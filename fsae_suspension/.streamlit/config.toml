@@ -1,0 +1,22 @@
+# Config tuned for sharing via tunnel links (ngrok, cloudflared, localtunnel)
+# during testing. These let the file uploader and websocket work through a
+# forwarded host. Review before a real public deploy.
+
+[server]
+# Allow the app to be reached through a tunnel's forwarded hostname.
+enableCORS = false
+enableXsrfProtection = false
+# CAD files (STEP/STL) can be large — raise the upload cap to 200 MB.
+maxUploadSize = 200
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "dark"
+primaryColor = "#ffb02e"
+backgroundColor = "#0b0d10"
+secondaryBackgroundColor = "#13171c"
+textColor = "#e7ecf1"
+font = "monospace"
