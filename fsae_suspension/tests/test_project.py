@@ -103,6 +103,114 @@ def test_open_notes_in_handover():
     assert "Open cross-team items" in md and "upright moved" in md
 
 
+def test_search_freetext():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "Raised roll centre", "less body roll", tags="roll-centre"))
+    s.add_decision(pj.Decision("cooling", "Moved radiator", "interference", tags="packaging"))
+    assert [d.title for d in s.search_decisions(query="roll")] == ["Raised roll centre"]
+    assert [d.title for d in s.search_decisions(query="interference")] == ["Moved radiator"]
+
+
+def test_search_team_filter():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "A", "x"))
+    s.add_decision(pj.Decision("cooling", "B", "y"))
+    assert [d.title for d in s.search_decisions(team="suspension")] == ["A"]
+
+
+def test_search_tag_filter():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "A", "x", tags="roll-centre, front"))
+    s.add_decision(pj.Decision("suspension", "B", "y", tags="rear"))
+    assert [d.title for d in s.search_decisions(tag="front")] == ["A"]
+
+
+def test_search_combined():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "Rear ARB", "rotate on entry", tags="rear"))
+    s.add_decision(pj.Decision("cooling", "Rear duct", "airflow", tags="rear"))
+    res = s.search_decisions(query="rotate", team="suspension")
+    assert [d.title for d in res] == ["Rear ARB"]
+
+
+def test_all_decision_tags():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "A", "x", tags="roll-centre, front"))
+    s.add_decision(pj.Decision("cooling", "B", "y", tags="packaging"))
+    assert s.all_decision_tags() == ["front", "packaging", "roll-centre"]
+
+
+def test_pluggable_backend_persists():
+    # An in-memory backend stands in for Supabase: data must survive a new store.
+    class MemoryBackend:
+        store = {}
+        def read(self): return dict(MemoryBackend.store)
+        def write(self, payload): MemoryBackend.store = dict(payload)
+    b = MemoryBackend()
+    s = pj.ProjectStore(path="unused.json", backend=b)
+    s.add_decision(pj.Decision("suspension", "persisted", "via backend"))
+    s.save()
+    # a brand-new store reading the same backend should see the decision
+    s2 = pj.ProjectStore(path="unused.json", backend=b)
+    assert len(s2.decisions) == 1 and s2.decisions[0].title == "persisted"
+
+
+def test_json_backend_roundtrip():
+    import tempfile, os as _os
+    fd, p = tempfile.mkstemp(suffix=".json"); _os.close(fd); _os.unlink(p)
+    b = pj.JSONFileBackend(p)
+    s = pj.ProjectStore(path=p, backend=b)
+    s.add_note(pj.Note(from_team="aero", to_team="all", message="hi"))
+    s.save()
+    s2 = pj.ProjectStore(path=p, backend=b)
+    assert len(s2.notes) == 1
+    _os.unlink(p)
+
+
+def test_auto_backend_defaults_to_json(monkeypatch=None):
+    # With no Supabase env vars, the auto backend is the JSON file backend.
+    import os as _os
+    _os.environ.pop("SUPABASE_URL", None)
+    _os.environ.pop("SUPABASE_KEY", None)
+    b = pj._auto_backend("whatever.json")
+    assert isinstance(b, pj.JSONFileBackend)
+
+
+def test_search_part_filter():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "A", "x", part="front upright"))
+    s.add_decision(pj.Decision("suspension", "B", "y", part="rear hub"))
+    assert [d.title for d in s.search_decisions(part="upright")] == ["A"]
+
+
+def test_all_decision_parts():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "A", "x", part="front upright"))
+    s.add_decision(pj.Decision("cooling", "B", "y", part="radiator"))
+    assert s.all_decision_parts() == ["front upright", "radiator"]
+
+
+def test_part_in_freetext_search():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "A", "x", part="front upright"))
+    assert [d.title for d in s.search_decisions(query="upright")] == ["A"]
+
+
+def test_degraded_storage_surfaces_reason():
+    import os as _os
+    _os.environ["SUPABASE_URL"] = "https://bad.invalid"
+    _os.environ["SUPABASE_KEY"] = "badkey"
+    try:
+        b = pj._auto_backend("fallback.json")
+        # Either supabase isn't installed or the connection fails — both should
+        # yield a JSON fallback that records WHY, not a silent swap.
+        if isinstance(b, pj.JSONFileBackend):
+            assert b.degraded_reason is not None
+    finally:
+        _os.environ.pop("SUPABASE_URL", None)
+        _os.environ.pop("SUPABASE_KEY", None)
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     p = 0

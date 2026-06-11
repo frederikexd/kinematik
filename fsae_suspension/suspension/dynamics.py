@@ -19,6 +19,11 @@ from .kinematics import SuspensionKinematics, Hardpoints
 
 @dataclass
 class VehicleParams:
+    # NOTE on provenance: the tyre constants below (tire_load_sens, mu_peak) are
+    # representative FSAE PLACEHOLDERS, not measured values. They make the balance
+    # model useful for COMPARING setups (which way does the balance move?), not for
+    # predicting absolute grip. Replace with values from your own tyre data (e.g. the
+    # FSAE Tire Test Consortium) before trusting absolute numbers.
     mass: float = 280.0            # total mass incl. driver, kg
     cg_height: float = 300.0       # mm above ground
     wheelbase: float = 1550.0      # mm
@@ -52,14 +57,18 @@ class VehicleDynamics:
         self.rear_kin = rear_kin
 
     # ---------------- roll centres from kinematics ----------------------- #
-    def roll_center_height(self, kin: SuspensionKinematics, track: float) -> float:
+    def roll_center_height(self, kin: SuspensionKinematics, track: float,
+                           state=None) -> float:
         """
         Front-view roll-centre height: intersection of the line from contact patch
-        through the instant centre with the car centreline (y = 0... here y = -track/2
-        is the contact patch on a right corner mirrored). We treat the corner as the
-        right side and find where the CP->IC line crosses the vehicle centreline.
+        through the instant centre with the car centreline (y = 0).
+
+        By default uses the static pose, but pass `state` (any CornerState) to
+        evaluate at a given travel — roll centres migrate substantially through
+        travel/roll, which is a primary reason teams care about RC, so the model
+        can now report that migration instead of assuming RC is fixed.
         """
-        st = kin.static
+        st = state if state is not None else kin.static
         ic = st.instant_center          # (y, z)
         cp_y = st.contact_patch[1]
         cp_z = st.contact_patch[2]
@@ -70,9 +79,17 @@ class VehicleDynamics:
         if abs(dy) < 1e-9:
             return cp_z
         slope = dz / dy
-        # centreline is at y = 0
         rc_z = cp_z + slope * (0.0 - cp_y)
         return float(rc_z)
+
+    def roll_center_migration(self, kin: SuspensionKinematics, track: float,
+                              travel_min=-30.0, travel_max=30.0, n=21):
+        """RC height across a travel sweep → (travels, rc_heights), for an honest
+        picture of how the roll centre moves rather than a single static number."""
+        travels = np.linspace(travel_min, travel_max, n)
+        rc = [self.roll_center_height(kin, track, state=kin.solve_at_travel(t))
+              for t in travels]
+        return list(travels), rc
 
     # ---------------- steady-state lateral load transfer ----------------- #
     def lateral_load_transfer(self, lateral_g: float):

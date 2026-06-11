@@ -1,3 +1,15 @@
+---
+title: KinematiK
+emoji: 🏎️
+colorFrom: yellow
+colorTo: gray
+sdk: streamlit
+sdk_version: 1.40.0
+app_file: streamlit_app.py
+pinned: false
+license: mit
+---
+
 # ◢ KinematiK
 
 **Open-source double-wishbone suspension studio for Formula SAE.**
@@ -110,7 +122,37 @@ print("max lateral g:", veh.max_lateral_g())
 print("balance index:", veh.balance_index(1.2)[0])   # + understeer, − oversteer
 ```
 
-## How the solver works
+## Persistent storage (so handover data survives)
+
+By default the project memory (decisions, notes, weight budget) saves to a local
+`project.json` file. That's fine on a laptop, but on ephemeral hosts like Streamlit
+Community Cloud the filesystem is wiped on restart — so for a deployed app the team
+relies on, point it at a free hosted database.
+
+KinematiK auto-detects [Supabase](https://supabase.com) (free Postgres). To enable it:
+
+1. Create a free Supabase project.
+2. In the SQL editor, create the table:
+   ```sql
+   create table kinematik_project (
+     id text primary key,
+     data jsonb
+   );
+   ```
+3. Copy your project URL and a service/anon key from Supabase settings.
+4. In Streamlit Cloud → your app → Settings → Secrets, add:
+   ```toml
+   SUPABASE_URL = "https://yourproject.supabase.co"
+   SUPABASE_KEY = "your-key"
+   ```
+   (Locally, set the same two as environment variables.)
+
+The app picks up the credentials automatically and switches to persistent storage —
+the WEIGHT & HANDOVER tab shows a green "persistent storage" badge when it's active,
+or an amber "local/session" badge when it's not. No credentials → it just uses the
+local JSON file, exactly as before. Nothing breaks either way.
+
+
 
 Each corner is a rigid double-wishbone linkage. The two ball joints must lie on the spheres defined by their wishbone lengths, the upright is rigid between them, and the tie-rod outer is rigidly tied to the upright. KinematiK drives the lower ball joint through vertical travel and solves the resulting nonlinear constraint system with a damped least-squares (Levenberg–Marquardt) step at each position. The upright's rigid pose is then transported to the wheel-centre, contact patch, and spin axis, so camber/toe/caster are read from the *actual* moving wheel rather than approximated. See `suspension/kinematics.py` — it's commented for exactly this reason.
 

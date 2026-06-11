@@ -12,6 +12,7 @@ Run:  streamlit run app.py
 import json
 import os
 import tempfile
+import datetime as _datetime
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
@@ -76,6 +77,32 @@ body, p, span, div, label{ font-family:'Archivo',sans-serif; }
 .hint{ color:var(--dim); font-size:.82rem; }
 hr{ border-color:var(--line);}
 [data-testid="stMetricValue"]{ font-family:'JetBrains Mono'!important;}
+
+/* Buttons and download buttons — dark theme (Streamlit defaults render white) */
+.stButton > button, .stDownloadButton > button{
+  background:var(--panel2)!important;
+  color:var(--ink)!important;
+  border:1px solid var(--line)!important;
+  border-radius:10px!important;
+  font-family:'JetBrains Mono',monospace!important;
+  font-size:.82rem!important;
+  font-weight:600!important;
+  transition:border-color .15s ease, background .15s ease;
+}
+.stButton > button:hover, .stDownloadButton > button:hover{
+  border-color:var(--amber)!important;
+  background:#1b222a!important;
+  color:var(--amber)!important;
+}
+.stButton > button:active, .stDownloadButton > button:active{ background:#11161b!important; }
+.stButton > button:focus, .stDownloadButton > button:focus{
+  box-shadow:none!important; border-color:var(--amber)!important;
+}
+.stTextInput input, .stTextArea textarea, .stNumberInput input,
+.stSelectbox div[data-baseweb="select"] > div{
+  background:var(--panel2)!important; color:var(--ink)!important; border-color:var(--line)!important;
+}
+.stFileUploader > div{ background:var(--panel2)!important; border-color:var(--line)!important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -246,6 +273,29 @@ if not solve_ok:
                 'check wishbone lengths</span>', unsafe_allow_html=True)
 
 st.write("")
+with st.expander("👋 New here? Start here (30-second tour)", expanded=False):
+    st.markdown("""
+**What KinematiK is:** a shared tool for the whole FSAE team. It does two jobs —
+checks parts against the chassis before you manufacture, and keeps a searchable
+record of *why* the team made its design decisions so that knowledge doesn't vanish
+at graduation.
+
+**Where to go, by what you want to do:**
+- **Designing suspension geometry?** → *Kinematics*, *Roll & Load Transfer*, *Grip
+  Balance*, *Geometry 3D* tabs. Edit hardpoints in the sidebar; everything updates live.
+- **Checking if your part fits the chassis?** → *Team Fit* tab. Load the chassis once,
+  load your part, get a collision/clearance verdict before you cut anything.
+- **Suspension vs chassis clearance through travel?** → *Suspension vs Chassis* tab.
+- **Logging a decision / tracking weight / handover?** → *Weight & Handover* tab.
+  Tap a quick-template, fill the brackets, done. This is the part next year's team
+  will thank you for.
+- **Leaving a note for another subteam?** → *Lead Notes* tab.
+
+**The one habit that makes this worth it:** log your decisions as you make them —
+especially the things that *didn't* work. It takes ten seconds with the templates,
+and it's the difference between next year starting ahead or relearning everything.
+    """)
+
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
     ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
      "  GEOMETRY 3D  ", "  SUSPENSION vs CHASSIS  ", "  TEAM FIT  ",
@@ -325,6 +375,23 @@ with tab2:
                        "good" if info['roll_angle'] < 2.5 else "warn"), unsafe_allow_html=True)
     c2.markdown(metric("Front LLT @1.2g", f"{info['ltd_front']:.0f}", "N"), unsafe_allow_html=True)
     c2.markdown(metric("Rear LLT @1.2g", f"{info['ltd_rear']:.0f}", "N"), unsafe_allow_html=True)
+
+    # Roll-centre migration through travel — the honest picture vs a static number.
+    mt, mrc = veh.roll_center_migration(kin, veh.p.track_front, -30, 30, 21)
+    figM = go.Figure()
+    figM.add_trace(go.Scatter(x=mt, y=mrc, mode="lines",
+                              line=dict(color="#9b8cff", width=3)))
+    figM.update_layout(**PLOT_LAYOUT, title="Roll-centre height migration vs travel",
+                       xaxis_title="travel (mm, + bump)", yaxis_title="RC height (mm)",
+                       height=300)
+    st.plotly_chart(figM, use_container_width=True)
+    _rc_swing = max(mrc) - min(mrc) if all(np.isfinite(mrc)) else float("nan")
+    st.markdown(f'<p class="hint">Across ±30 mm of travel the front roll centre moves '
+                f'{_rc_swing:.0f} mm. Large RC migration means the load-transfer balance '
+                f'shifts as the car heaves and rolls — a flatter curve is generally more '
+                f'predictable. The load-transfer numbers above use the static RC; this '
+                f'plot shows how much that assumption drifts under travel.</p>',
+                unsafe_allow_html=True)
 
     st.markdown(f'<p class="hint">Roll centre sits {rc_static:.0f} mm above ground at '
                 'the front. A higher RC reduces body roll but adds jacking and lateral '
@@ -743,6 +810,22 @@ with tab6:
 with tab7:
     store = project_mod.ProjectStore(PROJECT_PATH)
 
+    # Surface storage problems instead of silently losing data.
+    _degraded = getattr(store.backend, "degraded_reason", None)
+    if _degraded:
+        st.error(f"⚠ {_degraded}")
+    if getattr(store, "load_error", None):
+        st.error(f"⚠ {store.load_error}")
+
+    # Tell the user whether their data is persisting or session-only.
+    _is_persistent = type(store.backend).__name__ == "SupabaseBackend"
+    if _is_persistent:
+        st.markdown('<span class="tag good">● persistent storage — data survives '
+                    'restarts</span>', unsafe_allow_html=True)
+    else:
+        st.markdown('<span class="tag warn">● local/session storage — set up Supabase '
+                    'for permanent team data (see README)</span>', unsafe_allow_html=True)
+
     st.markdown('<p class="hint">The lightest reliable car is the advantage money '
                 'can\'t buy — and the reasoning behind your design is the thing a team '
                 'loses every graduation. This page is the persistent record: it saves '
@@ -814,6 +897,36 @@ with tab7:
     st.markdown('<p class="hint">This is the section next year\'s team thanks you for. '
                 'Write down <i>why</i>, not just what — the reasoning is what gets lost.</p>',
                 unsafe_allow_html=True)
+
+    # ---- Quick-add: one-tap templates to kill logging friction ----------
+    QUICK_TEMPLATES = {
+        "⚙ Geometry change": ("Geometry change", "changed-geometry",
+                              "Changed [what] from [old] to [new] because [reason]. "
+                              "Trade-off: [what it costs]."),
+        "🔧 Material / part choice": ("Material choice", "material",
+                              "Chose [material/part] for [component] because [reason]. "
+                              "Considered [alternative] but [why not]."),
+        "⚠ Interference found": ("Interference found", "interference",
+                              "[Part] interferes with [what] at [condition]. "
+                              "Resolved by [action] / flagged for [who]."),
+        "🧪 Test result": ("Test result", "test",
+                              "Tested [what]. Result: [outcome]. "
+                              "Means we should [implication]."),
+        "❌ Didn't work": ("Didn't work", "rejected",
+                              "Tried [approach] for [goal]. Didn't work because [reason]. "
+                              "Avoid repeating — instead [what to do]."),
+    }
+    st.markdown('<p class="hint" style="margin-bottom:.2rem;">Quick start — tap a '
+                'template, then just fill in the brackets:</p>', unsafe_allow_html=True)
+    qcols = st.columns(len(QUICK_TEMPLATES))
+    for i, (label, (title, tag, body)) in enumerate(QUICK_TEMPLATES.items()):
+        if qcols[i].button(label, key=f"qt_{i}", use_container_width=True):
+            # Seed the widget keys directly, before the widgets are created below.
+            st.session_state["d_title"] = title
+            st.session_state["d_tags"] = tag
+            st.session_state["d_rationale"] = body
+            st.rerun()
+
     dc = st.columns([1.2, 2, 1.2])
     d_team = dc[0].selectbox("Team", list(integ_mod.TEAMS.keys()),
                              format_func=lambda k: integ_mod.TEAMS[k]["label"], key="d_team")
@@ -821,26 +934,74 @@ with tab7:
     d_author = dc[2].text_input("Author", key="d_author")
     d_rationale = st.text_area("Rationale — why this choice, what were the trade-offs",
                                key="d_rationale", height=90)
+    tc = st.columns([1.4, 1.4])
+    d_part = tc[0].text_input("Part / system (e.g. front upright, radiator)", key="d_part",
+                              placeholder="what this decision is about")
+    d_tags = tc[1].text_input("Tags (comma-separated)", key="d_tags",
+                              placeholder="roll-centre, front, packaging…")
     if st.button("+ Log decision"):
         if d_title and d_rationale:
             store.add_decision(project_mod.Decision(
-                team=d_team, title=d_title, rationale=d_rationale, author=d_author))
+                team=d_team, title=d_title, rationale=d_rationale, author=d_author,
+                tags=d_tags, part=d_part))
             store.save()
+            for k in ("d_title", "d_tags", "d_rationale", "d_part"):
+                st.session_state.pop(k, None)
             st.rerun()
         else:
             st.warning("Enter a decision title and rationale.")
 
     if store.decisions:
-        for d in sorted(store.decisions, key=lambda x: x.date, reverse=True):
+        st.markdown("###### Search the decision log")
+        sc = st.columns([2.2, 1.2, 1.2, 1.2])
+        d_query = sc[0].text_input("Search", key="dec_search",
+                                   placeholder="search title, rationale, author, tags, part…",
+                                   label_visibility="collapsed")
+        team_opts = ["all teams"] + list(integ_mod.TEAMS.keys())
+        d_fteam = sc[1].selectbox("Team", team_opts, key="dec_fteam",
+                                  format_func=lambda k: "All teams" if k == "all teams"
+                                  else integ_mod.TEAMS[k]["label"], label_visibility="collapsed")
+        tag_opts = ["all tags"] + store.all_decision_tags()
+        d_ftag = sc[2].selectbox("Tag", tag_opts, key="dec_ftag",
+                                 format_func=lambda k: "All tags" if k == "all tags" else k,
+                                 label_visibility="collapsed")
+        part_opts = ["all parts"] + store.all_decision_parts()
+        d_fpart = sc[3].selectbox("Part", part_opts, key="dec_fpart",
+                                  format_func=lambda k: "All parts" if k == "all parts" else k,
+                                  label_visibility="collapsed")
+
+        results = store.search_decisions(
+            query=d_query,
+            team=None if d_fteam == "all teams" else d_fteam,
+            tag=None if d_ftag == "all tags" else d_ftag,
+            part=None if d_fpart == "all parts" else d_fpart)
+
+        st.markdown(f"<p class='hint'>{len(results)} of {len(store.decisions)} "
+                    f"decisions</p>", unsafe_allow_html=True)
+
+        for d in results:
             meta = f"{integ_mod.TEAMS.get(d.team,{}).get('label',d.team)} · {d.date}"
             if d.author:
                 meta += f" · {d.author}"
+            dpart = getattr(d, "part", "") or ""
+            if dpart:
+                meta += f" · ⛭ {dpart}"
             auto = "<span class='tag good' style='margin-left:6px;'>auto-captured</span>" \
                 if "auto" in (d.tags or "") else ""
+            # render user tags as chips (excluding the internal auto-captured marker)
+            chips = ""
+            for t in (d.tags or "").split(","):
+                t = t.strip()
+                if t and t != "auto-captured":
+                    chips += f"<span class='tag' style='margin-right:4px;'>{t}</span>"
+            chip_row = f"<div style='margin-top:.3rem;'>{chips}</div>" if chips else ""
             st.markdown(f"<div class='card' style='margin:.3rem 0;'>"
                         f"<b>{d.title}</b>{auto}<br><span class='hint'>{meta}</span><br>"
-                        f"<span style='font-size:.9rem;'>{d.rationale}</span></div>",
+                        f"<span style='font-size:.9rem;'>{d.rationale}</span>{chip_row}</div>",
                         unsafe_allow_html=True)
+        if not results:
+            st.markdown("<p class='hint'>No decisions match — try a broader search or "
+                        "clear the filters.</p>", unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("###### Export handover report")
@@ -968,25 +1129,64 @@ with tab8:
                     st.rerun()
 
 # --------------------------------------------------------------------------- #
-#  Export
+#  Save / Load project — one file captures the whole session
 # --------------------------------------------------------------------------- #
 st.markdown("---")
-ce1, ce2, ce3 = st.columns([1, 1, 3])
-config = {"hardpoints": hp_dict, "vehicle": st.session_state.vp}
-ce1.download_button("⬇ Export setup (.json)", json.dumps(config, indent=2),
-                    file_name="kinematik_setup.json", mime="application/json",
+st.markdown("#### Save / load your work")
+st.markdown('<p class="hint">One file holds your whole session — geometry, vehicle '
+            'setup, and the handover log (decisions, notes, weights). Save it to keep '
+            'your progress or hand it to a teammate; load it to pick up exactly where '
+            'you left off.</p>', unsafe_allow_html=True)
+
+# Build the unified project bundle.
+_store_for_save = project_mod.ProjectStore(PROJECT_PATH)
+project_bundle = {
+    "kinematik_version": "1.0",
+    "saved": _datetime.datetime.now().isoformat(timespec="seconds"),
+    "hardpoints": hp_dict,
+    "vehicle": st.session_state.vp,
+    "handover": json.loads(_store_for_save.as_json()),
+}
+
+sc1, sc2, sc3 = st.columns([1, 1, 1])
+sc1.download_button("💾 Save project (.json)", json.dumps(project_bundle, indent=2),
+                    file_name="kinematik_project.json", mime="application/json",
                     use_container_width=True)
 
-# CSV of the sweep for offline analysis / report plots
+# CSV of the sweep (tabular data — handy for report plots / Excel)
 import io
 buf = io.StringIO()
 buf.write("travel_mm,camber_deg,toe_deg,caster_deg,kpi_deg,scrub_mm\n")
 for st_ in sweep:
     buf.write(f"{st_.travel:.2f},{st_.camber:.4f},{st_.toe:.4f},"
               f"{st_.caster:.4f},{st_.kpi:.4f},{st_.scrub_radius:.3f}\n")
-ce2.download_button("⬇ Sweep data (.csv)", buf.getvalue(),
+sc2.download_button("⬇ Sweep data (.csv)", buf.getvalue(),
                     file_name="kinematik_sweep.csv", mime="text/csv",
                     use_container_width=True)
-ce3.markdown('<p class="hint" style="padding-top:.4rem;">Open source · MIT. '
-             'Fork it, validate against your OptimumK model, send a PR with the '
-             'rear-corner anti-squat module.</p>', unsafe_allow_html=True)
+
+with sc3:
+    loaded = st.file_uploader("📂 Load project (.json)", type=["json"],
+                              key="load_project", label_visibility="visible")
+    if loaded is not None:
+        try:
+            data = json.load(loaded)
+            if "hardpoints" in data:
+                st.session_state.hp = data["hardpoints"]
+            if "vehicle" in data:
+                st.session_state.vp = data["vehicle"]
+            # restore handover data into the store
+            if "handover" in data:
+                _s = project_mod.ProjectStore(PROJECT_PATH)
+                _s._apply(data["handover"])
+                _s.save()
+            st.success("Project loaded — geometry, vehicle, and handover restored.")
+            if st.button("Apply loaded project"):
+                st.rerun()
+        except Exception as e:
+            st.error(f"Couldn't read that project file: {e}")
+
+st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · MIT. Fork it, '
+            'validate against your OptimumK model, send a PR. '
+            '<i>Tip: on the hosted app, save your project before closing the tab — '
+            'geometry tweaks aren\'t auto-saved the way the handover log is.</i></p>',
+            unsafe_allow_html=True)

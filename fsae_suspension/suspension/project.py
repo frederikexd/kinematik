@@ -63,6 +63,7 @@ class Decision:
     date: str = ""
     author: str = ""
     tags: str = ""
+    part: str = ""               # the part/system this decision concerns (e.g. "front upright")
 
     def __post_init__(self):
         if not self.date:
@@ -95,12 +96,102 @@ class Note:
 
 
 # --------------------------------------------------------------------------- #
+#  Storage backends — where the project memory actually lives
+# --------------------------------------------------------------------------- #
+class JSONFileBackend:
+    """Default backend: a local JSON file. Perfect for laptops and tests."""
+
+    def __init__(self, path: str):
+        self.path = path
+        self.degraded_reason = None   # set if we fell back from a failed Supabase
+
+    def read(self) -> dict:
+        if os.path.exists(self.path):
+            with open(self.path) as f:
+                return json.load(f)
+        return {}
+
+    def write(self, payload: dict):
+        with open(self.path, "w") as f:
+            json.dump(payload, f, indent=2)
+
+
+class SupabaseBackend:
+    """
+    Persists the whole project as a single JSON row in a Supabase (Postgres) table,
+    so it survives restarts on ephemeral hosts like Streamlit Cloud.
+
+    Expects a table named `kinematik_project` with columns:
+        id   text  (primary key)
+        data jsonb
+    and these set in the environment / Streamlit secrets:
+        SUPABASE_URL, SUPABASE_KEY
+    A single row keyed by `project_id` (default "elbee") holds the team's data.
+    Concurrency is last-write-wins, which is fine for a team of a few editors.
+    """
+
+    TABLE = "kinematik_project"
+
+    def __init__(self, url: str, key: str, project_id: str = "elbee"):
+        from supabase import create_client
+        self.client = create_client(url, key)
+        self.project_id = project_id
+
+    def read(self) -> dict:
+        resp = (self.client.table(self.TABLE)
+                .select("data").eq("id", self.project_id).execute())
+        rows = resp.data or []
+        return rows[0]["data"] if rows else {}
+
+    def write(self, payload: dict):
+        self.client.table(self.TABLE).upsert(
+            {"id": self.project_id, "data": payload}).execute()
+
+
+def _auto_backend(path: str):
+    """
+    Choose a backend automatically: Supabase if its credentials are present in the
+    environment (the deployed app), otherwise a local JSON file (laptop/tests).
+
+    If Supabase credentials ARE set but initialisation fails, we do NOT silently
+    fall back — that would drop the team's data into ephemeral storage without
+    anyone knowing. Instead we record the error so the app can warn the user, and
+    only then fall back. Absence of credentials is the normal local case and is
+    silent.
+    """
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_KEY")
+    if url and key:
+        try:
+            return SupabaseBackend(url, key)
+        except Exception as e:
+            # Credentials were provided but the backend failed — this is worth
+            # surfacing, not hiding. Stash the reason on the fallback backend.
+            fb = JSONFileBackend(path)
+            fb.degraded_reason = (
+                "Supabase credentials are set but the connection failed "
+                f"({type(e).__name__}). Falling back to local storage — data will "
+                "NOT persist across restarts until this is fixed.")
+            return fb
+    return JSONFileBackend(path)
+
+
+# --------------------------------------------------------------------------- #
 #  Project store
 # --------------------------------------------------------------------------- #
 class ProjectStore:
-    """Loads/saves the team's persistent project memory to a JSON file."""
+    """
+    The team's persistent project memory: weights, decisions, notes.
 
-    def __init__(self, path: str = DEFAULT_PROJECT):
+    Storage is pluggable. By default it reads/writes a local JSON file (great for
+    running on a laptop or for tests). If a Supabase backend is configured (via
+    environment variables on the deployed app), it persists to a hosted Postgres
+    database instead — which survives restarts on ephemeral hosts like Streamlit
+    Cloud, where the local filesystem is wiped. The rest of the app doesn't change:
+    it calls .load() and .save() the same way regardless of backend.
+    """
+
+    def __init__(self, path: str = DEFAULT_PROJECT, backend=None):
         self.path = path
         self.team_name = "Elbee Racing"
         self.season = str(_dt.date.today().year)
@@ -108,22 +199,13 @@ class ProjectStore:
         self.weights: list[WeightItem] = []
         self.decisions: list[Decision] = []
         self.notes: list[Note] = []
-        if os.path.exists(path):
-            self.load()
+        self.load_error = None
+        # Pick a backend: explicit > auto-detected Supabase > local JSON file.
+        self.backend = backend or _auto_backend(path)
+        self.load()
 
-    # ----------------------------- io ---------------------------------- #
-    def load(self):
-        with open(self.path) as f:
-            d = json.load(f)
-        self.team_name = d.get("team_name", self.team_name)
-        self.season = d.get("season", self.season)
-        self.target_mass_kg = d.get("target_mass_kg", self.target_mass_kg)
-        self.weights = [WeightItem(**w) for w in d.get("weights", [])]
-        self.decisions = [Decision(**x) for x in d.get("decisions", [])]
-        self.notes = [Note(**n) for n in d.get("notes", [])]
-
-    def save(self):
-        d = {
+    def _payload(self) -> dict:
+        return {
             "team_name": self.team_name,
             "season": self.season,
             "target_mass_kg": self.target_mass_kg,
@@ -132,8 +214,31 @@ class ProjectStore:
             "notes": [asdict(n) for n in self.notes],
             "updated": _dt.datetime.now().isoformat(timespec="seconds"),
         }
-        with open(self.path, "w") as f:
-            json.dump(d, f, indent=2)
+
+    def _apply(self, d: dict):
+        if not d:
+            return
+        self.team_name = d.get("team_name", self.team_name)
+        self.season = d.get("season", self.season)
+        self.target_mass_kg = d.get("target_mass_kg", self.target_mass_kg)
+        self.weights = [WeightItem(**w) for w in d.get("weights", [])]
+        self.decisions = [Decision(**x) for x in d.get("decisions", [])]
+        self.notes = [Note(**n) for n in d.get("notes", [])]
+
+    # ----------------------------- io ---------------------------------- #
+    def load(self):
+        try:
+            d = self.backend.read()
+        except FileNotFoundError:
+            return  # fresh local project, nothing saved yet — expected
+        except Exception as e:
+            # A genuine read failure (corrupt file, DB error) shouldn't be hidden.
+            self.load_error = f"Could not read saved project data: {e}"
+            return
+        self._apply(d)
+
+    def save(self):
+        self.backend.write(self._payload())
 
     def as_json(self) -> str:
         return json.dumps({
@@ -150,6 +255,48 @@ class ProjectStore:
 
     def add_decision(self, dec: Decision):
         self.decisions.append(dec)
+
+    def search_decisions(self, query="", team=None, tag=None, part=None):
+        """
+        Find decisions by free-text query (matches title + rationale + author + part),
+        optional team, tag, and part filters. Returns newest-first. This is the
+        'written but findable' layer — the whole point of the handover tool is that
+        next year can locate the reasoning in seconds, including by which part it's about.
+        """
+        q = (query or "").strip().lower()
+        out = []
+        for d in self.decisions:
+            if team and d.team != team:
+                continue
+            if tag and tag.lower() not in (d.tags or "").lower():
+                continue
+            if part and part.lower() not in (getattr(d, "part", "") or "").lower():
+                continue
+            if q:
+                haystack = f"{d.title} {d.rationale} {d.author} {d.tags} {getattr(d, 'part', '')}".lower()
+                if q not in haystack:
+                    continue
+            out.append(d)
+        return sorted(out, key=lambda d: d.date, reverse=True)
+
+    def all_decision_parts(self):
+        """Unique, sorted list of parts/systems referenced across decisions."""
+        parts = set()
+        for d in self.decisions:
+            p = (getattr(d, "part", "") or "").strip()
+            if p:
+                parts.add(p)
+        return sorted(parts)
+
+    def all_decision_tags(self):
+        """Unique, sorted list of tags used across decisions (split on commas)."""
+        tags = set()
+        for d in self.decisions:
+            for t in (d.tags or "").split(","):
+                t = t.strip()
+                if t:
+                    tags.add(t)
+        return sorted(tags)
 
     def add_note(self, note: Note):
         self.notes.append(note)

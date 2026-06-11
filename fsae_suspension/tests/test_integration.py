@@ -49,6 +49,27 @@ def test_mass_estimate_from_density():
     assert rec.mass_g is not None and rec.mass_g > 0
 
 
+def test_load_part_rejects_sldprt():
+    try:
+        ig.load_part("model.sldprt")
+        assert False, "should have rejected sldprt"
+    except ValueError as e:
+        assert "sldprt" in str(e).lower() or "step" in str(e).lower()
+
+
+def test_load_part_rejects_tiny_metre_mesh():
+    import tempfile, os as _os
+    b = trimesh.creation.box(extents=[0.1, 0.1, 0.1])
+    p = _os.path.join(tempfile.gettempdir(), "tiny_test.stl"); b.export(p)
+    try:
+        ig.load_part(p)
+        assert False, "should have flagged metre-scale mesh"
+    except ValueError as e:
+        assert "metre" in str(e).lower() or "small" in str(e).lower()
+    finally:
+        _os.unlink(p)
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     p = 0

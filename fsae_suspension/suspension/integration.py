@@ -55,27 +55,43 @@ def load_part(path: str, offset=(0.0, 0.0, 0.0), scale=1.0,
     Load a part from STEP / STL / OBJ / GLB into a single Trimesh, positioned in
     the shared frame: scale first, then rotate (XYZ Euler, degrees), then translate.
 
-    STEP is tessellated via cascadio; mesh formats load directly. Multi-body
-    assemblies are concatenated — only the surface matters for distance queries.
+    Raises ValueError with a human-readable message for the common failure modes
+    (unreadable file, empty geometry, degenerate mesh) so the UI can tell the user
+    what's actually wrong instead of surfacing a raw library traceback.
     """
     ext = os.path.splitext(path)[1].lower()
-    if ext in (".step", ".stp"):
-        import cascadio
-        with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
-            glb = tmp.name
-        cascadio.step_to_glb(path, glb, tol_linear=0.5, tol_angular=0.5)
-        scene = trimesh.load(glb, force="scene")
-        os.unlink(glb)
-    else:
-        scene = trimesh.load(path, force="scene")
+    if ext not in (".step", ".stp", ".stl", ".obj", ".glb"):
+        raise ValueError(
+            f"Unsupported file type '{ext}'. Use STEP (.step/.stp), STL, OBJ, or GLB. "
+            f"SolidWorks .sldprt isn't supported — export it as STEP first.")
+
+    try:
+        if ext in (".step", ".stp"):
+            import cascadio
+            with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
+                glb = tmp.name
+            cascadio.step_to_glb(path, glb, tol_linear=0.5, tol_angular=0.5)
+            scene = trimesh.load(glb, force="scene")
+            os.unlink(glb)
+        else:
+            scene = trimesh.load(path, force="scene")
+    except Exception as e:
+        raise ValueError(
+            f"Couldn't read the file — it may be corrupted or not a valid {ext} file. "
+            f"(details: {e})")
 
     if isinstance(scene, trimesh.Scene):
-        if len(scene.geometry) == 0:
-            raise ValueError("No geometry found in file.")
-        mesh = trimesh.util.concatenate(
-            [g for g in scene.geometry.values() if isinstance(g, trimesh.Trimesh)])
+        meshes = [g for g in scene.geometry.values() if isinstance(g, trimesh.Trimesh)]
+        if not meshes:
+            raise ValueError(
+                "No 3D geometry found in the file. If it's a STEP assembly, make sure "
+                "it contains solid bodies, not just sketches or reference geometry.")
+        mesh = trimesh.util.concatenate(meshes)
     else:
         mesh = scene
+
+    if mesh is None or len(mesh.vertices) == 0 or len(mesh.faces) == 0:
+        raise ValueError("The file loaded but contains no usable surface mesh.")
 
     if scale != 1.0:
         mesh.apply_scale(scale)
@@ -84,6 +100,14 @@ def load_part(path: str, offset=(0.0, 0.0, 0.0), scale=1.0,
         R = trimesh.transformations.euler_matrix(rx, ry, rz, "sxyz")
         mesh.apply_transform(R)
     mesh.apply_translation(np.asarray(offset, float))
+
+    # Gentle unit sanity check: FSAE parts in mm are typically 10–3000 mm across.
+    # A bounding box under ~5 mm usually means the file is in metres (needs scale 1000).
+    size = float(np.max(mesh.bounds[1] - mesh.bounds[0]))
+    if size < 5.0:
+        raise ValueError(
+            f"The part is only {size:.2f} units across, which is suspiciously small — "
+            f"the file is probably in metres. Set scale to 1000 to convert to mm.")
     return mesh
 
 
