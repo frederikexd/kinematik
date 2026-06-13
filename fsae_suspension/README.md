@@ -33,10 +33,41 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
 - Camber gain & bump steer (toe vs travel)
 - Caster and kingpin inclination (KPI) through travel
 - Scrub radius
-- Instant-centre location and motion ratio
+- Front-view instant-centre location
+- **Real motion ratio from the actual pushrod/rocker (bell-crank) geometry** — the
+  pushrod drives the rocker, the installed spring length is read across it, and
+  MR = spring travel / wheel travel is differentiated against wheel travel. Gives
+  wheel rate = spring rate × MR², plus the full MR-vs-travel curve (rising/falling
+  rate). Falls back to a clearly-labelled direct-acting proxy only when no rocker
+  is defined.
+- **Anti-dive and anti-squat percentages** from the side-view swing-arm geometry
+  (the chassis pivot-axis inclination), referenced to the car's CG height and
+  wheelbase and the brake/drive bias.
+
+**Lap time & track (quasi-steady-state point mass)**
+- Skidpad, 75 m acceleration (proper standing-start integration), and autocross
+- Aero (downforce + drag), and a **real motor torque/speed map** (or the simpler flat
+  power cap when you don't have the curve)
+- **Track from GPS or cone coordinates** — drive/walk the course or drop the event-map
+  cones and the sim runs your actual layout (`track_from_path`, `cones_to_centerline`,
+  `latlon_to_xy`); no more manual segment entry
+- **Racing-line optimisation** — uses the track width to straighten corners and reports
+  the seconds gained vs the centreline (curvature-optimal line)
+
+**Tire (Pacejka MF5.2 lateral, fitted to TTC data)**
+- Load sensitivity, camber response, peak-mu and optimal-camber search
+- **Combined slip** (Fx+Fy friction ellipse) and **relaxation length** — real physics,
+  flagged uncalibrated until you supply drive/brake and transient data, so they never
+  present an invented number as measured
+- **Damper force–velocity model** (bilinear-digressive) with a damping-ratio diagnostic —
+  the building block for the transient model, calibratable from your dyno curve
 
 **Vehicle dynamics (coupled to the geometry)**
 - Front/rear roll-centre heights from the solved instant centres
+- **Roll stiffness derived from spring rates through the real motion ratio**
+  (k_wheel = k_spring × MR², plus anti-roll-bar rate) — so a quoted spring rate
+  maps to a wheel/roll rate through the actual rocker, instead of being assumed
+  1:1. This is the lever the optimiser now sweeps.
 - Steady-state lateral load transfer, split into geometric + elastic
 - Per-tire vertical loads vs lateral g
 - **Pacejka MF5.2 tire model** → load-sensitive, camber-aware grip, max lateral g,
@@ -186,6 +217,12 @@ from suspension.setup import sensitivity, optimise
 kin = SuspensionKinematics(Hardpoints.default())
 print(kin.static.camber, kin.static.caster, kin.static.scrub_radius)
 
+# Real motion ratio from the pushrod/rocker, wheel rate from a spring rate,
+# and anti-dive / anti-squat from the side-view geometry:
+print("motion ratio:", kin.motion_ratio(), "(real)" if kin.motion_ratio_is_real() else "(proxy)")
+print("wheel rate @35 N/mm spring:", kin.wheel_rate(35.0), "N/mm")
+print("anti-dive %:", kin.anti_dive_pct(cg_height=300, wheelbase=1550, brake_bias_front=0.65))
+
 # Grip/balance on the generic default tire (works out of the box) ...
 tire = default_tire()
 # ... or on YOUR tire fitted from TTC data:
@@ -196,9 +233,16 @@ print("grip model:", veh.grip_model_name())          # "Pacejka MF5.2"
 print("max lateral g:", veh.max_lateral_g())
 print("balance index:", veh.balance_index(1.2)[0])    # + understeer, − oversteer
 
-# Which setup change buys the most grip?
+# Sweep the PHYSICAL levers (spring rates/ARB flow through the motion ratio into
+# roll stiffness; sensitivity()/optimise() set use_spring_rates automatically):
 for r in sensitivity(VehicleParams(), front_kin=kin, rear_kin=kin, tire=tire)["rankings"]:
     print(f"  {r['label']}: {r['d_maxg_per_step']:+.4f} g per {r['step']} {r['unit']}")
+
+# Validate the model against a real skidpad run — earn trust by matching data:
+from suspension import correlation
+rep = correlation.correlate_skidpad(veh, measured_g=1.42)
+print(rep.summary)                 # measured vs predicted, % error, trust verdict
+print("within tolerance:", rep.overall_within_tol)
 ```
 
 ## Your tire is the edge
@@ -259,7 +303,7 @@ Sign conventions and gains are pinned by tests:
 ```bash
 python tests/test_kinematics.py        # kinematics sign conventions & solver
 python tests/test_tiremodel.py         # tire model, TTC fitter, setup optimiser
-python -m pytest tests/                # everything (67 tests)
+python -m pytest tests/                # everything (164 tests)
 ```
 
 The tire tests pin the things the grip upgrade depends on: load sensitivity in the
@@ -270,16 +314,96 @@ Before you trust it for a design decision, sweep one corner against your existin
 OptimumK/spreadsheet model and check the camber curve matches. If it doesn't, that's
 a bug worth a GitHub issue.
 
+## The interface that other tools don't have (SUBSYSTEM INTEGRATION tab)
+
+OptimumK, ANSYS and SolidWorks each go deep in **one** domain. What no FSAE team has is
+a place where the **interfaces between** subsystems are owned and checked — so eight
+sub-teams optimise in isolation and the integration failures (the radiator that won't
+fit the duct, the motor torque that exceeds the driveline, eight "~12 kg" estimates that
+sum well over budget) surface at assembly or at competition, when they're expensive.
+
+The SUBSYSTEM INTEGRATION tab (and `suspension/interfaces.py`) is a live integration
+ledger. Each of the eight subsystems declares, in typed fields, what it **needs from**
+the car and what it **provides to** it — mass + CG, spatial envelope, mount loads,
+power draw, heat/airflow, torque, downforce. KinematiK then runs cross-subsystem
+consistency checks and reports `Finding`s with a severity (`FAIL` / `WARN` / `MISSING` /
+`INFO` / `OK`) that name **both** subsystems involved, so each conflict has an owner:
+
+- mass budget vs target (net of a declared driver allowance) and combined **mass-weighted
+  CG** — which is pushed straight into the vehicle model so load transfer and the lap sim
+  reflect the real build, not an assumption;
+- spatial **envelope fit** of each subsystem inside the chassis interior;
+- **cooling airflow** required vs what the cooling package can move;
+- **LV power** draw vs supply, and HV voltage match;
+- **driveline torque** the powertrain delivers vs what the driveshaft/CV/upright is rated for;
+- mount loads vs design loads.
+
+Crucially it **does not simulate any subsystem** — KinematiK can't do CFD, brake-thermal,
+chassis FEA or battery modelling, and faking those would be the same false-confidence trap
+the rest of the codebase refuses. Each subsystem's analysis stays in the tool that does it
+properly; this owns the channels between them. Every declaration carries an `is_estimate`
+flag, and the board always surfaces which numbers are placeholders, so a green board never
+implies more certainty than the data behind it. That coordination layer — not deeper
+single-domain physics — is the edge.
+
+## Correlate it against real data (the VALIDATION tab)
+
+A sim only changes a decision if people believe it, and the honest way to earn that
+is to show it predicted something you measured. The **VALIDATION** tab (and
+`suspension/correlation.py`) takes data a cash-strapped team can actually collect and
+reports the gap in plain, checkable numbers:
+
+- **Skidpad** — enter your measured peak lateral g *or* timed-circle time; it reports
+  the error on both channels against the live grip model. This is the cleanest case:
+  steady-state and near closed-form, so a mismatch here means the grip stack is off,
+  not the lap integration.
+- **Acceleration (75 m)** — compares your measured run against a standing-start
+  integration of the longitudinal model (`laptime.acceleration_time`).
+- **Speed trace** — upload a two-column `distance, speed` CSV from GPS or a wheel-speed
+  log; the sim trace is resampled onto your distance axis and compared point-for-point,
+  reporting RMSE, **mean bias** (does the sim run systematically fast or slow?),
+  peak-speed error, and R².
+
+It deliberately does **not** tune the model to fit your data — it quantifies the gap
+and tells you which way the model is biased, so you either trust the prediction for the
+decision in front of you or go find the assumption that's wrong. Tolerances live in
+`DEFAULT_TOL` in `correlation.py`; they're explicit and editable, and every report
+carries the tolerance it used. A correlation can be logged straight to the handover
+record so the *evidence* travels with the design decision — which is what actually
+settles an argument, rather than the loudest opinion in the room.
+
 ## Roadmap / good first PRs
 
-- Rear-corner **anti-squat / anti-dive** percentages from side-view geometry
-- Pushrod/rocker module so motion ratio comes from real rocker geometry
-- Combined-slip (longitudinal + lateral) so the tire model covers braking/traction,
-  not just steady-state cornering — the lateral MF5.2 is in (`suspension/tiremodel.py`)
-- Transient response: turn-in, trail-braking, and damper behaviour on top of the
-  steady-state balance model
-- Pull-rod and decoupled (third-spring) layouts
+- **Transient response** — turn-in and pitch built on the relaxation-length and damper
+  primitives now in the codebase (`tiremodel.apply_relaxation_lag`, `damper.py`). This
+  is the next real step up in fidelity.
+- **Calibrate the data-gated models**: fit combined-slip ellipse exponents to drive/brake
+  TTC runs (`CombinedSlipTire`), relaxation length to transient runs, and the damper law
+  to your dyno (`DamperCurve.from_dyno_points`). The code is in and flagged uncalibrated
+  until you do — that's deliberate.
+- Pull-rod and decoupled (third-spring) layouts (the pushrod/rocker module in
+  `suspension/kinematics.py` is the place to extend)
 - Aligning-moment (Mz) from the tire data to model steering feel and self-centering
+- Full minimum-time racing line (the current one is curvature-optimal; couple the speed
+  solver into the offset optimisation for the true min-time line)
+
+Recently shipped (was on this list): real pushrod/rocker **motion ratio** and
+**anti-dive / anti-squat**; **GPS/cone track import**; **racing-line optimisation**;
+a real **motor map**; **combined slip**, **relaxation length** and a **damper model**
+(the last three implemented honestly and gated on your data); and a **validation tab**
+that correlates the sim against measured skidpad / accel / datalogger traces.
+
+### A note on honesty over a green scorecard
+
+Several of these (combined slip, relaxation length, damper, tyre thermal) *cannot* be
+made quantitatively correct without test data this project doesn't ship — Fx runs, step
+inputs, dyno pulls, temperature sweeps. The code implements the real physics and exposes
+an `is_calibrated`/`status()` flag that stays false, with representative magnitudes,
+until you supply that data. That is intentional: a model that prints a confident number
+it didn't earn is worse than an honest gap, because someone freezes a design on it. The
+capability is here and turns on the moment you have the data; it will not pretend in the
+meantime. A tyre **thermal** model is the one remaining red that is *not* built, for
+exactly this reason — it needs temperature-swept TTC data to be anything but a guess.
 
 ## Conventions
 

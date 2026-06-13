@@ -6,7 +6,7 @@ steer, caster, KPI, scrub) and the vehicle-level consequences (roll-centre
 migration, lateral load transfer, grip balance) update together. Built for the
 FSAE garage where OptimumK / ADAMS budgets don't reach.
 
-Run:  streamlit run app.py
+Run:  streamlit run streamlit_app.py
 """
 
 import json
@@ -28,6 +28,9 @@ from suspension import project as project_mod
 from suspension import tiremodel as tire_mod
 from suspension import setup as setup_mod
 from suspension import laptime as lap_mod
+from suspension import correlation as corr_mod
+from suspension import damper as damper_mod
+from suspension import interfaces as interfaces_mod
 
 st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
@@ -136,6 +139,9 @@ def init_state():
         st.session_state.tire_fnomin = dt.FNOMIN
         st.session_state.tire_source = "Generic FSAE default (not your tire)"
         st.session_state.tire_is_default = True
+    # Subsystem interface ledger — the cross-team integration contract.
+    if "ledger" not in st.session_state:
+        st.session_state.ledger = interfaces_mod.blank_ledger().as_dict()
 
 init_state()
 
@@ -150,6 +156,17 @@ POINTS = [
     ("tie_rod_outer",     "Tie rod · outer (upright)"),
     ("wheel_center",      "Wheel centre"),
     ("contact_patch",     "Contact patch"),
+]
+
+# Optional pushrod / rocker pickups. When all are present the tool reports the REAL
+# motion ratio (k_wheel = k_spring·MR²) instead of the direct-acting proxy.
+ROCKER_POINTS = [
+    ("pushrod_outer",  "Pushrod · outer (on wishbone/upright)"),
+    ("rocker_pivot",   "Rocker · pivot"),
+    ("rocker_axis",    "Rocker · pivot axis (direction)"),
+    ("rocker_pushrod", "Rocker · pushrod pickup"),
+    ("rocker_spring",  "Rocker · spring pickup"),
+    ("spring_inner",   "Spring/damper · chassis mount"),
 ]
 
 
@@ -206,6 +223,39 @@ with st.sidebar:
                     format="%.1f", label_visibility="visible"))
             st.session_state.hp[key] = nv
 
+    st.markdown("###### Pushrod / rocker")
+    rocker_on = st.checkbox(
+        "Pushrod-actuated (real motion ratio)",
+        value=bool(st.session_state.hp.get("pushrod_outer") is not None),
+        help="When on, the motion ratio and wheel rate come from the actual "
+             "bell-crank geometry. When off, a direct-acting proxy is used and "
+             "reported spring→wheel rates are only indicative.")
+    if rocker_on:
+        # Seed rocker points from the default if the project doesn't carry them.
+        _def = Hardpoints.default().as_dict()
+        for key, label in ROCKER_POINTS:
+            if st.session_state.hp.get(key) is None:
+                st.session_state.hp[key] = _def[key]
+        attach = st.selectbox(
+            "Pushrod mounts on", ["lower", "upper", "upright"],
+            index=["lower", "upper", "upright"].index(
+                st.session_state.hp.get("pushrod_attach", "lower")))
+        st.session_state.hp["pushrod_attach"] = attach
+        for key, label in ROCKER_POINTS:
+            with st.expander(label, expanded=False):
+                v = st.session_state.hp[key]
+                cols = st.columns(3)
+                nv = []
+                for i, ax in enumerate("xyz"):
+                    nv.append(cols[i].number_input(
+                        f"{ax}", value=float(v[i]), step=2.0, key=f"{key}_{ax}",
+                        format="%.2f", label_visibility="visible"))
+                st.session_state.hp[key] = nv
+    else:
+        # Clear rocker points so has_rocker() is False and the proxy is used.
+        for key, _ in ROCKER_POINTS:
+            st.session_state.hp[key] = None
+
     st.markdown("---")
     st.markdown("###### Vehicle")
     vp = st.session_state.vp
@@ -213,11 +263,32 @@ with st.sidebar:
     vp["cg_height"] = st.slider("CG height (mm)", 200, 400, int(vp["cg_height"]))
     vp["weight_dist_front"] = st.slider("Front weight (%)", 40, 60,
                                         int(vp["weight_dist_front"] * 100)) / 100
-    cc1, cc2 = st.columns(2)
-    vp["roll_stiffness_front"] = cc1.number_input("Roll stiff F (N·m/°)",
-                                                  value=float(vp["roll_stiffness_front"]), step=10.0)
-    vp["roll_stiffness_rear"] = cc2.number_input("Roll stiff R (N·m/°)",
-                                                 value=float(vp["roll_stiffness_rear"]), step=10.0)
+
+    st.markdown("###### Springs & roll stiffness")
+    use_springs = st.checkbox(
+        "Drive roll stiffness from spring rates × motion ratio",
+        value=bool(vp.get("use_spring_rates", False)),
+        help="On: axle roll stiffness = spring rate × MR² (+ ARB), using the live "
+             "rocker geometry. This is the physically correct path and is what the "
+             "optimiser uses. Off: type roll stiffness directly (legacy).")
+    vp["use_spring_rates"] = use_springs
+    if use_springs:
+        s1, s2 = st.columns(2)
+        vp["spring_rate_front"] = s1.number_input(
+            "Spring F (N/mm)", value=float(vp.get("spring_rate_front", 35.0)), step=2.5)
+        vp["spring_rate_rear"] = s2.number_input(
+            "Spring R (N/mm)", value=float(vp.get("spring_rate_rear", 35.0)), step=2.5)
+        a1, a2 = st.columns(2)
+        vp["arb_rate_front"] = a1.number_input(
+            "ARB F (N·m/°)", value=float(vp.get("arb_rate_front", 0.0)), step=10.0)
+        vp["arb_rate_rear"] = a2.number_input(
+            "ARB R (N·m/°)", value=float(vp.get("arb_rate_rear", 0.0)), step=10.0)
+    else:
+        cc1, cc2 = st.columns(2)
+        vp["roll_stiffness_front"] = cc1.number_input("Roll stiff F (N·m/°)",
+                                                      value=float(vp["roll_stiffness_front"]), step=10.0)
+        vp["roll_stiffness_rear"] = cc2.number_input("Roll stiff R (N·m/°)",
+                                                     value=float(vp["roll_stiffness_rear"]), step=10.0)
 
 
 # Apply presets (simple variations on the default)
@@ -227,8 +298,13 @@ def apply_preset(name, hp):
         hp["lower_front_inner"][2] = 95
         hp["lower_rear_inner"][2] = 95
     elif name == "High anti-dive":
-        hp["lower_rear_inner"][2] = 150
-        hp["upper_rear_inner"][2] = 320
+        # Steepen the forward-and-up convergence of the side-view wishbone pivot
+        # axes (raise the front pickups, lower the rears) so the side-view swing
+        # arm shortens and anti-dive rises from ~26% (default) to ~40%.
+        hp["upper_front_inner"][2] = 305
+        hp["lower_front_inner"][2] = 135
+        hp["upper_rear_inner"][2] = 285
+        hp["lower_rear_inner"][2] = 108
     return hp
 
 hp_dict = apply_preset(preset, st.session_state.hp)
@@ -290,6 +366,39 @@ if not solve_ok:
     st.markdown('<span class="tag bad">⚠ linkage does not close over full travel — '
                 'check wishbone lengths</span>', unsafe_allow_html=True)
 
+# Motion ratio + anti-dive/anti-squat row. MR is REAL when a rocker is defined;
+# otherwise a clearly-labelled direct-acting proxy. Anti-dive uses this (front)
+# corner's side-view geometry against the vehicle CG/wheelbase.
+_mr = kin.motion_ratio()
+_mr_real = kin.motion_ratio_is_real()
+_spring_demo = float(st.session_state.vp.get("spring_rate_front", 35.0))
+_wr = kin.wheel_rate(_spring_demo)
+_ad = kin.anti_dive_pct(st.session_state.vp.get("cg_height", 300.0),
+                        st.session_state.vp.get("wheelbase", 1550.0))
+_as = kin.anti_squat_pct(st.session_state.vp.get("cg_height", 300.0),
+                         st.session_state.vp.get("wheelbase", 1550.0))
+mcols = st.columns(6)
+mitems = [
+    ("Motion ratio", f"{_mr:.3f}" if np.isfinite(_mr) else "—", "spring/wheel",
+     "good" if _mr_real else "warn"),
+    ("MR source", "rocker" if _mr_real else "proxy", "",
+     "good" if _mr_real else "warn"),
+    ("Wheel rate", f"{_wr:.1f}" if np.isfinite(_wr) else "—",
+     f"N/mm @{_spring_demo:.0f}", ""),
+    ("Anti-dive", f"{_ad:+.0f}" if np.isfinite(_ad) else "—", "%",
+     "good" if (np.isfinite(_ad) and 0 <= _ad <= 50) else "warn"),
+    ("Anti-squat", f"{_as:+.0f}" if np.isfinite(_as) else "—", "%",
+     "good" if (np.isfinite(_as) and 0 <= _as <= 60) else "warn"),
+    ("SVA length", f"{kin.side_view_swing_arm_length():.0f}"
+     if np.isfinite(kin.side_view_swing_arm_length()) else "∞", "mm", ""),
+]
+for c, (k, v, u, cls) in zip(mcols, mitems):
+    c.markdown(metric(k, v, u, cls), unsafe_allow_html=True)
+if not _mr_real:
+    st.markdown('<span class="tag warn">motion ratio is a direct-acting proxy — '
+                'enable “Pushrod-actuated” in the sidebar and enter your rocker '
+                'geometry for real spring→wheel rates</span>', unsafe_allow_html=True)
+
 st.write("")
 with st.expander("👋 New here? Start here (30-second tour)", expanded=False):
     st.markdown("""
@@ -314,11 +423,12 @@ especially the things that *didn't* work. It takes ten seconds with the template
 and it's the difference between next year starting ahead or relearning everything.
     """)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs(
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13 = st.tabs(
     ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
      "  GEOMETRY 3D  ", "  SUSPENSION vs CHASSIS  ", "  TEAM FIT  ",
      "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
-     "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  "])
+     "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  VALIDATION  ",
+     "  SUBSYSTEM INTEGRATION  "])
 
 travels = [st_.travel for st_ in sweep]
 
@@ -1262,6 +1372,76 @@ with tab9:
                 'trustworthy once the tire above says "TTC-fitted".</p>',
                 unsafe_allow_html=True)
 
+    # ---- Combined slip (friction ellipse) -------------------------------- #
+    st.markdown("###### Combined slip — the friction ellipse")
+    st.markdown('<p class="hint">How much lateral grip is left while you brake or put '
+                'power down. Built on the lateral tire above with friction-ellipse '
+                'coupling. <b>Uncalibrated</b> until you fit it to drive/brake TTC data '
+                '— the coupling shape is real physics; the exact exponents need your '
+                'Fx data to be quantitative.</p>', unsafe_allow_html=True)
+    try:
+        _live_tire_cs = tire_mod.PacejkaLateral(
+            coeffs=dict(st.session_state.tire_coeffs),
+            FNOMIN=st.session_state.tire_fnomin)
+        _ct = tire_mod.CombinedSlipTire(lateral=_live_tire_cs)
+        _Fz_demo = float(st.session_state.tire_fnomin)
+        fx_e, fy_e = _ct.friction_circle(_Fz_demo)
+        figFE = go.Figure()
+        figFE.add_trace(go.Scatter(x=fx_e, y=fy_e, mode="lines",
+                                   line=dict(color=CYAN, width=2.5),
+                                   name="grip limit"))
+        figFE.update_layout(**PLOT_LAYOUT,
+                            title=f"Combined grip envelope at Fz={_Fz_demo:.0f} N",
+                            xaxis_title="longitudinal force Fx (N)",
+                            yaxis_title="lateral force Fy (N)", height=340)
+        figFE.update_yaxes(scaleanchor="x", scaleratio=1)
+        st.plotly_chart(figFE, use_container_width=True)
+        st.markdown(f'<span class="tag warn">{_ct.status()}</span>',
+                    unsafe_allow_html=True)
+    except Exception as e:
+        st.info(f"Combined-slip preview unavailable: {e}")
+
+    # ---- Damper force-velocity ------------------------------------------- #
+    st.markdown("###### Damper force–velocity (transient building block)")
+    st.markdown('<p class="hint">Real bilinear-digressive damper law. <b>Uncalibrated</b> '
+                'representative magnitudes until you load your dyno curve; the force law '
+                'and the damping-ratio diagnostic are real. This is the primitive the '
+                'transient (turn-in / pitch) model on the roadmap is built on.</p>',
+                unsafe_allow_html=True)
+    dmp_cols = st.columns(4)
+    _cbl = dmp_cols[0].number_input("Bump low (N·s/m)", 0.0, 30000.0, value=6000.0, step=250.0)
+    _crl = dmp_cols[1].number_input("Rebound low (N·s/m)", 0.0, 30000.0, value=9000.0, step=250.0)
+    _cbh = dmp_cols[2].number_input("Bump high (N·s/m)", 0.0, 15000.0, value=2000.0, step=100.0)
+    _crh = dmp_cols[3].number_input("Rebound high (N·s/m)", 0.0, 15000.0, value=3000.0, step=100.0)
+    _dc = damper_mod.DamperCurve(c_bump_low=_cbl, c_reb_low=_crl,
+                                 c_bump_high=_cbh, c_reb_high=_crh)
+    _vv, _ff = _dc.curve_points(v_max=0.4)
+    figD = go.Figure()
+    figD.add_trace(go.Scatter(x=_vv, y=_ff, mode="lines",
+                              line=dict(color=AMBER, width=2.5), name="damper"))
+    figD.update_layout(**PLOT_LAYOUT, title="Damper force vs shaft velocity",
+                       xaxis_title="shaft velocity (m/s)  +bump / −rebound",
+                       yaxis_title="force (N)", height=320)
+    st.plotly_chart(figD, use_container_width=True)
+    try:
+        _mr_demo = kin.motion_ratio() if kin.motion_ratio_is_real() else 1.0
+        _corner_m = float(st.session_state.vp.get("mass", 300)) * 0.25
+        _wr_demo = kin.wheel_rate(float(st.session_state.vp.get("spring_rate_front", 35.0))) \
+            if kin.motion_ratio_is_real() else 30.0
+        _zb = damper_mod.damping_ratio(_dc, _corner_m, _wr_demo, _mr_demo, "bump")
+        _zr = damper_mod.damping_ratio(_dc, _corner_m, _wr_demo, _mr_demo, "rebound")
+        zc = st.columns(2)
+        zc[0].markdown(metric("Damping ratio ζ (bump)", f"{_zb:.2f}", "",
+                              "good" if 0.5 <= _zb <= 0.8 else "warn"),
+                       unsafe_allow_html=True)
+        zc[1].markdown(metric("Damping ratio ζ (rebound)", f"{_zr:.2f}", "",
+                              "good" if 0.6 <= _zr <= 1.1 else "warn"),
+                       unsafe_allow_html=True)
+        st.markdown(f'<span class="tag warn">{_dc.status()}</span>',
+                    unsafe_allow_html=True)
+    except Exception as e:
+        st.info(f"Damping-ratio diagnostic unavailable: {e}")
+
 # ----------------------------- TAB 10 -------------------------------------- #
 # SETUP OPTIMISER — spend the one tire set wisely. Rank the levers by grip
 # impact and search for the best setup, all on the live tire.
@@ -1427,12 +1607,79 @@ with tab11:
                                   value=0.018, step=0.002, format="%.3f")
         eff = pc2[3].number_input("Drivetrain eff.", 0.5, 1.0, value=0.90, step=0.01)
 
+        st.markdown("**Motor map** — replace the flat power cap with a real "
+                    "torque/speed curve. The flat cap is the cruder model; the map "
+                    "is strictly better when you have the numbers.")
+        use_map = st.checkbox("Use a motor torque/speed map", value=False,
+                              help="Enter your motor's peak torque, peak power and "
+                                   "redline (from the datasheet). Builds a "
+                                   "representative torque-plateau + constant-power "
+                                   "curve — clearly flagged as representative, not a "
+                                   "measured dyno pull.")
+        _motor_map = None
+        if use_map:
+            mpc = st.columns(3)
+            mt = mpc[0].number_input("Peak torque (N·m)", 20.0, 600.0, value=230.0, step=10.0)
+            mp = mpc[1].number_input("Peak power (kW)", 10.0, 200.0, value=80.0, step=5.0)
+            mr_in = mpc[2].number_input("Redline (rpm)", 3000.0, 20000.0, value=6000.0, step=500.0)
+            mpc2 = st.columns(2)
+            fd = mpc2[0].number_input("Final drive ratio", 1.0, 10.0, value=3.5, step=0.1)
+            wr_ = mpc2[1].number_input("Loaded wheel radius (m)", 0.15, 0.30,
+                                       value=0.20, step=0.005, format="%.3f")
+            _motor_map = lap_mod.MotorMap.from_peak(mt, mp, mr_in, final_drive=fd,
+                                                    wheel_radius_m=wr_)
+            st.caption(f"Motor map source: {_motor_map.source} (from datasheet peaks; "
+                       "for a measured curve construct MotorMap(rpm, torque_nm) in code).")
+
     _pt = lap_mod.Powertrain(power_kw=pw, max_tractive_n=tract, drivetrain_eff=eff,
                              cda=cda, cla=cla, crr=crr, drive=drive,
-                             brake_g_cap=brake_g)
+                             brake_g_cap=brake_g, motor_map=_motor_map)
 
-    ax_scale = st.slider("Autocross lap scale (stretches the yardstick lap)",
-                         0.6, 1.6, 1.0, 0.1)
+    # ---- Track source: yardstick autocross, or YOUR GPS/cone layout ------- #
+    st.markdown("###### Track")
+    track_src = st.radio("Run on", ["Representative autocross",
+                                    "Import GPS / cone CSV"], horizontal=True)
+    ax_scale = 1.0
+    _imported_xy = None
+    if track_src == "Representative autocross":
+        ax_scale = st.slider("Autocross lap scale (stretches the yardstick lap)",
+                             0.6, 1.6, 1.0, 0.1)
+    else:
+        st.markdown('<p class="hint">Upload your actual layout — no more manual '
+                    'segment entry. Centreline <code>x,y</code> (metres) or GPS '
+                    '<code>lat,lon</code>; or cone rows '
+                    '<code>left_x,left_y,right_x,right_y</code>. The lap then runs your '
+                    'real course.</p>', unsafe_allow_html=True)
+        tcol = st.columns(3)
+        fmt = tcol[0].selectbox("CSV format", ["centreline x,y (m)",
+                                               "GPS lat,lon", "cones L/R x,y"])
+        width_m = tcol[1].number_input("Track width (m)", 2.0, 6.0, value=3.5, step=0.5)
+        do_line = tcol[2].checkbox("Optimise racing line", value=True,
+                                   help="Use the track width to straighten corners — "
+                                        "reports the time gained vs the centreline.")
+        tup = st.file_uploader("Track CSV", type=["csv"], key="track_csv")
+        if tup is not None:
+            try:
+                import io as _io2
+                raw = tup.getvalue().decode("utf-8", errors="replace")
+                arr = np.genfromtxt(_io2.StringIO(raw), delimiter=",")
+                if arr.ndim == 1:
+                    arr = arr.reshape(1, -1)
+                if arr.size and np.isnan(arr[0]).any():        # header row
+                    arr = arr[1:]
+                if fmt == "cones L/R x,y" and arr.shape[1] >= 4:
+                    cx, cy = lap_mod.cones_to_centerline(arr[:, 0], arr[:, 1],
+                                                         arr[:, 2], arr[:, 3])
+                elif fmt == "GPS lat,lon" and arr.shape[1] >= 2:
+                    cx, cy = lap_mod.latlon_to_xy(arr[:, 0], arr[:, 1])
+                else:
+                    cx, cy = arr[:, 0], arr[:, 1]
+                _imported_xy = (np.asarray(cx, float), np.asarray(cy, float),
+                                width_m, do_line)
+                st.success(f"Loaded {len(cx)} points "
+                           f"({np.hypot(np.diff(cx), np.diff(cy)).sum():.0f} m path).")
+            except Exception as e:
+                st.error(f"Couldn't parse that track CSV: {e}")
 
     if st.button("▶ Run lap-time sim", use_container_width=True):
         st.session_state._run_lap = True
@@ -1440,8 +1687,26 @@ with tab11:
     if st.session_state.get("_run_lap"):
         with st.spinner("Driving your car around on the live tire…"):
             skid = lap_mod.skidpad_time(_veh_lap, _pt)
-            track = lap_mod.default_autocross(scale=ax_scale)
-            lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
+            if _imported_xy is not None:
+                ix, iy, iw, iline = _imported_xy
+                if iline:
+                    _cmp = lap_mod.compare_line_vs_centerline(_veh_lap, ix, iy,
+                                                              track_width_m=iw, pt=_pt)
+                    track = _cmp["line_track"]
+                    lap = _cmp["line_result"]
+                    st.session_state._line_cmp = dict(
+                        gained=_cmp["time_gained_s"],
+                        center_t=_cmp["centerline_result"].lap_time_s,
+                        line_t=_cmp["line_result"].lap_time_s,
+                        lx=_cmp["line_x"], ly=_cmp["line_y"], cx=ix, cy=iy)
+                else:
+                    track = lap_mod.track_from_path(ix, iy, name="Imported", ds=1.0)
+                    lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
+                    st.session_state.pop("_line_cmp", None)
+            else:
+                track = lap_mod.default_autocross(scale=ax_scale)
+                lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
+                st.session_state.pop("_line_cmp", None)
 
         # Surface any safe-default warnings rather than hiding a bad data point.
         for r in (skid, lap):
@@ -1460,8 +1725,9 @@ with tab11:
             if skid.ok else 0.0
         skc[2].markdown(metric("Lateral", f"{_sk_lat:.2f}", "g"), unsafe_allow_html=True)
 
-        # ---- Autocross ---- #
-        st.markdown("###### Representative autocross")
+        # ---- Autocross / imported lap ---- #
+        _lap_title = track.name if getattr(track, "name", "") else "Representative autocross"
+        st.markdown(f"###### {_lap_title}")
         axc = st.columns(4)
         _axt = f"{lap.lap_time_s:.2f}" if lap.ok and np.isfinite(lap.lap_time_s) else "—"
         axc[0].markdown(metric("Lap time", _axt, "s",
@@ -1472,6 +1738,33 @@ with tab11:
                         unsafe_allow_html=True)
         axc[3].markdown(metric("Min speed", f"{lap.min_speed_ms:.1f}", "m/s"),
                         unsafe_allow_html=True)
+
+        # ---- Racing line vs centreline (only when an imported track was optimised) ---- #
+        _lc = st.session_state.get("_line_cmp")
+        if _lc and np.isfinite(_lc.get("gained", float("nan"))):
+            st.markdown(metric("Racing line vs centreline",
+                               f"{_lc['gained']:+.2f}", "s gained",
+                               "good" if _lc["gained"] >= 0 else "warn"),
+                        unsafe_allow_html=True)
+            figRL = go.Figure()
+            figRL.add_trace(go.Scatter(x=_lc["cx"], y=_lc["cy"], mode="lines",
+                                       line=dict(color="#8d99a6", width=1.5, dash="dot"),
+                                       name="centreline"))
+            figRL.add_trace(go.Scatter(x=_lc["lx"], y=_lc["ly"], mode="lines",
+                                       line=dict(color=CYAN, width=2.5),
+                                       name="racing line"))
+            figRL.update_layout(**PLOT_LAYOUT, title="Racing line (uses track width)",
+                                xaxis_title="x (m)", yaxis_title="y (m)", height=360)
+            figRL.update_yaxes(scaleanchor="x", scaleratio=1)
+            st.plotly_chart(figRL, use_container_width=True)
+            st.markdown('<p class="hint">Curvature-optimal line within the track '
+                        'width — straightens corners to raise minimum radius, hence '
+                        'speed. It is a curvature-optimal (not fully-coupled '
+                        'minimum-time) line; honest about the difference.</p>',
+                        unsafe_allow_html=True)
+        if _pt.uses_real_motor_map():
+            st.markdown('<span class="tag good">motor map active (representative '
+                        'curve)</span>', unsafe_allow_html=True)
 
         # Speed-vs-distance trace
         if lap.ok and lap.s and lap.v:
@@ -1523,6 +1816,397 @@ with tab11:
                     unsafe_allow_html=True)
 
 
+# ----------------------------- TAB 12 -------------------------------------- #
+with tab12:
+    st.markdown('<p class="hint">A sim only changes a decision if people <b>believe '
+                'it</b> — and the honest way to earn that is to show it predicted '
+                'something you measured. Load a real run and KinematiK reports the gap '
+                'in plain numbers you can check by hand: how far off, and <i>which way</i> '
+                'the model is biased. Nothing here tunes the model to fit — it tells you '
+                'whether to trust the prediction, or which assumption to go hunt down. '
+                'A matched sim wins the argument no stubborn opinion can.</p>',
+                unsafe_allow_html=True)
+
+    # Live model — same objects every other tab solved.
+    try:
+        _veh_val = veh
+    except Exception:
+        _veh_val = None
+    if _veh_val is None:
+        st.warning("Geometry/vehicle model isn't available — fix the linkage first.")
+    else:
+        def _verdict_tag(ok, data_error=False):
+            if data_error:
+                return '<span class="tag warn">could not correlate</span>'
+            return ('<span class="tag good">✓ within tolerance — trust it</span>'
+                    if ok else
+                    '<span class="tag bad">✗ outside tolerance — find the wrong assumption</span>')
+
+        def _channel_table(rep):
+            rows = ""
+            for c in rep.channels:
+                cls = "good" if c.within_tol else ("warn" if c.verdict == "n/a" else "bad")
+                epct = f"{c.error_pct:+.1f}%" if np.isfinite(c.error_pct) else "—"
+                rows += (f"<tr><td style='padding:4px 10px'>{c.channel}</td>"
+                         f"<td style='padding:4px 10px;text-align:right'>{c.measured:.4g}{corr_mod._u(c.unit)}</td>"
+                         f"<td style='padding:4px 10px;text-align:right'>{c.predicted:.4g}{corr_mod._u(c.unit)}</td>"
+                         f"<td style='padding:4px 10px;text-align:right'>{epct}</td>"
+                         f"<td style='padding:4px 10px'><span class='tag {cls}'>{c.verdict}</span></td></tr>")
+            return ("<table style='width:100%;border-collapse:collapse;font-size:.92rem;'>"
+                    "<tr style='color:#8d99a6;font-size:.8rem'>"
+                    "<td style='padding:4px 10px'>channel</td>"
+                    "<td style='padding:4px 10px;text-align:right'>measured</td>"
+                    "<td style='padding:4px 10px;text-align:right'>predicted</td>"
+                    "<td style='padding:4px 10px;text-align:right'>error</td>"
+                    "<td style='padding:4px 10px'>verdict</td></tr>"
+                    f"{rows}</table>")
+
+        vsub = st.radio("What did you measure?",
+                        ["Skidpad", "Acceleration (75 m)", "Speed trace (datalogger)"],
+                        horizontal=True)
+
+        # ---------------------------- SKIDPAD --------------------------------- #
+        if vsub == "Skidpad":
+            st.markdown("Enter **either** the measured peak lateral g **or** your "
+                        "timed-circle time — the other is derived so both are checked.")
+            sc = st.columns(3)
+            mode = sc[0].selectbox("I measured", ["peak lateral g", "timed-circle time (s)"])
+            radius = sc[2].number_input("Circle radius (m)", 5.0, 12.0, value=9.125,
+                                        step=0.125, format="%.3f",
+                                        help="FSAE timed-circle path radius (centreline).")
+            if mode == "peak lateral g":
+                mg = sc[1].number_input("Measured peak lateral g", 0.5, 2.5,
+                                        value=1.40, step=0.01)
+                rep = corr_mod.correlate_skidpad(_veh_val, measured_g=mg, radius_m=radius)
+            else:
+                mt = sc[1].number_input("Measured circle time (s)", 3.0, 8.0,
+                                        value=5.00, step=0.01)
+                rep = corr_mod.correlate_skidpad(_veh_val, measured_time_s=mt, radius_m=radius)
+
+            st.markdown(_verdict_tag(rep.overall_within_tol), unsafe_allow_html=True)
+            st.markdown(_channel_table(rep), unsafe_allow_html=True)
+            st.markdown(f'<p class="hint">{rep.summary}</p>', unsafe_allow_html=True)
+            if st.button("Log this correlation to handover", key="log_skid"):
+                log_decision_now("validation", "Skidpad correlation",
+                                 rep.summary, author="validation")
+                st.success("Logged.")
+
+        # ------------------------- ACCELERATION ------------------------------- #
+        elif vsub == "Acceleration (75 m)":
+            st.markdown("Predicted 75 m time comes from the **live lap sim** on your "
+                        "current car; enter your measured run to compare.")
+            try:
+                _live_tire_v = tire_mod.PacejkaLateral(
+                    coeffs=dict(st.session_state.tire_coeffs),
+                    FNOMIN=st.session_state.tire_fnomin)
+                _pt_v = lap_mod.Powertrain()
+                _acc = lap_mod.acceleration_time(_veh_val, _pt_v, distance_m=75.0)
+                pred_t = float(_acc.lap_time_s)
+                if _acc.warning:
+                    st.warning(f"⚠ {_acc.warning}")
+            except Exception as e:
+                pred_t = float("nan")
+                st.warning(f"Could not run the acceleration sim safely: {e}")
+
+            ac = st.columns(2)
+            mt = ac[0].number_input("Measured 75 m time (s)", 2.5, 8.0,
+                                    value=4.00, step=0.01)
+            ac[1].markdown(metric("Predicted", f"{pred_t:.3f}" if np.isfinite(pred_t) else "—",
+                                  "s"), unsafe_allow_html=True)
+            rep = corr_mod.correlate_acceleration(measured_time_s=mt, predicted_time_s=pred_t)
+            st.markdown(_verdict_tag(rep.overall_within_tol), unsafe_allow_html=True)
+            st.markdown(_channel_table(rep), unsafe_allow_html=True)
+            st.markdown(f'<p class="hint">{rep.summary}</p>', unsafe_allow_html=True)
+
+        # --------------------------- SPEED TRACE ------------------------------ #
+        else:
+            st.markdown("Upload a **CSV with two columns: distance, speed** (one row "
+                        "per sample) from GPS or a wheel-speed log. The sim trace is "
+                        "resampled onto your distance axis and compared point-for-point.")
+            uc = st.columns(3)
+            kmh = uc[0].checkbox("Speed is in km/h", value=False)
+            track_kind = uc[1].selectbox("Compare against", ["Autocross lap", "Skidpad"])
+            ax_scale_v = uc[2].slider("Autocross scale", 0.6, 1.6, 1.0, 0.1)
+            up = st.file_uploader("Measured trace CSV (distance, speed)", type=["csv"])
+
+            if up is not None:
+                try:
+                    import io as _io
+                    raw = up.getvalue().decode("utf-8", errors="replace")
+                    arr = np.genfromtxt(_io.StringIO(raw), delimiter=",",
+                                        names=None, skip_header=0)
+                    # tolerate a header row: if first row isn't numeric, retry skipping it
+                    if arr.dtype.names is None and (arr.ndim != 2 or arr.shape[1] < 2):
+                        arr = np.genfromtxt(_io.StringIO(raw), delimiter=",", skip_header=1)
+                    if np.isnan(arr).all():
+                        arr = np.genfromtxt(_io.StringIO(raw), delimiter=",", skip_header=1)
+                    md = np.asarray(arr)[:, 0]
+                    ms = np.asarray(arr)[:, 1]
+                except Exception as e:
+                    md = ms = None
+                    st.error(f"Couldn't parse that CSV as two numeric columns: {e}")
+
+                if md is not None:
+                    try:
+                        _live_tire_v = tire_mod.PacejkaLateral(
+                            coeffs=dict(st.session_state.tire_coeffs),
+                            FNOMIN=st.session_state.tire_fnomin)
+                        _pt_v = lap_mod.Powertrain()
+                        if track_kind == "Skidpad":
+                            _lap_v = lap_mod.skidpad_time(_veh_val, _pt_v)
+                        else:
+                            _trk = lap_mod.default_autocross(scale=ax_scale_v)
+                            _lap_v = lap_mod.simulate_lap(_veh_val, _trk, _pt_v)
+                    except Exception as e:
+                        _lap_v = None
+                        st.warning(f"Lap sim could not produce a trace safely: {e}")
+
+                    rep = corr_mod.correlate_speed_trace(
+                        md, ms, lap_result=_lap_v, measured_speed_kmh=kmh)
+
+                    if rep.trace is not None and rep.trace.ok:
+                        tr = rep.trace
+                        st.markdown(_verdict_tag(tr.within_tol), unsafe_allow_html=True)
+                        mc = st.columns(4)
+                        mc[0].markdown(metric("RMSE", f"{tr.rmse:.2f}", "m/s",
+                                              "good" if tr.within_tol else "bad"),
+                                       unsafe_allow_html=True)
+                        mc[1].markdown(metric("Bias", f"{tr.bias:+.2f}", "m/s",
+                                              "good" if abs(tr.bias_frac) <= rep.tolerances['trace_bias_frac'] else "warn"),
+                                       unsafe_allow_html=True)
+                        _r2 = f"{tr.r2:.3f}" if np.isfinite(tr.r2) else "n/a"
+                        mc[2].markdown(metric("R²", _r2, ""), unsafe_allow_html=True)
+                        mc[3].markdown(metric("Peak Δ", f"{tr.peak_speed_error:+.1f}", "m/s"),
+                                       unsafe_allow_html=True)
+
+                        figV = go.Figure()
+                        figV.add_trace(go.Scatter(x=tr.distance, y=tr.measured,
+                                                  name="measured", mode="lines"))
+                        figV.add_trace(go.Scatter(x=tr.distance, y=tr.predicted,
+                                                  name="predicted (sim)", mode="lines"))
+                        figV.update_layout(**PLOT_LAYOUT, title="Speed vs distance — measured vs sim",
+                                           xaxis_title="distance (m)", yaxis_title="speed (m/s)",
+                                           height=380)
+                        st.plotly_chart(figV, use_container_width=True)
+                        st.markdown(f'<p class="hint">{rep.summary}</p>', unsafe_allow_html=True)
+                        if st.button("Log this correlation to handover", key="log_trace"):
+                            log_decision_now("validation", f"Speed-trace correlation ({track_kind})",
+                                             rep.summary, author="validation")
+                            st.success("Logged.")
+                    else:
+                        st.error(rep.summary)
+            else:
+                st.markdown('<p class="hint">No file yet. A two-column CSV like '
+                            '<code>distance_m,speed_ms</code> with a header row is fine — '
+                            'the parser skips a non-numeric header automatically.</p>',
+                            unsafe_allow_html=True)
+
+        st.markdown('<p class="hint">Tolerances are explicit and editable in '
+                    '<code>suspension/correlation.py</code> (DEFAULT_TOL). They reflect '
+                    'what a quasi-steady-state point-mass model on one tyre set can '
+                    'credibly achieve — skidpad tightest, a noisy GPS trace loosest. '
+                    'Tighten them and watch the verdict move; that transparency is the '
+                    'point.</p>', unsafe_allow_html=True)
+
+
+# ----------------------------- TAB 13 -------------------------------------- #
+# SUBSYSTEM INTEGRATION — the interface ledger between the eight sub-teams.
+with tab13:
+    st.markdown('<p class="hint">OptimumK, ANSYS and SolidWorks each go deep in '
+                '<b>one</b> domain. What no team has is this: a place where the '
+                '<b>interfaces between</b> subsystems are owned and checked. Each team '
+                'enters what it <i>needs from</i> the car and what it <i>provides to</i> '
+                'it; KinematiK flags the conflicts — the radiator that won\'t fit the '
+                'duct, the motor torque that exceeds the driveline, the eight "~12 kg" '
+                'estimates that blow the budget — <b>while they\'re still cheap to fix</b>. '
+                'It does not simulate your subsystem (your own tool does that better); '
+                'it owns the channels between them, and flags every placeholder number '
+                'so a green board never means more than the data behind it.</p>',
+                unsafe_allow_html=True)
+
+    _IF = interfaces_mod
+    led = _IF.IntegrationLedger.from_dict(st.session_state.ledger)
+
+    # ---- car-level shared limits the checks validate against -------------- #
+    with st.expander("Car-level budgets & limits (the shared contract)", expanded=False):
+        lc = st.columns(3)
+        led.target_mass_kg = lc[0].number_input("Mass target (kg, incl. driver)",
+                                                100.0, 400.0, value=float(led.target_mass_kg), step=5.0)
+        led.includes_driver_kg = lc[1].number_input("of which driver (kg)",
+                                                     0.0, 120.0, value=float(led.includes_driver_kg), step=5.0)
+        led.driveline_torque_limit_nm = lc[2].number_input("Driveline torque rating (N·m)",
+                                                            0.0, 1000.0,
+                                                            value=float(led.driveline_torque_limit_nm or 0.0), step=10.0) or None
+        lc2 = st.columns(3)
+        led.lv_voltage_v = lc2[0].number_input("LV bus (V)", 6.0, 60.0, value=float(led.lv_voltage_v), step=1.0)
+        led.lv_supply_capacity_w = lc2[1].number_input("LV supply capacity (W)", 0.0, 5000.0,
+                                                        value=float(led.lv_supply_capacity_w), step=50.0)
+        led.accumulator_voltage_v = lc2[2].number_input("Accumulator (V)", 0.0, 600.0,
+                                                         value=float(led.accumulator_voltage_v), step=10.0)
+        lc3 = st.columns(4)
+        ex = lc3[0].number_input("Chassis interior X (mm)", 0.0, 3000.0,
+                                 value=float((led.chassis_envelope_mm or (0, 0, 0))[0]), step=10.0)
+        ey = lc3[1].number_input("interior Y (mm)", 0.0, 2000.0,
+                                 value=float((led.chassis_envelope_mm or (0, 0, 0))[1]), step=10.0)
+        ez = lc3[2].number_input("interior Z (mm)", 0.0, 2000.0,
+                                 value=float((led.chassis_envelope_mm or (0, 0, 0))[2]), step=10.0)
+        led.chassis_envelope_mm = (ex, ey, ez) if (ex and ey and ez) else None
+        led.total_cooling_airflow_cms = lc3[3].number_input("Cooling airflow (m³/s)", 0.0, 5.0,
+                                                            value=float(led.total_cooling_airflow_cms), step=0.05)
+
+    # Which fields each subsystem typically declares — keeps each editor focused.
+    FIELDSETS = {
+        "common": ["mass_kg", "cg_x_mm", "cg_y_mm", "cg_z_mm"],
+        "aerodynamics": ["env_x_mm", "env_y_mm", "env_z_mm"],
+        "brakes": ["brake_torque_nm", "mount_load_n", "mount_points"],
+        "chassis": ["env_x_mm", "env_y_mm", "env_z_mm"],
+        "cooling": ["cooling_airflow_cms", "env_x_mm", "env_y_mm", "env_z_mm"],
+        "data-acquisition": ["power_draw_w", "voltage_v"],
+        "electrics": ["power_draw_w", "voltage_v", "peak_current_a"],
+        "powertrain": ["peak_torque_nm", "peak_power_kw", "voltage_v",
+                       "cooling_airflow_cms", "heat_reject_w"],
+        "suspension": ["mount_load_n", "mount_points"],
+    }
+    FIELD_META = {
+        "mass_kg": ("Mass (kg)", 0.0, 200.0, 0.5),
+        "cg_x_mm": ("CG x — rearward (mm)", 0.0, 3000.0, 10.0),
+        "cg_y_mm": ("CG y — right (mm)", -500.0, 500.0, 5.0),
+        "cg_z_mm": ("CG z — up (mm)", 0.0, 1000.0, 5.0),
+        "env_x_mm": ("Envelope X (mm)", 0.0, 3000.0, 10.0),
+        "env_y_mm": ("Envelope Y (mm)", 0.0, 2000.0, 10.0),
+        "env_z_mm": ("Envelope Z (mm)", 0.0, 2000.0, 10.0),
+        "mount_load_n": ("Peak mount load (N)", 0.0, 50000.0, 100.0),
+        "mount_points": ("# mount points", 0.0, 12.0, 1.0),
+        "power_draw_w": ("Power draw (W)", 0.0, 5000.0, 10.0),
+        "voltage_v": ("Voltage (V)", 0.0, 600.0, 1.0),
+        "peak_current_a": ("Peak current (A)", 0.0, 600.0, 5.0),
+        "heat_reject_w": ("Heat rejected (W)", 0.0, 50000.0, 100.0),
+        "cooling_airflow_cms": ("Cooling airflow req (m³/s)", 0.0, 5.0, 0.05),
+        "peak_torque_nm": ("Peak torque (N·m)", 0.0, 1000.0, 10.0),
+        "peak_power_kw": ("Peak power (kW)", 0.0, 200.0, 5.0),
+        "brake_torque_nm": ("Brake torque/corner (N·m)", 0.0, 5000.0, 50.0),
+    }
+    EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
+             "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
+             "suspension": "🩷"}
+
+    st.markdown("###### Each subsystem's interface")
+    st.caption("Fill what's relevant. Blank = not declared yet (reported as MISSING, "
+               "not a silent pass). Untick “estimate” once a value is CAD/measured.")
+    for s in _IF.SUBSYSTEMS:
+        it = led.get(s) or _IF.SubsystemInterface(name=s)
+        with st.expander(f"{EMOJI.get(s,'•')}  {s}", expanded=False):
+            fields = FIELDSETS["common"] + [f for f in FIELDSETS.get(s, [])
+                                            if f not in FIELDSETS["common"]]
+            vals = {}
+            cols = st.columns(4)
+            for i, fld in enumerate(fields):
+                label = FIELD_META[fld][0]
+                cur = getattr(it, fld)
+                # Blank-able text input: empty string == not declared (None), which is
+                # distinct from a real 0. Robust for negative-valued fields (CG y) too.
+                raw = cols[i % 4].text_input(
+                    label, value=("" if cur is None else f"{cur:g}"),
+                    key=f"if_{s}_{fld}", placeholder="—")
+                raw = raw.strip()
+                if raw == "":
+                    vals[fld] = None
+                else:
+                    try:
+                        vals[fld] = float(raw)
+                    except ValueError:
+                        vals[fld] = None
+                        cols[i % 4].caption("⚠ not a number — ignored")
+            est = st.checkbox("These are estimates / placeholders", value=bool(it.is_estimate),
+                              key=f"if_{s}_est")
+            note = st.text_input("Note (optional)", value=it.notes, key=f"if_{s}_note")
+            new_it = _IF.SubsystemInterface(name=s, is_estimate=est, notes=note,
+                                            **{k: v for k, v in vals.items()})
+            # carry mounts_on default
+            new_it.mounts_on = it.mounts_on or ("suspension" if s in ("brakes",) else "chassis")
+            led.set(new_it)
+
+    # persist edits back to session
+    st.session_state.ledger = led.as_dict()
+
+    # ---- run the checks ---- #
+    findings = led.check_all()
+    summary = _IF.summarize(findings)
+    roll = led.mass_rollup()
+
+    # board-level badge
+    worst = summary["worst"]
+    badge = {"fail": ("bad", "✗ INTEGRATION CONFLICTS"),
+             "warning": ("warn", "⚠ WARNINGS"),
+             "missing": ("warn", "◴ DATA MISSING"),
+             "info": ("good", "ℹ INFO ONLY"),
+             "ok": ("good", "✓ ALL CHECKS PASS")}.get(worst, ("warn", worst))
+    st.markdown("###### Integration board")
+    bc = st.columns(5)
+    cnt = summary["counts"]
+    bc[0].markdown(metric("Status", badge[1].split(' ', 1)[1] if ' ' in badge[1] else badge[1],
+                          "", badge[0]), unsafe_allow_html=True)
+    bc[1].markdown(metric("Conflicts", str(cnt["fail"]), "fail",
+                          "bad" if cnt["fail"] else "good"), unsafe_allow_html=True)
+    bc[2].markdown(metric("Warnings", str(cnt["warning"]), "", "warn" if cnt["warning"] else "good"),
+                   unsafe_allow_html=True)
+    bc[3].markdown(metric("Missing", str(cnt["missing"]), "", "warn" if cnt["missing"] else "good"),
+                   unsafe_allow_html=True)
+    _massbadge = "bad" if (roll["declared"] and roll["delta_kg"] - led.includes_driver_kg > 0) else "good"
+    bc[4].markdown(metric("Declared mass", f"{roll['total_kg']:.0f}", "kg"),
+                   unsafe_allow_html=True)
+
+    # findings list
+    _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
+                "info": "", "ok": "good"}
+    for f in sorted(findings, key=lambda x: ["fail", "warning", "missing", "info", "ok"].index(x.severity.value)):
+        cls = _SEV_CLS.get(f.severity.value, "")
+        who = " ↔ ".join(f"{EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
+        st.markdown(
+            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+            f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
+            f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
+            f'<span style="font-size:.92rem">{f.message}</span></div>',
+            unsafe_allow_html=True)
+
+    # ---- close the loop with the real physics ---- #
+    st.markdown("###### Feed the build back into the physics")
+    if roll["cg_mm"]:
+        cgz = roll["cg_mm"][2]
+        total_with_driver = roll["total_kg"] + (led.includes_driver_kg or 0.0)
+        cc = st.columns([2, 1])
+        cc[0].markdown(f'<p class="hint">The declared build gives a combined mass of '
+                       f'<b>{roll["total_kg"]:.1f} kg</b> (+{led.includes_driver_kg:.0f} kg '
+                       f'driver = {total_with_driver:.1f} kg) and a CG height of '
+                       f'<b>{cgz:.0f} mm</b>. This is the number suspension\'s load-transfer '
+                       f'and the lap sim should be using — push it through so every other '
+                       f'tab reflects the real car, not an assumption.</p>',
+                       unsafe_allow_html=True)
+        if cc[1].button("→ Use this mass & CG in the vehicle model",
+                        use_container_width=True):
+            st.session_state.vp["mass"] = float(total_with_driver)
+            st.session_state.vp["cg_height"] = float(cgz)
+            log_decision_now("integration", "Build mass/CG pushed to vehicle model",
+                             f"Subsystem ledger: {total_with_driver:.1f} kg total, "
+                             f"CG height {cgz:.0f} mm. Now driving load transfer & lap sim.",
+                             author="integration")
+            st.success(f"Vehicle model updated: {total_with_driver:.1f} kg, "
+                       f"CG {cgz:.0f} mm. Other tabs now use it.")
+            st.rerun()
+    else:
+        st.markdown('<p class="hint">Once enough subsystems declare mass AND CG '
+                    'location, the combined CG can be pushed straight into the vehicle '
+                    'model here — closing the loop between the integration ledger and '
+                    'the load-transfer/lap-time physics.</p>', unsafe_allow_html=True)
+
+    st.markdown('<p class="hint" style="border-left:2px solid #2a3340;padding-left:10px;">'
+                'This is the edge OptimumK / ANSYS / SolidWorks don\'t give you: not '
+                'deeper single-domain physics, but a live, checkable contract <i>between</i> '
+                'domains — with mass and CG wired into the real vehicle model, and every '
+                'placeholder number flagged so the board is honest.</p>',
+                unsafe_allow_html=True)
+
+
 # --------------------------------------------------------------------------- #
 #  Save / Load project — one file captures the whole session
 # --------------------------------------------------------------------------- #
@@ -1540,6 +2224,7 @@ project_bundle = {
     "saved": _datetime.datetime.now().isoformat(timespec="seconds"),
     "hardpoints": hp_dict,
     "vehicle": st.session_state.vp,
+    "ledger": st.session_state.get("ledger"),
     "handover": json.loads(_store_for_save.as_json()),
 }
 
@@ -1569,6 +2254,8 @@ with sc3:
                 st.session_state.hp = data["hardpoints"]
             if "vehicle" in data:
                 st.session_state.vp = data["vehicle"]
+            if data.get("ledger"):
+                st.session_state.ledger = data["ledger"]
             # restore handover data into the store
             if "handover" in data:
                 _s = project_mod.ProjectStore(PROJECT_PATH)
