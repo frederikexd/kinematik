@@ -2122,19 +2122,26 @@ with tab13:
             rationale = st.text_area(
                 "Why — design justification (this is what design-event judges ask for, "
                 "and it goes straight into the interface report)",
-                value=it.rationale, key=f"if_{s}_why", height=68)
+                value=getattr(it, "rationale", "") or "", key=f"if_{s}_why", height=68)
             oc = st.columns(2)
-            owner = oc[0].text_input("Owner", value=it.owner, key=f"if_{s}_owner",
+            owner = oc[0].text_input("Owner", value=getattr(it, "owner", "") or "",
+                                     key=f"if_{s}_owner",
                                      placeholder="who owns this interface")
-            note = oc[1].text_input("Note (optional)", value=it.notes, key=f"if_{s}_note")
+            note = oc[1].text_input("Note (optional)", value=getattr(it, "notes", "") or "",
+                                    key=f"if_{s}_note")
             new_it = _IF.SubsystemInterface(
                 name=s, is_estimate=est, notes=note, rationale=rationale, owner=owner,
-                updated_by=owner or it.updated_by, updated_on=it.updated_on,
+                updated_by=owner or getattr(it, "updated_by", ""),
+                updated_on=getattr(it, "updated_on", ""),
                 **{k: v for k, v in vals.items()})
-            new_it.mounts_on = it.mounts_on or ("suspension" if s in ("brakes",) else "chassis")
+            new_it.mounts_on = getattr(it, "mounts_on", None) or (
+                "suspension" if s in ("brakes",) else "chassis")
             # Auto-log any change to the handover record, so documentation writes
             # itself as the team works (and stamp the edit date).
-            _changes = _IF.diff_interfaces(it.as_dict(), new_it)
+            try:
+                _changes = _IF.diff_interfaces(it.as_dict(), new_it)
+            except Exception:
+                _changes = []
             if _changes:
                 new_it.updated_on = _datetime.date.today().isoformat()
                 log_decision_now(
