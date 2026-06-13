@@ -1,0 +1,10 @@
+streamlit>=1.40
+numpy>=1.24
+scipy>=1.11
+plotly>=5.20
+trimesh>=4.0
+rtree>=1.0
+cascadio>=0.0.16
+numpy-stl>=3.0
+reportlab>=4.0
+supabase>=2.0
