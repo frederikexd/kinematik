@@ -303,7 +303,7 @@ Sign conventions and gains are pinned by tests:
 ```bash
 python tests/test_kinematics.py        # kinematics sign conventions & solver
 python tests/test_tiremodel.py         # tire model, TTC fitter, setup optimiser
-python -m pytest tests/                # everything (164 tests)
+python -m pytest tests/                # everything (173 tests)
 ```
 
 The tire tests pin the things the grip upgrade depends on: load sensitivity in the
@@ -345,6 +345,15 @@ properly; this owns the channels between them. Every declaration carries an `is_
 flag, and the board always surfaces which numbers are placeholders, so a green board never
 implies more certainty than the data behind it. That coordination layer — not deeper
 single-domain physics — is the edge.
+
+**It doubles as living documentation.** Each interface carries a `rationale` ("why these
+numbers"), an owner, and a last-updated stamp; every edit is auto-logged to the handover
+record as it happens. `build_interface_markdown()` exports the whole contract — values,
+rationale, provenance, the combined mass/CG, and the integration findings — as a
+design-event-ready document, so the design justification judges ask for is captured as
+the team works rather than scrambled together before the report deadline. Estimates and
+checks passing on placeholder data are marked as such in the export, so the document is
+honest about its own maturity.
 
 ## Correlate it against real data (the VALIDATION tab)
 

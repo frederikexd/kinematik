@@ -2119,11 +2119,29 @@ with tab13:
                         cols[i % 4].caption("⚠ not a number — ignored")
             est = st.checkbox("These are estimates / placeholders", value=bool(it.is_estimate),
                               key=f"if_{s}_est")
-            note = st.text_input("Note (optional)", value=it.notes, key=f"if_{s}_note")
-            new_it = _IF.SubsystemInterface(name=s, is_estimate=est, notes=note,
-                                            **{k: v for k, v in vals.items()})
-            # carry mounts_on default
+            rationale = st.text_area(
+                "Why — design justification (this is what design-event judges ask for, "
+                "and it goes straight into the interface report)",
+                value=it.rationale, key=f"if_{s}_why", height=68)
+            oc = st.columns(2)
+            owner = oc[0].text_input("Owner", value=it.owner, key=f"if_{s}_owner",
+                                     placeholder="who owns this interface")
+            note = oc[1].text_input("Note (optional)", value=it.notes, key=f"if_{s}_note")
+            new_it = _IF.SubsystemInterface(
+                name=s, is_estimate=est, notes=note, rationale=rationale, owner=owner,
+                updated_by=owner or it.updated_by, updated_on=it.updated_on,
+                **{k: v for k, v in vals.items()})
             new_it.mounts_on = it.mounts_on or ("suspension" if s in ("brakes",) else "chassis")
+            # Auto-log any change to the handover record, so documentation writes
+            # itself as the team works (and stamp the edit date).
+            _changes = _IF.diff_interfaces(it.as_dict(), new_it)
+            if _changes:
+                new_it.updated_on = _datetime.date.today().isoformat()
+                log_decision_now(
+                    "integration", f"{s} interface updated",
+                    "; ".join(_changes) + (f"  [why: {rationale.strip()}]"
+                                           if rationale.strip() else ""),
+                    author=owner or "integration")
             led.set(new_it)
 
     # persist edits back to session
@@ -2199,11 +2217,35 @@ with tab13:
                     'model here — closing the loop between the integration ledger and '
                     'the load-transfer/lap-time physics.</p>', unsafe_allow_html=True)
 
+    # ---- documentation export ---- #
+    st.markdown("###### Documentation export")
+    st.markdown('<p class="hint">The ledger doubles as living documentation. As each '
+                'team locks numbers and writes the <b>why</b>, it\'s captured with owner '
+                'and date — and every edit is auto-logged to the handover record. Export '
+                'the whole interface contract, rationale included, as a design-event-ready '
+                'document. No write-up scramble before the report deadline.</p>',
+                unsafe_allow_html=True)
+    try:
+        _team = project_mod.ProjectStore(PROJECT_PATH).team_name or "FSAE Team"
+    except Exception:
+        _team = "FSAE Team"
+    _report_md = _IF.build_interface_markdown(led, team_name=_team)
+    ec = st.columns([1, 1, 2])
+    ec[0].download_button("📄 Download interface report (.md)", _report_md,
+                          file_name="interface_contract.md", mime="text/markdown",
+                          use_container_width=True)
+    with ec[1]:
+        if st.button("👁 Preview report", use_container_width=True):
+            st.session_state._show_iface_report = not st.session_state.get("_show_iface_report", False)
+    if st.session_state.get("_show_iface_report"):
+        st.markdown(_report_md)
+
     st.markdown('<p class="hint" style="border-left:2px solid #2a3340;padding-left:10px;">'
                 'This is the edge OptimumK / ANSYS / SolidWorks don\'t give you: not '
                 'deeper single-domain physics, but a live, checkable contract <i>between</i> '
-                'domains — with mass and CG wired into the real vehicle model, and every '
-                'placeholder number flagged so the board is honest.</p>',
+                'domains — with mass and CG wired into the real vehicle model, every '
+                'placeholder number flagged, and the whole thing exportable as the '
+                'design justification judges ask for.</p>',
                 unsafe_allow_html=True)
 
 
