@@ -25,6 +25,9 @@ from suspension import (
 from suspension import chassis as chassis_mod
 from suspension import integration as integ_mod
 from suspension import project as project_mod
+from suspension import tiremodel as tire_mod
+from suspension import setup as setup_mod
+from suspension import laptime as lap_mod
 
 st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
@@ -125,6 +128,14 @@ def init_state():
         st.session_state.hp = Hardpoints.default().as_dict()
     if "vp" not in st.session_state:
         st.session_state.vp = VehicleParams().__dict__.copy()
+    # Tire model: start on the generic default so grip/balance run on a real Magic
+    # Formula from the first load. Replaced by a TTC-fitted tire when one is loaded.
+    if "tire_coeffs" not in st.session_state:
+        dt = tire_mod.default_tire()
+        st.session_state.tire_coeffs = dict(dt.coeffs)
+        st.session_state.tire_fnomin = dt.FNOMIN
+        st.session_state.tire_source = "Generic FSAE default (not your tire)"
+        st.session_state.tire_is_default = True
 
 init_state()
 
@@ -229,8 +240,15 @@ hp_dict = apply_preset(preset, st.session_state.hp)
 try:
     hp = Hardpoints.from_dict(hp_dict)
     kin = SuspensionKinematics(hp)
-    veh = VehicleDynamics(VehicleParams(**st.session_state.vp),
-                          front_kin=kin, rear_kin=kin)
+    # Build the live tire model from session state (default or TTC-fitted).
+    _tire = tire_mod.PacejkaLateral(coeffs=dict(st.session_state.tire_coeffs),
+                                    FNOMIN=st.session_state.tire_fnomin)
+    # Only pass VehicleParams fields the dataclass knows about (forward/backward
+    # compatible if an old saved project carries extra/missing keys).
+    _vp_fields = set(VehicleParams.__dataclass_fields__.keys())
+    _vp_kwargs = {k: v for k, v in st.session_state.vp.items() if k in _vp_fields}
+    veh = VehicleDynamics(VehicleParams(**_vp_kwargs),
+                          front_kin=kin, rear_kin=kin, tire=_tire)
     sweep = kin.sweep(-30, 30, 41)
     solve_ok = all(s.converged for s in sweep)
 except Exception as e:
@@ -296,10 +314,11 @@ especially the things that *didn't* work. It takes ten seconds with the template
 and it's the difference between next year starting ahead or relearning everything.
     """)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs(
     ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
      "  GEOMETRY 3D  ", "  SUSPENSION vs CHASSIS  ", "  TEAM FIT  ",
-     "  WEIGHT & HANDOVER  ", "  LEAD NOTES  "])
+     "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
+     "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  "])
 
 travels = [st_.travel for st_ in sweep]
 
@@ -417,6 +436,21 @@ with tab3:
     c2.markdown(metric("Balance", verdict[0], "", verdict[1]), unsafe_allow_html=True)
     c3.markdown(metric("Front/rear util", f"{uf:.2f}/{ur:.2f}", ""), unsafe_allow_html=True)
 
+    _model = veh.grip_model_name()
+    _is_default = st.session_state.get("tire_is_default", True)
+    if _model == "Pacejka MF5.2" and not _is_default:
+        st.markdown(f'<p class="hint" style="border-left:2px solid #2c6b3f;'
+                    f'padding-left:10px;">Grip is running on the <b>Pacejka MF5.2</b> '
+                    f'model fitted to <b>your tire</b> ({st.session_state.tire_source}). '
+                    f'These absolute grip numbers reflect measured rubber.</p>',
+                    unsafe_allow_html=True)
+    elif _model == "Pacejka MF5.2":
+        st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                    'padding-left:10px;">Grip is running on the <b>Pacejka MF5.2</b> '
+                    'model with the <b>generic default tire</b>. Good for comparing '
+                    'setups; load your TTC-fitted tire in the TIRE &amp; GRIP tab for '
+                    'absolute numbers you can trust.</p>', unsafe_allow_html=True)
+
     gs = np.linspace(0.3, max(max_g + 0.2, 1.0), 30)
     bidx = []
     for g in gs:
@@ -437,10 +471,12 @@ with tab3:
                 'distribution, RC heights, and weight distribution in the sidebar.</p>',
                 unsafe_allow_html=True)
     st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
-                '<b>Steady-state, simple tire model.</b> Balance is computed at sustained '
-                'cornering with a linear load-sensitivity grip model — good for comparing '
-                'setups and seeing which way the balance moves, not an absolute prediction '
-                'of grip or transient behaviour. A Pacejka tire model is on the roadmap.</p>',
+                '<b>Steady-state.</b> Balance is computed at sustained cornering with '
+                'the Pacejka load-sensitive, camber-aware grip model — good for '
+                'comparing setups and predicting limit balance, but not transient '
+                'response (turn-in, trail-braking, kerbs, dampers). The grip number is '
+                'only as trustworthy as the tire it runs on — fit yours from TTC data '
+                'in the TIRE &amp; GRIP tab.</p>',
                 unsafe_allow_html=True)
 
 # ----------------------------- TAB 4 --------------------------------------- #
@@ -1127,6 +1163,365 @@ with tab8:
                     nstore.reopen_note(n.id)
                     nstore.save()
                     st.rerun()
+
+# ----------------------------- TAB 9 --------------------------------------- #
+# TIRE & GRIP — the competitive core. You get one set of tires; the edge is
+# extracting every bit of truth from your tire data and running the whole grip/
+# balance stack on it instead of a guess.
+with tab9:
+    st.markdown('<p class="hint">You can only afford <b>one set of tires</b>. The way '
+                'you beat a team that can test rubber all year is to make every '
+                'geometry and setup call against <b>your actual tire</b> before you '
+                'commit it. This tab is where your tire lives — load a TTC-fitted '
+                'model and the GRIP BALANCE and SETUP OPTIMISER tabs run on measured '
+                'data, not a placeholder.</p>', unsafe_allow_html=True)
+
+    _is_default = st.session_state.get("tire_is_default", True)
+    badge_cls = "warn" if _is_default else "good"
+    st.markdown(
+        f"<div style='margin:.2rem 0 .8rem;'><span class='tag {badge_cls}'>"
+        f"Active tire: {st.session_state.tire_source}</span></div>",
+        unsafe_allow_html=True)
+
+    live_tire = tire_mod.PacejkaLateral(coeffs=dict(st.session_state.tire_coeffs),
+                                        FNOMIN=st.session_state.tire_fnomin)
+    desc = tire_mod.describe(live_tire)
+    m = st.columns(5)
+    m[0].markdown(metric("μ @ nominal", f"{desc['mu_at_nominal']:.2f}", ""), unsafe_allow_html=True)
+    m[1].markdown(metric("μ light load", f"{desc['mu_light_load']:.2f}", ""), unsafe_allow_html=True)
+    m[2].markdown(metric("μ heavy load", f"{desc['mu_heavy_load']:.2f}", ""), unsafe_allow_html=True)
+    m[3].markdown(metric("Peak slip", f"{desc['alpha_peak_deg']:.1f}", "°"), unsafe_allow_html=True)
+    m[4].markdown(metric("Best camber", f"{desc['optimal_camber_deg']:.1f}", "°"), unsafe_allow_html=True)
+
+    # ---- grip curves ----------------------------------------------------- #
+    cc1, cc2 = st.columns(2)
+    Fz = np.linspace(150, 2200, 60)
+    mu = [live_tire.mu_peak(f) for f in Fz]
+    figG = go.Figure()
+    figG.add_trace(go.Scatter(x=Fz, y=mu, mode="lines", line=dict(color=CYAN, width=3)))
+    figG.update_layout(**PLOT_LAYOUT, title="Load sensitivity — peak μ vs vertical load",
+                       xaxis_title="vertical load (N)", yaxis_title="peak μ", height=320)
+    cc1.plotly_chart(figG, use_container_width=True)
+
+    cam = np.linspace(0, 5, 40)
+    mu_c = [live_tire.mu_peak(live_tire.FNOMIN, np.radians(c)) for c in cam]
+    figC = go.Figure()
+    figC.add_trace(go.Scatter(x=cam, y=mu_c, mode="lines", line=dict(color=AMBER, width=3)))
+    figC.update_layout(**PLOT_LAYOUT, title="Camber sensitivity — peak μ vs inclination",
+                       xaxis_title="inclination (°)", yaxis_title="peak μ @ nominal load",
+                       height=320)
+    cc2.plotly_chart(figC, use_container_width=True)
+    st.markdown('<p class="hint">Left: how fast grip falls as the tire is loaded — '
+                'this is what makes load transfer cost you grip, and why a lower CG and '
+                'softer springs help. Right: the camber the tire wants. The peak of '
+                'this curve is free grip you set with geometry, not money — target it '
+                'with your static camber and camber-gain.</p>', unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("###### Load YOUR fitted tire (from TTC data)")
+    st.markdown('<p class="hint">Run <code>python process_ttc.py your_cornering.mat '
+                'my_tire.json</code> to fit a Magic Formula to your TTC data, then '
+                'upload <code>my_tire.json</code> here. It loads into the live engine '
+                'immediately. <b>The .json is TTC-derived — keep it out of git.</b></p>',
+                unsafe_allow_html=True)
+    up = st.file_uploader("Fitted tire JSON", type=["json"], key="tire_json")
+    lc1, lc2 = st.columns([1, 1])
+    if up is not None:
+        try:
+            import json as _json
+            d = _json.load(up)
+            new_coeffs = d["coeffs"]
+            new_fnom = float(d.get("FNOMIN", 1100.0))
+            # validate it builds
+            _t = tire_mod.PacejkaLateral(coeffs=new_coeffs, FNOMIN=new_fnom)
+            _t.mu_peak(new_fnom)
+            if lc1.button("✓ Use this tire", use_container_width=True):
+                st.session_state.tire_coeffs = dict(new_coeffs)
+                st.session_state.tire_fnomin = new_fnom
+                st.session_state.tire_source = f"TTC-fitted ({up.name})"
+                st.session_state.tire_is_default = False
+                log_decision_now("suspension", f"Loaded fitted tire {up.name}",
+                                 "Grip/balance now run on measured TTC tire data.")
+                st.rerun()
+        except Exception as e:
+            st.markdown(f"<p class='hint'>Couldn't read that tire file: {e}</p>",
+                        unsafe_allow_html=True)
+    if not _is_default:
+        if lc2.button("↺ Revert to generic default", use_container_width=True):
+            dt = tire_mod.default_tire()
+            st.session_state.tire_coeffs = dict(dt.coeffs)
+            st.session_state.tire_fnomin = dt.FNOMIN
+            st.session_state.tire_source = "Generic FSAE default (not your tire)"
+            st.session_state.tire_is_default = True
+            st.rerun()
+
+    st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
+                'The generic default is hand-built to behave sensibly (load sensitivity, '
+                'a camber optimum) but it is <b>not your tire</b> — use it for relative '
+                'comparisons until you fit yours. Absolute grip numbers only become '
+                'trustworthy once the tire above says "TTC-fitted".</p>',
+                unsafe_allow_html=True)
+
+# ----------------------------- TAB 10 -------------------------------------- #
+# SETUP OPTIMISER — spend the one tire set wisely. Rank the levers by grip
+# impact and search for the best setup, all on the live tire.
+with tab10:
+    st.markdown('<p class="hint">Which change actually buys grip? With one set of '
+                'tires you cannot afford to chase the wrong lever. This ranks every '
+                'setup knob by how much limit grip and balance it moves — on your live '
+                'tire — then searches for the best combination at a target balance. '
+                '<b>Out-integrate, don\'t out-spend: know the answer before you build '
+                'it.</b></p>', unsafe_allow_html=True)
+
+    base_vp = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
+                               if k in VehicleParams.__dataclass_fields__})
+
+    sc1, sc2 = st.columns([1, 1])
+    target_bal = sc1.slider("Target balance (+ understeer / − oversteer)",
+                            -0.10, 0.15, 0.04, 0.01)
+    bal_tol = sc2.slider("Balance tolerance", 0.02, 0.15, 0.06, 0.01)
+
+    if st.button("▶ Rank levers & optimise", use_container_width=True):
+        st.session_state._run_opt = True
+
+    if st.session_state.get("_run_opt"):
+        with st.spinner("Sweeping setup space on the live tire…"):
+            sens = setup_mod.sensitivity(base_vp, front_kin=kin, rear_kin=kin,
+                                         tire=live_tire)
+            opt = setup_mod.optimise(base_vp, front_kin=kin, rear_kin=kin,
+                                     tire=live_tire, target_balance=target_bal,
+                                     balance_tol=bal_tol)
+
+        b = sens["base"]
+        st.markdown("###### Current setup")
+        bc = st.columns(3)
+        bc[0].markdown(metric("Max grip", f"{b['max_g']:.3f}", "g"), unsafe_allow_html=True)
+        _bv = ("NEUTRAL", "good") if abs(b["balance"]) < 0.03 else \
+              (("UNDERSTEER", "warn") if b["balance"] > 0 else ("OVERSTEER", "bad"))
+        bc[1].markdown(metric("Balance", _bv[0], "", _bv[1]), unsafe_allow_html=True)
+        bc[2].markdown(metric("Balance index", f"{b['balance']:+.3f}", ""), unsafe_allow_html=True)
+
+        st.markdown("###### Levers ranked by grip impact")
+        st.markdown('<p class="hint">Read this as: change this knob by one step, get '
+                    'this much grip and this much balance shift. Spend your build/tune '
+                    'time top-down.</p>', unsafe_allow_html=True)
+        rows = "".join(
+            f"<tr><td style='padding:4px 10px;'>{r['label']}</td>"
+            f"<td style='padding:4px 10px;text-align:right;color:{'#62d27a' if r['d_maxg_per_step']>=0 else '#ff6b6b'};'>"
+            f"{r['d_maxg_per_step']:+.4f} g</td>"
+            f"<td style='padding:4px 10px;text-align:right;color:var(--dim);'>per {r['step']:g} {r['unit']}</td>"
+            f"<td style='padding:4px 10px;text-align:right;'>{r['d_balance_per_step']:+.3f} bal</td></tr>"
+            for r in sens["rankings"])
+        st.markdown(
+            f"<table style='width:100%;border-collapse:collapse;font-size:.92rem;'>"
+            f"<tr style='color:var(--dim);border-bottom:1px solid var(--line);'>"
+            f"<td style='padding:4px 10px;'>lever</td>"
+            f"<td style='padding:4px 10px;text-align:right;'>grip / step</td>"
+            f"<td></td><td style='padding:4px 10px;text-align:right;'>balance / step</td></tr>"
+            f"{rows}</table>", unsafe_allow_html=True)
+
+        st.markdown("###### Optimiser recommendation")
+        oc = st.columns(3)
+        oc[0].markdown(metric("Optimised grip", f"{opt['best_eval']['max_g']:.3f}", "g",
+                              "good"), unsafe_allow_html=True)
+        oc[1].markdown(metric("Grip gained", f"{opt['delta_maxg']:+.3f}", "g",
+                              "good" if opt["delta_maxg"] > 0 else ""), unsafe_allow_html=True)
+        oc[2].markdown(metric("Balance", f"{opt['best_eval']['balance']:+.3f}", ""),
+                       unsafe_allow_html=True)
+
+        if opt["best_params"]:
+            _knob_lbl = {k: v["label"] for k, v in setup_mod.PARAM_KNOBS.items()}
+            _knob_unit = {k: v["unit"] for k, v in setup_mod.PARAM_KNOBS.items()}
+            recs = "".join(
+                f"<tr><td style='padding:4px 10px;'>{_knob_lbl.get(k,k)}</td>"
+                f"<td style='padding:4px 10px;text-align:right;'>{v:.2f} {_knob_unit.get(k,'')}</td></tr>"
+                for k, v in opt["best_params"].items())
+            st.markdown(
+                f"<table style='width:100%;border-collapse:collapse;font-size:.92rem;'>"
+                f"<tr style='color:var(--dim);border-bottom:1px solid var(--line);'>"
+                f"<td style='padding:4px 10px;'>change</td>"
+                f"<td style='padding:4px 10px;text-align:right;'>to</td></tr>"
+                f"{recs}</table>", unsafe_allow_html=True)
+
+            ac1, ac2 = st.columns([1, 2])
+            if ac1.button("Apply to sidebar", use_container_width=True):
+                for k, v in opt["best_params"].items():
+                    if k in ("static_camber_front", "static_camber_rear"):
+                        continue  # camber is set by geometry; recommend, don't force
+                    if k in st.session_state.vp:
+                        st.session_state.vp[k] = v
+                _cam_note = ""
+                if "static_camber_front" in opt["best_params"]:
+                    _cam_note = (f" Target front camber "
+                                 f"{opt['best_params']['static_camber_front']:.1f}° via geometry.")
+                log_decision_now("suspension", "Applied optimiser setup",
+                                 f"Grip {opt['start_eval']['max_g']:.3f}→"
+                                 f"{opt['best_eval']['max_g']:.3f} g at balance "
+                                 f"{opt['best_eval']['balance']:+.3f}.{_cam_note}")
+                st.session_state._run_opt = False
+                st.rerun()
+            ac2.markdown('<p class="hint">Camber targets are recommendations — set them '
+                         'with static camber + camber-gain in your geometry, then check '
+                         'the KINEMATICS tab. Everything else applies to the sidebar '
+                         'directly.</p>', unsafe_allow_html=True)
+        else:
+            st.markdown('<p class="hint">Your current setup is already at the '
+                        'optimiser\'s best within these bounds. Nice.</p>',
+                        unsafe_allow_html=True)
+
+        if _is_default:
+            st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                        'padding-left:10px;">These rankings run on the <b>generic '
+                        'default tire</b>. They show the right <i>directions</i>, but '
+                        'load your TTC-fitted tire in the TIRE &amp; GRIP tab before '
+                        'trusting the magnitudes — your tire\'s load and camber '
+                        'sensitivity is exactly what sets which lever wins.</p>',
+                        unsafe_allow_html=True)
+
+# --------------------------------------------------------------------------- #
+#  TAB 11 — LAP TIME : turn the grip envelope into seconds
+# --------------------------------------------------------------------------- #
+with tab11:
+    st.markdown('<p class="hint">Grip is a means; <b>lap time is the score.</b> This '
+                'tab runs your <i>live</i> geometry, setup and tire around the FSAE '
+                'skidpad and a representative autocross, so every change you make '
+                'upstream reads out in <b>seconds</b> — the only currency at '
+                'competition. A team that can\'t test rubber all year wins by knowing '
+                'the lap-time consequence of a setup call <i>before</i> it freezes the '
+                'build. Quasi-steady-state on the grip envelope you already trust.</p>',
+                unsafe_allow_html=True)
+
+    # Live dynamics model — same objects the rest of the app already solved.
+    try:
+        _veh_lap = veh
+    except Exception:
+        _veh_lap = None
+
+    # Make sure a tire-backed model exists even if the user never opened TIRE & GRIP.
+    try:
+        _live_tire_lap = live_tire
+    except NameError:
+        _live_tire_lap = tire_mod.PacejkaLateral(
+            coeffs=dict(st.session_state.tire_coeffs),
+            FNOMIN=st.session_state.tire_fnomin)
+    if _veh_lap is None:
+        _veh_lap = VehicleDynamics(
+            VehicleParams(**{k: v for k, v in st.session_state.vp.items()
+                             if k in VehicleParams.__dataclass_fields__}),
+            front_kin=kin, rear_kin=kin, tire=_live_tire_lap)
+
+    # ---- Powertrain / aero inputs (all defaulted; safe to ignore) -------- #
+    with st.expander("Powertrain & aero (defaults are sensible FSAE-EV values)",
+                     expanded=False):
+        pc = st.columns(4)
+        pw = pc[0].number_input("Peak power (kW)", 10.0, 200.0,
+                                value=80.0, step=5.0)
+        tract = pc[1].number_input("Traction cap (N)", 500.0, 6000.0,
+                                   value=2600.0, step=100.0)
+        cda = pc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=1.10, step=0.05)
+        cla = pc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=2.60, step=0.1)
+        pc2 = st.columns(4)
+        drive = pc2[0].selectbox("Drive", ["rwd", "awd"], index=0)
+        brake_g = pc2[1].number_input("Brake cap (g)", 0.5, 3.0, value=1.8, step=0.1)
+        crr = pc2[2].number_input("Rolling res. crr", 0.005, 0.05,
+                                  value=0.018, step=0.002, format="%.3f")
+        eff = pc2[3].number_input("Drivetrain eff.", 0.5, 1.0, value=0.90, step=0.01)
+
+    _pt = lap_mod.Powertrain(power_kw=pw, max_tractive_n=tract, drivetrain_eff=eff,
+                             cda=cda, cla=cla, crr=crr, drive=drive,
+                             brake_g_cap=brake_g)
+
+    ax_scale = st.slider("Autocross lap scale (stretches the yardstick lap)",
+                         0.6, 1.6, 1.0, 0.1)
+
+    if st.button("▶ Run lap-time sim", use_container_width=True):
+        st.session_state._run_lap = True
+
+    if st.session_state.get("_run_lap"):
+        with st.spinner("Driving your car around on the live tire…"):
+            skid = lap_mod.skidpad_time(_veh_lap, _pt)
+            track = lap_mod.default_autocross(scale=ax_scale)
+            lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
+
+        # Surface any safe-default warnings rather than hiding a bad data point.
+        for r in (skid, lap):
+            if r.warning:
+                st.warning(f"⚠ {r.warning}")
+
+        # ---- Skidpad ---- #
+        st.markdown("###### FSAE skidpad (one timed circle)")
+        skc = st.columns(3)
+        _skt = f"{skid.lap_time_s:.3f}" if skid.ok and np.isfinite(skid.lap_time_s) else "—"
+        skc[0].markdown(metric("Skidpad time", _skt, "s",
+                               "good" if skid.ok else "bad"), unsafe_allow_html=True)
+        skc[1].markdown(metric("Corner speed", f"{skid.avg_speed_ms:.1f}", "m/s"),
+                        unsafe_allow_html=True)
+        _sk_lat = (skid.avg_speed_ms ** 2) / (lap_mod.SKIDPAD_RADIUS_M * 9.81) \
+            if skid.ok else 0.0
+        skc[2].markdown(metric("Lateral", f"{_sk_lat:.2f}", "g"), unsafe_allow_html=True)
+
+        # ---- Autocross ---- #
+        st.markdown("###### Representative autocross")
+        axc = st.columns(4)
+        _axt = f"{lap.lap_time_s:.2f}" if lap.ok and np.isfinite(lap.lap_time_s) else "—"
+        axc[0].markdown(metric("Lap time", _axt, "s",
+                               "good" if lap.ok else "bad"), unsafe_allow_html=True)
+        axc[1].markdown(metric("Avg speed", f"{lap.avg_speed_ms:.1f}", "m/s"),
+                        unsafe_allow_html=True)
+        axc[2].markdown(metric("Top speed", f"{lap.top_speed_ms:.1f}", "m/s"),
+                        unsafe_allow_html=True)
+        axc[3].markdown(metric("Min speed", f"{lap.min_speed_ms:.1f}", "m/s"),
+                        unsafe_allow_html=True)
+
+        # Speed-vs-distance trace
+        if lap.ok and lap.s and lap.v:
+            figL = go.Figure()
+            figL.add_trace(go.Scatter(x=lap.s, y=lap.v, mode="lines",
+                                      line=dict(color=CYAN, width=2.5),
+                                      name="speed"))
+            figL.update_layout(**PLOT_LAYOUT, title="Speed around the lap",
+                               xaxis_title="distance (m)", yaxis_title="speed (m/s)",
+                               height=320)
+            st.plotly_chart(figL, use_container_width=True)
+
+        # Store last skidpad time so a delta can be shown after the next change.
+        if skid.ok and np.isfinite(skid.lap_time_s):
+            prev = st.session_state.get("_last_skidpad")
+            if prev is not None and abs(prev - skid.lap_time_s) > 1e-4:
+                d = skid.lap_time_s - prev
+                _cls = "good" if d < 0 else "bad"
+                st.markdown(
+                    f"<span class='tag {_cls}'>Δ skidpad vs last run: "
+                    f"{d:+.3f} s</span>", unsafe_allow_html=True)
+            st.session_state._last_skidpad = skid.lap_time_s
+
+        # Log it to the handover record so the reasoning survives.
+        if lap.ok and np.isfinite(lap.lap_time_s):
+            lc1, lc2 = st.columns([1, 2])
+            if lc1.button("Log these times", use_container_width=True):
+                log_decision_now(
+                    "suspension", "Lap-time prediction",
+                    f"Skidpad {_skt}s, autocross {_axt}s on "
+                    f"{'TTC tire' if not st.session_state.get('tire_is_default', True) else 'generic tire'} "
+                    f"(power {pw:.0f}kW, ClA {cla:.2f}).")
+                st.success("Logged to handover record.")
+            lc2.markdown('<p class="hint">Tip: change a hardpoint or a setup lever, '
+                         're-run, and watch the skidpad delta. That delta — in seconds '
+                         '— is the number to defend a design decision with.</p>',
+                         unsafe_allow_html=True)
+
+        if st.session_state.get("tire_is_default", True):
+            st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                        'padding-left:10px;">Running on the <b>generic default tire</b>. '
+                        'Times are the right shape and rank setups correctly, but load '
+                        'your TTC-fitted tire in TIRE &amp; GRIP before trusting the '
+                        'absolute seconds.</p>', unsafe_allow_html=True)
+        st.markdown('<p class="hint">Model: quasi-steady-state point mass on the live '
+                    'grip envelope. Good for ranking and for skidpad (near closed-form); '
+                    'on autocross it lands within a few percent — enough to choose '
+                    'between setups, not to predict the absolute clock to the tenth.</p>',
+                    unsafe_allow_html=True)
+
 
 # --------------------------------------------------------------------------- #
 #  Save / Load project — one file captures the whole session

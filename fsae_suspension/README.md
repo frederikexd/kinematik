@@ -39,7 +39,73 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
 - Front/rear roll-centre heights from the solved instant centres
 - Steady-state lateral load transfer, split into geometric + elastic
 - Per-tire vertical loads vs lateral g
-- Load-sensitive grip model → max lateral g and an **understeer/oversteer balance index**
+- **Pacejka MF5.2 tire model** → load-sensitive, camber-aware grip, max lateral g,
+  and an **understeer/oversteer balance index**. Ships with a sensible generic FSAE
+  tire so it works out of the box, and loads a tire **fitted to your own TTC data**
+  the moment you have one — see "Your tire is the edge" below.
+
+**Lap-time simulator (the number that actually wins — NEW)**
+- A quasi-steady-state point-mass lap sim built **on top of the same kinematics +
+  Pacejka tire + vehicle-dynamics stack** the rest of the tool uses, so every
+  geometry/setup/tire change is judged in the one currency that decides events:
+  **seconds**. Ships in the **◢ LAP TIME** tab.
+- Runs the three timed FSAE dynamic events out of the box — skidpad (timed
+  circle), 75 m acceleration, and a representative autocross/endurance lap — and
+  reports per-event times plus an endurance estimate.
+- Speed + lateral-g + longitudinal-g trace along the lap, and a **limit
+  breakdown** (corner- vs accel- vs power- vs brake-limited %), so an underfunded
+  team can see *where* time is won and aim its effort there instead of guessing.
+- A **g-g-V capability envelope**: lateral/accel/braking g vs speed, showing how
+  downforce raises usable grip with speed — the picture engineers use to sanity-
+  check the car.
+- Point-mass layer adds power, drivetrain efficiency, traction limit, braking, and
+  aero (downforce *and* the drag it costs) so wing decisions show up honestly.
+- **SETUP → SECONDS** tab: re-runs the lap sim for each setup lever and ranks them
+  by **lap-time gained**, not an abstract grip index — because the same 0.05 g is
+  worth different time on a hairpin vs a sweeper. With one tire set, this points
+  your build hours at the lever that buys the most seconds.
+- Honest about method: QSS captures corner-speed limits, the accel/brake trade,
+  power and downforce — the things that dominate an FSAE lap — but not transient
+  yaw, combined-slip friction-circle usage, tire temperature, or the racing line.
+  Trust the *ranking* firmly and the *absolute seconds* to a few percent; the UI
+  says so. Robust by construction: a bad data point, a non-converging corner, or a
+  pathological tire never crashes the session — the sim substitutes a safe default
+  and surfaces a warning instead of raising.
+
+**Tire & grip (the thing that actually wins skidpad and the limit in autocross)**
+- Full Magic Formula lateral model wired into the whole grip/balance stack — not a
+  linear placeholder. Load sensitivity and camber response come from the curve, not
+  a guess.
+- A real TTC fitter: `process_ttc.py` cleans a cornering `.mat` and fits the MF5.2
+  lateral coefficients, writing a private JSON you load straight into the tool.
+- Grip-curve plots (μ vs load, μ vs camber) so you can read the optimal camber and
+  the load-transfer cost off your actual tire.
+
+**Lap-time simulator (the score, not the proxy)**
+- Everything else reports grip at one operating point; competition is won on **lap
+  time** — a transient, track-dependent integral of that grip. A funded team buys
+  that integral by testing fresh rubber all year; on one tire set you predict it.
+- Runs your **live** geometry, setup and tire around the **FSAE skidpad**
+  (near closed-form, ~4.6–5.2 s band — sanity-check it by hand) and a
+  **representative autocross**, via a quasi-steady-state point-mass model on the
+  same grip envelope the rest of the tool already trusts.
+- Simple, defensible longitudinal model (power/traction cap, drag, downforce,
+  rolling resistance, friction-circle coupling) so straights and corner exits are
+  realistic without pretending we have a motor map we don't.
+- Change a hardpoint or a setup lever, re-run, read the **skidpad delta in
+  seconds** — that delta is the number to defend a design decision with, and it
+  pairs with the optimiser: optimise for grip, then confirm it's worth time here.
+- Never crashes the session: a non-convergent linkage or a degenerate track
+  returns a flagged safe default and a UI warning, not a stack trace.
+
+**Setup optimiser (spend your one tire set wisely)**
+- Sensitivity ranking: every setup knob (weight bias, CG height, roll-stiffness
+  split, static camber) ranked by **grip gained per unit change** and its balance
+  effect — so an underfunded team tunes the levers that matter, not the ones that
+  feel important.
+- A transparent coordinate search that finds the setup maximising limit grip while
+  holding balance in a target window (mild understeer = fast and safe). It reports
+  the trade it made and can push the result to the sidebar / decision log.
 
 **Chassis fit & manufacturing check (load your STEP/STL)**
 - Fit check: do the inboard pickups land on the frame where a bracket can mount?
@@ -113,14 +179,44 @@ The solver is a clean importable package — drop it into your own lap-sim or op
 
 ```python
 from suspension import SuspensionKinematics, Hardpoints, VehicleDynamics, VehicleParams
+from suspension import default_tire
+from suspension.tiremodel import load_from_json
+from suspension.setup import sensitivity, optimise
 
 kin = SuspensionKinematics(Hardpoints.default())
 print(kin.static.camber, kin.static.caster, kin.static.scrub_radius)
 
-veh = VehicleDynamics(VehicleParams(), front_kin=kin, rear_kin=kin)
+# Grip/balance on the generic default tire (works out of the box) ...
+tire = default_tire()
+# ... or on YOUR tire fitted from TTC data:
+# tire = load_from_json("my_tire.json")
+
+veh = VehicleDynamics(VehicleParams(), front_kin=kin, rear_kin=kin, tire=tire)
+print("grip model:", veh.grip_model_name())          # "Pacejka MF5.2"
 print("max lateral g:", veh.max_lateral_g())
-print("balance index:", veh.balance_index(1.2)[0])   # + understeer, − oversteer
+print("balance index:", veh.balance_index(1.2)[0])    # + understeer, − oversteer
+
+# Which setup change buys the most grip?
+for r in sensitivity(VehicleParams(), front_kin=kin, rear_kin=kin, tire=tire)["rankings"]:
+    print(f"  {r['label']}: {r['d_maxg_per_step']:+.4f} g per {r['step']} {r['unit']}")
 ```
+
+## Your tire is the edge
+
+You can only afford one set of tires. A funded team tests rubber all year; you
+can't. So the entire equaliser is extracting maximum truth from the tire data you
+*are* allowed — the FSAE Tire Test Consortium — and making every geometry and setup
+decision against it before you commit the set you bought.
+
+```bash
+# Fit a full MF5.2 lateral model to your TTC cornering file (stays local/private):
+python process_ttc.py path/to/your_cornering.mat my_tire.json
+```
+
+Then upload `my_tire.json` in the **TIRE & GRIP** tab. The grip, balance, and setup
+optimiser instantly run on your measured tire instead of the generic default. The
+`.mat` files and the fitted `.json` are TTC-confidential and are gitignored — ship
+the code, never the numbers.
 
 ## Persistent storage (so handover data survives)
 
@@ -161,18 +257,29 @@ Each corner is a rigid double-wishbone linkage. The two ball joints must lie on 
 Sign conventions and gains are pinned by tests:
 
 ```bash
-python tests/test_kinematics.py        # or: python -m pytest tests/
+python tests/test_kinematics.py        # kinematics sign conventions & solver
+python tests/test_tiremodel.py         # tire model, TTC fitter, setup optimiser
+python -m pytest tests/                # everything (67 tests)
 ```
 
-Before you trust it for a design decision, sweep one corner against your existing OptimumK/spreadsheet model and check the camber curve matches. If it doesn't, that's a bug worth a GitHub issue.
+The tire tests pin the things the grip upgrade depends on: load sensitivity in the
+right direction, the fitter recovering a known tire from noisy data, and the
+optimiser never returning a setup worse than where it started.
+
+Before you trust it for a design decision, sweep one corner against your existing
+OptimumK/spreadsheet model and check the camber curve matches. If it doesn't, that's
+a bug worth a GitHub issue.
 
 ## Roadmap / good first PRs
 
 - Rear-corner **anti-squat / anti-dive** percentages from side-view geometry
 - Pushrod/rocker module so motion ratio comes from real rocker geometry
-- Pacejka tire model instead of the linear load-sensitivity placeholder
-- Roll-centre migration plot vs travel (the IC math is already there)
+- Combined-slip (longitudinal + lateral) so the tire model covers braking/traction,
+  not just steady-state cornering — the lateral MF5.2 is in (`suspension/tiremodel.py`)
+- Transient response: turn-in, trail-braking, and damper behaviour on top of the
+  steady-state balance model
 - Pull-rod and decoupled (third-spring) layouts
+- Aligning-moment (Mz) from the tire data to model steering feel and self-centering
 
 ## Conventions
 
