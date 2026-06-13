@@ -179,12 +179,27 @@ PROJECT_PATH = os.path.join(os.getcwd(), "project.json")
 
 
 def log_decision_now(team, title, rationale, author="auto"):
-    """Append a decision straight to the persistent store from any tab."""
-    st_ = project_mod.ProjectStore(PROJECT_PATH)
-    st_.add_decision(project_mod.Decision(
-        team=team, title=title, rationale=rationale, author=author,
-        tags="auto-captured"))
-    st_.save()
+    """Append a decision to the persistent store from any tab.
+
+    Fail-safe: a logging convenience must NEVER take down the app. If the backend
+    write fails (e.g. a remote Supabase/Postgres backend is misconfigured or
+    unreachable), swallow the error, record it quietly, and return False so the
+    caller can fall back. Returns True on success.
+    """
+    try:
+        st_ = project_mod.ProjectStore(PROJECT_PATH)
+        st_.add_decision(project_mod.Decision(
+            team=team, title=title, rationale=rationale, author=author,
+            tags="auto-captured"))
+        st_.save()
+        return True
+    except Exception as e:
+        try:
+            st.session_state.setdefault("_log_errors", [])
+            st.session_state["_log_errors"].append(str(e))
+        except Exception:
+            pass
+        return False
 
 
 # --------------------------------------------------------------------------- #
@@ -2136,19 +2151,24 @@ with tab13:
                 **{k: v for k, v in vals.items()})
             new_it.mounts_on = getattr(it, "mounts_on", None) or (
                 "suspension" if s in ("brakes",) else "chassis")
-            # Auto-log any change to the handover record, so documentation writes
-            # itself as the team works (and stamp the edit date).
+            # Capture any change into an in-SESSION change log. We deliberately do
+            # NOT write to the persistent backend on every edit: that fired a remote
+            # DB round-trip inside the render loop (and a backend hiccup could crash
+            # the app). Changes are batched and committed on demand below.
             try:
                 _changes = _IF.diff_interfaces(it.as_dict(), new_it)
             except Exception:
                 _changes = []
             if _changes:
                 new_it.updated_on = _datetime.date.today().isoformat()
-                log_decision_now(
-                    "integration", f"{s} interface updated",
-                    "; ".join(_changes) + (f"  [why: {rationale.strip()}]"
-                                           if rationale.strip() else ""),
-                    author=owner or "integration")
+                entry = dict(
+                    subsystem=s, when=new_it.updated_on, by=(owner or "—"),
+                    changes=_changes,
+                    why=rationale.strip() if rationale.strip() else "")
+                pending = st.session_state.setdefault("_iface_changelog", [])
+                sig = (s, tuple(_changes))
+                if not any((e["subsystem"], tuple(e["changes"])) == sig for e in pending):
+                    pending.append(entry)
             led.set(new_it)
 
     # persist edits back to session
@@ -2211,12 +2231,15 @@ with tab13:
                         use_container_width=True):
             st.session_state.vp["mass"] = float(total_with_driver)
             st.session_state.vp["cg_height"] = float(cgz)
-            log_decision_now("integration", "Build mass/CG pushed to vehicle model",
-                             f"Subsystem ledger: {total_with_driver:.1f} kg total, "
-                             f"CG height {cgz:.0f} mm. Now driving load transfer & lap sim.",
-                             author="integration")
+            _logged = log_decision_now(
+                "integration", "Build mass/CG pushed to vehicle model",
+                f"Subsystem ledger: {total_with_driver:.1f} kg total, "
+                f"CG height {cgz:.0f} mm. Now driving load transfer & lap sim.",
+                author="integration")
             st.success(f"Vehicle model updated: {total_with_driver:.1f} kg, "
-                       f"CG {cgz:.0f} mm. Other tabs now use it.")
+                       f"CG {cgz:.0f} mm. Other tabs now use it."
+                       + ("" if _logged else " (note: couldn't write to the handover "
+                          "log — backend unavailable; the model change still applied.)"))
             st.rerun()
     else:
         st.markdown('<p class="hint">Once enough subsystems declare mass AND CG '
@@ -2224,13 +2247,58 @@ with tab13:
                     'model here — closing the loop between the integration ledger and '
                     'the load-transfer/lap-time physics.</p>', unsafe_allow_html=True)
 
+    # ---- pending change log (batched, committed on demand) ---- #
+    _pending = st.session_state.get("_iface_changelog", [])
+    if _pending:
+        st.markdown("###### Pending change log")
+        st.markdown(f'<p class="hint">{len(_pending)} interface change(s) captured this '
+                    'session. They\'re held locally and written to the handover record '
+                    'only when you commit — so editing never depends on the backend '
+                    'being up.</p>', unsafe_allow_html=True)
+        for e in _pending[-8:]:
+            why = f" — <i>{e['why']}</i>" if e.get("why") else ""
+            st.markdown(f'<div style="font-size:.86rem;color:#c9d3dd;padding:2px 0;">'
+                        f'<b>{EMOJI.get(e["subsystem"],"")}{e["subsystem"]}</b> '
+                        f'<span style="color:#8d99a6">{e["when"]} · {e["by"]}</span>: '
+                        f'{"; ".join(e["changes"])}{why}</div>', unsafe_allow_html=True)
+        pcols = st.columns([1, 1, 2])
+        if pcols[0].button("✓ Commit to handover record", use_container_width=True):
+            ok = 0
+            for e in _pending:
+                body = "; ".join(e["changes"]) + (f"  [why: {e['why']}]" if e["why"] else "")
+                if log_decision_now("integration", f"{e['subsystem']} interface updated",
+                                    body, author=e["by"]):
+                    ok += 1
+            if ok == len(_pending):
+                st.session_state["_iface_changelog"] = []
+                st.success(f"Committed {ok} change(s) to the handover record.")
+            else:
+                st.warning(f"Committed {ok} of {len(_pending)}. The handover backend "
+                           "rejected the rest (it may be misconfigured or offline) — "
+                           "your edits are safe; try again or export the report instead.")
+        if pcols[1].button("Discard pending", use_container_width=True):
+            st.session_state["_iface_changelog"] = []
+            st.rerun()
+
+    # surface any backend logging errors quietly, without having crashed
+    if st.session_state.get("_log_errors"):
+        with st.expander(f"⚠ {len(st.session_state['_log_errors'])} handover-log "
+                         "write(s) failed this session", expanded=False):
+            st.caption("The handover/decision store couldn't be written. This is a "
+                       "backend/storage issue (e.g. Supabase credentials or table), "
+                       "not a problem with your design data — everything on screen is "
+                       "intact and the report export below still works.")
+            st.code("\n".join(st.session_state["_log_errors"][-5:]))
+
     # ---- documentation export ---- #
     st.markdown("###### Documentation export")
     st.markdown('<p class="hint">The ledger doubles as living documentation. As each '
                 'team locks numbers and writes the <b>why</b>, it\'s captured with owner '
-                'and date — and every edit is auto-logged to the handover record. Export '
-                'the whole interface contract, rationale included, as a design-event-ready '
-                'document. No write-up scramble before the report deadline.</p>',
+                'and date; changes are batched into the pending log above and committed '
+                'to the handover record on demand. Export the whole interface contract, '
+                'rationale included, as a design-event-ready document — no write-up '
+                'scramble before the report deadline, and no dependency on the backend '
+                'being online.</p>',
                 unsafe_allow_html=True)
     try:
         _team = project_mod.ProjectStore(PROJECT_PATH).team_name or "FSAE Team"
