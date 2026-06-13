@@ -69,6 +69,73 @@ def test_max_g_in_reasonable_range():
     assert 0.9 < veh.max_lateral_g() < 2.2
 
 
+def test_parallel_equal_arms_zero_camber_gain():
+    """
+    Ground-truth check against known physics (not internal consistency):
+    a parallel, equal-length double wishbone translates the upright vertically
+    with no rotation, so camber gain must be ~zero through travel. This is the
+    textbook result and catches sign/geometry regressions in the solver.
+    """
+    import numpy as np
+    hp = Hardpoints.default()
+    hp.upper_front_inner = np.array([-110.0, 200.0, 290.0])
+    hp.upper_rear_inner  = np.array([140.0, 200.0, 290.0])
+    hp.lower_front_inner = np.array([-110.0, 200.0, 120.0])
+    hp.lower_rear_inner  = np.array([140.0, 200.0, 120.0])
+    hp.upper_outer = np.array([0.0, 575.0, 290.0])
+    hp.lower_outer = np.array([0.0, 575.0, 120.0])
+    hp.static_camber = 0.0
+    hp.static_toe = 0.0
+    kin = SuspensionKinematics(hp)
+    cambers = [kin.solve_at_travel(t).camber for t in (-20, -10, 0, 10, 20)]
+    assert max(abs(c) for c in cambers) < 0.05, cambers
+
+
+def test_sweep_stays_on_branch():
+    """Incremental seeding: a full sweep must converge at every point and vary
+    smoothly (no jump to the mirror configuration at the extremes)."""
+    kin = SuspensionKinematics(Hardpoints.default())
+    states = kin.sweep(-30, 30, 25)
+    assert all(s.converged for s in states)
+    cambers = [s.camber for s in states]
+    # monotonic-ish: no sudden sign flip / discontinuity between adjacent steps
+    jumps = [abs(cambers[i+1] - cambers[i]) for i in range(len(cambers) - 1)]
+    assert max(jumps) < 1.0, f"discontinuity in camber sweep: {max(jumps)}"
+
+
+def test_validation_rejects_2d_point():
+    import numpy as _np
+    hp = Hardpoints.default()
+    hp.upper_outer = _np.array([1.0, 2.0])
+    try:
+        SuspensionKinematics(hp)
+        assert False, "should reject 2D point"
+    except ValueError:
+        pass
+
+
+def test_validation_rejects_coincident_balljoints():
+    import numpy as _np
+    hp = Hardpoints.default()
+    hp.upper_outer = hp.lower_outer.copy()
+    try:
+        SuspensionKinematics(hp)
+        assert False, "should reject coincident ball joints"
+    except ValueError:
+        pass
+
+
+def test_validation_rejects_nonfinite():
+    import numpy as _np
+    hp = Hardpoints.default()
+    hp.wheel_center = _np.array([_np.nan, 0.0, 0.0])
+    try:
+        SuspensionKinematics(hp)
+        assert False, "should reject non-finite"
+    except ValueError:
+        pass
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     passed = 0

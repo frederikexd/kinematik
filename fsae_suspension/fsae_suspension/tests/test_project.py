@@ -176,6 +176,41 @@ def test_auto_backend_defaults_to_json(monkeypatch=None):
     assert isinstance(b, pj.JSONFileBackend)
 
 
+def test_search_part_filter():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "A", "x", part="front upright"))
+    s.add_decision(pj.Decision("suspension", "B", "y", part="rear hub"))
+    assert [d.title for d in s.search_decisions(part="upright")] == ["A"]
+
+
+def test_all_decision_parts():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "A", "x", part="front upright"))
+    s.add_decision(pj.Decision("cooling", "B", "y", part="radiator"))
+    assert s.all_decision_parts() == ["front upright", "radiator"]
+
+
+def test_part_in_freetext_search():
+    s = _store()
+    s.add_decision(pj.Decision("suspension", "A", "x", part="front upright"))
+    assert [d.title for d in s.search_decisions(query="upright")] == ["A"]
+
+
+def test_degraded_storage_surfaces_reason():
+    import os as _os
+    _os.environ["SUPABASE_URL"] = "https://bad.invalid"
+    _os.environ["SUPABASE_KEY"] = "badkey"
+    try:
+        b = pj._auto_backend("fallback.json")
+        # Either supabase isn't installed or the connection fails — both should
+        # yield a JSON fallback that records WHY, not a silent swap.
+        if isinstance(b, pj.JSONFileBackend):
+            assert b.degraded_reason is not None
+    finally:
+        _os.environ.pop("SUPABASE_URL", None)
+        _os.environ.pop("SUPABASE_KEY", None)
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     p = 0

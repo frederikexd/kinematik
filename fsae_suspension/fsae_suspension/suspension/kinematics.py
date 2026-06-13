@@ -11,11 +11,17 @@ of vertical wheel travel by enforcing the rigid-link constraints:
     - upright: the distance between upper and lower ball joints is rigid
 
 We parameterise travel by the lower ball joint's vertical position and solve the
-resulting nonlinear system with a damped Newton iteration. From the solved upright
+resulting nonlinear constraint system with a Levenberg-Marquardt least-squares step
+(scipy.optimize.least_squares, method="lm") at each position. From the solved upright
 pose we extract the kinematic outputs FSAE teams actually tune around:
 
     camber gain, toe (bump steer), caster, kingpin inclination (KPI), scrub radius,
-    roll-centre height, instant-centre location, motion ratio, and anti geometry.
+    and the front-view instant-centre location.
+
+Roll-centre height is derived from the instant centre at the vehicle level (see
+dynamics.py), not here. Motion ratio is available via a separate method that
+finite-differences the linkage. Anti-dive/anti-squat is NOT yet implemented — it is
+on the roadmap, and is deliberately not reported rather than approximated.
 
 All coordinates are SAE-style vehicle axes, in millimetres:
     x : rearward positive (vehicle longitudinal)
@@ -146,7 +152,38 @@ class SuspensionKinematics:
 
     def __init__(self, hp: Hardpoints):
         self.hp = hp
+        self._validate(hp)
         self._cache_static()
+
+    @staticmethod
+    def _validate(hp: "Hardpoints"):
+        """Fail fast with a clear message rather than a cryptic solver error."""
+        point_fields = [
+            "upper_front_inner", "upper_rear_inner", "lower_front_inner",
+            "lower_rear_inner", "upper_outer", "lower_outer",
+            "tie_rod_inner", "tie_rod_outer", "wheel_center", "contact_patch",
+        ]
+        for name in point_fields:
+            v = np.asarray(getattr(hp, name), float)
+            if v.shape != (3,):
+                raise ValueError(
+                    f"Hardpoint '{name}' must be a 3D point [x, y, z]; "
+                    f"got shape {v.shape}.")
+            if not np.all(np.isfinite(v)):
+                raise ValueError(f"Hardpoint '{name}' contains non-finite values: {v}.")
+        # Degenerate geometry: ball joints must be distinct, wishbone arms non-zero.
+        if np.linalg.norm(hp.upper_outer - hp.lower_outer) < 1e-6:
+            raise ValueError("Upper and lower ball joints are coincident — "
+                             "the upright would have zero length.")
+        for inner, outer, label in [
+            (hp.upper_front_inner, hp.upper_outer, "upper front"),
+            (hp.upper_rear_inner, hp.upper_outer, "upper rear"),
+            (hp.lower_front_inner, hp.lower_outer, "lower front"),
+            (hp.lower_rear_inner, hp.lower_outer, "lower rear"),
+        ]:
+            if np.linalg.norm(np.asarray(inner, float) - np.asarray(outer, float)) < 1e-6:
+                raise ValueError(f"The {label} wishbone has zero length "
+                                 "(inner and outer points coincide).")
 
     def _cache_static(self):
         hp = self.hp
@@ -231,10 +268,18 @@ class SuspensionKinematics:
         ]
         return np.array(r)
 
-    def solve_at_travel(self, travel_mm: float) -> CornerState:
+    def solve_at_travel(self, travel_mm: float, seed=None) -> CornerState:
+        """
+        Solve the linkage at a given wheel travel. `seed` optionally provides a
+        warm-start vector [lo, uo, tro] from a nearby solved position — passing the
+        previous step's solution keeps the solver on the correct configuration branch
+        and prevents it from jumping to the mirror (flipped-linkage) solution at large
+        travel. When seed is None it starts from the static pose.
+        """
         hp = self.hp
         target_lower_z = hp.lower_outer[2] + travel_mm
-        q0 = np.concatenate([hp.lower_outer, hp.upper_outer, hp.tie_rod_outer])
+        q0 = seed if seed is not None else np.concatenate(
+            [hp.lower_outer, hp.upper_outer, hp.tie_rod_outer])
         sol = least_squares(
             self._residuals, q0, args=(target_lower_z,),
             method="lm", max_nfev=400, xtol=1e-12, ftol=1e-12,
@@ -315,8 +360,39 @@ class SuspensionKinematics:
 
     # ------------------------- sweep & metrics --------------------------- #
     def sweep(self, travel_min=-30.0, travel_max=30.0, n=41):
+        """
+        Solve across a travel range. Marches outward from the static position in both
+        directions, warm-starting each step from the previous solved pose so the
+        solver stays on the physically correct branch instead of risking a jump to the
+        mirror configuration at the extremes. Results are returned in ascending travel.
+        """
         travels = np.linspace(travel_min, travel_max, n)
-        return [self.solve_at_travel(t) for t in travels]
+        # split into droop side (descending from 0) and bump side (ascending from 0)
+        below = sorted([t for t in travels if t < 0], reverse=True)
+        above = sorted([t for t in travels if t > 0])
+        zero = [t for t in travels if t == 0]
+
+        results = {}
+        # solve static first as the anchor seed
+        static = self.solve_at_travel(0.0)
+        seed0 = np.concatenate([static.lower_outer, static.upper_outer,
+                                static.tie_rod_outer])
+        for t in zero:
+            results[t] = static
+
+        seed = seed0
+        for t in above:
+            st = self.solve_at_travel(t, seed=seed)
+            seed = np.concatenate([st.lower_outer, st.upper_outer, st.tie_rod_outer])
+            results[t] = st
+
+        seed = seed0
+        for t in below:
+            st = self.solve_at_travel(t, seed=seed)
+            seed = np.concatenate([st.lower_outer, st.upper_outer, st.tie_rod_outer])
+            results[t] = st
+
+        return [results[t] for t in travels]
 
     def motion_ratio(self, spring_inner, rocker_pivot, push_outer_local=None):
         """

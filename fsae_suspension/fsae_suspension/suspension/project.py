@@ -63,6 +63,7 @@ class Decision:
     date: str = ""
     author: str = ""
     tags: str = ""
+    part: str = ""               # the part/system this decision concerns (e.g. "front upright")
 
     def __post_init__(self):
         if not self.date:
@@ -102,6 +103,7 @@ class JSONFileBackend:
 
     def __init__(self, path: str):
         self.path = path
+        self.degraded_reason = None   # set if we fell back from a failed Supabase
 
     def read(self) -> dict:
         if os.path.exists(self.path):
@@ -150,15 +152,27 @@ def _auto_backend(path: str):
     """
     Choose a backend automatically: Supabase if its credentials are present in the
     environment (the deployed app), otherwise a local JSON file (laptop/tests).
-    Falls back to JSON if Supabase can't be initialised, so the app never breaks.
+
+    If Supabase credentials ARE set but initialisation fails, we do NOT silently
+    fall back — that would drop the team's data into ephemeral storage without
+    anyone knowing. Instead we record the error so the app can warn the user, and
+    only then fall back. Absence of credentials is the normal local case and is
+    silent.
     """
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
     if url and key:
         try:
             return SupabaseBackend(url, key)
-        except Exception:
-            pass  # supabase lib missing or creds bad → fall back to file
+        except Exception as e:
+            # Credentials were provided but the backend failed — this is worth
+            # surfacing, not hiding. Stash the reason on the fallback backend.
+            fb = JSONFileBackend(path)
+            fb.degraded_reason = (
+                "Supabase credentials are set but the connection failed "
+                f"({type(e).__name__}). Falling back to local storage — data will "
+                "NOT persist across restarts until this is fixed.")
+            return fb
     return JSONFileBackend(path)
 
 
@@ -185,6 +199,7 @@ class ProjectStore:
         self.weights: list[WeightItem] = []
         self.decisions: list[Decision] = []
         self.notes: list[Note] = []
+        self.load_error = None
         # Pick a backend: explicit > auto-detected Supabase > local JSON file.
         self.backend = backend or _auto_backend(path)
         self.load()
@@ -214,10 +229,13 @@ class ProjectStore:
     def load(self):
         try:
             d = self.backend.read()
-            self._apply(d)
-        except Exception:
-            # A fresh/empty backend just means an empty project — start clean.
-            pass
+        except FileNotFoundError:
+            return  # fresh local project, nothing saved yet — expected
+        except Exception as e:
+            # A genuine read failure (corrupt file, DB error) shouldn't be hidden.
+            self.load_error = f"Could not read saved project data: {e}"
+            return
+        self._apply(d)
 
     def save(self):
         self.backend.write(self._payload())
@@ -238,12 +256,12 @@ class ProjectStore:
     def add_decision(self, dec: Decision):
         self.decisions.append(dec)
 
-    def search_decisions(self, query="", team=None, tag=None):
+    def search_decisions(self, query="", team=None, tag=None, part=None):
         """
-        Find decisions by free-text query (matches title + rationale + author,
-        case-insensitive), optional team filter, and optional tag filter. Returns
-        newest-first. This is the 'written but findable' layer — the whole point of
-        the handover tool is that next year can locate the reasoning in seconds.
+        Find decisions by free-text query (matches title + rationale + author + part),
+        optional team, tag, and part filters. Returns newest-first. This is the
+        'written but findable' layer — the whole point of the handover tool is that
+        next year can locate the reasoning in seconds, including by which part it's about.
         """
         q = (query or "").strip().lower()
         out = []
@@ -252,12 +270,23 @@ class ProjectStore:
                 continue
             if tag and tag.lower() not in (d.tags or "").lower():
                 continue
+            if part and part.lower() not in (getattr(d, "part", "") or "").lower():
+                continue
             if q:
-                haystack = f"{d.title} {d.rationale} {d.author} {d.tags}".lower()
+                haystack = f"{d.title} {d.rationale} {d.author} {d.tags} {getattr(d, 'part', '')}".lower()
                 if q not in haystack:
                     continue
             out.append(d)
         return sorted(out, key=lambda d: d.date, reverse=True)
+
+    def all_decision_parts(self):
+        """Unique, sorted list of parts/systems referenced across decisions."""
+        parts = set()
+        for d in self.decisions:
+            p = (getattr(d, "part", "") or "").strip()
+            if p:
+                parts.add(p)
+        return sorted(parts)
 
     def all_decision_tags(self):
         """Unique, sorted list of tags used across decisions (split on commas)."""
