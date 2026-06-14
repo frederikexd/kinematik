@@ -125,6 +125,30 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   pathological tire never crashes the session — the sim substitutes a safe default
   and surfaces a warning instead of raising.
 
+**Transient solver (the unsteady half of the lap — NEW)**
+- The thing QSS assumes away. The **◢ TRANSIENT** tab runs an explicit,
+  high-frequency time-step solver that integrates the full vehicle DAE — planar
+  yaw/sideslip, sprung heave/pitch/roll, four unsprung wheel-hops, and lateral
+  tire relaxation — **millisecond by millisecond** (explicit RK4 @ 1 ms) on the
+  *same* tire, damper and geometry the rest of the tool uses.
+- It shows the behaviour a quasi-steady model structurally can't: **turn-in lag
+  and yaw overshoot** (a step steer that overshoots its steady yaw then settles),
+  **snap-oversteer and the countersteer that catches it** (a trailing-throttle
+  slide that spins uncaught but is pulled back by a state-feedback countersteer),
+  **pitch and dive** through a brake→throttle transition (the sprung mass rocking,
+  the digressive damper settling it), and **kerb strikes** (the unsprung mass
+  hopping at ~15–20 Hz, the contact load spiking and dropping to zero — wheel
+  lift). It also contrasts the transient corner build-up against the QSS steady
+  number directly (rise time, overshoot, settle).
+- Honest scope, same as everywhere else: it resolves the dominant transient
+  modes; longitudinal force is demanded and friction-ellipse-limited rather than
+  spun up as full slip-ratio wheel states, and tire thermal state and a
+  closed-loop racing line are out of scope — flagged, not faked. Use QSS for the
+  lap-time number; use this for the unsteady behaviour behind it. Same
+  never-crash contract: every run returns a flagged result with warnings rather
+  than raising. Built on the verified `damper.py` / relaxation-length primitives
+  and covered by `tests/test_transient.py` (37 checks).
+
 **Tire & grip (the thing that actually wins skidpad and the limit in autocross)**
 - Full Magic Formula lateral model wired into the whole grip/balance stack — not a
   linear placeholder. Load sensitivity and camber response come from the curve, not
@@ -311,6 +335,50 @@ A member's stiffness can come from three sources — a number you already have
 (`k_direct`), an analytic tube (`material, od_mm, wall_mm` → `E·A/L` on the link's
 length), or a condensed **FEA flex body**. Add `k_tab` to put a chassis-tab/bracket
 stiffness in series with any of them.
+
+### Non-linear joints: bushings, rod ends & spherical-bearing lash
+
+Relaxing the link is only half the story — the rigid solver also treats every
+*joint* as a perfect, zero-play constraint. Real cars don't have those. A
+`JointCompliance` gives any connection its own **non-linear force-vs-displacement
+curve** plus a **damping** coefficient, so you can model what's actually bolted in:
+
+```python
+from suspension import JointCompliance, CompliantCorner, corner_wheel_load
+
+bushing  = JointCompliance.rubber_bushing()          # soft, progressive, high loss
+# or .polyurethane_bushing() — stiffer, less progressive, lower loss
+rod_end  = JointCompliance.spherical_bearing(lash_mm=0.05)   # micro-yield / clearance
+
+cc  = CompliantCorner.with_bushings(hp, bushing=bushing, rod_end=rod_end)
+res = cc.solve(corner_wheel_load(veh, "front", 1.5, outer=True))
+print(res.compliance_toe, res.contact_patch_lateral_shift_mm)   # secondary steer, track compliance
+print(res.member_joint_deflection["TR"])   # {'link':…, 'joint_in':…, 'joint_out':…} mm
+```
+
+Each joint is a non-linear spring **in series** with its link along the load line
+(a pin-jointed two-force member transmits axial force through its end joints), so the
+member's total give is `link + joint_in + joint_out` and feeds the same solver — the
+**compliance steer** off a soft tie-rod bushing and the **track-compliance** lateral
+patch shift off the wishbone joints fall straight out. Curve shapes available:
+`linear`, `cubic` (progressive, the elastomer shape), `bilinear`, `freeplay` (the
+lash dead-band of a worn rod end), and `tabular` for a measured rig curve. Build any
+member by hand to mix them:
+
+```python
+stiff = {"TR": MemberStiffness(material="Steel 4130", od_mm=12.0, wall_mm=1.0,
+                               joint_in=JointCompliance.rubber_bushing(),
+                               joint_out=JointCompliance.spherical_bearing())}
+```
+
+**Where damping lives (honestly).** Damping is a rate term — it does no work in a
+steady, zero-velocity corner, so it never touches the static compliance number.
+It is surfaced two truthful ways: `corner.damping_summary(load, amplitude_mm, freq_hz)`
+reports the hysteresis energy lost per cycle, and `corner.linearized_rates(load,
+freq_hz)` exports each joint's tangent stiffness + equivalent viscous rate for the
+transient DAE solver to consume. A bushing's off-axis (transverse) give carries no
+load under the two-force idealisation, so it is modelled along the load line, not
+fed back as geometry — stated, not hidden.
 
 ### Importing an FEA component (the "Flex" part)
 

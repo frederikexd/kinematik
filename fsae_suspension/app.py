@@ -35,6 +35,7 @@ from suspension import laptime as lap_mod
 from suspension import correlation as corr_mod
 from suspension import damper as damper_mod
 from suspension import interfaces as interfaces_mod
+from suspension import transient as transient_mod
 
 st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
@@ -215,7 +216,7 @@ with st.sidebar:
     st.markdown('<div class="sub" style="color:#8d99a6;font-family:JetBrains Mono;font-size:.7rem;letter-spacing:.18em;margin-bottom:.6rem;">HARDPOINT EDITOR · mm · SAE x-rear y-right z-up</div>', unsafe_allow_html=True)
 
     colA, colB = st.columns(2)
-    if colA.button("↺ Reset", use_container_width=True):
+    if colA.button("↺ Reset", width='stretch'):
         st.session_state.hp = Hardpoints.default().as_dict()
         st.rerun()
     preset = colB.selectbox("Preset", ["Front (default)", "Low roll-centre",
@@ -446,15 +447,16 @@ _tabs = st.tabs(
     ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
      "  GEOMETRY 3D  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
      "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
-     "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  VALIDATION  ",
-     "  INTEGRATION  "])
+     "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  TRANSIENT  ",
+     "  VALIDATION  ", "  INTEGRATION  "])
 # Map the existing tab variable names onto the new (merged) tab order so the tab
 # bodies below don't all need renumbering. SUSPENSION vs CHASSIS is no longer a
 # top-level tab — its CAD fit/clearance check now lives inside the merged
 # INTEGRATION tab (tab13) as a sub-view, rendered by render_suspension_vs_chassis().
 # tab5c is the flexible-body compliance view (ADAMS Flex-style).
-(tab1, tab2, tab3, tab4, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab12,
- tab13) = _tabs
+# tab_tr is the explicit transient time-step solver (the unsteady half of the lap).
+(tab1, tab2, tab3, tab4, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_tr,
+ tab12, tab13) = _tabs
 
 
 travels = [st_.travel for st_ in sweep]
@@ -468,7 +470,7 @@ with tab1:
     fig.update_layout(**PLOT_LAYOUT, title="Camber vs wheel travel",
                       xaxis_title="travel (mm, + bump)", yaxis_title="camber (°)",
                       height=340)
-    c1.plotly_chart(fig, use_container_width=True)
+    c1.plotly_chart(fig, width='stretch')
 
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(x=travels, y=[st_.toe for st_ in sweep],
@@ -476,7 +478,7 @@ with tab1:
     fig2.update_layout(**PLOT_LAYOUT, title="Bump steer (toe vs travel)",
                        xaxis_title="travel (mm, + bump)", yaxis_title="toe (°, + out)",
                        height=340)
-    c2.plotly_chart(fig2, use_container_width=True)
+    c2.plotly_chart(fig2, width='stretch')
 
     c3, c4 = st.columns(2)
     fig3 = go.Figure()
@@ -484,14 +486,14 @@ with tab1:
                    mode="lines", line=dict(color="#9b8cff", width=3)))
     fig3.update_layout(**PLOT_LAYOUT, title="Scrub radius vs travel",
                        xaxis_title="travel (mm)", yaxis_title="scrub (mm)", height=320)
-    c3.plotly_chart(fig3, use_container_width=True)
+    c3.plotly_chart(fig3, width='stretch')
 
     fig4 = go.Figure()
     fig4.add_trace(go.Scatter(x=travels, y=[st_.caster for st_ in sweep],
                    mode="lines", line=dict(color="#62d27a", width=3)))
     fig4.update_layout(**PLOT_LAYOUT, title="Caster vs travel",
                        xaxis_title="travel (mm)", yaxis_title="caster (°)", height=320)
-    c4.plotly_chart(fig4, use_container_width=True)
+    c4.plotly_chart(fig4, width='stretch')
 
     st.markdown('<p class="hint">Camber gain should be negative in bump so the '
                 'outside wheel keeps its contact patch flat as the car rolls. Aim to '
@@ -522,7 +524,7 @@ with tab2:
     figL.update_layout(**PLOT_LAYOUT, title="Tire vertical load vs lateral g",
                        xaxis_title="lateral acceleration (g)", yaxis_title="vertical load (N)",
                        height=380)
-    c1.plotly_chart(figL, use_container_width=True)
+    c1.plotly_chart(figL, width='stretch')
 
     info = veh.lateral_load_transfer(1.2)[1]
     c2.markdown(metric("Roll-centre F", f"{info['rc_front']:.0f}", "mm"), unsafe_allow_html=True)
@@ -540,7 +542,7 @@ with tab2:
     figM.update_layout(**PLOT_LAYOUT, title="Roll-centre height migration vs travel",
                        xaxis_title="travel (mm, + bump)", yaxis_title="RC height (mm)",
                        height=300)
-    st.plotly_chart(figM, use_container_width=True)
+    st.plotly_chart(figM, width='stretch')
     _rc_swing = max(mrc) - min(mrc) if all(np.isfinite(mrc)) else float("nan")
     st.markdown(f'<p class="hint">Across ±30 mm of travel the front roll centre moves '
                 f'{_rc_swing:.0f} mm. Large RC migration means the load-transfer balance '
@@ -601,7 +603,7 @@ with tab3:
                        title="Handling balance vs lateral g  (+ understeer / − oversteer)",
                        xaxis_title="lateral acceleration (g)", yaxis_title="balance index",
                        height=380)
-    st.plotly_chart(figB, use_container_width=True)
+    st.plotly_chart(figB, width='stretch')
     st.markdown('<p class="hint">Balance index compares how hard each axle is working. '
                 'Positive means the front saturates first (push/understeer), negative '
                 'means the rear lets go first (oversteer). Shift it with roll-stiffness '
@@ -655,7 +657,7 @@ with tab4:
         font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
         height=560, margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(bgcolor="rgba(0,0,0,0)"))
-    st.plotly_chart(fig3d, use_container_width=True)
+    st.plotly_chart(fig3d, width='stretch')
 
 # --------------------------------------------------------------------------- #
 # ----- SUSPENSION vs CHASSIS (now a section of the merged INTEGRATION tab) ----- #
@@ -761,7 +763,7 @@ def _render_envelope_vs_chassis(subsys, led):
             font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
             height=500, margin=dict(l=0, r=0, t=10, b=0),
             legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
         st.markdown(f'<p class="hint">Chassis: {summ["triangles"]:,} triangles, '
                     f'{summ["size_mm"][0]:.0f}×{summ["size_mm"][1]:.0f}×{summ["size_mm"][2]:.0f} mm. '
@@ -899,7 +901,7 @@ def render_suspension_vs_chassis():
                 font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
                 height=520, margin=dict(l=0, r=0, t=10, b=0),
                 legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
             st.markdown(f'<p class="hint">Chassis mesh: {summ["triangles"]:,} triangles, '
                         f'bounding box {summ["size_mm"][0]:.0f}×{summ["size_mm"][1]:.0f}×'
@@ -976,6 +978,74 @@ with tab5c:
                                         500.0, 100000.0, 8000.0, 500.0,
                                         key="comp_ktab")
 
+    # ---- Non-linear joints: bushings / rod ends / spherical bearings ----- #
+    st.markdown('<p class="hint" style="margin-top:10px;border-left:2px solid #25506b;'
+                'padding-left:10px;"><b>Joints (bushings / rod ends / spherical '
+                'bearings).</b> The rigid model treats every joint as zero-play. Give '
+                'the inboard pickups and outboard joints a real non-linear '
+                'force–displacement curve — rubber or polyurethane bushings, or a '
+                'spherical bearing with a little free-play (lash). On a tube car the '
+                'joints, not the links, are usually the dominant give, and the tie-rod '
+                'joint is what sets compliance steer.</p>',
+                unsafe_allow_html=True)
+    comp_use_joints = st.checkbox("Model joint compliance", value=False, key="cj_use")
+
+    from suspension import JointCompliance as _JCui
+
+    def _joint_from_ui(prefix, label, default_kind):
+        kinds = ["None", "Rubber bushing", "Polyurethane bushing",
+                 "Spherical bearing", "Custom (cubic)"]
+        kind = st.selectbox(label, kinds, index=kinds.index(default_kind),
+                            key=f"{prefix}_kind")
+        if kind == "None":
+            return None
+        if kind in ("Rubber bushing", "Polyurethane bushing"):
+            is_rub = kind.startswith("Rubber")
+            c1, c2, c3 = st.columns(3)
+            k = c1.number_input("radial rate k₁ (N/mm)", 100.0, 50000.0,
+                                1500.0 if is_rub else 6000.0, 100.0, key=f"{prefix}_k")
+            hard = c2.number_input("hardening ×k₁ (/mm²)", 0.0, 50.0,
+                                   8.0 if is_rub else 4.0, 0.5, key=f"{prefix}_h")
+            loss = c3.number_input("loss factor η", 0.0, 0.5,
+                                   0.12 if is_rub else 0.05, 0.01, key=f"{prefix}_l")
+            return _JCui.cubic(k, hard * k, loss_factor=loss, label=kind)
+        if kind == "Spherical bearing":
+            c1, c2, c3 = st.columns(3)
+            lash = c1.number_input("lash (mm)", 0.0, 0.5, 0.05, 0.01,
+                                   key=f"{prefix}_lash")
+            k = c2.number_input("engaged k (N/mm)", 10000.0, 500000.0, 120000.0,
+                                5000.0, key=f"{prefix}_k")
+            loss = c3.number_input("loss factor η", 0.0, 0.2, 0.01, 0.01,
+                                   key=f"{prefix}_l")
+            return _JCui.spherical_bearing(lash_mm=lash, k=k, loss_factor=loss)
+        c1, c2, c3 = st.columns(3)   # Custom (cubic)
+        k1 = c1.number_input("k₁ (N/mm)", 50.0, 200000.0, 3000.0, 50.0, key=f"{prefix}_k1")
+        k3 = c2.number_input("k₃ (N/mm³)", 0.0, 500000.0, 0.0, 100.0, key=f"{prefix}_k3")
+        loss = c3.number_input("loss factor η", 0.0, 0.5, 0.05, 0.01, key=f"{prefix}_l")
+        return _JCui.cubic(k1, k3, loss_factor=loss, label="custom")
+
+    joint_in_ui = joint_out_ui = tie_in_ui = tie_out_ui = None
+    if comp_use_joints:
+        jc1, jc2 = st.columns(2)
+        with jc1:
+            st.markdown('<p class="hint"><b>Wishbone inboard</b> (chassis pickups)</p>',
+                        unsafe_allow_html=True)
+            joint_in_ui = _joint_from_ui("cj_wbi", "Inboard joint", "Rubber bushing")
+        with jc2:
+            st.markdown('<p class="hint"><b>Wishbone outboard</b> (ball joints)</p>',
+                        unsafe_allow_html=True)
+            joint_out_ui = _joint_from_ui("cj_wbo", "Outboard joint", "Spherical bearing")
+        cj_tie_same = st.checkbox("Use the same joints on the tie rod", value=True,
+                                  key="cj_tie_same")
+        if cj_tie_same:
+            tie_in_ui, tie_out_ui = joint_in_ui, joint_out_ui
+        else:
+            jt1, jt2 = st.columns(2)
+            with jt1:
+                tie_in_ui = _joint_from_ui("cj_ti", "Tie-rod inboard", "Rubber bushing")
+            with jt2:
+                tie_out_ui = _joint_from_ui("cj_to", "Tie-rod outboard", "Spherical bearing")
+
     # Optional FEA flex-body import (ADAMS Flex-equivalent). A loaded body replaces
     # the analytic tube stiffness for the members it names.
     st.markdown('<p class="hint" style="margin-top:10px;border-left:2px solid #25506b;'
@@ -1014,13 +1084,18 @@ with tab5c:
         stiff = {}
         for m in ("UF", "UR", "LF", "LR"):
             stiff[m] = MemberStiffness(material=comp_mat, od_mm=comp_od,
-                                       wall_mm=comp_wall, k_tab=comp_ktab)
+                                       wall_mm=comp_wall, k_tab=comp_ktab,
+                                       joint_in=joint_in_ui, joint_out=joint_out_ui)
         stiff["TR"] = MemberStiffness(material=comp_mat, od_mm=comp_od,
-                                      wall_mm=comp_wall)
-        # overlay any FEA-backed members
+                                      wall_mm=comp_wall,
+                                      joint_in=tie_in_ui, joint_out=tie_out_ui)
+        # overlay any FEA-backed members (keeping their joints)
         for m, (n_out, n_in) in flex_map.items():
+            ji = tie_in_ui if m == "TR" else joint_in_ui
+            jo = tie_out_ui if m == "TR" else joint_out_ui
             stiff[m] = MemberStiffness(flex_body=flex_body, node_out=n_out,
-                                       node_in=n_in, k_tab=comp_ktab
+                                       node_in=n_in, joint_in=ji, joint_out=jo,
+                                       k_tab=comp_ktab
                                        if (comp_use_tab and m != "TR") else None)
         corner = CompliantCorner(comp_kin.hp, stiff)
         load = corner_wheel_load(veh, comp_axle, comp_g, outer=True,
@@ -1069,7 +1144,50 @@ with tab5c:
                            height=340, barmode="group")
         figF.update_yaxes(title_text="axial force (N, + tension)", secondary_y=False)
         figF.update_yaxes(title_text="deflection (mm, + stretch)", secondary_y=True)
-        st.plotly_chart(figF, use_container_width=True)
+        st.plotly_chart(figF, width='stretch')
+
+        # ---- joint-specific views: where the give is, the curve, the damping --- #
+        if comp_use_joints and res.member_joint_deflection:
+            bd = [m for m in ("UF", "UR", "LF", "LR", "TR")
+                  if m in res.member_joint_deflection]
+            link_d = [res.member_joint_deflection[m]["link"] for m in bd]
+            jin_d = [res.member_joint_deflection[m]["joint_in"] for m in bd]
+            jout_d = [res.member_joint_deflection[m]["joint_out"] for m in bd]
+            figB = go.Figure()
+            figB.add_trace(go.Bar(x=bd, y=link_d, name="link", marker_color=DIM))
+            figB.add_trace(go.Bar(x=bd, y=jin_d, name="inboard joint",
+                                  marker_color=CYAN))
+            figB.add_trace(go.Bar(x=bd, y=jout_d, name="outboard joint",
+                                  marker_color=AMBER))
+            figB.update_layout(**PLOT_LAYOUT, barmode="relative", height=320,
+                               title="Where the give is — link vs joints (mm)")
+            figB.update_yaxes(title_text="axial give (mm, + stretch)")
+            st.plotly_chart(figB, width='stretch')
+
+            jshow = tie_in_ui or joint_in_ui or joint_out_ui
+            if jshow is not None:
+                dd = np.linspace(-0.6, 0.6, 161)
+                ff = [jshow.force(float(x)) for x in dd]
+                figJ = go.Figure(go.Scatter(x=dd, y=ff, mode="lines",
+                                            line=dict(color=CYAN, width=3)))
+                figJ.update_layout(**PLOT_LAYOUT, height=300,
+                                   title=f"Joint force–displacement curve "
+                                         f"({jshow.label or jshow.kind})",
+                                   xaxis_title="displacement (mm)",
+                                   yaxis_title="force (N, + tension)")
+                st.plotly_chart(figJ, width='stretch')
+
+            try:
+                dsum = corner.damping_summary(load, amplitude_mm=0.3, freq_hz=15.0)
+                st.markdown(
+                    f'<p class="hint">Joint damping at 0.3&nbsp;mm / 15&nbsp;Hz '
+                    f'dissipates <b>~{dsum["total_energy_per_cycle_mJ"]:.1f}&nbsp;mJ '
+                    f'per cycle</b> across all joints. Damping does no work in this '
+                    f'steady solve — it is reported here and exported (via '
+                    f'<code>linearized_rates</code>) for the transient model, where it '
+                    f'actually bites.</p>', unsafe_allow_html=True)
+            except Exception:
+                pass
 
         # compliance steer vs lateral g sweep
         gs_c = np.linspace(0.2, max(2.0, comp_g), 18)
@@ -1092,7 +1210,7 @@ with tab5c:
                            title="Compliance steer / camber vs lateral g",
                            xaxis_title="lateral acceleration (g)",
                            yaxis_title="angle change (°)", height=320)
-        st.plotly_chart(figS, use_container_width=True)
+        st.plotly_chart(figS, width='stretch')
 
         sign_txt = ("toe-out" if toe > 0 else "toe-in")
         st.markdown(f'<p class="hint">At {comp_g:.1f} g this corner deflects into '
@@ -1104,11 +1222,13 @@ with tab5c:
                     f'zero.</p>', unsafe_allow_html=True)
         if abs(toe) < 1e-4:
             st.markdown('<p class="hint">Bare steel-tube axial stiffness is enormous, '
-                        'so with rigid tabs the compliance is tiny — which is the honest '
-                        'answer. The dominant real-world give is in the chassis tabs and '
-                        'rod ends: tick "chassis-tab compliance" above, or import an FEA '
-                        'body that captures the bracket bending, to see realistic '
-                        'numbers.</p>', unsafe_allow_html=True)
+                        'so with rigid joints the compliance is tiny — which is the '
+                        'honest answer. The dominant real-world give is in the joints '
+                        'and chassis tabs: tick <b>"Model joint compliance"</b> to add '
+                        'rubber/poly bushings or a spherical bearing with lash, tick '
+                        '"chassis-tab compliance", or import an FEA body that captures '
+                        'the bracket bending, to see realistic numbers.</p>',
+                        unsafe_allow_html=True)
         st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
                     'padding-left:10px;"><b>Steady-state, quasi-static.</b> This is the '
                     'car held at one cornering load — the constraint-mode (static) '
@@ -1291,7 +1411,7 @@ with tab6:
                 font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
                 height=520, margin=dict(l=0, r=0, t=10, b=0),
                 legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10)))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             st.markdown('<p class="hint">If the part is in the wrong place relative to '
                         'the chassis, adjust the offset and rotation above until it sits '
                         'where it mounts. The red dot marks the tightest/worst point so '
@@ -1355,7 +1475,7 @@ with tab7:
         figW.update_layout(**PLOT_LAYOUT, title="Mass by subteam (kg)",
                            height=max(220, 40 * len(teams)), xaxis_title="kg",
                            yaxis_title="")
-        st.plotly_chart(figW, use_container_width=True)
+        st.plotly_chart(figW, width='stretch')
 
     st.markdown("###### Log a part's mass")
     wc = st.columns([1.2, 1.4, 0.7, 1, 1.4, 1])
@@ -1366,7 +1486,7 @@ with tab7:
     w_mass = wc[3].number_input("Mass each (g)", value=0.0, step=10.0, key="w_mass")
     w_mat = wc[4].selectbox("Material", list(project_mod.MATERIALS.keys()), key="w_mat")
     w_src = wc[5].selectbox("Source", ["manual", "cad_estimate"], key="w_src")
-    if st.button("+ Add part", use_container_width=False):
+    if st.button("+ Add part", width='content'):
         if w_name and w_mass > 0:
             store.add_weight(project_mod.WeightItem(
                 team=w_team, name=w_name, mass_g=float(w_mass), qty=int(w_qty),
@@ -1419,7 +1539,7 @@ with tab7:
                 'template, then just fill in the brackets:</p>', unsafe_allow_html=True)
     qcols = st.columns(len(QUICK_TEMPLATES))
     for i, (label, (title, tag, body)) in enumerate(QUICK_TEMPLATES.items()):
-        if qcols[i].button(label, key=f"qt_{i}", use_container_width=True):
+        if qcols[i].button(label, key=f"qt_{i}", width='stretch'):
             # Seed the widget keys directly, before the widgets are created below.
             st.session_state["d_title"] = title
             st.session_state["d_tags"] = tag
@@ -1514,17 +1634,17 @@ with tab7:
     md = project_mod.build_handover_markdown(store, geometry=geo)
     ec = st.columns(3)
     ec[0].download_button("⬇ Handover (.md)", md, file_name="elbee_handover.md",
-                          mime="text/markdown", use_container_width=True)
+                          mime="text/markdown", width='stretch')
     ec[1].download_button("⬇ Project data (.json)", store.as_json(),
                           file_name="project.json", mime="application/json",
-                          use_container_width=True)
+                          width='stretch')
     try:
         pdf_path = os.path.join(tempfile.gettempdir(), "elbee_handover.pdf")
         project_mod.render_pdf(md, pdf_path)
         with open(pdf_path, "rb") as f:
             ec[2].download_button("⬇ Handover (.pdf)", f.read(),
                                   file_name="elbee_handover.pdf",
-                                  mime="application/pdf", use_container_width=True)
+                                  mime="application/pdf", width='stretch')
     except Exception as e:
         ec[2].markdown(f"<p class='hint'>PDF unavailable: {e}</p>", unsafe_allow_html=True)
 
@@ -1664,7 +1784,7 @@ with tab9:
     figG.add_trace(go.Scatter(x=Fz, y=mu, mode="lines", line=dict(color=CYAN, width=3)))
     figG.update_layout(**PLOT_LAYOUT, title="Load sensitivity — peak μ vs vertical load",
                        xaxis_title="vertical load (N)", yaxis_title="peak μ", height=320)
-    cc1.plotly_chart(figG, use_container_width=True)
+    cc1.plotly_chart(figG, width='stretch')
 
     cam = np.linspace(0, 5, 40)
     mu_c = [live_tire.mu_peak(live_tire.FNOMIN, np.radians(c)) for c in cam]
@@ -1673,7 +1793,7 @@ with tab9:
     figC.update_layout(**PLOT_LAYOUT, title="Camber sensitivity — peak μ vs inclination",
                        xaxis_title="inclination (°)", yaxis_title="peak μ @ nominal load",
                        height=320)
-    cc2.plotly_chart(figC, use_container_width=True)
+    cc2.plotly_chart(figC, width='stretch')
     st.markdown('<p class="hint">Left: how fast grip falls as the tire is loaded — '
                 'this is what makes load transfer cost you grip, and why a lower CG and '
                 'softer springs help. Right: the camber the tire wants. The peak of '
@@ -1698,7 +1818,7 @@ with tab9:
             # validate it builds
             _t = tire_mod.PacejkaLateral(coeffs=new_coeffs, FNOMIN=new_fnom)
             _t.mu_peak(new_fnom)
-            if lc1.button("✓ Use this tire", use_container_width=True):
+            if lc1.button("✓ Use this tire", width='stretch'):
                 st.session_state.tire_coeffs = dict(new_coeffs)
                 st.session_state.tire_fnomin = new_fnom
                 st.session_state.tire_source = f"TTC-fitted ({up.name})"
@@ -1710,7 +1830,7 @@ with tab9:
             st.markdown(f"<p class='hint'>Couldn't read that tire file: {e}</p>",
                         unsafe_allow_html=True)
     if not _is_default:
-        if lc2.button("↺ Revert to generic default", use_container_width=True):
+        if lc2.button("↺ Revert to generic default", width='stretch'):
             dt = tire_mod.default_tire()
             st.session_state.tire_coeffs = dict(dt.coeffs)
             st.session_state.tire_fnomin = dt.FNOMIN
@@ -1748,7 +1868,7 @@ with tab9:
                             xaxis_title="longitudinal force Fx (N)",
                             yaxis_title="lateral force Fy (N)", height=340)
         figFE.update_yaxes(scaleanchor="x", scaleratio=1)
-        st.plotly_chart(figFE, use_container_width=True)
+        st.plotly_chart(figFE, width='stretch')
         st.markdown(f'<span class="tag warn">{_ct.status()}</span>',
                     unsafe_allow_html=True)
     except Exception as e:
@@ -1775,7 +1895,7 @@ with tab9:
     figD.update_layout(**PLOT_LAYOUT, title="Damper force vs shaft velocity",
                        xaxis_title="shaft velocity (m/s)  +bump / −rebound",
                        yaxis_title="force (N)", height=320)
-    st.plotly_chart(figD, use_container_width=True)
+    st.plotly_chart(figD, width='stretch')
     try:
         _mr_demo = kin.motion_ratio() if kin.motion_ratio_is_real() else 1.0
         _corner_m = float(st.session_state.vp.get("mass", 300)) * 0.25
@@ -1814,7 +1934,7 @@ with tab10:
                             -0.10, 0.15, 0.04, 0.01)
     bal_tol = sc2.slider("Balance tolerance", 0.02, 0.15, 0.06, 0.01)
 
-    if st.button("▶ Rank levers & optimise", use_container_width=True):
+    if st.button("▶ Rank levers & optimise", width='stretch'):
         st.session_state._run_opt = True
 
     if st.session_state.get("_run_opt"):
@@ -1877,7 +1997,7 @@ with tab10:
                 f"{recs}</table>", unsafe_allow_html=True)
 
             ac1, ac2 = st.columns([1, 2])
-            if ac1.button("Apply to sidebar", use_container_width=True):
+            if ac1.button("Apply to sidebar", width='stretch'):
                 for k, v in opt["best_params"].items():
                     if k in ("static_camber_front", "static_camber_rear"):
                         continue  # camber is set by geometry; recommend, don't force
@@ -2034,7 +2154,7 @@ with tab11:
             except Exception as e:
                 st.error(f"Couldn't parse that track CSV: {e}")
 
-    if st.button("▶ Run lap-time sim", use_container_width=True):
+    if st.button("▶ Run lap-time sim", width='stretch'):
         st.session_state._run_lap = True
 
     if st.session_state.get("_run_lap"):
@@ -2109,7 +2229,7 @@ with tab11:
             figRL.update_layout(**PLOT_LAYOUT, title="Racing line (uses track width)",
                                 xaxis_title="x (m)", yaxis_title="y (m)", height=360)
             figRL.update_yaxes(scaleanchor="x", scaleratio=1)
-            st.plotly_chart(figRL, use_container_width=True)
+            st.plotly_chart(figRL, width='stretch')
             st.markdown('<p class="hint">Curvature-optimal line within the track '
                         'width — straightens corners to raise minimum radius, hence '
                         'speed. It is a curvature-optimal (not fully-coupled '
@@ -2128,7 +2248,7 @@ with tab11:
             figL.update_layout(**PLOT_LAYOUT, title="Speed around the lap",
                                xaxis_title="distance (m)", yaxis_title="speed (m/s)",
                                height=320)
-            st.plotly_chart(figL, use_container_width=True)
+            st.plotly_chart(figL, width='stretch')
 
         # Store last skidpad time so a delta can be shown after the next change.
         if skid.ok and np.isfinite(skid.lap_time_s):
@@ -2144,7 +2264,7 @@ with tab11:
         # Log it to the handover record so the reasoning survives.
         if lap.ok and np.isfinite(lap.lap_time_s):
             lc1, lc2 = st.columns([1, 2])
-            if lc1.button("Log these times", use_container_width=True):
+            if lc1.button("Log these times", width='stretch'):
                 log_decision_now(
                     "suspension", "Lap-time prediction",
                     f"Skidpad {_skt}s, autocross {_axt}s on "
@@ -2340,7 +2460,7 @@ with tab12:
                         figV.update_layout(**PLOT_LAYOUT, title="Speed vs distance — measured vs sim",
                                            xaxis_title="distance (m)", yaxis_title="speed (m/s)",
                                            height=380)
-                        st.plotly_chart(figV, use_container_width=True)
+                        st.plotly_chart(figV, width='stretch')
                         st.markdown(f'<p class="hint">{rep.summary}</p>', unsafe_allow_html=True)
                         if st.button("Log this correlation to handover", key="log_trace"):
                             log_decision_now("validation", f"Speed-trace correlation ({track_kind})",
@@ -2581,7 +2701,7 @@ if _show_ledger:
                        f'tab reflects the real car, not an assumption.</p>',
                        unsafe_allow_html=True)
         if cc[1].button("→ Use this mass & CG in the vehicle model",
-                        use_container_width=True):
+                        width='stretch'):
             st.session_state.vp["mass"] = float(total_with_driver)
             st.session_state.vp["cg_height"] = float(cgz)
             _logged = log_decision_now(
@@ -2615,7 +2735,7 @@ if _show_ledger:
                         f'<span style="color:#8d99a6">{e["when"]} · {e["by"]}</span>: '
                         f'{"; ".join(e["changes"])}{why}</div>', unsafe_allow_html=True)
         pcols = st.columns([1, 1, 2])
-        if pcols[0].button("✓ Commit to handover record", use_container_width=True):
+        if pcols[0].button("✓ Commit to handover record", width='stretch'):
             ok = 0
             for e in _pending:
                 body = "; ".join(e["changes"]) + (f"  [why: {e['why']}]" if e["why"] else "")
@@ -2629,7 +2749,7 @@ if _show_ledger:
                 st.warning(f"Committed {ok} of {len(_pending)}. The handover backend "
                            "rejected the rest (it may be misconfigured or offline) — "
                            "your edits are safe; try again or export the report instead.")
-        if pcols[1].button("Discard pending", use_container_width=True):
+        if pcols[1].button("Discard pending", width='stretch'):
             st.session_state["_iface_changelog"] = []
             st.rerun()
 
@@ -2661,9 +2781,9 @@ if _show_ledger:
     ec = st.columns([1, 1, 2])
     ec[0].download_button("📄 Download interface report (.md)", _report_md,
                           file_name="interface_contract.md", mime="text/markdown",
-                          use_container_width=True)
+                          width='stretch')
     with ec[1]:
-        if st.button("👁 Preview report", use_container_width=True):
+        if st.button("👁 Preview report", width='stretch'):
             st.session_state._show_iface_report = not st.session_state.get("_show_iface_report", False)
     if st.session_state.get("_show_iface_report"):
         st.markdown(_report_md)
@@ -2679,6 +2799,268 @@ if _show_ledger:
 
 # --------------------------------------------------------------------------- #
 #  Save / Load project — one file captures the whole session
+# --------------------------------------------------------------------------- #
+#  TRANSIENT TAB — explicit high-frequency time-step DAE solver
+# --------------------------------------------------------------------------- #
+with tab_tr:
+    st.markdown("#### ◢ TRANSIENT — explicit high-frequency time-step solver")
+    st.markdown(
+        '<p class="hint">The LAP TIME tab is <b>quasi-steady-state</b>: it assumes the '
+        'car sits at a balanced equilibrium at every point and solves a speed profile. '
+        'This solver integrates the full vehicle DAE <b>millisecond by millisecond</b> '
+        '(explicit RK4 @ 1&nbsp;ms) on the <i>same</i> tyre, damper and geometry, so it '
+        'shows what QSS assumes away: turn-in lag and yaw overshoot, snap-oversteer and '
+        'the countersteer that catches it, pitch/dive through a brake&nbsp;→&nbsp;throttle '
+        'transition, and kerb strikes (wheel hop, contact-load spikes, wheel lift).</p>',
+        unsafe_allow_html=True)
+
+    _veh_tr = veh  # the live model the rest of the app already solved
+
+    def _trfig(title, xtitle, ytitle, height=320):
+        f = go.Figure()
+        f.update_layout(**PLOT_LAYOUT, title=title, xaxis_title=xtitle,
+                        yaxis_title=ytitle, height=height)
+        return f
+
+    _MAN = [
+        "Step steer (turn-in & yaw overshoot)",
+        "Snap-oversteer + recovery",
+        "Brake → throttle (pitch & dive)",
+        "Kerb strike (wheel hop & lift)",
+        "Transient vs QSS corner (the rise QSS skips)",
+    ]
+    mlabel = st.selectbox("Manoeuvre", _MAN, key="tr_maneuver")
+    cc = st.columns(4)
+
+    show_uncaught = False
+    if mlabel.startswith("Step steer"):
+        steer_deg = cc[0].number_input("Steer angle (°)", 0.5, 12.0, 4.0, 0.5,
+                                       key="tr_ss_steer")
+        u0 = cc[1].number_input("Entry speed (m/s)", 3.0, 40.0, 18.0, 1.0,
+                                key="tr_ss_u0")
+        kind, kw = "step_steer", dict(steer_deg=float(steer_deg), u0=float(u0))
+    elif mlabel.startswith("Snap"):
+        u0 = cc[0].number_input("Entry speed (m/s)", 5.0, 40.0, 16.0, 1.0,
+                                key="tr_so_u0")
+        steer_deg = cc[1].number_input("Corner steer (°)", 1.0, 8.0, 3.8, 0.2,
+                                       key="tr_so_steer")
+        brake_stab = cc[2].number_input("Trailing-brake stab (0–1)", 0.0, 1.0, 0.45,
+                                        0.05, key="tr_so_bs")
+        show_uncaught = cc[3].checkbox("Overlay uncaught spin", value=True,
+                                       key="tr_so_unc")
+        kind, kw = "snap_oversteer", dict(u0=float(u0), steer_deg=float(steer_deg),
+                                          brake_stab=float(brake_stab), recover=True)
+    elif mlabel.startswith("Brake"):
+        u0 = cc[0].number_input("Entry speed (m/s)", 5.0, 40.0, 25.0, 1.0,
+                                key="tr_bt_u0")
+        kind, kw = "brake_to_throttle", dict(u0=float(u0))
+    elif mlabel.startswith("Kerb"):
+        u0 = cc[0].number_input("Speed (m/s)", 3.0, 40.0, 20.0, 1.0, key="tr_cb_u0")
+        curb_h = cc[1].number_input("Kerb height (mm)", 5.0, 80.0, 30.0, 5.0,
+                                    key="tr_cb_h") / 1000.0
+        wsel = cc[2].selectbox("Wheels over kerb",
+                               ["FL + RL (left side)", "FL only", "All four"],
+                               key="tr_cb_w")
+        wheels = {"FL + RL (left side)": ("FL", "RL"), "FL only": ("FL",),
+                  "All four": ("FL", "FR", "RL", "RR")}[wsel]
+        kind, kw = "curb_strike", dict(u0=float(u0), curb_h=float(curb_h),
+                                       wheels=wheels)
+    else:
+        u0 = cc[0].number_input("Entry speed (m/s)", 5.0, 40.0, 16.0, 1.0,
+                                key="tr_qs_u0")
+        kind, kw = "_settling", dict(u0=float(u0))
+
+    run = st.button("▶ Run transient simulation", type="primary", key="tr_run")
+    if run:
+        with st.spinner("Integrating the vehicle DAE at 1 ms… (a few seconds)"):
+            try:
+                if kind == "_settling":
+                    sr = transient_mod.transient_vs_qss_corner(_veh_tr, u0=kw["u0"])
+                    st.session_state["_tr_result"] = ("settling", sr, None, mlabel)
+                elif kind == "snap_oversteer" and show_uncaught:
+                    res = transient_mod.run_maneuver(_veh_tr, kind, **kw)
+                    kw_u = dict(kw); kw_u["recover"] = False
+                    res_u = transient_mod.run_maneuver(_veh_tr, kind, **kw_u)
+                    st.session_state["_tr_result"] = (kind, res, res_u, mlabel)
+                else:
+                    res = transient_mod.run_maneuver(_veh_tr, kind, **kw)
+                    st.session_state["_tr_result"] = (kind, res, None, mlabel)
+            except Exception as e:
+                st.session_state["_tr_result"] = ("error", str(e), None, mlabel)
+
+    stored = st.session_state.get("_tr_result")
+    if not stored:
+        st.info("Pick a manoeuvre, set the inputs, and press **Run**. The solver "
+                "reuses the tyre, damper and geometry from the rest of the app, so "
+                "every setup change you make elsewhere shows up here too.")
+    elif stored[0] == "error":
+        st.error(f"Transient run failed: {stored[1]}")
+    else:
+        kind_done, res, res_u, label_done = stored
+        st.caption(f"Showing: **{label_done}**")
+
+        if kind_done == "settling":
+            sr = res
+            if not sr.ok:
+                st.warning("Settling analysis returned a flagged result.")
+            m = st.columns(5)
+            m[0].metric("QSS max lat g", f"{sr.qss_max_ay_g:.2f}")
+            m[1].metric("Transient steady", f"{sr.steady_ay_g:.2f} g")
+            m[2].metric("Peak (overshoot)",
+                        f"{sr.peak_ay_g:.2f} g", f"{sr.overshoot_pct:+.1f}%")
+            m[3].metric("Rise time (90%)",
+                        ("—" if not np.isfinite(sr.rise_time_s)
+                         else f"{sr.rise_time_s*1000:.0f} ms"))
+            m[4].metric("Settle (±5%)",
+                        ("—" if not np.isfinite(sr.settle_time_s)
+                         else f"{sr.settle_time_s*1000:.0f} ms"))
+            rr = sr.result
+            fig = _trfig("Lateral g — the rise QSS replaces with a single number",
+                         "time (s)", "lateral g", height=360)
+            fig.add_trace(go.Scatter(x=rr.t, y=np.abs(rr.ay), mode="lines",
+                          line=dict(color=CYAN, width=2), name="transient ay"))
+            fig.add_hline(y=sr.steady_ay_g, line=dict(color=AMBER, dash="dash"),
+                          annotation_text="transient steady")
+            fig.add_hline(y=sr.qss_max_ay_g, line=dict(color=RED, dash="dot"),
+                          annotation_text="QSS max")
+            st.plotly_chart(fig, width='stretch')
+            st.caption("QSS reports the steady corner as one number. The transient "
+                       "solver shows the car building up to it — the rise time, any "
+                       "overshoot, and the settle — the unsettled phase QSS assumes "
+                       "away. The steady value sits below the QSS limit because this "
+                       "is a sub-limit corner, by construction.")
+            warns = list(getattr(sr, "warnings", []) or [])
+        else:
+            s = res.summary()
+            warns = list(res.warnings or [])
+            if not res.ok:
+                st.warning("Run hit a numerical limit and the trace was truncated — "
+                           "metrics below are from what completed.")
+
+            if kind_done == "step_steer":
+                m = st.columns(4)
+                m[0].metric("Peak yaw rate", f"{s.get('peak_yaw_rate_deg_s',0):.0f} °/s")
+                m[1].metric("Steady yaw rate", f"{np.degrees(res.r[-1]):.0f} °/s")
+                m[2].metric("Peak lateral g", f"{s.get('peak_ay_g',0):.2f}")
+                m[3].metric("Peak body roll", f"{s.get('peak_roll_deg',0):.2f} °")
+                g1, g2 = st.columns(2)
+                f1 = _trfig("Yaw rate — overshoot then settle", "time (s)", "yaw rate (°/s)")
+                f1.add_trace(go.Scatter(x=res.t, y=np.degrees(res.r), mode="lines",
+                             line=dict(color=CYAN, width=2), name="yaw rate"))
+                f1.add_hline(y=np.degrees(res.r[-1]), line=dict(color=DIM, dash="dash"),
+                             annotation_text="steady")
+                g1.plotly_chart(f1, width='stretch')
+                f2 = _trfig("Lateral g & body roll", "time (s)", "lateral g")
+                f2.add_trace(go.Scatter(x=res.t, y=res.ay, mode="lines",
+                             line=dict(color=AMBER, width=2), name="lateral g"))
+                f2.add_trace(go.Scatter(x=res.t, y=np.degrees(res.roll), mode="lines",
+                             line=dict(color=RED, width=1.4), name="roll (°)", yaxis="y2"))
+                f2.update_layout(yaxis2=dict(title="roll (°)", overlaying="y",
+                                 side="right", gridcolor="#1d242c"))
+                g2.plotly_chart(f2, width='stretch')
+
+            elif kind_done == "snap_oversteer":
+                m = st.columns(3)
+                m[0].metric("Caught: final sideslip", f"{np.degrees(res.beta[-1]):.1f} °")
+                if res_u is not None:
+                    m[1].metric("Uncaught: final sideslip",
+                                f"{np.degrees(res_u.beta[-1]):.0f} °", "spins", delta_color="inverse")
+                m[2].metric("Peak yaw rate", f"{s.get('peak_yaw_rate_deg_s',0):.0f} °/s")
+                f1 = _trfig("Body sideslip β — divergence vs recovery",
+                            "time (s)", "sideslip β (°)", height=360)
+                if res_u is not None:
+                    f1.add_trace(go.Scatter(x=res_u.t, y=np.degrees(res_u.beta),
+                                 mode="lines", line=dict(color=RED, width=2),
+                                 name="uncaught → spins"))
+                f1.add_trace(go.Scatter(x=res.t, y=np.degrees(res.beta), mode="lines",
+                             line=dict(color="#3ec46d", width=2),
+                             name="feedback countersteer → caught"))
+                st.plotly_chart(f1, width='stretch')
+                f2 = _trfig("Steer input (the catch) & yaw rate", "time (s)", "steer (°)")
+                f2.add_trace(go.Scatter(x=res.t, y=np.degrees(res.steer), mode="lines",
+                             line=dict(color=AMBER, width=1.6), name="steer (°)"))
+                f2.add_trace(go.Scatter(x=res.t, y=np.degrees(res.r), mode="lines",
+                             line=dict(color=CYAN, width=1.4), name="yaw rate (°/s)", yaxis="y2"))
+                f2.update_layout(yaxis2=dict(title="yaw rate (°/s)", overlaying="y",
+                                 side="right", gridcolor="#1d242c"))
+                st.plotly_chart(f2, width='stretch')
+                st.caption("Lift-off plus a trailing-brake stab unloads the rear; "
+                           "uncaught it diverges into a spin, while a state-feedback "
+                           "countersteer pulls the sideslip back toward zero — the "
+                           "recovery a steady-state model can't represent because it "
+                           "never lets the car leave equilibrium.")
+
+            elif kind_done == "brake_to_throttle":
+                m = st.columns(4)
+                m[0].metric("Pitch dive", f"{np.degrees(res.pitch.min()):.2f} °")
+                m[1].metric("Pitch squat", f"{np.degrees(res.pitch.max()):.2f} °")
+                m[2].metric("Peak decel", f"{res.ax.min():.2f} g")
+                m[3].metric("Peak accel", f"{res.ax.max():.2f} g")
+                f1 = _trfig("Pitch — dive under braking, squat under power",
+                            "time (s)", "pitch (°)  (− dive / + squat)", height=340)
+                f1.add_trace(go.Scatter(x=res.t, y=np.degrees(res.pitch), mode="lines",
+                             line=dict(color="#a855f7", width=2), name="pitch (°)"))
+                f1.add_trace(go.Scatter(x=res.t, y=res.ax, mode="lines",
+                             line=dict(color=AMBER, width=1.2), name="long. g", yaxis="y2"))
+                f1.update_layout(yaxis2=dict(title="long. accel (g)", overlaying="y",
+                                 side="right", gridcolor="#1d242c"))
+                st.plotly_chart(f1, width='stretch')
+                f2 = _trfig("Axle vertical load through the transition",
+                            "time (s)", "axle load (N)")
+                f2.add_trace(go.Scatter(x=res.t, y=res.Fz[:, 0] + res.Fz[:, 1],
+                             mode="lines", line=dict(color=CYAN, width=1.6),
+                             name="front axle"))
+                f2.add_trace(go.Scatter(x=res.t, y=res.Fz[:, 2] + res.Fz[:, 3],
+                             mode="lines", line=dict(color=RED, width=1.6),
+                             name="rear axle"))
+                st.plotly_chart(f2, width='stretch')
+                st.caption("The sprung mass rocks forward (dive) then back (squat); the "
+                           "digressive damper sets how fast the ringing settles. QSS has "
+                           "no pitch degree of freedom, so this whole transient is "
+                           "invisible to it.")
+
+            elif kind_done == "curb_strike":
+                m = st.columns(3)
+                m[0].metric("Peak contact load", f"{s.get('max_Fz_N',0):.0f} N")
+                m[1].metric("Min contact load", f"{s.get('min_Fz_N',0):.0f} N")
+                m[2].metric("Wheel lift?", "yes" if s.get("wheel_lift") else "no")
+                names = ["FL", "FR", "RL", "RR"]
+                cols = [CYAN, AMBER, RED, "#3ec46d"]
+                f1 = _trfig("Contact vertical load — spike & wheel lift",
+                            "time (s)", "Fz (N)", height=340)
+                for i in range(4):
+                    f1.add_trace(go.Scatter(x=res.t, y=res.Fz[:, i], mode="lines",
+                                 line=dict(color=cols[i], width=1.4), name=names[i]))
+                f1.add_hline(y=0, line=dict(color=DIM, width=1))
+                st.plotly_chart(f1, width='stretch')
+                f2 = _trfig("Suspension (wheel) velocity — the high-frequency hop",
+                            "time (s)", "wheel vel (m/s, + bump)")
+                for i in range(4):
+                    f2.add_trace(go.Scatter(x=res.t, y=res.susp_vel[:, i], mode="lines",
+                                 line=dict(color=cols[i], width=1.2), name=names[i]))
+                st.plotly_chart(f2, width='stretch')
+                st.caption("The unsprung mass hops at ~15–20 Hz; the contact load spikes "
+                           "well above static and can momentarily drop to zero (wheel "
+                           "lift). A QSS point mass has no unsprung mass and cannot "
+                           "represent this millisecond-scale event at all.")
+
+        st.caption(f"Tyre: {res.meta.get('tire','n/a') if kind_done!='settling' else _veh_tr.grip_model_name()}"
+                   if kind_done != "settling" else
+                   f"Grip model: {_veh_tr.grip_model_name()}")
+        if warns:
+            with st.expander(f"⚠ {len(warns)} solver warning(s)"):
+                for w in warns:
+                    st.write("• " + str(w))
+        st.markdown(
+            '<p class="hint">Honest scope: this resolves the dominant transient modes '
+            '(yaw/sideslip, heave/pitch/roll, four unsprung wheel-hops, lateral tyre '
+            'relaxation). Longitudinal force is demanded and friction-ellipse-limited '
+            'rather than spun up as full slip-ratio wheel states, and tyre thermal state '
+            'and a closed-loop racing line are out of scope — flagged, not faked. '
+            'Use QSS (LAP TIME) for the lap-time number; use this for the unsteady '
+            'behaviour behind it.</p>', unsafe_allow_html=True)
+
+
 # --------------------------------------------------------------------------- #
 st.markdown("---")
 st.markdown("#### Save / load your work")
@@ -2701,7 +3083,7 @@ project_bundle = {
 sc1, sc2, sc3 = st.columns([1, 1, 1])
 sc1.download_button("💾 Save project (.json)", json.dumps(project_bundle, indent=2),
                     file_name="kinematik_project.json", mime="application/json",
-                    use_container_width=True)
+                    width='stretch')
 
 # CSV of the sweep (tabular data — handy for report plots / Excel)
 import io
@@ -2712,7 +3094,7 @@ for st_ in sweep:
               f"{st_.caster:.4f},{st_.kpi:.4f},{st_.scrub_radius:.3f}\n")
 sc2.download_button("⬇ Sweep data (.csv)", buf.getvalue(),
                     file_name="kinematik_sweep.csv", mime="text/csv",
-                    use_container_width=True)
+                    width='stretch')
 
 with sc3:
     loaded = st.file_uploader("📂 Load project (.json)", type=["json"],
