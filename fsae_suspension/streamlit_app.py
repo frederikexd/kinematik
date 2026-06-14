@@ -21,7 +21,11 @@ from plotly.subplots import make_subplots
 from suspension import (
     SuspensionKinematics, Hardpoints,
     VehicleDynamics, VehicleParams,
+    MATERIALS, MemberStiffness, CompliantCorner,
+    load_flex_body, corner_wheel_load, WheelLoad,
 )
+from suspension import compliance as compliance_mod
+from suspension import flex as flex_mod
 from suspension import chassis as chassis_mod
 from suspension import integration as integ_mod
 from suspension import project as project_mod
@@ -31,6 +35,7 @@ from suspension import laptime as lap_mod
 from suspension import correlation as corr_mod
 from suspension import damper as damper_mod
 from suspension import interfaces as interfaces_mod
+from suspension import transient as transient_mod
 
 st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
@@ -440,15 +445,18 @@ and it's the difference between next year starting ahead or relearning everythin
 
 _tabs = st.tabs(
     ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
-     "  GEOMETRY 3D  ", "  TEAM FIT  ",
+     "  GEOMETRY 3D  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
      "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
-     "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  VALIDATION  ",
-     "  INTEGRATION  "])
+     "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  TRANSIENT  ",
+     "  VALIDATION  ", "  INTEGRATION  "])
 # Map the existing tab variable names onto the new (merged) tab order so the tab
 # bodies below don't all need renumbering. SUSPENSION vs CHASSIS is no longer a
 # top-level tab — its CAD fit/clearance check now lives inside the merged
 # INTEGRATION tab (tab13) as a sub-view, rendered by render_suspension_vs_chassis().
-(tab1, tab2, tab3, tab4, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13) = _tabs
+# tab5c is the flexible-body compliance view (ADAMS Flex-style).
+# tab_tr is the explicit transient time-step solver (the unsteady half of the lap).
+(tab1, tab2, tab3, tab4, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_tr,
+ tab12, tab13) = _tabs
 
 
 travels = [st_.travel for st_ in sweep]
@@ -653,7 +661,154 @@ with tab4:
 
 # --------------------------------------------------------------------------- #
 # ----- SUSPENSION vs CHASSIS (now a section of the merged INTEGRATION tab) ----- #
+def _render_envelope_vs_chassis(subsys, led):
+    """Static envelope-fit check of a non-suspension subsystem against the chassis."""
+    it = led.get(subsys)
+    have_env = it is not None and None not in (
+        getattr(it, "env_x_mm", None), getattr(it, "env_y_mm", None),
+        getattr(it, "env_z_mm", None))
+    st.markdown(f'<p class="hint">Static fit check for <b>{subsys}</b>: does its '
+                'envelope sit inside the chassis interior and clear the frame tubes? '
+                'Unlike suspension, a statically-mounted subsystem doesn\'t move, so '
+                'this checks the bounding box, not a travel sweep. The envelope comes '
+                'from the subsystem\'s declaration in the cross-subsystem ledger — set '
+                'it there if it\'s blank.</p>', unsafe_allow_html=True)
+
+    if not have_env:
+        st.markdown(f'<span class="tag warn">{subsys} has no envelope declared — add '
+                    'env X/Y/Z (and optionally an origin) in the cross-subsystem '
+                    'ledger first.</span>', unsafe_allow_html=True)
+        return
+
+    size = (float(it.env_x_mm), float(it.env_y_mm), float(it.env_z_mm))
+    default_origin = getattr(it, "env_origin_mm", None)
+    st.markdown("###### Envelope placement (min corner, mm in the chassis frame)")
+    pc = st.columns(3)
+    ox = pc[0].number_input("origin x", value=float(default_origin[0]) if default_origin else 0.0,
+                            step=10.0, key=f"env_ox_{subsys}")
+    oy = pc[1].number_input("origin y", value=float(default_origin[1]) if default_origin else 0.0,
+                            step=10.0, key=f"env_oy_{subsys}")
+    oz = pc[2].number_input("origin z", value=float(default_origin[2]) if default_origin else 0.0,
+                            step=10.0, key=f"env_oz_{subsys}")
+    st.caption(f"Envelope size: {size[0]:.0f} × {size[1]:.0f} × {size[2]:.0f} mm "
+               "(from the ledger). Place its min corner above to match where it mounts.")
+
+    up = st.file_uploader("Chassis CAD", type=["step", "stp", "stl", "obj", "glb"],
+                          label_visibility="collapsed", key=f"env_cad_{subsys}")
+    oc1, oc2, oc3, oc4 = st.columns(4)
+    off_x = oc1.number_input("offset x (mm)", value=0.0, step=10.0, key=f"env_offx_{subsys}")
+    off_y = oc2.number_input("offset y (mm)", value=0.0, step=10.0, key=f"env_offy_{subsys}")
+    off_z = oc3.number_input("offset z (mm)", value=0.0, step=10.0, key=f"env_offz_{subsys}")
+    cad_scale = oc4.number_input("scale (m→mm = 1000)", value=1.0, step=1.0, key=f"env_scale_{subsys}")
+
+    if up is None:
+        st.markdown('<p class="hint" style="padding-top:.5rem;">Waiting for a chassis '
+                    'file (STEP most reliable). Same CAD as the suspension check — the '
+                    'envelope is placed in the same frame.</p>', unsafe_allow_html=True)
+        return
+
+    import tempfile as _tf
+    suffix = "." + up.name.split(".")[-1]
+    with _tf.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+        f.write(up.getbuffer())
+        cad_path = f.name
+    try:
+        with st.spinner(f"Loading chassis and fitting the {subsys} envelope…"):
+            mesh = chassis_mod.load_chassis(cad_path, offset=(off_x, off_y, off_z),
+                                            scale=cad_scale)
+            summ = chassis_mod.mesh_summary(mesh)
+            res = chassis_mod.envelope_fit_check(mesh, (ox, oy, oz), size,
+                                                 name=subsys, warn_mm=8.0)
+
+        vmap = {"CLEAR": ("good", "Envelope fits and clears the frame"),
+                "TIGHT": ("warn", "Within 8 mm of a tube — review before mounting"),
+                "COLLISION": ("bad", "Envelope intersects the frame — reposition or resize"),
+                "OUTSIDE": ("bad", "Envelope pokes outside the chassis interior")}
+        vc = vmap.get(res["verdict"], ("warn", res["verdict"]))
+        st.markdown(f'<div class="metric" style="margin:.4rem 0;">'
+                    f'<span class="k">{subsys.upper()} FIT VERDICT</span>'
+                    f'<span class="v {vc[0]}">{res["verdict"]}'
+                    f'<span class="u"> · {vc[1]}</span></span></div>',
+                    unsafe_allow_html=True)
+
+        mc = st.columns(3)
+        mc[0].markdown(metric("Min clearance to frame", f"{res['min_clearance_mm']:.1f}", "mm",
+                              vc[0]), unsafe_allow_html=True)
+        mc[1].markdown(metric("Contained in chassis", "yes" if res["contained"] else "no",
+                              "", "good" if res["contained"] else "bad"), unsafe_allow_html=True)
+        oob = ", ".join(res["oob_axes"]) if res["oob_axes"] else "—"
+        mc[2].markdown(metric("Outside on axes", oob, "", "bad" if res["oob_axes"] else "good"),
+                       unsafe_allow_html=True)
+
+        # 3D overlay: chassis mesh + subsystem box surface
+        st.markdown(f"###### {subsys} envelope overlaid on chassis")
+        box_pts = chassis_mod.envelope_box_points((ox, oy, oz), size, step_mm=25.0)
+        fig = go.Figure()
+        vx, vy, vz = mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.vertices[:, 2]
+        i, j, k = mesh.faces[:, 0], mesh.faces[:, 1], mesh.faces[:, 2]
+        fig.add_trace(go.Mesh3d(x=vx, y=vy, z=vz, i=i, j=j, k=k,
+                      color="#5a6b7a", opacity=0.30, name="Chassis", flatshading=True))
+        boxcolor = {"CLEAR": "#37e0d0", "TIGHT": AMBER, "COLLISION": RED, "OUTSIDE": RED}.get(
+            res["verdict"], "#9b8cff")
+        fig.add_trace(go.Scatter3d(x=box_pts[:, 0], y=box_pts[:, 1], z=box_pts[:, 2],
+                      mode="markers", marker=dict(size=2.5, color=boxcolor),
+                      name=f"{subsys} envelope"))
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            scene=dict(
+                xaxis=dict(title="x", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                yaxis=dict(title="y", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                zaxis=dict(title="z", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                aspectmode="data", camera=dict(eye=dict(x=1.6, y=-1.5, z=0.9))),
+            font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
+            height=500, margin=dict(l=0, r=0, t=10, b=0),
+            legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown(f'<p class="hint">Chassis: {summ["triangles"]:,} triangles, '
+                    f'{summ["size_mm"][0]:.0f}×{summ["size_mm"][1]:.0f}×{summ["size_mm"][2]:.0f} mm. '
+                    'If the envelope sits in the wrong place, adjust the origin or the '
+                    'CAD offset so the frames align.</p>', unsafe_allow_html=True)
+
+        if res["verdict"] in ("COLLISION", "TIGHT", "OUTSIDE"):
+            sug = (f"{subsys}: envelope {res['verdict'].lower()} vs chassis "
+                   f"(min clearance {res['min_clearance_mm']:.1f} mm"
+                   + (f", outside on {', '.join(res['oob_axes'])}" if res["oob_axes"] else "")
+                   + "). Flagged before mounting.")
+            note = st.text_area("Decision note (edit before logging)", value=sug,
+                                height=80, key=f"env_note_{subsys}")
+            if st.button("＋ Log this to handover", key=f"env_log_{subsys}"):
+                ok = log_decision_now(subsys, f"{subsys} {res['verdict'].lower()} vs chassis",
+                                      note, author="INTEGRATION")
+                st.success("Logged to handover." if ok else
+                           "Couldn't write to the handover log (backend offline) — verdict still stands.")
+    except Exception as e:
+        st.error(f"Could not process the chassis file: {e}")
+    finally:
+        try:
+            os.unlink(cad_path)
+        except Exception:
+            pass
+
+
 def render_suspension_vs_chassis():
+    _IFm = interfaces_mod
+    _led_cad = _IFm.IntegrationLedger.from_dict(st.session_state.ledger)
+    # Any physical subsystem can be checked against the chassis. Suspension is
+    # special — it MOVES, so it gets a swept-clearance check. Every other physical
+    # subsystem is statically mounted, so it gets an envelope-fit check (does the
+    # part's bounding box sit inside the frame and clear the tubes). Data-acquisition
+    # is excluded: it's wiring/loggers with no meaningful rigid envelope to fit.
+    _CAD_SUBSYSTEMS = [s for s in _IFm.SUBSYSTEMS if s != "data-acquisition"]
+    subsys = st.selectbox("Which subsystem to check against the chassis?",
+                          _CAD_SUBSYSTEMS,
+                          index=_CAD_SUBSYSTEMS.index("suspension"),
+                          key="cad_subsystem")
+
+    if subsys != "suspension":
+        _render_envelope_vs_chassis(subsys, _led_cad)
+        return
+
     st.markdown('<p class="hint">Load the team\'s chassis CAD (STEP or STL) to check '
                 'two things before you cut tube: do the inboard pickups land on the '
                 'frame (fit), and does the moving linkage clear the chassis through '
@@ -784,6 +939,184 @@ def render_suspension_vs_chassis():
                 os.unlink(cad_path)
             except Exception:
                 pass
+
+# ----------------------------- TAB 5c (COMPLIANCE / FLEX) ------------------ #
+with tab5c:
+    st.markdown('<p class="hint">The rigid model treats every link as infinitely '
+                'stiff. Real control arms, pushrods and tie rods stretch under load, '
+                'and the chassis tabs flex too — at 1.5 g that shows up as '
+                '<b>compliance steer</b> and <b>compliance camber</b> you never asked '
+                'for. This tab resolves the member loads at a cornering case, deflects '
+                'each link by its axial stiffness, and re-solves the geometry to read '
+                'off how much the wheel actually moves. Define link stiffness from tube '
+                'size, or import a condensed FEA body (ADAMS&nbsp;Flex-style).</p>',
+                unsafe_allow_html=True)
+
+    csL, csR = st.columns([1, 1])
+    with csL:
+        st.markdown('<p class="hint" style="margin-bottom:4px;"><b>Load case</b></p>',
+                    unsafe_allow_html=True)
+        comp_g = st.slider("Lateral acceleration (g)", 0.5, 2.5, 1.5, 0.1,
+                           key="comp_g")
+        comp_axle = st.selectbox("Axle", ["front", "rear"], key="comp_axle")
+        comp_long = st.slider("Longitudinal g (braking +, traction −)",
+                              -1.5, 1.5, 0.0, 0.1, key="comp_long")
+    with csR:
+        st.markdown('<p class="hint" style="margin-bottom:4px;"><b>Link stiffness</b>'
+                    '</p>', unsafe_allow_html=True)
+        comp_mat = st.selectbox("Tube material", list(MATERIALS.keys()),
+                                key="comp_mat")
+        comp_od = st.number_input("Tube OD (mm)", 8.0, 40.0, 19.05, 0.05,
+                                  key="comp_od")
+        comp_wall = st.number_input("Tube wall (mm)", 0.4, 4.0, 0.9, 0.05,
+                                    key="comp_wall")
+        comp_use_tab = st.checkbox("Add chassis-tab compliance (series)",
+                                   value=False, key="comp_use_tab")
+        comp_ktab = None
+        if comp_use_tab:
+            comp_ktab = st.number_input("Tab stiffness per leg (N/mm)",
+                                        500.0, 100000.0, 8000.0, 500.0,
+                                        key="comp_ktab")
+
+    # Optional FEA flex-body import (ADAMS Flex-equivalent). A loaded body replaces
+    # the analytic tube stiffness for the members it names.
+    st.markdown('<p class="hint" style="margin-top:10px;border-left:2px solid #25506b;'
+                'padding-left:10px;"><b>FEA flex body (optional).</b> Import a condensed '
+                'flexible body as <code>.flex.json</code> — either a beam/bar mesh we '
+                'assemble and Guyan-reduce, or a pre-reduced superelement (the interface '
+                'nodes + condensed stiffness an ADAMS&nbsp;Flex MNF carries). It is used '
+                'for any member whose two endpoints you map to body nodes below.</p>',
+                unsafe_allow_html=True)
+    flex_up = st.file_uploader("Flexible body (.flex.json)", type=["json", "flex"],
+                               key="comp_flex")
+    flex_body = None
+    flex_map = {}
+    if flex_up is not None:
+        try:
+            import json as _json
+            _d = _json.load(flex_up)
+            flex_body = load_flex_body(_d)
+            names = list(flex_body.names)
+            st.success(f"Loaded flex body with interface nodes: {', '.join(names)}")
+            fm1, fm2, fm3 = st.columns(3)
+            fb_member = fm1.selectbox("Apply to member",
+                                      ["UF", "UR", "LF", "LR", "TR"], key="fb_member")
+            fb_out = fm2.selectbox("Outboard node", names, key="fb_out")
+            fb_in = fm3.selectbox("Inboard node", names,
+                                  index=min(1, len(names) - 1), key="fb_in")
+            flex_map[fb_member] = (fb_out, fb_in)
+        except NotImplementedError as e:
+            st.error(str(e))
+        except Exception as e:
+            st.error(f"Could not read flex body: {e}")
+
+    # ---- build the compliant corner and solve --------------------------- #
+    try:
+        comp_kin = kin if comp_axle == "front" else kin   # same geometry both axles here
+        stiff = {}
+        for m in ("UF", "UR", "LF", "LR"):
+            stiff[m] = MemberStiffness(material=comp_mat, od_mm=comp_od,
+                                       wall_mm=comp_wall, k_tab=comp_ktab)
+        stiff["TR"] = MemberStiffness(material=comp_mat, od_mm=comp_od,
+                                      wall_mm=comp_wall)
+        # overlay any FEA-backed members
+        for m, (n_out, n_in) in flex_map.items():
+            stiff[m] = MemberStiffness(flex_body=flex_body, node_out=n_out,
+                                       node_in=n_in, k_tab=comp_ktab
+                                       if (comp_use_tab and m != "TR") else None)
+        corner = CompliantCorner(comp_kin.hp, stiff)
+        load = corner_wheel_load(veh, comp_axle, comp_g, outer=True,
+                                 long_g=comp_long)
+        res = corner.solve(load)
+    except Exception as e:
+        st.error(f"Compliance solve failed: {e}")
+        res = None
+
+    if res is not None:
+        st.markdown(f'<p class="hint" style="margin-top:14px;"><b>Compliance at '
+                    f'{comp_g:.1f} g — {comp_axle} outer wheel.</b> '
+                    f'Contact-patch load: Fz {load.Fz:.0f} N, Fy {load.Fy:.0f} N.'
+                    f'</p>', unsafe_allow_html=True)
+        m1, m2, m3, m4 = st.columns(4)
+        toe = res.compliance_toe
+        cam = res.compliance_camber
+        # FSAE rule of thumb: > ~0.15° compliance steer at the front is worth chasing.
+        toe_cls = "good" if abs(toe) < 0.15 else ("warn" if abs(toe) < 0.4 else "bad")
+        cam_cls = "good" if abs(cam) < 0.2 else ("warn" if abs(cam) < 0.5 else "bad")
+        m1.markdown(metric("Compliance toe", f"{toe:+.3f}", "°", toe_cls),
+                    unsafe_allow_html=True)
+        m2.markdown(metric("Compliance camber", f"{cam:+.3f}", "°", cam_cls),
+                    unsafe_allow_html=True)
+        m3.markdown(metric("Patch lateral shift",
+                           f"{res.contact_patch_lateral_shift_mm:+.2f}", "mm"),
+                    unsafe_allow_html=True)
+        m4.markdown(metric("Converged",
+                           "yes" if res.converged else "NO",
+                           f"{res.summary()['iterations']} it",
+                           "good" if res.converged else "bad"),
+                    unsafe_allow_html=True)
+
+        # member force / deflection bar chart
+        members = [m for m in ("UF", "UR", "LF", "LR", "TR", "PR")
+                   if m in res.member_forces]
+        forces = [res.member_forces[m] for m in members]
+        defls = [res.member_deflection.get(m, float("nan")) for m in members]
+        figF = make_subplots(specs=[[{"secondary_y": True}]])
+        figF.add_trace(go.Bar(x=members, y=forces, name="Axial force (N)",
+                              marker_color=CYAN, opacity=0.85), secondary_y=False)
+        figF.add_trace(go.Scatter(x=members, y=defls, name="Deflection (mm)",
+                                  mode="markers", marker=dict(color=AMBER, size=11)),
+                       secondary_y=True)
+        figF.update_layout(**PLOT_LAYOUT, title="Member axial force & deflection",
+                           height=340, barmode="group")
+        figF.update_yaxes(title_text="axial force (N, + tension)", secondary_y=False)
+        figF.update_yaxes(title_text="deflection (mm, + stretch)", secondary_y=True)
+        st.plotly_chart(figF, use_container_width=True)
+
+        # compliance steer vs lateral g sweep
+        gs_c = np.linspace(0.2, max(2.0, comp_g), 18)
+        toes, cams = [], []
+        for g in gs_c:
+            try:
+                _ld = corner_wheel_load(veh, comp_axle, g, outer=True,
+                                        long_g=comp_long)
+                _r = corner.solve(_ld)
+                toes.append(_r.compliance_toe if _r.converged else float("nan"))
+                cams.append(_r.compliance_camber if _r.converged else float("nan"))
+            except Exception:
+                toes.append(float("nan")); cams.append(float("nan"))
+        figS = go.Figure()
+        figS.add_trace(go.Scatter(x=gs_c, y=toes, name="Compliance toe",
+                                  line=dict(color=CYAN, width=3)))
+        figS.add_trace(go.Scatter(x=gs_c, y=cams, name="Compliance camber",
+                                  line=dict(color=AMBER, width=3)))
+        figS.update_layout(**PLOT_LAYOUT,
+                           title="Compliance steer / camber vs lateral g",
+                           xaxis_title="lateral acceleration (g)",
+                           yaxis_title="angle change (°)", height=320)
+        st.plotly_chart(figS, use_container_width=True)
+
+        sign_txt = ("toe-out" if toe > 0 else "toe-in")
+        st.markdown(f'<p class="hint">At {comp_g:.1f} g this corner deflects into '
+                    f'<b>{abs(toe):.3f}° {sign_txt}</b> and {cam:+.3f}° camber. '
+                    f'Compliance steer changes the slip angle the tyre actually runs, '
+                    f'so it shifts balance and can make the car feel vague or darty even '
+                    f'when the kinematic bump steer is perfect. Stiffer tabs, larger '
+                    f'tube, or a triangulated tie-rod pickup all pull it back toward '
+                    f'zero.</p>', unsafe_allow_html=True)
+        if abs(toe) < 1e-4:
+            st.markdown('<p class="hint">Bare steel-tube axial stiffness is enormous, '
+                        'so with rigid tabs the compliance is tiny — which is the honest '
+                        'answer. The dominant real-world give is in the chassis tabs and '
+                        'rod ends: tick "chassis-tab compliance" above, or import an FEA '
+                        'body that captures the bracket bending, to see realistic '
+                        'numbers.</p>', unsafe_allow_html=True)
+        st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                    'padding-left:10px;"><b>Steady-state, quasi-static.</b> This is the '
+                    'car held at one cornering load — the constraint-mode (static) '
+                    'content an MNF carries, which is what governs load↔deflection mid- '
+                    'corner. It is not a transient or NVH model: no damper dynamics, no '
+                    'modal response, no kerb strikes.</p>', unsafe_allow_html=True)
 
 # ----------------------------- TAB 6 --------------------------------------- #
 with tab6:
@@ -2037,7 +2370,7 @@ with tab12:
 with tab13:
     _iview = st.radio(
         "Integration view",
-        ["Cross-subsystem ledger", "Suspension ↔ chassis (CAD fit)"],
+        ["Cross-subsystem ledger", "Subsystem ↔ chassis (CAD fit)"],
         horizontal=True, label_visibility="collapsed", key="integration_view")
 
     _show_ledger = (_iview == "Cross-subsystem ledger")
@@ -2056,8 +2389,9 @@ if _show_ledger:
                 'It does not simulate your subsystem (your own tool does that better); '
                 'it owns the channels between them, and flags every placeholder number '
                 'so a green board never means more than the data behind it. The '
-                '<i>Suspension ↔ chassis</i> view above checks the geometric fit of the '
-                'linkage against the chassis CAD.</p>',
+                '<i>Suspension ↔ chassis</i> view above checks the geometric fit of '
+                'any physical subsystem against the chassis CAD — suspension by swept '
+                'clearance through travel, the rest by static envelope fit.</p>',
                 unsafe_allow_html=True)
 
     _IF = interfaces_mod
@@ -2347,6 +2681,268 @@ if _show_ledger:
 
 # --------------------------------------------------------------------------- #
 #  Save / Load project — one file captures the whole session
+# --------------------------------------------------------------------------- #
+#  TRANSIENT TAB — explicit high-frequency time-step DAE solver
+# --------------------------------------------------------------------------- #
+with tab_tr:
+    st.markdown("#### ◢ TRANSIENT — explicit high-frequency time-step solver")
+    st.markdown(
+        '<p class="hint">The LAP TIME tab is <b>quasi-steady-state</b>: it assumes the '
+        'car sits at a balanced equilibrium at every point and solves a speed profile. '
+        'This solver integrates the full vehicle DAE <b>millisecond by millisecond</b> '
+        '(explicit RK4 @ 1&nbsp;ms) on the <i>same</i> tyre, damper and geometry, so it '
+        'shows what QSS assumes away: turn-in lag and yaw overshoot, snap-oversteer and '
+        'the countersteer that catches it, pitch/dive through a brake&nbsp;→&nbsp;throttle '
+        'transition, and kerb strikes (wheel hop, contact-load spikes, wheel lift).</p>',
+        unsafe_allow_html=True)
+
+    _veh_tr = veh  # the live model the rest of the app already solved
+
+    def _trfig(title, xtitle, ytitle, height=320):
+        f = go.Figure()
+        f.update_layout(**PLOT_LAYOUT, title=title, xaxis_title=xtitle,
+                        yaxis_title=ytitle, height=height)
+        return f
+
+    _MAN = [
+        "Step steer (turn-in & yaw overshoot)",
+        "Snap-oversteer + recovery",
+        "Brake → throttle (pitch & dive)",
+        "Kerb strike (wheel hop & lift)",
+        "Transient vs QSS corner (the rise QSS skips)",
+    ]
+    mlabel = st.selectbox("Manoeuvre", _MAN, key="tr_maneuver")
+    cc = st.columns(4)
+
+    show_uncaught = False
+    if mlabel.startswith("Step steer"):
+        steer_deg = cc[0].number_input("Steer angle (°)", 0.5, 12.0, 4.0, 0.5,
+                                       key="tr_ss_steer")
+        u0 = cc[1].number_input("Entry speed (m/s)", 3.0, 40.0, 18.0, 1.0,
+                                key="tr_ss_u0")
+        kind, kw = "step_steer", dict(steer_deg=float(steer_deg), u0=float(u0))
+    elif mlabel.startswith("Snap"):
+        u0 = cc[0].number_input("Entry speed (m/s)", 5.0, 40.0, 16.0, 1.0,
+                                key="tr_so_u0")
+        steer_deg = cc[1].number_input("Corner steer (°)", 1.0, 8.0, 3.8, 0.2,
+                                       key="tr_so_steer")
+        brake_stab = cc[2].number_input("Trailing-brake stab (0–1)", 0.0, 1.0, 0.45,
+                                        0.05, key="tr_so_bs")
+        show_uncaught = cc[3].checkbox("Overlay uncaught spin", value=True,
+                                       key="tr_so_unc")
+        kind, kw = "snap_oversteer", dict(u0=float(u0), steer_deg=float(steer_deg),
+                                          brake_stab=float(brake_stab), recover=True)
+    elif mlabel.startswith("Brake"):
+        u0 = cc[0].number_input("Entry speed (m/s)", 5.0, 40.0, 25.0, 1.0,
+                                key="tr_bt_u0")
+        kind, kw = "brake_to_throttle", dict(u0=float(u0))
+    elif mlabel.startswith("Kerb"):
+        u0 = cc[0].number_input("Speed (m/s)", 3.0, 40.0, 20.0, 1.0, key="tr_cb_u0")
+        curb_h = cc[1].number_input("Kerb height (mm)", 5.0, 80.0, 30.0, 5.0,
+                                    key="tr_cb_h") / 1000.0
+        wsel = cc[2].selectbox("Wheels over kerb",
+                               ["FL + RL (left side)", "FL only", "All four"],
+                               key="tr_cb_w")
+        wheels = {"FL + RL (left side)": ("FL", "RL"), "FL only": ("FL",),
+                  "All four": ("FL", "FR", "RL", "RR")}[wsel]
+        kind, kw = "curb_strike", dict(u0=float(u0), curb_h=float(curb_h),
+                                       wheels=wheels)
+    else:
+        u0 = cc[0].number_input("Entry speed (m/s)", 5.0, 40.0, 16.0, 1.0,
+                                key="tr_qs_u0")
+        kind, kw = "_settling", dict(u0=float(u0))
+
+    run = st.button("▶ Run transient simulation", type="primary", key="tr_run")
+    if run:
+        with st.spinner("Integrating the vehicle DAE at 1 ms… (a few seconds)"):
+            try:
+                if kind == "_settling":
+                    sr = transient_mod.transient_vs_qss_corner(_veh_tr, u0=kw["u0"])
+                    st.session_state["_tr_result"] = ("settling", sr, None, mlabel)
+                elif kind == "snap_oversteer" and show_uncaught:
+                    res = transient_mod.run_maneuver(_veh_tr, kind, **kw)
+                    kw_u = dict(kw); kw_u["recover"] = False
+                    res_u = transient_mod.run_maneuver(_veh_tr, kind, **kw_u)
+                    st.session_state["_tr_result"] = (kind, res, res_u, mlabel)
+                else:
+                    res = transient_mod.run_maneuver(_veh_tr, kind, **kw)
+                    st.session_state["_tr_result"] = (kind, res, None, mlabel)
+            except Exception as e:
+                st.session_state["_tr_result"] = ("error", str(e), None, mlabel)
+
+    stored = st.session_state.get("_tr_result")
+    if not stored:
+        st.info("Pick a manoeuvre, set the inputs, and press **Run**. The solver "
+                "reuses the tyre, damper and geometry from the rest of the app, so "
+                "every setup change you make elsewhere shows up here too.")
+    elif stored[0] == "error":
+        st.error(f"Transient run failed: {stored[1]}")
+    else:
+        kind_done, res, res_u, label_done = stored
+        st.caption(f"Showing: **{label_done}**")
+
+        if kind_done == "settling":
+            sr = res
+            if not sr.ok:
+                st.warning("Settling analysis returned a flagged result.")
+            m = st.columns(5)
+            m[0].metric("QSS max lat g", f"{sr.qss_max_ay_g:.2f}")
+            m[1].metric("Transient steady", f"{sr.steady_ay_g:.2f} g")
+            m[2].metric("Peak (overshoot)",
+                        f"{sr.peak_ay_g:.2f} g", f"{sr.overshoot_pct:+.1f}%")
+            m[3].metric("Rise time (90%)",
+                        ("—" if not np.isfinite(sr.rise_time_s)
+                         else f"{sr.rise_time_s*1000:.0f} ms"))
+            m[4].metric("Settle (±5%)",
+                        ("—" if not np.isfinite(sr.settle_time_s)
+                         else f"{sr.settle_time_s*1000:.0f} ms"))
+            rr = sr.result
+            fig = _trfig("Lateral g — the rise QSS replaces with a single number",
+                         "time (s)", "lateral g", height=360)
+            fig.add_trace(go.Scatter(x=rr.t, y=np.abs(rr.ay), mode="lines",
+                          line=dict(color=CYAN, width=2), name="transient ay"))
+            fig.add_hline(y=sr.steady_ay_g, line=dict(color=AMBER, dash="dash"),
+                          annotation_text="transient steady")
+            fig.add_hline(y=sr.qss_max_ay_g, line=dict(color=RED, dash="dot"),
+                          annotation_text="QSS max")
+            st.plotly_chart(fig, use_container_width=True)
+            st.caption("QSS reports the steady corner as one number. The transient "
+                       "solver shows the car building up to it — the rise time, any "
+                       "overshoot, and the settle — the unsettled phase QSS assumes "
+                       "away. The steady value sits below the QSS limit because this "
+                       "is a sub-limit corner, by construction.")
+            warns = list(getattr(sr, "warnings", []) or [])
+        else:
+            s = res.summary()
+            warns = list(res.warnings or [])
+            if not res.ok:
+                st.warning("Run hit a numerical limit and the trace was truncated — "
+                           "metrics below are from what completed.")
+
+            if kind_done == "step_steer":
+                m = st.columns(4)
+                m[0].metric("Peak yaw rate", f"{s.get('peak_yaw_rate_deg_s',0):.0f} °/s")
+                m[1].metric("Steady yaw rate", f"{np.degrees(res.r[-1]):.0f} °/s")
+                m[2].metric("Peak lateral g", f"{s.get('peak_ay_g',0):.2f}")
+                m[3].metric("Peak body roll", f"{s.get('peak_roll_deg',0):.2f} °")
+                g1, g2 = st.columns(2)
+                f1 = _trfig("Yaw rate — overshoot then settle", "time (s)", "yaw rate (°/s)")
+                f1.add_trace(go.Scatter(x=res.t, y=np.degrees(res.r), mode="lines",
+                             line=dict(color=CYAN, width=2), name="yaw rate"))
+                f1.add_hline(y=np.degrees(res.r[-1]), line=dict(color=DIM, dash="dash"),
+                             annotation_text="steady")
+                g1.plotly_chart(f1, use_container_width=True)
+                f2 = _trfig("Lateral g & body roll", "time (s)", "lateral g")
+                f2.add_trace(go.Scatter(x=res.t, y=res.ay, mode="lines",
+                             line=dict(color=AMBER, width=2), name="lateral g"))
+                f2.add_trace(go.Scatter(x=res.t, y=np.degrees(res.roll), mode="lines",
+                             line=dict(color=RED, width=1.4), name="roll (°)", yaxis="y2"))
+                f2.update_layout(yaxis2=dict(title="roll (°)", overlaying="y",
+                                 side="right", gridcolor="#1d242c"))
+                g2.plotly_chart(f2, use_container_width=True)
+
+            elif kind_done == "snap_oversteer":
+                m = st.columns(3)
+                m[0].metric("Caught: final sideslip", f"{np.degrees(res.beta[-1]):.1f} °")
+                if res_u is not None:
+                    m[1].metric("Uncaught: final sideslip",
+                                f"{np.degrees(res_u.beta[-1]):.0f} °", "spins", delta_color="inverse")
+                m[2].metric("Peak yaw rate", f"{s.get('peak_yaw_rate_deg_s',0):.0f} °/s")
+                f1 = _trfig("Body sideslip β — divergence vs recovery",
+                            "time (s)", "sideslip β (°)", height=360)
+                if res_u is not None:
+                    f1.add_trace(go.Scatter(x=res_u.t, y=np.degrees(res_u.beta),
+                                 mode="lines", line=dict(color=RED, width=2),
+                                 name="uncaught → spins"))
+                f1.add_trace(go.Scatter(x=res.t, y=np.degrees(res.beta), mode="lines",
+                             line=dict(color="#3ec46d", width=2),
+                             name="feedback countersteer → caught"))
+                st.plotly_chart(f1, use_container_width=True)
+                f2 = _trfig("Steer input (the catch) & yaw rate", "time (s)", "steer (°)")
+                f2.add_trace(go.Scatter(x=res.t, y=np.degrees(res.steer), mode="lines",
+                             line=dict(color=AMBER, width=1.6), name="steer (°)"))
+                f2.add_trace(go.Scatter(x=res.t, y=np.degrees(res.r), mode="lines",
+                             line=dict(color=CYAN, width=1.4), name="yaw rate (°/s)", yaxis="y2"))
+                f2.update_layout(yaxis2=dict(title="yaw rate (°/s)", overlaying="y",
+                                 side="right", gridcolor="#1d242c"))
+                st.plotly_chart(f2, use_container_width=True)
+                st.caption("Lift-off plus a trailing-brake stab unloads the rear; "
+                           "uncaught it diverges into a spin, while a state-feedback "
+                           "countersteer pulls the sideslip back toward zero — the "
+                           "recovery a steady-state model can't represent because it "
+                           "never lets the car leave equilibrium.")
+
+            elif kind_done == "brake_to_throttle":
+                m = st.columns(4)
+                m[0].metric("Pitch dive", f"{np.degrees(res.pitch.min()):.2f} °")
+                m[1].metric("Pitch squat", f"{np.degrees(res.pitch.max()):.2f} °")
+                m[2].metric("Peak decel", f"{res.ax.min():.2f} g")
+                m[3].metric("Peak accel", f"{res.ax.max():.2f} g")
+                f1 = _trfig("Pitch — dive under braking, squat under power",
+                            "time (s)", "pitch (°)  (− dive / + squat)", height=340)
+                f1.add_trace(go.Scatter(x=res.t, y=np.degrees(res.pitch), mode="lines",
+                             line=dict(color="#a855f7", width=2), name="pitch (°)"))
+                f1.add_trace(go.Scatter(x=res.t, y=res.ax, mode="lines",
+                             line=dict(color=AMBER, width=1.2), name="long. g", yaxis="y2"))
+                f1.update_layout(yaxis2=dict(title="long. accel (g)", overlaying="y",
+                                 side="right", gridcolor="#1d242c"))
+                st.plotly_chart(f1, use_container_width=True)
+                f2 = _trfig("Axle vertical load through the transition",
+                            "time (s)", "axle load (N)")
+                f2.add_trace(go.Scatter(x=res.t, y=res.Fz[:, 0] + res.Fz[:, 1],
+                             mode="lines", line=dict(color=CYAN, width=1.6),
+                             name="front axle"))
+                f2.add_trace(go.Scatter(x=res.t, y=res.Fz[:, 2] + res.Fz[:, 3],
+                             mode="lines", line=dict(color=RED, width=1.6),
+                             name="rear axle"))
+                st.plotly_chart(f2, use_container_width=True)
+                st.caption("The sprung mass rocks forward (dive) then back (squat); the "
+                           "digressive damper sets how fast the ringing settles. QSS has "
+                           "no pitch degree of freedom, so this whole transient is "
+                           "invisible to it.")
+
+            elif kind_done == "curb_strike":
+                m = st.columns(3)
+                m[0].metric("Peak contact load", f"{s.get('max_Fz_N',0):.0f} N")
+                m[1].metric("Min contact load", f"{s.get('min_Fz_N',0):.0f} N")
+                m[2].metric("Wheel lift?", "yes" if s.get("wheel_lift") else "no")
+                names = ["FL", "FR", "RL", "RR"]
+                cols = [CYAN, AMBER, RED, "#3ec46d"]
+                f1 = _trfig("Contact vertical load — spike & wheel lift",
+                            "time (s)", "Fz (N)", height=340)
+                for i in range(4):
+                    f1.add_trace(go.Scatter(x=res.t, y=res.Fz[:, i], mode="lines",
+                                 line=dict(color=cols[i], width=1.4), name=names[i]))
+                f1.add_hline(y=0, line=dict(color=DIM, width=1))
+                st.plotly_chart(f1, use_container_width=True)
+                f2 = _trfig("Suspension (wheel) velocity — the high-frequency hop",
+                            "time (s)", "wheel vel (m/s, + bump)")
+                for i in range(4):
+                    f2.add_trace(go.Scatter(x=res.t, y=res.susp_vel[:, i], mode="lines",
+                                 line=dict(color=cols[i], width=1.2), name=names[i]))
+                st.plotly_chart(f2, use_container_width=True)
+                st.caption("The unsprung mass hops at ~15–20 Hz; the contact load spikes "
+                           "well above static and can momentarily drop to zero (wheel "
+                           "lift). A QSS point mass has no unsprung mass and cannot "
+                           "represent this millisecond-scale event at all.")
+
+        st.caption(f"Tyre: {res.meta.get('tire','n/a') if kind_done!='settling' else _veh_tr.grip_model_name()}"
+                   if kind_done != "settling" else
+                   f"Grip model: {_veh_tr.grip_model_name()}")
+        if warns:
+            with st.expander(f"⚠ {len(warns)} solver warning(s)"):
+                for w in warns:
+                    st.write("• " + str(w))
+        st.markdown(
+            '<p class="hint">Honest scope: this resolves the dominant transient modes '
+            '(yaw/sideslip, heave/pitch/roll, four unsprung wheel-hops, lateral tyre '
+            'relaxation). Longitudinal force is demanded and friction-ellipse-limited '
+            'rather than spun up as full slip-ratio wheel states, and tyre thermal state '
+            'and a closed-loop racing line are out of scope — flagged, not faked. '
+            'Use QSS (LAP TIME) for the lap-time number; use this for the unsteady '
+            'behaviour behind it.</p>', unsafe_allow_html=True)
+
+
 # --------------------------------------------------------------------------- #
 st.markdown("---")
 st.markdown("#### Save / load your work")

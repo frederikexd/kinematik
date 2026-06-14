@@ -75,6 +75,28 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   tire so it works out of the box, and loads a tire **fitted to your own TTC data**
   the moment you have one — see "Your tire is the edge" below.
 
+**Flexible bodies & compliance (the rigid-link assumption, finally relaxed — NEW)**
+- Every other tool here treats the control arms, pushrods and tie rods as
+  infinitely stiff. They aren't: at 1.5 g the links stretch and the chassis tabs
+  flex, and that shows up at the contact patch as **compliance steer** and
+  **compliance camber** you never dialled in. This is the deflection a four-figure
+  ADAMS Flex licence is bought for — here it's in the **◢ COMPLIANCE (FLEX)** tab.
+- Resolves the **axial load in every member** (upper/lower legs, tie rod, pushrod)
+  from the contact-patch wrench via a statically-determinate corner model, deflects
+  each link by its **axial stiffness**, and **re-solves the kinematics** under load
+  to read the toe/camber the wheel actually runs — iterated to convergence.
+- Link stiffness from **tube size + material** (zero-FEA, fully defensible from
+  `E·A/L`), with optional **chassis-tab stiffness in series** — usually the bigger
+  real-world contributor than the tube itself.
+- Or import a **real FEA mesh** of a component as a condensed flexible body: a
+  beam/bar mesh KinematiK **Guyan-reduces** itself, or a **pre-reduced superelement**
+  (the interface nodes + condensed stiffness an **ADAMS Flex MNF** carries). Honest
+  scope: it imports the **static / constraint-mode** content that governs
+  load↔deflection in a sustained corner, not the proprietary binary container or the
+  dynamic normal modes — and it says so rather than faking them.
+- Validated to closed form: a bar gives `E·A/L`, a cantilever `3·E·I/L³`, and a
+  two-element Guyan series reduces to the exact series stiffness.
+
 **Lap-time simulator (the number that actually wins — NEW)**
 - A quasi-steady-state point-mass lap sim built **on top of the same kinematics +
   Pacejka tire + vehicle-dynamics stack** the rest of the tool uses, so every
@@ -102,6 +124,30 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   says so. Robust by construction: a bad data point, a non-converging corner, or a
   pathological tire never crashes the session — the sim substitutes a safe default
   and surfaces a warning instead of raising.
+
+**Transient solver (the unsteady half of the lap — NEW)**
+- The thing QSS assumes away. The **◢ TRANSIENT** tab runs an explicit,
+  high-frequency time-step solver that integrates the full vehicle DAE — planar
+  yaw/sideslip, sprung heave/pitch/roll, four unsprung wheel-hops, and lateral
+  tire relaxation — **millisecond by millisecond** (explicit RK4 @ 1 ms) on the
+  *same* tire, damper and geometry the rest of the tool uses.
+- It shows the behaviour a quasi-steady model structurally can't: **turn-in lag
+  and yaw overshoot** (a step steer that overshoots its steady yaw then settles),
+  **snap-oversteer and the countersteer that catches it** (a trailing-throttle
+  slide that spins uncaught but is pulled back by a state-feedback countersteer),
+  **pitch and dive** through a brake→throttle transition (the sprung mass rocking,
+  the digressive damper settling it), and **kerb strikes** (the unsprung mass
+  hopping at ~15–20 Hz, the contact load spiking and dropping to zero — wheel
+  lift). It also contrasts the transient corner build-up against the QSS steady
+  number directly (rise time, overshoot, settle).
+- Honest scope, same as everywhere else: it resolves the dominant transient
+  modes; longitudinal force is demanded and friction-ellipse-limited rather than
+  spun up as full slip-ratio wheel states, and tire thermal state and a
+  closed-loop racing line are out of scope — flagged, not faked. Use QSS for the
+  lap-time number; use this for the unsteady behaviour behind it. Same
+  never-crash contract: every run returns a flagged result with warnings rather
+  than raising. Built on the verified `damper.py` / relaxation-length primitives
+  and covered by `tests/test_transient.py` (37 checks).
 
 **Tire & grip (the thing that actually wins skidpad and the limit in autocross)**
 - Full Magic Formula lateral model wired into the whole grip/balance stack — not a
@@ -244,6 +290,100 @@ rep = correlation.correlate_skidpad(veh, measured_g=1.42)
 print(rep.summary)                 # measured vs predicted, % error, trust verdict
 print("within tolerance:", rep.overall_within_tol)
 ```
+
+## Flexible bodies & compliance (ADAMS Flex-style)
+
+The rigid solver freezes every link length. The compliance layer relaxes that: it
+finds the axial load in each member at a cornering case, lets the links stretch by
+their stiffness, and re-solves the geometry under load. You get the **compliance
+toe and camber** — the steer/camber the wheel runs that isn't in your kinematics.
+
+The fastest way in is the **◢ COMPLIANCE (FLEX)** tab: pick a lateral g, a tube
+size, optionally tick chassis-tab compliance, and read the deflected toe/camber and
+the per-member force/deflection. From code:
+
+```python
+from suspension import (SuspensionKinematics, Hardpoints,
+                        VehicleDynamics, VehicleParams)
+from suspension import CompliantCorner, MemberStiffness, corner_wheel_load
+
+hp  = Hardpoints.default()
+kin = SuspensionKinematics(hp)
+veh = VehicleDynamics(VehicleParams(), front_kin=kin, rear_kin=kin)
+
+# Easiest: every link the same tube, optional chassis-tab stiffness in series.
+corner = CompliantCorner.uniform_tube(hp, od_mm=19.05, wall_mm=0.9, k_tab=8000.0)
+
+# Drive it straight off the real load-transfer model at the headline 1.5 g case:
+res = veh.corner_compliance(1.5, corner=corner)     # front-outer wheel
+print(f"compliance toe   {res.compliance_toe:+.3f} deg")   # the compliance steer
+print(f"compliance camber{res.compliance_camber:+.3f} deg")
+print("converged:", res.converged, "in", res.summary()['iterations'], "iters")
+print("member forces (N):", res.member_forces)             # + tension, − compression
+```
+
+Want one link at a time? Pass a per-member stiffness map; members you omit stay
+rigid, so you can isolate (say) the tie rod and watch only compliance steer move:
+
+```python
+stiff = {"TR": MemberStiffness(k_direct=1200.0)}   # N/mm; everything else rigid
+res = CompliantCorner(hp, stiff).solve(
+        corner_wheel_load(veh, "front", 1.5, outer=True))
+```
+
+A member's stiffness can come from three sources — a number you already have
+(`k_direct`), an analytic tube (`material, od_mm, wall_mm` → `E·A/L` on the link's
+length), or a condensed **FEA flex body**. Add `k_tab` to put a chassis-tab/bracket
+stiffness in series with any of them.
+
+### Importing an FEA component (the "Flex" part)
+
+A flexible body is a `.flex.json` in one of two schemas. Two ready samples ship in
+[`examples/`](examples/) — a lower A-arm as a beam **mesh** and the same arm as a
+**reduced** superelement.
+
+**1. Mesh** — give nodes, beam/bar elements and the interface (attachment) nodes;
+KinematiK assembles and **Guyan-condenses** it to the interface for you:
+
+```json
+{ "type": "mesh",
+  "nodes": [ {"id": "lower_front_inner", "xyz": [-110, 200, 122.5]},
+             {"id": "lower_ball",        "xyz": [  -5, 575, 110]} ],
+  "elements": [ {"n1": "lower_front_inner", "n2": "lower_ball",
+                 "kind": "beam", "material": "Steel 4130",
+                 "od_mm": 25.4, "wall_mm": 1.65} ],
+  "interface": { "lower_front_inner": "lower_front_inner",
+                 "lower_ball": "lower_ball" } }
+```
+
+**2. Reduced** — a pre-condensed superelement: interface nodes + the condensed
+stiffness matrix. This is the portable form an **ADAMS Flex MNF**, a Craig–Bampton
+boundary reduction, or a DMIG export already carries; KinematiK uses it verbatim:
+
+```json
+{ "type": "reduced", "dofs_per_node": 6,
+  "interface": [ {"name": "lower_front_inner", "xyz": [-110, 200, 122.5]},
+                 {"name": "lower_ball",        "xyz": [  -5, 575, 110]} ],
+  "K_condensed": [[ ... 12 x 12 ... ]] }
+```
+
+Load either and map its nodes onto a member:
+
+```python
+from suspension import load_flex_body
+body = load_flex_body("examples/lower_a_arm.flex.json")
+stiff = {"LF": MemberStiffness(flex_body=body,
+                               node_out="lower_ball", node_in="lower_front_inner")}
+```
+
+**Honest scope.** A production `.mnf` is a proprietary binary holding the interface
+data *and* the fixed-interface normal modes used for transient/NVH. KinematiK
+imports the **static (constraint-mode) stiffness** — exactly what governs
+load↔deflection in a *sustained* corner — and `read_mnf` raises a clear, actionable
+error on a binary file instead of guessing. Export the reduced superelement (the
+boundary stiffness) as JSON and the numbers are identical; only the packaging
+differs. This is a steady-state, quasi-static compliance model: no damper dynamics,
+no modal response, no kerb strikes.
 
 ## Your tire is the edge
 
@@ -399,8 +539,10 @@ settles an argument, rather than the loudest opinion in the room.
 Recently shipped (was on this list): real pushrod/rocker **motion ratio** and
 **anti-dive / anti-squat**; **GPS/cone track import**; **racing-line optimisation**;
 a real **motor map**; **combined slip**, **relaxation length** and a **damper model**
-(the last three implemented honestly and gated on your data); and a **validation tab**
-that correlates the sim against measured skidpad / accel / datalogger traces.
+(the last three implemented honestly and gated on your data); a **validation tab**
+that correlates the sim against measured skidpad / accel / datalogger traces; and
+**flexible-body compliance** — link/tab deflection and FEA (ADAMS Flex-style)
+import giving compliance steer/camber at the cornering limit.
 
 ### A note on honesty over a green scorecard
 
