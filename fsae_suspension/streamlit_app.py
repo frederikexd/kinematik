@@ -438,12 +438,18 @@ especially the things that *didn't* work. It takes ten seconds with the template
 and it's the difference between next year starting ahead or relearning everything.
     """)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13 = st.tabs(
+_tabs = st.tabs(
     ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
-     "  GEOMETRY 3D  ", "  SUSPENSION vs CHASSIS  ", "  TEAM FIT  ",
+     "  GEOMETRY 3D  ", "  TEAM FIT  ",
      "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
      "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  VALIDATION  ",
-     "  SUBSYSTEM INTEGRATION  "])
+     "  INTEGRATION  "])
+# Map the existing tab variable names onto the new (merged) tab order so the tab
+# bodies below don't all need renumbering. SUSPENSION vs CHASSIS is no longer a
+# top-level tab — its CAD fit/clearance check now lives inside the merged
+# INTEGRATION tab (tab13) as a sub-view, rendered by render_suspension_vs_chassis().
+(tab1, tab2, tab3, tab4, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13) = _tabs
+
 
 travels = [st_.travel for st_ in sweep]
 
@@ -645,8 +651,9 @@ with tab4:
         legend=dict(bgcolor="rgba(0,0,0,0)"))
     st.plotly_chart(fig3d, use_container_width=True)
 
-# ----------------------------- TAB 5 --------------------------------------- #
-with tab5:
+# --------------------------------------------------------------------------- #
+# ----- SUSPENSION vs CHASSIS (now a section of the merged INTEGRATION tab) ----- #
+def render_suspension_vs_chassis():
     st.markdown('<p class="hint">Load the team\'s chassis CAD (STEP or STL) to check '
                 'two things before you cut tube: do the inboard pickups land on the '
                 'frame (fit), and does the moving linkage clear the chassis through '
@@ -764,7 +771,7 @@ with tab5:
                 if st.button("＋ Log this to handover", key="autocap_susp_btn"):
                     log_decision_now("suspension",
                                      f"Suspension {verdict.lower()} vs chassis",
-                                     edited, author="SUSPENSION vs CHASSIS")
+                                     edited, author="INTEGRATION")
                     st.success("Logged to project.json — visible in WEIGHT & HANDOVER.")
 
             sheet = chassis_mod.manufacturing_sheet(hp, kin)
@@ -1251,7 +1258,7 @@ with tab8:
 
     if not notes:
         st.markdown('<p class="hint">No notes yet. When a check in TEAM FIT or '
-                    'SUSPENSION vs CHASSIS affects another team, post a note here so '
+                    'a suspension change affects another team, post a note here so '
                     'their lead sees it the next time they open the tool.</p>',
                     unsafe_allow_html=True)
     else:
@@ -2024,9 +2031,21 @@ with tab12:
                     'point.</p>', unsafe_allow_html=True)
 
 
-# ----------------------------- TAB 13 -------------------------------------- #
-# SUBSYSTEM INTEGRATION — the interface ledger between the eight sub-teams.
+# ----------------------------- TAB 13 (merged INTEGRATION) ----------------- #
+# INTEGRATION — suspension↔chassis CAD fit + the interface ledger across the
+# eight sub-teams, combined into one tab.
 with tab13:
+    _iview = st.radio(
+        "Integration view",
+        ["Cross-subsystem ledger", "Suspension ↔ chassis (CAD fit)"],
+        horizontal=True, label_visibility="collapsed", key="integration_view")
+
+    _show_ledger = (_iview == "Cross-subsystem ledger")
+    if not _show_ledger:
+        render_suspension_vs_chassis()
+
+if _show_ledger:
+  with tab13:
     st.markdown('<p class="hint">OptimumK, ANSYS and SolidWorks each go deep in '
                 '<b>one</b> domain. What no team has is this: a place where the '
                 '<b>interfaces between</b> subsystems are owned and checked. Each team '
@@ -2036,7 +2055,9 @@ with tab13:
                 'estimates that blow the budget — <b>while they\'re still cheap to fix</b>. '
                 'It does not simulate your subsystem (your own tool does that better); '
                 'it owns the channels between them, and flags every placeholder number '
-                'so a green board never means more than the data behind it.</p>',
+                'so a green board never means more than the data behind it. The '
+                '<i>Suspension ↔ chassis</i> view above checks the geometric fit of the '
+                'linkage against the chassis CAD.</p>',
                 unsafe_allow_html=True)
 
     _IF = interfaces_mod
