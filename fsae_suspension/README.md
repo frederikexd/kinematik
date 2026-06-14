@@ -125,30 +125,6 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   pathological tire never crashes the session — the sim substitutes a safe default
   and surfaces a warning instead of raising.
 
-**Transient solver (the unsteady half of the lap — NEW)**
-- The thing QSS assumes away. The **◢ TRANSIENT** tab runs an explicit,
-  high-frequency time-step solver that integrates the full vehicle DAE — planar
-  yaw/sideslip, sprung heave/pitch/roll, four unsprung wheel-hops, and lateral
-  tire relaxation — **millisecond by millisecond** (explicit RK4 @ 1 ms) on the
-  *same* tire, damper and geometry the rest of the tool uses.
-- It shows the behaviour a quasi-steady model structurally can't: **turn-in lag
-  and yaw overshoot** (a step steer that overshoots its steady yaw then settles),
-  **snap-oversteer and the countersteer that catches it** (a trailing-throttle
-  slide that spins uncaught but is pulled back by a state-feedback countersteer),
-  **pitch and dive** through a brake→throttle transition (the sprung mass rocking,
-  the digressive damper settling it), and **kerb strikes** (the unsprung mass
-  hopping at ~15–20 Hz, the contact load spiking and dropping to zero — wheel
-  lift). It also contrasts the transient corner build-up against the QSS steady
-  number directly (rise time, overshoot, settle).
-- Honest scope, same as everywhere else: it resolves the dominant transient
-  modes; longitudinal force is demanded and friction-ellipse-limited rather than
-  spun up as full slip-ratio wheel states, and tire thermal state and a
-  closed-loop racing line are out of scope — flagged, not faked. Use QSS for the
-  lap-time number; use this for the unsteady behaviour behind it. Same
-  never-crash contract: every run returns a flagged result with warnings rather
-  than raising. Built on the verified `damper.py` / relaxation-length primitives
-  and covered by `tests/test_transient.py` (37 checks).
-
 **Tire & grip (the thing that actually wins skidpad and the limit in autocross)**
 - Full Magic Formula lateral model wired into the whole grip/balance stack — not a
   linear placeholder. Load sensitivity and camber response come from the curve, not
