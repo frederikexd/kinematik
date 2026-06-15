@@ -85,14 +85,9 @@ from .tire_cosim import (
 from .tire_cosim_driver import (
     CosimCornerSet, CosimTireHistory, run_cosim_maneuver,
 )
-from .tire_thermal import (
-    ThermalTireModel, ThermalParams, ThermalRun,
-    default_thermal_params, simulate_warmup,
-)
 from . import tire_cosim
 from . import tire_cosim_driver
 from . import tire_cosim_ftire_example
-from . import tire_thermal
 
 # Aerodynamic CFD co-simulation boundary (OpenFOAM / STAR-CCM+ / Fluent seam).
 # The aero analogue of tire_cosim: KinematiK owns the attitude sweep, the run
@@ -164,9 +159,6 @@ __all__ = [
     "make_tire_backend", "default_structural_tire",
     "CosimCornerSet", "CosimTireHistory", "run_cosim_maneuver",
     "tire_cosim", "tire_cosim_driver", "tire_cosim_ftire_example",
-    # lumped-parameter tyre thermal channel (tread/carcass/gas energy balance)
-    "ThermalTireModel", "ThermalParams", "ThermalRun",
-    "default_thermal_params", "simulate_warmup", "tire_thermal",
     # aerodynamic CFD co-simulation boundary (OpenFOAM / STAR-CCM+ / Fluent seam)
     "Attitude", "RunMatrix", "CaseSpec", "CoeffResult", "CFDProvenance",
     "SolverFidelity", "CFDSolver", "SolverUnavailable",

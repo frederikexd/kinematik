@@ -44,28 +44,6 @@ plus a 3D road over a timestep, get forces plus an evolved state back.
 | `step(ws: WheelState) -> TireOutput` | Advance one step. **Must not raise** — clamp, flag via `warnings()` / `TireOutput.synthesized`, and return a valid object so a 10 000-step run is never taken down by one bad sample. |
 | `warnings() -> list[str]` | Cumulative, de-duplicated backend warnings. |
 
-### Built-in backends (no vendor binary)
-
-Two backends ship in-tree and need no license — build either with
-`make_tire_backend(kind)`:
-
-| `kind` | Class | Fidelity | Fills | Honest gaps |
-|---|---|---|---|---|
-| `reference` | `ReferenceTireModel` | `HANDLING` | Fx/Fy/Mz via Pacejka + friction ellipse, lateral relaxation as real internal state | all structural **and** thermal channels are `None`, listed in `synthesized` |
-| `thermal` | `ThermalTireModel` | `THERMAL` | the above **plus** `tread_temp_c` (per band), `carcass_temp_c`, `gas_temp_c`, hot `inflation_pressure_pa` from a 3-node lumped energy balance | structural channels still `None`; thermal channels are real physics but **uncalibrated** — flagged `synthesized` until `ThermalParams.calibrated=True` |
-
-`ThermalTireModel` (`suspension/tire_thermal.py`) is the honest in-house answer to
-"can KinematiK say anything about tyre temperature without a vendor thermal module?"
-It integrates tread/carcass/gas nodes heated by frictional sliding power
-(`|F·v_slip|`) and rolling hysteresis, cooled by speed-dependent convection to air
-and conduction to the track, with an ideal-gas pressure rise. The **equations are
-textbook**; the masses, heat-transfer coefficients and the optional grip-vs-
-temperature law μ(T) are representative defaults, **not** fitted to your tyre — so a
-true absolute temperature is impossible without temperature-swept TTC data, and the
-backend says so on every sample. Read its *shape* (warm-up time, the camber-driven
-inner/outer tread split, front/rear divergence over a stint, the pressure rise), not
-its absolute degrees, until you calibrate it. Tests: `tests/test_tire_thermal.py`.
-
 ---
 
 ## 2. Frame & sign conventions

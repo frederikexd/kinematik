@@ -445,26 +445,14 @@ class CDTireModel(_ExternalTireBackend):
 # --------------------------------------------------------------------------- #
 def make_tire_backend(kind: str = "reference", **kw) -> StructuralTireModel:
     """
-    Build a backend by name. `kind` in {reference, thermal, ftire, cdtire}.
-    `reference` is handling-only (no thermal/structural channels). `thermal` adds a
-    lumped tread/carcass/gas thermal network on the same Pacejka core — real
-    energy-balance physics, but UNCALIBRATED (every thermal channel flagged
-    synthesized) until you supply temperature-swept data. The external backends
-    (ftire, cdtire) require a `parameter_file=` and a `binding=`; without them they
-    raise a clear, actionable error (by design — the seam is here, the binary is
-    not). `reference` and `thermal` always work and need no binary.
+    Build a backend by name. `kind` in {reference, ftire, cdtire}. The external
+    backends require a `parameter_file=` and a `binding=`; without them they raise
+    a clear, actionable error (by design — the seam is here, the binary is not).
+    `reference` always works and needs nothing.
     """
     kind = (kind or "reference").lower()
     if kind in ("reference", "pacejka", "default"):
         return ReferenceTireModel(lateral=kw.get("lateral"))
-    if kind in ("thermal", "lumped-thermal", "lumped_thermal"):
-        # Lumped 3-node thermal channel on the Pacejka core. Real energy-balance
-        # physics, UNCALIBRATED parameters (flagged synthesized) until you supply
-        # temperature-swept data. Imported lazily to avoid a module import cycle.
-        from .tire_thermal import ThermalTireModel
-        return ThermalTireModel(lateral=kw.get("lateral"),
-                                params=kw.get("params"),
-                                init_temp_c=kw.get("init_temp_c"))
     if kind == "ftire":
         return FTireModel(parameter_file=kw.get("parameter_file", ""),
                           library_path=kw.get("library_path"),
@@ -476,7 +464,7 @@ def make_tire_backend(kind: str = "reference", **kw) -> StructuralTireModel:
                            binding=kw.get("binding"),
                            fitted_to=kw.get("fitted_to", ""))
     raise ValueError(f"Unknown tyre backend '{kind}'. "
-                     f"Options: reference, thermal, ftire, cdtire.")
+                     f"Options: reference, ftire, cdtire.")
 
 
 def default_structural_tire() -> StructuralTireModel:

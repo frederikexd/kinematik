@@ -38,7 +38,6 @@ from suspension import damper as damper_mod
 from suspension import interfaces as interfaces_mod
 from suspension import transient as transient_mod
 from suspension import ggv as ggv_mod
-from suspension import tire_thermal as thermal_mod
 
 st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
@@ -2350,121 +2349,6 @@ with tab9:
                     unsafe_allow_html=True)
     except Exception as e:
         st.info(f"Combined-slip preview unavailable: {e}")
-
-    # ---- Tire thermal channel (lumped tread/carcass/gas network) --------- #
-    st.markdown("###### Tire thermal channel — warm-up, working range & pressure")
-    st.markdown('<p class="hint">A true tire temperature cannot be computed without '
-                '<b>empirical, temperature-swept tire data</b> — so this channel is '
-                'built honestly: a 3-node lumped energy balance (tread / carcass / '
-                'inflation gas) heated by frictional sliding and rolling hysteresis, '
-                'cooled by convection to air and conduction to the track. The '
-                '<b>equations are textbook physics</b>; the masses, heat-transfer '
-                'coefficients and the grip-vs-temperature law are '
-                '<b>representative defaults, NOT your tire</b>. Read the shape — '
-                'warm-up time, the front/rear and across-width split, the pressure '
-                'rise — not the absolute degrees. Every temperature here is flagged '
-                'synthesized until you calibrate it to swept data.</p>',
-                unsafe_allow_html=True)
-    try:
-        tcol = st.columns(4)
-        _t_alpha = tcol[0].number_input("Slip angle (°)", 0.0, 12.0, value=4.0,
-                                        step=0.5, key="therm_alpha")
-        _t_fz = tcol[1].number_input("Vertical load (N)", 200.0, 3000.0,
-                                     value=1300.0, step=50.0, key="therm_fz")
-        _t_v = tcol[2].number_input("Speed (m/s)", 3.0, 45.0, value=20.0,
-                                    step=1.0, key="therm_v")
-        _t_dur = tcol[3].number_input("Run length (s)", 20.0, 600.0, value=150.0,
-                                      step=10.0, key="therm_dur")
-        tcol2 = st.columns(4)
-        _t_cam = tcol2[0].number_input("Camber (°)", 0.0, 6.0, value=1.5,
-                                       step=0.5, key="therm_cam")
-        _t_amb = tcol2[1].number_input("Ambient (°C)", -5.0, 50.0, value=25.0,
-                                       step=1.0, key="therm_amb")
-        _t_trk = tcol2[2].number_input("Track surface (°C)", 0.0, 70.0, value=34.0,
-                                       step=1.0, key="therm_trk")
-        _t_mu = tcol2[3].checkbox("Couple grip to temp (μ(T))", value=False,
-                                  key="therm_mu",
-                                  help="Let the modelled tread temperature scale "
-                                       "Pacejka grip. OFF by default — the μ(T) curve "
-                                       "is the most data-hungry part and is flagged "
-                                       "synthesized when on.")
-
-        _t_cold_psi = tcol[0].number_input("Cold set pressure (psi)", 6.0, 35.0,
-                                           value=12.0, step=0.5, key="therm_psi")
-
-        _live_tire_th = tire_mod.PacejkaLateral(
-            coeffs=dict(st.session_state.tire_coeffs),
-            FNOMIN=st.session_state.tire_fnomin)
-        _tp = thermal_mod.ThermalParams(
-            enable_mu_feedback=bool(_t_mu),
-            cold_pressure_pa=float(_t_cold_psi) * 6894.757)
-        _tm = thermal_mod.ThermalTireModel(lateral=_live_tire_th, params=_tp)
-        _trun = thermal_mod.simulate_warmup(
-            model=_tm, alpha_deg=float(_t_alpha), Fz=float(_t_fz), v_x=float(_t_v),
-            gamma_deg=float(_t_cam), ambient_c=float(_t_amb), track_c=float(_t_trk),
-            duration_s=float(_t_dur), dt=5.0e-3)
-
-        _mean = _trun.tread_mean_c()
-        tm_cols = st.columns(4)
-        tm_cols[0].markdown(metric("Tread (plateau)", f"{_mean[-1]:.0f}", "°C"),
-                            unsafe_allow_html=True)
-        tm_cols[1].markdown(metric("Carcass", f"{_trun.carcass_c[-1]:.0f}", "°C"),
-                            unsafe_allow_html=True)
-        tm_cols[2].markdown(metric("Hot pressure", f"{thermal_mod.psi(_trun.pressure_pa[-1]):.1f}", "psi"),
-                            unsafe_allow_html=True)
-        # time to reach 90% of the plateau rise — a "warm-up time" proxy
-        _rise = _mean - _mean[0]
-        _target = 0.9 * _rise[-1] if abs(_rise[-1]) > 1e-6 else 0.0
-        _idx = int(np.argmax(_rise >= _target)) if _target > 0 else 0
-        _warm_s = _trun.t[_idx] if _target > 0 else 0.0
-        tm_cols[3].markdown(metric("Warm-up (90%)", f"{_warm_s:.0f}", "s"),
-                            unsafe_allow_html=True)
-
-        # temperature traces
-        figT = go.Figure()
-        figT.add_trace(go.Scatter(x=_trun.t, y=_mean, mode="lines",
-                                  line=dict(color=CYAN, width=3), name="tread (mean)"))
-        figT.add_trace(go.Scatter(x=_trun.t, y=_trun.carcass_c, mode="lines",
-                                  line=dict(color=AMBER, width=2), name="carcass"))
-        figT.add_trace(go.Scatter(x=_trun.t, y=_trun.gas_c, mode="lines",
-                                  line=dict(color=DIM, width=2, dash="dot"), name="gas"))
-        # across-width band spread (inner/mid/outer) at the plateau
-        if _trun.tread_c.shape[1] > 1:
-            figT.add_trace(go.Scatter(x=_trun.t, y=_trun.tread_c[:, 0], mode="lines",
-                                      line=dict(color=CYAN, width=1, dash="dot"),
-                                      name="tread inner", opacity=0.5))
-            figT.add_trace(go.Scatter(x=_trun.t, y=_trun.tread_c[:, -1], mode="lines",
-                                      line=dict(color=RED, width=1, dash="dot"),
-                                      name="tread outer", opacity=0.5))
-        figT.update_layout(**PLOT_LAYOUT, title="Tire warm-up — lumped thermal network",
-                           xaxis_title="time (s)", yaxis_title="temperature (°C)",
-                           height=360)
-        st.plotly_chart(figT, width='stretch')
-
-        if bool(_t_mu):
-            figMu = go.Figure()
-            figMu.add_trace(go.Scatter(x=_trun.t, y=_trun.mu_scale, mode="lines",
-                                       line=dict(color=RED, width=2.5)))
-            figMu.update_layout(**PLOT_LAYOUT,
-                                title="Grip multiplier μ(T) over the run "
-                                      "(SYNTHESIZED — needs swept data)",
-                                xaxis_title="time (s)",
-                                yaxis_title="grip scale vs optimum", height=260)
-            st.plotly_chart(figMu, width='stretch')
-
-        st.markdown(f'<span class="tag warn">{_trun.status}</span>',
-                    unsafe_allow_html=True)
-        st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
-                    'padding-left:10px;">The across-width split (inner vs outer band) '
-                    'is the same thing a tire pyrometer reads after a run — use it to '
-                    'reason about camber, and the front/rear plateau split to reason '
-                    'about balance late in a stint. The numbers are a physically-'
-                    'shaped guess until the active tire above is calibrated to '
-                    'temperature-swept data; then set <code>ThermalParams.calibrated'
-                    '</code> and they stop being flagged.</p>',
-                    unsafe_allow_html=True)
-    except Exception as e:
-        st.info(f"Thermal channel unavailable: {e}")
 
     # ---- Damper force-velocity ------------------------------------------- #
     st.markdown("###### Damper force–velocity (transient building block)")
