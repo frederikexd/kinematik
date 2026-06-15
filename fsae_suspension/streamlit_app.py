@@ -1023,6 +1023,150 @@ def render_suspension_vs_chassis():
             except Exception:
                 pass
 
+# --------- MOUNT-POINT CLASH (section of the merged INTEGRATION tab) -------- #
+def render_mountpoint_clash():
+    """
+    The CAD→clash→CG chain, live: an aero member drags a single wing mounting point
+    and we re-run the point-vs-keep-out clearance check (flagging the chassis master
+    file clash) and re-roll the car CG through the integration ledger — in one call,
+    persisted to the project store so it survives a restart.
+    """
+    from suspension.mountpoints import MountPoint, KeepOut, propagate_mount_move
+    _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
+                 "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
+                 "suspension": "🩷"}
+    _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
+             "data-acquisition", "electrics", "powertrain", "suspension"]
+
+    st.markdown('<p class="hint">This is the move an aero member actually makes: drag '
+                'a single <b>wing mounting point</b> and see, immediately, whether it '
+                'now <b>clashes with a chassis keep-out</b> (the clearance check the '
+                'chassis engineer would otherwise catch at assembly) and what it does '
+                'to the car <b>CG</b> the vehicle-dynamics model uses. Points and '
+                'keep-outs persist with the project. It is a <i>geometric</i> check on '
+                'declared points and boxes — not a CAD kernel — so a point that bolts '
+                'onto a structure is allowed to touch it; everything else it must '
+                'clear.</p>', unsafe_allow_html=True)
+
+    store = project_mod.ProjectStore(PROJECT_PATH)
+    geom = store.geometry
+
+    # ---- editor: keep-outs and mount points ---- #
+    ec = st.columns(2)
+    with ec[0]:
+        st.markdown("###### Keep-out volumes (reserved by a subsystem's master file)")
+        with st.expander("Add / replace a keep-out", expanded=not geom.keepouts):
+            kname = st.text_input("Name", key="ko_name", value="main-hoop-tube")
+            kowner = st.selectbox("Owned by", _SUBS, index=_SUBS.index("chassis"),
+                                  key="ko_owner")
+            kl = st.columns(3)
+            lo = (kl[0].number_input("lo x", value=1380.0, key="ko_lox"),
+                  kl[1].number_input("lo y", value=-180.0, key="ko_loy"),
+                  kl[2].number_input("lo z", value=480.0, key="ko_loz"))
+            kh = st.columns(3)
+            hi = (kh[0].number_input("hi x", value=1430.0, key="ko_hix"),
+                  kh[1].number_input("hi y", value=180.0, key="ko_hiy"),
+                  kh[2].number_input("hi z", value=1050.0, key="ko_hiz"))
+            kest = st.checkbox("Estimated geometry", value=False, key="ko_est")
+            if st.button("Save keep-out", key="ko_save"):
+                store.set_keepout(KeepOut(kname, kowner, lo_mm=lo, hi_mm=hi,
+                                          is_estimate=kest))
+                store.save()
+                st.rerun()
+        for name, ko in list(geom.keepouts.items()):
+            est = " · est" if ko.is_estimate else ""
+            kc = st.columns([5, 1])
+            kc[0].markdown(
+                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                f'{_MP_EMOJI.get(ko.owner_subsystem,"")} <b>{name}</b> '
+                f'<span style="color:#8d99a6;font-size:.8rem">{ko.owner_subsystem}{est}</span><br>'
+                f'<span style="font-size:.82rem;color:#8d99a6">'
+                f'{tuple(round(v) for v in ko.lo_mm)} → {tuple(round(v) for v in ko.hi_mm)} mm</span></div>',
+                unsafe_allow_html=True)
+            if kc[1].button("✕", key=f"ko_del_{name}"):
+                store.remove_keepout(name); store.save(); st.rerun()
+
+    with ec[1]:
+        st.markdown("###### Mount points (the hardpoints a subteam moves)")
+        with st.expander("Add / replace a mount point", expanded=not geom.points):
+            pname = st.text_input("Name", key="mp_name", value="rear-wing-upper-mount")
+            powner = st.selectbox("Owned by", _SUBS,
+                                  index=_SUBS.index("aerodynamics"), key="mp_owner")
+            pmounts = st.selectbox("Mounts onto", _SUBS,
+                                   index=_SUBS.index("chassis"), key="mp_mounts")
+            pc = st.columns(3)
+            pxyz = (pc[0].number_input("x", value=1350.0, key="mp_x"),
+                    pc[1].number_input("y", value=120.0, key="mp_y"),
+                    pc[2].number_input("z", value=900.0, key="mp_z"))
+            pclr = st.number_input("Required clearance (mm)", 0.0, 100.0,
+                                   value=8.0, key="mp_clr")
+            pest = st.checkbox("Estimated geometry", value=False, key="mp_est")
+            if st.button("Save mount point", key="mp_save"):
+                store.set_mount_point(MountPoint(pname, xyz_mm=pxyz,
+                                                 owner_subsystem=powner,
+                                                 mounts_on=pmounts,
+                                                 min_clearance_mm=pclr,
+                                                 is_estimate=pest))
+                store.save()
+                st.rerun()
+        for name, mp in list(geom.points.items()):
+            est = " · est" if mp.is_estimate else ""
+            pc = st.columns([5, 1])
+            pc[0].markdown(
+                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                f'{_MP_EMOJI.get(mp.owner_subsystem,"")} <b>{name}</b> '
+                f'<span style="color:#8d99a6;font-size:.8rem">{mp.owner_subsystem} '
+                f'→ {mp.mounts_on}{est}</span><br>'
+                f'<span style="font-size:.82rem;color:#8d99a6">'
+                f'{tuple(round(v) for v in mp.xyz_mm)} mm · clr {mp.min_clearance_mm:.0f}</span></div>',
+                unsafe_allow_html=True)
+            if pc[1].button("✕", key=f"mp_del_{name}"):
+                store.remove_mount_point(name); store.save(); st.rerun()
+
+    # ---- the live "drag a point" propagation ---- #
+    if geom.points:
+        st.markdown("###### Move a mount point — propagate clash + CG in one step")
+        led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+        mc = st.columns([2, 3, 1])
+        which = mc[0].selectbox("Point", list(geom.points), key="mv_which")
+        cur = geom.points[which].xyz_mm
+        nx = mc[1].columns(3)
+        new_xyz = (nx[0].number_input("→ x", value=float(cur[0]), key="mv_x"),
+                   nx[1].number_input("→ y", value=float(cur[1]), key="mv_y"),
+                   nx[2].number_input("→ z", value=float(cur[2]), key="mv_z"))
+        also_cg = st.checkbox(
+            "This point is the subsystem's mass location (shift its CG with the move)",
+            value=False, key="mv_cg")
+        if mc[2].button("Move →", key="mv_go"):
+            res = propagate_mount_move(geom, led, which, new_xyz,
+                                       set_by="integration-tab",
+                                       update_interface_cg=also_cg)
+            if also_cg:
+                st.session_state.ledger = led.as_dict()
+            store.save()
+            st.session_state["_mp_last"] = res
+
+        res = st.session_state.get("_mp_last")
+        if res is not None and res.moved_point == which:
+            st.markdown(f'<p class="hint">{res.summary()}</p>', unsafe_allow_html=True)
+
+    # ---- the clash board (same render idiom as the ledger findings) ---- #
+    st.markdown("###### Clash board")
+    findings = geom.check_clashes()
+    _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
+                "info": "", "ok": "good"}
+    order = ["fail", "warning", "missing", "info", "ok"]
+    for f in sorted(findings, key=lambda x: order.index(x.severity.value)):
+        cls = _SEV_CLS.get(f.severity.value, "")
+        who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
+        st.markdown(
+            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+            f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
+            f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
+            f'<span style="font-size:.92rem">{f.message}</span></div>',
+            unsafe_allow_html=True)
+
+
 # ----------------------------- TAB 5c (COMPLIANCE / FLEX) ------------------ #
 with tab5c:
   if _topo != "double_wishbone":
@@ -2579,12 +2723,15 @@ with tab12:
 with tab13:
     _iview = st.radio(
         "Integration view",
-        ["Cross-subsystem ledger", "Subsystem ↔ chassis (CAD fit)"],
+        ["Cross-subsystem ledger", "Subsystem ↔ chassis (CAD fit)",
+         "Mount-point clash"],
         horizontal=True, label_visibility="collapsed", key="integration_view")
 
     _show_ledger = (_iview == "Cross-subsystem ledger")
-    if not _show_ledger:
+    if _iview == "Subsystem ↔ chassis (CAD fit)":
         render_suspension_vs_chassis()
+    elif _iview == "Mount-point clash":
+        render_mountpoint_clash()
 
 if _show_ledger:
   with tab13:

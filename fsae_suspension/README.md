@@ -168,6 +168,45 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   than raising. Built on the verified `damper.py` / relaxation-length primitives
   and covered by `tests/test_transient.py` (37 checks).
 
+**EV powertrain & energy — the architecture choice, decided in seconds (NEW)**
+- KinematiK was born combustion: the lap sim carried a single `power_w` cap.
+  That can't answer the expensive, hard-to-reverse question an FSAE-EV team has
+  to get right *once*: **one motor + diff, two motors (axle split), or four
+  hub/upright motors (full torque vectoring)?** The **EV layer**
+  (`suspension/ev_powertrain.py`) runs your *live* car through all three
+  architectures on the same track and ranks them in the only currencies that
+  decide the EV events: **seconds and kWh**.
+- It wraps the existing QSS lap sim at the one seam where architecture enters —
+  corner-exit traction. The traction-limit difference is modelled from first
+  principles: an **open diff** is capped by the lateral-load-unloaded inside
+  driven wheel, an **axle split** shares but still has no left/right control,
+  and **per-wheel torque vectoring** deploys each wheel to its own load-limit.
+  That delta is the real, defensible reason TV buys lap time, and it's computed,
+  not asserted.
+- **Honest about what QSS can't earn:** the *yaw-moment* benefit of L/R torque
+  vectoring (using a torque difference to rotate the car) is real but is a
+  closed-loop control behaviour a point-mass cannot resolve — so it is reported
+  as a **separate, clearly-flagged upper bound** and **never folded into the lap
+  time**. Same philosophy as the CFD and FTire seams: no fabricated number to
+  fill a hole.
+- **Each architecture carries its own mass.** More motors + inverters weigh
+  more, and that mass costs lap time, so TV must pay for its own weight before it
+  shows a net gain. In the default run this is the headline: the four-motor car's
+  traction edge is nearly eaten by its +16 kg, and the two-motor axle-split car
+  wins on raw lap time — TV only pulls ahead once the separately-reported yaw
+  benefit is counted. That trade, quantified, *is* the design-event argument.
+- **Energy budget + regen + pack sizing:** integrates net tractive energy from
+  the QSS speed/long-g trace through the inverter+motor efficiency, returns
+  braking energy via a driven-axle-capped regen model, and tells you whether the
+  pack outlasts the 22 km endurance distance — and if not, the planning-grade
+  lap-time penalty of derating power to finish. Size the pack you can afford
+  instead of brute-forcing it with the pack you can't.
+- Make it yours by setting two dicts to your real numbers: `mass_delta_kg`
+  (your motor/inverter weights) and `drive_grip_frac` (your measured/estimated
+  corner-exit traction per architecture) — the comparison lives there. Same
+  never-crash contract throughout; covered by `tests/test_ev_powertrain.py`
+  (27 checks).
+
 **Tire & grip (the thing that actually wins skidpad and the limit in autocross)**
 - Full Magic Formula lateral model wired into the whole grip/balance stack — not a
   linear placeholder. Load sensitivity and camber response come from the curve, not
@@ -218,6 +257,30 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
 - Same workflow for every Elbee subteam — aero, brakes, cooling, data-acq, electrics,
   powertrain, suspension. The idea: a team that can't out-spend its rivals wins by not
   wasting parts on rework. Catch interference in CAD before the first cut.
+
+**Parametric mount-point clash + CG propagation (the CAD→clash→CG chain — NEW)**
+- The interference checks above test a *whole loaded part* against the chassis mesh.
+  This closes the faster inner loop a subteam lives in: move **one mounting hardpoint**
+  a few millimetres and get, in a single call, both consequences at once —
+  - **the clearance clash** against every keep-out volume another subteam's master file
+    reserves (the chassis main hoop, the driver legroom box, the accumulator, a cooling
+    duct), flagged as hard interference (FAIL) or inside-the-clearance-band (WARN), with
+    **both subteams named as owners** so the conflict has an owner, and
+  - **the updated car CG**, re-rolled through the same integration ledger the
+    vehicle-dynamics model reads, so geometry and the load-transfer number can never
+    drift out of sync.
+- Geometry is explicit and honest: a `MountPoint` in car coordinates and a `KeepOut`
+  axis-aligned box, checked with an **exact analytic point-to-box signed distance**
+  (zero CAD-kernel dependency, validated to closed form). A point that legitimately
+  **bolts onto** a structure is allowed to touch it; everything else it must clear.
+- Provenance carries through: a point or box flagged *estimated* taints the finding as
+  estimated rather than presenting placeholder geometry as final — the same
+  no-false-confidence rule the rest of KinematiK keeps.
+- Lives in the **◢ INTEGRATION** tab under the *Mount-point clash* view, and **persists
+  with the project** (`project.json`) so the points, keep-outs and last move survive a
+  restart. `update_interface_cg` opt-in shifts a subsystem's declared CG with the point
+  only when that point genuinely is the part's mass location — off by default, because a
+  single bracket usually isn't.
 
 **Weight budget & handover (persistent team memory)**
 - Per-team weight budget with a running total against a target mass; mass estimated
@@ -308,6 +371,37 @@ from suspension import correlation
 rep = correlation.correlate_skidpad(veh, measured_g=1.42)
 print(rep.summary)                 # measured vs predicted, % error, trust verdict
 print("within tolerance:", rep.overall_within_tol)
+```
+
+The mount-point clash + CG chain is just as importable — move one hardpoint and get the
+clearance clash and the new CG back in a single call:
+
+```python
+from suspension import (GeometryLedger, MountPoint, KeepOut, propagate_mount_move)
+from suspension.interfaces import IntegrationLedger, SubsystemInterface
+
+# the chassis engineer's master file reserves the main-hoop tube volume
+geom = GeometryLedger()
+geom.set_keepout(KeepOut("main-hoop", "chassis",
+                         lo_mm=(1380, -180, 480), hi_mm=(1430, 180, 1050),
+                         is_estimate=False))
+# aero's rear-wing upper mount, currently clear
+geom.set_point(MountPoint("rear-wing-upper-mount", xyz_mm=(1350, 120, 900),
+                          owner_subsystem="aerodynamics", mounts_on="suspension",
+                          min_clearance_mm=8.0, is_estimate=False))
+
+# the vehicle-dynamics ledger (mass + CG) the load-transfer model reads
+led = IntegrationLedger(target_mass_kg=230.0)
+led.set(SubsystemInterface("aerodynamics", mass_kg=12.0,
+                           cg_x_mm=1450, cg_y_mm=0, cg_z_mm=520, is_estimate=False))
+led.set(SubsystemInterface("chassis", mass_kg=32.0,
+                           cg_x_mm=820, cg_y_mm=0, cg_z_mm=300, is_estimate=False))
+
+# aero drags the mount 60 mm rearward — clash + CG propagate in one call
+res = propagate_mount_move(geom, led, "rear-wing-upper-mount", (1410, 120, 900))
+print(res.summary())               # "...HARD CLASH flagged. CG moved ... mm in z."
+for f in res.clash_findings:
+    print(f"  [{f.severity.value.upper()}] {f.message}")
 ```
 
 ## Flexible bodies & compliance (ADAMS Flex-style)
@@ -467,8 +561,9 @@ the code, never the numbers.
 
 ## Persistent storage (so handover data survives)
 
-By default the project memory (decisions, notes, weight budget) saves to a local
-`project.json` file. That's fine on a laptop, but on ephemeral hosts like Streamlit
+By default the project memory (decisions, notes, weight budget, and the mount-point /
+keep-out geometry ledger) saves to a local `project.json` file. That's fine on a
+laptop, but on ephemeral hosts like Streamlit
 Community Cloud the filesystem is wiped on restart — so for a deployed app the team
 relies on, point it at a free hosted database.
 
