@@ -12,8 +12,18 @@ license: mit
 
 # ◢ KinematiK
 
-**Open-source double-wishbone suspension studio for Formula SAE.**
-Edit your hardpoints, see the kinematics *and* the vehicle-level consequences update together — in the browser, for free.
+**Open-source architecture-agnostic suspension studio.**
+Born as a Formula SAE double-wishbone tool, now a general multibody kinematics platform: edit double-wishbone hardpoints live, or pick any topology — MacPherson strut, multi-link, trailing / semi-trailing arm, solid axle, twist-beam, or a heavy-truck steering linkage — and see the kinematics *and* the vehicle-level consequences update together, in the browser, for free. You can also drop in entirely experimental linkages that fit no textbook geometric definition.
+
+---
+
+## Architecture-agnostic engine
+
+The double-wishbone assumption is no longer baked in. Under the hood is a data-driven multibody kinematics kernel (`suspension/topology.py`): rigid bodies defined by points, and a small set of constraint primitives — distance links (two-force members), ball/pin coincidence, prismatic slider (strut), planar, revolute (hinge), driving DOF, rack translation and beam-axle roll — assembled into a `Mechanism` and solved by a branch-stable Levenberg–Marquardt sweep.
+
+A library of parameterised templates (`suspension/topologies.py`) emits ready-to-solve mechanisms for every common topology, and a `from_links` builder lets you define free-form experimental corners. An adapter (`GenericKinematics`, `suspension/adapter.py`) exposes any mechanism through the original corner-state surface, so the **same** vehicle-dynamics layer (roll-centre migration, anti-dive / anti-squat, load transfer, grip balance) drives every architecture with no changes. Instant centres and side-view swing arms are derived topology-independently from the wheel-carrier velocity field, so they're correct even for linkages that have no literal control-arm pivots.
+
+Templates: `double_wishbone`, `macpherson_strut`, `multilink` (3/4/5-link), `trailing_arm`, `semi_trailing_arm`, `solid_axle` (Panhard or Watts), `twist_beam`, `truck_steer_linkage`, and `from_links` (experimental).
 
 ---
 

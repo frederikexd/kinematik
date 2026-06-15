@@ -23,6 +23,7 @@ from suspension import (
     VehicleDynamics, VehicleParams,
     MATERIALS, MemberStiffness, CompliantCorner,
     load_flex_body, corner_wheel_load, WheelLoad,
+    GenericKinematics, list_templates, example as topo_example,
 )
 from suspension import compliance as compliance_mod
 from suspension import flex as flex_mod
@@ -213,7 +214,41 @@ def log_decision_now(team, title, rationale, author="auto"):
 with st.sidebar:
     st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span></div>',
                 unsafe_allow_html=True)
+
+    _TOPO_LABELS = {
+        "double_wishbone": "Double wishbone (full editor)",
+        "macpherson_strut": "MacPherson strut",
+        "multilink": "Multi-link (5-link)",
+        "trailing_arm": "Trailing arm",
+        "semi_trailing_arm": "Semi-trailing arm",
+        "solid_axle": "Solid axle (Panhard)",
+        "twist_beam": "Twist-beam",
+        "truck_steer_linkage": "Heavy-truck steer linkage",
+        "from_links": "Experimental / free-form",
+    }
+    _topo_keys = list(_TOPO_LABELS.keys())
+    topo_choice = st.selectbox(
+        "Suspension topology",
+        _topo_keys,
+        format_func=lambda k: _TOPO_LABELS.get(k, k),
+        index=_topo_keys.index(st.session_state.get("topology", "double_wishbone")),
+        help="Double-wishbone exposes the full live hardpoint editor. Every other "
+             "architecture is solved by the architecture-agnostic multibody engine "
+             "from a representative parameter set and feeds the same vehicle-level "
+             "balance analysis.")
+    st.session_state.topology = topo_choice
+    if topo_choice != "double_wishbone":
+        st.caption("Agnostic engine · this topology drives the same RC / anti-dive / "
+                   "balance pipeline as the wishbone path.")
+
     st.markdown('<div class="sub" style="color:#8d99a6;font-family:JetBrains Mono;font-size:.7rem;letter-spacing:.18em;margin-bottom:.6rem;">HARDPOINT EDITOR · mm · SAE x-rear y-right z-up</div>', unsafe_allow_html=True)
+
+    _is_wishbone = (topo_choice == "double_wishbone")
+    if not _is_wishbone:
+        st.info("The full hardpoint editor below applies to the double-wishbone "
+                "model. The selected topology uses its built-in parameterised "
+                "template; switch back to double-wishbone to edit pickups live.")
+
 
     colA, colB = st.columns(2)
     if colA.button("↺ Reset", width='stretch'):
@@ -334,8 +369,14 @@ hp_dict = apply_preset(preset, st.session_state.hp)
 #  Solve
 # --------------------------------------------------------------------------- #
 try:
-    hp = Hardpoints.from_dict(hp_dict)
-    kin = SuspensionKinematics(hp)
+    _topo = st.session_state.get("topology", "double_wishbone")
+    if _topo == "double_wishbone":
+        hp = Hardpoints.from_dict(hp_dict)
+        kin = SuspensionKinematics(hp)
+    else:
+        mech = topo_example(_topo)
+        kin = GenericKinematics(mech)
+        hp = kin.hp
     # Build the live tire model from session state (default or TTC-fitted).
     _tire = tire_mod.PacejkaLateral(coeffs=dict(st.session_state.tire_coeffs),
                                     FNOMIN=st.session_state.tire_fnomin)
@@ -345,14 +386,25 @@ try:
     _vp_kwargs = {k: v for k, v in st.session_state.vp.items() if k in _vp_fields}
     veh = VehicleDynamics(VehicleParams(**_vp_kwargs),
                           front_kin=kin, rear_kin=kin, tire=_tire)
-    sweep = kin.sweep(-30, 30, 41)
+    # Steer-DOF linkages (e.g. truck steering) have a limited vertical-travel
+    # envelope; sweep a narrower band so the studio stays usable.
+    _span = 15 if _topo == "truck_steer_linkage" else 30
+    sweep = kin.sweep(-_span, _span, 41)
     solve_ok = all(s.converged for s in sweep)
+    if not solve_ok and not kin.static.converged:
+        st.error("Solver could not converge at the static ride height for this "
+                 "topology. Check the template parameters.")
+        st.stop()
 except Exception as e:
     st.error(f"Solver failed for this geometry: {e}")
     st.stop()
 
+if not solve_ok:
+    st.warning("Some travel positions did not converge for this topology; "
+               "results outside the converged band may be incomplete.")
+
 st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
-            '<span class="sub">FSAE double-wishbone studio · open source</span></div>',
+            f'<span class="sub">{_TOPO_LABELS.get(_topo, _topo)} · agnostic engine · open source</span></div>',
             unsafe_allow_html=True)
 
 s = kin.static
@@ -630,21 +682,40 @@ with tab4:
 
     H = hp
     st0 = kin.static
-    # wishbones
-    seg(H.upper_front_inner, st0.upper_outer, CYAN, name="Upper wishbone")
-    seg(H.upper_rear_inner, st0.upper_outer, CYAN)
-    seg(H.lower_front_inner, st0.lower_outer, AMBER, name="Lower wishbone")
-    seg(H.lower_rear_inner, st0.lower_outer, AMBER)
-    seg(st0.lower_outer, st0.upper_outer, "#ffffff", 7, name="Upright / kingpin")
-    seg(H.tie_rod_inner, st0.tie_rod_outer, RED, 4, name="Tie rod")
-    seg(st0.contact_patch, st0.wheel_center, "#6f7d8c", 3, name="Wheel")
+    if _topo == "double_wishbone":
+        # wishbones
+        seg(H.upper_front_inner, st0.upper_outer, CYAN, name="Upper wishbone")
+        seg(H.upper_rear_inner, st0.upper_outer, CYAN)
+        seg(H.lower_front_inner, st0.lower_outer, AMBER, name="Lower wishbone")
+        seg(H.lower_rear_inner, st0.lower_outer, AMBER)
+        seg(st0.lower_outer, st0.upper_outer, "#ffffff", 7, name="Upright / kingpin")
+        seg(H.tie_rod_inner, st0.tie_rod_outer, RED, 4, name="Tie rod")
+        seg(st0.contact_patch, st0.wheel_center, "#6f7d8c", 3, name="Wheel")
 
-    pts = {k: getattr(H, k) for k, _ in POINTS}
-    fig3d.add_trace(go.Scatter3d(
-        x=[p[0] for p in pts.values()], y=[p[1] for p in pts.values()],
-        z=[p[2] for p in pts.values()], mode="markers",
-        marker=dict(size=4, color="#e7ecf1"), name="Hardpoints",
-        text=list(pts.keys()), hoverinfo="text+x+y+z"))
+        pts = {k: getattr(H, k) for k, _ in POINTS}
+        fig3d.add_trace(go.Scatter3d(
+            x=[p[0] for p in pts.values()], y=[p[1] for p in pts.values()],
+            z=[p[2] for p in pts.values()], mode="markers",
+            marker=dict(size=4, color="#e7ecf1"), name="Hardpoints",
+            text=list(pts.keys()), hoverinfo="text+x+y+z"))
+    else:
+        # Architecture-agnostic rendering: every member the mechanism reports.
+        _palette = [CYAN, AMBER, RED, "#9b8cff", "#5ad17a", "#ff9f43", "#37e0d0"]
+        _shown = set()
+        for i, (p, q, label) in enumerate(kin.render_segments()):
+            if label == "Wheel":
+                seg(p, q, "#6f7d8c", 3, name="Wheel")
+                continue
+            base = label.split()[0] if label else f"link{i}"
+            nm = None if base in _shown else label
+            _shown.add(base)
+            seg(p, q, _palette[i % len(_palette)], 5, name=nm)
+        named = kin.named_points()
+        fig3d.add_trace(go.Scatter3d(
+            x=[p[0] for p in named.values()], y=[p[1] for p in named.values()],
+            z=[p[2] for p in named.values()], mode="markers",
+            marker=dict(size=4, color="#e7ecf1"), name="Points",
+            text=list(named.keys()), hoverinfo="text+x+y+z"))
 
     fig3d.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
@@ -942,6 +1013,14 @@ def render_suspension_vs_chassis():
 
 # ----------------------------- TAB 5c (COMPLIANCE / FLEX) ------------------ #
 with tab5c:
+  if _topo != "double_wishbone":
+    st.info("The flex / compliance solver models axial deflection of the "
+            "double-wishbone member set (upper & lower arms + tie rod). For "
+            "the selected topology, the architecture-agnostic engine reports "
+            "its own member set on the GEOMETRY 3D tab; per-link compliance "
+            "for arbitrary topologies is not yet wired into this tab. Switch "
+            "to the double-wishbone model to use the flex analysis.")
+  else:
     st.markdown('<p class="hint">The rigid model treats every link as infinitely '
                 'stiff. Real control arms, pushrods and tie rods stretch under load, '
                 'and the chassis tabs flex too — at 1.5 g that shows up as '
