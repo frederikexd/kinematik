@@ -474,17 +474,28 @@ if not _mr_real:
 st.write("")
 with st.expander("👋 New here? Start here (30-second tour)", expanded=False):
     st.markdown("""
-**What KinematiK is:** a shared tool for the whole FSAE team. It does two jobs —
-checks parts against the chassis before you manufacture, and keeps a searchable
-record of *why* the team made its design decisions so that knowledge doesn't vanish
-at graduation.
+**What KinematiK is:** an architecture-agnostic suspension studio (born FSAE
+double-wishbone, now a general multibody platform) plus a shared team workspace.
+It does two jobs — turns *any* suspension geometry into live kinematics and
+vehicle-level balance, and keeps a searchable record of *why* the team made its
+design decisions so that knowledge doesn't vanish at graduation.
+
+**Pick your topology first:** the sidebar **Suspension topology** selector switches
+the whole studio between double-wishbone (full live hardpoint editor), MacPherson
+strut, multi-link, trailing / semi-trailing arm, solid axle, twist-beam, a
+heavy-truck steering linkage, or an experimental free-form layout. Every topology
+feeds the *same* roll-centre / anti-dive / load-transfer / grip-balance pipeline.
 
 **Where to go, by what you want to do:**
 - **Designing suspension geometry?** → *Kinematics*, *Roll & Load Transfer*, *Grip
-  Balance*, *Geometry 3D* tabs. Edit hardpoints in the sidebar; everything updates live.
+  Balance*, *Geometry 3D* tabs. On double-wishbone, edit hardpoints in the sidebar;
+  on every other topology the agnostic engine solves a parameterised template and
+  draws its own member set — everything updates live either way.
 - **Checking if your part fits the chassis?** → *Team Fit* tab. Load the chassis once,
   load your part, get a collision/clearance verdict before you cut anything.
 - **Suspension vs chassis clearance through travel?** → *Suspension vs Chassis* tab.
+- **Member flex / compliance steer?** → *Compliance (Flex)* tab (double-wishbone member
+  set today; switch back to double-wishbone to use it).
 - **Logging a decision / tracking weight / handover?** → *Weight & Handover* tab.
   Tap a quick-template, fill the brackets, done. This is the part next year's team
   will thank you for.
