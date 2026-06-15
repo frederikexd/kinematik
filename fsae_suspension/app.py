@@ -512,15 +512,18 @@ _tabs = st.tabs(
      "  GEOMETRY 3D  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
      "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
      "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  TRANSIENT  ",
-     "  VALIDATION  ", "  INTEGRATION  "])
+     "  VALIDATION  ", "  INTEGRATION  ", "  ELECTRONICS (PCB)  "])
 # Map the existing tab variable names onto the new (merged) tab order so the tab
 # bodies below don't all need renumbering. SUSPENSION vs CHASSIS is no longer a
 # top-level tab — its CAD fit/clearance check now lives inside the merged
 # INTEGRATION tab (tab13) as a sub-view, rendered by render_suspension_vs_chassis().
 # tab5c is the flexible-body compliance view (ADAMS Flex-style).
 # tab_tr is the explicit transient time-step solver (the unsteady half of the lap).
+# tab_pcb is the electronics layer: copper-survival (IPC-2221 heating, Onderdonk
+# fusing, IR-drop / ECU brown-out) + signal-integrity (diff-pair impedance and
+# HV-aggressor coupling), rendered by render_pcb_board().
 (tab1, tab2, tab3, tab4, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_tr,
- tab12, tab13) = _tabs
+ tab12, tab13, tab_pcb) = _tabs
 
 
 travels = [st_.travel for st_ in sweep]
@@ -1050,6 +1053,12 @@ def render_mountpoint_clash():
 
     store = project_mod.ProjectStore(PROJECT_PATH)
     geom = store.geometry
+    if geom is None:
+        st.error("The mount-point / keep-out geometry layer is unavailable in "
+                 "this deployment (its numpy-backed module failed to import). "
+                 "Other tabs work; reinstall the app dependencies (numpy) to "
+                 "restore the clash check.")
+        return
 
     # ---- editor: keep-outs and mount points ---- #
     ec = st.columns(2)
@@ -1165,6 +1174,235 @@ def render_mountpoint_clash():
             f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
             f'<span style="font-size:.92rem">{f.message}</span></div>',
             unsafe_allow_html=True)
+
+
+def render_pcb_board():
+    """
+    The electronics layer, live: size copper traces and route the CAN differential
+    pair, then run the pre-fab gate — does the worst simultaneous load (brake light
+    + both cooling fans at once) melt a trace, overheat it, or brown out the ECU,
+    and does the CAN pair run too close to the HV motor-controller net? Traces,
+    pairs and aggressors persist with the project, and the worst-case currents are
+    rolled up from the integration ledger's declared peak currents — the same
+    single source of truth the LV/HV check uses.
+    """
+    from suspension.electronics import Trace, DiffPair, Aggressor
+
+    _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
+                 "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
+                 "suspension": "🩷", "ecu": "🖥️"}
+    _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
+             "data-acquisition", "electrics", "powertrain", "suspension"]
+
+    st.markdown(
+        '<p class="hint">This is the check an electrical member runs the afternoon '
+        'before sending a board to fab: under the worst <b>simultaneous load</b> '
+        '(brake light + both cooling fans firing at once), do the thin copper '
+        'traces <b>physically melt</b> (Onderdonk fusing), overheat past the board '
+        'derate ceiling (IPC-2221), or drop enough voltage to push the rail below '
+        'the <b>ECU brown-out</b> threshold and reset the car? And does a CAN '
+        '<b>differential pair</b> route close enough to the switching '
+        '<b>HV motor-controller</b> net to pick up its noise? It is an '
+        '<i>analytic</i> screening check on declared traces and routes — not a PCB '
+        'CAD kernel and not a field solver — so the impedance and coupling numbers '
+        'are labelled estimates, and the true eye/reflection that need a field '
+        'solver are reported as <i>not computed</i> rather than invented.</p>',
+        unsafe_allow_html=True)
+
+    store = project_mod.ProjectStore(PROJECT_PATH)
+    board = store._ensure_board()
+    led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+
+    # ---- board-level brown-out / thermal context ---- #
+    st.markdown("###### Board context (rail + ambient the checks run against)")
+    bc = st.columns(5)
+    board.rail_nominal_v = bc[0].number_input("ECU rail (V)", 1.0, 60.0,
+                                              value=float(board.rail_nominal_v), key="pcb_rail")
+    board.ecu_brownout_v = bc[1].number_input("Brown-out (V)", 0.5, 60.0,
+                                              value=float(board.ecu_brownout_v), key="pcb_bo")
+    board.ambient_c = bc[2].number_input("Ambient (°C)", -20.0, 150.0,
+                                         value=float(board.ambient_c), key="pcb_amb")
+    board.max_trace_temp_c = bc[3].number_input("Trace ceiling (°C)", 50.0, 200.0,
+                                               value=float(board.max_trace_temp_c), key="pcb_ceil")
+    board.fuse_safety_factor = bc[4].number_input("Fuse safety ×", 1.0, 10.0,
+                                                 value=float(board.fuse_safety_factor), key="pcb_sf")
+
+    # ---- editors: traces, pairs, aggressors ---- #
+    ec = st.columns(3)
+    with ec[0]:
+        st.markdown("###### Copper traces (power / signal nets you size)")
+        with st.expander("Add / replace a trace", expanded=not board.traces):
+            tn = st.text_input("Name", key="tr_name", value="main_feed")
+            tnet = st.text_input("Net", key="tr_net", value="lv_rail")
+            town = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"), key="tr_own")
+            tfeed = st.text_input("Feeds", key="tr_feed", value="ecu")
+            tg = st.columns(3)
+            tw = tg[0].number_input("Width (mm)", 0.05, 50.0, value=0.30, key="tr_w")
+            toz = tg[1].number_input("Copper (oz)", 0.25, 6.0, value=1.0, key="tr_oz")
+            tl = tg[2].number_input("Length (mm)", 1.0, 2000.0, value=100.0, key="tr_l")
+            text = st.checkbox("Outer layer (external)", value=True, key="tr_ext")
+            test = st.checkbox("Estimated geometry", value=False, key="tr_est")
+            if st.button("Save trace", key="tr_save"):
+                store.set_trace(Trace(name=tn, net=tnet, owner_subsystem=town,
+                                      feeds=tfeed, width_mm=tw, copper_oz=toz,
+                                      length_mm=tl, is_external=text, is_estimate=test))
+                store.save(); st.rerun()
+        for name, tr in list(board.traces.items()):
+            est = " · est" if tr.is_estimate else ""
+            row = st.columns([5, 1])
+            row[0].markdown(
+                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                f'{_MP_EMOJI.get(tr.owner_subsystem,"")} <b>{name}</b> '
+                f'<span style="color:#8d99a6;font-size:.8rem">{tr.owner_subsystem} → {tr.feeds}{est}</span><br>'
+                f'<span style="font-size:.82rem;color:#8d99a6">'
+                f'{tr.width_mm:.2f} mm · {tr.copper_oz:.0f} oz · {tr.length_mm:.0f} mm · '
+                f'fuses @ {tr.fusing_current_a(ambient_c=board.ambient_c):.1f} A</span></div>',
+                unsafe_allow_html=True)
+            if row[1].button("✕", key=f"tr_del_{name}"):
+                store.remove_trace(name); store.save(); st.rerun()
+
+    with ec[1]:
+        st.markdown("###### Differential pairs (CAN H/L routes)")
+        with st.expander("Add / replace a pair", expanded=not board.pairs):
+            pn = st.text_input("Name", key="dp_name", value="CAN")
+            pown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"), key="dp_own")
+            pg = st.columns(3)
+            pw = pg[0].number_input("Trace w (mm)", 0.05, 5.0, value=0.20, key="dp_w")
+            psp = pg[1].number_input("Spacing (mm)", 0.05, 5.0, value=0.20, key="dp_s")
+            ph = pg[2].number_input("Dielectric h (mm)", 0.05, 5.0, value=0.20, key="dp_h")
+            pg2 = st.columns(2)
+            peps = pg2[0].number_input("eps_r", 1.0, 15.0, value=4.3, key="dp_eps")
+            ptz = pg2[1].number_input("Target Zdiff (Ω)", 20.0, 200.0, value=120.0, key="dp_tz")
+            ppath = st.text_input("Route (x,y; x,y; …)", key="dp_path", value="0,0; 60,0")
+            pest = st.checkbox("Estimated routing", value=False, key="dp_est")
+            if st.button("Save pair", key="dp_save"):
+                pts = _parse_path(ppath)
+                store.set_pair(DiffPair(name=pn, owner_subsystem=pown, trace_w_mm=pw,
+                                        spacing_mm=psp, height_mm=ph, eps_r=peps,
+                                        target_z0_ohm=ptz, path_mm=pts, is_estimate=pest))
+                store.save(); st.rerun()
+        for name, dp in list(board.pairs.items()):
+            est = " · est" if dp.is_estimate else ""
+            z = dp.differential_z0_ohm()
+            row = st.columns([5, 1])
+            row[0].markdown(
+                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                f'{_MP_EMOJI.get(dp.owner_subsystem,"")} <b>{name}</b> '
+                f'<span style="color:#8d99a6;font-size:.8rem">{dp.owner_subsystem}{est}</span><br>'
+                f'<span style="font-size:.82rem;color:#8d99a6">'
+                f'~{z:.0f} Ω diff (est) · target {dp.target_z0_ohm:.0f} Ω · {len(dp.path_mm)} pts</span></div>',
+                unsafe_allow_html=True)
+            if row[1].button("✕", key=f"dp_del_{name}"):
+                store.remove_pair(name); store.save(); st.rerun()
+
+    with ec[2]:
+        st.markdown("###### Aggressor nets (noisy HV traces to avoid)")
+        with st.expander("Add / replace an aggressor", expanded=not board.aggressors):
+            an = st.text_input("Name", key="ag_name", value="INV")
+            anet = st.text_input("Net", key="ag_net", value="hv_inverter")
+            aown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("powertrain"), key="ag_own")
+            ag2 = st.columns(2)
+            asw = ag2[0].number_input("Switched V", 1.0, 1000.0, value=400.0, key="ag_v")
+            aedge = ag2[1].number_input("Edge (V/ns)", 0.1, 100.0, value=5.0, key="ag_e")
+            apath = st.text_input("Route (x,y; x,y; …)", key="ag_path", value="0,0.3; 60,0.3")
+            aest = st.checkbox("Estimated routing", value=False, key="ag_est")
+            if st.button("Save aggressor", key="ag_save"):
+                pts = _parse_path(apath)
+                store.set_aggressor(Aggressor(name=an, net=anet, owner_subsystem=aown,
+                                              sw_voltage_v=asw, edge_v_per_ns=aedge,
+                                              path_mm=pts, is_estimate=aest))
+                store.save(); st.rerun()
+        for name, ag in list(board.aggressors.items()):
+            est = " · est" if ag.is_estimate else ""
+            row = st.columns([5, 1])
+            row[0].markdown(
+                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                f'{_MP_EMOJI.get(ag.owner_subsystem,"")} <b>{name}</b> '
+                f'<span style="color:#8d99a6;font-size:.8rem">{ag.owner_subsystem} · {ag.net}{est}</span><br>'
+                f'<span style="font-size:.82rem;color:#8d99a6">'
+                f'{ag.sw_voltage_v:.0f} V · {ag.edge_v_per_ns:.0f} V/ns · {len(ag.path_mm)} pts</span></div>',
+                unsafe_allow_html=True)
+            if row[1].button("✕", key=f"ag_del_{name}"):
+                store.remove_aggressor(name); store.save(); st.rerun()
+
+    # ---- the simultaneous-load scenario ---- #
+    st.markdown("###### Worst-case simultaneous load — which subsystems fire at once, onto which trace")
+    st.markdown(
+        '<p class="hint">Each trace can carry several loads at once. Pick the '
+        'subsystems whose peak currents sum onto it (e.g. cooling + cooling + '
+        'brakes = both fans and the brake light). The per-load amps come from the '
+        '<b>integration ledger</b> (each subsystem\'s declared peak current), not '
+        'retyped here — so this can\'t drift from what TEAM FIT says.</p>',
+        unsafe_allow_html=True)
+    scenario = {}
+    if board.traces:
+        for name, tr in board.traces.items():
+            picks = st.multiselect(
+                f"Loads on '{name}'", _SUBS,
+                default=st.session_state.get(f"pcb_scn_{name}", []),
+                key=f"pcb_scn_{name}",
+                help="Choose the same subsystem twice (e.g. two fans) by it appearing once "
+                     "per declared load — duplicates are summed.")
+            if picks:
+                scenario[name] = picks
+    else:
+        st.caption("Add at least one trace to define a load scenario.")
+
+    # ---- the pre-fab gate ---- #
+    st.markdown("###### Pre-fab board check")
+    res = store.board_check(ledger=led, scenario=scenario)
+    if res.findings:
+        st.markdown(f'<p class="hint">{res.summary()}</p>', unsafe_allow_html=True)
+    else:
+        st.caption("Nothing to check yet — declare traces/pairs and a load scenario above.")
+
+    _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
+                "info": "", "ok": "good"}
+    order = ["fail", "warning", "missing", "info", "ok"]
+    for f in sorted(res.findings, key=lambda x: order.index(x.severity.value)):
+        cls = _SEV_CLS.get(f.severity.value, "")
+        who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
+        st.markdown(
+            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+            f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
+            f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
+            f'<span style="font-size:.92rem">{f.message}</span></div>',
+            unsafe_allow_html=True)
+
+    # ---- honest SI detail: what's analytic vs what needs a field solver ---- #
+    if board.pairs:
+        st.markdown("###### Signal-integrity detail (analytic vs field-solver)")
+        which = st.selectbox("Pair", list(board.pairs), key="pcb_si_which")
+        d = board.si_detail(which)
+        sc = st.columns(2)
+        sc[0].markdown(
+            f"**Computed (analytic, IPC-2141 + edge coupling)**\n\n"
+            f"- single-ended Z₀: {d['single_ended_z0_ohm']:.1f} Ω\n"
+            f"- differential Z₀: {d['differential_z0_ohm']:.1f} Ω")
+        sc[1].markdown(
+            "**Not computed — needs a field solver / SPICE**\n\n"
+            "- eye height: *not computed*\n"
+            "- insertion loss: *not computed*\n"
+            "- reflection coeff: *not computed*\n"
+            "- coupled noise voltage: *not computed*")
+        st.caption(d["note"])
+
+
+def _parse_path(s: str):
+    """Parse 'x,y; x,y; …' into a list of (x,y) float tuples. Tolerant of stray
+    whitespace and trailing separators; returns [] on anything unparseable."""
+    pts = []
+    for chunk in str(s).replace("\n", ";").split(";"):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        parts = chunk.replace(",", " ").split()
+        if len(parts) >= 2:
+            try:
+                pts.append((float(parts[0]), float(parts[1])))
+            except ValueError:
+                continue
+    return pts
 
 
 # ----------------------------- TAB 5c (COMPLIANCE / FLEX) ------------------ #
@@ -3356,6 +3594,10 @@ with sc3:
                 st.rerun()
         except Exception as e:
             st.error(f"Couldn't read that project file: {e}")
+
+# ----------------------------- TAB PCB (ELECTRONICS) ----------------------- #
+with tab_pcb:
+    render_pcb_board()
 
 st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · MIT. Fork it, '
             'validate against your OptimumK model, send a PR. '

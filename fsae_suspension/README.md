@@ -81,6 +81,17 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   See `docs/tire_cosim_interface.md` for the STI-style channel contract and
   `suspension/tire_cosim_ftire_example.py` for a runnable conforming-wrapper skeleton
 
+**Electronics / custom PCB (the pre-fab electrical gate)**
+- **Trace copper survival** — Onderdonk **fusing current** (does it melt), IPC-2221
+  steady-state **temperature rise**, DC **resistance / IR-drop**, and an **ECU brown-out**
+  check against the worst *simultaneous* load (brake light + both cooling fans at once),
+  with the per-trace current rolled up from the integration ledger's declared peak currents
+- **Signal integrity** — IPC-2141 edge-coupled **differential-pair impedance** vs a target
+  (120 Ω CAN), and a geometric **HV-aggressor coupling** check (closest approach + coupled
+  run length) so a CAN pair routed too near the switching motor-controller net is flagged,
+  both owners named. Analytic *screening* only — the eye/loss/reflection that need a field
+  solver are reported `None`, never faked
+
 **Vehicle dynamics (coupled to the geometry)**
 - Front/rear roll-centre heights from the solved instant centres
 - **Roll stiffness derived from spring rates through the real motion ratio**
@@ -282,6 +293,38 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   only when that point genuinely is the part's mass location — off by default, because a
   single bracket usually isn't.
 
+**Custom-PCB copper survival + signal integrity (the pre-fab electrical gate — NEW)**
+- The same integration ledger names every subsystem's peak current and supply voltage, but
+  it stops at "does the LV bus have enough headroom". This closes the inner loop the
+  electrical sub-team lives in the afternoon before a board goes to fab: pick a **trace
+  width** and route the **CAN differential pair**, and get, in one call, whether the board
+  survives its worst moment.
+- **Copper survival**, against the worst *simultaneous* load (the brake light and both
+  cooling fans firing at once):
+  - **Onderdonk fusing current** — the amperage at which the trace physically *melts*,
+  - **IPC-2221 steady-state temperature** — does it cook past the board's derate ceiling,
+  - **IR-drop / ECU brown-out** — does the voltage drop under that load pull the rail below
+    the microcontroller's brown-out threshold and reset the car mid-event. A trace that
+    fuses before steady state is reported as an open circuit, not merely a brown-out — the
+    two findings can't physically contradict each other.
+- **Signal integrity**: an **edge-coupled microstrip differential-impedance** estimate
+  (IPC-2141) checked against the pair's target (120 Ω for CAN), and a **geometric coupling
+  check** of every signal pair against the switching **HV motor-controller / inverter** net
+  — closest approach and coupled run length — so a CAN pair routed too close to the
+  high-voltage switching node is flagged with **both owners named** (electrics ↔ powertrain).
+- The worst-case current per trace is **rolled up from the integration ledger's declared
+  `peak_current_a`**, not retyped in the electrical tab — so "what fires at once" and what
+  TEAM FIT says a subsystem draws can never drift apart.
+- Honest about its limits, like the rest of KinematiK: it is an **analytic screening**
+  layer, **not a PCB CAD kernel and not a field solver**. The impedance and coupling
+  numbers are labelled estimates; the things that genuinely need a 2-D field solver / SPICE
+  — the true eye height, insertion loss, reflection coefficient, coupled-noise waveform —
+  are returned as **`None` / "not computed"** rather than invented (the same contract the
+  structural-tire co-sim backend uses). The IPC temperature curve is clamped at copper's
+  melting point so it can never print a non-physical number.
+- Lives in the **◢ ELECTRONICS (PCB)** tab and **persists with the project** (`project.json`)
+  so traces, pairs, aggressor nets and the load scenario survive a restart.
+
 **Weight budget & handover (persistent team memory)**
 - Per-team weight budget with a running total against a target mass; mass estimated
   from CAD volume + material or entered manually, with per-subteam breakdown
@@ -402,6 +445,40 @@ res = propagate_mount_move(geom, led, "rear-wing-upper-mount", (1410, 120, 900))
 print(res.summary())               # "...HARD CLASH flagged. CG moved ... mm in z."
 for f in res.clash_findings:
     print(f"  [{f.severity.value.upper()}] {f.message}")
+```
+
+The PCB copper-survival + signal-integrity gate is importable the same way — size a
+trace, route the CAN pair past the inverter, and check the board against the worst
+simultaneous load in one call:
+
+```python
+from suspension import (Trace, DiffPair, Aggressor, BoardLedger, check_board)
+from suspension.interfaces import IntegrationLedger, SubsystemInterface
+
+# peak currents declared once, on the integration ledger (the single source of truth)
+led = IntegrationLedger()
+led.set(SubsystemInterface("cooling", peak_current_a=8.0, voltage_v=12.0, is_estimate=False))
+led.set(SubsystemInterface("brakes",  peak_current_a=2.0, voltage_v=12.0, is_estimate=False))
+
+board = BoardLedger(rail_nominal_v=5.0, ecu_brownout_v=4.5, ambient_c=40.0)
+# the trace that feeds the ECU rail
+board.set_trace(Trace("main_feed", net="lv_rail", owner_subsystem="electrics",
+                      feeds="ecu", width_mm=0.15, copper_oz=1.0, length_mm=150.0,
+                      is_estimate=False))
+# the CAN pair, and the HV inverter net it must avoid
+board.set_pair(DiffPair("CAN", owner_subsystem="electrics",
+                        path_mm=[(0, 0), (60, 0)], target_z0_ohm=120.0))
+board.set_aggressor(Aggressor("INV", owner_subsystem="powertrain", net="hv_inverter",
+                              sw_voltage_v=400.0, edge_v_per_ns=8.0,
+                              path_mm=[(0, 0.3), (60, 0.3)]))
+
+# worst case: brake light + BOTH cooling fans at once -> 8 + 8 + 2 = 18 A on the feed
+res = check_board(board, led, scenario={"main_feed": ["cooling", "cooling", "brakes"]})
+print(res.summary())               # "FAIL: ... fail / ... warn / ... ok ..."
+for f in res.findings:
+    print(f"  [{f.severity.value.upper()}] {f.check}: {f.message}")
+# the undersized feed FAILs on fusing, heating and ECU brown-out;
+# the CAN pair FAILs on coupling to the 400 V inverter net.
 ```
 
 ## Flexible bodies & compliance (ADAMS Flex-style)
@@ -561,8 +638,9 @@ the code, never the numbers.
 
 ## Persistent storage (so handover data survives)
 
-By default the project memory (decisions, notes, weight budget, and the mount-point /
-keep-out geometry ledger) saves to a local `project.json` file. That's fine on a
+By default the project memory (decisions, notes, weight budget, the mount-point /
+keep-out geometry ledger, and the PCB trace / differential-pair / aggressor board)
+saves to a local `project.json` file. That's fine on a
 laptop, but on ephemeral hosts like Streamlit
 Community Cloud the filesystem is wiped on restart — so for a deployed app the team
 relies on, point it at a free hosted database.
