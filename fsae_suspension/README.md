@@ -80,6 +80,17 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   transient solver — the same way ADAMS/Car couples FTire/CDTire to its multibody solver.
   See `docs/tire_cosim_interface.md` for the STI-style channel contract and
   `suspension/tire_cosim_ftire_example.py` for a runnable conforming-wrapper skeleton
+- **Tire thermal channel** — a `ThermalTireModel` backend (`suspension/tire_thermal.py`)
+  that fills the tread/carcass/gas-temperature and hot-pressure channels the reference
+  backend leaves `None`, using a 3-node **lumped energy balance** (frictional sliding +
+  rolling hysteresis in; convection to air + conduction to track out; ideal-gas pressure
+  rise). The equations are textbook physics; the masses, heat-transfer coefficients and
+  the optional grip-vs-temperature law μ(T) are **representative defaults, not your tyre**,
+  so every thermal channel is flagged `synthesized` and `provenance().is_calibrated` stays
+  `False` until you supply temperature-swept data — the same honesty gate as the friction
+  ellipse and damper. It satisfies the same `step(WheelState)→TireOutput` contract, so it
+  drops straight into the four-corner co-sim driver and the transient solver. Surfaced in
+  the **TIRE & GRIP** tab as a warm-up / working-range / pressure view
 
 **Electronics / custom PCB (the pre-fab electrical gate)**
 - **Trace copper survival** — Onderdonk **fusing current** (does it melt), IPC-2221
@@ -837,9 +848,11 @@ Recently shipped (was on this list): real pushrod/rocker **motion ratio** and
 **anti-dive / anti-squat**; **GPS/cone track import**; **racing-line optimisation**;
 a real **motor map**; **combined slip**, **relaxation length** and a **damper model**
 (the last three implemented honestly and gated on your data); a **validation tab**
-that correlates the sim against measured skidpad / accel / datalogger traces; and
+that correlates the sim against measured skidpad / accel / datalogger traces;
 **flexible-body compliance** — link/tab deflection and FEA (ADAMS Flex-style)
-import giving compliance steer/camber at the cornering limit.
+import giving compliance steer/camber at the cornering limit; and a **tyre thermal
+channel** — a lumped tread/carcass/gas energy balance giving warm-up, working-range
+and pressure-rise behaviour (real physics, gated uncalibrated on temperature-swept data).
 
 ### A note on honesty over a green scorecard
 
@@ -850,8 +863,13 @@ an `is_calibrated`/`status()` flag that stays false, with representative magnitu
 until you supply that data. That is intentional: a model that prints a confident number
 it didn't earn is worse than an honest gap, because someone freezes a design on it. The
 capability is here and turns on the moment you have the data; it will not pretend in the
-meantime. A tyre **thermal** model is the one remaining red that is *not* built, for
-exactly this reason — it needs temperature-swept TTC data to be anything but a guess.
+meantime. The tyre **thermal** channel is built on exactly these terms: it is a real
+3-node energy balance (`suspension/tire_thermal.py`) that warms up, splits front/rear and
+across the tread width, and raises gas pressure — but because absolute temperature is
+impossible to compute without temperature-swept TTC data, every thermal channel is flagged
+`synthesized` and the backend reports `THERMAL` fidelity, `is_calibrated=False`. Read its
+shape (warm-up time, the camber-driven inner/outer split, the pressure rise), not its
+absolute degrees, until you fit it and set `ThermalParams.calibrated`.
 
 ## Conventions
 
