@@ -476,30 +476,31 @@ with st.expander("👋 New here? Start here (30-second tour)", expanded=False):
     st.markdown("""
 **What KinematiK is:** an architecture-agnostic suspension studio (born FSAE
 double-wishbone, now a general multibody platform) plus a shared team workspace.
-It does two jobs — turns *any* suspension geometry into live kinematics and
-vehicle-level balance, and keeps a searchable record of *why* the team made its
-design decisions so that knowledge doesn't vanish at graduation.
+It turns *any* suspension geometry into live kinematics and vehicle-level balance,
+runs grip / lap-time / transient analysis on top, and keeps a searchable record of
+*why* the team made its design decisions so that knowledge doesn't vanish at graduation.
 
 **Pick your topology first:** the sidebar **Suspension topology** selector switches
 the whole studio between double-wishbone (full live hardpoint editor), MacPherson
 strut, multi-link, trailing / semi-trailing arm, solid axle, twist-beam, a
 heavy-truck steering linkage, or an experimental free-form layout. Every topology
-feeds the *same* roll-centre / anti-dive / load-transfer / grip-balance pipeline.
+feeds the *same* analysis pipeline below.
 
-**Where to go, by what you want to do:**
-- **Designing suspension geometry?** → *Kinematics*, *Roll & Load Transfer*, *Grip
-  Balance*, *Geometry 3D* tabs. On double-wishbone, edit hardpoints in the sidebar;
-  on every other topology the agnostic engine solves a parameterised template and
-  draws its own member set — everything updates live either way.
-- **Checking if your part fits the chassis?** → *Team Fit* tab. Load the chassis once,
-  load your part, get a collision/clearance verdict before you cut anything.
-- **Suspension vs chassis clearance through travel?** → *Suspension vs Chassis* tab.
-- **Member flex / compliance steer?** → *Compliance (Flex)* tab (double-wishbone member
-  set today; switch back to double-wishbone to use it).
-- **Logging a decision / tracking weight / handover?** → *Weight & Handover* tab.
-  Tap a quick-template, fill the brackets, done. This is the part next year's team
-  will thank you for.
-- **Leaving a note for another subteam?** → *Lead Notes* tab.
+**The tabs, in order:**
+- **Kinematics** — camber gain, bump steer, caster, KPI, scrub, motion ratio vs travel.
+- **Roll & Load Transfer** — roll-centre height & migration, lateral load-transfer split.
+- **Grip Balance** — limit understeer/oversteer from the load-sensitive tire model.
+- **Geometry 3D** — live 3D view of the linkage; non-wishbone topologies draw their own member set.
+- **Compliance (Flex)** — member axial deflection → compliance steer/camber (double-wishbone member set; switch back to double-wishbone to use it).
+- **Team Fit** — load the chassis once, load your part, get a collision/clearance verdict before you cut anything.
+- **Weight & Handover** — log decisions, track weight, build the next-team handover record.
+- **Lead Notes** — leave notes for another subteam.
+- **Tire & Grip** — fit your tire from TTC data so grip/balance run on *your* rubber, not a generic default.
+- **Setup Optimiser** — which change actually buys grip, given one set of tires.
+- **Lap Time** — turn grip and balance into the score that matters: lap time.
+- **Transient** — explicit high-frequency time-step solver for the unsteady stuff (turn-in, kerbs, dampers).
+- **Validation** — correlation against logged/track data so a sim result is believable.
+- **Integration** — CAD/tool interchange, plus the suspension-vs-chassis clearance-through-travel check.
 
 **The one habit that makes this worth it:** log your decisions as you make them —
 especially the things that *didn't* work. It takes ten seconds with the templates,
