@@ -61,6 +61,15 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   present an invented number as measured
 - **Damper force–velocity model** (bilinear-digressive) with a damping-ratio diagnostic —
   the building block for the transient model, calibratable from your dyno curve
+- **Structural tire co-simulation boundary** — a stateful `StructuralTireModel` contract
+  (the FTire / CDTire integration *seam*), a Pacejka-backed reference backend that runs the
+  whole co-sim today with no external binary, and vendor adapter stubs that declare exactly
+  the binding they need. The reference backend returns `None` (never a faked number) for the
+  carcass-deformation, contact-patch-pressure and tread/gas-temperature channels it cannot
+  compute, and a staggered driver advances the tyre state once per macro-step around the
+  transient solver — the same way ADAMS/Car couples FTire/CDTire to its multibody solver.
+  See `docs/tire_cosim_interface.md` for the STI-style channel contract and
+  `suspension/tire_cosim_ftire_example.py` for a runnable conforming-wrapper skeleton
 
 **Vehicle dynamics (coupled to the geometry)**
 - Front/rear roll-centre heights from the solved instant centres
