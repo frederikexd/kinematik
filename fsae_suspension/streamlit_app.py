@@ -37,6 +37,7 @@ from suspension import correlation as corr_mod
 from suspension import damper as damper_mod
 from suspension import interfaces as interfaces_mod
 from suspension import transient as transient_mod
+from suspension import ggv as ggv_mod
 
 st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
@@ -498,9 +499,11 @@ feeds the *same* analysis pipeline below.
 - **Tire & Grip** — fit your tire from TTC data so grip/balance run on *your* rubber, not a generic default.
 - **Setup Optimiser** — which change actually buys grip, given one set of tires.
 - **Lap Time** — turn grip and balance into the score that matters: lap time.
+- **GGV Diagram** — the combined accel/brake/cornering envelope at every speed, on your live tire; sweep CG, camber, ClA, power to see what reshapes it, and cross-check it against the Lap Sim.
 - **Transient** — explicit high-frequency time-step solver for the unsteady stuff (turn-in, kerbs, dampers).
 - **Validation** — correlation against logged/track data so a sim result is believable.
 - **Integration** — CAD/tool interchange, plus the suspension-vs-chassis clearance-through-travel check.
+- **Electronics (PCB)** — copper-survival and signal-integrity checks for the EV harness/ECU: trace heating, fusing, IR-drop brown-out, diff-pair impedance and HV coupling.
 
 **The one habit that makes this worth it:** log your decisions as you make them —
 especially the things that *didn't* work. It takes ten seconds with the templates,
@@ -511,7 +514,7 @@ _tabs = st.tabs(
     ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
      "  GEOMETRY 3D  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
      "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
-     "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  TRANSIENT  ",
+     "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  GGV DIAGRAM  ", "  TRANSIENT  ",
      "  VALIDATION  ", "  INTEGRATION  ", "  ELECTRONICS (PCB)  "])
 # Map the existing tab variable names onto the new (merged) tab order so the tab
 # bodies below don't all need renumbering. SUSPENSION vs CHASSIS is no longer a
@@ -522,8 +525,8 @@ _tabs = st.tabs(
 # tab_pcb is the electronics layer: copper-survival (IPC-2221 heating, Onderdonk
 # fusing, IR-drop / ECU brown-out) + signal-integrity (diff-pair impedance and
 # HV-aggressor coupling), rendered by render_pcb_board().
-(tab1, tab2, tab3, tab4, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_tr,
- tab12, tab13, tab_pcb) = _tabs
+(tab1, tab2, tab3, tab4, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_ggv,
+ tab_tr, tab12, tab13, tab_pcb) = _tabs
 
 
 travels = [st_.travel for st_ in sweep]
@@ -3275,6 +3278,240 @@ if _show_ledger:
 
 # --------------------------------------------------------------------------- #
 #  Save / Load project — one file captures the whole session
+# --------------------------------------------------------------------------- #
+#  GGV DIAGRAM TAB — combined acceleration envelope vs speed
+# --------------------------------------------------------------------------- #
+with tab_ggv:
+    st.markdown('<p class="hint">The <b>GGV diagram</b> is the car\'s combined '
+                'acceleration envelope: at each speed, the boundary of longitudinal '
+                'g (accel up / brake down) vs lateral g it can sustain. It is the '
+                'one steady-state picture that shows how much combined grip you '
+                'have, where you go power-limited vs grip-limited, and — the point '
+                'for an underfunded team — <b>how a design change reshapes the whole '
+                'envelope</b> before you cut a single tube. Built on the same live '
+                'load-transfer + Pacejka chain as everything else, so CG height, '
+                'roll-centre, wheel rate and camber are the levers that move it.</p>',
+                unsafe_allow_html=True)
+
+    # Reuse the live dynamics object the rest of the app already solved.
+    _veh_ggv = veh
+
+    # ---- Powertrain / aero (same defaults as the Lap Sim tab) ------------ #
+    with st.expander("Powertrain & aero (defaults are sensible FSAE-EV values)",
+                     expanded=False):
+        gc = st.columns(4)
+        g_pw = gc[0].number_input("Peak power (kW)", 10.0, 200.0, value=80.0,
+                                  step=5.0, key="ggv_pw")
+        g_tract = gc[1].number_input("Traction cap (N)", 500.0, 6000.0,
+                                     value=2600.0, step=100.0, key="ggv_tract")
+        g_cda = gc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=1.10,
+                                   step=0.05, key="ggv_cda")
+        g_cla = gc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=2.60,
+                                   step=0.1, key="ggv_cla")
+        gc2 = st.columns(4)
+        g_drive = gc2[0].selectbox("Drive", ["rwd", "awd"], index=0, key="ggv_drive")
+        g_brake = gc2[1].number_input("Brake cap (g)", 0.5, 3.0, value=1.8,
+                                      step=0.1, key="ggv_brake")
+        g_crr = gc2[2].number_input("Rolling res. crr", 0.005, 0.05, value=0.018,
+                                    step=0.002, format="%.3f", key="ggv_crr")
+        g_eff = gc2[3].number_input("Drivetrain eff.", 0.5, 1.0, value=0.90,
+                                    step=0.01, key="ggv_eff")
+
+        st.markdown("**Combined-slip coupling** — how lateral and longitudinal "
+                    "grip trade against each other (corner entry/exit). The "
+                    "symmetric friction circle is the honest default; calibrate the "
+                    "exponents and the longitudinal/lateral mu ratio once you have "
+                    "drive/brake TTC data.")
+        use_comb = st.checkbox("Use a combined-slip tire (friction ellipse)",
+                               value=False, key="ggv_usecomb")
+        _comb_tire = None
+        if use_comb:
+            cc = st.columns(3)
+            mxr = cc[0].number_input("μx / μy ratio", 0.8, 1.4, value=1.05,
+                                     step=0.05, key="ggv_mxr",
+                                     help="Peak longitudinal grip / peak lateral "
+                                          "grip. >1 is typical (tires put down more "
+                                          "Fx than Fy).")
+            kx = cc[1].number_input("ellipse exp. kx", 1.5, 3.0, value=2.0,
+                                    step=0.1, key="ggv_kx")
+            ky = cc[2].number_input("ellipse exp. ky", 1.5, 3.0, value=2.0,
+                                    step=0.1, key="ggv_ky")
+            is_cal = st.checkbox("These exponents are fitted to my Fx TTC data",
+                                 value=False, key="ggv_iscal")
+            _comb_tire = tire_mod.CombinedSlipTire(
+                lateral=tire_mod.PacejkaLateral(
+                    coeffs=dict(st.session_state.tire_coeffs),
+                    FNOMIN=st.session_state.tire_fnomin),
+                mu_x_ratio=mxr, ell_kx=kx, ell_ky=ky, is_calibrated=is_cal)
+            st.caption("Status: " + _comb_tire.status())
+
+    # Build the lap-sim Powertrain, then derive GGVParams from it so the GGV and
+    # the Lap Sim tab share one source of truth.
+    _pt_ggv = lap_mod.Powertrain(power_kw=g_pw, max_tractive_n=g_tract,
+                                 drivetrain_eff=g_eff, cda=g_cda, cla=g_cla,
+                                 crr=g_crr, drive=g_drive, brake_g_cap=g_brake,
+                                 combined_tire=_comb_tire)
+    _gp = ggv_mod.GGVParams.from_powertrain(_pt_ggv)
+
+    # ---- Build the envelope --------------------------------------------- #
+    _vmax_ui = st.slider("Top speed to chart (m/s)", 20.0, 45.0, 38.0, 1.0,
+                         key="ggv_vmax")
+    try:
+        _speeds = np.linspace(5.0, _vmax_ui, 12)
+        _res = ggv_mod.GGVGenerator(_veh_ggv, _gp).generate(speeds=_speeds)
+    except Exception as e:
+        _res = None
+        st.error(f"GGV generation failed: {e}")
+
+    if _res is not None:
+        for w in _res.warnings:
+            st.warning(f"⚠ {w}")
+
+        # headline metrics at a representative mid-corner speed
+        _i_mid = int(np.argmin(np.abs(_res.speeds - 15.0)))
+        mc = st.columns(4)
+        mc[0].markdown(metric("Peak lateral", f"{np.nanmax(_res.max_lat_g):.2f}",
+                              "g"), unsafe_allow_html=True)
+        mc[1].markdown(metric("Peak accel", f"{np.nanmax(_res.max_accel_g):.2f}",
+                              "g"), unsafe_allow_html=True)
+        mc[2].markdown(metric("Peak braking", f"{np.nanmax(_res.max_brake_g):.2f}",
+                              "g"), unsafe_allow_html=True)
+        mc[3].markdown(metric("Grip model",
+                              "Pacejka" if "Pacejka" in _res.grip_model else "linear",
+                              ""), unsafe_allow_html=True)
+
+        # ---- GGV cross-sections (the diagram itself) -------------------- #
+        figG = go.Figure()
+        _ns = len(_res.speeds)
+        for i, v in enumerate(_res.speeds):
+            if i % 2 and i != _ns - 1:
+                continue  # thin the legend a little
+            lon, lat = _res.long_g[i], _res.lat_g[i]
+            # mirror lateral so both left and right cornering show
+            x = np.concatenate([lat, -lat[::-1]])
+            y = np.concatenate([lon, lon[::-1]])
+            # colour ramp dim->cyan with speed
+            t = i / max(_ns - 1, 1)
+            col = f"rgba({int(55 + 200 * (1 - t))},{int(120 + 100 * t)},"\
+                  f"{int(160 + 50 * t)},0.95)"
+            figG.add_trace(go.Scatter(x=x, y=y, mode="lines",
+                                      line=dict(color=col, width=2),
+                                      name=f"{v:.0f} m/s"))
+        figG.update_layout(**PLOT_LAYOUT,
+                           title="GGV cross-sections — combined g envelope by speed",
+                           xaxis_title="lateral g", yaxis_title="longitudinal g  (+accel / −brake)",
+                           height=460)
+        figG.add_hline(y=0, line_color="#33414e", line_width=1)
+        figG.add_vline(x=0, line_color="#33414e", line_width=1)
+        st.plotly_chart(figG, width='stretch')
+        st.markdown('<p class="hint">Each closed curve is the limit at one speed. '
+                    'It grows downward (braking gains from aero downforce + drag) and '
+                    'wider (more cornering grip with downforce) as speed rises; the '
+                    'top flattens where the car runs out of power. Keep the combined-g '
+                    'vector inside the curve for the current speed.</p>',
+                    unsafe_allow_html=True)
+
+        # ---- Capability vs speed --------------------------------------- #
+        figC = go.Figure()
+        figC.add_trace(go.Scatter(x=_res.speeds, y=_res.max_lat_g, mode="lines+markers",
+                                  line=dict(color=CYAN, width=2.5), name="max lateral g"))
+        figC.add_trace(go.Scatter(x=_res.speeds, y=_res.max_accel_g, mode="lines+markers",
+                                  line=dict(color=AMBER, width=2.5), name="max accel g"))
+        figC.add_trace(go.Scatter(x=_res.speeds, y=_res.max_brake_g, mode="lines+markers",
+                                  line=dict(color=RED, width=2.5), name="max braking g"))
+        figC.update_layout(**PLOT_LAYOUT, title="Capability vs speed",
+                           xaxis_title="speed (m/s)", yaxis_title="g", height=320)
+        st.plotly_chart(figC, width='stretch')
+
+        # ---- "What does changing X do?" sweep -------------------------- #
+        st.markdown("###### Design-input sweep — what reshapes the envelope?")
+        sw = st.columns([2, 2, 1, 1])
+        _param_opts = {
+            "CG height (mm)": ("cg_height", [250, 300, 350, 400]),
+            "Weight dist. front (frac)": ("weight_dist_front", [0.42, 0.46, 0.50, 0.54]),
+            "Front static camber (°)": ("static_camber_front", [0.0, -1.0, -2.0, -3.0]),
+            "Front roll stiffness (N·m/°)": ("roll_stiffness_front", [250, 350, 450, 550]),
+            "Downforce ClA (m²)": ("cl_a", [0.0, 1.5, 2.5, 3.5]),
+            "Peak power (W)": ("power_w", [40000, 60000, 80000, 100000]),
+        }
+        _param_label = sw[0].selectbox("Parameter", list(_param_opts.keys()),
+                                       key="ggv_sweep_param")
+        _metric_label = sw[1].selectbox(
+            "Metric", ["max lateral g", "max accel g", "max braking g"],
+            key="ggv_sweep_metric")
+        _sweep_v = sw[2].number_input("at speed (m/s)", 5.0, 45.0, 20.0, 1.0,
+                                      key="ggv_sweep_v")
+        _metric_key = {"max lateral g": "max_lat_g", "max accel g": "max_accel_g",
+                       "max braking g": "max_brake_g"}[_metric_label]
+        if sw[3].button("Sweep", key="ggv_sweep_btn", width='stretch'):
+            st.session_state._ggv_run_sweep = True
+        if st.session_state.get("_ggv_run_sweep"):
+            _pname, _pvals = _param_opts[_param_label]
+            try:
+                _sres = ggv_mod.sweep_parameter(_veh_ggv, _gp, _pname, _pvals,
+                                                speed=_sweep_v, metric=_metric_key)
+                figS = go.Figure()
+                figS.add_trace(go.Scatter(x=_sres["values"], y=_sres["metric"],
+                                          mode="lines+markers",
+                                          line=dict(color=CYAN, width=2.5)))
+                figS.update_layout(**PLOT_LAYOUT,
+                                   title=f"{_metric_label} vs {_param_label} "
+                                         f"@ {_sweep_v:.0f} m/s",
+                                   xaxis_title=_param_label, yaxis_title=_metric_label,
+                                   height=300)
+                st.plotly_chart(figS, width='stretch')
+                if _pname == "static_camber_front" and \
+                        len(set(round(x, 3) for x in _sres["metric"])) <= 1:
+                    st.markdown('<p class="hint">Camber looks flat because the '
+                                '<b>generic tire is nearly camber-insensitive</b> by '
+                                'design. Load your TTC-fitted tire (TIRE &amp; GRIP) — '
+                                'a real fit carries camber terms and this curve will '
+                                'respond.</p>', unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"Sweep failed: {e}")
+
+        # ---- Cross-check against the Lap Sim --------------------------- #
+        with st.expander("Cross-check: does the GGV agree with the Lap Sim?",
+                         expanded=False):
+            st.markdown('<p class="hint">Both the GGV and the Lap Sim run on the '
+                        'same load-transfer + Pacejka chain, so their axis limits '
+                        'should match. This button compares them directly — a '
+                        'divergence means one has drifted and is worth chasing.</p>',
+                        unsafe_allow_html=True)
+            if st.button("Run cross-check", key="ggv_validate_btn"):
+                try:
+                    _vres = ggv_mod.validate_against_laptime(_veh_ggv, _pt_ggv)
+                    _cls = "good" if _vres["ok"] else "warn"
+                    st.markdown(metric("Max difference vs Lap Sim",
+                                       f"{_vres['max_reldiff'] * 100:.2f}", "%", _cls),
+                                unsafe_allow_html=True)
+                    if _vres["ok"]:
+                        st.success("Agrees with the Lap Sim within tolerance.")
+                    else:
+                        st.warning(_vres.get("note", _vres["reason"]))
+                    # small comparison table
+                    import pandas as _pd
+                    _df = _pd.DataFrame({
+                        "speed m/s": [round(x, 1) for x in _vres["speeds"]],
+                        "lat GGV": [round(x, 3) for x in _vres["lat_ggv"]],
+                        "lat Lap": [round(x, 3) for x in _vres["lat_lap"]],
+                        "accel GGV": [round(x, 3) for x in _vres["accel_ggv"]],
+                        "accel Lap": [round(x, 3) for x in _vres["accel_lap"]],
+                        "brake GGV": [round(x, 3) for x in _vres["brake_ggv"]],
+                        "brake Lap": [round(x, 3) for x in _vres["brake_lap"]],
+                    })
+                    st.dataframe(_df, width='stretch', hide_index=True)
+                except Exception as e:
+                    st.error(f"Cross-check failed: {e}")
+
+        if st.session_state.get("tire_is_default", True):
+            st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                        'padding-left:10px;">Running on the <b>generic default tire</b>. '
+                        'The envelope shape and the way it responds to setup changes are '
+                        'right; load your TTC-fitted tire in TIRE &amp; GRIP before '
+                        'quoting absolute g numbers.</p>', unsafe_allow_html=True)
+
+
 # --------------------------------------------------------------------------- #
 #  TRANSIENT TAB — explicit high-frequency time-step DAE solver
 # --------------------------------------------------------------------------- #

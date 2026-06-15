@@ -140,7 +140,8 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   team can see *where* time is won and aim its effort there instead of guessing.
 - A **g-g-V capability envelope**: lateral/accel/braking g vs speed, showing how
   downforce raises usable grip with speed — the picture engineers use to sanity-
-  check the car.
+  check the car. (For the *full* combined envelope and the design-input sweeps,
+  see the dedicated **◢ GGV DIAGRAM** tab below.)
 - Point-mass layer adds power, drivetrain efficiency, traction limit, braking, and
   aero (downforce *and* the drag it costs) so wing decisions show up honestly.
 - **SETUP → SECONDS** tab: re-runs the lap sim for each setup lever and ranks them
@@ -154,6 +155,36 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
   says so. Robust by construction: a bad data point, a non-converging corner, or a
   pathological tire never crashes the session — the sim substitutes a safe default
   and surfaces a warning instead of raising.
+
+**GGV diagram (the full combined-acceleration envelope — NEW)**
+- The single steady-state picture an engineer reads before stepping up to full
+  transient/multibody modelling: at each speed, the closed boundary in the
+  (longitudinal g, lateral g) plane — cornering, braking, accelerating, and every
+  combination between. Ships in the **◢ GGV DIAGRAM** tab. Where the lap sim's
+  older g-g-V gave only three axis points per speed, this is the *whole* surface.
+- Built **through the same load-transfer + Pacejka chain** as everything else, so
+  the design inputs an FSAE team actually owns are the levers that reshape it:
+  **CG height, roll-centre height, wheel/spring rate (through the real motion
+  ratio), dynamic camber, weight and weight distribution, and aero ClA/CdA**.
+- A built-in **design-input sweep** answers "what does changing *X* do to my
+  envelope?" directly — pick CG height, weight distribution, camber, roll
+  stiffness, downforce or power and see the metric move. (Camber sweeps force the
+  camber lever live even with geometry attached, so a flat curve only ever means
+  genuine tire insensitivity, never a silent geometry override.)
+- **Combined-slip aware:** drop in a `CombinedSlipTire` and the longitudinal axis
+  uses its calibrated longitudinal/lateral mu ratio while the envelope corners
+  take its friction-ellipse exponents (a superellipse, not a forced circle) — the
+  same object the lap sim consumes, so there's one tire model, not two.
+- **Cross-checked against the lap sim:** `GGVParams.from_powertrain()` builds the
+  GGV from the same `Powertrain` the lap sim uses, and `validate_against_laptime()`
+  compares their axis limits directly. They agree to **under 0.1%** on lateral and
+  acceleration across downforce levels; the one deliberate, *documented* exception
+  (the lap sim's brake side ignores the longitudinal mu ratio) is detected and
+  reported rather than hidden. The tab exposes this as a one-click check.
+- Same honesty contract as the rest: envelope *shape* and its *response to setup*
+  are trustworthy out of the box on the generic tire; absolute g's become real
+  once you load your TTC-fitted tire. Never raises — a bad point clamps and warns,
+  and inner-wheel lift at the limit is flagged as an artifact, not sold as grip.
 
 **Transient solver (the unsteady half of the lap — NEW)**
 - The thing QSS assumes away. The **◢ TRANSIENT** tab runs an explicit,
@@ -414,6 +445,35 @@ from suspension import correlation
 rep = correlation.correlate_skidpad(veh, measured_g=1.42)
 print(rep.summary)                 # measured vs predicted, % error, trust verdict
 print("within tolerance:", rep.overall_within_tol)
+```
+
+The GGV diagram is importable the same way — generate the full envelope, sweep a
+design lever, and cross-check it against the lap sim, all from the live vehicle:
+
+```python
+from suspension.ggv import GGVGenerator, GGVParams, sweep_parameter, quick_ggv
+from suspension import laptime
+
+# One-call envelope from the headline numbers (no kinematics object needed):
+res = quick_ggv(mass=280, cg_height=300, cl_a=2.5, power_w=60_000)
+print("peak lateral g:", round(res.max_lat_g.max(), 2))
+print("peak braking g:", round(res.max_brake_g.max(), 2))
+
+# Or drive it from the live vehicle + the SAME Powertrain the lap sim uses, so
+# the two share one source of truth (combined-slip tire flows through too):
+pt  = laptime.Powertrain(power_kw=80, cla=2.6, cda=1.1, drive="rwd")
+gp  = GGVParams.from_powertrain(pt)
+res = GGVGenerator(veh, gp).generate()          # full (speed, direction) surface
+
+# "What does changing X do to my envelope?" — X is any VehicleParams/GGVParams field
+s = sweep_parameter(veh, gp, "cg_height", [250, 300, 350, 400],
+                    speed=20.0, metric="max_lat_g")
+print("max lat g vs CG height:", [round(m, 3) for m in s["metric"]])
+
+# Earn trust the same way the skidpad does — prove the GGV agrees with the lap sim:
+from suspension.ggv import validate_against_laptime
+v = validate_against_laptime(veh, pt)
+print("agrees within tol:", v["ok"], "| worst diff: %.2f%%" % (v["max_reldiff"] * 100))
 ```
 
 The mount-point clash + CG chain is just as importable — move one hardpoint and get the
@@ -679,7 +739,8 @@ Sign conventions and gains are pinned by tests:
 ```bash
 python tests/test_kinematics.py        # kinematics sign conventions & solver
 python tests/test_tiremodel.py         # tire model, TTC fitter, setup optimiser
-python -m pytest tests/                # everything (173 tests)
+python tests/test_ggv.py               # GGV envelope, combined slip, lap-sim cross-check
+python -m pytest tests/                # everything (170+ tests)
 ```
 
 The tire tests pin the things the grip upgrade depends on: load sensitivity in the
