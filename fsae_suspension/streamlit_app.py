@@ -38,6 +38,34 @@ from suspension import damper as damper_mod
 from suspension import interfaces as interfaces_mod
 from suspension import transient as transient_mod
 from suspension import ggv as ggv_mod
+from suspension import tire_thermal as thermal_mod
+
+# --------------------------------------------------------------------------- #
+#  Cached compute layer.
+#
+#  Streamlit re-executes this entire script top-to-bottom on EVERY widget
+#  interaction, and it runs the body of every `with tab:` block regardless of
+#  which tab is visible. Without caching, that meant the thermal warm-up
+#  integration (~30 s) and the GGV envelope (~2 s) were recomputed on every
+#  rerun — that is why the app "took forever". These wrappers memoize the heavy
+#  physics on their actual inputs, so they only recompute when something that
+#  affects the result changes. Args are kept hashable (dicts/tuples/floats) so
+#  cache_data can key on them.
+# --------------------------------------------------------------------------- #
+
+@st.cache_data(show_spinner=False)
+def _cached_thermal_warmup(coeffs, fnomin, enable_mu, cold_pa,
+                           alpha_deg, Fz, v_x, gamma_deg,
+                           ambient_c, track_c, duration_s, dt):
+    _lt = tire_mod.PacejkaLateral(coeffs=dict(coeffs), FNOMIN=fnomin)
+    _tp = thermal_mod.ThermalParams(enable_mu_feedback=bool(enable_mu),
+                                    cold_pressure_pa=float(cold_pa))
+    _tm = thermal_mod.ThermalTireModel(lateral=_lt, params=_tp)
+    return thermal_mod.simulate_warmup(
+        model=_tm, alpha_deg=float(alpha_deg), Fz=float(Fz), v_x=float(v_x),
+        gamma_deg=float(gamma_deg), ambient_c=float(ambient_c),
+        track_c=float(track_c), duration_s=float(duration_s), dt=float(dt))
+
 
 st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
@@ -1165,6 +1193,26 @@ def render_mountpoint_clash():
     # ---- the clash board (same render idiom as the ledger findings) ---- #
     st.markdown("###### Clash board")
     findings = geom.check_clashes()
+    # check_clashes() returns an empty list ONLY when there are no mount points at
+    # all (a fresh project). Without this guard the board would render as a bare
+    # header with nothing beneath it — indistinguishable from a broken tab. Show an
+    # explicit empty state so the board always "appears".
+    if not findings:
+        if not geom.points and not geom.keepouts:
+            _msg = ("No mount points or keep-out volumes declared yet. Add at least "
+                    "one mount point and one keep-out above (the defaults in the "
+                    "forms are a ready-to-save starting pair), then the clash board "
+                    "checks every point against every keep-out it must clear.")
+        elif not geom.points:
+            _msg = ("Keep-out volumes are declared but no mount points exist to check "
+                    "against them yet — add a mount point above.")
+        else:
+            _msg = ("No clashes to report.")
+        st.markdown(
+            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+            f'<span class="tag">EMPTY</span> '
+            f'<span style="font-size:.92rem;color:#8d99a6">{_msg}</span></div>',
+            unsafe_allow_html=True)
     _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
                 "info": "", "ok": "good"}
     order = ["fail", "warning", "missing", "info", "ok"]
@@ -1389,6 +1437,322 @@ def render_pcb_board():
             "- reflection coeff: *not computed*\n"
             "- coupled noise voltage: *not computed*")
         st.caption(d["note"])
+
+
+def _parse_path3d(s: str):
+    """Parse 'x,y,z; x,y,z; …' into a list of (x,y,z) float tuples. Tolerant of
+    stray whitespace, trailing separators, and 2-D points (z defaults to 0)."""
+    pts = []
+    for chunk in str(s).replace("\n", ";").split(";"):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        parts = chunk.replace(",", " ").split()
+        if len(parts) >= 2:
+            try:
+                x = float(parts[0]); y = float(parts[1])
+                z = float(parts[2]) if len(parts) >= 3 else 0.0
+                pts.append((x, y, z))
+            except ValueError:
+                continue
+    return pts
+
+
+def _formboard_svg(fb, width_px: int = 720, height_px: int = 360) -> str:
+    """Render a Formboard as an inline 1:1-proportioned SVG nail-board drawing.
+    Branches are drawn as polylines (length-true), connector nodes as labelled
+    pads. The drawing is scaled to fit the panel but the proportions are the true
+    flat layout — the shape a fabricator pins the loom out on."""
+    ext_w, ext_h = fb.extent_mm
+    ext_w = max(ext_w, 1.0); ext_h = max(ext_h, 1.0)
+    pad = 28
+    sx = (width_px - 2 * pad) / ext_w
+    sy = (height_px - 2 * pad) / ext_h
+    s = min(sx, sy)  # uniform scale -> proportions preserved (true 1:1 shape)
+
+    def tx(p):
+        return pad + p[0] * s, pad + (ext_h - p[1]) * s  # flip y for screen
+
+    palette = ["#4aa3df", "#e1683c", "#5cb85c", "#b18ad6", "#d9a441",
+               "#48b8b8", "#d76a8a", "#7d8c99"]
+    parts = [f'<svg viewBox="0 0 {width_px} {height_px}" '
+             f'style="width:100%;height:auto;background:#0e1419;'
+             f'border:1px solid var(--line);border-radius:8px;">']
+    # scale bar (100 mm)
+    bar = 100.0 * s
+    parts.append(f'<line x1="{pad}" y1="{height_px-12}" x2="{pad+bar}" '
+                 f'y2="{height_px-12}" stroke="#8d99a6" stroke-width="2"/>'
+                 f'<text x="{pad}" y="{height_px-16}" fill="#8d99a6" '
+                 f'font-size="10">100 mm</text>')
+    for i, b in enumerate(fb.branches):
+        col = palette[i % len(palette)]
+        pts = " ".join(f"{tx(p)[0]:.1f},{tx(p)[1]:.1f}" for p in b.points_mm)
+        parts.append(f'<polyline points="{pts}" fill="none" stroke="{col}" '
+                     f'stroke-width="2.4" stroke-linejoin="round" '
+                     f'stroke-linecap="round" opacity="0.92"/>')
+        # label at midpoint
+        if b.points_mm:
+            mid = b.points_mm[len(b.points_mm) // 2]
+            mx, my = tx(mid)
+            parts.append(f'<text x="{mx+4:.1f}" y="{my-4:.1f}" fill="{col}" '
+                         f'font-size="10" font-weight="600">{b.wire} '
+                         f'(AWG{b.gauge_awg})</text>')
+    for name, (x, y) in fb.nodes.items():
+        nx, ny = tx((x, y))
+        parts.append(f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="5" fill="#e8edf2" '
+                     f'stroke="#0e1419" stroke-width="1.5"/>'
+                     f'<text x="{nx+7:.1f}" y="{ny+3:.1f}" fill="#e8edf2" '
+                     f'font-size="10" font-weight="700">{name}</text>')
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def render_harness():
+    """
+    The 3-D wiring harness, live: route every conductor through the same car
+    coordinates the suspension geometry uses, catch a bend tighter than the wire
+    can take, a connector with no strain relief, and a loom that fouls a reserved
+    keep-out — then, before a single wire is cut, read off the exact cut length to
+    the millimetre, the 1:1 formboard, the automated BOM, and the exact copper
+    mass and where it sits on the car.
+    """
+    from suspension.harness import Connector, WireRun
+
+    _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
+                 "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
+                 "suspension": "🩷", "ecu": "🖥️"}
+    _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
+             "data-acquisition", "electrics", "powertrain", "suspension"]
+
+    st.markdown("---")
+    st.markdown("### 🧵 Harness — the physical loom in 3-D car space")
+    st.markdown(
+        '<p class="hint">The board above is the copper <i>on the PCB</i>. This is '
+        'the copper <i>between the boxes</i> — the loom you lay into the chassis. '
+        'Route each conductor as a 3-D polyline through the <b>same car '
+        'coordinates</b> the suspension mount-points and keep-outs live in, so a '
+        'wire that would foul a wishbone or the accumulator box shows up as a '
+        'clearance FAIL on the same board a mount clash does. It catches the two '
+        'things that actually scrap a loom on the bench — a <b>bend tighter than '
+        'the wire can take</b> (kinks the conductor) and a connector entry with no '
+        '<b>strain-relief</b> straight length — then derives, <i>before you cut a '
+        'single wire</i>: the exact <b>cut length</b> to the millimetre, a 1:1 '
+        '<b>formboard</b>, the automated <b>BOM</b>, and the exact <b>copper mass '
+        'and its distribution</b>. It measures the route you declare; it is not a '
+        'cable-flex solver, so unsupported sag under vibration is reported as '
+        '<i>not computed</i> rather than invented.</p>',
+        unsafe_allow_html=True)
+
+    store = project_mod.ProjectStore(PROJECT_PATH)
+    harness = store._ensure_harness()
+    geom = getattr(store, "geometry", None)
+    keepouts = list(getattr(geom, "keepouts", {}).values()) if geom else []
+
+    hc = st.columns(3)
+    harness.ambient_c = hc[0].number_input("Ambient (°C)", -20.0, 150.0,
+                                           value=float(harness.ambient_c), key="hn_amb")
+    harness.clearance_warn_mm = hc[1].number_input(
+        "Clearance WARN (mm)", 0.0, 100.0,
+        value=float(harness.clearance_warn_mm), key="hn_cw")
+    harness.clearance_fail_mm = hc[2].number_input(
+        "Clearance FAIL (mm)", 0.0, 50.0,
+        value=float(harness.clearance_fail_mm), key="hn_cf")
+
+    if keepouts:
+        st.caption(f"Routing against {len(keepouts)} keep-out volume(s) from the "
+                   f"geometry ledger: " +
+                   ", ".join(f"{_MP_EMOJI.get(getattr(k,'owner_subsystem','?'),'')}"
+                             f"{k.name}" for k in keepouts))
+    else:
+        st.caption("No keep-out volumes declared yet — add them in the geometry / "
+                   "mount-point tab to clearance-check the loom against reserved space.")
+
+    ec = st.columns(2)
+    # ---- connector editor ---- #
+    with ec[0]:
+        st.markdown("###### Connectors (harness end-points / branch nodes)")
+        with st.expander("Add / replace a connector", expanded=not harness.connectors):
+            cn = st.text_input("Name", key="cn_name", value="ECU")
+            cown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
+                                key="cn_own")
+            cg = st.columns(3)
+            cx = cg[0].number_input("x (mm)", -5000.0, 5000.0, value=0.0, key="cn_x")
+            cy = cg[1].number_input("y (mm)", -5000.0, 5000.0, value=0.0, key="cn_y")
+            cz = cg[2].number_input("z (mm)", -5000.0, 5000.0, value=0.0, key="cn_z")
+            cg2 = st.columns(3)
+            ccav = cg2[0].number_input("Cavities", 1, 200, value=12, key="cn_cav")
+            csr = cg2[1].number_input("Strain relief (mm)", 0.0, 200.0,
+                                      value=25.0, key="cn_sr")
+            cmass = cg2[2].number_input("Mass (g, 0=unknown)", 0.0, 2000.0,
+                                        value=0.0, key="cn_mass")
+            cpn = st.text_input("Part number", key="cn_pn", value="DTM-12")
+            cest = st.checkbox("Estimated", value=False, key="cn_est")
+            if st.button("Save connector", key="cn_save"):
+                store.set_connector(Connector(
+                    name=cn, owner_subsystem=cown, xyz_mm=(cx, cy, cz),
+                    cavities=int(ccav), part_number=cpn, strain_relief_mm=csr,
+                    mass_g=(None if cmass == 0.0 else cmass), is_estimate=cest))
+                store.save(); st.rerun()
+        for name, c in list(harness.connectors.items()):
+            est = " · est" if c.is_estimate else ""
+            mtxt = f"{c.mass_g:.0f} g" if c.mass_g is not None else "mass —"
+            row = st.columns([5, 1])
+            row[0].markdown(
+                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                f'{_MP_EMOJI.get(c.owner_subsystem,"")} <b>{name}</b> '
+                f'<span style="color:#8d99a6;font-size:.8rem">{c.owner_subsystem} · '
+                f'{c.part_number or "—"}{est}</span><br>'
+                f'<span style="font-size:.82rem;color:#8d99a6">'
+                f'({c.xyz_mm[0]:.0f}, {c.xyz_mm[1]:.0f}, {c.xyz_mm[2]:.0f}) mm · '
+                f'{c.cavities} cav · {mtxt} · SR {c.strain_relief_mm:.0f} mm</span></div>',
+                unsafe_allow_html=True)
+            if row[1].button("✕", key=f"cn_del_{name}"):
+                store.remove_connector(name); store.save(); st.rerun()
+
+    # ---- wire editor ---- #
+    with ec[1]:
+        st.markdown("###### Wire runs (3-D routed conductors)")
+        conn_names = [""] + list(harness.connectors.keys())
+        with st.expander("Add / replace a wire", expanded=not harness.wires):
+            wn = st.text_input("Name", key="wr_name", value="MOT_PWR")
+            wown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
+                                key="wr_own")
+            wg = st.columns(3)
+            wawg = wg[0].number_input("Gauge (AWG)", 8, 30, value=10, key="wr_awg")
+            wnet = wg[1].text_input("Net", key="wr_net", value="hv_pwr")
+            wod = wg[2].number_input("OD (mm, 0=AWG nom)", 0.0, 30.0,
+                                     value=0.0, key="wr_od")
+            wg2 = st.columns(2)
+            wfrom = wg2[0].selectbox("From connector", conn_names, key="wr_from")
+            wto = wg2[1].selectbox("To connector", conn_names, key="wr_to")
+            wg3 = st.columns(3)
+            wmult = wg3[0].number_input("Min bend ×OD", 1.0, 20.0,
+                                        value=6.0, key="wr_mult")
+            wloop = wg3[1].number_input("Service loop (mm)", 0.0, 1000.0,
+                                        value=0.0, key="wr_loop")
+            wstrip = wg3[2].number_input("Strip/end (mm)", 0.0, 100.0,
+                                         value=8.0, key="wr_strip")
+            wpath = st.text_input("3-D route (x,y,z; x,y,z; …)", key="wr_path",
+                                  value="0,0,0; 40,0,0; 600,0,100; 1160,0,100; 1200,0,0")
+            wcur = st.number_input("Carries current (A, 0=from net)", 0.0, 1000.0,
+                                   value=0.0, key="wr_cur")
+            west = st.checkbox("Estimated route", value=False, key="wr_est")
+            if st.button("Save wire", key="wr_save"):
+                pts = _parse_path3d(wpath)
+                store.set_wire(WireRun(
+                    name=wn, owner_subsystem=wown, gauge_awg=int(wawg),
+                    path_mm=pts, from_conn=wfrom, to_conn=wto, net=wnet,
+                    od_mm=(None if wod == 0.0 else wod),
+                    bundle_min_radius_mult=wmult, service_loop_mm=wloop,
+                    strip_mm=wstrip,
+                    carries_current_a=(None if wcur == 0.0 else wcur),
+                    is_estimate=west))
+                store.save(); st.rerun()
+        for name, w in list(harness.wires.items()):
+            est = " · est" if w.is_estimate else ""
+            row = st.columns([5, 1])
+            row[0].markdown(
+                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                f'{_MP_EMOJI.get(w.owner_subsystem,"")} <b>{name}</b> '
+                f'<span style="color:#8d99a6;font-size:.8rem">AWG{w.gauge_awg} · '
+                f'{w.net or "—"}{est}</span><br>'
+                f'<span style="font-size:.82rem;color:#8d99a6">'
+                f'{w.from_conn or "?"} → {w.to_conn or "?"} · '
+                f'cut {w.cut_length_mm():.0f} mm · {w.copper_mass_g():.1f} g Cu · '
+                f'min bend {w.min_bend_radius_mm:.0f} mm</span></div>',
+                unsafe_allow_html=True)
+            if row[1].button("✕", key=f"wr_del_{name}"):
+                store.remove_wire(name); store.save(); st.rerun()
+
+    # ---- the pre-cut gate ---- #
+    st.markdown("###### Pre-cut harness check")
+    res = store.harness_check()
+    if res.findings:
+        st.markdown(f'<p class="hint">{res.summary()}</p>', unsafe_allow_html=True)
+    else:
+        st.caption("Add connectors and at least one routed wire to run the check.")
+
+    _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
+                "info": "", "ok": "good"}
+    order = ["fail", "warning", "missing", "info", "ok"]
+    for f in sorted(res.findings, key=lambda x: order.index(x.severity.value)):
+        cls = _SEV_CLS.get(f.severity.value, "")
+        who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
+        st.markdown(
+            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+            f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
+            f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
+            f'<span style="font-size:.92rem">{f.message}</span></div>',
+            unsafe_allow_html=True)
+
+    if not harness.wires:
+        return
+
+    # ---- manufacturing artefacts: cut list + BOM + mass + formboard ---- #
+    st.markdown("###### Manufacturing roll-up — everything known before the first cut")
+    mc = st.columns([3, 2])
+
+    with mc[0]:
+        st.markdown("**Cut list (to the millimetre)**")
+        if res.cut_list:
+            import pandas as pd
+            df = pd.DataFrame(res.cut_list)[
+                ["wire", "net", "gauge_awg", "from_conn", "to_conn",
+                 "routed_mm", "bend_allowance_mm", "service_loop_mm",
+                 "strip_both_ends_mm", "cut_length_mm"]]
+            st.dataframe(df, hide_index=True, use_container_width=True)
+        st.markdown("**Bill of materials (automated)**")
+        bom = res.bom
+        if bom.get("wire"):
+            import pandas as pd
+            st.caption("Wire by gauge")
+            st.dataframe(pd.DataFrame(bom["wire"]), hide_index=True,
+                         use_container_width=True)
+        if bom.get("connectors"):
+            import pandas as pd
+            st.caption("Connectors")
+            st.dataframe(pd.DataFrame(bom["connectors"]), hide_index=True,
+                         use_container_width=True)
+        st.markdown(
+            f'<p class="hint">Totals: <b>{bom.get("total_wire_m",0):.2f} m</b> wire · '
+            f'<b>{bom.get("total_copper_g",0):.0f} g</b> copper · '
+            f'<b>{bom.get("contacts_total",0)}</b> crimp contacts.</p>',
+            unsafe_allow_html=True)
+
+    with mc[1]:
+        st.markdown("**Copper mass & distribution**")
+        md = res.mass
+        st.markdown(
+            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:3px 0;">'
+            f'<span style="font-size:.95rem"><b>{md.get("total_copper_g",0):.1f} g</b> '
+            f'copper · <b>{md.get("total_harness_g",0):.1f} g</b> total harness</span><br>'
+            f'<span style="font-size:.85rem;color:#8d99a6">harness CG: '
+            f'{md.get("harness_cg_mm")} mm (x rearward, y right, z up)</span></div>',
+            unsafe_allow_html=True)
+        if md.get("connectors_without_declared_mass"):
+            st.caption("Excluded from CG (mass not declared): " +
+                       ", ".join(md["connectors_without_declared_mass"]))
+        if md.get("per_wire"):
+            import pandas as pd
+            st.dataframe(pd.DataFrame(md["per_wire"])[
+                ["wire", "gauge_awg", "copper_g", "total_g"]],
+                hide_index=True, use_container_width=True)
+        st.caption("Sag of unsupported runs under vibration: *not computed* — "
+                   "needs a flexible-body solver; the route is measured, not solved.")
+
+    # ---- the 1:1 formboard ---- #
+    st.markdown("###### 1:1 Formboard (unfolded flat layout for the bench)")
+    fb = res.formboard
+    if fb and fb.branches:
+        st.markdown(
+            f'<p class="hint">The harness unfolded to a length-true 2-D nail-board: '
+            f'every branch segment is the exact length of its 3-D run, so the '
+            f'fabricator pins the loom out 1:1. Board extent '
+            f'~{fb.extent_mm[0]:.0f} × {fb.extent_mm[1]:.0f} mm.</p>',
+            unsafe_allow_html=True)
+        st.markdown(_formboard_svg(fb), unsafe_allow_html=True)
+    else:
+        st.caption("Route at least one wire with ≥2 points to generate the formboard.")
 
 
 def _parse_path(s: str):
@@ -2350,6 +2714,118 @@ with tab9:
     except Exception as e:
         st.info(f"Combined-slip preview unavailable: {e}")
 
+    # ---- Tire thermal channel (lumped tread/carcass/gas network) --------- #
+    st.markdown("###### Tire thermal channel — warm-up, working range & pressure")
+    st.markdown('<p class="hint">A true tire temperature cannot be computed without '
+                '<b>empirical, temperature-swept tire data</b> — so this channel is '
+                'built honestly: a 3-node lumped energy balance (tread / carcass / '
+                'inflation gas) heated by frictional sliding and rolling hysteresis, '
+                'cooled by convection to air and conduction to the track. The '
+                '<b>equations are textbook physics</b>; the masses, heat-transfer '
+                'coefficients and the grip-vs-temperature law are '
+                '<b>representative defaults, NOT your tire</b>. Read the shape — '
+                'warm-up time, the front/rear and across-width split, the pressure '
+                'rise — not the absolute degrees. Every temperature here is flagged '
+                'synthesized until you calibrate it to swept data.</p>',
+                unsafe_allow_html=True)
+    try:
+        tcol = st.columns(4)
+        _t_alpha = tcol[0].number_input("Slip angle (°)", 0.0, 12.0, value=4.0,
+                                        step=0.5, key="therm_alpha")
+        _t_fz = tcol[1].number_input("Vertical load (N)", 200.0, 3000.0,
+                                     value=1300.0, step=50.0, key="therm_fz")
+        _t_v = tcol[2].number_input("Speed (m/s)", 3.0, 45.0, value=20.0,
+                                    step=1.0, key="therm_v")
+        _t_dur = tcol[3].number_input("Run length (s)", 20.0, 600.0, value=150.0,
+                                      step=10.0, key="therm_dur")
+        tcol2 = st.columns(4)
+        _t_cam = tcol2[0].number_input("Camber (°)", 0.0, 6.0, value=1.5,
+                                       step=0.5, key="therm_cam")
+        _t_amb = tcol2[1].number_input("Ambient (°C)", -5.0, 50.0, value=25.0,
+                                       step=1.0, key="therm_amb")
+        _t_trk = tcol2[2].number_input("Track surface (°C)", 0.0, 70.0, value=34.0,
+                                       step=1.0, key="therm_trk")
+        _t_mu = tcol2[3].checkbox("Couple grip to temp (μ(T))", value=False,
+                                  key="therm_mu",
+                                  help="Let the modelled tread temperature scale "
+                                       "Pacejka grip. OFF by default — the μ(T) curve "
+                                       "is the most data-hungry part and is flagged "
+                                       "synthesized when on.")
+
+        _t_cold_psi = tcol[0].number_input("Cold set pressure (psi)", 6.0, 35.0,
+                                           value=12.0, step=0.5, key="therm_psi")
+
+        _trun = _cached_thermal_warmup(
+            coeffs=tuple(sorted(dict(st.session_state.tire_coeffs).items())),
+            fnomin=st.session_state.tire_fnomin,
+            enable_mu=bool(_t_mu),
+            cold_pa=float(_t_cold_psi) * 6894.757,
+            alpha_deg=float(_t_alpha), Fz=float(_t_fz), v_x=float(_t_v),
+            gamma_deg=float(_t_cam), ambient_c=float(_t_amb), track_c=float(_t_trk),
+            duration_s=float(_t_dur), dt=5.0e-3)
+
+        _mean = _trun.tread_mean_c()
+        tm_cols = st.columns(4)
+        tm_cols[0].markdown(metric("Tread (plateau)", f"{_mean[-1]:.0f}", "°C"),
+                            unsafe_allow_html=True)
+        tm_cols[1].markdown(metric("Carcass", f"{_trun.carcass_c[-1]:.0f}", "°C"),
+                            unsafe_allow_html=True)
+        tm_cols[2].markdown(metric("Hot pressure", f"{thermal_mod.psi(_trun.pressure_pa[-1]):.1f}", "psi"),
+                            unsafe_allow_html=True)
+        # time to reach 90% of the plateau rise — a "warm-up time" proxy
+        _rise = _mean - _mean[0]
+        _target = 0.9 * _rise[-1] if abs(_rise[-1]) > 1e-6 else 0.0
+        _idx = int(np.argmax(_rise >= _target)) if _target > 0 else 0
+        _warm_s = _trun.t[_idx] if _target > 0 else 0.0
+        tm_cols[3].markdown(metric("Warm-up (90%)", f"{_warm_s:.0f}", "s"),
+                            unsafe_allow_html=True)
+
+        # temperature traces
+        figT = go.Figure()
+        figT.add_trace(go.Scatter(x=_trun.t, y=_mean, mode="lines",
+                                  line=dict(color=CYAN, width=3), name="tread (mean)"))
+        figT.add_trace(go.Scatter(x=_trun.t, y=_trun.carcass_c, mode="lines",
+                                  line=dict(color=AMBER, width=2), name="carcass"))
+        figT.add_trace(go.Scatter(x=_trun.t, y=_trun.gas_c, mode="lines",
+                                  line=dict(color=DIM, width=2, dash="dot"), name="gas"))
+        # across-width band spread (inner/mid/outer) at the plateau
+        if _trun.tread_c.shape[1] > 1:
+            figT.add_trace(go.Scatter(x=_trun.t, y=_trun.tread_c[:, 0], mode="lines",
+                                      line=dict(color=CYAN, width=1, dash="dot"),
+                                      name="tread inner", opacity=0.5))
+            figT.add_trace(go.Scatter(x=_trun.t, y=_trun.tread_c[:, -1], mode="lines",
+                                      line=dict(color=RED, width=1, dash="dot"),
+                                      name="tread outer", opacity=0.5))
+        figT.update_layout(**PLOT_LAYOUT, title="Tire warm-up — lumped thermal network",
+                           xaxis_title="time (s)", yaxis_title="temperature (°C)",
+                           height=360)
+        st.plotly_chart(figT, width='stretch')
+
+        if bool(_t_mu):
+            figMu = go.Figure()
+            figMu.add_trace(go.Scatter(x=_trun.t, y=_trun.mu_scale, mode="lines",
+                                       line=dict(color=RED, width=2.5)))
+            figMu.update_layout(**PLOT_LAYOUT,
+                                title="Grip multiplier μ(T) over the run "
+                                      "(SYNTHESIZED — needs swept data)",
+                                xaxis_title="time (s)",
+                                yaxis_title="grip scale vs optimum", height=260)
+            st.plotly_chart(figMu, width='stretch')
+
+        st.markdown(f'<span class="tag warn">{_trun.status}</span>',
+                    unsafe_allow_html=True)
+        st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                    'padding-left:10px;">The across-width split (inner vs outer band) '
+                    'is the same thing a tire pyrometer reads after a run — use it to '
+                    'reason about camber, and the front/rear plateau split to reason '
+                    'about balance late in a stint. The numbers are a physically-'
+                    'shaped guess until the active tire above is calibrated to '
+                    'temperature-swept data; then set <code>ThermalParams.calibrated'
+                    '</code> and they stop being flagged.</p>',
+                    unsafe_allow_html=True)
+    except Exception as e:
+        st.info(f"Thermal channel unavailable: {e}")
+
     # ---- Damper force-velocity ------------------------------------------- #
     st.markdown("###### Damper force–velocity (transient building block)")
     st.markdown('<p class="hint">Real bilinear-digressive damper law. <b>Uncalibrated</b> '
@@ -3022,16 +3498,24 @@ if _show_ledger:
                                                             value=float(led.total_cooling_airflow_cms), step=0.05)
 
     # Which fields each subsystem typically declares — keeps each editor focused.
+    # Every physical subsystem that the "Subsystem ↔ chassis (CAD fit)" view can
+    # check against the chassis must be able to declare an envelope here — the fit
+    # reads env_x/y/z straight from this ledger. Suspension is the only exception
+    # (it gets a swept-clearance check, not a static box), and data-acquisition is
+    # excluded from the CAD fit entirely, so neither needs env fields.
     FIELDSETS = {
         "common": ["mass_kg", "cg_x_mm", "cg_y_mm", "cg_z_mm"],
         "aerodynamics": ["env_x_mm", "env_y_mm", "env_z_mm"],
-        "brakes": ["brake_torque_nm", "mount_load_n", "mount_points"],
+        "brakes": ["brake_torque_nm", "mount_load_n", "mount_points",
+                   "env_x_mm", "env_y_mm", "env_z_mm"],
         "chassis": ["env_x_mm", "env_y_mm", "env_z_mm"],
         "cooling": ["cooling_airflow_cms", "env_x_mm", "env_y_mm", "env_z_mm"],
         "data-acquisition": ["power_draw_w", "voltage_v"],
-        "electrics": ["power_draw_w", "voltage_v", "peak_current_a"],
+        "electrics": ["power_draw_w", "voltage_v", "peak_current_a",
+                      "env_x_mm", "env_y_mm", "env_z_mm"],
         "powertrain": ["peak_torque_nm", "peak_power_kw", "voltage_v",
-                       "cooling_airflow_cms", "heat_reject_w"],
+                       "cooling_airflow_cms", "heat_reject_w",
+                       "env_x_mm", "env_y_mm", "env_z_mm"],
         "suspension": ["mount_load_n", "mount_points"],
     }
     FIELD_META = {
@@ -3358,7 +3842,27 @@ with tab_ggv:
                          key="ggv_vmax")
     try:
         _speeds = np.linspace(5.0, _vmax_ui, 12)
-        _res = ggv_mod.GGVGenerator(_veh_ggv, _gp).generate(speeds=_speeds)
+        # Memoize the envelope: regenerate only when an input that affects it
+        # changes. _veh_ggv / _gp aren't hashable, so key on a cheap signature
+        # built from the underlying primitives instead.
+        _ggv_sig = (
+            round(float(_vmax_ui), 3),
+            repr(st.session_state.vp),
+            repr(dict(st.session_state.tire_coeffs)),
+            float(st.session_state.tire_fnomin),
+            round(float(g_pw), 3), round(float(g_tract), 3), round(float(g_eff), 4),
+            round(float(g_cda), 4), round(float(g_cla), 4), round(float(g_crr), 5),
+            g_drive, round(float(g_brake), 4),
+            st.session_state.get("topology", "double_wishbone"),
+            repr(hp_dict),
+        )
+        if st.session_state.get("_ggv_sig") == _ggv_sig and \
+           st.session_state.get("_ggv_res") is not None:
+            _res = st.session_state["_ggv_res"]
+        else:
+            _res = ggv_mod.GGVGenerator(_veh_ggv, _gp).generate(speeds=_speeds)
+            st.session_state["_ggv_sig"] = _ggv_sig
+            st.session_state["_ggv_res"] = _res
     except Exception as e:
         _res = None
         st.error(f"GGV generation failed: {e}")
@@ -3835,6 +4339,7 @@ with sc3:
 # ----------------------------- TAB PCB (ELECTRONICS) ----------------------- #
 with tab_pcb:
     render_pcb_board()
+    render_harness()
 
 st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · MIT. Fork it, '
             'validate against your OptimumK model, send a PR. '
