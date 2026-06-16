@@ -1,3 +1,9 @@
+# ============================================================================
+#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
+#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+#  Open source. Original author: Frederik Thio, creator of KinematiK.
+# ============================================================================
+
 """
 Demo: the explicit transient time-step DAE solver vs the quasi-steady-state sim.
 

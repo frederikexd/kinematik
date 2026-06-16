@@ -1,3 +1,9 @@
+<!--
+  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
+  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+  Open source. Original author: Frederik Thio, creator of KinematiK.
+-->
+
 # KinematiK Tire Co-Simulation Interface
 
 **Status:** stable contract · **Applies to:** `suspension/tire_cosim.py`, `suspension/tire_cosim_driver.py` · **Version:** 0.16.0

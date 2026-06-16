@@ -1,3 +1,6 @@
+# KinematiK — Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+# Open source. Original author: Frederik Thio, creator of KinematiK.
+
 # KinematiK — Python dependencies for the Streamlit deployment.
 #
 # Why this file exists: Streamlit Cloud only installs `streamlit` plus whatever is

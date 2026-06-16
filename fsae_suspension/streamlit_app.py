@@ -1,3 +1,9 @@
+# ============================================================================
+#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
+#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+#  Open source. Original author: Frederik Thio, creator of KinematiK.
+# ============================================================================
+
 """
 KinematiK — open-source Formula SAE suspension design studio.
 
@@ -34,6 +40,7 @@ from suspension import tiremodel as tire_mod
 from suspension import setup as setup_mod
 from suspension import laptime as lap_mod
 from suspension import correlation as corr_mod
+from suspension.aero import windtunnel as wt_mod
 from suspension import damper as damper_mod
 from suspension import interfaces as interfaces_mod
 from suspension import transient as transient_mod
@@ -3287,7 +3294,8 @@ with tab12:
                     f"{rows}</table>")
 
         vsub = st.radio("What did you measure?",
-                        ["Skidpad", "Acceleration (75 m)", "Speed trace (datalogger)"],
+                        ["Skidpad", "Acceleration (75 m)", "Speed trace (datalogger)",
+                         "Wind tunnel (CFD calibration)"],
                         horizontal=True)
 
         # ---------------------------- SKIDPAD --------------------------------- #
@@ -3344,7 +3352,7 @@ with tab12:
             st.markdown(f'<p class="hint">{rep.summary}</p>', unsafe_allow_html=True)
 
         # --------------------------- SPEED TRACE ------------------------------ #
-        else:
+        elif vsub == "Speed trace (datalogger)":
             st.markdown("Upload a **CSV with two columns: distance, speed** (one row "
                         "per sample) from GPS or a wheel-speed log. The sim trace is "
                         "resampled onto your distance axis and compared point-for-point.")
@@ -3426,12 +3434,227 @@ with tab12:
                             'the parser skips a non-numeric header automatically.</p>',
                             unsafe_allow_html=True)
 
-        st.markdown('<p class="hint">Tolerances are explicit and editable in '
-                    '<code>suspension/correlation.py</code> (DEFAULT_TOL). They reflect '
-                    'what a quasi-steady-state point-mass model on one tyre set can '
-                    'credibly achieve — skidpad tightest, a noisy GPS trace loosest. '
-                    'Tighten them and watch the verdict move; that transparency is the '
-                    'point.</p>', unsafe_allow_html=True)
+        # ------------------------- WIND TUNNEL (CFD) -------------------------- #
+        else:
+            st.markdown(
+                '<p class="hint">The point of tunnel testing isn\'t "is the car '
+                'fast" — it\'s <b>calibrating your CFD</b>. You map the physical aero '
+                'map (how C_l/C_d shift with front &amp; rear ride height under load), '
+                'then run the <i>identical</i> ride-height/speed points through a '
+                '<b>Virtual Wind Tunnel</b> in Star-CCM+, TS-Auto or OpenFOAM, and '
+                'compare. If k-omega SST reproduces the tunnel inside tolerance, every '
+                'digital config you screen afterwards is trustworthy. If it doesn\'t, '
+                'this tells you <i>which way</i> it\'s wrong — point by point.</p>',
+                unsafe_allow_html=True)
+
+            wc = st.columns(4)
+            wt_area = wc[0].number_input("Reference area A (m²)", 0.5, 3.0,
+                                         value=1.00, step=0.05, key="wt_area",
+                                         help="Frontal area the C_l/C_d are normalised by. "
+                                              "MUST match what the CFD post-processor uses.")
+            wt_wb = wc[1].number_input("Wheelbase (mm)", 1000.0, 2000.0,
+                                       value=1550.0, step=10.0, key="wt_wb",
+                                       help="Distance between the front & rear ride-height "
+                                            "reference planes (the CFD reference length).")
+            wt_solver = wc[2].selectbox("Virtual tunnel solver",
+                                        ["Star-CCM+", "TS-Auto", "OpenFOAM"], key="wt_solver")
+            wt_ground = wc[3].selectbox("Tunnel floor",
+                                        ["moving-belt", "fixed-floor", "suction-fixed"],
+                                        key="wt_ground",
+                                        help="Moving belt is the only ground-effect-true "
+                                             "state. A fixed floor underpredicts underbody "
+                                             "downforce — flagged in provenance.")
+            wc2 = st.columns(3)
+            wt_facility = wc2[0].text_input("Facility", value="in-house tunnel",
+                                            key="wt_facility")
+            wt_blkcorr = wc2[1].checkbox("Blockage-corrected", value=True,
+                                         key="wt_blkcorr",
+                                         help="Were the coefficients corrected for solid + "
+                                              "wake blockage? Uncorrected coeffs are inflated.")
+            wt_geom = wc2[2].text_input("Geometry (STL/CAD path)", value="car.stl",
+                                        key="wt_geom")
+
+            st.markdown(
+                'Upload your **physical aero map** as a CSV with columns '
+                '<code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code> and optional '
+                '<code>aero_balance_front</code>. Sign convention: <b>c_lift negative = '
+                'downforce</b>. (Logged downforce/drag in Newtons instead? Convert with '
+                '<code>downforce_to_clift</code> / <code>drag_to_cdrag</code> first.)',
+                unsafe_allow_html=True)
+            wt_phys_up = st.file_uploader("Physical aero-map CSV", type=["csv"],
+                                          key="wt_phys_up")
+
+            _GS = {"moving-belt": wt_mod.GroundState.MOVING_BELT,
+                   "fixed-floor": wt_mod.GroundState.FIXED_FLOOR,
+                   "suction-fixed": wt_mod.GroundState.SUCTION_FIXED}
+            _SOLVER_KEY = {"Star-CCM+": "starccm", "TS-Auto": "tsauto",
+                           "OpenFOAM": "openfoam"}
+
+            phys_map = None
+            if wt_phys_up is not None:
+                try:
+                    import csv as _csv, io as _io2
+                    raw = wt_phys_up.getvalue().decode("utf-8", errors="replace")
+                    rdr = _csv.DictReader(_io2.StringIO(raw))
+                    prov = wt_mod.TunnelProvenance(
+                        facility=wt_facility or "tunnel",
+                        ground_state=_GS[wt_ground], model_scale=1.0,
+                        blockage_corrected=bool(wt_blkcorr),
+                        reference_area_m2=float(wt_area),
+                        reference_length_m=float(wt_wb) / 1000.0)
+                    phys_map = wt_mod.PhysicalAeroMap(
+                        prov, reference_area_m2=float(wt_area),
+                        reference_length_m=float(wt_wb) / 1000.0,
+                        wheelbase_mm=float(wt_wb))
+                    n_rows = 0
+                    for row in rdr:
+                        def _f(k, d=None):
+                            v = (row.get(k) or "").strip()
+                            return float(v) if v not in ("", None) else d
+                        bal = _f("aero_balance_front", None)
+                        rh = wt_mod.RideHeights(
+                            front_mm=_f("front_mm", 30.0), rear_mm=_f("rear_mm", 30.0),
+                            speed_ms=_f("speed_ms", 20.0), wheelbase_mm=float(wt_wb))
+                        phys_map.add_measurement(
+                            rh, c_lift=_f("c_lift"), c_drag=_f("c_drag"),
+                            aero_balance_front=bal)
+                        n_rows += 1
+                    st.success(f"Loaded {len(phys_map)} physical map point(s) "
+                               f"from {n_rows} row(s).")
+                    st.markdown(f'<p class="hint">{prov.status()}</p>',
+                                unsafe_allow_html=True)
+                except Exception as e:
+                    phys_map = None
+                    st.error(f"Couldn't parse the aero-map CSV: {e}")
+
+            if phys_map is not None and len(phys_map) > 0:
+                vwt = wt_mod.VirtualWindTunnel(phys_map, geometry_path=wt_geom,
+                                               rho=1.225)
+                st.markdown("**Step 1 — generate the matching Virtual Wind Tunnel run.** "
+                            "These are the *exact* physical points, as CFD cases.")
+                st.markdown(f'<p class="hint">{vwt.plan()}</p>', unsafe_allow_html=True)
+
+                if st.button("Write CFD driver files for the matched points",
+                             key="wt_write"):
+                    try:
+                        from suspension.aero import get_backend
+                        backend = get_backend(_SOLVER_KEY[wt_solver],
+                                              turbulence_model="kOmegaSST") \
+                            if _SOLVER_KEY[wt_solver] in ("openfoam", "tsauto") \
+                            else get_backend(_SOLVER_KEY[wt_solver])
+                        outdir = tempfile.mkdtemp(prefix="kinematik_vwt_")
+                        specs = vwt.case_specs()
+                        written = [backend.write_case(s, outdir) for s in specs]
+                        st.session_state["wt_outdir"] = outdir
+                        st.success(f"Wrote {len(written)} {wt_solver} case file(s) to "
+                                   f"{outdir}. Run them on your licensed install, export "
+                                   f"one coeff CSV per case (Cl,Cd,Cs,CmPitch,converged), "
+                                   f"then upload the combined results below.")
+                        st.code("\n".join(os.path.basename(w) for w in written[:8])
+                                + ("\n…" if len(written) > 8 else ""))
+                    except Exception as e:
+                        st.error(f"Could not write driver files: {e}")
+
+                st.markdown("**Step 2 — upload the CFD results** as a CSV with columns "
+                            "<code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code> "
+                            "(plus optional <code>aero_balance_front, converged</code>) "
+                            "— the same ride-height points you ran. Same sign convention "
+                            "(c_lift negative = downforce).", unsafe_allow_html=True)
+                wt_cfd_up = st.file_uploader("Virtual-tunnel (CFD) results CSV",
+                                             type=["csv"], key="wt_cfd_up")
+
+                if wt_cfd_up is not None:
+                    try:
+                        import csv as _csv2, io as _io3
+                        raw2 = wt_cfd_up.getvalue().decode("utf-8", errors="replace")
+                        rdr2 = _csv2.DictReader(_io3.StringIO(raw2))
+                        cfd_results = []
+                        cfd_prov = wt_mod.CFDProvenance(
+                            backend=_SOLVER_KEY[wt_solver],
+                            fidelity=wt_mod.SolverFidelity.RANS,
+                            turbulence_model="kOmegaSST",
+                            notes=f"{wt_solver} virtual wind tunnel results")
+                        for row in rdr2:
+                            def _g(k, d=None):
+                                v = (row.get(k) or "").strip()
+                                return float(v) if v not in ("", None) else d
+                            rh = wt_mod.RideHeights(
+                                front_mm=_g("front_mm", 30.0), rear_mm=_g("rear_mm", 30.0),
+                                speed_ms=_g("speed_ms", 20.0), wheelbase_mm=float(wt_wb))
+                            att = wt_mod.ride_heights_to_attitude(rh)
+                            convv = (row.get("converged", "1") or "1").strip().lower() \
+                                in ("1", "true", "yes", "")
+                            cfd_results.append(wt_mod.CoeffResult(
+                                attitude=att, c_lift=_g("c_lift"), c_drag=_g("c_drag"),
+                                aero_balance_front=_g("aero_balance_front", None),
+                                converged=convv, provenance=cfd_prov))
+                        rep = vwt.correlate(cfd_results)
+
+                        st.markdown(_verdict_tag(rep.overall_within_tol),
+                                    unsafe_allow_html=True)
+                        mcw = st.columns(4)
+                        mcw[0].markdown(metric("C_l RMS", f"{rep.cl_rms_pct:.1f}", "%",
+                                               "good" if rep.overall_within_tol else "bad"),
+                                        unsafe_allow_html=True)
+                        mcw[1].markdown(metric("C_l bias", f"{rep.cl_bias_pct:+.1f}", "%"),
+                                        unsafe_allow_html=True)
+                        mcw[2].markdown(metric("C_d RMS", f"{rep.cd_rms_pct:.1f}", "%"),
+                                        unsafe_allow_html=True)
+                        mcw[3].markdown(metric("Paired pts", f"{rep.n_paired}", ""),
+                                        unsafe_allow_html=True)
+
+                        # per-point table
+                        rows = ""
+                        for p in rep.points:
+                            if not p.paired:
+                                rows += (f"<tr><td style='padding:4px 10px'>{p.ride_heights.label()}</td>"
+                                         f"<td colspan='4' style='padding:4px 10px'>"
+                                         f"<span class='tag warn'>hole</span> {p.note}</td></tr>")
+                                continue
+                            cle = p.cl_err_pct; cde = p.cd_err_pct
+                            cls_cl = "good" if abs(cle) <= rep.tolerances["cl_pct"] else "bad"
+                            cls_cd = "good" if abs(cde) <= rep.tolerances["cd_pct"] else "bad"
+                            rows += (
+                                f"<tr><td style='padding:4px 10px'>{p.ride_heights.label()}</td>"
+                                f"<td style='padding:4px 10px;text-align:right'>{p.cl_phys:.3f} / {p.cl_cfd:.3f}</td>"
+                                f"<td style='padding:4px 10px;text-align:right'><span class='tag {cls_cl}'>{cle:+.1f}%</span></td>"
+                                f"<td style='padding:4px 10px;text-align:right'>{p.cd_phys:.3f} / {p.cd_cfd:.3f}</td>"
+                                f"<td style='padding:4px 10px;text-align:right'><span class='tag {cls_cd}'>{cde:+.1f}%</span></td></tr>")
+                        table = ("<table style='width:100%;border-collapse:collapse;font-size:.9rem;'>"
+                                 "<tr style='color:#8d99a6;font-size:.8rem'>"
+                                 "<td style='padding:4px 10px'>ride heights</td>"
+                                 "<td style='padding:4px 10px;text-align:right'>C_l phys/CFD</td>"
+                                 "<td style='padding:4px 10px;text-align:right'>C_l err</td>"
+                                 "<td style='padding:4px 10px;text-align:right'>C_d phys/CFD</td>"
+                                 "<td style='padding:4px 10px;text-align:right'>C_d err</td></tr>"
+                                 f"{rows}</table>")
+                        st.markdown(table, unsafe_allow_html=True)
+                        st.markdown(f'<p class="hint">{rep.summary}</p>',
+                                    unsafe_allow_html=True)
+
+                        if st.button("Log this CFD calibration to handover",
+                                     key="wt_log"):
+                            log_decision_now(
+                                "validation",
+                                f"CFD calibration vs wind tunnel ({wt_solver}, kOmegaSST)",
+                                rep.summary, author="aerodynamics")
+                            st.success("Logged.")
+                    except Exception as e:
+                        st.error(f"Couldn't correlate the CFD results: {e}")
+            elif wt_phys_up is None:
+                st.markdown('<p class="hint">No physical map yet. The CSV needs '
+                            '<code>front_mm,rear_mm,speed_ms,c_lift,c_drag</code> per '
+                            'row — one row per ride-height point you measured in the '
+                            'tunnel.</p>', unsafe_allow_html=True)
+
+        st.markdown('<p class="hint">Tolerances are explicit and editable: track/lap '
+                    'correlation in <code>suspension/correlation.py</code> '
+                    '(DEFAULT_TOL), and CFD-vs-tunnel calibration in '
+                    '<code>suspension/aero/windtunnel.py</code> (DEFAULT_TUNNEL_TOL). '
+                    'They reflect what each comparison can credibly achieve — skidpad '
+                    'tightest, a noisy GPS trace loosest, and a well-run k-omega SST '
+                    'solve a few percent on C_l/C_d. Tighten them and watch the verdict '
+                    'move; that transparency is the point.</p>', unsafe_allow_html=True)
 
 
 # ----------------------------- TAB 13 (merged INTEGRATION) ----------------- #

@@ -1,3 +1,9 @@
+<!--
+  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
+  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+  Open source. Original author: Frederik Thio, creator of KinematiK.
+-->
+
 ---
 title: KinematiK
 emoji: 🏎️
@@ -828,6 +834,51 @@ decision in front of you or go find the assumption that's wrong. Tolerances live
 carries the tolerance it used. A correlation can be logged straight to the handover
 record so the *evidence* travels with the design decision — which is what actually
 settles an argument, rather than the loudest opinion in the room.
+
+### Virtual Wind Tunnel — calibrate your CFD against the physical aero map
+
+The headline reason to run a wind tunnel isn't "is the car fast" — the lap sim
+answers that cheaper. The reason is **CFD calibration**. A modern aero programme
+screens hundreds of digital configurations before one part gets made, and that only
+works if your turbulence closure (for FSAE, almost always **k-omega SST RANS**)
+reproduces numbers you actually measured. The tunnel is the ruler the CFD is checked
+against.
+
+The **VALIDATION** tab's *Wind tunnel (CFD calibration)* mode and
+`suspension/aero/windtunnel.py` run that loop with one non-negotiable rule:
+**compare like-for-like operating points.** You sweep the physical aero map over
+front and rear ride height (downforce is exquisitely ride-height sensitive on a
+ground-effect car), then the Virtual Wind Tunnel generates the CFD run at *those
+exact* front/rear ride heights and wind speed — generated *from* the physical map,
+never hand-typed alongside it, so a ride-height sensitivity can't masquerade as a
+turbulence-model error.
+
+- Upload the **physical aero map** (`front_mm, rear_mm, speed_ms, c_lift, c_drag`,
+  optional `aero_balance_front`; `c_lift` negative = downforce). It loads as a
+  `PhysicalAeroMap` carrying **tunnel provenance** — facility, moving-ground vs
+  fixed floor, blockage correction, Reynolds — because an uncorrected, fixed-floor
+  reading is a *different measurement* from a corrected, moving-belt one, and the
+  provenance refuses to let a correlation imply more than the run behind it. (It's
+  also a drop-in `AeroMap`, so the lap sim can consume the measured map directly.)
+- **Step 1** writes the matched CFD driver files — a **Star-CCM+** Java macro, a
+  **TS-Auto** run config, or a full **OpenFOAM** case — at the identical points,
+  with the same reference area/length the physical coefficients were normalised by.
+  Run them on your licensed install (KinematiK never holds the license or fakes a
+  solve), export one coeff CSV per case.
+- **Step 2** uploads the CFD results and reports, **point by point and overall**,
+  the C_l / C_d / balance error and whether k-omega SST is calibrated to the tunnel
+  inside tolerance. A point the CFD never covered is an honest **hole**, never
+  snapped to a neighbour; a real offset is flagged **NOT CALIBRATED** with the
+  direction (does CFD over- or under-predict downforce, and what to check —
+  floor/diffuser y+, transition, moving-ground modelling). Tolerances live in
+  `DEFAULT_TUNNEL_TOL`, explicit and editable. The verdict logs to handover so the
+  *evidence* that your digital pipeline is trustworthy travels with the decisions
+  it justifies.
+
+Same philosophy as the rest of the CFD seam: KinematiK owns the parameterisation,
+the matched run matrix and the correlation; the meshing and the Navier–Stokes solve
+live outside it, on your cluster with your license. No fabricated number fills a
+hole.
 
 ## Roadmap / good first PRs
 
