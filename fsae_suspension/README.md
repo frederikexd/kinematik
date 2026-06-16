@@ -23,6 +23,29 @@ Born as a Formula SAE double-wishbone tool, now a general multibody kinematics p
 
 ---
 
+## 30-second tour (every tab)
+
+Sixteen tabs, front to back. Each takes the live geometry + setup and answers one question; nothing is retyped between them — mass/CG, peak currents, ride heights and the tire all flow from one source of truth.
+
+1. **KINEMATICS** — the 3D constraint solver. Drag any of the ten hardpoints and read camber gain, bump steer (toe vs travel), caster, KPI, scrub radius, the front-view instant centre, the **real motion ratio** off the pushrod/rocker (→ wheel rate, rising/falling-rate curve), and **anti-dive / anti-squat** from the side-view swing arm. Pick the topology here (double-wishbone … solid axle, twist-beam, truck steer, or `from_links`).
+2. **ROLL & LOAD TRANSFER** — roll-centre height and *migration* through travel/roll, and the front/rear lateral load-transfer split that migration drives — the geometry→balance link the spreadsheets skip.
+3. **GRIP BALANCE** — turns that split + the tire into an understeer/oversteer verdict at the limit: does the car push or rotate, and by how much.
+4. **GEOMETRY 3D** — the live 3D view of the linkage and wheel envelope; sanity-check the mechanism and travel sweep visually.
+5. **COMPLIANCE (FLEX)** — the links aren't rigid: pick a lateral g and tube size (optionally chassis-tab stiffness in series, or a condensed FEA flex body) and read the deflected toe/camber — the ADAMS-Flex-style compliance most free tools assume away. The same structural layer also carries an analytic **bolted-joint check** (`bolted_joint.py`): preload from torque, the joint load factor, and whether a braking load pries the pedal-box base off its tabs (VDI 2230 / Shigley — separation, bolt stress, washer-face crush).
+6. **TEAM FIT** — the cross-team CAD check: any subteam loads the shared chassis as reference, then drops in their part (caliper, radiator, battery box, wing mount, ECU tray) and gets the same collision / tight / clear verdict suspension gets — catch interference before the first cut.
+7. **WEIGHT & HANDOVER** — the mass + CG ledger (the single source the load-transfer model reads) plus persistent project handover, so design decisions and their evidence survive a roster change.
+8. **LEAD NOTES** — cross-team notes between subsystem leads, attached to the project so context isn't lost between people or sessions.
+9. **TIRE & GRIP** — the Pacejka MF5.2 lateral model: load sensitivity, camber response, peak-µ / optimal-camber search, combined-slip friction ellipse, relaxation length, and the **thermal channel** (warm-up / working-range / pressure). Upload `my_tire.json` (fitted from TTC data) and everything downstream uses *your* tire; uncalibrated channels stay flagged, never faked.
+10. **SETUP OPTIMISER** — sweeps the physical levers (spring rates, ARB, ride height …) through the motion ratio and **ranks setups by lap delta**; sensitivity()/optimise() never return a setup worse than the start.
+11. **LAP TIME** — quasi-steady-state point-mass lap: skidpad, 75 m accel (standing-start integration), autocross; aero + real motor torque map; **track from GPS/cone coordinates** and curvature-optimal **racing-line** with seconds gained.
+12. **GGV DIAGRAM** — the accel-lateral-velocity envelope the lap sim rides, drivable from the live vehicle + the same powertrain, with a one-click check that GGV and lap sim agree.
+13. **TRANSIENT** — the unsteady half of the lap: an explicit time-step solver for turn-in and pitch built on relaxation length + the damper model, the thing QSS assumes away.
+14. **VALIDATION** — earn trust by matching data. Skidpad g / circle time, 75 m accel, and a GPS **speed-trace** RMSE/bias/R²; the **Virtual Wind Tunnel** (sweep the physical aero map → matched k-omega SST CFD run → point-by-point C_l/C_d/balance calibration); **surface pressure taps** (raw volts → C_p on the wing → stall detection → RMSE vs CFD); and the **live acquisition front end** — a Virtual Instrument off the force balance + Scanivalve/Chell scanners that decouples the 6×6 balance and filters the fan tone (offline *or* real-time) into clean F_x/F_y/F_z and raw P_static. No number is tuned to fit; the gap is quantified and logged to handover.
+15. **INTEGRATION** — the live cross-subsystem surface, in three views: a **cross-subsystem ledger** (the one place mass, CG and peak currents are declared), **subsystem ↔ chassis CAD fit**, and **mount-point clash** — move a mount and the clash verdict plus mass/CG propagate in one call. Persists with the project.
+16. **ELECTRONICS (PCB)** — copper-survival (IPC-2221 heating, Onderdonk fusing, IR-drop / ECU brown-out) + signal integrity (diff-pair impedance, HV-aggressor coupling), reading the **same** declared peak currents as the integration ledger so "what fires at once" is never retyped.
+
+---
+
 ## Architecture-agnostic engine
 
 The double-wishbone assumption is no longer baked in. Under the hood is a data-driven multibody kinematics kernel (`suspension/topology.py`): rigid bodies defined by points, and a small set of constraint primitives — distance links (two-force members), ball/pin coincidence, prismatic slider (strut), planar, revolute (hinge), driving DOF, rack translation and beam-axle roll — assembled into a `Mechanism` and solved by a branch-stable Levenberg–Marquardt sweep.
@@ -696,6 +719,71 @@ boundary stiffness) as JSON and the numbers are identical; only the packaging
 differs. This is a steady-state, quasi-static compliance model: no damper dynamics,
 no modal response, no kerb strikes.
 
+## Bolted joints: will the pedal box peel off its tabs?
+
+The link-flex layer above tells you how a member *deflects*. This layer answers a
+different structural question the same honest way: **does a preloaded bolted joint
+stay clamped, or does the load pry a bracket foot off the chassis?** The motivating
+case is the brake pedal box — a hard panic stop puts a bending moment into the base
+that tries to peel the front (or rear) edge straight off its mounting tabs, and a
+naïve "force ÷ number of bolts" share badly understates what the far-edge bolt
+actually sees.
+
+`suspension/bolted_joint.py` implements the classical **VDI 2230 / Shigley** preloaded-joint
+method — all closed-form, no FEA required for the part that *is* closed-form:
+
+```python
+from suspension import Fastener, ClampedStack, analyze_joint, joint_findings
+
+# 4× M6 grade-10.9 socket-heads, lightly lubed (K=0.15), 8 mm grip,
+# pedal-box base (7075) onto a 6061 chassis face, 10 mm washer face.
+f = Fastener(grade="10.9", nominal_d_mm=6.0, K_factor=0.15,
+             head_dia_mm=10.0, hole_dia_mm=6.4)
+s = ClampedStack(base_material="Aluminium 7075",
+                 chassis_material="Aluminium 6061", grip_mm=8.0)
+
+r = analyze_joint(f, s,
+                  assembly_torque_Nm=10.0,      # explicit pretension: F_i = T/(K·d)
+                  external_tensile_N=900.0,     # this foot's pull-off load, braking
+                  prying_factor=3.2)            # bending lever amplifying the far bolt
+
+print(r.F_preload, r.load_factor, r.F_sep, r.separated)   # 11111 N, Φ≈0.50, 22086 N, False
+print(r.separation_safety)                                # 7.67× margin to gap-opening
+for finding in joint_findings(r):
+    print(finding.severity.value, finding.check, finding.message)
+```
+
+What it models, and why it maps onto the contact/pretension/separation workflow a
+funded team would run in Ansys:
+
+- **Explicit bolt pretension** — torque becomes clamp force via `T = K·F·d`, with the
+  nut-factor `K` exposed (≈0.20 dry, ≈0.15 lubed, ≈0.12 anti-seize) because that
+  scatter is the real source of preload uncertainty, not a number to bury.
+- **The joint load factor** `Φ = k_b/(k_b+k_m)` — the heart of the
+  frictional/no-separation behaviour. *Below separation the bolt only feels `Φ·F_ext`
+  on top of preload, so its stress barely moves*; the clamped interface absorbs the
+  rest. Bolt and member stiffness come from the standard rod and Wileman/Shigley
+  frustum forms, or you can hand it a **condensed FEA stiffness** for the foot
+  (`k_member_N_per_mm`) straight off the flex layer.
+- **The separation check** — `F_sep = F_preload/(1−Φ)`. When the external (pried) load
+  exceeds it, the joint **gaps open** and the bolt instantly carries the full raw
+  load — the fatigue spike. That's a `FAIL` `Finding`.
+- **Washer-face bearing / crush** — checks contact pressure under the head against the
+  soft base material's allowable, flagging the localized yield that relaxes preload
+  and lets the joint **back out on track**.
+
+**Honest scope — the one thing it does *not* fake.** A true frictional-contact, solid-mesh
+FEA of *how* a specific base plate bows and peels needs the real meshed bracket and a
+contact solver — KinematiK is beam/bar + analytic, and (like the rest of the codebase)
+it refuses to fabricate FEA it can't validate, least of all a green light on a brake
+component. So the prying amplification is a single, visible input (`prying_factor`)
+you supply from a hand lever-arm calc or a real FEA. Any result that uses it is flagged
+`is_estimate=True` and carries the factor in its `detail`, so a provisional number can
+never read as final — at design judging that's the defensible position, not a black box.
+Every result renders as the same typed `Finding` objects (`bolt-separation`,
+`bolt-stress`, `bolt-bearing`, `bolt-prying`) the integration board already shows, with
+owners named.
+
 ## Your tire is the edge
 
 You can only afford one set of tires. A funded team tests rubber all year; you
@@ -757,7 +845,8 @@ Sign conventions and gains are pinned by tests:
 python tests/test_kinematics.py        # kinematics sign conventions & solver
 python tests/test_tiremodel.py         # tire model, TTC fitter, setup optimiser
 python tests/test_ggv.py               # GGV envelope, combined slip, lap-sim cross-check
-python -m pytest tests/                # everything (170+ tests)
+python tests/test_daq.py               # force-balance decoupling + vibration filters (offline & real-time)
+python -m pytest tests/                # everything (460+ tests)
 ```
 
 The tire tests pin the things the grip upgrade depends on: load sensitivity in the
@@ -880,6 +969,124 @@ the matched run matrix and the correlation; the meshing and the Navier–Stokes 
 live outside it, on your cluster with your license. No fabricated number fills a
 hole.
 
+### Surface pressure taps — *where* the wing is loaded, and *where* it's stalling
+
+The Virtual Wind Tunnel correlates the integrated **coefficients** — one C_l, one
+C_d, one balance number per ride height. That answers *how much* downforce, but
+never *where it comes from*, and "where" is the question a tunnel run is uniquely
+able to answer. A wing makes its downforce number with the flow attached over the
+whole suction surface, **or** it makes the *same* number with the leading edge
+over-loaded and the trailing third already stalled and leaking — and the integral
+cannot tell those two wings apart. You only find out which one you built when the
+car does something the lap sim never predicted.
+
+A tunnel run doesn't actually hand you a C_l. It hands you a wall of **raw
+numbers**: a matrix of pressure-transducer voltages (one column per surface tap,
+one row per sample), a load-cell force trace, and a logged wind speed. Left like
+that it's unreadable. `suspension/aero/pressure_tap.py` is the reduction that makes
+the run legible, in three honest stages:
+
+- **Raw volts → C_p.** A `RawPressureScan` holds the `(n_samples × n_taps)` voltage
+  matrix straight off the DAQ, plus each channel's `TapCalibration`. `to_cp()`
+  applies the linear calibration, time-averages each tap (NaN-safe, so one railed
+  sample can't drag the mean), subtracts the freestream static, and divides by the
+  run's real dynamic pressure to get the non-dimensional pressure coefficient
+  **C_p = (p − p_inf) / q**, q = ½ρV² (or the measured pitot q when it's logged —
+  the pitot is what the freestream *actually* was). C_p ≈ 1 is stagnation, 0 is
+  freestream, strongly **negative** is suction — and suction on the right surface is
+  the downforce.
+- **Mapped onto the wing.** Every tap carries its `(element, x/c, span, surface)`,
+  so the resulting `CpField` reads as a wing: `chordwise()` gives the C_p(x/c) curve
+  sorted leading-edge → trailing-edge, `suction_peak()` finds where the wing is
+  working hardest, `normal_load_coefficient()` integrates the pressure-side-minus-
+  suction-side difference to show *where along the chord* the load is, and
+  `stall_indicator()` measures the pressure-recovery slope aft of the suction peak.
+  A healthy surface recovers (C_p climbs back toward 0); a **stalled** one sits on a
+  flat plateau because the boundary layer has detached — a thing you can see in
+  C_p(x/c) and **cannot** see in C_l. That flat tail is flagged, with the slope and
+  peak, so the call is auditable rather than a bare boolean.
+- **RMSE vs CFD.** `correlate_cp()` pairs each measured tap to the CFD surface C_p
+  with the **same tap id** — never snapped to a nearest node — and reports the
+  **RMSE = √(mean (C_p_cfd − C_p_phys)²)** over the taps that genuinely paired, plus
+  the bias, the worst tap, and the coverage. This is the spatial complement to the
+  coefficient correlation: it can fail (CFD got the *distribution* wrong) even when
+  the integrated C_l lands, because two different C_p curves integrate to the same
+  force. A tap the CFD never covered, or one that reduced to a hole (uncalibrated /
+  railed transducer), is reported **unpaired** and excluded from the RMSE — the
+  error is never quoted over a coverage too thin to mean anything. Tolerances live
+  in `DEFAULT_CP_TOL`, explicit and editable.
+
+The honesty contract is the same as everywhere else in the package: an uncalibrated
+channel, a railed transducer, and a sample window too short to average down the
+turbulence are surfaced in `ScanProvenance` and reduce to NaN **holes**, never
+zero-filled. Run `python demo_pressure_tap.py` for the end-to-end story — two CFD
+runs that integrate to nearly the same flap C_l, where the RMSE localises the
+disagreement to the exact aft-chord taps where the real flap has stalled and the
+simulated one hasn't.
+
+### The live acquisition front end — a Virtual Instrument off the balance and scanners
+
+`pressure_tap.py` begins one step too late on purpose: it starts from a `RawPressureScan`
+that has *already* appeared in memory, and `windtunnel.py` later still, from a finished
+C_l/C_d. The step before either is what the test engineer actually does first — bolt the
+car to an **under-floor multi-axis force balance**, skin it in hundreds of static taps
+plumbed into **electronic pressure scanners** (Scanivalve ZOC/MPS, Chell nanoDAQ), and
+stream all of it through a **high-speed DAQ chassis** at several kHz. What comes off that
+hardware is *not* a clean force and *not* a clean C_p — it's cross-coupled bridge voltages,
+hundreds of transducer channels, and, riding on everything, the fan blade-pass tone and
+structural resonance. `suspension/aero/daq.py` owns that front end (the forces/pressures
+analogue of PIV's rig + processor seam):
+
+- **Connect a custom VI.** A `VirtualInstrument` binds one `ForceBalanceSpec` and one or
+  more `PressureScannerSpec` to a `DAQChassis` through a pluggable backend, then on demand
+  `acquire(spec)` returns clean time-averaged **raw forces** (`BalanceReading` with F_x, F_y,
+  F_z + moments, each carrying its standard error) **and** a `RawPressureScan` ready for the
+  `to_cp()` reduction above — the same object the rest of the package already reads. Swap the
+  `SyntheticDAQ` backend (clearly flagged synthetic in its provenance, never mistakable for a
+  measurement) for a real `nidaqmx` / Scanivalve-TCP / Chell driver and the *same* VI runs
+  the real tunnel. With no backend bound, `OfflineDAQ` raises `DAQUnavailable` rather than
+  fabricate a stream.
+- **Decouple the balance honestly.** A multi-component balance is one elastic element with
+  six strain-gauge bridges: a pure drag load bleeds into the lift and pitch channels through
+  the flexure, so a raw F_z bridge **is not F_z** until the 6×6 **interaction matrix** is
+  applied. `BalanceCalibration` holds that matrix and the wind-off zero, applies it, and —
+  the honesty gate — returns a **hole** (NaN) when the matrix is missing, uncalibrated, or
+  singular, never a raw channel scaled by a guess. A railed sample on any bridge NaNs the
+  whole decoupled row, because the matrix mixes the axes. (A diagonal-only `identity()`
+  baseline is provided precisely to *show* how much the off-diagonal cross-talk matters.)
+- **Filter the fan tone before averaging — and report it.** The wind-tunnel fan stamps a
+  blade-pass tone (rpm/60 × blades) and harmonics onto everything bolted to the model; a
+  naive average over a window that isn't an integer number of tone periods leaves that tone
+  in the mean as a **bias that looks like signal**. Two interchangeable filters strip it,
+  both satisfying one `ChannelFilter.apply()` contract so either drops into the
+  `AcquisitionSpec` with no change to the VI:
+  - `VibrationFilter` — an **offline** FFT-domain notch + brick-wall low-pass: zero-phase, no
+    settling transient, removes a tone cleanly even on a non-integer window. The right tool
+    for post-run reduction of a captured window.
+  - `StreamingVibrationFilter` — the **real-time** twin: a causal cascade of second-order
+    sections (RBJ notch biquads per harmonic + a 4th-order Butterworth low-pass), run
+    Direct-Form-II-transposed so it emits a filtered sample the instant one arrives — exactly
+    what runs on the DAQ's FPGA or a LabVIEW point-by-point loop. It exposes the genuine
+    streaming primitives a live rig calls (`process_sample`, `process_block`, `reset`),
+    DC-preloads its state so only the AC contamination has to settle, and is honest about the
+    two things causal filtering inherently costs: a **settling transient** (reported as
+    `warmup_samples` and excluded from the variance bookkeeping) and **phase lag** (noted in
+    the report; it does not affect the time-average the balance reading needs).
+
+  Either way the filter never silently reshapes the signal — its `VibrationFilterReport` says
+  which tones it notched and how much variance it removed, and NaN (railed) samples are
+  preserved as holes, never invented through.
+
+Every reading carries a `DAQProvenance` recording the chassis rate, the run length, whether
+the stream was real or synthetic, whether it was filtered, and any dropped samples — so a
+force or pressure can never imply more than the acquisition behind it (a short window or an
+unfiltered run is *warned*, not hidden). Run `python demo_virtual_instrument.py` for the
+end-to-end story: a balance with real cross-talk and a Scanivalve scanner, contaminated with
+a 137 Hz fan tone and turbulence, where the VI recovers the known F_x/F_y/F_z (the
+interaction matrix removing ~30 N of phantom lift a diagonal balance would have reported) and
+the known C_p distribution — shown with both the offline and the real-time filter landing on
+the same forces.
+
 ## Roadmap / good first PRs
 
 - **Transient response** — turn-in and pitch built on the relaxation-length and damper
@@ -901,9 +1108,13 @@ a real **motor map**; **combined slip**, **relaxation length** and a **damper mo
 (the last three implemented honestly and gated on your data); a **validation tab**
 that correlates the sim against measured skidpad / accel / datalogger traces;
 **flexible-body compliance** — link/tab deflection and FEA (ADAMS Flex-style)
-import giving compliance steer/camber at the cornering limit; and a **tyre thermal
+import giving compliance steer/camber at the cornering limit; a **tyre thermal
 channel** — a lumped tread/carcass/gas energy balance giving warm-up, working-range
-and pressure-rise behaviour (real physics, gated uncalibrated on temperature-swept data).
+and pressure-rise behaviour (real physics, gated uncalibrated on temperature-swept data);
+and **surface pressure taps** — raw transducer voltages reduced to a non-dimensional
+C_p distribution mapped onto the wing (suction peak, sectional loading, a flat-recovery
+**stall** flag) and RMSE-correlated against the CFD surface tap-for-tap, the spatial
+complement to the Virtual Wind Tunnel's coefficient correlation.
 
 ### A note on honesty over a green scorecard
 
