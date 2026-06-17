@@ -2649,10 +2649,14 @@ with tab9:
 
     st.markdown("---")
     st.markdown("###### Load YOUR fitted tire (from TTC data)")
-    st.markdown('<p class="hint">Run <code>python process_ttc.py your_cornering.mat '
-                'my_tire.json</code> to fit a Magic Formula to your TTC data, then '
-                'upload <code>my_tire.json</code> here. It loads into the live engine '
-                'immediately. <b>The .json is TTC-derived — keep it out of git.</b></p>',
+    st.markdown('<p class="hint">Two ways in: upload an already-fitted '
+                '<code>my_tire.json</code> below, or drop a raw '
+                '<code>.mat</code>/<code>.csv</code> cornering file in the '
+                '<b>"Fit from raw TTC data"</b> section beneath and let the app fit it '
+                'for you. (The JSON is what <code>python process_ttc.py your_cornering.mat '
+                'my_tire.json</code> produces — the in-app fitter runs the same chain.) '
+                'Either way it loads into the live engine immediately. '
+                '<b>Both are TTC-derived — keep them out of git.</b></p>',
                 unsafe_allow_html=True)
     up = st.file_uploader("Fitted tire JSON", type=["json"], key="tire_json")
     lc1, lc2 = st.columns([1, 1])
@@ -2691,6 +2695,161 @@ with tab9:
                 'comparisons until you fit yours. Absolute grip numbers only become '
                 'trustworthy once the tire above says "TTC-fitted".</p>',
                 unsafe_allow_html=True)
+
+    # ---- Fit straight from RAW TTC data (.mat / .csv) in-app -------------- #
+    # Same fit chain as process_ttc.py, but no terminal round-trip: drop the raw
+    # cornering file here, the app cleans it, fits the MF5.2 lateral model, and
+    # lets you apply it live and/or download the private JSON to keep locally.
+    with st.expander("Fit from raw TTC data (.mat / .csv) — no terminal needed",
+                     expanded=False):
+        st.markdown(
+            '<p class="hint">Upload a raw <b>cornering</b> file straight from the rig. '
+            'Needs lateral force, vertical load and slip angle — channel names <code>FY '
+            '/ FZ / SA</code> (camber <code>IA</code> optional). For CSV, the first row '
+            'must be the channel headers. The app trims warmup, drops airborne samples, '
+            'and fits a full Magic Formula here. '
+            '<b>The fit is TTC-derived — download it and keep it out of git.</b></p>',
+            unsafe_allow_html=True)
+
+        raw_up = st.file_uploader("Raw TTC cornering file",
+                                  type=["mat", "csv"], key="tire_raw")
+
+        # Channel-name aliases, matching process_ttc.py so .mat files behave the same.
+        _ALIASES = {
+            "FY": ["FY", "Fy", "fy"], "FZ": ["FZ", "Fz", "fz"],
+            "SA": ["SA", "Sa", "sa", "slip_angle", "SLIP_ANGLE"],
+            "IA": ["IA", "Ia", "ia", "camber", "CAMBER", "inclination"],
+            "P":  ["P", "PRESS", "pressure"], "V": ["V", "speed"],
+            "FX": ["FX", "Fx", "fx"],
+        }
+
+        def _channels_from_mat(file_obj):
+            import scipy.io as _sio
+            raw = _sio.loadmat(file_obj)
+            raw = {k: v for k, v in raw.items() if not k.startswith("__")}
+            chans = {}
+            for canon, names in _ALIASES.items():
+                for nm in names:
+                    if nm in raw:
+                        chans[canon] = np.asarray(raw[nm], float).ravel()
+                        break
+            return chans, sorted(raw.keys())
+
+        def _channels_from_csv(file_obj):
+            import pandas as _pd
+            df = _pd.read_csv(file_obj)
+            # Some TTC CSV exports carry a units row directly under the header;
+            # coerce to numeric and drop rows that won't parse.
+            df = df.apply(_pd.to_numeric, errors="coerce")
+            cols = {c.strip(): c for c in df.columns}
+            chans = {}
+            for canon, names in _ALIASES.items():
+                for nm in names:
+                    if nm in cols:
+                        chans[canon] = df[cols[nm]].to_numpy(float).ravel()
+                        break
+            return chans, list(df.columns)
+
+        def _clean_channels(chans, drop_warmup_frac=0.05):
+            if "FZ" not in chans:
+                return chans
+            n = len(chans["FZ"])
+            start = int(n * drop_warmup_frac)
+            out = {k: v[start:] for k, v in chans.items()}
+            fz_mag = np.abs(out["FZ"])
+            good = np.isfinite(fz_mag) & (fz_mag > 100.0)
+            m = len(good)
+            for k in list(out):
+                v = out[k]
+                if len(v) == m:
+                    out[k] = v[good]
+            # truncate to common length (rig files can differ by a sample or two)
+            ln = min(len(v) for v in out.values()) if out else 0
+            return {k: v[:ln] for k, v in out.items()}
+
+        if raw_up is not None:
+            try:
+                if raw_up.name.lower().endswith(".mat"):
+                    chans, raw_keys = _channels_from_mat(raw_up)
+                else:
+                    chans, raw_keys = _channels_from_csv(raw_up)
+            except Exception as e:
+                chans, raw_keys = {}, []
+                st.markdown(f"<p class='hint'>Couldn't read that file: {e}</p>",
+                            unsafe_allow_html=True)
+
+            found = sorted(chans.keys())
+            missing = [c for c in ("FY", "FZ", "SA") if c not in chans]
+            st.markdown(
+                f"<p class='hint'>Channels found: <code>{', '.join(found) or '—'}</code>"
+                + (f" &nbsp;·&nbsp; raw columns: <code>"
+                   f"{', '.join(str(k) for k in raw_keys[:12])}</code>"
+                   if raw_keys else "")
+                + "</p>", unsafe_allow_html=True)
+
+            if missing:
+                st.warning(
+                    "⚠ Missing essential channel(s) " + ", ".join(missing)
+                    + ". A lateral fit needs FY, FZ and SA. If this is a drive/brake "
+                    "file, load a cornering sweep instead; if the names differ, rename "
+                    "the columns to FY / FZ / SA (and optionally IA).")
+            else:
+                cln = _clean_channels(chans)
+                npts = len(cln.get("FZ", []))
+                st.markdown(f"<p class='hint'>Usable samples after cleanup: "
+                            f"<b>{npts}</b></p>", unsafe_allow_html=True)
+                if st.button("⚙ Fit Magic Formula to this data",
+                             key="tire_raw_fit_btn"):
+                    with st.spinner("Fitting MF5.2 lateral model…"):
+                        try:
+                            from suspension.tirefit import fit_from_ttc_channels
+                            res = fit_from_ttc_channels(cln, verbose=False)
+                            st.session_state["_tire_raw_fit"] = res
+                            st.session_state["_tire_raw_name"] = raw_up.name
+                        except Exception as e:
+                            st.session_state.pop("_tire_raw_fit", None)
+                            st.error(f"Fit failed: {e}")
+
+        # Show the fit result + apply / download controls (persists across reruns).
+        _fit = st.session_state.get("_tire_raw_fit")
+        if _fit is not None:
+            r2 = float(_fit.get("r2", float("nan")))
+            _q = "good" if r2 >= 0.9 else "warn"
+            fcols = st.columns(3)
+            fcols[0].markdown(metric("Fit R²", f"{r2:.3f}", "", _q),
+                              unsafe_allow_html=True)
+            fcols[1].markdown(metric("RMSE", f"{_fit['rmse_N']:.0f}", "N"),
+                              unsafe_allow_html=True)
+            fcols[2].markdown(metric("Points fit", f"{_fit['n']}", ""),
+                              unsafe_allow_html=True)
+            if r2 < 0.9:
+                st.markdown(
+                    '<p class="hint">R² below 0.9 — the fit is loose. Check the file is '
+                    'a clean cornering sweep with a good spread of load and slip, and '
+                    'that warmup was trimmed. A loose fit means loose grip numbers '
+                    'downstream.</p>', unsafe_allow_html=True)
+
+            import json as _json
+            _payload = _json.dumps(
+                {"coeffs": _fit["coeffs"], "FNOMIN": _fit["FNOMIN"]}, indent=2)
+            ac1, ac2 = st.columns([1, 1])
+            if ac1.button("✓ Use this fitted tire", key="tire_raw_use_btn",
+                          width='stretch'):
+                st.session_state.tire_coeffs = dict(_fit["coeffs"])
+                st.session_state.tire_fnomin = float(_fit["FNOMIN"])
+                _src = st.session_state.get("_tire_raw_name", "raw TTC")
+                st.session_state.tire_source = f"TTC-fitted (in-app: {_src})"
+                st.session_state.tire_is_default = False
+                log_decision_now("suspension",
+                                 f"Fitted tire in-app from {_src}",
+                                 "Grip/balance now run on a Magic Formula fitted to "
+                                 "raw TTC data inside the app.")
+                st.rerun()
+            ac2.download_button(
+                "⬇ Download fitted tire JSON", data=_payload,
+                file_name="my_tire.json", mime="application/json",
+                key="tire_raw_dl_btn", width='stretch',
+                help="TTC-derived — store privately, keep it out of git.")
 
     # ---- Combined slip (friction ellipse) -------------------------------- #
     st.markdown("###### Combined slip — the friction ellipse")
