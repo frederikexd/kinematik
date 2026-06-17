@@ -1250,6 +1250,10 @@ def render_pcb_board():
                  "suspension": "🩷", "ecu": "🖥️"}
     _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
              "data-acquisition", "electrics", "powertrain", "suspension"]
+    # Only subsystems that can actually put an electrical load on a board trace
+    # belong in the "Loads on <trace>" picker. Aero/chassis/suspension draw no
+    # board current, so offering them just invites a nonsensical scenario.
+    _LOAD_SUBS = ["brakes", "cooling", "data-acquisition", "electrics", "powertrain"]
 
     st.markdown(
         '<p class="hint">This is the check an electrical member runs the afternoon '
@@ -1394,10 +1398,17 @@ def render_pcb_board():
     scenario = {}
     if board.traces:
         for name, tr in board.traces.items():
+            # Drop any stale stored selection no longer in the allowed loads
+            # (e.g. aerodynamics from before the picker was restricted), or the
+            # widget errors. Use key only — passing default= alongside an existing
+            # key makes Streamlit reset the selection to [] on rerun.
+            _skey = f"pcb_scn_{name}"
+            if _skey in st.session_state:
+                st.session_state[_skey] = [
+                    s for s in st.session_state[_skey] if s in _LOAD_SUBS]
             picks = st.multiselect(
-                f"Loads on '{name}'", _SUBS,
-                default=st.session_state.get(f"pcb_scn_{name}", []),
-                key=f"pcb_scn_{name}",
+                f"Loads on '{name}'", _LOAD_SUBS,
+                key=_skey,
                 help="Choose the same subsystem twice (e.g. two fans) by it appearing once "
                      "per declared load — duplicates are summed.")
             if picks:
