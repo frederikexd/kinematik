@@ -147,7 +147,7 @@ from .mountpoints import (
 from . import electronics
 from .electronics import (
     Trace, DiffPair, Aggressor, BoardLedger, BoardCheckResult,
-    check_board, worst_case_currents,
+    check_board, worst_case_currents, undeclared_loads,
     min_parallel_distance_mm, parallel_run_length_mm,
 )
 from . import harness
@@ -220,7 +220,7 @@ __all__ = [
     "mountpoints",
     # electronics / PCB layer (copper survival + signal integrity)
     "Trace", "DiffPair", "Aggressor", "BoardLedger", "BoardCheckResult",
-    "check_board", "worst_case_currents",
+    "check_board", "worst_case_currents", "undeclared_loads",
     # harness / 3-D loom (route, bend, clearance, formboard, BOM, copper mass)
     "Connector", "WireRun", "HarnessLedger", "HarnessCheckResult",
     "Formboard", "FormboardBranch", "check_harness",

@@ -420,7 +420,8 @@ class BoardLedger:
         self.aggressors[a.name] = a
 
     # ---- copper survival check --------------------------------------------- #
-    def check_traces(self, currents: Optional[dict] = None) -> list:
+    def check_traces(self, currents: Optional[dict] = None,
+                     undeclared: Optional[dict] = None) -> list:
         """
         For every trace, against the current it must carry, emit a Finding for:
           * fusing margin (does it physically melt under the worst load?),
@@ -430,9 +431,15 @@ class BoardLedger:
         `currents` maps trace-name -> amps for the worst simultaneous load. When a
         trace has no entry, no current finding is emitted for it (MISSING-style),
         rather than inventing a load.
+
+        `undeclared` maps trace-name -> list of subsystems the user *did* select for
+        that trace but which carry no declared peak_current_a. This lets the MISSING
+        finding name the specific picked subsystem(s) to fix, so the check responds
+        to the chosen subsystem combination instead of reporting a generic blank.
         """
         out: list = []
         currents = currents or {}
+        undeclared = undeclared or {}
         if not self.traces:
             return out
         for tr in self.traces.values():
@@ -441,15 +448,26 @@ class BoardLedger:
             tag = " (estimated geometry)" if est else ""
             pair = sorted({tr.owner_subsystem, tr.feeds})
             if I is None:
+                picked_missing = undeclared.get(tr.name) or []
+                if picked_missing:
+                    # The user DID pick load(s) for this trace, but the selected
+                    # subsystem(s) have no declared peak current — so name them.
+                    who = ", ".join(sorted(set(picked_missing)))
+                    msg = (f"Trace '{tr.name}' ({tr.owner_subsystem}->{tr.feeds}) has "
+                           f"selected load(s) [{who}], but {'that subsystem has' if len(set(picked_missing))==1 else 'those subsystems have'} "
+                           f"no declared peak current — cannot check heating or drop. "
+                           f"Declare each one's peak current in the Integration tab.")
+                else:
+                    msg = (f"Trace '{tr.name}' ({tr.owner_subsystem}->{tr.feeds}) has no "
+                           f"declared worst-case current — cannot check heating or drop. "
+                           f"Pick its load(s) in the scenario above, and declare each "
+                           f"subsystem's peak current in the Integration tab.")
                 out.append(Finding(
-                    "trace-current", Severity.MISSING,
-                    f"Trace '{tr.name}' ({tr.owner_subsystem}->{tr.feeds}) has no "
-                    f"declared worst-case current — cannot check heating or drop. "
-                    f"Pick its load(s) in the scenario above, and declare each "
-                    f"subsystem's peak current in the Integration tab.",
+                    "trace-current", Severity.MISSING, msg,
                     subsystems=pair,
                     detail=dict(trace=tr.name, width_mm=tr.width_mm,
-                                copper_oz=tr.copper_oz)))
+                                copper_oz=tr.copper_oz,
+                                undeclared_loads=sorted(set(picked_missing)))))
                 continue
 
             # --- fusing (physical melt) --- #
@@ -714,7 +732,8 @@ def worst_case_currents(board: BoardLedger,
     `scenario` maps trace-name -> list of subsystem names whose loads sum onto that
     trace simultaneously. A subsystem with no declared peak_current_a contributes
     nothing and is silently skipped (the trace check will still flag MISSING if a
-    trace ends up with no load).
+    trace ends up with no load). To find out *which* picked subsystems were
+    undeclared (so the UI can name them), use `undeclared_loads()`.
     """
     currents: dict = {}
     for trace_name, subsystems in scenario.items():
@@ -728,6 +747,30 @@ def worst_case_currents(board: BoardLedger,
         if any_declared:
             currents[trace_name] = total
     return currents
+
+
+def undeclared_loads(ledger: Optional[IntegrationLedger],
+                     scenario: dict) -> dict:
+    """
+    For each trace in the scenario, return the subsystems the user selected that
+    have NO declared peak_current_a on the integration ledger. This is what lets
+    the board check tell the user *which* picked subsystem is missing its amps —
+    so the finding reflects the chosen subsystem combination rather than a generic
+    "no declared current" that never changes with the selection.
+
+    Returns {trace_name: [subsystem, ...]} containing only traces that have at
+    least one undeclared picked subsystem.
+    """
+    out: dict = {}
+    for trace_name, subsystems in scenario.items():
+        missing = []
+        for s in (subsystems or []):
+            it = ledger.interfaces.get(s) if ledger else None
+            if it is None or it.peak_current_a is None:
+                missing.append(s)
+        if missing:
+            out[trace_name] = missing
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -763,7 +806,8 @@ def check_board(board: BoardLedger,
     """
     scenario = scenario or {}
     currents = worst_case_currents(board, ledger, scenario)
+    missing = undeclared_loads(ledger, scenario)
     findings = []
-    findings += board.check_traces(currents)
+    findings += board.check_traces(currents, undeclared=missing)
     findings += board.check_signal_integrity()
     return BoardCheckResult(findings=findings)
