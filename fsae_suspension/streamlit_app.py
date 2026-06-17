@@ -364,6 +364,40 @@ def mechanism_with_overrides(topo_key, coords):
 PROJECT_PATH = os.path.join(os.getcwd(), "project.json")
 
 
+def get_store():
+    """Return the project store, cached in session_state for the life of the
+    session.
+
+    Why cache instead of reconstructing from disk every rerun: on ephemeral hosts
+    (Streamlit Cloud) the working directory can be read-only or wiped, so a
+    `save()` to the local JSON file may be rejected. If we rebuilt the store from
+    disk on the next rerun, the trace/wire just added would vanish and the PCB and
+    harness checks would forever say "nothing to check". Holding the live store in
+    session_state means edits persist for the session regardless of whether the
+    backend write succeeded; `save()` still runs for cross-session persistence
+    where the backend allows it.
+    """
+    store = st.session_state.get("_project_store")
+    if store is None:
+        store = project_mod.ProjectStore(PROJECT_PATH)
+        st.session_state["_project_store"] = store
+    return store
+
+
+def save_store(store):
+    """Persist the store and surface a failure instead of swallowing it. Returns
+    True on success. On an ephemeral host the in-memory store (cached in
+    session_state) still holds the edit, so a False return is not data loss for
+    the session — only a warning that it won't survive a restart."""
+    ok = store.save()
+    if not ok and getattr(store, "save_error", None):
+        st.warning(
+            f"Saved in this session only — couldn't persist to storage: "
+            f"{store.save_error} Configure Supabase (see README) for data that "
+            f"survives a restart.")
+    return ok
+
+
 def log_decision_now(team, title, rationale, author="auto"):
     """Append a decision to the persistent store from any tab.
 
@@ -1243,7 +1277,7 @@ def render_mountpoint_clash():
                 'onto a structure is allowed to touch it; everything else it must '
                 'clear.</p>', unsafe_allow_html=True)
 
-    store = project_mod.ProjectStore(PROJECT_PATH)
+    store = get_store()
     geom = store.geometry
     if geom is None:
         st.error("The mount-point / keep-out geometry layer is unavailable in "
@@ -1421,7 +1455,7 @@ def render_pcb_board():
         'solver are reported as <i>not computed</i> rather than invented.</p>',
         unsafe_allow_html=True)
 
-    store = project_mod.ProjectStore(PROJECT_PATH)
+    store = get_store()
     board = store._ensure_board()
     led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
 
@@ -1458,7 +1492,7 @@ def render_pcb_board():
                 store.set_trace(Trace(name=tn, net=tnet, owner_subsystem=town,
                                       feeds=tfeed, width_mm=tw, copper_oz=toz,
                                       length_mm=tl, is_external=text, is_estimate=test))
-                store.save(); st.rerun()
+                save_store(store); st.rerun()
         for name, tr in list(board.traces.items()):
             est = " · est" if tr.is_estimate else ""
             row = st.columns([5, 1])
@@ -1471,7 +1505,7 @@ def render_pcb_board():
                 f'fuses @ {tr.fusing_current_a(ambient_c=board.ambient_c):.1f} A</span></div>',
                 unsafe_allow_html=True)
             if row[1].button("✕", key=f"tr_del_{name}"):
-                store.remove_trace(name); store.save(); st.rerun()
+                store.remove_trace(name); save_store(store); st.rerun()
 
     with ec[1]:
         st.markdown("###### Differential pairs (CAN H/L routes)")
@@ -1492,7 +1526,7 @@ def render_pcb_board():
                 store.set_pair(DiffPair(name=pn, owner_subsystem=pown, trace_w_mm=pw,
                                         spacing_mm=psp, height_mm=ph, eps_r=peps,
                                         target_z0_ohm=ptz, path_mm=pts, is_estimate=pest))
-                store.save(); st.rerun()
+                save_store(store); st.rerun()
         for name, dp in list(board.pairs.items()):
             est = " · est" if dp.is_estimate else ""
             z = dp.differential_z0_ohm()
@@ -1505,7 +1539,7 @@ def render_pcb_board():
                 f'~{z:.0f} Ω diff (est) · target {dp.target_z0_ohm:.0f} Ω · {len(dp.path_mm)} pts</span></div>',
                 unsafe_allow_html=True)
             if row[1].button("✕", key=f"dp_del_{name}"):
-                store.remove_pair(name); store.save(); st.rerun()
+                store.remove_pair(name); save_store(store); st.rerun()
 
     with ec[2]:
         st.markdown("###### Aggressor nets (noisy HV traces to avoid)")
@@ -1523,7 +1557,7 @@ def render_pcb_board():
                 store.set_aggressor(Aggressor(name=an, net=anet, owner_subsystem=aown,
                                               sw_voltage_v=asw, edge_v_per_ns=aedge,
                                               path_mm=pts, is_estimate=aest))
-                store.save(); st.rerun()
+                save_store(store); st.rerun()
         for name, ag in list(board.aggressors.items()):
             est = " · est" if ag.is_estimate else ""
             row = st.columns([5, 1])
@@ -1535,7 +1569,7 @@ def render_pcb_board():
                 f'{ag.sw_voltage_v:.0f} V · {ag.edge_v_per_ns:.0f} V/ns · {len(ag.path_mm)} pts</span></div>',
                 unsafe_allow_html=True)
             if row[1].button("✕", key=f"ag_del_{name}"):
-                store.remove_aggressor(name); store.save(); st.rerun()
+                store.remove_aggressor(name); save_store(store); st.rerun()
 
     # ---- the simultaneous-load scenario ---- #
     st.markdown("###### Worst-case simultaneous load — which subsystems fire at once, onto which trace")
@@ -1708,7 +1742,7 @@ def render_harness():
         '<i>not computed</i> rather than invented.</p>',
         unsafe_allow_html=True)
 
-    store = project_mod.ProjectStore(PROJECT_PATH)
+    store = get_store()
     harness = store._ensure_harness()
     geom = getattr(store, "geometry", None)
     keepouts = list(getattr(geom, "keepouts", {}).values()) if geom else []
@@ -1757,7 +1791,7 @@ def render_harness():
                     name=cn, owner_subsystem=cown, xyz_mm=(cx, cy, cz),
                     cavities=int(ccav), part_number=cpn, strain_relief_mm=csr,
                     mass_g=(None if cmass == 0.0 else cmass), is_estimate=cest))
-                store.save(); st.rerun()
+                save_store(store); st.rerun()
         for name, c in list(harness.connectors.items()):
             est = " · est" if c.is_estimate else ""
             mtxt = f"{c.mass_g:.0f} g" if c.mass_g is not None else "mass —"
@@ -1772,7 +1806,7 @@ def render_harness():
                 f'{c.cavities} cav · {mtxt} · SR {c.strain_relief_mm:.0f} mm</span></div>',
                 unsafe_allow_html=True)
             if row[1].button("✕", key=f"cn_del_{name}"):
-                store.remove_connector(name); store.save(); st.rerun()
+                store.remove_connector(name); save_store(store); st.rerun()
 
     # ---- wire editor ---- #
     with ec[1]:
@@ -1812,7 +1846,7 @@ def render_harness():
                     strip_mm=wstrip,
                     carries_current_a=(None if wcur == 0.0 else wcur),
                     is_estimate=west))
-                store.save(); st.rerun()
+                save_store(store); st.rerun()
         for name, w in list(harness.wires.items()):
             est = " · est" if w.is_estimate else ""
             row = st.columns([5, 1])
@@ -1827,7 +1861,7 @@ def render_harness():
                 f'min bend {w.min_bend_radius_mm:.0f} mm</span></div>',
                 unsafe_allow_html=True)
             if row[1].button("✕", key=f"wr_del_{name}"):
-                store.remove_wire(name); store.save(); st.rerun()
+                store.remove_wire(name); save_store(store); st.rerun()
 
     # ---- the pre-cut gate ---- #
     st.markdown("###### Pre-cut harness check")
@@ -2432,7 +2466,7 @@ with tab6:
 
 # ----------------------------- TAB 7 --------------------------------------- #
 with tab7:
-    store = project_mod.ProjectStore(PROJECT_PATH)
+    store = get_store()
 
     # Surface storage problems instead of silently losing data.
     _degraded = getattr(store.backend, "degraded_reason", None)
@@ -5044,9 +5078,9 @@ with sc3:
                 st.session_state.ledger = data["ledger"]
             # restore handover data into the store
             if "handover" in data:
-                _s = project_mod.ProjectStore(PROJECT_PATH)
+                _s = get_store()
                 _s._apply(data["handover"])
-                _s.save()
+                save_store(_s)
             st.success("Project loaded — geometry, vehicle, and handover restored.")
             if st.button("Apply loaded project"):
                 st.rerun()
