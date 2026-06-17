@@ -154,10 +154,32 @@ class SupabaseBackend:
             {"id": self.project_id, "data": payload}).execute()
 
 
+def _read_credential(name: str):
+    """Resolve a credential from either real environment variables or Streamlit
+    Cloud secrets. Streamlit secrets (the TOML box in Settings) populate
+    `st.secrets`, NOT `os.environ`, so an env-only lookup misses them and the app
+    silently falls back to ephemeral local storage. Check both. Importing
+    streamlit here (not at module top) keeps this module usable in plain
+    scripts/tests with no Streamlit installed."""
+    val = os.environ.get(name)
+    if val:
+        return val
+    try:
+        import streamlit as st
+        # st.secrets behaves like a dict; .get avoids raising if the key is absent.
+        secret = st.secrets.get(name)
+        if secret:
+            return str(secret)
+    except Exception:
+        pass
+    return None
+
+
 def _auto_backend(path: str):
     """
-    Choose a backend automatically: Supabase if its credentials are present in the
-    environment (the deployed app), otherwise a local JSON file (laptop/tests).
+    Choose a backend automatically: Supabase if its credentials are present (in
+    the environment or in Streamlit Cloud secrets), otherwise a local JSON file
+    (laptop/tests).
 
     If Supabase credentials ARE set but initialisation fails, we do NOT silently
     fall back — that would drop the team's data into ephemeral storage without
@@ -165,8 +187,8 @@ def _auto_backend(path: str):
     only then fall back. Absence of credentials is the normal local case and is
     silent.
     """
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
+    url = _read_credential("SUPABASE_URL")
+    key = _read_credential("SUPABASE_KEY")
     if url and key:
         try:
             return SupabaseBackend(url, key)
@@ -176,8 +198,8 @@ def _auto_backend(path: str):
             fb = JSONFileBackend(path)
             fb.degraded_reason = (
                 "Supabase credentials are set but the connection failed "
-                f"({type(e).__name__}). Falling back to local storage — data will "
-                "NOT persist across restarts until this is fixed.")
+                f"({type(e).__name__}: {e}). Falling back to local storage — data "
+                "will NOT persist across restarts until this is fixed.")
             return fb
     return JSONFileBackend(path)
 

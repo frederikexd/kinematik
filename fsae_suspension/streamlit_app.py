@@ -389,12 +389,16 @@ def save_store(store):
     True on success. On an ephemeral host the in-memory store (cached in
     session_state) still holds the edit, so a False return is not data loss for
     the session — only a warning that it won't survive a restart."""
+    degraded = getattr(getattr(store, "backend", None), "degraded_reason", None)
+    if degraded:
+        st.warning(f"⚠ {degraded}")
     ok = store.save()
     if not ok and getattr(store, "save_error", None):
         st.warning(
             f"Saved in this session only — couldn't persist to storage: "
-            f"{store.save_error} Configure Supabase (see README) for data that "
-            f"survives a restart.")
+            f"{store.save_error} Check the Supabase table name "
+            f"('kinematik_project'), its columns (id text, data jsonb), and the "
+            f"key's row-level-security policy.")
     return ok
 
 
