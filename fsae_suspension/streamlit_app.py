@@ -7,10 +7,12 @@
 """
 KinematiK — open-source Formula SAE suspension design studio.
 
-Edit double-wishbone hardpoints live and watch the kinematics (camber gain, bump
-steer, caster, KPI, scrub) and the vehicle-level consequences (roll-centre
-migration, lateral load transfer, grip balance) update together. Built for the
-FSAE garage where OptimumK / ADAMS budgets don't reach.
+Edit hardpoints live for any suspension topology — double wishbone, MacPherson,
+multi-link, trailing/semi-trailing arm, solid axle, twist-beam, truck steer, or a
+free-form linkage — and watch the kinematics (camber gain, bump steer, caster,
+KPI, scrub) and the vehicle-level consequences (roll-centre migration, lateral
+load transfer, grip balance) update together. Built for the FSAE garage where
+OptimumK / ADAMS budgets don't reach.
 
 Run:  streamlit run app.py
 """
@@ -31,6 +33,7 @@ from suspension import (
     load_flex_body, corner_wheel_load, WheelLoad,
     GenericKinematics, list_templates, example as topo_example,
 )
+from suspension import topologies as topo_mod
 from suspension import compliance as compliance_mod
 from suspension import flex as flex_mod
 from suspension import chassis as chassis_mod
@@ -217,6 +220,147 @@ def metric(label, value, unit="", cls=""):
     <span class="v {cls}">{value}<span class="u"> {unit}</span></span></div>"""
 
 
+# --------------------------------------------------------------------------- #
+#  Generic-topology hardpoint editing
+# --------------------------------------------------------------------------- #
+# The double-wishbone path edits a `Hardpoints` set. EVERY other topology compiles
+# to a `Mechanism` with a dict of named points (ground / free / carried). We let
+# the user edit those point coordinates live too: build the base mechanism, apply
+# the user's per-topology coordinate overrides, then re-compile and solve. Edits
+# are stored per topology so each architecture keeps its own geometry.
+
+# Friendly labels + role grouping. Point names come from topologies.py; this maps
+# the terse internal names to something a student can read. Anything not listed
+# falls back to the raw name, so new templates still edit fine.
+_POINT_LABELS = {
+    # double wishbone
+    "ufi": "Upper wishbone · front inner", "uri": "Upper wishbone · rear inner",
+    "lfi": "Lower wishbone · front inner", "lri": "Lower wishbone · rear inner",
+    "tri": "Tie rod · inner (rack)", "uo": "Upper ball joint",
+    "lo": "Lower ball joint", "tro": "Tie rod · outer",
+    # MacPherson
+    "st": "Strut top mount", "sl": "Strut lower (upright)",
+    # multilink
+    "in0": "Link 1 · inner", "in1": "Link 2 · inner", "in2": "Link 3 · inner",
+    "in3": "Link 4 · inner", "in4": "Toe link · inner",
+    "out0": "Link 1 · outer", "out1": "Link 2 · outer", "out2": "Link 3 · outer",
+    "out3": "Link 4 · outer", "out4": "Toe link · outer",
+    # trailing / semi-trailing
+    "pi": "Pivot · inboard", "po": "Pivot · outboard", "hub": "Hub",
+    # solid axle
+    "lat_in": "Lateral device · chassis", "lat": "Lateral device · axle",
+    "lin0": "Link 1 · inner", "lin1": "Link 2 · inner", "lin2": "Link 3 · inner",
+    "lout0": "Link 1 · axle", "lout1": "Link 2 · axle", "lout2": "Link 3 · axle",
+    "axL": "Axle · left end", "axR": "Axle · right end",
+    # twist beam
+    "piL": "Pivot · left", "beamR_ground": "Beam · right ground",
+    "hubL": "Hub · left", "beamL": "Beam · left",
+    # truck steer
+    "kpt": "Kingpin · top", "kpb": "Kingpin · bottom", "sp": "Spindle",
+    "sa": "Steering arm", "dragc": "Drag link · chassis",
+    # carried wheel points (all topologies)
+    "wc": "Wheel centre", "cp": "Contact patch",
+}
+
+_ROLE_HEADERS = {
+    "ground":  "Chassis pickups (fixed)",
+    "free":    "Free joints (solved)",
+    "carried": "Wheel-carrier points",
+}
+
+
+def _from_links_default():
+    """A raw double-wishbone expressed through the free-form `from_links` builder.
+    Gives the 'Experimental / free-form' topology a sensible, solvable starting
+    geometry (it ships without an example(), so selecting it used to crash)."""
+    chassis = {"ufi": [-100, 240, 280.8], "uri": [130, 240, 299.2],
+               "lfi": [-110, 200, 122.5], "lri": [140, 200, 117.5],
+               "tri": [100, 230, 160]}
+    free = {"uo": [12, 540, 300], "lo": [-5, 575, 110], "tro": [90, 560, 150]}
+    carried = {"wc": ("upright", [0, 600, 228]), "cp": ("upright", [0, 605, 0])}
+    links = [("ufi", "uo", "upper_fore"), ("uri", "uo", "upper_aft"),
+             ("lfi", "lo", "lower_fore"), ("lri", "lo", "lower_aft"),
+             ("tri", "tro", "tie_rod")]
+    return topo_mod.from_links(
+        chassis, free, carried, links, carrier_body="upright",
+        carrier_defining=["uo", "lo", "tro"], wheel_center="wc",
+        contact_patch="cp", drive_point="wc", steer_point="tro",
+        static_camber=-1.3, label="experimental")
+
+
+def build_base_mechanism(topo_key):
+    """Fresh, unedited Mechanism for a topology key (no user overrides applied)."""
+    if topo_key == "from_links":
+        return _from_links_default()
+    return topo_mod.example(topo_key)
+
+
+def mechanism_point_coords(topo_key):
+    """name -> (role, [x,y,z]) for every editable point of the base mechanism."""
+    mech = build_base_mechanism(topo_key)
+    out = {}
+    for nm, p in mech.points.items():
+        out[nm] = (p.role, [float(c) for c in np.asarray(p.pos, float).ravel()])
+    return out
+
+
+def render_generic_point_editor(topo_key):
+    """Live x/y/z editor for every point of a non-wishbone topology. Stores the
+    edited coordinates in st.session_state['topo_hp'][topo_key]; returns that
+    dict (name -> [x,y,z]). Re-seeds from the template the first time a topology
+    is opened, and offers a reset."""
+    base = mechanism_point_coords(topo_key)
+    store = st.session_state.setdefault("topo_hp", {})
+    if topo_key not in store:
+        store[topo_key] = {nm: list(xyz) for nm, (role, xyz) in base.items()}
+    coords = store[topo_key]
+    # Heal any drift between a saved project and the current template (new/removed
+    # points) so the editor never KeyErrors.
+    for nm, (role, xyz) in base.items():
+        coords.setdefault(nm, list(xyz))
+    for nm in list(coords.keys()):
+        if nm not in base:
+            del coords[nm]
+
+    if st.button("↺ Reset to template", key=f"topo_reset_{topo_key}",
+                 width='stretch'):
+        store[topo_key] = {nm: list(xyz) for nm, (role, xyz) in base.items()}
+        st.rerun()
+
+    # group by role for a readable layout
+    by_role = {"ground": [], "free": [], "carried": []}
+    for nm, (role, _xyz) in base.items():
+        by_role.get(role, by_role["free"]).append(nm)
+    for role in ("ground", "free", "carried"):
+        names = by_role[role]
+        if not names:
+            continue
+        st.markdown(f"###### {_ROLE_HEADERS[role]}")
+        for nm in names:
+            label = _POINT_LABELS.get(nm, nm)
+            with st.expander(f"{label}  ·  {nm}", expanded=False):
+                v = coords[nm]
+                cols = st.columns(3)
+                nv = []
+                for i, ax in enumerate("xyz"):
+                    nv.append(cols[i].number_input(
+                        ax, value=float(v[i]), step=2.0,
+                        key=f"topo_{topo_key}_{nm}_{ax}", format="%.1f"))
+                coords[nm] = nv
+    return coords
+
+
+def mechanism_with_overrides(topo_key, coords):
+    """Build the base mechanism for the topology and move its points to the
+    user-edited coordinates, ready to compile + solve."""
+    mech = build_base_mechanism(topo_key)
+    for nm, xyz in (coords or {}).items():
+        if nm in mech.points:
+            mech.points[nm].pos = np.asarray(xyz, float)
+    mech._compiled = False
+    return mech
+
+
 PROJECT_PATH = os.path.join(os.getcwd(), "project.json")
 
 
@@ -280,59 +424,31 @@ with st.sidebar:
     st.markdown('<div class="sub" style="color:#8d99a6;font-family:JetBrains Mono;font-size:.7rem;letter-spacing:.18em;margin-bottom:.6rem;">HARDPOINT EDITOR · mm · SAE x-rear y-right z-up</div>', unsafe_allow_html=True)
 
     _is_wishbone = (topo_choice == "double_wishbone")
-    if not _is_wishbone:
-        st.info("The full hardpoint editor below applies to the double-wishbone "
-                "model. The selected topology uses its built-in parameterised "
-                "template; switch back to double-wishbone to edit pickups live.")
 
+    # Default the names the solve block expects; the wishbone branch overrides
+    # `preset`, the generic branch produces `_topo_coords`.
+    preset = "Front (default)"
+    _topo_coords = None
 
-    colA, colB = st.columns(2)
-    if colA.button("↺ Reset", width='stretch'):
-        st.session_state.hp = Hardpoints.default().as_dict()
-        st.rerun()
-    preset = colB.selectbox("Preset", ["Front (default)", "Low roll-centre",
-                                       "High anti-dive"], label_visibility="collapsed")
+    if _is_wishbone:
+        colA, colB = st.columns(2)
+        if colA.button("↺ Reset", width='stretch'):
+            st.session_state.hp = Hardpoints.default().as_dict()
+            st.rerun()
+        preset = colB.selectbox("Preset", ["Front (default)", "Low roll-centre",
+                                           "High anti-dive"], label_visibility="collapsed")
 
-    st.markdown("###### Design intent")
-    c1, c2 = st.columns(2)
-    st.session_state.hp["static_camber"] = c1.number_input(
-        "Static camber °", value=float(st.session_state.hp.get("static_camber", -1.5)),
-        step=0.1, format="%.2f")
-    st.session_state.hp["static_toe"] = c2.number_input(
-        "Static toe °", value=float(st.session_state.hp.get("static_toe", 0.0)),
-        step=0.05, format="%.2f")
+        st.markdown("###### Design intent")
+        c1, c2 = st.columns(2)
+        st.session_state.hp["static_camber"] = c1.number_input(
+            "Static camber °", value=float(st.session_state.hp.get("static_camber", -1.5)),
+            step=0.1, format="%.2f")
+        st.session_state.hp["static_toe"] = c2.number_input(
+            "Static toe °", value=float(st.session_state.hp.get("static_toe", 0.0)),
+            step=0.05, format="%.2f")
 
-    st.markdown("###### Pickup coordinates")
-    for key, label in POINTS:
-        with st.expander(label, expanded=False):
-            v = st.session_state.hp[key]
-            cols = st.columns(3)
-            nv = []
-            for i, ax in enumerate("xyz"):
-                nv.append(cols[i].number_input(
-                    f"{ax}", value=float(v[i]), step=2.0, key=f"{key}_{ax}",
-                    format="%.1f", label_visibility="visible"))
-            st.session_state.hp[key] = nv
-
-    st.markdown("###### Pushrod / rocker")
-    rocker_on = st.checkbox(
-        "Pushrod-actuated (real motion ratio)",
-        value=bool(st.session_state.hp.get("pushrod_outer") is not None),
-        help="When on, the motion ratio and wheel rate come from the actual "
-             "bell-crank geometry. When off, a direct-acting proxy is used and "
-             "reported spring→wheel rates are only indicative.")
-    if rocker_on:
-        # Seed rocker points from the default if the project doesn't carry them.
-        _def = Hardpoints.default().as_dict()
-        for key, label in ROCKER_POINTS:
-            if st.session_state.hp.get(key) is None:
-                st.session_state.hp[key] = _def[key]
-        attach = st.selectbox(
-            "Pushrod mounts on", ["lower", "upper", "upright"],
-            index=["lower", "upper", "upright"].index(
-                st.session_state.hp.get("pushrod_attach", "lower")))
-        st.session_state.hp["pushrod_attach"] = attach
-        for key, label in ROCKER_POINTS:
+        st.markdown("###### Pickup coordinates")
+        for key, label in POINTS:
             with st.expander(label, expanded=False):
                 v = st.session_state.hp[key]
                 cols = st.columns(3)
@@ -340,12 +456,48 @@ with st.sidebar:
                 for i, ax in enumerate("xyz"):
                     nv.append(cols[i].number_input(
                         f"{ax}", value=float(v[i]), step=2.0, key=f"{key}_{ax}",
-                        format="%.2f", label_visibility="visible"))
+                        format="%.1f", label_visibility="visible"))
                 st.session_state.hp[key] = nv
+
+        st.markdown("###### Pushrod / rocker")
+        rocker_on = st.checkbox(
+            "Pushrod-actuated (real motion ratio)",
+            value=bool(st.session_state.hp.get("pushrod_outer") is not None),
+            help="When on, the motion ratio and wheel rate come from the actual "
+                 "bell-crank geometry. When off, a direct-acting proxy is used and "
+                 "reported spring→wheel rates are only indicative.")
+        if rocker_on:
+            # Seed rocker points from the default if the project doesn't carry them.
+            _def = Hardpoints.default().as_dict()
+            for key, label in ROCKER_POINTS:
+                if st.session_state.hp.get(key) is None:
+                    st.session_state.hp[key] = _def[key]
+            attach = st.selectbox(
+                "Pushrod mounts on", ["lower", "upper", "upright"],
+                index=["lower", "upper", "upright"].index(
+                    st.session_state.hp.get("pushrod_attach", "lower")))
+            st.session_state.hp["pushrod_attach"] = attach
+            for key, label in ROCKER_POINTS:
+                with st.expander(label, expanded=False):
+                    v = st.session_state.hp[key]
+                    cols = st.columns(3)
+                    nv = []
+                    for i, ax in enumerate("xyz"):
+                        nv.append(cols[i].number_input(
+                            f"{ax}", value=float(v[i]), step=2.0, key=f"{key}_{ax}",
+                            format="%.2f", label_visibility="visible"))
+                    st.session_state.hp[key] = nv
+        else:
+            # Clear rocker points so has_rocker() is False and the proxy is used.
+            for key, _ in ROCKER_POINTS:
+                st.session_state.hp[key] = None
     else:
-        # Clear rocker points so has_rocker() is False and the proxy is used.
-        for key, _ in ROCKER_POINTS:
-            st.session_state.hp[key] = None
+        # Generic topologies: edit the Mechanism's named points directly. Every
+        # architecture now has a live hardpoint editor, not just the wishbone.
+        st.caption("Live editor for this architecture — move any pickup, free "
+                   "joint, or carrier point; the agnostic engine re-solves the "
+                   "same RC / anti-dive / balance pipeline.")
+        _topo_coords = render_generic_point_editor(topo_choice)
 
     st.markdown("---")
     st.markdown("###### Vehicle")
@@ -410,7 +562,9 @@ try:
         hp = Hardpoints.from_dict(hp_dict)
         kin = SuspensionKinematics(hp)
     else:
-        mech = topo_example(_topo)
+        # Apply the live hardpoint edits for this topology (falls back to the
+        # template geometry when nothing has been edited yet).
+        mech = mechanism_with_overrides(_topo, _topo_coords)
         kin = GenericKinematics(mech)
         hp = kin.hp
     # Build the live tire model from session state (default or TTC-fitted).
@@ -1395,9 +1549,13 @@ def render_pcb_board():
     scenario = {}
     if board.traces:
         for name, tr in board.traces.items():
+            # NB: pass `key` only — Streamlit persists the selection in
+            # st.session_state[key] across reruns. Passing `default=` alongside a
+            # `key` that already exists makes Streamlit ignore the default and, on
+            # rerun, silently reset the selection to [], so the scenario went empty
+            # and every trace reported "no declared worst-case current".
             picks = st.multiselect(
                 f"Loads on '{name}'", _SUBS,
-                default=st.session_state.get(f"pcb_scn_{name}", []),
                 key=f"pcb_scn_{name}",
                 help="Choose the same subsystem twice (e.g. two fans) by it appearing once "
                      "per declared load — duplicates are summed.")
@@ -4343,6 +4501,8 @@ with tab_ggv:
             g_drive, round(float(g_brake), 4),
             st.session_state.get("topology", "double_wishbone"),
             repr(hp_dict),
+            repr(st.session_state.get("topo_hp", {}).get(
+                st.session_state.get("topology", ""))),
         )
         if st.session_state.get("_ggv_sig") == _ggv_sig and \
            st.session_state.get("_ggv_res") is not None:
@@ -4843,6 +5003,8 @@ project_bundle = {
     "kinematik_version": "1.0",
     "saved": _datetime.datetime.now().isoformat(timespec="seconds"),
     "hardpoints": hp_dict,
+    "topology": st.session_state.get("topology", "double_wishbone"),
+    "topo_hardpoints": st.session_state.get("topo_hp", {}),
     "vehicle": st.session_state.vp,
     "ledger": st.session_state.get("ledger"),
     "handover": json.loads(_store_for_save.as_json()),
@@ -4872,6 +5034,10 @@ with sc3:
             data = json.load(loaded)
             if "hardpoints" in data:
                 st.session_state.hp = data["hardpoints"]
+            if "topo_hardpoints" in data and isinstance(data["topo_hardpoints"], dict):
+                st.session_state.topo_hp = data["topo_hardpoints"]
+            if "topology" in data:
+                st.session_state.topology = data["topology"]
             if "vehicle" in data:
                 st.session_state.vp = data["vehicle"]
             if data.get("ledger"):

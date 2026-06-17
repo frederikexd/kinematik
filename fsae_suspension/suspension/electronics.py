@@ -444,7 +444,9 @@ class BoardLedger:
                 out.append(Finding(
                     "trace-current", Severity.MISSING,
                     f"Trace '{tr.name}' ({tr.owner_subsystem}->{tr.feeds}) has no "
-                    f"declared worst-case current — cannot check heating or drop.",
+                    f"declared worst-case current — cannot check heating or drop. "
+                    f"Pick its load(s) in the scenario above, and declare each "
+                    f"subsystem's peak current in the Integration tab.",
                     subsystems=pair,
                     detail=dict(trace=tr.name, width_mm=tr.width_mm,
                                 copper_oz=tr.copper_oz)))
