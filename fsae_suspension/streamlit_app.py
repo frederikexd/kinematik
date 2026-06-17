@@ -4197,11 +4197,27 @@ with tab_ggv:
         st.error(f"GGV generation failed: {e}")
 
     if _res is not None:
+        # Sort warnings into the repetitive inner-wheel-lift family vs. everything
+        # else. The lift warning fires once per speed point, so left as-is it
+        # stacks 6-10 identical yellow boxes and buries the diagram. Collapse the
+        # family into ONE callout that states the explanation once and lists the
+        # affected speeds, and show it *after* the chart so the diagram leads.
+        import re as _re
+        _lift_pts = []          # (g, v) tuples parsed from the lift warnings
+        _other_warns = []
         for w in _res.warnings:
+            m = _re.search(r"Inner-wheel lift at ~([\d.]+)\s*g\s*\(v=([\d.]+)", w)
+            if m:
+                _lift_pts.append((float(m.group(1)), float(m.group(2))))
+            else:
+                _other_warns.append(w)
+        _lift_pts.sort(key=lambda p: p[1])
+
+        # Non-lift warnings are rare and worth seeing immediately.
+        for w in _other_warns:
             st.warning(f"⚠ {w}")
 
-        # headline metrics at a representative mid-corner speed
-        _i_mid = int(np.argmin(np.abs(_res.speeds - 15.0)))
+        # headline metrics
         mc = st.columns(4)
         mc[0].markdown(metric("Peak lateral", f"{np.nanmax(_res.max_lat_g):.2f}",
                               "g"), unsafe_allow_html=True)
@@ -4244,6 +4260,40 @@ with tab_ggv:
                     'vector inside the curve for the current speed.</p>',
                     unsafe_allow_html=True)
 
+        # ---- Inner-wheel-lift summary (one box, not one-per-speed) ------ #
+        if _lift_pts:
+            _gmin = min(p[0] for p in _lift_pts)
+            _gmax = max(p[0] for p in _lift_pts)
+            _vmin = min(p[1] for p in _lift_pts)
+            _vmax = max(p[1] for p in _lift_pts)
+            _g_rng = (f"{_gmin:.2f} g" if abs(_gmax - _gmin) < 0.005
+                      else f"{_gmin:.2f}–{_gmax:.2f} g")
+            _v_rng = (f"{_vmin:.0f} m/s" if abs(_vmax - _vmin) < 0.5
+                      else f"{_vmin:.0f}–{_vmax:.0f} m/s")
+            _chips = " ".join(
+                f'<span style="display:inline-block;font-family:\'JetBrains Mono\',monospace;'
+                f'font-size:.72rem;color:var(--amber);background:rgba(255,176,46,.08);'
+                f'border:1px solid #5a4317;border-radius:6px;padding:.12rem .45rem;'
+                f'margin:.12rem .2rem .12rem 0;">{v:.0f} m/s · {g:.2f} g</span>'
+                for g, v in _lift_pts)
+            st.markdown(
+                f'<div style="border:1px solid #5a4317;border-left:3px solid var(--amber);'
+                f'border-radius:10px;background:rgba(255,176,46,.05);'
+                f'padding:.8rem 1rem;margin:.2rem 0 1rem;">'
+                f'<div style="display:flex;align-items:center;gap:.5rem;'
+                f'font-weight:600;color:var(--amber);margin-bottom:.35rem;">'
+                f'⚠ Inner wheel lifts above ~{_g_rng} '
+                f'<span style="color:var(--dim);font-weight:400;font-size:.8rem;">'
+                f'({len(_lift_pts)} of {len(_res.speeds)} speed points · {_v_rng})</span></div>'
+                f'<p class="hint" style="margin:.1rem 0 .55rem;">Past these points an '
+                f'inside tire has fully unloaded, so the rigid load-transfer model '
+                f'saturates at its zero-load floor. The lateral-grip number there is an '
+                f'<b>upper bound / artifact</b>, not real grip — it can even rise with CG '
+                f'height, which is unphysical. Lower the CG, soften the inside bar, or '
+                f'read those points as "lifting a wheel".</p>'
+                f'<div>{_chips}</div></div>',
+                unsafe_allow_html=True)
+
         # ---- Capability vs speed --------------------------------------- #
         figC = go.Figure()
         figC.add_trace(go.Scatter(x=_res.speeds, y=_res.max_lat_g, mode="lines+markers",
@@ -4254,6 +4304,19 @@ with tab_ggv:
                                   line=dict(color=RED, width=2.5), name="max braking g"))
         figC.update_layout(**PLOT_LAYOUT, title="Capability vs speed",
                            xaxis_title="speed (m/s)", yaxis_title="g", height=320)
+        # Flag the speeds where lateral g is a wheel-lift artifact so the curve
+        # isn't read as honest grip there.
+        if _lift_pts:
+            _lift_v = {round(v, 1) for _, v in _lift_pts}
+            _mx = [s for s in _res.speeds if round(float(s), 1) in _lift_v]
+            _my = [g for s, g in zip(_res.speeds, _res.max_lat_g)
+                   if round(float(s), 1) in _lift_v]
+            if _mx:
+                figC.add_trace(go.Scatter(
+                    x=_mx, y=_my, mode="markers",
+                    marker=dict(color=AMBER, size=11, symbol="circle-open",
+                                line=dict(width=2)),
+                    name="lateral g = wheel-lift artifact"))
         st.plotly_chart(figC, width='stretch')
 
         # ---- "What does changing X do?" sweep -------------------------- #
