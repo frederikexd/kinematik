@@ -1443,10 +1443,6 @@ def render_pcb_board():
                  "suspension": "🩷", "ecu": "🖥️"}
     _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
              "data-acquisition", "electrics", "powertrain", "suspension"]
-    # Only subsystems that can actually put an electrical load on a board trace
-    # belong in the "Loads on <trace>" picker. Aero/chassis/suspension draw no
-    # board current, so offering them just invites a nonsensical scenario.
-    _LOAD_SUBS = ["brakes", "cooling", "data-acquisition", "electrics", "powertrain"]
 
     st.markdown(
         '<p class="hint">This is the check an electrical member runs the afternoon '
@@ -1591,22 +1587,14 @@ def render_pcb_board():
     scenario = {}
     if board.traces:
         for name, tr in board.traces.items():
-            # If a previous session stored a selection that's no longer an allowed
-            # load (e.g. aerodynamics, before we restricted the picker to
-            # current-drawing subsystems), drop it from session state first —
-            # Streamlit errors if a persisted value isn't among the options.
-            _skey = f"pcb_scn_{name}"
-            if _skey in st.session_state:
-                st.session_state[_skey] = [
-                    s for s in st.session_state[_skey] if s in _LOAD_SUBS]
             # NB: pass `key` only — Streamlit persists the selection in
             # st.session_state[key] across reruns. Passing `default=` alongside a
             # `key` that already exists makes Streamlit ignore the default and, on
             # rerun, silently reset the selection to [], so the scenario went empty
             # and every trace reported "no declared worst-case current".
             picks = st.multiselect(
-                f"Loads on '{name}'", _LOAD_SUBS,
-                key=_skey,
+                f"Loads on '{name}'", _SUBS,
+                key=f"pcb_scn_{name}",
                 help="Choose the same subsystem twice (e.g. two fans) by it appearing once "
                      "per declared load — duplicates are summed.")
             if picks:
