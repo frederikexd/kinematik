@@ -5,60 +5,56 @@
 # ============================================================================
 
 """
-Virtual Tunnel Solver — one solver built ON TOP of STAR-CCM+, TS-Auto and OpenFOAM.
+Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend.
 
 WHY THIS MODULE EXISTS (read this before using it)
 ---------------------------------------------------
-The old Virtual Wind Tunnel made the user pick ONE code — Star-CCM+ *or* TS-Auto
-*or* OpenFOAM — and correlate that single solver against the tunnel. That framing
-quietly hides the most useful number in multi-code aero work: **how much the codes
-disagree with each other.** Two independent solvers landing on the same C_l at the
-same attitude is strong evidence the number is real and not a meshing/turbulence
-artefact; the same two diverging by 8% is a red flag that no single-solver report
-would ever show you.
+The Virtual (Wind) Tunnel used to generate driver files for THREE external codes at
+once — Star-CCM+, TS-Auto and OpenFOAM — and fuse their outputs to flag inter-code
+divergence. That made the feature unusable for anyone who did not own those licenses
+and a cluster to run them on: you got driver files and nothing else until you ran
+them elsewhere.
 
-So this module does NOT add a fourth backend. It adds a *meta-solver* — the
-`EnsembleTunnelSolver` — that IS the Virtual Tunnel Solver, built out of the three
-real backends underneath it (`StarCCMSolver`, `TSAutoSolver`, `OpenFOAMSolver`).
-It implements the very same `CFDSolver` seam every other backend implements
-(`write_case` / `run_case` / `read_result` + `provenance`), so it is a drop-in
-solver everywhere the old single backends plugged in — including
-`VirtualWindTunnel.case_specs()` / `.correlate()`. The difference is what happens
-inside:
+This module now does the opposite. Everything happens INSIDE KinematiK:
 
-    write_case   -> writes ALL THREE codes' input for one attitude into per-code
-                    sub-directories (a Star-CCM+ macro, a TS-Auto config, and a
-                    valid OpenFOAM case), so a team can run the same point through
-                    every code with one call.
-    run_case     -> drives each member; OpenFOAM actually runs if it is on PATH,
-                    the licensed codes are read back if their result CSV is already
-                    staged. Members that cannot run are recorded as honest holes,
-                    NOT dropped silently and NEVER faked.
-    read_result  -> parses whatever each member produced, then FUSES the members
-                    into one `CoeffResult` whose coefficients are the cross-code
-                    consensus and whose provenance carries the inter-code spread.
+  * the headline coefficient is computed in-house by `FluentVerificationSolver`
+    (the analytic attitude model), so the user needs NO ANSYS Fluent, no other
+    solver, no license and no mesh to get a usable number, and
+  * for every case a complete ANSYS Fluent journal is still written, purely so the
+    user can independently VERIFY the in-house number on their own Fluent install if
+    and when they want to. The deck is a confirmation artefact, never a prerequisite.
+
+The class is still called `EnsembleTunnelSolver` and still implements the full
+`CFDSolver` seam (`write_case` / `run_case` / `read_result` + `provenance`), so it
+remains a drop-in everywhere a backend plugs in — including
+`VirtualWindTunnel.case_specs()` / `.correlate()`. What changed is its default
+roster: instead of three external codes it now wraps a SINGLE member, the in-house
+Fluent backend. The fusion machinery (mean/median reduction, inter-code spread,
+honest holes) is fully retained for the advanced case where a caller deliberately
+supplies several backends to cross-check — e.g. adding a real OpenFOAM solve next to
+the in-house estimate — but the out-of-the-box behaviour is one self-contained code.
+
+    write_case   -> writes the ANSYS Fluent verification journal for one attitude
+                    (under a `fluent/` sub-directory), so the deck is on disk to run
+                    whenever the user wants to confirm.
+    run_case     -> returns the in-house coefficient for that attitude immediately,
+                    with no external solver; the Fluent deck is left alongside it.
+    read_result  -> returns the in-house number, or — if the user has run the deck
+                    and staged a Fluent coeff CSV — the licensed-solver confirmation.
 
 THE HONESTY CONTRACT (same discipline as cfd.py / backends.py)
 --------------------------------------------------------------
-This is the dangerous part of an ensemble, so it is the strict part here:
+  * The in-house coefficient is labelled exactly for what it is: an analytic estimate
+    at `POTENTIAL` fidelity, `is_correlated=False`. It is never dressed up as a
+    Navier–Stokes solve, and its provenance/notes say so on every result.
+  * When more than one member is supplied, the fused coefficient is a transparent
+    reduction (mean / median) of ONLY the members that produced a converged number;
+    a member that raised SolverUnavailable or did not converge contributes NOTHING.
+  * `c_lift` sign convention is preserved end to end (negative = downforce).
 
-  * The fused coefficient is a transparent reduction (mean / median) of ONLY the
-    members that actually produced a converged number. A member that raised
-    SolverUnavailable or did not converge contributes NOTHING — it is not counted,
-    not zero-filled, not guessed.
-  * The fused result is `converged` only if at least `min_members` members
-    converged AND their inter-code spread is within `agreement_tol`. Codes that
-    disagree wildly are NOT a converged consensus, and the result says so.
-  * Every fused `CoeffResult` carries, in its provenance and notes, exactly which
-    codes were used, which were holes and why, and the per-channel spread. You can
-    always see how many codes voted and how far apart they were.
-  * `c_lift` sign convention is preserved end to end (negative = downforce), since
-    the member backends already normalise the vendor up-positive convention.
-
-DELIBERATE NON-GOALS, identical to the seam it sits on: this module meshes nothing,
-solves no Navier-Stokes itself, and invents no coefficient. It orchestrates the
-three real backends and reduces their honest output. A hole it reports is a real
-hole; a disagreement it reports is a real disagreement.
+DELIBERATE NON-GOALS, identical to the seam it sits on: this module meshes nothing
+and solves no Navier-Stokes itself. The in-house number is an openly-labelled
+analytic estimate; the Fluent deck it writes is for the user to run, not KinematiK.
 """
 
 from __future__ import annotations
@@ -72,32 +68,30 @@ from .cfd import (
     Attitude, CaseSpec, CoeffResult, CFDProvenance, SolverFidelity,
     SolverUnavailable,
 )
-from .backends import StarCCMSolver, TSAutoSolver, OpenFOAMSolver
+from .backends import FluentVerificationSolver
 
 
 # --------------------------------------------------------------------------- #
-#  Default ensemble of the three codes the Virtual Tunnel Solver is built on
+#  Default roster: the single in-house Fluent backend the Virtual Tunnel runs on
 # --------------------------------------------------------------------------- #
-# Order is the canonical reporting order (commercial high-fidelity first, the
-# productised OpenFOAM workflow second, the open core last) — it has no bearing on
-# the fused number, which is symmetric across members.
-DEFAULT_MEMBER_NAMES = ("starccm", "tsauto", "openfoam")
+# The Virtual Tunnel Solver is now self-contained: by default it wraps ONE member,
+# KinematiK's in-house `FluentVerificationSolver`, which computes the coefficient
+# internally and writes an ANSYS Fluent journal for optional verification. The
+# member-based machinery below still supports several backends, so a caller can pass
+# `members=[...]` to deliberately cross-check the in-house number against a real
+# OpenFOAM solve — but no external solver is needed for the default path.
+DEFAULT_MEMBER_NAMES = ("fluent",)
 
 
 def _default_members(turbulence_model: str, fidelity: SolverFidelity,
-                      mesh_params=None) -> "list":
+                     mesh_params=None) -> "list":
     """
-    Construct the three real backends the Virtual Tunnel Solver is built on. The
-    licensed codes (Star-CCM+, TS-Auto) take only what their constructors accept;
-    OpenFOAM additionally takes the turbulence model and an optional mesher so the
-    one member that can actually run here is fully driven.
+    Construct the default roster — a single in-house Fluent backend. `mesh_params`
+    and `turbulence_model` are accepted for signature compatibility with the old
+    multi-code roster but are not needed by the in-house estimate (there is no mesh
+    and no turbulence closure to drive); they are ignored here.
     """
-    return [
-        StarCCMSolver(fidelity=fidelity),
-        TSAutoSolver(turbulence_model=turbulence_model, fidelity=fidelity),
-        OpenFOAMSolver(turbulence_model=turbulence_model, fidelity=fidelity,
-                       mesh_params=mesh_params),
-    ]
+    return [FluentVerificationSolver()]
 
 
 # --------------------------------------------------------------------------- #
@@ -189,39 +183,46 @@ def _reduce(values: Sequence[float], how: str) -> Optional[float]:
 class EnsembleTunnelSolver:
     """
     The Virtual Tunnel Solver. It implements the `CFDSolver` protocol (so it drops
-    into `VirtualWindTunnel`, `AeroOrchestrator`, and anywhere a backend is taken),
-    but instead of being one code it ORCHESTRATES the three real backends —
-    Star-CCM+, TS-Auto and OpenFOAM — at each attitude and FUSES their converged
-    output into a single cross-code consensus coefficient.
+    into `VirtualWindTunnel`, `AeroOrchestrator`, and anywhere a backend is taken).
 
-    The point of the fusion is the inter-code spread: agreement between independent
-    solvers is the strongest cheap evidence a CFD number is physical, and that
-    spread is recorded on every result rather than hidden behind a single code's
-    confident-looking output.
+    By default it is SELF-CONTAINED: it wraps a single member, KinematiK's in-house
+    `FluentVerificationSolver`, which computes the aero coefficient internally (no
+    ANSYS Fluent, no other solver, no license, no mesh) and writes an ANSYS Fluent
+    journal alongside each case so the user can independently verify that number on
+    their own Fluent install. With one member there is nothing to "fuse" — the result
+    is simply the in-house estimate, openly labelled as such.
+
+    The fusion machinery is retained for the advanced case: pass `members=[...]` with
+    several backends (e.g. the in-house estimate plus a real OpenFOAM solve) and the
+    solver will reduce the converged members to a consensus and report the inter-code
+    spread — agreement between independent solvers is the strongest cheap evidence a
+    number is physical. That spread is recorded on every multi-member result.
 
     Parameters
     ----------
     reduction       : "mean" (default) or "median" — how converged members are
-                      combined into the consensus coefficient.
-    agreement_tol   : maximum inter-code spread (% of mean, peak-to-peak) for the
-                      fused result to be called `converged`. Above this the codes
-                      disagree and the consensus is reported NOT converged.
-    min_members     : minimum number of converged members required to fuse at all.
-                      Default 2 — a "consensus" of one code is just that code.
-    turbulence_model: passed to the members that accept it (TS-Auto, OpenFOAM).
-    fidelity        : labelled fidelity of the ensemble (the members share it).
-    mesh_params     : optional MeshParams handed to the OpenFOAM member so the one
-                      code that can run here is fully driven; None => solver files
-                      only, the team supplies the mesh.
+                      combined into the consensus coefficient (only meaningful with
+                      more than one member).
+    agreement_tol   : maximum inter-code spread (% of mean, peak-to-peak) for a
+                      multi-member fused result to be called `converged`.
+    min_members     : minimum number of converged members required to report a
+                      number. Default 1 — the in-house solver alone IS the answer.
+                      Raise it when you supply several backends and want to require
+                      cross-code agreement.
+    turbulence_model: accepted for compatibility; the in-house estimate has no
+                      turbulence closure, but any solver members you add can use it.
+    fidelity        : labelled fidelity of the ensemble.
+    mesh_params     : accepted for compatibility; ignored by the in-house estimate,
+                      passed through if you supply solver members that mesh.
     members         : advanced — supply your own list of CFDSolver backends to
-                      ensemble instead of the default three (used by tests).
+                      cross-check instead of the default single in-house code.
     """
     name = "virtual-tunnel"
 
     def __init__(self,
                  reduction: str = "mean",
                  agreement_tol: float = 5.0,
-                 min_members: int = 2,
+                 min_members: int = 1,
                  turbulence_model: str = "kOmegaSST",
                  fidelity: SolverFidelity = SolverFidelity.RANS,
                  mesh_params=None,
@@ -255,23 +256,26 @@ class EnsembleTunnelSolver:
             fidelity=self.fidelity,
             is_correlated=False,
             turbulence_model=self.turbulence_model,
-            notes=("Virtual Tunnel Solver — cross-code consensus of Star-CCM+, "
-                   "TS-Auto and OpenFOAM. The fused coefficient is the "
+            notes=("Virtual Tunnel Solver — self-contained on KinematiK's in-house "
+                   "ANSYS-Fluent backend. The coefficient is computed internally (no "
+                   "external solver, license or mesh required) and a Fluent journal "
+                   "is written for optional verification. When several backends are "
+                   "supplied the result is the "
                    f"{self.reduction} of the converged members only; members that "
                    "could not run or did not converge contribute nothing and are "
-                   "recorded as holes. Inter-code agreement is the confidence "
-                   "signal — correlate against the physical tunnel map before "
+                   "recorded as holes, and inter-code agreement is the confidence "
+                   "signal. Correlate against the physical tunnel map before "
                    f"trusting absolute levels{vote}{spr}."),
         )
 
     # -- the CFDSolver seam: write / run / read --------------------------- #
     def write_case(self, spec: CaseSpec, workdir: str) -> str:
         """
-        Write EVERY member code's input for this attitude, each into its own
-        sub-directory under <workdir>/<case_name>/<member>. Returns the parent case
-        directory. A team can then run the same point through all three codes from
-        one place; the licensed codes get their driver files, OpenFOAM gets a valid
-        runnable case.
+        Write each member's input for this attitude, each into its own sub-directory
+        under <workdir>/<case_name>/<member>. By default this is a single `fluent/`
+        folder containing the ANSYS Fluent verification journal. Returns the parent
+        case directory. If you supplied extra solver members, each gets its own
+        sub-folder too.
         """
         case_dir = os.path.join(workdir, spec.case_name())
         os.makedirs(case_dir, exist_ok=True)
@@ -289,11 +293,13 @@ class EnsembleTunnelSolver:
 
     def run_case(self, spec: CaseSpec, workdir: str) -> CoeffResult:
         """
-        Drive every member at this attitude, then fuse. OpenFOAM runs if it is on
-        PATH; the licensed members run only if KinematiK can (they raise
-        SolverUnavailable here, which is captured as a hole, never faked). The
-        returned CoeffResult is the fused consensus; the full per-member breakdown
-        is available via `solve_detailed`.
+        Drive every member at this attitude, then reduce. The default in-house Fluent
+        backend returns its internally-computed coefficient immediately (no external
+        solver) and leaves a Fluent verification journal on disk. If you supplied
+        extra solver members, each that cannot run here is captured as an honest hole,
+        never faked. The returned CoeffResult is the result (the consensus when there
+        is more than one member); the full per-member breakdown is available via
+        `solve_detailed`.
         """
         return self.solve_detailed(spec, workdir).fused
 

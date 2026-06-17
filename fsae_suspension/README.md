@@ -25,7 +25,7 @@ Born as a Formula SAE double-wishbone tool, now a general multibody kinematics p
 
 ## 30-second tour (every tab)
 
-Seventeen tabs, front to back. Each takes the live geometry + setup and answers one question; nothing is retyped between them — mass/CG, peak currents, ride heights and the tire all flow from one source of truth.
+Sixteen tabs, front to back. Each takes the live geometry + setup and answers one question; nothing is retyped between them — mass/CG, peak currents, ride heights and the tire all flow from one source of truth.
 
 1. **KINEMATICS** — the 3D constraint solver. Drag any of the ten hardpoints and read camber gain, bump steer (toe vs travel), caster, KPI, scrub radius, the front-view instant centre, the **real motion ratio** off the pushrod/rocker (→ wheel rate, rising/falling-rate curve), and **anti-dive / anti-squat** from the side-view swing arm. Pick the topology here (double-wishbone … solid axle, twist-beam, truck steer, or `from_links`).
 2. **ROLL & LOAD TRANSFER** — roll-centre height and *migration* through travel/roll, and the front/rear lateral load-transfer split that migration drives — the geometry→balance link the spreadsheets skip.
@@ -43,7 +43,6 @@ Seventeen tabs, front to back. Each takes the live geometry + setup and answers 
 14. **VALIDATION** — earn trust by matching data. Skidpad g / circle time, 75 m accel, and a GPS **speed-trace** RMSE/bias/R²; the **Virtual Tunnel Solver** (sweep the physical aero map → run the matched k-omega SST points through **Star-CCM+, TS-Auto *and* OpenFOAM at once** → fuse them into one cross-code **consensus**, with the **inter-code spread** as the confidence signal → point-by-point C_l/C_d/balance calibration); **surface pressure taps** (raw volts → C_p on the wing → stall detection → RMSE vs CFD); and the **live acquisition front end** — a Virtual Instrument off the force balance + Scanivalve/Chell scanners that decouples the 6×6 balance and filters the fan tone (offline *or* real-time) into clean F_x/F_y/F_z and raw P_static. No number is tuned to fit, no single code is just trusted, and a solver that can't run is an honest hole, never a fabricated number; the gap is quantified and logged to handover.
 15. **INTEGRATION** — the live cross-subsystem surface, in three views: a **cross-subsystem ledger** (the one place mass, CG and peak currents are declared), **subsystem ↔ chassis CAD fit**, and **mount-point clash** — move a mount and the clash verdict plus mass/CG propagate in one call. Persists with the project.
 16. **ELECTRONICS (PCB)** — copper-survival (IPC-2221 heating, Onderdonk fusing, IR-drop / ECU brown-out) + signal integrity (diff-pair impedance, HV-aggressor coupling), reading the **same** declared peak currents as the integration ledger so "what fires at once" is never retyped.
-17. **BRAKE ROTOR** — the lightest rotor that survives the lap. Spin the wheel in a **virtual tunnel** to extract the speed-dependent convective coefficient h_c on the rotor faces and vents (the rotating-wheel CFD seam — analytic surrogate today, OpenFOAM/Star-CCM+ MRF/sliding-mesh drops in at the same boundary), push the lap sim's **alternating braking-energy flux** (P = F_brake·v, heat into every corner, shed on every straight) through a **transient** ring→hat→hub→caliper→fluid lumped network, then **mill away mass** (ring thickness, vents, cross-drillings, hat) only where the transient peak proves the thermal mass isn't needed — keeping the friction ring under **pad fade** and the caliper-piston fluid under its **wet boiling point** (Motul RBF 600 …). The optimiser never returns a rotor that fails a limit, and every temperature stays flagged `synthesized` until the masses, conductances and h_c are calibrated — the same honesty gate as the tyre and pack thermal models.
 
 ---
 
@@ -882,8 +881,8 @@ consistency checks and reports `Finding`s with a severity (`FAIL` / `WARN` / `MI
 - **driveline torque** the powertrain delivers vs what the driveshaft/CV/upright is rated for;
 - mount loads vs design loads.
 
-Crucially it **does not simulate any subsystem** — the integration ledger can't do full-car CFD,
-chassis FEA or detailed battery cell modelling, and faking those would be the same false-confidence trap
+Crucially it **does not simulate any subsystem** — KinematiK can't do CFD, brake-thermal,
+chassis FEA or battery modelling, and faking those would be the same false-confidence trap
 the rest of the codebase refuses. Each subsystem's analysis stays in the tool that does it
 properly; this owns the channels between them. Every declaration carries an `is_estimate`
 flag, and the board always surfaces which numbers are placeholders, so a green board never

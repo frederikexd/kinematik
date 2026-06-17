@@ -22,8 +22,8 @@ import pytest
 
 from suspension.aero import (
     Attitude, RunMatrix, CaseSpec, CoeffResult, SolverFidelity, SolverUnavailable,
-    ReferenceAeroModel, OpenFOAMSolver, StarCCMSolver, FluentSolver,
-    LocalSubmitter, SlurmSSHSubmitter,
+    ReferenceAeroModel, FluentVerificationSolver, OpenFOAMSolver, StarCCMSolver,
+    FluentSolver, LocalSubmitter, SlurmSSHSubmitter,
     AeroMap, AeroOrchestrator, AeroProvider, estimate_attitude, get_backend,
 )
 
@@ -160,6 +160,62 @@ def test_fluent_writes_journal_but_refuses_to_run():
             b.run_case(CaseSpec(Attitude(yaw_deg=3), "car.stl"), d)
 
 
+# --------------------------------------------------------------------------- #
+#  In-house Fluent verification backend — answers without any external solver
+# --------------------------------------------------------------------------- #
+def test_fluent_verification_answers_in_house_and_writes_deck():
+    b = FluentVerificationSolver()
+    spec = CaseSpec(Attitude(yaw_deg=3, ride_height_mm=20.0, speed_ms=27.0), "car.stl")
+    with tempfile.TemporaryDirectory() as d:
+        # run_case must NOT raise — KinematiK answers on its own
+        res = b.run_case(spec, d)
+        assert res.c_lift is not None and res.c_lift < 0     # downforce, computed in-house
+        assert res.c_drag is not None and res.c_drag > 0
+        assert res.converged is True
+        assert res.provenance.is_correlated is False         # honest: an estimate
+        # the ANSYS Fluent verification journal is written alongside, for the user
+        jou = os.path.join(d, spec.case_name() + ".jou")
+        assert os.path.isfile(jou)
+        text = open(jou).read()
+        assert "ANSYS Fluent" in text
+        assert "in-house estimate" in text.lower()
+
+
+def test_fluent_verification_matches_reference_model_physics():
+    # The in-house number is exactly the analytic attitude model's number.
+    b = FluentVerificationSolver()
+    ref = ReferenceAeroModel()
+    spec = CaseSpec(Attitude(yaw_deg=4, ride_height_mm=22.0), "car.stl")
+    with tempfile.TemporaryDirectory() as d:
+        got = b.run_case(spec, d)
+    want = ref.run_case(spec, tempfile.mkdtemp())
+    assert got.c_lift == pytest.approx(want.c_lift)
+    assert got.c_drag == pytest.approx(want.c_drag)
+
+
+def test_fluent_verification_reads_back_user_run_csv():
+    # If the user runs the deck and stages a coeff CSV, read_result returns THAT.
+    b = FluentVerificationSolver()
+    spec = CaseSpec(Attitude(yaw_deg=2), "car.stl")
+    with tempfile.TemporaryDirectory() as d:
+        b.write_case(spec, d)
+        csv_path = os.path.join(d, spec.case_name() + "_coeffs.csv")
+        with open(csv_path, "w") as f:
+            f.write("Cl,Cd,Cs,CmPitch,converged\n2.7,1.06,0.05,0.1,1\n")
+        res = b.read_result(spec, d)
+    assert res.c_lift == pytest.approx(-2.7)     # vendor up-positive -> down-negative
+    assert res.c_drag == pytest.approx(1.06)
+    assert "fluent-verified" in res.provenance.backend
+
+
+def test_fluent_verification_read_fluent_csv_requires_the_csv():
+    b = FluentVerificationSolver()
+    spec = CaseSpec(Attitude(), "car.stl")
+    with tempfile.TemporaryDirectory() as d:
+        with pytest.raises(SolverUnavailable):
+            b.read_fluent_csv(spec, d)           # optional check, but must be explicit
+
+
 def test_commercial_stub_reads_exported_csv():
     b = StarCCMSolver()
     spec = CaseSpec(Attitude(yaw_deg=3), "car.stl")
@@ -283,7 +339,12 @@ def test_estimate_attitude_signs():
 def test_get_backend_aliases():
     assert isinstance(get_backend("openfoam"), OpenFOAMSolver)
     assert isinstance(get_backend("star"), StarCCMSolver)
-    assert isinstance(get_backend("ansys"), FluentSolver)
+    # "ansys" / "fluent" now resolve to the self-contained in-house verification
+    # solver (computes the coefficient internally, writes a Fluent deck to verify).
+    assert isinstance(get_backend("ansys"), FluentVerificationSolver)
+    assert isinstance(get_backend("fluent"), FluentVerificationSolver)
+    # the pure external pass-through stub is still reachable explicitly
+    assert isinstance(get_backend("fluent-stub"), FluentSolver)
     assert isinstance(get_backend("reference"), ReferenceAeroModel)
 
 

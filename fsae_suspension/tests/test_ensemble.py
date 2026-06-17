@@ -105,8 +105,9 @@ def test_is_a_cfdsolver_and_in_registry():
     assert isinstance(vts, EnsembleTunnelSolver)
     assert isinstance(vts, CFDSolver)            # runtime_checkable Protocol
     assert vts.name == "virtual-tunnel"
-    # built on the three named codes
+    # self-contained on the single in-house Fluent backend
     assert vts._member_names == list(DEFAULT_MEMBER_NAMES)
+    assert DEFAULT_MEMBER_NAMES == ("fluent",)
 
 
 def test_registry_aliases():
@@ -114,17 +115,20 @@ def test_registry_aliases():
         assert isinstance(get_backend(alias), EnsembleTunnelSolver)
 
 
-def test_provenance_names_all_three_codes():
+def test_provenance_names_the_in_house_fluent_backend():
     prov = get_backend("virtual-tunnel").provenance()
-    assert "starccm" in prov.backend
-    assert "tsauto" in prov.backend
-    assert "openfoam" in prov.backend
+    # the default roster is the single in-house Fluent code
+    assert "fluent" in prov.backend
+    # and it no longer drags in the old external three-code roster
+    assert "starccm" not in prov.backend
+    assert "tsauto" not in prov.backend
+    assert "openfoam" not in prov.backend
 
 
 # --------------------------------------------------------------------------- #
-#  2. write_case writes every member's input
+#  2. write_case writes every member's input (default: the Fluent verification deck)
 # --------------------------------------------------------------------------- #
-def test_write_case_writes_all_three_codes():
+def test_write_case_writes_each_member_input():
     vts = get_backend("virtual-tunnel")
     wd = tempfile.mkdtemp(prefix="vts_w_")
     case_dir = vts.write_case(_spec(), wd)
@@ -132,6 +136,9 @@ def test_write_case_writes_all_three_codes():
         sub = os.path.join(case_dir, code)
         assert os.path.isdir(sub), f"{code} sub-folder missing"
         assert os.listdir(sub), f"{code} wrote no input"
+    # the default member is Fluent and it writes a .jou verification deck
+    fluent_sub = os.path.join(case_dir, "fluent")
+    assert any(f.endswith(".jou") for f in os.listdir(fluent_sub))
 
 
 # --------------------------------------------------------------------------- #
@@ -213,15 +220,24 @@ def test_no_usable_code_yields_an_honest_hole_not_an_exception():
     assert det.fused.is_usable() is False
 
 
-def test_real_default_members_all_holes_here_no_fabrication():
-    # In this environment: no STAR-CCM+/TS-Auto license, no simpleFoam on PATH.
+def test_real_default_member_answers_in_house_no_external_solver():
+    # The whole point of the new design: with NOTHING installed (no license, no mesh,
+    # no external solver), the default Virtual Tunnel Solver still returns a usable,
+    # honestly-labelled in-house number and writes a Fluent deck to verify it.
     vts = get_backend("virtual-tunnel")
-    det = vts.solve_detailed(_spec(), tempfile.mkdtemp())
-    assert det.n_voted == 0
-    assert det.fused.c_lift is None
-    # each real code recorded an actionable reason
-    errs = {m.backend: m.error for m in det.members}
-    assert errs["starccm"] and errs["tsauto"] and errs["openfoam"]
+    wd = tempfile.mkdtemp()
+    det = vts.solve_detailed(_spec(), wd)
+    assert det.n_voted == 1                       # the in-house code voted
+    assert det.fused.c_lift is not None           # a real number, computed internally
+    assert det.fused.c_lift < 0                   # downforce sign convention
+    assert det.fused.converged is True
+    assert det.fused.is_usable() is True
+    # the provenance is honest about what this is
+    assert det.fused.provenance.is_correlated is False
+    assert "in-house" in det.fused.provenance.notes.lower()
+    # and the ANSYS Fluent verification journal is on disk for confirmation
+    case_dir = os.path.join(wd, _spec().case_name(), "fluent")
+    assert any(f.endswith(".jou") for f in os.listdir(case_dir))
 
 
 # --------------------------------------------------------------------------- #

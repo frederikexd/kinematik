@@ -157,27 +157,6 @@ from .harness import (
     awg_area_mm2, awg_nominal_od_mm,
 )
 
-# Brake-rotor thermal design loop: a spinning-wheel virtual-tunnel CFD seam that
-# extracts the speed-dependent convective coefficient h_c, a TRANSIENT lumped
-# rotor->hat->caliper->fluid thermal network driven by the lap sim's braking-power
-# trace (P_brake = F·v), and a mass/vent topology search that mills the rotor as
-# light as the transient peak allows while proving the ring never fades and the
-# caliper fluid never boils. Same co-sim-seam + honesty contract as aero/cfd.py
-# and pack_thermal.py: never fakes a CFD h_c, flags every uncalibrated temperature
-# as synthesized, and never returns a rotor that fails a thermal limit.
-from . import brakes
-from .brakes import (
-    RotorMaterial, ROTOR_MATERIALS, BrakeFluid, BRAKE_FLUIDS, PadSpec,
-    RotorCFDFidelity, RotorCFDProvenance, WheelTunnelPoint, ConvectiveResult,
-    RotorCFDSolver, RotorSolverUnavailable, ReferenceRotorCFD, OpenFOAMRotorCFD,
-    ConvectiveMap, build_convective_map,
-    RotorGeometry, braking_power_trace,
-    RotorThermalParams, RotorThermalResult, RotorThermalModel,
-    simulate_rotor_thermal,
-    FluidBoilCheck, fluid_boil_check,
-    RotorCandidate, RotorOptimization, rotor_candidate_grid, optimize_rotor,
-)
-
 __all__ = [
     "SuspensionKinematics", "Hardpoints", "CornerState",
     # architecture-agnostic topology engine
@@ -248,16 +227,5 @@ __all__ = [
     "awg_area_mm2", "awg_nominal_od_mm", "harness",
     "min_parallel_distance_mm", "parallel_run_length_mm",
     "electronics",
-    # brake-rotor thermal design loop (wheel-tunnel h_c + transient FEA + mass opt)
-    "RotorMaterial", "ROTOR_MATERIALS", "BrakeFluid", "BRAKE_FLUIDS", "PadSpec",
-    "RotorCFDFidelity", "RotorCFDProvenance", "WheelTunnelPoint", "ConvectiveResult",
-    "RotorCFDSolver", "RotorSolverUnavailable", "ReferenceRotorCFD", "OpenFOAMRotorCFD",
-    "ConvectiveMap", "build_convective_map",
-    "RotorGeometry", "braking_power_trace",
-    "RotorThermalParams", "RotorThermalResult", "RotorThermalModel",
-    "simulate_rotor_thermal",
-    "FluidBoilCheck", "fluid_boil_check",
-    "RotorCandidate", "RotorOptimization", "rotor_candidate_grid", "optimize_rotor",
-    "brakes",
 ]
-__version__ = "0.22.0"
+__version__ = "0.21.0"

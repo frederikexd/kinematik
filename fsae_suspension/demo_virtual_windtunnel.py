@@ -5,27 +5,24 @@
 # ============================================================================
 
 """
-Demo: the Virtual Tunnel Solver — calibrate CFD (k-omega SST) against a physical
-aero map, the way an FSAE aero subteam actually uses tunnel time.
+Demo: the Virtual Tunnel Solver — now SELF-CONTAINED inside KinematiK.
 
-There is no single-code choice to make. The Virtual Tunnel Solver is built ON
-Star-CCM+, TS-Auto AND OpenFOAM at once: it writes every matched ride-height point
-for all three codes, then fuses their converged output into one cross-code
-consensus coefficient. The inter-code spread is the payoff — agreement between
-independent solvers is the strongest cheap evidence a number is physical.
+There is no external solver to install and no multi-code choice to make. The
+Virtual Tunnel Solver computes the aero coefficients IN-HOUSE (the analytic attitude
+model) at every matched ride-height point, so you get a usable, honestly-labelled
+number with nothing installed: no ANSYS Fluent, no license, no mesh. For every point
+it ALSO writes a complete ANSYS Fluent journal — purely so you can independently
+VERIFY the in-house number on your own Fluent install whenever you want. The deck is
+a confirmation artefact, never a prerequisite.
 
 The story:
   1. Map the physical aero map in the tunnel: C_l/C_d at swept front & rear ride
      heights. Here we fabricate a small but physically-shaped measured map.
-  2. Build the matching Virtual Tunnel Solver and write the CFD driver files at the
-     IDENTICAL ride-height/speed points — all three codes, one sub-folder each.
-  3. Feed back two sets of per-code CFD results and FUSE them: a case where the
-     codes agree and the consensus matches the tunnel (CALIBRATED), and one where
-     the codes disagree (flagged before it ever reaches the tunnel comparison).
-
-No license, no mesh, no solver needed: the driver files are written for real, the
-fusion runs on results you'd otherwise bring back from the cluster, and a code that
-can't run here is an honest hole, never a fabricated number.
+  2. Build the matching Virtual Tunnel Solver and let KinematiK ANSWER each matched
+     ride-height/speed point in-house, while writing an ANSYS Fluent deck per point.
+  3. Correlate the in-house map against the physical tunnel map — the same
+     like-for-like calibration loop as before, now runnable end-to-end with no
+     external solver in the room.
 
 Run:  python demo_virtual_windtunnel.py
 """
@@ -35,8 +32,7 @@ import tempfile
 
 from suspension.aero import windtunnel as wt
 from suspension.aero import (
-    get_backend, CFDProvenance, SolverFidelity, ride_heights_to_attitude,
-    CoeffResult, MemberOutcome, fused_results, DEFAULT_MEMBER_NAMES,
+    get_backend, ride_heights_to_attitude, DEFAULT_MEMBER_NAMES,
 )
 
 
@@ -61,35 +57,6 @@ def build_physical_map():
     return pm
 
 
-def fuse_per_code(vts, pm, scales):
-    """
-    Stand in for "the team ran every code and brought the CSVs back". For each
-    physical point, fabricate one CoeffResult per code (scaled to model each code's
-    solve quality), wrap them as MemberOutcomes, and fuse through the SAME engine the
-    solver uses — so the consensus here is identical to the programmatic one. Returns
-    the list of EnsembleResults.
-    """
-    out = []
-    for phys in pm.measured_points():
-        outs = []
-        for code in DEFAULT_MEMBER_NAMES:
-            sc = scales.get(code)
-            if sc is None:                      # this code didn't run => honest hole
-                outs.append(MemberOutcome(backend=code, error="not run for this demo"))
-                continue
-            outs.append(MemberOutcome(
-                backend=code,
-                result=CoeffResult(attitude=phys.attitude,
-                                   c_lift=phys.c_lift * sc,
-                                   c_drag=phys.c_drag * sc,
-                                   aero_balance_front=phys.aero_balance_front,
-                                   converged=True)))
-        spec = wt.CaseSpec(attitude=phys.attitude, geometry_path="car.stl",
-                           reference_area_m2=1.0, reference_length_m=1.55)
-        out.append(vts._fuse(spec, outs))
-    return out
-
-
 def main():
     pm = build_physical_map()
     print("=" * 78)
@@ -100,53 +67,56 @@ def main():
 
     vwt = wt.VirtualWindTunnel(pm, geometry_path="car.stl", rho=1.225)
     print("=" * 78)
-    print("VIRTUAL TUNNEL SOLVER — matched CFD run on Star-CCM+ + TS-Auto + OpenFOAM")
+    print("VIRTUAL TUNNEL SOLVER — in-house answer + ANSYS Fluent deck to verify")
     print("=" * 78)
     print(vwt.plan())
 
-    vts = get_backend("virtual-tunnel", reduction="mean", agreement_tol=5.0,
-                      min_members=2, turbulence_model="kOmegaSST")
+    # Self-contained: the default Virtual Tunnel Solver is the in-house Fluent
+    # backend. No external solver, license or mesh is needed to get a number. With a
+    # real STL it solves a 3D panel/potential-flow field on the geometry (see
+    # demo_panel_method.py); with the placeholder geometry here it uses the analytic
+    # surrogate and says so.
+    vts = get_backend("virtual-tunnel")
+    print(f"\nDefault roster (no external solver): {DEFAULT_MEMBER_NAMES}")
+    print("In-house method: 'auto' — 3D panel solve when a real STL is supplied, "
+          "analytic surrogate otherwise.\n")
+
     outdir = tempfile.mkdtemp(prefix="kinematik_vts_demo_")
     specs = vwt.case_specs()
-    for s in specs:
-        vts.write_case(s, outdir)              # writes all three codes per point
-    print(f"\nWrote {len(specs)} matched case(s) to {outdir}, each containing input "
-          f"for all three codes:")
-    example = os.path.join(outdir, specs[0].case_name())
-    for code in DEFAULT_MEMBER_NAMES:
-        sub = os.path.join(example, code)
-        files = os.listdir(sub) if os.path.isdir(sub) else []
-        print(f"    {specs[0].case_name()}/{code}/  ->  {', '.join(files[:2])}")
-    print("(Run each point through every code on the team's installs; export one "
-          "coeff CSV per code.)\n")
+
+    # Answer every matched point in-house; the Fluent deck is written as a side effect.
+    cfd_results = [vts.run_case(s, outdir) for s in specs]
+
+    print(f"Answered {len(specs)} matched case(s) IN-HOUSE (no solver run). Each case "
+          f"also has an ANSYS Fluent journal written for optional verification:")
+    example = os.path.join(outdir, specs[0].case_name(), "fluent")
+    files = os.listdir(example) if os.path.isdir(example) else []
+    print(f"    {specs[0].case_name()}/fluent/  ->  {', '.join(files[:2])}")
+    print("(Run any of those .jou files on a licensed ANSYS Fluent to confirm the "
+          "in-house number; KinematiK needs nothing installed to give you the map.)\n")
+
+    ex = cfd_results[0]
+    print(f"e.g. {ex.attitude.label()}: in-house C_l {ex.c_lift:+.3f}, "
+          f"C_d {ex.c_drag:+.3f}  (converged={ex.converged})")
+    print(f"     provenance: {ex.provenance.status()}\n")
 
     print("=" * 78)
-    print("CONSENSUS A — three codes that AGREE and match the tunnel")
+    print("CORRELATION — in-house map vs the physical tunnel map")
     print("=" * 78)
-    ensA = fuse_per_code(vts, pm, {"starccm": 1.01, "tsauto": 1.02, "openfoam": 0.99})
-    exA = ensA[0]
-    print(f"e.g. {exA.fused.attitude.label()}: fused C_l {exA.fused.c_lift:+.3f}, "
-          f"{exA.n_voted} codes voted, inter-code C_l spread {exA.cl_spread_pct:.1f}% "
-          f"=> converged={exA.fused.converged}")
-    repA = vwt.correlate(fused_results(ensA))
-    print(repA.summary, "\n")
-
-    print("=" * 78)
-    print("CONSENSUS B — codes DISAGREE (one code over-predicts downforce)")
-    print("=" * 78)
-    ensB = fuse_per_code(vts, pm, {"starccm": 1.00, "tsauto": 1.12, "openfoam": 0.98})
-    exB = ensB[0]
-    print(f"e.g. {exB.fused.attitude.label()}: fused C_l {exB.fused.c_lift:+.3f}, "
-          f"{exB.n_voted} codes voted, inter-code C_l spread {exB.cl_spread_pct:.1f}% "
-          f"=> converged={exB.fused.converged}")
-    n_flagged = sum(1 for er in ensB if er.n_voted >= 2 and not er.fused.converged)
-    print(f"{n_flagged}/{len(ensB)} point(s) flagged: the codes disagree beyond the "
-          f"5% agreement tolerance — caught BEFORE the tunnel comparison.")
-    print("\nThe consensus's own verdict on each point (first three):")
-    for er in ensB[:3]:
-        print(f"   {er.fused.attitude.label():46s}  "
-              f"C_l spread {er.cl_spread_pct:5.1f}%  "
-              f"converged={er.fused.converged}")
+    rep = vwt.correlate(cfd_results)
+    print(rep.summary)
+    # Report which in-house method actually produced these numbers (the placeholder
+    # "car.stl" here is not on disk, so 'auto' falls back to the analytic surrogate
+    # and says so; supply a real STL to get the 3D panel solve — see
+    # demo_panel_method.py).
+    used_panel = any("panel solve" in (r.notes or "") for r in cfd_results)
+    method_txt = ("the 3D panel / potential-flow solve on your STL" if used_panel
+                  else "the analytic surrogate (no STL on disk for the panel solve)")
+    print(f"\nNote: these numbers came from {method_txt}, openly labelled "
+          "UNCORRELATED. Treat the absolute levels as provisional and the deltas as "
+          "the trustworthy part — and run the written Fluent decks when you want a "
+          "licensed-solver (RANS) check of any point, especially near separation, "
+          "which potential flow cannot see.")
 
 
 if __name__ == "__main__":

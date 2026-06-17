@@ -76,8 +76,11 @@ from .cfd import (
     SolverFidelity, CFDSolver, SolverUnavailable,
 )
 from .backends import (
-    ReferenceAeroModel, OpenFOAMSolver, StarCCMSolver, FluentSolver, TSAutoSolver,
-    BACKENDS, get_backend,
+    ReferenceAeroModel, FluentVerificationSolver, OpenFOAMSolver, StarCCMSolver,
+    FluentSolver, TSAutoSolver, BACKENDS, get_backend,
+)
+from .panel_method import (
+    PanelMethodModel, PanelParams, PanelMethodUnavailable,
 )
 from .ensemble import (
     EnsembleTunnelSolver, EnsembleResult, MemberOutcome, fused_results,
@@ -118,8 +121,10 @@ from .daq import (
 __all__ = [
     "Attitude", "RunMatrix", "CaseSpec", "CoeffResult", "CFDProvenance",
     "SolverFidelity", "CFDSolver", "SolverUnavailable",
-    "ReferenceAeroModel", "OpenFOAMSolver", "StarCCMSolver", "FluentSolver",
+    "ReferenceAeroModel", "FluentVerificationSolver", "OpenFOAMSolver",
+    "StarCCMSolver", "FluentSolver",
     "TSAutoSolver", "BACKENDS", "get_backend",
+    "PanelMethodModel", "PanelParams", "PanelMethodUnavailable",
     "EnsembleTunnelSolver", "EnsembleResult", "MemberOutcome", "fused_results",
     "DEFAULT_MEMBER_NAMES",
     "Submitter", "LocalSubmitter", "SlurmSSHSubmitter", "SubmitResult",
