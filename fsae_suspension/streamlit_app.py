@@ -3440,11 +3440,16 @@ with tab12:
                 '<p class="hint">The point of tunnel testing isn\'t "is the car '
                 'fast" — it\'s <b>calibrating your CFD</b>. You map the physical aero '
                 'map (how C_l/C_d shift with front &amp; rear ride height under load), '
-                'then run the <i>identical</i> ride-height/speed points through a '
-                '<b>Virtual Wind Tunnel</b> in Star-CCM+, TS-Auto or OpenFOAM, and '
-                'compare. If k-omega SST reproduces the tunnel inside tolerance, every '
-                'digital config you screen afterwards is trustworthy. If it doesn\'t, '
-                'this tells you <i>which way</i> it\'s wrong — point by point.</p>',
+                'then run the <i>identical</i> ride-height/speed points through the '
+                '<b>Virtual Tunnel Solver</b> and compare. There\'s no single-code '
+                'choice to make: the Virtual Tunnel Solver is built on <b>Star-CCM+, '
+                'TS-Auto <i>and</i> OpenFOAM at once</b> — it runs every matched point '
+                'through all three codes and fuses their converged output into one '
+                'cross-code consensus coefficient. The <b>inter-code spread</b> is the '
+                'payoff: two independent solvers landing on the same C_l is strong '
+                'evidence the number is real; the same two diverging is a red flag no '
+                'single-solver report would ever show you. That consensus — not any one '
+                'code — is what gets calibrated against the tunnel, point by point.</p>',
                 unsafe_allow_html=True)
 
             wc = st.columns(4)
@@ -3456,15 +3461,18 @@ with tab12:
                                        value=1550.0, step=10.0, key="wt_wb",
                                        help="Distance between the front & rear ride-height "
                                             "reference planes (the CFD reference length).")
-            wt_solver = wc[2].selectbox("Virtual tunnel solver",
-                                        ["Star-CCM+", "TS-Auto", "OpenFOAM"], key="wt_solver")
+            wt_reduction = wc[2].selectbox("Consensus", ["mean", "median"],
+                                           key="wt_reduction",
+                                           help="How the Virtual Tunnel Solver fuses the "
+                                                "converged codes into one coefficient. "
+                                                "Median is robust to one outlier code.")
             wt_ground = wc[3].selectbox("Tunnel floor",
                                         ["moving-belt", "fixed-floor", "suction-fixed"],
                                         key="wt_ground",
                                         help="Moving belt is the only ground-effect-true "
                                              "state. A fixed floor underpredicts underbody "
                                              "downforce — flagged in provenance.")
-            wc2 = st.columns(3)
+            wc2 = st.columns(4)
             wt_facility = wc2[0].text_input("Facility", value="in-house tunnel",
                                             key="wt_facility")
             wt_blkcorr = wc2[1].checkbox("Blockage-corrected", value=True,
@@ -3473,6 +3481,16 @@ with tab12:
                                               "wake blockage? Uncorrected coeffs are inflated.")
             wt_geom = wc2[2].text_input("Geometry (STL/CAD path)", value="car.stl",
                                         key="wt_geom")
+            wt_agree = wc2[3].number_input("Code agreement tol (%)", 0.5, 25.0,
+                                           value=5.0, step=0.5, key="wt_agree",
+                                           help="Max inter-code spread (peak-to-peak, % of "
+                                                "mean) for the fused point to count as a "
+                                                "converged consensus. Above it, the codes "
+                                                "disagree and the point is flagged, not "
+                                                "trusted.")
+            # The Virtual Tunnel Solver is built on all three codes. We keep the legacy
+            # single-code key map only for the result-CSV provenance label below.
+            wt_solver = "Virtual Tunnel Solver"
 
             st.markdown(
                 'Upload your **physical aero map** as a CSV with columns '
@@ -3487,8 +3505,6 @@ with tab12:
             _GS = {"moving-belt": wt_mod.GroundState.MOVING_BELT,
                    "fixed-floor": wt_mod.GroundState.FIXED_FLOOR,
                    "suction-fixed": wt_mod.GroundState.SUCTION_FIXED}
-            _SOLVER_KEY = {"Star-CCM+": "starccm", "TS-Auto": "tsauto",
-                           "OpenFOAM": "openfoam"}
 
             phys_map = None
             if wt_phys_up is not None:
@@ -3534,47 +3550,85 @@ with tab12:
                             "These are the *exact* physical points, as CFD cases.")
                 st.markdown(f'<p class="hint">{vwt.plan()}</p>', unsafe_allow_html=True)
 
-                if st.button("Write CFD driver files for the matched points",
+                if st.button("Write Virtual Tunnel Solver case files "
+                             "(Star-CCM+ + TS-Auto + OpenFOAM) for the matched points",
                              key="wt_write"):
                     try:
                         from suspension.aero import get_backend
-                        backend = get_backend(_SOLVER_KEY[wt_solver],
-                                              turbulence_model="kOmegaSST") \
-                            if _SOLVER_KEY[wt_solver] in ("openfoam", "tsauto") \
-                            else get_backend(_SOLVER_KEY[wt_solver])
-                        outdir = tempfile.mkdtemp(prefix="kinematik_vwt_")
+                        backend = get_backend("virtual-tunnel",
+                                              reduction=str(wt_reduction),
+                                              agreement_tol=float(wt_agree),
+                                              turbulence_model="kOmegaSST")
+                        outdir = tempfile.mkdtemp(prefix="kinematik_vts_")
                         specs = vwt.case_specs()
+                        # Each write_case lays down all three codes' input per point.
                         written = [backend.write_case(s, outdir) for s in specs]
                         st.session_state["wt_outdir"] = outdir
-                        st.success(f"Wrote {len(written)} {wt_solver} case file(s) to "
-                                   f"{outdir}. Run them on your licensed install, export "
-                                   f"one coeff CSV per case (Cl,Cd,Cs,CmPitch,converged), "
-                                   f"then upload the combined results below.")
-                        st.code("\n".join(os.path.basename(w) for w in written[:8])
-                                + ("\n…" if len(written) > 8 else ""))
+                        codes = ", ".join(backend._member_names)
+                        st.success(
+                            f"Wrote {len(written)} matched case(s) to {outdir}, each "
+                            f"with input for all three codes ({codes}) in its own "
+                            f"sub-folder. Run each point through every code on your "
+                            f"licensed installs / OpenFOAM cluster, export one coeff CSV "
+                            f"per code (Cl,Cd,Cs,CmPitch,converged), then upload the "
+                            f"combined consensus results below.")
+                        # show the per-point / per-code layout for the first few points
+                        preview = []
+                        for w in written[:4]:
+                            cn = os.path.basename(w)
+                            preview.append(cn + "/")
+                            for m in backend._member_names:
+                                preview.append(f"    {m}/")
+                        st.code("\n".join(preview)
+                                + ("\n…" if len(written) > 4 else ""))
                     except Exception as e:
                         st.error(f"Could not write driver files: {e}")
 
-                st.markdown("**Step 2 — upload the CFD results** as a CSV with columns "
-                            "<code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code> "
-                            "(plus optional <code>aero_balance_front, converged</code>) "
-                            "— the same ride-height points you ran. Same sign convention "
-                            "(c_lift negative = downforce).", unsafe_allow_html=True)
-                wt_cfd_up = st.file_uploader("Virtual-tunnel (CFD) results CSV",
+                st.markdown(
+                    "**Step 2 — upload the CFD results.** Two accepted layouts, both "
+                    "keyed by the ride-height point "
+                    "(<code>front_mm, rear_mm, speed_ms</code>):<br>"
+                    "&nbsp;&nbsp;• <b>Per-code</b> (recommended) — give each code's "
+                    "coefficients in columns "
+                    "<code>c_lift_starccm, c_drag_starccm, c_lift_tsauto, "
+                    "c_drag_tsauto, c_lift_openfoam, c_drag_openfoam</code>; the "
+                    "Virtual Tunnel Solver fuses them into the consensus and reports "
+                    "the inter-code spread.<br>"
+                    "&nbsp;&nbsp;• <b>Pre-fused</b> — a single "
+                    "<code>c_lift, c_drag</code> (plus optional "
+                    "<code>aero_balance_front, converged</code>) if you've already "
+                    "combined the codes yourself.<br>"
+                    "Same sign convention throughout (<b>c_lift negative = "
+                    "downforce</b>).", unsafe_allow_html=True)
+                wt_cfd_up = st.file_uploader("Virtual Tunnel Solver results CSV",
                                              type=["csv"], key="wt_cfd_up")
 
                 if wt_cfd_up is not None:
                     try:
                         import csv as _csv2, io as _io3
+                        from suspension.aero import (get_backend, MemberOutcome,
+                                                     DEFAULT_MEMBER_NAMES)
                         raw2 = wt_cfd_up.getvalue().decode("utf-8", errors="replace")
                         rdr2 = _csv2.DictReader(_io3.StringIO(raw2))
+                        rows2 = list(rdr2)
+                        cols = set((rows2[0].keys() if rows2 else []))
+                        per_code = any(f"c_lift_{m}" in cols
+                                       for m in DEFAULT_MEMBER_NAMES)
+
+                        vts_backend = get_backend("virtual-tunnel",
+                                                  reduction=str(wt_reduction),
+                                                  agreement_tol=float(wt_agree),
+                                                  turbulence_model="kOmegaSST")
                         cfd_results = []
+                        ens_details = []      # (RideHeights, EnsembleResult) for display
                         cfd_prov = wt_mod.CFDProvenance(
-                            backend=_SOLVER_KEY[wt_solver],
+                            backend="virtual-tunnel[starccm+tsauto+openfoam]",
                             fidelity=wt_mod.SolverFidelity.RANS,
                             turbulence_model="kOmegaSST",
-                            notes=f"{wt_solver} virtual wind tunnel results")
-                        for row in rdr2:
+                            notes="Virtual Tunnel Solver consensus (Star-CCM+, "
+                                  "TS-Auto, OpenFOAM)")
+
+                        for row in rows2:
                             def _g(k, d=None):
                                 v = (row.get(k) or "").strip()
                                 return float(v) if v not in ("", None) else d
@@ -3582,12 +3636,64 @@ with tab12:
                                 front_mm=_g("front_mm", 30.0), rear_mm=_g("rear_mm", 30.0),
                                 speed_ms=_g("speed_ms", 20.0), wheelbase_mm=float(wt_wb))
                             att = wt_mod.ride_heights_to_attitude(rh)
-                            convv = (row.get("converged", "1") or "1").strip().lower() \
-                                in ("1", "true", "yes", "")
-                            cfd_results.append(wt_mod.CoeffResult(
-                                attitude=att, c_lift=_g("c_lift"), c_drag=_g("c_drag"),
-                                aero_balance_front=_g("aero_balance_front", None),
-                                converged=convv, provenance=cfd_prov))
+
+                            if per_code:
+                                # Build one MemberOutcome per code from its columns,
+                                # then fuse through the solver's own engine so the UI
+                                # consensus is identical to the programmatic one.
+                                spec = wt_mod.CaseSpec(
+                                    attitude=att, geometry_path=wt_geom,
+                                    reference_area_m2=float(wt_area),
+                                    reference_length_m=float(wt_wb) / 1000.0)
+                                outs = []
+                                for m in DEFAULT_MEMBER_NAMES:
+                                    cl = _g(f"c_lift_{m}"); cd = _g(f"c_drag_{m}")
+                                    if cl is None or cd is None:
+                                        outs.append(MemberOutcome(
+                                            backend=m,
+                                            error="no result column for this code"))
+                                    else:
+                                        outs.append(MemberOutcome(
+                                            backend=m,
+                                            result=wt_mod.CoeffResult(
+                                                attitude=att, c_lift=cl, c_drag=cd,
+                                                aero_balance_front=_g(
+                                                    f"aero_balance_front_{m}", None),
+                                                converged=True)))
+                                er = vts_backend._fuse(spec, outs)
+                                cfd_results.append(er.fused)
+                                ens_details.append((rh, er))
+                            else:
+                                convv = (row.get("converged", "1") or "1").strip().lower() \
+                                    in ("1", "true", "yes", "")
+                                cfd_results.append(wt_mod.CoeffResult(
+                                    attitude=att, c_lift=_g("c_lift"), c_drag=_g("c_drag"),
+                                    aero_balance_front=_g("aero_balance_front", None),
+                                    converged=convv, provenance=cfd_prov))
+
+                        # If we fused per-code, surface the inter-code agreement first —
+                        # the whole reason the solver is built on three codes.
+                        if ens_details:
+                            n_dis = sum(1 for _rh, er in ens_details
+                                        if er.n_voted >= 2 and not er.fused.converged)
+                            worst = max((er.cl_spread_pct for _rh, er in ens_details
+                                         if er.cl_spread_pct == er.cl_spread_pct),
+                                        default=float("nan"))
+                            agree_msg = (f"Virtual Tunnel Solver fused "
+                                         f"{len(ens_details)} point(s) across "
+                                         f"{', '.join(DEFAULT_MEMBER_NAMES)}. "
+                                         f"Worst inter-code C_l spread "
+                                         f"{worst:.1f}%.")
+                            if n_dis:
+                                st.warning(agree_msg + f" {n_dis} point(s) exceed the "
+                                           f"{float(wt_agree):.0f}% agreement tolerance — "
+                                           "the codes disagree there; treat those as "
+                                           "flags, not numbers.")
+                            else:
+                                st.success(agree_msg + " All fused points are within the "
+                                           "agreement tolerance — the codes corroborate "
+                                           "each other.")
+
                         rep = vwt.correlate(cfd_results)
 
                         st.markdown(_verdict_tag(rep.overall_within_tol),

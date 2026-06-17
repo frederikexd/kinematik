@@ -25,7 +25,7 @@ Born as a Formula SAE double-wishbone tool, now a general multibody kinematics p
 
 ## 30-second tour (every tab)
 
-Sixteen tabs, front to back. Each takes the live geometry + setup and answers one question; nothing is retyped between them — mass/CG, peak currents, ride heights and the tire all flow from one source of truth.
+Seventeen tabs, front to back. Each takes the live geometry + setup and answers one question; nothing is retyped between them — mass/CG, peak currents, ride heights and the tire all flow from one source of truth.
 
 1. **KINEMATICS** — the 3D constraint solver. Drag any of the ten hardpoints and read camber gain, bump steer (toe vs travel), caster, KPI, scrub radius, the front-view instant centre, the **real motion ratio** off the pushrod/rocker (→ wheel rate, rising/falling-rate curve), and **anti-dive / anti-squat** from the side-view swing arm. Pick the topology here (double-wishbone … solid axle, twist-beam, truck steer, or `from_links`).
 2. **ROLL & LOAD TRANSFER** — roll-centre height and *migration* through travel/roll, and the front/rear lateral load-transfer split that migration drives — the geometry→balance link the spreadsheets skip.
@@ -40,9 +40,10 @@ Sixteen tabs, front to back. Each takes the live geometry + setup and answers on
 11. **LAP TIME** — quasi-steady-state point-mass lap: skidpad, 75 m accel (standing-start integration), autocross; aero + real motor torque map; **track from GPS/cone coordinates** and curvature-optimal **racing-line** with seconds gained.
 12. **GGV DIAGRAM** — the accel-lateral-velocity envelope the lap sim rides, drivable from the live vehicle + the same powertrain, with a one-click check that GGV and lap sim agree.
 13. **TRANSIENT** — the unsteady half of the lap: an explicit time-step solver for turn-in and pitch built on relaxation length + the damper model, the thing QSS assumes away.
-14. **VALIDATION** — earn trust by matching data. Skidpad g / circle time, 75 m accel, and a GPS **speed-trace** RMSE/bias/R²; the **Virtual Wind Tunnel** (sweep the physical aero map → matched k-omega SST CFD run → point-by-point C_l/C_d/balance calibration); **surface pressure taps** (raw volts → C_p on the wing → stall detection → RMSE vs CFD); and the **live acquisition front end** — a Virtual Instrument off the force balance + Scanivalve/Chell scanners that decouples the 6×6 balance and filters the fan tone (offline *or* real-time) into clean F_x/F_y/F_z and raw P_static. No number is tuned to fit; the gap is quantified and logged to handover.
+14. **VALIDATION** — earn trust by matching data. Skidpad g / circle time, 75 m accel, and a GPS **speed-trace** RMSE/bias/R²; the **Virtual Tunnel Solver** (sweep the physical aero map → run the matched k-omega SST points through **Star-CCM+, TS-Auto *and* OpenFOAM at once** → fuse them into one cross-code **consensus**, with the **inter-code spread** as the confidence signal → point-by-point C_l/C_d/balance calibration); **surface pressure taps** (raw volts → C_p on the wing → stall detection → RMSE vs CFD); and the **live acquisition front end** — a Virtual Instrument off the force balance + Scanivalve/Chell scanners that decouples the 6×6 balance and filters the fan tone (offline *or* real-time) into clean F_x/F_y/F_z and raw P_static. No number is tuned to fit, no single code is just trusted, and a solver that can't run is an honest hole, never a fabricated number; the gap is quantified and logged to handover.
 15. **INTEGRATION** — the live cross-subsystem surface, in three views: a **cross-subsystem ledger** (the one place mass, CG and peak currents are declared), **subsystem ↔ chassis CAD fit**, and **mount-point clash** — move a mount and the clash verdict plus mass/CG propagate in one call. Persists with the project.
 16. **ELECTRONICS (PCB)** — copper-survival (IPC-2221 heating, Onderdonk fusing, IR-drop / ECU brown-out) + signal integrity (diff-pair impedance, HV-aggressor coupling), reading the **same** declared peak currents as the integration ledger so "what fires at once" is never retyped.
+17. **BRAKE ROTOR** — the lightest rotor that survives the lap. Spin the wheel in a **virtual tunnel** to extract the speed-dependent convective coefficient h_c on the rotor faces and vents (the rotating-wheel CFD seam — analytic surrogate today, OpenFOAM/Star-CCM+ MRF/sliding-mesh drops in at the same boundary), push the lap sim's **alternating braking-energy flux** (P = F_brake·v, heat into every corner, shed on every straight) through a **transient** ring→hat→hub→caliper→fluid lumped network, then **mill away mass** (ring thickness, vents, cross-drillings, hat) only where the transient peak proves the thermal mass isn't needed — keeping the friction ring under **pad fade** and the caliper-piston fluid under its **wet boiling point** (Motul RBF 600 …). The optimiser never returns a rotor that fails a limit, and every temperature stays flagged `synthesized` until the masses, conductances and h_c are calibrated — the same honesty gate as the tyre and pack thermal models.
 
 ---
 
@@ -881,8 +882,8 @@ consistency checks and reports `Finding`s with a severity (`FAIL` / `WARN` / `MI
 - **driveline torque** the powertrain delivers vs what the driveshaft/CV/upright is rated for;
 - mount loads vs design loads.
 
-Crucially it **does not simulate any subsystem** — KinematiK can't do CFD, brake-thermal,
-chassis FEA or battery modelling, and faking those would be the same false-confidence trap
+Crucially it **does not simulate any subsystem** — the integration ledger can't do full-car CFD,
+chassis FEA or detailed battery cell modelling, and faking those would be the same false-confidence trap
 the rest of the codebase refuses. Each subsystem's analysis stays in the tool that does it
 properly; this owns the channels between them. Every declaration carries an `is_estimate`
 flag, and the board always surfaces which numbers are placeholders, so a green board never
@@ -924,7 +925,7 @@ carries the tolerance it used. A correlation can be logged straight to the hando
 record so the *evidence* travels with the design decision — which is what actually
 settles an argument, rather than the loudest opinion in the room.
 
-### Virtual Wind Tunnel — calibrate your CFD against the physical aero map
+### Virtual Tunnel Solver — calibrate your CFD against the physical aero map
 
 The headline reason to run a wind tunnel isn't "is the car fast" — the lap sim
 answers that cheaper. The reason is **CFD calibration**. A modern aero programme
@@ -933,14 +934,24 @@ works if your turbulence closure (for FSAE, almost always **k-omega SST RANS**)
 reproduces numbers you actually measured. The tunnel is the ruler the CFD is checked
 against.
 
-The **VALIDATION** tab's *Wind tunnel (CFD calibration)* mode and
-`suspension/aero/windtunnel.py` run that loop with one non-negotiable rule:
-**compare like-for-like operating points.** You sweep the physical aero map over
-front and rear ride height (downforce is exquisitely ride-height sensitive on a
-ground-effect car), then the Virtual Wind Tunnel generates the CFD run at *those
-exact* front/rear ride heights and wind speed — generated *from* the physical map,
-never hand-typed alongside it, so a ride-height sensitivity can't masquerade as a
-turbulence-model error.
+There's no single-code choice to make. The **Virtual Tunnel Solver**
+(`suspension/aero/ensemble.py`, `EnsembleTunnelSolver`) is built **on Star-CCM+,
+TS-Auto *and* OpenFOAM at once**. It implements the same `CFDSolver` seam every
+single backend does — so it drops straight into `VirtualWindTunnel` — but instead of
+*being* one code it runs each matched point through **all three** and **fuses** their
+converged output into one cross-code **consensus** coefficient. The **inter-code
+spread** is the payoff: two independent solvers landing on the same C_l is the
+strongest cheap evidence the number is physical; the same two diverging is a red flag
+no single-solver report would ever surface. That consensus — not any one code — is
+what gets calibrated against the tunnel.
+
+The **VALIDATION** tab's *Wind tunnel (CFD calibration)* mode runs that loop with one
+non-negotiable rule: **compare like-for-like operating points.** You sweep the
+physical aero map over front and rear ride height (downforce is exquisitely
+ride-height sensitive on a ground-effect car), then the Virtual Tunnel Solver
+generates the run at *those exact* front/rear ride heights and wind speed — generated
+*from* the physical map, never hand-typed alongside it, so a ride-height sensitivity
+can't masquerade as a turbulence-model error.
 
 - Upload the **physical aero map** (`front_mm, rear_mm, speed_ms, c_lift, c_drag`,
   optional `aero_balance_front`; `c_lift` negative = downforce). It loads as a
@@ -949,25 +960,52 @@ turbulence-model error.
   reading is a *different measurement* from a corrected, moving-belt one, and the
   provenance refuses to let a correlation imply more than the run behind it. (It's
   also a drop-in `AeroMap`, so the lap sim can consume the measured map directly.)
-- **Step 1** writes the matched CFD driver files — a **Star-CCM+** Java macro, a
-  **TS-Auto** run config, or a full **OpenFOAM** case — at the identical points,
-  with the same reference area/length the physical coefficients were normalised by.
-  Run them on your licensed install (KinematiK never holds the license or fakes a
-  solve), export one coeff CSV per case.
-- **Step 2** uploads the CFD results and reports, **point by point and overall**,
-  the C_l / C_d / balance error and whether k-omega SST is calibrated to the tunnel
-  inside tolerance. A point the CFD never covered is an honest **hole**, never
-  snapped to a neighbour; a real offset is flagged **NOT CALIBRATED** with the
+- **Step 1** writes the matched driver files for **every code at once** — a
+  **Star-CCM+** Java macro, a **TS-Auto** run config, *and* a full **OpenFOAM** case
+  — one sub-folder per code under each matched point, with the same reference
+  area/length the physical coefficients were normalised by. Run them on your licensed
+  installs / OpenFOAM cluster (KinematiK never holds the license or fakes a solve),
+  export one coeff CSV per code.
+- **Step 2** uploads the results. Give each code's coefficients in per-code columns
+  (`c_lift_starccm`, `c_drag_starccm`, `c_lift_tsauto`, …) and the solver **fuses**
+  them: the consensus is the `mean` or `median` of the converged codes, reported as
+  **converged only if** enough codes voted **and** their inter-code spread is inside
+  the **agreement tolerance** — codes that disagree are flagged (a flag, not a
+  number) *before* the tunnel comparison. Then it reports, **point by point and
+  overall**, the C_l / C_d / balance error and whether k-omega SST is calibrated to
+  the tunnel inside tolerance. A point the CFD never covered is an honest **hole**,
+  never snapped to a neighbour; a real offset is flagged **NOT CALIBRATED** with the
   direction (does CFD over- or under-predict downforce, and what to check —
   floor/diffuser y+, transition, moving-ground modelling). Tolerances live in
   `DEFAULT_TUNNEL_TOL`, explicit and editable. The verdict logs to handover so the
-  *evidence* that your digital pipeline is trustworthy travels with the decisions
-  it justifies.
+  *evidence* that your digital pipeline is trustworthy travels with the decisions it
+  justifies. (A single pre-fused `c_lift, c_drag` is still accepted if you've combined
+  the codes yourself.)
 
-Same philosophy as the rest of the CFD seam: KinematiK owns the parameterisation,
-the matched run matrix and the correlation; the meshing and the Navier–Stokes solve
-live outside it, on your cluster with your license. No fabricated number fills a
-hole.
+The honesty contract runs all the way through the fusion: a code that cannot run is
+recorded as a **hole** that contributes **nothing** — not zero, not a guess — and
+with no usable code the consensus coefficient is `None`, never fabricated. Same
+philosophy as the rest of the CFD seam: KinematiK owns the parameterisation, the
+matched run matrix and the consensus correlation; the meshing and the Navier–Stokes
+solve live outside it, on your cluster with your license.
+
+```python
+from suspension.aero import (PhysicalAeroMap, TunnelProvenance, RideHeights,
+                             VirtualWindTunnel, get_backend, fused_results)
+
+phys = PhysicalAeroMap(TunnelProvenance("A2"), reference_area_m2=1.0)
+phys.add_measurement(RideHeights(20, 40, 27.0), c_lift=-2.8, c_drag=1.05)
+
+vwt = VirtualWindTunnel(phys, "car.stl")
+vts = get_backend("virtual-tunnel", reduction="mean", agreement_tol=5.0)
+specs = vwt.case_specs()                 # the exact physical points, as CFD cases
+for s in specs:
+    vts.write_case(s, workdir)           # writes Star-CCM+ + TS-Auto + OpenFOAM each
+# ... team runs every code, stages each code's coeff CSV back ...
+ens = vts.solve_matrix(specs, workdir, run=False)   # fuse the codes per point
+report = vwt.correlate(fused_results(ens))          # consensus vs tunnel
+```
+
 
 ### Surface pressure taps — *where* the wing is loaded, and *where* it's stalling
 
