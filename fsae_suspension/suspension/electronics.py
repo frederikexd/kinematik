@@ -808,6 +808,19 @@ def check_board(board: BoardLedger,
     currents = worst_case_currents(board, ledger, scenario)
     missing = undeclared_loads(ledger, scenario)
     findings = []
-    findings += board.check_traces(currents, undeclared=missing)
+    # Pass `undeclared` only if this BoardLedger's check_traces actually accepts it.
+    # Guards against a partial deploy where a newer check_board meets an older
+    # check_traces (or vice-versa) — better to lose the richer MISSING wording than
+    # to crash the entire pre-fab gate with a TypeError.
+    try:
+        import inspect
+        _accepts_undeclared = "undeclared" in inspect.signature(
+            board.check_traces).parameters
+    except (TypeError, ValueError):
+        _accepts_undeclared = False
+    if _accepts_undeclared:
+        findings += board.check_traces(currents, undeclared=missing)
+    else:
+        findings += board.check_traces(currents)
     findings += board.check_signal_integrity()
     return BoardCheckResult(findings=findings)
