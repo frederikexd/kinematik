@@ -34,6 +34,7 @@ from suspension import (
     GenericKinematics, list_templates, example as topo_example,
 )
 from suspension import topologies as topo_mod
+from suspension import fullcar3d as fullcar_mod
 from suspension import compliance as compliance_mod
 from suspension import flex as flex_mod
 from suspension import chassis as chassis_mod
@@ -49,6 +50,7 @@ from suspension import interfaces as interfaces_mod
 from suspension import transient as transient_mod
 from suspension import ggv as ggv_mod
 from suspension import tire_thermal as thermal_mod
+from suspension import units as units_mod
 
 # --------------------------------------------------------------------------- #
 #  Cached compute layer.
@@ -216,6 +218,14 @@ ROCKER_POINTS = [
 
 
 def metric(label, value, unit="", cls=""):
+    # Convert the displayed number + unit into the user's chosen unit system.
+    # The model stays metric; only this presentation layer converts. Compound
+    # units (e.g. "°/10mm", "N/mm @35") get bespoke handling.
+    if unit in ("°/10mm",) or str(unit).startswith("N/mm"):
+        value, unit = units_mod.convert_compound(str(value), unit)
+    else:
+        value = units_mod.convert_value_str(str(value), unit)
+        unit = units_mod.label(unit)
     return f"""<div class="metric"><span class="k">{label}</span>
     <span class="v {cls}">{value}<span class="u"> {unit}</span></span></div>"""
 
@@ -336,6 +346,9 @@ def render_generic_point_editor(topo_key):
         if not names:
             continue
         st.markdown(f"###### {_ROLE_HEADERS[role]}")
+        _u_len = units_mod.label("mm")
+        _c_step = 0.1 if units_mod.is_us() else 2.0
+        _c_fmt = "%.2f" if units_mod.is_us() else "%.1f"
         for nm in names:
             label = _POINT_LABELS.get(nm, nm)
             with st.expander(f"{label}  ·  {nm}", expanded=False):
@@ -343,9 +356,11 @@ def render_generic_point_editor(topo_key):
                 cols = st.columns(3)
                 nv = []
                 for i, ax in enumerate("xyz"):
-                    nv.append(cols[i].number_input(
-                        ax, value=float(v[i]), step=2.0,
-                        key=f"topo_{topo_key}_{nm}_{ax}", format="%.1f"))
+                    _disp = cols[i].number_input(
+                        f"{ax} ({_u_len})",
+                        value=units_mod.from_metric(float(v[i]), "mm"), step=_c_step,
+                        key=f"topo_{topo_key}_{nm}_{ax}", format=_c_fmt)
+                    nv.append(units_mod.to_metric(_disp, "mm"))
                 coords[nm] = nv
     return coords
 
@@ -427,11 +442,133 @@ def log_decision_now(team, title, rationale, author="auto"):
 
 
 # --------------------------------------------------------------------------- #
+#  Live cross-team note notifications
+#
+#  The Lead Notes tab persists a note to project.json (or Supabase), but that
+#  only helps the *next* lead who happens to open that one tab and rerun the
+#  page. A note another lead needs to see could sit unseen for hours. This block
+#  closes that gap: every session polls the shared store on a short interval and,
+#  whenever a note appears that this session hasn't seen yet (and didn't write
+#  itself), it fires a toast — on whatever tab the user is currently looking at —
+#  and bumps an unread badge on the LEAD NOTES tab. So one lead posting a note
+#  notifies everyone else who has the platform open.
+# --------------------------------------------------------------------------- #
+NOTE_POLL_SECONDS = 10
+
+
+def _load_notes_from_disk():
+    """Read notes straight from the shared backend, bypassing the per-session
+    cached store, so we see what *other* sessions have written. Never raises."""
+    try:
+        fresh = project_mod.ProjectStore(PROJECT_PATH)
+        return list(fresh.notes)
+    except Exception:
+        return []
+
+
+def _note_line(n):
+    """One-line human summary of a note for a toast."""
+    frm = integ_mod.TEAMS.get(n.from_team, {}).get("label", n.from_team)
+    if n.to_team == "all":
+        to = "all teams"
+    else:
+        to = integ_mod.TEAMS.get(n.to_team, {}).get("label", n.to_team)
+    who = f" ({n.author})" if getattr(n, "author", "") else ""
+    flags = ""
+    if getattr(n, "urgent", False):
+        flags += " ⚠ URGENT"
+    if getattr(n, "is_request", False):
+        flags += " · action requested"
+    msg = (n.message or "").strip()
+    if len(msg) > 140:
+        msg = msg[:137] + "…"
+    return f"📝 **{frm} → {to}**{who}{flags}\n\n{msg}"
+
+
+def poll_note_notifications():
+    """Detect notes posted since this session last looked and notify the user.
+
+    Tracks the set of note ids already seen by THIS session. On the very first
+    run we seed the baseline silently (so a brand-new visitor isn't flooded with
+    toasts for the whole history). After that, any unseen note that wasn't
+    authored in this session triggers a toast and increments the unread badge.
+    """
+    notes = _load_notes_from_disk()
+    seen = st.session_state.get("_notes_seen_ids")
+    my_session = st.session_state.get("_my_posted_note_ids", set())
+
+    if seen is None:
+        # First load this session: establish baseline, don't toast history.
+        st.session_state["_notes_seen_ids"] = {n.id for n in notes}
+        st.session_state.setdefault("_notes_unread", 0)
+        return
+
+    new_notes = [n for n in notes
+                 if n.id not in seen and n.id not in my_session]
+    if new_notes:
+        # Oldest first so toasts read in chronological order.
+        for n in sorted(new_notes, key=lambda x: x.ts):
+            try:
+                st.toast(_note_line(n), icon="📝")
+            except Exception:
+                pass
+        st.session_state["_notes_unread"] = (
+            st.session_state.get("_notes_unread", 0) + len(new_notes))
+
+    # Update the high-water mark to everything currently on disk.
+    st.session_state["_notes_seen_ids"] = {n.id for n in notes}
+
+
+# A fragment lets the poll loop run on its own short timer WITHOUT re-executing
+# the whole (expensive) app body. run_every makes idle sessions actually pick up
+# notes other leads post, instead of only noticing on the next manual click.
+try:
+    _NOTE_FRAGMENT = st.fragment(run_every=NOTE_POLL_SECONDS)
+
+    @_NOTE_FRAGMENT
+    def _note_notification_fragment():
+        poll_note_notifications()
+        unread = st.session_state.get("_notes_unread", 0)
+        if unread:
+            st.markdown(
+                f"<div style='position:sticky;top:0;z-index:50;'>"
+                f"<span class='tag warn'>📝 {unread} new lead note"
+                f"{'s' if unread != 1 else ''} — open LEAD NOTES</span></div>",
+                unsafe_allow_html=True)
+    _HAVE_NOTE_FRAGMENT = True
+except Exception:
+    # Older Streamlit without run_every: fall back to a once-per-rerun poll.
+    _HAVE_NOTE_FRAGMENT = False
+
+    def _note_notification_fragment():
+        poll_note_notifications()
+
+
+# --------------------------------------------------------------------------- #
 #  Sidebar — geometry editor
 # --------------------------------------------------------------------------- #
 with st.sidebar:
     st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span></div>',
                 unsafe_allow_html=True)
+
+    _UNIT_LABELS = {"metric": "Metric (SI)", "us": "US / Imperial"}
+    _unit_sys = st.radio(
+        "Units",
+        ["metric", "us"],
+        index=["metric", "us"].index(st.session_state.get("unit_system", "metric")),
+        format_func=lambda k: _UNIT_LABELS[k],
+        horizontal=True,
+        help="Switch all displayed values and input fields between metric "
+             "(mm, kg, N, m/s, °C …) and US/Imperial (in, lb, lbf, mph, °F …). "
+             "The underlying model always computes in SI; only the display and "
+             "input units change.")
+    st.session_state.unit_system = _unit_sys
+    _US = (_unit_sys == "us")
+    # Per-quantity unit labels for input widgets (track the active system).
+    _U_LEN = units_mod.label("mm")
+    _U_MASS = units_mod.label("kg")
+    _U_RATE = units_mod.label("N/mm")
+    _U_TORQ = units_mod.label("N·m")
 
     _TOPO_LABELS = {
         "double_wishbone": "Double wishbone (full editor)",
@@ -459,7 +596,7 @@ with st.sidebar:
         st.caption("Agnostic engine · this topology drives the same RC / anti-dive / "
                    "balance pipeline as the wishbone path.")
 
-    st.markdown('<div class="sub" style="color:#8d99a6;font-family:JetBrains Mono;font-size:.7rem;letter-spacing:.18em;margin-bottom:.6rem;">HARDPOINT EDITOR · mm · SAE x-rear y-right z-up</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="sub" style="color:#8d99a6;font-family:JetBrains Mono;font-size:.7rem;letter-spacing:.18em;margin-bottom:.6rem;">HARDPOINT EDITOR · {_U_LEN} · SAE x-rear y-right z-up</div>', unsafe_allow_html=True)
 
     _is_wishbone = (topo_choice == "double_wishbone")
 
@@ -486,15 +623,20 @@ with st.sidebar:
             step=0.05, format="%.2f")
 
         st.markdown("###### Pickup coordinates")
+        _coord_step = 0.1 if _US else 2.0
+        _coord_fmt = "%.2f" if _US else "%.1f"
         for key, label in POINTS:
             with st.expander(label, expanded=False):
                 v = st.session_state.hp[key]
                 cols = st.columns(3)
                 nv = []
                 for i, ax in enumerate("xyz"):
-                    nv.append(cols[i].number_input(
-                        f"{ax}", value=float(v[i]), step=2.0, key=f"{key}_{ax}",
-                        format="%.1f", label_visibility="visible"))
+                    _disp = cols[i].number_input(
+                        f"{ax} ({_U_LEN})",
+                        value=units_mod.from_metric(float(v[i]), "mm"),
+                        step=_coord_step, key=f"{key}_{ax}",
+                        format=_coord_fmt, label_visibility="visible")
+                    nv.append(units_mod.to_metric(_disp, "mm"))
                 st.session_state.hp[key] = nv
 
         st.markdown("###### Pushrod / rocker")
@@ -521,9 +663,12 @@ with st.sidebar:
                     cols = st.columns(3)
                     nv = []
                     for i, ax in enumerate("xyz"):
-                        nv.append(cols[i].number_input(
-                            f"{ax}", value=float(v[i]), step=2.0, key=f"{key}_{ax}",
-                            format="%.2f", label_visibility="visible"))
+                        _disp = cols[i].number_input(
+                            f"{ax} ({_U_LEN})",
+                            value=units_mod.from_metric(float(v[i]), "mm"),
+                            step=_coord_step, key=f"{key}_{ax}",
+                            format="%.2f", label_visibility="visible")
+                        nv.append(units_mod.to_metric(_disp, "mm"))
                     st.session_state.hp[key] = nv
         else:
             # Clear rocker points so has_rocker() is False and the proxy is used.
@@ -540,8 +685,18 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("###### Vehicle")
     vp = st.session_state.vp
-    vp["mass"] = st.slider("Mass + driver (kg)", 180, 360, int(vp["mass"]))
-    vp["cg_height"] = st.slider("CG height (mm)", 200, 400, int(vp["cg_height"]))
+    if _US:
+        _m_lo, _m_hi = units_mod.from_metric(180, "kg"), units_mod.from_metric(360, "kg")
+        _m_disp = st.slider(f"Mass + driver ({_U_MASS})", round(_m_lo), round(_m_hi),
+                            round(units_mod.from_metric(float(vp["mass"]), "kg")))
+        vp["mass"] = units_mod.to_metric(_m_disp, "kg")
+        _cg_lo, _cg_hi = units_mod.from_metric(200, "mm"), units_mod.from_metric(400, "mm")
+        _cg_disp = st.slider(f"CG height ({_U_LEN})", round(_cg_lo, 1), round(_cg_hi, 1),
+                             round(units_mod.from_metric(float(vp["cg_height"]), "mm"), 1))
+        vp["cg_height"] = units_mod.to_metric(_cg_disp, "mm")
+    else:
+        vp["mass"] = st.slider("Mass + driver (kg)", 180, 360, int(vp["mass"]))
+        vp["cg_height"] = st.slider("CG height (mm)", 200, 400, int(vp["cg_height"]))
     vp["weight_dist_front"] = st.slider("Front weight (%)", 40, 60,
                                         int(vp["weight_dist_front"] * 100)) / 100
 
@@ -555,21 +710,37 @@ with st.sidebar:
     vp["use_spring_rates"] = use_springs
     if use_springs:
         s1, s2 = st.columns(2)
-        vp["spring_rate_front"] = s1.number_input(
-            "Spring F (N/mm)", value=float(vp.get("spring_rate_front", 35.0)), step=2.5)
-        vp["spring_rate_rear"] = s2.number_input(
-            "Spring R (N/mm)", value=float(vp.get("spring_rate_rear", 35.0)), step=2.5)
+        _sf = s1.number_input(
+            f"Spring F ({_U_RATE})",
+            value=units_mod.from_metric(float(vp.get("spring_rate_front", 35.0)), "N/mm"),
+            step=units_mod.from_metric(2.5, "N/mm"))
+        vp["spring_rate_front"] = units_mod.to_metric(_sf, "N/mm")
+        _sr = s2.number_input(
+            f"Spring R ({_U_RATE})",
+            value=units_mod.from_metric(float(vp.get("spring_rate_rear", 35.0)), "N/mm"),
+            step=units_mod.from_metric(2.5, "N/mm"))
+        vp["spring_rate_rear"] = units_mod.to_metric(_sr, "N/mm")
         a1, a2 = st.columns(2)
-        vp["arb_rate_front"] = a1.number_input(
-            "ARB F (N·m/°)", value=float(vp.get("arb_rate_front", 0.0)), step=10.0)
-        vp["arb_rate_rear"] = a2.number_input(
-            "ARB R (N·m/°)", value=float(vp.get("arb_rate_rear", 0.0)), step=10.0)
+        _af = a1.number_input(
+            f"ARB F ({_U_TORQ}/°)",
+            value=units_mod.from_metric(float(vp.get("arb_rate_front", 0.0)), "N·m"),
+            step=units_mod.from_metric(10.0, "N·m"))
+        vp["arb_rate_front"] = units_mod.to_metric(_af, "N·m")
+        _ar = a2.number_input(
+            f"ARB R ({_U_TORQ}/°)",
+            value=units_mod.from_metric(float(vp.get("arb_rate_rear", 0.0)), "N·m"),
+            step=units_mod.from_metric(10.0, "N·m"))
+        vp["arb_rate_rear"] = units_mod.to_metric(_ar, "N·m")
     else:
         cc1, cc2 = st.columns(2)
-        vp["roll_stiffness_front"] = cc1.number_input("Roll stiff F (N·m/°)",
-                                                      value=float(vp["roll_stiffness_front"]), step=10.0)
-        vp["roll_stiffness_rear"] = cc2.number_input("Roll stiff R (N·m/°)",
-                                                     value=float(vp["roll_stiffness_rear"]), step=10.0)
+        _rf = cc1.number_input(f"Roll stiff F ({_U_TORQ}/°)",
+                               value=units_mod.from_metric(float(vp["roll_stiffness_front"]), "N·m"),
+                               step=units_mod.from_metric(10.0, "N·m"))
+        vp["roll_stiffness_front"] = units_mod.to_metric(_rf, "N·m")
+        _rr = cc2.number_input(f"Roll stiff R ({_U_TORQ}/°)",
+                               value=units_mod.from_metric(float(vp["roll_stiffness_rear"]), "N·m"),
+                               step=units_mod.from_metric(10.0, "N·m"))
+        vp["roll_stiffness_rear"] = units_mod.to_metric(_rr, "N·m")
 
 
 # Apply presets (simple variations on the default)
@@ -739,7 +910,7 @@ and it's the difference between next year starting ahead or relearning everythin
 
 _tabs = st.tabs(
     ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
-     "  GEOMETRY 3D  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
+     "  GEOMETRY 3D  ", "  FULL CAR 3D  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
      "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
      "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  GGV DIAGRAM  ", "  TRANSIENT  ",
      "  VALIDATION  ", "  INTEGRATION  ", "  ELECTRONICS (PCB)  "])
@@ -752,8 +923,14 @@ _tabs = st.tabs(
 # tab_pcb is the electronics layer: copper-survival (IPC-2221 heating, Onderdonk
 # fusing, IR-drop / ECU brown-out) + signal-integrity (diff-pair impedance and
 # HV-aggressor coupling), rendered by render_pcb_board().
-(tab1, tab2, tab3, tab4, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_ggv,
+(tab1, tab2, tab3, tab4, tab_car, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_ggv,
  tab_tr, tab12, tab13, tab_pcb) = _tabs
+
+# Global live notifier: polls the shared store and toasts every session when any
+# lead posts a note, on whatever tab they're currently viewing. Runs on its own
+# timer (fragment) so it doesn't re-run the whole app. Rendered outside the tab
+# blocks so the toast + unread banner reach all users everywhere in the UI.
+_note_notification_fragment()
 
 
 travels = [st_.travel for st_ in sweep]
@@ -975,6 +1152,50 @@ with tab4:
         legend=dict(bgcolor="rgba(0,0,0,0)"))
     st.plotly_chart(fig3d, width='stretch')
 
+# --------------------------- FULL CAR 3D ----------------------------------- #
+# Assembles the whole vehicle from the corner geometry the team has already
+# entered (mirrored L/R and placed front/rear off wheelbase + track) plus the
+# vehicle params. Pure numpy + plotly, same frame and styling as the single-
+# corner GEOMETRY 3D tab above.
+with tab_car:
+    st.markdown(
+        '<p class="hint">The complete car assembled from your corner geometry and '
+        'vehicle parameters. The authored corner is mirrored left/right and placed '
+        'at the front and rear axles using <b>wheelbase</b> and <b>track</b> from the '
+        'sidebar — the same single-corner assumption the rest of the tool uses. '
+        'Tires, a representative chassis cage, the ground plane and the CG marker '
+        'are drawn for context. Drag to orbit; scroll to zoom.</p>',
+        unsafe_allow_html=True)
+
+    cc1, cc2, cc3, cc4 = st.columns(4)
+    _show_tires = cc1.checkbox("Tires", value=True, key="car3d_tires")
+    _show_chassis = cc2.checkbox("Chassis cage", value=True, key="car3d_chassis")
+    _show_floor = cc3.checkbox("Ground", value=True, key="car3d_floor")
+    _tire_w = cc4.number_input("Tire width mm", value=180.0, min_value=80.0,
+                               max_value=320.0, step=10.0, key="car3d_tirew")
+
+    try:
+        _vp_fields_car = set(VehicleParams.__dataclass_fields__.keys())
+        _vp_kwargs_car = {k: v for k, v in st.session_state.vp.items()
+                          if k in _vp_fields_car}
+        _vp_car = VehicleParams(**_vp_kwargs_car)
+        _hp_car = Hardpoints.from_dict(st.session_state.hp)
+        _fig_car = fullcar_mod.build_full_car_figure(
+            _hp_car, _vp_car,
+            show_chassis=_show_chassis, show_tires=_show_tires,
+            show_floor=_show_floor, tire_width_mm=float(_tire_w))
+        st.plotly_chart(_fig_car, width='stretch')
+        st.markdown(
+            f'<p class="hint">Wheelbase <b>{_vp_car.wheelbase:.0f} mm</b> · '
+            f'front track <b>{_vp_car.track_front:.0f} mm</b> · '
+            f'rear track <b>{_vp_car.track_rear:.0f} mm</b> · '
+            f'CG height <b>{_vp_car.cg_height:.0f} mm</b>. The chassis cage is a '
+            'representative scaffold, not your real frame — load actual chassis CAD '
+            'in the INTEGRATION tab for fit and clearance checks.</p>',
+            unsafe_allow_html=True)
+    except Exception as _e:
+        st.error(f"Could not assemble the full-car view: {_e}")
+
 # --------------------------------------------------------------------------- #
 # ----- SUSPENSION vs CHASSIS (now a section of the merged INTEGRATION tab) ----- #
 def _render_envelope_vs_chassis(subsys, led):
@@ -1006,7 +1227,10 @@ def _render_envelope_vs_chassis(subsys, led):
                             step=10.0, key=f"env_oy_{subsys}")
     oz = pc[2].number_input("origin z", value=float(default_origin[2]) if default_origin else 0.0,
                             step=10.0, key=f"env_oz_{subsys}")
-    st.caption(f"Envelope size: {size[0]:.0f} × {size[1]:.0f} × {size[2]:.0f} mm "
+    _es = [units_mod.from_metric(size[i], "mm") for i in range(3)]
+    _eu = units_mod.label("mm")
+    _ep = 2 if units_mod.is_us() else 0
+    st.caption(f"Envelope size: {_es[0]:.{_ep}f} × {_es[1]:.{_ep}f} × {_es[2]:.{_ep}f} {_eu} "
                "(from the ledger). Place its min corner above to match where it mounts.")
 
     up = st.file_uploader("Chassis CAD", type=["step", "stp", "stl", "obj", "glb"],
@@ -2707,6 +2931,11 @@ with tab7:
 with tab8:
     nstore = project_mod.ProjectStore(PROJECT_PATH)
 
+    # The lead is looking at the notes — clear the unread badge for this session
+    # and treat everything currently on disk as seen.
+    st.session_state["_notes_unread"] = 0
+    st.session_state["_notes_seen_ids"] = {n.id for n in nstore.notes}
+
     st.markdown('<p class="hint">Cross-team notes between leads — for keeping '
                 'interfaces from going stale. Unlike Discord, a note here is addressed '
                 'to a team, has an open/resolved status, and lives next to the work in '
@@ -2740,10 +2969,26 @@ with tab8:
     n_urg = fc[1].checkbox("Urgent", key="n_urg")
     if st.button("Post note", key="n_post"):
         if n_msg.strip():
-            nstore.add_note(project_mod.Note(
+            _new_note = project_mod.Note(
                 from_team=n_from, to_team=n_to, message=n_msg.strip(),
-                author=n_author, is_request=n_req, urgent=n_urg))
-            nstore.save()
+                author=n_author, is_request=n_req, urgent=n_urg)
+            nstore.add_note(_new_note)
+            _ok = nstore.save()
+            # Remember this id as ours so the poller doesn't toast us our own
+            # note, and mark it seen. Everyone ELSE's session will pick it up
+            # off disk on their next poll (within NOTE_POLL_SECONDS) and toast.
+            st.session_state.setdefault("_my_posted_note_ids", set()).add(_new_note.id)
+            st.session_state.setdefault("_notes_seen_ids", set()).add(_new_note.id)
+            _recipients = ("all teams" if n_to == "all"
+                           else integ_mod.TEAMS.get(n_to, {}).get("label", n_to))
+            if _ok:
+                st.toast(f"Note posted — {_recipients} will be notified.", icon="✅")
+            else:
+                st.warning(
+                    "Note saved in this session only — it could not be written to "
+                    "shared storage, so other leads won't be notified. "
+                    f"({getattr(nstore, 'save_error', 'unknown error')}) "
+                    "Check the Supabase config so notes sync across users.")
             st.rerun()
         else:
             st.warning("Write a note before posting.")
