@@ -18,11 +18,12 @@ A single Plotly 3D figure of an open-wheel Formula car, built from:
                                                     ride height (from spring rate)
   * the integration ledger (IntegrationLedger)   -> every other subsystem:
         aerodynamics -> front & rear wings sized by declared downforce
-        powertrain   -> engine/motor block + rear airbox sized by power
+        powertrain   -> EV traction motor + inverter sized by power
         cooling      -> sidepod radiator ducts sized by required airflow
         electrics    -> accumulator / battery box sized by its envelope+mass
         brakes       -> brake discs at each corner sized by brake torque
-        chassis      -> the survival-cell monocoque (nose, tub, halo)
+        chassis      -> the FSAE survival cell (pointed nose, tub, main & front
+                        roll hoops, driver helmet)
         data-acq     -> a small logger pod (no meaningful envelope, shown small)
 
 Every body is a real triangulated mesh (Mesh3d) or line set, positioned in the
@@ -55,13 +56,16 @@ from .kinematics import Hardpoints, SuspensionKinematics
 COLORS = dict(
     upper="#37e0d0", lower="#ffb02e", upright="#ffffff", tie="#ff5a52",
     push="#9b8cff", rocker="#5ad17a", spring="#ff9f43",
-    wheel="#6f7d8c", tire="#1b1f24", tire_edge="#3a434c",
-    monocoque="#39424c", nose="#454f59", halo="#10141a",
-    wing="#2a3340", wing_edge="#5cd2ff",
-    sidepod="#3a2d2d", radiator="#ff6b5a",
-    engine="#5a4a2a", airbox="#42474d",
-    battery="#2a3d2a", batt_edge="#5ad17a",
-    brake="#c2410c", logger="#444a52",
+    wheel="#6f7d8c", tire="#15181c", tire_edge="#3a434c", rim="#23282e",
+    # Matte-black tub with a hint of the photo's red/yellow livery accent.
+    monocoque="#1d2024", nose="#23262b", livery="#d63a2f",
+    frame="#0d1013", hoop="#0d1013", helmet="#e9edf1", helmet_band="#d63a2f",
+    halo="#10141a",
+    wing="#202428", wing_edge="#3a414a", endplate="#16191d",
+    sidepod="#23262b", radiator="#ff6b5a", inlet="#0e1216",
+    engine="#3a3a3f", motor="#454a52", airbox="#33373d",
+    battery="#1f2a20", batt_edge="#5ad17a",
+    brake="#c2410c", logger="#33373d",
     point="#e7ecf1", floor="#0c1014", cg="#ffd166",
 )
 
@@ -132,6 +136,98 @@ def _cylinder(center, axis, radius, length, n=24, cap=True):
             b = (a + 1) % n
             I += [ci0]; J += [b]; K += [a]
             I += [ci1]; J += [a + n]; K += [b + n]
+    return verts, np.array(I), np.array(J), np.array(K)
+
+
+def _airfoil_section(n=14, thickness=0.12):
+    """A closed 2D aerofoil-ish ring in (chord, thickness) coords, chord 0..1.
+
+    Cambered teardrop: thicker near the leading edge, tapering to the trailing
+    edge, so a lofted wing reads as a real element rather than a flat slab.
+    """
+    xs = (1 - np.cos(np.linspace(0, np.pi, n))) / 2  # cosine-spaced 0..1
+    yt = thickness * (1.4845 * np.sqrt(np.clip(xs, 0, 1)) - 0.63 * xs
+                      - 1.758 * xs**2 + 1.4215 * xs**3 - 0.5075 * xs**4)
+    camber = 0.06 * (1 - (2 * xs - 1) ** 2)  # gentle single-element camber
+    upper = np.column_stack([xs, camber + yt])
+    lower = np.column_stack([xs[::-1], (camber - yt)[::-1]])
+    return np.vstack([upper, lower])
+
+
+def _wing_element(cx, cy, cz, chord, span, *, thickness=0.12, aoa_deg=-6.0,
+                  n_sec=14):
+    """A single aerofoil wing element centred at (cx,cy,cz), spanning in y.
+
+    chord runs in x (fore-aft), span in y, with a small angle of attack rotating
+    the section in the x-z plane. Returns mesh arrays ready for Mesh3d.
+    """
+    sec = _airfoil_section(n_sec, thickness)           # (m,2): chord, thick
+    m = len(sec)
+    a = np.deg2rad(aoa_deg)
+    ca, sa = np.cos(a), np.sin(a)
+    # section local -> (x,z): chord along x (centred), thickness along z, rotated
+    chord_local = (sec[:, 0] - 0.5) * chord
+    thick_local = sec[:, 1] * chord
+    sx = chord_local * ca - thick_local * sa
+    sz = chord_local * sa + thick_local * ca
+    ys = np.array([cy - span / 2, cy + span / 2])
+    rings = []
+    for y in ys:
+        rings.append(np.column_stack([cx + sx, np.full(m, y), cz + sz]))
+    verts = np.vstack(rings)
+    I, J, K = [], [], []
+    for s in range(len(rings) - 1):
+        b0, b1 = s * m, (s + 1) * m
+        for aa in range(m):
+            bb = (aa + 1) % m
+            I += [b0 + aa, b0 + aa]; J += [b0 + bb, b1 + bb]; K += [b1 + bb, b1 + aa]
+    return verts, np.array(I), np.array(J), np.array(K)
+
+
+def _tube(p0, p1, radius, n=12):
+    """A capped cylinder between two endpoints — for roll hoops and frame tubes."""
+    p0 = np.asarray(p0, float); p1 = np.asarray(p1, float)
+    axis = p1 - p0
+    length = np.linalg.norm(axis) + 1e-12
+    center = (p0 + p1) / 2
+    return _cylinder(center, axis, radius, length, n=n, cap=True)
+
+
+def _swept_tube(points, radius, n=10):
+    """A tube following a polyline of points — for the curved main roll hoop."""
+    pts = [np.asarray(p, float) for p in points]
+    V = []
+    I = []
+    J = []
+    K = []
+    base = 0
+    for a in range(len(pts) - 1):
+        v, i, j, k = _tube(pts[a], pts[a + 1], radius, n=n)
+        V.append(v)
+        I += list(i + base); J += list(j + base); K += list(k + base)
+        base += len(v)
+    return np.vstack(V), np.array(I), np.array(J), np.array(K)
+
+
+def _sphere(center, radius, n=16):
+    """A UV sphere — used for the driver's helmet."""
+    c = np.asarray(center, float)
+    u = np.linspace(0, np.pi, n)          # polar
+    w = np.linspace(0, 2 * np.pi, n)      # azimuth
+    U, W = np.meshgrid(u, w)
+    x = c[0] + radius * np.sin(U) * np.cos(W)
+    y = c[1] + radius * np.sin(U) * np.sin(W)
+    z = c[2] + radius * np.cos(U)
+    verts = np.column_stack([x.ravel(), y.ravel(), z.ravel()])
+    I, J, K = [], [], []
+    cols = n
+    for a in range(n - 1):
+        for b in range(n - 1):
+            v00 = a * cols + b
+            v01 = a * cols + (b + 1)
+            v10 = (a + 1) * cols + b
+            v11 = (a + 1) * cols + (b + 1)
+            I += [v00, v00]; J += [v01, v11]; K += [v11, v10]
     return verts, np.array(I), np.array(J), np.array(K)
 
 
@@ -465,8 +561,15 @@ def build_full_car_figure(
         axis = np.array([0.0, sign * np.cos(cam), np.sin(cam)])
         radius = abs(wc[2] - cp[2]) or 228.0
         if show_tires:
-            tv, ti, tj, tk = _cylinder(wc, axis, radius, tire_width_mm, n=26)
-            mesh(tv, ti, tj, tk, COLORS["tire"], "Tire", "suspension", base_op=0.55)
+            tv, ti, tj, tk = _cylinder(wc, axis, radius, tire_width_mm, n=30)
+            mesh(tv, ti, tj, tk, COLORS["tire"], "Tire", "suspension",
+                 base_op=0.95)
+            # Rim: a slightly inset, lighter disc so the wheel reads as a wheel,
+            # not a black drum — sits at ~62% of tire radius on the outboard face.
+            rim_r = radius * 0.62
+            rv, ri, rj, rk = _cylinder(wc, axis, rim_r, tire_width_mm * 0.9, n=24)
+            mesh(rv, ri, rj, rk, COLORS["rim"], "Tire", "suspension",
+                 base_op=0.98)
         if show_brakes:
             disc_r = (radius * _clamp(0.62 + (brake_tq or 0) / 4000.0, 0.5, 0.85)
                       if brake_tq else radius * 0.62)
@@ -498,66 +601,172 @@ def build_full_car_figure(
     inner_y_f = tf / 2.0 - tire_width_mm - 40
     inner_y_r = tr / 2.0 - tire_width_mm - 40
 
-    # ---- 2) chassis monocoque + halo ----------------------------------- #
+    # ---- 2) chassis: FSAE monocoque + nosecone + roll hoops + driver ---- #
+    #  Reshaped to read as a real Formula Student car (cf. the reference photo):
+    #  a low, slim survival cell that tapers to a pointed nosecone at the front,
+    #  an open cockpit, a curved MAIN roll hoop behind the driver's head and a
+    #  smaller FRONT hoop ahead of the dash, plus the driver's helmet showing in
+    #  the cockpit — not an F1 halo.
     if show_bodywork:
         ch_it = _iface(ledger, "chassis")
-        tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.15, 150, 360)
-        tub_top = z_hi * 0.92
-        tub_bot = max(z_lo * 0.6, tire_r * 0.18)
-        prof = _ellipse_ring(22)
-        x_tip = x_front + tire_r * 1.7
-        x_bulk = x_rear - tire_r * 0.2
-        xs = np.linspace(x_tip, x_bulk, 7)
+        tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
+        # Sit the tub low like an FSAE car: floor near the ground, deck low.
+        tub_bot = max(z_lo * 0.5, tire_r * 0.14)
+        tub_top = tub_bot + _clamp(tire_r * 0.95, 180, 360)
         cz = (tub_top + tub_bot) / 2
         hzz = (tub_top - tub_bot) / 2
-        widths = np.array([0.18, 0.5, 0.85, 1.0, 0.95, 0.8, 0.7])
-        heights = np.array([0.30, 0.55, 0.9, 1.0, 1.0, 0.95, 0.9])
-        scales = [(tub_w / 2 * w, hzz * h, 0.0, cz) for w, h in zip(widths, heights)]
+        prof = _ellipse_ring(24)
+
+        # Lofted survival cell: pointed nose tip -> footwell -> cockpit bay ->
+        # tapered tail. Stations run front (tip) to rear.
+        nose_tip_x = x_front + tire_r * 1.9
+        tail_x = x_rear + tire_r * 0.15
+        xs = np.linspace(nose_tip_x, tail_x, 9)
+        #             tip   nose  foot  dash  cockpit cock  belly tail   end
+        widths  = np.array([0.05, 0.22, 0.55, 0.88, 1.00, 0.98, 0.86, 0.66, 0.5])
+        heights = np.array([0.10, 0.30, 0.62, 0.85, 0.92, 0.92, 0.85, 0.74, 0.6])
+        zoff    = np.array([0.55, 0.42, 0.18, 0.04, 0.00, 0.00, 0.02, 0.06, 0.1]) * hzz
+        scales = [(tub_w / 2 * w, hzz * h, 0.0, cz + dz)
+                  for w, h, dz in zip(widths, heights, zoff)]
         mv, mi, mj, mk = _prism_xsection(prof, xs, scales)
         hv = "Monocoque / survival cell"
         if _g(ch_it, "mass_kg"):
             hv += " · %.1f kg" % _g(ch_it, "mass_kg")
         mesh(mv, mi, mj, mk, COLORS["monocoque"], "Monocoque", "chassis",
-             base_op=0.5, hover=hv)
+             base_op=0.92, hover=hv)
 
-        cockpit_x = x_front - wb * 0.18
-        halo_r = tub_w * 0.55
-        th = np.linspace(0, np.pi, 16)
-        halo = np.column_stack([
-            cockpit_x + np.linspace(-30, 30, 16),
-            np.zeros(16),
-            tub_top + halo_r * np.sin(th) * 0.9 + 20])
-        seg([cockpit_x + 120, 0, tub_top + 10],
-            [cockpit_x - 60, 0, tub_top + halo_r * 0.9 + 20],
-            COLORS["halo"], 7, corner_name("Halo"), "halo", "chassis")
-        for s_ in range(len(halo) - 1):
-            seg(halo[s_], halo[s_ + 1], COLORS["halo"], 6, None, "halo", "chassis")
+        # A thin livery flash down the flank (the photo's red/yellow stripe).
+        fv, fi, fj, fk = _prism_xsection(
+            _ellipse_ring(24),
+            np.linspace(nose_tip_x - tire_r * 0.3, tail_x, 6),
+            [(tub_w / 2 * w * 1.005, hzz * h * 0.16, 0.0, cz + dz)
+             for w, h, dz in zip(widths[2:8], heights[2:8], zoff[2:8])])
+        mesh(fv, fi, fj, fk, COLORS["livery"], "Monocoque", "chassis", 0.9)
 
-    # ---- 3) aerodynamics: wings ---------------------------------------- #
+        # Cockpit opening reference + driver: a helmet sphere sitting in the bay.
+        cockpit_x = x_front - wb * 0.16
+        helmet_r = tub_w * 0.34
+        helmet_z = tub_top + helmet_r * 0.65
+        hv_e = _sphere([cockpit_x, 0, helmet_z], helmet_r, n=16)
+        mesh(hv_e[0], hv_e[1], hv_e[2], hv_e[3], COLORS["helmet"],
+             "Driver", "chassis", 0.98, "Driver (helmet)")
+        # Helmet stripe band.
+        bandv = _sphere([cockpit_x, 0, helmet_z], helmet_r * 1.01, n=14)
+        bv = bandv[0]
+        keep = np.abs(bv[:, 2] - helmet_z) < helmet_r * 0.18
+        if keep.any():
+            seg([cockpit_x - helmet_r, 0, helmet_z],
+                [cockpit_x + helmet_r, 0, helmet_z],
+                COLORS["helmet_band"], 6, None, "helmet", "chassis")
+
+        # MAIN roll hoop: a curved tube arching above and behind the helmet.
+        hoop_x = cockpit_x - tire_r * 0.55
+        hoop_w = tub_w * 0.92
+        hoop_top = helmet_z + helmet_r * 0.9
+        main_hoop = [
+            [hoop_x, -hoop_w, tub_bot + hzz * 0.2],
+            [hoop_x, -hoop_w * 0.95, cz],
+            [hoop_x - tire_r * 0.1, -hoop_w * 0.55, hoop_top * 0.92],
+            [hoop_x - tire_r * 0.12, 0, hoop_top],
+            [hoop_x - tire_r * 0.1, hoop_w * 0.55, hoop_top * 0.92],
+            [hoop_x, hoop_w * 0.95, cz],
+            [hoop_x, hoop_w, tub_bot + hzz * 0.2],
+        ]
+        mh = _swept_tube(main_hoop, radius=tire_r * 0.07, n=10)
+        mesh(mh[0], mh[1], mh[2], mh[3], COLORS["hoop"], "Roll hoop",
+             "chassis", 0.95, "Main roll hoop")
+        # Rear hoop braces down to the tub.
+        for sgn in (-1, 1):
+            tb = _tube([hoop_x - tire_r * 0.1, sgn * hoop_w * 0.5, hoop_top * 0.92],
+                       [hoop_x - tire_r * 1.1, sgn * hoop_w * 0.4, tub_bot + hzz * 0.3],
+                       radius=tire_r * 0.045, n=8)
+            mesh(tb[0], tb[1], tb[2], tb[3], COLORS["frame"], "Roll hoop",
+                 "chassis", 0.95)
+
+        # FRONT hoop: smaller, ahead of the dash.
+        fh_x = cockpit_x + tire_r * 1.0
+        fh_top = tub_top + helmet_r * 0.2
+        front_hoop = [
+            [fh_x, -tub_w * 0.7, cz],
+            [fh_x, -tub_w * 0.5, fh_top],
+            [fh_x, 0, fh_top + helmet_r * 0.1],
+            [fh_x, tub_w * 0.5, fh_top],
+            [fh_x, tub_w * 0.7, cz],
+        ]
+        fhm = _swept_tube(front_hoop, radius=tire_r * 0.05, n=8)
+        mesh(fhm[0], fhm[1], fhm[2], fhm[3], COLORS["frame"], "Roll hoop",
+             "chassis", 0.95, "Front hoop")
+
+    # ---- 3) aerodynamics: multi-element wings + endplates --------------- #
+    #  FSAE-style: a wide multi-element FRONT wing low and ahead of the front
+    #  axle on endplates, and a tall multi-element REAR wing on twin endplates
+    #  behind the rear axle. Element count/size still scale with declared
+    #  downforce, so the aero team's number visibly grows the wing.
     if show_aero:
         aero_it = _iface(ledger, "aerodynamics")
         df = _g(aero_it, "downforce_n_at_v")
         df_n = df[0] if isinstance(df, (tuple, list)) and df else None
 
-        fw_span, fw_chord = _wing_span_chord(df_n, tf * 0.92, tire_r * 0.95)
-        fw_x, fw_z = x_front + tire_r * 1.55, tire_r * 0.30
-        v, i, j, k = _box(fw_x, 0, fw_z, fw_chord, fw_span, 18)
-        mesh(v, i, j, k, COLORS["wing"], "Front wing", "aerodynamics", 0.85,
-             "Front wing" + (" (sized from %.0f N)" % df_n if df_n else ""))
-        for sgn in (-1, 1):
-            ev, ei, ej, ek = _box(fw_x, sgn * fw_span / 2, fw_z + 25, fw_chord * 1.1, 8, 70)
-            mesh(ev, ei, ej, ek, COLORS["wing"], "Front wing", "aerodynamics", 0.85)
+        def _elements(df_n):
+            # more downforce -> more elements (2..4) and a touch more chord
+            if not df_n:
+                return 3
+            return int(_clamp(2 + df_n / 500.0, 2, 4))
 
-        rw_span, rw_chord = _wing_span_chord(df_n, tr * 0.78, tire_r * 1.05)
-        rw_x, rw_z = x_rear - tire_r * 1.5, z_hi + tire_r * 0.95
-        v, i, j, k = _box(rw_x, 0, rw_z, rw_chord, rw_span, 22)
-        mesh(v, i, j, k, COLORS["wing"], "Rear wing", "aerodynamics", 0.85,
-             "Rear wing" + (" (sized from %.0f N)" % df_n if df_n else ""))
+        # ---- FRONT wing: low, ahead of the front axle --------------------
+        fw_span, fw_chord = _wing_span_chord(df_n, tf * 0.98, tire_r * 0.62)
+        fw_x = x_front + tire_r * 1.62
+        fw_z = tire_r * 0.32
+        n_fe = _elements(df_n)
+        hint_f = "Front wing" + (" (sized from %.0f N)" % df_n if df_n else "")
+        for e in range(n_fe):
+            ex = fw_x - e * fw_chord * 0.42
+            ez = fw_z + e * fw_chord * 0.22
+            ch = fw_chord * (0.7 + 0.12 * e)
+            wv = _wing_element(ex, 0, ez, ch, fw_span,
+                               thickness=0.11, aoa_deg=-8 - 4 * e)
+            mesh(wv[0], wv[1], wv[2], wv[3], COLORS["wing"], "Front wing",
+                 "aerodynamics", 0.9, hint_f if e == 0 else None)
+        # endplates by the front tires
         for sgn in (-1, 1):
-            ev, ei, ej, ek = _box(rw_x, sgn * rw_span / 2, rw_z - 60, rw_chord * 1.1, 10, 150)
-            mesh(ev, ei, ej, ek, COLORS["wing"], "Rear wing", "aerodynamics", 0.85)
-        seg([rw_x, 0, rw_z - 70], [rw_x + 60, 0, z_hi * 0.7],
-            COLORS["wing_edge"], 6, None, "wing", "aerodynamics")
+            ev, ei, ej, ek = _box(fw_x - fw_chord * 0.3, sgn * fw_span / 2,
+                                   fw_z + fw_chord * 0.15,
+                                   fw_chord * 1.5, 6, fw_chord * 1.1)
+            mesh(ev, ei, ej, ek, COLORS["endplate"], "Front wing",
+                 "aerodynamics", 0.9)
+        # nose-to-wing pylons
+        _mount_y = (tub_w * 0.3) if show_bodywork else (fw_span * 0.12)
+        for sgn in (-1, 1):
+            seg([fw_x, sgn * fw_span * 0.18, fw_z],
+                [fw_x - fw_chord, sgn * _mount_y, fw_z + tire_r * 0.4],
+                COLORS["wing_edge"], 4, None, "fw_mount", "aerodynamics")
+
+        # ---- REAR wing: tall, behind the rear axle -----------------------
+        rw_span, rw_chord = _wing_span_chord(df_n, tr * 0.82, tire_r * 0.72)
+        rw_x = x_rear - tire_r * 1.55
+        rw_z = z_hi + tire_r * 1.15
+        n_re = _elements(df_n)
+        hint_r = "Rear wing" + (" (sized from %.0f N)" % df_n if df_n else "")
+        for e in range(n_re):
+            ex = rw_x + e * rw_chord * 0.4
+            ez = rw_z + e * rw_chord * 0.34
+            ch = rw_chord * (0.8 + 0.1 * e)
+            wv = _wing_element(ex, 0, ez, ch, rw_span,
+                               thickness=0.12, aoa_deg=-12 - 5 * e)
+            mesh(wv[0], wv[1], wv[2], wv[3], COLORS["wing"], "Rear wing",
+                 "aerodynamics", 0.9, hint_r if e == 0 else None)
+        # twin endplates
+        for sgn in (-1, 1):
+            ev, ei, ej, ek = _box(rw_x + rw_chord * 0.3, sgn * rw_span / 2,
+                                   rw_z + rw_chord * 0.5,
+                                   rw_chord * 2.0, 8, rw_chord * 2.2)
+            mesh(ev, ei, ej, ek, COLORS["endplate"], "Rear wing",
+                 "aerodynamics", 0.92)
+        # rear-wing support struts up from the gearbox/tail
+        for sgn in (-1, 1):
+            seg([rw_x + rw_chord * 0.3, sgn * rw_span * 0.18, rw_z - rw_chord * 0.4],
+                [rw_x + rw_chord * 1.2, sgn * rw_span * 0.12, z_hi * 0.7],
+                COLORS["wing_edge"], 5, None, "rw_mount", "aerodynamics")
 
     # ---- 4) cooling: sidepods ------------------------------------------ #
     if show_cooling:
@@ -582,7 +791,10 @@ def build_full_car_figure(
                                   8, pod_w * 0.8, pod_h * 0.8)
             mesh(rv, ri, rj, rk, COLORS["radiator"], "Radiator core", "cooling", 0.85)
 
-    # ---- 5) powertrain: engine + airbox + driveshafts ------------------ #
+    # ---- 5) powertrain: EV traction motor + inverter + driveshafts ------ #
+    #  This is an FSAE EV, so the rear package is a compact traction motor with
+    #  its inverter on top, not an IC engine + airbox. Sizing still tracks the
+    #  declared power/torque so the powertrain team's number drives the body.
     if show_powertrain:
         pt_it = _iface(ledger, "powertrain")
         pkw = _g(pt_it, "peak_power_kw")
@@ -593,20 +805,27 @@ def build_full_car_figure(
             sized = "(declared envelope)"
         else:
             f = _clamp((pkw or 60) / 60.0, 0.5, 2.0)
-            blk_l = wb * 0.22 * _clamp(f ** 0.4, 0.7, 1.4)
-            blk_w = min(inner_y_r, 180) * 1.3
-            blk_h = tire_r * 0.85 * _clamp(f ** 0.3, 0.8, 1.3)
+            blk_l = wb * 0.16 * _clamp(f ** 0.4, 0.7, 1.4)
+            blk_w = min(inner_y_r, 150) * 1.2
+            blk_h = tire_r * 0.7 * _clamp(f ** 0.3, 0.8, 1.3)
             sized = ("(sized from %.0f kW)" % pkw if pkw else "")
-        eng_x = x_rear + tire_r * 1.2
-        v, i, j, k = _box(eng_x, 0, tire_r * 0.85, blk_l, blk_w, blk_h)
-        hv = "Engine / motor " + sized + (" · %.0f N·m" % ptq if ptq else "")
-        mesh(v, i, j, k, COLORS["engine"], "Engine / motor", "powertrain", 0.85, hv)
-        av, ai, aj, ak = _box(eng_x + blk_l * 0.2, 0, tire_r * 0.85 + blk_h * 0.7,
-                              blk_l * 0.6, blk_w * 0.7, blk_h * 0.5)
-        mesh(av, ai, aj, ak, COLORS["airbox"], "Airbox", "powertrain", 0.7)
+        mot_x = x_rear + tire_r * 1.05
+        # Traction motor: a cylinder lying across the car (EV motor, not a block).
+        mc = _cylinder([mot_x, 0, tire_r * 0.8], [0, 1, 0],
+                       radius=blk_h * 0.55, length=blk_w, n=22)
+        hv = "Traction motor " + sized + (" · %.0f N·m" % ptq if ptq else "")
+        mesh(mc[0], mc[1], mc[2], mc[3], COLORS["motor"], "Motor + inverter",
+             "powertrain", 0.92, hv)
+        # Inverter box sitting on top.
+        iv, ii, ij, ik = _box(mot_x - blk_l * 0.1, 0, tire_r * 0.8 + blk_h * 0.6,
+                              blk_l * 0.8, blk_w * 0.7, blk_h * 0.45)
+        mesh(iv, ii, ij, ik, COLORS["engine"], "Motor + inverter", "powertrain",
+             0.9, "Inverter")
+        # Driveshafts to the rear wheels.
         for sgn in (-1, 1):
-            seg([eng_x, 0, tire_r], [x_rear, sgn * tr / 2 * 0.78, tire_r],
-                "#8d99a6", 4, None, "drive", "powertrain")
+            seg([mot_x, sgn * blk_w * 0.45, tire_r * 0.8],
+                [x_rear, sgn * tr / 2 * 0.78, tire_r],
+                "#8d99a6", 5, None, "drive", "powertrain")
 
     # ---- 6) electrics: accumulator ------------------------------------- #
     if show_electrics:
@@ -754,7 +973,7 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
     pt = _iface(ledger, "powertrain")
     pkw = _g(pt, "peak_power_kw")
     add("powertrain", "sized" if (pkw or _g(pt, "env_x_mm")) else "default",
-        ("%.0f kW → engine block size" % pkw) if pkw else "no power/envelope → nominal block")
+        ("%.0f kW → motor + inverter size" % pkw) if pkw else "no power/envelope → nominal motor")
 
     cool = _iface(ledger, "cooling")
     af = _g(cool, "cooling_airflow_cms")

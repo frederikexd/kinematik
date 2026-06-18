@@ -1180,9 +1180,12 @@ with tab4:
 with tab_car:
   if st.session_state.get("model3d_view", "Linkage geometry") == "Full car":
     st.markdown(
-        '<p class="hint">The whole car, live. Every sub-team\u2019s current numbers '
-        'become a body here: edit a hardpoint, a spring rate, your downforce, your '
-        'battery mass \u2014 then come back and your part has moved. '
+        '<p class="hint">The whole car, live \u2014 drawn as a true Formula Student '
+        'EV: pointed nose, multi-element front &amp; rear wings on endplates, open '
+        'cockpit with main/front roll hoops and the driver\u2019s helmet, sidepods, '
+        'a rear traction motor + inverter and the accumulator. Every sub-team\u2019s '
+        'current numbers become a body here: edit a hardpoint, a spring rate, your '
+        'downforce, your battery mass \u2014 then come back and your part has moved. '
         '<b>Drag to rotate</b> the car in 3D, scroll to zoom, right-drag to pan. '
         '<b>Click any part to zoom into it</b>; use the spotlight picker or the '
         'reset button to pull back out. Your rotation is kept as you click around.</p>',
