@@ -24,7 +24,7 @@ from .topologies import (
 )
 from .adapter import GenericKinematics
 from . import fullcar3d
-from .fullcar3d import build_full_car_figure
+from .fullcar3d import build_full_car_figure, influence_summary
 from .dynamics import VehicleDynamics, VehicleParams, CornerLoads
 from .tiremodel import (PacejkaLateral, default_tire, CombinedSlipTire,
                         default_combined_tire, relaxation_length)

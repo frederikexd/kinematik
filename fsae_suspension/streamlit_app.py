@@ -889,7 +889,7 @@ feeds the *same* analysis pipeline below.
 - **Kinematics** — camber gain, bump steer, caster, KPI, scrub, motion ratio vs travel.
 - **Roll & Load Transfer** — roll-centre height & migration, lateral load-transfer split.
 - **Grip Balance** — limit understeer/oversteer from the load-sensitive tire model.
-- **Geometry 3D** — live 3D view of the linkage; non-wishbone topologies draw their own member set.
+- **3D Model** — one tab, two views via a toggle: the live suspension linkage, or the whole car assembled from every subsystem. On the full car, click any part — suspension, aero, powertrain, cooling, electrics, brakes, chassis, data-acq — to auto-zoom the camera onto it; "Reset zoom" pulls back out.
 - **Compliance (Flex)** — member axial deflection → compliance steer/camber (double-wishbone member set; switch back to double-wishbone to use it).
 - **Team Fit** — load the chassis once, load your part, get a collision/clearance verdict before you cut anything.
 - **Weight & Handover** — log decisions, track weight, build the next-team handover record.
@@ -910,10 +910,13 @@ and it's the difference between next year starting ahead or relearning everythin
 
 _tabs = st.tabs(
     ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
-     "  GEOMETRY 3D  ", "  FULL CAR 3D  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
+     "  3D MODEL  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
      "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
      "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  GGV DIAGRAM  ", "  TRANSIENT  ",
      "  VALIDATION  ", "  INTEGRATION  ", "  ELECTRONICS (PCB)  "])
+# GEOMETRY 3D and FULL CAR 3D are now one merged "3D MODEL" tab (tab4): a single
+# view with a toggle between the live linkage geometry and the assembled full
+# car, where clicking any part of the full car auto-zooms the camera onto it.
 # Map the existing tab variable names onto the new (merged) tab order so the tab
 # bodies below don't all need renumbering. SUSPENSION vs CHASSIS is no longer a
 # top-level tab — its CAD fit/clearance check now lives inside the merged
@@ -923,8 +926,10 @@ _tabs = st.tabs(
 # tab_pcb is the electronics layer: copper-survival (IPC-2221 heating, Onderdonk
 # fusing, IR-drop / ECU brown-out) + signal-integrity (diff-pair impedance and
 # HV-aggressor coupling), rendered by render_pcb_board().
-(tab1, tab2, tab3, tab4, tab_car, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_ggv,
+# tab_car now aliases tab4 — the full-car view lives inside the same merged tab.
+(tab1, tab2, tab3, tab4, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_ggv,
  tab_tr, tab12, tab13, tab_pcb) = _tabs
+tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
 # lead posts a note, on whatever tab they're currently viewing. Runs on its own
@@ -1092,8 +1097,19 @@ with tab3:
                 'in the TIRE &amp; GRIP tab.</p>',
                 unsafe_allow_html=True)
 
-# ----------------------------- TAB 4 --------------------------------------- #
+# ----------------------------- TAB 4 (merged 3D MODEL) --------------------- #
+# One tab, two views. A radio switches between the live suspension linkage
+# (GEOMETRY 3D) and the assembled full car (FULL CAR 3D). On the full-car view,
+# clicking any part auto-zooms the camera onto that subsystem.
 with tab4:
+    _3d_view = st.radio(
+        "View", ["Linkage geometry", "Full car"], horizontal=True,
+        key="model3d_view", label_visibility="collapsed",
+        help="Linkage geometry shows just the suspension members; Full car "
+             "assembles every subsystem — click a part there to zoom into it.")
+
+with tab4:
+  if st.session_state.get("model3d_view", "Linkage geometry") == "Linkage geometry":
     fig3d = go.Figure()
 
     def seg(p, q, color, w=6, name=None):
@@ -1153,45 +1169,140 @@ with tab4:
     st.plotly_chart(fig3d, width='stretch')
 
 # --------------------------- FULL CAR 3D ----------------------------------- #
-# Assembles the whole vehicle from the corner geometry the team has already
-# entered (mirrored L/R and placed front/rear off wheelbase + track) plus the
-# vehicle params. Pure numpy + plotly, same frame and styling as the single-
-# corner GEOMETRY 3D tab above.
+# A LIVE Formula car assembled from every subsystem's current declaration. The
+# figure is rebuilt from session state on every rerun, so the instant any tab
+# edits geometry, vehicle params, or its interface in the ledger, the body that
+# subsystem owns changes here — wings scale with downforce, sidepods with cooling
+# airflow, the engine block with power, the battery with its envelope/mass, brake
+# discs with brake torque, and the CG marker with the declared mass roll-up.
 with tab_car:
+  if st.session_state.get("model3d_view", "Linkage geometry") == "Full car":
     st.markdown(
-        '<p class="hint">The complete car assembled from your corner geometry and '
-        'vehicle parameters. The authored corner is mirrored left/right and placed '
-        'at the front and rear axles using <b>wheelbase</b> and <b>track</b> from the '
-        'sidebar — the same single-corner assumption the rest of the tool uses. '
-        'Tires, a representative chassis cage, the ground plane and the CG marker '
-        'are drawn for context. Drag to orbit; scroll to zoom.</p>',
+        '<p class="hint">The whole car, live. Every sub-team\u2019s current numbers '
+        'become a body here: edit a hardpoint, a spring rate, your downforce, your '
+        'battery mass \u2014 then come back and your part has moved. '
+        '<b>Click any part to zoom into it</b>; use the spotlight picker or the '
+        'reset button to pull back out. Drag to orbit; scroll to zoom.</p>',
         unsafe_allow_html=True)
 
-    cc1, cc2, cc3, cc4 = st.columns(4)
-    _show_tires = cc1.checkbox("Tires", value=True, key="car3d_tires")
-    _show_chassis = cc2.checkbox("Chassis cage", value=True, key="car3d_chassis")
-    _show_floor = cc3.checkbox("Ground", value=True, key="car3d_floor")
-    _tire_w = cc4.number_input("Tire width mm", value=180.0, min_value=80.0,
+    _SUBSYS_CHOICES = ["(whole car)", "suspension", "aerodynamics", "powertrain",
+                       "cooling", "electrics", "brakes", "chassis",
+                       "data-acquisition"]
+    hc1, hc2, hc3, hc4 = st.columns([2, 1, 1, 1])
+    _hl_choice = hc1.selectbox(
+        "Spotlight subsystem", _SUBSYS_CHOICES, index=0, key="car3d_highlight",
+        help="Glow your subsystem and dim the rest, to see your part in the whole car.")
+    _highlight = None if _hl_choice == "(whole car)" else _hl_choice
+    # Detect an actual change of the spotlight picker (not just its resting
+    # value), so selecting "(whole car)" clears a click-zoom but the rerun that
+    # immediately follows a part click — where the picker is still on
+    # "(whole car)" — does not wipe the focus we just set.
+    _prev_hl = st.session_state.get("_car3d_hl_prev")
+    if _hl_choice != _prev_hl:
+        st.session_state._car3d_hl_prev = _hl_choice
+        if _hl_choice == "(whole car)":
+            st.session_state.pop("car3d_focus", None)
+    _tire_w = hc2.number_input("Tire width mm", value=180.0, min_value=80.0,
                                max_value=320.0, step=10.0, key="car3d_tirew")
+    _show_floor = hc3.checkbox("Ground", value=True, key="car3d_floor")
+    # Reset zoom: clear the focused part so the camera returns to the wide shot.
+    if hc4.button("Reset zoom", key="car3d_resetzoom",
+                  help="Pull the camera back out to the whole-car view."):
+        st.session_state.pop("car3d_focus", None)
+        st.session_state.pop("car3d_plot", None)
+
+    with st.expander("Layers", expanded=False):
+        lc = st.columns(4)
+        _show_tires = lc[0].checkbox("Tires", True, key="car3d_tires")
+        _show_brakes = lc[0].checkbox("Brakes", True, key="car3d_brakes")
+        _show_aero = lc[1].checkbox("Aero (wings)", True, key="car3d_aero")
+        _show_cool = lc[1].checkbox("Cooling (sidepods)", True, key="car3d_cool")
+        _show_pt = lc[2].checkbox("Powertrain", True, key="car3d_pt")
+        _show_el = lc[2].checkbox("Electrics", True, key="car3d_el")
+        _show_body = lc[3].checkbox("Bodywork (monocoque/halo)", True, key="car3d_body")
 
     try:
         _vp_fields_car = set(VehicleParams.__dataclass_fields__.keys())
         _vp_kwargs_car = {k: v for k, v in st.session_state.vp.items()
                           if k in _vp_fields_car}
         _vp_car = VehicleParams(**_vp_kwargs_car)
-        _hp_car = Hardpoints.from_dict(st.session_state.hp)
+        _led_car = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+
+        # Reflect the CHOSEN suspension architecture. For double wishbone we hand
+        # the renderer the live Hardpoints; for every other topology we hand it
+        # the already-solved topology-aware kinematics (`kin`), which reports its
+        # own member set. `kin` and `_topo` are the live objects the whole app is
+        # running on, so the full car always matches the topology in the sidebar.
+        _topo_now = st.session_state.get("topology", "double_wishbone")
+        _topo_lbl = globals().get("_TOPO_LABELS", {}).get(_topo_now, _topo_now)
+        if _topo_now == "double_wishbone":
+            _hp_car = Hardpoints.from_dict(st.session_state.hp)
+            _car_kwargs = dict(hp_front=_hp_car)
+        else:
+            # `kin` is the GenericKinematics solved above for this topology.
+            _car_kwargs = dict(corner_front=kin)
+
+        # The clicked part (if any) drives both the spotlight and the camera
+        # zoom. A click from a previous run is stored in car3d_focus; choosing a
+        # subsystem in the spotlight picker also zooms to it. "(whole car)"
+        # clears the zoom back to the wide shot.
+        _focus = st.session_state.get("car3d_focus")
+        if _highlight:
+            _focus = _highlight
         _fig_car = fullcar_mod.build_full_car_figure(
-            _hp_car, _vp_car,
-            show_chassis=_show_chassis, show_tires=_show_tires,
-            show_floor=_show_floor, tire_width_mm=float(_tire_w))
-        st.plotly_chart(_fig_car, width='stretch')
+            vp=_vp_car, ledger=_led_car, topology_label=_topo_lbl,
+            show_tires=_show_tires, show_brakes=_show_brakes,
+            show_aero=_show_aero, show_cooling=_show_cool,
+            show_powertrain=_show_pt, show_electrics=_show_el,
+            show_bodywork=_show_body, show_floor=_show_floor,
+            highlight_subsystem=_focus,
+            focus_subsystem=_focus, tire_width_mm=float(_tire_w),
+            **_car_kwargs)
+        st.markdown(
+            f'<p class="hint" style="margin-bottom:2px;">Suspension architecture: '
+            f'<b>{_topo_lbl}</b> \u2014 the corners below are drawn from this '
+            f'topology\u2019s actual members. Change it in the sidebar and the whole '
+            f'car\u2019s suspension changes with it.'
+            + (f' Zoomed on <b>{_focus}</b> \u2014 click another part to move, or '
+               '\u201cReset zoom\u201d to pull back.' if _focus else
+               ' <b>Click a part to zoom in.</b>')
+            + '</p>', unsafe_allow_html=True)
+
+        # Native Streamlit selection events (streamlit>=1.49): a click returns the
+        # picked point, whose customdata carries the subsystem id we tagged each
+        # body with. We store it and rerun so build_full_car_figure reframes the
+        # camera onto that part — i.e. clicking a part auto-zooms.
+        _sel = st.plotly_chart(_fig_car, width='stretch', key="car3d_plot",
+                               on_select="rerun",
+                               selection_mode=("points",))
+        try:
+            _pts = (_sel or {}).get("selection", {}).get("points", [])
+        except Exception:
+            _pts = []
+        if _pts:
+            _cd = _pts[0].get("customdata")
+            _clicked = _cd[0] if isinstance(_cd, (list, tuple)) else _cd
+            if _clicked and _clicked != st.session_state.get("car3d_focus"):
+                st.session_state.car3d_focus = _clicked
+                st.rerun()
+
+        # Live influence read-out: what each subsystem's current numbers are doing.
+        _rows = fullcar_mod.influence_summary(_vp_car, _led_car, topology_label=_topo_lbl)
+        st.markdown('<p class="hint" style="margin-bottom:4px;"><b>Live influence</b> '
+                    '\u2014 what each subsystem\u2019s current declaration is doing to '
+                    'the model right now:</p>', unsafe_allow_html=True)
+        import pandas as _pd
+        _df_inf = _pd.DataFrame(_rows)[["subsystem", "status", "detail"]]
+        st.dataframe(_df_inf, hide_index=True, width='stretch')
+
         st.markdown(
             f'<p class="hint">Wheelbase <b>{_vp_car.wheelbase:.0f} mm</b> · '
-            f'front track <b>{_vp_car.track_front:.0f} mm</b> · '
-            f'rear track <b>{_vp_car.track_rear:.0f} mm</b> · '
-            f'CG height <b>{_vp_car.cg_height:.0f} mm</b>. The chassis cage is a '
-            'representative scaffold, not your real frame — load actual chassis CAD '
-            'in the INTEGRATION tab for fit and clearance checks.</p>',
+            f'front/rear track <b>{_vp_car.track_front:.0f}/{_vp_car.track_rear:.0f} mm</b>. '
+            'Bodies with a declared envelope are drawn at their reserved size; bodies '
+            'sized from a performance number (downforce, power, airflow, brake torque) '
+            'are labelled "(sized from \u2026)" \u2014 they show direction of change, not '
+            'a CFD/analysis result. Declare masses + CG positions for every subsystem '
+            'in the INTEGRATION tab to make the gold CG marker reflect the real car.</p>',
             unsafe_allow_html=True)
     except Exception as _e:
         st.error(f"Could not assemble the full-car view: {_e}")
@@ -2217,7 +2328,7 @@ with tab5c:
     st.info("The flex / compliance solver models axial deflection of the "
             "double-wishbone member set (upper & lower arms + tie rod). For "
             "the selected topology, the architecture-agnostic engine reports "
-            "its own member set on the GEOMETRY 3D tab; per-link compliance "
+            "its own member set on the 3D MODEL tab; per-link compliance "
             "for arbitrary topologies is not yet wired into this tab. Switch "
             "to the double-wishbone model to use the flex analysis.")
   else:
