@@ -1157,16 +1157,18 @@ with tab4:
 
     fig3d.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
+        dragmode="turntable", uirevision="geom",
         scene=dict(
             xaxis=dict(title="x (rear)", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
             yaxis=dict(title="y (right)", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
             zaxis=dict(title="z (up)", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-            aspectmode="data",
+            aspectmode="data", dragmode="turntable",
             camera=dict(eye=dict(x=1.6, y=-1.5, z=0.9))),
         font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
         height=560, margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(bgcolor="rgba(0,0,0,0)"))
-    st.plotly_chart(fig3d, width='stretch')
+    st.plotly_chart(fig3d, width='stretch', key="geom3d_plot",
+                    config={"scrollZoom": True, "displaylogo": False})
 
 # --------------------------- FULL CAR 3D ----------------------------------- #
 # A LIVE Formula car assembled from every subsystem's current declaration. The
@@ -1181,8 +1183,9 @@ with tab_car:
         '<p class="hint">The whole car, live. Every sub-team\u2019s current numbers '
         'become a body here: edit a hardpoint, a spring rate, your downforce, your '
         'battery mass \u2014 then come back and your part has moved. '
+        '<b>Drag to rotate</b> the car in 3D, scroll to zoom, right-drag to pan. '
         '<b>Click any part to zoom into it</b>; use the spotlight picker or the '
-        'reset button to pull back out. Drag to orbit; scroll to zoom.</p>',
+        'reset button to pull back out. Your rotation is kept as you click around.</p>',
         unsafe_allow_html=True)
 
     _SUBSYS_CHOICES = ["(whole car)", "suspension", "aerodynamics", "powertrain",
@@ -1274,7 +1277,8 @@ with tab_car:
         # camera onto that part — i.e. clicking a part auto-zooms.
         _sel = st.plotly_chart(_fig_car, width='stretch', key="car3d_plot",
                                on_select="rerun",
-                               selection_mode=("points",))
+                               selection_mode=("points",),
+                               config={"scrollZoom": True, "displaylogo": False})
         try:
             _pts = (_sel or {}).get("selection", {}).get("points", [])
         except Exception:

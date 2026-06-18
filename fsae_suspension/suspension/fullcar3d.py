@@ -680,8 +680,13 @@ def build_full_car_figure(
     # box centre and pull the eye in proportionally, so clicking a part reads as
     # an automatic zoom. With no focus we keep the standard wide establishing
     # shot of the whole car.
+    # uirevision token: constant while the focus is unchanged (so the user's
+    # rotation is preserved across reruns), and distinct per focused part (so a
+    # new click is allowed to re-aim the camera). "wide" is the no-focus shot.
+    camera_revision = "wide"
     scene_camera = dict(eye=dict(x=1.8, y=-1.7, z=1.05))
     if focus_subsystem and subsys_pts.get(focus_subsystem):
+        camera_revision = "focus:%s" % focus_subsystem
         pts = np.asarray(subsys_pts[focus_subsystem], float)
         lo, hi = pts.min(axis=0), pts.max(axis=0)
         ctr = (lo + hi) / 2.0
@@ -708,6 +713,15 @@ def build_full_car_figure(
 
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
+        # Make rotating the car the primary mouse gesture: left-drag orbits the
+        # scene (turntable keeps "up" sensible), scroll zooms, right-drag pans.
+        dragmode="turntable",
+        # Preserve the user's manual orbit/zoom across Streamlit reruns. Plotly
+        # keeps the current camera as long as uirevision is unchanged; we only
+        # bump it (via camera_revision) when we deliberately re-aim the camera
+        # on a focus change, so a click-to-zoom still moves but ordinary reruns
+        # (and the user's own rotation) don't snap the view back.
+        uirevision=camera_revision,
         scene=dict(
             xaxis=dict(title="x (rear ←→ front)", backgroundcolor="#0e1216",
                        gridcolor="#1d242c", color="#8d99a6"),
@@ -715,7 +729,8 @@ def build_full_car_figure(
                        gridcolor="#1d242c", color="#8d99a6"),
             zaxis=dict(title="z (up)", backgroundcolor="#0e1216",
                        gridcolor="#1d242c", color="#8d99a6"),
-            aspectmode="data", camera=scene_camera),
+            aspectmode="data", camera=scene_camera,
+            dragmode="turntable"),
         font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
         height=height, margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10), itemsizing="constant"))
