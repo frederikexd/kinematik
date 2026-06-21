@@ -475,6 +475,7 @@ def build_full_car_figure(
     tire_width_mm: float = 180.0,
     part_overrides: dict | None = None,
     custom_parts: list | None = None,
+    suppress_subsystems: set | None = None,
     height: int = 720,
 ):
     """Assemble a live Formula-car 3D figure.
@@ -547,6 +548,10 @@ def build_full_car_figure(
     # Softer front spring -> more static sag -> body visibly lower. Cue, not a calc.
     kf = float(getattr(vp, "spring_rate_front", 35.0) or 35.0)
     ride_drop = _clamp((35.0 - kf) * 0.6, -12.0, 18.0)
+
+    # Subsystems whose PROCEDURAL body is replaced by a user CAD/custom part:
+    # skip drawing the stand-in loft/box so only the real geometry shows.
+    _suppress = set(suppress_subsystems or ())
 
     # Extract each axle's corner into a uniform, topology-independent description.
     color_registry = {}
@@ -750,7 +755,11 @@ def build_full_car_figure(
     #  an open cockpit, a curved MAIN roll hoop behind the driver's head and a
     #  smaller FRONT hoop ahead of the dash, plus the driver's helmet showing in
     #  the cockpit — not an F1 halo.
-    if show_bodywork:
+    # Defaults so aero (pylon mounts, rear-wing height) still works when the
+    # chassis body is suppressed (replaced by a CAD part).
+    tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
+    tub_top = max(z_lo * 0.5, tire_r * 0.14) + _clamp(tire_r * 0.95, 180, 360)
+    if show_bodywork and "chassis" not in _suppress:
         ch_it = _iface(ledger, "chassis")
         tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
         # Sit the tub low like an FSAE car: floor near the ground, deck low.
@@ -845,7 +854,7 @@ def build_full_car_figure(
     #  axle on endplates, and a tall multi-element REAR wing on twin endplates
     #  behind the rear axle. Element count/size still scale with declared
     #  downforce, so the aero team's number visibly grows the wing.
-    if show_aero:
+    if show_aero and "aerodynamics" not in _suppress:
         aero_it = _iface(ledger, "aerodynamics")
         df = _g(aero_it, "downforce_n_at_v")
         df_n = df[0] if isinstance(df, (tuple, list)) and df else None
@@ -878,7 +887,7 @@ def build_full_car_figure(
             mesh(ev, ei, ej, ek, COLORS["endplate"], "Front wing",
                  "aerodynamics", 0.9)
         # nose-to-wing pylons
-        _mount_y = (tub_w * 0.3) if show_bodywork else (fw_span * 0.12)
+        _mount_y = (tub_w * 0.3) if (show_bodywork and "chassis" not in _suppress) else (fw_span * 0.12)
         for sgn in (-1, 1):
             seg([fw_x, sgn * fw_span * 0.18, fw_z],
                 [fw_x - fw_chord, sgn * _mount_y, fw_z + tire_r * 0.4],
@@ -912,7 +921,7 @@ def build_full_car_figure(
                 COLORS["wing_edge"], 5, None, "rw_mount", "aerodynamics")
 
     # ---- 4) cooling: sidepods ------------------------------------------ #
-    if show_cooling:
+    if show_cooling and "cooling" not in _suppress:
         cool_it = _iface(ledger, "cooling")
         airflow = _g(cool_it, "cooling_airflow_cms")
         heat = _g(cool_it, "heat_reject_w")
@@ -938,7 +947,7 @@ def build_full_car_figure(
     #  This is an FSAE EV, so the rear package is a compact traction motor with
     #  its inverter on top, not an IC engine + airbox. Sizing still tracks the
     #  declared power/torque so the powertrain team's number drives the body.
-    if show_powertrain:
+    if show_powertrain and "powertrain" not in _suppress:
         pt_it = _iface(ledger, "powertrain")
         pkw = _g(pt_it, "peak_power_kw")
         ptq = _g(pt_it, "peak_torque_nm")
@@ -971,7 +980,7 @@ def build_full_car_figure(
                 "#8d99a6", 5, None, "drive", "powertrain")
 
     # ---- 6) electrics: accumulator ------------------------------------- #
-    if show_electrics:
+    if show_electrics and "electrics" not in _suppress:
         el_it = _iface(ledger, "electrics")
         ex, ey, ez = _g(el_it, "env_x_mm"), _g(el_it, "env_y_mm"), _g(el_it, "env_z_mm")
         emass, pwr = _g(el_it, "mass_kg"), _g(el_it, "power_draw_w")
@@ -1003,21 +1012,61 @@ def build_full_car_figure(
                else "Data-acquisition logger (placeholder — declare mass in INTEGRATION)")
     mesh(v, i, j, k, COLORS["logger"], "Data logger", "data-acquisition", 0.85, _daq_hv)
 
-    # ---- 8) CG marker from mass roll-up -------------------------------- #
+    # ---- 8) CG marker from mass roll-up (ledger + custom parts) --------- #
+    # The gold CG diamond reflects EVERYTHING declared: each subsystem's mass/CG
+    # from the ledger PLUS any custom/CAD part that carries a mass. As a team
+    # replaces stand-ins with real parts (each with its own mass), the CG slides
+    # to the real number — the whole car re-balances as the build firms up.
     cg_h = float(getattr(vp, "cg_height", 0.0) or 0.0)
     wdist = float(getattr(vp, "weight_dist_front", 0.5) or 0.5)
     cg_x = x_rear + wdist * (x_front - x_rear)
     cg_y = 0.0
     cg_label = "CG (params)"
+    _cg_terms = []   # (mass, x_car, y_car, z) tuples in car SAE frame
+    _ledger_mass = 0.0
     if ledger is not None:
         try:
             roll = ledger.mass_rollup()
             if roll.get("cg_mm"):
                 gx, gy, gz = roll["cg_mm"]
-                cg_x, cg_y, cg_h = x_front - gx, gy, gz
-                cg_label = "CG (declared %.0f kg)" % roll["total_kg"]
+                _ledger_mass = float(roll.get("total_kg", 0.0) or 0.0)
+                # ledger gx is +rearward from front axle -> car frame x is x_front-gx
+                _cg_terms.append((_ledger_mass, x_front - gx, gy, gz))
         except Exception:
             pass
+    # Fold in custom/CAD parts that declare a mass, at their placed centre.
+    _cust_mass = 0.0
+    for _cpm in (custom_parts or []):
+        try:
+            _m = float(_cpm.get("mass_kg", 0) or 0)
+            if _m <= 0:
+                continue
+            _cx2 = float(_cpm.get("x_mm", 0) or 0)
+            _cy2 = float(_cpm.get("y_mm", 0) or 0)
+            _cz2 = float(_cpm.get("z_mm", 0) or 0)
+            # If this part is auto-fitted, its drawn centre is the envelope home.
+            if _cpm.get("fit_to_envelope") and _cpm.get("subsys") not in (None, "(custom / unassigned)"):
+                try:
+                    _tg = suggest_part_geometry(vp, _cpm["subsys"], ledger=ledger)
+                    _cx2, _cy2, _cz2 = _tg["x_mm"], _tg["y_mm"], _tg["z_mm"]
+                except Exception:
+                    pass
+            _cg_terms.append((_m, _cx2, _cy2, _cz2))
+            _cust_mass += _m
+        except Exception:
+            continue
+    if _cg_terms:
+        _tot = sum(t[0] for t in _cg_terms) or 1.0
+        cg_x = sum(t[0] * t[1] for t in _cg_terms) / _tot
+        cg_y = sum(t[0] * t[2] for t in _cg_terms) / _tot
+        cg_h = sum(t[0] * t[3] for t in _cg_terms) / _tot
+        if _cust_mass > 0 and _ledger_mass > 0:
+            cg_label = "CG (%.0f kg: %.0f declared + %.0f parts)" % (
+                _tot, _ledger_mass, _cust_mass)
+        elif _cust_mass > 0:
+            cg_label = "CG (%.0f kg from parts)" % _tot
+        else:
+            cg_label = "CG (declared %.0f kg)" % _tot
     if cg_h > 0:
         fig.add_trace(go.Scatter3d(
             x=[cg_x], y=[cg_y], z=[cg_h], mode="markers+text",
@@ -1083,12 +1132,28 @@ def build_full_car_figure(
             if has_mesh:
                 # Draw the ACTUAL imported geometry, oriented + placed on the car.
                 faces = np.asarray(mesh_payload["faces"], int)
+                _mesh_scale = float(cp.get("mesh_scale", 1.0) or 1.0)
+                _cx, _cy, _cz = cx, cy, cz
+                # AUTO-FIT: scale + place the CAD into its subsystem's expected
+                # envelope so a part exported at any size/origin lands in the
+                # right spot at the right scale, instead of floating in raw CAD
+                # coordinates. The team can still nudge afterwards.
+                if cp.get("fit_to_envelope") and sub:
+                    try:
+                        _tgt = suggest_part_geometry(vp, sub, ledger=ledger)
+                        _raw = mesh_payload.get("size_mm") or [l, w, h]
+                        _raw_max = max(float(x) for x in _raw) or 1.0
+                        _tgt_max = max(_tgt["l_mm"], _tgt["w_mm"], _tgt["h_mm"])
+                        _mesh_scale = _mesh_scale * (_tgt_max / _raw_max)
+                        _cx, _cy, _cz = _tgt["x_mm"], _tgt["y_mm"], _tgt["z_mm"]
+                    except Exception:
+                        pass
                 V = _orient_part_mesh(
                     mesh_payload["verts"],
                     axis_map=cp.get("axis_map", "z_up"),
                     yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
-                    scale=float(cp.get("mesh_scale", 1.0) or 1.0),
-                    centre=(cx, cy, cz))
+                    scale=_mesh_scale,
+                    centre=(_cx, _cy, _cz))
                 mesh(V, faces[:, 0], faces[:, 1], faces[:, 2],
                      col, nm_draw, sub, base_op, hov)
             elif shape == "cylinder":

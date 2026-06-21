@@ -1400,6 +1400,24 @@ with tab_car:
                                                help="Spin the part about the car's "
                                                     "vertical axis to line it up.")
 
+                _rc = st.columns([3, 2])
+                _is_assigned = _cad_sub != "(custom / unassigned)"
+                _cad_replace = _rc[0].checkbox(
+                    f"Replace the built-in {_cad_sub} body & auto-fit it into place"
+                    if _is_assigned else
+                    "Auto-fit into the car (assign a subsystem to enable)",
+                    value=_is_assigned, key="car3d_cad_replace",
+                    disabled=not _is_assigned,
+                    help="On: the placeholder body for this subsystem is hidden and "
+                         "your CAD is scaled + placed into its slot, so the whole "
+                         "car fits around it. Off: drops the CAD at the raw size and "
+                         "position you set above.")
+                _cad_mass = _rc[1].number_input(
+                    "Mass kg (moves CG)", min_value=0.0, max_value=300.0,
+                    value=0.0, step=0.5, key="car3d_cad_mass",
+                    help="If set, this part's weight is folded into the gold CG "
+                         "marker so the car re-balances as parts firm up.")
+
                 if st.button("Add CAD part to car", key="car3d_cad_add",
                              type="primary"):
                     # Derive the placed extents for the fit read, honouring axis map.
@@ -1411,10 +1429,14 @@ with tab_car:
                         _L, _W, _H = _sz2, _sy, _sx
                     else:
                         _L, _W, _H = _sx, _sy, _sz2
+                    _fit = bool(_cad_replace and _is_assigned)
                     st.session_state.car3d_custom_parts.append(dict(
                         name=(_cad_name.strip() or "CAD part"), subsys=_cad_sub,
                         shape="mesh", mesh=_payload, axis_map=_ax,
                         yaw_deg=float(_cad_yaw), mesh_scale=1.0,
+                        fit_to_envelope=_fit,
+                        replaces_subsys=(_cad_sub if _fit else None),
+                        mass_kg=float(_cad_mass),
                         x_mm=float(_cad_x), y_mm=float(_cad_y), z_mm=float(_cad_z),
                         l_mm=float(_L), w_mm=float(_W), h_mm=float(_H)))
                     st.session_state.car3d_focus = (
@@ -1523,12 +1545,14 @@ with tab_car:
                 _is_mesh = _cpd.get("shape") == "mesh" and _cpd.get("mesh")
                 _mtag = (' <span style="color:#37e0d0;">· CAD mesh</span>'
                          if _is_mesh else '')
+                _rtag = (f' <span style="color:#9b8cff;">· replaces '
+                         f'{_cpd.get("replaces_subsys")} body</span>'
+                         if _cpd.get("replaces_subsys") else '')
                 _lc[0].markdown(
                     f'<span style="font-size:.9rem;">\u2022 <b>{_cpd["name"]}</b> '
                     f'({_cpd["subsys"]}) \u2014 {_cpd.get("l_mm",0):.0f}\u00d7'
-                    f'{_cpd.get("w_mm",0):.0f}\u00d7{_cpd.get("h_mm",0):.0f} mm @ '
-                    f'({_cpd.get("x_mm",0):.0f}, {_cpd.get("y_mm",0):.0f}, '
-                    f'{_cpd.get("z_mm",0):.0f}){_mtag}{_tag}</span>',
+                    f'{_cpd.get("w_mm",0):.0f}\u00d7{_cpd.get("h_mm",0):.0f} mm'
+                    f'{_mtag}{_rtag}{_tag}</span>',
                     unsafe_allow_html=True)
                 if _lc[1].button("Remove", key=f"car3d_cp_rm_{_ci}"):
                     st.session_state.car3d_custom_parts.pop(_ci)
@@ -1722,7 +1746,11 @@ with tab_car:
                         help="If the part comes in lying on its side, switch this.")
                     if st.button(f"Confirm & replace stand-in for \u201c{_req['name']}\u201d",
                                  key=f"car3d_rq_confirm_{_rid}", type="primary"):
-                        # Turn the stand-in into the confirmed REAL MESH, in place.
+                        # Turn the stand-in into the confirmed REAL MESH, in place,
+                        # auto-fitted into its subsystem's slot so the rest of the
+                        # car fits around it and the placeholder body is hidden.
+                        _rsub = _req.get("subsys")
+                        _rfit = bool(_rsub and _rsub != "(custom / unassigned)")
                         for _p in st.session_state.car3d_custom_parts:
                             if _p.get("req_id") == _rid:
                                 _p["shape"] = "mesh"
@@ -1734,6 +1762,8 @@ with tab_car:
                                 _p["w_mm"] = _real["w_mm"]
                                 _p["h_mm"] = _real["h_mm"]
                                 _p["provisional"] = False
+                                _p["fit_to_envelope"] = _rfit
+                                _p["replaces_subsys"] = _rsub if _rfit else None
                                 break
                         _req["resolved"] = True
                         _req["real"] = _real
@@ -1960,6 +1990,12 @@ with tab_car:
           _focus = st.session_state.get("car3d_focus")
           if _highlight:
               _focus = _highlight
+          # Any custom/CAD part that replaces a subsystem hides that subsystem's
+          # built-in placeholder body, so only the real geometry shows and the
+          # rest of the car fits around it.
+          _suppress = {p.get("replaces_subsys") for p in
+                       st.session_state.get("car3d_custom_parts", [])
+                       if p.get("replaces_subsys")}
           _fig_car = fullcar_mod.build_full_car_figure(
               vp=_vp_car, ledger=_led_car, topology_label=_topo_lbl,
               show_tires=_show_tires, show_brakes=_show_brakes,
@@ -1970,6 +2006,7 @@ with tab_car:
               focus_subsystem=_focus, tire_width_mm=float(_tire_w),
               part_overrides=_part_overrides,
               custom_parts=st.session_state.get("car3d_custom_parts", []),
+              suppress_subsystems=_suppress,
               **_car_kwargs)
 
           # Native Streamlit selection events (streamlit>=1.49): a click returns the
@@ -1987,6 +2024,31 @@ with tab_car:
                  '“Reset zoom” to pull back.' if _focus else
                  ' · <b>click a part to zoom in.</b>')
               + '</p>', unsafe_allow_html=True)
+
+          # Progress toward "every stand-in replaced by real CAD": show which
+          # subsystems now carry real geometry vs the procedural placeholder.
+          _REPLACEABLE = ["chassis", "cooling", "powertrain", "electrics",
+                          "aerodynamics"]
+          _replaced = {p.get("replaces_subsys") for p in
+                       st.session_state.get("car3d_custom_parts", [])
+                       if p.get("replaces_subsys")}
+          _pending = [s for s in
+                      st.session_state.get("car3d_part_requests", [])
+                      if not s.get("resolved")]
+          if _replaced or _pending:
+              _chips = []
+              for _s in _REPLACEABLE:
+                  if _s in _replaced:
+                      _chips.append(f'<span style="color:#5ad17a;">●</span> {_s}')
+                  else:
+                      _chips.append(f'<span style="color:#6f7d8c;">○</span> {_s}')
+              _done_n = len(_replaced & set(_REPLACEABLE))
+              st.markdown(
+                  f'<p class="hint" style="margin:4px 0 0;"><b>{_done_n}/'
+                  f'{len(_REPLACEABLE)} real CAD</b> · ' + " &nbsp; ".join(_chips)
+                  + (f' &nbsp;·&nbsp; <span style="color:#ffd166;">{len(_pending)} '
+                     'awaiting CAD</span>' if _pending else '')
+                  + '</p>', unsafe_allow_html=True)
           try:
               _pts = (_sel or {}).get("selection", {}).get("points", [])
           except Exception:
