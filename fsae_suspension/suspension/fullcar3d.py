@@ -433,6 +433,7 @@ def build_full_car_figure(
     highlight_subsystem: str | None = None,
     focus_subsystem: str | None = None,
     tire_width_mm: float = 180.0,
+    part_overrides: dict | None = None,
     height: int = 720,
 ):
     """Assemble a live Formula-car 3D figure.
@@ -445,6 +446,26 @@ def build_full_car_figure(
     corner_* takes precedence over hp_* when both are given. This lets a
     MacPherson, multi-link, trailing-arm, solid-axle, twist-beam or free-form
     car render its real members instead of being forced into wishbones.
+
+    PART OVERRIDES — user edits to size & position
+    ----------------------------------------------
+    `part_overrides` lets the user nudge the dimensions and location of any
+    drawn part without changing the underlying engineering numbers. It is a
+    dict keyed by the part's display name (exactly the `name=` each body is
+    drawn with, e.g. "Front wing", "Sidepod (cooling)", "Motor + inverter",
+    "Accumulator", "Monocoque", "Tire", "Brake disc", "Roll hoop", "Driver",
+    "Data logger", "Radiator core"). Each value is a dict with any of:
+
+        dx, dy, dz : float   # translate the whole part, in mm (SAE axes)
+        sx, sy, sz : float   # per-axis scale about the part's own centroid
+        scale      : float   # uniform scale (applied if sx/sy/sz absent)
+
+    The transform is applied at the single chokepoint every body passes
+    through (the local `mesh`/`seg` helpers), so it covers every part — meshes
+    and line members alike — and the per-subsystem bounding boxes used for
+    click-to-zoom are computed AFTER the override, so the camera still frames
+    the part where the user moved it. Missing keys default to no change
+    (dx=dy=dz=0, scale=1), so an empty/None override leaves the car untouched.
     """
     # Resolve the front/rear corner objects (architecture-agnostic).
     cf = corner_front if corner_front is not None else hp_front
@@ -474,6 +495,57 @@ def build_full_car_figure(
 
     fig = go.Figure()
 
+    # ---- user part overrides (size & position) -------------------------- #
+    # Resolve once: a part name -> (dx, dy, dz, sx, sy, sz). Scaling is about
+    # the part's centroid so a part keeps its place while changing size; the
+    # translate then moves it. Parts drawn in several pieces (a wing = elements
+    # + endplates, a "Tire" = tire + rim across 4 corners) must scale about a
+    # SHARED centroid, else the pieces fly apart — so we pin each part's scale
+    # centre to the centroid of the FIRST batch of vertices seen under that
+    # name, and reuse it for every later piece. Overrides are applied at the
+    # mesh/seg chokepoint, before _accrue, so click-to-zoom frames the moved part.
+    _ov = part_overrides or {}
+
+    def _ov_for(name):
+        o = _ov.get(name) if name else None
+        if not o:
+            return None
+        dx = float(o.get("dx", 0.0) or 0.0)
+        dy = float(o.get("dy", 0.0) or 0.0)
+        dz = float(o.get("dz", 0.0) or 0.0)
+        us = o.get("scale", 1.0)
+        us = 1.0 if us is None else float(us)
+        sx = float(o.get("sx", us) or us)
+        sy = float(o.get("sy", us) or us)
+        sz = float(o.get("sz", us) or us)
+        if dx == dy == dz == 0.0 and sx == sy == sz == 1.0:
+            return None
+        return (dx, dy, dz, sx, sy, sz)
+
+    _scale_centre: dict[str, np.ndarray] = {}
+    # Parts drawn once per corner (4×): scale each instance about ITS OWN
+    # centroid (so each tire/disc grows in place) rather than a shared car-wide
+    # centre (which would splay the four apart). Translate still applies to all.
+    _PER_INSTANCE = {"Tire", "Brake disc"}
+
+    def _apply_ov(name, V):
+        """Return V transformed by the named part's override (or V unchanged)."""
+        spec = _ov_for(name)
+        if spec is None:
+            return V
+        dx, dy, dz, sx, sy, sz = spec
+        A = np.asarray(V, float)
+        flat = A.reshape(-1, 3)
+        if name in _PER_INSTANCE:
+            c = flat.mean(axis=0)            # this instance's own centre
+        else:
+            c = _scale_centre.get(name)
+            if c is None:
+                c = flat.mean(axis=0)
+                _scale_centre[name] = c
+        out = (flat - c) * np.array([sx, sy, sz]) + c + np.array([dx, dy, dz])
+        return out.reshape(A.shape)
+
     def op(subsys, base):
         if highlight_subsystem is None:
             return base
@@ -500,6 +572,11 @@ def build_full_car_figure(
     def seg(p, q, color, w=5, name=None, group=None, subsys=None):
         if p is None or q is None:
             return
+        # Override key: prefer the legend name, fall back to the group token so
+        # unnamed members of a named part (hoop braces, wing mounts) move too.
+        _ovk = name if (name and name in _ov) else (group if group in _ov else name)
+        pq = _apply_ov(_ovk, np.array([p, q], float))
+        p, q = pq[0], pq[1]
         _accrue(subsys, [p, q])
         fig.add_trace(go.Scatter3d(
             x=[p[0], q[0]], y=[p[1], q[1]], z=[p[2], q[2]],
@@ -511,6 +588,7 @@ def build_full_car_figure(
     def mesh(verts, i, j, k, color, name, subsys, base_op=0.6, hover=None):
         once = name not in legend_done
         legend_done.add(name)
+        verts = _apply_ov(name, verts)
         _accrue(subsys, verts)
         # customdata carries the clickable subsystem id on every vertex, so a
         # Streamlit selection event can read which part the user picked.

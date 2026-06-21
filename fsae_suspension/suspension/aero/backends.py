@@ -253,12 +253,29 @@ class FluentVerificationSolver:
     def write_case(self, spec: CaseSpec, workdir: str,
                    estimate: "Optional[CoeffResult]" = None) -> str:
         """
-        Write the ANSYS Fluent verification journal for one case and return its path.
-        This is the artefact the user opens to confirm the in-house number; it is
-        written every time `write_case`/`run_case` is called, but running it is
-        entirely optional. Pass `estimate` to embed an already-computed in-house
-        number in the header (so the panel solve is not repeated); otherwise it is
-        computed here.
+        Write a RUNNABLE ANSYS Fluent validation journal for one case and return its
+        path. The deck reads the team's meshed case, sets the freestream from the
+        attitude, configures k-omega SST, initialises, iterates, and exports the
+        coefficient CSV that `read_fluent_csv` ingests — so a licensed-Fluent run
+        flows straight back into the tunnel correlation.
+
+        Per-run, site-specific bits (the meshed case file and the wall zone name(s)
+        the force report targets) are read from `spec.extra` with sane defaults:
+            spec.extra['case_file']   -> the .cas/.msh to read   (default geometry_path)
+            spec.extra['wall_zones']  -> wall zone name(s)        (default "car")
+            spec.extra['inlet_zone']  -> velocity-inlet zone      (default "inlet")
+        Pass `estimate` to print the in-house number in the header for comparison.
+        """
+        from .fluent_journal import write_runnable_journal
+        est = estimate if estimate is not None else self._estimate(spec)
+        return write_runnable_journal(spec, workdir, estimate=est)
+
+    def _write_stub_case(self, spec: CaseSpec, workdir: str,
+                         estimate: "Optional[CoeffResult]" = None) -> str:
+        """
+        The original header-only stub deck (kept for reference / fallback). Prints
+        reference values and the in-house estimate but leaves the solve as TODOs;
+        it does NOT run end to end. Prefer `write_case` (runnable).
         """
         os.makedirs(workdir, exist_ok=True)
         ux, uy, uz = OpenFOAMSolver._inlet_velocity(spec.attitude)

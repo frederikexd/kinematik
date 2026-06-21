@@ -128,6 +128,40 @@ body, p, span, div, label{ font-family:'Archivo',sans-serif; }
       border-bottom:none; border-radius:10px 10px 0 0; color:var(--dim); font-family:'JetBrains Mono'; font-size:.8rem;}
 .stTabs [aria-selected="true"]{ color:var(--ink); background:var(--panel2); border-color:#34507c;}
 .hint{ color:var(--dim); font-size:.82rem; }
+
+/* --- Wind-tunnel module helpers --------------------------------------- */
+.wt-intro{ display:flex; gap:.9rem; align-items:flex-start;
+      background:linear-gradient(180deg,var(--panel2),var(--panel));
+      border:1px solid var(--line); border-left:3px solid var(--cyan);
+      border-radius:12px; padding:.85rem 1rem; margin:.2rem 0 .6rem; }
+.wt-intro .ic{ font-family:'JetBrains Mono'; font-size:1.05rem; line-height:1.2;
+      color:var(--cyan); flex:0 0 auto; margin-top:1px; }
+.wt-intro p{ margin:0; font-size:.86rem; line-height:1.5; color:var(--ink); }
+.wt-intro p + p{ margin-top:.45rem; color:var(--dim); }
+.wt-intro b{ color:var(--ink); }
+
+.wt-step{ display:flex; gap:.7rem; align-items:baseline;
+      margin:.9rem 0 .35rem; }
+.wt-step .n{ font-family:'JetBrains Mono'; font-weight:700; font-size:.72rem;
+      letter-spacing:.04em; color:var(--bg); background:var(--amber);
+      border-radius:6px; padding:.12rem .42rem; flex:0 0 auto; }
+.wt-step .t{ font-family:'Archivo'; font-weight:700; font-size:1.0rem;
+      letter-spacing:-.01em; }
+.wt-step .t small{ font-family:'JetBrains Mono'; font-weight:400;
+      font-size:.72rem; color:var(--dim); letter-spacing:.02em; }
+.wt-sub{ color:var(--dim); font-size:.83rem; line-height:1.5;
+      margin:.1rem 0 .5rem 0; padding-left:1.85rem; }
+.wt-sub code{ font-size:.78rem; }
+
+.wt-note{ border:1px solid var(--line); border-left:3px solid var(--amber);
+      background:var(--panel2); border-radius:10px; padding:.6rem .8rem;
+      margin:.35rem 0 .55rem; font-size:.82rem; line-height:1.5; color:var(--dim); }
+.wt-note b{ color:var(--ink); }
+
+.wt-verify{ display:inline-flex; gap:.4rem; align-items:center;
+      font-family:'JetBrains Mono'; font-size:.7rem; color:var(--cyan);
+      border:1px solid #1f4d49; border-radius:6px; padding:.18rem .5rem;
+      background:#0e1a1955; }
 hr{ border-color:var(--line);}
 [data-testid="stMetricValue"]{ font-family:'JetBrains Mono'!important;}
 
@@ -1191,6 +1225,28 @@ with tab_car:
         'reset button to pull back out. Your rotation is kept as you click around.</p>',
         unsafe_allow_html=True)
 
+    st.markdown(
+        '<div style="border:1px solid var(--line);border-left:4px solid var(--line);'
+        'border-radius:8px;padding:10px 14px;margin:2px 0 10px;">'
+        '<b>What this view is for \u2014 and what it is not.</b><br>'
+        '<span style="font-size:.92rem;line-height:1.5;">This is the assembled car '
+        'as a <i>picture</i>: it shows where every subsystem sits and lets you '
+        'resize or reposition a body to explore packaging. Moving a part here '
+        'changes the <b>drawing</b>, not the real car \u2014 it will not catch a '
+        'collision on build day. For a team that can manufacture only once, the '
+        'check that actually protects the build lives in the '
+        '<b>INTEGRATION tab \u2192 \u201cMount-point clash\u201d</b> view: declare '
+        'each subsystem\u2019s reserved volume and where its parts bolt on, and the '
+        '<b>manufacturing-readiness board</b> there gives a single go/no-go \u2014 '
+        'red if parts physically overlap (do not cut), amber for thin clearances to '
+        'decide deliberately, green when the car will assemble. It flags anything '
+        'still based on an <i>estimate</i> so you know what to confirm before '
+        'sign-off. <b>Start there</b>, enter your subsystem\u2019s geometry in the '
+        'guided form at the top of that view, and drive the \u201cstill '
+        'estimated\u201d count to zero \u2014 that is what keeps the one build you '
+        'get from becoming a re-build.</span></div>',
+        unsafe_allow_html=True)
+
     _SUBSYS_CHOICES = ["(whole car)", "suspension", "aerodynamics", "powertrain",
                        "cooling", "electrics", "brakes", "chassis",
                        "data-acquisition"]
@@ -1226,6 +1282,115 @@ with tab_car:
         _show_pt = lc[2].checkbox("Powertrain", True, key="car3d_pt")
         _show_el = lc[2].checkbox("Electrics", True, key="car3d_el")
         _show_body = lc[3].checkbox("Bodywork (monocoque/halo)", True, key="car3d_body")
+
+    # ---- Edit parts: per-part size & position overrides ------------------- #
+    # Each part the car draws can be nudged in x/y/z (mm) and resized (uniform
+    # or per-axis), on top of whatever its subsystem numbers produced. These are
+    # pure presentation overrides held in session_state["car3d_overrides"] and
+    # handed to build_full_car_figure as part_overrides; the underlying
+    # engineering declarations are untouched. Keys are the parts' draw names.
+    _PART_EDIT = {
+        "Front wing":        "aerodynamics",
+        "Rear wing":         "aerodynamics",
+        "Sidepod (cooling)": "cooling",
+        "Radiator core":     "cooling",
+        "Motor + inverter":  "powertrain",
+        "Accumulator":       "electrics",
+        "Monocoque":         "chassis",
+        "Roll hoop":         "chassis",
+        "Driver":            "chassis",
+        "Tire":              "suspension",
+        "Brake disc":        "brakes",
+        "Data logger":       "data-acquisition",
+    }
+    if "car3d_overrides" not in st.session_state:
+        st.session_state.car3d_overrides = {}
+
+    with st.expander("Edit parts — size & position", expanded=False):
+        st.markdown(
+            '<p class="hint">Nudge any part\u2019s <b>location</b> (x: rear\u2194front, '
+            'y: left\u2194right, z: down\u2194up, in mm) and <b>size</b> (uniform, or '
+            'per-axis under \u201cAdvanced\u201d). These are view overrides on top of '
+            'your subsystem numbers \u2014 they move the body in the model without '
+            'changing any declared engineering value. Tires and brake discs resize '
+            'at all four corners at once.</p>', unsafe_allow_html=True)
+
+        _ep1, _ep2 = st.columns([3, 1])
+        _part = _ep1.selectbox("Part", list(_PART_EDIT.keys()), key="car3d_editpart")
+        if _ep2.button("Reset all parts", key="car3d_ov_resetall",
+                       help="Clear every part override and return all parts to "
+                            "their computed size and place."):
+            st.session_state.car3d_overrides = {}
+            st.session_state.pop("car3d_plot", None)
+            st.rerun()
+
+        _cur = dict(st.session_state.car3d_overrides.get(_part, {}))
+        _adv = st.checkbox("Advanced (per-axis scale)", key="car3d_ov_adv",
+                           value=any(k in _cur for k in ("sx", "sy", "sz")))
+
+        pc = st.columns(3)
+        _dx = pc[0].number_input("Move x (mm)", value=float(_cur.get("dx", 0.0)),
+                                 min_value=-1500.0, max_value=1500.0, step=10.0,
+                                 key=f"car3d_ov_dx_{_part}")
+        _dy = pc[1].number_input("Move y (mm)", value=float(_cur.get("dy", 0.0)),
+                                 min_value=-1500.0, max_value=1500.0, step=10.0,
+                                 key=f"car3d_ov_dy_{_part}")
+        _dz = pc[2].number_input("Move z (mm)", value=float(_cur.get("dz", 0.0)),
+                                 min_value=-1500.0, max_value=1500.0, step=10.0,
+                                 key=f"car3d_ov_dz_{_part}")
+
+        _new = dict(dx=_dx, dy=_dy, dz=_dz)
+        if _adv:
+            sc = st.columns(3)
+            _sx = sc[0].number_input("Scale x", value=float(_cur.get("sx", _cur.get("scale", 1.0))),
+                                     min_value=0.2, max_value=4.0, step=0.05,
+                                     key=f"car3d_ov_sx_{_part}")
+            _sy = sc[1].number_input("Scale y", value=float(_cur.get("sy", _cur.get("scale", 1.0))),
+                                     min_value=0.2, max_value=4.0, step=0.05,
+                                     key=f"car3d_ov_sy_{_part}")
+            _sz = sc[2].number_input("Scale z", value=float(_cur.get("sz", _cur.get("scale", 1.0))),
+                                     min_value=0.2, max_value=4.0, step=0.05,
+                                     key=f"car3d_ov_sz_{_part}")
+            _new.update(sx=_sx, sy=_sy, sz=_sz)
+        else:
+            _scl = st.slider("Size (uniform scale)", min_value=0.2, max_value=4.0,
+                             value=float(_cur.get("scale", _cur.get("sx", 1.0))),
+                             step=0.05, key=f"car3d_ov_scale_{_part}")
+            _new["scale"] = _scl
+
+        if st.button(f"Reset \u201c{_part}\u201d", key=f"car3d_ov_reset_{_part}"):
+            st.session_state.car3d_overrides.pop(_part, None)
+            st.session_state.pop("car3d_plot", None)
+            st.rerun()
+
+        # Persist only meaningful (non-identity) overrides so the dict stays clean.
+        _is_identity = (_new.get("dx", 0) == 0 and _new.get("dy", 0) == 0
+                        and _new.get("dz", 0) == 0
+                        and all(_new.get(k, 1.0) == 1.0
+                                for k in ("scale", "sx", "sy", "sz") if k in _new))
+        if _is_identity:
+            st.session_state.car3d_overrides.pop(_part, None)
+        else:
+            st.session_state.car3d_overrides[_part] = _new
+
+        _active = st.session_state.car3d_overrides
+        if _active:
+            st.markdown('<p class="hint" style="margin-bottom:2px;">Active part '
+                        'overrides:</p>', unsafe_allow_html=True)
+            _summ = []
+            for _pn, _o in _active.items():
+                _mv = [f"{ax}{_o[k]:+.0f}" for ax, k in
+                       (("x", "dx"), ("y", "dy"), ("z", "dz"))
+                       if _o.get(k)]
+                if "scale" in _o and _o["scale"] != 1.0:
+                    _mv.append(f"×{_o['scale']:.2f}")
+                for ax, k in (("sx", "sx"), ("sy", "sy"), ("sz", "sz")):
+                    if _o.get(k, 1.0) != 1.0:
+                        _mv.append(f"{ax}×{_o[k]:.2f}")
+                _summ.append(f"<b>{_pn}</b>: {', '.join(_mv) if _mv else 'none'}")
+            st.markdown('<p class="hint">' + " &nbsp;·&nbsp; ".join(_summ) + '</p>',
+                        unsafe_allow_html=True)
+    _part_overrides = dict(st.session_state.car3d_overrides)
 
     try:
         _vp_fields_car = set(VehicleParams.__dataclass_fields__.keys())
@@ -1263,6 +1428,7 @@ with tab_car:
             show_bodywork=_show_body, show_floor=_show_floor,
             highlight_subsystem=_focus,
             focus_subsystem=_focus, tire_width_mm=float(_tire_w),
+            part_overrides=_part_overrides,
             **_car_kwargs)
         st.markdown(
             f'<p class="hint" style="margin-bottom:2px;">Suspension architecture: '
@@ -1599,6 +1765,292 @@ def render_suspension_vs_chassis():
                 pass
 
 # --------- MOUNT-POINT CLASH (section of the merged INTEGRATION tab) -------- #
+def render_geometry_intake(store, geom):
+    """
+    Low-friction, guided data entry so the clash gate has real geometry to judge.
+
+    The readiness board is honest, which means it stays NOT-READY until every
+    subsystem declares (a) the volume it reserves — its keep-out box — and (b)
+    where it bolts to the car — its mount points. This form walks ONE subsystem
+    at a time through both in plain language, with defaults pre-filled, a running
+    roster of who has entered data and who hasn't, and an estimate toggle so a
+    team can declare a rough box now and confirm it later. It writes through the
+    same store.set_keepout / set_mount_point the detailed editor uses, so nothing
+    here is a parallel data path — it is just a friendlier door to the same ledger.
+    """
+    from suspension.mountpoints import MountPoint, KeepOut
+    _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
+             "data-acquisition", "electrics", "powertrain", "suspension"]
+    _EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
+              "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
+              "suspension": "🩷"}
+
+    # Who has declared anything yet — the roster that turns "enter your data" from
+    # an abstract ask into a visible, finite checklist the team can close out.
+    have_ko = {ko.owner_subsystem for ko in (geom.keepouts or {}).values()}
+    have_mp = {mp.owner_subsystem for mp in (geom.points or {}).values()}
+    entered = have_ko | have_mp
+    missing = [s for s in _SUBS if s not in entered]
+
+    with st.expander("① Start here — declare your subsystem's geometry "
+                     f"({len(entered)}/8 teams in)",
+                     expanded=bool(missing)):
+        st.markdown(
+            '<p class="hint">Two things make the clash gate work, and only your '
+            'team knows them for your subsystem:<br>'
+            '<b>1 · Your keep-out box</b> — the volume you reserve that nothing '
+            'else may enter (your accumulator envelope, the cooling duct path, the '
+            'roll-hoop tube, the driver\u2019s legroom). Give two opposite corners '
+            'in car coordinates (x: rear\u2192front, y: left\u2192right, z: up), in mm.<br>'
+            '<b>2 · Your mount points</b> — where your parts bolt to the car, and '
+            'how much clearance they need. Each point names what it mounts onto.<br>'
+            'Don\u2019t have exact numbers yet? Enter your best estimate and tick '
+            '<i>estimated</i> \u2014 it still gets checked, just flagged as '
+            'unconfirmed so you know to come back. The goal is to drive the '
+            '\u201cstill estimated\u201d count to zero before anyone cuts material.</p>',
+            unsafe_allow_html=True)
+
+        # Roster line: green who's in, grey who's still missing.
+        _in = " ".join(f"{_EMOJI[s]}{s}" for s in _SUBS if s in entered) or "—"
+        _out = " ".join(f"{_EMOJI[s]}{s}" for s in missing) or "none 🎉 every team is in"
+        st.markdown(
+            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:2px 0 8px;">'
+            f'<span style="font-size:.84rem;color:#8d99a6;">entered:</span> '
+            f'<span style="font-size:.86rem;">{_in}</span><br>'
+            f'<span style="font-size:.84rem;color:#8d99a6;">still needed:</span> '
+            f'<span style="font-size:.86rem;">{_out}</span></div>',
+            unsafe_allow_html=True)
+
+        # Pick the subsystem to enter — default to the first one still missing, so
+        # the form naturally walks the team through the gaps.
+        _default_idx = _SUBS.index(missing[0]) if missing else 0
+        who = st.selectbox("Which subsystem are you entering?", _SUBS,
+                           index=_default_idx, key="intake_who",
+                           format_func=lambda s: f"{_EMOJI[s]} {s}")
+
+        gi = st.columns(2)
+        # ---- 1) keep-out box ---- #
+        with gi[0]:
+            st.markdown("**1 · Your keep-out box**")
+            _kn = st.text_input("Name it", value=f"{who}-envelope",
+                                key="intake_ko_name")
+            lo_c = st.columns(3)
+            lo = (lo_c[0].number_input("corner A — x", value=0.0, step=10.0, key="intake_lox"),
+                  lo_c[1].number_input("y", value=-150.0, step=10.0, key="intake_loy"),
+                  lo_c[2].number_input("z", value=0.0, step=10.0, key="intake_loz"))
+            hi_c = st.columns(3)
+            hi = (hi_c[0].number_input("corner B — x", value=200.0, step=10.0, key="intake_hix"),
+                  hi_c[1].number_input("y", value=150.0, step=10.0, key="intake_hiy"),
+                  hi_c[2].number_input("z", value=200.0, step=10.0, key="intake_hiz"))
+            _ke = st.checkbox("These corners are estimated", value=True,
+                              key="intake_ko_est",
+                              help="Leave ticked until you've confirmed the volume "
+                                   "from real CAD. Estimated boxes still get checked.")
+            if st.button("Save my keep-out", key="intake_ko_save"):
+                store.set_keepout(KeepOut(_kn, who, lo_mm=lo, hi_mm=hi,
+                                          is_estimate=_ke))
+                store.save()
+                st.rerun()
+
+        # ---- 2) a mount point ---- #
+        with gi[1]:
+            st.markdown("**2 · A mount point** (add one at a time)")
+            _pn = st.text_input("Name it", value=f"{who}-mount-1",
+                                key="intake_mp_name")
+            _mo = st.selectbox("Bolts onto", _SUBS,
+                               index=_SUBS.index("chassis"),
+                               key="intake_mp_mounts",
+                               format_func=lambda s: f"{_EMOJI[s]} {s}")
+            p_c = st.columns(3)
+            pxyz = (p_c[0].number_input("at — x", value=100.0, step=10.0, key="intake_px"),
+                    p_c[1].number_input("y", value=0.0, step=10.0, key="intake_py"),
+                    p_c[2].number_input("z", value=100.0, step=10.0, key="intake_pz"))
+            _clr = st.number_input("Clearance it needs (mm)", 0.0, 100.0, value=8.0,
+                                   step=1.0, key="intake_mp_clr",
+                                   help="How far this point must stay from any other "
+                                        "subsystem's keep-out. 5–10 mm is typical for "
+                                        "a bolted bracket; more if a tool must reach in.")
+            _pe = st.checkbox("This position is estimated", value=True,
+                              key="intake_mp_est")
+            if st.button("Save my mount point", key="intake_mp_save"):
+                store.set_mount_point(MountPoint(_pn, xyz_mm=pxyz,
+                                                 owner_subsystem=who,
+                                                 mounts_on=_mo,
+                                                 min_clearance_mm=_clr,
+                                                 is_estimate=_pe))
+                store.save()
+                st.rerun()
+
+        st.markdown(
+            '<p class="hint" style="margin-top:6px;">Add as many mount points as '
+            'your subsystem has. When every team has entered a box and its mounts, '
+            'the readiness verdict below judges the real car \u2014 and the full '
+            'editor under \u201cMount points / keep-out volumes\u201d lets you tweak '
+            'or delete anything you\u2019ve saved.</p>', unsafe_allow_html=True)
+
+
+def render_manufacturing_readiness(geom):
+    """
+    Whole-car go/no-go for a team that can only manufacture once.
+
+    Consumes the SAME geom.check_clashes() findings as the clash board below — no
+    parallel data path — and reshapes them into a single build-readiness verdict:
+
+      * the ONLY hard STOP is physical interference (parts overlapping). It is
+        owner-independent and needs no per-part tagging, so it stays zero-friction:
+        the geometry itself decides.
+      * thin-clearance shortfalls WARN, never stop — but a shortfall on ESTIMATED
+        geometry is ranked above one on confirmed geometry, because a part that
+        only just clears at a position you GUESSED is the one most likely to
+        actually overlap once real dimensions land. The is_estimate flag already
+        in the data does this for free — no one-shot list to maintain and rot.
+      * estimates never block a green result; instead every row carries a separate
+        confidence chip (confirmed vs est), and the pile of "est" chips IS the
+        team's pre-manufacturing to-do list. When it's empty, the green is real.
+
+    This is the lowest-friction design that still catches the collision that would
+    cost the re-make: interference stops the build, everything else informs it.
+    """
+    from suspension.interfaces import Severity
+    findings = geom.check_clashes()
+
+    # Partition the real clash findings (ignore the synthetic OK/MISSING summary
+    # rows check_clashes emits when there is nothing to check — the readiness
+    # banner speaks to those states itself).
+    interferences, clearances = [], []
+    for f in findings:
+        d = f.detail or {}
+        if f.check == "clash-interference":
+            interferences.append(f)
+        elif f.check == "clash-clearance":
+            clearances.append(f)
+
+    n_pts = len(getattr(geom, "points", {}) or {})
+    n_kos = len(getattr(geom, "keepouts", {}) or {})
+
+    # ---- the single go/no-go banner ---- #
+    if not n_pts or not n_kos:
+        _verdict, _cls, _line = (
+            "NOT READY — NO DATA", "warn",
+            "No geometry to judge yet. Until every subsystem declares its mount "
+            "points and keep-out volumes below, this board is green on a car that "
+            "doesn't exist — the exact false confidence that loses a one-shot "
+            "build. Populating the ledger is the highest-value thing the team can "
+            "do; the gate is ready the moment the numbers are real.")
+    elif interferences:
+        _verdict, _cls = "DO NOT MANUFACTURE", "bad"
+        _line = (f"{len(interferences)} hard interference(s) — parts physically "
+                 "overlap. These will not assemble; fix the geometry before "
+                 "anything is cut, drilled, or laid up.")
+    elif clearances:
+        _est_warn = sum(1 for f in clearances if (f.detail or {}).get("estimate"))
+        _verdict, _cls = "BUILD WITH OPEN ITEMS", "warn"
+        _line = (f"No interference. {len(clearances)} thin-clearance warning(s)"
+                 + (f", {_est_warn} of them on geometry you marked estimated "
+                    "(your highest real risk — confirm those positions first)"
+                    if _est_warn else "")
+                 + ". None of these stop the build, but each is a deliberate "
+                 "decision, not an oversight.")
+    else:
+        _verdict, _cls = "CLEAR TO MANUFACTURE", "good"
+        _line = (f"All {n_pts} mount point(s) clear every keep-out with margin and "
+                 "no part overlaps another.")
+
+    # ---- confidence: the to-do list that drains toward build day ---- #
+    est_pts = [m.name for m in (geom.points or {}).values() if getattr(m, "is_estimate", False)]
+    est_kos = [k.name for k in (geom.keepouts or {}).values() if getattr(k, "is_estimate", False)]
+    n_est = len(est_pts) + len(est_kos)
+    n_geo = n_pts + n_kos
+    if n_geo:
+        confirmed = n_geo - n_est
+        if n_est == 0:
+            _conf = (f"Confidence: all {n_geo} geometries confirmed — this verdict "
+                     "rests on real numbers, not estimates.")
+        else:
+            _conf = (f"Confidence: {confirmed}/{n_geo} geometries confirmed · "
+                     f"<b>{n_est} still estimated</b>. Those {n_est} are the "
+                     "pre-manufacturing to-do list — a green result above is only "
+                     "as trustworthy as these are real. Confirm them down to zero "
+                     "before sign-off.")
+    else:
+        _conf = ""
+
+    # ---- scope caveat: what the verdict CANNOT see yet -------------------- #
+    # Framed as the check's blind spots, not a roster of who is late. A
+    # subsystem that has declared no geometry is invisible to the clash check,
+    # so any collision involving it is undetectable — that is a fact about the
+    # VERDICT's coverage, not a judgement of the people. We deliberately do NOT
+    # phrase this as "team X owes data": that pressures someone to enter a junk
+    # estimate just to clear their name, which corrupts the ledger the whole gate
+    # depends on. Naming the blind spots pressures the result's credibility (good)
+    # without pressuring people to launder unknowns into fake-confirmed cells (bad).
+    _ALL_SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
+                 "data-acquisition", "electrics", "powertrain", "suspension"]
+    _EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
+              "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
+              "suspension": "🩷"}
+    _declared = ({k.owner_subsystem for k in (geom.keepouts or {}).values()}
+                 | {m.owner_subsystem for m in (geom.points or {}).values()})
+    _blind = [s for s in _ALL_SUBS if s not in _declared]
+    if _blind and n_geo:
+        # Only meaningful once SOME data exists — when nothing is declared the
+        # banner already says NO DATA, and repeating all eight names is noise.
+        _names = " ".join(f"{_EMOJI[s]}{s}" for s in _blind)
+        _scope = (
+            f"Scope of this verdict: it covers {len(_declared)} of 8 subsystems. "
+            f"It is <b>blind to {len(_blind)}</b> that have declared no geometry "
+            f"yet \u2014 {_names}. Any collision involving those is undetectable "
+            "here, so treat even a green result as provisional until they\u2019re "
+            "in. This is a limit of what the check can see, not a tally of who\u2019s "
+            "behind.")
+    else:
+        _scope = ""
+
+    st.markdown(
+        f'<div style="border:1px solid var(--line);border-left:5px solid var(--line);'
+        f'border-radius:8px;padding:12px 16px;margin:6px 0 10px;">'
+        f'<span class="tag {_cls}" style="font-size:.95rem;">{_verdict}</span><br>'
+        f'<span style="font-size:.95rem;line-height:1.45;">{_line}</span>'
+        + (f'<br><span style="font-size:.86rem;color:#8d99a6;line-height:1.4;">{_conf}</span>'
+           if _conf else "")
+        + (f'<br><span style="font-size:.86rem;color:#8d99a6;line-height:1.4;">{_scope}</span>'
+           if _scope else "")
+        + '</div>', unsafe_allow_html=True)
+
+    # ---- ranked open items: interference first, then est-clearance, then rest -- #
+    # Estimate-amplification: a shortfall on guessed geometry outranks the same
+    # shortfall on confirmed geometry. Within each tier, tighter gaps come first.
+    if interferences or clearances:
+        def _rank(f):
+            d = f.detail or {}
+            if f.check == "clash-interference":
+                return (0, -(d.get("penetration_mm") or 0.0))
+            est = 1 if d.get("estimate") else 2     # estimated clearance before confirmed
+            return (est, d.get("gap_mm") or 0.0)
+        st.markdown('<p class="hint" style="margin:2px 0 4px;"><b>Open items</b>, '
+                    'ranked by what most threatens the one-shot build:</p>',
+                    unsafe_allow_html=True)
+        _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜",
+                     "cooling": "🩵", "data-acquisition": "💚", "electrics": "💙",
+                     "powertrain": "❤️", "suspension": "🩷"}
+        for f in sorted(interferences + clearances, key=_rank):
+            d = f.detail or {}
+            est = d.get("estimate")
+            stop = f.check == "clash-interference"
+            tag_cls = "bad" if stop else "warn"
+            tag_txt = "STOP · INTERFERENCE" if stop else "WARN · CLEARANCE"
+            conf_chip = ('<span class="tag warn" style="font-size:.7rem;">EST</span>'
+                         if est else
+                         '<span class="tag good" style="font-size:.7rem;">CONFIRMED</span>')
+            who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
+            st.markdown(
+                f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+                f'<span class="tag {tag_cls}">{tag_txt}</span> {conf_chip} '
+                f'&nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
+                f'<span style="font-size:.92rem">{f.message}</span></div>',
+                unsafe_allow_html=True)
+
+
 def render_mountpoint_clash():
     """
     The CAD→clash→CG chain, live: an aero member drags a single wing mounting point
@@ -1631,6 +2083,12 @@ def render_mountpoint_clash():
                  "Other tabs work; reinstall the app dependencies (numpy) to "
                  "restore the clash check.")
         return
+
+    # Guided data entry first — the gate is only honest once the geometry is real,
+    # so the friendliest door to the ledger leads. Then the whole-car verdict.
+    render_geometry_intake(store, geom)
+    render_manufacturing_readiness(geom)
+    st.divider()
 
     # ---- editor: keep-outs and mount points ---- #
     ec = st.columns(2)
@@ -1729,7 +2187,28 @@ def render_mountpoint_clash():
 
         res = st.session_state.get("_mp_last")
         if res is not None and res.moved_point == which:
-            st.markdown(f'<p class="hint">{res.summary()}</p>', unsafe_allow_html=True)
+            # Surface the consequence of the move at the point of action: not just
+            # "did THIS point clash" but what the move did to the WHOLE-CAR verdict,
+            # so a subsystem dragging a mount sees instantly whether it just created
+            # or cleared a build stop — without scrolling back to the banner.
+            from suspension.interfaces import Severity as _Sev
+            _post = geom.check_clashes()
+            _has_interf = any(f.check == "clash-interference" for f in _post)
+            _has_clear = any(f.check == "clash-clearance" for f in _post)
+            if _has_interf:
+                _vtxt, _vcls = "DO NOT MANUFACTURE — interference", "bad"
+            elif _has_clear:
+                _vtxt, _vcls = "BUILD WITH OPEN ITEMS — thin clearance", "warn"
+            else:
+                _vtxt, _vcls = "CLEAR TO MANUFACTURE", "good"
+            st.markdown(
+                f'<p class="hint">{res.summary()}</p>'
+                f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+                f'<span class="tag {_vcls}">{_vtxt}</span> '
+                f'<span style="font-size:.86rem;color:#8d99a6">after this move '
+                f'(whole-car verdict — see the readiness board up top for the full '
+                f'open-items list)</span></div>',
+                unsafe_allow_html=True)
 
     # ---- the clash board (same render idiom as the ledger findings) ---- #
     st.markdown("###### Clash board")
@@ -3054,6 +3533,21 @@ with tab8:
     st.session_state["_notes_unread"] = 0
     st.session_state["_notes_seen_ids"] = {n.id for n in nstore.notes}
 
+    # Record a READ RECEIPT for this viewer so the people who posted notes can
+    # see their note actually reached someone. The viewer label is the lead's
+    # typed name if they've given one (persisted in n_author), else a stable
+    # per-session id. We only write back to shared storage when something
+    # actually changed, to avoid hammering Supabase on every rerun.
+    _viewer = (st.session_state.get("n_author") or "").strip()
+    if not _viewer:
+        _sid = st.session_state.get("_viewer_sid")
+        if not _sid:
+            _sid = "guest-" + _datetime.datetime.now().strftime("%H%M%S%f")
+            st.session_state["_viewer_sid"] = _sid
+        _viewer = _sid
+    if nstore.mark_note_seen(_viewer):
+        nstore.save()
+
     st.markdown('<p class="hint">Cross-team notes between leads — for keeping '
                 'interfaces from going stale. Unlike Discord, a note here is addressed '
                 'to a team, has an open/resolved status, and lives next to the work in '
@@ -3099,17 +3593,43 @@ with tab8:
             st.session_state.setdefault("_notes_seen_ids", set()).add(_new_note.id)
             _recipients = ("all teams" if n_to == "all"
                            else integ_mod.TEAMS.get(n_to, {}).get("label", n_to))
-            if _ok:
-                st.toast(f"Note posted — {_recipients} will be notified.", icon="✅")
+            _shared = type(nstore.backend).__name__ == "SupabaseBackend"
+            if _ok and _shared:
+                # Genuinely delivered: written to the shared store every other
+                # session polls, so their poller will toast them within
+                # NOTE_POLL_SECONDS. This is the real "it reached other users".
+                st.session_state["_last_post_confirm"] = (
+                    f"✅ Posted to shared storage — {_recipients} will be "
+                    f"notified within {NOTE_POLL_SECONDS}s, and you'll see "
+                    "“Seen by” below once they open this tab.")
+                st.toast(f"Delivered — {_recipients} will be notified.", icon="✅")
+            elif _ok and not _shared:
+                # Saved, but only to local/ephemeral storage — on Streamlit Cloud
+                # other users run a different process and will NEVER see this.
+                # Do not pretend it was delivered.
+                st.session_state["_last_post_confirm"] = (
+                    "⚠ Saved to LOCAL storage only — other leads will NOT see "
+                    "this note. Supabase isn't the active backend, so notes "
+                    "don't sync across users on Streamlit Cloud.")
+                st.warning(st.session_state["_last_post_confirm"])
             else:
-                st.warning(
-                    "Note saved in this session only — it could not be written to "
-                    "shared storage, so other leads won't be notified. "
-                    f"({getattr(nstore, 'save_error', 'unknown error')}) "
+                st.session_state["_last_post_confirm"] = (
+                    "⚠ Note could NOT be written to shared storage, so other "
+                    f"leads won't be notified. ({getattr(nstore, 'save_error', 'unknown error')}) "
                     "Check the Supabase config so notes sync across users.")
+                st.warning(st.session_state["_last_post_confirm"])
             st.rerun()
         else:
             st.warning("Write a note before posting.")
+
+    # Persisted delivery confirmation from the last post (survives the st.rerun
+    # above, which a transient st.warning would not). Shown until the next post.
+    _confirm = st.session_state.get("_last_post_confirm")
+    if _confirm:
+        if _confirm.startswith("✅"):
+            st.success(_confirm)
+        else:
+            st.warning(_confirm)
 
     st.markdown("---")
     fcol1, fcol2 = st.columns([1.5, 3])
@@ -3148,11 +3668,27 @@ with tab8:
             meta = f"{from_label} → {to_label} · {n.ts.replace('T',' ')[:16]}"
             if n.author:
                 meta += f" · {n.author}"
+            # Read-receipt line: who has opened the tab and seen this note. This
+            # is the concrete signal that a posted note actually reached other
+            # leads — not just that it saved. The author is excluded by
+            # mark_note_seen, so this only ever shows *other* people.
+            _seen = getattr(n, "seen_by", {}) or {}
+            if _seen:
+                _names = sorted(_seen.keys())
+                _shown = ", ".join(_names[:4])
+                if len(_names) > 4:
+                    _shown += f" +{len(_names) - 4} more"
+                seen_line = (f"<br><span class='tag good' style='margin-top:.25rem;"
+                             f"display:inline-block;'>✓ Seen by {_shown}</span>")
+            else:
+                seen_line = ("<br><span class='hint' style='font-size:.8rem;'>"
+                             "○ Not yet opened by anyone else</span>")
             st.markdown(
                 f"<div class='card' style='margin:.3rem 0; border-left:3px solid {fclr};'>"
                 f"<div style='margin-bottom:.2rem;'>{badges}</div>"
                 f"<span style='font-size:.95rem;'>{n.message}</span><br>"
-                f"<span class='hint'>{meta}</span></div>", unsafe_allow_html=True)
+                f"<span class='hint'>{meta}</span>{seen_line}</div>",
+                unsafe_allow_html=True)
             bc = st.columns([1, 6])
             if n.status == "open":
                 if bc[0].button("Mark resolved", key=f"res_{n.id}"):
@@ -4167,35 +4703,48 @@ with tab12:
         # ------------------------- WIND TUNNEL (CFD) -------------------------- #
         else:
             st.markdown(
-                '<p class="hint">The point of tunnel testing isn\'t "is the car '
-                'fast" — it\'s <b>calibrating your CFD</b>. You map the physical aero '
-                'map (how C_l/C_d shift with front &amp; rear ride height under load), '
-                'then run the <i>identical</i> ride-height/speed points through the '
-                '<b>Virtual Tunnel Solver</b> and compare. There\'s no single-code '
-                'choice to make: the Virtual Tunnel Solver is built on <b>Star-CCM+, '
-                'TS-Auto <i>and</i> OpenFOAM at once</b> — it runs every matched point '
-                'through all three codes and fuses their converged output into one '
-                'cross-code consensus coefficient. The <b>inter-code spread</b> is the '
-                'payoff: two independent solvers landing on the same C_l is strong '
-                'evidence the number is real; the same two diverging is a red flag no '
-                'single-solver report would ever show you. That consensus — not any one '
-                'code — is what gets calibrated against the tunnel, point by point.</p>',
+                '<div class="wt-intro"><span class="ic">◎</span><div>'
+                '<p><b>What this does:</b> it checks whether your CFD can be trusted. '
+                'You give it the aero map your wind tunnel actually measured — how '
+                'C_l and C_d move as front &amp; rear ride height change — and it '
+                'runs the <i>same</i> ride-height and speed points through the '
+                '<b>Virtual Wind Tunnel</b>, then lines the two up point by point. '
+                'If they agree, your CFD is calibrated and you can trust it to screen '
+                'setups the tunnel never saw. If they don\'t, you\'ve found a wrong '
+                'assumption before it reaches the car.</p>'
+                '<p>The Virtual Wind Tunnel computes each point with an in-house '
+                'flow surrogate <b>and</b> writes a ready-to-run <b>ANSYS Fluent '
+                'journal</b> for every case, so you can re-run any point on your own '
+                'licensed Fluent and confirm the number yourself. Same physics '
+                '(k-ω SST RANS), nothing you can\'t check.</p>'
+                '</div></div>',
+                unsafe_allow_html=True)
+            st.markdown(
+                '<span class="wt-verify">✓ verifiable on ANSYS Fluent — '
+                'a .jou deck is written for every point</span>',
                 unsafe_allow_html=True)
 
+            st.markdown('<div class="wt-step"><span class="n">SETUP</span>'
+                        '<span class="t">Reference values & tunnel conditions '
+                        '<small>must match your CFD post-processor</small></span></div>',
+                        unsafe_allow_html=True)
             wc = st.columns(4)
             wt_area = wc[0].number_input("Reference area A (m²)", 0.5, 3.0,
                                          value=1.00, step=0.05, key="wt_area",
                                          help="Frontal area the C_l/C_d are normalised by. "
-                                              "MUST match what the CFD post-processor uses.")
+                                              "MUST match the reference area set in Fluent.")
             wt_wb = wc[1].number_input("Wheelbase (mm)", 1000.0, 2000.0,
                                        value=1550.0, step=10.0, key="wt_wb",
                                        help="Distance between the front & rear ride-height "
                                             "reference planes (the CFD reference length).")
-            wt_reduction = wc[2].selectbox("Consensus", ["mean", "median"],
+            wt_reduction = wc[2].selectbox("Combine repeats by", ["mean", "median"],
                                            key="wt_reduction",
-                                           help="How the Virtual Tunnel Solver fuses the "
-                                                "converged codes into one coefficient. "
-                                                "Median is robust to one outlier code.")
+                                           help="If you give more than one CFD value for the "
+                                                "same point (e.g. a few Fluent restarts or "
+                                                "mesh levels), this is how they collapse to "
+                                                "one number. Median ignores a single outlier "
+                                                "run. With one value per point it has no "
+                                                "effect.")
             wt_ground = wc[3].selectbox("Tunnel floor",
                                         ["moving-belt", "fixed-floor", "suction-fixed"],
                                         key="wt_ground",
@@ -4211,23 +4760,28 @@ with tab12:
                                               "wake blockage? Uncorrected coeffs are inflated.")
             wt_geom = wc2[2].text_input("Geometry (STL/CAD path)", value="car.stl",
                                         key="wt_geom")
-            wt_agree = wc2[3].number_input("Code agreement tol (%)", 0.5, 25.0,
+            wt_agree = wc2[3].number_input("Run-spread tol (%)", 0.5, 25.0,
                                            value=5.0, step=0.5, key="wt_agree",
-                                           help="Max inter-code spread (peak-to-peak, % of "
-                                                "mean) for the fused point to count as a "
-                                                "converged consensus. Above it, the codes "
-                                                "disagree and the point is flagged, not "
-                                                "trusted.")
-            # The Virtual Tunnel Solver is built on all three codes. We keep the legacy
-            # single-code key map only for the result-CSV provenance label below.
-            wt_solver = "Virtual Tunnel Solver"
+                                           help="Only used when a point has more than one CFD "
+                                                "value. If those repeats spread wider than "
+                                                "this (peak-to-peak, % of mean), the point is "
+                                                "flagged as not-yet-converged rather than "
+                                                "trusted. With one value per point it does "
+                                                "nothing.")
+            # Provenance label for the results CSV. The Virtual Wind Tunnel's verified
+            # path is ANSYS Fluent (an in-house surrogate plus a Fluent journal per case).
+            wt_solver = "ANSYS Fluent (verified)"
 
+            st.markdown('<div class="wt-step"><span class="n">STEP 1</span>'
+                        '<span class="t">Upload what the tunnel measured</span></div>',
+                        unsafe_allow_html=True)
             st.markdown(
-                'Upload your **physical aero map** as a CSV with columns '
-                '<code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code> and optional '
-                '<code>aero_balance_front</code>. Sign convention: <b>c_lift negative = '
-                'downforce</b>. (Logged downforce/drag in Newtons instead? Convert with '
-                '<code>downforce_to_clift</code> / <code>drag_to_cdrag</code> first.)',
+                '<p class="wt-sub">One row per ride-height point you ran in the tunnel. '
+                'Columns: <code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code> '
+                '(optionally <code>aero_balance_front</code>). Sign convention: '
+                '<b>c_lift negative = downforce</b>. Logged forces in Newtons instead? '
+                'Convert with <code>downforce_to_clift</code> / <code>drag_to_cdrag</code> '
+                'first.</p>',
                 unsafe_allow_html=True)
             wt_phys_up = st.file_uploader("Physical aero-map CSV", type=["csv"],
                                           key="wt_phys_up")
@@ -4276,12 +4830,38 @@ with tab12:
             if phys_map is not None and len(phys_map) > 0:
                 vwt = wt_mod.VirtualWindTunnel(phys_map, geometry_path=wt_geom,
                                                rho=1.225)
-                st.markdown("**Step 1 — generate the matching Virtual Wind Tunnel run.** "
-                            "These are the *exact* physical points, as CFD cases.")
+                st.markdown('<div class="wt-step"><span class="n">STEP 2</span>'
+                            '<span class="t">Generate the matching CFD cases '
+                            '<small>same ride heights & speed</small></span></div>',
+                            unsafe_allow_html=True)
+                st.markdown(
+                    '<p class="wt-sub">The Virtual Wind Tunnel computes each point '
+                    'in-house and writes a ready-to-run <b>ANSYS Fluent journal '
+                    '(<code>.jou</code>)</b> per case, so you can reproduce any number '
+                    'on your own licensed Fluent. Two things are site-specific — set '
+                    'them to match how your team builds the case:</p>',
+                    unsafe_allow_html=True)
+                wcj = st.columns([2, 2, 1])
+                wt_casefile = wcj[0].text_input(
+                    "Meshed case file Fluent reads", value="car.cas",
+                    key="wt_casefile",
+                    help="The .cas/.msh your team builds per run. The journal does NOT "
+                         "mesh for you — point this at a case Fluent can read and "
+                         "iterate. Varies by run, so it's editable here and inside "
+                         "each .jou.")
+                wt_walls = wcj[1].text_input(
+                    "Car wall zone(s) for the force report", value="car",
+                    key="wt_walls",
+                    help="Name(s) of the solid surface the lift/drag report targets. "
+                         "Space- or comma-separated for several (e.g. "
+                         "'floor frontwing rearwing body'). Leave as 'car' if you have "
+                         "one body zone.")
+                wt_inlet = wcj[2].text_input(
+                    "Inlet zone", value="inlet", key="wt_inlet",
+                    help="Velocity-inlet zone name the freestream is applied to.")
                 st.markdown(f'<p class="hint">{vwt.plan()}</p>', unsafe_allow_html=True)
 
-                if st.button("Write Virtual Tunnel Solver case files "
-                             "(Star-CCM+ + TS-Auto + OpenFOAM) for the matched points",
+                if st.button("Write ANSYS Fluent case files for the matched points",
                              key="wt_write"):
                     try:
                         from suspension.aero import get_backend
@@ -4289,48 +4869,59 @@ with tab12:
                                               reduction=str(wt_reduction),
                                               agreement_tol=float(wt_agree),
                                               turbulence_model="kOmegaSST")
-                        outdir = tempfile.mkdtemp(prefix="kinematik_vts_")
+                        outdir = tempfile.mkdtemp(prefix="kinematik_vwt_")
+                        # Thread the per-run, site-specific bits into each case so the
+                        # journal reads the right mesh and reports on the right walls.
+                        _zones = [z for z in re.split(r"[,\s]+", wt_walls.strip()) if z]
                         specs = vwt.case_specs()
-                        # Each write_case lays down all three codes' input per point.
+                        for s in specs:
+                            s.extra.setdefault("case_file", wt_casefile.strip()
+                                               or "car.cas")
+                            s.extra.setdefault("wall_zones", _zones or ["car"])
+                            s.extra.setdefault("inlet_zone", wt_inlet.strip() or "inlet")
+                        # write_case lays down a runnable Fluent journal per point.
                         written = [backend.write_case(s, outdir) for s in specs]
                         st.session_state["wt_outdir"] = outdir
-                        codes = ", ".join(backend._member_names)
                         st.success(
-                            f"Wrote {len(written)} matched case(s) to {outdir}, each "
-                            f"with input for all three codes ({codes}) in its own "
-                            f"sub-folder. Run each point through every code on your "
-                            f"licensed installs / OpenFOAM cluster, export one coeff CSV "
-                            f"per code (Cl,Cd,Cs,CmPitch,converged), then upload the "
-                            f"combined consensus results below.")
-                        # show the per-point / per-code layout for the first few points
+                            f"Wrote {len(written)} runnable case(s) to {outdir}. Each "
+                            f"point has its own folder with an ANSYS Fluent journal that "
+                            f"reads `{wt_casefile.strip() or 'car.cas'}`, sets the "
+                            f"freestream, solves k-\u03c9 SST, and exports "
+                            f"Cl,Cd,Cs,CmPitch,converged. Run a point with "
+                            f"`fluent 3ddp -g -i <case>.jou`, then bring its "
+                            f"`_coeffs.csv` back in Step 3.")
+                        # show the per-point layout for the first few points
                         preview = []
                         for w in written[:4]:
                             cn = os.path.basename(w)
                             preview.append(cn + "/")
                             for m in backend._member_names:
-                                preview.append(f"    {m}/")
+                                preview.append(f"    {m}/<case>.jou  (runnable)")
                         st.code("\n".join(preview)
                                 + ("\n…" if len(written) > 4 else ""))
                     except Exception as e:
-                        st.error(f"Could not write driver files: {e}")
+                        st.error(f"Could not write the Fluent case files: {e}")
 
+                st.markdown('<div class="wt-step"><span class="n">STEP 3</span>'
+                            '<span class="t">Bring the CFD coefficients back</span>'
+                            '</div>', unsafe_allow_html=True)
                 st.markdown(
-                    "**Step 2 — upload the CFD results.** Two accepted layouts, both "
-                    "keyed by the ride-height point "
-                    "(<code>front_mm, rear_mm, speed_ms</code>):<br>"
-                    "&nbsp;&nbsp;• <b>Per-code</b> (recommended) — give each code's "
-                    "coefficients in columns "
-                    "<code>c_lift_starccm, c_drag_starccm, c_lift_tsauto, "
-                    "c_drag_tsauto, c_lift_openfoam, c_drag_openfoam</code>; the "
-                    "Virtual Tunnel Solver fuses them into the consensus and reports "
-                    "the inter-code spread.<br>"
-                    "&nbsp;&nbsp;• <b>Pre-fused</b> — a single "
-                    "<code>c_lift, c_drag</code> (plus optional "
-                    "<code>aero_balance_front, converged</code>) if you've already "
-                    "combined the codes yourself.<br>"
-                    "Same sign convention throughout (<b>c_lift negative = "
-                    "downforce</b>).", unsafe_allow_html=True)
-                wt_cfd_up = st.file_uploader("Virtual Tunnel Solver results CSV",
+                    '<p class="wt-sub">One row per point, keyed by its ride height '
+                    '(<code>front_mm, rear_mm, speed_ms</code>). The simplest form has '
+                    'one <code>c_lift</code> and one <code>c_drag</code> per row '
+                    '(optionally <code>aero_balance_front, converged</code>) — that\'s '
+                    'all you need if you ran each point once in Fluent.</p>',
+                    unsafe_allow_html=True)
+                st.markdown(
+                    '<div class="wt-note">Comparing more than one solver? You can add '
+                    'per-solver columns named <code>c_lift_&lt;name&gt;</code> / '
+                    '<code>c_drag_&lt;name&gt;</code> (e.g. <code>c_lift_fluent</code>) '
+                    'and the app will combine them and report how far apart they sit. '
+                    '<b>For a Fluent-only workflow you can ignore this</b> and just give '
+                    'one <code>c_lift, c_drag</code> pair. Same sign convention '
+                    'throughout: <b>c_lift negative = downforce</b>.</div>',
+                    unsafe_allow_html=True)
+                wt_cfd_up = st.file_uploader("CFD results CSV",
                                              type=["csv"], key="wt_cfd_up")
 
                 if wt_cfd_up is not None:
@@ -4352,11 +4943,11 @@ with tab12:
                         cfd_results = []
                         ens_details = []      # (RideHeights, EnsembleResult) for display
                         cfd_prov = wt_mod.CFDProvenance(
-                            backend="virtual-tunnel[starccm+tsauto+openfoam]",
+                            backend="virtual-windtunnel[ansys-fluent]",
                             fidelity=wt_mod.SolverFidelity.RANS,
                             turbulence_model="kOmegaSST",
-                            notes="Virtual Tunnel Solver consensus (Star-CCM+, "
-                                  "TS-Auto, OpenFOAM)")
+                            notes="Virtual Wind Tunnel — ANSYS Fluent verified "
+                                  "(k-omega SST RANS)")
 
                         for row in rows2:
                             def _g(k, d=None):
@@ -4370,7 +4961,7 @@ with tab12:
                             if per_code:
                                 # Build one MemberOutcome per code from its columns,
                                 # then fuse through the solver's own engine so the UI
-                                # consensus is identical to the programmatic one.
+                                # combined value is identical to the programmatic one.
                                 spec = wt_mod.CaseSpec(
                                     attitude=att, geometry_path=wt_geom,
                                     reference_area_m2=float(wt_area),
@@ -4401,31 +4992,43 @@ with tab12:
                                     aero_balance_front=_g("aero_balance_front", None),
                                     converged=convv, provenance=cfd_prov))
 
-                        # If we fused per-code, surface the inter-code agreement first —
-                        # the whole reason the solver is built on three codes.
+                        # If multiple solver columns were supplied, surface how far
+                        # apart the runs sit before showing the tunnel correlation.
                         if ens_details:
                             n_dis = sum(1 for _rh, er in ens_details
                                         if er.n_voted >= 2 and not er.fused.converged)
                             worst = max((er.cl_spread_pct for _rh, er in ens_details
                                          if er.cl_spread_pct == er.cl_spread_pct),
                                         default=float("nan"))
-                            agree_msg = (f"Virtual Tunnel Solver fused "
-                                         f"{len(ens_details)} point(s) across "
-                                         f"{', '.join(DEFAULT_MEMBER_NAMES)}. "
-                                         f"Worst inter-code C_l spread "
+                            n_src = len(DEFAULT_MEMBER_NAMES)
+                            src_label = (DEFAULT_MEMBER_NAMES[0] if n_src == 1
+                                         else f"{n_src} solvers "
+                                              f"({', '.join(DEFAULT_MEMBER_NAMES)})")
+                            agree_msg = (f"Combined {len(ens_details)} point(s) from "
+                                         f"{src_label}. Worst C_l spread across runs "
                                          f"{worst:.1f}%.")
                             if n_dis:
                                 st.warning(agree_msg + f" {n_dis} point(s) exceed the "
-                                           f"{float(wt_agree):.0f}% agreement tolerance — "
-                                           "the codes disagree there; treat those as "
-                                           "flags, not numbers.")
+                                           f"{float(wt_agree):.0f}% run-spread tolerance — "
+                                           "those aren't settled yet; treat them as flags, "
+                                           "not numbers.")
                             else:
-                                st.success(agree_msg + " All fused points are within the "
-                                           "agreement tolerance — the codes corroborate "
-                                           "each other.")
+                                st.success(agree_msg + " Every point is inside the "
+                                           "run-spread tolerance — the results are "
+                                           "self-consistent.")
 
                         rep = vwt.correlate(cfd_results)
 
+                        st.markdown('<div class="wt-step"><span class="n">RESULT</span>'
+                                    '<span class="t">Tunnel vs CFD, point by point</span>'
+                                    '</div>', unsafe_allow_html=True)
+                        st.markdown(
+                            '<p class="wt-sub">Each row is one ride-height point. '
+                            '<code>phys/CFD</code> shows the tunnel number next to the '
+                            'CFD number; the <b>err</b> column is how far CFD is off. '
+                            'Green means inside tolerance (trust it); red means the CFD '
+                            'missed there. The verdict below is the whole-map call.</p>',
+                            unsafe_allow_html=True)
                         st.markdown(_verdict_tag(rep.overall_within_tol),
                                     unsafe_allow_html=True)
                         mcw = st.columns(4)
@@ -4478,10 +5081,12 @@ with tab12:
                     except Exception as e:
                         st.error(f"Couldn't correlate the CFD results: {e}")
             elif wt_phys_up is None:
-                st.markdown('<p class="hint">No physical map yet. The CSV needs '
-                            '<code>front_mm,rear_mm,speed_ms,c_lift,c_drag</code> per '
-                            'row — one row per ride-height point you measured in the '
-                            'tunnel.</p>', unsafe_allow_html=True)
+                st.markdown(
+                    '<div class="wt-note">Start with <b>Step 1</b>: upload the aero map '
+                    'your tunnel measured. One row per ride-height point, columns '
+                    '<code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code>. '
+                    'Steps 2 and 3 appear once it loads.</div>',
+                    unsafe_allow_html=True)
 
         st.markdown('<p class="hint">Tolerances are explicit and editable: track/lap '
                     'correlation in <code>suspension/correlation.py</code> '
@@ -5418,8 +6023,10 @@ st.markdown('<p class="hint">One file holds your whole session — geometry, veh
             'your progress or hand it to a teammate; load it to pick up exactly where '
             'you left off.</p>', unsafe_allow_html=True)
 
-# Build the unified project bundle.
-_store_for_save = project_mod.ProjectStore(PROJECT_PATH)
+# Build the unified project bundle. Source the handover from the live cached
+# store (not a fresh disk read) so a decision just logged at the save gate is
+# included in the file even on ephemeral hosts where the disk write is rejected.
+_store_for_save = get_store()
 project_bundle = {
     "kinematik_version": "1.0",
     "saved": _datetime.datetime.now().isoformat(timespec="seconds"),
@@ -5431,10 +6038,70 @@ project_bundle = {
     "handover": json.loads(_store_for_save.as_json()),
 }
 
+# --------------------------------------------------------------------------- #
+#  Required step: log a decision before you can save.
+#
+#  The whole point of the tool is that the *reasoning* survives to next year's
+#  team. A save that captures geometry but not "why" is exactly the gap that
+#  used to get lost — so logging a decision is a gate on the save, not an
+#  optional tab nobody opens. The gate clears for the session once a decision
+#  is logged here, so repeat saves of the same state don't re-nag; the form
+#  stays visible so you can keep logging as you go.
+# --------------------------------------------------------------------------- #
+_gate_ok = st.session_state.get("save_decision_logged", False)
+
 sc1, sc2, sc3 = st.columns([1, 1, 1])
-sc1.download_button("💾 Save project (.json)", json.dumps(project_bundle, indent=2),
-                    file_name="kinematik_project.json", mime="application/json",
-                    width='stretch')
+
+if _gate_ok:
+    sc1.download_button("💾 Save project (.json)", json.dumps(project_bundle, indent=2),
+                        file_name="kinematik_project.json", mime="application/json",
+                        width='stretch')
+else:
+    sc1.button("💾 Save project (.json)", width='stretch', disabled=True,
+               help="Log the decision behind this save first — see the box below.")
+
+# The required decision form. Rendered inline at the save step so it can't be
+# skipped, mirroring the handover tab's add_decision API.
+with st.container():
+    if not _gate_ok:
+        st.markdown('<p class="hint" style="margin:.3rem 0;">⛔ <b>Before you save:</b> '
+                    'log the decision behind this version. One line on <i>why</i> is what '
+                    'next year\'s team actually needs — the geometry alone doesn\'t explain '
+                    'itself.</p>', unsafe_allow_html=True)
+    else:
+        st.markdown('<p class="hint" style="margin:.3rem 0;">✅ Decision logged — save is '
+                    'unlocked. Log another below if this save covers more than one change.</p>',
+                    unsafe_allow_html=True)
+
+    _SAVE_TEAMS = list(integ_mod.TEAMS.keys())
+    gc = st.columns([1.2, 2])
+    _g_team = gc[0].selectbox(
+        "Team", _SAVE_TEAMS,
+        format_func=lambda k: integ_mod.TEAMS[k]["label"], key="save_d_team")
+    _g_title = gc[1].text_input(
+        "What did you decide?", key="save_d_title",
+        placeholder="e.g. Raised front roll-centre 8 mm")
+    _g_rationale = st.text_area(
+        "Why — the reasoning and trade-off (this is the part that gets lost)",
+        key="save_d_rationale", height=80,
+        placeholder="Chose [x] over [y] because [reason]. Costs us [trade-off].")
+    _g_author = st.text_input("Author", key="save_d_author",
+                              placeholder="your name")
+
+    if st.button("✔ Log decision & unlock save", key="save_gate_log"):
+        if _g_title.strip() and _g_rationale.strip():
+            _gstore = get_store()
+            _gstore.add_decision(project_mod.Decision(
+                team=_g_team, title=_g_title.strip(),
+                rationale=_g_rationale.strip(), author=_g_author.strip(),
+                tags="save-gate"))
+            save_store(_gstore)
+            st.session_state["save_decision_logged"] = True
+            for _k in ("save_d_title", "save_d_rationale"):
+                st.session_state.pop(_k, None)
+            st.rerun()
+        else:
+            st.warning("Enter what you decided and why before saving.")
 
 # CSV of the sweep (tabular data — handy for report plots / Excel)
 import io

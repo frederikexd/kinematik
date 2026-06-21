@@ -93,12 +93,20 @@ class Note:
     status: str = "open"         # "open" | "resolved"
     ts: str = ""
     id: str = ""
+    # Read receipts: who has opened the Lead Notes tab and seen this note.
+    # Keyed by a viewer label (the lead's name, or a session id if unnamed) ->
+    # ISO timestamp of first view. Lets the *poster* see "Seen by ..." so they
+    # know the note actually reached other leads, not just that it saved.
+    seen_by: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.ts:
             self.ts = _dt.datetime.now().isoformat(timespec="seconds")
         if not self.id:
             self.id = _dt.datetime.now().strftime("%Y%m%d%H%M%S%f")
+        # Tolerate older rows persisted before seen_by existed / wrong types.
+        if not isinstance(self.seen_by, dict):
+            self.seen_by = {}
 
 
 # --------------------------------------------------------------------------- #
@@ -404,6 +412,26 @@ class ProjectStore:
         for n in self.notes:
             if n.id == note_id:
                 n.status = "open"
+
+    def mark_note_seen(self, viewer: str, exclude_author: bool = True) -> bool:
+        """Record that `viewer` has now seen the notes addressed to them.
+
+        Stamps every note this viewer can see (i.e. not ones they authored, when
+        exclude_author is set) with a first-seen timestamp. Returns True if any
+        note was newly stamped, so the caller knows whether a save is worthwhile.
+        A viewer is a stable label — the lead's typed name, or a session id when
+        they haven't given one.
+        """
+        if not viewer:
+            return False
+        changed = False
+        for n in self.notes:
+            if exclude_author and n.author and n.author == viewer:
+                continue
+            if viewer not in n.seen_by:
+                n.seen_by[viewer] = _dt.datetime.now().isoformat(timespec="seconds")
+                changed = True
+        return changed
 
     def notes_for(self, team: str, include_all=True):
         """Notes addressed to a team (and 'all' broadcasts), newest first."""
