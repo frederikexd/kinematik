@@ -140,6 +140,31 @@ def _cylinder(center, axis, radius, length, n=24, cap=True):
     return verts, np.array(I), np.array(J), np.array(K)
 
 
+def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
+                      centre=(0.0, 0.0, 0.0)):
+    """Place an imported CAD part's vertices into the car's SAE frame.
+
+    verts come recentred on the part's own bbox centre (from chassis.load_part_mesh).
+    We optionally remap axes (CAD up-axis -> car z-up), apply a yaw about car z,
+    scale, then translate the part's centre to `centre`. Returns an (N,3) array.
+
+        axis_map : "z_up"  CAD already z-up (no swap)
+                   "y_up"  CAD is y-up (Y->Z, Z->-Y): common SolidWorks export
+                   "x_up"  CAD is x-up (X->Z, Z->-X)
+    """
+    V = np.asarray(verts, float).reshape(-1, 3) * float(scale)
+    if axis_map == "y_up":
+        V = np.column_stack([V[:, 0], -V[:, 2], V[:, 1]])
+    elif axis_map == "x_up":
+        V = np.column_stack([-V[:, 2], V[:, 1], V[:, 0]])
+    if yaw_deg:
+        a = np.radians(float(yaw_deg))
+        ca, sa = np.cos(a), np.sin(a)
+        R = np.array([[ca, -sa, 0.0], [sa, ca, 0.0], [0.0, 0.0, 1.0]])
+        V = V @ R.T
+    return V + np.asarray(centre, float)
+
+
 def _airfoil_section(n=14, thickness=0.12):
     """A closed 2D aerofoil-ish ring in (chord, thickness) coords, chord 0..1.
 
@@ -1033,9 +1058,14 @@ def build_full_car_figure(
             cx = float(cp.get("x_mm", 0) or 0)
             cy = float(cp.get("y_mm", 0) or 0)
             cz = float(cp.get("z_mm", 0) or 0)
-            if l <= 0 or w <= 0 or (h <= 0 and cp.get("shape", "box") == "box"):
+            _has_mesh_early = bool(cp.get("mesh") and cp["mesh"].get("verts"))
+            if not _has_mesh_early and (
+                    l <= 0 or w <= 0 or (h <= 0 and cp.get("shape", "box") == "box")):
                 continue
             prov = bool(cp.get("provisional"))
+            mesh_payload = cp.get("mesh")
+            has_mesh = bool(mesh_payload and mesh_payload.get("verts")
+                            and mesh_payload.get("faces"))
             if prov:
                 # A waiting-on-CAD stand-in: amber, see-through, clearly a guess.
                 col = cp.get("color") or COLORS["cg"]
@@ -1045,22 +1075,33 @@ def build_full_car_figure(
                     nm, l, w, h, cx, cy, cz)
             else:
                 col = cp.get("color") or COLORS.get(sub_color_key(sub), COLORS["custom"])
-                base_op = 0.82
+                base_op = 0.95 if has_mesh else 0.82
                 nm_draw = nm
-                hov = "%s — %.0f×%.0f×%.0f mm @ (x %.0f, y %.0f, z %.0f)" % (
-                    nm, l, w, h, cx, cy, cz)
+                _kind = "CAD mesh" if has_mesh else "%.0f×%.0f×%.0f mm" % (l, w, h)
+                hov = "%s — %s @ (x %.0f, y %.0f, z %.0f)" % (nm, _kind, cx, cy, cz)
             shape = cp.get("shape", "box")
-            if shape == "cylinder":
+            if has_mesh:
+                # Draw the ACTUAL imported geometry, oriented + placed on the car.
+                faces = np.asarray(mesh_payload["faces"], int)
+                V = _orient_part_mesh(
+                    mesh_payload["verts"],
+                    axis_map=cp.get("axis_map", "z_up"),
+                    yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
+                    scale=float(cp.get("mesh_scale", 1.0) or 1.0),
+                    centre=(cx, cy, cz))
+                mesh(V, faces[:, 0], faces[:, 1], faces[:, 2],
+                     col, nm_draw, sub, base_op, hov)
+            elif shape == "cylinder":
                 v, ii, jj, kk = _cylinder((cx, cy, cz), (1, 0, 0),
                                           radius=w / 2.0, length=l)
                 mesh(v, ii, jj, kk, col, nm_draw, sub, base_op, hov)
             else:
                 v, ii, jj, kk = _box(cx, cy, cz, l, w, h)
                 mesh(v, ii, jj, kk, col, nm_draw, sub, base_op, hov)
-            # On a stand-in, also draw its wireframe edges so its true extent is
-            # legible through the transparency — the packaging team is reading a
-            # box, and a faint mesh alone is hard to judge.
-            if prov and shape != "cylinder":
+            # On a box stand-in, also draw its wireframe edges so its true extent
+            # is legible through the transparency — the packaging team is reading
+            # a box, and a faint mesh alone is hard to judge.
+            if prov and not has_mesh and shape != "cylinder":
                 E = [(0,1),(1,2),(2,3),(3,0),(4,5),(5,6),(6,7),(7,4),
                      (0,4),(1,5),(2,6),(3,7)]
                 for a, b in E:

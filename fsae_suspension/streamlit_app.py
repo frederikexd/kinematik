@@ -1215,16 +1215,53 @@ with tab4:
 with tab_car:
   if st.session_state.get("model3d_view", "Linkage geometry") == "Full car":
     st.markdown(
-        '<p class="hint">The whole car, live \u2014 drawn as a true Formula Student '
-        'EV: pointed nose, multi-element front &amp; rear wings on endplates, open '
-        'cockpit with main/front roll hoops and the driver\u2019s helmet, sidepods, '
-        'a rear traction motor + inverter and the accumulator. Every sub-team\u2019s '
-        'current numbers become a body here: edit a hardpoint, a spring rate, your '
-        'downforce, your battery mass \u2014 then come back and your part has moved. '
-        '<b>Drag to rotate</b> the car in 3D, scroll to zoom, right-drag to pan. '
-        '<b>Click any part to zoom into it</b>; use the spotlight picker or the '
-        'reset button to pull back out. Your rotation is kept as you click around.</p>',
+        '<p class="hint" style="margin:0 0 8px;">The whole car, live. '
+        '<b>Drag</b> to rotate, scroll to zoom, <b>click a part</b> to zoom in. '
+        'Tools and details are below the model.</p>',
         unsafe_allow_html=True)
+
+    # ---- compact control strip (sits directly above the car) ------------- #
+    _SUBSYS_CHOICES = ["(whole car)", "suspension", "aerodynamics", "powertrain",
+                       "cooling", "electrics", "brakes", "chassis",
+                       "data-acquisition"]
+    hc1, hc2, hc3, hc4 = st.columns([2, 1, 1, 1])
+    _hl_choice = hc1.selectbox(
+        "Spotlight subsystem", _SUBSYS_CHOICES, index=0, key="car3d_highlight",
+        help="Glow your subsystem and dim the rest, to see your part in the whole car.")
+    _highlight = None if _hl_choice == "(whole car)" else _hl_choice
+    _prev_hl = st.session_state.get("_car3d_hl_prev")
+    if _hl_choice != _prev_hl:
+        st.session_state._car3d_hl_prev = _hl_choice
+        if _hl_choice == "(whole car)":
+            st.session_state.pop("car3d_focus", None)
+    _tire_w = hc2.number_input("Tire width mm", value=180.0, min_value=80.0,
+                               max_value=320.0, step=10.0, key="car3d_tirew")
+    _show_floor = hc3.checkbox("Ground", value=True, key="car3d_floor")
+    if hc4.button("Reset zoom", key="car3d_resetzoom",
+                  help="Pull the camera back out to the whole-car view."):
+        st.session_state.pop("car3d_focus", None)
+        st.session_state.pop("car3d_plot", None)
+
+    with st.expander("Layers", expanded=False):
+        lc = st.columns(4)
+        _show_tires = lc[0].checkbox("Tires", True, key="car3d_tires")
+        _show_brakes = lc[0].checkbox("Brakes", True, key="car3d_brakes")
+        _show_aero = lc[1].checkbox("Aero (wings)", True, key="car3d_aero")
+        _show_cool = lc[1].checkbox("Cooling (sidepods)", True, key="car3d_cool")
+        _show_pt = lc[2].checkbox("Powertrain", True, key="car3d_pt")
+        _show_el = lc[2].checkbox("Electrics", True, key="car3d_el")
+        _show_body = lc[3].checkbox("Bodywork (monocoque/halo)", True, key="car3d_body")
+
+    # The car renders HERE, directly under the controls. Streamlit fills a
+    # container in the order it was CREATED, not called, so we reserve this slot
+    # now and draw the figure into it after the part-editing tools below have
+    # written their values to session_state. This is what puts the model first
+    # and pushes every tool/panel below it — far less to scroll past.
+    _car_slot = st.container()
+
+    st.markdown('<p class="hint" style="margin:10px 0 2px;font-family:JetBrains Mono;'
+                'font-size:.7rem;letter-spacing:.12em;color:#6f7d8c;">PART TOOLS</p>',
+                unsafe_allow_html=True)
 
     # ===================================================================== #
     #  DROP YOUR PART ON THE CAR  —  the frictionless "does it fit" path.    #
@@ -1277,7 +1314,7 @@ with tab_car:
                   "data-acquisition"]
 
     with st.expander("➕  Drop your part on the car — type its size in mm, see it fit",
-                     expanded=not st.session_state.car3d_custom_parts):
+                     expanded=False):
         st.markdown(
             '<p class="hint">Got a part with real dimensions \u2014 a radiator off a '
             'spec sheet, an accumulator box, a motor? Put its <b>actual size in '
@@ -1288,8 +1325,108 @@ with tab_car:
             'check \u2014 the build-day go/no-go still lives in the INTEGRATION '
             'tab.</p>', unsafe_allow_html=True)
 
-        # Preset picker: choosing one seeds the form fields (via session_state)
-        # and reruns, so the inputs below come up pre-filled.
+        # ---- UPLOAD A REAL CAD / SKETCH ------------------------------------ #
+        # The team can drop their actual SolidWorks part (or a quick sketch
+        # exported as STEP/STL) and the REAL geometry renders on the car — not a
+        # box approximation. We load + normalise the mesh once, cache it in
+        # session_state keyed by the part name, then add it as a mesh-backed
+        # custom part that flows through the same renderer as everything else.
+        st.markdown('<p class="hint" style="margin:2px 0 4px;"><b>Have the actual '
+                    'CAD?</b> Drop a SolidWorks part or a quick sketch '
+                    '(STEP / STL / OBJ / GLB) and the real shape renders on the car '
+                    '\u2014 not just a box.</p>', unsafe_allow_html=True)
+        _cad_up = st.file_uploader(
+            "Upload CAD / sketch", type=["step", "stp", "stl", "obj", "glb"],
+            key="car3d_cad_up",
+            help="STEP is most reliable from SolidWorks (File ▸ Save As ▸ STEP). "
+                 "STL/OBJ/GLB also work for a quick sketch.")
+        if _cad_up is not None:
+            # Load + normalise only once per uploaded file (keyed by name+size).
+            _sig = f"{_cad_up.name}:{_cad_up.size}"
+            if st.session_state.get("car3d_cad_sig") != _sig:
+                try:
+                    import tempfile as _tf, os as _os
+                    _sfx = "." + _cad_up.name.split(".")[-1]
+                    with _tf.NamedTemporaryFile(delete=False, suffix=_sfx) as _f:
+                        _f.write(_cad_up.getbuffer())
+                        _cad_path = _f.name
+                    with st.spinner("Reading geometry…"):
+                        _payload = chassis_mod.load_part_mesh(_cad_path, max_faces=4000)
+                    _os.unlink(_cad_path)
+                    st.session_state.car3d_cad_payload = _payload
+                    st.session_state.car3d_cad_sig = _sig
+                    st.session_state.car3d_cad_name_default = \
+                        _cad_up.name.rsplit(".", 1)[0]
+                except Exception as _ce:
+                    st.session_state.car3d_cad_payload = None
+                    st.error(
+                        "Couldn't read that CAD (" + str(_ce) + "). STEP is the most "
+                        "reliable export from SolidWorks; for a STEP make sure the "
+                        "cascadio package is installed in the deployment.")
+
+            _payload = st.session_state.get("car3d_cad_payload")
+            if _payload:
+                _sz = _payload["size_mm"]
+                _unit_note = ("" if _payload["unit_scale"] == 1.0 else
+                              " · auto-scaled ×%g (looked like %s)" % (
+                                  _payload["unit_scale"],
+                                  "metres" if _payload["unit_scale"] == 1000 else "inches"))
+                st.markdown(
+                    f'<p class="hint">Loaded <b>{_payload["triangles"]} triangles</b>, '
+                    f'bounding box <b>{_sz[0]:.0f}\u00d7{_sz[1]:.0f}\u00d7{_sz[2]:.0f} '
+                    f'mm</b>{_unit_note}. Set where it sits and which way is up, then '
+                    'add it.</p>', unsafe_allow_html=True)
+
+                _cc = st.columns([3, 2, 2])
+                _cad_name = _cc[0].text_input(
+                    "Part name", key="car3d_cad_name",
+                    value=st.session_state.get("car3d_cad_name_default", "CAD part"))
+                _cad_sub = _cc[1].selectbox("Belongs to", _CP_SUBSYS,
+                                            key="car3d_cad_subsys")
+                _cad_axis = _cc[2].selectbox(
+                    "Up axis in CAD", ["z_up", "y_up", "x_up"], key="car3d_cad_axis",
+                    help="Which axis points UP in your CAD. SolidWorks defaults are "
+                         "often Y-up; if the part lies on its side, switch this.")
+
+                _cp = st.columns(4)
+                _cad_x = _cp[0].number_input("Centre x (mm)", -1500.0, 1500.0,
+                                             value=0.0, step=10.0, key="car3d_cad_x")
+                _cad_y = _cp[1].number_input("Centre y (mm)", -900.0, 900.0,
+                                             value=0.0, step=10.0, key="car3d_cad_y")
+                _cad_z = _cp[2].number_input("Centre z (mm)", 0.0, 1500.0,
+                                             value=250.0, step=10.0, key="car3d_cad_z")
+                _cad_yaw = _cp[3].number_input("Yaw °", -180.0, 180.0, value=0.0,
+                                               step=15.0, key="car3d_cad_yaw",
+                                               help="Spin the part about the car's "
+                                                    "vertical axis to line it up.")
+
+                if st.button("Add CAD part to car", key="car3d_cad_add",
+                             type="primary"):
+                    # Derive the placed extents for the fit read, honouring axis map.
+                    _ax = st.session_state.get("car3d_cad_axis", "z_up")
+                    _sx, _sy, _sz2 = _sz
+                    if _ax == "y_up":
+                        _L, _W, _H = _sx, _sz2, _sy
+                    elif _ax == "x_up":
+                        _L, _W, _H = _sz2, _sy, _sx
+                    else:
+                        _L, _W, _H = _sx, _sy, _sz2
+                    st.session_state.car3d_custom_parts.append(dict(
+                        name=(_cad_name.strip() or "CAD part"), subsys=_cad_sub,
+                        shape="mesh", mesh=_payload, axis_map=_ax,
+                        yaw_deg=float(_cad_yaw), mesh_scale=1.0,
+                        x_mm=float(_cad_x), y_mm=float(_cad_y), z_mm=float(_cad_z),
+                        l_mm=float(_L), w_mm=float(_W), h_mm=float(_H)))
+                    st.session_state.car3d_focus = (
+                        _cad_sub if _cad_sub != "(custom / unassigned)" else None)
+                    # Clear the uploader cache so a re-add doesn't double-trigger.
+                    st.session_state.pop("car3d_cad_sig", None)
+                    st.rerun()
+
+        st.markdown('<p class="hint" style="margin:8px 0 2px;border-top:1px solid '
+                    'var(--line);padding-top:8px;"><b>Or sketch it by hand</b> with '
+                    'dimensions:</p>', unsafe_allow_html=True)
+
         _pp = st.selectbox("Quick start", list(_PART_PRESETS.keys()), index=0,
                            key="car3d_cp_preset")
         if st.session_state.get("_car3d_cp_preset_prev") != _pp:
@@ -1383,11 +1520,16 @@ with tab_car:
                 _lc = st.columns([5, 1])
                 _tag = (' <span style="color:#ffd166;">· awaiting CAD</span>'
                         if _cpd.get("provisional") else '')
+                _is_mesh = _cpd.get("shape") == "mesh" and _cpd.get("mesh")
+                _mtag = (' <span style="color:#37e0d0;">· CAD mesh</span>'
+                         if _is_mesh else '')
                 _lc[0].markdown(
                     f'<span style="font-size:.9rem;">\u2022 <b>{_cpd["name"]}</b> '
-                    f'({_cpd["subsys"]}) \u2014 {_cpd["l_mm"]:.0f}\u00d7{_cpd["w_mm"]:.0f}'
-                    f'\u00d7{_cpd["h_mm"]:.0f} mm @ ({_cpd["x_mm"]:.0f}, {_cpd["y_mm"]:.0f}, '
-                    f'{_cpd["z_mm"]:.0f}){_tag}</span>', unsafe_allow_html=True)
+                    f'({_cpd["subsys"]}) \u2014 {_cpd.get("l_mm",0):.0f}\u00d7'
+                    f'{_cpd.get("w_mm",0):.0f}\u00d7{_cpd.get("h_mm",0):.0f} mm @ '
+                    f'({_cpd.get("x_mm",0):.0f}, {_cpd.get("y_mm",0):.0f}, '
+                    f'{_cpd.get("z_mm",0):.0f}){_mtag}{_tag}</span>',
+                    unsafe_allow_html=True)
                 if _lc[1].button("Remove", key=f"car3d_cp_rm_{_ci}"):
                     st.session_state.car3d_custom_parts.pop(_ci)
                     st.rerun()
@@ -1412,7 +1554,7 @@ with tab_car:
     with st.expander(
             "⏳  Waiting on a part? Place a stand-in so you're not blocked"
             + (f"  ·  {len(_open_reqs)} open" if _open_reqs else ""),
-            expanded=bool(_open_reqs)):
+            expanded=False):
         st.markdown(
             '<p class="hint">A part stuck in someone else\u2019s CAD shouldn\u2019t '
             'freeze your work. Put your <b>best-guess</b> size and position here and '
@@ -1547,10 +1689,13 @@ with tab_car:
                     with _tf.NamedTemporaryFile(delete=False, suffix=_sfx) as _f:
                         _f.write(_cad.getbuffer())
                         _cad_path = _f.name
-                    _m = chassis_mod.load_chassis(_cad_path)
-                    _summ = chassis_mod.mesh_summary(_m)
+                    with st.spinner("Reading the arrived CAD…"):
+                        _payload_r = chassis_mod.load_part_mesh(_cad_path, max_faces=4000)
                     _os.unlink(_cad_path)
-                    _real = fullcar_mod.part_dims_from_mesh(_summ)
+                    _real = dict(l_mm=_payload_r["size_mm"][0],
+                                 w_mm=_payload_r["size_mm"][1],
+                                 h_mm=_payload_r["size_mm"][2],
+                                 centre_mm=[0.0, 0.0, 0.0])
                     _rec = fullcar_mod.reconcile_part(_g, _real)
                     _col = {"match": "#5ad17a", "resize": "#ffd166",
                             "mirrored": "#ff6b5a", "new": "#5ad17a"}[_rec["status"]]
@@ -1564,25 +1709,31 @@ with tab_car:
                         f'<b style="color:{_col};">{_word}.</b> '
                         f'<span style="font-size:.9rem;">Real part reads '
                         f'<b>{_real["l_mm"]:.0f}\u00d7{_real["w_mm"]:.0f}'
-                        f'\u00d7{_real["h_mm"]:.0f} mm</b>. ' + " ".join(_rec["messages"])
+                        f'\u00d7{_real["h_mm"]:.0f} mm</b> ({_payload_r["triangles"]} '
+                        f'triangles). ' + " ".join(_rec["messages"])
+                        + ' The real geometry will replace the stand-in box.'
                         + '</span></div>', unsafe_allow_html=True)
 
                     _kx = st.checkbox("Keep my stand-in's position (recommended)",
                                       value=True, key=f"car3d_rq_keep_{_rid}")
+                    _ax_r = st.selectbox(
+                        "Up axis in CAD", ["z_up", "y_up", "x_up"],
+                        key=f"car3d_rq_axis_{_rid}",
+                        help="If the part comes in lying on its side, switch this.")
                     if st.button(f"Confirm & replace stand-in for \u201c{_req['name']}\u201d",
                                  key=f"car3d_rq_confirm_{_rid}", type="primary"):
-                        # Find the stand-in body for this request and turn it into
-                        # the confirmed real part, in place.
+                        # Turn the stand-in into the confirmed REAL MESH, in place.
                         for _p in st.session_state.car3d_custom_parts:
                             if _p.get("req_id") == _rid:
+                                _p["shape"] = "mesh"
+                                _p["mesh"] = _payload_r
+                                _p["axis_map"] = _ax_r
+                                _p["yaw_deg"] = 0.0
+                                _p["mesh_scale"] = 1.0
                                 _p["l_mm"] = _real["l_mm"]
                                 _p["w_mm"] = _real["w_mm"]
                                 _p["h_mm"] = _real["h_mm"]
                                 _p["provisional"] = False
-                                if not _kx:
-                                    _c = _real["centre_mm"]
-                                    _p["x_mm"], _p["y_mm"], _p["z_mm"] = (
-                                        float(_c[0]), float(_c[1]), float(_c[2]))
                                 break
                         _req["resolved"] = True
                         _req["real"] = _real
@@ -1623,63 +1774,22 @@ with tab_car:
                     f'\u2014 now confirmed on the car.</span>', unsafe_allow_html=True)
 
 
-    st.markdown(
-        '<div style="border:1px solid var(--line);border-left:4px solid var(--line);'
-        'border-radius:8px;padding:10px 14px;margin:2px 0 10px;">'
-        '<b>What this view is for \u2014 and what it is not.</b><br>'
-        '<span style="font-size:.92rem;line-height:1.5;">This is the assembled car '
-        'as a <i>picture</i>: it shows where every subsystem sits and lets you '
-        'resize or reposition a body to explore packaging. Moving a part here '
-        'changes the <b>drawing</b>, not the real car \u2014 it will not catch a '
-        'collision on build day. For a team that can manufacture only once, the '
-        'check that actually protects the build lives in the '
-        '<b>INTEGRATION tab \u2192 \u201cMount-point clash\u201d</b> view: declare '
-        'each subsystem\u2019s reserved volume and where its parts bolt on, and the '
-        '<b>manufacturing-readiness board</b> there gives a single go/no-go \u2014 '
-        'red if parts physically overlap (do not cut), amber for thin clearances to '
-        'decide deliberately, green when the car will assemble. It flags anything '
-        'still based on an <i>estimate</i> so you know what to confirm before '
-        'sign-off. <b>Start there</b>, enter your subsystem\u2019s geometry in the '
-        'guided form at the top of that view, and drive the \u201cstill '
-        'estimated\u201d count to zero \u2014 that is what keeps the one build you '
-        'get from becoming a re-build.</span></div>',
-        unsafe_allow_html=True)
-
-    _SUBSYS_CHOICES = ["(whole car)", "suspension", "aerodynamics", "powertrain",
-                       "cooling", "electrics", "brakes", "chassis",
-                       "data-acquisition"]
-    hc1, hc2, hc3, hc4 = st.columns([2, 1, 1, 1])
-    _hl_choice = hc1.selectbox(
-        "Spotlight subsystem", _SUBSYS_CHOICES, index=0, key="car3d_highlight",
-        help="Glow your subsystem and dim the rest, to see your part in the whole car.")
-    _highlight = None if _hl_choice == "(whole car)" else _hl_choice
-    # Detect an actual change of the spotlight picker (not just its resting
-    # value), so selecting "(whole car)" clears a click-zoom but the rerun that
-    # immediately follows a part click — where the picker is still on
-    # "(whole car)" — does not wipe the focus we just set.
-    _prev_hl = st.session_state.get("_car3d_hl_prev")
-    if _hl_choice != _prev_hl:
-        st.session_state._car3d_hl_prev = _hl_choice
-        if _hl_choice == "(whole car)":
-            st.session_state.pop("car3d_focus", None)
-    _tire_w = hc2.number_input("Tire width mm", value=180.0, min_value=80.0,
-                               max_value=320.0, step=10.0, key="car3d_tirew")
-    _show_floor = hc3.checkbox("Ground", value=True, key="car3d_floor")
-    # Reset zoom: clear the focused part so the camera returns to the wide shot.
-    if hc4.button("Reset zoom", key="car3d_resetzoom",
-                  help="Pull the camera back out to the whole-car view."):
-        st.session_state.pop("car3d_focus", None)
-        st.session_state.pop("car3d_plot", None)
-
-    with st.expander("Layers", expanded=False):
-        lc = st.columns(4)
-        _show_tires = lc[0].checkbox("Tires", True, key="car3d_tires")
-        _show_brakes = lc[0].checkbox("Brakes", True, key="car3d_brakes")
-        _show_aero = lc[1].checkbox("Aero (wings)", True, key="car3d_aero")
-        _show_cool = lc[1].checkbox("Cooling (sidepods)", True, key="car3d_cool")
-        _show_pt = lc[2].checkbox("Powertrain", True, key="car3d_pt")
-        _show_el = lc[2].checkbox("Electrics", True, key="car3d_el")
-        _show_body = lc[3].checkbox("Bodywork (monocoque/halo)", True, key="car3d_body")
+    with st.expander("ⓘ  About this view — and the build-day check it is *not*",
+                     expanded=False):
+        st.markdown(
+            '<span style="font-size:.92rem;line-height:1.5;">This is the assembled car '
+            'as a <i>picture</i>: it shows where every subsystem sits and lets you '
+            'resize or reposition a body to explore packaging. Moving a part here '
+            'changes the <b>drawing</b>, not the real car \u2014 it will not catch a '
+            'collision on build day. For a team that can manufacture only once, the '
+            'check that actually protects the build lives in the '
+            '<b>INTEGRATION tab \u2192 \u201cMount-point clash\u201d</b> view: declare '
+            'each subsystem\u2019s reserved volume and where its parts bolt on, and the '
+            '<b>manufacturing-readiness board</b> there gives a single go/no-go \u2014 '
+            'red if parts physically overlap (do not cut), amber for thin clearances to '
+            'decide deliberately, green when the car will assemble. It flags anything '
+            'still based on an <i>estimate</i> so you know what to confirm before '
+            'sign-off.</span>', unsafe_allow_html=True)
 
     # ---- Edit parts: per-part size & position overrides ------------------- #
     # Each part the car draws can be nudged in x/y/z (mm) and resized (uniform
@@ -1821,94 +1931,94 @@ with tab_car:
                         unsafe_allow_html=True)
     _part_overrides = dict(st.session_state.car3d_overrides)
 
-    try:
-        _vp_fields_car = set(VehicleParams.__dataclass_fields__.keys())
-        _vp_kwargs_car = {k: v for k, v in st.session_state.vp.items()
-                          if k in _vp_fields_car}
-        _vp_car = VehicleParams(**_vp_kwargs_car)
-        _led_car = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+    with _car_slot:
+      try:
+          _vp_fields_car = set(VehicleParams.__dataclass_fields__.keys())
+          _vp_kwargs_car = {k: v for k, v in st.session_state.vp.items()
+                            if k in _vp_fields_car}
+          _vp_car = VehicleParams(**_vp_kwargs_car)
+          _led_car = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
 
-        # Reflect the CHOSEN suspension architecture. For double wishbone we hand
-        # the renderer the live Hardpoints; for every other topology we hand it
-        # the already-solved topology-aware kinematics (`kin`), which reports its
-        # own member set. `kin` and `_topo` are the live objects the whole app is
-        # running on, so the full car always matches the topology in the sidebar.
-        _topo_now = st.session_state.get("topology", "double_wishbone")
-        _topo_lbl = globals().get("_TOPO_LABELS", {}).get(_topo_now, _topo_now)
-        if _topo_now == "double_wishbone":
-            _hp_car = Hardpoints.from_dict(st.session_state.hp)
-            _car_kwargs = dict(hp_front=_hp_car)
-        else:
-            # `kin` is the GenericKinematics solved above for this topology.
-            _car_kwargs = dict(corner_front=kin)
+          # Reflect the CHOSEN suspension architecture. For double wishbone we hand
+          # the renderer the live Hardpoints; for every other topology we hand it
+          # the already-solved topology-aware kinematics (`kin`), which reports its
+          # own member set. `kin` and `_topo` are the live objects the whole app is
+          # running on, so the full car always matches the topology in the sidebar.
+          _topo_now = st.session_state.get("topology", "double_wishbone")
+          _topo_lbl = globals().get("_TOPO_LABELS", {}).get(_topo_now, _topo_now)
+          if _topo_now == "double_wishbone":
+              _hp_car = Hardpoints.from_dict(st.session_state.hp)
+              _car_kwargs = dict(hp_front=_hp_car)
+          else:
+              # `kin` is the GenericKinematics solved above for this topology.
+              _car_kwargs = dict(corner_front=kin)
 
-        # The clicked part (if any) drives both the spotlight and the camera
-        # zoom. A click from a previous run is stored in car3d_focus; choosing a
-        # subsystem in the spotlight picker also zooms to it. "(whole car)"
-        # clears the zoom back to the wide shot.
-        _focus = st.session_state.get("car3d_focus")
-        if _highlight:
-            _focus = _highlight
-        _fig_car = fullcar_mod.build_full_car_figure(
-            vp=_vp_car, ledger=_led_car, topology_label=_topo_lbl,
-            show_tires=_show_tires, show_brakes=_show_brakes,
-            show_aero=_show_aero, show_cooling=_show_cool,
-            show_powertrain=_show_pt, show_electrics=_show_el,
-            show_bodywork=_show_body, show_floor=_show_floor,
-            highlight_subsystem=_focus,
-            focus_subsystem=_focus, tire_width_mm=float(_tire_w),
-            part_overrides=_part_overrides,
-            custom_parts=st.session_state.get("car3d_custom_parts", []),
-            **_car_kwargs)
-        st.markdown(
-            f'<p class="hint" style="margin-bottom:2px;">Suspension architecture: '
-            f'<b>{_topo_lbl}</b> \u2014 the corners below are drawn from this '
-            f'topology\u2019s actual members. Change it in the sidebar and the whole '
-            f'car\u2019s suspension changes with it.'
-            + (f' Zoomed on <b>{_focus}</b> \u2014 click another part to move, or '
-               '\u201cReset zoom\u201d to pull back.' if _focus else
-               ' <b>Click a part to zoom in.</b>')
-            + '</p>', unsafe_allow_html=True)
+          # The clicked part (if any) drives both the spotlight and the camera
+          # zoom. A click from a previous run is stored in car3d_focus; choosing a
+          # subsystem in the spotlight picker also zooms to it. "(whole car)"
+          # clears the zoom back to the wide shot.
+          _focus = st.session_state.get("car3d_focus")
+          if _highlight:
+              _focus = _highlight
+          _fig_car = fullcar_mod.build_full_car_figure(
+              vp=_vp_car, ledger=_led_car, topology_label=_topo_lbl,
+              show_tires=_show_tires, show_brakes=_show_brakes,
+              show_aero=_show_aero, show_cooling=_show_cool,
+              show_powertrain=_show_pt, show_electrics=_show_el,
+              show_bodywork=_show_body, show_floor=_show_floor,
+              highlight_subsystem=_focus,
+              focus_subsystem=_focus, tire_width_mm=float(_tire_w),
+              part_overrides=_part_overrides,
+              custom_parts=st.session_state.get("car3d_custom_parts", []),
+              **_car_kwargs)
 
-        # Native Streamlit selection events (streamlit>=1.49): a click returns the
-        # picked point, whose customdata carries the subsystem id we tagged each
-        # body with. We store it and rerun so build_full_car_figure reframes the
-        # camera onto that part — i.e. clicking a part auto-zooms.
-        _sel = st.plotly_chart(_fig_car, width='stretch', key="car3d_plot",
-                               on_select="rerun",
-                               selection_mode=("points",),
-                               config={"scrollZoom": True, "displaylogo": False})
-        try:
-            _pts = (_sel or {}).get("selection", {}).get("points", [])
-        except Exception:
-            _pts = []
-        if _pts:
-            _cd = _pts[0].get("customdata")
-            _clicked = _cd[0] if isinstance(_cd, (list, tuple)) else _cd
-            if _clicked and _clicked != st.session_state.get("car3d_focus"):
-                st.session_state.car3d_focus = _clicked
-                st.rerun()
+          # Native Streamlit selection events (streamlit>=1.49): a click returns the
+          # picked point, whose customdata carries the subsystem id we tagged each
+          # body with. We store it and rerun so build_full_car_figure reframes the
+          # camera onto that part — i.e. clicking a part auto-zooms.
+          _sel = st.plotly_chart(_fig_car, width='stretch', key="car3d_plot",
+                                 on_select="rerun",
+                                 selection_mode=("points",),
+                                 config={"scrollZoom": True, "displaylogo": False})
+          st.markdown(
+              f'<p class="hint" style="margin:2px 0 0;">Suspension: '
+              f'<b>{_topo_lbl}</b>'
+              + (f' · zoomed on <b>{_focus}</b> — click another part to move, or '
+                 '“Reset zoom” to pull back.' if _focus else
+                 ' · <b>click a part to zoom in.</b>')
+              + '</p>', unsafe_allow_html=True)
+          try:
+              _pts = (_sel or {}).get("selection", {}).get("points", [])
+          except Exception:
+              _pts = []
+          if _pts:
+              _cd = _pts[0].get("customdata")
+              _clicked = _cd[0] if isinstance(_cd, (list, tuple)) else _cd
+              if _clicked and _clicked != st.session_state.get("car3d_focus"):
+                  st.session_state.car3d_focus = _clicked
+                  st.rerun()
 
-        # Live influence read-out: what each subsystem's current numbers are doing.
-        _rows = fullcar_mod.influence_summary(_vp_car, _led_car, topology_label=_topo_lbl)
-        st.markdown('<p class="hint" style="margin-bottom:4px;"><b>Live influence</b> '
-                    '\u2014 what each subsystem\u2019s current declaration is doing to '
-                    'the model right now:</p>', unsafe_allow_html=True)
-        import pandas as _pd
-        _df_inf = _pd.DataFrame(_rows)[["subsystem", "status", "detail"]]
-        st.dataframe(_df_inf, hide_index=True, width='stretch')
-
-        st.markdown(
-            f'<p class="hint">Wheelbase <b>{_vp_car.wheelbase:.0f} mm</b> · '
-            f'front/rear track <b>{_vp_car.track_front:.0f}/{_vp_car.track_rear:.0f} mm</b>. '
-            'Bodies with a declared envelope are drawn at their reserved size; bodies '
-            'sized from a performance number (downforce, power, airflow, brake torque) '
-            'are labelled "(sized from \u2026)" \u2014 they show direction of change, not '
-            'a CFD/analysis result. Declare masses + CG positions for every subsystem '
-            'in the INTEGRATION tab to make the gold CG marker reflect the real car.</p>',
-            unsafe_allow_html=True)
-    except Exception as _e:
-        st.error(f"Could not assemble the full-car view: {_e}")
+          # Live influence read-out + sizing notes, tucked away so the model
+          # itself stays the focus. Open it when you want the detail.
+          _rows = fullcar_mod.influence_summary(_vp_car, _led_car, topology_label=_topo_lbl)
+          with st.expander("Live influence & sizing notes", expanded=False):
+              st.markdown('<p class="hint" style="margin-bottom:4px;"><b>What each '
+                          'subsystem\u2019s current declaration is doing to the model '
+                          'right now:</b></p>', unsafe_allow_html=True)
+              import pandas as _pd
+              _df_inf = _pd.DataFrame(_rows)[["subsystem", "status", "detail"]]
+              st.dataframe(_df_inf, hide_index=True, width='stretch')
+              st.markdown(
+                  f'<p class="hint">Wheelbase <b>{_vp_car.wheelbase:.0f} mm</b> · '
+                  f'front/rear track <b>{_vp_car.track_front:.0f}/{_vp_car.track_rear:.0f} mm</b>. '
+                  'Bodies with a declared envelope are drawn at their reserved size; bodies '
+                  'sized from a performance number (downforce, power, airflow, brake torque) '
+                  'are labelled "(sized from \u2026)" \u2014 they show direction of change, not '
+                  'a CFD/analysis result. Declare masses + CG positions for every subsystem '
+                  'in the INTEGRATION tab to make the gold CG marker reflect the real car.</p>',
+                  unsafe_allow_html=True)
+      except Exception as _e:
+          st.error(f"Could not assemble the full-car view: {_e}")
 
 # --------------------------------------------------------------------------- #
 # ----- SUSPENSION vs CHASSIS (now a section of the merged INTEGRATION tab) ----- #

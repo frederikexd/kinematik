@@ -23,6 +23,8 @@ trimesh>=4.0
 # --- optional features: imported lazily, only when the feature is used ---
 # The app boots fine without these; each one just unlocks its feature.
 cascadio>=0.0.16   # STEP/STP chassis import            (chassis.py, integration.py)
+fast_simplification>=0.1   # faster CAD-part decimation for the 3D model (optional;
+                           # falls back to built-in vertex clustering if absent)
 rtree>=1.0         # chassis/part collision queries via trimesh.proximity
 reportlab>=4.0     # PDF design-handover export         (project.py: render_pdf)
 supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseStore)
