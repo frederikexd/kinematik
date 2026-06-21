@@ -67,6 +67,7 @@ COLORS = dict(
     battery="#1f2a20", batt_edge="#5ad17a",
     brake="#c2410c", logger="#33373d",
     point="#e7ecf1", floor="#0c1014", cg="#ffd166",
+    custom="#37e0d0",
 )
 
 
@@ -303,6 +304,20 @@ def _agnostic_color(label, registry):
     return registry[base], base
 
 
+# Map a subsystem name to the COLORS key whose hue best represents it, so a
+# user-dropped custom part reads as "belonging to" that sub-team at a glance.
+_SUBSYS_COLOR_KEY = {
+    "aerodynamics": "wing", "brakes": "brake", "chassis": "monocoque",
+    "cooling": "radiator", "electrics": "batt_edge", "powertrain": "motor",
+    "suspension": "point", "data-acquisition": "logger",
+}
+
+
+def sub_color_key(subsys):
+    """COLORS key for a subsystem's representative hue ('custom' if unknown)."""
+    return _SUBSYS_COLOR_KEY.get(subsys, "custom")
+
+
 def _is_wishbone_hardpoints(corner) -> bool:
     """True if `corner` is a double-wishbone Hardpoints (has the named fields)."""
     return isinstance(corner, Hardpoints)
@@ -434,6 +449,7 @@ def build_full_car_figure(
     focus_subsystem: str | None = None,
     tire_width_mm: float = 180.0,
     part_overrides: dict | None = None,
+    custom_parts: list | None = None,
     height: int = 720,
 ):
     """Assemble a live Formula-car 3D figure.
@@ -466,6 +482,30 @@ def build_full_car_figure(
     click-to-zoom are computed AFTER the override, so the camera still frames
     the part where the user moved it. Missing keys default to no change
     (dx=dy=dz=0, scale=1), so an empty/None override leaves the car untouched.
+
+    CUSTOM PARTS — "drop my part on the car"
+    ----------------------------------------
+    `custom_parts` lets a sub-team drop a part onto the car in REAL millimetres,
+    straight off a spec sheet, with no scale-factor fiddling. It is a list of
+    dicts, each:
+
+        name : str            # label shown on the body and in the legend
+        subsys : str          # which subsystem it belongs to (for colour +
+                              #   click-to-zoom + spotlight); any of SUBSYSTEMS,
+                              #   or None for a neutral grey "custom" body
+        l_mm, w_mm, h_mm : float   # the part's real size: length(x) width(y) height(z)
+        x_mm, y_mm, z_mm : float   # where its CENTRE sits in SAE car axes
+                              #   (x: +forward from mid-wheelbase, y: +right of
+                              #    centreline, z: +up from ground)
+        shape : str           # "box" (default) or "cylinder" (l_mm = length
+                              #   along x, w_mm = diameter)
+        color : str           # optional hex; defaults to the subsystem colour
+
+    Every custom part is a first-class body: it flows through the same `mesh`
+    chokepoint as the built-in parts, so it honours part_overrides, the
+    highlight spotlight, and — because its vertices are accrued under its
+    subsystem — click-to-zoom frames it too. This is the path a powertrain lead
+    uses to type "Radiator 289×124×34" and see it sit on the car immediately.
     """
     # Resolve the front/rear corner objects (architecture-agnostic).
     cf = corner_front if corner_front is not None else hp_front
@@ -972,6 +1012,63 @@ def build_full_car_figure(
             opacity=0.22, colorscale=[[0, COLORS["floor"]], [1, COLORS["floor"]]],
             hoverinfo="skip", name="Ground", showlegend=False))
 
+    # ---- 9) custom parts: user-dropped bodies in real millimetres ------- #
+    # A sub-team can drop any part onto the car straight off a spec sheet: real
+    # L×W×H in mm at a real centre, no scale factors. Each becomes a first-class
+    # body through the same `mesh` chokepoint, so it inherits highlight dimming,
+    # part_overrides and — via _accrue under its subsystem — click-to-zoom.
+    # A part flagged `provisional` is a stand-in for a part whose CAD hasn't
+    # arrived yet: it draws faint and hatched-amber so nobody mistakes a guess
+    # for a confirmed body, but still lets dependent packaging work continue.
+    _cyl_default = None
+    for cp in (custom_parts or []):
+        try:
+            nm = str(cp.get("name") or "Custom part").strip() or "Custom part"
+            sub = cp.get("subsys") or None
+            if sub == "(custom / unassigned)":
+                sub = None
+            l = float(cp.get("l_mm", 0) or 0)
+            w = float(cp.get("w_mm", 0) or 0)
+            h = float(cp.get("h_mm", 0) or 0)
+            cx = float(cp.get("x_mm", 0) or 0)
+            cy = float(cp.get("y_mm", 0) or 0)
+            cz = float(cp.get("z_mm", 0) or 0)
+            if l <= 0 or w <= 0 or (h <= 0 and cp.get("shape", "box") == "box"):
+                continue
+            prov = bool(cp.get("provisional"))
+            if prov:
+                # A waiting-on-CAD stand-in: amber, see-through, clearly a guess.
+                col = cp.get("color") or COLORS["cg"]
+                base_op = 0.30
+                nm_draw = nm if nm.endswith("(awaiting CAD)") else nm + " (awaiting CAD)"
+                hov = "%s — PROVISIONAL stand-in, %.0f×%.0f×%.0f mm @ (x %.0f, y %.0f, z %.0f)" % (
+                    nm, l, w, h, cx, cy, cz)
+            else:
+                col = cp.get("color") or COLORS.get(sub_color_key(sub), COLORS["custom"])
+                base_op = 0.82
+                nm_draw = nm
+                hov = "%s — %.0f×%.0f×%.0f mm @ (x %.0f, y %.0f, z %.0f)" % (
+                    nm, l, w, h, cx, cy, cz)
+            shape = cp.get("shape", "box")
+            if shape == "cylinder":
+                v, ii, jj, kk = _cylinder((cx, cy, cz), (1, 0, 0),
+                                          radius=w / 2.0, length=l)
+                mesh(v, ii, jj, kk, col, nm_draw, sub, base_op, hov)
+            else:
+                v, ii, jj, kk = _box(cx, cy, cz, l, w, h)
+                mesh(v, ii, jj, kk, col, nm_draw, sub, base_op, hov)
+            # On a stand-in, also draw its wireframe edges so its true extent is
+            # legible through the transparency — the packaging team is reading a
+            # box, and a faint mesh alone is hard to judge.
+            if prov and shape != "cylinder":
+                E = [(0,1),(1,2),(2,3),(3,0),(4,5),(5,6),(6,7),(7,4),
+                     (0,4),(1,5),(2,6),(3,7)]
+                for a, b in E:
+                    seg(v[a], v[b], col, w=3, subsys=sub)
+        except Exception:
+            # A malformed custom part must never take down the whole car view.
+            continue
+
     # ---- camera: zoom to the focused subsystem, if one is clicked ------- #
     # When focus_subsystem is set we re-aim the camera at that part's bounding
     # box centre and pull the eye in proportionally, so clicking a part reads as
@@ -1089,3 +1186,230 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
         except Exception:
             pass
     return rows
+
+
+def custom_part_fit(vp, part: dict) -> dict:
+    """Plain-language fit check of a user-dropped part against the car envelope.
+
+    Not a collision solver — that lives in the INTEGRATION tab against declared
+    volumes. This is the quick "does my radiator even fit between the wheels and
+    inside the floor-to-hoop height" read a sub-team wants the instant they drop
+    a part on the car, expressed in real mm of clearance (negative = pokes out).
+
+    Returns dict(status in {ok, tight, over}, messages:list[str], clearances:dict).
+    """
+    wb = float(getattr(vp, "wheelbase", 1550.0))
+    tf = float(getattr(vp, "track_front", 1200.0))
+    tr = float(getattr(vp, "track_rear", 1180.0))
+    track = min(tf, tr)
+    # A representative usable height: ground up to roughly the main-hoop top.
+    z_ceiling = 1150.0
+
+    l = float(part.get("l_mm", 0) or 0)
+    w = float(part.get("w_mm", 0) or 0)
+    h = float(part.get("h_mm", 0) or 0)
+    cx = float(part.get("x_mm", 0) or 0)
+    cy = float(part.get("y_mm", 0) or 0)
+    cz = float(part.get("z_mm", 0) or 0)
+
+    # Car spans x in [-wb/2, +wb/2] (mid-wheelbase origin), y in [-track/2, track/2].
+    x_lo, x_hi = cx - l / 2, cx + l / 2
+    y_lo, y_hi = cy - w / 2, cy + w / 2
+    z_lo, z_hi = cz - h / 2, cz + h / 2
+
+    clr = {
+        "front of front axle": (wb / 2) - x_hi,
+        "behind rear axle": x_lo - (-wb / 2),
+        "right of track": (track / 2) - y_hi,
+        "left of track": y_lo - (-track / 2),
+        "above hoop height": z_ceiling - z_hi,
+        "below ground": z_lo - 0.0,
+    }
+    msgs, status = [], "ok"
+    for where, mm in clr.items():
+        if mm < 0:
+            status = "over"
+            msgs.append("pokes out %s by %.0f mm" % (where, -mm))
+        elif mm < 25:
+            if status != "over":
+                status = "tight"
+            msgs.append("only %.0f mm clear %s" % (mm, where))
+    if not msgs:
+        msgs.append("sits inside the wheelbase, track and hoop-height envelope")
+    return dict(status=status, messages=msgs, clearances=clr)
+
+
+def part_dims_from_mesh(summary: dict) -> dict:
+    """Pull a part's real L×W×H (mm) out of a loaded-CAD mesh summary.
+
+    `summary` is what chassis.mesh_summary() returns (bbox_min/bbox_max/size_mm).
+    The mesh sits in whatever frame it was exported in; we only take its overall
+    bounding-box extents, mapped to the car's L(x)/W(y)/H(z) so a stand-in can be
+    replaced by the part's true size the instant the CAD lands. Returns the size
+    and the bbox so the caller can also recover a sensible default centre.
+    """
+    sz = summary.get("size_mm") or [0.0, 0.0, 0.0]
+    lo = summary.get("bbox_min") or [0.0, 0.0, 0.0]
+    hi = summary.get("bbox_max") or [0.0, 0.0, 0.0]
+    l, w, h = (abs(float(sz[0])), abs(float(sz[1])), abs(float(sz[2])))
+    ctr = [(float(lo[i]) + float(hi[i])) / 2.0 for i in range(3)]
+    return dict(l_mm=l, w_mm=w, h_mm=h, centre_mm=ctr, size_mm=[l, w, h])
+
+
+def reconcile_part(guess: dict, real: dict, tol_mm: float = 8.0,
+                   tol_frac: float = 0.05) -> dict:
+    """Compare a stand-in guess against the part that finally arrived.
+
+    This is the catch for the exact handoff failure the team keeps hitting — the
+    CAD that "is a mirror of the one I originally got", or that turns out a
+    different size than everyone packaged around. We diff the three extents and
+    also test for a swapped/mirrored aspect (the part's dimensions present but in
+    a different order), and return a plain-language verdict so the dependent team
+    learns BEFORE build that their guess was off.
+
+    status: "match"      guess was right within tolerance
+            "resize"     same part, different size — repackage around real dims
+            "mirrored"   extents look transposed/swapped — likely a mirror/wrong
+                         orientation handoff; check handedness before cutting
+            "new"        nothing was packaged here yet (no guess to compare)
+    """
+    def trip(d):
+        return [abs(float(d.get(k, 0) or 0)) for k in ("l_mm", "w_mm", "h_mm")]
+
+    g, r = trip(guess or {}), trip(real or {})
+    if max(g) <= 0:
+        return dict(status="new", deltas=[r[0], r[1], r[2]],
+                    messages=["No stand-in was here — placing the real part."])
+
+    deltas = [r[i] - g[i] for i in range(3)]
+
+    def within(a, b):
+        return abs(a - b) <= max(tol_mm, tol_frac * max(a, b, 1.0))
+
+    axiswise_ok = all(within(g[i], r[i]) for i in range(3))
+    if axiswise_ok:
+        return dict(status="match", deltas=deltas,
+                    messages=["Real part matches your stand-in within tolerance "
+                              "— your packaging holds."])
+
+    # Same multiset of extents but assigned to different axes -> mirror/swap.
+    if sorted(round(x, 1) for x in g) == sorted(round(x, 1) for x in r) and \
+            not axiswise_ok:
+        return dict(status="mirrored", deltas=deltas,
+                    messages=["Same dimensions, different axes — this looks "
+                              "mirrored or rotated vs your stand-in. Confirm "
+                              "handedness/orientation before committing."])
+    if sorted(within(gv, rv) for gv, rv in zip(sorted(g), sorted(r))) and \
+            all(within(gv, rv) for gv, rv in zip(sorted(g), sorted(r))):
+        return dict(status="mirrored", deltas=deltas,
+                    messages=["Extents match but on different axes — likely a "
+                              "mirror/orientation swap. Check before cutting."])
+
+    msgs = []
+    for ax, dv in zip(("L", "W", "H"), deltas):
+        if abs(dv) > max(tol_mm, tol_frac * max(g[("L", "W", "H").index(ax)], 1.0)):
+            msgs.append("%s %+.0f mm" % (ax, dv))
+    return dict(status="resize", deltas=deltas,
+                messages=["Real part differs from your stand-in: "
+                          + ", ".join(msgs) + ". Repackage around the real size."])
+
+
+def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
+    """Propose a TARGET size (x/y/z mm) + position for a part nobody has sized yet.
+
+    The deeper version of the missing-part stall: a team is blocked not because a
+    CAD is late but because they have *no idea* what the part should be, so they
+    can't even guess. This gives them a number to design toward — dimensions the
+    car can actually accommodate, using the same FSAE-typical proportions the
+    full-car renderer already sizes each subsystem body with, scaled to THIS
+    car's wheelbase / track / tyre size. It is an envelope to strive for, not a
+    spec: "build it to roughly this and it will package."
+
+    Any dimension the subsystem has already declared in the ledger (env_x/y/z) is
+    honoured and passed straight back, so a partial declaration is completed
+    rather than overwritten. Returns:
+
+        l_mm, w_mm, h_mm     suggested extents (x, y, z)
+        x_mm, y_mm, z_mm     a centre where that subsystem usually lives
+        shape                "box" or "cylinder"
+        basis                plain-language reason for each axis (what constrains it)
+        from_declared        list of axes that came from the team's own declaration
+    """
+    wb = float(getattr(vp, "wheelbase", 1550.0))
+    tf = float(getattr(vp, "track_front", 1200.0))
+    tr = float(getattr(vp, "track_rear", 1180.0))
+    # Approximate tyre radius and usable interior half-width the renderer uses.
+    tire_r = 228.0
+    interior_w = max(120.0, min(tf, tr) / 2.0 - 180.0 - 40.0) * 2.0  # full width
+    x_front, x_rear = wb / 2.0, -wb / 2.0
+
+    it = _iface(ledger, subsys) if ledger is not None else None
+    dec = (_g(it, "env_x_mm"), _g(it, "env_y_mm"), _g(it, "env_z_mm"))
+
+    # Per-subsystem TYPICAL envelope + home position, mirroring the renderer.
+    S = subsys
+    shape = "box"
+    if S == "powertrain":
+        l, w, h = wb * 0.16, min(interior_w, 240.0), tire_r * 0.9
+        x, y, z = x_rear + tire_r * 1.05, 0.0, tire_r * 0.8
+        shape = "cylinder"
+        basis = ["L from wheelbase (rear motor bay)",
+                 "W ≤ interior track width",
+                 "H ~ tyre radius (sits low)"]
+    elif S == "electrics":
+        l, w, h = wb * 0.22, min(interior_w * 0.95, 340.0), tire_r * 1.1
+        x, y, z = -wb * 0.02, 0.0, tire_r * 0.7
+        basis = ["L from wheelbase (accumulator bay)",
+                 "W ≤ interior track width",
+                 "H to clear floor and stay under hoop"]
+    elif S == "cooling":
+        # A sidepod-mounted radiator: long in x, thin in y, moderate in z.
+        l, w, h = wb * 0.30, 130.0, tire_r * 0.95
+        x, y, z = -wb * 0.05, min(tf, tr) / 2.0 - 150.0, tire_r * 0.7
+        basis = ["L from sidepod length",
+                 "W ~ radiator core thickness",
+                 "H to fit the duct"]
+    elif S == "aerodynamics":
+        # A wing assembly: full track wide, short chord, thin.
+        l, w, h = tire_r * 0.65, tf * 0.98, 80.0
+        x, y, z = x_front + tire_r * 1.6, 0.0, tire_r * 0.32
+        basis = ["L = wing chord", "W ~ front track", "H = element stack"]
+    elif S == "brakes":
+        # A single disc + caliper package near a corner.
+        l, w, h = 60.0, 280.0, 280.0
+        x, y, z = x_front, tf / 2.0 - 60.0, tire_r * 0.9
+        shape = "cylinder"
+        basis = ["L = disc + caliper thickness",
+                 "W/H = disc diameter (corner package)",
+                 "at the wheel"]
+    elif S == "data-acquisition":
+        l, w, h = 160.0, 120.0, 80.0
+        x, y, z = -wb * 0.16, 0.0, tire_r * 1.1
+        basis = ["compact logger box", "fits beside the driver", "above the floor"]
+    elif S == "chassis":
+        l, w, h = wb * 0.5, min(interior_w * 1.1, 320.0), tire_r * 1.6
+        x, y, z = -wb * 0.08, 0.0, tire_r * 0.9
+        basis = ["L = central tub length", "W = interior width", "H = tub depth"]
+    elif S == "suspension":
+        l, w, h = 300.0, 200.0, 300.0
+        x, y, z = x_front, tf / 2.0 - 120.0, tire_r
+        basis = ["upright/linkage package", "inboard of the wheel", "corner height"]
+    else:
+        l, w, h = 200.0, 150.0, 120.0
+        x, y, z = 0.0, 0.0, tire_r
+        basis = ["generic packaging box", "centred", "mid-height"]
+
+    # Honour anything the team already declared: complete, don't overwrite.
+    from_declared = []
+    out_l, out_w, out_h = float(l), float(w), float(h)
+    if dec[0]:
+        out_l = float(dec[0]); from_declared.append("L")
+    if dec[1]:
+        out_w = float(dec[1]); from_declared.append("W")
+    if dec[2]:
+        out_h = float(dec[2]); from_declared.append("H")
+
+    return dict(l_mm=round(out_l, 0), w_mm=round(out_w, 0), h_mm=round(out_h, 0),
+                x_mm=round(float(x), 0), y_mm=round(float(y), 0),
+                z_mm=round(float(z), 0), shape=shape, basis=basis,
+                from_declared=from_declared)
