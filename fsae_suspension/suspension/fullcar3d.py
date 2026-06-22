@@ -1228,14 +1228,30 @@ def build_full_car_figure(
                 # SIZE + PLACE.
                 if cp.get("fit_to_envelope") and _ref_dims is not None:
                     # Uniform auto-size into the slot, and snap to the slot centre.
+                    # Because auto-orient has already matched the part's axes to the
+                    # slot's (longest->longest), the per-axis ratios are comparable.
+                    # "fit"  : scale so the part's LONGEST axis matches the slot's
+                    #          matching axis — fills the primary extent (a chassis
+                    #          spans the wheelbase) without distortion.
+                    # "fill" : same idea but allow growing to the largest ratio so
+                    #          even the stubbier axes reach the envelope.
                     try:
-                        _safe = np.where(_ext > 1e-6, _ext, 1.0)
-                        _ratios = _ref_dims / _safe
+                        _so = np.argsort(_ext)              # short, mid, long (src)
+                        _to = np.argsort(_ref_dims)         # short, mid, long (slot)
+                        # Pair the part's axes with the slot's by rank.
+                        _paired = [(_ref_dims[_to[r]] /
+                                    (_ext[_so[r]] if _ext[_so[r]] > 1e-6 else 1.0))
+                                   for r in range(3)]
                         if cp.get("fit_mode") == "fill":
-                            _factor = float(np.median(_ratios))
-                            _factor = min(_factor, float(np.min(_ratios)) * 1.5)
+                            # Fill the primary extent (longest axis); may overflow
+                            # the slot on stubbier axes — for parts that should look
+                            # substantial along their main direction.
+                            _factor = float(_paired[2])
                         else:
-                            _factor = float(np.min(_ratios))
+                            # Balanced default: the MIDDLE ratio. Big enough to read
+                            # as the real part, but won't blow far past the slot on
+                            # the tight axes. True proportions always preserved.
+                            _factor = float(_paired[1])
                         _mesh_scale = _mesh_scale * _factor
                         if _ref_ctr is not None:
                             _cx, _cy, _cz = (float(_ref_ctr[0]), float(_ref_ctr[1]),
@@ -1329,6 +1345,16 @@ def build_full_car_figure(
         font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
         height=height, margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10), itemsizing="constant"))
+    # Expose the real drawn boxes (centre+size in car mm) so the UI can fit a CAD
+    # to the ACTUAL placeholder a part occupies, not just the rough anchor.
+    try:
+        fig._part_boxes = {
+            nm: dict(
+                centre=[float((lo[i] + hi[i]) / 2.0) for i in range(3)],
+                size=[float(hi[i] - lo[i]) for i in range(3)])
+            for nm, (lo, hi) in _part_boxes.items()}
+    except Exception:
+        fig._part_boxes = {}
     return fig
 
 
@@ -1624,8 +1650,29 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
 # uses (so we can suppress exactly that body), its subsystem (colour + zoom),
 # and an envelope+home so a dropped part auto-fits where THAT part belongs.
 # `key` is a stable id used in session-state and suppression sets.
+# SIMPLIFIED to seven subsystems. Each is replaceable as ONE unit by a CAD /
+# sketch / estimate. Replacing a subsystem hides ALL of its procedural bodies
+# (listed in `drawnames`) so only the real geometry shows there, while every
+# OTHER subsystem stays on screen as a dummy suggestion — wheels, wings, driver,
+# CG, etc. — so the user always sees their part in the context of a full car.
+SUBSYSTEM_CATALOG = [
+    # key            display name        draw-names this subsystem owns
+    ("chassis",      "Chassis",          ["Monocoque", "Roll hoop", "Driver"]),
+    ("aerodynamics", "Aerodynamics",     ["Front wing", "Rear wing"]),
+    ("cooling",      "Cooling",          ["Sidepod (cooling)", "Radiator core"]),
+    ("powertrain",   "Powertrain",       ["Motor + inverter"]),
+    ("electrics",    "Electrics",        ["Accumulator"]),
+    ("suspension",   "Suspension",       ["Tire", "Upright", "Wheel hub",
+                                          "Upper wishbone", "Lower wishbone",
+                                          "Tie rod", "Pushrod", "Rocker",
+                                          "Spring/damper"]),
+    ("brakes",       "Brakes",           ["Brake disc"]),
+]
+SUBSYS_DRAWNAMES = {k: dn for k, _d, dn in SUBSYSTEM_CATALOG}
+SUBSYS_DISPLAY = {k: d for k, d, _dn in SUBSYSTEM_CATALOG}
+
+# Kept for the renderer's internal anchor/box lookups (per representative body).
 PART_CATALOG = [
-    # key                disp-name              subsys            corner?
     ("front_wing",      "Front wing",          "aerodynamics", False),
     ("rear_wing",       "Rear wing",           "aerodynamics", False),
     ("monocoque",       "Monocoque",           "chassis",      False),
@@ -1635,7 +1682,6 @@ PART_CATALOG = [
     ("radiator",        "Radiator core",       "cooling",      False),
     ("motor",           "Motor + inverter",    "powertrain",   False),
     ("accumulator",     "Accumulator",         "electrics",    False),
-    ("data_logger",     "Data logger",         "data-acquisition", False),
     ("tire",            "Tire",                "suspension",   True),
     ("brake_disc",      "Brake disc",          "brakes",       True),
     ("upright",         "Upright",             "suspension",   True),
@@ -1645,9 +1691,21 @@ PART_DRAWNAME_BY_KEY = {k: dn for k, dn, _s, _c in PART_CATALOG}
 PART_KEY_BY_DRAWNAME = {dn: k for k, dn, _s, _c in PART_CATALOG}
 PART_SUBSYS_BY_KEY = {k: s for k, _dn, s, _c in PART_CATALOG}
 
+# A representative body per subsystem, used to size/anchor a replacement.
+SUBSYS_ANCHOR_PART = {
+    "chassis": "monocoque", "aerodynamics": "front_wing", "cooling": "radiator",
+    "powertrain": "motor", "electrics": "accumulator", "suspension": "tire",
+    "brakes": "brake_disc",
+}
+
+
+def subsystem_catalog():
+    """Public list of (key, display_name, [draw-names]) for the simplified UI."""
+    return list(SUBSYSTEM_CATALOG)
+
 
 def part_catalog():
-    """Public list of (key, display_name, subsystem, is_corner) for the UI."""
+    """Public list of (key, display_name, subsystem, is_corner) — internal."""
     return list(PART_CATALOG)
 
 
