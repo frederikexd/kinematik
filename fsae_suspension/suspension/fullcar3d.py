@@ -141,7 +141,7 @@ def _cylinder(center, axis, radius, length, n=24, cap=True):
 
 
 def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
-                      centre=(0.0, 0.0, 0.0), post_scale=None):
+                      centre=(0.0, 0.0, 0.0), post_scale=None, axis_perm=None):
     """Place an imported CAD part's vertices into the car's SAE frame.
 
     verts come recentred on the part's own bbox centre (from chassis.load_part_mesh).
@@ -151,12 +151,16 @@ def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
         axis_map : "z_up"  CAD already z-up (no swap)
                    "y_up"  CAD is y-up (Y->Z, Z->-Y): common SolidWorks export
                    "x_up"  CAD is x-up (X->Z, Z->-X)
-        post_scale : optional (sx,sy,sz) applied in CAR axes AFTER orientation,
-                     for snap-to-fill where each axis is stretched independently
-                     to the target envelope.
+                   "auto"  no preset swap here; pair with axis_perm for auto-align
+        axis_perm : optional (p0,p1,p2) permutation of source axes onto car
+                    X,Y,Z — a CLEAN 90° re-labelling (never a distortion) used to
+                    auto-align the part's longest side with the slot's longest.
+        post_scale : optional (sx,sy,sz) applied in CAR axes AFTER orientation.
     """
     V = np.asarray(verts, float).reshape(-1, 3) * float(scale)
-    if axis_map == "y_up":
+    if axis_perm is not None:
+        V = V[:, list(axis_perm)]
+    elif axis_map == "y_up":
         V = np.column_stack([V[:, 0], -V[:, 2], V[:, 1]])
     elif axis_map == "x_up":
         V = np.column_stack([-V[:, 2], V[:, 1], V[:, 0]])
@@ -1175,62 +1179,76 @@ def build_full_car_figure(
                 faces = np.asarray(mesh_payload["faces"], int)
                 _mesh_scale = float(cp.get("mesh_scale", 1.0) or 1.0)
                 _cx, _cy, _cz = cx, cy, cz
-                _post = None
-                # Orient first at unit scale so we measure the part's TRUE extents
-                # in car axes (after the up-axis remap + yaw), then fit/place.
-                V0 = _orient_part_mesh(
-                    mesh_payload["verts"],
-                    axis_map=cp.get("axis_map", "z_up"),
-                    yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
-                    scale=_mesh_scale, centre=(0.0, 0.0, 0.0))
-                _ext = V0.max(axis=0) - V0.min(axis=0)   # [Lx, Wy, Hz] in car axes
-                # FIT into the part's canonical envelope (the SAME box the
-                # placeholder occupies — captured in _part_boxes), so a
-                # replacement lands exactly where its placeholder was. The fit is
-                # ALWAYS uniform: a single scale factor, never per-axis stretch,
-                # so the CAD's true proportions are preserved and it can never
-                # look distorted. "fit" sizes it to sit cleanly INSIDE the slot
-                # (touching the tightest axis); "fill" grows it to the envelope's
-                # largest axis (uniformly), for parts that should look substantial.
-                if cp.get("fit_to_envelope") and (sub or cp.get("replaces_part")):
+                _axis_perm = None
+                _axis_map = cp.get("axis_map", "auto")
+                _raw = np.asarray(mesh_payload.get("size_mm") or [l, w, h], float)
+
+                # ORIENTATION REFERENCE: the slot shape we align the part TO. Use
+                # the replaced placeholder's actual box if we're hiding it, else
+                # the chosen snap part's anchor. Available even when NOT auto-
+                # sizing, so auto-orient still rotates a real-size part correctly.
+                _ref_dims = None
+                _ref_ctr = None
+                _pk = cp.get("replaces_part") or cp.get("snap_part")
+                _dn = cp.get("replaces_drawname")
+                try:
+                    if _dn and _dn in _part_boxes:
+                        _lo, _hi = _part_boxes[_dn]
+                        _ref_dims = np.asarray(_hi, float) - np.asarray(_lo, float)
+                        _ref_ctr = (np.asarray(_hi, float) + np.asarray(_lo, float)) / 2.0
+                    elif _pk:
+                        _ta = part_anchor(vp, _pk, ledger=ledger)
+                        _ref_dims = np.array([_ta["l_mm"], _ta["w_mm"], _ta["h_mm"]], float)
+                        _ref_ctr = np.array([_ta["x_mm"], _ta["y_mm"], _ta["z_mm"]], float)
+                    elif sub:
+                        _ta = suggest_part_geometry(vp, sub, ledger=ledger)
+                        _ref_dims = np.array([_ta["l_mm"], _ta["w_mm"], _ta["h_mm"]], float)
+                        _ref_ctr = np.array([_ta["x_mm"], _ta["y_mm"], _ta["z_mm"]], float)
+                except Exception:
+                    _ref_dims = _ref_ctr = None
+
+                # AUTO-ORIENT: clean 90° axis permutation so the part's longest
+                # side lines up with the slot's longest side. Never a stretch, so
+                # never distorted — and it fixes the "stood vertical" rotation.
+                if _axis_map == "auto" and _ref_dims is not None:
+                    src_order = np.argsort(_raw)         # short, mid, long
+                    tgt_order = np.argsort(_ref_dims)
+                    perm = [0, 0, 0]
+                    for rank in range(3):
+                        perm[tgt_order[rank]] = int(src_order[rank])
+                    _axis_perm = tuple(perm)
+                    _ext = _raw[list(_axis_perm)]
+                else:
+                    V0 = _orient_part_mesh(
+                        mesh_payload["verts"], axis_map=_axis_map,
+                        yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
+                        scale=1.0, centre=(0.0, 0.0, 0.0))
+                    _ext = V0.max(axis=0) - V0.min(axis=0)
+
+                # SIZE + PLACE.
+                if cp.get("fit_to_envelope") and _ref_dims is not None:
+                    # Uniform auto-size into the slot, and snap to the slot centre.
                     try:
-                        _pk = cp.get("replaces_part")
-                        _dn = cp.get("replaces_drawname")
-                        # Prefer the ACTUAL placeholder box drawn this frame, so the
-                        # replacement lands in exactly the same place; fall back to
-                        # the canonical anchor if that body wasn't drawn.
-                        if _dn and _dn in _part_boxes:
-                            _lo, _hi = _part_boxes[_dn]
-                            _tgtv = np.asarray(_hi, float) - np.asarray(_lo, float)
-                            _ctr = (np.asarray(_hi, float) + np.asarray(_lo, float)) / 2.0
-                            _cx, _cy, _cz = float(_ctr[0]), float(_ctr[1]), float(_ctr[2])
-                        else:
-                            if _pk:
-                                _tgt = part_anchor(vp, _pk, ledger=ledger)
-                            else:
-                                _tgt = suggest_part_geometry(vp, sub, ledger=ledger)
-                            _tgtv = np.array([_tgt["l_mm"], _tgt["w_mm"], _tgt["h_mm"]],
-                                             float)
-                            _cx, _cy, _cz = _tgt["x_mm"], _tgt["y_mm"], _tgt["z_mm"]
                         _safe = np.where(_ext > 1e-6, _ext, 1.0)
-                        _ratios = _tgtv / _safe
+                        _ratios = _ref_dims / _safe
                         if cp.get("fit_mode") == "fill":
-                            # Uniform grow to the envelope's most generous axis,
-                            # but never overflow the tightest axis by >1.5×.
                             _factor = float(np.median(_ratios))
                             _factor = min(_factor, float(np.min(_ratios)) * 1.5)
                         else:
-                            # Default: sit cleanly INSIDE the slot, true shape.
                             _factor = float(np.min(_ratios))
                         _mesh_scale = _mesh_scale * _factor
+                        if _ref_ctr is not None:
+                            _cx, _cy, _cz = (float(_ref_ctr[0]), float(_ref_ctr[1]),
+                                             float(_ref_ctr[2]))
                     except Exception:
                         pass
+                # else: keep the real CAD size × mesh_scale, at the user's x/y/z.
                 V = _orient_part_mesh(
                     mesh_payload["verts"],
-                    axis_map=cp.get("axis_map", "z_up"),
+                    axis_map=_axis_map,
                     yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
                     scale=_mesh_scale,
-                    centre=(_cx, _cy, _cz))
+                    centre=(_cx, _cy, _cz), axis_perm=_axis_perm)
                 mesh(V, faces[:, 0], faces[:, 1], faces[:, 2],
                      col, nm_draw, sub, base_op, hov)
             elif shape == "cylinder":
