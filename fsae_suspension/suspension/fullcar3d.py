@@ -2,7 +2,7 @@
 #  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
 #  Dynamic full-vehicle 3D model (pure Python + Plotly).
 #
-#  A live Formula-style car assembled from the data every sub-team has already
+#  A live Baja-buggy (tube-frame) assembled from the data every sub-team has already
 #  entered. Edit a hardpoint, a spring rate, a wing's downforce, the battery
 #  mass — and the body that subsystem owns visibly changes here, instantly,
 #  because the figure is rebuilt from the same session state those tabs write.
@@ -11,19 +11,19 @@
 """
 WHAT THIS DRAWS
 
-A single Plotly 3D figure of an open-wheel Formula car, built from:
+A single Plotly 3D figure of an open tube-frame Baja SAE buggy, built from:
 
   * suspension geometry   (Hardpoints)          -> the four corners + tires
   * vehicle parameters    (VehicleParams)        -> wheelbase, track, CG, mass,
                                                     ride height (from spring rate)
   * the integration ledger (IntegrationLedger)   -> every other subsystem:
-        aerodynamics -> front & rear wings sized by declared downforce
-        powertrain   -> EV traction motor + inverter sized by power
+        aerodynamics -> none (Baja runs no wings; the aero body is disabled)
+        powertrain   -> single-cylinder engine + CVT + half-shafts sized by power
         cooling      -> sidepod radiator ducts sized by required airflow
-        electrics    -> accumulator / battery box sized by its envelope+mass
+        electrics    -> small 12 V battery / DAQ box sized by its envelope+mass
         brakes       -> brake discs at each corner sized by brake torque
-        chassis      -> the FSAE survival cell (pointed nose, tub, main & front
-                        roll hoops, driver helmet)
+        chassis      -> the tubular space frame (lower floor rails, cockpit bay,
+                        main & front roll hoops, side-impact bars, driver helmet)
         data-acq     -> a small logger pod (no meaningful envelope, shown small)
 
 Every body is a real triangulated mesh (Mesh3d) or line set, positioned in the
@@ -138,6 +138,66 @@ def _cylinder(center, axis, radius, length, n=24, cap=True):
             I += [ci0]; J += [b]; K += [a]
             I += [ci1]; J += [a + n]; K += [b + n]
     return verts, np.array(I), np.array(J), np.array(K)
+
+
+def chassis_cad_footprint(vp, custom_parts, ledger=None):
+    """If a chassis CAD/estimate is present, return the footprint the rest of the
+    car should attach to: dict(wb, length, width, height, cx, cy, cz, x_front,
+    x_rear) in car SAE mm. Returns None if no chassis replacement exists.
+
+    The surrounding dummy parts (wheels, wings, motor, etc.) are then placed
+    against THIS footprint, so a real chassis pulls the whole car into a coherent
+    assembly instead of leaving the dummies at the generic envelope.
+    """
+    import numpy as _np
+    for cp in (custom_parts or []):
+        if cp.get("replaces_subsys") != "chassis":
+            continue
+        mp = cp.get("mesh")
+        # Determine the placed extents (length x, width y, height z) in car frame.
+        if mp and mp.get("verts"):
+            raw = _np.asarray(mp.get("size_mm") or [0, 0, 0], float)
+            scale = float(cp.get("mesh_scale", 1.0) or 1.0)
+            axis_map = cp.get("axis_map", "auto")
+            # Reference slot for auto-orient: the generic monocoque anchor.
+            try:
+                ta = suggest_part_geometry_for(vp, "monocoque", ledger=ledger)
+                ref = _np.array([ta["l_mm"], ta["w_mm"], ta["h_mm"]], float)
+            except Exception:
+                ref = _np.array([1550.0, 320.0, 300.0])
+            if axis_map == "auto":
+                so = _np.argsort(raw); to = _np.argsort(ref)
+                ext = _np.zeros(3)
+                for r in range(3):
+                    ext[to[r]] = raw[so[r]]
+            else:
+                ext = raw
+            # Apply the auto/explicit fit factor the renderer will use (middle axis).
+            if cp.get("fit_to_envelope"):
+                try:
+                    so = _np.argsort(ext); tos = _np.argsort(ref)
+                    paired = [ref[tos[r]] / (ext[so[r]] if ext[so[r]] > 1e-6 else 1.0)
+                              for r in range(3)]
+                    scale = scale * float(paired[1])
+                except Exception:
+                    pass
+            ext = ext * scale
+            L, W, H = float(ext[0]), float(ext[1]), float(ext[2])
+        else:
+            L = float(cp.get("l_mm", 0) or 0)
+            W = float(cp.get("w_mm", 0) or 0)
+            H = float(cp.get("h_mm", 0) or 0)
+        if L <= 0:
+            return None
+        cx = float(cp.get("x_mm", 0) or 0)
+        cy = float(cp.get("y_mm", 0) or 0)
+        cz = float(cp.get("z_mm", 0) or 0)
+        # Wheelbase ≈ a bit shorter than the hull length (axles sit inboard of
+        # nose/tail). Use ~78% of hull length as a sane FSAE-ish ratio.
+        wb = max(900.0, L * 0.78)
+        return dict(wb=wb, length=L, width=W, height=H, cx=cx, cy=cy, cz=cz,
+                    x_front=cx + wb / 2.0, x_rear=cx - wb / 2.0)
+    return None
 
 
 def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
@@ -479,8 +539,8 @@ def build_full_car_figure(
     corner_rear=None,
     topology_label: str | None = None,
     show_chassis=True, show_tires=True, show_floor=True,
-    show_aero=True, show_powertrain=True, show_cooling=True,
-    show_electrics=True, show_brakes=True, show_bodywork=True,
+    show_aero=False, show_powertrain=True, show_cooling=False,
+    show_electrics=False, show_brakes=True, show_bodywork=True,
     highlight_subsystem: str | None = None,
     focus_subsystem: str | None = None,
     tire_width_mm: float = 180.0,
@@ -490,7 +550,7 @@ def build_full_car_figure(
     suppress_parts: set | None = None,
     height: int = 720,
 ):
-    """Assemble a live Formula-car 3D figure.
+    """Assemble a live Baja-buggy 3D figure.
 
     The suspension reflects the chosen ARCHITECTURE. Pass the corner either as:
       * a double-wishbone `Hardpoints`  (via hp_front / hp_rear), or
@@ -506,8 +566,8 @@ def build_full_car_figure(
     `part_overrides` lets the user nudge the dimensions and location of any
     drawn part without changing the underlying engineering numbers. It is a
     dict keyed by the part's display name (exactly the `name=` each body is
-    drawn with, e.g. "Front wing", "Sidepod (cooling)", "Motor + inverter",
-    "Accumulator", "Monocoque", "Tire", "Brake disc", "Roll hoop", "Driver",
+    drawn with, e.g. "Engine + CVT", "Sidepod (cooling)", "Frame tube",
+    "Main hoop", "Front hoop", "Tire", "Brake disc", "Driver",
     "Data logger", "Radiator core"). Each value is a dict with any of:
 
         dx, dy, dz : float   # translate the whole part, in mm (SAE axes)
@@ -557,6 +617,23 @@ def build_full_car_figure(
     tf = float(getattr(vp, "track_front", 1200.0))
     tr = float(getattr(vp, "track_rear", 1180.0))
 
+    # If a real chassis CAD/estimate has been dropped in, re-base the whole car
+    # on ITS footprint: wheels, wings, sidepods, motor etc. reposition to attach
+    # to the real chassis, so the car reads as one coherent assembly (the "new
+    # after chassis CAD upload" sketch) instead of dummies floating at the
+    # generic envelope. Shift the fore/aft origin to the chassis centre too.
+    _chassis_fp = None
+    _x_origin = 0.0
+    try:
+        _chassis_fp = chassis_cad_footprint(vp, custom_parts, ledger=ledger)
+    except Exception:
+        _chassis_fp = None
+    if _chassis_fp:
+        wb = _chassis_fp["wb"]
+        _tgt_track = _clamp(_chassis_fp["width"] + 520.0, 900.0, 1700.0)
+        tf = tr = _tgt_track
+        _x_origin = _chassis_fp["cx"]
+
     # Softer front spring -> more static sag -> body visibly lower. Cue, not a calc.
     kf = float(getattr(vp, "spring_rate_front", 35.0) or 35.0)
     ride_drop = _clamp((35.0 - kf) * 0.6, -12.0, 18.0)
@@ -579,7 +656,10 @@ def build_full_car_figure(
     y_center = 0.0
     scale_f = (tf / 2.0) / (abs(front_corner["contact_patch"][1] - y_center) or 1.0)
     scale_r = (tr / 2.0) / (abs(rear_corner["contact_patch"][1] - y_center) or 1.0)
-    x_front, x_rear = +wb / 2.0, -wb / 2.0
+    # Centre the axles on the chassis (or 0 when no chassis CAD is present), so a
+    # real chassis pulls the wheels — and everything keyed off x_front/x_rear
+    # (wings, sidepods, motor, nose, tail) — into alignment with it.
+    x_front, x_rear = _x_origin + wb / 2.0, _x_origin - wb / 2.0
 
     fig = go.Figure()
 
@@ -732,16 +812,20 @@ def build_full_car_figure(
                                  x_shift=x_shift, y_center_ref=y_center)
 
     for axle, corner, lat_scale, x_shift, mirror in stations:
+        # Baja: front corners belong to Front Suspension + Steering, rear corners
+        # to Rear Suspension, so spotlight / click-to-zoom resolve to the right
+        # owning subteam instead of one merged "suspension".
+        _susgrp = "front-suspension" if axle == "front" else "rear-suspension"
         # draw every member the topology reported
         for p, q, label, color, group in corner["segments"]:
             pT = _xform(p, mirror, lat_scale, x_shift)
             qT = _xform(q, mirror, lat_scale, x_shift)
-            seg(pT, qT, color, 5, corner_name(label), group, "suspension")
+            seg(pT, qT, color, 5, corner_name(label), group, _susgrp)
 
         wc = _xform(corner["wheel_center"], mirror, lat_scale, x_shift)
         cp = _xform(corner["contact_patch"], mirror, lat_scale, x_shift)
         # wheel hub line
-        seg(cp, wc, COLORS["wheel"], 3, corner_name("Wheel hub"), "wheel", "suspension")
+        seg(cp, wc, COLORS["wheel"], 3, corner_name("Wheel hub"), "wheel", _susgrp)
 
         cam = np.deg2rad(corner["camber"])
         sign = -1.0 if mirror else 1.0
@@ -749,13 +833,13 @@ def build_full_car_figure(
         radius = abs(wc[2] - cp[2]) or 228.0
         if show_tires:
             tv, ti, tj, tk = _cylinder(wc, axis, radius, tire_width_mm, n=30)
-            mesh(tv, ti, tj, tk, COLORS["tire"], "Tire", "suspension",
+            mesh(tv, ti, tj, tk, COLORS["tire"], "Tire", _susgrp,
                  base_op=0.95)
             # Rim: a slightly inset, lighter disc so the wheel reads as a wheel,
             # not a black drum — sits at ~62% of tire radius on the outboard face.
             rim_r = radius * 0.62
             rv, ri, rj, rk = _cylinder(wc, axis, rim_r, tire_width_mm * 0.9, n=24)
-            mesh(rv, ri, rj, rk, COLORS["rim"], "Tire", "suspension",
+            mesh(rv, ri, rj, rk, COLORS["rim"], "Tire", _susgrp,
                  base_op=0.98)
         if show_brakes:
             disc_r = (radius * _clamp(0.62 + (brake_tq or 0) / 4000.0, 0.5, 0.85)
@@ -764,17 +848,17 @@ def build_full_car_figure(
                                        max(8.0, tire_width_mm * 0.07), n=26)
             hv = ("Brake disc · r≈%.0f mm" % disc_r
                   + (" (sized from %.0f N·m)" % brake_tq if brake_tq else ""))
-            mesh(dv, di, dj, dk, COLORS["brake"], "Brake disc", "brakes",
+            mesh(dv, di, dj, dk, COLORS["brake"], "Brake disc", _susgrp,
                  base_op=0.9, hover=hv)
 
         mk = [_xform(m, mirror, lat_scale, x_shift) for m in corner["markers"]]
         if mk:
-            _accrue("suspension", mk)
+            _accrue(_susgrp, mk)
             fig.add_trace(go.Scatter3d(
                 x=[p[0] for p in mk], y=[p[1] for p in mk], z=[p[2] for p in mk],
                 mode="markers", marker=dict(size=3, color=COLORS["point"]),
-                opacity=edge_op("suspension"), showlegend=False, hoverinfo="skip",
-                customdata=["suspension"] * len(mk)))
+                opacity=edge_op(_susgrp), showlegend=False, hoverinfo="skip",
+                customdata=[_susgrp] * len(mk)))
 
     # z-extent + tire radius derived from the extracted corners (any topology).
     z_all = []
@@ -788,105 +872,130 @@ def build_full_car_figure(
     inner_y_f = tf / 2.0 - tire_width_mm - 40
     inner_y_r = tr / 2.0 - tire_width_mm - 40
 
-    # ---- 2) chassis: FSAE monocoque + nosecone + roll hoops + driver ---- #
-    #  Reshaped to read as a real Formula Student car (cf. the reference photo):
-    #  a low, slim survival cell that tapers to a pointed nosecone at the front,
-    #  an open cockpit, a curved MAIN roll hoop behind the driver's head and a
-    #  smaller FRONT hoop ahead of the dash, plus the driver's helmet showing in
-    #  the cockpit — not an F1 halo.
-    # Defaults so aero (pylon mounts, rear-wing height) still works when the
-    # chassis body is suppressed (replaced by a CAD part).
-    tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
-    tub_top = max(z_lo * 0.5, tire_r * 0.14) + _clamp(tire_r * 0.95, 180, 360)
+    # ---- 2) chassis: Baja SAE tubular space frame (roll cage) ----------- #
+    #  Baja is an open tube-frame buggy (cf. the reference photo): a welded
+    #  4130 space frame — lower floor rails, a cockpit bay, a curved MAIN hoop
+    #  behind the driver's head, a front (A-pillar) hoop, lateral roof/floor
+    #  cross-members, diagonal side-impact (door) bars, and front/rear nodes
+    #  the suspension and engine hang off. NO body panels, NO pointed nosecone,
+    #  NO wings. The driver's helmet shows in the open cockpit.
+    #
+    #  tub_w / tub_top / tub_bot / cz / hzz are still computed here because the
+    #  cooling/powertrain/electrics sections downstream place bodies relative to
+    #  the cockpit box.
+    tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.25, 180, 360)
+    tub_bot = max(z_lo * 0.5, tire_r * 0.16)
+    tub_top = tub_bot + _clamp(tire_r * 1.15, 220, 420)
+    cz = (tub_top + tub_bot) / 2
+    hzz = (tub_top - tub_bot) / 2
     if show_bodywork:
         ch_it = _iface(ledger, "chassis")
-        tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
-        # Sit the tub low like an FSAE car: floor near the ground, deck low.
-        tub_bot = max(z_lo * 0.5, tire_r * 0.14)
-        tub_top = tub_bot + _clamp(tire_r * 0.95, 180, 360)
-        cz = (tub_top + tub_bot) / 2
-        hzz = (tub_top - tub_bot) / 2
-        prof = _ellipse_ring(24)
-
-        # Lofted survival cell: pointed nose tip -> footwell -> cockpit bay ->
-        # tapered tail. Stations run front (tip) to rear.
-        nose_tip_x = x_front + tire_r * 1.9
-        tail_x = x_rear + tire_r * 0.15
-        xs = np.linspace(nose_tip_x, tail_x, 9)
-        #             tip   nose  foot  dash  cockpit cock  belly tail   end
-        widths  = np.array([0.05, 0.22, 0.55, 0.88, 1.00, 0.98, 0.86, 0.66, 0.5])
-        heights = np.array([0.10, 0.30, 0.62, 0.85, 0.92, 0.92, 0.85, 0.74, 0.6])
-        zoff    = np.array([0.55, 0.42, 0.18, 0.04, 0.00, 0.00, 0.02, 0.06, 0.1]) * hzz
-        scales = [(tub_w / 2 * w, hzz * h, 0.0, cz + dz)
-                  for w, h, dz in zip(widths, heights, zoff)]
-        mv, mi, mj, mk = _prism_xsection(prof, xs, scales)
-        hv = "Monocoque / survival cell"
+        tube_r = max(tire_r * 0.058, 12.0)        # ~25–32 mm OD frame tubing
+        node_r = tube_r * 1.25
+        hv = "Tubular space frame (4130)"
         if _g(ch_it, "mass_kg"):
             hv += " · %.1f kg" % _g(ch_it, "mass_kg")
-        mesh(mv, mi, mj, mk, COLORS["monocoque"], "Monocoque", "chassis",
-             base_op=0.92, hover=hv)
 
-        # A thin livery flash down the flank (the photo's red/yellow stripe).
-        fv, fi, fj, fk = _prism_xsection(
-            _ellipse_ring(24),
-            np.linspace(nose_tip_x - tire_r * 0.3, tail_x, 6),
-            [(tub_w / 2 * w * 1.005, hzz * h * 0.16, 0.0, cz + dz)
-             for w, h, dz in zip(widths[2:8], heights[2:8], zoff[2:8])])
-        mesh(fv, fi, fj, fk, COLORS["livery"], "Monocoque", "chassis", 0.9)
+        # Longitudinal stations of the frame (front bulkhead -> rear).
+        fb_x = x_front + tire_r * 1.30          # front bulkhead (feet)
+        dash_x = x_front - wb * 0.02            # front (dash) hoop
+        seat_x = x_front - wb * 0.30            # main hoop (behind seat)
+        rear_x = x_rear + tire_r * 0.10         # rear frame node
+        hw = tub_w                              # half-width of the frame
+        z0 = tub_bot                            # lower rail height
+        z1 = tub_top                            # upper rail / hoop shoulder
 
-        # Cockpit opening reference + driver: a helmet sphere sitting in the bay.
-        cockpit_x = x_front - wb * 0.16
-        helmet_r = tub_w * 0.34
-        helmet_z = tub_top + helmet_r * 0.65
+        def frame_tube(p0, p1, r=None, name="Frame tube", hint=None):
+            t = _tube(p0, p1, radius=(r or tube_r), n=10)
+            mesh(t[0], t[1], t[2], t[3], COLORS["frame"], name, "chassis",
+                 base_op=0.95, hover=hint)
+
+        def frame_node(p):
+            s = _sphere(p, node_r, n=12)
+            mesh(s[0], s[1], s[2], s[3], COLORS["frame"], "Frame node",
+                 "chassis", 0.96)
+
+        # Lower floor rails (left & right), front bulkhead to rear node.
+        for sgn in (-1, 1):
+            y = sgn * hw
+            frame_tube([fb_x, y, z0], [seat_x, y, z0], hint=hv)
+            frame_tube([seat_x, y, z0], [rear_x, y, z0])
+        # Lower cross-members (front, mid, rear).
+        for xx in (fb_x, seat_x, rear_x):
+            frame_tube([xx, -hw, z0], [xx, hw, z0])
+        # Upper side rails along the cockpit (dash hoop shoulder -> main hoop).
+        for sgn in (-1, 1):
+            y = sgn * hw
+            frame_tube([dash_x, y, z1 * 0.86], [seat_x, y, z1 * 0.92])
+        # Diagonal side-impact (door) bars across the cockpit opening.
+        for sgn in (-1, 1):
+            y = sgn * hw
+            frame_tube([dash_x, y, z0], [seat_x, y, z1 * 0.7], r=tube_r * 0.9)
+
+        # MAIN roll hoop: a tall curved tube arching above/behind the driver.
+        hoop_top = z1 + tire_r * 0.55
+        main_hoop = [
+            [seat_x, -hw, z0],
+            [seat_x, -hw, cz],
+            [seat_x - tire_r * 0.12, -hw * 0.6, hoop_top * 0.94],
+            [seat_x - tire_r * 0.15, 0, hoop_top],
+            [seat_x - tire_r * 0.12, hw * 0.6, hoop_top * 0.94],
+            [seat_x, hw, cz],
+            [seat_x, hw, z0],
+        ]
+        mh = _swept_tube(main_hoop, radius=tube_r, n=10)
+        mesh(mh[0], mh[1], mh[2], mh[3], COLORS["hoop"], "Main hoop",
+             "chassis", 0.96, "Main roll hoop")
+
+        # Rear bracing: main hoop shoulders down to the rear frame nodes.
+        for sgn in (-1, 1):
+            frame_tube([seat_x - tire_r * 0.12, sgn * hw * 0.6, hoop_top * 0.94],
+                       [rear_x, sgn * hw, z0], r=tube_r * 0.9,
+                       name="Rear brace")
+        # Roof cross tube tying the top of the main hoop laterally.
+        frame_tube([seat_x - tire_r * 0.15, -hw * 0.6, hoop_top * 0.94],
+                   [seat_x - tire_r * 0.15, hw * 0.6, hoop_top * 0.94],
+                   r=tube_r * 0.85)
+
+        # FRONT (dash / A-pillar) hoop, smaller, ahead of the cockpit.
+        fh_top = z1 + tire_r * 0.12
+        front_hoop = [
+            [dash_x, -hw, z0],
+            [dash_x, -hw, cz],
+            [dash_x, -hw * 0.55, fh_top],
+            [dash_x, 0, fh_top + tire_r * 0.05],
+            [dash_x, hw * 0.55, fh_top],
+            [dash_x, hw, cz],
+            [dash_x, hw, z0],
+        ]
+        fhm = _swept_tube(front_hoop, radius=tube_r * 0.92, n=9)
+        mesh(fhm[0], fhm[1], fhm[2], fhm[3], COLORS["frame"], "Front hoop",
+             "chassis", 0.95, "Front (A-pillar) hoop")
+
+        # Front-bay tubes: dash hoop forward to the front bulkhead (feet box).
+        for sgn in (-1, 1):
+            y = sgn * hw
+            frame_tube([dash_x, y, z0], [fb_x, y, z0])
+            frame_tube([dash_x, y, cz], [fb_x, y, z0 + hzz * 0.4],
+                       r=tube_r * 0.85)
+        frame_tube([fb_x, -hw, z0 + hzz * 0.4], [fb_x, hw, z0 + hzz * 0.4],
+                   r=tube_r * 0.85, name="Front bulkhead")
+        # A couple of frame nodes where the suspension picks up loads read.
+        for xx in (fb_x, dash_x, seat_x, rear_x):
+            for sgn in (-1, 1):
+                frame_node([xx, sgn * hw, z0])
+
+        # Driver: a helmet sphere seated in the open cockpit.
+        cockpit_x = (dash_x + seat_x) / 2
+        helmet_r = tub_w * 0.42
+        helmet_z = z1 + helmet_r * 0.35
         hv_e = _sphere([cockpit_x, 0, helmet_z], helmet_r, n=16)
         mesh(hv_e[0], hv_e[1], hv_e[2], hv_e[3], COLORS["helmet"],
              "Driver", "chassis", 0.98, "Driver (helmet)")
-        # Helmet stripe band.
-        bandv = _sphere([cockpit_x, 0, helmet_z], helmet_r * 1.01, n=14)
-        bv = bandv[0]
-        keep = np.abs(bv[:, 2] - helmet_z) < helmet_r * 0.18
-        if keep.any():
-            seg([cockpit_x - helmet_r, 0, helmet_z],
-                [cockpit_x + helmet_r, 0, helmet_z],
-                COLORS["helmet_band"], 6, None, "helmet", "chassis")
+        seg([cockpit_x - helmet_r, 0, helmet_z],
+            [cockpit_x + helmet_r, 0, helmet_z],
+            COLORS["helmet_band"], 6, None, "helmet", "chassis")
 
-        # MAIN roll hoop: a curved tube arching above and behind the helmet.
-        hoop_x = cockpit_x - tire_r * 0.55
-        hoop_w = tub_w * 0.92
-        hoop_top = helmet_z + helmet_r * 0.9
-        main_hoop = [
-            [hoop_x, -hoop_w, tub_bot + hzz * 0.2],
-            [hoop_x, -hoop_w * 0.95, cz],
-            [hoop_x - tire_r * 0.1, -hoop_w * 0.55, hoop_top * 0.92],
-            [hoop_x - tire_r * 0.12, 0, hoop_top],
-            [hoop_x - tire_r * 0.1, hoop_w * 0.55, hoop_top * 0.92],
-            [hoop_x, hoop_w * 0.95, cz],
-            [hoop_x, hoop_w, tub_bot + hzz * 0.2],
-        ]
-        mh = _swept_tube(main_hoop, radius=tire_r * 0.07, n=10)
-        mesh(mh[0], mh[1], mh[2], mh[3], COLORS["hoop"], "Roll hoop",
-             "chassis", 0.95, "Main roll hoop")
-        # Rear hoop braces down to the tub.
-        for sgn in (-1, 1):
-            tb = _tube([hoop_x - tire_r * 0.1, sgn * hoop_w * 0.5, hoop_top * 0.92],
-                       [hoop_x - tire_r * 1.1, sgn * hoop_w * 0.4, tub_bot + hzz * 0.3],
-                       radius=tire_r * 0.045, n=8)
-            mesh(tb[0], tb[1], tb[2], tb[3], COLORS["frame"], "Roll hoop",
-                 "chassis", 0.95)
-
-        # FRONT hoop: smaller, ahead of the dash.
-        fh_x = cockpit_x + tire_r * 1.0
-        fh_top = tub_top + helmet_r * 0.2
-        front_hoop = [
-            [fh_x, -tub_w * 0.7, cz],
-            [fh_x, -tub_w * 0.5, fh_top],
-            [fh_x, 0, fh_top + helmet_r * 0.1],
-            [fh_x, tub_w * 0.5, fh_top],
-            [fh_x, tub_w * 0.7, cz],
-        ]
-        fhm = _swept_tube(front_hoop, radius=tire_r * 0.05, n=8)
-        mesh(fhm[0], fhm[1], fhm[2], fhm[3], COLORS["frame"], "Roll hoop",
-             "chassis", 0.95, "Front hoop")
 
     # ---- 3) aerodynamics: multi-element wings + endplates --------------- #
     #  FSAE-style: a wide multi-element FRONT wing low and ahead of the front
@@ -982,12 +1091,14 @@ def build_full_car_figure(
                                   8, pod_w * 0.8, pod_h * 0.8)
             mesh(rv, ri, rj, rk, COLORS["radiator"], "Radiator core", "cooling", 0.85)
 
-    # ---- 5) powertrain: EV traction motor + inverter + driveshafts ------ #
-    #  This is an FSAE EV, so the rear package is a compact traction motor with
-    #  its inverter on top, not an IC engine + airbox. Sizing still tracks the
-    #  declared power/torque so the powertrain team's number drives the body.
+    # ---- 5) drivetrain: Baja engine + CVT + half-shafts ----------------- #
+    #  Baja SAE is single-make combustion: a ~10 hp Briggs & Stratton sits at the
+    #  rear with a CVT (primary on the crank, secondary on the gearbox input) and
+    #  a reduction gearbox driving the rear wheels through half-shafts. Sizing
+    #  tracks the declared power/torque so the drivetrain team's number drives
+    #  the body, exactly as the EV motor used to.
     if show_powertrain:
-        pt_it = _iface(ledger, "powertrain")
+        pt_it = _iface(ledger, "drivetrain")
         pkw = _g(pt_it, "peak_power_kw")
         ptq = _g(pt_it, "peak_torque_nm")
         ex, ey, ez = _g(pt_it, "env_x_mm"), _g(pt_it, "env_y_mm"), _g(pt_it, "env_z_mm")
@@ -995,31 +1106,35 @@ def build_full_car_figure(
             blk_l, blk_w, blk_h = ex, ey, ez
             sized = "(declared envelope)"
         else:
-            f = _clamp((pkw or 60) / 60.0, 0.5, 2.0)
-            blk_l = wb * 0.16 * _clamp(f ** 0.4, 0.7, 1.4)
-            blk_w = min(inner_y_r, 150) * 1.2
-            blk_h = tire_r * 0.7 * _clamp(f ** 0.3, 0.8, 1.3)
-            sized = ("(sized from %.0f kW)" % pkw if pkw else "")
+            # Baja spec engine ≈ 7.5 kW; scale gently around that.
+            f = _clamp((pkw or 7.5) / 7.5, 0.6, 1.8)
+            blk_l = wb * 0.15 * _clamp(f ** 0.4, 0.7, 1.4)
+            blk_w = min(inner_y_r, 150) * 1.1
+            blk_h = tire_r * 0.85 * _clamp(f ** 0.3, 0.8, 1.3)
+            sized = ("(sized from %.1f kW)" % pkw if pkw else "")
         mot_x = x_rear + tire_r * 1.05
-        # Traction motor: a cylinder lying across the car (EV motor, not a block).
-        mc = _cylinder([mot_x, 0, tire_r * 0.8], [0, 1, 0],
-                       radius=blk_h * 0.55, length=blk_w, n=22)
-        hv = "Traction motor " + sized + (" · %.0f N·m" % ptq if ptq else "")
-        mesh(mc[0], mc[1], mc[2], mc[3], COLORS["motor"], "Motor + inverter",
-             "powertrain", 0.92, hv)
-        # Inverter box sitting on top.
-        iv, ii, ij, ik = _box(mot_x - blk_l * 0.1, 0, tire_r * 0.8 + blk_h * 0.6,
-                              blk_l * 0.8, blk_w * 0.7, blk_h * 0.45)
-        mesh(iv, ii, ij, ik, COLORS["engine"], "Motor + inverter", "powertrain",
-             0.9, "Inverter")
-        # Driveshafts to the rear wheels.
+        # Engine block: an upright box (single-cylinder IC engine, not a motor).
+        ev, ei, ej, ek = _box(mot_x, 0, tire_r * 0.9, blk_l, blk_w * 0.7, blk_h)
+        hv = "Engine (IC) " + sized + (" · %.0f N·m" % ptq if ptq else "")
+        mesh(ev, ei, ej, ek, COLORS["engine"], "Engine + CVT",
+             "drivetrain", 0.92, hv)
+        # CVT housing: a flat cylinder on the driver's-left of the block.
+        cc = _cylinder([mot_x, blk_w * 0.55, tire_r * 0.9], [0, 1, 0],
+                       radius=blk_h * 0.5, length=blk_w * 0.5, n=22)
+        mesh(cc[0], cc[1], cc[2], cc[3], COLORS["motor"], "Engine + CVT",
+             "drivetrain", 0.9, "CVT (primary + secondary)")
+        # Half-shafts to the rear wheels.
         for sgn in (-1, 1):
-            seg([mot_x, sgn * blk_w * 0.45, tire_r * 0.8],
+            seg([mot_x, sgn * blk_w * 0.45, tire_r * 0.9],
                 [x_rear, sgn * tr / 2 * 0.78, tire_r],
-                "#8d99a6", 5, None, "drive", "powertrain")
+                "#8d99a6", 5, None, "drive", "drivetrain")
 
-    # ---- 6) electrics: accumulator ------------------------------------- #
-    if show_electrics:
+    # ---- 6) (removed) EV accumulator — Baja has no HV pack -------------- #
+    #  The original FSAE-EV build drew a tractive accumulator here. Baja SAE
+    #  runs a small LV battery for ignition/DAQ only, which lives in the
+    #  data-acquisition / electrics packaging rather than as a structural body,
+    #  so no large box is drawn.
+    if False and show_electrics:
         el_it = _iface(ledger, "electrics")
         ex, ey, ez = _g(el_it, "env_x_mm"), _g(el_it, "env_y_mm"), _g(el_it, "env_z_mm")
         emass, pwr = _g(el_it, "mass_kg"), _g(el_it, "power_draw_w")
@@ -1032,16 +1147,13 @@ def build_full_car_figure(
             bl, bw, bh = side * 1.4, side * 1.1, side * 0.7
             sized = "(sized from %.1f kg)" % emass
         else:
-            # Nothing declared yet: draw a nominal accumulator box so the part
-            # is always present in the car and clickable, with a hint that it's
-            # a placeholder until electrics declares an envelope or mass.
             bl, bw, bh = wb * 0.16, min(inner_y_r, 160) * 1.2, tire_r * 0.55
-            sized = "(placeholder — declare envelope/mass in INTEGRATION)"
+            sized = "(placeholder)"
         if bl:
             bx = x_rear + tire_r * 2.6
             v, i, j, k = _box(bx, 0, tire_r * 0.55, bl, bw, bh)
-            hv = "Accumulator / battery " + sized + (" · %.0f W" % pwr if pwr else "")
-            mesh(v, i, j, k, COLORS["battery"], "Accumulator", "electrics", 0.85, hv)
+            hv = "Battery " + sized + (" · %.0f W" % pwr if pwr else "")
+            mesh(v, i, j, k, COLORS["battery"], "Accumulator", "drivetrain", 0.85, hv)
 
     # ---- 7) data-acquisition: logger pod ------------------------------- #
     daq_it = _iface(ledger, "data-acquisition")
@@ -1366,42 +1478,23 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
     def add(sys, status, detail):
         rows.append(dict(subsystem=sys, status=status, detail=detail))
 
-    aero = _iface(ledger, "aerodynamics")
-    df = _g(aero, "downforce_n_at_v")
-    add("aerodynamics", "sized" if df else "default",
-        ("%.0f N @ %.0f m/s → wing span/chord" % (df[0], df[1]))
-        if isinstance(df, (tuple, list)) and df else "no downforce → nominal wings")
-
-    pt = _iface(ledger, "powertrain")
+    pt = _iface(ledger, "drivetrain")
     pkw = _g(pt, "peak_power_kw")
-    add("powertrain", "sized" if (pkw or _g(pt, "env_x_mm")) else "default",
-        ("%.0f kW → motor + inverter size" % pkw) if pkw else "no power/envelope → nominal motor")
-
-    cool = _iface(ledger, "cooling")
-    af = _g(cool, "cooling_airflow_cms")
-    add("cooling", "sized" if af else "default",
-        ("%.2f m³/s → sidepod size" % af) if af else "no airflow → nominal sidepods")
-
-    el = _iface(ledger, "electrics")
-    em, ee = _g(el, "mass_kg"), _g(el, "env_x_mm")
-    add("electrics", "shown" if (em or ee) else "hidden",
-        "declared envelope → battery box" if ee else
-        (("%.1f kg → battery box size" % em) if em else "no mass/envelope → not drawn"))
-
-    br = _iface(ledger, "brakes")
-    bt = _g(br, "brake_torque_nm")
-    add("brakes", "sized" if bt else "default",
-        ("%.0f N·m → brake-disc diameter" % bt) if bt else "no torque → nominal discs")
+    add("drivetrain", "sized" if (pkw or _g(pt, "env_x_mm")) else "default",
+        ("%.1f kW → engine + CVT size" % pkw) if pkw else "no power/envelope → nominal engine")
 
     _arch = (topology_label + " · ") if topology_label else ""
-    add("suspension", "live",
-        "%strack F/R %.0f/%.0f mm · wheelbase %.0f mm · spring %.0f N/mm" % (
-            _arch, getattr(vp, "track_front", 0), getattr(vp, "track_rear", 0),
+    add("front-suspension", "live",
+        "%strack F %.0f mm · wheelbase %.0f mm · spring %.0f N/mm" % (
+            _arch, getattr(vp, "track_front", 0),
             getattr(vp, "wheelbase", 0), getattr(vp, "spring_rate_front", 0)))
+    add("rear-suspension", "live",
+        "track R %.0f mm · spring %.0f N/mm" % (
+            getattr(vp, "track_rear", 0), getattr(vp, "spring_rate_rear", 0)))
 
     ch = _iface(ledger, "chassis")
     cm = _g(ch, "mass_kg")
-    add("chassis", "live", ("%.1f kg monocoque" % cm) if cm else "monocoque (no mass declared)")
+    add("chassis", "live", ("%.1f kg space frame" % cm) if cm else "space frame (no mass declared)")
 
     if ledger is not None:
         try:
@@ -1576,39 +1669,12 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
     # Per-subsystem TYPICAL envelope + home position, mirroring the renderer.
     S = subsys
     shape = "box"
-    if S == "powertrain":
-        l, w, h = wb * 0.16, min(interior_w, 240.0), tire_r * 0.9
-        x, y, z = x_rear + tire_r * 1.05, 0.0, tire_r * 0.8
-        shape = "cylinder"
-        basis = ["L from wheelbase (rear motor bay)",
+    if S == "drivetrain":
+        l, w, h = wb * 0.16, min(interior_w, 240.0), tire_r * 0.95
+        x, y, z = x_rear + tire_r * 1.05, 0.0, tire_r * 0.9
+        basis = ["L from wheelbase (rear engine bay)",
                  "W ≤ interior track width",
-                 "H ~ tyre radius (sits low)"]
-    elif S == "electrics":
-        l, w, h = wb * 0.22, min(interior_w * 0.95, 340.0), tire_r * 1.1
-        x, y, z = -wb * 0.02, 0.0, tire_r * 0.7
-        basis = ["L from wheelbase (accumulator bay)",
-                 "W ≤ interior track width",
-                 "H to clear floor and stay under hoop"]
-    elif S == "cooling":
-        # A sidepod-mounted radiator: long in x, thin in y, moderate in z.
-        l, w, h = wb * 0.30, 130.0, tire_r * 0.95
-        x, y, z = -wb * 0.05, min(tf, tr) / 2.0 - 150.0, tire_r * 0.7
-        basis = ["L from sidepod length",
-                 "W ~ radiator core thickness",
-                 "H to fit the duct"]
-    elif S == "aerodynamics":
-        # A wing assembly: full track wide, short chord, thin.
-        l, w, h = tire_r * 0.65, tf * 0.98, 80.0
-        x, y, z = x_front + tire_r * 1.6, 0.0, tire_r * 0.32
-        basis = ["L = wing chord", "W ~ front track", "H = element stack"]
-    elif S == "brakes":
-        # A single disc + caliper package near a corner.
-        l, w, h = 60.0, 280.0, 280.0
-        x, y, z = x_front, tf / 2.0 - 60.0, tire_r * 0.9
-        shape = "cylinder"
-        basis = ["L = disc + caliper thickness",
-                 "W/H = disc diameter (corner package)",
-                 "at the wheel"]
+                 "H ~ engine + CVT stack height"]
     elif S == "data-acquisition":
         l, w, h = 160.0, 120.0, 80.0
         x, y, z = -wb * 0.16, 0.0, tire_r * 1.1
@@ -1616,11 +1682,15 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
     elif S == "chassis":
         l, w, h = wb * 0.5, min(interior_w * 1.1, 320.0), tire_r * 1.6
         x, y, z = -wb * 0.08, 0.0, tire_r * 0.9
-        basis = ["L = central tub length", "W = interior width", "H = tub depth"]
-    elif S == "suspension":
+        basis = ["L = central frame length", "W = interior width", "H = frame depth"]
+    elif S == "front-suspension":
         l, w, h = 300.0, 200.0, 300.0
         x, y, z = x_front, tf / 2.0 - 120.0, tire_r
-        basis = ["upright/linkage package", "inboard of the wheel", "corner height"]
+        basis = ["upright + steering package", "inboard of the front wheel", "corner height"]
+    elif S == "rear-suspension":
+        l, w, h = 300.0, 200.0, 300.0
+        x, y, z = x_rear, tr / 2.0 - 120.0, tire_r
+        basis = ["upright + trailing-arm package", "inboard of the rear wheel", "corner height"]
     else:
         l, w, h = 200.0, 150.0, 120.0
         x, y, z = 0.0, 0.0, tire_r
@@ -1656,35 +1726,29 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
 # OTHER subsystem stays on screen as a dummy suggestion — wheels, wings, driver,
 # CG, etc. — so the user always sees their part in the context of a full car.
 SUBSYSTEM_CATALOG = [
-    # key            display name        draw-names this subsystem owns
-    ("chassis",      "Chassis",          ["Monocoque", "Roll hoop", "Driver"]),
-    ("aerodynamics", "Aerodynamics",     ["Front wing", "Rear wing"]),
-    ("cooling",      "Cooling",          ["Sidepod (cooling)", "Radiator core"]),
-    ("powertrain",   "Powertrain",       ["Motor + inverter"]),
-    ("electrics",    "Electrics",        ["Accumulator"]),
-    ("suspension",   "Suspension",       ["Tire", "Upright", "Wheel hub",
-                                          "Upper wishbone", "Lower wishbone",
-                                          "Tie rod", "Pushrod", "Rocker",
-                                          "Spring/damper"]),
-    ("brakes",       "Brakes",           ["Brake disc"]),
+    # key                display name                    draw-names this subsystem owns
+    ("chassis",          "Chassis",                      ["Frame tube", "Main hoop", "Front hoop", "Driver"]),
+    ("drivetrain",       "Drivetrain",                   ["Engine + CVT"]),
+    ("front-suspension", "Front Suspension + Steering",  ["Tire", "Upright", "Wheel hub",
+                                                          "Upper wishbone", "Lower wishbone",
+                                                          "Tie rod", "Pushrod", "Rocker",
+                                                          "Spring/damper", "Brake disc"]),
+    ("rear-suspension",  "Rear Suspension",              ["Tire", "Upright", "Wheel hub",
+                                                          "Upper wishbone", "Lower wishbone",
+                                                          "Pushrod", "Rocker", "Spring/damper"]),
 ]
 SUBSYS_DRAWNAMES = {k: dn for k, _d, dn in SUBSYSTEM_CATALOG}
 SUBSYS_DISPLAY = {k: d for k, d, _dn in SUBSYSTEM_CATALOG}
 
 # Kept for the renderer's internal anchor/box lookups (per representative body).
 PART_CATALOG = [
-    ("front_wing",      "Front wing",          "aerodynamics", False),
-    ("rear_wing",       "Rear wing",           "aerodynamics", False),
-    ("monocoque",       "Monocoque",           "chassis",      False),
-    ("roll_hoop",       "Roll hoop",           "chassis",      False),
-    ("driver",          "Driver",              "chassis",      False),
-    ("sidepod",         "Sidepod (cooling)",   "cooling",      False),
-    ("radiator",        "Radiator core",       "cooling",      False),
-    ("motor",           "Motor + inverter",    "powertrain",   False),
-    ("accumulator",     "Accumulator",         "electrics",    False),
-    ("tire",            "Tire",                "suspension",   True),
-    ("brake_disc",      "Brake disc",          "brakes",       True),
-    ("upright",         "Upright",             "suspension",   True),
+    ("monocoque",       "Monocoque",           "chassis",          False),
+    ("roll_hoop",       "Roll hoop",           "chassis",          False),
+    ("driver",          "Driver",              "chassis",          False),
+    ("motor",           "Engine + CVT",        "drivetrain",       False),
+    ("tire",            "Tire",                "front-suspension", True),
+    ("brake_disc",      "Brake disc",          "front-suspension", True),
+    ("upright",         "Upright",             "front-suspension", True),
 ]
 # draw-name -> key, for suppression (the renderer suppresses by draw-name).
 PART_DRAWNAME_BY_KEY = {k: dn for k, dn, _s, _c in PART_CATALOG}
@@ -1693,9 +1757,8 @@ PART_SUBSYS_BY_KEY = {k: s for k, _dn, s, _c in PART_CATALOG}
 
 # A representative body per subsystem, used to size/anchor a replacement.
 SUBSYS_ANCHOR_PART = {
-    "chassis": "monocoque", "aerodynamics": "front_wing", "cooling": "radiator",
-    "powertrain": "motor", "electrics": "accumulator", "suspension": "tire",
-    "brakes": "brake_disc",
+    "chassis": "monocoque", "drivetrain": "motor",
+    "front-suspension": "tire", "rear-suspension": "tire",
 }
 
 

@@ -1,12 +1,12 @@
 <!--
-  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
-  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
-  Open source. Original author: Frederik Thio, creator of KinematiK.
+  Elbee Racing — Baja SAE suspension & vehicle-dynamics studio.
+  Rebased for Elbee Racing from KinematiK by Frederik Thio (FSAE-EV, MIT).
+  Original engine © 2026 Frederik Thio; this Baja rebase retains the MIT license.
 -->
 
 ---
-title: KinematiK
-emoji: 🏎️
+title: Elbee Racing Baja
+emoji: 🏁
 colorFrom: yellow
 colorTo: gray
 sdk: streamlit
@@ -16,12 +16,17 @@ pinned: false
 license: mit
 ---
 
-# ◢ KinematiK
+# ◢ Elbee Racing · Baja SAE
 
-**Open-source architecture-agnostic suspension studio.**
-Born as a Formula SAE double-wishbone tool, now a general multibody kinematics platform: edit hardpoints live for *any* topology — double wishbone, MacPherson strut, multi-link, trailing / semi-trailing arm, solid axle, twist-beam, or a heavy-truck steering linkage — and see the kinematics *and* the vehicle-level consequences update together, in the browser, for free. You can also drop in entirely experimental linkages that fit no textbook geometric definition, and edit their pickups the same way.
+**Suspension &amp; vehicle-dynamics studio for the Elbee Racing Baja car.**
+Rebased from KinematiK (an FSAE-EV double-wishbone tool) into a Baja-SAE platform: the same architecture-agnostic multibody kinematics engine — edit hardpoints live for *any* topology (double wishbone front, trailing / semi-trailing arm or multi-link rear, MacPherson, solid axle, twist-beam, steering linkage, or a free-form layout) and see the kinematics *and* the vehicle-level consequences update together, in the browser, for free — but reorganised around Elbee's five subteams and pointed at the part that ends Elbee's runs every year: the **suspension and steering**.
+
+**Why this version exists.** Year after year the failure that stops the Elbee Baja car is suspension and steering — bent tie rods, sheared rod-ends, bump-steer fighting the driver, links that don't survive the off-road abuse. So this rebase splits suspension into two first-class owners (**Front Suspension + Steering** and **Rear Suspension**), folds the steering into the front corner where it belongs, and puts the durability checks — member-deflection compliance, bump-steer over full travel, and the bolted-joint separation analysis — front and centre instead of buried.
+
+**The five subteams:** Drivetrain (engine + CVT + gearbox), Front Suspension + Steering, Rear Suspension, Chassis, and Data Acquisition. Each owns its parts in the shared 3D buggy, the Team-Fit clearance check, the weight ledger, the lead-notes board and the integration ledger.
 
 ---
+
 
 ## 30-second tour (every tab)
 
@@ -423,7 +428,7 @@ KinematiK closes that loop. It runs a real 3D constraint solver for the linkage 
 ```bash
 git clone <your-fork-url> kinematik && cd kinematik
 pip install -r requirements.txt
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
 Then edit hardpoints in the sidebar (millimetres, SAE axes: **x** rearward, **y** to the right, **z** up). The default geometry is a representative front corner you can tune from.

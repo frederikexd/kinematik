@@ -1,7 +1,6 @@
-# KinematiK — Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
-# Open source. Original author: Frederik Thio, creator of KinematiK.
+# Elbee Racing Baja studio — rebased from KinematiK by Frederik Thio (MIT).
 
-# KinematiK — Python dependencies for the Streamlit deployment.
+# Elbee Racing Baja — Python dependencies for the Streamlit deployment.
 #
 # Why this file exists: Streamlit Cloud only installs `streamlit` plus whatever is
 # listed here. With no requirements file the app crashes at startup with a redacted
@@ -27,4 +26,4 @@ fast_simplification>=0.1   # faster CAD-part decimation for the 3D model (option
                            # falls back to built-in vertex clustering if absent)
 rtree>=1.0         # chassis/part collision queries via trimesh.proximity
 reportlab>=4.0     # PDF design-handover export         (project.py: render_pdf)
-supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseStore)
+# supabase>=2.0    # cloud sync — DISABLED in this standalone demo build

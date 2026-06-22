@@ -1,20 +1,21 @@
 # ============================================================================
-#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
-#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
-#  Open source. Original author: Frederik Thio, creator of KinematiK.
+#  Elbee Racing — Baja SAE suspension & vehicle-dynamics studio.
+#  Rebased for Elbee Racing from KinematiK by Frederik Thio (FSAE-EV, MIT).
+#  Original engine © 2026 Frederik Thio; Baja rebase retains the MIT license.
 # ============================================================================
 
 """
-KinematiK — open-source Formula SAE suspension design studio.
+Elbee Racing Baja — suspension & vehicle-dynamics studio.
 
 Edit hardpoints live for any suspension topology — double wishbone, MacPherson,
 multi-link, trailing/semi-trailing arm, solid axle, twist-beam, truck steer, or a
 free-form linkage — and watch the kinematics (camber gain, bump steer, caster,
 KPI, scrub) and the vehicle-level consequences (roll-centre migration, lateral
-load transfer, grip balance) update together. Built for the FSAE garage where
-OptimumK / ADAMS budgets don't reach.
+load transfer, grip balance) update together. Rebased from KinematiK (FSAE-EV)
+for Elbee Racing Baja, with the suspension + steering durability that ends the
+team's runs year after year made the headline focus.
 
-Run:  streamlit run app.py
+Run:  streamlit run streamlit_app.py
 """
 
 import json
@@ -80,7 +81,7 @@ def _cached_thermal_warmup(coeffs, fnomin, enable_mu, cold_pa,
         track_c=float(track_c), duration_s=float(duration_s), dt=float(dt))
 
 
-st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
+st.set_page_config(page_title="Elbee Baja · Suspension & Vehicle Dynamics Studio",
                    page_icon="◢", layout="wide",
                    initial_sidebar_state="expanded")
 
@@ -191,6 +192,58 @@ hr{ border-color:var(--line);}
   background:var(--panel2)!important; color:var(--ink)!important; border-color:var(--line)!important;
 }
 .stFileUploader > div{ background:var(--panel2)!important; border-color:var(--line)!important; }
+
+/* --- Kill every remaining white surface --------------------------------- */
+/* Top header / toolbar bar (Share, star, edit, GitHub icons live here) */
+[data-testid="stHeader"], [data-testid="stToolbar"], .stAppHeader,
+header[data-testid="stHeader"]{
+  background:var(--bg)!important;
+  color:var(--ink)!important;
+  border-bottom:1px solid var(--line)!important;
+}
+[data-testid="stHeader"] *, [data-testid="stToolbar"] *{ color:var(--ink)!important; }
+[data-testid="stDecoration"]{ background:transparent!important; }
+[data-testid="stMainBlockContainer"], [data-testid="stAppViewContainer"]{
+  background:transparent!important; }
+
+/* Number-input stepper container + its +/- buttons (render white otherwise) */
+.stNumberInput div[data-baseweb="input"],
+.stNumberInput div[data-baseweb="input"] > div,
+[data-testid="stNumberInput"] div[data-baseweb="input"]{
+  background:var(--panel2)!important; border-color:var(--line)!important;
+}
+.stNumberInput button, [data-testid="stNumberInputStepUp"],
+[data-testid="stNumberInputStepDown"]{
+  background:var(--panel)!important; color:var(--ink)!important;
+  border-color:var(--line)!important;
+}
+.stNumberInput button:hover, [data-testid="stNumberInputStepUp"]:hover,
+[data-testid="stNumberInputStepDown"]:hover{
+  background:#1b222a!important; color:var(--amber)!important;
+}
+/* baseweb wrappers behind text/select/number inputs */
+div[data-baseweb="input"], div[data-baseweb="base-input"]{
+  background:var(--panel2)!important;
+}
+div[data-baseweb="input"] input{ background:var(--panel2)!important; color:var(--ink)!important; }
+
+/* Tab strip: dark track so the scroll edges don't flash white */
+.stTabs [data-baseweb="tab-list"]{ background:transparent!important; }
+.stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"]{
+  background:var(--amber)!important;
+}
+.stTabs [data-baseweb="tab-list"]::after{ background:transparent!important; }
+
+/* Expander, popover, menu surfaces */
+[data-testid="stExpander"] details, [data-testid="stExpander"] summary{
+  background:var(--panel)!important; color:var(--ink)!important;
+  border-color:var(--line)!important;
+}
+[data-baseweb="popover"] *, [role="listbox"], [role="option"]{
+  background:var(--panel2)!important; color:var(--ink)!important;
+}
+/* Radio / checkbox label text stays light */
+.stRadio label, .stCheckbox label{ color:var(--ink)!important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -219,7 +272,7 @@ def init_state():
         dt = tire_mod.default_tire()
         st.session_state.tire_coeffs = dict(dt.coeffs)
         st.session_state.tire_fnomin = dt.FNOMIN
-        st.session_state.tire_source = "Generic FSAE default (not your tire)"
+        st.session_state.tire_source = "Generic Baja default (not your tire)"
         st.session_state.tire_is_default = True
     # Subsystem interface ledger — the cross-team integration contract.
     if "ledger" not in st.session_state:
@@ -263,6 +316,24 @@ def metric(label, value, unit="", cls=""):
         unit = units_mod.label(unit)
     return f"""<div class="metric"><span class="k">{label}</span>
     <span class="v {cls}">{value}<span class="u"> {unit}</span></span></div>"""
+
+
+# --------------------------------------------------------------------------- #
+#  Baja-default powertrain
+#
+#  lap_mod.Powertrain() defaults are FSAE-EV (80 kW, ClA 2.6 downforce, tarmac
+#  crr 0.018, 1.8 g brakes). Anywhere we run the lap sim WITHOUT explicit UI
+#  controls (e.g. the Validation tab's accel/speed-trace correlation) must use
+#  Baja numbers instead, or the prediction is an 80 kW downforce car and the
+#  correlation against a real Baja run is meaningless. These match the Lap Time
+#  and GGV tab defaults so all three agree.
+# --------------------------------------------------------------------------- #
+def baja_powertrain(**overrides):
+    """A sensible Baja-spec Powertrain: ~7.5 kW engine, no aero, dirt grip."""
+    base = dict(power_kw=7.5, max_tractive_n=1500.0, drivetrain_eff=0.82,
+                cda=0.80, cla=0.0, crr=0.045, drive="rwd", brake_g_cap=1.0)
+    base.update(overrides)
+    return lap_mod.Powertrain(**base)
 
 
 # --------------------------------------------------------------------------- #
@@ -583,7 +654,7 @@ except Exception:
 #  Sidebar — geometry editor
 # --------------------------------------------------------------------------- #
 with st.sidebar:
-    st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span></div>',
+    st.markdown('<div class="brand"><span class="mark">◢ ELBEE BAJA</span></div>',
                 unsafe_allow_html=True)
 
     _UNIT_LABELS = {"metric": "Metric (SI)", "us": "US / Imperial"}
@@ -837,8 +908,8 @@ if not solve_ok:
     st.warning("Some travel positions did not converge for this topology; "
                "results outside the converged band may be incomplete.")
 
-st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
-            f'<span class="sub">{_TOPO_LABELS.get(_topo, _topo)} · agnostic engine · open source</span></div>',
+st.markdown('<div class="brand"><span class="mark">◢ ELBEE RACING · BAJA SAE</span>'
+            f'<span class="sub">{_TOPO_LABELS.get(_topo, _topo)} · suspension &amp; steering durability studio</span></div>',
             unsafe_allow_html=True)
 
 s = kin.static
@@ -908,35 +979,47 @@ if not _mr_real:
 st.write("")
 with st.expander("👋 New here? Start here (30-second tour)", expanded=False):
     st.markdown("""
-**What KinematiK is:** an architecture-agnostic suspension studio (born FSAE
-double-wishbone, now a general multibody platform) plus a shared team workspace.
+**What this is:** the Elbee Racing Baja suspension &amp; vehicle-dynamics studio —
+an architecture-agnostic multibody platform plus a shared subteam workspace.
 It turns *any* suspension geometry into live kinematics and vehicle-level balance,
-runs grip / lap-time / transient analysis on top, and keeps a searchable record of
+runs grip / lap-time / durability analysis on top, and keeps a searchable record of
 *why* the team made its design decisions so that knowledge doesn't vanish at graduation.
 
+**Why this rebuild exists:** year after year the part that ends Elbee's runs is the
+**suspension and steering** — bent tie rods, sheared rod-ends, bump-steer that fights
+the driver, and links that fail under the abuse an off-road course hands out. So the
+two front/rear suspension subteams are first-class owners here, the front corner
+carries the steering with it, and the **Compliance / durability** checks (member
+deflection, bolted-joint separation, bump-steer over full travel) are front and centre,
+not an afterthought.
+
 **Pick your topology first:** the sidebar **Suspension topology** selector switches
-the whole studio between double-wishbone (full live hardpoint editor), MacPherson
-strut, multi-link, trailing / semi-trailing arm, solid axle, twist-beam, a
-heavy-truck steering linkage, or an experimental free-form layout. Every topology
-feeds the *same* analysis pipeline below.
+the whole studio between double-wishbone (full live hardpoint editor — the usual Baja
+front), trailing / semi-trailing arm or multi-link (typical Baja rear), MacPherson
+strut, solid axle, twist-beam, a steering linkage, or an experimental free-form layout.
+Every topology feeds the *same* analysis pipeline below.
+
+**The subteams:** Drivetrain (engine + CVT + gearbox), Front Suspension + Steering,
+Rear Suspension, Chassis, and Data Acquisition — each owns its parts in the shared
+3D car, the Team-Fit clearance check, the weight ledger and the lead-notes board.
 
 **The tabs, in order:**
 - **Kinematics** — camber gain, bump steer, caster, KPI, scrub, motion ratio vs travel.
-- **Roll & Load Transfer** — roll-centre height & migration, lateral load-transfer split.
+- **Roll & Load Transfer** — roll-centre height &amp; migration, lateral load-transfer split.
 - **Grip Balance** — limit understeer/oversteer from the load-sensitive tire model.
-- **3D Model** — one tab, two views via a toggle: the live suspension linkage, or the whole car assembled from every subsystem. On the full car, click any part — suspension, aero, powertrain, cooling, electrics, brakes, chassis, data-acq — to auto-zoom the camera onto it; "Reset zoom" pulls back out.
-- **Compliance (Flex)** — member axial deflection → compliance steer/camber (double-wishbone member set; switch back to double-wishbone to use it).
+- **3D Model** — one tab, two views via a toggle: the live suspension linkage, or the whole buggy assembled from every subsystem. Click any part — front/rear suspension, drivetrain, chassis, data-acq — to auto-zoom onto it; "Reset zoom" pulls back out.
+- **Compliance (Flex)** — member axial deflection → compliance steer/camber, plus the bolted-joint separation check: the durability layer that catches the links and joints that keep failing.
 - **Team Fit** — load the chassis once, load your part, get a collision/clearance verdict before you cut anything.
-- **Weight & Handover** — log decisions, track weight, build the next-team handover record.
+- **Weight &amp; Handover** — log decisions, track weight, build the next-team handover record.
 - **Lead Notes** — leave notes for another subteam.
-- **Tire & Grip** — fit your tire from TTC data so grip/balance run on *your* rubber, not a generic default.
+- **Tire &amp; Grip** — fit your tire from test data so grip/balance run on *your* rubber, not a generic default.
 - **Setup Optimiser** — which change actually buys grip, given one set of tires.
-- **Lap Time** — turn grip and balance into the score that matters: lap time.
-- **GGV Diagram** — the combined accel/brake/cornering envelope at every speed, on your live tire; sweep CG, camber, ClA, power to see what reshapes it, and cross-check it against the Lap Sim.
-- **Transient** — explicit high-frequency time-step solver for the unsteady stuff (turn-in, kerbs, dampers).
+- **Lap Time** — turn grip and balance into the score that matters: event time.
+- **GGV Diagram** — the combined accel/brake/cornering envelope at every speed, on your live tire.
+- **Transient** — explicit high-frequency time-step solver for the unsteady stuff (turn-in, whoops, dampers).
 - **Validation** — correlation against logged/track data so a sim result is believable.
-- **Integration** — CAD/tool interchange, plus the suspension-vs-chassis clearance-through-travel check.
-- **Electronics (PCB)** — copper-survival and signal-integrity checks for the EV harness/ECU: trace heating, fusing, IR-drop brown-out, diff-pair impedance and HV coupling.
+- **Integration** — cross-subsystem CAD/interface check, plus the suspension-vs-chassis clearance-through-travel check.
+- **Data Acquisition** — sensor &amp; logger wiring survival and signal-integrity checks for the DAQ harness: trace heating, fusing, IR-drop brown-out, and noisy-line coupling on the buggy.
 
 **The one habit that makes this worth it:** log your decisions as you make them —
 especially the things that *didn't* work. It takes ten seconds with the templates,
@@ -948,7 +1031,7 @@ _tabs = st.tabs(
      "  3D MODEL  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
      "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
      "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  GGV DIAGRAM  ", "  TRANSIENT  ",
-     "  VALIDATION  ", "  INTEGRATION  ", "  ELECTRONICS (PCB)  "])
+     "  VALIDATION  ", "  INTEGRATION  ", "  DATA ACQUISITION  "])
 # GEOMETRY 3D and FULL CAR 3D are now one merged "3D MODEL" tab (tab4): a single
 # view with a toggle between the live linkage geometry and the assembled full
 # car, where clicking any part of the full car auto-zooms the camera onto it.
@@ -1067,7 +1150,7 @@ with tab2:
 
     st.markdown(f'<p class="hint">Roll centre sits {rc_static:.0f} mm above ground at '
                 'the front. A higher RC reduces body roll but adds jacking and lateral '
-                'scrub; most FSAE cars keep it 20–60 mm. The geometric/elastic split of '
+                'scrub; most off-road cars keep it 20–60 mm. The geometric/elastic split of '
                 'load transfer is what you tune with bar stiffness and RC height to set '
                 'the balance.</p>', unsafe_allow_html=True)
     st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
@@ -1206,7 +1289,7 @@ with tab4:
                     config={"scrollZoom": True, "displaylogo": False})
 
 # --------------------------- FULL CAR 3D ----------------------------------- #
-# A LIVE Formula car assembled from every subsystem's current declaration. The
+# A LIVE Baja buggy assembled from every subsystem's current declaration. The
 # figure is rebuilt from session state on every rerun, so the instant any tab
 # edits geometry, vehicle params, or its interface in the ledger, the body that
 # subsystem owns changes here — wings scale with downforce, sidepods with cooling
@@ -1221,9 +1304,8 @@ with tab_car:
         unsafe_allow_html=True)
 
     # ---- compact control strip (sits directly above the car) ------------- #
-    _SUBSYS_CHOICES = ["(whole car)", "suspension", "aerodynamics", "powertrain",
-                       "cooling", "electrics", "brakes", "chassis",
-                       "data-acquisition"]
+    _SUBSYS_CHOICES = ["(whole car)", "front-suspension", "rear-suspension",
+                       "drivetrain", "chassis", "data-acquisition"]
     hc1, hc2, hc3, hc4 = st.columns([2, 1, 1, 1])
     _hl_choice = hc1.selectbox(
         "Spotlight subsystem", _SUBSYS_CHOICES, index=0, key="car3d_highlight",
@@ -1234,7 +1316,7 @@ with tab_car:
         st.session_state._car3d_hl_prev = _hl_choice
         if _hl_choice == "(whole car)":
             st.session_state.pop("car3d_focus", None)
-    _tire_w = hc2.number_input("Tire width mm", value=180.0, min_value=80.0,
+    _tire_w = hc2.number_input("Tire width mm", value=205.0, min_value=80.0,
                                max_value=320.0, step=10.0, key="car3d_tirew")
     _show_floor = hc3.checkbox("Ground", value=True, key="car3d_floor")
     if hc4.button("Reset zoom", key="car3d_resetzoom",
@@ -1246,11 +1328,11 @@ with tab_car:
         lc = st.columns(4)
         _show_tires = lc[0].checkbox("Tires", True, key="car3d_tires")
         _show_brakes = lc[0].checkbox("Brakes", True, key="car3d_brakes")
-        _show_aero = lc[1].checkbox("Aero (wings)", True, key="car3d_aero")
+        _show_aero = lc[1].checkbox("Aero (off for Baja)", False, key="car3d_aero")
         _show_cool = lc[1].checkbox("Cooling (sidepods)", True, key="car3d_cool")
         _show_pt = lc[2].checkbox("Powertrain", True, key="car3d_pt")
         _show_el = lc[2].checkbox("Electrics", True, key="car3d_el")
-        _show_body = lc[3].checkbox("Bodywork (monocoque/halo)", True, key="car3d_body")
+        _show_body = lc[3].checkbox("Frame (roll cage)", True, key="car3d_body")
 
     # The car renders HERE, directly under the controls. Streamlit fills a
     # container in the order it was CREATED, not called, so we reserve this slot
@@ -1292,25 +1374,29 @@ with tab_car:
     # and can edit the numbers after, instead of facing an empty form.
     _PART_PRESETS = {
         "— pick a starting point —": None,
-        "Radiator — Koolance HX-240YC (289×124×34)":
-            dict(name="Radiator (HX-240YC)", subsys="cooling",
-                 l_mm=289.0, w_mm=124.0, h_mm=34.0, x_mm=-150.0, y_mm=0.0,
-                 z_mm=320.0, shape="box"),
-        "Accumulator — 3 modules (320×330×280)":
-            dict(name="Accumulator", subsys="electrics",
-                 l_mm=320.0, w_mm=330.0, h_mm=280.0, x_mm=100.0, y_mm=0.0,
-                 z_mm=190.0, shape="box"),
-        "Traction motor (Ø150×200)":
-            dict(name="Traction motor", subsys="powertrain",
-                 l_mm=200.0, w_mm=150.0, h_mm=150.0, x_mm=-620.0, y_mm=0.0,
+        "Engine — Briggs & Stratton 10 hp (300×320×340)":
+            dict(name="Engine (B&S 10hp)", subsys="drivetrain",
+                 l_mm=300.0, w_mm=320.0, h_mm=340.0, x_mm=-620.0, y_mm=0.0,
+                 z_mm=200.0, shape="box"),
+        "CVT housing (Ø260×140)":
+            dict(name="CVT", subsys="drivetrain",
+                 l_mm=140.0, w_mm=260.0, h_mm=260.0, x_mm=-620.0, y_mm=180.0,
                  z_mm=200.0, shape="cylinder"),
+        "Gearbox (260×200×200)":
+            dict(name="Gearbox", subsys="drivetrain",
+                 l_mm=260.0, w_mm=200.0, h_mm=200.0, x_mm=-500.0, y_mm=0.0,
+                 z_mm=190.0, shape="box"),
+        "Data logger (160×120×60)":
+            dict(name="Data logger", subsys="data-acquisition",
+                 l_mm=160.0, w_mm=120.0, h_mm=60.0, x_mm=-150.0, y_mm=0.0,
+                 z_mm=320.0, shape="box"),
         "Blank box (edit the numbers)":
             dict(name="My part", subsys="(custom / unassigned)",
                  l_mm=200.0, w_mm=150.0, h_mm=100.0, x_mm=0.0, y_mm=0.0,
                  z_mm=250.0, shape="box"),
     }
-    _CP_SUBSYS = ["(custom / unassigned)", "cooling", "powertrain", "electrics",
-                  "aerodynamics", "brakes", "chassis", "suspension"]
+    _CP_SUBSYS = ["(custom / unassigned)", "drivetrain", "front-suspension",
+                  "rear-suspension", "chassis", "data-acquisition"]
     # SIMPLIFIED: replace by SUBSYSTEM. The picker value is
     # (subsys_key, display, anchor_part_key, [draw-names to hide]). Replacing a
     # subsystem hides all its procedural bodies; the rest stay as dummies.
@@ -1324,8 +1410,8 @@ with tab_car:
     with st.expander("➕  Drop your part on the car — type its size in mm, see it fit",
                      expanded=False):
         st.markdown(
-            '<p class="hint">Got a part with real dimensions \u2014 a radiator off a '
-            'spec sheet, an accumulator box, a motor? Put its <b>actual size in '
+            '<p class="hint">Got a part with real dimensions \u2014 a gearbox off a '
+            'spec sheet, a fuel tank, the engine? Put its <b>actual size in '
             'millimetres</b> here and roughly where it sits, and it lands on the car '
             'right away so you can see how it fits and which way it should face. '
             'These are real mm, not scale factors. It draws as a clickable body in '
@@ -1475,7 +1561,7 @@ with tab_car:
                              "subsystem occupies, at true proportions. Nudge after."):
                     try:
                         # Union the actual placeholder boxes of ALL bodies this
-                        # subsystem owns (e.g. chassis = monocoque+hoop+driver), so
+                        # subsystem owns (e.g. chassis = frame+hoop+driver), so
                         # the CAD fills the real area you see, not one sub-part.
                         _pbx = st.session_state.get("car3d_part_boxes", {})
                         _dns = _cad_pick[3]
@@ -1826,7 +1912,7 @@ with tab_car:
         # ---- FALLBACK: no idea how big it should be? Let the system propose a
         # target. This is the deepest version of the unblock — a team that can't
         # even guess gets car-scaled x/y/z dimensions to design TOWARD, derived
-        # from this car's wheelbase/track/tyre and FSAE-typical proportions.
+        # from this car's wheelbase/track/tyre and Baja-typical proportions.
         _sg1, _sg2 = st.columns([2, 3])
         if _sg1.button("💡 Suggest target dimensions", key="car3d_rq_suggest",
                        help="No guess? Fill the boxes with a size the car can "
@@ -2052,17 +2138,16 @@ with tab_car:
     # handed to build_full_car_figure as part_overrides; the underlying
     # engineering declarations are untouched. Keys are the parts' draw names.
     _PART_EDIT = {
-        "Front wing":        "aerodynamics",
-        "Rear wing":         "aerodynamics",
-        "Sidepod (cooling)": "cooling",
-        "Radiator core":     "cooling",
-        "Motor + inverter":  "powertrain",
-        "Accumulator":       "electrics",
-        "Monocoque":         "chassis",
-        "Roll hoop":         "chassis",
+        "Engine + CVT":      "drivetrain",
+        "Frame tube":        "chassis",
+        "Main hoop":         "chassis",
+        "Front hoop":        "chassis",
+        "Rear brace":        "chassis",
+        "Front bulkhead":    "chassis",
+        "Frame node":        "chassis",
         "Driver":            "chassis",
-        "Tire":              "suspension",
-        "Brake disc":        "brakes",
+        "Tire":              "front-suspension",
+        "Brake disc":        "front-suspension",
         "Data logger":       "data-acquisition",
     }
     if "car3d_overrides" not in st.session_state:
@@ -2283,6 +2368,12 @@ with tab_car:
               + (f' &nbsp;·&nbsp; <span style="color:#ffd166;">{len(_pending)} '
                  'awaiting CAD</span>' if _pending else '')
               + '</p>', unsafe_allow_html=True)
+          if "chassis" in _replaced_keys:
+              st.markdown(
+                  '<p class="hint" style="margin:2px 0 0; color:#1F8FFF;">'
+                  '⮈ Dummy wheels, wings &amp; bodywork have snapped to your real '
+                  'chassis so the car reads as one assembly.</p>',
+                  unsafe_allow_html=True)
           try:
               _pts = (_sel or {}).get("selection", {}).get("points", [])
           except Exception:
@@ -2462,10 +2553,10 @@ def render_suspension_vs_chassis():
     _CAD_SUBSYSTEMS = [s for s in _IFm.SUBSYSTEMS if s != "data-acquisition"]
     subsys = st.selectbox("Which subsystem to check against the chassis?",
                           _CAD_SUBSYSTEMS,
-                          index=_CAD_SUBSYSTEMS.index("suspension"),
+                          index=_CAD_SUBSYSTEMS.index("front-suspension"),
                           key="cad_subsystem")
 
-    if subsys != "suspension":
+    if subsys not in ("front-suspension", "rear-suspension"):
         _render_envelope_vs_chassis(subsys, _led_cad)
         return
 
@@ -2615,11 +2706,10 @@ def render_geometry_intake(store, geom):
     here is a parallel data path — it is just a friendlier door to the same ledger.
     """
     from suspension.mountpoints import MountPoint, KeepOut
-    _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
-             "data-acquisition", "electrics", "powertrain", "suspension"]
-    _EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
-              "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
-              "suspension": "🩷"}
+    _SUBS = ["chassis", "drivetrain", "front-suspension",
+             "rear-suspension", "data-acquisition"]
+    _EMOJI = {{"chassis": "💜", "drivetrain": "❤️", "front-suspension": "🩷",
+              "rear-suspension": "💛", "data-acquisition": "💚"}}
 
     # Who has declared anything yet — the roster that turns "enter your data" from
     # an abstract ask into a visible, finite checklist the team can close out.
@@ -2635,7 +2725,7 @@ def render_geometry_intake(store, geom):
             '<p class="hint">Two things make the clash gate work, and only your '
             'team knows them for your subsystem:<br>'
             '<b>1 · Your keep-out box</b> — the volume you reserve that nothing '
-            'else may enter (your accumulator envelope, the cooling duct path, the '
+            'else may enter (your CVT clearance, the fuel-tank envelope, the '
             'roll-hoop tube, the driver\u2019s legroom). Give two opposite corners '
             'in car coordinates (x: rear\u2192front, y: left\u2192right, z: up), in mm.<br>'
             '<b>2 · Your mount points</b> — where your parts bolt to the car, and '
@@ -2820,11 +2910,10 @@ def render_manufacturing_readiness(geom):
     # estimate just to clear their name, which corrupts the ledger the whole gate
     # depends on. Naming the blind spots pressures the result's credibility (good)
     # without pressuring people to launder unknowns into fake-confirmed cells (bad).
-    _ALL_SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
-                 "data-acquisition", "electrics", "powertrain", "suspension"]
-    _EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
-              "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
-              "suspension": "🩷"}
+    _ALL_SUBS = ["chassis", "drivetrain", "front-suspension",
+                 "rear-suspension", "data-acquisition"]
+    _EMOJI = {{"chassis": "💜", "drivetrain": "❤️", "front-suspension": "🩷",
+              "rear-suspension": "💛", "data-acquisition": "💚"}}
     _declared = ({k.owner_subsystem for k in (geom.keepouts or {}).values()}
                  | {m.owner_subsystem for m in (geom.points or {}).values()})
     _blind = [s for s in _ALL_SUBS if s not in _declared]
@@ -2866,9 +2955,8 @@ def render_manufacturing_readiness(geom):
         st.markdown('<p class="hint" style="margin:2px 0 4px;"><b>Open items</b>, '
                     'ranked by what most threatens the one-shot build:</p>',
                     unsafe_allow_html=True)
-        _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜",
-                     "cooling": "🩵", "data-acquisition": "💚", "electrics": "💙",
-                     "powertrain": "❤️", "suspension": "🩷"}
+        _MP_EMOJI = {"chassis": "💜", "drivetrain": "❤️", "front-suspension": "🩷",
+                     "rear-suspension": "💛", "data-acquisition": "💚"}
         for f in sorted(interferences + clearances, key=_rank):
             d = f.detail or {}
             est = d.get("estimate")
@@ -2895,11 +2983,10 @@ def render_mountpoint_clash():
     persisted to the project store so it survives a restart.
     """
     from suspension.mountpoints import MountPoint, KeepOut, propagate_mount_move
-    _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
-                 "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
-                 "suspension": "🩷"}
-    _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
-             "data-acquisition", "electrics", "powertrain", "suspension"]
+    _MP_EMOJI = {{"chassis": "💜", "drivetrain": "❤️", "front-suspension": "🩷",
+              "rear-suspension": "💛", "data-acquisition": "💚"}}
+    _SUBS = ["chassis", "drivetrain", "front-suspension",
+             "rear-suspension", "data-acquisition"]
 
     st.markdown('<p class="hint">This is the move an aero member actually makes: drag '
                 'a single <b>wing mounting point</b> and see, immediately, whether it '
@@ -2966,7 +3053,7 @@ def render_mountpoint_clash():
         with st.expander("Add / replace a mount point", expanded=not geom.points):
             pname = st.text_input("Name", key="mp_name", value="rear-wing-upper-mount")
             powner = st.selectbox("Owned by", _SUBS,
-                                  index=_SUBS.index("aerodynamics"), key="mp_owner")
+                                  index=_SUBS.index("chassis"), key="mp_owner")
             pmounts = st.selectbox("Mounts onto", _SUBS,
                                    index=_SUBS.index("chassis"), key="mp_mounts")
             pc = st.columns(3)
@@ -3095,25 +3182,25 @@ def render_pcb_board():
     """
     from suspension.electronics import Trace, DiffPair, Aggressor
 
-    _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
-                 "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
-                 "suspension": "🩷", "ecu": "🖥️"}
-    _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
-             "data-acquisition", "electrics", "powertrain", "suspension"]
+    _MP_EMOJI = {"drivetrain": "❤️", "front-suspension": "🩷",
+                 "rear-suspension": "💛", "chassis": "💜",
+                 "data-acquisition": "💚", "ecu": "🖥️"}
+    _SUBS = ["drivetrain", "front-suspension", "rear-suspension", "chassis",
+             "data-acquisition"]
     # Only subsystems that can actually put an electrical load on a board trace
-    # belong in the "Loads on <trace>" picker. Aero/chassis/suspension draw no
-    # board current, so offering them just invites a nonsensical scenario.
-    _LOAD_SUBS = ["brakes", "cooling", "data-acquisition", "electrics", "powertrain"]
+    # belong in the "Loads on <trace>" picker. On a Baja buggy that's the DAQ
+    # logger/sensors and the drivetrain's ignition/sensor electrics.
+    _LOAD_SUBS = ["data-acquisition", "drivetrain"]
 
     st.markdown(
-        '<p class="hint">This is the check an electrical member runs the afternoon '
-        'before sending a board to fab: under the worst <b>simultaneous load</b> '
-        '(brake light + both cooling fans firing at once), do the thin copper '
+        '<p class="hint">This is the check the data-acquisition lead runs before '
+        'wiring the buggy: under the worst <b>simultaneous load</b> '
+        '(logger + every sensor and the brake-light circuit powered at once), do the thin copper '
         'traces <b>physically melt</b> (Onderdonk fusing), overheat past the board '
         'derate ceiling (IPC-2221), or drop enough voltage to push the rail below '
-        'the <b>ECU brown-out</b> threshold and reset the car? And does a CAN '
-        '<b>differential pair</b> route close enough to the switching '
-        '<b>HV motor-controller</b> net to pick up its noise? It is an '
+        'the <b>logger/ECU brown-out</b> threshold and reset mid-run? And does a sensor '
+        '<b>differential pair</b> (e.g. a CAN or wheel-speed line) route close enough to a noisy '
+        '<b>ignition / alternator</b> net to pick up its noise? It is an '
         '<i>analytic</i> screening check on declared traces and routes — not a PCB '
         'CAD kernel and not a field solver — so the impedance and coupling numbers '
         'are labelled estimates, and the true eye/reflection that need a field '
@@ -3145,7 +3232,7 @@ def render_pcb_board():
         with st.expander("Add / replace a trace", expanded=not board.traces):
             tn = st.text_input("Name", key="tr_name", value="main_feed")
             tnet = st.text_input("Net", key="tr_net", value="lv_rail")
-            town = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"), key="tr_own")
+            town = st.selectbox("Owned by", _SUBS, index=_SUBS.index("data-acquisition"), key="tr_own")
             tfeed = st.text_input("Feeds", key="tr_feed", value="ecu")
             tg = st.columns(3)
             tw = tg[0].number_input("Width (mm)", 0.05, 50.0, value=0.30, key="tr_w")
@@ -3176,7 +3263,7 @@ def render_pcb_board():
         st.markdown("###### Differential pairs (CAN H/L routes)")
         with st.expander("Add / replace a pair", expanded=not board.pairs):
             pn = st.text_input("Name", key="dp_name", value="CAN")
-            pown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"), key="dp_own")
+            pown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("data-acquisition"), key="dp_own")
             pg = st.columns(3)
             pw = pg[0].number_input("Trace w (mm)", 0.05, 5.0, value=0.20, key="dp_w")
             psp = pg[1].number_input("Spacing (mm)", 0.05, 5.0, value=0.20, key="dp_s")
@@ -3209,9 +3296,9 @@ def render_pcb_board():
     with ec[2]:
         st.markdown("###### Aggressor nets (noisy HV traces to avoid)")
         with st.expander("Add / replace an aggressor", expanded=not board.aggressors):
-            an = st.text_input("Name", key="ag_name", value="INV")
-            anet = st.text_input("Net", key="ag_net", value="hv_inverter")
-            aown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("powertrain"), key="ag_own")
+            an = st.text_input("Name", key="ag_name", value="IGN")
+            anet = st.text_input("Net", key="ag_net", value="ignition")
+            aown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("drivetrain"), key="ag_own")
             ag2 = st.columns(2)
             asw = ag2[0].number_input("Switched V", 1.0, 1000.0, value=400.0, key="ag_v")
             aedge = ag2[1].number_input("Edge (V/ns)", 0.1, 100.0, value=5.0, key="ag_e")
@@ -3390,11 +3477,10 @@ def render_harness():
     """
     from suspension.harness import Connector, WireRun
 
-    _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
-                 "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
-                 "suspension": "🩷", "ecu": "🖥️"}
-    _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
-             "data-acquisition", "electrics", "powertrain", "suspension"]
+    _MP_EMOJI = {"chassis": "💜", "drivetrain": "❤️", "front-suspension": "🩷",
+                 "rear-suspension": "💛", "data-acquisition": "💚", "ecu": "🖥️"}
+    _SUBS = ["chassis", "drivetrain", "front-suspension",
+             "rear-suspension", "data-acquisition"]
 
     st.markdown("---")
     st.markdown("### 🧵 Harness — the physical loom in 3-D car space")
@@ -3403,7 +3489,7 @@ def render_harness():
         'the copper <i>between the boxes</i> — the loom you lay into the chassis. '
         'Route each conductor as a 3-D polyline through the <b>same car '
         'coordinates</b> the suspension mount-points and keep-outs live in, so a '
-        'wire that would foul a wishbone or the accumulator box shows up as a '
+        'wire that would foul a wishbone or the CVT guard shows up as a '
         'clearance FAIL on the same board a mount clash does. It catches the two '
         'things that actually scrap a loom on the bench — a <b>bend tighter than '
         'the wire can take</b> (kinks the conductor) and a connector entry with no '
@@ -3445,7 +3531,7 @@ def render_harness():
         st.markdown("###### Connectors (harness end-points / branch nodes)")
         with st.expander("Add / replace a connector", expanded=not harness.connectors):
             cn = st.text_input("Name", key="cn_name", value="ECU")
-            cown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
+            cown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("data-acquisition"),
                                 key="cn_own")
             cg = st.columns(3)
             cx = cg[0].number_input("x (mm)", -5000.0, 5000.0, value=0.0, key="cn_x")
@@ -3487,7 +3573,7 @@ def render_harness():
         conn_names = [""] + list(harness.connectors.keys())
         with st.expander("Add / replace a wire", expanded=not harness.wires):
             wn = st.text_input("Name", key="wr_name", value="MOT_PWR")
-            wown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
+            wown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("data-acquisition"),
                                 key="wr_own")
             wg = st.columns(3)
             wawg = wg[0].number_input("Gauge (AWG)", 8, 30, value=10, key="wr_awg")
@@ -4154,8 +4240,9 @@ with tab7:
         st.markdown('<span class="tag good">● persistent storage — data survives '
                     'restarts</span>', unsafe_allow_html=True)
     else:
-        st.markdown('<span class="tag warn">● local/session storage — set up Supabase '
-                    'for permanent team data (see README)</span>', unsafe_allow_html=True)
+        st.markdown('<span class="tag good">● local demo — saves to '
+                    '<code>project.json</code> on this machine (cloud sync off)</span>',
+                    unsafe_allow_html=True)
 
     st.markdown('<p class="hint">The lightest reliable car is the advantage money '
                 'can\'t buy — and the reasoning behind your design is the thing a team '
@@ -4360,6 +4447,61 @@ with tab7:
     except Exception as e:
         ec[2].markdown(f"<p class='hint'>PDF unavailable: {e}</p>", unsafe_allow_html=True)
 
+    # --------------------------------------------------------------------- #
+    #  SAAD per-subsystem documentation (the competition archive format)
+    # --------------------------------------------------------------------- #
+    st.markdown("###### Subsystem documentation (SAAD format)")
+    st.markdown(
+        '<p class="hint">One <b>Standard Archived and Accurate Documentation</b> '
+        'file per subsystem — cover sheet with a <code>WW-XYY-ZZZ</code> part '
+        'number, three-phase table of contents, and the standard prompted '
+        'sections. Logged decisions, weights and the current design state are '
+        'pre-filled; answer the prompts in paragraph form and delete them as you '
+        'go. This is the format the strongest Baja programs archive in.</p>',
+        unsafe_allow_html=True)
+
+    _team_labels = {k: v["label"] for k, v in integ_mod.TEAMS.items()}
+    sc = st.columns([2, 2, 2])
+    _saad_team = sc[0].selectbox(
+        "Subsystem", list(_team_labels.keys()),
+        format_func=lambda k: f"{project_mod.saad_part_number(k, store.season)} · {_team_labels[k]}",
+        key="saad_team")
+    _saad_component = sc[1].text_input("Component name", value="Name Of Component",
+                                       key="saad_component")
+    _saad_lead = sc[2].text_input("Subsystem lead(s)", value="", key="saad_lead")
+    _saad_members = st.text_input("Team members", value="", key="saad_members")
+
+    # Suspension subsystems carry the live geometry into their design-state seed.
+    _saad_geo = geo if _saad_team in ("front-suspension", "rear-suspension") else None
+    _saad_md = project_mod.build_saad_markdown(
+        store, _saad_team, team_label=_team_labels[_saad_team], geometry=_saad_geo,
+        component_name=_saad_component, subsystem_lead=_saad_lead,
+        team_members=_saad_members)
+    _saad_pn = project_mod.saad_part_number(_saad_team, store.season)
+
+    dc = st.columns(3)
+    dc[0].download_button(f"⬇ {_saad_pn} SAAD (.md)", _saad_md,
+                          file_name=f"SAAD_{_saad_pn}.md",
+                          mime="text/markdown", width='stretch')
+    try:
+        _saad_pdf = os.path.join(tempfile.gettempdir(), f"SAAD_{_saad_pn}.pdf")
+        project_mod.render_pdf(_saad_md, _saad_pdf)
+        with open(_saad_pdf, "rb") as f:
+            dc[1].download_button(f"⬇ {_saad_pn} SAAD (.pdf)", f.read(),
+                                  file_name=f"SAAD_{_saad_pn}.pdf",
+                                  mime="application/pdf", width='stretch')
+    except Exception as e:
+        dc[1].markdown(f"<p class='hint'>PDF unavailable: {e}</p>", unsafe_allow_html=True)
+
+    # All subsystems in one bundle.
+    _all_saad = project_mod.build_all_saad_markdown(store, _team_labels, geometry=geo)
+    dc[2].download_button("⬇ All subsystems (.md)", _all_saad,
+                          file_name="SAAD_all_subsystems.md",
+                          mime="text/markdown", width='stretch')
+
+    with st.expander(f"Preview · {_saad_pn} {_team_labels[_saad_team]}", expanded=False):
+        st.markdown(_saad_md)
+
 # ----------------------------- TAB 8 --------------------------------------- #
 with tab8:
     nstore = project_mod.ProjectStore(PROJECT_PATH)
@@ -4440,14 +4582,12 @@ with tab8:
                     "“Seen by” below once they open this tab.")
                 st.toast(f"Delivered — {_recipients} will be notified.", icon="✅")
             elif _ok and not _shared:
-                # Saved, but only to local/ephemeral storage — on Streamlit Cloud
-                # other users run a different process and will NEVER see this.
-                # Do not pretend it was delivered.
+                # Demo build: cloud sync is off, so notes are stored locally for
+                # this session. Confirm the save plainly rather than warning.
                 st.session_state["_last_post_confirm"] = (
-                    "⚠ Saved to LOCAL storage only — other leads will NOT see "
-                    "this note. Supabase isn't the active backend, so notes "
-                    "don't sync across users on Streamlit Cloud.")
-                st.warning(st.session_state["_last_post_confirm"])
+                    f"✅ Note saved locally for {_recipients} (demo build — "
+                    "cloud sync off, so it lives on this machine only).")
+                st.toast("Note saved.", icon="✅")
             else:
                 st.session_state["_last_post_confirm"] = (
                     "⚠ Note could NOT be written to shared storage, so other "
@@ -4628,7 +4768,7 @@ with tab9:
             dt = tire_mod.default_tire()
             st.session_state.tire_coeffs = dict(dt.coeffs)
             st.session_state.tire_fnomin = dt.FNOMIN
-            st.session_state.tire_source = "Generic FSAE default (not your tire)"
+            st.session_state.tire_source = "Generic Baja default (not your tire)"
             st.session_state.tire_is_default = True
             st.rerun()
 
@@ -5097,7 +5237,7 @@ with tab10:
 # --------------------------------------------------------------------------- #
 with tab11:
     st.markdown('<p class="hint">Grip is a means; <b>lap time is the score.</b> This '
-                'tab runs your <i>live</i> geometry, setup and tire around the FSAE '
+                'tab runs your <i>live</i> geometry, setup and tire around the Baja '
                 'skidpad and a representative autocross, so every change you make '
                 'upstream reads out in <b>seconds</b> — the only currency at '
                 'competition. A team that can\'t test rubber all year wins by knowing '
@@ -5125,44 +5265,57 @@ with tab11:
             front_kin=kin, rear_kin=kin, tire=_live_tire_lap)
 
     # ---- Powertrain / aero inputs (all defaulted; safe to ignore) -------- #
-    with st.expander("Powertrain & aero (defaults are sensible FSAE-EV values)",
+    with st.expander("Drivetrain & resistance (defaults are sensible Baja values)",
                      expanded=False):
         pc = st.columns(4)
-        pw = pc[0].number_input("Peak power (kW)", 10.0, 200.0,
-                                value=80.0, step=5.0)
-        tract = pc[1].number_input("Traction cap (N)", 500.0, 6000.0,
-                                   value=2600.0, step=100.0)
-        cda = pc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=1.10, step=0.05)
-        cla = pc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=2.60, step=0.1)
+        pw = pc[0].number_input("Peak power (kW)", 2.0, 25.0,
+                                value=7.5, step=0.5,
+                                help="Baja spec engine ≈ 10 hp ≈ 7.5 kW at the crank.")
+        tract = pc[1].number_input("Traction cap (N)", 300.0, 4000.0,
+                                   value=1500.0, step=50.0,
+                                   help="Limited by rear-tire grip on dirt, not engine torque.")
+        cda = pc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=0.80, step=0.05,
+                                 help="Open tube-frame buggy + driver; bluff body, no fairing.")
+        cla = pc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=0.0, step=0.1,
+                                 help="Baja runs no aero package — leave at 0.")
         pc2 = st.columns(4)
-        drive = pc2[0].selectbox("Drive", ["rwd", "awd"], index=0)
-        brake_g = pc2[1].number_input("Brake cap (g)", 0.5, 3.0, value=1.8, step=0.1)
-        crr = pc2[2].number_input("Rolling res. crr", 0.005, 0.05,
-                                  value=0.018, step=0.002, format="%.3f")
-        eff = pc2[3].number_input("Drivetrain eff.", 0.5, 1.0, value=0.90, step=0.01)
+        drive = pc2[0].selectbox("Drive", ["rwd", "awd"], index=0,
+                                 help="Most Baja cars are RWD; pick AWD only if you run a transfer case.")
+        brake_g = pc2[1].number_input("Brake cap (g)", 0.5, 2.0, value=1.0, step=0.1,
+                                      help="Off-road µ is lower than tarmac; ~1.0 g is realistic on dirt.")
+        crr = pc2[2].number_input("Rolling res. crr", 0.010, 0.10,
+                                  value=0.045, step=0.005, format="%.3f",
+                                  help="Knobby tires on loose dirt — much higher than a tarmac car.")
+        eff = pc2[3].number_input("Drivetrain eff.", 0.5, 1.0, value=0.82, step=0.01,
+                                  help="CVT + chain/gear reduction; lower than a geared FSAE driveline.")
 
-        st.markdown("**Motor map** — replace the flat power cap with a real "
-                    "torque/speed curve. The flat cap is the cruder model; the map "
-                    "is strictly better when you have the numbers.")
-        use_map = st.checkbox("Use a motor torque/speed map", value=False,
-                              help="Enter your motor's peak torque, peak power and "
-                                   "redline (from the datasheet). Builds a "
-                                   "representative torque-plateau + constant-power "
-                                   "curve — clearly flagged as representative, not a "
-                                   "measured dyno pull.")
+        st.markdown("**CVT + gearbox map** — replace the flat power cap with the "
+                    "engine torque curve seen through the CVT ratio sweep + final "
+                    "reduction. The flat cap is the cruder model; the map is "
+                    "strictly better when you have the numbers.")
+        use_map = st.checkbox("Use an engine torque/speed map", value=False,
+                              help="Enter your engine's peak torque, peak power and "
+                                   "governed rpm (Briggs spec sheet), plus the CVT "
+                                   "ratio range and final drive. Builds a "
+                                   "representative curve — clearly flagged as "
+                                   "representative, not a measured dyno pull.")
         _motor_map = None
         if use_map:
             mpc = st.columns(3)
-            mt = mpc[0].number_input("Peak torque (N·m)", 20.0, 600.0, value=230.0, step=10.0)
-            mp = mpc[1].number_input("Peak power (kW)", 10.0, 200.0, value=80.0, step=5.0)
-            mr_in = mpc[2].number_input("Redline (rpm)", 3000.0, 20000.0, value=6000.0, step=500.0)
+            mt = mpc[0].number_input("Peak torque (N·m)", 5.0, 60.0, value=19.0, step=1.0,
+                                     help="Briggs & Stratton 10 hp spec ≈ 19 N·m.")
+            mp = mpc[1].number_input("Peak power (kW)", 2.0, 25.0, value=7.5, step=0.5)
+            mr_in = mpc[2].number_input("Governed rpm", 2000.0, 5000.0, value=3800.0, step=100.0,
+                                        help="Spec engine is governed ~3800 rpm.")
             mpc2 = st.columns(2)
-            fd = mpc2[0].number_input("Final drive ratio", 1.0, 10.0, value=3.5, step=0.1)
-            wr_ = mpc2[1].number_input("Loaded wheel radius (m)", 0.15, 0.30,
-                                       value=0.20, step=0.005, format="%.3f")
+            fd = mpc2[0].number_input("CVT × final drive (total)", 3.0, 30.0, value=12.0, step=0.5,
+                                      help="Effective overall reduction at the wheels (CVT low ratio × gearbox).")
+            wr_ = mpc2[1].number_input("Loaded wheel radius (m)", 0.20, 0.35,
+                                       value=0.28, step=0.005, format="%.3f",
+                                       help="Baja tires are tall — ~22–24 in OD.")
             _motor_map = lap_mod.MotorMap.from_peak(mt, mp, mr_in, final_drive=fd,
                                                     wheel_radius_m=wr_)
-            st.caption(f"Motor map source: {_motor_map.source} (from datasheet peaks; "
+            st.caption(f"Engine/CVT map source: {_motor_map.source} (from spec-sheet peaks; "
                        "for a measured curve construct MotorMap(rpm, torque_nm) in code).")
 
     _pt = lap_mod.Powertrain(power_kw=pw, max_tractive_n=tract, drivetrain_eff=eff,
@@ -5248,7 +5401,7 @@ with tab11:
                 st.warning(f"⚠ {r.warning}")
 
         # ---- Skidpad ---- #
-        st.markdown("###### FSAE skidpad (one timed circle)")
+        st.markdown("###### Skidpad (one timed circle)")
         skc = st.columns(3)
         _skt = f"{skid.lap_time_s:.3f}" if skid.ok and np.isfinite(skid.lap_time_s) else "—"
         skc[0].markdown(metric("Skidpad time", _skt, "s",
@@ -5354,7 +5507,7 @@ with tab11:
 with tab12:
     st.markdown('<p class="hint">A sim only changes a decision if people <b>believe '
                 'it</b> — and the honest way to earn that is to show it predicted '
-                'something you measured. Load a real run and KinematiK reports the gap '
+                'something you measured. Load a real run and the studio reports the gap '
                 'in plain numbers you can check by hand: how far off, and <i>which way</i> '
                 'the model is biased. Nothing here tunes the model to fit — it tells you '
                 'whether to trust the prediction, or which assumption to go hunt down. '
@@ -5408,7 +5561,7 @@ with tab12:
             mode = sc[0].selectbox("I measured", ["peak lateral g", "timed-circle time (s)"])
             radius = sc[2].number_input("Circle radius (m)", 5.0, 12.0, value=9.125,
                                         step=0.125, format="%.3f",
-                                        help="FSAE timed-circle path radius (centreline).")
+                                        help="Skidpad timed-circle path radius (centreline).")
             if mode == "peak lateral g":
                 mg = sc[1].number_input("Measured peak lateral g", 0.5, 2.5,
                                         value=1.40, step=0.01)
@@ -5434,7 +5587,7 @@ with tab12:
                 _live_tire_v = tire_mod.PacejkaLateral(
                     coeffs=dict(st.session_state.tire_coeffs),
                     FNOMIN=st.session_state.tire_fnomin)
-                _pt_v = lap_mod.Powertrain()
+                _pt_v = baja_powertrain()
                 _acc = lap_mod.acceleration_time(_veh_val, _pt_v, distance_m=75.0)
                 pred_t = float(_acc.lap_time_s)
                 if _acc.warning:
@@ -5486,7 +5639,7 @@ with tab12:
                         _live_tire_v = tire_mod.PacejkaLateral(
                             coeffs=dict(st.session_state.tire_coeffs),
                             FNOMIN=st.session_state.tire_fnomin)
-                        _pt_v = lap_mod.Powertrain()
+                        _pt_v = baja_powertrain()
                         if track_kind == "Skidpad":
                             _lap_v = lap_mod.skidpad_time(_veh_val, _pt_v)
                         else:
@@ -5912,7 +6065,7 @@ with tab12:
                             log_decision_now(
                                 "validation",
                                 f"CFD calibration vs wind tunnel ({wt_solver}, kOmegaSST)",
-                                rep.summary, author="aerodynamics")
+                                rep.summary, author="chassis")
                             st.success("Logged.")
                     except Exception as e:
                         st.error(f"Couldn't correlate the CFD results: {e}")
@@ -5984,7 +6137,7 @@ if _show_ledger:
         led.lv_voltage_v = lc2[0].number_input("LV bus (V)", 6.0, 60.0, value=float(led.lv_voltage_v), step=1.0)
         led.lv_supply_capacity_w = lc2[1].number_input("LV supply capacity (W)", 0.0, 5000.0,
                                                         value=float(led.lv_supply_capacity_w), step=50.0)
-        led.accumulator_voltage_v = lc2[2].number_input("Accumulator (V)", 0.0, 600.0,
+        led.accumulator_voltage_v = lc2[2].number_input("Battery (V)", 0.0, 24.0,
                                                          value=float(led.accumulator_voltage_v), step=10.0)
         lc3 = st.columns(4)
         ex = lc3[0].number_input("Chassis interior X (mm)", 0.0, 3000.0,
@@ -6010,21 +6163,16 @@ if _show_ledger:
     # never contribute, and the board check could never compute a current.
     FIELDSETS = {
         "common": ["mass_kg", "cg_x_mm", "cg_y_mm", "cg_z_mm"],
-        "aerodynamics": ["env_x_mm", "env_y_mm", "env_z_mm"],
-        "brakes": ["brake_torque_nm", "mount_load_n", "mount_points",
-                   "peak_current_a",
-                   "env_x_mm", "env_y_mm", "env_z_mm"],
         "chassis": ["env_x_mm", "env_y_mm", "env_z_mm"],
-        "cooling": ["cooling_airflow_cms", "peak_current_a",
-                    "env_x_mm", "env_y_mm", "env_z_mm"],
-        "data-acquisition": ["power_draw_w", "voltage_v", "peak_current_a"],
-        "electrics": ["power_draw_w", "voltage_v", "peak_current_a",
-                      "env_x_mm", "env_y_mm", "env_z_mm"],
-        "powertrain": ["peak_torque_nm", "peak_power_kw", "voltage_v",
+        "drivetrain": ["peak_torque_nm", "peak_power_kw", "voltage_v",
                        "peak_current_a",
-                       "cooling_airflow_cms", "heat_reject_w",
                        "env_x_mm", "env_y_mm", "env_z_mm"],
-        "suspension": ["mount_load_n", "mount_points"],
+        "front-suspension": ["mount_load_n", "mount_points",
+                             "brake_torque_nm",
+                             "env_x_mm", "env_y_mm", "env_z_mm"],
+        "rear-suspension": ["mount_load_n", "mount_points",
+                            "env_x_mm", "env_y_mm", "env_z_mm"],
+        "data-acquisition": ["power_draw_w", "voltage_v", "peak_current_a"],
     }
     FIELD_META = {
         "mass_kg": ("Mass (kg)", 0.0, 200.0, 0.5),
@@ -6045,9 +6193,8 @@ if _show_ledger:
         "peak_power_kw": ("Peak power (kW)", 0.0, 200.0, 5.0),
         "brake_torque_nm": ("Brake torque/corner (N·m)", 0.0, 5000.0, 50.0),
     }
-    EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
-             "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
-             "suspension": "🩷"}
+    EMOJI = {"chassis": "💜", "drivetrain": "❤️", "front-suspension": "🩷",
+             "rear-suspension": "💛", "data-acquisition": "💚"}
 
     st.markdown("###### Each subsystem's interface")
     st.caption("Fill what's relevant. Blank = not declared yet (reported as MISSING, "
@@ -6094,7 +6241,7 @@ if _show_ledger:
                 updated_on=getattr(it, "updated_on", ""),
                 **{k: v for k, v in vals.items()})
             new_it.mounts_on = getattr(it, "mounts_on", None) or (
-                "suspension" if s in ("brakes",) else "chassis")
+                "front-suspension" if s in ("front-suspension", "rear-suspension") else "chassis")
             # Capture any change into an in-SESSION change log. We deliberately do
             # NOT write to the persistent backend on every edit: that fired a remote
             # DB round-trip inside the render loop (and a backend hiccup could crash
@@ -6288,25 +6435,25 @@ with tab_ggv:
     # Reuse the live dynamics object the rest of the app already solved.
     _veh_ggv = veh
 
-    # ---- Powertrain / aero (same defaults as the Lap Sim tab) ------------ #
-    with st.expander("Powertrain & aero (defaults are sensible FSAE-EV values)",
+    # ---- Drivetrain / resistance (same defaults as the Lap Sim tab) ------ #
+    with st.expander("Drivetrain & resistance (defaults are sensible Baja values)",
                      expanded=False):
         gc = st.columns(4)
-        g_pw = gc[0].number_input("Peak power (kW)", 10.0, 200.0, value=80.0,
-                                  step=5.0, key="ggv_pw")
-        g_tract = gc[1].number_input("Traction cap (N)", 500.0, 6000.0,
-                                     value=2600.0, step=100.0, key="ggv_tract")
-        g_cda = gc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=1.10,
+        g_pw = gc[0].number_input("Peak power (kW)", 2.0, 25.0, value=7.5,
+                                  step=0.5, key="ggv_pw")
+        g_tract = gc[1].number_input("Traction cap (N)", 300.0, 4000.0,
+                                     value=1500.0, step=50.0, key="ggv_tract")
+        g_cda = gc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=0.80,
                                    step=0.05, key="ggv_cda")
-        g_cla = gc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=2.60,
+        g_cla = gc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=0.0,
                                    step=0.1, key="ggv_cla")
         gc2 = st.columns(4)
         g_drive = gc2[0].selectbox("Drive", ["rwd", "awd"], index=0, key="ggv_drive")
-        g_brake = gc2[1].number_input("Brake cap (g)", 0.5, 3.0, value=1.8,
+        g_brake = gc2[1].number_input("Brake cap (g)", 0.5, 2.0, value=1.0,
                                       step=0.1, key="ggv_brake")
-        g_crr = gc2[2].number_input("Rolling res. crr", 0.005, 0.05, value=0.018,
-                                    step=0.002, format="%.3f", key="ggv_crr")
-        g_eff = gc2[3].number_input("Drivetrain eff.", 0.5, 1.0, value=0.90,
+        g_crr = gc2[2].number_input("Rolling res. crr", 0.010, 0.10, value=0.045,
+                                    step=0.005, format="%.3f", key="ggv_crr")
+        g_eff = gc2[3].number_input("Drivetrain eff.", 0.5, 1.0, value=0.82,
                                     step=0.01, key="ggv_eff")
 
         st.markdown("**Combined-slip coupling** — how lateral and longitudinal "

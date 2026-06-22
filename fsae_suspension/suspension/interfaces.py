@@ -1,7 +1,7 @@
 # ============================================================================
-#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
-#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
-#  Open source. Original author: Frederik Thio, creator of KinematiK.
+#  Elbee Racing — Baja SAE suspension & vehicle-dynamics studio.
+#  Rebased for Elbee Racing from KinematiK by Frederik Thio (FSAE-EV, MIT).
+#  Original engine © 2026 Frederik Thio; Baja rebase retains the MIT license.
 # ============================================================================
 
 """
@@ -44,11 +44,12 @@ from enum import Enum
 from typing import Optional
 
 
-# The eight subsystems (matching the team channels). 'chassis' and 'suspension' are
-# the integrators most others hang off, but all are peers here.
+# The five Baja subsystems (matching the team channels). 'chassis' is the
+# integrator most others hang off; the two suspension corners and the drivetrain
+# are the historical failure-driven priorities. All are peers here.
 SUBSYSTEMS = [
-    "aerodynamics", "brakes", "chassis", "cooling",
-    "data-acquisition", "electrics", "powertrain", "suspension",
+    "chassis", "drivetrain", "front-suspension", "rear-suspension",
+    "data-acquisition",
 ]
 
 
@@ -164,9 +165,9 @@ class IntegrationLedger:
     """
     target_mass_kg: float = 230.0          # whole-car mass target (incl. driver?)
     includes_driver_kg: float = 0.0        # driver mass already counted in target
-    accumulator_voltage_v: float = 400.0   # tractive-system nominal voltage
-    lv_voltage_v: float = 24.0             # low-voltage bus
-    lv_supply_capacity_w: float = 600.0    # what the LV system can deliver
+    accumulator_voltage_v: float = 12.0    # Baja has no HV pack; small 12 V battery
+    lv_voltage_v: float = 12.0             # 12 V bus (ignition / DAQ / lights)
+    lv_supply_capacity_w: float = 180.0    # what the small battery/charging can deliver
     total_cooling_airflow_cms: float = 0.0 # airflow the cooling pkg can actually move
     chassis_envelope_mm: Optional[tuple] = None  # (x,y,z) interior the car offers
     upright_design_load_n: Optional[float] = None  # what suspension designed mounts for
@@ -287,13 +288,13 @@ class IntegrationLedger:
                             "Combined CG not computable — some subsystems gave mass "
                             "but no CG location. Suspension is using an assumed CG "
                             "height that nobody has confirmed against real layout.",
-                            subsystems=["suspension"])]
+                            subsystems=["front-suspension", "rear-suspension"])]
         x, y, z = r["cg_mm"]
         out = [Finding("cg", Severity.INFO,
                        f"Combined CG (declared subsystems): x={x:.0f} y={y:.0f} "
                        f"z={z:.0f} mm. Feed CG height {z:.0f} mm into the vehicle "
                        f"model so load transfer matches the real build.",
-                       subsystems=["suspension", "chassis"],
+                       subsystems=["front-suspension", "rear-suspension", "chassis"],
                        detail=dict(cg_x=x, cg_y=y, cg_z=z))]
         # lateral CG should be near centreline
         if abs(y) > 25.0:
@@ -301,7 +302,7 @@ class IntegrationLedger:
                                f"Combined CG is {y:+.0f} mm off centreline — that's a "
                                f"static lateral weight bias the suspension corner "
                                f"weights must account for.",
-                               subsystems=["suspension", "chassis"]))
+                               subsystems=["front-suspension", "rear-suspension", "chassis"]))
         return out
 
     def _check_envelopes(self):
@@ -397,29 +398,29 @@ class IntegrationLedger:
                                    f"LV loads ({', '.join(lv_users)}) draw "
                                    f"{lv_draw:.0f} W but the LV supply provides "
                                    f"{self.lv_supply_capacity_w:.0f} W.",
-                                   subsystems=lv_users + ["electrics"],
+                                   subsystems=lv_users + ["data-acquisition"],
                                    detail=dict(draw_w=lv_draw,
                                                capacity_w=self.lv_supply_capacity_w)))
             else:
                 out.append(Finding("lv-power", Severity.OK,
                                    f"LV draw {lv_draw:.0f} W within "
                                    f"{self.lv_supply_capacity_w:.0f} W supply.",
-                                   subsystems=lv_users + ["electrics"]))
+                                   subsystems=lv_users + ["data-acquisition"]))
         # HV voltage match
-        pt = self.interfaces.get("powertrain")
+        pt = self.interfaces.get("drivetrain")
         if pt and pt.voltage_v is not None and pt.voltage_v > 60.0:
             if abs(pt.voltage_v - self.accumulator_voltage_v) > 0.05 * self.accumulator_voltage_v:
                 out.append(Finding("hv-voltage", Severity.WARN,
                                    f"Powertrain expects {pt.voltage_v:.0f} V but the "
                                    f"accumulator is {self.accumulator_voltage_v:.0f} V "
                                    f"— inverter/motor spec mismatch.",
-                                   subsystems=["powertrain", "electrics"]))
+                                   subsystems=["drivetrain"]))
         return out
 
     def _check_driveline_torque(self):
         """Motor torque the powertrain claims vs what the driveline is rated for."""
         out = []
-        pt = self.interfaces.get("powertrain")
+        pt = self.interfaces.get("drivetrain")
         if not pt or pt.peak_torque_nm is None:
             return out
         limit = self.driveline_torque_limit_nm
@@ -623,9 +624,7 @@ def build_interface_markdown(ledger: IntegrationLedger,
         L.append(f"- Driveline torque rating: **{ledger.driveline_torque_limit_nm:.0f} N·m**")
     L.append(f"- LV bus: **{ledger.lv_voltage_v:.0f} V**, supply capacity "
              f"**{ledger.lv_supply_capacity_w:.0f} W**")
-    L.append(f"- Accumulator: **{ledger.accumulator_voltage_v:.0f} V**")
-    if ledger.total_cooling_airflow_cms:
-        L.append(f"- Cooling package airflow: **{ledger.total_cooling_airflow_cms:.2f} m³/s**")
+    L.append(f"- Battery: **{ledger.accumulator_voltage_v:.0f} V** (ignition / DAQ)")
     L.append("")
 
     # Combined mass + CG (the number that feeds the vehicle model)
