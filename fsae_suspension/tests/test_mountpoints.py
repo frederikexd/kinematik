@@ -1,7 +1,7 @@
 # ============================================================================
-#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
-#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
-#  Open source. Original author: Frederik Thio, creator of KinematiK.
+#  Elbee Racing — Baja SAE suspension & vehicle-dynamics studio.
+#  Rebased for Elbee Racing from KinematiK by Frederik Thio (FSAE-EV, MIT).
+#  Original engine © 2026 Frederik Thio; Baja rebase retains the MIT license.
 # ============================================================================
 
 """Tests for the geometric mount-point / clash / CG-propagation layer."""
@@ -57,7 +57,7 @@ def _geom_with_chassis_box():
 def test_interference_is_fail():
     g = _geom_with_chassis_box()
     g.set_point(MountPoint("wing-mount", xyz_mm=(50, 50, 50),
-                           owner_subsystem="aerodynamics", mounts_on="chassis",
+                           owner_subsystem="rear-suspension", mounts_on="chassis",
                            min_clearance_mm=5.0, is_estimate=False))
     # note: point bolts onto chassis, but the keep-out is a *different* chassis volume
     # (the tube path) it must avoid — owner==chassis==mounts_on means it's skipped.
@@ -73,23 +73,23 @@ def test_interference_against_foreign_keepout():
                           lo_mm=(0, 0, 0), hi_mm=(100, 100, 100), is_estimate=False))
     # aero point that mounts on suspension, intruding into chassis legroom
     g.set_point(MountPoint("wing-stay", xyz_mm=(50, 50, 50),
-                           owner_subsystem="aerodynamics", mounts_on="suspension",
+                           owner_subsystem="rear-suspension", mounts_on="front-suspension",
                            min_clearance_mm=5.0, is_estimate=False))
     findings = g.check_clashes()
     fails = [f for f in findings if f.severity == Severity.FAIL]
     assert len(fails) == 1
     assert fails[0].check == "clash-interference"
-    assert set(fails[0].subsystems) == {"aerodynamics", "chassis"}
+    assert set(fails[0].subsystems) == {"rear-suspension", "chassis"}
     assert fails[0].detail["penetration_mm"] == pytest.approx(50.0)
 
 
 def test_clearance_warn_band():
     g = GeometryLedger()
-    g.set_keepout(KeepOut("accumulator", "electrics",
+    g.set_keepout(KeepOut("cvt", "drivetrain",
                           lo_mm=(0, 0, 0), hi_mm=(100, 100, 100), is_estimate=False))
     # 3 mm outside the x=100 face, needs 5 mm
     g.set_point(MountPoint("wing-mount", xyz_mm=(103, 50, 50),
-                           owner_subsystem="aerodynamics", mounts_on="chassis",
+                           owner_subsystem="rear-suspension", mounts_on="chassis",
                            min_clearance_mm=5.0, is_estimate=False))
     findings = g.check_clashes()
     warns = [f for f in findings if f.severity == Severity.WARN]
@@ -100,10 +100,10 @@ def test_clearance_warn_band():
 
 def test_clear_point_is_ok():
     g = GeometryLedger()
-    g.set_keepout(KeepOut("accumulator", "electrics",
+    g.set_keepout(KeepOut("cvt", "drivetrain",
                           lo_mm=(0, 0, 0), hi_mm=(100, 100, 100), is_estimate=False))
     g.set_point(MountPoint("wing-mount", xyz_mm=(200, 50, 50),
-                           owner_subsystem="aerodynamics", mounts_on="chassis",
+                           owner_subsystem="rear-suspension", mounts_on="chassis",
                            min_clearance_mm=5.0, is_estimate=False))
     findings = g.check_clashes()
     assert any(f.severity == Severity.OK for f in findings)
@@ -114,8 +114,8 @@ def test_estimate_flag_propagates_to_finding():
     g = GeometryLedger()
     g.set_keepout(KeepOut("box", "chassis", lo_mm=(0, 0, 0), hi_mm=(100, 100, 100),
                           is_estimate=True))
-    g.set_point(MountPoint("p", xyz_mm=(50, 50, 50), owner_subsystem="aerodynamics",
-                           mounts_on="suspension", is_estimate=False))
+    g.set_point(MountPoint("p", xyz_mm=(50, 50, 50), owner_subsystem="rear-suspension",
+                           mounts_on="front-suspension", is_estimate=False))
     f = [x for x in g.check_clashes() if x.severity == Severity.FAIL][0]
     assert f.detail["estimate"] is True
     assert "estimated geometry" in f.message
@@ -123,7 +123,7 @@ def test_estimate_flag_propagates_to_finding():
 
 def test_no_keepouts_is_missing_not_pass():
     g = GeometryLedger()
-    g.set_point(MountPoint("p", xyz_mm=(0, 0, 0), owner_subsystem="aerodynamics"))
+    g.set_point(MountPoint("p", xyz_mm=(0, 0, 0), owner_subsystem="rear-suspension"))
     findings = g.check_clashes()
     assert findings[0].severity == Severity.MISSING
 
@@ -133,7 +133,7 @@ def test_no_keepouts_is_missing_not_pass():
 # --------------------------------------------------------------------------- #
 def _ledger_two_masses():
     led = IntegrationLedger(target_mass_kg=230.0)
-    led.set(SubsystemInterface(name="aerodynamics", mass_kg=10.0,
+    led.set(SubsystemInterface(name="rear-suspension", mass_kg=10.0,
                                cg_x_mm=1000, cg_y_mm=0, cg_z_mm=400,
                                is_estimate=False))
     led.set(SubsystemInterface(name="chassis", mass_kg=30.0,
@@ -147,7 +147,7 @@ def test_propagation_flags_clash_and_recomputes_cg():
     g.set_keepout(KeepOut("monocoque-wall", "chassis",
                           lo_mm=(0, 0, 0), hi_mm=(100, 100, 100), is_estimate=False))
     g.set_point(MountPoint("rear-wing-mount", xyz_mm=(200, 50, 50),
-                           owner_subsystem="aerodynamics", mounts_on="suspension",
+                           owner_subsystem="rear-suspension", mounts_on="front-suspension",
                            min_clearance_mm=5.0, is_estimate=False))
     led = _ledger_two_masses()
 
@@ -164,14 +164,14 @@ def test_propagation_with_cg_update_moves_ledger_cg():
     g = GeometryLedger()
     g.set_keepout(KeepOut("box", "chassis", lo_mm=(0, 0, 0), hi_mm=(10, 10, 10),
                           is_estimate=False))
-    g.set_point(MountPoint("aero-cg-pt", xyz_mm=(1000, 0, 400),
-                           owner_subsystem="aerodynamics", mounts_on="suspension",
+    g.set_point(MountPoint("rear-cg-pt", xyz_mm=(1000, 0, 400),
+                           owner_subsystem="rear-suspension", mounts_on="front-suspension",
                            is_estimate=False))
     led = _ledger_two_masses()
     cg0 = led.mass_rollup()["cg_mm"]
 
     # raise the aero mass point by 100 mm in z, asking the CG to follow
-    res = propagate_mount_move(g, led, "aero-cg-pt", new_xyz_mm=(1000, 0, 500),
+    res = propagate_mount_move(g, led, "rear-cg-pt", new_xyz_mm=(1000, 0, 500),
                                update_interface_cg=True)
     # combined CG z must rise: aero is 10/40 of mass, moved +100 -> +25 mm
     assert res.cg_delta_mm[2] == pytest.approx(25.0)
@@ -182,10 +182,10 @@ def test_propagation_with_cg_update_moves_ledger_cg():
 def test_propagation_cg_none_when_data_incomplete():
     g = GeometryLedger()
     g.set_keepout(KeepOut("box", "chassis", lo_mm=(0, 0, 0), hi_mm=(10, 10, 10)))
-    g.set_point(MountPoint("p", xyz_mm=(500, 0, 300), owner_subsystem="aerodynamics",
-                           mounts_on="suspension"))
+    g.set_point(MountPoint("p", xyz_mm=(500, 0, 300), owner_subsystem="rear-suspension",
+                           mounts_on="front-suspension"))
     led = IntegrationLedger()
-    led.set(SubsystemInterface(name="aerodynamics", mass_kg=10.0))  # no CG
+    led.set(SubsystemInterface(name="rear-suspension", mass_kg=10.0))  # no CG
     res = propagate_mount_move(g, led, "p", new_xyz_mm=(600, 0, 300))
     assert res.cg_after_mm is None
     assert res.cg_delta_mm is None
@@ -198,7 +198,7 @@ def test_propagation_cg_none_when_data_incomplete():
 def test_geometry_ledger_roundtrip():
     g = GeometryLedger()
     g.set_keepout(KeepOut("box", "chassis", lo_mm=(0, 0, 0), hi_mm=(100, 100, 100)))
-    g.set_point(MountPoint("p", xyz_mm=(1, 2, 3), owner_subsystem="aerodynamics"))
+    g.set_point(MountPoint("p", xyz_mm=(1, 2, 3), owner_subsystem="rear-suspension"))
     g2 = GeometryLedger.from_dict(g.as_dict())
     assert g2.points["p"].xyz_mm == (1, 2, 3)
     assert g2.keepouts["box"].hi_mm == (100, 100, 100)
@@ -215,7 +215,7 @@ def test_projectstore_persists_geometry(tmp_path):
     s.set_keepout(KeepOut("main-hoop", "chassis", lo_mm=(1380, -180, 480),
                           hi_mm=(1430, 180, 1050), is_estimate=False))
     s.set_mount_point(MountPoint("rear-wing-mount", xyz_mm=(1350, 120, 900),
-                                 owner_subsystem="aerodynamics", mounts_on="suspension",
+                                 owner_subsystem="rear-suspension", mounts_on="front-suspension",
                                  min_clearance_mm=8.0, is_estimate=False))
     assert s.save(), s.save_error
 
@@ -236,11 +236,11 @@ def test_projectstore_move_propagates(tmp_path):
     s.set_keepout(KeepOut("hoop", "chassis", lo_mm=(1380, -180, 480),
                           hi_mm=(1430, 180, 1050), is_estimate=False))
     s.set_mount_point(MountPoint("wing", xyz_mm=(1350, 120, 900),
-                                 owner_subsystem="aerodynamics", mounts_on="suspension",
+                                 owner_subsystem="rear-suspension", mounts_on="front-suspension",
                                  min_clearance_mm=8.0, is_estimate=False))
 
     led = IntegrationLedger()
-    led.set(SubsystemInterface("aerodynamics", mass_kg=12.0,
+    led.set(SubsystemInterface("rear-suspension", mass_kg=12.0,
                                cg_x_mm=1450, cg_y_mm=0, cg_z_mm=520, is_estimate=False))
     res = s.move_mount(led, "wing", (1410, 120, 900), set_by="tester")
     assert res.has_hard_clash

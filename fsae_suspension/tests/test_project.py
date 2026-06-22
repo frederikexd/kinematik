@@ -1,7 +1,7 @@
 # ============================================================================
-#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
-#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
-#  Open source. Original author: Frederik Thio, creator of KinematiK.
+#  Elbee Racing — Baja SAE suspension & vehicle-dynamics studio.
+#  Rebased for Elbee Racing from KinematiK by Frederik Thio (FSAE-EV, MIT).
+#  Original engine © 2026 Frederik Thio; Baja rebase retains the MIT license.
 # ============================================================================
 
 """Tests for the weight budget, decision log, persistence, and report."""
@@ -202,16 +202,18 @@ def test_part_in_freetext_search():
     assert [d.title for d in s.search_decisions(query="upright")] == ["A"]
 
 
-def test_degraded_storage_surfaces_reason():
+def test_demo_build_never_uses_supabase():
+    # DEMO BUILD: Supabase is intentionally disconnected. Even with credentials
+    # present in the environment, _auto_backend must return the local JSON
+    # backend and must NOT attempt any connection or flag a degraded state.
     import os as _os
     _os.environ["SUPABASE_URL"] = "https://bad.invalid"
     _os.environ["SUPABASE_KEY"] = "badkey"
     try:
         b = pj._auto_backend("fallback.json")
-        # Either supabase isn't installed or the connection fails — both should
-        # yield a JSON fallback that records WHY, not a silent swap.
-        if isinstance(b, pj.JSONFileBackend):
-            assert b.degraded_reason is not None
+        assert isinstance(b, pj.JSONFileBackend)
+        # Not a degraded fallback — it's the deliberate, clean local backend.
+        assert getattr(b, "degraded_reason", None) is None
     finally:
         _os.environ.pop("SUPABASE_URL", None)
         _os.environ.pop("SUPABASE_KEY", None)

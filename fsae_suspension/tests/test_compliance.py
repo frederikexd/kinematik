@@ -1,7 +1,7 @@
 # ============================================================================
-#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
-#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
-#  Open source. Original author: Frederik Thio, creator of KinematiK.
+#  Elbee Racing — Baja SAE suspension & vehicle-dynamics studio.
+#  Rebased for Elbee Racing from KinematiK by Frederik Thio (FSAE-EV, MIT).
+#  Original engine © 2026 Frederik Thio; Baja rebase retains the MIT license.
 # ============================================================================
 
 """
