@@ -1,7 +1,7 @@
 # ============================================================================
-#  Elbee Racing — Baja SAE suspension & vehicle-dynamics studio.
-#  Rebased for Elbee Racing from KinematiK by Frederik Thio (FSAE-EV, MIT).
-#  Original engine © 2026 Frederik Thio; Baja rebase retains the MIT license.
+#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
+#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+#  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
 
 """
@@ -40,43 +40,16 @@ from dataclasses import dataclass
 
 # Elbee subteam registry — matches the Discord channels. Each team's parts get
 # tagged so a future packaging view can colour/group by team.
-#  Elbee Racing — Baja SAE subsystem teams.
-#
-#  Rebased from the original FSAE-EV team list. Baja SAE is a single-make
-#  combustion off-road buggy: there is no aero package, no cooling pack and no
-#  HV electrics, so those teams are gone. The drivetrain is a CVT + gearbox
-#  (not a traction motor + accumulator). Suspension is split front/rear because
-#  on this car the front corner also carries the steering, and the front and
-#  rear corners are genuinely different mechanisms (the rear is usually a
-#  trailing/semi-trailing or multi-link, the front a double wishbone with a
-#  steering rack). Front suspension + steering and rear suspension being the
-#  historical year-after-year failure point is exactly why they get their own
-#  owners here.
 TEAMS = {
-    "drivetrain":       {"color": "#ff4444", "label": "Drivetrain"},
-    "front-suspension": {"color": "#ff6fb5", "label": "Front Suspension + Steering"},
-    "rear-suspension":  {"color": "#ffd93b", "label": "Rear Suspension"},
+    "aerodynamics":     {"color": "#ffd93b", "label": "Aerodynamics"},
+    "brakes":           {"color": "#ff8c1a", "label": "Brakes"},
     "chassis":          {"color": "#a855f7", "label": "Chassis"},
+    "cooling":          {"color": "#5ec8f2", "label": "Cooling"},
     "data-acquisition": {"color": "#3ec46d", "label": "Data acquisition"},
+    "electrics":        {"color": "#2f6bff", "label": "Electrics"},
+    "powertrain":       {"color": "#ff4444", "label": "Powertrain"},
+    "suspension":       {"color": "#ff6fb5", "label": "Suspension"},
 }
-
-# Back-compat alias map: old FSAE keys that other modules / saved projects may
-# still reference are folded onto the nearest Baja owner so nothing KeyErrors.
-TEAM_ALIASES = {
-    "suspension":   "front-suspension",
-    "powertrain":   "drivetrain",
-    "electrics":    "drivetrain",
-    "brakes":       "front-suspension",
-    "aerodynamics": "chassis",
-    "cooling":      "drivetrain",
-}
-
-
-def resolve_team(key):
-    """Map any (possibly legacy FSAE) team key onto a current Baja team key."""
-    if key in TEAMS:
-        return key
-    return TEAM_ALIASES.get(key, "chassis")
 
 
 # --------------------------------------------------------------------------- #
