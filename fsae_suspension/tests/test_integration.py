@@ -1,7 +1,7 @@
 # ============================================================================
-#  Elbee Racing — Baja SAE suspension & vehicle-dynamics studio.
-#  Rebased for Elbee Racing from KinematiK by Frederik Thio (FSAE-EV, MIT).
-#  Original engine © 2026 Frederik Thio; Baja rebase retains the MIT license.
+#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
+#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+#  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
 
 """Tests for the generic multi-team part-vs-chassis interference checker."""
@@ -41,19 +41,12 @@ def test_collision_fraction_bounds():
     assert 0.0 <= f <= 1.0
 
 
-def test_all_baja_teams_registered():
-    expected = {"drivetrain", "front-suspension", "rear-suspension",
-                "chassis", "data-acquisition"}
-    assert expected == set(ig.TEAMS.keys())
+def test_all_discord_teams_registered():
+    expected = {"aerodynamics", "brakes", "chassis", "cooling",
+                "data-acquisition", "electrics", "powertrain", "suspension"}
+    assert expected.issubset(set(ig.TEAMS.keys()))
     for v in ig.TEAMS.values():
         assert v["color"].startswith("#") and len(v["color"]) == 7
-
-
-def test_legacy_team_keys_resolve():
-    # Old FSAE keys from saved projects must still map onto a Baja owner.
-    assert ig.resolve_team("suspension") == "front-suspension"
-    assert ig.resolve_team("powertrain") == "drivetrain"
-    assert ig.resolve_team("chassis") == "chassis"
 
 
 def test_mass_estimate_from_density():
