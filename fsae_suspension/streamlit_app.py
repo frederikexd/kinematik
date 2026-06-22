@@ -1420,14 +1420,29 @@ with tab_car:
                 _anchor = (fullcar_mod.part_anchor(_vp_cad, _cad_pick[0], ledger=_led_cad)
                            if _is_part else None)
 
-                # When the picked part changes, seed the position fields to that
-                # part's anchor centre so the CAD starts in the right neighbourhood.
+                # Initialise the position/scale widget keys ONCE, and flush any
+                # pending writes from the Snap / Fit-scale / pick-changed actions
+                # BEFORE the widgets are created (Streamlit forbids assigning to a
+                # widget's key after the widget exists in the same run).
+                for _k, _dv in (("car3d_cad_x", 0.0), ("car3d_cad_y", 0.0),
+                                ("car3d_cad_z", 250.0), ("car3d_cad_scale", 1.0),
+                                ("car3d_cad_yaw", 0.0)):
+                    if _k not in st.session_state:
+                        st.session_state[_k] = _dv
+                _pend = st.session_state.pop("_car3d_cad_pending", None)
+                if _pend:
+                    for _k, _v in _pend.items():
+                        st.session_state[_k] = _v
+
+                # When the picked part changes, queue its anchor centre so the CAD
+                # starts in the right neighbourhood (flushed on the next run).
                 if st.session_state.get("_car3d_cad_pick_prev") != _cad_pick_lbl:
                     st.session_state._car3d_cad_pick_prev = _cad_pick_lbl
                     if _anchor:
-                        st.session_state.car3d_cad_x = float(_anchor["x_mm"])
-                        st.session_state.car3d_cad_y = float(_anchor["y_mm"])
-                        st.session_state.car3d_cad_z = float(_anchor["z_mm"])
+                        st.session_state._car3d_cad_pending = dict(
+                            car3d_cad_x=float(_anchor["x_mm"]),
+                            car3d_cad_y=float(_anchor["y_mm"]),
+                            car3d_cad_z=float(_anchor["z_mm"]))
                         st.rerun()
 
                 _o1 = st.columns([2, 2, 2])
@@ -1441,12 +1456,12 @@ with tab_car:
                          "side up with the slot — never distorts. Override with a "
                          "fixed up-axis if needed.")
                 _cad_scale = _o1[1].number_input(
-                    "Scale ×", min_value=0.05, max_value=20.0, value=1.0, step=0.05,
+                    "Scale ×", min_value=0.05, max_value=20.0, step=0.05,
                     key="car3d_cad_scale",
                     help="Multiplier on the real CAD size. Leave at 1.0 to keep its "
                          "true dimensions; use “Fit scale” to match the slot.")
                 _cad_yaw = _o1[2].number_input(
-                    "Yaw °", -180.0, 180.0, value=0.0, step=15.0, key="car3d_cad_yaw",
+                    "Yaw °", -180.0, 180.0, step=15.0, key="car3d_cad_yaw",
                     help="Spin about the car's vertical axis to line it up.")
 
                 # One-click: compute the uniform scale that makes the CAD match the
@@ -1463,10 +1478,11 @@ with tab_car:
                                          float(_anchor["h_mm"])])
                         _r = [_slotd[i] / _rawd[i] for i in range(3) if _rawd[i] > 1e-6]
                         if _r:
-                            st.session_state.car3d_cad_scale = round(min(_r), 3)
-                            st.session_state.car3d_cad_x = float(_anchor["x_mm"])
-                            st.session_state.car3d_cad_y = float(_anchor["y_mm"])
-                            st.session_state.car3d_cad_z = float(_anchor["z_mm"])
+                            st.session_state._car3d_cad_pending = dict(
+                                car3d_cad_scale=round(min(_r), 3),
+                                car3d_cad_x=float(_anchor["x_mm"]),
+                                car3d_cad_y=float(_anchor["y_mm"]),
+                                car3d_cad_z=float(_anchor["z_mm"]))
                             st.rerun()
                     except Exception:
                         pass
@@ -1498,9 +1514,10 @@ with tab_car:
                                  help="Drop the centre exactly onto the chosen "
                                       "part's position, so it lines up with the car."):
                     if _anchor:
-                        st.session_state.car3d_cad_x = float(_anchor["x_mm"])
-                        st.session_state.car3d_cad_y = float(_anchor["y_mm"])
-                        st.session_state.car3d_cad_z = float(_anchor["z_mm"])
+                        st.session_state._car3d_cad_pending = dict(
+                            car3d_cad_x=float(_anchor["x_mm"]),
+                            car3d_cad_y=float(_anchor["y_mm"]),
+                            car3d_cad_z=float(_anchor["z_mm"]))
                         st.rerun()
 
                 # Alignment read-out: how far the current centre is from the target
