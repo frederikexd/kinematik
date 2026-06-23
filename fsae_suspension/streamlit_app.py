@@ -46,6 +46,10 @@ from suspension import setup as setup_mod
 from suspension import laptime as lap_mod
 from suspension import correlation as corr_mod
 from suspension.aero import windtunnel as wt_mod
+from suspension.aero import ReferenceAeroModel as _AeroRefModel, Attitude as _AeroAttitude
+from suspension import ev_powertrain as ev_mod
+from suspension import lapsim as lapsim_mod
+from suspension import pack_thermal as pack_mod
 from suspension import damper as damper_mod
 from suspension import interfaces as interfaces_mod
 from suspension import transient as transient_mod
@@ -920,11 +924,29 @@ strut, multi-link, trailing / semi-trailing arm, solid axle, twist-beam, a
 heavy-truck steering linkage, or an experimental free-form layout. Every topology
 feeds the *same* analysis pipeline below.
 
+**Find your subteam — go straight to your tabs:**
+- **Suspension / Dynamics** → Kinematics · Roll & Load Transfer · Grip Balance · Compliance · Tire & Grip · Setup Optimiser · GGV · Transient
+- **Aerodynamics** → Aerodynamics (downforce, ground effect, wing/diffuser sizing, aero map)
+- **Powertrain / Drivetrain** → EV Powertrain (architecture choice, energy budget) · Lap Time
+- **Accumulator / Battery / Electrical** → Accumulator (pack design + rules) · the electrics layer of the Heatmap
+- **Brakes** → Brakes (bias, lock-up, hydraulic sizing)
+- **Chassis / Frame** → 3D Model · Team Fit · Integration · Weight & Handover
+- **Electronics / Systems** → Electronics (PCB) · Data-acquisition in Integration
+- **Cost / Business** → Cost & BOM (auto-seeded from the team's declared masses)
+- **Everyone** → 3D Model (see the whole car + your part) · Integration (declare your mass/CG/envelope once, and every tab uses it) · Lead Notes · Validation
+
+Declare your subsystem's numbers **once** in the **Integration** tab (mass, CG, envelope, heat, power, downforce…) and they flow automatically into the 3D model, the heatmap, the lap sim, the cost BOM and the cross-subsystem checks — you never type the same number twice.
+
 **The tabs, in order:**
 - **Kinematics** — camber gain, bump steer, caster, KPI, scrub, motion ratio vs travel.
 - **Roll & Load Transfer** — roll-centre height & migration, lateral load-transfer split.
 - **Grip Balance** — limit understeer/oversteer from the load-sensitive tire model.
-- **3D Model** — one tab, two views via a toggle: the live suspension linkage, or the whole car assembled from every subsystem. On the full car, click any part — suspension, aero, powertrain, cooling, electrics, brakes, chassis, data-acq — to auto-zoom the camera onto it; "Reset zoom" pulls back out.
+- **3D Model** — one tab, three views via a toggle. **Subsystems**: pick a subsystem (suspension, aero, powertrain, cooling, electrics, brakes, chassis, data-acq), then an individual **part** within it — wishbone, upright, tie rod, wing, radiator, accumulator, brake disc, monocoque, etc. — to zoom the camera onto that one part; the suspension also exposes its **inner pickup points** (wishbone pickups, ball joints, tie-rod ends), and anything that exists at every wheel gets a **corner row (FL / FR / RL / RR)** to drill to a single corner. **Full car**: the whole car assembled from every subsystem, where clicking any part auto-zooms onto it. **Heatmap**: shades the whole car by **heat rejection, electrical draw, or mass** — cool = light load, hot = heavy load — so the powertrain↔cooling↔electrics coupling is legible at a glance; bodies that exceed what the car can carry (heat beyond cooling airflow, draw beyond LV supply, mass over budget) are outlined in magenta, with a ranked contribution table and the relevant integration warnings shown underneath. The colours and warnings are computed from the INTEGRATION ledger, so the picture and the numbers never disagree.
+- **Aerodynamics** — the aero subteam's workspace, three views. **Downforce & ground effect**: live force-vs-speed (∝ V²) and downforce-vs-ride-height curves, so the ground-effect trend is visible as you lower the car. **Wing & diffuser sizing**: size the package to a downforce target, see the drag it costs, the front/rear split it lands, and how much the floor/diffuser carries vs the wings — then push it into the car's declared downforce so the 3D wings, lap sim and heatmap all reflect it. **Aero map**: the ride-height × yaw attitude sweep (downforce / drag / balance) that the lap sim queries through a lap. Driven by the in-house analytic aero model for instant trends, with an honest provenance note and the upgrade path to the shipped 3D source-panel potential-flow solver (real ground effect from your STL), the Virtual Wind Tunnel, pressure-tap correlation, and the ANSYS Fluent verification deck.
+- **EV Powertrain** — the electric powertrain/drivetrain decision. Compares the three FSAE-EV motor architectures (single motor + diff, two-motor axle split, four-motor torque vectoring) on the same car and track, each carrying its own mass penalty and usable corner-exit drive grip, with a full energy budget including regen. Reports lap time, event time, energy per event, and — critically for endurance — whether the pack outlasts the event or runs dry (and the lap-time cost of derating to finish). Torque-vectoring's yaw benefit is shown separately as an upper bound, never folded into the lap time. Includes a cumulative-energy-vs-laps plot (where each pack runs dry against the usable-pack line) and a tractive-force envelope, and can fold the aerodynamics tab's declared downforce/drag into the lap.
+- **Accumulator** — the HV battery-pack designer for the electric team's accumulator subteam. Pick a cell (presets for common 18650/21700 cells, or custom), set the series/parallel topology, and it sizes the pack — voltage, energy, capacity, cell count, mass, per-cell current, C-rate, deliverable power, and I²R heat — then runs the hard FSAE-EV rules checks: tractive system under 600 V, tractive power ≤ 80 kW, per-cell current within the cell's rating, and the < 120 V / < 6 MJ isolatable-segment requirement (EV1 / EV3.3.3), suggesting the minimum compliant segment count. It draws the pack grid coloured by segment, and a button declares the pack (voltage, mass incl. housing, heat) into the INTEGRATION ledger so the heatmap, mass roll-up and electrical checks all use it; the layout also feeds KinematiK's per-cell transient thermal model.
+- **Brakes** — the brake system designer, built around the FSAE brake test (lock all four wheels, stop straight). **Bias & lock-up**: from the live car's mass, CG height and wheelbase it computes the forward load transfer under braking, the ideal front/rear bias vs deceleration, which axle locks first (front-first is stable, rear-first spins the car), the max decel before lock, and the torque needed per corner to lock the tyres — with a brake-bias diagram. **Hydraulic sizing**: sizes the pedal-ratio → master-cylinder → caliper → pad → rotor chain to deliver that lock-up torque, reporting line pressure, clamp force, torque made vs needed, and the pedal force a driver actually needs — then declares the brake torque/corner into the INTEGRATION ledger so the 3D disc size and heatmap reflect it.
+- **Cost & BOM** — the scored FSAE Cost & Manufacturing event, without the blank-sheet pain. It auto-seeds a starter Bill of Materials from the masses every subsystem already declared in INTEGRATION, pre-fills standardized catalog costs (material $/kg by class, plus process rates for holes/cuts/bends/labour and machining), and lets you edit every row inline. It rolls up cost per commodity and against your target, charts cost-by-commodity and make-vs-buy, and exports the BOM as CSV — following the FSAE hierarchy (System/Commodity → Part → Material/Process/Fastener) so material and manufacturing choices show up live as dollars.
 - **Compliance (Flex)** — member axial deflection → compliance steer/camber (double-wishbone member set; switch back to double-wishbone to use it).
 - **Team Fit** — load the chassis once, load your part, get a collision/clearance verdict before you cut anything.
 - **Weight & Handover** — log decisions, track weight, build the next-team handover record.
@@ -945,7 +967,8 @@ and it's the difference between next year starting ahead or relearning everythin
 
 _tabs = st.tabs(
     ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
-     "  3D MODEL  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
+     "  3D MODEL  ", "  AERODYNAMICS  ", "  EV POWERTRAIN  ", "  ACCUMULATOR  ", "  BRAKES  ",
+     "  COST & BOM  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
      "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
      "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  GGV DIAGRAM  ", "  TRANSIENT  ",
      "  VALIDATION  ", "  INTEGRATION  ", "  ELECTRONICS (PCB)  "])
@@ -962,7 +985,7 @@ _tabs = st.tabs(
 # fusing, IR-drop / ECU brown-out) + signal-integrity (diff-pair impedance and
 # HV-aggressor coupling), rendered by render_pcb_board().
 # tab_car now aliases tab4 — the full-car view lives inside the same merged tab.
-(tab1, tab2, tab3, tab4, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_ggv,
+(tab1, tab2, tab3, tab4, tab_aero, tab_ev, tab_accum, tab_brake, tab_cost, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_ggv,
  tab_tr, tab12, tab13, tab_pcb) = _tabs
 tab_car = tab4
 
@@ -1138,72 +1161,301 @@ with tab3:
 # clicking any part auto-zooms the camera onto that subsystem.
 with tab4:
     _3d_view = st.radio(
-        "View", ["Linkage geometry", "Full car"], horizontal=True,
+        "View", ["Subsystems", "Full car", "Heatmap"], horizontal=True,
         key="model3d_view", label_visibility="collapsed",
-        help="Linkage geometry shows just the suspension members; Full car "
-             "assembles every subsystem — click a part there to zoom into it.")
+        help="Subsystems lets you pick any subsystem and get a zoomed-in look at "
+             "the parts it owns; Full car assembles every subsystem into the whole "
+             "car — click a part there to zoom into it; Heatmap shades the whole "
+             "car by heat, electrical draw, or mass so you can see at a glance "
+             "where the load concentrates and what's over budget.")
 
 with tab4:
-  if st.session_state.get("model3d_view", "Linkage geometry") == "Linkage geometry":
-    fig3d = go.Figure()
+  # ----------------------------- SUBSYSTEM BROWSER ----------------------- #
+  # Pick a subsystem and get a zoomed-in look at the parts it owns. This reuses
+  # the very same assembled-car renderer as the Full-car view, but frames the
+  # camera tight on the chosen subsystem (focus_subsystem) and spotlights it
+  # while dimming everything else (highlight_subsystem). So instead of one flat
+  # linkage skeleton, the user browses the car one subsystem at a time — each
+  # one shown in the context of the whole car, but front-and-centre.
+  if st.session_state.get("model3d_view", "Subsystems") == "Subsystems":
+    # The eight canonical subsystems, each with a friendly label, an icon, a
+    # one-line "what you're looking at", and the list of PARTS it owns. Each part
+    # is a (label, focus_key) pair where focus_key is the exact token the
+    # renderer tags that body with — passed to build_full_car_figure as
+    # focus_part so the camera frames just that one part. Suspension members are
+    # keyed by their stable group token ("upper", "tie", …); mesh bodies by their
+    # display name ("Front wing", "Brake disc", …). These mirror what the figure
+    # actually emits, so every button has something to zoom onto.
+    _SUBSYS_CATALOG = [
+        ("suspension", "🔩", "Suspension",
+         "The corner mechanism — control arms, upright, steering tie rod, the "
+         "actuation (pushrod/rocker/spring) and the wheel they carry. Switch the "
+         "topology in the sidebar and these follow.",
+         [("Upper wishbone", "upper"), ("Lower wishbone", "lower"),
+          ("Upright", "upright"), ("Tie rod", "tie"), ("Pushrod", "push"),
+          ("Rocker", "rocker"), ("Spring / damper", "spring"),
+          ("Wheel hub", "wheel"), ("Tire", "Tire")]),
+        ("aerodynamics", "🪽", "Aerodynamics",
+         "The wings, sized live from the downforce each end declares. Bigger "
+         "downforce → bigger element.",
+         [("Front wing", "Front wing"), ("Rear wing", "Rear wing")]),
+        ("powertrain", "⚙️", "Powertrain",
+         "The drive unit, scaled to declared power. This is where the torque "
+         "comes from.",
+         [("Motor + inverter", "Motor + inverter")]),
+        ("cooling", "💧", "Cooling",
+         "Sidepods and the radiator core they feed, sized from the cooling "
+         "airflow the team declares.",
+         [("Sidepod", "Sidepod (cooling)"), ("Radiator core", "Radiator core")]),
+        ("electrics", "🔋", "Electrics",
+         "The accumulator / battery envelope, sized from its declared mass and "
+         "volume.",
+         [("Accumulator", "Accumulator")]),
+        ("brakes", "🛑", "Brakes",
+         "The brake discs at each corner, scaled with declared brake torque.",
+         [("Brake disc (×4)", "Brake disc")]),
+        ("chassis", "🏎️", "Chassis",
+         "The monocoque tub, roll hoop and driver — the structure everything "
+         "else mounts to.",
+         [("Monocoque", "Monocoque"), ("Roll hoop", "Roll hoop"),
+          ("Driver", "Driver")]),
+        ("data-acquisition", "📟", "Data acquisition",
+         "The logger / DAQ box and where it sits in the car.",
+         [("Data logger", "Data logger")]),
+    ]
+    _SUB_BY_KEY = {k: (ic, lbl, blurb, parts)
+                   for (k, ic, lbl, blurb, parts) in _SUBSYS_CATALOG}
 
-    def seg(p, q, color, w=6, name=None):
-        fig3d.add_trace(go.Scatter3d(
-            x=[p[0], q[0]], y=[p[1], q[1]], z=[p[2], q[2]],
-            mode="lines", line=dict(color=color, width=w),
-            name=name, showlegend=name is not None))
+    st.markdown(
+        '<p class="hint" style="margin:0 0 8px;">Pick a subsystem, then pick a '
+        '<b>part</b> to zoom right onto it — each part is shown in the whole-car '
+        'context but framed tight and spotlit. <b>Drag</b> to rotate, scroll to '
+        'zoom.</p>', unsafe_allow_html=True)
 
-    H = hp
-    st0 = kin.static
-    if _topo == "double_wishbone":
-        # wishbones
-        seg(H.upper_front_inner, st0.upper_outer, CYAN, name="Upper wishbone")
-        seg(H.upper_rear_inner, st0.upper_outer, CYAN)
-        seg(H.lower_front_inner, st0.lower_outer, AMBER, name="Lower wishbone")
-        seg(H.lower_rear_inner, st0.lower_outer, AMBER)
-        seg(st0.lower_outer, st0.upper_outer, "#ffffff", 7, name="Upright / kingpin")
-        seg(H.tie_rod_inner, st0.tie_rod_outer, RED, 4, name="Tie rod")
-        seg(st0.contact_patch, st0.wheel_center, "#6f7d8c", 3, name="Wheel")
+    # Chosen subsystem + chosen part persist in their own keys so they survive
+    # reruns and stay independent of the Full-car spotlight/zoom state. A part of
+    # None means "frame the whole subsystem".
+    if "model3d_sub" not in st.session_state:
+        st.session_state.model3d_sub = "suspension"
+    if "model3d_part" not in st.session_state:
+        st.session_state.model3d_part = None
 
-        pts = {k: getattr(H, k) for k, _ in POINTS}
-        fig3d.add_trace(go.Scatter3d(
-            x=[p[0] for p in pts.values()], y=[p[1] for p in pts.values()],
-            z=[p[2] for p in pts.values()], mode="markers",
-            marker=dict(size=4, color="#e7ecf1"), name="Hardpoints",
-            text=list(pts.keys()), hoverinfo="text+x+y+z"))
-    else:
-        # Architecture-agnostic rendering: every member the mechanism reports.
-        _palette = [CYAN, AMBER, RED, "#9b8cff", "#5ad17a", "#ff9f43", "#37e0d0"]
-        _shown = set()
-        for i, (p, q, label) in enumerate(kin.render_segments()):
-            if label == "Wheel":
-                seg(p, q, "#6f7d8c", 3, name="Wheel")
-                continue
-            base = label.split()[0] if label else f"link{i}"
-            nm = None if base in _shown else label
-            _shown.add(base)
-            seg(p, q, _palette[i % len(_palette)], 5, name=nm)
-        named = kin.named_points()
-        fig3d.add_trace(go.Scatter3d(
-            x=[p[0] for p in named.values()], y=[p[1] for p in named.values()],
-            z=[p[2] for p in named.values()], mode="markers",
-            marker=dict(size=4, color="#e7ecf1"), name="Points",
-            text=list(named.keys()), hoverinfo="text+x+y+z"))
+    # ---- subsystem picker: one card per subsystem ------------------------ #
+    # Tapping a subsystem selects it and clears any part focus (so you see the
+    # whole subsystem first, then drill into a part).
+    _cur_sub = st.session_state.model3d_sub
+    _ncols = 4
+    for _row_start in range(0, len(_SUBSYS_CATALOG), _ncols):
+        _cols = st.columns(_ncols)
+        for _ci, (_k, _ic, _lbl, _blurb, _parts) in enumerate(
+                _SUBSYS_CATALOG[_row_start:_row_start + _ncols]):
+            _is_cur = (_k == _cur_sub)
+            with _cols[_ci]:
+                if st.button(f"{_ic}  {_lbl}", key=f"model3d_pick_{_k}",
+                             width='stretch',
+                             type=("primary" if _is_cur else "secondary"),
+                             help=_blurb):
+                    st.session_state.model3d_sub = _k
+                    st.session_state.model3d_part = None
+                    st.rerun()
 
-    fig3d.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        dragmode="turntable", uirevision="geom",
-        scene=dict(
-            xaxis=dict(title="x (rear)", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-            yaxis=dict(title="y (right)", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-            zaxis=dict(title="z (up)", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-            aspectmode="data", dragmode="turntable",
-            camera=dict(eye=dict(x=1.6, y=-1.5, z=0.9))),
-        font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
-        height=560, margin=dict(l=0, r=0, t=10, b=0),
-        legend=dict(bgcolor="rgba(0,0,0,0)"))
-    st.plotly_chart(fig3d, width='stretch', key="geom3d_plot",
-                    config={"scrollZoom": True, "displaylogo": False})
+    _sub_key = st.session_state.model3d_sub
+    _ic, _lbl, _blurb, _parts_static = _SUB_BY_KEY[_sub_key]
+    _part_focus = st.session_state.model3d_part
+
+    # ---- build the figure FIRST, then derive the real part list from it --- #
+    # The parts a subsystem actually owns depend on the live car (its topology,
+    # which layers are on). So we build the model, ask it which clickable parts
+    # it really contains (available_parts reads each body's [subsystem, part_key]
+    # customdata), and drive the buttons off THAT — no dead buttons, and exotic
+    # topologies (MacPherson strut, multi-link) get the right members. The chart
+    # itself is drawn into a reserved slot below the buttons so the picker stays
+    # on top.
+    _parts = _parts_static  # sensible fallback if discovery comes back empty
+    try:
+        _vp_fields_s = set(VehicleParams.__dataclass_fields__.keys())
+        _vp_kwargs_s = {k: v for k, v in st.session_state.vp.items()
+                        if k in _vp_fields_s}
+        _vp_s = VehicleParams(**_vp_kwargs_s)
+        _led_s = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+
+        _topo_now_s = st.session_state.get("topology", "double_wishbone")
+        _topo_lbl_s = globals().get("_TOPO_LABELS", {}).get(_topo_now_s, _topo_now_s)
+        if _topo_now_s == "double_wishbone":
+            _hp_s = Hardpoints.from_dict(st.session_state.hp)
+            _car_kwargs_s = dict(hp_front=_hp_s)
+        else:
+            _car_kwargs_s = dict(corner_front=kin)
+
+        _fig_sub = fullcar_mod.build_full_car_figure(
+            vp=_vp_s, ledger=_led_s, topology_label=_topo_lbl_s,
+            highlight_subsystem=_sub_key, focus_subsystem=_sub_key,
+            focus_part=_part_focus,
+            custom_parts=st.session_state.get("car3d_custom_parts", []),
+            height=560, **_car_kwargs_s)
+
+        _avail = fullcar_mod.available_parts(_fig_sub)
+        _disc = _avail.get(_sub_key)
+        if _disc:
+            _parts = _disc
+        # If the remembered part focus isn't valid for this subsystem/car, drop it
+        # so we don't sit on an empty frame (e.g. after a topology switch). A
+        # per-corner focus ("Tire#FR") is valid if its BASE part ("Tire") is owned
+        # by this subsystem. Inner pickup points count as valid suspension targets.
+        _valid_keys = {k for _, k in _parts}
+        if _sub_key == "suspension":
+            try:
+                _valid_keys |= {k for _, k in fullcar_mod.pickup_parts(_fig_sub)}
+            except Exception:
+                pass
+        _focus_base = (_part_focus.split("#", 1)[0]
+                       if isinstance(_part_focus, str) else _part_focus)
+        if _part_focus is not None and _focus_base not in _valid_keys:
+            st.session_state.model3d_part = None
+            _part_focus = None
+            _focus_base = None
+    except Exception as _se:
+        _fig_sub = None
+        st.warning(f"Couldn't build the subsystem view: {_se}")
+
+    # ---- part picker: one clickable chip per part in this subsystem ------- #
+    # This is the per-part zoom. "Whole subsystem" clears the part focus; each
+    # part button frames the camera on exactly that body. A part button is shown
+    # as current when the focus is that part OR any single corner of it.
+    _focus_base = (_part_focus.split("#", 1)[0]
+                   if isinstance(_part_focus, str) else None)
+    st.markdown(
+        f'<p class="hint" style="margin:8px 0 3px;"><b>{_ic} {_lbl}</b> — pick a '
+        'part to zoom in:</p>', unsafe_allow_html=True)
+    _pcols = st.columns(max(2, min(5, len(_parts) + 1)))
+    if _pcols[0].button("◇ Whole subsystem", key="model3d_part_all",
+                        width='stretch',
+                        type=("primary" if _part_focus is None else "secondary"),
+                        help="Frame the whole subsystem instead of a single part."):
+        st.session_state.model3d_part = None
+        st.rerun()
+    for _pi, (_plabel, _pkey) in enumerate(_parts):
+        _col = _pcols[(_pi + 1) % len(_pcols)]
+        _is_cur_part = (_focus_base == _pkey)
+        if _col.button(_plabel, key=f"model3d_part_{_sub_key}_{_pi}",
+                       width='stretch',
+                       type=("primary" if _is_cur_part else "secondary"),
+                       help=f"Zoom the camera onto {_plabel}."):
+            # Selecting a part frames all its instances; the corner row below then
+            # lets you narrow to one corner if it has several.
+            st.session_state.model3d_part = _pkey
+            st.rerun()
+
+    # ---- inner pickup points: a secondary, finer drill row --------------- #
+    # The suspension hardpoints (inner wishbone pickups, ball joints, tie-rod
+    # ends) are individually focusable too, but they're finer than the structural
+    # members, so they live in a tucked-away expander. Each frames all four
+    # corners; the corner row below then narrows to one. Only shows when the car
+    # actually exposes named pickups (double-wishbone and similar).
+    _pickups = []
+    if _fig_sub is not None:
+        try:
+            _pickups = fullcar_mod.pickup_parts(_fig_sub)
+        except Exception:
+            _pickups = []
+    if _pickups:
+        _pickup_open = bool(_focus_base and fullcar_mod.is_pickup(_focus_base))
+        with st.expander("Inner pickup points", expanded=_pickup_open):
+            _kcols = st.columns(min(4, len(_pickups)))
+            for _ki, (_klabel, _kkey) in enumerate(_pickups):
+                _is_cur_k = (_focus_base == _kkey)
+                if _kcols[_ki % len(_kcols)].button(
+                        _klabel, key=f"model3d_pickup_{_ki}",
+                        width='stretch',
+                        type=("primary" if _is_cur_k else "secondary"),
+                        help=f"Zoom onto the {_klabel.lower()} (all four corners; "
+                             "use the corner row to pick one)."):
+                    st.session_state.model3d_part = _kkey
+                    st.rerun()
+
+    # ---- corner sub-selector: only when the focused part has corners ------ #
+    # A part drawn at all four wheels (tire, brake disc, a wishbone) gets an
+    # All / FL / FR / RL / RR row so you can drill from "all four" down to one
+    # corner. Parts that exist only once (monocoque, a wing) show nothing here.
+    _corners = []
+    if _fig_sub is not None and _focus_base:
+        try:
+            _corners = fullcar_mod.part_corners(_fig_sub, _focus_base)
+        except Exception:
+            _corners = []
+    if _corners:
+        _cur_corner = (_part_focus.split("#", 1)[1]
+                       if (isinstance(_part_focus, str) and "#" in _part_focus)
+                       else None)
+        st.markdown(
+            '<p class="hint" style="margin:6px 0 3px;">Which corner?</p>',
+            unsafe_allow_html=True)
+        _ccols = st.columns(len(_corners) + 1)
+        if _ccols[0].button("All four", key="model3d_corner_all",
+                            width='stretch',
+                            type=("primary" if _cur_corner is None else "secondary"),
+                            help="Frame all instances of this part together."):
+            st.session_state.model3d_part = _focus_base
+            st.rerun()
+        for _xi, (_cid, _ckey) in enumerate(_corners):
+            _is_cur_c = (_cur_corner == _cid)
+            if _ccols[_xi + 1].button(
+                    _cid, key=f"model3d_corner_{_focus_base}_{_cid}",
+                    width='stretch',
+                    type=("primary" if _is_cur_c else "secondary"),
+                    help=f"Zoom onto the {fullcar_mod.corner_label(_cid).lower()} "
+                         f"{_plabel if False else fullcar_mod.part_label(_focus_base)}."):
+                st.session_state.model3d_part = _ckey
+                st.rerun()
+
+    # ---- the zoomed model (drawn here, below the picker) ----------------- #
+    if _fig_sub is not None:
+        # A click on the model itself also drills in: the picked point's
+        # customdata carries [subsystem, part_key, corner]. We switch the
+        # subsystem and/or focus to match, going straight to the clicked CORNER
+        # when there is one so a click on the rear-right tire frames that tire.
+        _sel_sub = st.plotly_chart(
+            _fig_sub, width='stretch', key="sub3d_plot",
+            on_select="rerun", selection_mode=("points",),
+            config={"scrollZoom": True, "displaylogo": False})
+        try:
+            _spts = (_sel_sub or {}).get("selection", {}).get("points", [])
+        except Exception:
+            _spts = []
+        if _spts:
+            _scd = _spts[0].get("customdata")
+            if isinstance(_scd, (list, tuple)) and len(_scd) >= 2:
+                _csub = _scd[0]
+                _cpart = _scd[1]
+                _ccorner = _scd[2] if len(_scd) >= 3 else ""
+                # The exact body clicked: its corner if it has one, else the part.
+                _ctarget = (f"{_cpart}#{_ccorner}" if (_cpart and _ccorner)
+                            else _cpart)
+                if _csub and _csub != _sub_key:
+                    st.session_state.model3d_sub = _csub
+                    st.session_state.model3d_part = _ctarget
+                    st.rerun()
+                elif _ctarget and _ctarget != _part_focus:
+                    st.session_state.model3d_part = _ctarget
+                    st.rerun()
+
+    # ---- what you're looking at ------------------------------------------ #
+    _focus_label = "Whole subsystem"
+    if _part_focus is not None:
+        _focus_label = next((lbl for lbl, key in _parts if key == _part_focus),
+                            fullcar_mod.part_label(_part_focus))
+    st.markdown(
+        f'<div style="border:1px solid var(--line);border-left:4px solid '
+        f'var(--accent, #37e0d0);border-radius:8px;padding:10px 14px;margin:8px 0;">'
+        f'<b style="font-size:1.02rem;">{_ic}&nbsp; {_lbl}</b>'
+        f'<span style="color:#37e0d0;"> · {_focus_label}</span>'
+        f'<span class="hint" style="display:block;margin-top:3px;">{_blurb}</span>'
+        f'</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="hint" style="margin:6px 0 0;">Tip: <b>click a part directly on '
+        'the model</b> to zoom onto it, or use the buttons above. Want to assemble '
+        'everything into the whole car, edit part sizes, or drop your own CAD on '
+        'it? Switch to <b>Full car</b> above.</p>', unsafe_allow_html=True)
 
 # --------------------------- FULL CAR 3D ----------------------------------- #
 # A LIVE Formula car assembled from every subsystem's current declaration. The
@@ -1213,7 +1465,7 @@ with tab4:
 # airflow, the engine block with power, the battery with its envelope/mass, brake
 # discs with brake torque, and the CG marker with the declared mass roll-up.
 with tab_car:
-  if st.session_state.get("model3d_view", "Linkage geometry") == "Full car":
+  if st.session_state.get("model3d_view", "Subsystems") == "Full car":
     st.markdown(
         '<p class="hint" style="margin:0 0 8px;">The whole car, live. '
         '<b>Drag</b> to rotate, scroll to zoom, <b>click a part</b> to zoom in. '
@@ -1310,16 +1562,8 @@ with tab_car:
                  z_mm=250.0, shape="box"),
     }
     _CP_SUBSYS = ["(custom / unassigned)", "cooling", "powertrain", "electrics",
-                  "aerodynamics", "brakes", "chassis", "suspension"]
-    # SIMPLIFIED: replace by SUBSYSTEM. The picker value is
-    # (subsys_key, display, anchor_part_key, [draw-names to hide]). Replacing a
-    # subsystem hides all its procedural bodies; the rest stay as dummies.
-    _SUB_CATALOG = fullcar_mod.subsystem_catalog()  # (key, display, [drawnames])
-    _SUB_ANCHOR = fullcar_mod.SUBSYS_ANCHOR_PART
-    _PART_PICK = {"(not replacing a subsystem)": None}
-    for _sk, _sdisp, _sdn in _SUB_CATALOG:
-        _PART_PICK[_sdisp] = (_sk, _sdisp, _SUB_ANCHOR.get(_sk), list(_sdn))
-    _PART_PICK_LABELS = list(_PART_PICK.keys())
+                  "aerodynamics", "brakes", "chassis", "suspension",
+                  "data-acquisition"]
 
     with st.expander("➕  Drop your part on the car — type its size in mm, see it fit",
                      expanded=False):
@@ -1382,225 +1626,52 @@ with tab_car:
                 st.markdown(
                     f'<p class="hint">Loaded <b>{_payload["triangles"]} triangles</b>, '
                     f'bounding box <b>{_sz[0]:.0f}\u00d7{_sz[1]:.0f}\u00d7{_sz[2]:.0f} '
-                    f'mm</b>{_unit_note}. Pick the part it represents, then snap or '
-                    'type where it sits.</p>', unsafe_allow_html=True)
+                    f'mm</b>{_unit_note}. Set where it sits and which way is up, then '
+                    'add it.</p>', unsafe_allow_html=True)
 
-                # Seed position fields once so the number_inputs own their keys.
-                for _k, _v in dict(car3d_cad_x=0.0, car3d_cad_y=0.0,
-                                   car3d_cad_z=250.0).items():
-                    if _k not in st.session_state:
-                        st.session_state[_k] = _v
-
-                _cc = st.columns([3, 3])
+                _cc = st.columns([3, 2, 2])
                 _cad_name = _cc[0].text_input(
                     "Part name", key="car3d_cad_name",
                     value=st.session_state.get("car3d_cad_name_default", "CAD part"))
-                _cad_pick_lbl = _cc[1].selectbox(
-                    "Which part is this? (sets colour + snap target)",
-                    _PART_PICK_LABELS, key="car3d_cad_pick",
-                    help="Pick the body this CAD represents. It sets the colour and "
-                         "gives you a one-tap Snap to drop it exactly where that "
-                         "part's placeholder sits. You choose below whether to hide "
-                         "the placeholder.")
-                _cad_pick = _PART_PICK.get(_cad_pick_lbl)
-                # tuple = (subsys_key, display, anchor_part_key, [drawnames])
-                _cad_sub = _cad_pick[0] if _cad_pick else "(custom / unassigned)"
-                _is_part = _cad_pick is not None
+                _cad_sub = _cc[1].selectbox("Belongs to", _CP_SUBSYS,
+                                            key="car3d_cad_subsys")
+                _cad_axis = _cc[2].selectbox(
+                    "Up axis in CAD", ["z_up", "y_up", "x_up"], key="car3d_cad_axis",
+                    help="Which axis points UP in your CAD. SolidWorks defaults are "
+                         "often Y-up; if the part lies on its side, switch this.")
 
-                # Resolve this car's anchor for the chosen subsystem's representative
-                # body, so position fields and the Snap button use real coordinates.
-                try:
-                    _vp_cad = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
-                                               if k in set(VehicleParams.__dataclass_fields__.keys())})
-                except Exception:
-                    _vp_cad = VehicleParams()
-                try:
-                    _led_cad = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
-                except Exception:
-                    _led_cad = None
-                _anchor = (fullcar_mod.part_anchor(_vp_cad, _cad_pick[2], ledger=_led_cad)
-                           if _is_part else None)
-
-                # Initialise the position/scale widget keys ONCE, and flush any
-                # pending writes from the Snap / Fit-scale / pick-changed actions
-                # BEFORE the widgets are created (Streamlit forbids assigning to a
-                # widget's key after the widget exists in the same run).
-                for _k, _dv in (("car3d_cad_x", 0.0), ("car3d_cad_y", 0.0),
-                                ("car3d_cad_z", 250.0), ("car3d_cad_scale", 1.0),
-                                ("car3d_cad_yaw", 0.0)):
-                    if _k not in st.session_state:
-                        st.session_state[_k] = _dv
-                _pend = st.session_state.pop("_car3d_cad_pending", None)
-                if _pend:
-                    for _k, _v in _pend.items():
-                        st.session_state[_k] = _v
-
-                # When the picked part changes, queue its anchor centre so the CAD
-                # starts in the right neighbourhood (flushed on the next run).
-                if st.session_state.get("_car3d_cad_pick_prev") != _cad_pick_lbl:
-                    st.session_state._car3d_cad_pick_prev = _cad_pick_lbl
-                    if _anchor:
-                        st.session_state._car3d_cad_pending = dict(
-                            car3d_cad_x=float(_anchor["x_mm"]),
-                            car3d_cad_y=float(_anchor["y_mm"]),
-                            car3d_cad_z=float(_anchor["z_mm"]))
-                        st.rerun()
-
-                _o1 = st.columns([2, 2, 2])
-                _cad_axis = _o1[0].selectbox(
-                    "Orientation", ["auto", "z_up", "y_up", "x_up"],
-                    key="car3d_cad_axis",
-                    format_func=lambda v: {
-                        "auto": "Auto-align to the slot",
-                        "z_up": "Z is up", "y_up": "Y is up", "x_up": "X is up"}[v],
-                    help="Auto rotates the part by a clean 90° to line its longest "
-                         "side up with the slot — never distorts. Override with a "
-                         "fixed up-axis if needed.")
-                _cad_scale = _o1[1].number_input(
-                    "Scale ×", min_value=0.05, max_value=20.0, step=0.05,
-                    key="car3d_cad_scale",
-                    help="Multiplier on the real CAD size. Leave at 1.0 to keep its "
-                         "true dimensions; use “Fit scale” to match the slot.")
-                _cad_yaw = _o1[2].number_input(
-                    "Yaw °", -180.0, 180.0, step=15.0, key="car3d_cad_yaw",
-                    help="Spin about the car's vertical axis to line it up.")
-
-                # One-click: compute the uniform scale that makes the CAD match the
-                # chosen part's slot, WITHOUT letting the renderer auto-balloon. The
-                # user gets a real number they can then see and fine-tune.
-                if _is_part and _anchor and st.button(
-                        "↧ Fit scale to the “%s” area" % _cad_pick[1],
-                        key="car3d_cad_fitscale",
-                        help="Sets the scale × so your CAD fills the space that "
-                             "subsystem occupies, at true proportions. Nudge after."):
-                    try:
-                        # Union the actual placeholder boxes of ALL bodies this
-                        # subsystem owns (e.g. chassis = monocoque+hoop+driver), so
-                        # the CAD fills the real area you see, not one sub-part.
-                        _pbx = st.session_state.get("car3d_part_boxes", {})
-                        _dns = _cad_pick[3]
-                        _los, _his = [], []
-                        for _d in _dns:
-                            _b = _pbx.get(_d)
-                            if _b:
-                                _c = _b["centre"]; _s2 = _b["size"]
-                                _los.append([_c[i] - _s2[i] / 2 for i in range(3)])
-                                _his.append([_c[i] + _s2[i] / 2 for i in range(3)])
-                        if _los:
-                            _lo = [min(p[i] for p in _los) for i in range(3)]
-                            _hi = [max(p[i] for p in _his) for i in range(3)]
-                            _slotd = sorted([_hi[i] - _lo[i] for i in range(3)])
-                            _ctr = [(_lo[i] + _hi[i]) / 2 for i in range(3)]
-                        else:
-                            _slotd = sorted([float(_anchor["l_mm"]),
-                                             float(_anchor["w_mm"]), float(_anchor["h_mm"])])
-                            _ctr = [_anchor["x_mm"], _anchor["y_mm"], _anchor["z_mm"]]
-                        _rawd = sorted([float(x) for x in _sz])
-                        _factor = _slotd[1] / _rawd[1] if _rawd[1] > 1e-6 else 1.0
-                        st.session_state._car3d_cad_pending = dict(
-                            car3d_cad_scale=round(_factor, 3),
-                            car3d_cad_x=float(_ctr[0]),
-                            car3d_cad_y=float(_ctr[1]),
-                            car3d_cad_z=float(_ctr[2]))
-                        st.rerun()
-                    except Exception:
-                        pass
-
-                # Live placed size at the current scale + orientation.
-                _sx, _sy, _sz2 = _sz
-                _axn = st.session_state.get("car3d_cad_axis", "auto")
-                if _axn == "y_up":
-                    _Lr, _Wr, _Hr = _sx, _sz2, _sy
-                elif _axn == "x_up":
-                    _Lr, _Wr, _Hr = _sz2, _sy, _sx
-                else:
-                    _Lr, _Wr, _Hr = _sx, _sy, _sz2
-                _Lr, _Wr, _Hr = _Lr * _cad_scale, _Wr * _cad_scale, _Hr * _cad_scale
-
-                st.markdown('<p class="hint" style="margin:6px 0 2px;"><b>Position of '
-                            'its centre (mm)</b> — x: −rear / +front, y: +right, '
-                            'z: up. Type coordinates, or Snap to the part below.</p>',
-                            unsafe_allow_html=True)
-                _cp = st.columns([2, 2, 2, 2])
-                _cad_x = _cp[0].number_input("Centre x (mm)", -2000.0, 2000.0,
-                                             step=10.0, key="car3d_cad_x")
-                _cad_y = _cp[1].number_input("Centre y (mm)", -1200.0, 1200.0,
-                                             step=10.0, key="car3d_cad_y")
-                _cad_z = _cp[2].number_input("Centre z (mm)", -200.0, 2000.0,
-                                             step=10.0, key="car3d_cad_z")
-                if _cp[3].button("⌖ Snap to part", key="car3d_cad_snap",
-                                 disabled=not _is_part,
-                                 help="Drop the centre exactly onto the chosen "
-                                      "part's position, so it lines up with the car."):
-                    if _anchor:
-                        st.session_state._car3d_cad_pending = dict(
-                            car3d_cad_x=float(_anchor["x_mm"]),
-                            car3d_cad_y=float(_anchor["y_mm"]),
-                            car3d_cad_z=float(_anchor["z_mm"]))
-                        st.rerun()
-
-                # Alignment read-out: how far the current centre is from the target
-                # part's anchor, so the user can see when it lines up.
-                if _anchor:
-                    _dx = _cad_x - _anchor["x_mm"]
-                    _dy = _cad_y - _anchor["y_mm"]
-                    _dz = _cad_z - _anchor["z_mm"]
-                    _off = (_dx**2 + _dy**2 + _dz**2) ** 0.5
-                    _al_col = "#5ad17a" if _off < 15 else ("#ffd166" if _off < 150 else "#ff6b5a")
-                    _al_txt = ("aligned with its slot" if _off < 15 else
-                               "offset %.0f mm from the %s slot (Δ %+.0f, %+.0f, %+.0f)"
-                               % (_off, _cad_pick[1], _dx, _dy, _dz))
-                    st.markdown(
-                        f'<div style="border:1px solid var(--line);border-left:4px '
-                        f'solid {_al_col};border-radius:8px;padding:6px 12px;margin:4px 0;">'
-                        f'<span style="font-size:.9rem;">Placed size '
-                        f'<b>{_Lr:.0f}×{_Wr:.0f}×{_Hr:.0f} mm</b> · '
-                        f'<span style="color:{_al_col};">{_al_txt}</span></span></div>',
-                        unsafe_allow_html=True)
-
-                _rc = st.columns([3, 2])
-                _cad_replace = _rc[0].checkbox(
-                    (f"Replace the dummy “{_cad_pick[1]}” (hide its placeholder)"
-                     if _is_part else "Pick a subsystem above to replace it"),
-                    value=_is_part, key="car3d_cad_replace", disabled=not _is_part,
-                    help="On: every dummy body of that subsystem is hidden so only "
-                         "your CAD shows there — the rest of the car stays as dummy "
-                         "suggestions. Off: your CAD sits alongside the dummy.")
-                _cad_mass = _rc[1].number_input(
-                    "Mass kg (moves CG)", min_value=0.0, max_value=300.0,
-                    value=0.0, step=0.5, key="car3d_cad_mass",
-                    help="If set, this part's weight is folded into the gold CG "
-                         "marker so the car re-balances as parts firm up.")
-
-                _cad_autofit = st.checkbox(
-                    "Auto-size into the area (uniform, true shape) — otherwise keep "
-                    "real CAD size", value=True, key="car3d_cad_autofit",
-                    disabled=not _is_part,
-                    help="On (default): uniformly scaled to fill that subsystem's "
-                         "area — handy when the real size is unknown. Off: draws at "
-                         "real exported size × the scale above. Never distorts.")
+                _cp = st.columns(4)
+                _cad_x = _cp[0].number_input("Centre x (mm)", -1500.0, 1500.0,
+                                             value=0.0, step=10.0, key="car3d_cad_x")
+                _cad_y = _cp[1].number_input("Centre y (mm)", -900.0, 900.0,
+                                             value=0.0, step=10.0, key="car3d_cad_y")
+                _cad_z = _cp[2].number_input("Centre z (mm)", 0.0, 1500.0,
+                                             value=250.0, step=10.0, key="car3d_cad_z")
+                _cad_yaw = _cp[3].number_input("Yaw °", -180.0, 180.0, value=0.0,
+                                               step=15.0, key="car3d_cad_yaw",
+                                               help="Spin the part about the car's "
+                                                    "vertical axis to line it up.")
 
                 if st.button("Add CAD part to car", key="car3d_cad_add",
                              type="primary"):
-                    _ax = st.session_state.get("car3d_cad_axis", "auto")
-                    _hide = bool(_cad_replace and _is_part)
-                    _fit = bool(_cad_autofit and _is_part)
-                    _skey = _cad_pick[0] if _is_part else None      # subsystem
-                    _apart = _cad_pick[2] if _is_part else None      # anchor part
-                    _dns = _cad_pick[3] if _is_part else []          # draw-names
+                    # Derive the placed extents for the fit read, honouring axis map.
+                    _ax = st.session_state.get("car3d_cad_axis", "z_up")
+                    _sx, _sy, _sz2 = _sz
+                    if _ax == "y_up":
+                        _L, _W, _H = _sx, _sz2, _sy
+                    elif _ax == "x_up":
+                        _L, _W, _H = _sz2, _sy, _sx
+                    else:
+                        _L, _W, _H = _sx, _sy, _sz2
                     st.session_state.car3d_custom_parts.append(dict(
                         name=(_cad_name.strip() or "CAD part"), subsys=_cad_sub,
                         shape="mesh", mesh=_payload, axis_map=_ax,
-                        yaw_deg=float(_cad_yaw), mesh_scale=float(_cad_scale),
-                        fit_to_envelope=_fit, fit_mode="fit",
-                        replaces_part=_apart,
-                        replaces_drawnames=(_dns if _hide else []),
-                        replaces_subsys=(_skey if _hide else None),
-                        snap_part=_apart, mass_kg=float(_cad_mass),
+                        yaw_deg=float(_cad_yaw), mesh_scale=1.0,
                         x_mm=float(_cad_x), y_mm=float(_cad_y), z_mm=float(_cad_z),
-                        l_mm=float(_Lr), w_mm=float(_Wr), h_mm=float(_Hr)))
+                        l_mm=float(_L), w_mm=float(_W), h_mm=float(_H)))
                     st.session_state.car3d_focus = (
                         _cad_sub if _cad_sub != "(custom / unassigned)" else None)
+                    # Clear the uploader cache so a re-add doesn't double-trigger.
                     st.session_state.pop("car3d_cad_sig", None)
                     st.rerun()
 
@@ -1634,16 +1705,6 @@ with tab_car:
         _cp_shape = _r1[2].selectbox("Shape", ["box", "cylinder"],
                                      key="car3d_cp_shape",
                                      help="Cylinder: length is L, diameter is W (e.g. a motor).")
-
-        # Optional: tie this hand-sketched estimate to a specific built-in part so
-        # it REPLACES that placeholder (hides it, takes its slot). Leaving it on
-        # "(not replacing…)" just drops the box as an extra body.
-        _cp_pick_lbl = st.selectbox(
-            "Replace which built-in part? (optional)", _PART_PICK_LABELS,
-            key="car3d_cp_pick",
-            help="Pick a part to swap your estimate in for it; its placeholder "
-                 "hides and your box takes its place. Leave as-is for a loose body.")
-        _cp_pick = _PART_PICK.get(_cp_pick_lbl)
 
         st.markdown('<p class="hint" style="margin:6px 0 2px;"><b>Size (mm)</b> '
                     '\u2014 L is fore\u2013aft, W is left\u2013right, H is up. For a '
@@ -1694,88 +1755,36 @@ with tab_car:
 
         _ab = st.columns([1, 1, 3])
         if _ab[0].button("Add to car", key="car3d_cp_add", type="primary"):
-            _d = dict(_draft)
-            if _cp_pick:
-                # tuple = (subsys_key, display, anchor_part_key, [drawnames]).
-                # Replace that whole subsystem with this estimate box: hide all its
-                # dummy bodies; the box draws at the size/position entered.
-                _d["replaces_part"] = _cp_pick[2]
-                _d["replaces_drawnames"] = list(_cp_pick[3])
-                _d["replaces_subsys"] = _cp_pick[0]
-                _d["subsys"] = _cp_pick[0]
-            st.session_state.car3d_custom_parts.append(_d)
-            st.session_state.car3d_focus = (
-                _d["subsys"] if _d["subsys"] != "(custom / unassigned)" else None)
+            st.session_state.car3d_custom_parts.append(dict(_draft))
+            st.session_state.car3d_focus = _cp_sub if _cp_sub != "(custom / unassigned)" else None
             st.rerun()
         if _ab[1].button("Clear all", key="car3d_cp_clearall",
                          disabled=not st.session_state.car3d_custom_parts):
             st.session_state.car3d_custom_parts = []
             st.rerun()
 
-        # ---- Placed parts: adjust every part's coordinates to align them ---- #
-        # The core of multi-part placement: each part you've added shows its live
-        # x/y/z (and scale for a CAD mesh), editable inline, so you can nudge
-        # several parts until they line up — and Snap drops a part exactly onto
-        # its slot. Editing here writes straight back to the part and re-renders.
+        # The parts already on the car, each removable. Keeps the list honest and
+        # lets a team pull a part once they've seen it doesn't belong there.
         if st.session_state.car3d_custom_parts:
-            st.markdown('<p class="hint" style="margin:10px 0 2px;"><b>Placed parts '
-                        '— adjust coordinates to align them (mm):</b></p>',
-                        unsafe_allow_html=True)
-            _dirty = False
+            st.markdown('<p class="hint" style="margin:8px 0 2px;"><b>On the car '
+                        'now:</b></p>', unsafe_allow_html=True)
             for _ci, _cpd in enumerate(list(st.session_state.car3d_custom_parts)):
+                _lc = st.columns([5, 1])
+                _tag = (' <span style="color:#ffd166;">· awaiting CAD</span>'
+                        if _cpd.get("provisional") else '')
                 _is_mesh = _cpd.get("shape") == "mesh" and _cpd.get("mesh")
-                _badge = ("🟦 CAD" if _is_mesh else
-                          ("🟠 awaiting" if _cpd.get("provisional") else "▫ box"))
-                _rep = (f" → replaces {_cpd.get('replaces_subsys')}"
-                        if _cpd.get("replaces_subsys") else "")
-                st.markdown(
-                    f'<span style="font-size:.86rem;">{_badge} <b>{_cpd["name"]}</b>'
-                    f'{_rep}</span>', unsafe_allow_html=True)
-                _row = st.columns([2, 2, 2, 2, 1.4, 1.2])
-                _nx = _row[0].number_input(
-                    "x", value=float(_cpd.get("x_mm", 0)), step=10.0,
-                    key=f"car3d_ed_x_{_ci}", format="%.0f")
-                _ny = _row[1].number_input(
-                    "y", value=float(_cpd.get("y_mm", 0)), step=10.0,
-                    key=f"car3d_ed_y_{_ci}", format="%.0f")
-                _nz = _row[2].number_input(
-                    "z", value=float(_cpd.get("z_mm", 0)), step=10.0,
-                    key=f"car3d_ed_z_{_ci}", format="%.0f")
-                # Scale only meaningful for a real-size CAD mesh (not auto-fitted).
-                if _is_mesh and not _cpd.get("fit_to_envelope"):
-                    _nsc = _row[3].number_input(
-                        "scale ×", value=float(_cpd.get("mesh_scale", 1.0)),
-                        min_value=0.05, max_value=20.0, step=0.05,
-                        key=f"car3d_ed_sc_{_ci}", format="%.2f")
-                else:
-                    _row[3].markdown('<span class="hint" style="font-size:.8rem;">'
-                                     '—</span>', unsafe_allow_html=True)
-                    _nsc = float(_cpd.get("mesh_scale", 1.0))
-                # Snap this part onto its target slot centre.
-                _snap_k = _cpd.get("snap_part") or _cpd.get("replaces_part")
-                if _row[4].button("⌖ Snap", key=f"car3d_ed_snap_{_ci}",
-                                  disabled=not _snap_k):
-                    try:
-                        _a = fullcar_mod.part_anchor(_vp_cad, _snap_k, ledger=_led_cad)
-                        st.session_state.car3d_custom_parts[_ci]["x_mm"] = float(_a["x_mm"])
-                        st.session_state.car3d_custom_parts[_ci]["y_mm"] = float(_a["y_mm"])
-                        st.session_state.car3d_custom_parts[_ci]["z_mm"] = float(_a["z_mm"])
-                        st.rerun()
-                    except Exception:
-                        pass
-                if _row[5].button("✕", key=f"car3d_cp_rm_{_ci}", help="Remove"):
+                _mtag = (' <span style="color:#37e0d0;">· CAD mesh</span>'
+                         if _is_mesh else '')
+                _lc[0].markdown(
+                    f'<span style="font-size:.9rem;">\u2022 <b>{_cpd["name"]}</b> '
+                    f'({_cpd["subsys"]}) \u2014 {_cpd.get("l_mm",0):.0f}\u00d7'
+                    f'{_cpd.get("w_mm",0):.0f}\u00d7{_cpd.get("h_mm",0):.0f} mm @ '
+                    f'({_cpd.get("x_mm",0):.0f}, {_cpd.get("y_mm",0):.0f}, '
+                    f'{_cpd.get("z_mm",0):.0f}){_mtag}{_tag}</span>',
+                    unsafe_allow_html=True)
+                if _lc[1].button("Remove", key=f"car3d_cp_rm_{_ci}"):
                     st.session_state.car3d_custom_parts.pop(_ci)
                     st.rerun()
-                # Write edits back (only if changed, to avoid needless reruns).
-                if (_nx != _cpd.get("x_mm") or _ny != _cpd.get("y_mm")
-                        or _nz != _cpd.get("z_mm") or _nsc != _cpd.get("mesh_scale", 1.0)):
-                    st.session_state.car3d_custom_parts[_ci]["x_mm"] = float(_nx)
-                    st.session_state.car3d_custom_parts[_ci]["y_mm"] = float(_ny)
-                    st.session_state.car3d_custom_parts[_ci]["z_mm"] = float(_nz)
-                    st.session_state.car3d_custom_parts[_ci]["mesh_scale"] = float(_nsc)
-                    _dirty = True
-            if _dirty:
-                st.rerun()
 
     # ===================================================================== #
     #  WAITING ON A PART?  —  unblock the missing-CAD handoff.               #
@@ -1960,20 +1969,12 @@ with tab_car:
                     _kx = st.checkbox("Keep my stand-in's position (recommended)",
                                       value=True, key=f"car3d_rq_keep_{_rid}")
                     _ax_r = st.selectbox(
-                        "Orientation", ["auto", "z_up", "y_up", "x_up"],
+                        "Up axis in CAD", ["z_up", "y_up", "x_up"],
                         key=f"car3d_rq_axis_{_rid}",
-                        format_func=lambda v: {
-                            "auto": "Auto-align to the slot (recommended)",
-                            "z_up": "Z is up", "y_up": "Y is up", "x_up": "X is up"}[v],
-                        help="Auto-align rotates the part so it lines up with the "
-                             "slot — no guessing. Pick a fixed axis only to override.")
+                        help="If the part comes in lying on its side, switch this.")
                     if st.button(f"Confirm & replace stand-in for \u201c{_req['name']}\u201d",
                                  key=f"car3d_rq_confirm_{_rid}", type="primary"):
-                        # Turn the stand-in into the confirmed REAL MESH, in place,
-                        # auto-fitted into its subsystem's slot so the rest of the
-                        # car fits around it and the placeholder body is hidden.
-                        _rsub = _req.get("subsys")
-                        _rfit = bool(_rsub and _rsub != "(custom / unassigned)")
+                        # Turn the stand-in into the confirmed REAL MESH, in place.
                         for _p in st.session_state.car3d_custom_parts:
                             if _p.get("req_id") == _rid:
                                 _p["shape"] = "mesh"
@@ -1985,9 +1986,6 @@ with tab_car:
                                 _p["w_mm"] = _real["w_mm"]
                                 _p["h_mm"] = _real["h_mm"]
                                 _p["provisional"] = False
-                                _p["fit_to_envelope"] = _rfit
-                                _p["fit_mode"] = "fit"
-                                _p["replaces_subsys"] = _rsub if _rfit else None
                                 break
                         _req["resolved"] = True
                         _req["real"] = _real
@@ -2214,18 +2212,6 @@ with tab_car:
           _focus = st.session_state.get("car3d_focus")
           if _highlight:
               _focus = _highlight
-          # A CAD part that replaces a subsystem hides ALL that subsystem's dummy
-          # bodies (its draw-names). Other subsystems stay on as dummy suggestions.
-          _suppress = set()
-          _suppress_parts = set()
-          for _p in st.session_state.get("car3d_custom_parts", []):
-              if _p.get("replaces_subsys"):
-                  _suppress.add(_p["replaces_subsys"])
-              for _dn in (_p.get("replaces_drawnames") or []):
-                  _suppress_parts.add(_dn)
-              # Back-compat with any single-draw-name parts.
-              if _p.get("replaces_drawname"):
-                  _suppress_parts.add(_p["replaces_drawname"])
           _fig_car = fullcar_mod.build_full_car_figure(
               vp=_vp_car, ledger=_led_car, topology_label=_topo_lbl,
               show_tires=_show_tires, show_brakes=_show_brakes,
@@ -2236,16 +2222,7 @@ with tab_car:
               focus_subsystem=_focus, tire_width_mm=float(_tire_w),
               part_overrides=_part_overrides,
               custom_parts=st.session_state.get("car3d_custom_parts", []),
-              suppress_subsystems=_suppress,
-              suppress_parts=_suppress_parts,
               **_car_kwargs)
-          # Stash the actual drawn part boxes so the CAD form (which runs before
-          # this build) can fit a part to its REAL placeholder, not the rough
-          # anchor. Read from the prior run; refreshes whenever the car redraws.
-          try:
-              st.session_state.car3d_part_boxes = dict(_fig_car._part_boxes)
-          except Exception:
-              pass
 
           # Native Streamlit selection events (streamlit>=1.49): a click returns the
           # picked point, whose customdata carries the subsystem id we tagged each
@@ -2262,40 +2239,19 @@ with tab_car:
                  '“Reset zoom” to pull back.' if _focus else
                  ' · <b>click a part to zoom in.</b>')
               + '</p>', unsafe_allow_html=True)
-
-          # Progress toward "every subsystem replaced by real geometry": how many
-          # of the 7 subsystems now carry a CAD/sketch/estimate vs dummy.
-          _cat = fullcar_mod.subsystem_catalog()      # (key, display, [drawnames])
-          _replaced_keys = {p.get("replaces_subsys") for p in
-                            st.session_state.get("car3d_custom_parts", [])
-                            if p.get("replaces_subsys")}
-          _pending = [s for s in
-                      st.session_state.get("car3d_part_requests", [])
-                      if not s.get("resolved")]
-          _done_n = len({k for k, _d, _dn in _cat} & _replaced_keys)
-          st.markdown(
-              f'<p class="hint" style="margin:4px 0 0;"><b>{_done_n}/{len(_cat)} '
-              'subsystems are real geometry</b> '
-              + ('· ' + " ".join(
-                  f'<span style="color:#1F8FFF;">●</span>{_d}'
-                  for _k, _d, _dn in _cat if _k in _replaced_keys)
-                 if _replaced_keys else '· every subsystem is still a dummy suggestion')
-              + (f' &nbsp;·&nbsp; <span style="color:#ffd166;">{len(_pending)} '
-                 'awaiting CAD</span>' if _pending else '')
-              + '</p>', unsafe_allow_html=True)
-          if "chassis" in _replaced_keys:
-              st.markdown(
-                  '<p class="hint" style="margin:2px 0 0; color:#1F8FFF;">'
-                  '⮈ Dummy wheels, wings &amp; bodywork have snapped to your real '
-                  'chassis so the car reads as one assembly.</p>',
-                  unsafe_allow_html=True)
           try:
               _pts = (_sel or {}).get("selection", {}).get("points", [])
           except Exception:
               _pts = []
           if _pts:
+              # customdata is [subsystem, part_key, corner] per point. The
+              # Full-car view zooms by SUBSYSTEM, so take element 0. Stay
+              # backward-compatible with a bare-string customdata just in case.
               _cd = _pts[0].get("customdata")
-              _clicked = _cd[0] if isinstance(_cd, (list, tuple)) else _cd
+              if isinstance(_cd, (list, tuple)):
+                  _clicked = _cd[0][0] if (_cd and isinstance(_cd[0], (list, tuple))) else _cd[0]
+              else:
+                  _clicked = _cd
               if _clicked and _clicked != st.session_state.get("car3d_focus"):
                   st.session_state.car3d_focus = _clicked
                   st.rerun()
@@ -2321,6 +2277,1209 @@ with tab_car:
                   unsafe_allow_html=True)
       except Exception as _e:
           st.error(f"Could not assemble the full-car view: {_e}")
+
+# --------------------------- HEATMAP 3D ------------------------------------ #
+# The whole car shaded by a physical metric so the powertrain↔cooling↔electrics
+# coupling is legible at a glance: where heat piles up, where the LV draw goes,
+# where the mass sits. Same assembled car as Full car, recoloured by load and
+# outlined in magenta wherever a subsystem exceeds what the car can carry. The
+# numbers come straight from the INTEGRATION ledger, so the picture and the
+# warnings below it never disagree — it's a design-review tool, not decoration.
+with tab_car:
+  if st.session_state.get("model3d_view", "Subsystems") == "Heatmap":
+    _MK = {"Heat": "heat", "Electrical": "power", "Mass": "mass"}
+    _mk_label = st.radio(
+        "Metric", list(_MK.keys()), horizontal=True, key="heat3d_metric",
+        help="Heat = waste heat each subsystem dumps (cooling has to remove it); "
+             "Electrical = continuous LV draw (supply has to feed it); "
+             "Mass = where the weight sits (drives CG and the mass budget).")
+    _metric = _MK[_mk_label]
+
+    try:
+        _vp_fields_h = set(VehicleParams.__dataclass_fields__.keys())
+        _vp_kwargs_h = {k: v for k, v in st.session_state.vp.items()
+                        if k in _vp_fields_h}
+        _vp_h = VehicleParams(**_vp_kwargs_h)
+        _led_h = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+
+        _topo_now_h = st.session_state.get("topology", "double_wishbone")
+        _topo_lbl_h = globals().get("_TOPO_LABELS", {}).get(_topo_now_h, _topo_now_h)
+        if _topo_now_h == "double_wishbone":
+            _car_kwargs_h = dict(hp_front=Hardpoints.from_dict(st.session_state.hp))
+        else:
+            _car_kwargs_h = dict(corner_front=kin)
+
+        _hm = fullcar_mod.subsystem_metrics(_vp_h, _led_h, _metric)
+
+        # If nothing's been declared for this metric yet, say so plainly — the
+        # heatmap is only as good as the INTEGRATION numbers behind it.
+        if not _hm["values"]:
+            st.info(
+                f"No **{_mk_label.lower()}** numbers declared yet. Enter "
+                f"{'heat rejection' if _metric=='heat' else 'electrical draw' if _metric=='power' else 'subsystem masses'} "
+                "for powertrain, cooling and electrics in the INTEGRATION tab and "
+                "they'll light up here.")
+
+        st.markdown(
+            f'<p class="hint" style="margin:6px 0 8px;">Each body is shaded by its '
+            f'<b>{_hm["label"].lower()}</b>. Cool = light load, hot = heavy load. '
+            f'Bodies outlined in <span style="color:#ff2bd6;font-weight:600;">'
+            f'magenta</span> exceed what the car can carry. {_hm["blurb"]}</p>',
+            unsafe_allow_html=True)
+
+        _fig_h = fullcar_mod.build_full_car_figure(
+            vp=_vp_h, ledger=_led_h, topology_label=_topo_lbl_h,
+            heatmap=_hm,
+            custom_parts=st.session_state.get("car3d_custom_parts", []),
+            part_overrides=dict(st.session_state.get("car3d_overrides", {})),
+            height=560, **_car_kwargs_h)
+        st.plotly_chart(_fig_h, width='stretch', key="heat3d_plot",
+                        config={"scrollZoom": True, "displaylogo": False})
+
+        # ---- legend: colour ramp + the actual ranked numbers -------------- #
+        _vmax = _hm["vmax"]
+        _unit = _hm["unit"]
+        _cap = _hm["capacity"]
+        # gradient bar
+        _stops = ", ".join(
+            "%s %d%%" % (fullcar_mod.heat_color(t / 10.0), t * 10)
+            for t in range(11))
+        _cap_txt = ""
+        if _cap:
+            if _metric == "heat":
+                _cap_txt = (f" · cooling can move <b>{_cap:.3f} m³/s</b> of airflow")
+            elif _metric == "power":
+                _cap_txt = f" · LV supply <b>{_cap:.0f} W</b>"
+            else:
+                _cap_txt = f" · mass target <b>{_cap:.0f} kg</b>"
+        st.markdown(
+            f'<div style="margin:6px 0 2px;">'
+            f'<div style="height:12px;border-radius:6px;border:1px solid var(--line);'
+            f'background:linear-gradient(90deg,{_stops});"></div>'
+            f'<div class="hint" style="display:flex;justify-content:space-between;'
+            f'margin-top:2px;"><span>0 {_unit}</span>'
+            f'<span>peak {_vmax:.0f} {_unit}{_cap_txt}</span></div></div>',
+            unsafe_allow_html=True)
+
+        # ranked contributions (the "where is it" table)
+        if _hm["values"]:
+            _ranked = sorted(_hm["values"].items(), key=lambda kv: -kv[1])
+            _total = sum(_hm["values"].values())
+            import pandas as _pd_h
+            _df_h = _pd_h.DataFrame([
+                dict(Subsystem=s.replace("-", " ").title(),
+                     **{_hm["label"]: f"{v:.0f} {_unit}"},
+                     Share=f"{100*v/_total:.0f}%",
+                     Status=("⚠ over budget" if _hm["over"].get(s) else "ok"))
+                for s, v in _ranked])
+            st.dataframe(_df_h, hide_index=True, width='stretch')
+            st.markdown(
+                f'<p class="hint" style="margin:2px 0 0;">Total declared '
+                f'{_hm["label"].lower()}: <b>{_total:.0f} {_unit}</b>'
+                + (f' against a {_cap:.0f} {_unit} budget.' if (_cap and _metric!="heat")
+                   else '.') + '</p>', unsafe_allow_html=True)
+
+        # ---- warnings straight from the ledger checks --------------------- #
+        if _hm["warnings"]:
+            st.markdown('<p class="hint" style="margin:8px 0 2px;"><b>What this '
+                        'means for the car:</b></p>', unsafe_allow_html=True)
+            for _w in _hm["warnings"]:
+                _sev = _w.get("severity", "info")
+                if _sev == "fail":
+                    st.error(_w["message"])
+                elif _sev == "warning":
+                    st.warning(_w["message"])
+                else:
+                    st.info(_w["message"])
+        elif _hm["values"]:
+            st.success(
+                f"No {_mk_label.lower()} conflicts flagged — declared "
+                f"{_hm['label'].lower()} sits within the car's budget.")
+    except Exception as _eh:
+        st.error(f"Could not build the heatmap view: {_eh}")
+
+# =========================================================================== #
+#  AERODYNAMICS  —  surfaces the in-house aero stack as a frictionless tool.   #
+# =========================================================================== #
+# FSAE aero subteams (USC's included) design front/rear wings, a diffuser and the
+# floor to trade drag for downforce, and study ground effect + balance. KinematiK
+# already ships a real aero stack (analytic surrogate, 3D source-panel potential
+# flow, virtual wind tunnel, pressure-tap correlation); this tab puts the runnable
+# parts in front of the user with no solver, no mesh, no license — three views:
+#   1) Downforce & ground effect — force vs speed and vs ride height, live.
+#   2) Wing & diffuser sizing — size elements to a downforce target, see drag cost.
+#   3) Aero map — the attitude sweep (ride height × yaw) that feeds the lap sim.
+# Coefficients come from suspension.aero.ReferenceAeroModel; forces use the same
+# F = ½·ρ·(−C_L·A)·V² convention as the lap-sim aero coupling, so numbers here and
+# in LAP TIME agree. Provenance is shouted: this is a trend/plumbing surrogate, not
+# a Navier–Stokes result — the panel method + Fluent deck are the correlation path.
+with tab_aero:
+  try:
+    _RHO = 1.225  # kg/m³, sea-level ISA — same default as the aero coupling
+    st.markdown(
+        '<p class="hint" style="margin:0 0 6px;">Trade <b>drag for downforce</b> and '
+        'see it on the car. Downforce grows with speed² and as the floor nears the '
+        'ground (ground effect); every count of downforce costs drag. These are live '
+        'analytic trends — instant, no solver — meant for direction and sizing. The '
+        'panel-method solve on your STL and the Fluent verification deck (already in '
+        'KinematiK) are the correlation path for absolute numbers.</p>',
+        unsafe_allow_html=True)
+
+    # Reference area: prefer the vehicle's declared frontal area, else an FSAE-typical
+    # 1.0 m². This is the area C_L/C_D are normalised to, so forces scale with it.
+    _aero_area = float(st.session_state.vp.get("frontal_area_m2", 0.0) or 0.0)
+    _ac = st.columns([1, 1, 1, 1])
+    _aero_area = _ac[0].number_input(
+        "Reference area A (m²)", 0.5, 2.0,
+        value=(_aero_area if _aero_area > 0 else 1.0), step=0.05,
+        help="Planform/frontal area the coefficients are referenced to. FSAE cars "
+             "are ~1.0 m². Forces scale linearly with this.")
+    _aero_v = _ac[1].number_input(
+        "Speed (km/h)", 10.0, 140.0, value=60.0, step=5.0,
+        help="A typical FSAE corner is 40–70 km/h; the endurance straight ~100+.")
+    _aero_v_ms = _aero_v / 3.6
+    _aero_ride = _ac[2].number_input(
+        "Ride height (mm)", 10.0, 70.0, value=30.0, step=2.5,
+        help="Front floor clearance. Lower = more ground effect, to a floor.")
+    _aero_yaw = _ac[3].number_input(
+        "Yaw / sideslip (°)", 0.0, 12.0, value=0.0, step=1.0,
+        help="In a corner the car runs a few degrees of sideslip; downforce is "
+             "lost and drag gained with yaw.")
+
+    _aero_model = _AeroRefModel()
+
+    def _aero_forces(ride_mm, yaw_deg, v_ms, area):
+        """(downforce_N, drag_N, c_lift, c_drag, front_balance) at an attitude."""
+        cl, cd, cs, fb = _aero_model._coeffs(
+            _AeroAttitude(ride_height_mm=ride_mm, yaw_deg=yaw_deg, speed_ms=v_ms))
+        q = 0.5 * _RHO * v_ms * v_ms
+        downforce = q * (-cl * area)   # -C_L*A is positive for downforce
+        drag = q * (cd * area)
+        return downforce, drag, cl, cd, fb
+
+    _view = st.radio(
+        "View", ["Downforce & ground effect", "Wing & diffuser sizing",
+                 "Aero map (attitude sweep)"],
+        horizontal=True, key="aero_view", label_visibility="collapsed")
+
+    # Live headline numbers at the chosen attitude — shared across views.
+    _df, _dr, _cl, _cd, _fb = _aero_forces(_aero_ride, _aero_yaw, _aero_v_ms, _aero_area)
+    _ld = (_df / _dr) if _dr else 0.0
+    mcol = st.columns(4)
+    mcol[0].metric("Downforce", f"{_df:.0f} N", help="≈ %.0f kgf of grip-adding load" % (_df/9.81))
+    mcol[1].metric("Drag", f"{_dr:.0f} N")
+    mcol[2].metric("Efficiency L/D", f"{_ld:.2f}", help="Downforce per unit drag — higher is better.")
+    mcol[3].metric("Aero balance", f"{_fb*100:.0f}% front",
+                   help="Share of downforce on the front axle. ~45% front is a typical FSAE target.")
+
+    # ---------------------------------------------------------------- VIEW 1 #
+    if _view == "Downforce & ground effect":
+        gcol = st.columns(2)
+        # (a) force vs speed
+        _vs = np.linspace(20, 120, 40)  # km/h
+        _dfs, _drs = [], []
+        for v in _vs:
+            d, r, *_ = _aero_forces(_aero_ride, _aero_yaw, v / 3.6, _aero_area)
+            _dfs.append(d); _drs.append(r)
+        f1 = go.Figure()
+        f1.add_trace(go.Scatter(x=_vs, y=_dfs, name="Downforce (N)",
+                                line=dict(color="#37e0d0", width=3)))
+        f1.add_trace(go.Scatter(x=_vs, y=_drs, name="Drag (N)",
+                                line=dict(color="#ff9f43", width=3)))
+        f1.add_vline(x=_aero_v, line=dict(color="#6f7d8c", dash="dot"))
+        f1.update_layout(
+            title="Force vs speed (∝ V²)", xaxis_title="speed (km/h)",
+            yaxis_title="force (N)", height=340,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0),
+            legend=dict(bgcolor="rgba(0,0,0,0)"))
+        gcol[0].plotly_chart(f1, width='stretch', key="aero_fvs")
+        # (b) ground effect: downforce vs ride height
+        _hs = np.linspace(12, 60, 40)
+        _dfh = [_aero_forces(h, _aero_yaw, _aero_v_ms, _aero_area)[0] for h in _hs]
+        f2 = go.Figure()
+        f2.add_trace(go.Scatter(x=_hs, y=_dfh, name="Downforce",
+                                line=dict(color="#5ad17a", width=3),
+                                fill="tozeroy", fillcolor="rgba(90,209,122,0.12)"))
+        f2.add_vline(x=_aero_ride, line=dict(color="#6f7d8c", dash="dot"))
+        f2.update_layout(
+            title="Ground effect: downforce vs ride height",
+            xaxis_title="ride height (mm)  ← lower = closer to ground",
+            yaxis_title="downforce (N) @ %.0f km/h" % _aero_v, height=340,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0),
+            legend=dict(bgcolor="rgba(0,0,0,0)"))
+        f2.update_xaxes(autorange="reversed")
+        gcol[1].plotly_chart(f2, width='stretch', key="aero_ge")
+        st.markdown(
+            '<p class="hint">Downforce scales with the square of speed, so the aero '
+            'package earns its drag mostly in the fast parts of the lap — and lowering '
+            'the car strengthens the floor\u2019s ground effect until it saturates. '
+            'Push the ride height down and watch the green curve climb; that\u2019s the '
+            'physics the panel-method solve reproduces from your actual floor geometry, '
+            'not a tuned constant.</p>', unsafe_allow_html=True)
+
+    # ---------------------------------------------------------------- VIEW 2 #
+    elif _view == "Wing & diffuser sizing":
+        st.markdown(
+            '<p class="hint">Size the aero package to a <b>downforce target</b> and see '
+            'the drag it costs and the balance it lands. A first-order sizing: element '
+            'area × its lift coefficient sets each surface\u2019s contribution; the '
+            'diffuser multiplies floor load through ground effect. Use it to set the '
+            'target the wing leads then design to in CFD.</p>', unsafe_allow_html=True)
+        sc = st.columns(3)
+        _target = sc[0].number_input("Downforce target (N) @ %.0f km/h" % _aero_v,
+                                     100.0, 2000.0, value=max(300.0, round(_df, -1)),
+                                     step=25.0)
+        _split = sc[1].slider("Front/rear split (% front)", 30, 60, 45, 1,
+                              help="Aero balance target. Match it to your mechanical "
+                                   "balance so the car doesn't change character with speed.")
+        _diff_gain = sc[2].slider("Diffuser/floor share (%)", 0, 60, 35, 5,
+                                  help="Fraction of downforce from the floor + diffuser "
+                                       "rather than the wings. Floor downforce is far "
+                                       "cheaper in drag — FSAE-legal and efficient.")
+        q = 0.5 * _RHO * _aero_v_ms * _aero_v_ms * _aero_area
+        # element cl needed to hit the target, given the floor share
+        _wing_force = _target * (1 - _diff_gain / 100.0)
+        _floor_force = _target * (_diff_gain / 100.0)
+        _cl_needed = (_target / q) if q else 0.0
+        # drag model: wings ~ induced + profile (k·cl²+cd0); floor cheaper
+        _cd0 = 0.9
+        _wing_cl = (_wing_force / q) if q else 0.0
+        _floor_cl = (_floor_force / q) if q else 0.0
+        _wing_drag = q * (_cd0 * 0.4 + 0.13 * _wing_cl * _wing_cl)
+        _floor_drag = q * (0.05 + 0.03 * _floor_cl * _floor_cl)
+        _tot_drag = _wing_drag + _floor_drag
+        _ld_sized = (_target / _tot_drag) if _tot_drag else 0.0
+        rc = st.columns(4)
+        rc[0].metric("Total C_L·A needed", f"{_cl_needed*_aero_area:.2f} m²"
+                     if False else f"{_cl_needed:.2f}",
+                     help="Effective lift coefficient at this area to hit the target.")
+        rc[1].metric("Wings carry", f"{_wing_force:.0f} N", f"{100-_diff_gain}%")
+        rc[2].metric("Floor/diffuser carry", f"{_floor_force:.0f} N", f"{_diff_gain}%")
+        rc[3].metric("Drag cost", f"{_tot_drag:.0f} N", f"L/D {_ld_sized:.2f}")
+        # bar: front vs rear contribution
+        fbar = go.Figure()
+        fbar.add_trace(go.Bar(
+            x=["Front axle", "Rear axle"],
+            y=[_target * _split / 100.0, _target * (100 - _split) / 100.0],
+            marker_color=["#37e0d0", "#ff9f43"]))
+        fbar.update_layout(
+            title="Downforce split to hit %0.0f N @ %.0f km/h" % (_target, _aero_v),
+            yaxis_title="downforce (N)", height=300,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0))
+        st.plotly_chart(fbar, width='stretch', key="aero_split")
+        st.info("Tip: pushing the floor/diffuser share up buys downforce at a fraction "
+                "of the wing's drag — it's the efficient, FSAE-legal way to add load. "
+                "Set this target, then the wing lead designs the element stack to it in "
+                "CFD and verifies with the Fluent deck.")
+        # offer to write the target into the car's declared downforce (closes the loop)
+        if st.button("Use this as the car's declared downforce",
+                     key="aero_set_downforce",
+                     help="Writes (downforce, speed) into the aerodynamics interface so "
+                          "the 3D model wings, lap sim and heatmap all reflect it."):
+            try:
+                _led_a = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+                _it = _led_a.get("aerodynamics") or interfaces_mod.SubsystemInterface(name="aerodynamics")
+                _it.downforce_n_at_v = (float(_target), float(_aero_v_ms))
+                _it.drag_n_at_v = (float(_tot_drag), float(_aero_v_ms))
+                _led_a.set(_it)
+                st.session_state.ledger = _led_a.as_dict()
+                st.success("Declared. The aero wings, lap sim and heatmap now use "
+                           f"{_target:.0f} N @ {_aero_v:.0f} km/h.")
+                st.rerun()
+            except Exception as _e2:
+                st.warning(f"Couldn't write it: {_e2}")
+
+    # ---------------------------------------------------------------- VIEW 3 #
+    else:
+        st.markdown(
+            '<p class="hint">The <b>aero map</b>: how downforce, drag and balance move '
+            'as the car changes attitude through a lap — ride height (bumps, braking '
+            'dive, ground effect) crossed with yaw (sideslip in corners). This is the '
+            'map the lap sim queries at every point on track. A flat, predictable map '
+            'is a fast, drivable car; cliffs in it are where drivers lose confidence.</p>',
+            unsafe_allow_html=True)
+        _hs = np.linspace(15, 55, 24)
+        _yaws = np.linspace(0, 8, 24)
+        _what = st.radio("Show", ["Downforce (N)", "Drag (N)", "Aero balance (% front)"],
+                         horizontal=True, key="aero_map_what")
+        Z = np.zeros((len(_yaws), len(_hs)))
+        for iy, yw in enumerate(_yaws):
+            for ih, h in enumerate(_hs):
+                d, r, cl, cd, fb = _aero_forces(h, yw, _aero_v_ms, _aero_area)
+                Z[iy, ih] = (d if _what.startswith("Downforce")
+                             else r if _what.startswith("Drag") else fb * 100.0)
+        _scale = ("Tealrose" if _what.startswith("Aero") else
+                  "Viridis" if _what.startswith("Downforce") else "Inferno")
+        fh = go.Figure(data=go.Heatmap(
+            x=_hs, y=_yaws, z=Z, colorscale=_scale,
+            colorbar=dict(title=_what.split()[0])))
+        fh.add_trace(go.Scatter(x=[_aero_ride], y=[_aero_yaw], mode="markers",
+                                marker=dict(color="#ffffff", size=11, symbol="x"),
+                                name="current", showlegend=False))
+        fh.update_layout(
+            title="%s vs ride height × yaw @ %.0f km/h" % (_what, _aero_v),
+            xaxis_title="ride height (mm)", yaxis_title="yaw / sideslip (°)",
+            height=440, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0))
+        st.plotly_chart(fh, width='stretch', key="aero_map")
+        st.markdown(
+            '<p class="hint">The white × is your current attitude. Watch downforce fall '
+            'and drag rise toward higher yaw — that\u2019s the car stalling in sideslip — '
+            'and downforce build toward lower ride height. To go further, run the same '
+            'attitude grid through the <b>panel-method solver on your STL</b> (it solves '
+            'the real flow, ground image and all) and correlate it against the virtual '
+            'wind tunnel + Fluent deck — all already in KinematiK.</p>',
+            unsafe_allow_html=True)
+
+    with st.expander("How honest is this? (provenance)", expanded=False):
+        _prov = _aero_model.provenance()
+        st.markdown(
+            f"**Backend:** {_prov.backend} · **fidelity:** {_prov.fidelity.value} · "
+            f"**correlated:** {'yes' if _prov.is_correlated else 'no'}  \n"
+            f"{_prov.notes}")
+        st.markdown(
+            "The upgrade path, all shipped in KinematiK and runnable without a paid "
+            "license: a **3D source-panel potential-flow solve** on your actual floor/"
+            "wing STL (ground effect emerges from geometry, not a constant), a "
+            "**Virtual Wind Tunnel** that sweeps ride heights and writes the identical "
+            "points for ANSYS Fluent verification, **pressure-tap correlation** that "
+            "maps measured C_p onto the wing to find stall, and a **DAQ front-end** that "
+            "cleans force-balance + pressure-scanner data. This tab is the fast trend "
+            "layer that sits on top of all of it.")
+  except Exception as _eaero:
+    st.error(f"Could not build the aero workspace: {_eaero}")
+
+# =========================================================================== #
+#  EV POWERTRAIN  —  architecture choice + energy budget for the electric car. #
+# =========================================================================== #
+# USC is an ELECTRIC team; their powertrain/drivetrain subteams pick a motor
+# architecture and must finish endurance on the pack. KinematiK already ships an
+# EV lap simulator that runs the QSS lap for each architecture (single motor+diff,
+# two-motor axle split, four-motor torque vectoring), layers architecture-aware
+# traction limits and a full energy budget (regen included), and reports — HONESTLY
+# — whether the pack outlasts the event and what torque vectoring is worth. This
+# tab puts that decision in front of the user on the live car and track.
+with tab_ev:
+  try:
+    st.markdown(
+        '<p class="hint" style="margin:0 0 6px;">Pick the <b>motor architecture</b> and '
+        'size the pack. KinematiK runs the same lap on each option, with each one '
+        'carrying its own weight (more motors = more mass), its own usable drive grip '
+        'on corner exit, and a full <b>energy budget with regen</b> — then tells you '
+        'which is fastest <i>and</i> whether it finishes endurance. Torque-vectoring\u2019s '
+        'yaw benefit is reported separately and never quietly folded into the lap time.</p>',
+        unsafe_allow_html=True)
+
+    try:
+        _veh_ev = veh
+    except Exception:
+        _veh_ev = None
+
+    if _veh_ev is None:
+        st.warning("The vehicle model isn't available — fix the linkage/geometry first.")
+    else:
+        # ---- controls ---------------------------------------------------- #
+        ec = st.columns(4)
+        _arch_labels = {
+            "Single motor + diff": ev_mod.Powertrain.SINGLE_DIFF,
+            "Two motors (axle split)": ev_mod.Powertrain.TWO_AXLE,
+            "Four motors (torque vectoring)": ev_mod.Powertrain.FOUR_TV,
+        }
+        _picked = ec[0].multiselect(
+            "Architectures to compare", list(_arch_labels.keys()),
+            default=list(_arch_labels.keys()),
+            help="The three EV architectures an FSAE team realistically chooses between.")
+        _event = ec[1].selectbox(
+            "Event", ["Autocross (1 lap)", "Endurance (22 km)", "Acceleration (75 m)"],
+            help="Endurance is the energy-limited event — where the pack size bites.")
+        _pack_kwh = ec[2].number_input(
+            "Pack energy (kWh)", 1.0, 12.0, value=6.5, step=0.25,
+            help="Usable pack is this × usable fraction. FSAE-EV packs are ~5–8 kWh.")
+        _power_kw = ec[3].number_input(
+            "Power cap (kW)", 20.0, 80.0, value=60.0, step=5.0,
+            help="FS rules cap tractive power at 80 kW; many EV cars run lower to save energy.")
+
+        ec2 = st.columns(4)
+        _regen_on = ec2[0].checkbox("Regen", value=True,
+                                    help="Capture braking energy back into the pack.")
+        _regen_eff = ec2[1].slider("Regen capture %", 0, 80, 55, 5,
+                                   help="Round-trip efficiency of braking energy recovered.") / 100.0
+        _usable_frac = ec2[2].slider("Pack usable %", 80, 98, 92, 1,
+                                     help="Fraction of nameplate energy actually usable.") / 100.0
+        _use_aero = ec2[3].checkbox("Use declared aero", value=True,
+                                    help="Fold the aerodynamics tab's declared downforce/drag "
+                                         "into the lap (cl_a / cd_a). Otherwise no aero.")
+
+        # ---- build params + track --------------------------------------- #
+        _ev_params = ev_mod.EVParams(
+            pack_energy_kwh=float(_pack_kwh), pack_usable_frac=float(_usable_frac),
+            regen_enabled=bool(_regen_on), regen_eff=float(_regen_eff))
+        _base = lapsim_mod.LapSimParams(power_w=float(_power_kw) * 1000.0)
+        # fold declared aero into the lap if asked and present
+        if _use_aero:
+            try:
+                _led_ev = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+                _ait = _led_ev.get("aerodynamics")
+                _area_ev = float(st.session_state.vp.get("frontal_area_m2", 0.0) or 1.0)
+                _rho = 1.225
+                if _ait is not None and getattr(_ait, "downforce_n_at_v", None):
+                    _dN, _dV = _ait.downforce_n_at_v
+                    if _dV and _dV > 0:
+                        _base.cl_a = (2.0 * float(_dN)) / (_rho * _dV * _dV)
+                if _ait is not None and getattr(_ait, "drag_n_at_v", None):
+                    _gN, _gV = _ait.drag_n_at_v
+                    if _gV and _gV > 0:
+                        _base.cd_a = (2.0 * float(_gN)) / (_rho * _gV * _gV)
+            except Exception:
+                pass
+
+        if _event.startswith("Autocross"):
+            _track = lapsim_mod.autocross_track(laps=1)
+        elif _event.startswith("Endurance"):
+            # ~22 km endurance over a ~1 km lap → ~22 laps on the same layout.
+            _track = lapsim_mod.autocross_track(laps=1)
+            try:
+                _track.laps = 22
+            except Exception:
+                pass
+        else:
+            _track = lapsim_mod.acceleration_track()
+
+        _archs = [_arch_labels[p] for p in _picked] or list(ev_mod.Powertrain)
+        _sim = ev_mod.EVLapSimulator(_veh_ev, base_params=_base, ev=_ev_params)
+        _cmp = _sim.compare(_track, architectures=_archs)
+        _best = _cmp.best_on_time()
+
+        # ---- ranked comparison table ------------------------------------ #
+        st.markdown('<p class="hint" style="margin:8px 0 2px;"><b>Architecture '
+                    'comparison</b> on the same car & track:</p>', unsafe_allow_html=True)
+        _rows = []
+        _base_t = (_best.event_time if _best else float("nan"))
+        for r in sorted(_cmp.results, key=lambda r: (not r.ok, r.event_time if r.ok else 9e9)):
+            if not r.ok or not np.isfinite(r.event_time):
+                _rows.append(dict(Architecture=r.architecture.label(), **{
+                    "Lap (s)": "—", "Event (s)": "run failed", "Δ": "—",
+                    "Energy (kWh)": "—", "Pack": "—", "Mass (kg)": "—",
+                    "TV yaw (s/lap)": "—"}))
+                continue
+            _delta = r.event_time - _base_t
+            _fin = ("✓ finishes" if r.finishes_event
+                    else f"✗ empty @ {r.laps_until_empty:.1f} laps")
+            _rows.append(dict(
+                Architecture=r.architecture.label() + (" ★" if r is _best else ""),
+                **{"Lap (s)": f"{r.lap_time:.2f}",
+                   "Event (s)": f"{r.event_time:.2f}",
+                   "Δ": ("best" if abs(_delta) < 1e-6 else f"+{_delta:.2f}"),
+                   "Energy (kWh)": f"{r.energy_full_event_kwh:.2f}",
+                   "Pack": _fin, "Mass (kg)": f"{r.effective_mass_kg:.1f}",
+                   "TV yaw (s/lap)": (f"−{r.tv_yaw_benefit_s:.2f}*"
+                                      if r.tv_yaw_benefit_s > 0 else "—")}))
+        import pandas as _pd_ev
+        st.dataframe(_pd_ev.DataFrame(_rows), hide_index=True, width='stretch')
+        if _best:
+            st.success(f"Fastest that finishes: **{_best.architecture.label()}** — "
+                       f"{_best.event_time:.2f} s event, {_best.energy_full_event_kwh:.2f} kWh "
+                       f"of a {_pack_kwh*_usable_frac:.2f} kWh usable pack.")
+        st.caption("★ = fastest event time. * the TV-yaw column is an UPPER-BOUND benefit "
+                   "from left/right torque vectoring, shown separately because a "
+                   "quasi-steady lap can't resolve closed-loop yaw control — never added "
+                   "into the lap time above.")
+
+        # ---- energy vs laps: does the pack last? ------------------------ #
+        gcol = st.columns(2)
+        fe = go.Figure()
+        _usable_kwh = _pack_kwh * _usable_frac
+        _colors = {"single_diff": "#37e0d0", "two_axle": "#ffb02e", "four_tv": "#ff5a52"}
+        _maxlaps = 1
+        for r in _cmp.results:
+            if not r.ok or not np.isfinite(r.energy_per_lap_kwh) or r.energy_per_lap_kwh <= 0:
+                continue
+            _nl = int(max(2, min(40, np.ceil(_usable_kwh / r.energy_per_lap_kwh) + 2)))
+            _maxlaps = max(_maxlaps, _nl)
+            xs = list(range(0, _nl + 1))
+            ys = [r.energy_per_lap_kwh * x for x in xs]
+            fe.add_trace(go.Scatter(
+                x=xs, y=ys, name=r.architecture.label(),
+                line=dict(color=_colors.get(r.architecture.value, "#9b8cff"), width=3)))
+        fe.add_hline(y=_usable_kwh, line=dict(color="#e7ecf1", dash="dash"),
+                     annotation_text="usable pack", annotation_position="top left")
+        fe.update_layout(
+            title="Cumulative energy vs laps — where each pack runs dry",
+            xaxis_title="laps", yaxis_title="energy used (kWh)", height=360,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0),
+            legend=dict(bgcolor="rgba(0,0,0,0)"))
+        gcol[0].plotly_chart(fe, width='stretch', key="ev_energy")
+
+        # ---- motor torque/power curve (illustrative deployment) --------- #
+        # A representative constant-power envelope: torque falls as 1/wheelspeed
+        # above base speed, capped by a traction-limited torque at low speed.
+        _v = np.linspace(1, 30, 60)  # m/s
+        _wheel_r = 0.228
+        _P = float(_power_kw) * 1000.0
+        _F_power = _P / np.maximum(_v, 0.5)             # tractive force from power
+        _F_tract = float(getattr(_base, "mass", 230.0)) * 9.81 * 1.4  # ~grip-limited
+        _F = np.minimum(_F_power, _F_tract)
+        fp = go.Figure()
+        fp.add_trace(go.Scatter(x=_v * 3.6, y=_F, name="Deployable tractive force",
+                                line=dict(color="#5ad17a", width=3),
+                                fill="tozeroy", fillcolor="rgba(90,209,122,0.10)"))
+        fp.add_trace(go.Scatter(x=_v * 3.6, y=_F_power, name="Power-limited",
+                                line=dict(color="#6f7d8c", width=1, dash="dot")))
+        fp.add_hline(y=_F_tract, line=dict(color="#ff9f43", dash="dot"),
+                     annotation_text="grip limit", annotation_position="top right")
+        fp.update_layout(
+            title="Tractive force envelope @ %.0f kW" % _power_kw,
+            xaxis_title="speed (km/h)", yaxis_title="force at the tyres (N)", height=360,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0),
+            legend=dict(bgcolor="rgba(0,0,0,0)"))
+        gcol[1].plotly_chart(fp, width='stretch', key="ev_torque")
+
+        st.markdown(
+            '<p class="hint">The energy plot is the endurance decision: any line that '
+            'crosses the dashed pack line before the event distance <b>does not finish</b> '
+            'without derating (shedding power, which costs lap time). More motors buy '
+            'corner-exit grip and yaw control but carry weight and can draw more energy — '
+            'this is exactly the trade your powertrain lead defends to the design judges. '
+            'To push further, the same architectures run through the <b>TRANSIENT</b> solver '
+            'and correlate in <b>VALIDATION</b> against a real acceleration run.</p>',
+            unsafe_allow_html=True)
+
+        if _cmp.warnings or any(r.warnings for r in _cmp.results):
+            with st.expander("Notes & honesty flags from the run", expanded=False):
+                for w in _cmp.warnings:
+                    st.caption("• " + w)
+                for r in _cmp.results:
+                    for w in (r.warnings or []):
+                        st.caption(f"• [{r.architecture.label()}] {w}")
+  except Exception as _eev:
+    st.error(f"Could not build the EV powertrain workspace: {_eev}")
+
+# =========================================================================== #
+#  ACCUMULATOR  —  design the HV battery pack to the FSAE-EV rules.            #
+# =========================================================================== #
+# An electric team's accumulator subteam picks a cell, chooses a series/parallel
+# topology, and must clear the hard FSAE-EV electrical rules: the tractive system
+# stays under 600 V, the pack never outputs more than 80 kW, and every isolatable
+# SEGMENT carries < 120 V static and < 6 MJ of energy (EV3.3.3 / EV1). This tab
+# sizes the pack from the cell up — voltage, energy, capacity, mass, peak C-rate —
+# checks every rule, suggests a compliant segmentation, draws the pack grid, and
+# hands the layout straight to KinematiK's per-cell thermal model and the ledger.
+with tab_accum:
+  try:
+    st.markdown(
+        '<p class="hint" style="margin:0 0 6px;">Build the <b>HV accumulator</b> from the '
+        'cell up and clear the rules in one place. Pick a cell, choose how many in '
+        '<b>series</b> (sets voltage) and <b>parallel</b> (sets capacity & shares current), '
+        'and KinematiK sizes the pack and checks the hard FSAE-EV limits: tractive system '
+        '< 600 V, ≤ 80 kW, and every isolatable segment < 120 V and < 6 MJ.</p>',
+        unsafe_allow_html=True)
+
+    # ---- cell chooser: presets + custom -------------------------------- #
+    # Representative datasheet-scale numbers for cells FSAE-EV teams actually use.
+    # (nominal V, capacity Ah, mass g, internal R mΩ, max continuous discharge A)
+    _CELLS = {
+        "Molicel P28A (21700)": (3.6, 2.8, 70.0, 14.0, 35.0),
+        "Molicel P42A (21700)": (3.6, 4.2, 70.0, 10.0, 45.0),
+        "Samsung 40T (21700)":  (3.6, 4.0, 70.0, 12.0, 35.0),
+        "Sony/Murata VTC6 (18650)": (3.6, 3.0, 47.0, 13.0, 30.0),
+        "LG HG2 (18650)":       (3.6, 3.0, 48.0, 20.0, 20.0),
+        "Custom…": None,
+    }
+    cc = st.columns(4)
+    _cell_name = cc[0].selectbox("Cell", list(_CELLS.keys()),
+                                 help="Representative datasheet-scale specs; set Custom to type your own.")
+    _spec = _CELLS[_cell_name]
+    if _spec is None:
+        _cv = cc[1].number_input("Cell nominal V", 2.5, 4.2, value=3.6, step=0.1)
+        _cah = cc[2].number_input("Cell capacity (Ah)", 1.0, 8.0, value=4.0, step=0.1)
+        _cg = cc[3].number_input("Cell mass (g)", 20.0, 120.0, value=70.0, step=1.0)
+        cc2 = st.columns(4)
+        _cr = cc2[0].number_input("Internal R (mΩ)", 5.0, 60.0, value=12.0, step=1.0)
+        _cmax_a = cc2[1].number_input("Max cont. discharge (A)", 5.0, 60.0, value=35.0, step=1.0)
+    else:
+        _cv, _cah, _cg, _cr, _cmax_a = _spec
+        cc[1].metric("Nominal", f"{_cv:.1f} V")
+        cc[2].metric("Capacity", f"{_cah:.1f} Ah")
+        cc[3].metric("Max cont.", f"{_cmax_a:.0f} A/cell")
+
+    # ---- topology ------------------------------------------------------- #
+    tc = st.columns(4)
+    _series = tc[0].number_input("Series (sets voltage)", 1, 200, value=140, step=1,
+                                 help="Cells in series. Pack nominal V = series × cell V.")
+    _parallel = tc[1].number_input("Parallel (sets capacity)", 1, 20, value=5, step=1,
+                                   help="Cells in parallel per series group. Pack Ah = parallel × cell Ah; "
+                                        "per-cell current = pack current / parallel.")
+    _power_cap_kw = tc[2].number_input("Power cap (kW)", 20.0, 80.0, value=80.0, step=5.0,
+                                       help="FSAE caps tractive power at 80 kW; the pack must deliver it.")
+    _peak_pack_a = tc[3].number_input("Peak pack current (A)", 50.0, 600.0, value=0.0, step=10.0,
+                                      help="Leave 0 to derive from the power cap at pack voltage.")
+
+    # ---- derived pack numbers ------------------------------------------ #
+    _pack_v = _series * _cv
+    _pack_ah = _parallel * _cah
+    _pack_wh = _pack_v * _pack_ah
+    _pack_kwh = _pack_wh / 1000.0
+    _n_cells = int(_series * _parallel)
+    _pack_mass = _n_cells * (_cg / 1000.0)
+    if _peak_pack_a <= 0:
+        _peak_pack_a = (_power_cap_kw * 1000.0) / max(_pack_v, 1.0)
+    _per_cell_a = _peak_pack_a / max(_parallel, 1)
+    _c_rate = _per_cell_a / max(_cah, 1e-6)
+    _max_power_kw = (_pack_v * _peak_pack_a) / 1000.0
+    # I²R heat in the pack at peak (all cells): per-cell I²·R × n_cells
+    _pack_heat_w = _n_cells * (_per_cell_a ** 2) * (_cr / 1000.0)
+
+    m = st.columns(5)
+    m[0].metric("Pack voltage", f"{_pack_v:.0f} V")
+    m[1].metric("Pack energy", f"{_pack_kwh:.2f} kWh")
+    m[2].metric("Pack capacity", f"{_pack_ah:.1f} Ah")
+    m[3].metric("Cell count", f"{_n_cells}", f"{_series}s{_parallel}p")
+    m[4].metric("Pack mass", f"{_pack_mass:.1f} kg",
+                help="Cells only — add ~30–50% for housing, BMS, bus bars, cooling.")
+
+    m2 = st.columns(4)
+    m2[0].metric("Per-cell current", f"{_per_cell_a:.0f} A",
+                 help="Pack current shared across the parallel cells — this drives I²R heat.")
+    m2[1].metric("Cell C-rate", f"{_c_rate:.1f} C",
+                 delta=("within cell limit" if _per_cell_a <= _cmax_a else "OVER cell limit"),
+                 delta_color=("normal" if _per_cell_a <= _cmax_a else "inverse"))
+    m2[2].metric("Deliverable power", f"{_max_power_kw:.0f} kW")
+    m2[3].metric("Pack I²R heat @ peak", f"{_pack_heat_w/1000:.1f} kW",
+                 help="Resistive heat the whole pack makes at peak current — the cooling load.")
+
+    # ---- FSAE-EV rules checks ------------------------------------------ #
+    st.markdown('<p class="hint" style="margin:10px 0 2px;"><b>FSAE-EV rules check</b> '
+                '(EV1 / EV3.3.3):</p>', unsafe_allow_html=True)
+    _checks = []
+    # 600 V system limit (use max charge voltage ~4.2 V/cell as worst case)
+    _pack_v_max = _series * 4.2
+    _checks.append((
+        _pack_v_max < 600.0,
+        f"System voltage < 600 V — pack tops out at {_pack_v_max:.0f} V "
+        f"(at 4.2 V/cell full charge).",
+        f"Pack reaches {_pack_v_max:.0f} V at full charge, over the 600 V limit. "
+        f"Reduce series count below {int(600/4.2)}."))
+    # 80 kW power
+    _checks.append((
+        _max_power_kw <= 80.0 + 1e-6,
+        f"Tractive power ≤ 80 kW — deliverable {_max_power_kw:.0f} kW at peak current.",
+        f"Deliverable power {_max_power_kw:.0f} kW exceeds the 80 kW cap; "
+        f"the BMS/inverter must limit current."))
+    # cell current within rating
+    _checks.append((
+        _per_cell_a <= _cmax_a + 1e-6,
+        f"Per-cell current {_per_cell_a:.0f} A ≤ cell rating {_cmax_a:.0f} A.",
+        f"Per-cell current {_per_cell_a:.0f} A exceeds the cell's {_cmax_a:.0f} A "
+        f"rating — add parallel cells (more p) to share the load."))
+    # segmentation: each segment < 120 V and < 6 MJ
+    # smallest number of segments that satisfies both limits
+    import math as _math
+    _seg_by_v = _math.ceil(_pack_v_max / 120.0)
+    _seg_energy_mj = (_pack_wh * 3600.0 / 1e6)
+    _seg_by_e = _math.ceil(_seg_energy_mj / 6.0)
+    _n_segments = max(_seg_by_v, _seg_by_e, 1)
+    _seg_v = _pack_v_max / _n_segments
+    _seg_mj = _seg_energy_mj / _n_segments
+    _checks.append((
+        _seg_v < 120.0 and _seg_mj < 6.0,
+        f"Segments: split into {_n_segments} → {_seg_v:.0f} V & {_seg_mj:.2f} MJ each "
+        f"(both under the 120 V / 6 MJ segment limits).",
+        f"Need at least {_n_segments} isolatable segments to stay under 120 V & 6 MJ each."))
+
+    _all_ok = all(ok for ok, _, _ in _checks)
+    for ok, ok_msg, bad_msg in _checks:
+        if ok:
+            st.success("✓ " + ok_msg)
+        else:
+            st.error("✗ " + bad_msg)
+    if _all_ok:
+        st.markdown(
+            f'<p class="hint">This pack is rules-legal as configured: <b>{_series}s{_parallel}p</b>, '
+            f'<b>{_pack_v:.0f} V</b> nominal, <b>{_pack_kwh:.2f} kWh</b>, <b>{_pack_mass:.0f} kg</b> '
+            f'of cells, in <b>{_n_segments} segments</b>. Build the accumulator container around this '
+            f'and the structural/SES work follows.</p>', unsafe_allow_html=True)
+
+    # ---- pack grid visual, coloured by segment ------------------------- #
+    st.markdown('<p class="hint" style="margin:10px 0 2px;"><b>Pack layout</b> — '
+                f'{_n_cells} cells in {_n_segments} segments:</p>', unsafe_allow_html=True)
+    # lay series groups left→right, parallel stacked vertically; colour by segment
+    _groups_per_seg = max(1, _math.ceil(_series / _n_segments))
+    gx, gy, gc, gt = [], [], [], []
+    _seg_palette = ["#37e0d0", "#ffb02e", "#ff5a52", "#9b8cff", "#5ad17a",
+                    "#ff9f43", "#6cc4ff", "#e06cff", "#c2410c", "#33d6a6"]
+    for s in range(int(_series)):
+        seg_idx = s // _groups_per_seg
+        for p in range(int(_parallel)):
+            gx.append(s)
+            gy.append(p)
+            gc.append(_seg_palette[seg_idx % len(_seg_palette)])
+            gt.append(f"series {s+1}, parallel {p+1} · segment {seg_idx+1}")
+    fgrid = go.Figure(go.Scatter(
+        x=gx, y=gy, mode="markers",
+        marker=dict(size=max(4, min(13, 700 // max(_series, 1))),
+                    color=gc, line=dict(width=0)),
+        text=gt, hoverinfo="text"))
+    fgrid.update_layout(
+        title=f"{_series}s × {_parallel}p — colour = isolatable segment (<120 V, <6 MJ each)",
+        xaxis_title="series position (→ voltage)", yaxis_title="parallel",
+        height=260, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#cdd6df", size=10), margin=dict(l=0, r=0, t=36, b=0),
+        showlegend=False)
+    fgrid.update_yaxes(dtick=1)
+    st.plotly_chart(fgrid, width='stretch', key="accum_grid")
+
+    # ---- actions: write to ledger / thermal --------------------------- #
+    ac = st.columns(2)
+    if ac[0].button("Declare this pack in the INTEGRATION ledger",
+                    key="accum_declare",
+                    help="Writes pack voltage and mass into the electrics interface and "
+                         "the accumulator system voltage, so the heatmap, mass roll-up "
+                         "and electrical checks all use it."):
+        try:
+            _led_ac = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+            _it = _led_ac.get("electrics") or interfaces_mod.SubsystemInterface(name="electrics")
+            _it.mass_kg = round(float(_pack_mass) * 1.4, 1)  # +40% for housing/BMS/bus bars
+            _it.voltage_v = float(_pack_v)
+            _it.heat_reject_w = round(float(_pack_heat_w), 0)
+            _led_ac.set(_it)
+            _led_ac.accumulator_voltage_v = float(_pack_v)
+            st.session_state.ledger = _led_ac.as_dict()
+            st.success(f"Declared: {_pack_v:.0f} V, {_pack_mass*1.4:.0f} kg (incl. housing), "
+                       f"{_pack_heat_w/1000:.1f} kW heat. The heatmap, mass roll-up and "
+                       "electrical checks now use this pack.")
+            st.rerun()
+        except Exception as _e3:
+            st.warning(f"Couldn't declare: {_e3}")
+    ac[1].caption("Per-cell transient thermal — which cell cooks first and where to put "
+                  "the fan — runs from this layout via KinematiK's pack-thermal model "
+                  "(see the pack_thermal module / demo_pack_thermal).")
+  except Exception as _eac:
+    st.error(f"Could not build the accumulator workspace: {_eac}")
+
+# =========================================================================== #
+#  BRAKES  —  bias, lock-up, and the hydraulic chain to size the system.       #
+# =========================================================================== #
+# Every FSAE car must pass a brake test: lock all four wheels and stop in a
+# straight line. The brakes subteam sizes the pedal → master cylinder → caliper →
+# pad → rotor chain to do that and sets the front/rear bias so the car is stable
+# under braking (front locks slightly before rear). This tab does both from the
+# live car: dynamic load transfer sets the ideal bias and the lock-all-four check;
+# the hydraulic chain sizes the parts and reports the pedal force a driver needs.
+with tab_brake:
+  try:
+    try:
+        _vp_b = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
+                                 if k in set(VehicleParams.__dataclass_fields__.keys())})
+    except Exception:
+        _vp_b = VehicleParams()
+    _g = 9.81
+    _mass = float(_vp_b.mass)
+    _cgh = float(_vp_b.cg_height)
+    _wb = float(_vp_b.wheelbase)
+    _wdf = float(_vp_b.weight_dist_front)
+    _mu = float(getattr(_vp_b, "mu_peak", 1.5))
+
+    st.markdown(
+        '<p class="hint" style="margin:0 0 6px;">Size the brakes to <b>lock all four '
+        'wheels</b> (the FSAE brake test) and set a stable <b>front/rear bias</b>. Under '
+        'braking, weight shifts forward, so the front needs more brake than its static '
+        'share — and you want the front to lock <i>just</i> before the rear so the car '
+        'stays straight. Everything below comes from the live car\u2019s mass, CG height '
+        'and wheelbase.</p>', unsafe_allow_html=True)
+
+    _bview = st.radio("View", ["Bias & lock-up", "Hydraulic sizing"],
+                      horizontal=True, key="brake_view", label_visibility="collapsed")
+
+    _wheel_r_mm = st.session_state.get("brake_wheel_r", 228.0)
+
+    # =================================================================== #
+    if _bview == "Bias & lock-up":
+        bc = st.columns(4)
+        _decel = bc[0].slider("Decel target (g)", 0.8, 2.0, 1.4, 0.1,
+                              help="The brake test needs the tyres at their limit. FSAE "
+                                   "cars on slicks brake at ~1.4–1.8 g.")
+        _bias = bc[1].slider("Front brake bias (%)", 50, 80, 65, 1,
+                             help="Share of brake torque sent to the front axle. Set it "
+                                  "near the ideal so the front locks just before the rear.") / 100.0
+        _mu_b = bc[2].slider("Tyre μ (braking)", 1.0, 2.0, value=float(round(_mu, 2)), step=0.05,
+                             help="Peak longitudinal grip. From the car's tyre model by default.")
+        _wheel_r_mm = bc[3].number_input("Loaded tyre radius (mm)", 180.0, 280.0,
+                                         value=float(_wheel_r_mm), step=2.0,
+                                         help="Sets the brake torque needed at a given decel.")
+        st.session_state.brake_wheel_r = _wheel_r_mm
+
+        # static axle loads
+        W = _mass * _g
+        Wf_static = W * _wdf
+        Wr_static = W * (1 - _wdf)
+        # longitudinal load transfer at the decel target
+        dW = _decel * W * (_cgh / _wb)
+        Wf = Wf_static + dW
+        Wr = max(Wr_static - dW, 0.0)
+        # ideal bias = front's share of the dynamic normal load (matches lock-up)
+        _ideal_bias = Wf / max(Wf + Wr, 1.0)
+        # the decel the car can actually reach before EITHER axle locks given the bias.
+        # brake force per axle is bias-limited; an axle locks when demanded force > μ·N.
+        # demanded total decel force at decel a: F = a·W, split by bias.
+        # find max a where front demand ≤ μ·Wf(a) AND rear demand ≤ μ·Wr(a).
+        def _locks(a):
+            dWa = a * W * (_cgh / _wb)
+            Wfa = Wf_static + dWa
+            Wra = max(Wr_static - dWa, 0.0)
+            F = a * W
+            Ff = F * _bias
+            Fr = F * (1 - _bias)
+            return (Ff > _mu_b * Wfa + 1e-6, Fr > _mu_b * Wra + 1e-6, Wfa, Wra)
+        # sweep decel to find first lock
+        _amax = 0.0
+        _first = None
+        for a in np.linspace(0.1, 2.2, 220):
+            fl, rl, _, _ = _locks(a)
+            if fl or rl:
+                _amax = a
+                _first = "front" if fl and not rl else ("rear" if rl and not fl else "both")
+                break
+        else:
+            _amax = 2.2
+            _first = "neither (raise decel)"
+
+        mc = st.columns(4)
+        mc[0].metric("Ideal front bias", f"{_ideal_bias*100:.0f}%",
+                     help="Front share of the dynamic load at this decel — match the slider to it.")
+        mc[1].metric("Your bias", f"{_bias*100:.0f}%",
+                     delta=f"{(_bias-_ideal_bias)*100:+.0f}% vs ideal")
+        mc[2].metric("Locks first", _first.title(),
+                     help="You want FRONT first (stable). Rear-first is twitchy/unstable.")
+        mc[3].metric("Max decel before lock", f"{_amax:.2f} g")
+
+        # torque needed at each axle to lock at the decel target
+        Tf_lock = _mu_b * Wf * (_wheel_r_mm / 1000.0)   # total front-axle torque to lock
+        Tr_lock = _mu_b * Wr * (_wheel_r_mm / 1000.0)
+        st.session_state.brake_Tf = Tf_lock / 2.0  # per corner
+        st.session_state.brake_Tr = Tr_lock / 2.0
+
+        # plot: brake-force distribution vs ideal (the classic brake-bias diagram)
+        _as = np.linspace(0, 1.8, 60)
+        _ideal_front = []
+        for a in _as:
+            dWa = a * W * (_cgh / _wb)
+            Wfa = Wf_static + dWa
+            Wra = max(Wr_static - dWa, 0.0)
+            _ideal_front.append(Wfa / max(Wfa + Wra, 1.0) * 100)
+        fb = go.Figure()
+        fb.add_trace(go.Scatter(x=_as, y=_ideal_front, name="Ideal front bias",
+                                line=dict(color="#37e0d0", width=3)))
+        fb.add_hline(y=_bias * 100, line=dict(color="#ff9f43", dash="dash"),
+                     annotation_text="your fixed bias", annotation_position="top left")
+        fb.add_vline(x=_decel, line=dict(color="#6f7d8c", dash="dot"))
+        fb.update_layout(
+            title="Ideal front brake bias vs deceleration",
+            xaxis_title="deceleration (g)", yaxis_title="front bias (%)", height=340,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0),
+            legend=dict(bgcolor="rgba(0,0,0,0)"))
+        st.plotly_chart(fb, width='stretch', key="brake_bias")
+
+        # FSAE lock-all-four verdict
+        if _first == "front":
+            st.success(f"✓ Stable bias: the front locks first (at {_amax:.2f} g), then the "
+                       "rear — the car stays straight in the brake test. The hydraulic "
+                       "sizing view checks you can actually generate the torque to lock all four.")
+        elif _first == "rear":
+            st.error(f"✗ Rear locks first (at {_amax:.2f} g) — unstable, the car will spin "
+                     f"under heavy braking. Move bias forward (toward {_ideal_bias*100:.0f}%).")
+        else:
+            st.info(f"Both axles reach the limit together at ~{_amax:.2f} g — neutral. A "
+                    "touch of extra front bias makes it stable.")
+        st.markdown(
+            f'<p class="hint">At {_decel:.1f} g the front axle carries '
+            f'<b>{Wf/_g:.0f} kg</b> and the rear <b>{Wr/_g:.0f} kg</b> (static was '
+            f'{Wf_static/_g:.0f}/{Wr_static/_g:.0f}). To lock the tyres you need '
+            f'<b>{Tf_lock/2:.0f} N·m</b> per front corner and <b>{Tr_lock/2:.0f} N·m</b> '
+            f'per rear corner — carried into the hydraulic sizing view.</p>',
+            unsafe_allow_html=True)
+
+    # =================================================================== #
+    else:
+        st.markdown(
+            '<p class="hint">Size the hydraulic chain to deliver the lock-up torque the '
+            'bias view found, and see the <b>pedal force</b> a driver needs. The chain: '
+            'pedal ratio multiplies foot force → master cylinder makes line pressure → '
+            'caliper pistons clamp the pad → pad friction on the rotor makes torque.</p>',
+            unsafe_allow_html=True)
+        _Tf_need = float(st.session_state.get("brake_Tf", 380.0))
+        _Tr_need = float(st.session_state.get("brake_Tr", 180.0))
+
+        hc = st.columns(4)
+        _axle = hc[0].selectbox("Sizing for", ["Front corner", "Rear corner"])
+        _T_need = _Tf_need if _axle.startswith("Front") else _Tr_need
+        _pedal_ratio = hc[1].number_input("Pedal ratio", 3.0, 8.0, value=5.0, step=0.25,
+                                          help="Mechanical advantage of the brake pedal (lever).")
+        _mc_dia = hc[2].number_input("Master cyl. ⌀ (mm)", 12.0, 25.0, value=15.875, step=0.397,
+                                     help="Smaller bore = more line pressure for the same pedal force, "
+                                          "but more pedal travel. 5/8\" = 15.875 mm is common.")
+        _pad_mu = hc[3].number_input("Pad friction μ", 0.3, 0.6, value=0.45, step=0.01,
+                                     help="Brake pad coefficient of friction against the rotor.")
+
+        hc2 = st.columns(4)
+        _cal_pistons = hc2[0].number_input("Caliper pistons (per side)", 1, 4, value=2, step=1)
+        _cal_dia = hc2[1].number_input("Caliper piston ⌀ (mm)", 20.0, 45.0, value=30.0, step=1.0)
+        _rotor_dia = hc2[2].number_input("Rotor ⌀ (mm)", 180.0, 300.0, value=220.0, step=5.0,
+                                         help="Bigger rotor = more torque arm = less clamp needed.")
+        _pedal_force = hc2[3].number_input("Driver pedal force (N)", 100.0, 1200.0, value=500.0,
+                                           step=25.0, help="A strong driver can apply ~600–800 N.")
+
+        # hydraulic chain
+        _A_mc = np.pi * (_mc_dia / 1000.0 / 2) ** 2          # master cyl area m²
+        _A_cal = np.pi * (_cal_dia / 1000.0 / 2) ** 2 * _cal_pistons  # total caliper piston area
+        _line_force = _pedal_force * _pedal_ratio            # N at master cyl pushrod
+        _line_pressure = _line_force / max(_A_mc, 1e-9)      # Pa
+        _clamp = _line_pressure * _A_cal                     # N clamp force (one pad pair)
+        # effective radius ~ rotor radius minus a pad half-height; approx 0.92·outer R
+        _r_eff = (_rotor_dia / 1000.0 / 2) * 0.92
+        _T_made = 2 * _clamp * _pad_mu * _r_eff              # ×2 friction faces
+        _ratio = _T_made / max(_T_need, 1e-6)
+
+        m = st.columns(4)
+        m[0].metric("Line pressure", f"{_line_pressure/1e5:.0f} bar",
+                    help="Hydraulic pressure at this pedal force. Race systems run 30–80 bar.")
+        m[1].metric("Clamp force", f"{_clamp:.0f} N")
+        m[2].metric("Torque made", f"{_T_made:.0f} N·m",
+                    help="Brake torque this corner can generate at the chosen pedal force.")
+        m[3].metric("Torque needed", f"{_T_need:.0f} N·m",
+                    delta=f"{(_ratio-1)*100:+.0f}% margin",
+                    delta_color=("normal" if _ratio >= 1 else "inverse"))
+
+        # pedal force actually required to hit lock-up
+        _pf_req = _pedal_force / max(_ratio, 1e-6)
+        if _ratio >= 1.0:
+            st.success(f"✓ This corner can lock the tyre: it makes {_T_made:.0f} N·m, and "
+                       f"only {_pf_req:.0f} N of pedal force is needed to reach the "
+                       f"{_T_need:.0f} N·m lock-up torque (you set {_pedal_force:.0f} N). "
+                       "Combined with a front-first bias, the car passes the lock-all-four test.")
+        else:
+            st.error(f"✗ Under-sized: at {_pedal_force:.0f} N pedal force this corner only "
+                     f"makes {_T_made:.0f} of the {_T_need:.0f} N·m needed to lock. Drop the "
+                     "master-cylinder bore, raise the pedal ratio, or fit a bigger rotor/caliper.")
+
+        # bar: torque-made vs needed for this corner at the current driver pedal force
+        fbar = go.Figure()
+        fbar.add_trace(go.Bar(x=["This corner"], y=[_T_made], name="Torque made",
+                              marker_color="#5ad17a"))
+        fbar.add_trace(go.Bar(x=["This corner"], y=[_T_need], name="Torque to lock",
+                              marker_color="#ff5a52"))
+        fbar.update_layout(
+            barmode="group", title="Brake torque made vs needed (%s)" % _axle.lower(),
+            yaxis_title="torque (N·m)", height=300,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0),
+            legend=dict(bgcolor="rgba(0,0,0,0)"))
+        st.plotly_chart(fbar, width='stretch', key="brake_torque")
+
+        if st.button("Declare brake torque/corner in the INTEGRATION ledger",
+                     key="brake_declare",
+                     help="Writes the lock-up brake torque into the brakes interface so "
+                          "the 3D model disc size, heatmap and checks use it."):
+            try:
+                _led_b = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+                _it = _led_b.get("brakes") or interfaces_mod.SubsystemInterface(name="brakes")
+                _it.brake_torque_nm = round(max(_Tf_need, _Tr_need), 0)
+                _led_b.set(_it)
+                st.session_state.ledger = _led_b.as_dict()
+                st.success(f"Declared {max(_Tf_need,_Tr_need):.0f} N·m/corner. The 3D brake "
+                           "discs and heatmap now reflect it.")
+                st.rerun()
+            except Exception as _e4:
+                st.warning(f"Couldn't declare: {_e4}")
+  except Exception as _eb:
+    st.error(f"Could not build the brakes workspace: {_eb}")
+
+# =========================================================================== #
+#  COST & BOM  —  the scored FSAE Cost & Manufacturing event, auto-seeded.     #
+# =========================================================================== #
+# FSAE scores a Cost event: an electronic Bill of Materials of every part on the
+# car, organised into commodity sections, with standardized catalog costs for
+# material ($/kg), processes ($/hole, $/cut, $/bend, $/hr labour) and fasteners —
+# the point being to make teams feel their material and manufacturing choices as
+# DOLLARS. The friction in real life is building the BOM from a blank sheet. This
+# tab REMOVES that: it auto-seeds a starter BOM from the masses each subsystem has
+# already declared in INTEGRATION, pre-fills standardized catalog costs, and lets
+# the team edit inline — then rolls it up per commodity and against a target.
+with tab_cost:
+  try:
+    # Standardized catalog rates (FSAE-cost-scale, editable in the UI). Material
+    # $/kg by class; process rates per the cost tables; assembly labour $/hr.
+    _MAT_RATES = {
+        "Aluminium (6061/7075)": 12.0, "Steel (mild/4130)": 6.0,
+        "Carbon fibre / composite": 90.0, "Titanium": 60.0,
+        "Plastic / polymer": 15.0, "Electronics / PCB": 120.0,
+        "Battery cells": 110.0, "Rubber / tyre": 18.0, "Other": 20.0,
+    }
+    # default material + make/buy guess per commodity, so the seed is sensible
+    _COMMODITY_SEED = {
+        "suspension": ("Steel (mild/4130)", "Make"),
+        "aerodynamics": ("Carbon fibre / composite", "Make"),
+        "powertrain": ("Electronics / PCB", "Buy"),
+        "cooling": ("Aluminium (6061/7075)", "Make"),
+        "electrics": ("Battery cells", "Buy"),
+        "brakes": ("Steel (mild/4130)", "Buy"),
+        "chassis": ("Steel (mild/4130)", "Make"),
+        "data-acquisition": ("Electronics / PCB", "Buy"),
+    }
+    _PROC_RATES = dict(hole=0.35, cut=0.20, bend=0.05, labour_hr=35.0, machine_hr=70.0)
+
+    st.markdown(
+        '<p class="hint" style="margin:0 0 6px;">The FSAE <b>Cost event</b>, without the '
+        'blank-sheet pain. KinematiK seeds a starter Bill of Materials from the masses '
+        'every subsystem already declared in <b>INTEGRATION</b>, pre-fills standardized '
+        'catalog costs, and lets you edit every row inline. It rolls up per commodity and '
+        'against your target, so material and manufacturing choices show up as dollars.</p>',
+        unsafe_allow_html=True)
+
+    # ---- seed / load the BOM ------------------------------------------- #
+    import pandas as _pd_c
+    _led_c = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+
+    def _seed_bom():
+        rows = []
+        for s in interfaces_mod.SUBSYSTEMS:
+            it = _led_c.get(s)
+            mass = float(getattr(it, "mass_kg", 0.0) or 0.0) if it else 0.0
+            mat, mk = _COMMODITY_SEED.get(s, ("Other", "Make"))
+            rate = _MAT_RATES.get(mat, 20.0)
+            rows.append(dict(
+                Commodity=s.replace("-", " ").title(),
+                Part=f"{s.replace('-', ' ').title()} assembly",
+                Qty=1,
+                Material=mat,
+                **{"Mass (kg)": round(mass, 2)},
+                **{"Material $/kg": rate},
+                **{"Process $": 0.0},
+                **{"Fastener $": 0.0},
+                Make_Buy=mk))
+        return rows
+
+    if "cost_bom" not in st.session_state:
+        st.session_state.cost_bom = _seed_bom()
+
+    tc = st.columns([1, 1, 2])
+    if tc[0].button("↻ Re-seed from declared masses", key="cost_reseed",
+                    help="Rebuild the starter BOM from the latest INTEGRATION masses. "
+                         "Your manual edits are replaced."):
+        st.session_state.cost_bom = _seed_bom()
+        st.rerun()
+    if tc[1].button("+ Add blank part", key="cost_addrow"):
+        st.session_state.cost_bom.append(dict(
+            Commodity="Suspension", Part="New part", Qty=1, Material="Other",
+            **{"Mass (kg)": 0.0}, **{"Material $/kg": 20.0}, **{"Process $": 0.0},
+            **{"Fastener $": 0.0}, Make_Buy="Make"))
+        st.rerun()
+    _target = tc[2].number_input("Cost target ($)", 1000.0, 50000.0,
+                                 value=float(st.session_state.get("cost_target", 12000.0)),
+                                 step=250.0, key="cost_target",
+                                 help="Your team's cost ceiling. The roll-up flags if you're over.")
+
+    st.markdown('<p class="hint" style="margin:8px 0 2px;">Edit any cell. '
+                '<b>Part cost = Qty × (Mass × Material $/kg + Process $ + Fastener $)</b>. '
+                'Add holes/cuts/bends as Process $ using the catalog rates below.</p>',
+                unsafe_allow_html=True)
+
+    _df = _pd_c.DataFrame(st.session_state.cost_bom)
+    _edited = st.data_editor(
+        _df, width='stretch', num_rows="dynamic", key="cost_editor",
+        column_config={
+            "Commodity": st.column_config.SelectboxColumn(
+                "Commodity", options=[s.replace("-", " ").title()
+                                      for s in interfaces_mod.SUBSYSTEMS], required=True),
+            "Material": st.column_config.SelectboxColumn(
+                "Material", options=list(_MAT_RATES.keys()), required=True),
+            "Make_Buy": st.column_config.SelectboxColumn(
+                "Make/Buy", options=["Make", "Buy"], required=True),
+            "Qty": st.column_config.NumberColumn("Qty", min_value=1, step=1),
+            "Mass (kg)": st.column_config.NumberColumn("Mass (kg)", min_value=0.0, step=0.1, format="%.2f"),
+            "Material $/kg": st.column_config.NumberColumn("Material $/kg", min_value=0.0, step=1.0, format="$%.0f"),
+            "Process $": st.column_config.NumberColumn("Process $", min_value=0.0, step=1.0, format="$%.2f"),
+            "Fastener $": st.column_config.NumberColumn("Fastener $", min_value=0.0, step=0.5, format="$%.2f"),
+        })
+    # persist edits
+    st.session_state.cost_bom = _edited.to_dict("records")
+
+    # ---- roll-up -------------------------------------------------------- #
+    _ed = _edited.copy()
+    for c, d in [("Qty", 1), ("Mass (kg)", 0.0), ("Material $/kg", 0.0),
+                 ("Process $", 0.0), ("Fastener $", 0.0)]:
+        _ed[c] = _pd_c.to_numeric(_ed[c], errors="coerce").fillna(d)
+    _ed["Part $"] = _ed["Qty"] * (_ed["Mass (kg)"] * _ed["Material $/kg"]
+                                  + _ed["Process $"] + _ed["Fastener $"])
+    _total = float(_ed["Part $"].sum())
+    _by_comm = _ed.groupby("Commodity")["Part $"].sum().sort_values(ascending=False)
+
+    rc = st.columns(3)
+    rc[0].metric("Total car cost", f"${_total:,.0f}",
+                 delta=f"${_total-_target:,.0f} vs target",
+                 delta_color=("inverse" if _total > _target else "normal"))
+    rc[1].metric("Parts in BOM", f"{len(_ed)}")
+    rc[2].metric("Most expensive commodity",
+                 _by_comm.index[0] if len(_by_comm) else "—",
+                 f"${_by_comm.iloc[0]:,.0f}" if len(_by_comm) else None)
+
+    gcol = st.columns([3, 2])
+    # bar: cost by commodity
+    fcost = go.Figure(go.Bar(
+        x=_by_comm.values, y=_by_comm.index, orientation="h",
+        marker_color="#37e0d0", text=[f"${v:,.0f}" for v in _by_comm.values],
+        textposition="auto"))
+    fcost.update_layout(
+        title="Cost by commodity", xaxis_title="cost ($)", height=320,
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0))
+    fcost.update_yaxes(autorange="reversed")
+    gcol[0].plotly_chart(fcost, width='stretch', key="cost_by_comm")
+    # make vs buy split
+    _mb = _ed.groupby("Make_Buy")["Part $"].sum()
+    fpie = go.Figure(go.Pie(
+        labels=_mb.index.tolist(), values=_mb.values.tolist(), hole=0.5,
+        marker=dict(colors=["#ffb02e", "#5ad17a"])))
+    fpie.update_layout(
+        title="Make vs Buy ($)", height=320,
+        paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#cdd6df", size=11),
+        margin=dict(l=0, r=0, t=36, b=0), legend=dict(bgcolor="rgba(0,0,0,0)"))
+    gcol[1].plotly_chart(fpie, width='stretch', key="cost_makebuy")
+
+    if _total > _target:
+        st.warning(f"Over target by ${_total-_target:,.0f}. The bar chart shows where the "
+                   "money is — usually a composite or machined-aluminium choice. Try a "
+                   "cheaper material class or a Buy part to see the cost drop live.")
+    else:
+        st.success(f"Under the ${_target:,.0f} target with ${_target-_total:,.0f} to spare.")
+
+    # ---- catalog rates (editable reference) + export ------------------- #
+    with st.expander("Standardized cost catalog (the rates the cells use)", expanded=False):
+        st.markdown("**Material $/kg** — " + " · ".join(
+            f"{k.split()[0]} ${v:.0f}" for k, v in _MAT_RATES.items()))
+        st.markdown(f"**Process rates** — hole ${_PROC_RATES['hole']:.2f} · "
+                    f"cut ${_PROC_RATES['cut']:.2f} · bend ${_PROC_RATES['bend']:.2f} · "
+                    f"assembly labour ${_PROC_RATES['labour_hr']:.0f}/hr · "
+                    f"machining ${_PROC_RATES['machine_hr']:.0f}/hr")
+        st.caption("Add a part's holes/cuts/bends/labour into its Process $ cell, e.g. "
+                   "8 holes × $0.35 + 18 min CNC × ($70/60) = $23.80. These mirror the "
+                   "FSAE cost-table style; swap in your competition's exact catalog numbers.")
+
+    _csv = _ed[["Commodity", "Part", "Qty", "Material", "Mass (kg)",
+                "Material $/kg", "Process $", "Fastener $", "Make_Buy", "Part $"]].to_csv(index=False)
+    st.download_button("⬇ Export BOM as CSV", _csv, file_name="kinematik_cost_bom.csv",
+                       mime="text/csv", key="cost_export",
+                       help="The full Bill of Materials, ready to drop into your cost report.")
+    st.caption("Hierarchy follows the FSAE cost report: System (Commodity) → Part → "
+               "Material / Process / Fastener. Mark each part Make or Buy; the roll-up "
+               "and charts update live so the cost of every engineering choice is visible.")
+  except Exception as _ecost:
+    st.error(f"Could not build the cost workspace: {_ecost}")
 
 # --------------------------------------------------------------------------- #
 # ----- SUSPENSION vs CHASSIS (now a section of the merged INTEGRATION tab) ----- #

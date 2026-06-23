@@ -49,6 +49,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 from .kinematics import Hardpoints, SuspensionKinematics
+from .interfaces import SUBSYSTEMS
 
 # --------------------------------------------------------------------------- #
 #  Palette — matched to the app's dark instrument styling.
@@ -67,13 +68,30 @@ COLORS = dict(
     battery="#1f2a20", batt_edge="#5ad17a",
     brake="#c2410c", logger="#33373d",
     point="#e7ecf1", floor="#0c1014", cg="#ffd166",
-    custom="#37e0d0", cad_neon="#1F8FFF",
+    custom="#37e0d0",
 )
 
 
 # --------------------------------------------------------------------------- #
 #  Mesh primitives
 # --------------------------------------------------------------------------- #
+def _bbox_wire(lo, hi):
+    """12 edges of the axis-aligned box [lo,hi] as polyline x/y/z lists (with
+    None breaks between segments) for a single Scatter3d trace."""
+    x0, y0, z0 = float(lo[0]), float(lo[1]), float(lo[2])
+    x1, y1, z1 = float(hi[0]), float(hi[1]), float(hi[2])
+    c = [(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0),
+         (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)]
+    edges = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6),
+             (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]
+    xs, ys, zs = [], [], []
+    for a, b in edges:
+        xs += [c[a][0], c[b][0], None]
+        ys += [c[a][1], c[b][1], None]
+        zs += [c[a][2], c[b][2], None]
+    return xs, ys, zs
+
+
 def _box(cx, cy, cz, lx, ly, lz):
     """Axis-aligned box centred at (cx,cy,cz) with full extents (lx,ly,lz)."""
     hx, hy, hz = lx / 2.0, ly / 2.0, lz / 2.0
@@ -140,68 +158,8 @@ def _cylinder(center, axis, radius, length, n=24, cap=True):
     return verts, np.array(I), np.array(J), np.array(K)
 
 
-def chassis_cad_footprint(vp, custom_parts, ledger=None):
-    """If a chassis CAD/estimate is present, return the footprint the rest of the
-    car should attach to: dict(wb, length, width, height, cx, cy, cz, x_front,
-    x_rear) in car SAE mm. Returns None if no chassis replacement exists.
-
-    The surrounding dummy parts (wheels, wings, motor, etc.) are then placed
-    against THIS footprint, so a real chassis pulls the whole car into a coherent
-    assembly instead of leaving the dummies at the generic envelope.
-    """
-    import numpy as _np
-    for cp in (custom_parts or []):
-        if cp.get("replaces_subsys") != "chassis":
-            continue
-        mp = cp.get("mesh")
-        # Determine the placed extents (length x, width y, height z) in car frame.
-        if mp and mp.get("verts"):
-            raw = _np.asarray(mp.get("size_mm") or [0, 0, 0], float)
-            scale = float(cp.get("mesh_scale", 1.0) or 1.0)
-            axis_map = cp.get("axis_map", "auto")
-            # Reference slot for auto-orient: the generic monocoque anchor.
-            try:
-                ta = suggest_part_geometry_for(vp, "monocoque", ledger=ledger)
-                ref = _np.array([ta["l_mm"], ta["w_mm"], ta["h_mm"]], float)
-            except Exception:
-                ref = _np.array([1550.0, 320.0, 300.0])
-            if axis_map == "auto":
-                so = _np.argsort(raw); to = _np.argsort(ref)
-                ext = _np.zeros(3)
-                for r in range(3):
-                    ext[to[r]] = raw[so[r]]
-            else:
-                ext = raw
-            # Apply the auto/explicit fit factor the renderer will use (middle axis).
-            if cp.get("fit_to_envelope"):
-                try:
-                    so = _np.argsort(ext); tos = _np.argsort(ref)
-                    paired = [ref[tos[r]] / (ext[so[r]] if ext[so[r]] > 1e-6 else 1.0)
-                              for r in range(3)]
-                    scale = scale * float(paired[1])
-                except Exception:
-                    pass
-            ext = ext * scale
-            L, W, H = float(ext[0]), float(ext[1]), float(ext[2])
-        else:
-            L = float(cp.get("l_mm", 0) or 0)
-            W = float(cp.get("w_mm", 0) or 0)
-            H = float(cp.get("h_mm", 0) or 0)
-        if L <= 0:
-            return None
-        cx = float(cp.get("x_mm", 0) or 0)
-        cy = float(cp.get("y_mm", 0) or 0)
-        cz = float(cp.get("z_mm", 0) or 0)
-        # Wheelbase ≈ a bit shorter than the hull length (axles sit inboard of
-        # nose/tail). Use ~78% of hull length as a sane FSAE-ish ratio.
-        wb = max(900.0, L * 0.78)
-        return dict(wb=wb, length=L, width=W, height=H, cx=cx, cy=cy, cz=cz,
-                    x_front=cx + wb / 2.0, x_rear=cx - wb / 2.0)
-    return None
-
-
 def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
-                      centre=(0.0, 0.0, 0.0), post_scale=None, axis_perm=None):
+                      centre=(0.0, 0.0, 0.0)):
     """Place an imported CAD part's vertices into the car's SAE frame.
 
     verts come recentred on the part's own bbox centre (from chassis.load_part_mesh).
@@ -211,16 +169,9 @@ def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
         axis_map : "z_up"  CAD already z-up (no swap)
                    "y_up"  CAD is y-up (Y->Z, Z->-Y): common SolidWorks export
                    "x_up"  CAD is x-up (X->Z, Z->-X)
-                   "auto"  no preset swap here; pair with axis_perm for auto-align
-        axis_perm : optional (p0,p1,p2) permutation of source axes onto car
-                    X,Y,Z — a CLEAN 90° re-labelling (never a distortion) used to
-                    auto-align the part's longest side with the slot's longest.
-        post_scale : optional (sx,sy,sz) applied in CAR axes AFTER orientation.
     """
     V = np.asarray(verts, float).reshape(-1, 3) * float(scale)
-    if axis_perm is not None:
-        V = V[:, list(axis_perm)]
-    elif axis_map == "y_up":
+    if axis_map == "y_up":
         V = np.column_stack([V[:, 0], -V[:, 2], V[:, 1]])
     elif axis_map == "x_up":
         V = np.column_stack([-V[:, 2], V[:, 1], V[:, 0]])
@@ -229,10 +180,6 @@ def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
         ca, sa = np.cos(a), np.sin(a)
         R = np.array([[ca, -sa, 0.0], [sa, ca, 0.0], [0.0, 0.0, 1.0]])
         V = V @ R.T
-    if post_scale is not None:
-        # Stretch about the part's own centre (it's recentred at origin here).
-        ctr0 = (V.max(axis=0) + V.min(axis=0)) / 2.0
-        V = (V - ctr0) * np.asarray(post_scale, float) + ctr0
     return V + np.asarray(centre, float)
 
 
@@ -454,7 +401,18 @@ def _extract_corner(corner, ride_drop_mm, color_registry):
             segs.append((rpv, rsp, "Rocker", COLORS["rocker"], "rocker"))
         if rsp is not None and spi is not None:
             segs.append((rsp, spi, "Spring/damper", COLORS["spring"], "spring"))
-        markers = [pts[k] for k in (
+        # Named pickup points, so each hardpoint can be focused individually.
+        _marker_names = {
+            "upper_front_inner": "Upper front pickup",
+            "upper_rear_inner": "Upper rear pickup",
+            "lower_front_inner": "Lower front pickup",
+            "lower_rear_inner": "Lower rear pickup",
+            "upper_outer": "Upper ball joint",
+            "lower_outer": "Lower ball joint",
+            "tie_rod_inner": "Tie rod inner",
+            "tie_rod_outer": "Tie rod outer",
+        }
+        markers = [(_marker_names[k], pts[k]) for k in (
             "upper_front_inner", "upper_rear_inner", "lower_front_inner",
             "lower_rear_inner", "upper_outer", "lower_outer",
             "tie_rod_inner", "tie_rod_outer")]
@@ -475,7 +433,20 @@ def _extract_corner(corner, ride_drop_mm, color_registry):
         color, base = _agnostic_color(label, color_registry)
         segs.append((p, q, label, color, base))
     named = corner.named_points()
-    markers = [np.asarray(v, float) - drop for v in named.values()]
+    # Friendly names for the abbreviated point codes various topologies expose,
+    # so each pickup reads clearly and (where it matches) groups with the named
+    # wishbone pickups. Anything unmapped falls back to a de-abbreviated title.
+    _AGN = {
+        "ufi": "Upper front pickup", "uri": "Upper rear pickup",
+        "lfi": "Lower front pickup", "lri": "Lower rear pickup",
+        "uo": "Upper ball joint", "lo": "Lower ball joint",
+        "tri": "Tie rod inner", "tro": "Tie rod outer",
+        "st": "Strut top", "sl": "Strut lower", "wc": "Wheel centre",
+        "cp": "Contact patch",
+    }
+    markers = [(_AGN.get(str(k).lower(),
+                         str(k).replace("_", " ").capitalize()),
+                np.asarray(v, float) - drop) for k, v in named.items()]
     st = corner.static
     wc = np.asarray(st.wheel_center, float) - drop
     cp = np.asarray(st.contact_patch, float) - drop
@@ -527,6 +498,175 @@ def _g(it, attr, default=None):
 
 
 # --------------------------------------------------------------------------- #
+#  Heatmap — colour the car by a physical metric (heat / power / mass)
+# --------------------------------------------------------------------------- #
+# A perceptually-ordered cool→warm ramp. Low load reads cool blue/teal, high
+# load reads amber/red, so "where's the load concentrated" is legible at a
+# glance. Over-budget bodies get a distinct hot magenta-red outline on top.
+_HEAT_RAMP = [
+    (0.00, (37, 99, 173)),    # deep blue   — light load
+    (0.25, (55, 224, 208)),   # teal
+    (0.50, (90, 209, 122)),   # green
+    (0.70, (255, 176, 46)),   # amber
+    (0.88, (255, 90, 82)),    # red
+    (1.00, (214, 33, 33)),    # deep red    — heavy load
+]
+_OVER_BUDGET_COLOR = "#ff2bd6"   # magenta outline for "exceeds capacity"
+_HEAT_NEUTRAL = "#3a4048"        # grey for bodies with no value for this metric
+
+
+def heat_color(t: float) -> str:
+    """Hex colour for a normalised load 0..1 along the cool→warm ramp."""
+    t = max(0.0, min(1.0, float(t)))
+    for (a_t, a_c), (b_t, b_c) in zip(_HEAT_RAMP, _HEAT_RAMP[1:]):
+        if t <= b_t:
+            f = 0.0 if b_t == a_t else (t - a_t) / (b_t - a_t)
+            r = round(a_c[0] + (b_c[0] - a_c[0]) * f)
+            g = round(a_c[1] + (b_c[1] - a_c[1]) * f)
+            b = round(a_c[2] + (b_c[2] - a_c[2]) * f)
+            return "#%02x%02x%02x" % (r, g, b)
+    return "#%02x%02x%02x" % _HEAT_RAMP[-1][1]
+
+
+# Which subsystems carry a meaningful value for each metric, and the human label
+# + units shown in the legend. The metric is read from each subsystem's declared
+# interface, so the heatmap reflects exactly what the teams have entered.
+_METRIC_SPECS = {
+    "heat": dict(field="heat_reject_w", label="Heat rejection", unit="W",
+                 blurb="Waste heat each subsystem dumps into the car — the load "
+                       "your cooling package has to carry away."),
+    "power": dict(field="power_draw_w", label="Electrical draw", unit="W",
+                  blurb="Continuous electrical draw on the low-voltage system — "
+                        "what the supply has to feed."),
+    "mass": dict(field="mass_kg", label="Mass", unit="kg",
+                 blurb="Each subsystem's mass — what drives the car's weight and "
+                       "where the CG ends up."),
+}
+
+
+def subsystem_metrics(vp, ledger, metric: str = "heat") -> dict:
+    """Per-subsystem values for a heatmap, plus normalisation + warnings.
+
+    Returns a dict with:
+      values   : {subsystem: raw_value}          (only those that declared it)
+      norm     : {subsystem: 0..1}               (raw / max, for colouring)
+      over     : {subsystem: bool}               (exceeds capacity — see below)
+      vmax     : float                            (the scale top, for the legend)
+      unit,label,blurb : strings for the legend
+      capacity : float | None                     (the car's budget for this metric)
+      warnings : [ {severity, message, subsystems} ]  (from the ledger findings)
+
+    Over-budget logic is metric-specific and uses the SAME numbers the ledger's
+    consistency checks use, so the colours and the warnings never disagree:
+      * heat  — flagged when total declared heat needs more cooling airflow than
+                the cooling package can move (the cooling-airflow check).
+      * power — flagged when total LV draw exceeds LV supply (the lv-power check).
+      * mass  — flagged when the whole-car mass is over the target budget.
+    """
+    spec = _METRIC_SPECS.get(metric, _METRIC_SPECS["heat"])
+    field = spec["field"]
+
+    # Pull the raw value each subsystem declares for this metric.
+    values: dict[str, float] = {}
+    for s in SUBSYSTEMS:
+        it = _iface(ledger, s)
+        v = _g(it, field, None)
+        if v is not None and float(v) > 0:
+            values[s] = float(v)
+
+    vmax = max(values.values()) if values else 0.0
+    norm = {s: (v / vmax if vmax > 0 else 0.0) for s, v in values.items()}
+
+    # ---- capacity + over-budget, mirrored from the ledger checks ---------- #
+    over: dict[str, bool] = {}
+    capacity = None
+    findings = []
+    try:
+        findings = [f.as_dict() if hasattr(f, "as_dict") else f
+                    for f in ledger.check_all()]
+    except Exception:
+        findings = []
+
+    def _finding(check):
+        for f in findings:
+            if f.get("check") == check:
+                return f
+        return None
+
+    def _capacity(field):
+        """Read a budget/capacity that lives on the IntegrationLedger (where the
+        consistency checks read it from), falling back to vp only if absent. This
+        keeps the heatmap's legend capacity consistent with the over-budget flags,
+        which come from those same ledger checks."""
+        for src in (ledger, vp):
+            v = getattr(src, field, None)
+            if v is not None:
+                try:
+                    return float(v)
+                except Exception:
+                    pass
+        return 0.0
+
+    if metric == "heat":
+        # cooling can move X m³/s; heat-rejecting subsystems each need some airflow.
+        cap_air = _capacity("total_cooling_airflow_cms")
+        cool_it = _iface(ledger, "cooling")
+        cap_air = max(cap_air, float(_g(cool_it, "cooling_airflow_cms", 0.0)))
+        capacity = cap_air
+        f = _finding("cooling-airflow")
+        if f and f.get("severity") in ("fail", "missing"):
+            # everything that needs cooling is implicated
+            for s in values:
+                if s != "cooling":
+                    over[s] = True
+    elif metric == "power":
+        cap_w = _capacity("lv_supply_capacity_w")
+        capacity = cap_w
+        f = _finding("lv-power")
+        if f and f.get("severity") == "fail":
+            # The finding names the LV users PLUS "electrics" as the owning system.
+            # Flag only the genuine LV draws — those at/near the LV bus voltage —
+            # so an HV traction load that merely shares the colourmap isn't blamed
+            # for an LV-supply shortfall. Mirrors the ledger's own LV test.
+            lv_bus = _capacity("lv_voltage_v") or 24.0
+            for s in values:
+                it = _iface(ledger, s)
+                v_s = _g(it, "voltage_v", None)
+                if v_s is None or abs(float(v_s) - lv_bus) < 5.0:
+                    over[s] = True
+    elif metric == "mass":
+        cap_kg = _capacity("target_mass_kg")
+        capacity = cap_kg
+        # mass is a whole-car budget; flag the heaviest contributors when over.
+        f = _finding("mass-budget-total")
+        total = sum(values.values())
+        if (f and f.get("severity") in ("fail", "warning")) or \
+           (cap_kg > 0 and total > cap_kg):
+            # mark the top contributors (those above the mean) as the ones to cut
+            if values:
+                mean_v = total / len(values)
+                for s, v in values.items():
+                    if v >= mean_v:
+                        over[s] = True
+
+    # ---- warnings: the relevant findings, plain-language -------------------#
+    relevant = {"heat": {"cooling-airflow", "aero-cooling-duct"},
+                "power": {"lv-power", "hv-voltage"},
+                "mass": {"mass-budget", "mass-budget-total", "cg", "cg-lateral"}}
+    warnings = [
+        dict(severity=f.get("severity"), message=f.get("message"),
+             subsystems=f.get("subsystems", []))
+        for f in findings
+        if f.get("check") in relevant.get(metric, set())
+        and f.get("severity") in ("warning", "fail", "missing")
+    ]
+
+    return dict(values=values, norm=norm, over=over, vmax=vmax,
+                unit=spec["unit"], label=spec["label"], blurb=spec["blurb"],
+                capacity=capacity, warnings=warnings, metric=metric)
+
+
+# --------------------------------------------------------------------------- #
 #  Main entry point
 # --------------------------------------------------------------------------- #
 def build_full_car_figure(
@@ -543,11 +683,11 @@ def build_full_car_figure(
     show_electrics=True, show_brakes=True, show_bodywork=True,
     highlight_subsystem: str | None = None,
     focus_subsystem: str | None = None,
+    focus_part: str | None = None,
+    heatmap: dict | None = None,
     tire_width_mm: float = 180.0,
     part_overrides: dict | None = None,
     custom_parts: list | None = None,
-    suppress_subsystems: set | None = None,
-    suppress_parts: set | None = None,
     height: int = 720,
 ):
     """Assemble a live Formula-car 3D figure.
@@ -617,36 +757,9 @@ def build_full_car_figure(
     tf = float(getattr(vp, "track_front", 1200.0))
     tr = float(getattr(vp, "track_rear", 1180.0))
 
-    # If a real chassis CAD/estimate has been dropped in, re-base the whole car
-    # on ITS footprint: wheels, wings, sidepods, motor etc. reposition to attach
-    # to the real chassis, so the car reads as one coherent assembly (the "new
-    # after chassis CAD upload" sketch) instead of dummies floating at the
-    # generic envelope. Shift the fore/aft origin to the chassis centre too.
-    _chassis_fp = None
-    _x_origin = 0.0
-    try:
-        _chassis_fp = chassis_cad_footprint(vp, custom_parts, ledger=ledger)
-    except Exception:
-        _chassis_fp = None
-    if _chassis_fp:
-        wb = _chassis_fp["wb"]
-        _tgt_track = _clamp(_chassis_fp["width"] + 520.0, 900.0, 1700.0)
-        tf = tr = _tgt_track
-        _x_origin = _chassis_fp["cx"]
-
     # Softer front spring -> more static sag -> body visibly lower. Cue, not a calc.
     kf = float(getattr(vp, "spring_rate_front", 35.0) or 35.0)
     ride_drop = _clamp((35.0 - kf) * 0.6, -12.0, 18.0)
-
-    # Subsystems whose PROCEDURAL body is replaced by a user CAD/custom part:
-    # skip drawing the stand-in loft/box so only the real geometry shows.
-    _suppress = set(suppress_subsystems or ())
-    # Individual part draw-names to suppress (per-PART replacement). A suppressed
-    # subsystem also suppresses all of its catalog parts, for back-compat.
-    _suppress_names = set(suppress_parts or ())
-    for _k, _dn, _s, _c in PART_CATALOG:
-        if _s in _suppress:
-            _suppress_names.add(_dn)
 
     # Extract each axle's corner into a uniform, topology-independent description.
     color_registry = {}
@@ -656,10 +769,7 @@ def build_full_car_figure(
     y_center = 0.0
     scale_f = (tf / 2.0) / (abs(front_corner["contact_patch"][1] - y_center) or 1.0)
     scale_r = (tr / 2.0) / (abs(rear_corner["contact_patch"][1] - y_center) or 1.0)
-    # Centre the axles on the chassis (or 0 when no chassis CAD is present), so a
-    # real chassis pulls the wheels — and everything keyed off x_front/x_rear
-    # (wings, sidepods, motor, nose, tail) — into alignment with it.
-    x_front, x_rear = _x_origin + wb / 2.0, _x_origin - wb / 2.0
+    x_front, x_rear = +wb / 2.0, -wb / 2.0
 
     fig = go.Figure()
 
@@ -724,22 +834,52 @@ def build_full_car_figure(
             return 1.0
         return 1.0 if subsys == highlight_subsystem else 0.14
 
+    # Heatmap colouring. When a heatmap is supplied, a body's own colour is
+    # replaced by the cool→warm colour for its subsystem's normalised load, so
+    # the whole car reads as a load map. Subsystems that declared no value for
+    # the chosen metric go neutral grey (they're not part of this story). The
+    # set of over-budget subsystems is returned so we can outline them.
+    _hm_norm = (heatmap or {}).get("norm", {}) if heatmap else {}
+    _hm_over = (heatmap or {}).get("over", {}) if heatmap else {}
+
+    def heat_for(subsys):
+        """(fill_colour, is_over) for a subsystem under the active heatmap, or
+        (None, False) when no heatmap is active."""
+        if not heatmap or not subsys:
+            return None, False
+        if subsys in _hm_norm:
+            return heat_color(_hm_norm[subsys]), bool(_hm_over.get(subsys))
+        return _HEAT_NEUTRAL, False
+
     legend_done = set()
-    _part_boxes = {}   # draw-name -> [lo(3), hi(3)] actual drawn box, for seamless
-                       # replacement placement (CAD lands where placeholder was).
 
     # Per-subsystem point accumulator. Every body that belongs to a clickable
     # subsystem feeds its vertices here, so afterwards we know the bounding box
     # of each subsystem and can frame the camera on whichever one is clicked.
     subsys_pts: dict[str, list] = {}
+    # Per-PART point accumulator, keyed by the body's display name (e.g. "Front
+    # wing", "Tire", "Brake disc"). This is the finer grain that lets the camera
+    # frame a single part — not just the whole subsystem it belongs to — so a
+    # part-level click/pick can zoom onto exactly that body. Several stations may
+    # share a name (four tires, four brake discs); they all merge under the one
+    # key, so focusing "Tire" frames all four, which is the sensible behaviour.
+    part_pts: dict[str, list] = {}
 
-    def _accrue(subsys, pts):
-        if not subsys or pts is None:
+    def _accrue(subsys, pts, part=None, corner=None):
+        if pts is None:
             return
-        bucket = subsys_pts.setdefault(subsys, [])
-        bucket.extend(np.asarray(pts, float).reshape(-1, 3).tolist())
+        arr = np.asarray(pts, float).reshape(-1, 3).tolist()
+        if subsys:
+            subsys_pts.setdefault(subsys, []).extend(arr)
+        if part:
+            part_pts.setdefault(part, []).extend(arr)
+            # Also bucket a per-CORNER key ("<part>#FL") so a part that exists at
+            # all four wheels can be drilled to a single corner. The shared key
+            # above still frames all instances; this finer key frames just one.
+            if corner:
+                part_pts.setdefault("%s#%s" % (part, corner), []).extend(arr)
 
-    def seg(p, q, color, w=5, name=None, group=None, subsys=None):
+    def seg(p, q, color, w=5, name=None, group=None, subsys=None, corner=None):
         if p is None or q is None:
             return
         # Override key: prefer the legend name, fall back to the group token so
@@ -747,46 +887,64 @@ def build_full_car_figure(
         _ovk = name if (name and name in _ov) else (group if group in _ov else name)
         pq = _apply_ov(_ovk, np.array([p, q], float))
         p, q = pq[0], pq[1]
-        _accrue(subsys, [p, q])
+        # Accrue under a STABLE part key. corner_name() returns a label only the
+        # first time (legend dedup), so for the 2nd–4th corners `name` is None;
+        # the `group` token, however, is the same on every corner. Prefer it so
+        # all four corners of e.g. the upper wishbone merge into one focus box,
+        # while the per-corner key (added in _accrue) frames a single corner.
+        _part_key = group or name
+        _accrue(subsys, [p, q], part=_part_key, corner=corner)
+        # Under a heatmap, recolour line members by their subsystem's load too (so
+        # e.g. brake lines warm with the discs) and grey out subsystems with no
+        # value, so the bright topology hues don't fight the load colourmap.
+        _lcol = color
+        _lop = edge_op(subsys)
+        if heatmap:
+            _hc, _ = heat_for(subsys)
+            if _hc is not None:
+                _lcol = _hc
+                _lop = 0.95 if subsys in _hm_norm else 0.5
         fig.add_trace(go.Scatter3d(
             x=[p[0], q[0]], y=[p[1], q[1]], z=[p[2], q[2]],
-            mode="lines", line=dict(color=color, width=w),
-            opacity=edge_op(subsys), name=name, legendgroup=group,
+            mode="lines", line=dict(color=_lcol, width=w),
+            opacity=_lop, name=name, legendgroup=group,
             showlegend=name is not None, hoverinfo="skip",
-            customdata=[subsys, subsys] if subsys else None))
+            customdata=[[subsys, _part_key, corner or ""]] * 2 if subsys else None))
 
-    def mesh(verts, i, j, k, color, name, subsys, base_op=0.6, hover=None):
-        # Record this part's actual box (its true drawn extent) keyed by name —
-        # even if we then suppress it — so a replacement can land in EXACTLY the
-        # same place its placeholder occupies. This is what makes CAD/sketch/
-        # estimate parts and the procedural placeholders share one frame.
-        try:
-            _vv = _apply_ov(name, verts)
-            _lo = _vv.min(axis=0); _hi = _vv.max(axis=0)
-            if name in _part_boxes:
-                _pb = _part_boxes[name]
-                _pb[0] = np.minimum(_pb[0], _lo)
-                _pb[1] = np.maximum(_pb[1], _hi)
-            else:
-                _part_boxes[name] = [_lo.copy(), _hi.copy()]
-        except Exception:
-            pass
-        # A part replaced by a user CAD/sketch/estimate is suppressed by its
-        # draw-name, so exactly that body disappears (not the whole subsystem).
-        if name in _suppress_names:
-            return
+    def mesh(verts, i, j, k, color, name, subsys, base_op=0.6, hover=None,
+             corner=None):
         once = name not in legend_done
         legend_done.add(name)
         verts = _apply_ov(name, verts)
-        _accrue(subsys, verts)
-        # customdata carries the clickable subsystem id on every vertex, so a
-        # Streamlit selection event can read which part the user picked.
-        cd = [subsys] * len(verts) if subsys else None
+        _accrue(subsys, verts, part=name, corner=corner)
+        # customdata carries the clickable subsystem id, the part name, and the
+        # corner tag (if any) on every vertex, so a Streamlit selection event can
+        # read which subsystem, which part, AND which corner the user picked.
+        cd = [[subsys, name, corner or ""]] * len(verts) if subsys else None
+        # Heatmap override: recolour by load, and lift opacity so the colour
+        # reads cleanly. Over-budget bodies are drawn solid + outlined below.
+        _hcol, _hover_budget = heat_for(subsys)
+        _fill = _hcol if _hcol is not None else color
+        _mop = (max(base_op, 0.85) if _hcol is not None else op(subsys, base_op))
         fig.add_trace(go.Mesh3d(
             x=verts[:, 0], y=verts[:, 1], z=verts[:, 2], i=i, j=j, k=k,
-            color=color, opacity=op(subsys, base_op), flatshading=True,
+            color=_fill, opacity=_mop, flatshading=True,
             name=name, showlegend=once, customdata=cd,
             hoverinfo="text" if hover else "skip", text=hover))
+        # Over-budget outline: a bright magenta bounding-box wireframe when this
+        # body's subsystem exceeds the car's capacity for the active metric, so
+        # failures pop without flooding the scene with per-triangle edges.
+        if _hover_budget:
+            try:
+                lo = verts.min(axis=0)
+                hi = verts.max(axis=0)
+                _bx, _by, _bz = _bbox_wire(lo, hi)
+                fig.add_trace(go.Scatter3d(
+                    x=_bx, y=_by, z=_bz, mode="lines",
+                    line=dict(color=_OVER_BUDGET_COLOR, width=5),
+                    opacity=0.95, showlegend=False, hoverinfo="skip"))
+            except Exception:
+                pass
 
     def corner_name(base):
         if base in legend_done:
@@ -812,16 +970,25 @@ def build_full_car_figure(
                                  x_shift=x_shift, y_center_ref=y_center)
 
     for axle, corner, lat_scale, x_shift, mirror in stations:
+        # Stable corner id (FL/FR/RL/RR) for per-corner focus. Side comes from the
+        # TRANSFORMED wheel-centre y (y is "right"), so it's correct regardless of
+        # the base geometry's handedness or the mirror convention.
+        _wc_tag = _xform(corner["wheel_center"], mirror, lat_scale, x_shift)
+        _side = "R" if _wc_tag[1] >= 0 else "L"
+        _corner_id = ("F" if axle == "front" else "R") + _side
+
         # draw every member the topology reported
         for p, q, label, color, group in corner["segments"]:
             pT = _xform(p, mirror, lat_scale, x_shift)
             qT = _xform(q, mirror, lat_scale, x_shift)
-            seg(pT, qT, color, 5, corner_name(label), group, "suspension")
+            seg(pT, qT, color, 5, corner_name(label), group, "suspension",
+                corner=_corner_id)
 
         wc = _xform(corner["wheel_center"], mirror, lat_scale, x_shift)
         cp = _xform(corner["contact_patch"], mirror, lat_scale, x_shift)
         # wheel hub line
-        seg(cp, wc, COLORS["wheel"], 3, corner_name("Wheel hub"), "wheel", "suspension")
+        seg(cp, wc, COLORS["wheel"], 3, corner_name("Wheel hub"), "wheel",
+            "suspension", corner=_corner_id)
 
         cam = np.deg2rad(corner["camber"])
         sign = -1.0 if mirror else 1.0
@@ -830,13 +997,13 @@ def build_full_car_figure(
         if show_tires:
             tv, ti, tj, tk = _cylinder(wc, axis, radius, tire_width_mm, n=30)
             mesh(tv, ti, tj, tk, COLORS["tire"], "Tire", "suspension",
-                 base_op=0.95)
+                 base_op=0.95, corner=_corner_id)
             # Rim: a slightly inset, lighter disc so the wheel reads as a wheel,
             # not a black drum — sits at ~62% of tire radius on the outboard face.
             rim_r = radius * 0.62
             rv, ri, rj, rk = _cylinder(wc, axis, rim_r, tire_width_mm * 0.9, n=24)
             mesh(rv, ri, rj, rk, COLORS["rim"], "Tire", "suspension",
-                 base_op=0.98)
+                 base_op=0.98, corner=_corner_id)
         if show_brakes:
             disc_r = (radius * _clamp(0.62 + (brake_tq or 0) / 4000.0, 0.5, 0.85)
                       if brake_tq else radius * 0.62)
@@ -845,16 +1012,21 @@ def build_full_car_figure(
             hv = ("Brake disc · r≈%.0f mm" % disc_r
                   + (" (sized from %.0f N·m)" % brake_tq if brake_tq else ""))
             mesh(dv, di, dj, dk, COLORS["brake"], "Brake disc", "brakes",
-                 base_op=0.9, hover=hv)
+                 base_op=0.9, hover=hv, corner=_corner_id)
 
-        mk = [_xform(m, mirror, lat_scale, x_shift) for m in corner["markers"]]
-        if mk:
-            _accrue("suspension", mk)
+        # Inner pickup points: each is now NAMED and individually focusable. We
+        # draw them as one trace per point so a click (or a part button) can frame
+        # a single hardpoint at a single corner. The part key is the pickup name;
+        # the per-corner key ("Upper front pickup#FL") frames just this corner's.
+        for _mname, _mpt in corner["markers"]:
+            _mT = _xform(_mpt, mirror, lat_scale, x_shift)
+            _accrue("suspension", [_mT], part=_mname, corner=_corner_id)
             fig.add_trace(go.Scatter3d(
-                x=[p[0] for p in mk], y=[p[1] for p in mk], z=[p[2] for p in mk],
-                mode="markers", marker=dict(size=3, color=COLORS["point"]),
-                opacity=edge_op("suspension"), showlegend=False, hoverinfo="skip",
-                customdata=["suspension"] * len(mk)))
+                x=[_mT[0]], y=[_mT[1]], z=[_mT[2]],
+                mode="markers", marker=dict(size=4, color=COLORS["point"]),
+                opacity=edge_op("suspension"), showlegend=False,
+                hoverinfo="text", text="%s · %s" % (_mname, _corner_id),
+                customdata=[["suspension", _mname, _corner_id]]))
 
     # z-extent + tire radius derived from the extracted corners (any topology).
     z_all = []
@@ -874,10 +1046,6 @@ def build_full_car_figure(
     #  an open cockpit, a curved MAIN roll hoop behind the driver's head and a
     #  smaller FRONT hoop ahead of the dash, plus the driver's helmet showing in
     #  the cockpit — not an F1 halo.
-    # Defaults so aero (pylon mounts, rear-wing height) still works when the
-    # chassis body is suppressed (replaced by a CAD part).
-    tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
-    tub_top = max(z_lo * 0.5, tire_r * 0.14) + _clamp(tire_r * 0.95, 180, 360)
     if show_bodywork:
         ch_it = _iface(ledger, "chassis")
         tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
@@ -1131,61 +1299,21 @@ def build_full_car_figure(
                else "Data-acquisition logger (placeholder — declare mass in INTEGRATION)")
     mesh(v, i, j, k, COLORS["logger"], "Data logger", "data-acquisition", 0.85, _daq_hv)
 
-    # ---- 8) CG marker from mass roll-up (ledger + custom parts) --------- #
-    # The gold CG diamond reflects EVERYTHING declared: each subsystem's mass/CG
-    # from the ledger PLUS any custom/CAD part that carries a mass. As a team
-    # replaces stand-ins with real parts (each with its own mass), the CG slides
-    # to the real number — the whole car re-balances as the build firms up.
+    # ---- 8) CG marker from mass roll-up -------------------------------- #
     cg_h = float(getattr(vp, "cg_height", 0.0) or 0.0)
     wdist = float(getattr(vp, "weight_dist_front", 0.5) or 0.5)
     cg_x = x_rear + wdist * (x_front - x_rear)
     cg_y = 0.0
     cg_label = "CG (params)"
-    _cg_terms = []   # (mass, x_car, y_car, z) tuples in car SAE frame
-    _ledger_mass = 0.0
     if ledger is not None:
         try:
             roll = ledger.mass_rollup()
             if roll.get("cg_mm"):
                 gx, gy, gz = roll["cg_mm"]
-                _ledger_mass = float(roll.get("total_kg", 0.0) or 0.0)
-                # ledger gx is +rearward from front axle -> car frame x is x_front-gx
-                _cg_terms.append((_ledger_mass, x_front - gx, gy, gz))
+                cg_x, cg_y, cg_h = x_front - gx, gy, gz
+                cg_label = "CG (declared %.0f kg)" % roll["total_kg"]
         except Exception:
             pass
-    # Fold in custom/CAD parts that declare a mass, at their placed centre.
-    _cust_mass = 0.0
-    for _cpm in (custom_parts or []):
-        try:
-            _m = float(_cpm.get("mass_kg", 0) or 0)
-            if _m <= 0:
-                continue
-            _cx2 = float(_cpm.get("x_mm", 0) or 0)
-            _cy2 = float(_cpm.get("y_mm", 0) or 0)
-            _cz2 = float(_cpm.get("z_mm", 0) or 0)
-            # If this part is auto-fitted, its drawn centre is the envelope home.
-            if _cpm.get("fit_to_envelope") and _cpm.get("subsys") not in (None, "(custom / unassigned)"):
-                try:
-                    _tg = suggest_part_geometry(vp, _cpm["subsys"], ledger=ledger)
-                    _cx2, _cy2, _cz2 = _tg["x_mm"], _tg["y_mm"], _tg["z_mm"]
-                except Exception:
-                    pass
-            _cg_terms.append((_m, _cx2, _cy2, _cz2))
-            _cust_mass += _m
-        except Exception:
-            continue
-    if _cg_terms:
-        _tot = sum(t[0] for t in _cg_terms) or 1.0
-        cg_x = sum(t[0] * t[1] for t in _cg_terms) / _tot
-        cg_y = sum(t[0] * t[2] for t in _cg_terms) / _tot
-        cg_h = sum(t[0] * t[3] for t in _cg_terms) / _tot
-        if _cust_mass > 0 and _ledger_mass > 0:
-            cg_label = "CG (%.0f kg: %.0f declared + %.0f parts)" % (
-                _tot, _ledger_mass, _cust_mass)
-        elif _cust_mass > 0:
-            cg_label = "CG (%.0f kg from parts)" % _tot
-        else:
-            cg_label = "CG (declared %.0f kg)" % _tot
     if cg_h > 0:
         fig.add_trace(go.Scatter3d(
             x=[cg_x], y=[cg_y], z=[cg_h], mode="markers+text",
@@ -1242,14 +1370,8 @@ def build_full_car_figure(
                 hov = "%s — PROVISIONAL stand-in, %.0f×%.0f×%.0f mm @ (x %.0f, y %.0f, z %.0f)" % (
                     nm, l, w, h, cx, cy, cz)
             else:
-                # CAD mesh parts glow neon blue so real geometry is unmistakable
-                # against the matte procedural placeholders. Sketch/estimate boxes
-                # keep their subsystem hue.
-                if has_mesh:
-                    col = cp.get("color") or COLORS["cad_neon"]
-                else:
-                    col = cp.get("color") or COLORS.get(sub_color_key(sub), COLORS["custom"])
-                base_op = 0.97 if has_mesh else 0.82
+                col = cp.get("color") or COLORS.get(sub_color_key(sub), COLORS["custom"])
+                base_op = 0.95 if has_mesh else 0.82
                 nm_draw = nm
                 _kind = "CAD mesh" if has_mesh else "%.0f×%.0f×%.0f mm" % (l, w, h)
                 hov = "%s — %s @ (x %.0f, y %.0f, z %.0f)" % (nm, _kind, cx, cy, cz)
@@ -1257,94 +1379,12 @@ def build_full_car_figure(
             if has_mesh:
                 # Draw the ACTUAL imported geometry, oriented + placed on the car.
                 faces = np.asarray(mesh_payload["faces"], int)
-                _mesh_scale = float(cp.get("mesh_scale", 1.0) or 1.0)
-                _cx, _cy, _cz = cx, cy, cz
-                _axis_perm = None
-                _axis_map = cp.get("axis_map", "auto")
-                _raw = np.asarray(mesh_payload.get("size_mm") or [l, w, h], float)
-
-                # ORIENTATION REFERENCE: the slot shape we align the part TO. Use
-                # the replaced placeholder's actual box if we're hiding it, else
-                # the chosen snap part's anchor. Available even when NOT auto-
-                # sizing, so auto-orient still rotates a real-size part correctly.
-                _ref_dims = None
-                _ref_ctr = None
-                _pk = cp.get("replaces_part") or cp.get("snap_part")
-                _dn = cp.get("replaces_drawname")
-                try:
-                    if _dn and _dn in _part_boxes:
-                        _lo, _hi = _part_boxes[_dn]
-                        _ref_dims = np.asarray(_hi, float) - np.asarray(_lo, float)
-                        _ref_ctr = (np.asarray(_hi, float) + np.asarray(_lo, float)) / 2.0
-                    elif _pk:
-                        _ta = part_anchor(vp, _pk, ledger=ledger)
-                        _ref_dims = np.array([_ta["l_mm"], _ta["w_mm"], _ta["h_mm"]], float)
-                        _ref_ctr = np.array([_ta["x_mm"], _ta["y_mm"], _ta["z_mm"]], float)
-                    elif sub:
-                        _ta = suggest_part_geometry(vp, sub, ledger=ledger)
-                        _ref_dims = np.array([_ta["l_mm"], _ta["w_mm"], _ta["h_mm"]], float)
-                        _ref_ctr = np.array([_ta["x_mm"], _ta["y_mm"], _ta["z_mm"]], float)
-                except Exception:
-                    _ref_dims = _ref_ctr = None
-
-                # AUTO-ORIENT: clean 90° axis permutation so the part's longest
-                # side lines up with the slot's longest side. Never a stretch, so
-                # never distorted — and it fixes the "stood vertical" rotation.
-                if _axis_map == "auto" and _ref_dims is not None:
-                    src_order = np.argsort(_raw)         # short, mid, long
-                    tgt_order = np.argsort(_ref_dims)
-                    perm = [0, 0, 0]
-                    for rank in range(3):
-                        perm[tgt_order[rank]] = int(src_order[rank])
-                    _axis_perm = tuple(perm)
-                    _ext = _raw[list(_axis_perm)]
-                else:
-                    V0 = _orient_part_mesh(
-                        mesh_payload["verts"], axis_map=_axis_map,
-                        yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
-                        scale=1.0, centre=(0.0, 0.0, 0.0))
-                    _ext = V0.max(axis=0) - V0.min(axis=0)
-
-                # SIZE + PLACE.
-                if cp.get("fit_to_envelope") and _ref_dims is not None:
-                    # Uniform auto-size into the slot, and snap to the slot centre.
-                    # Because auto-orient has already matched the part's axes to the
-                    # slot's (longest->longest), the per-axis ratios are comparable.
-                    # "fit"  : scale so the part's LONGEST axis matches the slot's
-                    #          matching axis — fills the primary extent (a chassis
-                    #          spans the wheelbase) without distortion.
-                    # "fill" : same idea but allow growing to the largest ratio so
-                    #          even the stubbier axes reach the envelope.
-                    try:
-                        _so = np.argsort(_ext)              # short, mid, long (src)
-                        _to = np.argsort(_ref_dims)         # short, mid, long (slot)
-                        # Pair the part's axes with the slot's by rank.
-                        _paired = [(_ref_dims[_to[r]] /
-                                    (_ext[_so[r]] if _ext[_so[r]] > 1e-6 else 1.0))
-                                   for r in range(3)]
-                        if cp.get("fit_mode") == "fill":
-                            # Fill the primary extent (longest axis); may overflow
-                            # the slot on stubbier axes — for parts that should look
-                            # substantial along their main direction.
-                            _factor = float(_paired[2])
-                        else:
-                            # Balanced default: the MIDDLE ratio. Big enough to read
-                            # as the real part, but won't blow far past the slot on
-                            # the tight axes. True proportions always preserved.
-                            _factor = float(_paired[1])
-                        _mesh_scale = _mesh_scale * _factor
-                        if _ref_ctr is not None:
-                            _cx, _cy, _cz = (float(_ref_ctr[0]), float(_ref_ctr[1]),
-                                             float(_ref_ctr[2]))
-                    except Exception:
-                        pass
-                # else: keep the real CAD size × mesh_scale, at the user's x/y/z.
                 V = _orient_part_mesh(
                     mesh_payload["verts"],
-                    axis_map=_axis_map,
+                    axis_map=cp.get("axis_map", "z_up"),
                     yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
-                    scale=_mesh_scale,
-                    centre=(_cx, _cy, _cz), axis_perm=_axis_perm)
+                    scale=float(cp.get("mesh_scale", 1.0) or 1.0),
+                    centre=(cx, cy, cz))
                 mesh(V, faces[:, 0], faces[:, 1], faces[:, 2],
                      col, nm_draw, sub, base_op, hov)
             elif shape == "cylinder":
@@ -1376,9 +1416,22 @@ def build_full_car_figure(
     # new click is allowed to re-aim the camera). "wide" is the no-focus shot.
     camera_revision = "wide"
     scene_camera = dict(eye=dict(x=1.8, y=-1.7, z=1.05))
-    if focus_subsystem and subsys_pts.get(focus_subsystem):
-        camera_revision = "focus:%s" % focus_subsystem
-        pts = np.asarray(subsys_pts[focus_subsystem], float)
+    # Resolve the focus target. A specific PART takes precedence over its
+    # subsystem, so picking "Front wing" frames just that wing while picking the
+    # whole "aerodynamics" subsystem frames every aero body. Fall back cleanly:
+    # if the named part wasn't drawn (layer hidden, topology without it) we drop
+    # to the subsystem box, and if that's empty too we keep the wide shot.
+    _focus_pts = None
+    _focus_token = None
+    if focus_part and part_pts.get(focus_part):
+        _focus_pts = part_pts[focus_part]
+        _focus_token = "part:%s" % focus_part
+    elif focus_subsystem and subsys_pts.get(focus_subsystem):
+        _focus_pts = subsys_pts[focus_subsystem]
+        _focus_token = "focus:%s" % focus_subsystem
+    if _focus_pts:
+        camera_revision = _focus_token
+        pts = np.asarray(_focus_pts, float)
         lo, hi = pts.min(axis=0), pts.max(axis=0)
         ctr = (lo + hi) / 2.0
 
@@ -1390,10 +1443,14 @@ def build_full_car_figure(
         span = np.where((smax - smin) == 0, 1.0, (smax - smin))
         c_norm = (ctr - (smin + smax) / 2.0) / span  # centred, normalised
 
-        # how big the part is relative to the whole car -> how hard we zoom
+        # how big the part is relative to the whole car -> how hard we zoom.
+        # A pickup point has zero span, so floor the fraction a bit higher than
+        # for a body and lift the base distance, giving single points a readable
+        # standoff instead of jamming the camera onto the vertex.
         part_span = (hi - lo)
-        frac = float(np.clip(np.max(part_span / span), 0.04, 0.9))
-        dist = 0.55 + frac * 1.4  # closer for small parts, backed off for big
+        _is_point = bool(np.max(part_span) < 1e-6)
+        frac = float(np.clip(np.max(part_span / span), 0.08 if _is_point else 0.04, 0.9))
+        dist = (0.85 if _is_point else 0.55) + frac * 1.4
 
         dir_unit = np.array([1.0, -0.95, 0.6])
         dir_unit = dir_unit / np.linalg.norm(dir_unit)
@@ -1425,17 +1482,160 @@ def build_full_car_figure(
         font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
         height=height, margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10), itemsizing="constant"))
-    # Expose the real drawn boxes (centre+size in car mm) so the UI can fit a CAD
-    # to the ACTUAL placeholder a part occupies, not just the rough anchor.
-    try:
-        fig._part_boxes = {
-            nm: dict(
-                centre=[float((lo[i] + hi[i]) / 2.0) for i in range(3)],
-                size=[float(hi[i] - lo[i]) for i in range(3)])
-            for nm, (lo, hi) in _part_boxes.items()}
-    except Exception:
-        fig._part_boxes = {}
     return fig
+
+
+# --------------------------------------------------------------------------- #
+#  Part discovery — which clickable parts a built figure actually contains
+# --------------------------------------------------------------------------- #
+# A label nice enough to show on a button, for the internal part keys the
+# renderer tags bodies with. Wishbone members are keyed by their group token;
+# mesh bodies by their display name (already nice). Anything not listed falls
+# back to the key with its first letter capitalised, so even an unforeseen
+# topology member gets a readable button instead of a raw token.
+_PART_LABELS = {
+    "upper": "Upper wishbone", "lower": "Lower wishbone", "upright": "Upright",
+    "tie": "Tie rod", "push": "Pushrod", "rocker": "Rocker",
+    "spring": "Spring / damper", "wheel": "Wheel hub",
+    "strut": "Strut", "trailing": "Trailing arm", "panhard": "Panhard rod",
+    "track": "Track rod", "link": "Link", "radius": "Radius rod",
+    "Brake disc": "Brake disc (×4)", "Sidepod (cooling)": "Sidepod",
+}
+
+# Corner ids in a stable, readable order, with friendly labels.
+_CORNER_ORDER = ["FL", "FR", "RL", "RR"]
+_CORNER_LABELS = {"FL": "Front-left", "FR": "Front-right",
+                  "RL": "Rear-left", "RR": "Rear-right"}
+
+
+def part_label(key: str) -> str:
+    """Human-friendly button label for an internal part-focus key.
+
+    A per-corner key ("Tire#FR") is shown as the base part's label with the
+    corner appended ("Tire (×4) · Front-right"), so even if such a key surfaces
+    it reads clearly.
+    """
+    base = str(key)
+    corner_suffix = ""
+    if "#" in base:
+        base, cnr = base.split("#", 1)
+        corner_suffix = " · " + _CORNER_LABELS.get(cnr, cnr)
+    if base in _PART_LABELS:
+        return _PART_LABELS[base] + corner_suffix
+    # mesh bodies are already display names; group tokens are short lowercase.
+    nice = base if (base[:1].isupper() or " " in base) else base.capitalize()
+    return nice + corner_suffix
+
+
+# Secondary/helper bodies that belong to a bigger part and shouldn't get their
+# own button (they're still clickable on the model, just not listed separately):
+# wing mounts, the motor's drive line, the driver's helmet.
+_PART_HIDE = {"fw_mount", "rw_mount", "drive", "helmet",
+              "Wheel centre", "Contact patch"}
+
+# Inner suspension pickup points. These are real, individually focusable targets
+# but they're finer-grained than the structural members, so the UI lists them in
+# a separate, secondary "pickup points" group rather than mixed in with the arms.
+_PICKUP_NAMES = {
+    "Upper front pickup", "Upper rear pickup", "Lower front pickup",
+    "Lower rear pickup", "Upper ball joint", "Lower ball joint",
+    "Tie rod inner", "Tie rod outer", "Strut top", "Strut lower",
+}
+
+
+def is_pickup(part_key: str) -> bool:
+    """True if a part key names an inner suspension pickup point."""
+    base = str(part_key).split("#", 1)[0]
+    return base in _PICKUP_NAMES
+
+
+def available_parts(fig, include_pickups: bool = False) -> dict:
+    """Map subsystem -> ordered list of (label, part_key) actually drawn.
+
+    Reads the customdata [subsystem, part_key, corner] that every clickable body
+    carries, so the part list always reflects THIS car (its topology, its visible
+    layers). Order of first appearance is preserved so buttons read top-down
+    sensibly. Helper sub-bodies in _PART_HIDE are skipped so the button row stays
+    clean. Per-corner focus keys (those containing '#') are NOT listed here — the
+    shared part key represents all corners, and part_corners() enumerates the
+    individual corners for an optional drill-down.
+
+    Inner pickup points are excluded by default (they're returned by
+    pickup_parts() for a separate, secondary list); pass include_pickups=True to
+    fold them in.
+    """
+    out: dict[str, list] = {}
+    seen: dict[str, set] = {}
+    for tr in fig.data:
+        cd = getattr(tr, "customdata", None)
+        if not cd:
+            continue
+        first = cd[0]
+        if not (isinstance(first, (list, tuple)) and len(first) >= 2):
+            continue
+        sub, key = first[0], first[1]
+        if not sub or not key or key in _PART_HIDE or "#" in str(key):
+            continue
+        if not include_pickups and is_pickup(key):
+            continue
+        bucket_seen = seen.setdefault(sub, set())
+        if key in bucket_seen:
+            continue
+        bucket_seen.add(key)
+        out.setdefault(sub, []).append((part_label(key), key))
+    return out
+
+
+def pickup_parts(fig) -> list:
+    """Ordered list of (label, part_key) for the inner suspension pickup points
+    actually present in this figure. Empty for topologies that don't expose
+    named hardpoints. These are the finer drill targets shown as a secondary row.
+    """
+    out: list = []
+    seen: set = set()
+    for tr in fig.data:
+        cd = getattr(tr, "customdata", None)
+        if not cd:
+            continue
+        first = cd[0]
+        if not (isinstance(first, (list, tuple)) and len(first) >= 2):
+            continue
+        key = first[1]
+        if not key or "#" in str(key) or not is_pickup(key):
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append((part_label(key), key))
+    return out
+
+
+def part_corners(fig, part_key: str) -> list:
+    """Corners a given part exists at, as ordered (corner_id, focus_key) pairs.
+
+    A part drawn at all four wheels (tire, brake disc, a wishbone) reports
+    [("FL","<part>#FL"), ("FR","<part>#FR"), …]; a one-off body (monocoque, a
+    wing) reports []. The focus_key is what you hand build_full_car_figure as
+    focus_part to frame that single corner.
+    """
+    present = set()
+    pref = str(part_key) + "#"
+    for tr in fig.data:
+        cd = getattr(tr, "customdata", None)
+        if not cd:
+            continue
+        first = cd[0]
+        if not (isinstance(first, (list, tuple)) and len(first) >= 3):
+            continue
+        key, cnr = first[1], first[2]
+        if key == part_key and cnr:
+            present.add(cnr)
+    return [(c, pref + c) for c in _CORNER_ORDER if c in present]
+
+
+def corner_label(corner_id: str) -> str:
+    """Friendly label for a corner id (FL/FR/RL/RR)."""
+    return _CORNER_LABELS.get(corner_id, corner_id)
 
 
 # --------------------------------------------------------------------------- #
@@ -1720,129 +1920,3 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
                 x_mm=round(float(x), 0), y_mm=round(float(y), 0),
                 z_mm=round(float(z), 0), shape=shape, basis=basis,
                 from_declared=from_declared)
-
-
-# --------------------------------------------------------------------------- #
-#  Per-PART replacement registry
-# --------------------------------------------------------------------------- #
-# Every body the car draws is individually replaceable by a CAD / sketch /
-# estimate. This catalog maps each legend part to: the draw-name the renderer
-# uses (so we can suppress exactly that body), its subsystem (colour + zoom),
-# and an envelope+home so a dropped part auto-fits where THAT part belongs.
-# `key` is a stable id used in session-state and suppression sets.
-# SIMPLIFIED to seven subsystems. Each is replaceable as ONE unit by a CAD /
-# sketch / estimate. Replacing a subsystem hides ALL of its procedural bodies
-# (listed in `drawnames`) so only the real geometry shows there, while every
-# OTHER subsystem stays on screen as a dummy suggestion — wheels, wings, driver,
-# CG, etc. — so the user always sees their part in the context of a full car.
-SUBSYSTEM_CATALOG = [
-    # key            display name        draw-names this subsystem owns
-    ("chassis",      "Chassis",          ["Monocoque", "Roll hoop", "Driver"]),
-    ("aerodynamics", "Aerodynamics",     ["Front wing", "Rear wing"]),
-    ("cooling",      "Cooling",          ["Sidepod (cooling)", "Radiator core"]),
-    ("powertrain",   "Powertrain",       ["Motor + inverter"]),
-    ("electrics",    "Electrics",        ["Accumulator"]),
-    ("suspension",   "Suspension",       ["Tire", "Upright", "Wheel hub",
-                                          "Upper wishbone", "Lower wishbone",
-                                          "Tie rod", "Pushrod", "Rocker",
-                                          "Spring/damper"]),
-    ("brakes",       "Brakes",           ["Brake disc"]),
-]
-SUBSYS_DRAWNAMES = {k: dn for k, _d, dn in SUBSYSTEM_CATALOG}
-SUBSYS_DISPLAY = {k: d for k, d, _dn in SUBSYSTEM_CATALOG}
-
-# Kept for the renderer's internal anchor/box lookups (per representative body).
-PART_CATALOG = [
-    ("front_wing",      "Front wing",          "aerodynamics", False),
-    ("rear_wing",       "Rear wing",           "aerodynamics", False),
-    ("monocoque",       "Monocoque",           "chassis",      False),
-    ("roll_hoop",       "Roll hoop",           "chassis",      False),
-    ("driver",          "Driver",              "chassis",      False),
-    ("sidepod",         "Sidepod (cooling)",   "cooling",      False),
-    ("radiator",        "Radiator core",       "cooling",      False),
-    ("motor",           "Motor + inverter",    "powertrain",   False),
-    ("accumulator",     "Accumulator",         "electrics",    False),
-    ("tire",            "Tire",                "suspension",   True),
-    ("brake_disc",      "Brake disc",          "brakes",       True),
-    ("upright",         "Upright",             "suspension",   True),
-]
-# draw-name -> key, for suppression (the renderer suppresses by draw-name).
-PART_DRAWNAME_BY_KEY = {k: dn for k, dn, _s, _c in PART_CATALOG}
-PART_KEY_BY_DRAWNAME = {dn: k for k, dn, _s, _c in PART_CATALOG}
-PART_SUBSYS_BY_KEY = {k: s for k, _dn, s, _c in PART_CATALOG}
-
-# A representative body per subsystem, used to size/anchor a replacement.
-SUBSYS_ANCHOR_PART = {
-    "chassis": "monocoque", "aerodynamics": "front_wing", "cooling": "radiator",
-    "powertrain": "motor", "electrics": "accumulator", "suspension": "tire",
-    "brakes": "brake_disc",
-}
-
-
-def subsystem_catalog():
-    """Public list of (key, display_name, [draw-names]) for the simplified UI."""
-    return list(SUBSYSTEM_CATALOG)
-
-
-def part_catalog():
-    """Public list of (key, display_name, subsystem, is_corner) — internal."""
-    return list(PART_CATALOG)
-
-
-def suggest_part_geometry_for(vp, part_key: str, ledger=None) -> dict:
-    """Per-PART target envelope + home position (finer than per-subsystem).
-
-    Falls back to the subsystem suggestion, then refines for parts that are
-    smaller than their whole subsystem (a roll hoop is not the whole chassis).
-    """
-    sub = PART_SUBSYS_BY_KEY.get(part_key, "chassis")
-    base = suggest_part_geometry(vp, sub, ledger=ledger)
-    wb = float(getattr(vp, "wheelbase", 1550.0))
-    tf = float(getattr(vp, "track_front", 1200.0))
-    tr = float(getattr(vp, "track_rear", 1180.0))
-    tire_r = 228.0
-    x_front, x_rear = wb / 2.0, -wb / 2.0
-
-    def out(l, w, h, x, y, z, shape="box", basis=None):
-        return dict(l_mm=round(l, 0), w_mm=round(w, 0), h_mm=round(h, 0),
-                    x_mm=round(x, 0), y_mm=round(y, 0), z_mm=round(z, 0),
-                    shape=shape, basis=basis or base["basis"],
-                    from_declared=base.get("from_declared", []))
-
-    if part_key == "front_wing":
-        return out(tire_r * 0.65, tf * 0.98, 80, x_front + tire_r * 1.6, 0, tire_r * 0.32,
-                   basis=["chord", "≈ front track", "element stack"])
-    if part_key == "rear_wing":
-        return out(tire_r * 0.7, tr * 0.92, 120, x_rear - tire_r * 0.8, 0, tire_r * 1.15,
-                   basis=["chord", "≈ rear track", "tall element stack"])
-    if part_key == "roll_hoop":
-        return out(60, min(tf, tr) * 0.55, tire_r * 1.7, x_rear + wb * 0.30, 0, tire_r * 1.2,
-                   basis=["tube thickness", "shoulder width", "above the driver"])
-    if part_key == "driver":
-        return out(280, 300, 600, x_front - wb * 0.16, 0, tire_r * 1.4,
-                   basis=["torso", "shoulders", "seated height"])
-    if part_key == "data_logger":
-        return out(160, 120, 80, -wb * 0.16, 0, tire_r * 1.1,
-                   basis=["compact box", "beside driver", "above floor"])
-    if part_key == "tire":
-        return out(360, 200, 360, x_front, tf / 2.0, tire_r,
-                   shape="cylinder", basis=["diameter", "section width", "diameter"])
-    if part_key == "brake_disc":
-        return out(40, 280, 280, x_front, tf / 2.0 - 40, tire_r * 0.9,
-                   shape="cylinder", basis=["disc thickness", "Ø", "Ø at wheel"])
-    if part_key == "upright":
-        return out(180, 160, 260, x_front, tf / 2.0 - 110, tire_r,
-                   basis=["upright depth", "width", "hub-to-arm"])
-    # monocoque, sidepod, radiator, motor, accumulator: subsystem suggestion fits.
-    return base
-
-
-# Single source of truth for WHERE and HOW BIG each part is. Both the placeholder
-# renderer (via _placeholder_box, drawn when a part has no replacement) and the
-# replacement auto-fit read this, so a CAD/sketch/estimate lands in EXACTLY the
-# same box its placeholder occupied — every part integrates on one coordinate
-# system. Honours ledger env_* declarations through suggest_part_geometry_for.
-def part_anchor(vp, part_key: str, ledger=None) -> dict:
-    """Canonical (centre + size + shape) box for a catalog part, in car SAE mm."""
-    return suggest_part_geometry_for(vp, part_key, ledger=ledger)
-
