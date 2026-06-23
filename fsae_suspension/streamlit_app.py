@@ -2916,8 +2916,9 @@ with tab_accum:
                                         "per-cell current = pack current / parallel.")
     _power_cap_kw = tc[2].number_input("Power cap (kW)", 20.0, 80.0, value=80.0, step=5.0,
                                        help="FSAE caps tractive power at 80 kW; the pack must deliver it.")
-    _peak_pack_a = tc[3].number_input("Peak pack current (A)", 50.0, 600.0, value=0.0, step=10.0,
-                                      help="Leave 0 to derive from the power cap at pack voltage.")
+    _auto_peak = tc[3].checkbox("Auto peak current", value=True,
+                                help="Derive peak pack current from the power cap at pack "
+                                     "voltage. Uncheck to type it in.")
 
     # ---- derived pack numbers ------------------------------------------ #
     _pack_v = _series * _cv
@@ -2926,8 +2927,14 @@ with tab_accum:
     _pack_kwh = _pack_wh / 1000.0
     _n_cells = int(_series * _parallel)
     _pack_mass = _n_cells * (_cg / 1000.0)
-    if _peak_pack_a <= 0:
+    if _auto_peak:
         _peak_pack_a = (_power_cap_kw * 1000.0) / max(_pack_v, 1.0)
+    else:
+        _derived = (_power_cap_kw * 1000.0) / max(_pack_v, 1.0)
+        _peak_pack_a = st.number_input(
+            "Peak pack current (A)", 50.0, 600.0,
+            value=float(min(600.0, max(50.0, _derived))), step=10.0,
+            help="Peak current the pack must deliver.")
     _per_cell_a = _peak_pack_a / max(_parallel, 1)
     _c_rate = _per_cell_a / max(_cah, 1e-6)
     _max_power_kw = (_pack_v * _peak_pack_a) / 1000.0
