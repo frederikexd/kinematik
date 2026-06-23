@@ -2930,9 +2930,10 @@ with tab_accum:
     if _auto_peak:
         _peak_pack_a = (_power_cap_kw * 1000.0) / max(_pack_v, 1.0)
     else:
+        _derived = (_power_cap_kw * 1000.0) / max(_pack_v, 1.0)
         _peak_pack_a = st.number_input(
             "Peak pack current (A)", 50.0, 600.0,
-            value=float((_power_cap_kw * 1000.0) / max(_pack_v, 1.0)), step=10.0,
+            value=float(min(600.0, max(50.0, _derived))), step=10.0,
             help="Peak current the pack must deliver.")
     _per_cell_a = _peak_pack_a / max(_parallel, 1)
     _c_rate = _per_cell_a / max(_cah, 1e-6)
