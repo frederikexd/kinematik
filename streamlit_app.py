@@ -2876,7 +2876,8 @@ with tab_accum:
         'cell up and clear the rules in one place. Pick a cell, choose how many in '
         '<b>series</b> (sets voltage) and <b>parallel</b> (sets capacity & shares current), '
         'and KinematiK sizes the pack and checks the hard FSAE-EV limits: tractive system '
-        '< 600 V, ≤ 80 kW, and every isolatable segment < 120 V and < 6 MJ.</p>',
+        '< 600 V, ≤ 80 kW, and every isolatable segment < 120 V and < 6 MJ. '
+        '<span style="opacity:0.5;">(build: pack-v2)</span></p>',
         unsafe_allow_html=True)
 
     # ---- cell chooser: presets + custom -------------------------------- #
@@ -2910,13 +2911,16 @@ with tab_accum:
     # ---- topology ------------------------------------------------------- #
     tc = st.columns(4)
     _series = tc[0].number_input("Series (sets voltage)", 1, 200, value=140, step=1,
+                                 key="accum_series",
                                  help="Cells in series. Pack nominal V = series × cell V.")
     _parallel = tc[1].number_input("Parallel (sets capacity)", 1, 20, value=5, step=1,
+                                   key="accum_parallel",
                                    help="Cells in parallel per series group. Pack Ah = parallel × cell Ah; "
                                         "per-cell current = pack current / parallel.")
     _power_cap_kw = tc[2].number_input("Power cap (kW)", 20.0, 80.0, value=80.0, step=5.0,
+                                       key="accum_power_cap",
                                        help="FSAE caps tractive power at 80 kW; the pack must deliver it.")
-    _auto_peak = tc[3].checkbox("Auto peak current", value=True,
+    _auto_peak = tc[3].checkbox("Auto peak current", value=True, key="accum_auto_peak",
                                 help="Derive peak pack current from the power cap at pack "
                                      "voltage. Uncheck to type it in.")
 
@@ -2934,6 +2938,7 @@ with tab_accum:
         _peak_pack_a = st.number_input(
             "Peak pack current (A)", 50.0, 600.0,
             value=float(min(600.0, max(50.0, _derived))), step=10.0,
+            key="accum_peak_a_v2",
             help="Peak current the pack must deliver.")
     _per_cell_a = _peak_pack_a / max(_parallel, 1)
     _c_rate = _per_cell_a / max(_cah, 1e-6)
