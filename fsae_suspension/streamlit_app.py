@@ -228,6 +228,9 @@ def init_state():
     # Subsystem interface ledger — the cross-team integration contract.
     if "ledger" not in st.session_state:
         st.session_state.ledger = interfaces_mod.blank_ledger().as_dict()
+    # Unit system — seed before any widget or units_mod call reads it.
+    if "unit_system" not in st.session_state:
+        st.session_state.unit_system = "metric"
 
 init_state()
 
@@ -591,18 +594,17 @@ with st.sidebar:
                 unsafe_allow_html=True)
 
     _UNIT_LABELS = {"metric": "Metric (SI)", "us": "US / Imperial"}
-    _unit_sys = st.radio(
+    st.radio(
         "Units",
         ["metric", "us"],
-        index=["metric", "us"].index(st.session_state.get("unit_system", "metric")),
+        key="unit_system",
         format_func=lambda k: _UNIT_LABELS[k],
         horizontal=True,
         help="Switch all displayed values and input fields between metric "
              "(mm, kg, N, m/s, °C …) and US/Imperial (in, lb, lbf, mph, °F …). "
              "The underlying model always computes in SI; only the display and "
              "input units change.")
-    st.session_state.unit_system = _unit_sys
-    _US = (_unit_sys == "us")
+    _US = (st.session_state.unit_system == "us")
     # Per-quantity unit labels for input widgets (track the active system).
     _U_LEN = units_mod.label("mm")
     _U_MASS = units_mod.label("kg")
