@@ -269,6 +269,25 @@ def metric(label, value, unit="", cls=""):
     <span class="v {cls}">{value}<span class="u"> {unit}</span></span></div>"""
 
 
+def umetric(container, label, value_num, unit="", *, fmt="{:.0f}", **kwargs):
+    """Unit-aware wrapper around Streamlit's native ``.metric``. Pass the metric
+    (SI) NUMBER and its metric unit; this converts BOTH to the active unit system
+    before display, so native metric widgets honour the imperial toggle instead
+    of staying stuck on metric. ``container`` is the column/st object to draw on.
+
+    Example: ``umetric(_mt[0], "Rotor mass", m_kg, "kg", fmt="{:.0f}")`` shows kg
+    in metric and lb in US automatically.
+    """
+    try:
+        disp = units_mod.from_metric(float(value_num), unit)
+        u = units_mod.label(unit)
+        val_str = fmt.format(disp)
+        text = f"{val_str} {u}".strip()
+    except Exception:
+        text = f"{value_num} {unit}".strip()
+    return container.metric(label, text, **kwargs)
+
+
 # --------------------------------------------------------------------------- #
 #  Generic-topology hardpoint editing
 # --------------------------------------------------------------------------- #
@@ -1567,16 +1586,16 @@ def _render_rotor_thermal(_bt, _mass, kin):
         p_brake_avg_w=_tk_pwr, v_work_ms=_tk_air / 3.6, diameter_mm=_tk_dia)
 
     _mt = st.columns(4)
-    _mt[0].metric("Energy / front rotor", f"{_single.q_per_rotor_j/1000:.0f} kJ",
-                  help="Kinetic energy this one rotor absorbs in the stop.")
-    _mt[1].metric("Rotor mass (est)", f"{_single.rotor_mass_kg*1000:.0f} g",
-                  help="First-order friction-ring mass from ⌀, thickness and "
-                  "vented fraction — a thermal-capacity estimate, not a CAD mass.")
-    _mt[2].metric("Single-stop peak", f"{_single.T_peak_c:.0f} °C",
-                  help="Bulk temperature after one stop from a cold rotor.")
-    _mt[3].metric("Endurance equilibrium", f"{_equil.T_equilibrium_c:.0f} °C",
-                  help="Steady-state temp where convection+radiation balance the "
-                  "average braking power. This is the fade-relevant number.")
+    umetric(_mt[0], "Energy / front rotor", _single.q_per_rotor_j / 1000, "kJ",
+            help="Kinetic energy this one rotor absorbs in the stop.")
+    umetric(_mt[1], "Rotor mass (est)", _single.rotor_mass_kg, "kg", fmt="{:.2f}",
+            help="First-order friction-ring mass from ⌀, thickness and vented "
+            "fraction — a thermal-capacity estimate, not a CAD mass.")
+    umetric(_mt[2], "Single-stop peak", _single.T_peak_c, "°C",
+            help="Bulk temperature after one stop from a cold rotor.")
+    umetric(_mt[3], "Endurance equilibrium", _equil.T_equilibrium_c, "°C",
+            help="Steady-state temp where convection+radiation balance the "
+            "average braking power. This is the fade-relevant number.")
 
     if _equil.T_equilibrium_c > 650:
         st.error(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — grey iron "
@@ -1646,15 +1665,13 @@ def _render_rotor_thermal(_bt, _mass, kin):
     _trace = _bt.TwoNodeRotorPad(_tn).simulate(_pw, _dt, v_series=_vs)
 
     _ftm = st.columns(3)
-    _ftm[0].metric("Rotor peak (fade)", f"{_trace.T_rotor_peak_c:.0f} °C")
-    _ftm[1].metric("Pad peak (fade)", f"{_trace.T_pad_peak_c:.0f} °C",
-                   help="Pads fade on THEIR temperature — track this, not just "
-                   "the rotor.")
-    _ftm[2].metric("Material ceiling",
-                   f"{_trace.material_T_max_c:.0f} °C",
-                   delta=("OVER" if _trace.over_material_limit else "ok"),
-                   delta_color=("inverse" if _trace.over_material_limit
-                                else "normal"))
+    umetric(_ftm[0], "Rotor peak (fade)", _trace.T_rotor_peak_c, "°C")
+    umetric(_ftm[1], "Pad peak (fade)", _trace.T_pad_peak_c, "°C",
+            help="Pads fade on THEIR temperature — track this, not just the "
+            "rotor.")
+    umetric(_ftm[2], "Material ceiling", _trace.material_T_max_c, "°C",
+            delta=("OVER" if _trace.over_material_limit else "ok"),
+            delta_color=("inverse" if _trace.over_material_limit else "normal"))
 
     _fig_ft = go.Figure()
     _fig_ft.add_trace(go.Scatter(x=_trace.t_s, y=_trace.T_rotor_c, mode="lines",
@@ -1673,6 +1690,59 @@ def _render_rotor_thermal(_bt, _mass, kin):
                  f"limit ({_trace.material_T_max_c:.0f} °C) during the test — this "
                  "material/geometry won't survive the stint. Bigger ⌀, vent it, "
                  "add duct airflow, or change material.")
+
+    # ---- 1-D through-thickness: surface spike + crack-risk screen -----------
+    with st.expander("🔬 Surface-vs-core gradient & thermal-crack screen "
+                     "(1-D through-thickness)"):
+        st.markdown('<p class="hint">The lumped trace above is the rotor\'s '
+                    '<i>average</i>. In a hard stop the friction <b>surface</b> '
+                    'spikes far hotter than the core — and that gradient is what '
+                    'cracks rotors. This resolves temperature through the '
+                    'thickness (1-D) and screens crack risk from the surface-to-'
+                    'core ΔT. Still 1-D: no hot-spot location or vane-root '
+                    'stress — that\'s Ansys. A screening number, flagged '
+                    'synthesized.</p>', unsafe_allow_html=True)
+        _od = _bt.OneDRotor(_tn, n_nodes=12).simulate(_pw, _dt, v_series=_vs)
+        _odm = st.columns(4)
+        _surf_delta = units_mod.from_metric_delta(
+            _od.T_surface_peak_c - _trace.T_rotor_peak_c, "°C")
+        umetric(_odm[0], "Surface peak", _od.T_surface_peak_c, "°C",
+                delta=f"+{_surf_delta:.0f} vs bulk",
+                help="The friction face runs this much hotter than the average "
+                "the lumped model reports.")
+        # Peak gradient is a temperature DIFFERENCE — convert factor-only.
+        _grad_disp = units_mod.from_metric_delta(_od.dT_gradient_peak_c, "°C")
+        _odm[1].metric("Peak gradient", f"{_grad_disp:.0f} {units_mod.label('°C')}",
+                       help="Surface minus core — the driver of thermal cracking.")
+        umetric(_odm[2], "Thermal stress", _od.sigma_peak_mpa, "MPa",
+                help=f"Screening estimate vs ~"
+                f"{units_mod.from_metric(_od.sigma_limit_mpa, 'MPa'):.0f} "
+                f"{units_mod.label('MPa')} for this material.")
+        _risk_color = {"low": "normal", "elevated": "off", "high": "inverse"}
+        _odm[3].metric("Crack risk", _od.crack_risk.upper(),
+                       delta=("watch" if _od.crack_risk != "low" else "ok"),
+                       delta_color=_risk_color.get(_od.crack_risk, "normal"))
+
+        _fig_1d = go.Figure()
+        _fig_1d.add_trace(go.Scatter(x=_od.t_s, y=_od.T_surface_c, mode="lines",
+                                     line=dict(color=RED, width=2.5),
+                                     name="surface"))
+        _fig_1d.add_trace(go.Scatter(x=_od.t_s, y=_od.T_core_c, mode="lines",
+                                     line=dict(color=CYAN, width=2),
+                                     name="core"))
+        _fig_1d.update_layout(**PLOT_LAYOUT,
+                              title="Through-thickness: surface vs core temperature",
+                              xaxis_title="time (s)", yaxis_title="temperature (°C)",
+                              height=320)
+        st.plotly_chart(_fig_1d, width="stretch")
+        if _od.crack_risk == "high":
+            st.error("HIGH thermal-crack risk: the surface-to-core gradient drives "
+                     "stress near this material's limit. Thinner section, higher-"
+                     "conductivity material, or gentler duty — and definitely mesh "
+                     "this one in Ansys before committing.")
+        elif _od.crack_risk == "elevated":
+            st.warning("Elevated crack risk — worth meshing to check the surface "
+                       "stress, not just the bulk temperature.")
 
     # ---- Material comparison: same test, every material ---------------------
     with st.expander("Compare rotor materials on this exact fade test"):
@@ -1740,20 +1810,29 @@ def _render_rotor_thermal(_bt, _mass, kin):
     _opt_fine = _oc[3].checkbox("Fine grid", value=False, key="bt_opt_fine",
                                 help="Denser search (slower, ~3–4 s) for a "
                                 "smoother Pareto front.")
+    _opt_crack = st.checkbox("Also screen thermal-crack risk (1-D, slower ~8 s)",
+                             value=False, key="bt_opt_crack",
+                             help="Runs the through-thickness model on every "
+                             "candidate too, and rejects HIGH crack-risk "
+                             "geometries — narrows the mesh short-list further.")
 
     if st.button("🎯 Optimise rotor", key="bt_opt_run", type="primary"):
         if not _opt_mats:
             st.warning("Pick at least one material to search.")
         else:
-            with st.spinner(f"Searching the design space…"):
+            _spin = ("Searching the design space (with crack screen)…"
+                     if _opt_crack else "Searching the design space…")
+            with st.spinner(_spin):
                 _steps = ((14, 8) if _opt_fine else (10, 6))
                 _optres = _bt.optimise_rotor(
                     mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
                     T_constraint_c=float(_opt_Tcon), materials=_opt_mats,
                     dia_steps=_steps[0], th_steps=_steps[1],
                     n_stops=int(_opt_nstops), area_factor=float(_tk_area),
-                    duct_gain=float(st.session_state.get("bt_duct", 1.0)))
+                    duct_gain=float(st.session_state.get("bt_duct", 1.0)),
+                    screen_cracks=bool(_opt_crack))
             st.session_state["bt_opt_result"] = _optres
+            st.session_state["bt_opt_had_crack"] = bool(_opt_crack)
 
     _optres = st.session_state.get("bt_opt_result")
     if _optres is not None:
@@ -1817,22 +1896,48 @@ def _render_rotor_thermal(_bt, _mass, kin):
             st.plotly_chart(_fig_op, width="stretch")
 
             # the handful worth meshing: knee of the feasible Pareto front
+            _had_crack = st.session_state.get("bt_opt_had_crack", False)
             _knee = _optres.pareto[:6]
-            _rows = [{
-                "Material": _bt.ROTOR_MATERIALS[c.material].name,
-                "⌀ (mm)": round(c.diameter_mm),
-                "Thick (mm)": round(c.thickness_mm, 1),
-                "Vent": f"{c.vented_fraction:.0%}",
-                "Mass (g)": round(c.rotor_mass_kg * 1000),
-                "Peak (°C)": round(c.T_rotor_peak_c),
-                "Margin (°C)": round(c.margin_c),
-            } for c in _knee]
+            _uT = units_mod.label("°C")       # °C or °F
+            _uL = units_mod.label("mm")       # mm or in
+            _uM = units_mod.label("kg")       # kg or lb
+            _uS = units_mod.label("MPa")      # MPa or ksi
+
+            def _cT(c_celsius):
+                return round(units_mod.from_metric(c_celsius, "°C"))
+
+            def _cL(mm):
+                return round(units_mod.from_metric(mm, "mm"), 1)
+
+            _rows = []
+            for c in _knee:
+                _row = {
+                    "Material": _bt.ROTOR_MATERIALS[c.material].name,
+                    f"⌀ ({_uL})": _cL(c.diameter_mm),
+                    f"Thick ({_uL})": _cL(c.thickness_mm),
+                    "Vent": f"{c.vented_fraction:.0%}",
+                    f"Mass ({_uM})": round(
+                        units_mod.from_metric(c.rotor_mass_kg, "kg"), 2),
+                    f"Peak ({_uT})": _cT(c.T_rotor_peak_c),
+                    # margin is a temperature DIFFERENCE: factor only, no +32 offset
+                    f"Margin ({_uT})": round(
+                        units_mod.from_metric_delta(c.margin_c, "°C")),
+                }
+                if _had_crack:
+                    _row[f"Surface ({_uT})"] = _cT(c.T_surface_peak_c)
+                    _row[f"Stress ({_uS})"] = round(
+                        units_mod.from_metric(c.sigma_peak_mpa, "MPa"), 1)
+                    _row["Crack"] = c.crack_risk
+                _rows.append(_row)
             st.markdown("**Short-list to mesh in Ansys** (lightest feasible "
                         "geometries):")
             st.dataframe(_rows, width="stretch", hide_index=True)
+            _extra = (" Crack-risk was screened too, so these survivors are clear "
+                      "on both bulk temperature AND surface-gradient stress."
+                      if _had_crack else "")
             st.caption("These are 0-D/transient survivors — confirm the hot-spot, "
                        "coning and stress in Ansys on this short-list. The model "
-                       "found them; the FEA verifies them.")
+                       "found them; the FEA verifies them." + _extra)
 
     if _single.synthesized:
         st.caption("⚠ Synthesized: equations are exact energy balances, but "
@@ -3392,8 +3497,8 @@ with tab_aero:
     _df, _dr, _cl, _cd, _fb = _aero_forces(_aero_ride, _aero_yaw, _aero_v_ms, _aero_area)
     _ld = (_df / _dr) if _dr else 0.0
     mcol = st.columns(4)
-    mcol[0].metric("Downforce", f"{_df:.0f} N", help="≈ %.0f kgf of grip-adding load" % (_df/9.81))
-    mcol[1].metric("Drag", f"{_dr:.0f} N")
+    umetric(mcol[0], "Downforce", _df, "N", help="≈ %.0f kgf of grip-adding load" % (_df/9.81))
+    umetric(mcol[1], "Drag", _dr, "N")
     mcol[2].metric("Efficiency L/D", f"{_ld:.2f}", help="Downforce per unit drag — higher is better.")
     mcol[3].metric("Aero balance", f"{_fb*100:.0f}% front",
                    help="Share of downforce on the front axle. ~45% front is a typical FSAE target.")
@@ -3481,9 +3586,9 @@ with tab_aero:
         rc[0].metric("Total C_L·A needed", f"{_cl_needed*_aero_area:.2f} m²"
                      if False else f"{_cl_needed:.2f}",
                      help="Effective lift coefficient at this area to hit the target.")
-        rc[1].metric("Wings carry", f"{_wing_force:.0f} N", f"{100-_diff_gain}%")
-        rc[2].metric("Floor/diffuser carry", f"{_floor_force:.0f} N", f"{_diff_gain}%")
-        rc[3].metric("Drag cost", f"{_tot_drag:.0f} N", f"L/D {_ld_sized:.2f}")
+        umetric(rc[1], "Wings carry", _wing_force, "N", delta=f"{100-_diff_gain}%")
+        umetric(rc[2], "Floor/diffuser carry", _floor_force, "N", delta=f"{_diff_gain}%")
+        umetric(rc[3], "Drag cost", _tot_drag, "N", delta=f"L/D {_ld_sized:.2f}")
         # bar: front vs rear contribution
         fbar = go.Figure()
         fbar.add_trace(go.Bar(
@@ -3880,8 +3985,8 @@ with tab_accum:
     m[1].metric("Pack energy", f"{_pack_kwh:.2f} kWh")
     m[2].metric("Pack capacity", f"{_pack_ah:.1f} Ah")
     m[3].metric("Cell count", f"{_n_cells}", f"{_series}s{_parallel}p")
-    m[4].metric("Pack mass", f"{_pack_mass:.1f} kg",
-                help="Cells only — add ~30–50% for housing, BMS, bus bars, cooling.")
+    umetric(m[4], "Pack mass", _pack_mass, "kg", fmt="{:.1f}",
+            help="Cells only — add ~30–50% for housing, BMS, bus bars, cooling.")
 
     m2 = st.columns(4)
     m2[0].metric("Per-cell current", f"{_per_cell_a:.0f} A",
@@ -3889,8 +3994,8 @@ with tab_accum:
     m2[1].metric("Cell C-rate", f"{_c_rate:.1f} C",
                  delta=("within cell limit" if _per_cell_a <= _cmax_a else "OVER cell limit"),
                  delta_color=("normal" if _per_cell_a <= _cmax_a else "inverse"))
-    m2[2].metric("Deliverable power", f"{_max_power_kw:.0f} kW")
-    m2[3].metric("Pack I²R heat @ peak", f"{_pack_heat_w/1000:.1f} kW",
+    umetric(m2[2], "Deliverable power", _max_power_kw, "kW")
+    umetric(m2[3], "Pack I²R heat @ peak", _pack_heat_w / 1000, "kW", fmt="{:.1f}",
                  help="Resistive heat the whole pack makes at peak current — the cooling load.")
 
     # ---- FSAE-EV rules checks ------------------------------------------ #
@@ -4190,14 +4295,14 @@ with tab_brake:
         _ratio = _T_made / max(_T_need, 1e-6)
 
         m = st.columns(4)
-        m[0].metric("Line pressure", f"{_line_pressure/1e5:.0f} bar",
-                    help="Hydraulic pressure at this pedal force. Race systems run 30–80 bar.")
-        m[1].metric("Clamp force", f"{_clamp:.0f} N")
-        m[2].metric("Torque made", f"{_T_made:.0f} N·m",
-                    help="Brake torque this corner can generate at the chosen pedal force.")
-        m[3].metric("Torque needed", f"{_T_need:.0f} N·m",
-                    delta=f"{(_ratio-1)*100:+.0f}% margin",
-                    delta_color=("normal" if _ratio >= 1 else "inverse"))
+        umetric(m[0], "Line pressure", _line_pressure / 1e5, "bar",
+                help="Hydraulic pressure at this pedal force. Race systems run 30–80 bar.")
+        umetric(m[1], "Clamp force", _clamp, "N")
+        umetric(m[2], "Torque made", _T_made, "N·m",
+                help="Brake torque this corner can generate at the chosen pedal force.")
+        umetric(m[3], "Torque needed", _T_need, "N·m",
+                delta=f"{(_ratio-1)*100:+.0f}% margin",
+                delta_color=("normal" if _ratio >= 1 else "inverse"))
 
         # pedal force actually required to hit lock-up
         _pf_req = _pedal_force / max(_ratio, 1e-6)
@@ -8956,8 +9061,8 @@ with tab_tr:
 
             elif kind_done == "curb_strike":
                 m = st.columns(3)
-                m[0].metric("Peak contact load", f"{s.get('max_Fz_N',0):.0f} N")
-                m[1].metric("Min contact load", f"{s.get('min_Fz_N',0):.0f} N")
+                umetric(m[0], "Peak contact load", s.get('max_Fz_N', 0), "N")
+                umetric(m[1], "Min contact load", s.get('min_Fz_N', 0), "N")
                 m[2].metric("Wheel lift?", "yes" if s.get("wheel_lift") else "no")
                 names = ["FL", "FR", "RL", "RR"]
                 cols = [CYAN, AMBER, RED, "#3ec46d"]
