@@ -1616,19 +1616,26 @@ def _render_rotor_thermal(_bt, _mass, kin):
         if "brake_lap_pwr" in st.session_state:
             st.session_state["bt_pwr"] = st.session_state["brake_lap_pwr"]
         if "brake_lap_air" in st.session_state:
-            st.session_state["bt_air"] = st.session_state["brake_lap_air"]
+            st.session_state["bt_air"] = units_mod.from_metric(
+                st.session_state["brake_lap_air"], "km/h")
     st.session_state.setdefault("bt_pwr", 1200.0)
-    st.session_state.setdefault("bt_air", 55.0)
+    st.session_state.setdefault("bt_air", units_mod.from_metric(55.0, "km/h"))
     _tk_pwr = _tc2[2].number_input("Avg brake power / front rotor",
                                    200.0, 8000.0, step=100.0, key="bt_pwr",
                                    help="Time-averaged power into ONE front rotor "
                                    "over the stint. Type it, or pull it from a lap "
                                    "sim below.")
-    _tk_air = _tc2[3].number_input("Airflow speed (km/h)", 20.0, 120.0, step=5.0,
-                                   key="bt_air",
-                                   help="Representative car speed during braking — "
-                                   "sets convection. Auto-filled from the lap sim's "
-                                   "mean braking speed.")
+    _uAir = units_mod.label("km/h")
+    _tk_air_disp = _tc2[3].number_input(
+        f"Airflow speed ({_uAir})",
+        units_mod.from_metric(20.0, "km/h"),
+        units_mod.from_metric(120.0, "km/h"),
+        step=units_mod.from_metric_delta(5.0, "km/h"),
+        key="bt_air",
+        help="Representative car speed during braking — "
+        "sets convection. Auto-filled from the lap sim's "
+        "mean braking speed.")
+    _tk_air = units_mod.to_metric(_tk_air_disp, "km/h")   # km/h (model takes km/h→/3.6)
 
     # ---- pull the average braking power straight from a lap sim -----------
     st.markdown('<p class="hint" style="margin:6px 0 2px;border-top:1px solid '
@@ -2283,18 +2290,24 @@ with tab2:
                        height=300)
     st.plotly_chart(figM, width='stretch')
     _rc_swing = max(mrc) - min(mrc) if all(np.isfinite(mrc)) else float("nan")
-    st.markdown(f'<p class="hint">Across ±30 mm of travel the front roll centre moves '
-                f'{_rc_swing:.0f} mm. Large RC migration means the load-transfer balance '
-                f'shifts as the car heaves and rolls — a flatter curve is generally more '
-                f'predictable. The load-transfer numbers above use the static RC; this '
-                f'plot shows how much that assumption drifts under travel.</p>',
-                unsafe_allow_html=True)
+    _uL = units_mod.label("mm")
+    _rc_swing_d = units_mod.from_metric_delta(_rc_swing, "mm")
+    _travel_d = units_mod.from_metric_delta(30, "mm")
+    st.markdown(f'<p class="hint">Across ±{_travel_d:.0f} {_uL} of travel the front '
+                f'roll centre moves {_rc_swing_d:.0f} {_uL}. Large RC migration means '
+                f'the load-transfer balance shifts as the car heaves and rolls — a '
+                f'flatter curve is generally more predictable. The load-transfer numbers '
+                f'above use the static RC; this plot shows how much that assumption '
+                f'drifts under travel.</p>', unsafe_allow_html=True)
 
-    st.markdown(f'<p class="hint">Roll centre sits {rc_static:.0f} mm above ground at '
-                'the front. A higher RC reduces body roll but adds jacking and lateral '
-                'scrub; most FSAE cars keep it 20–60 mm. The geometric/elastic split of '
-                'load transfer is what you tune with bar stiffness and RC height to set '
-                'the balance.</p>', unsafe_allow_html=True)
+    _rc_static_d = units_mod.from_metric(rc_static, "mm")
+    _rc_lo = units_mod.from_metric(20, "mm")
+    _rc_hi = units_mod.from_metric(60, "mm")
+    st.markdown(f'<p class="hint">Roll centre sits {_rc_static_d:.0f} {_uL} above ground at '
+                f'the front. A higher RC reduces body roll but adds jacking and lateral '
+                f'scrub; most FSAE cars keep it {_rc_lo:.0f}–{_rc_hi:.0f} {_uL}. The '
+                f'geometric/elastic split of load transfer is what you tune with bar '
+                f'stiffness and RC height to set the balance.</p>', unsafe_allow_html=True)
     st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
                 '<b>Steady-state model.</b> These numbers assume sustained cornering at '
                 'the given lateral g — they capture the car loaded and balanced mid-corner, '
@@ -3468,9 +3481,13 @@ with tab_car:
               import pandas as _pd
               _df_inf = _pd.DataFrame(_rows)[["subsystem", "status", "detail"]]
               st.dataframe(_df_inf, hide_index=True, width='stretch')
+              _uL = units_mod.label("mm")
+              _wb = units_mod.from_metric(_vp_car.wheelbase, "mm")
+              _tf = units_mod.from_metric(_vp_car.track_front, "mm")
+              _tr = units_mod.from_metric(_vp_car.track_rear, "mm")
               st.markdown(
-                  f'<p class="hint">Wheelbase <b>{_vp_car.wheelbase:.0f} mm</b> · '
-                  f'front/rear track <b>{_vp_car.track_front:.0f}/{_vp_car.track_rear:.0f} mm</b>. '
+                  f'<p class="hint">Wheelbase <b>{_wb:.0f} {_uL}</b> · '
+                  f'front/rear track <b>{_tf:.0f}/{_tr:.0f} {_uL}</b>. '
                   'Bodies with a declared envelope are drawn at their reserved size; bodies '
                   'sized from a performance number (downforce, power, airflow, brake torque) '
                   'are labelled "(sized from \u2026)" \u2014 they show direction of change, not '
@@ -4308,7 +4325,9 @@ with tab_accum:
             _led_ac.set(_it)
             _led_ac.accumulator_voltage_v = float(_pack_v)
             st.session_state.ledger = _led_ac.as_dict()
-            st.success(f"Declared: {_pack_v:.0f} V, {_pack_mass*1.4:.0f} kg (incl. housing), "
+            st.success(f"Declared: {_pack_v:.0f} V, "
+                       f"{units_mod.from_metric(_pack_mass*1.4, 'kg'):.0f} "
+                       f"{units_mod.label('kg')} (incl. housing), "
                        f"{_pack_heat_w/1000:.1f} kW heat. The heatmap, mass roll-up and "
                        "electrical checks now use this pack.")
             st.rerun()
@@ -4458,11 +4477,19 @@ with tab_brake:
         else:
             st.info(f"Both axles reach the limit together at ~{_amax:.2f} g — neutral. A "
                     "touch of extra front bias makes it stable.")
+        _uM = units_mod.label("kg")
+        _uTq = units_mod.label("N·m")
+        _Wf = units_mod.from_metric(Wf / _g, "kg")
+        _Wr = units_mod.from_metric(Wr / _g, "kg")
+        _Wfs = units_mod.from_metric(Wf_static / _g, "kg")
+        _Wrs = units_mod.from_metric(Wr_static / _g, "kg")
+        _Tf = units_mod.from_metric(Tf_lock / 2, "N·m")
+        _Tr = units_mod.from_metric(Tr_lock / 2, "N·m")
         st.markdown(
             f'<p class="hint">At {_decel:.1f} g the front axle carries '
-            f'<b>{Wf/_g:.0f} kg</b> and the rear <b>{Wr/_g:.0f} kg</b> (static was '
-            f'{Wf_static/_g:.0f}/{Wr_static/_g:.0f}). To lock the tyres you need '
-            f'<b>{Tf_lock/2:.0f} N·m</b> per front corner and <b>{Tr_lock/2:.0f} N·m</b> '
+            f'<b>{_Wf:.0f} {_uM}</b> and the rear <b>{_Wr:.0f} {_uM}</b> (static was '
+            f'{_Wfs:.0f}/{_Wrs:.0f}). To lock the tyres you need '
+            f'<b>{_Tf:.0f} {_uTq}</b> per front corner and <b>{_Tr:.0f} {_uTq}</b> '
             f'per rear corner — carried into the hydraulic sizing view.</p>',
             unsafe_allow_html=True)
 
@@ -4559,7 +4586,9 @@ with tab_brake:
                 _it.brake_torque_nm = round(max(_Tf_need, _Tr_need), 0)
                 _led_b.set(_it)
                 st.session_state.ledger = _led_b.as_dict()
-                st.success(f"Declared {max(_Tf_need,_Tr_need):.0f} N·m/corner. The 3D brake "
+                st.success(f"Declared "
+                           f"{units_mod.from_metric(max(_Tf_need,_Tr_need), 'N·m'):.0f} "
+                           f"{units_mod.label('N·m')}/corner. The 3D brake "
                            "discs and heatmap now reflect it.")
                 st.rerun()
             except Exception as _e4:
@@ -5021,13 +5050,15 @@ def render_suspension_vs_chassis():
 
             if verdict in ("COLLISION", "TIGHT"):
                 worst = clr["worst_link"].replace("_", " ")
+                _uL = units_mod.label("mm")
+                _wc = units_mod.from_metric(clr['worst_clearance_mm'], "mm")
                 if verdict == "COLLISION":
                     sug = (f"Suspension: {worst} hits the chassis through travel "
-                           f"(worst {clr['worst_clearance_mm']:.0f} mm). Geometry "
+                           f"(worst {_wc:.0f} {_uL}). Geometry "
                            f"adjusted / flagged before cutting tube.")
                 else:
                     sug = (f"Suspension: {worst} clears the chassis by only "
-                           f"{clr['worst_clearance_mm']:.1f} mm at full travel — tight. "
+                           f"{_wc:.1f} {_uL} at full travel — tight. "
                            f"Reviewed before fabrication.")
                 st.markdown('<p class="hint" style="margin-top:.4rem;">⚑ Worth recording '
                             'for handover:</p>', unsafe_allow_html=True)
@@ -8665,10 +8696,16 @@ if _show_ledger:
         cgz = roll["cg_mm"][2]
         total_with_driver = roll["total_kg"] + (led.includes_driver_kg or 0.0)
         cc = st.columns([2, 1])
+        _uM = units_mod.label("kg")
+        _uL = units_mod.label("mm")
+        _tot = units_mod.from_metric(roll["total_kg"], "kg")
+        _drv = units_mod.from_metric(led.includes_driver_kg or 0.0, "kg")
+        _twd = units_mod.from_metric(total_with_driver, "kg")
+        _cgz = units_mod.from_metric(cgz, "mm")
         cc[0].markdown(f'<p class="hint">The declared build gives a combined mass of '
-                       f'<b>{roll["total_kg"]:.1f} kg</b> (+{led.includes_driver_kg:.0f} kg '
-                       f'driver = {total_with_driver:.1f} kg) and a CG height of '
-                       f'<b>{cgz:.0f} mm</b>. This is the number suspension\'s load-transfer '
+                       f'<b>{_tot:.1f} {_uM}</b> (+{_drv:.0f} {_uM} '
+                       f'driver = {_twd:.1f} {_uM}) and a CG height of '
+                       f'<b>{_cgz:.0f} {_uL}</b>. This is the number suspension\'s load-transfer '
                        f'and the lap sim should be using — push it through so every other '
                        f'tab reflects the real car, not an assumption.</p>',
                        unsafe_allow_html=True)
@@ -8681,8 +8718,8 @@ if _show_ledger:
                 f"Subsystem ledger: {total_with_driver:.1f} kg total, "
                 f"CG height {cgz:.0f} mm. Now driving load transfer & lap sim.",
                 author="integration")
-            st.success(f"Vehicle model updated: {total_with_driver:.1f} kg, "
-                       f"CG {cgz:.0f} mm. Other tabs now use it."
+            st.success(f"Vehicle model updated: {_twd:.1f} {_uM}, "
+                       f"CG {_cgz:.0f} {_uL}. Other tabs now use it."
                        + ("" if _logged else " (note: couldn't write to the handover "
                           "log — backend unavailable; the model change still applied.)"))
             st.rerun()
