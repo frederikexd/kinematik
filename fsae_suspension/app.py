@@ -377,6 +377,7 @@ with st.sidebar:
              "The underlying model always computes in SI; only the display and "
              "input units change.")
     _US = (st.session_state.unit_system == "us")
+    units_mod.set_system(st.session_state.unit_system)
     # Per-quantity unit labels for input widgets (track the active system).
     _U_LEN = units_mod.label("mm")
     _U_MASS = units_mod.label("kg")
