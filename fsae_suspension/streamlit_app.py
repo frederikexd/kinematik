@@ -1615,6 +1615,225 @@ def _render_rotor_thermal(_bt, _mass, kin):
                           yaxis_title="single-stop peak temp (°C)", height=360)
     st.plotly_chart(_fig_mt, width="stretch")
 
+    # ---- Transient: temperature trace through a repeated-stop fade test -----
+    st.markdown('<p class="hint" style="margin:10px 0 2px;border-top:1px solid '
+                'var(--line);padding-top:10px;"><b>Fade test — does it cook over a '
+                'stint?</b> Repeated hard stops with cooling between them. The '
+                'single-stop number misses thermal <i>accumulation</i>; this '
+                'shows the rotor (and pad) climbing run to run.</p>',
+                unsafe_allow_html=True)
+    _ft = st.columns(4)
+    _ft_mat = _ft[0].selectbox("Rotor material",
+                               list(_bt.ROTOR_MATERIALS.keys()),
+                               format_func=lambda k: _bt.ROTOR_MATERIALS[k].name,
+                               key="bt_mat")
+    _ft_n = _ft[1].number_input("Stops in the test", 3, 30, value=10, step=1,
+                                key="bt_nstops")
+    _ft_gap = _ft[2].number_input("Cooling gap (s)", 2.0, 20.0, value=6.0,
+                                  step=1.0, key="bt_gap",
+                                  help="Seconds of cruise-cooling between stops.")
+    _ft_duct = _ft[3].slider("Brake-duct airflow gain", 1.0, 3.0, 1.0, 0.1,
+                             key="bt_duct", help="1.0 = no duct. A good cooling "
+                             "duct raises local airflow 2–3×.")
+
+    _tn = _bt.TwoNodeParams(
+        rotor_mat=_ft_mat, diameter_mm=_tk_dia, thickness_mm=_tk_th,
+        vented_fraction=_tk_vent, area_factor=float(_tk_area),
+        duct_gain=float(_ft_duct))
+    _pw, _vs, _dt = _bt.fade_test_power_series(
+        mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
+        n_stops=int(_ft_n), gap_s=float(_ft_gap))
+    _trace = _bt.TwoNodeRotorPad(_tn).simulate(_pw, _dt, v_series=_vs)
+
+    _ftm = st.columns(3)
+    _ftm[0].metric("Rotor peak (fade)", f"{_trace.T_rotor_peak_c:.0f} °C")
+    _ftm[1].metric("Pad peak (fade)", f"{_trace.T_pad_peak_c:.0f} °C",
+                   help="Pads fade on THEIR temperature — track this, not just "
+                   "the rotor.")
+    _ftm[2].metric("Material ceiling",
+                   f"{_trace.material_T_max_c:.0f} °C",
+                   delta=("OVER" if _trace.over_material_limit else "ok"),
+                   delta_color=("inverse" if _trace.over_material_limit
+                                else "normal"))
+
+    _fig_ft = go.Figure()
+    _fig_ft.add_trace(go.Scatter(x=_trace.t_s, y=_trace.T_rotor_c, mode="lines",
+                                 line=dict(color=RED, width=2.5), name="rotor"))
+    _fig_ft.add_trace(go.Scatter(x=_trace.t_s, y=_trace.T_pad_c, mode="lines",
+                                 line=dict(color=AMBER, width=2), name="pad"))
+    _fig_ft.add_hline(y=_trace.material_T_max_c, line_dash="dot",
+                      line_color="#ff5a52",
+                      annotation_text=f"{_bt.ROTOR_MATERIALS[_ft_mat].name} limit")
+    _fig_ft.update_layout(**PLOT_LAYOUT, title="Fade test — rotor & pad temperature",
+                          xaxis_title="time (s)", yaxis_title="temperature (°C)",
+                          height=340)
+    st.plotly_chart(_fig_ft, width="stretch")
+    if _trace.over_material_limit:
+        st.error(f"Rotor exceeds the {_bt.ROTOR_MATERIALS[_ft_mat].name} service "
+                 f"limit ({_trace.material_T_max_c:.0f} °C) during the test — this "
+                 "material/geometry won't survive the stint. Bigger ⌀, vent it, "
+                 "add duct airflow, or change material.")
+
+    # ---- Material comparison: same test, every material ---------------------
+    with st.expander("Compare rotor materials on this exact fade test"):
+        _rows = []
+        for _mk in _bt.ROTOR_MATERIALS:
+            _tt = _bt.TwoNodeRotorPad(_bt.TwoNodeParams(
+                rotor_mat=_mk, diameter_mm=_tk_dia, thickness_mm=_tk_th,
+                vented_fraction=_tk_vent, area_factor=float(_tk_area),
+                duct_gain=float(_ft_duct))).simulate(_pw, _dt, v_series=_vs)
+            _m = _bt.ROTOR_MATERIALS[_mk]
+            _rows.append({
+                "Material": _m.name,
+                "Rotor mass (g)": round(_tt.rotor_mass_kg * 1000),
+                "Peak rotor (°C)": round(_tt.T_rotor_peak_c),
+                "Ceiling (°C)": round(_m.T_max_c),
+                "Verdict": "⚠ over limit" if _tt.over_material_limit else "ok",
+            })
+        st.dataframe(_rows, width="stretch", hide_index=True)
+        st.caption("Lighter isn't free: carbon-carbon and Al-MMC cut mass hard "
+                   "but Al-MMC's low ceiling can be exceeded under heavy braking, "
+                   "and carbon only works once it's hot. Read mass AND verdict "
+                   "together.")
+
+    # ---- Cooling-duct spec: invert the equilibrium --------------------------
+    with st.expander("What cooling duct do I need?"):
+        _dt_c = st.columns(2)
+        _T_tgt = _dt_c[0].number_input("Target rotor temp (°C)", 200.0, 700.0,
+                                       value=500.0, step=25.0, key="bt_ttgt",
+                                       help="Keep the rotor at/below this over the "
+                                       "stint.")
+        _req = _bt.required_duct_gain(
+            p_brake_avg_w=_tk_pwr, v_work_ms=_tk_air / 3.6, diameter_mm=_tk_dia,
+            T_target_c=float(_T_tgt))
+        if _req["achievable_unducted"]:
+            _dt_c[1].success(f"No duct needed — the bare rotor holds "
+                             f"{_T_tgt:.0f} °C at this power.")
+        else:
+            _dt_c[1].warning(f"Need a duct raising airflow ≈"
+                             f"{_req['required_duct_gain']:.1f}× "
+                             f"(h {_req['h_unducted_w_m2K']:.0f}→"
+                             f"{_req['h_needed_w_m2K']:.0f} W/m²K) to hold "
+                             f"{_T_tgt:.0f} °C.")
+
+    # ---- ROTOR OPTIMISER: own the loop, mesh only the winners ---------------
+    st.markdown('<p class="hint" style="margin:12px 0 2px;border-top:2px solid '
+                'var(--accent);padding-top:10px;"><b>🎯 Optimise the rotor — '
+                'instead of forty Ansys runs.</b> Searches diameter × thickness × '
+                'vent × material for the <b>lightest rotor that still survives</b> '
+                'your fade test, runs the whole space in ~1 s, and hands you the '
+                'winner plus the mass-vs-temp Pareto front. Mesh the 2–3 knee '
+                'points — not the whole sweep.</p>', unsafe_allow_html=True)
+
+    _oc = st.columns(4)
+    _opt_Tcon = _oc[0].number_input("Max allowed rotor temp (°C)", 300.0, 1000.0,
+                                    value=600.0, step=25.0, key="bt_opt_tcon",
+                                    help="The constraint: peak rotor temp over the "
+                                    "fade test must stay below this.")
+    _opt_mats = _oc[1].multiselect("Materials to search",
+                                   list(_bt.ROTOR_MATERIALS.keys()),
+                                   default=["grey_cast_iron", "steel"],
+                                   format_func=lambda k: _bt.ROTOR_MATERIALS[k].name,
+                                   key="bt_opt_mats")
+    _opt_nstops = _oc[2].number_input("Fade-test stops", 4, 20, value=8, step=1,
+                                      key="bt_opt_nstops")
+    _opt_fine = _oc[3].checkbox("Fine grid", value=False, key="bt_opt_fine",
+                                help="Denser search (slower, ~3–4 s) for a "
+                                "smoother Pareto front.")
+
+    if st.button("🎯 Optimise rotor", key="bt_opt_run", type="primary"):
+        if not _opt_mats:
+            st.warning("Pick at least one material to search.")
+        else:
+            with st.spinner(f"Searching the design space…"):
+                _steps = ((14, 8) if _opt_fine else (10, 6))
+                _optres = _bt.optimise_rotor(
+                    mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
+                    T_constraint_c=float(_opt_Tcon), materials=_opt_mats,
+                    dia_steps=_steps[0], th_steps=_steps[1],
+                    n_stops=int(_opt_nstops), area_factor=float(_tk_area),
+                    duct_gain=float(st.session_state.get("bt_duct", 1.0)))
+            st.session_state["bt_opt_result"] = _optres
+
+    _optres = st.session_state.get("bt_opt_result")
+    if _optres is not None:
+        if _optres.best is None:
+            st.error(f"No rotor in the searched space stays under "
+                     f"{_optres.constraint_c:.0f} °C over {int(_opt_nstops)} stops "
+                     f"({_optres.n_evaluated} candidates checked). Raise the temp "
+                     "limit, add brake-duct airflow, vent the rotor, or accept a "
+                     "bigger/heavier disc — then re-optimise.")
+        else:
+            _b = _optres.best
+            _bm = _bt.ROTOR_MATERIALS[_b.material]
+            st.success(
+                f"**Lightest rotor that survives:** {_bm.name}, "
+                f"⌀{_b.diameter_mm:.0f} × {_b.thickness_mm:.1f} mm, "
+                f"vent {_b.vented_fraction:.0%} → **{_b.rotor_mass_kg*1000:.0f} g**, "
+                f"peak {_b.T_rotor_peak_c:.0f} °C "
+                f"({_b.margin_c:.0f} °C under the {_b.T_limit_c:.0f} °C limit). "
+                f"Searched {_optres.n_evaluated} geometries; "
+                f"{len(_optres.feasible)} feasible.")
+
+            # Pareto scatter: every candidate, feasible vs not, Pareto front, winner
+            _fig_op = go.Figure()
+            _infeas = [c for c in _optres.candidates if not c.feasible]
+            _feas = _optres.feasible
+            if _infeas:
+                _fig_op.add_trace(go.Scatter(
+                    x=[c.rotor_mass_kg * 1000 for c in _infeas],
+                    y=[c.T_rotor_peak_c for c in _infeas], mode="markers",
+                    marker=dict(color=DIM, size=5, opacity=0.4),
+                    name="over limit", hoverinfo="skip"))
+            if _feas:
+                _fig_op.add_trace(go.Scatter(
+                    x=[c.rotor_mass_kg * 1000 for c in _feas],
+                    y=[c.T_rotor_peak_c for c in _feas], mode="markers",
+                    marker=dict(color=CYAN, size=6, opacity=0.55),
+                    name="feasible", hoverinfo="skip"))
+            _fig_op.add_trace(go.Scatter(
+                x=[c.rotor_mass_kg * 1000 for c in _optres.pareto],
+                y=[c.T_rotor_peak_c for c in _optres.pareto],
+                mode="lines+markers", line=dict(color=AMBER, width=3),
+                marker=dict(size=7),
+                text=[f"{_bt.ROTOR_MATERIALS[c.material].name} ⌀{c.diameter_mm:.0f} "
+                      f"{c.thickness_mm:.1f}mm vent{c.vented_fraction:.0%}"
+                      for c in _optres.pareto],
+                hovertemplate="%{text}<br>%{x:.0f} g<br>%{y:.0f} °C<extra></extra>",
+                name="Pareto front (mesh these)"))
+            _fig_op.add_trace(go.Scatter(
+                x=[_b.rotor_mass_kg * 1000], y=[_b.T_rotor_peak_c],
+                mode="markers", marker=dict(color=RED, size=15, symbol="star"),
+                name="lightest feasible", hovertemplate="winner<extra></extra>"))
+            _fig_op.add_hline(y=_optres.constraint_c, line_dash="dash",
+                              line_color="#ff5a52",
+                              annotation_text=f"limit {_optres.constraint_c:.0f}°C")
+            _fig_op.update_layout(**PLOT_LAYOUT,
+                                  title="Design space — every rotor, the Pareto "
+                                  "front, and the winner",
+                                  xaxis_title="rotor mass (g)",
+                                  yaxis_title="peak rotor temp over fade test (°C)",
+                                  height=420)
+            st.plotly_chart(_fig_op, width="stretch")
+
+            # the handful worth meshing: knee of the feasible Pareto front
+            _knee = _optres.pareto[:6]
+            _rows = [{
+                "Material": _bt.ROTOR_MATERIALS[c.material].name,
+                "⌀ (mm)": round(c.diameter_mm),
+                "Thick (mm)": round(c.thickness_mm, 1),
+                "Vent": f"{c.vented_fraction:.0%}",
+                "Mass (g)": round(c.rotor_mass_kg * 1000),
+                "Peak (°C)": round(c.T_rotor_peak_c),
+                "Margin (°C)": round(c.margin_c),
+            } for c in _knee]
+            st.markdown("**Short-list to mesh in Ansys** (lightest feasible "
+                        "geometries):")
+            st.dataframe(_rows, width="stretch", hide_index=True)
+            st.caption("These are 0-D/transient survivors — confirm the hot-spot, "
+                       "coning and stress in Ansys on this short-list. The model "
+                       "found them; the FEA verifies them.")
+
     if _single.synthesized:
         st.caption("⚠ Synthesized: equations are exact energy balances, but "
                    "material c_p/density, convection h and the heat-split are "
