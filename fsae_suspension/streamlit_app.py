@@ -1207,12 +1207,20 @@ with _pcar:
             _vp_pick = VehicleParams(**_vp_pick_kwargs)
         except Exception:
             _vp_pick = VehicleParams()
-        _fig_pick = fullcar_mod.build_full_car_figure(
-            vp=_vp_pick,
-            highlight_subsystem=_hl,
-            show_cg=False,
-            height=340,
-        )
+        # Build kwargs defensively: only pass show_cg if the installed
+        # build_full_car_figure actually accepts it. This keeps the picker
+        # working even if a deployment has an older fullcar3d.py that predates
+        # the show_cg parameter (otherwise we'd hit a TypeError and the whole
+        # preview would fall back to "unavailable").
+        _car_kwargs = dict(vp=_vp_pick, highlight_subsystem=_hl, height=340)
+        try:
+            import inspect as _inspect
+            if "show_cg" in _inspect.signature(
+                    fullcar_mod.build_full_car_figure).parameters:
+                _car_kwargs["show_cg"] = False
+        except Exception:
+            pass
+        _fig_pick = fullcar_mod.build_full_car_figure(**_car_kwargs)
         _fig_pick.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),
             showlegend=False,
@@ -1227,7 +1235,12 @@ with _pcar:
         # Labels use the shared team-colour palette (_ROLE_COLOR), the same
         # source the dropdown chips read, so the picker is colour-consistent.
         _ROLE_LABEL_COLOR = _ROLE_COLOR
-        _cents = fullcar_mod.subsys_centroids(_fig_pick)
+        # subsys_centroids() only exists in newer fullcar3d.py; if a deployment
+        # has an older copy, skip the floating labels rather than crash.
+        if hasattr(fullcar_mod, "subsys_centroids"):
+            _cents = fullcar_mod.subsys_centroids(_fig_pick)
+        else:
+            _cents = {}
         for _r in _roles:
             _parts = _ROLE_TO_3D.get(_r, set())
             if not _parts:
