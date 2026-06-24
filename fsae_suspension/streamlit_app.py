@@ -1461,6 +1461,168 @@ def _subsystem_cad_import(subsys_key, *, key_prefix, title=None):
                     st.rerun()
 
 
+def _render_rotor_thermal(_bt, _mass, kin):
+    """The Brakes ▸ Rotor thermal view. `_bt` is the imported brake_thermal
+    module (already verified present by the caller), `_mass` the live car mass,
+    `kin` the current kinematics object for the optional lap-sim coupling."""
+    _bt_mod_le = _bt.lap_brake_energy
+    st.markdown(
+        '<p class="hint"><b>Triage your Ansys runs.</b> This is a fast 0-D '
+        'energy balance — single-mass rotor, the same lumped-thermal approach '
+        'as the tyre model — so you can sweep dozens of rotor geometries here '
+        'in milliseconds and only mesh the 2–3 survivors. It is <b>not</b> an '
+        'FEA: no temperature field, no coning, no vane flow, no stress. Use it '
+        'to <b>narrow the design space</b>, then take the short-list to Ansys.</p>',
+        unsafe_allow_html=True)
+
+    _tc = st.columns(4)
+    _tk_v0 = _tc[0].number_input("Stop from (km/h)", 40.0, 140.0, value=100.0,
+                                 step=5.0, help="Top speed of the hardest single "
+                                 "stop on track.")
+    _tk_bias = _tc[1].slider("Front bias (%)", 50, 80,
+                             int(st.session_state.get("brake_front_bias_pct", 62)),
+                             1, help="Front axle's share of braking energy — from "
+                             "the Bias & lock-up view.") / 100.0
+    _tk_dia = _tc[2].number_input("Rotor ⌀ (mm)", 180.0, 320.0, value=220.0,
+                                  step=5.0, key="bt_dia")
+    _tk_th = _tc[3].number_input("Rotor thickness (mm)", 3.0, 12.0, value=5.0,
+                                 step=0.5, key="bt_th")
+
+    _tc2 = st.columns(4)
+    _tk_vent = _tc2[0].slider("Vented fraction", 0.0, 0.6, 0.0, 0.05,
+                              help="0 = solid disc. Raise to approximate the "
+                              "material removed by cooling vanes/slots.")
+    _tk_area = _tc2[1].slider("Cooling-area factor", 1.5, 4.0, 2.4, 0.1,
+                              help="≈2 = both faces of a solid disc; higher for a "
+                              "vented/vaned rotor with more wetted area.")
+    # If the lap-sim button ran on the previous rerun, it parked results in
+    # staging keys. Apply them to the widget keys HERE — before the widgets are
+    # instantiated — which is the only point Streamlit allows writing a widget's
+    # state key. Then clear the staging flag so manual edits aren't overwritten.
+    if st.session_state.pop("brake_lap_apply", False):
+        if "brake_lap_pwr" in st.session_state:
+            st.session_state["bt_pwr"] = st.session_state["brake_lap_pwr"]
+        if "brake_lap_air" in st.session_state:
+            st.session_state["bt_air"] = st.session_state["brake_lap_air"]
+    st.session_state.setdefault("bt_pwr", 1200.0)
+    st.session_state.setdefault("bt_air", 55.0)
+    _tk_pwr = _tc2[2].number_input("Avg brake power / front rotor (W)",
+                                   200.0, 8000.0, step=100.0, key="bt_pwr",
+                                   help="Time-averaged power into ONE front rotor "
+                                   "over the stint. Type it, or pull it from a lap "
+                                   "sim below.")
+    _tk_air = _tc2[3].number_input("Airflow speed (km/h)", 20.0, 120.0, step=5.0,
+                                   key="bt_air",
+                                   help="Representative car speed during braking — "
+                                   "sets convection. Auto-filled from the lap sim's "
+                                   "mean braking speed.")
+
+    # ---- pull the average braking power straight from a lap sim -----------
+    st.markdown('<p class="hint" style="margin:6px 0 2px;border-top:1px solid '
+                'var(--line);padding-top:8px;"><b>Or compute it from a real lap</b> '
+                '— the velocity trace already implies exactly how much energy the '
+                'brakes dump per lap.</p>', unsafe_allow_html=True)
+    if st.button("Run lap sim → average braking power", key="bt_runlap"):
+        try:
+            _vd_b = VehicleDynamics(
+                VehicleParams(**{k: v for k, v in st.session_state.vp.items()
+                                 if k in VehicleParams.__dataclass_fields__}),
+                front_kin=kin, rear_kin=kin,
+                tire=globals().get("_live_tire_lap"))
+            _lp = lapsim_mod.LapSimParams(mass=float(_mass))
+            _sim_b = lapsim_mod.LapSimulator(_vd_b, params=_lp)
+            _res_b = _sim_b.simulate(lapsim_mod.autocross_track(laps=1))
+            if _res_b.ok:
+                _lbe = _bt_mod_le(
+                    _res_b.distance, _res_b.speed, mass_kg=float(_mass),
+                    front_bias=_tk_bias, lap_time_s=_res_b.lap_time,
+                    long_g=_res_b.long_g)
+                st.session_state["brake_lap_pwr"] = float(min(max(
+                    round(_lbe.p_front_avg_w, 0), 200.0), 8000.0))
+                st.session_state["brake_lap_air"] = float(min(max(
+                    round(_lbe.v_brake_mean_ms * 3.6, 0), 20.0), 120.0))
+                st.session_state["brake_lap_apply"] = True
+                st.session_state["brake_lap_meta"] = (
+                    f"{_res_b.lap_time:.1f} s lap · {_lbe.q_lap_j/1000:.0f} kJ "
+                    f"braking/lap · {_lbe.n_brake_samples} brake samples · peak "
+                    f"{_lbe.p_front_peak_w/1000:.0f} kW/rotor")
+                st.rerun()
+            else:
+                st.warning("Lap sim couldn't run on the default autocross with "
+                           "this car — type the average power instead.")
+        except Exception as _le:
+            st.warning(f"Couldn't run the lap sim ({_le}). Type the average power "
+                       "instead.")
+    if st.session_state.get("brake_lap_meta"):
+        st.caption("From lap sim: " + st.session_state["brake_lap_meta"]
+                   + ". Power & airflow above are filled from this lap.")
+
+    _bt_params = _bt.BrakeThermalParams(area_factor=float(_tk_area))
+    _bt_model = _bt.BrakeThermalModel(_bt_params)
+
+    _single = _bt_model.single_stop(
+        mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
+        diameter_mm=_tk_dia, thickness_mm=_tk_th, vented_fraction=_tk_vent)
+    _equil = _bt_model.equilibrium(
+        p_brake_avg_w=_tk_pwr, v_work_ms=_tk_air / 3.6, diameter_mm=_tk_dia)
+
+    _mt = st.columns(4)
+    _mt[0].metric("Energy / front rotor", f"{_single.q_per_rotor_j/1000:.0f} kJ",
+                  help="Kinetic energy this one rotor absorbs in the stop.")
+    _mt[1].metric("Rotor mass (est)", f"{_single.rotor_mass_kg*1000:.0f} g",
+                  help="First-order friction-ring mass from ⌀, thickness and "
+                  "vented fraction — a thermal-capacity estimate, not a CAD mass.")
+    _mt[2].metric("Single-stop peak", f"{_single.T_peak_c:.0f} °C",
+                  help="Bulk temperature after one stop from a cold rotor.")
+    _mt[3].metric("Endurance equilibrium", f"{_equil.T_equilibrium_c:.0f} °C",
+                  help="Steady-state temp where convection+radiation balance the "
+                  "average braking power. This is the fade-relevant number.")
+
+    if _equil.T_equilibrium_c > 650:
+        st.error(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — grey iron "
+                 "fades/glazes hard here. Bigger ⌀, more vent area, or a higher-"
+                 "temp rotor material; this geometry likely needs Ansys to confirm "
+                 "it survives a stint.")
+    elif _equil.T_equilibrium_c > 500:
+        st.warning(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — into the fade-"
+                   "risk band for an iron rotor. Worth meshing to check the "
+                   "hot-spot, not just the bulk.")
+    else:
+        st.success(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — bulk thermal "
+                   "load looks manageable. Mesh to confirm the hot-spot and "
+                   "coning, but this geometry is a sensible candidate.")
+
+    _sweep = _bt_model.mass_temp_sweep(
+        mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
+        thickness_mm=_tk_th, dia_min_mm=180.0, dia_max_mm=300.0, n=25,
+        vented_fraction=_tk_vent)
+    _fig_mt = go.Figure()
+    _fig_mt.add_trace(go.Scatter(
+        x=[r["rotor_mass_kg"] * 1000 for r in _sweep],
+        y=[r["T_peak_c"] for r in _sweep],
+        mode="lines+markers", line=dict(color=AMBER, width=3),
+        text=[f"⌀{r['diameter_mm']:.0f} mm" for r in _sweep],
+        hovertemplate="%{text}<br>%{x:.0f} g<br>%{y:.0f} °C<extra></extra>",
+        name="single-stop peak"))
+    _fig_mt.add_trace(go.Scatter(
+        x=[_single.rotor_mass_kg * 1000], y=[_single.T_peak_c],
+        mode="markers", marker=dict(color=CYAN, size=13, symbol="diamond"),
+        name="your rotor", hovertemplate="your rotor<extra></extra>"))
+    _fig_mt.update_layout(**PLOT_LAYOUT,
+                          title="Mass ↔ peak-temp frontier (single stop) — pick "
+                          "the knee, mesh those",
+                          xaxis_title="rotor mass (g)",
+                          yaxis_title="single-stop peak temp (°C)", height=360)
+    st.plotly_chart(_fig_mt, width="stretch")
+
+    if _single.synthesized:
+        st.caption("⚠ Synthesized: equations are exact energy balances, but "
+                   "material c_p/density, convection h and the heat-split are "
+                   "representative (uncalibrated) values. Right shape, invented "
+                   "magnitudes — triage with these, confirm absolute temperatures "
+                   "in Ansys.")
+
+
 tab1        = _id_to_container["kinematics"]
 tab2        = _id_to_container["roll"]
 tab3        = _id_to_container["grip"]
@@ -3862,159 +4024,19 @@ with tab_brake:
 
     # =================================================================== #
     elif _bview == "Rotor thermal":
-        import suspension.brake_thermal as _bt
-        _bt_mod_le = _bt.lap_brake_energy
-        st.markdown(
-            '<p class="hint"><b>Triage your Ansys runs.</b> This is a fast 0-D '
-            'energy balance — single-mass rotor, the same lumped-thermal approach '
-            'as the tyre model — so you can sweep dozens of rotor geometries here '
-            'in milliseconds and only mesh the 2–3 survivors. It is <b>not</b> an '
-            'FEA: no temperature field, no coning, no vane flow, no stress. Use it '
-            'to <b>narrow the design space</b>, then take the short-list to Ansys.</p>',
-            unsafe_allow_html=True)
-
-        _tc = st.columns(4)
-        _tk_v0 = _tc[0].number_input("Stop from (km/h)", 40.0, 140.0, value=100.0,
-                                     step=5.0, help="Top speed of the hardest "
-                                     "single stop on track.")
-        _tk_bias = _tc[1].slider("Front bias (%)", 50, 80,
-                                 int(st.session_state.get("brake_front_bias_pct", 62)),
-                                 1, help="Front axle's share of braking energy — "
-                                 "from the Bias & lock-up view.") / 100.0
-        _tk_dia = _tc[2].number_input("Rotor ⌀ (mm)", 180.0, 320.0, value=220.0,
-                                      step=5.0, key="bt_dia")
-        _tk_th = _tc[3].number_input("Rotor thickness (mm)", 3.0, 12.0, value=5.0,
-                                     step=0.5, key="bt_th")
-
-        _tc2 = st.columns(4)
-        _tk_vent = _tc2[0].slider("Vented fraction", 0.0, 0.6, 0.0, 0.05,
-                                  help="0 = solid disc. Raise to approximate the "
-                                  "material removed by cooling vanes/slots.") 
-        _tk_area = _tc2[1].slider("Cooling-area factor", 1.5, 4.0, 2.4, 0.1,
-                                  help="≈2 = both faces of a solid disc; higher "
-                                  "for a vented/vaned rotor with more wetted area.")
-        # Seed the widget keys once so they have a default, then let the widgets
-        # (and the lap-sim button) own their state. Writing value= AND key= would
-        # both warn and stop the lap sim from being able to update them.
-        st.session_state.setdefault("bt_pwr", 1200.0)
-        st.session_state.setdefault("bt_air", 55.0)
-        _tk_pwr = _tc2[2].number_input("Avg brake power / front rotor (W)",
-                                       200.0, 8000.0, step=100.0, key="bt_pwr",
-                                       help="Time-averaged power into ONE front "
-                                       "rotor over the stint. Type it, or pull it "
-                                       "from a lap sim below.")
-        _tk_air = _tc2[3].number_input("Airflow speed (km/h)", 20.0, 120.0,
-                                       step=5.0, key="bt_air",
-                                       help="Representative car speed during "
-                                       "braking — sets convection. Auto-filled "
-                                       "from the lap sim's mean braking speed.")
-
-        # ---- pull the average braking power straight from a lap sim --------
-        st.markdown('<p class="hint" style="margin:6px 0 2px;border-top:1px solid '
-                    'var(--line);padding-top:8px;"><b>Or compute it from a real '
-                    'lap</b> — the velocity trace already implies exactly how much '
-                    'energy the brakes dump per lap.</p>', unsafe_allow_html=True)
-        if st.button("Run lap sim → average braking power", key="bt_runlap"):
-            try:
-                _vd_b = VehicleDynamics(
-                    VehicleParams(**{k: v for k, v in st.session_state.vp.items()
-                                     if k in VehicleParams.__dataclass_fields__}),
-                    front_kin=kin, rear_kin=kin,
-                    tire=globals().get("_live_tire_lap"))
-                _lp = lapsim_mod.LapSimParams(mass=float(_mass))
-                _sim_b = lapsim_mod.LapSimulator(_vd_b, params=_lp)
-                _res_b = _sim_b.simulate(lapsim_mod.autocross_track(laps=1))
-                if _res_b.ok:
-                    _lbe = _bt_mod_le(
-                        _res_b.distance, _res_b.speed, mass_kg=float(_mass),
-                        front_bias=_tk_bias, lap_time_s=_res_b.lap_time,
-                        long_g=_res_b.long_g)
-                    st.session_state["bt_pwr"] = float(min(max(
-                        round(_lbe.p_front_avg_w, 0), 200.0), 8000.0))
-                    st.session_state["bt_air"] = float(min(max(
-                        round(_lbe.v_brake_mean_ms * 3.6, 0), 20.0), 120.0))
-                    st.session_state["brake_lap_meta"] = (
-                        f"{_res_b.lap_time:.1f} s lap · {_lbe.q_lap_j/1000:.0f} kJ "
-                        f"braking/lap · {_lbe.n_brake_samples} brake samples · peak "
-                        f"{_lbe.p_front_peak_w/1000:.0f} kW/rotor")
-                    st.rerun()
-                else:
-                    st.warning("Lap sim couldn't run on the default autocross with "
-                               "this car — type the average power instead.")
-            except Exception as _le:
-                st.warning(f"Couldn't run the lap sim ({_le}). Type the average "
-                           "power instead.")
-        if st.session_state.get("brake_lap_meta"):
-            st.caption("From lap sim: " + st.session_state["brake_lap_meta"]
-                       + ". Power & airflow above are filled from this lap.")
-
-        _bt_params = _bt.BrakeThermalParams(area_factor=float(_tk_area))
-        _bt_model = _bt.BrakeThermalModel(_bt_params)
-
-        _single = _bt_model.single_stop(
-            mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
-            diameter_mm=_tk_dia, thickness_mm=_tk_th,
-            vented_fraction=_tk_vent)
-        _equil = _bt_model.equilibrium(
-            p_brake_avg_w=_tk_pwr, v_work_ms=_tk_air / 3.6, diameter_mm=_tk_dia)
-
-        _mt = st.columns(4)
-        _mt[0].metric("Energy / front rotor", f"{_single.q_per_rotor_j/1000:.0f} kJ",
-                      help="Kinetic energy this one rotor absorbs in the stop.")
-        _mt[1].metric("Rotor mass (est)", f"{_single.rotor_mass_kg*1000:.0f} g",
-                      help="First-order friction-ring mass from ⌀, thickness and "
-                      "vented fraction — a thermal-capacity estimate, not a CAD mass.")
-        _mt[2].metric("Single-stop peak", f"{_single.T_peak_c:.0f} °C",
-                      help="Bulk temperature after one stop from a cold rotor.")
-        _mt[3].metric("Endurance equilibrium", f"{_equil.T_equilibrium_c:.0f} °C",
-                      help="Steady-state temp where convection+radiation balance "
-                      "the average braking power. This is the fade-relevant number.")
-
-        if _equil.T_equilibrium_c > 650:
-            st.error(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — grey iron "
-                     "fades/glazes hard here. Bigger ⌀, more vent area, or a "
-                     "higher-temp rotor material; this geometry likely needs Ansys "
-                     "to confirm it survives a stint.")
-        elif _equil.T_equilibrium_c > 500:
-            st.warning(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — into the "
-                       "fade-risk band for an iron rotor. Worth meshing to check "
-                       "the hot-spot, not just the bulk.")
+        try:
+            import suspension.brake_thermal as _bt
+        except Exception:
+            _bt = None
+        if _bt is None:
+            st.info("The rotor-thermal model isn't available in this deployment "
+                    "yet — the `suspension/brake_thermal.py` module hasn't been "
+                    "deployed. The rest of the Brakes workspace works; once that "
+                    "file is pushed, this view will compute single-stop and "
+                    "endurance rotor temperatures.")
         else:
-            st.success(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — bulk thermal "
-                       "load looks manageable. Mesh to confirm the hot-spot and "
-                       "coning, but this geometry is a sensible candidate.")
+            _render_rotor_thermal(_bt, float(_mass), kin)
 
-        # mass-vs-peak-temp frontier — the trade the FEA is being used to explore
-        _sweep = _bt_model.mass_temp_sweep(
-            mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
-            thickness_mm=_tk_th, dia_min_mm=180.0, dia_max_mm=300.0, n=25,
-            vented_fraction=_tk_vent)
-        _fig_mt = go.Figure()
-        _fig_mt.add_trace(go.Scatter(
-            x=[r["rotor_mass_kg"] * 1000 for r in _sweep],
-            y=[r["T_peak_c"] for r in _sweep],
-            mode="lines+markers", line=dict(color=AMBER, width=3),
-            text=[f"⌀{r['diameter_mm']:.0f} mm" for r in _sweep],
-            hovertemplate="%{text}<br>%{x:.0f} g<br>%{y:.0f} °C<extra></extra>",
-            name="single-stop peak"))
-        # mark the currently-selected rotor
-        _fig_mt.add_trace(go.Scatter(
-            x=[_single.rotor_mass_kg * 1000], y=[_single.T_peak_c],
-            mode="markers", marker=dict(color=CYAN, size=13, symbol="diamond"),
-            name="your rotor", hovertemplate="your rotor<extra></extra>"))
-        _fig_mt.update_layout(**PLOT_LAYOUT,
-                              title="Mass ↔ peak-temp frontier (single stop) — "
-                              "pick the knee, mesh those",
-                              xaxis_title="rotor mass (g)",
-                              yaxis_title="single-stop peak temp (°C)", height=360)
-        st.plotly_chart(_fig_mt, width="stretch")
-
-        if _single.synthesized:
-            st.caption("⚠ Synthesized: equations are exact energy balances, but "
-                       "material c_p/density, convection h and the heat-split are "
-                       "representative (uncalibrated) values. Right shape, "
-                       "invented magnitudes — triage with these, confirm absolute "
-                       "temperatures in Ansys.")
 
   except Exception as _eb:
     st.error(f"Could not build the brakes workspace: {_eb}")
