@@ -58,6 +58,11 @@ _CONVERSIONS = {
     "N·m/°":   ("lbf·ft/°", 0.7375621493,     0.0),
     "bar":     ("psi",     14.503773773,      0.0),
     "kPa":     ("psi",     0.1450377377,      0.0),
+    "MPa":     ("ksi",     0.1450377377,      0.0),    # thermal/structural stress
+    "kW":      ("hp",      1.3410220888,      0.0),     # power (mechanical hp)
+    "W":       ("hp",      0.0013410221,      0.0),
+    "kJ":      ("BTU",     0.9478171203,      0.0),     # energy
+    "J":       ("ft·lbf",  0.7375621493,      0.0),
     "°C":      ("°F",      9.0 / 5.0,         32.0),
 }
 
@@ -94,6 +99,18 @@ def from_metric(value: float, unit: str) -> float:
         return value
     _, factor, offset = _CONVERSIONS[unit]
     return value * factor + offset
+
+
+def from_metric_delta(value: float, unit: str) -> float:
+    """Convert a metric DIFFERENCE (gradient, margin, ΔT) to the active system.
+
+    A difference scales by the factor but takes NO offset — a 10 °C rise is an
+    18 °F rise, not (10·9/5+32). Use this for any quantity that is a delta rather
+    than an absolute reading (temperature gradients, margins, spans)."""
+    if not is_us() or unit not in _CONVERSIONS:
+        return value
+    _, factor, _offset = _CONVERSIONS[unit]
+    return value * factor
 
 
 def to_metric(value: float, unit: str) -> float:
