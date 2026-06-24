@@ -1004,6 +1004,8 @@ _ROLE_TABS = {
     "aero":       ["aero"],
     "powertrain": ["ev", "laptime", "ggv"],
     "electrics":  ["accum", "pcb"],
+    "cooling":    [],            # body-only subteam — shows via heatmap + shared spine
+    "dataacq":    ["pcb"],       # data-acquisition — lives in the Electronics/PCB tab
     "brakes":     ["brakes"],
     "chassis":    ["teamfit"],
     "cost":       ["cost"],
@@ -1014,6 +1016,8 @@ _ROLE_LABELS = {
     "aero":        "Aerodynamics",
     "powertrain":  "Powertrain / Drivetrain",
     "electrics":   "Electrics",
+    "cooling":     "Cooling",
+    "dataacq":     "Data Acquisition",
     "brakes":      "Brakes",
     "chassis":     "Chassis / Frame",
     "cost":        "Cost / Business",
@@ -1026,7 +1030,7 @@ _ROLE_LABELS = {
 # lets you blend as many subteams as you like and unions their tabs. We carry
 # the selection as a list in `kk_roles`; the legacy single-value `kk_role`
 # key is migrated forward so older sessions/projects don't break.
-_BLENDABLE = [k for k in _ROLE_LABELS if k not in ("all",)]  # everyone + 8 teams
+_BLENDABLE = [k for k in _ROLE_LABELS if k not in ("all",)]  # everyone + 9 teams
 
 def _normalize_roles(_raw):
     """Coerce whatever is in state into a clean, de-duped list of blendable roles."""
@@ -1082,18 +1086,41 @@ _ROLE_TO_3D = {
     # either of those roles. "electrics" merges the old accumulator + electronics
     # roles: it owns the HV battery box, the cooling it shares, and the data-acq
     # electronics (PCBs/loggers).
+    # Cooling is both its own subteam AND a shared concern: powertrain and
+    # electrics still light the sidepod/radiator (they design around it), and a
+    # dedicated Cooling pick lights exactly those bodies.
     "powertrain":  {"powertrain", "cooling"},
     "electrics":   {"electrics", "cooling", "data-acquisition"},
+    "cooling":     {"cooling"},
+    "dataacq":     {"data-acquisition"},
     "brakes":      {"brakes"},
     "chassis":     {"chassis"},
     "cost":        set(),          # business role — nothing to glow
     "everyone":    set(),
 }
 
+# Official subteam colours — matched to the team's Discord channel heart emojis
+# (💛 aero, 🧡 brakes, 💜 chassis, 🩵 cooling, 💙 electrics, ❤️ powertrain,
+# 💗 suspension). One source of truth: drives BOTH the floating labels on the
+# 3D car and the selection chips in the dropdown, so the picker reads the same
+# colour everywhere. "electrics" merges the old accumulator + data-acquisition
+# channels under the one blue tag.
+_ROLE_COLOR = {
+    "aero":        "#ffd93b",  # 💛 yellow  · fsae-aerodynamics
+    "brakes":      "#ff9f2e",  # 🧡 orange  · fsae-brakes
+    "chassis":     "#b06cf5",  # 💜 purple  · fsae-chassis
+    "powertrain":  "#ff4d4d",  # ❤️ red     · fsae-powertrain
+    "suspension":  "#ff6fae",  # 💗 pink    · fsae-suspension
+    "electrics":   "#3b7cff",  # 💙 blue    · fsae-electrics
+    "cooling":     "#7fd9f5",  # 🩵 light blue · fsae-cooling
+    "dataacq":     "#4fd35e",  # 💚 green   · fsae-data-acquisition
+    "cost":        "#8d99a6",  # no channel · neutral grey
+}
+
 _team_keys = [k for k in _BLENDABLE if k != "everyone"]
 _default = [r for r in _roles if r in _team_keys]
 
-_pcar, _pctl = st.columns([1.15, 1.0], gap="large")
+_pcar, _pctl = st.columns([1.0, 1.05], gap="large")
 
 with _pctl:
     st.markdown("#### Who are you on the team?")
@@ -1117,13 +1144,40 @@ with _pctl:
         _roles = _picked_norm
         st.rerun()
 
+    # Colour each selection chip to its subteam's team colour (same palette as
+    # the on-car labels), so "Brakes" reads orange, "Electrics" blue, etc. —
+    # not Streamlit's default amber. Chips render in the order the user picked
+    # them, so we target them by nth-of-type and recolour per selected role.
+    if _picked and not _show_all:
+        _chip_rules = []
+        for _ix, _rk in enumerate(_picked, start=1):
+            _bg = _ROLE_COLOR.get(_rk, "#8d99a6")
+            # Target the nth tag chip. baseweb renders each selected value as a
+            # [data-baseweb="tag"] sibling in pick order, so nth-of-type maps 1:1
+            # onto _picked. Recolour background + border to the team colour.
+            _sel = (f'[data-testid="stMultiSelect"] [data-baseweb="tag"]'
+                    f':nth-of-type({_ix})')
+            _chip_rules.append(
+                f'{_sel}{{background:{_bg}!important;border-color:{_bg}!important;}}')
+        # Dark, readable text + matching close-button "×" on every coloured chip
+        # (the team colours are bright, so near-black foreground reads best).
+        _chip_rules.append(
+            '[data-testid="stMultiSelect"] [data-baseweb="tag"],'
+            '[data-testid="stMultiSelect"] [data-baseweb="tag"] *'
+            '{color:#0b0d10!important;font-weight:600!important;}')
+        _chip_rules.append(
+            '[data-testid="stMultiSelect"] [data-baseweb="tag"] svg'
+            '{fill:#0b0d10!important;stroke:#0b0d10!important;}')
+        st.markdown("<style>" + "".join(_chip_rules) + "</style>",
+                    unsafe_allow_html=True)
+
     if _show_all:
-        st.caption("Showing **all 21** tabs")
+        st.caption("Showing all 21 tabs")
     elif _roles == ["everyone"]:
-        st.caption("Showing the **shared** tabs · rest under ⋯ More")
+        st.caption("Showing shared tabs only")
     else:
         _names = " + ".join(_ROLE_LABELS[r].split(" / ")[0] for r in _roles)
-        st.caption(f"Showing **{_names}** · rest under ⋯ More")
+        st.caption(f"Showing **{_names}** + shared tabs")
 
     if st.button("Show all tabs" if not _show_all else "Back to focus mode",
                  use_container_width=True,
@@ -1156,6 +1210,7 @@ with _pcar:
         _fig_pick = fullcar_mod.build_full_car_figure(
             vp=_vp_pick,
             highlight_subsystem=_hl,
+            show_cg=False,
             height=340,
         )
         _fig_pick.update_layout(
@@ -1169,19 +1224,9 @@ with _pcar:
         # four-corner subsystem like Suspension gets a single tag, not four.
         # Bright accent hues (not the car's dark body colours) keep the text
         # legible against the matte tub.
-        # Official subteam colours — matched to the team's Discord channel
-        # heart emojis (💛 aero, 🧡 brakes, 💜 chassis, 🩵 cooling,
-        # 💙 electrics, ❤️ powertrain, 💗 suspension). The "electrics" role
-        # merges the old accumulator + data-acquisition channels under one blue
-        # tag, since that subteam owns the HV pack and the electronics together.
-        _ROLE_LABEL_COLOR = {
-            "aero":        "#ffd93b",  # 💛 yellow  · fsae-aerodynamics
-            "brakes":      "#ff9f2e",  # 🧡 orange  · fsae-brakes
-            "chassis":     "#b06cf5",  # 💜 purple  · fsae-chassis
-            "powertrain":  "#ff4d4d",  # ❤️ red     · fsae-powertrain
-            "suspension":  "#ff6fae",  # 💗 pink    · fsae-suspension
-            "electrics":   "#3b7cff",  # 💙 blue    · fsae-electrics
-        }
+        # Labels use the shared team-colour palette (_ROLE_COLOR), the same
+        # source the dropdown chips read, so the picker is colour-consistent.
+        _ROLE_LABEL_COLOR = _ROLE_COLOR
         _meta = _fig_pick.layout.meta if isinstance(_fig_pick.layout.meta, dict) else {}
         _cents = (_meta or {}).get("subsys_centroids", {}) or {}
         for _r in _roles:
