@@ -39,6 +39,21 @@ except Exception:  # pragma: no cover
 METRIC = "metric"
 US = "us"
 
+# Module-level active system. Set explicitly by the app at the top of each rerun
+# via set_system(); falls back to reading session_state for backward compatibility.
+_active_system: str = METRIC
+
+
+def set_system(system: str) -> None:
+    """Explicitly set the active unit system for this rerun.
+
+    Call this once at the top of the app (right after the sidebar radio widget)
+    so every subsequent units_mod call in the same rerun uses the correct system
+    without relying on session_state reads.
+    """
+    global _active_system
+    _active_system = system
+
 # Conversion table keyed by the metric unit string used throughout the app.
 # Each entry: metric_unit -> (us_label, metric->us factor, metric->us offset)
 # value_us = value_metric * factor + offset
@@ -65,13 +80,14 @@ _PASSTHROUGH = {"", "°", "%", "g", "s", "psi", "spring/wheel", "fail", "—"}
 
 
 def current_system() -> str:
-    """Active unit system, defaulting to metric and safe outside Streamlit."""
-    if st is not None:
-        try:
-            return st.session_state.get("unit_system", METRIC)
-        except Exception:
-            return METRIC
-    return METRIC
+    """Active unit system for the current rerun.
+
+    Reads the module-level ``_active_system`` variable (set via :func:`set_system`
+    by the app after the sidebar radio renders).  Falls back to
+    ``session_state['unit_system']`` for backward compatibility, and to
+    ``'metric'`` if neither is available.
+    """
+    return _active_system
 
 
 def is_us() -> bool:
