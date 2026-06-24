@@ -1227,8 +1227,7 @@ with _pcar:
         # Labels use the shared team-colour palette (_ROLE_COLOR), the same
         # source the dropdown chips read, so the picker is colour-consistent.
         _ROLE_LABEL_COLOR = _ROLE_COLOR
-        _meta = _fig_pick.layout.meta if isinstance(_fig_pick.layout.meta, dict) else {}
-        _cents = (_meta or {}).get("subsys_centroids", {}) or {}
+        _cents = fullcar_mod.subsys_centroids(_fig_pick)
         for _r in _roles:
             _parts = _ROLE_TO_3D.get(_r, set())
             if not _parts:
@@ -1264,8 +1263,11 @@ with _pcar:
             st.caption("Pick a subteam to light up the parts you own.")
     except Exception as _e:
         # The picker must never block the app: if the 3D car can't build (bad
-        # state, missing dep), silently fall back to the dropdown alone.
+        # state, missing dep), fall back to the dropdown alone — but surface the
+        # actual error so the cause is diagnosable rather than a silent "broke".
         st.caption("3D preview unavailable — pick your subteam(s) on the right.")
+        with st.expander("Why is the 3D preview unavailable?", expanded=False):
+            st.exception(_e)
 
 # --- Decide which ids are primary (own strip) vs folded into "More". ------- #
 if _show_all:
