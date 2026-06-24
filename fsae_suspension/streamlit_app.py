@@ -288,6 +288,18 @@ def umetric(container, label, value_num, unit="", *, fmt="{:.0f}", **kwargs):
     return container.metric(label, text, **kwargs)
 
 
+def uconv_series(values, unit, *, delta=False):
+    """Convert a whole metric data series to the active unit system, for plotting.
+    Pair with ``units_mod.ulabel`` on the axis title so the curve and its axis
+    always agree. ``delta=True`` for difference quantities (gradients) so the
+    temperature offset is not applied."""
+    fn = units_mod.from_metric_delta if delta else units_mod.from_metric
+    try:
+        return [fn(float(v), unit) for v in values]
+    except Exception:
+        return list(values)
+
+
 # --------------------------------------------------------------------------- #
 #  Generic-topology hardpoint editing
 # --------------------------------------------------------------------------- #
@@ -1495,17 +1507,30 @@ def _render_rotor_thermal(_bt, _mass, kin):
         unsafe_allow_html=True)
 
     _tc = st.columns(4)
-    _tk_v0 = _tc[0].number_input("Stop from (km/h)", 40.0, 140.0, value=100.0,
-                                 step=5.0, help="Top speed of the hardest single "
-                                 "stop on track.")
+    _uSpd = units_mod.label("km/h")
+    _uLen = units_mod.label("mm")
+    _tk_v0_disp = _tc[0].number_input(
+        f"Stop from ({_uSpd})", units_mod.from_metric(40.0, "km/h"),
+        units_mod.from_metric(140.0, "km/h"),
+        value=units_mod.from_metric(100.0, "km/h"),
+        step=units_mod.from_metric_delta(5.0, "km/h"),
+        help="Top speed of the hardest single stop on track.")
+    _tk_v0 = units_mod.to_metric(_tk_v0_disp, "km/h")   # km/h (model takes km/h→/3.6)
     _tk_bias = _tc[1].slider("Front bias (%)", 50, 80,
                              int(st.session_state.get("brake_front_bias_pct", 62)),
                              1, help="Front axle's share of braking energy — from "
                              "the Bias & lock-up view.") / 100.0
-    _tk_dia = _tc[2].number_input("Rotor ⌀ (mm)", 180.0, 320.0, value=220.0,
-                                  step=5.0, key="bt_dia")
-    _tk_th = _tc[3].number_input("Rotor thickness (mm)", 3.0, 12.0, value=5.0,
-                                 step=0.5, key="bt_th")
+    _tk_dia_disp = _tc[2].number_input(
+        f"Rotor ⌀ ({_uLen})", units_mod.from_metric(180.0, "mm"),
+        units_mod.from_metric(320.0, "mm"), value=units_mod.from_metric(220.0, "mm"),
+        step=units_mod.from_metric_delta(5.0, "mm"), key="bt_dia")
+    _tk_dia = units_mod.to_metric(_tk_dia_disp, "mm")
+    _tk_th_disp = _tc[3].number_input(
+        f"Rotor thickness ({_uLen})", units_mod.from_metric(3.0, "mm"),
+        units_mod.from_metric(12.0, "mm"), value=units_mod.from_metric(5.0, "mm"),
+        step=units_mod.from_metric_delta(0.5, "mm"),
+        format="%.2f" if units_mod.is_us() else "%.1f", key="bt_th")
+    _tk_th = units_mod.to_metric(_tk_th_disp, "mm")
 
     _tc2 = st.columns(4)
     _tk_vent = _tc2[0].slider("Vented fraction", 0.0, 0.6, 0.0, 0.05,
@@ -1597,17 +1622,19 @@ def _render_rotor_thermal(_bt, _mass, kin):
             help="Steady-state temp where convection+radiation balance the "
             "average braking power. This is the fade-relevant number.")
 
+    _eq_disp = units_mod.from_metric(_equil.T_equilibrium_c, "°C")
+    _eq_u = units_mod.label("°C")
     if _equil.T_equilibrium_c > 650:
-        st.error(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — grey iron "
+        st.error(f"Equilibrium ~{_eq_disp:.0f} {_eq_u} — grey iron "
                  "fades/glazes hard here. Bigger ⌀, more vent area, or a higher-"
                  "temp rotor material; this geometry likely needs Ansys to confirm "
                  "it survives a stint.")
     elif _equil.T_equilibrium_c > 500:
-        st.warning(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — into the fade-"
+        st.warning(f"Equilibrium ~{_eq_disp:.0f} {_eq_u} — into the fade-"
                    "risk band for an iron rotor. Worth meshing to check the "
                    "hot-spot, not just the bulk.")
     else:
-        st.success(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — bulk thermal "
+        st.success(f"Equilibrium ~{_eq_disp:.0f} {_eq_u} — bulk thermal "
                    "load looks manageable. Mesh to confirm the hot-spot and "
                    "coning, but this geometry is a sensible candidate.")
 
@@ -1615,23 +1642,39 @@ def _render_rotor_thermal(_bt, _mass, kin):
         mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
         thickness_mm=_tk_th, dia_min_mm=180.0, dia_max_mm=300.0, n=25,
         vented_fraction=_tk_vent)
+    _is_us = units_mod.is_us()
+    # mass axis: g in metric, lb in US; temp axis: °C / °F
+    _mass_unit_lbl = "lb" if _is_us else "g"
+    _tmp_unit_lbl = units_mod.label("°C")
+    _dia_unit_lbl = units_mod.label("mm")
+
+    def _mass_disp(kg):
+        return units_mod.from_metric(kg, "kg") if _is_us else kg * 1000.0
+
+    def _dia_disp(mm):
+        return units_mod.from_metric(mm, "mm")
+
     _fig_mt = go.Figure()
     _fig_mt.add_trace(go.Scatter(
-        x=[r["rotor_mass_kg"] * 1000 for r in _sweep],
-        y=[r["T_peak_c"] for r in _sweep],
+        x=[_mass_disp(r["rotor_mass_kg"]) for r in _sweep],
+        y=[units_mod.from_metric(r["T_peak_c"], "°C") for r in _sweep],
         mode="lines+markers", line=dict(color=AMBER, width=3),
-        text=[f"⌀{r['diameter_mm']:.0f} mm" for r in _sweep],
-        hovertemplate="%{text}<br>%{x:.0f} g<br>%{y:.0f} °C<extra></extra>",
+        text=[f"⌀{_dia_disp(r['diameter_mm']):.1f} {_dia_unit_lbl}"
+              for r in _sweep],
+        hovertemplate="%{text}<br>%{x:.1f} " + _mass_unit_lbl
+        + "<br>%{y:.0f} " + _tmp_unit_lbl + "<extra></extra>",
         name="single-stop peak"))
     _fig_mt.add_trace(go.Scatter(
-        x=[_single.rotor_mass_kg * 1000], y=[_single.T_peak_c],
+        x=[_mass_disp(_single.rotor_mass_kg)],
+        y=[units_mod.from_metric(_single.T_peak_c, "°C")],
         mode="markers", marker=dict(color=CYAN, size=13, symbol="diamond"),
         name="your rotor", hovertemplate="your rotor<extra></extra>"))
     _fig_mt.update_layout(**PLOT_LAYOUT,
                           title="Mass ↔ peak-temp frontier (single stop) — pick "
                           "the knee, mesh those",
-                          xaxis_title="rotor mass (g)",
-                          yaxis_title="single-stop peak temp (°C)", height=360)
+                          xaxis_title=f"rotor mass ({_mass_unit_lbl})",
+                          yaxis_title=f"single-stop peak temp ({_tmp_unit_lbl})",
+                          height=360)
     st.plotly_chart(_fig_mt, width="stretch")
 
     # ---- Transient: temperature trace through a repeated-stop fade test -----
@@ -1674,20 +1717,26 @@ def _render_rotor_thermal(_bt, _mass, kin):
             delta_color=("inverse" if _trace.over_material_limit else "normal"))
 
     _fig_ft = go.Figure()
-    _fig_ft.add_trace(go.Scatter(x=_trace.t_s, y=_trace.T_rotor_c, mode="lines",
+    _fig_ft.add_trace(go.Scatter(x=_trace.t_s,
+                                 y=uconv_series(_trace.T_rotor_c, "°C"),
+                                 mode="lines",
                                  line=dict(color=RED, width=2.5), name="rotor"))
-    _fig_ft.add_trace(go.Scatter(x=_trace.t_s, y=_trace.T_pad_c, mode="lines",
+    _fig_ft.add_trace(go.Scatter(x=_trace.t_s,
+                                 y=uconv_series(_trace.T_pad_c, "°C"),
+                                 mode="lines",
                                  line=dict(color=AMBER, width=2), name="pad"))
-    _fig_ft.add_hline(y=_trace.material_T_max_c, line_dash="dot",
-                      line_color="#ff5a52",
+    _fig_ft.add_hline(y=units_mod.from_metric(_trace.material_T_max_c, "°C"),
+                      line_dash="dot", line_color="#ff5a52",
                       annotation_text=f"{_bt.ROTOR_MATERIALS[_ft_mat].name} limit")
     _fig_ft.update_layout(**PLOT_LAYOUT, title="Fade test — rotor & pad temperature",
-                          xaxis_title="time (s)", yaxis_title="temperature (°C)",
+                          xaxis_title="time (s)",
+                          yaxis_title=units_mod.ulabel("temperature (°C)"),
                           height=340)
     st.plotly_chart(_fig_ft, width="stretch")
     if _trace.over_material_limit:
         st.error(f"Rotor exceeds the {_bt.ROTOR_MATERIALS[_ft_mat].name} service "
-                 f"limit ({_trace.material_T_max_c:.0f} °C) during the test — this "
+                 f"limit ({units_mod.from_metric(_trace.material_T_max_c, '°C'):.0f} "
+                 f"{units_mod.label('°C')}) during the test — this "
                  "material/geometry won't survive the stint. Bigger ⌀, vent it, "
                  "add duct airflow, or change material.")
 
@@ -1724,15 +1773,20 @@ def _render_rotor_thermal(_bt, _mass, kin):
                        delta_color=_risk_color.get(_od.crack_risk, "normal"))
 
         _fig_1d = go.Figure()
-        _fig_1d.add_trace(go.Scatter(x=_od.t_s, y=_od.T_surface_c, mode="lines",
+        _fig_1d.add_trace(go.Scatter(x=_od.t_s,
+                                     y=uconv_series(_od.T_surface_c, "°C"),
+                                     mode="lines",
                                      line=dict(color=RED, width=2.5),
                                      name="surface"))
-        _fig_1d.add_trace(go.Scatter(x=_od.t_s, y=_od.T_core_c, mode="lines",
+        _fig_1d.add_trace(go.Scatter(x=_od.t_s,
+                                     y=uconv_series(_od.T_core_c, "°C"),
+                                     mode="lines",
                                      line=dict(color=CYAN, width=2),
                                      name="core"))
         _fig_1d.update_layout(**PLOT_LAYOUT,
                               title="Through-thickness: surface vs core temperature",
-                              xaxis_title="time (s)", yaxis_title="temperature (°C)",
+                              xaxis_title="time (s)",
+                              yaxis_title=units_mod.ulabel("temperature (°C)"),
                               height=320)
         st.plotly_chart(_fig_1d, width="stretch")
         if _od.crack_risk == "high":
@@ -1747,17 +1801,23 @@ def _render_rotor_thermal(_bt, _mass, kin):
     # ---- Material comparison: same test, every material ---------------------
     with st.expander("Compare rotor materials on this exact fade test"):
         _rows = []
+        _mc_uT = units_mod.label("°C")
+        _mc_uM = "lb" if units_mod.is_us() else "g"
         for _mk in _bt.ROTOR_MATERIALS:
             _tt = _bt.TwoNodeRotorPad(_bt.TwoNodeParams(
                 rotor_mat=_mk, diameter_mm=_tk_dia, thickness_mm=_tk_th,
                 vented_fraction=_tk_vent, area_factor=float(_tk_area),
                 duct_gain=float(_ft_duct))).simulate(_pw, _dt, v_series=_vs)
             _m = _bt.ROTOR_MATERIALS[_mk]
+            _mass_disp = (round(units_mod.from_metric(_tt.rotor_mass_kg, "kg"), 2)
+                          if units_mod.is_us() else round(_tt.rotor_mass_kg * 1000))
             _rows.append({
                 "Material": _m.name,
-                "Rotor mass (g)": round(_tt.rotor_mass_kg * 1000),
-                "Peak rotor (°C)": round(_tt.T_rotor_peak_c),
-                "Ceiling (°C)": round(_m.T_max_c),
+                f"Rotor mass ({_mc_uM})": _mass_disp,
+                f"Peak rotor ({_mc_uT})": round(
+                    units_mod.from_metric(_tt.T_rotor_peak_c, "°C")),
+                f"Ceiling ({_mc_uT})": round(
+                    units_mod.from_metric(_m.T_max_c, "°C")),
                 "Verdict": "⚠ over limit" if _tt.over_material_limit else "ok",
             })
         st.dataframe(_rows, width="stretch", hide_index=True)
@@ -1769,22 +1829,29 @@ def _render_rotor_thermal(_bt, _mass, kin):
     # ---- Cooling-duct spec: invert the equilibrium --------------------------
     with st.expander("What cooling duct do I need?"):
         _dt_c = st.columns(2)
-        _T_tgt = _dt_c[0].number_input("Target rotor temp (°C)", 200.0, 700.0,
-                                       value=500.0, step=25.0, key="bt_ttgt",
-                                       help="Keep the rotor at/below this over the "
-                                       "stint.")
+        _duct_uT = units_mod.label("°C")
+        # Input shows/accepts the active unit; we store the metric value.
+        _tgt_default = units_mod.from_metric(500.0, "°C")
+        _tgt_lo = units_mod.from_metric(200.0, "°C")
+        _tgt_hi = units_mod.from_metric(700.0, "°C")
+        _tgt_step = units_mod.from_metric_delta(25.0, "°C")
+        _T_tgt_disp = _dt_c[0].number_input(
+            f"Target rotor temp ({_duct_uT})", _tgt_lo, _tgt_hi,
+            value=_tgt_default, step=_tgt_step, key="bt_ttgt",
+            help="Keep the rotor at/below this over the stint.")
+        _T_tgt = units_mod.to_metric(_T_tgt_disp, "°C")   # back to °C for the model
         _req = _bt.required_duct_gain(
             p_brake_avg_w=_tk_pwr, v_work_ms=_tk_air / 3.6, diameter_mm=_tk_dia,
             T_target_c=float(_T_tgt))
         if _req["achievable_unducted"]:
             _dt_c[1].success(f"No duct needed — the bare rotor holds "
-                             f"{_T_tgt:.0f} °C at this power.")
+                             f"{_T_tgt_disp:.0f} {_duct_uT} at this power.")
         else:
             _dt_c[1].warning(f"Need a duct raising airflow ≈"
                              f"{_req['required_duct_gain']:.1f}× "
                              f"(h {_req['h_unducted_w_m2K']:.0f}→"
                              f"{_req['h_needed_w_m2K']:.0f} W/m²K) to hold "
-                             f"{_T_tgt:.0f} °C.")
+                             f"{_T_tgt_disp:.0f} {_duct_uT}.")
 
     # ---- ROTOR OPTIMISER: own the loop, mesh only the winners ---------------
     st.markdown('<p class="hint" style="margin:12px 0 2px;border-top:2px solid '
@@ -1796,10 +1863,15 @@ def _render_rotor_thermal(_bt, _mass, kin):
                 'points — not the whole sweep.</p>', unsafe_allow_html=True)
 
     _oc = st.columns(4)
-    _opt_Tcon = _oc[0].number_input("Max allowed rotor temp (°C)", 300.0, 1000.0,
-                                    value=600.0, step=25.0, key="bt_opt_tcon",
-                                    help="The constraint: peak rotor temp over the "
-                                    "fade test must stay below this.")
+    _opt_uT = units_mod.label("°C")
+    _opt_Tcon_disp = _oc[0].number_input(
+        f"Max allowed rotor temp ({_opt_uT})",
+        units_mod.from_metric(300.0, "°C"), units_mod.from_metric(1000.0, "°C"),
+        value=units_mod.from_metric(600.0, "°C"),
+        step=units_mod.from_metric_delta(25.0, "°C"), key="bt_opt_tcon",
+        help="The constraint: peak rotor temp over the fade test must stay "
+        "below this.")
+    _opt_Tcon = units_mod.to_metric(_opt_Tcon_disp, "°C")
     _opt_mats = _oc[1].multiselect("Materials to search",
                                    list(_bt.ROTOR_MATERIALS.keys()),
                                    default=["grey_cast_iron", "steel"],
@@ -1836,22 +1908,39 @@ def _render_rotor_thermal(_bt, _mass, kin):
 
     _optres = st.session_state.get("bt_opt_result")
     if _optres is not None:
+        _uT = units_mod.label("°C")
+        _uL = units_mod.label("mm")
+        _uM = "lb" if units_mod.is_us() else "g"
+
+        def _T(c):  # absolute temperature
+            return units_mod.from_metric(c, "°C")
+
+        def _Td(c):  # temperature difference (margin)
+            return units_mod.from_metric_delta(c, "°C")
+
+        def _L(mm):
+            return units_mod.from_metric(mm, "mm")
+
+        def _M(kg):
+            return units_mod.from_metric(kg, "kg") if units_mod.is_us() else kg * 1000.0
+
         if _optres.best is None:
             st.error(f"No rotor in the searched space stays under "
-                     f"{_optres.constraint_c:.0f} °C over {int(_opt_nstops)} stops "
-                     f"({_optres.n_evaluated} candidates checked). Raise the temp "
-                     "limit, add brake-duct airflow, vent the rotor, or accept a "
-                     "bigger/heavier disc — then re-optimise.")
+                     f"{_T(_optres.constraint_c):.0f} {_uT} over {int(_opt_nstops)} "
+                     f"stops ({_optres.n_evaluated} candidates checked). Raise the "
+                     "temp limit, add brake-duct airflow, vent the rotor, or accept "
+                     "a bigger/heavier disc — then re-optimise.")
         else:
             _b = _optres.best
             _bm = _bt.ROTOR_MATERIALS[_b.material]
             st.success(
                 f"**Lightest rotor that survives:** {_bm.name}, "
-                f"⌀{_b.diameter_mm:.0f} × {_b.thickness_mm:.1f} mm, "
-                f"vent {_b.vented_fraction:.0%} → **{_b.rotor_mass_kg*1000:.0f} g**, "
-                f"peak {_b.T_rotor_peak_c:.0f} °C "
-                f"({_b.margin_c:.0f} °C under the {_b.T_limit_c:.0f} °C limit). "
-                f"Searched {_optres.n_evaluated} geometries; "
+                f"⌀{_L(_b.diameter_mm):.1f} × {_L(_b.thickness_mm):.2f} {_uL}, "
+                f"vent {_b.vented_fraction:.0%} → "
+                f"**{_M(_b.rotor_mass_kg):.{1 if units_mod.is_us() else 0}f} {_uM}**, "
+                f"peak {_T(_b.T_rotor_peak_c):.0f} {_uT} "
+                f"({_Td(_b.margin_c):.0f} {_uT} under the {_T(_b.T_limit_c):.0f} "
+                f"{_uT} limit). Searched {_optres.n_evaluated} geometries; "
                 f"{len(_optres.feasible)} feasible.")
 
             # Pareto scatter: every candidate, feasible vs not, Pareto front, winner
@@ -1860,38 +1949,40 @@ def _render_rotor_thermal(_bt, _mass, kin):
             _feas = _optres.feasible
             if _infeas:
                 _fig_op.add_trace(go.Scatter(
-                    x=[c.rotor_mass_kg * 1000 for c in _infeas],
-                    y=[c.T_rotor_peak_c for c in _infeas], mode="markers",
+                    x=[_M(c.rotor_mass_kg) for c in _infeas],
+                    y=[_T(c.T_rotor_peak_c) for c in _infeas], mode="markers",
                     marker=dict(color=DIM, size=5, opacity=0.4),
                     name="over limit", hoverinfo="skip"))
             if _feas:
                 _fig_op.add_trace(go.Scatter(
-                    x=[c.rotor_mass_kg * 1000 for c in _feas],
-                    y=[c.T_rotor_peak_c for c in _feas], mode="markers",
+                    x=[_M(c.rotor_mass_kg) for c in _feas],
+                    y=[_T(c.T_rotor_peak_c) for c in _feas], mode="markers",
                     marker=dict(color=CYAN, size=6, opacity=0.55),
                     name="feasible", hoverinfo="skip"))
             _fig_op.add_trace(go.Scatter(
-                x=[c.rotor_mass_kg * 1000 for c in _optres.pareto],
-                y=[c.T_rotor_peak_c for c in _optres.pareto],
+                x=[_M(c.rotor_mass_kg) for c in _optres.pareto],
+                y=[_T(c.T_rotor_peak_c) for c in _optres.pareto],
                 mode="lines+markers", line=dict(color=AMBER, width=3),
                 marker=dict(size=7),
-                text=[f"{_bt.ROTOR_MATERIALS[c.material].name} ⌀{c.diameter_mm:.0f} "
-                      f"{c.thickness_mm:.1f}mm vent{c.vented_fraction:.0%}"
+                text=[f"{_bt.ROTOR_MATERIALS[c.material].name} "
+                      f"⌀{_L(c.diameter_mm):.1f} {_L(c.thickness_mm):.2f}{_uL} "
+                      f"vent{c.vented_fraction:.0%}"
                       for c in _optres.pareto],
-                hovertemplate="%{text}<br>%{x:.0f} g<br>%{y:.0f} °C<extra></extra>",
+                hovertemplate="%{text}<br>%{x:.1f} " + _uM + "<br>%{y:.0f} " + _uT
+                + "<extra></extra>",
                 name="Pareto front (mesh these)"))
             _fig_op.add_trace(go.Scatter(
-                x=[_b.rotor_mass_kg * 1000], y=[_b.T_rotor_peak_c],
+                x=[_M(_b.rotor_mass_kg)], y=[_T(_b.T_rotor_peak_c)],
                 mode="markers", marker=dict(color=RED, size=15, symbol="star"),
                 name="lightest feasible", hovertemplate="winner<extra></extra>"))
-            _fig_op.add_hline(y=_optres.constraint_c, line_dash="dash",
+            _fig_op.add_hline(y=_T(_optres.constraint_c), line_dash="dash",
                               line_color="#ff5a52",
-                              annotation_text=f"limit {_optres.constraint_c:.0f}°C")
+                              annotation_text=f"limit {_T(_optres.constraint_c):.0f}{_uT}")
             _fig_op.update_layout(**PLOT_LAYOUT,
                                   title="Design space — every rotor, the Pareto "
                                   "front, and the winner",
-                                  xaxis_title="rotor mass (g)",
-                                  yaxis_title="peak rotor temp over fade test (°C)",
+                                  xaxis_title=f"rotor mass ({_uM})",
+                                  yaxis_title=f"peak rotor temp over fade test ({_uT})",
                                   height=420)
             st.plotly_chart(_fig_op, width="stretch")
 
@@ -1978,6 +2069,9 @@ _note_notification_fragment()
 
 
 travels = [st_.travel for st_ in sweep]
+# Unit-aware copies for plotting (mm in metric, in in US). Angles are unitless.
+travels_u = [units_mod.from_metric(t, "mm") for t in travels]
+_U_TRAVEL = units_mod.label("mm")
 
 # ----------------------------- TAB 1 --------------------------------------- #
 with tab1:
@@ -2032,34 +2126,38 @@ with tab1:
 
     c1, c2 = st.columns(2)
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=travels, y=[st_.camber for st_ in sweep],
+    fig.add_trace(go.Scatter(x=travels_u, y=[st_.camber for st_ in sweep],
                   mode="lines", line=dict(color=CYAN, width=3), name="Camber"))
     fig.update_layout(**PLOT_LAYOUT, title="Camber vs wheel travel",
-                      xaxis_title="travel (mm, + bump)", yaxis_title="camber (°)",
-                      height=340)
+                      xaxis_title=f"travel ({_U_TRAVEL}, + bump)",
+                      yaxis_title="camber (°)", height=340)
     c1.plotly_chart(fig, width='stretch')
 
     fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=travels, y=[st_.toe for st_ in sweep],
+    fig2.add_trace(go.Scatter(x=travels_u, y=[st_.toe for st_ in sweep],
                    mode="lines", line=dict(color=AMBER, width=3), name="Toe"))
     fig2.update_layout(**PLOT_LAYOUT, title="Bump steer (toe vs travel)",
-                       xaxis_title="travel (mm, + bump)", yaxis_title="toe (°, + out)",
-                       height=340)
+                       xaxis_title=f"travel ({_U_TRAVEL}, + bump)",
+                       yaxis_title="toe (°, + out)", height=340)
     c2.plotly_chart(fig2, width='stretch')
 
     c3, c4 = st.columns(2)
     fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(x=travels, y=[st_.scrub_radius for st_ in sweep],
-                   mode="lines", line=dict(color="#9b8cff", width=3)))
+    fig3.add_trace(go.Scatter(
+        x=travels_u,
+        y=[units_mod.from_metric(st_.scrub_radius, "mm") for st_ in sweep],
+        mode="lines", line=dict(color="#9b8cff", width=3)))
     fig3.update_layout(**PLOT_LAYOUT, title="Scrub radius vs travel",
-                       xaxis_title="travel (mm)", yaxis_title="scrub (mm)", height=320)
+                       xaxis_title=f"travel ({_U_TRAVEL})",
+                       yaxis_title=f"scrub ({_U_TRAVEL})", height=320)
     c3.plotly_chart(fig3, width='stretch')
 
     fig4 = go.Figure()
-    fig4.add_trace(go.Scatter(x=travels, y=[st_.caster for st_ in sweep],
+    fig4.add_trace(go.Scatter(x=travels_u, y=[st_.caster for st_ in sweep],
                    mode="lines", line=dict(color="#62d27a", width=3)))
     fig4.update_layout(**PLOT_LAYOUT, title="Caster vs travel",
-                       xaxis_title="travel (mm)", yaxis_title="caster (°)", height=320)
+                       xaxis_title=f"travel ({_U_TRAVEL})",
+                       yaxis_title="caster (°)", height=320)
     c4.plotly_chart(fig4, width='stretch')
 
     st.markdown('<p class="hint">Camber gain should be negative in bump so the '
@@ -2084,12 +2182,14 @@ with tab2:
         ld, _ = veh.lateral_load_transfer(g)
         fl.append(ld.fl); fr.append(ld.fr); rl.append(ld.rl); rr.append(ld.rr)
     figL = go.Figure()
-    figL.add_trace(go.Scatter(x=gs, y=fr, name="Front outer", line=dict(color=CYAN, width=3)))
-    figL.add_trace(go.Scatter(x=gs, y=fl, name="Front inner", line=dict(color=CYAN, width=1.5, dash="dot")))
-    figL.add_trace(go.Scatter(x=gs, y=rr, name="Rear outer", line=dict(color=AMBER, width=3)))
-    figL.add_trace(go.Scatter(x=gs, y=rl, name="Rear inner", line=dict(color=AMBER, width=1.5, dash="dot")))
+    _cv = lambda arr: [units_mod.from_metric(v, "N") for v in arr]
+    figL.add_trace(go.Scatter(x=gs, y=_cv(fr), name="Front outer", line=dict(color=CYAN, width=3)))
+    figL.add_trace(go.Scatter(x=gs, y=_cv(fl), name="Front inner", line=dict(color=CYAN, width=1.5, dash="dot")))
+    figL.add_trace(go.Scatter(x=gs, y=_cv(rr), name="Rear outer", line=dict(color=AMBER, width=3)))
+    figL.add_trace(go.Scatter(x=gs, y=_cv(rl), name="Rear inner", line=dict(color=AMBER, width=1.5, dash="dot")))
     figL.update_layout(**PLOT_LAYOUT, title="Tire vertical load vs lateral g",
-                       xaxis_title="lateral acceleration (g)", yaxis_title="vertical load (N)",
+                       xaxis_title="lateral acceleration (g)",
+                       yaxis_title=units_mod.ulabel("vertical load (N)"),
                        height=380)
     c1.plotly_chart(figL, width='stretch')
 
@@ -2104,10 +2204,13 @@ with tab2:
     # Roll-centre migration through travel — the honest picture vs a static number.
     mt, mrc = veh.roll_center_migration(kin, veh.p.track_front, -30, 30, 21)
     figM = go.Figure()
-    figM.add_trace(go.Scatter(x=mt, y=mrc, mode="lines",
-                              line=dict(color="#9b8cff", width=3)))
+    figM.add_trace(go.Scatter(
+        x=[units_mod.from_metric(v, "mm") for v in mt],
+        y=[units_mod.from_metric(v, "mm") for v in mrc], mode="lines",
+        line=dict(color="#9b8cff", width=3)))
     figM.update_layout(**PLOT_LAYOUT, title="Roll-centre height migration vs travel",
-                       xaxis_title="travel (mm, + bump)", yaxis_title="RC height (mm)",
+                       xaxis_title=units_mod.ulabel("travel (mm, + bump)"),
+                       yaxis_title=units_mod.ulabel("RC height (mm)"),
                        height=300)
     st.plotly_chart(figM, width='stretch')
     _rc_swing = max(mrc) - min(mrc) if all(np.isfinite(mrc)) else float("nan")
@@ -3506,21 +3609,30 @@ with tab_aero:
     # ---------------------------------------------------------------- VIEW 1 #
     if _view == "Downforce & ground effect":
         gcol = st.columns(2)
+        _uSpd = units_mod.label("km/h")
+        _uF = units_mod.label("N")
+        _uLn = units_mod.label("mm")
         # (a) force vs speed
         _vs = np.linspace(20, 120, 40)  # km/h
         _dfs, _drs = [], []
         for v in _vs:
             d, r, *_ = _aero_forces(_aero_ride, _aero_yaw, v / 3.6, _aero_area)
             _dfs.append(d); _drs.append(r)
+        _vs_u = [units_mod.from_metric(v, "km/h") for v in _vs]
         f1 = go.Figure()
-        f1.add_trace(go.Scatter(x=_vs, y=_dfs, name="Downforce (N)",
+        f1.add_trace(go.Scatter(x=_vs_u,
+                                y=[units_mod.from_metric(v, "N") for v in _dfs],
+                                name=f"Downforce ({_uF})",
                                 line=dict(color="#37e0d0", width=3)))
-        f1.add_trace(go.Scatter(x=_vs, y=_drs, name="Drag (N)",
+        f1.add_trace(go.Scatter(x=_vs_u,
+                                y=[units_mod.from_metric(v, "N") for v in _drs],
+                                name=f"Drag ({_uF})",
                                 line=dict(color="#ff9f43", width=3)))
-        f1.add_vline(x=_aero_v, line=dict(color="#6f7d8c", dash="dot"))
+        f1.add_vline(x=units_mod.from_metric(_aero_v, "km/h"),
+                     line=dict(color="#6f7d8c", dash="dot"))
         f1.update_layout(
-            title="Force vs speed (∝ V²)", xaxis_title="speed (km/h)",
-            yaxis_title="force (N)", height=340,
+            title="Force vs speed (∝ V²)", xaxis_title=f"speed ({_uSpd})",
+            yaxis_title=f"force ({_uF})", height=340,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0),
             legend=dict(bgcolor="rgba(0,0,0,0)"))
@@ -3529,14 +3641,18 @@ with tab_aero:
         _hs = np.linspace(12, 60, 40)
         _dfh = [_aero_forces(h, _aero_yaw, _aero_v_ms, _aero_area)[0] for h in _hs]
         f2 = go.Figure()
-        f2.add_trace(go.Scatter(x=_hs, y=_dfh, name="Downforce",
-                                line=dict(color="#5ad17a", width=3),
-                                fill="tozeroy", fillcolor="rgba(90,209,122,0.12)"))
-        f2.add_vline(x=_aero_ride, line=dict(color="#6f7d8c", dash="dot"))
+        f2.add_trace(go.Scatter(
+            x=[units_mod.from_metric(h, "mm") for h in _hs],
+            y=[units_mod.from_metric(v, "N") for v in _dfh], name="Downforce",
+            line=dict(color="#5ad17a", width=3),
+            fill="tozeroy", fillcolor="rgba(90,209,122,0.12)"))
+        f2.add_vline(x=units_mod.from_metric(_aero_ride, "mm"),
+                     line=dict(color="#6f7d8c", dash="dot"))
         f2.update_layout(
             title="Ground effect: downforce vs ride height",
-            xaxis_title="ride height (mm)  ← lower = closer to ground",
-            yaxis_title="downforce (N) @ %.0f km/h" % _aero_v, height=340,
+            xaxis_title=f"ride height ({_uLn})  ← lower = closer to ground",
+            yaxis_title=f"downforce ({_uF}) @ %.0f {_uSpd}" % units_mod.from_metric(_aero_v, "km/h"),
+            height=340,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0),
             legend=dict(bgcolor="rgba(0,0,0,0)"))
@@ -3590,14 +3706,19 @@ with tab_aero:
         umetric(rc[2], "Floor/diffuser carry", _floor_force, "N", delta=f"{_diff_gain}%")
         umetric(rc[3], "Drag cost", _tot_drag, "N", delta=f"L/D {_ld_sized:.2f}")
         # bar: front vs rear contribution
+        _uF = units_mod.label("N")
+        _uSpd = units_mod.label("km/h")
         fbar = go.Figure()
         fbar.add_trace(go.Bar(
             x=["Front axle", "Rear axle"],
-            y=[_target * _split / 100.0, _target * (100 - _split) / 100.0],
+            y=[units_mod.from_metric(_target * _split / 100.0, "N"),
+               units_mod.from_metric(_target * (100 - _split) / 100.0, "N")],
             marker_color=["#37e0d0", "#ff9f43"]))
         fbar.update_layout(
-            title="Downforce split to hit %0.0f N @ %.0f km/h" % (_target, _aero_v),
-            yaxis_title="downforce (N)", height=300,
+            title="Downforce split to hit %0.0f %s @ %.0f %s" % (
+                units_mod.from_metric(_target, "N"), _uF,
+                units_mod.from_metric(_aero_v, "km/h"), _uSpd),
+            yaxis_title=f"downforce ({_uF})", height=300,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0))
         st.plotly_chart(fbar, width='stretch', key="aero_split")
@@ -3642,17 +3763,26 @@ with tab_aero:
                 d, r, cl, cd, fb = _aero_forces(h, yw, _aero_v_ms, _aero_area)
                 Z[iy, ih] = (d if _what.startswith("Downforce")
                              else r if _what.startswith("Drag") else fb * 100.0)
+        _is_force = not _what.startswith("Aero")   # Downforce/Drag are in N
+        if _is_force:
+            Z = np.array([[units_mod.from_metric(v, "N") for v in row] for row in Z])
+        _uLn = units_mod.label("mm")
+        _uF = units_mod.label("N")
+        _uSpd = units_mod.label("km/h")
+        _cbar_title = (_uF if _is_force else "% front")
         _scale = ("Tealrose" if _what.startswith("Aero") else
                   "Viridis" if _what.startswith("Downforce") else "Inferno")
         fh = go.Figure(data=go.Heatmap(
-            x=_hs, y=_yaws, z=Z, colorscale=_scale,
-            colorbar=dict(title=_what.split()[0])))
-        fh.add_trace(go.Scatter(x=[_aero_ride], y=[_aero_yaw], mode="markers",
+            x=[units_mod.from_metric(h, "mm") for h in _hs], y=_yaws, z=Z,
+            colorscale=_scale, colorbar=dict(title=_cbar_title)))
+        fh.add_trace(go.Scatter(x=[units_mod.from_metric(_aero_ride, "mm")],
+                                y=[_aero_yaw], mode="markers",
                                 marker=dict(color="#ffffff", size=11, symbol="x"),
                                 name="current", showlegend=False))
         fh.update_layout(
-            title="%s vs ride height × yaw @ %.0f km/h" % (_what, _aero_v),
-            xaxis_title="ride height (mm)", yaxis_title="yaw / sideslip (°)",
+            title="%s vs ride height × yaw @ %.0f %s" % (
+                _what, units_mod.from_metric(_aero_v, "km/h"), _uSpd),
+            xaxis_title=f"ride height ({_uLn})", yaxis_title="yaw / sideslip (°)",
             height=440, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0))
         st.plotly_chart(fh, width='stretch', key="aero_map")
@@ -3856,17 +3986,30 @@ with tab_ev:
         _F_power = _P / np.maximum(_v, 0.5)             # tractive force from power
         _F_tract = float(getattr(_base, "mass", 230.0)) * 9.81 * 1.4  # ~grip-limited
         _F = np.minimum(_F_power, _F_tract)
+        _uSpd = units_mod.label("km/h")
+        _uF = units_mod.label("N")
+        _uPw = units_mod.label("kW")
+        _v_kmh = _v * 3.6
         fp = go.Figure()
-        fp.add_trace(go.Scatter(x=_v * 3.6, y=_F, name="Deployable tractive force",
-                                line=dict(color="#5ad17a", width=3),
-                                fill="tozeroy", fillcolor="rgba(90,209,122,0.10)"))
-        fp.add_trace(go.Scatter(x=_v * 3.6, y=_F_power, name="Power-limited",
-                                line=dict(color="#6f7d8c", width=1, dash="dot")))
-        fp.add_hline(y=_F_tract, line=dict(color="#ff9f43", dash="dot"),
+        fp.add_trace(go.Scatter(
+            x=[units_mod.from_metric(v, "km/h") for v in _v_kmh],
+            y=[units_mod.from_metric(float(f), "N") for f in _F],
+            name="Deployable tractive force",
+            line=dict(color="#5ad17a", width=3),
+            fill="tozeroy", fillcolor="rgba(90,209,122,0.10)"))
+        fp.add_trace(go.Scatter(
+            x=[units_mod.from_metric(v, "km/h") for v in _v_kmh],
+            y=[units_mod.from_metric(float(f), "N") for f in _F_power],
+            name="Power-limited",
+            line=dict(color="#6f7d8c", width=1, dash="dot")))
+        fp.add_hline(y=units_mod.from_metric(float(_F_tract), "N"),
+                     line=dict(color="#ff9f43", dash="dot"),
                      annotation_text="grip limit", annotation_position="top right")
         fp.update_layout(
-            title="Tractive force envelope @ %.0f kW" % _power_kw,
-            xaxis_title="speed (km/h)", yaxis_title="force at the tyres (N)", height=360,
+            title="Tractive force envelope @ %.1f %s" % (
+                units_mod.from_metric(_power_kw, "kW"), _uPw),
+            xaxis_title=f"speed ({_uSpd})",
+            yaxis_title=f"force at the tyres ({_uF})", height=360,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0),
             legend=dict(bgcolor="rgba(0,0,0,0)"))
@@ -4306,25 +4449,31 @@ with tab_brake:
 
         # pedal force actually required to hit lock-up
         _pf_req = _pedal_force / max(_ratio, 1e-6)
+        _uTq = units_mod.label("N·m")
+        _uFc = units_mod.label("N")
+        _Tm = units_mod.from_metric(_T_made, "N·m")
+        _Tn = units_mod.from_metric(_T_need, "N·m")
+        _pfr = units_mod.from_metric(_pf_req, "N")
+        _pf = units_mod.from_metric(_pedal_force, "N")
         if _ratio >= 1.0:
-            st.success(f"✓ This corner can lock the tyre: it makes {_T_made:.0f} N·m, and "
-                       f"only {_pf_req:.0f} N of pedal force is needed to reach the "
-                       f"{_T_need:.0f} N·m lock-up torque (you set {_pedal_force:.0f} N). "
+            st.success(f"✓ This corner can lock the tyre: it makes {_Tm:.0f} {_uTq}, and "
+                       f"only {_pfr:.0f} {_uFc} of pedal force is needed to reach the "
+                       f"{_Tn:.0f} {_uTq} lock-up torque (you set {_pf:.0f} {_uFc}). "
                        "Combined with a front-first bias, the car passes the lock-all-four test.")
         else:
-            st.error(f"✗ Under-sized: at {_pedal_force:.0f} N pedal force this corner only "
-                     f"makes {_T_made:.0f} of the {_T_need:.0f} N·m needed to lock. Drop the "
+            st.error(f"✗ Under-sized: at {_pf:.0f} {_uFc} pedal force this corner only "
+                     f"makes {_Tm:.0f} of the {_Tn:.0f} {_uTq} needed to lock. Drop the "
                      "master-cylinder bore, raise the pedal ratio, or fit a bigger rotor/caliper.")
 
         # bar: torque-made vs needed for this corner at the current driver pedal force
         fbar = go.Figure()
-        fbar.add_trace(go.Bar(x=["This corner"], y=[_T_made], name="Torque made",
+        fbar.add_trace(go.Bar(x=["This corner"], y=[_Tm], name="Torque made",
                               marker_color="#5ad17a"))
-        fbar.add_trace(go.Bar(x=["This corner"], y=[_T_need], name="Torque to lock",
+        fbar.add_trace(go.Bar(x=["This corner"], y=[_Tn], name="Torque to lock",
                               marker_color="#ff5a52"))
         fbar.update_layout(
             barmode="group", title="Brake torque made vs needed (%s)" % _axle.lower(),
-            yaxis_title="torque (N·m)", height=300,
+            yaxis_title=f"torque ({_uTq})", height=300,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#cdd6df", size=11), margin=dict(l=0, r=0, t=36, b=0),
             legend=dict(bgcolor="rgba(0,0,0,0)"))
@@ -6073,29 +6222,37 @@ with tab5c:
                     unsafe_allow_html=True)
 
         # member force / deflection bar chart
+        _uF = units_mod.label("N")
+        _uL = units_mod.label("mm")
         members = [m for m in ("UF", "UR", "LF", "LR", "TR", "PR")
                    if m in res.member_forces]
-        forces = [res.member_forces[m] for m in members]
-        defls = [res.member_deflection.get(m, float("nan")) for m in members]
+        forces = [units_mod.from_metric(res.member_forces[m], "N") for m in members]
+        defls = [units_mod.from_metric(res.member_deflection.get(m, float("nan")), "mm")
+                 for m in members]
         figF = make_subplots(specs=[[{"secondary_y": True}]])
-        figF.add_trace(go.Bar(x=members, y=forces, name="Axial force (N)",
+        figF.add_trace(go.Bar(x=members, y=forces, name=f"Axial force ({_uF})",
                               marker_color=CYAN, opacity=0.85), secondary_y=False)
-        figF.add_trace(go.Scatter(x=members, y=defls, name="Deflection (mm)",
+        figF.add_trace(go.Scatter(x=members, y=defls, name=f"Deflection ({_uL})",
                                   mode="markers", marker=dict(color=AMBER, size=11)),
                        secondary_y=True)
         figF.update_layout(**PLOT_LAYOUT, title="Member axial force & deflection",
                            height=340, barmode="group")
-        figF.update_yaxes(title_text="axial force (N, + tension)", secondary_y=False)
-        figF.update_yaxes(title_text="deflection (mm, + stretch)", secondary_y=True)
+        figF.update_yaxes(title_text=units_mod.ulabel("axial force (N, + tension)"),
+                          secondary_y=False)
+        figF.update_yaxes(title_text=units_mod.ulabel("deflection (mm, + stretch)"),
+                          secondary_y=True)
         st.plotly_chart(figF, width='stretch')
 
         # ---- joint-specific views: where the give is, the curve, the damping --- #
         if comp_use_joints and res.member_joint_deflection:
             bd = [m for m in ("UF", "UR", "LF", "LR", "TR")
                   if m in res.member_joint_deflection]
-            link_d = [res.member_joint_deflection[m]["link"] for m in bd]
-            jin_d = [res.member_joint_deflection[m]["joint_in"] for m in bd]
-            jout_d = [res.member_joint_deflection[m]["joint_out"] for m in bd]
+            link_d = [units_mod.from_metric(
+                res.member_joint_deflection[m]["link"], "mm") for m in bd]
+            jin_d = [units_mod.from_metric(
+                res.member_joint_deflection[m]["joint_in"], "mm") for m in bd]
+            jout_d = [units_mod.from_metric(
+                res.member_joint_deflection[m]["joint_out"], "mm") for m in bd]
             figB = go.Figure()
             figB.add_trace(go.Bar(x=bd, y=link_d, name="link", marker_color=DIM))
             figB.add_trace(go.Bar(x=bd, y=jin_d, name="inboard joint",
@@ -6103,21 +6260,23 @@ with tab5c:
             figB.add_trace(go.Bar(x=bd, y=jout_d, name="outboard joint",
                                   marker_color=AMBER))
             figB.update_layout(**PLOT_LAYOUT, barmode="relative", height=320,
-                               title="Where the give is — link vs joints (mm)")
-            figB.update_yaxes(title_text="axial give (mm, + stretch)")
+                               title=f"Where the give is — link vs joints ({_uL})")
+            figB.update_yaxes(title_text=units_mod.ulabel("axial give (mm, + stretch)"))
             st.plotly_chart(figB, width='stretch')
 
             jshow = tie_in_ui or joint_in_ui or joint_out_ui
             if jshow is not None:
                 dd = np.linspace(-0.6, 0.6, 161)
                 ff = [jshow.force(float(x)) for x in dd]
-                figJ = go.Figure(go.Scatter(x=dd, y=ff, mode="lines",
-                                            line=dict(color=CYAN, width=3)))
+                figJ = go.Figure(go.Scatter(
+                    x=[units_mod.from_metric(float(x), "mm") for x in dd],
+                    y=[units_mod.from_metric(float(v), "N") for v in ff],
+                    mode="lines", line=dict(color=CYAN, width=3)))
                 figJ.update_layout(**PLOT_LAYOUT, height=300,
                                    title=f"Joint force–displacement curve "
                                          f"({jshow.label or jshow.kind})",
-                                   xaxis_title="displacement (mm)",
-                                   yaxis_title="force (N, + tension)")
+                                   xaxis_title=units_mod.ulabel("displacement (mm)"),
+                                   yaxis_title=units_mod.ulabel("force (N, + tension)"))
                 st.plotly_chart(figJ, width='stretch')
 
             try:
@@ -6409,14 +6568,16 @@ with tab7:
                             "bad" if b["over_budget"] else "good"), unsafe_allow_html=True)
 
     if store.mass_by_team():
+        _uMs = units_mod.label("kg")
         figW = go.Figure()
         teams = list(store.mass_by_team().keys())
-        masses = list(store.mass_by_team().values())
+        masses = [units_mod.from_metric(v, "kg")
+                  for v in store.mass_by_team().values()]
         colors = [integ_mod.TEAMS.get(t, {}).get("color", "#888") for t in teams]
         figW.add_trace(go.Bar(x=masses, y=teams, orientation="h",
                               marker_color=colors))
-        figW.update_layout(**PLOT_LAYOUT, title="Mass by subteam (kg)",
-                           height=max(220, 40 * len(teams)), xaxis_title="kg",
+        figW.update_layout(**PLOT_LAYOUT, title=f"Mass by subteam ({_uMs})",
+                           height=max(220, 40 * len(teams)), xaxis_title=_uMs,
                            yaxis_title="")
         st.plotly_chart(figW, width='stretch')
 
@@ -6821,9 +6982,11 @@ with tab9:
     Fz = np.linspace(150, 2200, 60)
     mu = [live_tire.mu_peak(f) for f in Fz]
     figG = go.Figure()
-    figG.add_trace(go.Scatter(x=Fz, y=mu, mode="lines", line=dict(color=CYAN, width=3)))
+    figG.add_trace(go.Scatter(x=[units_mod.from_metric(f, "N") for f in Fz],
+                              y=mu, mode="lines", line=dict(color=CYAN, width=3)))
     figG.update_layout(**PLOT_LAYOUT, title="Load sensitivity — peak μ vs vertical load",
-                       xaxis_title="vertical load (N)", yaxis_title="peak μ", height=320)
+                       xaxis_title=units_mod.ulabel("vertical load (N)"),
+                       yaxis_title="peak μ", height=320)
     cc1.plotly_chart(figG, width='stretch')
 
     cam = np.linspace(0, 5, 40)
@@ -7058,14 +7221,18 @@ with tab9:
         _ct = tire_mod.CombinedSlipTire(lateral=_live_tire_cs)
         _Fz_demo = float(st.session_state.tire_fnomin)
         fx_e, fy_e = _ct.friction_circle(_Fz_demo)
+        _uFc = units_mod.label("N")
         figFE = go.Figure()
-        figFE.add_trace(go.Scatter(x=fx_e, y=fy_e, mode="lines",
-                                   line=dict(color=CYAN, width=2.5),
-                                   name="grip limit"))
+        figFE.add_trace(go.Scatter(
+            x=[units_mod.from_metric(v, "N") for v in fx_e],
+            y=[units_mod.from_metric(v, "N") for v in fy_e], mode="lines",
+            line=dict(color=CYAN, width=2.5),
+            name="grip limit"))
         figFE.update_layout(**PLOT_LAYOUT,
-                            title=f"Combined grip envelope at Fz={_Fz_demo:.0f} N",
-                            xaxis_title="longitudinal force Fx (N)",
-                            yaxis_title="lateral force Fy (N)", height=340)
+                            title=f"Combined grip envelope at Fz="
+                            f"{units_mod.from_metric(_Fz_demo, 'N'):.0f} {_uFc}",
+                            xaxis_title=f"longitudinal force Fx ({_uFc})",
+                            yaxis_title=f"lateral force Fy ({_uFc})", height=340)
         figFE.update_yaxes(scaleanchor="x", scaleratio=1)
         st.plotly_chart(figFE, width='stretch')
         st.markdown(f'<span class="tag warn">{_ct.status()}</span>',
@@ -7140,23 +7307,25 @@ with tab9:
                             unsafe_allow_html=True)
 
         # temperature traces
+        _cT = lambda arr: [units_mod.from_metric(float(v), "°C") for v in arr]
         figT = go.Figure()
-        figT.add_trace(go.Scatter(x=_trun.t, y=_mean, mode="lines",
+        figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_mean), mode="lines",
                                   line=dict(color=CYAN, width=3), name="tread (mean)"))
-        figT.add_trace(go.Scatter(x=_trun.t, y=_trun.carcass_c, mode="lines",
+        figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.carcass_c), mode="lines",
                                   line=dict(color=AMBER, width=2), name="carcass"))
-        figT.add_trace(go.Scatter(x=_trun.t, y=_trun.gas_c, mode="lines",
+        figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.gas_c), mode="lines",
                                   line=dict(color=DIM, width=2, dash="dot"), name="gas"))
         # across-width band spread (inner/mid/outer) at the plateau
         if _trun.tread_c.shape[1] > 1:
-            figT.add_trace(go.Scatter(x=_trun.t, y=_trun.tread_c[:, 0], mode="lines",
+            figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.tread_c[:, 0]), mode="lines",
                                       line=dict(color=CYAN, width=1, dash="dot"),
                                       name="tread inner", opacity=0.5))
-            figT.add_trace(go.Scatter(x=_trun.t, y=_trun.tread_c[:, -1], mode="lines",
+            figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.tread_c[:, -1]), mode="lines",
                                       line=dict(color=RED, width=1, dash="dot"),
                                       name="tread outer", opacity=0.5))
         figT.update_layout(**PLOT_LAYOUT, title="Tire warm-up — lumped thermal network",
-                           xaxis_title="time (s)", yaxis_title="temperature (°C)",
+                           xaxis_title="time (s)",
+                           yaxis_title=units_mod.ulabel("temperature (°C)"),
                            height=360)
         st.plotly_chart(figT, width='stretch')
 
@@ -7201,11 +7370,12 @@ with tab9:
                                  c_bump_high=_cbh, c_reb_high=_crh)
     _vv, _ff = _dc.curve_points(v_max=0.4)
     figD = go.Figure()
-    figD.add_trace(go.Scatter(x=_vv, y=_ff, mode="lines",
-                              line=dict(color=AMBER, width=2.5), name="damper"))
+    figD.add_trace(go.Scatter(
+        x=_vv, y=[units_mod.from_metric(v, "N") for v in _ff], mode="lines",
+        line=dict(color=AMBER, width=2.5), name="damper"))
     figD.update_layout(**PLOT_LAYOUT, title="Damper force vs shaft velocity",
                        xaxis_title="shaft velocity (m/s)  +bump / −rebound",
-                       yaxis_title="force (N)", height=320)
+                       yaxis_title=units_mod.ulabel("force (N)"), height=320)
     st.plotly_chart(figD, width='stretch')
     try:
         _mr_demo = kin.motion_ratio() if kin.motion_ratio_is_real() else 1.0
@@ -7552,12 +7722,16 @@ with tab11:
 
         # Speed-vs-distance trace
         if lap.ok and lap.s and lap.v:
+            _uDist = units_mod.label("m")
+            _uSp = units_mod.label("m/s")
             figL = go.Figure()
-            figL.add_trace(go.Scatter(x=lap.s, y=lap.v, mode="lines",
-                                      line=dict(color=CYAN, width=2.5),
-                                      name="speed"))
+            figL.add_trace(go.Scatter(
+                x=[units_mod.from_metric(v, "m") for v in lap.s],
+                y=[units_mod.from_metric(v, "m/s") for v in lap.v], mode="lines",
+                line=dict(color=CYAN, width=2.5), name="speed"))
             figL.update_layout(**PLOT_LAYOUT, title="Speed around the lap",
-                               xaxis_title="distance (m)", yaxis_title="speed (m/s)",
+                               xaxis_title=f"distance ({_uDist})",
+                               yaxis_title=f"speed ({_uSp})",
                                height=320)
             st.plotly_chart(figL, width='stretch')
 
@@ -7764,13 +7938,20 @@ with tab12:
                         mc[3].markdown(metric("Peak Δ", f"{tr.peak_speed_error:+.1f}", "m/s"),
                                        unsafe_allow_html=True)
 
+                        _uD = units_mod.label("m")
+                        _uS = units_mod.label("m/s")
                         figV = go.Figure()
-                        figV.add_trace(go.Scatter(x=tr.distance, y=tr.measured,
-                                                  name="measured", mode="lines"))
-                        figV.add_trace(go.Scatter(x=tr.distance, y=tr.predicted,
-                                                  name="predicted (sim)", mode="lines"))
+                        figV.add_trace(go.Scatter(
+                            x=[units_mod.from_metric(v, "m") for v in tr.distance],
+                            y=[units_mod.from_metric(v, "m/s") for v in tr.measured],
+                            name="measured", mode="lines"))
+                        figV.add_trace(go.Scatter(
+                            x=[units_mod.from_metric(v, "m") for v in tr.distance],
+                            y=[units_mod.from_metric(v, "m/s") for v in tr.predicted],
+                            name="predicted (sim)", mode="lines"))
                         figV.update_layout(**PLOT_LAYOUT, title="Speed vs distance — measured vs sim",
-                                           xaxis_title="distance (m)", yaxis_title="speed (m/s)",
+                                           xaxis_title=f"distance ({_uD})",
+                                           yaxis_title=f"speed ({_uS})",
                                            height=380)
                         st.plotly_chart(figV, width='stretch')
                         st.markdown(f'<p class="hint">{rep.summary}</p>', unsafe_allow_html=True)
@@ -8726,15 +8907,17 @@ with tab_ggv:
                 unsafe_allow_html=True)
 
         # ---- Capability vs speed --------------------------------------- #
+        _uSp = units_mod.label("m/s")
+        _spd_u = [units_mod.from_metric(v, "m/s") for v in _res.speeds]
         figC = go.Figure()
-        figC.add_trace(go.Scatter(x=_res.speeds, y=_res.max_lat_g, mode="lines+markers",
+        figC.add_trace(go.Scatter(x=_spd_u, y=_res.max_lat_g, mode="lines+markers",
                                   line=dict(color=CYAN, width=2.5), name="max lateral g"))
-        figC.add_trace(go.Scatter(x=_res.speeds, y=_res.max_accel_g, mode="lines+markers",
+        figC.add_trace(go.Scatter(x=_spd_u, y=_res.max_accel_g, mode="lines+markers",
                                   line=dict(color=AMBER, width=2.5), name="max accel g"))
-        figC.add_trace(go.Scatter(x=_res.speeds, y=_res.max_brake_g, mode="lines+markers",
+        figC.add_trace(go.Scatter(x=_spd_u, y=_res.max_brake_g, mode="lines+markers",
                                   line=dict(color=RED, width=2.5), name="max braking g"))
         figC.update_layout(**PLOT_LAYOUT, title="Capability vs speed",
-                           xaxis_title="speed (m/s)", yaxis_title="g", height=320)
+                           xaxis_title=f"speed ({_uSp})", yaxis_title="g", height=320)
         # Flag the speeds where lateral g is a wheel-lift artifact so the curve
         # isn't read as honest grip there.
         if _lift_pts:
