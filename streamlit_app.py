@@ -635,68 +635,53 @@ with st.sidebar:
         st.caption("Agnostic engine · this topology drives the same RC / anti-dive / "
                    "balance pipeline as the wishbone path.")
 
-    st.markdown(f'<div class="sub" style="color:#8d99a6;font-family:JetBrains Mono;font-size:.7rem;letter-spacing:.18em;margin-bottom:.6rem;">HARDPOINT EDITOR · {_U_LEN} · SAE x-rear y-right z-up</div>', unsafe_allow_html=True)
+    # For users whose subteam does not edit suspension geometry, fold the
+    # hardpoint editor into a collapsed expander so the sidebar opens calm.
+    # Suspension/Dynamics (and the All-tabs power view) get it open as before.
+    import contextlib as _ctxlib
+    # Open the hardpoint editor for anyone whose blend includes Suspension/
+    # Dynamics, or who has the full all-tabs view on. Read the multi-role
+    # selection (falling back to the legacy single-role key for old sessions).
+    _kk_roles_sb = st.session_state.get("kk_roles",
+                                        st.session_state.get("kk_role", "everyone"))
+    if isinstance(_kk_roles_sb, str):
+        _kk_roles_sb = [_kk_roles_sb]
+    _geom_role = ("suspension" in _kk_roles_sb) or bool(st.session_state.get("kk_show_all", False))
+    with (_ctxlib.nullcontext() if _geom_role
+          else st.expander("Suspension geometry (hardpoint editor)", expanded=False)) as _geom_box:
+        if not _geom_role:
+            st.caption("Not your subteam? You can leave this as-is — the rest of "
+                       "the studio reads it automatically.")
+        st.markdown(f'<div class="sub" style="color:#8d99a6;font-family:JetBrains Mono;font-size:.7rem;letter-spacing:.18em;margin-bottom:.6rem;">HARDPOINT EDITOR · {_U_LEN} · SAE x-rear y-right z-up</div>', unsafe_allow_html=True)
 
-    _is_wishbone = (topo_choice == "double_wishbone")
+        _is_wishbone = (topo_choice == "double_wishbone")
 
-    # Default the names the solve block expects; the wishbone branch overrides
-    # `preset`, the generic branch produces `_topo_coords`.
-    preset = "Front (default)"
-    _topo_coords = None
+        # Default the names the solve block expects; the wishbone branch overrides
+        # `preset`, the generic branch produces `_topo_coords`.
+        preset = "Front (default)"
+        _topo_coords = None
 
-    if _is_wishbone:
-        colA, colB = st.columns(2)
-        if colA.button("↺ Reset", width='stretch'):
-            st.session_state.hp = Hardpoints.default().as_dict()
-            st.rerun()
-        preset = colB.selectbox("Preset", ["Front (default)", "Low roll-centre",
-                                           "High anti-dive"], label_visibility="collapsed")
+        if _is_wishbone:
+            colA, colB = st.columns(2)
+            if colA.button("↺ Reset", width='stretch'):
+                st.session_state.hp = Hardpoints.default().as_dict()
+                st.rerun()
+            preset = colB.selectbox("Preset", ["Front (default)", "Low roll-centre",
+                                               "High anti-dive"], label_visibility="collapsed")
 
-        st.markdown("###### Design intent")
-        c1, c2 = st.columns(2)
-        st.session_state.hp["static_camber"] = c1.number_input(
-            "Static camber °", value=float(st.session_state.hp.get("static_camber", -1.5)),
-            step=0.1, format="%.2f")
-        st.session_state.hp["static_toe"] = c2.number_input(
-            "Static toe °", value=float(st.session_state.hp.get("static_toe", 0.0)),
-            step=0.05, format="%.2f")
+            st.markdown("###### Design intent")
+            c1, c2 = st.columns(2)
+            st.session_state.hp["static_camber"] = c1.number_input(
+                "Static camber °", value=float(st.session_state.hp.get("static_camber", -1.5)),
+                step=0.1, format="%.2f")
+            st.session_state.hp["static_toe"] = c2.number_input(
+                "Static toe °", value=float(st.session_state.hp.get("static_toe", 0.0)),
+                step=0.05, format="%.2f")
 
-        st.markdown("###### Pickup coordinates")
-        _coord_step = 0.1 if _US else 2.0
-        _coord_fmt = "%.2f" if _US else "%.1f"
-        for key, label in POINTS:
-            with st.expander(label, expanded=False):
-                v = st.session_state.hp[key]
-                cols = st.columns(3)
-                nv = []
-                for i, ax in enumerate("xyz"):
-                    _disp = cols[i].number_input(
-                        f"{ax} ({_U_LEN})",
-                        value=units_mod.from_metric(float(v[i]), "mm"),
-                        step=_coord_step, key=f"{key}_{ax}",
-                        format=_coord_fmt, label_visibility="visible")
-                    nv.append(units_mod.to_metric(_disp, "mm"))
-                st.session_state.hp[key] = nv
-
-        st.markdown("###### Pushrod / rocker")
-        rocker_on = st.checkbox(
-            "Pushrod-actuated (real motion ratio)",
-            value=bool(st.session_state.hp.get("pushrod_outer") is not None),
-            help="When on, the motion ratio and wheel rate come from the actual "
-                 "bell-crank geometry. When off, a direct-acting proxy is used and "
-                 "reported spring→wheel rates are only indicative.")
-        if rocker_on:
-            # Seed rocker points from the default if the project doesn't carry them.
-            _def = Hardpoints.default().as_dict()
-            for key, label in ROCKER_POINTS:
-                if st.session_state.hp.get(key) is None:
-                    st.session_state.hp[key] = _def[key]
-            attach = st.selectbox(
-                "Pushrod mounts on", ["lower", "upper", "upright"],
-                index=["lower", "upper", "upright"].index(
-                    st.session_state.hp.get("pushrod_attach", "lower")))
-            st.session_state.hp["pushrod_attach"] = attach
-            for key, label in ROCKER_POINTS:
+            st.markdown("###### Pickup coordinates")
+            _coord_step = 0.1 if _US else 2.0
+            _coord_fmt = "%.2f" if _US else "%.1f"
+            for key, label in POINTS:
                 with st.expander(label, expanded=False):
                     v = st.session_state.hp[key]
                     cols = st.columns(3)
@@ -706,20 +691,52 @@ with st.sidebar:
                             f"{ax} ({_U_LEN})",
                             value=units_mod.from_metric(float(v[i]), "mm"),
                             step=_coord_step, key=f"{key}_{ax}",
-                            format="%.2f", label_visibility="visible")
+                            format=_coord_fmt, label_visibility="visible")
                         nv.append(units_mod.to_metric(_disp, "mm"))
                     st.session_state.hp[key] = nv
+
+            st.markdown("###### Pushrod / rocker")
+            rocker_on = st.checkbox(
+                "Pushrod-actuated (real motion ratio)",
+                value=bool(st.session_state.hp.get("pushrod_outer") is not None),
+                help="When on, the motion ratio and wheel rate come from the actual "
+                     "bell-crank geometry. When off, a direct-acting proxy is used and "
+                     "reported spring→wheel rates are only indicative.")
+            if rocker_on:
+                # Seed rocker points from the default if the project doesn't carry them.
+                _def = Hardpoints.default().as_dict()
+                for key, label in ROCKER_POINTS:
+                    if st.session_state.hp.get(key) is None:
+                        st.session_state.hp[key] = _def[key]
+                attach = st.selectbox(
+                    "Pushrod mounts on", ["lower", "upper", "upright"],
+                    index=["lower", "upper", "upright"].index(
+                        st.session_state.hp.get("pushrod_attach", "lower")))
+                st.session_state.hp["pushrod_attach"] = attach
+                for key, label in ROCKER_POINTS:
+                    with st.expander(label, expanded=False):
+                        v = st.session_state.hp[key]
+                        cols = st.columns(3)
+                        nv = []
+                        for i, ax in enumerate("xyz"):
+                            _disp = cols[i].number_input(
+                                f"{ax} ({_U_LEN})",
+                                value=units_mod.from_metric(float(v[i]), "mm"),
+                                step=_coord_step, key=f"{key}_{ax}",
+                                format="%.2f", label_visibility="visible")
+                            nv.append(units_mod.to_metric(_disp, "mm"))
+                        st.session_state.hp[key] = nv
+            else:
+                # Clear rocker points so has_rocker() is False and the proxy is used.
+                for key, _ in ROCKER_POINTS:
+                    st.session_state.hp[key] = None
         else:
-            # Clear rocker points so has_rocker() is False and the proxy is used.
-            for key, _ in ROCKER_POINTS:
-                st.session_state.hp[key] = None
-    else:
-        # Generic topologies: edit the Mechanism's named points directly. Every
-        # architecture now has a live hardpoint editor, not just the wishbone.
-        st.caption("Live editor for this architecture — move any pickup, free "
-                   "joint, or carrier point; the agnostic engine re-solves the "
-                   "same RC / anti-dive / balance pipeline.")
-        _topo_coords = render_generic_point_editor(topo_choice)
+            # Generic topologies: edit the Mechanism's named points directly. Every
+            # architecture now has a live hardpoint editor, not just the wishbone.
+            st.caption("Live editor for this architecture — move any pickup, free "
+                       "joint, or carrier point; the agnostic engine re-solves the "
+                       "same RC / anti-dive / balance pipeline.")
+            _topo_coords = render_generic_point_editor(topo_choice)
 
     st.markdown("---")
     st.markdown("###### Vehicle")
@@ -910,83 +927,369 @@ if not _mr_real:
                 'geometry for real spring→wheel rates</span>', unsafe_allow_html=True)
 
 st.write("")
-with st.expander("👋 New here? Start here (30-second tour)", expanded=False):
+with st.expander("👋 New here? 20 seconds, then pick your subteam below", expanded=False):
     st.markdown("""
-**What KinematiK is:** an architecture-agnostic suspension studio (born FSAE
-double-wishbone, now a general multibody platform) plus a shared team workspace.
-It turns *any* suspension geometry into live kinematics and vehicle-level balance,
-runs grip / lap-time / transient analysis on top, and keeps a searchable record of
-*why* the team made its design decisions so that knowledge doesn't vanish at graduation.
+**Three steps and you're working:**
 
-**Pick your topology first:** the sidebar **Suspension topology** selector switches
-the whole studio between double-wishbone (full live hardpoint editor), MacPherson
-strut, multi-link, trailing / semi-trailing arm, solid axle, twist-beam, a
-heavy-truck steering linkage, or an experimental free-form layout. Every topology
-feeds the *same* analysis pipeline below.
+1. **Pick your subteam(s)** in the selector right below this box — one, or
+   several if you own more than one (brakes *and* electronics, say). As you pick,
+   the parts that subteam owns **light up on the 3D car** beside the selector
+   (drag it to spin it), so you can see exactly what's yours before you touch a
+   tab. You'll get those teams' tabs combined up front; everything else is one
+   click away under **⋯ More tools** (or hit **Show all tabs** any time).
+2. **Declare your numbers once** in **🔗 Integration** — mass, CG, envelope,
+   heat, power, downforce. They flow into the 3D model, lap sim, cost BOM and
+   every cross-team check automatically. You never type the same number twice.
+3. **Leave a trail** in **📝 Lead Notes** / **⚖️ Weight & Handover** — log the
+   calls you make (especially what *didn't* work). It's the difference between
+   next year starting ahead or relearning everything.
 
-**Find your subteam — go straight to your tabs:**
-- **Suspension / Dynamics** → Kinematics · Roll & Load Transfer · Grip Balance · Compliance · Tire & Grip · Setup Optimiser · GGV · Transient
-- **Aerodynamics** → Aerodynamics (downforce, ground effect, wing/diffuser sizing, aero map)
-- **Powertrain / Drivetrain** → EV Powertrain (architecture choice, energy budget) · Lap Time
-- **Accumulator / Battery / Electrical** → Accumulator (pack design + rules) · the electrics layer of the Heatmap
-- **Brakes** → Brakes (bias, lock-up, hydraulic sizing)
-- **Chassis / Frame** → 3D Model · Team Fit · Integration · Weight & Handover
-- **Electronics / Systems** → Electronics (PCB) · Data-acquisition in Integration
-- **Cost / Business** → Cost & BOM (auto-seeded from the team's declared masses)
-- **Everyone** → 3D Model (see the whole car + your part) · Integration (declare your mass/CG/envelope once, and every tab uses it) · Lead Notes · Validation
-
-Declare your subsystem's numbers **once** in the **Integration** tab (mass, CG, envelope, heat, power, downforce…) and they flow automatically into the 3D model, the heatmap, the lap sim, the cost BOM and the cross-subsystem checks — you never type the same number twice.
-
-**The tabs, in order:**
-- **Kinematics** — camber gain, bump steer, caster, KPI, scrub, motion ratio vs travel.
-- **Roll & Load Transfer** — roll-centre height & migration, lateral load-transfer split.
-- **Grip Balance** — limit understeer/oversteer from the load-sensitive tire model.
-- **3D Model** — one tab, three views via a toggle. **Subsystems**: pick a subsystem (suspension, aero, powertrain, cooling, electrics, brakes, chassis, data-acq), then an individual **part** within it — wishbone, upright, tie rod, wing, radiator, accumulator, brake disc, monocoque, etc. — to zoom the camera onto that one part; the suspension also exposes its **inner pickup points** (wishbone pickups, ball joints, tie-rod ends), and anything that exists at every wheel gets a **corner row (FL / FR / RL / RR)** to drill to a single corner. **Full car**: the whole car assembled from every subsystem, where clicking any part auto-zooms onto it. **Heatmap**: shades the whole car by **heat rejection, electrical draw, or mass** — cool = light load, hot = heavy load — so the powertrain↔cooling↔electrics coupling is legible at a glance; bodies that exceed what the car can carry (heat beyond cooling airflow, draw beyond LV supply, mass over budget) are outlined in magenta, with a ranked contribution table and the relevant integration warnings shown underneath. The colours and warnings are computed from the INTEGRATION ledger, so the picture and the numbers never disagree.
-- **Aerodynamics** — the aero subteam's workspace, three views. **Downforce & ground effect**: live force-vs-speed (∝ V²) and downforce-vs-ride-height curves, so the ground-effect trend is visible as you lower the car. **Wing & diffuser sizing**: size the package to a downforce target, see the drag it costs, the front/rear split it lands, and how much the floor/diffuser carries vs the wings — then push it into the car's declared downforce so the 3D wings, lap sim and heatmap all reflect it. **Aero map**: the ride-height × yaw attitude sweep (downforce / drag / balance) that the lap sim queries through a lap. Driven by the in-house analytic aero model for instant trends, with an honest provenance note and the upgrade path to the shipped 3D source-panel potential-flow solver (real ground effect from your STL), the Virtual Wind Tunnel, pressure-tap correlation, and the ANSYS Fluent verification deck.
-- **EV Powertrain** — the electric powertrain/drivetrain decision. Compares the three FSAE-EV motor architectures (single motor + diff, two-motor axle split, four-motor torque vectoring) on the same car and track, each carrying its own mass penalty and usable corner-exit drive grip, with a full energy budget including regen. Reports lap time, event time, energy per event, and — critically for endurance — whether the pack outlasts the event or runs dry (and the lap-time cost of derating to finish). Torque-vectoring's yaw benefit is shown separately as an upper bound, never folded into the lap time. Includes a cumulative-energy-vs-laps plot (where each pack runs dry against the usable-pack line) and a tractive-force envelope, and can fold the aerodynamics tab's declared downforce/drag into the lap.
-- **Accumulator** — the HV battery-pack designer for the electric team's accumulator subteam. Pick a cell (presets for common 18650/21700 cells, or custom), set the series/parallel topology, and it sizes the pack — voltage, energy, capacity, cell count, mass, per-cell current, C-rate, deliverable power, and I²R heat — then runs the hard FSAE-EV rules checks: tractive system under 600 V, tractive power ≤ 80 kW, per-cell current within the cell's rating, and the < 120 V / < 6 MJ isolatable-segment requirement (EV1 / EV3.3.3), suggesting the minimum compliant segment count. It draws the pack grid coloured by segment, and a button declares the pack (voltage, mass incl. housing, heat) into the INTEGRATION ledger so the heatmap, mass roll-up and electrical checks all use it; the layout also feeds KinematiK's per-cell transient thermal model.
-- **Brakes** — the brake system designer, built around the FSAE brake test (lock all four wheels, stop straight). **Bias & lock-up**: from the live car's mass, CG height and wheelbase it computes the forward load transfer under braking, the ideal front/rear bias vs deceleration, which axle locks first (front-first is stable, rear-first spins the car), the max decel before lock, and the torque needed per corner to lock the tyres — with a brake-bias diagram. **Hydraulic sizing**: sizes the pedal-ratio → master-cylinder → caliper → pad → rotor chain to deliver that lock-up torque, reporting line pressure, clamp force, torque made vs needed, and the pedal force a driver actually needs — then declares the brake torque/corner into the INTEGRATION ledger so the 3D disc size and heatmap reflect it.
-- **Cost & BOM** — the scored FSAE Cost & Manufacturing event, without the blank-sheet pain. It auto-seeds a starter Bill of Materials from the masses every subsystem already declared in INTEGRATION, pre-fills standardized catalog costs (material $/kg by class, plus process rates for holes/cuts/bends/labour and machining), and lets you edit every row inline. It rolls up cost per commodity and against your target, charts cost-by-commodity and make-vs-buy, and exports the BOM as CSV — following the FSAE hierarchy (System/Commodity → Part → Material/Process/Fastener) so material and manufacturing choices show up live as dollars.
-- **Compliance (Flex)** — member axial deflection → compliance steer/camber (double-wishbone member set; switch back to double-wishbone to use it).
-- **Team Fit** — load the chassis once, load your part, get a collision/clearance verdict before you cut anything.
-- **Weight & Handover** — log decisions, track weight, build the next-team handover record.
-- **Lead Notes** — leave notes for another subteam.
-- **Tire & Grip** — fit your tire from TTC data so grip/balance run on *your* rubber, not a generic default.
-- **Setup Optimiser** — which change actually buys grip, given one set of tires.
-- **Lap Time** — turn grip and balance into the score that matters: lap time.
-- **GGV Diagram** — the combined accel/brake/cornering envelope at every speed, on your live tire; sweep CG, camber, ClA, power to see what reshapes it, and cross-check it against the Lap Sim.
-- **Transient** — explicit high-frequency time-step solver for the unsteady stuff (turn-in, kerbs, dampers).
-- **Validation** — correlation against logged/track data so a sim result is believable.
-- **Integration** — CAD/tool interchange, plus the suspension-vs-chassis clearance-through-travel check.
-- **Electronics (PCB)** — copper-survival and signal-integrity checks for the EV harness/ECU: trace heating, fusing, IR-drop brown-out, diff-pair impedance and HV coupling.
-
-**The one habit that makes this worth it:** log your decisions as you make them —
-especially the things that *didn't* work. It takes ten seconds with the templates,
-and it's the difference between next year starting ahead or relearning everything.
+Suspension topology and the live hardpoint editor live in the **sidebar** on the
+left. Want the full description of every single tab? It's in the project README.
     """)
 
-_tabs = st.tabs(
-    ["  KINEMATICS  ", "  ROLL & LOAD TRANSFER  ", "  GRIP BALANCE  ",
-     "  3D MODEL  ", "  AERODYNAMICS  ", "  EV POWERTRAIN  ", "  ACCUMULATOR  ", "  BRAKES  ",
-     "  COST & BOM  ", "  COMPLIANCE (FLEX)  ", "  TEAM FIT  ",
-     "  WEIGHT & HANDOVER  ", "  LEAD NOTES  ",
-     "  TIRE & GRIP  ", "  SETUP OPTIMISER  ", "  LAP TIME  ", "  GGV DIAGRAM  ", "  TRANSIENT  ",
-     "  VALIDATION  ", "  INTEGRATION  ", "  ELECTRONICS (PCB)  "])
-# GEOMETRY 3D and FULL CAR 3D are now one merged "3D MODEL" tab (tab4): a single
-# view with a toggle between the live linkage geometry and the assembled full
-# car, where clicking any part of the full car auto-zooms the camera onto it.
-# Map the existing tab variable names onto the new (merged) tab order so the tab
-# bodies below don't all need renumbering. SUSPENSION vs CHASSIS is no longer a
-# top-level tab — its CAD fit/clearance check now lives inside the merged
-# INTEGRATION tab (tab13) as a sub-view, rendered by render_suspension_vs_chassis().
-# tab5c is the flexible-body compliance view (ADAMS Flex-style).
-# tab_tr is the explicit transient time-step solver (the unsteady half of the lap).
-# tab_pcb is the electronics layer: copper-survival (IPC-2221 heating, Onderdonk
-# fusing, IR-drop / ECU brown-out) + signal-integrity (diff-pair impedance and
-# HV-aggressor coupling), rendered by render_pcb_board().
-# tab_car now aliases tab4 — the full-car view lives inside the same merged tab.
-(tab1, tab2, tab3, tab4, tab_aero, tab_ev, tab_accum, tab_brake, tab_cost, tab5c, tab6, tab7, tab8, tab9, tab10, tab11, tab_ggv,
- tab_tr, tab12, tab13, tab_pcb) = _tabs
+# ========================================================================== #
+#  ROLE-AWARE TAB ROUTING
+#
+#  The studio carries 21 tabs. Showing all 21 to every user — when a brakes
+#  lead never touches the aero map and a cost lead never edits a hardpoint —
+#  is the single biggest source of "this is overwhelming". So instead of one
+#  flat strip of 21, each user picks their subteam ONCE (remembered for the
+#  session); we then surface only that team's working tabs plus the handful
+#  everyone shares, and tuck the rest into a single "⋯ More tools" tab.
+#
+#  Nothing is removed and nothing is hidden behind a wall: every tab body
+#  below still runs exactly as before (same physics, same single source of
+#  truth), and "All tabs (power user)" restores the original flat 21. The
+#  only thing that changes is how many tabs a given person has to look at to
+#  find their work.
+# ========================================================================== #
+
+# Stable id -> (emoji, short label). Order here is the canonical full order.
+_TAB_META = {
+    "kinematics":  ("📐", "Kinematics"),
+    "roll":        ("🎚️", "Roll & Load Transfer"),
+    "grip":        ("🪀", "Grip Balance"),
+    "model3d":     ("🏎️", "3D Model"),
+    "aero":        ("🌬️", "Aerodynamics"),
+    "ev":          ("⚡", "EV Powertrain"),
+    "accum":       ("🔋", "Accumulator"),
+    "brakes":      ("🛑", "Brakes"),
+    "cost":        ("💲", "Cost & BOM"),
+    "compliance":  ("🧬", "Compliance (Flex)"),
+    "teamfit":     ("🧩", "Team Fit"),
+    "weight":      ("⚖️", "Weight & Handover"),
+    "notes":       ("📝", "Lead Notes"),
+    "tire":        ("🛞", "Tire & Grip"),
+    "setup":       ("🎛️", "Setup Optimiser"),
+    "laptime":     ("⏱️", "Lap Time"),
+    "ggv":         ("🟢", "GGV Diagram"),
+    "transient":   ("〰️", "Transient"),
+    "validation":  ("✔️", "Validation"),
+    "integration": ("🔗", "Integration"),
+    "pcb":         ("🔌", "Electronics (PCB)"),
+}
+_FULL_ORDER = list(_TAB_META.keys())
+
+# Tabs every member uses no matter their subteam — the shared spine of the
+# project (see one car, declare your numbers once, read/leave notes).
+_SHARED_IDS = ["model3d", "integration", "notes", "weight", "validation"]
+
+# Subteam -> the tabs that team actually works in (most-used first). Shared
+# tabs are appended automatically, so they're listed here only where a team
+# leans on them especially hard.
+_ROLE_TABS = {
+    "suspension": ["kinematics", "roll", "grip", "compliance", "tire",
+                   "setup", "ggv", "transient"],
+    "aero":       ["aero"],
+    "powertrain": ["ev", "laptime", "ggv"],
+    "electrics":  ["accum", "pcb"],
+    "brakes":     ["brakes"],
+    "chassis":    ["teamfit"],
+    "cost":       ["cost"],
+    "everyone":   [],   # just the shared spine
+}
+_ROLE_LABELS = {
+    "suspension":  "Suspension / Dynamics",
+    "aero":        "Aerodynamics",
+    "powertrain":  "Powertrain / Drivetrain",
+    "electrics":   "Electrics",
+    "brakes":      "Brakes",
+    "chassis":     "Chassis / Frame",
+    "cost":        "Cost / Business",
+    "everyone":    "Everyone / Just looking",
+    "all":         "All tabs (power user)",
+}
+
+# Roles are a *set* — small teams routinely have one person owning two or
+# three subsystems (brakes + electronics, or aero + chassis), so the picker
+# lets you blend as many subteams as you like and unions their tabs. We carry
+# the selection as a list in `kk_roles`; the legacy single-value `kk_role`
+# key is migrated forward so older sessions/projects don't break.
+_BLENDABLE = [k for k in _ROLE_LABELS if k not in ("all",)]  # everyone + 8 teams
+
+def _normalize_roles(_raw):
+    """Coerce whatever is in state into a clean, de-duped list of blendable roles."""
+    if isinstance(_raw, str):
+        _raw = [_raw]
+    # Legacy role keys: the old "accumulator" and "electronics" subteams were
+    # merged into a single "electrics" role, so map either forward (old sessions
+    # and saved projects keep their selection instead of silently losing it).
+    _alias = {"accumulator": "electrics", "electronics": "electrics"}
+    _raw = [_alias.get(r, r) for r in (_raw or [])]
+    # Filter to known roles and drop duplicates (preserving order). De-dup
+    # matters now that two legacy keys can alias onto the same merged role.
+    _seen = set()
+    _out = []
+    for r in _raw:
+        if r in _BLENDABLE and r not in _seen:
+            _seen.add(r)
+            _out.append(r)
+    # 'everyone' is implied by any real team selection; keep it only when alone.
+    _teams = [r for r in _out if r != "everyone"]
+    if _teams:
+        return _teams
+    return ["everyone"]
+
+# Migrate / load current selection.
+if "kk_roles" in st.session_state:
+    _roles = _normalize_roles(st.session_state.get("kk_roles"))
+else:
+    _roles = _normalize_roles(st.session_state.get("kk_role", "everyone"))
+_show_all = bool(st.session_state.get("kk_show_all", False))
+
+# --- Role picker: pick subteam(s) from a dropdown and watch the parts that --
+#     subteam owns light up on a live, rotatable 3D car. Selecting "Aero +
+#     Brakes" glows the wings and the brake discs while the rest of the car
+#     ghosts back, so a new member sees *physically* what they own before they
+#     ever touch a tab. The dropdown is still the input (drag the car only to
+#     rotate); the 3D model is pure visual feedback. "All tabs" overrides with
+#     the full 21-tab view. ------------------------------------------------- #
+
+# Each blendable role -> the set of 3D-mesh subsystem keys it should light up.
+# NB the picker's role keys are NOT the same as fullcar3d's subsystem tags
+# (aero -> "aerodynamics", accumulator -> "electrics", electronics ->
+# "data-acquisition"), so the mapping is explicit. Roles with no physical body
+# on the car (cost) map to an empty set and simply light nothing.
+_ROLE_TO_3D = {
+    "suspension":  {"suspension"},
+    "aero":        {"aerodynamics"},
+    # Cooling isn't a standalone subteam — it's a shared concern handled jointly
+    # by powertrain and electrics, so the sidepod/radiator bodies light up for
+    # either of those roles.
+    # Cooling isn't a standalone subteam — it's a shared concern handled jointly
+    # by powertrain and electrics, so the sidepod/radiator bodies light up for
+    # either of those roles. "electrics" merges the old accumulator + electronics
+    # roles: it owns the HV battery box, the cooling it shares, and the data-acq
+    # electronics (PCBs/loggers).
+    "powertrain":  {"powertrain", "cooling"},
+    "electrics":   {"electrics", "cooling", "data-acquisition"},
+    "brakes":      {"brakes"},
+    "chassis":     {"chassis"},
+    "cost":        set(),          # business role — nothing to glow
+    "everyone":    set(),
+}
+
+_team_keys = [k for k in _BLENDABLE if k != "everyone"]
+_default = [r for r in _roles if r in _team_keys]
+
+_pcar, _pctl = st.columns([1.15, 1.0], gap="large")
+
+with _pctl:
+    st.markdown("#### Who are you on the team?")
+    st.caption("Pick your subteam(s) — the parts you own light up on the car. "
+               "Drag the car to spin it. Blend as many subteams as you wear.")
+    _picked = st.multiselect(
+        "Your subteam(s)",
+        _team_keys,
+        default=_default,
+        format_func=lambda k: _ROLE_LABELS[k],
+        label_visibility="collapsed",
+        placeholder="Pick your subteam(s) — blend as many as you own",
+        disabled=_show_all,
+        help="Choose one or more subteams. Their tabs are combined and shown up "
+             "front; everything else tucks into “⋯ More tools”. Own brakes *and* "
+             "electronics? Pick both. Leave empty to just see the shared tabs. "
+             "“All tabs” overrides this with the full 21-tab view.")
+    _picked_norm = _normalize_roles(_picked)
+    if not _show_all and _picked_norm != _roles:
+        st.session_state.kk_roles = _picked_norm
+        _roles = _picked_norm
+        st.rerun()
+
+    if _show_all:
+        st.caption("Showing **all 21** tabs")
+    elif _roles == ["everyone"]:
+        st.caption("Showing the **shared** tabs · rest under ⋯ More")
+    else:
+        _names = " + ".join(_ROLE_LABELS[r].split(" / ")[0] for r in _roles)
+        st.caption(f"Showing **{_names}** · rest under ⋯ More")
+
+    if st.button("Show all tabs" if not _show_all else "Back to focus mode",
+                 use_container_width=True,
+                 help="Toggle between your focused (blended) tab set and the full "
+                      "21-tab view."):
+        st.session_state.kk_show_all = not _show_all
+        st.rerun()
+
+with _pcar:
+    # Union the 3D subsystems owned by the currently selected roles. When "All
+    # tabs" is on, or nothing real is picked, pass None so the whole car shows
+    # at full brightness rather than ghosting everything.
+    _glow = set()
+    if not _show_all:
+        for _r in _roles:
+            _glow |= _ROLE_TO_3D.get(_r, set())
+    _hl = (_glow or None)
+
+    try:
+        # Build a VehicleParams the same way the Model tab does, so the picker
+        # car is sized to *this* team's wheelbase/track. Fall back to defaults
+        # if state isn't populated yet.
+        try:
+            _vp_pick_kwargs = {
+                k: v for k, v in st.session_state.get("vp", {}).items()
+                if k in VehicleParams.__dataclass_fields__}
+            _vp_pick = VehicleParams(**_vp_pick_kwargs)
+        except Exception:
+            _vp_pick = VehicleParams()
+        _fig_pick = fullcar_mod.build_full_car_figure(
+            vp=_vp_pick,
+            highlight_subsystem=_hl,
+            height=340,
+        )
+        _fig_pick.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),
+            showlegend=False,
+            paper_bgcolor="rgba(0,0,0,0)",
+        )
+        # Float a bright label on each lit subteam, anchored at the centroid of
+        # the parts it owns (exposed by build_full_car_figure as
+        # .subsys_centroids). One label per selected role — not per mesh — so a
+        # four-corner subsystem like Suspension gets a single tag, not four.
+        # Bright accent hues (not the car's dark body colours) keep the text
+        # legible against the matte tub.
+        # Official subteam colours — matched to the team's Discord channel
+        # heart emojis (💛 aero, 🧡 brakes, 💜 chassis, 🩵 cooling,
+        # 💙 electrics, ❤️ powertrain, 💗 suspension). The "electrics" role
+        # merges the old accumulator + data-acquisition channels under one blue
+        # tag, since that subteam owns the HV pack and the electronics together.
+        _ROLE_LABEL_COLOR = {
+            "aero":        "#ffd93b",  # 💛 yellow  · fsae-aerodynamics
+            "brakes":      "#ff9f2e",  # 🧡 orange  · fsae-brakes
+            "chassis":     "#b06cf5",  # 💜 purple  · fsae-chassis
+            "powertrain":  "#ff4d4d",  # ❤️ red     · fsae-powertrain
+            "suspension":  "#ff6fae",  # 💗 pink    · fsae-suspension
+            "electrics":   "#3b7cff",  # 💙 blue    · fsae-electrics
+        }
+        _meta = _fig_pick.layout.meta if isinstance(_fig_pick.layout.meta, dict) else {}
+        _cents = (_meta or {}).get("subsys_centroids", {}) or {}
+        for _r in _roles:
+            _parts = _ROLE_TO_3D.get(_r, set())
+            if not _parts:
+                continue
+            # Average the centroids of every 3D subsystem this role lights, so a
+            # role spanning two bodies (powertrain = motor + cooling) lands one
+            # label between them.
+            _pcs = [_cents[p] for p in _parts if p in _cents]
+            if not _pcs:
+                continue
+            _cx = sum(c[0] for c in _pcs) / len(_pcs)
+            _cy = sum(c[1] for c in _pcs) / len(_pcs)
+            _cz = sum(c[2] for c in _pcs) / len(_pcs)
+            _short = _ROLE_LABELS[_r].split(" / ")[0]
+            _col = _ROLE_LABEL_COLOR.get(_r, "#ffffff")
+            _fig_pick.add_trace(go.Scatter3d(
+                x=[_cx], y=[_cy], z=[_cz + 90.0],   # lift slightly above the part
+                mode="text",
+                text=[f"<b>{_short}</b>"],
+                textposition="middle center",
+                textfont=dict(color=_col, size=13, family="JetBrains Mono"),
+                hoverinfo="skip", showlegend=False, name=f"label_{_r}",
+            ))
+        st.plotly_chart(
+            _fig_pick, width="stretch", key="role_pick_car3d",
+            config={"scrollZoom": True, "displaylogo": False,
+                    "displayModeBar": False})
+        if _hl:
+            _lit = " + ".join(_ROLE_LABELS[r].split(" / ")[0] for r in _roles
+                              if _ROLE_TO_3D.get(r))
+            st.caption(f"Lit up: **{_lit}** — that's the metal you own.")
+        else:
+            st.caption("Pick a subteam to light up the parts you own.")
+    except Exception as _e:
+        # The picker must never block the app: if the 3D car can't build (bad
+        # state, missing dep), silently fall back to the dropdown alone.
+        st.caption("3D preview unavailable — pick your subteam(s) on the right.")
+
+# --- Decide which ids are primary (own strip) vs folded into "More". ------- #
+if _show_all:
+    _primary_ids = list(_FULL_ORDER)
+    _more_ids = []
+else:
+    # Union every selected team's tabs (canonical order), then the shared spine.
+    _own = []
+    for _r in _roles:
+        for _i in _ROLE_TABS.get(_r, []):
+            if _i not in _own:
+                _own.append(_i)
+    # Keep the unioned tabs in canonical full order so the strip reads sensibly
+    # no matter what combination is picked.
+    _own = [_i for _i in _FULL_ORDER if _i in _own]
+    _primary_ids = []
+    for _i in _own + _SHARED_IDS:
+        if _i not in _primary_ids:
+            _primary_ids.append(_i)
+    _more_ids = [_i for _i in _FULL_ORDER if _i not in _primary_ids]
+
+def _tab_label(_id):
+    _em, _lab = _TAB_META[_id]
+    return f"{_em}  {_lab}"
+
+# --- Build the actual Streamlit tab widgets. ------------------------------- #
+# Every one of the 21 tab bodies below still executes; we just route each id's
+# container either into the top strip or into the nested "More tools" strip.
+_id_to_container = {}
+if _more_ids:
+    _top_labels = [_tab_label(i) for i in _primary_ids] + ["⋯  More tools"]
+    _top = st.tabs(_top_labels)
+    for _i, _id in enumerate(_primary_ids):
+        _id_to_container[_id] = _top[_i]
+    with _top[-1]:
+        st.caption("Everything outside your subteam — still live, still reads "
+                   "the same shared numbers. Set your subteam above to pull any "
+                   "of these up front.")
+        _more = st.tabs([_tab_label(i) for i in _more_ids])
+        for _i, _id in enumerate(_more_ids):
+            _id_to_container[_id] = _more[_i]
+else:
+    _top = st.tabs([_tab_label(i) for i in _primary_ids])
+    for _i, _id in enumerate(_primary_ids):
+        _id_to_container[_id] = _top[_i]
+
+# Map the stable ids back onto the legacy tab variable names the bodies below
+# already use, so not a single tab body needs to change.
+tab1        = _id_to_container["kinematics"]
+tab2        = _id_to_container["roll"]
+tab3        = _id_to_container["grip"]
+tab4        = _id_to_container["model3d"]
+tab_aero    = _id_to_container["aero"]
+tab_ev      = _id_to_container["ev"]
+tab_accum   = _id_to_container["accum"]
+tab_brake   = _id_to_container["brakes"]
+tab_cost    = _id_to_container["cost"]
+tab5c       = _id_to_container["compliance"]
+tab6        = _id_to_container["teamfit"]
+tab7        = _id_to_container["weight"]
+tab8        = _id_to_container["notes"]
+tab9        = _id_to_container["tire"]
+tab10       = _id_to_container["setup"]
+tab11       = _id_to_container["laptime"]
+tab_ggv     = _id_to_container["ggv"]
+tab_tr      = _id_to_container["transient"]
+tab12       = _id_to_container["validation"]
+tab13       = _id_to_container["integration"]
+tab_pcb     = _id_to_container["pcb"]
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
@@ -5513,12 +5816,31 @@ with tab7:
 
     st.markdown("---")
     st.markdown("###### Export handover report")
+    # Re-derive the static state locally so this export never depends on a module
+    # variable that another tab may have shadowed; read every field defensively so
+    # an exotic topology or an unconverged solve degrades gracefully instead of
+    # taking down the whole app.
+    try:
+        _s_h = kin.static
+    except Exception:
+        _s_h = None
+
+    def _gf(obj, attr, default=0.0):
+        try:
+            v = getattr(obj, attr, default)
+            return float(v) if v is not None else default
+        except Exception:
+            return default
+
     geo = {
-        "static_camber_deg": s.camber, "static_toe_deg": s.toe,
-        "caster_deg": s.caster, "kpi_deg": s.kpi,
-        "scrub_radius_mm": s.scrub_radius,
-        "roll_centre_front_mm": mid["rc_front"], "roll_centre_rear_mm": mid["rc_rear"],
-        "max_lateral_g": veh.max_lateral_g(),
+        "static_camber_deg": _gf(_s_h, "camber"),
+        "static_toe_deg": _gf(_s_h, "toe"),
+        "caster_deg": _gf(_s_h, "caster"),
+        "kpi_deg": _gf(_s_h, "kpi"),
+        "scrub_radius_mm": _gf(_s_h, "scrub_radius"),
+        "roll_centre_front_mm": mid.get("rc_front", 0.0) if isinstance(mid, dict) else 0.0,
+        "roll_centre_rear_mm": mid.get("rc_rear", 0.0) if isinstance(mid, dict) else 0.0,
+        "max_lateral_g": (veh.max_lateral_g() if hasattr(veh, "max_lateral_g") else 0.0),
     }
     md = project_mod.build_handover_markdown(store, geometry=geo)
     ec = st.columns(3)

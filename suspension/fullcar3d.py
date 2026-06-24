@@ -824,15 +824,27 @@ def build_full_car_figure(
         out = (flat - c) * np.array([sx, sy, sz]) + c + np.array([dx, dy, dz])
         return out.reshape(A.shape)
 
+    # `highlight_subsystem` may be a single key (legacy) or a set/list/tuple of
+    # keys (so several blended subteams can all glow at full opacity while the
+    # rest of the car ghosts back). Normalise to a set once.
+    if highlight_subsystem is None:
+        _hl_set = None
+    elif isinstance(highlight_subsystem, (set, list, tuple)):
+        _hl_set = {h for h in highlight_subsystem if h}
+        if not _hl_set:
+            _hl_set = None
+    else:
+        _hl_set = {highlight_subsystem}
+
     def op(subsys, base):
-        if highlight_subsystem is None:
+        if _hl_set is None:
             return base
-        return base if subsys == highlight_subsystem else base * 0.16
+        return base if subsys in _hl_set else base * 0.16
 
     def edge_op(subsys):
-        if highlight_subsystem is None or subsys is None:
+        if _hl_set is None or subsys is None:
             return 1.0
-        return 1.0 if subsys == highlight_subsystem else 0.14
+        return 1.0 if subsys in _hl_set else 0.14
 
     # Heatmap colouring. When a heatmap is supplied, a body's own colour is
     # replaced by the cool→warm colour for its subsystem's normalised load, so
@@ -1482,6 +1494,21 @@ def build_full_car_figure(
         font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
         height=height, margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10), itemsizing="constant"))
+
+    # Expose each subsystem's centroid (mean of all its accrued vertices) so a
+    # caller can float a label on it — e.g. the role picker tags every lit
+    # subteam by name at the centre of the parts it owns. Stored as a plain
+    # attribute (consumed in-process, never serialised) keyed by subsystem id.
+    _centroids = {}
+    for _s, _pts in subsys_pts.items():
+        if _pts:
+            _arr = np.asarray(_pts, float).reshape(-1, 3)
+            _centroids[_s] = _arr.mean(axis=0).tolist()
+    # Plotly blocks arbitrary attributes on Figure, so stash the centroids in
+    # layout.meta (a sanctioned free-form field) under a namespaced key.
+    _meta = dict(fig.layout.meta) if isinstance(fig.layout.meta, dict) else {}
+    _meta["subsys_centroids"] = _centroids
+    fig.update_layout(meta=_meta)
     return fig
 
 
