@@ -202,3 +202,38 @@ def convert_compound(value_str: str, unit: str) -> Tuple[str, str]:
         return new_val, "lbf/in" + suffix
 
     return convert_value_str(value_str, unit), label(unit)
+
+
+# --- relabel unit TOKENS inside any header / title / widget-label string ---- #
+
+# Longest-first so multi-char units (km/h, N·m, N/mm) match before their parts.
+_TOKEN_ORDER = sorted(_CONVERSIONS.keys(), key=len, reverse=True)
+
+
+def ulabel(text: str) -> str:
+    """Rewrite metric unit tokens inside a free-text label/title/header to the
+    active unit system. Leaves everything else untouched.
+
+    Handles units wherever they appear: in parentheses ("Mass (kg)" -> "Mass
+    (lb)"), after a space or slash, etc. In metric mode it is a no-op, so it is
+    safe to wrap every title and label unconditionally.
+
+    Examples (US active):
+        "rotor mass (g)"               -> "rotor mass (g)"        (g passes through)
+        "single-stop peak temp (°C)"   -> "single-stop peak temp (°F)"
+        "travel (mm, + bump)"          -> "travel (in, + bump)"
+        "downforce (N) @ 80 km/h"      -> "downforce (lbf) @ 80 mph"
+        "ride height (mm)  ← lower …"  -> "ride height (in)  ← lower …"
+    """
+    if not is_us() or not text:
+        return text
+    out = text
+    for metric_u in _TOKEN_ORDER:
+        us_u = _CONVERSIONS[metric_u][0]
+        if us_u == metric_u:
+            continue  # passthrough (e.g. "g")
+        # Replace the token only on a word/symbol boundary so we don't corrupt
+        # substrings (e.g. don't turn "Nm" inside a word, or "m" inside "mm").
+        pattern = r"(?<![A-Za-z0-9·/°])" + re.escape(metric_u) + r"(?![A-Za-z0-9·/])"
+        out = re.sub(pattern, us_u, out)
+    return out
