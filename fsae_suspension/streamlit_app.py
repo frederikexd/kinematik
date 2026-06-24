@@ -300,6 +300,75 @@ def uconv_series(values, unit, *, delta=False):
         return list(values)
 
 
+def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
+         fmt=None, **kw):
+    """Unit-aware ``number_input``. The label keeps its parenthesised unit and
+    switches it with the toggle (via ``ulabel``). The min/max/value/step convert
+    to the active unit for display, and the result converts back to metric so
+    downstream code always sees SI.
+
+    If ``key`` is provided, a shadow session-state key tracks the metric value
+    and the unit system it was stored in. When the user switches units, the
+    widget key is overwritten with the re-converted value *before* the widget
+    instantiates, so it doesn't mis-interpret old display-unit state.
+    """
+    lbl = units_mod.ulabel(label_with_unit)
+    d_lo = units_mod.from_metric(float(lo), unit)
+    d_hi = units_mod.from_metric(float(hi), unit)
+    d_val = units_mod.from_metric(float(val), unit)
+    if key is not None:
+        shadow = f"_u_{key}"
+        cur_sys = units_mod.current_system()
+        if shadow in st.session_state:
+            old_metric, old_sys = st.session_state[shadow]
+            if old_sys != cur_sys:
+                d_val = units_mod.from_metric(old_metric, unit)
+                st.session_state[key] = d_val
+            elif key in st.session_state:
+                d_val = float(st.session_state[key])
+    extra = {}
+    if step is not None:
+        extra["step"] = units_mod.from_metric_delta(float(step), unit)
+    if fmt is not None:
+        extra["format"] = fmt
+    if key is not None:
+        extra["key"] = key
+    result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
+    metric_result = units_mod.to_metric(float(result), unit)
+    if key is not None:
+        st.session_state[f"_u_{key}"] = (metric_result, units_mod.current_system())
+    return metric_result
+
+
+def uslider(container, label_with_unit, lo, hi, val, unit, *, step=None,
+            key=None, **kw):
+    """Unit-aware ``slider``. Same idea as ``unum`` but for sliders."""
+    lbl = units_mod.ulabel(label_with_unit)
+    d_lo = units_mod.from_metric(float(lo), unit)
+    d_hi = units_mod.from_metric(float(hi), unit)
+    d_val = units_mod.from_metric(float(val), unit)
+    if key is not None:
+        shadow = f"_u_{key}"
+        cur_sys = units_mod.current_system()
+        if shadow in st.session_state:
+            old_metric, old_sys = st.session_state[shadow]
+            if old_sys != cur_sys:
+                d_val = units_mod.from_metric(old_metric, unit)
+                st.session_state[key] = d_val
+            elif key in st.session_state:
+                d_val = float(st.session_state[key])
+    extra = {}
+    if step is not None:
+        extra["step"] = units_mod.from_metric_delta(float(step), unit)
+    if key is not None:
+        extra["key"] = key
+    result = container.slider(lbl, d_lo, d_hi, d_val, **extra, **kw)
+    metric_result = units_mod.to_metric(float(result), unit)
+    if key is not None:
+        st.session_state[f"_u_{key}"] = (metric_result, units_mod.current_system())
+    return metric_result
+
+
 # --------------------------------------------------------------------------- #
 #  Generic-topology hardpoint editing
 # --------------------------------------------------------------------------- #
@@ -1443,12 +1512,12 @@ def _subsystem_cad_import(subsys_key, *, key_prefix, title=None):
 
         _dx, _dy, _dz = _subsystem_default_placement(subsys_key)
         _cp = st.columns(4)
-        _cad_x = _cp[0].number_input("Centre x (mm)", -1500.0, 1500.0, value=_dx,
-                                     step=10.0, key=f"{key_prefix}_cad_x")
-        _cad_y = _cp[1].number_input("Centre y (mm)", -900.0, 900.0, value=_dy,
-                                     step=10.0, key=f"{key_prefix}_cad_y")
-        _cad_z = _cp[2].number_input("Centre z (mm)", 0.0, 1500.0, value=_dz,
-                                     step=10.0, key=f"{key_prefix}_cad_z")
+        _cad_x = unum(_cp[0], "Centre x (mm)", -1500, 1500, _dx, "mm",
+                       step=10.0, key=f"{key_prefix}_cad_x")
+        _cad_y = unum(_cp[1], "Centre y (mm)", -900, 900, _dy, "mm",
+                       step=10.0, key=f"{key_prefix}_cad_y")
+        _cad_z = unum(_cp[2], "Centre z (mm)", 0, 1500, _dz, "mm",
+                       step=10.0, key=f"{key_prefix}_cad_z")
         _cad_yaw = _cp[3].number_input("Yaw °", -180.0, 180.0, value=0.0,
                                        step=15.0, key=f"{key_prefix}_cad_yaw")
         st.caption("Pre-placed where this subsystem sits on the car — nudge to "
@@ -1550,7 +1619,7 @@ def _render_rotor_thermal(_bt, _mass, kin):
             st.session_state["bt_air"] = st.session_state["brake_lap_air"]
     st.session_state.setdefault("bt_pwr", 1200.0)
     st.session_state.setdefault("bt_air", 55.0)
-    _tk_pwr = _tc2[2].number_input("Avg brake power / front rotor (W)",
+    _tk_pwr = _tc2[2].number_input("Avg brake power / front rotor",
                                    200.0, 8000.0, step=100.0, key="bt_pwr",
                                    help="Time-averaged power into ONE front rotor "
                                    "over the stint. Type it, or pull it from a lap "
@@ -2774,12 +2843,12 @@ with tab_car:
                          "often Y-up; if the part lies on its side, switch this.")
 
                 _cp = st.columns(4)
-                _cad_x = _cp[0].number_input("Centre x (mm)", -1500.0, 1500.0,
-                                             value=0.0, step=10.0, key="car3d_cad_x")
-                _cad_y = _cp[1].number_input("Centre y (mm)", -900.0, 900.0,
-                                             value=0.0, step=10.0, key="car3d_cad_y")
-                _cad_z = _cp[2].number_input("Centre z (mm)", 0.0, 1500.0,
-                                             value=250.0, step=10.0, key="car3d_cad_z")
+                _cad_x = unum(_cp[0], "Centre x (mm)", -1500, 1500, 0, "mm",
+                              step=10.0, key="car3d_cad_x")
+                _cad_y = unum(_cp[1], "Centre y (mm)", -900, 900, 0, "mm",
+                              step=10.0, key="car3d_cad_y")
+                _cad_z = unum(_cp[2], "Centre z (mm)", 0, 1500, 250, "mm",
+                              step=10.0, key="car3d_cad_z")
                 _cad_yaw = _cp[3].number_input("Yaw °", -180.0, 180.0, value=0.0,
                                                step=15.0, key="car3d_cad_yaw",
                                                help="Spin the part about the car's "
@@ -2844,24 +2913,24 @@ with tab_car:
                     'cylinder, L = length and W = diameter.</p>',
                     unsafe_allow_html=True)
         _sz = st.columns(3)
-        _cp_l = _sz[0].number_input("Length L (mm)", min_value=1.0, max_value=3000.0,
-                                    step=5.0, key="car3d_cp_l")
-        _cp_w = _sz[1].number_input("Width W (mm)", min_value=1.0, max_value=2000.0,
-                                    step=5.0, key="car3d_cp_w")
-        _cp_h = _sz[2].number_input("Height H (mm)", min_value=1.0, max_value=2000.0,
-                                    step=5.0, key="car3d_cp_h")
+        _cp_l = unum(_sz[0], "Length L (mm)", 1, 3000, 100, "mm",
+                     step=5.0, key="car3d_cp_l")
+        _cp_w = unum(_sz[1], "Width W (mm)", 1, 2000, 100, "mm",
+                     step=5.0, key="car3d_cp_w")
+        _cp_h = unum(_sz[2], "Height H (mm)", 1, 2000, 100, "mm",
+                     step=5.0, key="car3d_cp_h")
 
         st.markdown('<p class="hint" style="margin:6px 0 2px;"><b>Position of its '
-                    'centre (mm)</b> \u2014 x: \u2212 toward rear axle / + toward '
+                    'centre</b> \u2014 x: \u2212 toward rear axle / + toward '
                     'front, y: + to the right, z: up from the ground. Leave at 0,0,250 '
                     'and nudge from there.</p>', unsafe_allow_html=True)
         _ps = st.columns(3)
-        _cp_x = _ps[0].number_input("Centre x (mm)", min_value=-1500.0, max_value=1500.0,
-                                    step=10.0, key="car3d_cp_x")
-        _cp_y = _ps[1].number_input("Centre y (mm)", min_value=-900.0, max_value=900.0,
-                                    step=10.0, key="car3d_cp_y")
-        _cp_z = _ps[2].number_input("Centre z (mm)", min_value=0.0, max_value=1500.0,
-                                    step=10.0, key="car3d_cp_z")
+        _cp_x = unum(_ps[0], "Centre x (mm)", -1500, 1500, 0, "mm",
+                     step=10.0, key="car3d_cp_x")
+        _cp_y = unum(_ps[1], "Centre y (mm)", -900, 900, 0, "mm",
+                     step=10.0, key="car3d_cp_y")
+        _cp_z = unum(_ps[2], "Centre z (mm)", 0, 1500, 250, "mm",
+                     step=10.0, key="car3d_cp_z")
 
         # Live fit read on the part being entered — answers "does it fit?" BEFORE
         # you even add it, against the car's wheelbase/track/hoop-height envelope.
@@ -3012,19 +3081,19 @@ with tab_car:
                     'you\u2019ll replace it with the real one.</p>',
                     unsafe_allow_html=True)
         _rs = st.columns(3)
-        _rq_l = _rs[0].number_input("Guess L (mm)", min_value=1.0, max_value=3000.0,
-                                    step=5.0, key="car3d_rq_l")
-        _rq_w = _rs[1].number_input("Guess W (mm)", min_value=1.0, max_value=2000.0,
-                                    step=5.0, key="car3d_rq_w")
-        _rq_h = _rs[2].number_input("Guess H (mm)", min_value=1.0, max_value=2000.0,
-                                    step=5.0, key="car3d_rq_h")
+        _rq_l = unum(_rs[0], "Guess L (mm)", 1, 3000, 100, "mm",
+                     step=5.0, key="car3d_rq_l")
+        _rq_w = unum(_rs[1], "Guess W (mm)", 1, 2000, 100, "mm",
+                     step=5.0, key="car3d_rq_w")
+        _rq_h = unum(_rs[2], "Guess H (mm)", 1, 2000, 100, "mm",
+                     step=5.0, key="car3d_rq_h")
         _rp = st.columns(3)
-        _rq_x = _rp[0].number_input("Centre x (mm)", min_value=-1500.0, max_value=1500.0,
-                                    step=10.0, key="car3d_rq_x")
-        _rq_y = _rp[1].number_input("Centre y (mm)", min_value=-900.0, max_value=900.0,
-                                    step=10.0, key="car3d_rq_y")
-        _rq_z = _rp[2].number_input("Centre z (mm)", min_value=0.0, max_value=1500.0,
-                                    step=10.0, key="car3d_rq_z")
+        _rq_x = unum(_rp[0], "Centre x (mm)", -1500, 1500, 0, "mm",
+                     step=10.0, key="car3d_rq_x")
+        _rq_y = unum(_rp[1], "Centre y (mm)", -900, 900, 0, "mm",
+                     step=10.0, key="car3d_rq_y")
+        _rq_z = unum(_rp[2], "Centre z (mm)", 0, 1500, 250, "mm",
+                     step=10.0, key="car3d_rq_z")
 
         if st.button("Place stand-in & log the request", key="car3d_rq_add",
                      type="primary"):
@@ -3245,16 +3314,16 @@ with tab_car:
 
         with _loc_col:
             st.markdown('<p class="hint" style="margin-bottom:2px;"><b>Location'
-                        '</b> (mm)</p>', unsafe_allow_html=True)
-            _dx = st.number_input("Move x (mm)", value=float(_cur.get("dx", 0.0)),
-                                  min_value=-1500.0, max_value=1500.0, step=10.0,
-                                  key=f"car3d_ov_dx_{_part}")
-            _dy = st.number_input("Move y (mm)", value=float(_cur.get("dy", 0.0)),
-                                  min_value=-1500.0, max_value=1500.0, step=10.0,
-                                  key=f"car3d_ov_dy_{_part}")
-            _dz = st.number_input("Move z (mm)", value=float(_cur.get("dz", 0.0)),
-                                  min_value=-1500.0, max_value=1500.0, step=10.0,
-                                  key=f"car3d_ov_dz_{_part}")
+                        '</b></p>', unsafe_allow_html=True)
+            _dx = unum(st, "Move x (mm)", -1500, 1500,
+                       float(_cur.get("dx", 0.0)), "mm", step=10.0,
+                       key=f"car3d_ov_dx_{_part}")
+            _dy = unum(st, "Move y (mm)", -1500, 1500,
+                       float(_cur.get("dy", 0.0)), "mm", step=10.0,
+                       key=f"car3d_ov_dy_{_part}")
+            _dz = unum(st, "Move z (mm)", -1500, 1500,
+                       float(_cur.get("dz", 0.0)), "mm", step=10.0,
+                       key=f"car3d_ov_dz_{_part}")
 
         _new = dict(dx=_dx, dy=_dy, dz=_dz)
 
@@ -3569,11 +3638,11 @@ with tab_aero:
         help="Planform/frontal area the coefficients are referenced to. FSAE cars "
              "are ~1.0 m². Forces scale linearly with this.")
     _aero_v = _ac[1].number_input(
-        "Speed (km/h)", 10.0, 140.0, value=60.0, step=5.0,
+        "Speed", 10.0, 140.0, value=60.0, step=5.0,
         help="A typical FSAE corner is 40–70 km/h; the endurance straight ~100+.")
     _aero_v_ms = _aero_v / 3.6
     _aero_ride = _ac[2].number_input(
-        "Ride height (mm)", 10.0, 70.0, value=30.0, step=2.5,
+        "Ride height", 10.0, 70.0, value=30.0, step=2.5,
         help="Front floor clearance. Lower = more ground effect, to a floor.")
     _aero_yaw = _ac[3].number_input(
         "Yaw / sideslip (°)", 0.0, 12.0, value=0.0, step=1.0,
@@ -3675,9 +3744,11 @@ with tab_aero:
             'diffuser multiplies floor load through ground effect. Use it to set the '
             'target the wing leads then design to in CFD.</p>', unsafe_allow_html=True)
         sc = st.columns(3)
-        _target = sc[0].number_input("Downforce target (N) @ %.0f km/h" % _aero_v,
-                                     100.0, 2000.0, value=max(300.0, round(_df, -1)),
-                                     step=25.0)
+        _target = sc[0].number_input(
+            "Downforce target @ %.0f %s" % (
+                units_mod.from_metric(_aero_v, "km/h"), units_mod.label("km/h")),
+            100.0, 2000.0, value=max(300.0, round(_df, -1)),
+            step=25.0)
         _split = sc[1].slider("Front/rear split (% front)", 30, 60, 45, 1,
                               help="Aero balance target. Match it to your mechanical "
                                    "balance so the car doesn't change character with speed.")
@@ -3861,9 +3932,8 @@ with tab_ev:
         _pack_kwh = ec[2].number_input(
             "Pack energy (kWh)", 1.0, 12.0, value=6.5, step=0.25,
             help="Usable pack is this × usable fraction. FSAE-EV packs are ~5–8 kWh.")
-        _power_kw = ec[3].number_input(
-            "Power cap (kW)", 20.0, 80.0, value=60.0, step=5.0,
-            help="FS rules cap tractive power at 80 kW; many EV cars run lower to save energy.")
+        _power_kw = unum(ec[3], "Power cap (kW)", 20, 80, 60, "kW", step=5.0,
+                         help="FS rules cap tractive power at 80 kW; many EV cars run lower to save energy.")
 
         ec2 = st.columns(4)
         _regen_on = ec2[0].checkbox("Regen", value=True,
@@ -4094,9 +4164,9 @@ with tab_accum:
                                    key="accum_parallel",
                                    help="Cells in parallel per series group. Pack Ah = parallel × cell Ah; "
                                         "per-cell current = pack current / parallel.")
-    _power_cap_kw = tc[2].number_input("Power cap (kW)", 20.0, 80.0, value=80.0, step=5.0,
-                                       key="accum_power_cap",
-                                       help="FSAE caps tractive power at 80 kW; the pack must deliver it.")
+    _power_cap_kw = unum(tc[2], "Power cap (kW)", 20, 80, 80, "kW", step=5.0,
+                         key="accum_power_cap",
+                         help="FSAE caps tractive power at 80 kW; the pack must deliver it.")
     _auto_peak = tc[3].checkbox("Auto peak current", value=True, key="accum_auto_peak",
                                 help="Derive peak pack current from the power cap at pack "
                                      "voltage. Uncheck to type it in.")
@@ -4300,9 +4370,9 @@ with tab_brake:
         st.session_state["brake_front_bias_pct"] = int(round(_bias * 100))
         _mu_b = bc[2].slider("Tyre μ (braking)", 1.0, 2.0, value=float(round(_mu, 2)), step=0.05,
                              help="Peak longitudinal grip. From the car's tyre model by default.")
-        _wheel_r_mm = bc[3].number_input("Loaded tyre radius (mm)", 180.0, 280.0,
-                                         value=float(_wheel_r_mm), step=2.0,
-                                         help="Sets the brake torque needed at a given decel.")
+        _wheel_r_mm = unum(bc[3], "Loaded tyre radius (mm)", 180, 280,
+                           float(_wheel_r_mm), "mm", step=2.0,
+                           help="Sets the brake torque needed at a given decel.")
         st.session_state.brake_wheel_r = _wheel_r_mm
 
         # static axle loads
@@ -4412,19 +4482,19 @@ with tab_brake:
         _T_need = _Tf_need if _axle.startswith("Front") else _Tr_need
         _pedal_ratio = hc[1].number_input("Pedal ratio", 3.0, 8.0, value=5.0, step=0.25,
                                           help="Mechanical advantage of the brake pedal (lever).")
-        _mc_dia = hc[2].number_input("Master cyl. ⌀ (mm)", 12.0, 25.0, value=15.875, step=0.397,
-                                     help="Smaller bore = more line pressure for the same pedal force, "
-                                          "but more pedal travel. 5/8\" = 15.875 mm is common.")
+        _mc_dia = unum(hc[2], "Master cyl. ⌀ (mm)", 12, 25, 15.875, "mm", step=0.397,
+                       help="Smaller bore = more line pressure for the same pedal force, "
+                            "but more pedal travel. 5/8\" = 15.875 mm is common.")
         _pad_mu = hc[3].number_input("Pad friction μ", 0.3, 0.6, value=0.45, step=0.01,
                                      help="Brake pad coefficient of friction against the rotor.")
 
         hc2 = st.columns(4)
         _cal_pistons = hc2[0].number_input("Caliper pistons (per side)", 1, 4, value=2, step=1)
-        _cal_dia = hc2[1].number_input("Caliper piston ⌀ (mm)", 20.0, 45.0, value=30.0, step=1.0)
-        _rotor_dia = hc2[2].number_input("Rotor ⌀ (mm)", 180.0, 300.0, value=220.0, step=5.0,
-                                         help="Bigger rotor = more torque arm = less clamp needed.")
-        _pedal_force = hc2[3].number_input("Driver pedal force (N)", 100.0, 1200.0, value=500.0,
-                                           step=25.0, help="A strong driver can apply ~600–800 N.")
+        _cal_dia = unum(hc2[1], "Caliper piston ⌀ (mm)", 20, 45, 30, "mm", step=1.0)
+        _rotor_dia = unum(hc2[2], "Rotor ⌀ (mm)", 180, 300, 220, "mm", step=5.0,
+                          help="Bigger rotor = more torque arm = less clamp needed.")
+        _pedal_force = unum(hc2[3], "Driver pedal force (N)", 100, 1200, 500, "N",
+                            step=25.0, help="A strong driver can apply ~600–800 N.")
 
         # hydraulic chain
         _A_mc = np.pi * (_mc_dia / 1000.0 / 2) ** 2          # master cyl area m²
@@ -4736,9 +4806,9 @@ def _render_envelope_vs_chassis(subsys, led):
     up = st.file_uploader("Chassis CAD", type=["step", "stp", "stl", "obj", "glb"],
                           label_visibility="collapsed", key=f"env_cad_{subsys}")
     oc1, oc2, oc3, oc4 = st.columns(4)
-    off_x = oc1.number_input("offset x (mm)", value=0.0, step=10.0, key=f"env_offx_{subsys}")
-    off_y = oc2.number_input("offset y (mm)", value=0.0, step=10.0, key=f"env_offy_{subsys}")
-    off_z = oc3.number_input("offset z (mm)", value=0.0, step=10.0, key=f"env_offz_{subsys}")
+    off_x = oc1.number_input("offset x", value=0.0, step=10.0, key=f"env_offx_{subsys}")
+    off_y = oc2.number_input("offset y", value=0.0, step=10.0, key=f"env_offy_{subsys}")
+    off_z = oc3.number_input("offset z", value=0.0, step=10.0, key=f"env_offz_{subsys}")
     cad_scale = oc4.number_input("scale (m→mm = 1000)", value=1.0, step=1.0, key=f"env_scale_{subsys}")
 
     if up is None:
@@ -4859,9 +4929,9 @@ def render_suspension_vs_chassis():
     up = st.file_uploader("Chassis CAD", type=["step", "stp", "stl", "obj", "glb"],
                           label_visibility="collapsed")
     oc1, oc2, oc3, oc4 = st.columns(4)
-    off_x = oc1.number_input("offset x (mm)", value=0.0, step=10.0)
-    off_y = oc2.number_input("offset y (mm)", value=0.0, step=10.0)
-    off_z = oc3.number_input("offset z (mm)", value=0.0, step=10.0)
+    off_x = oc1.number_input("offset x", value=0.0, step=10.0)
+    off_y = oc2.number_input("offset y", value=0.0, step=10.0)
+    off_z = oc3.number_input("offset z", value=0.0, step=10.0)
     cad_scale = oc4.number_input("scale (m→mm = 1000)", value=1.0, step=1.0)
 
     if up is None:
@@ -5081,7 +5151,7 @@ def render_geometry_intake(store, geom):
             pxyz = (p_c[0].number_input("at — x", value=100.0, step=10.0, key="intake_px"),
                     p_c[1].number_input("y", value=0.0, step=10.0, key="intake_py"),
                     p_c[2].number_input("z", value=100.0, step=10.0, key="intake_pz"))
-            _clr = st.number_input("Clearance it needs (mm)", 0.0, 100.0, value=8.0,
+            _clr = st.number_input("Clearance it needs", 0.0, 100.0, value=8.0,
                                    step=1.0, key="intake_mp_clr",
                                    help="How far this point must stay from any other "
                                         "subsystem's keep-out. 5–10 mm is typical for "
@@ -5353,7 +5423,7 @@ def render_mountpoint_clash():
             pxyz = (pc[0].number_input("x", value=1350.0, key="mp_x"),
                     pc[1].number_input("y", value=120.0, key="mp_y"),
                     pc[2].number_input("z", value=900.0, key="mp_z"))
-            pclr = st.number_input("Required clearance (mm)", 0.0, 100.0,
+            pclr = st.number_input("Required clearance", 0.0, 100.0,
                                    value=8.0, key="mp_clr")
             pest = st.checkbox("Estimated geometry", value=False, key="mp_est")
             if st.button("Save mount point", key="mp_save"):
@@ -5511,9 +5581,9 @@ def render_pcb_board():
                                               value=float(board.rail_nominal_v), key="pcb_rail")
     board.ecu_brownout_v = bc[1].number_input("Brown-out (V)", 0.5, 60.0,
                                               value=float(board.ecu_brownout_v), key="pcb_bo")
-    board.ambient_c = bc[2].number_input("Ambient (°C)", -20.0, 150.0,
+    board.ambient_c = bc[2].number_input("Ambient", -20.0, 150.0,
                                          value=float(board.ambient_c), key="pcb_amb")
-    board.max_trace_temp_c = bc[3].number_input("Trace ceiling (°C)", 50.0, 200.0,
+    board.max_trace_temp_c = bc[3].number_input("Trace ceiling", 50.0, 200.0,
                                                value=float(board.max_trace_temp_c), key="pcb_ceil")
     board.fuse_safety_factor = bc[4].number_input("Fuse safety ×", 1.0, 10.0,
                                                  value=float(board.fuse_safety_factor), key="pcb_sf")
@@ -5528,9 +5598,9 @@ def render_pcb_board():
             town = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"), key="tr_own")
             tfeed = st.text_input("Feeds", key="tr_feed", value="ecu")
             tg = st.columns(3)
-            tw = tg[0].number_input("Width (mm)", 0.05, 50.0, value=0.30, key="tr_w")
+            tw = tg[0].number_input("Width", 0.05, 50.0, value=0.30, key="tr_w")
             toz = tg[1].number_input("Copper (oz)", 0.25, 6.0, value=1.0, key="tr_oz")
-            tl = tg[2].number_input("Length (mm)", 1.0, 2000.0, value=100.0, key="tr_l")
+            tl = tg[2].number_input("Length", 1.0, 2000.0, value=100.0, key="tr_l")
             text = st.checkbox("Outer layer (external)", value=True, key="tr_ext")
             test = st.checkbox("Estimated geometry", value=False, key="tr_est")
             if st.button("Save trace", key="tr_save"):
@@ -5558,9 +5628,9 @@ def render_pcb_board():
             pn = st.text_input("Name", key="dp_name", value="CAN")
             pown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"), key="dp_own")
             pg = st.columns(3)
-            pw = pg[0].number_input("Trace w (mm)", 0.05, 5.0, value=0.20, key="dp_w")
-            psp = pg[1].number_input("Spacing (mm)", 0.05, 5.0, value=0.20, key="dp_s")
-            ph = pg[2].number_input("Dielectric h (mm)", 0.05, 5.0, value=0.20, key="dp_h")
+            pw = pg[0].number_input("Trace w", 0.05, 5.0, value=0.20, key="dp_w")
+            psp = pg[1].number_input("Spacing", 0.05, 5.0, value=0.20, key="dp_s")
+            ph = pg[2].number_input("Dielectric h", 0.05, 5.0, value=0.20, key="dp_h")
             pg2 = st.columns(2)
             peps = pg2[0].number_input("eps_r", 1.0, 15.0, value=4.3, key="dp_eps")
             ptz = pg2[1].number_input("Target Zdiff (Ω)", 20.0, 200.0, value=120.0, key="dp_tz")
@@ -5801,13 +5871,13 @@ def render_harness():
     keepouts = list(getattr(geom, "keepouts", {}).values()) if geom else []
 
     hc = st.columns(3)
-    harness.ambient_c = hc[0].number_input("Ambient (°C)", -20.0, 150.0,
+    harness.ambient_c = hc[0].number_input("Ambient", -20.0, 150.0,
                                            value=float(harness.ambient_c), key="hn_amb")
     harness.clearance_warn_mm = hc[1].number_input(
-        "Clearance WARN (mm)", 0.0, 100.0,
+        "Clearance WARN", 0.0, 100.0,
         value=float(harness.clearance_warn_mm), key="hn_cw")
     harness.clearance_fail_mm = hc[2].number_input(
-        "Clearance FAIL (mm)", 0.0, 50.0,
+        "Clearance FAIL", 0.0, 50.0,
         value=float(harness.clearance_fail_mm), key="hn_cf")
 
     if keepouts:
@@ -5828,12 +5898,12 @@ def render_harness():
             cown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
                                 key="cn_own")
             cg = st.columns(3)
-            cx = cg[0].number_input("x (mm)", -5000.0, 5000.0, value=0.0, key="cn_x")
-            cy = cg[1].number_input("y (mm)", -5000.0, 5000.0, value=0.0, key="cn_y")
-            cz = cg[2].number_input("z (mm)", -5000.0, 5000.0, value=0.0, key="cn_z")
+            cx = cg[0].number_input("x", -5000.0, 5000.0, value=0.0, key="cn_x")
+            cy = cg[1].number_input("y", -5000.0, 5000.0, value=0.0, key="cn_y")
+            cz = cg[2].number_input("z", -5000.0, 5000.0, value=0.0, key="cn_z")
             cg2 = st.columns(3)
             ccav = cg2[0].number_input("Cavities", 1, 200, value=12, key="cn_cav")
-            csr = cg2[1].number_input("Strain relief (mm)", 0.0, 200.0,
+            csr = cg2[1].number_input("Strain relief", 0.0, 200.0,
                                       value=25.0, key="cn_sr")
             cmass = cg2[2].number_input("Mass (g, 0=unknown)", 0.0, 2000.0,
                                         value=0.0, key="cn_mass")
@@ -5880,9 +5950,9 @@ def render_harness():
             wg3 = st.columns(3)
             wmult = wg3[0].number_input("Min bend ×OD", 1.0, 20.0,
                                         value=6.0, key="wr_mult")
-            wloop = wg3[1].number_input("Service loop (mm)", 0.0, 1000.0,
+            wloop = wg3[1].number_input("Service loop", 0.0, 1000.0,
                                         value=0.0, key="wr_loop")
-            wstrip = wg3[2].number_input("Strip/end (mm)", 0.0, 100.0,
+            wstrip = wg3[2].number_input("Strip/end", 0.0, 100.0,
                                          value=8.0, key="wr_strip")
             wpath = st.text_input("3-D route (x,y,z; x,y,z; …)", key="wr_path",
                                   value="0,0,0; 40,0,0; 600,0,100; 1160,0,100; 1200,0,0")
@@ -6058,15 +6128,15 @@ with tab5c:
                     '</p>', unsafe_allow_html=True)
         comp_mat = st.selectbox("Tube material", list(MATERIALS.keys()),
                                 key="comp_mat")
-        comp_od = st.number_input("Tube OD (mm)", 8.0, 40.0, 19.05, 0.05,
+        comp_od = st.number_input("Tube OD", 8.0, 40.0, 19.05, 0.05,
                                   key="comp_od")
-        comp_wall = st.number_input("Tube wall (mm)", 0.4, 4.0, 0.9, 0.05,
+        comp_wall = st.number_input("Tube wall", 0.4, 4.0, 0.9, 0.05,
                                     key="comp_wall")
         comp_use_tab = st.checkbox("Add chassis-tab compliance (series)",
                                    value=False, key="comp_use_tab")
         comp_ktab = None
         if comp_use_tab:
-            comp_ktab = st.number_input("Tab stiffness per leg (N/mm)",
+            comp_ktab = st.number_input("Tab stiffness per leg",
                                         500.0, 100000.0, 8000.0, 500.0,
                                         key="comp_ktab")
 
@@ -6094,7 +6164,7 @@ with tab5c:
         if kind in ("Rubber bushing", "Polyurethane bushing"):
             is_rub = kind.startswith("Rubber")
             c1, c2, c3 = st.columns(3)
-            k = c1.number_input("radial rate k₁ (N/mm)", 100.0, 50000.0,
+            k = c1.number_input("radial rate k₁", 100.0, 50000.0,
                                 1500.0 if is_rub else 6000.0, 100.0, key=f"{prefix}_k")
             hard = c2.number_input("hardening ×k₁ (/mm²)", 0.0, 50.0,
                                    8.0 if is_rub else 4.0, 0.5, key=f"{prefix}_h")
@@ -6103,15 +6173,15 @@ with tab5c:
             return _JCui.cubic(k, hard * k, loss_factor=loss, label=kind)
         if kind == "Spherical bearing":
             c1, c2, c3 = st.columns(3)
-            lash = c1.number_input("lash (mm)", 0.0, 0.5, 0.05, 0.01,
+            lash = c1.number_input("lash", 0.0, 0.5, 0.05, 0.01,
                                    key=f"{prefix}_lash")
-            k = c2.number_input("engaged k (N/mm)", 10000.0, 500000.0, 120000.0,
+            k = c2.number_input("engaged k", 10000.0, 500000.0, 120000.0,
                                 5000.0, key=f"{prefix}_k")
             loss = c3.number_input("loss factor η", 0.0, 0.2, 0.01, 0.01,
                                    key=f"{prefix}_l")
             return _JCui.spherical_bearing(lash_mm=lash, k=k, loss_factor=loss)
         c1, c2, c3 = st.columns(3)   # Custom (cubic)
-        k1 = c1.number_input("k₁ (N/mm)", 50.0, 200000.0, 3000.0, 50.0, key=f"{prefix}_k1")
+        k1 = c1.number_input("k₁", 50.0, 200000.0, 3000.0, 50.0, key=f"{prefix}_k1")
         k3 = c2.number_input("k₃ (N/mm³)", 0.0, 500000.0, 0.0, 100.0, key=f"{prefix}_k3")
         loss = c3.number_input("loss factor η", 0.0, 0.5, 0.05, 0.01, key=f"{prefix}_l")
         return _JCui.cubic(k1, k3, loss_factor=loss, label="custom")
@@ -6557,7 +6627,7 @@ with tab7:
     hcol1, hcol2, hcol3 = st.columns(3)
     store.team_name = hcol1.text_input("Team", value=store.team_name)
     store.season = hcol2.text_input("Season", value=store.season)
-    store.target_mass_kg = hcol3.number_input("Target mass (kg)",
+    store.target_mass_kg = hcol3.number_input("Target mass",
                                               value=float(store.target_mass_kg), step=5.0)
 
     b = store.budget_status()
@@ -7258,18 +7328,18 @@ with tab9:
         tcol = st.columns(4)
         _t_alpha = tcol[0].number_input("Slip angle (°)", 0.0, 12.0, value=4.0,
                                         step=0.5, key="therm_alpha")
-        _t_fz = tcol[1].number_input("Vertical load (N)", 200.0, 3000.0,
+        _t_fz = tcol[1].number_input("Vertical load", 200.0, 3000.0,
                                      value=1300.0, step=50.0, key="therm_fz")
-        _t_v = tcol[2].number_input("Speed (m/s)", 3.0, 45.0, value=20.0,
+        _t_v = tcol[2].number_input("Speed", 3.0, 45.0, value=20.0,
                                     step=1.0, key="therm_v")
         _t_dur = tcol[3].number_input("Run length (s)", 20.0, 600.0, value=150.0,
                                       step=10.0, key="therm_dur")
         tcol2 = st.columns(4)
         _t_cam = tcol2[0].number_input("Camber (°)", 0.0, 6.0, value=1.5,
                                        step=0.5, key="therm_cam")
-        _t_amb = tcol2[1].number_input("Ambient (°C)", -5.0, 50.0, value=25.0,
+        _t_amb = tcol2[1].number_input("Ambient", -5.0, 50.0, value=25.0,
                                        step=1.0, key="therm_amb")
-        _t_trk = tcol2[2].number_input("Track surface (°C)", 0.0, 70.0, value=34.0,
+        _t_trk = tcol2[2].number_input("Track surface", 0.0, 70.0, value=34.0,
                                        step=1.0, key="therm_trk")
         _t_mu = tcol2[3].checkbox("Couple grip to temp (μ(T))", value=False,
                                   key="therm_mu",
@@ -7548,9 +7618,9 @@ with tab11:
     with st.expander("Powertrain & aero (defaults are sensible FSAE-EV values)",
                      expanded=False):
         pc = st.columns(4)
-        pw = pc[0].number_input("Peak power (kW)", 10.0, 200.0,
+        pw = pc[0].number_input("Peak power", 10.0, 200.0,
                                 value=80.0, step=5.0)
-        tract = pc[1].number_input("Traction cap (N)", 500.0, 6000.0,
+        tract = pc[1].number_input("Traction cap", 500.0, 6000.0,
                                    value=2600.0, step=100.0)
         cda = pc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=1.10, step=0.05)
         cla = pc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=2.60, step=0.1)
@@ -7573,8 +7643,8 @@ with tab11:
         _motor_map = None
         if use_map:
             mpc = st.columns(3)
-            mt = mpc[0].number_input("Peak torque (N·m)", 20.0, 600.0, value=230.0, step=10.0)
-            mp = mpc[1].number_input("Peak power (kW)", 10.0, 200.0, value=80.0, step=5.0)
+            mt = mpc[0].number_input("Peak torque", 20.0, 600.0, value=230.0, step=10.0)
+            mp = mpc[1].number_input("Peak power", 10.0, 200.0, value=80.0, step=5.0)
             mr_in = mpc[2].number_input("Redline (rpm)", 3000.0, 20000.0, value=6000.0, step=500.0)
             mpc2 = st.columns(2)
             fd = mpc2[0].number_input("Final drive ratio", 1.0, 10.0, value=3.5, step=0.1)
@@ -8000,7 +8070,7 @@ with tab12:
                                          value=1.00, step=0.05, key="wt_area",
                                          help="Frontal area the C_l/C_d are normalised by. "
                                               "MUST match the reference area set in Fluent.")
-            wt_wb = wc[1].number_input("Wheelbase (mm)", 1000.0, 2000.0,
+            wt_wb = wc[1].number_input("Wheelbase", 1000.0, 2000.0,
                                        value=1550.0, step=10.0, key="wt_wb",
                                        help="Distance between the front & rear ride-height "
                                             "reference planes (the CFD reference length).")
@@ -8406,23 +8476,23 @@ if _show_ledger:
         lc = st.columns(3)
         led.target_mass_kg = lc[0].number_input("Mass target (kg, incl. driver)",
                                                 100.0, 400.0, value=float(led.target_mass_kg), step=5.0)
-        led.includes_driver_kg = lc[1].number_input("of which driver (kg)",
+        led.includes_driver_kg = lc[1].number_input("of which driver",
                                                      0.0, 120.0, value=float(led.includes_driver_kg), step=5.0)
-        led.driveline_torque_limit_nm = lc[2].number_input("Driveline torque rating (N·m)",
+        led.driveline_torque_limit_nm = lc[2].number_input("Driveline torque rating",
                                                             0.0, 1000.0,
                                                             value=float(led.driveline_torque_limit_nm or 0.0), step=10.0) or None
         lc2 = st.columns(3)
         led.lv_voltage_v = lc2[0].number_input("LV bus (V)", 6.0, 60.0, value=float(led.lv_voltage_v), step=1.0)
-        led.lv_supply_capacity_w = lc2[1].number_input("LV supply capacity (W)", 0.0, 5000.0,
+        led.lv_supply_capacity_w = lc2[1].number_input("LV supply capacity", 0.0, 5000.0,
                                                         value=float(led.lv_supply_capacity_w), step=50.0)
         led.accumulator_voltage_v = lc2[2].number_input("Accumulator (V)", 0.0, 600.0,
                                                          value=float(led.accumulator_voltage_v), step=10.0)
         lc3 = st.columns(4)
-        ex = lc3[0].number_input("Chassis interior X (mm)", 0.0, 3000.0,
+        ex = lc3[0].number_input("Chassis interior X", 0.0, 3000.0,
                                  value=float((led.chassis_envelope_mm or (0, 0, 0))[0]), step=10.0)
-        ey = lc3[1].number_input("interior Y (mm)", 0.0, 2000.0,
+        ey = lc3[1].number_input("interior Y", 0.0, 2000.0,
                                  value=float((led.chassis_envelope_mm or (0, 0, 0))[1]), step=10.0)
-        ez = lc3[2].number_input("interior Z (mm)", 0.0, 2000.0,
+        ez = lc3[2].number_input("interior Z", 0.0, 2000.0,
                                  value=float((led.chassis_envelope_mm or (0, 0, 0))[2]), step=10.0)
         led.chassis_envelope_mm = (ex, ey, ez) if (ex and ey and ez) else None
         led.total_cooling_airflow_cms = lc3[3].number_input("Cooling airflow (m³/s)", 0.0, 5.0,
@@ -8723,9 +8793,9 @@ with tab_ggv:
     with st.expander("Powertrain & aero (defaults are sensible FSAE-EV values)",
                      expanded=False):
         gc = st.columns(4)
-        g_pw = gc[0].number_input("Peak power (kW)", 10.0, 200.0, value=80.0,
+        g_pw = gc[0].number_input("Peak power", 10.0, 200.0, value=80.0,
                                   step=5.0, key="ggv_pw")
-        g_tract = gc[1].number_input("Traction cap (N)", 500.0, 6000.0,
+        g_tract = gc[1].number_input("Traction cap", 500.0, 6000.0,
                                      value=2600.0, step=100.0, key="ggv_tract")
         g_cda = gc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=1.10,
                                    step=0.05, key="ggv_cda")
@@ -8777,7 +8847,7 @@ with tab_ggv:
     _gp = ggv_mod.GGVParams.from_powertrain(_pt_ggv)
 
     # ---- Build the envelope --------------------------------------------- #
-    _vmax_ui = st.slider("Top speed to chart (m/s)", 20.0, 45.0, 38.0, 1.0,
+    _vmax_ui = st.slider("Top speed to chart", 20.0, 45.0, 38.0, 1.0,
                          key="ggv_vmax")
     try:
         _speeds = np.linspace(5.0, _vmax_ui, 12)
@@ -8949,7 +9019,7 @@ with tab_ggv:
         _metric_label = sw[1].selectbox(
             "Metric", ["max lateral g", "max accel g", "max braking g"],
             key="ggv_sweep_metric")
-        _sweep_v = sw[2].number_input("at speed (m/s)", 5.0, 45.0, 20.0, 1.0,
+        _sweep_v = sw[2].number_input("at speed", 5.0, 45.0, 20.0, 1.0,
                                       key="ggv_sweep_v")
         _metric_key = {"max lateral g": "max_lat_g", "max accel g": "max_accel_g",
                        "max braking g": "max_brake_g"}[_metric_label]
@@ -9059,11 +9129,11 @@ with tab_tr:
     if mlabel.startswith("Step steer"):
         steer_deg = cc[0].number_input("Steer angle (°)", 0.5, 12.0, 4.0, 0.5,
                                        key="tr_ss_steer")
-        u0 = cc[1].number_input("Entry speed (m/s)", 3.0, 40.0, 18.0, 1.0,
+        u0 = cc[1].number_input("Entry speed", 3.0, 40.0, 18.0, 1.0,
                                 key="tr_ss_u0")
         kind, kw = "step_steer", dict(steer_deg=float(steer_deg), u0=float(u0))
     elif mlabel.startswith("Snap"):
-        u0 = cc[0].number_input("Entry speed (m/s)", 5.0, 40.0, 16.0, 1.0,
+        u0 = cc[0].number_input("Entry speed", 5.0, 40.0, 16.0, 1.0,
                                 key="tr_so_u0")
         steer_deg = cc[1].number_input("Corner steer (°)", 1.0, 8.0, 3.8, 0.2,
                                        key="tr_so_steer")
@@ -9074,12 +9144,12 @@ with tab_tr:
         kind, kw = "snap_oversteer", dict(u0=float(u0), steer_deg=float(steer_deg),
                                           brake_stab=float(brake_stab), recover=True)
     elif mlabel.startswith("Brake"):
-        u0 = cc[0].number_input("Entry speed (m/s)", 5.0, 40.0, 25.0, 1.0,
+        u0 = cc[0].number_input("Entry speed", 5.0, 40.0, 25.0, 1.0,
                                 key="tr_bt_u0")
         kind, kw = "brake_to_throttle", dict(u0=float(u0))
     elif mlabel.startswith("Kerb"):
-        u0 = cc[0].number_input("Speed (m/s)", 3.0, 40.0, 20.0, 1.0, key="tr_cb_u0")
-        curb_h = cc[1].number_input("Kerb height (mm)", 5.0, 80.0, 30.0, 5.0,
+        u0 = cc[0].number_input("Speed", 3.0, 40.0, 20.0, 1.0, key="tr_cb_u0")
+        curb_h = cc[1].number_input("Kerb height", 5.0, 80.0, 30.0, 5.0,
                                     key="tr_cb_h") / 1000.0
         wsel = cc[2].selectbox("Wheels over kerb",
                                ["FL + RL (left side)", "FL only", "All four"],
@@ -9089,7 +9159,7 @@ with tab_tr:
         kind, kw = "curb_strike", dict(u0=float(u0), curb_h=float(curb_h),
                                        wheels=wheels)
     else:
-        u0 = cc[0].number_input("Entry speed (m/s)", 5.0, 40.0, 16.0, 1.0,
+        u0 = cc[0].number_input("Entry speed", 5.0, 40.0, 16.0, 1.0,
                                 key="tr_qs_u0")
         kind, kw = "_settling", dict(u0=float(u0))
 
