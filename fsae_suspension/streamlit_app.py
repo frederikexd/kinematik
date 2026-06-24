@@ -1297,6 +1297,170 @@ else:
 
 # Map the stable ids back onto the legacy tab variable names the bodies below
 # already use, so not a single tab body needs to change.
+
+
+def _subsystem_default_placement(subsys_key):
+    """Sensible default (x, y, z) in mm for an imported part, so it lands roughly
+    where that subsystem actually sits on the car before the user fine-tunes.
+
+    Coordinate system matches fullcar3d: x = +forward from mid-wheelbase,
+    y = +right of centreline, z = up from ground. Positions scale with the
+    declared wheelbase/track so they stay sensible if the car geometry changes.
+    """
+    _vp = st.session_state.get("vp", {})
+    wb = float(_vp.get("wheelbase", 1550.0) or 1550.0)
+    tf = float(_vp.get("track_front", 1200.0) or 1200.0)
+    tr = float(_vp.get("track_rear", 1180.0) or 1180.0)
+    x_front, x_rear = wb / 2.0, -wb / 2.0
+    _r = 228.0  # nominal tyre radius (mm), the hub/centre height fullcar3d uses
+
+    # Mirror the body positions fullcar3d renders (see build_full_car_figure).
+    _map = {
+        # front-right corner, hub height
+        "suspension":       (x_front, tf / 2.0 * 0.9, _r),
+        "brakes":           (x_front, tf / 2.0 * 0.9, _r),
+        # front wing: ahead of the front axle, low to the floor
+        "aerodynamics":     (x_front + _r * 1.62, 0.0, _r * 0.4),
+        # traction motor: just ahead of the rear axle, on centreline
+        "powertrain":       (x_rear + _r * 1.05, 0.0, _r * 1.1),
+        # sidepod radiator: right-hand pod, mid-car
+        "cooling":          (x_rear + _r * 2.4, tr / 2.0 * 0.7, _r * 1.1),
+        # accumulator / HV box: behind the cockpit, low and central
+        "electrics":        (x_rear + _r * 2.6, 0.0, _r * 0.8),
+        # logger pod: near the cockpit, up high
+        "data-acquisition": (x_front - wb * 0.1, 0.0, _r * 1.4),
+    }
+    return _map.get(subsys_key, (0.0, 0.0, 250.0))
+
+
+def _subsystem_cad_import(subsys_key, *, key_prefix, title=None):
+    """Render a compact CAD/sketch importer scoped to ONE subsystem.
+
+    Imported parts are appended to the SAME shared ``car3d_custom_parts`` list
+    the full-car 3D Model tab reads, so a part dropped here shows up on the
+    full car immediately (and vice-versa). ``subsys_key`` is the fullcar3d
+    subsystem tag (e.g. "brakes", "aerodynamics") so the part lights up with the
+    right team. ``key_prefix`` namespaces the Streamlit widget keys per tab.
+    """
+    if "car3d_custom_parts" not in st.session_state:
+        st.session_state.car3d_custom_parts = []
+
+    _label = (subsys_key or "this subsystem").replace("-", " ")
+    with st.expander(title or f"📥  Import {_label} CAD / sketch — shows on the "
+                     "full car instantly", expanded=False):
+        st.markdown(
+            '<p class="hint" style="margin:2px 0 6px;">Drop a SolidWorks part or '
+            'a quick sketch (STEP / STL / OBJ / GLB). The real shape renders on '
+            'the full-car 3D model, tagged to <b>' + _label + '</b> so it lights '
+            'up with your subteam. STEP is the most reliable SolidWorks export '
+            '(File ▸ Save As ▸ STEP).</p>', unsafe_allow_html=True)
+
+        _up = st.file_uploader(
+            f"Upload {_label} CAD / sketch",
+            type=["step", "stp", "stl", "obj", "glb"],
+            key=f"{key_prefix}_cad_up")
+        if _up is None:
+            return
+
+        _sig_key = f"{key_prefix}_cad_sig"
+        _payload_key = f"{key_prefix}_cad_payload"
+        _name_key = f"{key_prefix}_cad_name_default"
+        _sig = f"{_up.name}:{_up.size}"
+        if st.session_state.get(_sig_key) != _sig:
+            try:
+                import tempfile as _tf, os as _os
+                _sfx = "." + _up.name.split(".")[-1]
+                with _tf.NamedTemporaryFile(delete=False, suffix=_sfx) as _f:
+                    _f.write(_up.getbuffer())
+                    _cad_path = _f.name
+                with st.spinner("Reading geometry…"):
+                    _payload = chassis_mod.load_part_mesh(_cad_path, max_faces=4000)
+                _os.unlink(_cad_path)
+                st.session_state[_payload_key] = _payload
+                st.session_state[_sig_key] = _sig
+                st.session_state[_name_key] = _up.name.rsplit(".", 1)[0]
+            except Exception as _ce:
+                st.session_state[_payload_key] = None
+                st.error("Couldn't read that CAD (" + str(_ce) + "). STEP is the "
+                         "most reliable export from SolidWorks; for STEP make sure "
+                         "the cascadio package is installed in the deployment.")
+
+        _payload = st.session_state.get(_payload_key)
+        if not _payload:
+            return
+
+        _sz = _payload["size_mm"]
+        _unit_note = ("" if _payload["unit_scale"] == 1.0 else
+                      " · auto-scaled ×%g (looked like %s)" % (
+                          _payload["unit_scale"],
+                          "metres" if _payload["unit_scale"] == 1000 else "inches"))
+        st.markdown(
+            f'<p class="hint">Loaded <b>{_payload["triangles"]} triangles</b>, '
+            f'bounding box <b>{_sz[0]:.0f}×{_sz[1]:.0f}×{_sz[2]:.0f} mm</b>'
+            f'{_unit_note}. Set where it sits and which way is up, then add it.</p>',
+            unsafe_allow_html=True)
+
+        _cc = st.columns([3, 2])
+        _cad_name = _cc[0].text_input(
+            "Part name", key=f"{key_prefix}_cad_name",
+            value=st.session_state.get(_name_key, f"{_label} part"))
+        _cad_axis = _cc[1].selectbox(
+            "Up axis in CAD", ["z_up", "y_up", "x_up"],
+            key=f"{key_prefix}_cad_axis",
+            help="Which axis points UP in your CAD. SolidWorks is often Y-up; if "
+                 "the part lies on its side, switch this.")
+
+        _dx, _dy, _dz = _subsystem_default_placement(subsys_key)
+        _cp = st.columns(4)
+        _cad_x = _cp[0].number_input("Centre x (mm)", -1500.0, 1500.0, value=_dx,
+                                     step=10.0, key=f"{key_prefix}_cad_x")
+        _cad_y = _cp[1].number_input("Centre y (mm)", -900.0, 900.0, value=_dy,
+                                     step=10.0, key=f"{key_prefix}_cad_y")
+        _cad_z = _cp[2].number_input("Centre z (mm)", 0.0, 1500.0, value=_dz,
+                                     step=10.0, key=f"{key_prefix}_cad_z")
+        _cad_yaw = _cp[3].number_input("Yaw °", -180.0, 180.0, value=0.0,
+                                       step=15.0, key=f"{key_prefix}_cad_yaw")
+        st.caption("Pre-placed where this subsystem sits on the car — nudge to "
+                   "line it up exactly.")
+
+        if st.button(f"Add to car ({_label})", key=f"{key_prefix}_cad_add",
+                     type="primary"):
+            _ax = st.session_state.get(f"{key_prefix}_cad_axis", "z_up")
+            _sx, _sy, _sz2 = _sz
+            if _ax == "y_up":
+                _L, _W, _H = _sx, _sz2, _sy
+            elif _ax == "x_up":
+                _L, _W, _H = _sz2, _sy, _sx
+            else:
+                _L, _W, _H = _sx, _sy, _sz2
+            st.session_state.car3d_custom_parts.append(dict(
+                name=(_cad_name.strip() or f"{_label} part"), subsys=subsys_key,
+                shape="mesh", mesh=_payload, axis_map=_ax,
+                yaw_deg=float(_cad_yaw), mesh_scale=1.0,
+                x_mm=float(_cad_x), y_mm=float(_cad_y), z_mm=float(_cad_z),
+                l_mm=float(_L), w_mm=float(_W), h_mm=float(_H)))
+            st.session_state.car3d_focus = subsys_key
+            st.session_state.pop(_sig_key, None)
+            st.success(f"Added to the full-car model under **{_label}**. "
+                       "Open the 3D Model tab to see it placed.")
+            st.rerun()
+
+        # Show what this subsystem already has on the car, with quick removal.
+        _mine = [(_i, _p) for _i, _p in
+                 enumerate(st.session_state.car3d_custom_parts)
+                 if _p.get("subsys") == subsys_key]
+        if _mine:
+            st.markdown('<p class="hint" style="margin:8px 0 2px;">On the car for '
+                        f'<b>{_label}</b>:</p>', unsafe_allow_html=True)
+            for _idx, _p in _mine:
+                _r = st.columns([6, 1])
+                _r[0].caption(f"• {_p.get('name', 'part')}")
+                if _r[1].button("✕", key=f"{key_prefix}_rm_{_idx}",
+                                help="Remove from the car"):
+                    st.session_state.car3d_custom_parts.pop(_idx)
+                    st.rerun()
+
+
 tab1        = _id_to_container["kinematics"]
 tab2        = _id_to_container["roll"]
 tab3        = _id_to_container["grip"]
@@ -1377,6 +1541,8 @@ with tab1:
                     'your rocker geometry for real spring→wheel rates</span>',
                     unsafe_allow_html=True)
     st.write("")
+
+    _subsystem_cad_import("suspension", key_prefix="susp")
 
     c1, c2 = st.columns(2)
     fig = go.Figure()
@@ -2793,6 +2959,7 @@ with tab_car:
 # a Navier–Stokes result — the panel method + Fluent deck are the correlation path.
 with tab_aero:
   try:
+    _subsystem_cad_import("aerodynamics", key_prefix="aero")
     _RHO = 1.225  # kg/m³, sea-level ISA — same default as the aero coupling
     st.markdown(
         '<p class="hint" style="margin:0 0 6px;">Trade <b>drag for downforce</b> and '
@@ -3042,6 +3209,8 @@ with tab_aero:
 # tab puts that decision in front of the user on the live car and track.
 with tab_ev:
   try:
+    _subsystem_cad_import("powertrain", key_prefix="ev")
+    _subsystem_cad_import("cooling", key_prefix="ev_cooling")
     st.markdown(
         '<p class="hint" style="margin:0 0 6px;">Pick the <b>motor architecture</b> and '
         'size the pack. KinematiK runs the same lap on each option, with each one '
@@ -3249,6 +3418,7 @@ with tab_ev:
 # hands the layout straight to KinematiK's per-cell thermal model and the ledger.
 with tab_accum:
   try:
+    _subsystem_cad_import("electrics", key_prefix="accum")
     st.markdown(
         '<p class="hint" style="margin:0 0 6px;">Build the <b>HV accumulator</b> from the '
         'cell up and clear the rules in one place. Pick a cell, choose how many in '
@@ -3462,6 +3632,7 @@ with tab_accum:
 # the hydraulic chain sizes the parts and reports the pedal force a driver needs.
 with tab_brake:
   try:
+    _subsystem_cad_import("brakes", key_prefix="brake")
     try:
         _vp_b = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
                                  if k in set(VehicleParams.__dataclass_fields__.keys())})
@@ -3482,7 +3653,8 @@ with tab_brake:
         'stays straight. Everything below comes from the live car\u2019s mass, CG height '
         'and wheelbase.</p>', unsafe_allow_html=True)
 
-    _bview = st.radio("View", ["Bias & lock-up", "Hydraulic sizing"],
+    _bview = st.radio("View", ["Bias & lock-up", "Hydraulic sizing",
+                               "Rotor thermal"],
                       horizontal=True, key="brake_view", label_visibility="collapsed")
 
     _wheel_r_mm = st.session_state.get("brake_wheel_r", 228.0)
@@ -3496,6 +3668,7 @@ with tab_brake:
         _bias = bc[1].slider("Front brake bias (%)", 50, 80, 65, 1,
                              help="Share of brake torque sent to the front axle. Set it "
                                   "near the ideal so the front locks just before the rear.") / 100.0
+        st.session_state["brake_front_bias_pct"] = int(round(_bias * 100))
         _mu_b = bc[2].slider("Tyre μ (braking)", 1.0, 2.0, value=float(round(_mu, 2)), step=0.05,
                              help="Peak longitudinal grip. From the car's tyre model by default.")
         _wheel_r_mm = bc[3].number_input("Loaded tyre radius (mm)", 180.0, 280.0,
@@ -3595,7 +3768,7 @@ with tab_brake:
             unsafe_allow_html=True)
 
     # =================================================================== #
-    else:
+    elif _bview == "Hydraulic sizing":
         st.markdown(
             '<p class="hint">Size the hydraulic chain to deliver the lock-up torque the '
             'bias view found, and see the <b>pedal force</b> a driver needs. The chain: '
@@ -3686,6 +3859,163 @@ with tab_brake:
                 st.rerun()
             except Exception as _e4:
                 st.warning(f"Couldn't declare: {_e4}")
+
+    # =================================================================== #
+    elif _bview == "Rotor thermal":
+        import suspension.brake_thermal as _bt
+        _bt_mod_le = _bt.lap_brake_energy
+        st.markdown(
+            '<p class="hint"><b>Triage your Ansys runs.</b> This is a fast 0-D '
+            'energy balance — single-mass rotor, the same lumped-thermal approach '
+            'as the tyre model — so you can sweep dozens of rotor geometries here '
+            'in milliseconds and only mesh the 2–3 survivors. It is <b>not</b> an '
+            'FEA: no temperature field, no coning, no vane flow, no stress. Use it '
+            'to <b>narrow the design space</b>, then take the short-list to Ansys.</p>',
+            unsafe_allow_html=True)
+
+        _tc = st.columns(4)
+        _tk_v0 = _tc[0].number_input("Stop from (km/h)", 40.0, 140.0, value=100.0,
+                                     step=5.0, help="Top speed of the hardest "
+                                     "single stop on track.")
+        _tk_bias = _tc[1].slider("Front bias (%)", 50, 80,
+                                 int(st.session_state.get("brake_front_bias_pct", 62)),
+                                 1, help="Front axle's share of braking energy — "
+                                 "from the Bias & lock-up view.") / 100.0
+        _tk_dia = _tc[2].number_input("Rotor ⌀ (mm)", 180.0, 320.0, value=220.0,
+                                      step=5.0, key="bt_dia")
+        _tk_th = _tc[3].number_input("Rotor thickness (mm)", 3.0, 12.0, value=5.0,
+                                     step=0.5, key="bt_th")
+
+        _tc2 = st.columns(4)
+        _tk_vent = _tc2[0].slider("Vented fraction", 0.0, 0.6, 0.0, 0.05,
+                                  help="0 = solid disc. Raise to approximate the "
+                                  "material removed by cooling vanes/slots.") 
+        _tk_area = _tc2[1].slider("Cooling-area factor", 1.5, 4.0, 2.4, 0.1,
+                                  help="≈2 = both faces of a solid disc; higher "
+                                  "for a vented/vaned rotor with more wetted area.")
+        # Seed the widget keys once so they have a default, then let the widgets
+        # (and the lap-sim button) own their state. Writing value= AND key= would
+        # both warn and stop the lap sim from being able to update them.
+        st.session_state.setdefault("bt_pwr", 1200.0)
+        st.session_state.setdefault("bt_air", 55.0)
+        _tk_pwr = _tc2[2].number_input("Avg brake power / front rotor (W)",
+                                       200.0, 8000.0, step=100.0, key="bt_pwr",
+                                       help="Time-averaged power into ONE front "
+                                       "rotor over the stint. Type it, or pull it "
+                                       "from a lap sim below.")
+        _tk_air = _tc2[3].number_input("Airflow speed (km/h)", 20.0, 120.0,
+                                       step=5.0, key="bt_air",
+                                       help="Representative car speed during "
+                                       "braking — sets convection. Auto-filled "
+                                       "from the lap sim's mean braking speed.")
+
+        # ---- pull the average braking power straight from a lap sim --------
+        st.markdown('<p class="hint" style="margin:6px 0 2px;border-top:1px solid '
+                    'var(--line);padding-top:8px;"><b>Or compute it from a real '
+                    'lap</b> — the velocity trace already implies exactly how much '
+                    'energy the brakes dump per lap.</p>', unsafe_allow_html=True)
+        if st.button("Run lap sim → average braking power", key="bt_runlap"):
+            try:
+                _vd_b = VehicleDynamics(
+                    VehicleParams(**{k: v for k, v in st.session_state.vp.items()
+                                     if k in VehicleParams.__dataclass_fields__}),
+                    front_kin=kin, rear_kin=kin,
+                    tire=globals().get("_live_tire_lap"))
+                _lp = lapsim_mod.LapSimParams(mass=float(_mass))
+                _sim_b = lapsim_mod.LapSimulator(_vd_b, params=_lp)
+                _res_b = _sim_b.simulate(lapsim_mod.autocross_track(laps=1))
+                if _res_b.ok:
+                    _lbe = _bt_mod_le(
+                        _res_b.distance, _res_b.speed, mass_kg=float(_mass),
+                        front_bias=_tk_bias, lap_time_s=_res_b.lap_time,
+                        long_g=_res_b.long_g)
+                    st.session_state["bt_pwr"] = float(min(max(
+                        round(_lbe.p_front_avg_w, 0), 200.0), 8000.0))
+                    st.session_state["bt_air"] = float(min(max(
+                        round(_lbe.v_brake_mean_ms * 3.6, 0), 20.0), 120.0))
+                    st.session_state["brake_lap_meta"] = (
+                        f"{_res_b.lap_time:.1f} s lap · {_lbe.q_lap_j/1000:.0f} kJ "
+                        f"braking/lap · {_lbe.n_brake_samples} brake samples · peak "
+                        f"{_lbe.p_front_peak_w/1000:.0f} kW/rotor")
+                    st.rerun()
+                else:
+                    st.warning("Lap sim couldn't run on the default autocross with "
+                               "this car — type the average power instead.")
+            except Exception as _le:
+                st.warning(f"Couldn't run the lap sim ({_le}). Type the average "
+                           "power instead.")
+        if st.session_state.get("brake_lap_meta"):
+            st.caption("From lap sim: " + st.session_state["brake_lap_meta"]
+                       + ". Power & airflow above are filled from this lap.")
+
+        _bt_params = _bt.BrakeThermalParams(area_factor=float(_tk_area))
+        _bt_model = _bt.BrakeThermalModel(_bt_params)
+
+        _single = _bt_model.single_stop(
+            mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
+            diameter_mm=_tk_dia, thickness_mm=_tk_th,
+            vented_fraction=_tk_vent)
+        _equil = _bt_model.equilibrium(
+            p_brake_avg_w=_tk_pwr, v_work_ms=_tk_air / 3.6, diameter_mm=_tk_dia)
+
+        _mt = st.columns(4)
+        _mt[0].metric("Energy / front rotor", f"{_single.q_per_rotor_j/1000:.0f} kJ",
+                      help="Kinetic energy this one rotor absorbs in the stop.")
+        _mt[1].metric("Rotor mass (est)", f"{_single.rotor_mass_kg*1000:.0f} g",
+                      help="First-order friction-ring mass from ⌀, thickness and "
+                      "vented fraction — a thermal-capacity estimate, not a CAD mass.")
+        _mt[2].metric("Single-stop peak", f"{_single.T_peak_c:.0f} °C",
+                      help="Bulk temperature after one stop from a cold rotor.")
+        _mt[3].metric("Endurance equilibrium", f"{_equil.T_equilibrium_c:.0f} °C",
+                      help="Steady-state temp where convection+radiation balance "
+                      "the average braking power. This is the fade-relevant number.")
+
+        if _equil.T_equilibrium_c > 650:
+            st.error(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — grey iron "
+                     "fades/glazes hard here. Bigger ⌀, more vent area, or a "
+                     "higher-temp rotor material; this geometry likely needs Ansys "
+                     "to confirm it survives a stint.")
+        elif _equil.T_equilibrium_c > 500:
+            st.warning(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — into the "
+                       "fade-risk band for an iron rotor. Worth meshing to check "
+                       "the hot-spot, not just the bulk.")
+        else:
+            st.success(f"Equilibrium ~{_equil.T_equilibrium_c:.0f} °C — bulk thermal "
+                       "load looks manageable. Mesh to confirm the hot-spot and "
+                       "coning, but this geometry is a sensible candidate.")
+
+        # mass-vs-peak-temp frontier — the trade the FEA is being used to explore
+        _sweep = _bt_model.mass_temp_sweep(
+            mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
+            thickness_mm=_tk_th, dia_min_mm=180.0, dia_max_mm=300.0, n=25,
+            vented_fraction=_tk_vent)
+        _fig_mt = go.Figure()
+        _fig_mt.add_trace(go.Scatter(
+            x=[r["rotor_mass_kg"] * 1000 for r in _sweep],
+            y=[r["T_peak_c"] for r in _sweep],
+            mode="lines+markers", line=dict(color=AMBER, width=3),
+            text=[f"⌀{r['diameter_mm']:.0f} mm" for r in _sweep],
+            hovertemplate="%{text}<br>%{x:.0f} g<br>%{y:.0f} °C<extra></extra>",
+            name="single-stop peak"))
+        # mark the currently-selected rotor
+        _fig_mt.add_trace(go.Scatter(
+            x=[_single.rotor_mass_kg * 1000], y=[_single.T_peak_c],
+            mode="markers", marker=dict(color=CYAN, size=13, symbol="diamond"),
+            name="your rotor", hovertemplate="your rotor<extra></extra>"))
+        _fig_mt.update_layout(**PLOT_LAYOUT,
+                              title="Mass ↔ peak-temp frontier (single stop) — "
+                              "pick the knee, mesh those",
+                              xaxis_title="rotor mass (g)",
+                              yaxis_title="single-stop peak temp (°C)", height=360)
+        st.plotly_chart(_fig_mt, width="stretch")
+
+        if _single.synthesized:
+            st.caption("⚠ Synthesized: equations are exact energy balances, but "
+                       "material c_p/density, convection h and the heat-split are "
+                       "representative (uncalibrated) values. Right shape, "
+                       "invented magnitudes — triage with these, confirm absolute "
+                       "temperatures in Ansys.")
+
   except Exception as _eb:
     st.error(f"Could not build the brakes workspace: {_eb}")
 
@@ -8553,6 +8883,7 @@ with sc3:
 
 # ----------------------------- TAB PCB (ELECTRONICS) ----------------------- #
 with tab_pcb:
+    _subsystem_cad_import("data-acquisition", key_prefix="pcb")
     render_pcb_board()
     render_harness()
 
