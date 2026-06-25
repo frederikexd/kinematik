@@ -702,6 +702,7 @@ feeds the *same* analysis pipeline below.
 - **Validation** — correlation against logged/track data so a sim result is believable.
 - **Integration** — CAD/tool interchange, plus the suspension-vs-chassis clearance-through-travel check.
 - **Electronics (PCB)** — copper-survival and signal-integrity checks for the EV harness/ECU: trace heating, fusing, IR-drop brown-out, diff-pair impedance and HV coupling.
+- **DFMEA** — a living Powertrain design-risk log (live RPN, a dashboard and an action tracker) pre-loaded with real failure modes, so risk reviews replace the loose spreadsheet.
 
 **The one habit that makes this worth it:** log your decisions as you make them —
 especially the things that *didn't* work. It takes ten seconds with the templates,
