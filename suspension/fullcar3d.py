@@ -681,6 +681,7 @@ def build_full_car_figure(
     show_chassis=True, show_tires=True, show_floor=True,
     show_aero=True, show_powertrain=True, show_cooling=True,
     show_electrics=True, show_brakes=True, show_bodywork=True,
+    show_cg=True,
     highlight_subsystem: str | None = None,
     focus_subsystem: str | None = None,
     focus_part: str | None = None,
@@ -839,7 +840,12 @@ def build_full_car_figure(
     def op(subsys, base):
         if _hl_set is None:
             return base
-        return base if subsys in _hl_set else base * 0.16
+        # Highlighted parts are pushed to FULL opacity (brighter than their
+        # resting state) so selecting a subteam reads as the part *lighting up*,
+        # not merely the rest dimming. Everything else ghosts hard.
+        if subsys in _hl_set:
+            return min(1.0, max(base, 0.92))
+        return base * 0.16
 
     def edge_op(subsys):
         if _hl_set is None or subsys is None:
@@ -1326,12 +1332,17 @@ def build_full_car_figure(
                 cg_label = "CG (declared %.0f kg)" % roll["total_kg"]
         except Exception:
             pass
-    if cg_h > 0:
+    if show_cg and cg_h > 0:
+        # When a subsystem is spotlit, fade the CG marker too — it's a global
+        # readout, not part of any subteam, so it shouldn't out-shine the
+        # highlighted parts. Full strength only when nothing is highlighted.
+        _cg_op = 1.0 if _hl_set is None else 0.18
         fig.add_trace(go.Scatter3d(
             x=[cg_x], y=[cg_y], z=[cg_h], mode="markers+text",
             marker=dict(size=8, color=COLORS["cg"], symbol="diamond"),
             text=[cg_label], textposition="top center",
             textfont=dict(color=COLORS["cg"], size=11),
+            opacity=_cg_op,
             name="Centre of gravity", hoverinfo="text"))
 
     # ---- ground plane -------------------------------------------------- #
@@ -1497,19 +1508,28 @@ def build_full_car_figure(
 
     # Expose each subsystem's centroid (mean of all its accrued vertices) so a
     # caller can float a label on it — e.g. the role picker tags every lit
-    # subteam by name at the centre of the parts it owns. Stored as a plain
-    # attribute (consumed in-process, never serialised) keyed by subsystem id.
+    # subteam by name at the centre of the parts it owns.
     _centroids = {}
     for _s, _pts in subsys_pts.items():
         if _pts:
             _arr = np.asarray(_pts, float).reshape(-1, 3)
             _centroids[_s] = _arr.mean(axis=0).tolist()
-    # Plotly blocks arbitrary attributes on Figure, so stash the centroids in
-    # layout.meta (a sanctioned free-form field) under a namespaced key.
-    _meta = dict(fig.layout.meta) if isinstance(fig.layout.meta, dict) else {}
-    _meta["subsys_centroids"] = _centroids
-    fig.update_layout(meta=_meta)
+    # Attach as a plain Python attribute, bypassing plotly's Figure.__setattr__
+    # guard via object.__setattr__. This avoids stuffing a nested dict into
+    # layout.meta, which older plotly (5.x) validates strictly and can reject —
+    # the previous cause of the picker silently failing to build. The attribute
+    # is read in-process by the role picker and never serialised.
+    try:
+        object.__setattr__(fig, "_kk_subsys_centroids", _centroids)
+    except Exception:
+        pass
     return fig
+
+
+def subsys_centroids(fig) -> dict:
+    """Return the per-subsystem centroid dict attached by build_full_car_figure
+    (mapping subsystem id -> [x, y, z]), or an empty dict if none is present."""
+    return getattr(fig, "_kk_subsys_centroids", {}) or {}
 
 
 # --------------------------------------------------------------------------- #
