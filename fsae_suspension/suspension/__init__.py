@@ -32,7 +32,6 @@ from .ggv import (GGVGenerator, GGVParams, GGVResult,
                   sweep_parameter, quick_ggv)
 from . import ggv
 from . import chassis
-from . import bracket_fos
 from . import integration
 from . import project
 from . import tiremodel
@@ -101,33 +100,6 @@ from .pack_thermal import (
     optimize_fan_placement, fan_grid_candidates,
 )
 from . import pack_thermal
-
-# Phase-change-material (PCM) cooling buffer — the "liquid wax inside the cell
-# holder" the cooling team is modelling. Adds the latent-heat plateau pack_thermal
-# can't represent on its own and answers the sizing question ("how much wax holds
-# the cells for the endurance stint, or do I still need the fan?"). Post-processes
-# a bare PackThermalResult at the seam pack_thermal exposes; never re-runs the
-# integrator. Same calibration/never-raise contract.
-from .pcm_cooling import (
-    PCMMaterial, default_pcm, PCMAllocation, PCMResult,
-    evaluate_pcm_buffer, size_pcm_for_hold, check_pcm,
-)
-from . import pcm_cooling
-
-# Tractive-system safety layer — the precharge transient and the shutdown chain
-# (TSAL / BSPD / AMS / IMD) the electrics team validates before tech inspection.
-# Reproduces the slide's "R-C on a DC source, switch shorts the resistor after
-# ~2s" experiment without SPICE, checks discharge/precharge against the season's
-# rules, and gates the series shutdown loop for completeness + fail-safe wiring.
-# Emits the same typed Findings the integration board renders.
-from .tractive_system import (
-    Rules, PrechargeCircuit, PrechargeTrace,
-    simulate_precharge, check_precharge,
-    ShutdownNode, ShutdownChain, REQUIRED_SHUTDOWN_NODES, check_shutdown_chain,
-    TSAL, check_tsal, BSPD, check_bspd,
-    TractiveSafetyResult, check_tractive_system,
-)
-from . import tractive_system
 
 # Structural tire co-simulation boundary (the FTire / CDTire integration seam):
 # a stateful tyre contract, a Pacejka-backed reference backend that refuses to

@@ -39,7 +39,6 @@ from suspension import fullcar3d as fullcar_mod
 from suspension import compliance as compliance_mod
 from suspension import flex as flex_mod
 from suspension import chassis as chassis_mod
-from suspension import bracket_fos as bracket_mod
 from suspension import integration as integ_mod
 from suspension import project as project_mod
 from suspension import tiremodel as tire_mod
@@ -51,9 +50,6 @@ from suspension.aero import ReferenceAeroModel as _AeroRefModel, Attitude as _Ae
 from suspension import ev_powertrain as ev_mod
 from suspension import lapsim as lapsim_mod
 from suspension import pack_thermal as pack_mod
-from suspension import tractive_system as tract_mod
-from suspension import pcm_cooling as pcm_mod
-from suspension import dfmea as dfmea_mod
 from suspension import damper as damper_mod
 from suspension import interfaces as interfaces_mod
 from suspension import transient as transient_mod
@@ -1030,10 +1026,6 @@ with st.expander("👋 New here? 20 seconds, then pick your subteam below", expa
    calls you make (especially what *didn't* work). It's the difference between
    next year starting ahead or relearning everything.
 
-Powertrain / Electrics / Cooling also get **🧯 DFMEA** — a living design-risk
-log (live RPN, dashboard, action tracker) pre-loaded with real failure modes,
-so risk reviews replace the loose spreadsheet.
-
 Suspension topology and the live hardpoint editor live in the **sidebar** on the
 left. Want the full description of every single tab? It's in the project README.
     """)
@@ -1041,7 +1033,7 @@ left. Want the full description of every single tab? It's in the project README.
 # ========================================================================== #
 #  ROLE-AWARE TAB ROUTING
 #
-#  The studio carries 22 tabs. Showing all 22 to every user — when a brakes
+#  The studio carries 21 tabs. Showing all 21 to every user — when a brakes
 #  lead never touches the aero map and a cost lead never edits a hardpoint —
 #  is the single biggest source of "this is overwhelming". So instead of one
 #  flat strip of 21, each user picks their subteam ONCE (remembered for the
@@ -1050,7 +1042,7 @@ left. Want the full description of every single tab? It's in the project README.
 #
 #  Nothing is removed and nothing is hidden behind a wall: every tab body
 #  below still runs exactly as before (same physics, same single source of
-#  truth), and "All tabs (power user)" restores the original flat 22. The
+#  truth), and "All tabs (power user)" restores the original flat 21. The
 #  only thing that changes is how many tabs a given person has to look at to
 #  find their work.
 # ========================================================================== #
@@ -1078,8 +1070,6 @@ _TAB_META = {
     "validation":  ("✔️", "Validation"),
     "integration": ("🔗", "Integration"),
     "pcb":         ("🔌", "Electronics (PCB)"),
-    "tractive":    ("⚡", "Tractive Safety"),
-    "dfmea":       ("🧯", "DFMEA"),
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
@@ -1094,10 +1084,9 @@ _ROLE_TABS = {
     "suspension": ["kinematics", "roll", "grip", "compliance", "tire",
                    "setup", "ggv", "transient"],
     "aero":       ["aero"],
-    "powertrain": ["ev", "laptime", "ggv", "dfmea"],
-    "electrics":  ["accum", "pcb", "tractive", "dfmea"],
-    "cooling":    ["tractive", "dfmea"],   # PCM buffer lives alongside the precharge gate;
-                                  # cooling also shows via heatmap + shared spine
+    "powertrain": ["ev", "laptime", "ggv"],
+    "electrics":  ["accum", "pcb"],
+    "cooling":    [],            # body-only subteam — shows via heatmap + shared spine
     "dataacq":    ["pcb"],       # data-acquisition — lives in the Electronics/PCB tab
     "brakes":     ["brakes"],
     "chassis":    ["teamfit"],
@@ -1265,7 +1254,7 @@ with _pctl:
                     unsafe_allow_html=True)
 
     if _show_all:
-        st.caption("Showing all 22 tabs")
+        st.caption("Showing all 21 tabs")
     elif _roles == ["everyone"]:
         st.caption("Showing shared tabs only")
     else:
@@ -1400,7 +1389,7 @@ def _tab_label(_id):
     return f"{_em}  {_lab}"
 
 # --- Build the actual Streamlit tab widgets. ------------------------------- #
-# Every one of the 22 tab bodies below still executes; we just route each id's
+# Every one of the 21 tab bodies below still executes; we just route each id's
 # container either into the top strip or into the nested "More tools" strip.
 _id_to_container = {}
 if _more_ids:
@@ -2161,8 +2150,6 @@ tab_tr      = _id_to_container["transient"]
 tab12       = _id_to_container["validation"]
 tab13       = _id_to_container["integration"]
 tab_pcb     = _id_to_container["pcb"]
-tab_tractive = _id_to_container["tractive"]
-tab_dfmea    = _id_to_container["dfmea"]
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
@@ -6670,157 +6657,6 @@ with tab6:
                 except Exception:
                     pass
 
-    # ===================================================================== #
-    #  BRACKET FACTOR-OF-SAFETY SCREENING                                    #
-    #  The chassis lead's standing rule, made one-click: every mount the     #
-    #  team now has to design gets checked against FoS ≥ 1.5 on YIELD, the   #
-    #  same way every time, before anyone opens an FEA. Mirrors the team's   #
-    #  live 4130 → 1018 cold-rolled material decision as a side-by-side.     #
-    # ===================================================================== #
-    st.divider()
-    st.markdown("### 🔩 Bracket Factor-of-Safety screening")
-    st.markdown('<p class="hint">The frame\'s figured out — the job now is '
-                '<b>mounting brackets</b>: seat tabs, harness anchors, floor tabs, '
-                'aero attachment points, firewall, steering column, accumulator '
-                'mounts. The rule is <b>FoS ≥ 1.5 on yield</b> (not ultimate). '
-                'Size a bracket here and get that verdict in five seconds — the '
-                'obviously-undersized ones fail before they ever reach the sim '
-                'queue. This is a <b>screening</b> hand-calc (Shigley / weld throat '
-                'shear), not a replacement for the SolidWorks/Ansys check the rule '
-                'also asks for — it tells you whether a bracket is even in the right '
-                'ballpark first.</p>', unsafe_allow_html=True)
-
-    bcc = st.columns([1.4, 1.4, 1])
-    br_name = bcc[0].text_input("Bracket name", value="seat_front_tab", key="br_name")
-    _mat_keys = list(bracket_mod.MATERIALS.keys())
-    _def_mat = "Steel 1018 CR (cold-rolled)"
-    br_mat = bcc[1].selectbox(
-        "Material", _mat_keys,
-        index=_mat_keys.index(_def_mat) if _def_mat in _mat_keys else 0,
-        key="br_mat",
-        help="The team's switch-to material is 1018 cold-rolled. 4130 carries a "
-             "separate as-welded row because un-heat-treated 4130 loses yield at "
-             "the weld — that's the whole argument for moving to 1018.")
-    br_fos_target = bcc[2].number_input("Target FoS", value=1.5, min_value=1.0,
-                                        step=0.1, key="br_fos_target",
-                                        help="The lead set 1.5. Buffer for "
-                                             "rushed-manufacturing variation.")
-
-    st.markdown("###### Section & load")
-    s1 = st.columns(4)
-    br_w = s1[0].number_input("Width (mm)", value=30.0, min_value=0.1, step=1.0, key="br_w")
-    br_t = s1[1].number_input("Thickness (mm)", value=4.0, min_value=0.1, step=0.5, key="br_t")
-    br_P = s1[2].number_input("Worst-case load (N)", value=2000.0, step=100.0, key="br_P",
-                              help="Peak load the bracket sees — use your worst "
-                                   "event (bump, braking, impact share).")
-    br_lever = s1[3].number_input("Lever arm (mm)", value=20.0, min_value=0.0, step=1.0,
-                                  key="br_lever",
-                                  help="Distance from the welded root to the load "
-                                       "line. This is what bends the foot — usually "
-                                       "the mode that governs a tab bracket.")
-    br_shear = st.radio("Direct load acts as", ["shear (in plane)", "tension (along plate)"],
-                        horizontal=True, key="br_shear") == "shear (in plane)"
-
-    st.markdown("###### Bolt hole (optional)")
-    s2 = st.columns(3)
-    br_hole = s2[0].number_input("Hole ⌀ (mm)", value=8.0, min_value=0.0, step=1.0, key="br_hole")
-    br_edge = s2[1].number_input("Edge distance (mm)", value=12.0, min_value=0.0, step=1.0,
-                                 key="br_edge", help="Hole centre to nearest free "
-                                                     "edge — the tear-out path.")
-    br_nb = s2[2].number_input("# bolts", value=1, min_value=1, step=1, key="br_nb")
-
-    st.markdown("###### Fillet weld to frame (optional — the 'design for welding' check)")
-    s3 = st.columns(2)
-    br_wleg = s3[0].number_input("Weld leg (mm)", value=6.0, min_value=0.0, step=1.0, key="br_wleg")
-    br_wlen = s3[1].number_input("Total weld length (mm)", value=60.0, min_value=0.0,
-                                 step=5.0, key="br_wlen",
-                                 help="Sum the effective weld runs attaching the "
-                                      "foot (e.g. both sides).")
-
-    _bracket = bracket_mod.Bracket(
-        name=br_name or "bracket", material=br_mat, width_mm=br_w, thickness_mm=br_t,
-        P_N=br_P, lever_arm_mm=br_lever, hole_dia_mm=br_hole, edge_dist_mm=br_edge,
-        weld_leg_mm=br_wleg, weld_length_mm=br_wlen, load_is_shear=br_shear,
-        n_bolts=int(br_nb), is_estimate=True, set_by="TEAM FIT")
-    _res = bracket_mod.screen_bracket(_bracket, fos_target=float(br_fos_target))
-
-    _vmap = {"PASS": ("good", f"Meets FoS ≥ {br_fos_target:.1f} on yield"),
-             "TIGHT": ("warn", "Passes but no margin — review / FEA confirm"),
-             "FAIL": ("bad", "Below the FoS floor — resize before fab"),
-             "INVALID": ("bad", "Can't screen — check inputs")}
-    _vc = _vmap.get(_res.verdict, ("warn", _res.verdict))
-    st.markdown(f'<div class="metric" style="margin:.5rem 0;">'
-                f'<span class="k">BRACKET FoS VERDICT · {_res.material.upper()}</span>'
-                f'<span class="v {_vc[0]}">{_res.verdict}'
-                f'<span class="u"> · {_vc[1]}</span></span></div>',
-                unsafe_allow_html=True)
-
-    if _res.modes:
-        _mc = st.columns(3)
-        _mc[0].markdown(metric("Min FoS (yield)", f"{_res.min_fos:.2f}",
-                               f"need ≥ {br_fos_target:.1f}", _vc[0]),
-                        unsafe_allow_html=True)
-        _mc[1].markdown(metric("Governing mode", _res.governing_mode.replace(" (section)", ""),
-                               "", _vc[0]), unsafe_allow_html=True)
-        _gov = next((m for m in _res.modes if getattr(m, "governs", False)), None)
-        _mc[2].markdown(metric("Peak stress", f"{_gov.stress_MPa:.0f}" if _gov else "—",
-                               "MPa"), unsafe_allow_html=True)
-
-        st.markdown("###### Every failure mode (governing one marked)")
-        for m in _res.modes:
-            _tag = "bad" if m.fos < br_fos_target else ("warn"
-                    if m.fos < br_fos_target * 1.15 else "good")
-            _mark = "  ◄ governs" if getattr(m, "governs", False) else ""
-            st.markdown(metric(m.mode + _mark, f"{m.fos:.2f}",
-                               f"FoS · σ={m.stress_MPa:.0f} MPa vs {m.allow_MPa:.0f} MPa allow",
-                               _tag), unsafe_allow_html=True)
-
-    if _res.notes:
-        for n in _res.notes:
-            st.markdown(f'<p class="hint">ℹ {n}</p>', unsafe_allow_html=True)
-
-    st.markdown('<p class="hint" style="margin-top:.3rem;">⚠ Screening only — this '
-                'is the cheap hand-calc that runs before FEA, not the FEA itself. '
-                'Confirm the governing mode in SolidWorks/Ansys before sign-off.</p>',
-                unsafe_allow_html=True)
-
-    # ---- Material trade: the 4130 vs 1018 decision, as numbers ------------- #
-    with st.expander("Compare this exact bracket across materials (the 4130 → 1018 call)"):
-        st.markdown('<p class="hint">Same geometry and load, every material — so the '
-                    'switch from 4130 is a column of FoS numbers, not a hand-wave. '
-                    '1018 and 4130 are nearly the same density, so for fixed geometry '
-                    'it\'s almost purely a yield + cost + weldability call — and '
-                    'as-welded (no heat treat) 4130 lands right next to 1018 CR.</p>',
-                    unsafe_allow_html=True)
-        _rows = bracket_mod.compare_materials(_bracket, fos_target=float(br_fos_target))
-        import pandas as _pd
-        _df = _pd.DataFrame([{
-            "Material": r["material"],
-            "Yield (MPa)": f"{r['yield_MPa']:.0f}",
-            "Min FoS": f"{r['min_fos']:.2f}",
-            "Governing": r["governing_mode"].replace(" (section)", ""),
-            "Verdict": r["verdict"],
-            "Welds w/o PWHT": "yes" if r["weldable_no_pwht"] else "no",
-            "Density (kg/m³)": f"{r['density_kg_m3']:.0f}",
-        } for r in _rows])
-        st.dataframe(_df, width='stretch', hide_index=True)
-
-    # ---- Report download + log to handover -------------------------------- #
-    _dlc = st.columns([1.3, 1.7])
-    _report = bracket_mod.bracket_report(_res)
-    _dlc[0].download_button("⬇ Screening report (.txt)", _report,
-                            file_name=f"bracket_fos_{(br_name or 'bracket').replace(' ', '_')}.txt",
-                            mime="text/plain", key="br_dl")
-    if _res.verdict in ("FAIL", "TIGHT"):
-        _sug = (f"Chassis bracket '{br_name}' {_res.verdict} the FoS rule: "
-                f"{_res.governing_mode} at FoS {_res.min_fos:.2f} vs "
-                f"{br_fos_target:.1f} ({_res.material}). Screening hand-calc — "
-                f"flagged before FEA / fab.")
-        if _dlc[1].button("＋ Log this bracket to handover", key="br_log"):
-            log_decision_now("chassis", f"Bracket {br_name} FoS {_res.verdict.lower()}",
-                             _sug, author="TEAM FIT")
-            st.success("Logged to handover — visible in WEIGHT & HANDOVER.")
-
 # ----------------------------- TAB 7 --------------------------------------- #
 with tab7:
     store = get_store()
@@ -9720,529 +9556,6 @@ with tab_pcb:
     _subsystem_cad_import("data-acquisition", key_prefix="pcb")
     render_pcb_board()
     render_harness()
-
-
-# --------------------------- TAB TRACTIVE SAFETY --------------------------- #
-# The pre-tech-inspection gate the electrics + cooling teams actually run the
-# week before a comp: the precharge/discharge transient (incl. the meeting's
-# "switch shorts the resistor after ~2s" experiment), the series shutdown chain
-# (TSAL/BSPD/AMS/IMD/MSD), and the PCM "liquid wax" buffer on the 140s3p pack.
-# Every result is a typed Finding rendered the same way the integration board
-# renders a melted trace — so a slow precharge or a missing IMD has an owner.
-with tab_tractive:
-    st.header("⚡ Tractive-System Safety & PCM Cooling")
-    st.caption("The pre-tech gate: precharge/discharge, the shutdown chain "
-               "(TSAL · BSPD · AMS · IMD · MSD), and the PCM wax buffer — checked "
-               "against the season's rules, no SPICE required.")
-
-    def _render_findings(findings):
-        """Render typed Findings with the same severity vocabulary as the board."""
-        _icon = {"ok": "✅", "info": "ℹ️", "warning": "⚠️",
-                 "fail": "❌", "missing": "◻️"}
-        for f in findings:
-            sev = f.severity.value if hasattr(f.severity, "value") else str(f.severity)
-            who = (" · " + ", ".join(f.subsystems)) if f.subsystems else ""
-            st.markdown(f"{_icon.get(sev,'•')} **{f.check}**{who} — {f.message}")
-
-    # season/series rule limits (editable — they move year to year)
-    with st.expander("Rule limits for this season/series", expanded=False):
-        _rc = st.columns(4)
-        _safe_v = _rc[0].number_input("Safe-to-touch voltage (V)", 1.0, 600.0,
-                                      60.0, key="tr_safe_v")
-        _disc_t = _rc[1].number_input("Discharge time limit (s)", 0.1, 60.0,
-                                      5.0, key="tr_disc_t")
-        _pre_frac = _rc[2].number_input("Precharge fraction", 0.5, 0.99,
-                                        0.90, key="tr_pre_frac")
-        _pre_t = _rc[3].number_input("Precharge time limit (s)", 0.1, 30.0,
-                                     5.0, key="tr_pre_t")
-        _rules = tract_mod.Rules(safe_voltage_v=_safe_v, discharge_time_s=_disc_t,
-                                 precharge_fraction=_pre_frac,
-                                 precharge_max_time_s=_pre_t)
-
-    _t_pre, _t_shut, _t_pcm = st.tabs(
-        ["🔌 Precharge / Discharge", "🛑 Shutdown chain · TSAL · BSPD",
-         "🧊 PCM cooling buffer"])
-
-    # ---- PRECHARGE / DISCHARGE (slides 4 & 5) ----------------------------- #
-    with _t_pre:
-        st.markdown("**The slide-5 experiment, solved in closed form.** Declare "
-                    "the R-C and (optionally) the instant a switch shorts the "
-                    "precharge resistor; read V_cap, inrush and resistor energy.")
-        _pc1 = st.columns(4)
-        _vpack = _pc1[0].number_input("Pack voltage (V)", 1.0, 600.0, 400.0,
-                                      key="pc_v")
-        _clink_uf = _pc1[1].number_input("DC-link capacitance (µF)", 1.0, 1e5,
-                                         600.0, key="pc_c")
-        _rpre = _pc1[2].number_input("Precharge R (Ω)", 0.1, 1e5, 30.0,
-                                     key="pc_rpre")
-        _rdis = _pc1[3].number_input("Discharge R (Ω, 0 = none)", 0.0, 1e7,
-                                     15000.0, key="pc_rdis")
-        _pc2 = st.columns(3)
-        _e_rate = _pc2[0].number_input("Resistor energy rating (J, 0 = unknown)",
-                                       0.0, 1e5, 100.0, key="pc_erate")
-        _tsw = _pc2[1].number_input("Switch shorts R at t = (s, 0 = never)",
-                                    0.0, 30.0, 2.0, key="pc_tsw")
-
-        pc = tract_mod.PrechargeCircuit(
-            pack_voltage_v=_vpack, link_capacitance_f=_clink_uf * 1e-6,
-            precharge_r_ohm=_rpre,
-            discharge_r_ohm=(_rdis if _rdis > 0 else None),
-            resistor_energy_rating_j=(_e_rate if _e_rate > 0 else None),
-            set_by="electrics", is_estimate=False)
-
-        _m = st.columns(4)
-        _m[0].metric("τ precharge", f"{pc.tau_precharge_s*1000:.1f} ms")
-        _m[1].metric("Peak inrush", f"{pc.peak_inrush_a:.0f} A")
-        _m[2].metric("Pulse energy ½CV²", f"{pc.precharge_pulse_energy_j:.1f} J")
-        _tts = pc.time_to_safe_s(_safe_v)
-        _m[3].metric(f"Bleed to {_safe_v:.0f} V",
-                     "—" if _tts is None else f"{_tts:.2f} s")
-
-        tr = tract_mod.simulate_precharge(
-            pc, t_switch_s=(_tsw if _tsw > 0 else None))
-        if tr.ok:
-            try:
-                import plotly.graph_objects as _go
-                _fig = _go.Figure()
-                _fig.add_trace(_go.Scatter(x=tr.time_s, y=tr.v_cap_v,
-                                           name="V_cap (V)", mode="lines"))
-                _fig.add_trace(_go.Scatter(x=tr.time_s, y=tr.i_a,
-                                           name="I_resistor (A)", mode="lines",
-                                           yaxis="y2"))
-                if _tsw > 0:
-                    _fig.add_vline(x=_tsw, line_dash="dash",
-                                   annotation_text="switch shorts R")
-                _fig.update_layout(
-                    height=320, margin=dict(l=10, r=10, t=30, b=10),
-                    yaxis=dict(title="V_cap (V)"),
-                    yaxis2=dict(title="I (A)", overlaying="y", side="right"),
-                    legend=dict(orientation="h", y=1.15))
-                st.plotly_chart(_fig, use_container_width=True)
-            except Exception:
-                st.line_chart({"V_cap (V)": tr.v_cap_v}, x=None)
-        for _w in tr.warnings:
-            st.caption("⚠ " + _w)
-
-        st.divider()
-        _render_findings(tract_mod.check_precharge(pc, _rules))
-
-    # ---- SHUTDOWN CHAIN + TSAL + BSPD (slides 3 & 8) ---------------------- #
-    with _t_shut:
-        st.markdown("**The series safety loop, checked for rule-completeness and "
-                    "fail-safe wiring.** Tick the nodes your shutdown circuit "
-                    "actually has (MSD/accumulator/inverter interlocks included).")
-        _present = {}
-        _cc = st.columns(4)
-        _labels = {
-            "master_switch": "Master switch(es)", "bspd": "BSPD",
-            "ams": "AMS / BMS", "imd": "IMD",
-            "interlock": "HV interlocks (MSD/accum/inverter)",
-            "inertia": "Inertia / crash switch", "estop": "E-stops (cockpit + sides)"}
-        for _i, (_k, _lab) in enumerate(_labels.items()):
-            _present[_k] = _cc[_i % 4].checkbox(_lab, value=True, key=f"sd_{_k}")
-        _nc = st.checkbox("All nodes wired normally-CLOSED (open-to-trip)",
-                          value=True, key="sd_nc")
-
-        _chain = tract_mod.ShutdownChain()
-        for _k, _on in _present.items():
-            if _on:
-                _chain.add(tract_mod.ShutdownNode(
-                    name=_k, kind=_k, normally_closed=_nc,
-                    set_by="glv", is_estimate=False))
-        _render_findings(tract_mod.check_shutdown_chain(_chain, _rules))
-
-        st.divider()
-        _tc = st.columns(2)
-        with _tc[0]:
-            st.markdown("**TSAL**")
-            _flash = st.number_input("Flash rate (Hz)", 0.1, 20.0, 3.0,
-                                     key="tsal_hz")
-            _tsal_v = st.number_input("Indicates 'safe' below (V)", 1.0, 600.0,
-                                      55.0, key="tsal_v")
-            _render_findings(tract_mod.check_tsal(
-                tract_mod.TSAL(flash_hz=_flash, safe_threshold_v=_tsal_v), _rules))
-        with _tc[1]:
-            st.markdown("**BSPD**")
-            _react = st.number_input("Reaction time (ms)", 1.0, 2000.0, 300.0,
-                                     key="bspd_ms")
-            _bp = st.number_input("Trip power threshold (W)", 0.0, 1e5, 5000.0,
-                                  key="bspd_w")
-            _render_findings(tract_mod.check_bspd(
-                tract_mod.BSPD(brake_threshold=10.0, power_threshold_w=_bp,
-                               reaction_time_s=_react / 1000.0), _rules))
-
-    # ---- PCM COOLING BUFFER (slides 3 & 7) ------------------------------- #
-    with _t_pcm:
-        st.markdown("**The 'liquid wax' buffer — how long it holds the cells, and "
-                    "how much you need.** Latent heat flattens the corner-exit "
-                    "spikes; this tells you when the wax runs out and the fan has "
-                    "to take over.")
-        _wc = st.columns(4)
-        _series = _wc[0].number_input("Series (s)", 1, 400, 140, key="pcm_s")
-        _par = _wc[1].number_input("Parallel (p)", 1, 50, 3, key="pcm_p")
-        _mass_g = _wc[2].number_input("Wax per cell (g)", 0.0, 500.0, 15.0,
-                                      key="pcm_g")
-        _ambient = _wc[3].number_input("Inlet air (°C)", 0.0, 60.0, 35.0,
-                                       key="pcm_amb")
-        _wc2 = st.columns(4)
-        _tmelt = _wc2[0].number_input("Wax melt temp (°C)", 20.0, 90.0, 45.0,
-                                      key="pcm_tm")
-        _lheat = _wc2[1].number_input("Latent heat (J/g)", 50.0, 400.0, 200.0,
-                                      key="pcm_l")
-        _stint = _wc2[2].number_input("Endurance stint (s)", 60.0, 3000.0, 1500.0,
-                                      key="pcm_stint")
-        _peakA = _wc2[3].number_input("Pack current peak (A)", 10.0, 800.0, 300.0,
-                                      key="pcm_a")
-
-        _ncells = int(_series) * int(_par)
-        # square-ish packaging grid for the n cells
-        _rows = max(int(round(_ncells ** 0.5)), 1)
-        _cols = max(int(round(_ncells / _rows)), 1)
-        try:
-            _cell = pack_mod.default_cell_params()
-            _layout = pack_mod.PackLayout(rows=_rows, cols=_cols,
-                                          series=int(_series), parallel=int(_par),
-                                          cell=_cell, ambient_c=_ambient)
-            _t = np.linspace(0, 120, 800)
-            _cur = 0.4 * _peakA + _peakA * np.clip(np.sin(2 * np.pi * _t / 8), 0, 1)
-            _model = pack_mod.PackThermalModel(layout=_layout, fans=[],
-                                               airflow=pack_mod.AirflowParams())
-            _res = _model.simulate(_t, _cur, n_laps=3)
-            _mat = pcm_mod.PCMMaterial(t_melt_c=_tmelt, latent_heat_j_per_g=_lheat)
-            _alloc = pcm_mod.PCMAllocation(material=_mat, mass_per_cell_g=_mass_g,
-                                           set_by="cooling")
-            _pr = pcm_mod.evaluate_pcm_buffer(_res, _layout, _alloc)
-
-            _mm = st.columns(4)
-            _mm[0].metric("Cells (grid)", f"{_layout.n_cells}")
-            _hold = ("holds full stint" if _pr.hold_time_s is None
-                     else f"{_pr.hold_time_s:.0f} s")
-            _mm[1].metric("Wax hold time", _hold)
-            _mm[2].metric("Pack wax mass", f"{_pr.total_pcm_mass_kg:.1f} kg")
-            _mm[3].metric("Pack wax volume", f"{_pr.total_pcm_volume_cc:.0f} cc")
-
-            _render_findings(pcm_mod.check_pcm(_pr, endurance_time_s=_stint))
-
-            st.divider()
-            st.markdown("**Inverse sizing** — wax needed to hold the full stint:")
-            _sz = pcm_mod.size_pcm_for_hold(_res, _layout, _mat, hold_time_s=_stint)
-            if _sz.get("ok"):
-                _sc = st.columns(3)
-                _sc[0].metric("Per cell", f"{_sz['pcm_mass_per_cell_g']:.0f} g")
-                _sc[1].metric("Pack mass", f"{_sz['pack_pcm_mass_kg']:.1f} kg")
-                _sc[2].metric("Pack volume", f"{_sz['pack_pcm_volume_cc']:.0f} cc")
-                if _sz["pack_pcm_mass_kg"] > 10:
-                    st.caption("⚠ That much wax to hold the *whole* stint on "
-                               "latent heat alone is impractical — the honest read "
-                               "is: PCM buffers the spikes, the fan carries the "
-                               "steady load. Size the wax for the burst, not the "
-                               "stint.")
-            if _pr.synthesized:
-                st.caption("⚠ Synthesized: energy balances are exact, but cell and "
-                           "wax properties are representative (uncalibrated). Use "
-                           "for ranking layouts and finding where the wax runs out; "
-                           "confirm absolute °C in Ansys.")
-        except Exception as _e:
-            st.error(f"PCM model couldn't run: {_e}")
-
-
-
-
-# =========================================================================== #
-#  DFMEA WORKBENCH  —  Design Failure Mode & Effects Analysis (Powertrain)     #
-#  Replaces the loose FSAE_Powertrain_DFMEA.xlsx with a living, in-app risk    #
-#  log: live RPN, built-in rating scales, a dashboard, an action tracker, and  #
-#  round-trip CSV/Excel that matches the team's User-Guide column layout.      #
-# =========================================================================== #
-with tab_dfmea:
-  try:
-    import pandas as _pd_d
-
-    st.header("🧯 DFMEA — Design Failure Mode & Effects Analysis")
-    st.caption("Your living Powertrain risk log, in the app next to the FEA, "
-               "lap-sim, cooling and tractive-safety tools that close the rows. "
-               "RPN, risk bands and the dashboard recompute as you type — no "
-               "spreadsheet formulas to babysit.")
-
-    # ---- seed on first open --------------------------------------------- #
-    if "dfmea_rows" not in st.session_state:
-        st.session_state.dfmea_rows = dfmea_mod.seed_rows()
-
-    _help = st.columns([3, 1, 1])
-    _help[0].markdown(
-        '<p class="hint" style="margin:2px 0 6px;">Pre-loaded with the User-Guide '
-        'failure modes <b>plus your summer projects</b> (cooling test rig, gear '
-        'ratio / sprocket, motor &amp; diff mount, accumulator cooling). Edit '
-        'any cell; add rows with the <b>＋</b> at the bottom of the table. One '
-        'failure mode per row — keep leak, crack and blockage separate.</p>',
-        unsafe_allow_html=True)
-    if _help[1].button("↻ Re-seed starter log", key="dfmea_reseed",
-                       help="Rebuild the example log from the User Guide + summer "
-                            "projects. Your manual edits are replaced."):
-        st.session_state.dfmea_rows = dfmea_mod.seed_rows()
-        st.rerun()
-    if _help[2].button("🗑 Clear all rows", key="dfmea_clear",
-                       help="Empty the log to start from scratch."):
-        st.session_state.dfmea_rows = []
-        st.rerun()
-
-    # ---- import an existing workbook ------------------------------------ #
-    with st.expander("📥 Import an existing DFMEA (.xlsx / .csv) — column names "
-                     "are matched automatically", expanded=False):
-        _up = st.file_uploader("Spreadsheet with DFMEA rows", type=["xlsx", "csv"],
-                               key="dfmea_upload",
-                               help="Columns are matched case-insensitively to the "
-                                    "User-Guide names; RPN is recomputed. Extra "
-                                    "columns are ignored.")
-        _imode = st.radio("On import", ["Append to current log", "Replace current log"],
-                          horizontal=True, key="dfmea_import_mode")
-        if _up is not None and st.button("Import rows", key="dfmea_do_import"):
-            try:
-                if _up.name.lower().endswith(".csv"):
-                    _idf = _pd_d.read_csv(_up)
-                else:
-                    _idf = _pd_d.read_excel(_up)
-                _recs = [dfmea_mod.row_from_mapping(r).to_record()
-                         for r in _idf.to_dict("records")]
-                if _imode.startswith("Replace"):
-                    st.session_state.dfmea_rows = _recs
-                else:
-                    st.session_state.dfmea_rows = (
-                        st.session_state.dfmea_rows + _recs)
-                st.success(f"Imported {len(_recs)} row(s).")
-                st.rerun()
-            except Exception as _e:
-                st.error(f"Couldn't read that file: {_e}")
-
-    # ---- rating-scale reference (the consistency anchor) ---------------- #
-    with st.expander("📊 Rating scales — Severity · Occurrence · Detection (1–10)",
-                     expanded=False):
-        st.caption("Score on evidence, not optimism. Severity reflects the "
-                   "consequence and never drops just because detection is good.")
-        _sc1, _sc2, _sc3 = st.columns(3)
-        _sc1.markdown("**Severity (S)** — how bad if it reaches the car")
-        _sc1.table(_pd_d.DataFrame(
-            [(k, v) for k, v in dfmea_mod.SEVERITY_SCALE.items()],
-            columns=["S", "Meaning"]).set_index("S"))
-        _sc2.markdown("**Occurrence (O)** — likelihood with current controls")
-        _sc2.table(_pd_d.DataFrame(
-            [(k, v) for k, v in dfmea_mod.OCCURRENCE_SCALE.items()],
-            columns=["O", "Meaning"]).set_index("O"))
-        _sc3.markdown("**Detection (D)** — chance a check catches it first")
-        _sc3.table(_pd_d.DataFrame(
-            [(k, v) for k, v in dfmea_mod.DETECTION_SCALE.items()],
-            columns=["D", "Meaning"]).set_index("D"))
-
-    # ---- the editable risk log ------------------------------------------ #
-    _view = st.radio("View", ["📝 Risk log", "📈 Dashboard", "✅ Action tracker"],
-                     horizontal=True, key="dfmea_view")
-
-    # Build the working DataFrame with a live RPN + Risk Band for display.
-    _df = _pd_d.DataFrame(st.session_state.dfmea_rows,
-                          columns=dfmea_mod.COLUMNS) if st.session_state.dfmea_rows \
-        else _pd_d.DataFrame(columns=dfmea_mod.COLUMNS)
-
-    def _recompute(df):
-        if df.empty:
-            df["RPN"] = []
-            df["Risk Band"] = []
-            return df
-        df = df.copy()
-        df["RPN"] = [dfmea_mod.compute_rpn(s, o, d) for s, o, d in
-                     zip(df["Severity"], df["Occurrence"], df["Detection"])]
-        df["Risk Band"] = [dfmea_mod.classify_risk(s, r).value for s, r in
-                           zip(df["Severity"], df["RPN"])]
-        return df
-
-    if _view == "📝 Risk log":
-        st.markdown(
-            '<p class="hint" style="margin:6px 0 2px;"><b>RPN = S × O × D</b>, '
-            'recomputed live. A high-Severity row is flagged even at moderate RPN '
-            '— review those first. <b>Closed</b> needs evidence in the last '
-            'column.</p>', unsafe_allow_html=True)
-
-        _num = st.column_config.NumberColumn  # alias
-        _edited = st.data_editor(
-            _df, width="stretch", num_rows="dynamic", key="dfmea_editor",
-            column_config={
-                "Subsystem": st.column_config.SelectboxColumn(
-                    "Subsystem", options=dfmea_mod.SUBSYSTEM_OPTIONS, required=True,
-                    width="small"),
-                "Item / Component": st.column_config.TextColumn(
-                    "Item / Component", width="medium"),
-                "Function / Requirement": st.column_config.TextColumn(
-                    "Function / Requirement", width="medium"),
-                "Failure Mode": st.column_config.TextColumn(
-                    "Failure Mode", width="medium"),
-                "Effect of Failure": st.column_config.TextColumn(
-                    "Effect of Failure", width="medium"),
-                "Severity": _num("S", min_value=1, max_value=10, step=1,
-                                 help="Consequence if it reaches the car (1–10)."),
-                "Potential Cause / Mechanism": st.column_config.TextColumn(
-                    "Potential Cause / Mechanism", width="medium"),
-                "Occurrence": _num("O", min_value=1, max_value=10, step=1,
-                                   help="Likelihood with current prevention (1–10)."),
-                "Prevention Controls": st.column_config.TextColumn(
-                    "Prevention Controls", width="medium"),
-                "Detection Controls": st.column_config.TextColumn(
-                    "Detection Controls", width="medium"),
-                "Detection": _num("D", min_value=1, max_value=10, step=1,
-                                  help="Chance current checks catch it first (1–10)."),
-                "RPN": _num("RPN", disabled=True, help="S × O × D — auto."),
-                "Recommended Action": st.column_config.TextColumn(
-                    "Recommended Action", width="medium"),
-                "Owner": st.column_config.TextColumn("Owner", width="small",
-                                                     help="One accountable person."),
-                "Due Date": st.column_config.TextColumn("Due Date", width="small"),
-                "Status": st.column_config.SelectboxColumn(
-                    "Status", options=dfmea_mod.STATUS_OPTIONS, required=True,
-                    width="small"),
-                "Evidence / Notes": st.column_config.TextColumn(
-                    "Evidence / Notes", width="medium"),
-            })
-
-        # Persist edits (store the canonical columns only; RPN is derived).
-        _clean = _edited[dfmea_mod.COLUMNS].copy() if not _edited.empty \
-            else _pd_d.DataFrame(columns=dfmea_mod.COLUMNS)
-        st.session_state.dfmea_rows = _clean.to_dict("records")
-
-        # Live data-quality nudges from the User-Guide "definition of done".
-        _stats = dfmea_mod.dashboard_stats(st.session_state.dfmea_rows)
-        _flags = []
-        if _stats.actions_without_owner:
-            _flags.append(f"{_stats.actions_without_owner} open action(s) have "
-                          f"**no owner** — assign one accountable person each.")
-        if _stats.closed_without_evidence:
-            _flags.append(f"{_stats.closed_without_evidence} row(s) marked "
-                          f"**Closed** with no evidence — a row isn't closed until "
-                          f"it has objective proof.")
-        if _flags:
-            st.warning("  \n".join("• " + f for f in _flags))
-        else:
-            st.success("No data-quality flags — every open action has an owner and "
-                       "every Closed row has evidence.")
-
-    elif _view == "📈 Dashboard":
-        _stats = dfmea_mod.dashboard_stats(st.session_state.dfmea_rows)
-        if _stats.total == 0:
-            st.info("No rows yet. Add some in the Risk log view (or re-seed the "
-                    "starter log).")
-        else:
-            mc = st.columns(4)
-            mc[0].metric("Risks logged", f"{_stats.total}")
-            mc[1].metric("Open high-risk", f"{_stats.open_high_risk}",
-                         help="Critical/High band rows not yet Closed or Accepted.")
-            mc[2].metric("Open high-severity", f"{_stats.high_sev_open}",
-                         help="Severity ≥ 7 and not resolved — review separately "
-                              "from RPN.")
-            mc[3].metric("Closed w/o evidence", f"{_stats.closed_without_evidence}",
-                         delta=None,
-                         delta_color="inverse")
-
-            gc = st.columns([2, 3])
-            # risk-band donut
-            _band_order = ["Critical", "High", "Medium", "Low"]
-            _band_col = {"Critical": "#ff5a52", "High": "#ffb02e",
-                         "Medium": "#37e0d0", "Low": "#5ad17a"}
-            _bvals = [_stats.by_band.get(b, 0) for b in _band_order]
-            _fb = go.Figure(go.Pie(
-                labels=_band_order, values=_bvals, hole=0.55,
-                marker=dict(colors=[_band_col[b] for b in _band_order]),
-                sort=False))
-            _fb.update_layout(
-                title="Risk by priority band", height=320,
-                paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#cdd6df", size=11),
-                margin=dict(l=0, r=0, t=36, b=0),
-                legend=dict(bgcolor="rgba(0,0,0,0)"))
-            gc[0].plotly_chart(_fb, width="stretch", key="dfmea_band_pie")
-
-            # risk concentration by subsystem (User-Guide §7)
-            _bysub = sorted(_stats.by_subsystem.items(),
-                            key=lambda kv: kv[1], reverse=True)
-            _fs = go.Figure(go.Bar(
-                x=[v for _, v in _bysub], y=[k for k, _ in _bysub],
-                orientation="h", marker_color="#37e0d0",
-                text=[v for _, v in _bysub], textposition="auto"))
-            _fs.update_layout(
-                title="Risk concentration by subsystem", height=320,
-                xaxis_title="rows", paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#cdd6df", size=11),
-                margin=dict(l=0, r=0, t=36, b=0))
-            _fs.update_yaxes(autorange="reversed")
-            gc[1].plotly_chart(_fs, width="stretch", key="dfmea_sub_bar")
-
-            st.markdown("**Top risks — review these first**")
-            _topdf = _pd_d.DataFrame(_stats.top_rows)
-            if not _topdf.empty:
-                _show = _topdf[["Risk Band", "RPN", "Subsystem", "Item / Component",
-                                "Failure Mode", "Severity", "Status"]]
-                st.dataframe(_show, width="stretch", hide_index=True)
-
-            if _stats.open_high_risk:
-                st.warning(f"{_stats.open_high_risk} high-risk item(s) are still "
-                           "open. Before competition, every high-severity / "
-                           "high-RPN row should have an action, owner and closure "
-                           "evidence.")
-            else:
-                st.success("No open high-risk items — nice. Keep re-scoring after "
-                           "each test as real data comes in.")
-
-    else:  # Action tracker
-        _items = dfmea_mod.action_items(st.session_state.dfmea_rows)
-        st.markdown(
-            '<p class="hint" style="margin:2px 0 8px;">Every open row with a '
-            'recommended action, sorted by risk. This is the execution list — a '
-            'risk is closed when the action has objective evidence, not when the '
-            'cell says “done”.</p>', unsafe_allow_html=True)
-        if not _items:
-            st.success("No open actions — every recommended action is on a Closed "
-                       "or Accepted row, or there are no actions yet.")
-        else:
-            _adf = _pd_d.DataFrame(_items)
-            st.dataframe(_adf, width="stretch", hide_index=True,
-                         column_config={
-                             "RPN": st.column_config.NumberColumn("RPN", disabled=True),
-                         })
-            _acsv = _adf.to_csv(index=False)
-            st.download_button("⬇ Export action tracker (.csv)", _acsv,
-                               file_name="powertrain_dfmea_actions.csv",
-                               mime="text/csv", key="dfmea_action_export")
-
-    # ---- export (always available, all views) --------------------------- #
-    st.markdown('<p class="hint" style="margin:10px 0 2px;border-top:1px solid '
-                'var(--grid);padding-top:8px;">Export the full log in the same '
-                'column layout as your workbook — drop it straight into the team '
-                'sheet or the design-review packet.</p>', unsafe_allow_html=True)
-    _outdf = _recompute(_pd_d.DataFrame(st.session_state.dfmea_rows,
-                                        columns=dfmea_mod.COLUMNS)) \
-        if st.session_state.dfmea_rows else _pd_d.DataFrame(columns=dfmea_mod.COLUMNS)
-    _ecols = st.columns(2)
-    _full_csv = _outdf.to_csv(index=False)
-    _ecols[0].download_button("⬇ Export DFMEA (.csv)", _full_csv,
-                              file_name="FSAE_Powertrain_DFMEA.csv",
-                              mime="text/csv", key="dfmea_csv_export")
-    # Excel export (best-effort; falls back to a caption if no engine).
-    try:
-        import io as _io_d
-        _buf = _io_d.BytesIO()
-        with _pd_d.ExcelWriter(_buf, engine="openpyxl") as _xw:
-            _outdf.to_excel(_xw, index=False, sheet_name="DFMEA")
-        _ecols[1].download_button(
-            "⬇ Export DFMEA (.xlsx)", _buf.getvalue(),
-            file_name="FSAE_Powertrain_DFMEA.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key="dfmea_xlsx_export")
-    except Exception:
-        _ecols[1].caption("Install `openpyxl` for .xlsx export (CSV works now).")
-
-    st.caption("DFMEA is a living document — update it whenever the design "
-               "changes or a test reveals something new, and re-score "
-               "Occurrence/Detection once an action truly reduces the risk.")
-  except Exception as _e:
-    st.error(f"The DFMEA workbench hit an error: {_e}")
-    with st.expander("Details"):
-        st.exception(_e)
-
 
 st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · MIT. Fork it, '
             'validate against your OptimumK model, send a PR. '
