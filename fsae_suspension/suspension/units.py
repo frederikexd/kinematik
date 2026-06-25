@@ -47,6 +47,7 @@ _CONVERSIONS = {
     "cm":      ("in",      1.0 / 2.54,        0.0),
     "m":       ("ft",      3.280839895,       0.0),
     "kg":      ("lb",      2.2046226218,      0.0),
+    "g_mass":  ("oz",      0.0352739619,      0.0),     # small mass (grams)
     "g":       ("g", 1.0, 0.0),                     # acceleration g — unchanged
     "m/s":     ("mph",     2.2369362921,      0.0),
     "km/h":    ("mph",     0.6213711922,      0.0),
@@ -55,6 +56,8 @@ _CONVERSIONS = {
     "N·m":     ("lbf·ft",  0.7375621493,      0.0),
     "Nm":      ("lbf·ft",  0.7375621493,      0.0),
     "N/mm":    ("lbf/in",  5.7101471627,      0.0),
+    "N/mm³":   ("lbf/in³", 3683.6055,         0.0),    # cubic stiffness coeff
+    "/mm²":    ("/in²",    645.16,            0.0),     # per-area hardening coeff
     "N·m/°":   ("lbf·ft/°", 0.7375621493,     0.0),
     "bar":     ("psi",     14.503773773,      0.0),
     "kPa":     ("psi",     0.1450377377,      0.0),
@@ -64,6 +67,10 @@ _CONVERSIONS = {
     "kJ":      ("BTU",     0.9478171203,      0.0),     # energy
     "J":       ("ft·lbf",  0.7375621493,      0.0),
     "°C":      ("°F",      9.0 / 5.0,         32.0),
+    "N·s/m":   ("lbf·s/in", 0.0057101471627, 0.0),     # damping coefficient
+    "N·s/mm":  ("lbf·s/in", 5.7101471627,     0.0),
+    "m³/s":    ("ft³/s",   35.314666721,      0.0),     # volumetric flow
+    "L/s":     ("ft³/s",   0.0353146667,      0.0),
 }
 
 # Units that are identical in both systems (kept explicit for clarity / safety).

@@ -69,6 +69,23 @@ Quick start (runnable today, no solver):
     print(orch.plan(RunMatrix(yaw_deg=[0,2,4,6])))     # cost preview
     report = orch.run(RunMatrix(yaw_deg=[0,2,4,6]), workdir="/tmp/sweep")
     amap = report.aero_map
+
+Scaled-model planning (upstream of any tunnel/CFD run — the make-it-before-you-test path):
+    A team rarely tests the full-size part first; material and oven/tunnel size force a
+    SCALED article. That scale decision quietly mortgages the validation through
+    Reynolds similitude, build tolerance, and weld-induced mount misalignment.
+    `scale_model.py` makes those three explicit so a coefficient measured on a small,
+    hand-made part is never read as if it were the full car:
+        from suspension.aero import ScaleSpec, SimilitudePlan, ToleranceBudget, MountAlignment, ScaledRunPlan
+        spec = ScaleSpec(ratio=0.4, scaled_chord_mm=500, scaled_height_mm=260, scaled_width_mm=250)
+        sim  = SimilitudePlan.match_reynolds(spec, full_speed_ms=20.0, tunnel_max_speed_ms=45.0)
+        print(sim.verdict)                      # can the tunnel even match Reynolds?
+        tol  = ToleranceBudget(spec)
+        tol.add_chord_deviation_mm(2.0).add_camber_deviation_mm(1.5).add_surface_waviness_mm(0.8)
+        mnt  = MountAlignment(incidence_error_deg=1.0)   # the Dzus-weld lesson, quantified
+        plan = ScaledRunPlan(sim, tol, mnt)
+        print(plan.report())                    # run speed + total coefficient uncertainty + provenance
+        # feed plan.tunnel_reynolds()/plan.model_scale()/plan.provenance() into TunnelProvenance(...)
 """
 
 from .cfd import (
@@ -117,6 +134,11 @@ from .daq import (
     AcquisitionSpec, DAQProvenance, BalanceReading, DAQBackend, DAQUnavailable,
     OfflineDAQ, SyntheticDAQ, VirtualInstrument,
 )
+from .scale_model import (
+    ScaleSpec, SimilitudePlan, ToleranceBudget, ToleranceReport,
+    MountAlignment, ScaledRunPlan, reynolds, air_kinematic_viscosity,
+    DEFAULT_AIR_DENSITY, DEFAULT_AIR_KINEMATIC_VISCOSITY, LOW_RE_BUBBLE_THRESHOLD,
+)
 
 __all__ = [
     "Attitude", "RunMatrix", "CaseSpec", "CoeffResult", "CFDProvenance",
@@ -150,4 +172,8 @@ __all__ = [
     "ChannelFilter", "StreamingVibrationFilter",
     "AcquisitionSpec", "DAQProvenance", "BalanceReading", "DAQBackend",
     "DAQUnavailable", "OfflineDAQ", "SyntheticDAQ", "VirtualInstrument",
+    "ScaleSpec", "SimilitudePlan", "ToleranceBudget", "ToleranceReport",
+    "MountAlignment", "ScaledRunPlan", "reynolds", "air_kinematic_viscosity",
+    "DEFAULT_AIR_DENSITY", "DEFAULT_AIR_KINEMATIC_VISCOSITY",
+    "LOW_RE_BUBBLE_THRESHOLD",
 ]

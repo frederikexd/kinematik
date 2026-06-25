@@ -300,6 +300,20 @@ def uconv_series(values, unit, *, delta=False):
         return list(values)
 
 
+def uval(value_num, unit, *, fmt="{:.0f}", delta=False):
+    """Return a ``"<converted_value> <label>"`` string for an inline f-string.
+
+    Converts a metric (SI) number and its unit to the active system, so dynamic
+    captions/markdown that splice a value next to a hardcoded unit honour the
+    imperial toggle. ``delta=True`` for differences (no temperature offset)."""
+    fn = units_mod.from_metric_delta if delta else units_mod.from_metric
+    try:
+        disp = fn(float(value_num), unit)
+        return f"{fmt.format(disp)} {units_mod.label(unit)}"
+    except Exception:
+        return f"{value_num} {unit}"
+
+
 def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
          fmt=None, **kw):
     """Unit-aware ``number_input``. The label keeps its parenthesised unit and
@@ -1494,9 +1508,10 @@ def _subsystem_cad_import(subsys_key, *, key_prefix, title=None):
                       " · auto-scaled ×%g (looked like %s)" % (
                           _payload["unit_scale"],
                           "metres" if _payload["unit_scale"] == 1000 else "inches"))
+        _szu = [units_mod.from_metric(_v, "mm") for _v in _sz]
         st.markdown(
             f'<p class="hint">Loaded <b>{_payload["triangles"]} triangles</b>, '
-            f'bounding box <b>{_sz[0]:.0f}×{_sz[1]:.0f}×{_sz[2]:.0f} mm</b>'
+            f'bounding box <b>{_szu[0]:.0f}×{_szu[1]:.0f}×{_szu[2]:.0f} {units_mod.label("mm")}</b>'
             f'{_unit_note}. Set where it sits and which way is up, then add it.</p>',
             unsafe_allow_html=True)
 
@@ -1663,9 +1678,9 @@ def _render_rotor_thermal(_bt, _mass, kin):
                     round(_lbe.v_brake_mean_ms * 3.6, 0), 20.0), 120.0))
                 st.session_state["brake_lap_apply"] = True
                 st.session_state["brake_lap_meta"] = (
-                    f"{_res_b.lap_time:.1f} s lap · {_lbe.q_lap_j/1000:.0f} kJ "
+                    f"{_res_b.lap_time:.1f} s lap · {uval(_lbe.q_lap_j/1000, 'kJ')} "
                     f"braking/lap · {_lbe.n_brake_samples} brake samples · peak "
-                    f"{_lbe.p_front_peak_w/1000:.0f} kW/rotor")
+                    f"{uval(_lbe.p_front_peak_w/1000, 'kW')}/rotor")
                 st.rerun()
             else:
                 st.warning("Lap sim couldn't run on the default autocross with "
@@ -2990,12 +3005,14 @@ with tab_car:
                 _is_mesh = _cpd.get("shape") == "mesh" and _cpd.get("mesh")
                 _mtag = (' <span style="color:#37e0d0;">· CAD mesh</span>'
                          if _is_mesh else '')
+                _f = lambda v: units_mod.from_metric(float(v), "mm")
+                _ul = units_mod.label("mm")
                 _lc[0].markdown(
                     f'<span style="font-size:.9rem;">\u2022 <b>{_cpd["name"]}</b> '
-                    f'({_cpd["subsys"]}) \u2014 {_cpd.get("l_mm",0):.0f}\u00d7'
-                    f'{_cpd.get("w_mm",0):.0f}\u00d7{_cpd.get("h_mm",0):.0f} mm @ '
-                    f'({_cpd.get("x_mm",0):.0f}, {_cpd.get("y_mm",0):.0f}, '
-                    f'{_cpd.get("z_mm",0):.0f}){_mtag}{_tag}</span>',
+                    f'({_cpd["subsys"]}) \u2014 {_f(_cpd.get("l_mm",0)):.0f}\u00d7'
+                    f'{_f(_cpd.get("w_mm",0)):.0f}\u00d7{_f(_cpd.get("h_mm",0)):.0f} {_ul} @ '
+                    f'({_f(_cpd.get("x_mm",0)):.0f}, {_f(_cpd.get("y_mm",0)):.0f}, '
+                    f'{_f(_cpd.get("z_mm",0)):.0f}){_mtag}{_tag}</span>',
                     unsafe_allow_html=True)
                 if _lc[1].button("Remove", key=f"car3d_cp_rm_{_ci}"):
                     st.session_state.car3d_custom_parts.pop(_ci)
@@ -3141,8 +3158,8 @@ with tab_car:
                 f'#ffd166;border-radius:8px;padding:8px 12px;margin:4px 0;">'
                 f'<b>{_req["name"]}</b> \u2014 for <i>{_req["subsys"]}</i>'
                 + (f', owed by <b>{_req["owner"]}</b>' if _req.get("owner") else '')
-                + f' \u00b7 stand-in {_g.get("l_mm",0):.0f}\u00d7{_g.get("w_mm",0):.0f}'
-                f'\u00d7{_g.get("h_mm",0):.0f} mm \u00b7 since {_req.get("placed_on","")}'
+                + f' \u00b7 stand-in {units_mod.from_metric(_g.get("l_mm",0),"mm"):.0f}\u00d7{units_mod.from_metric(_g.get("w_mm",0),"mm"):.0f}'
+                f'\u00d7{units_mod.from_metric(_g.get("h_mm",0),"mm"):.0f} {units_mod.label("mm")} \u00b7 since {_req.get("placed_on","")}'
                 '</div>', unsafe_allow_html=True)
 
             _cad = st.file_uploader(
@@ -3175,8 +3192,8 @@ with tab_car:
                         f'solid {_col};border-radius:8px;padding:8px 12px;margin:4px 0;">'
                         f'<b style="color:{_col};">{_word}.</b> '
                         f'<span style="font-size:.9rem;">Real part reads '
-                        f'<b>{_real["l_mm"]:.0f}\u00d7{_real["w_mm"]:.0f}'
-                        f'\u00d7{_real["h_mm"]:.0f} mm</b> ({_payload_r["triangles"]} '
+                        f'<b>{units_mod.from_metric(_real["l_mm"],"mm"):.0f}\u00d7{units_mod.from_metric(_real["w_mm"],"mm"):.0f}'
+                        f'\u00d7{units_mod.from_metric(_real["h_mm"],"mm"):.0f} {units_mod.label("mm")}</b> ({_payload_r["triangles"]} '
                         f'triangles). ' + " ".join(_rec["messages"])
                         + ' The real geometry will replace the stand-in box.'
                         + '</span></div>', unsafe_allow_html=True)
@@ -3566,11 +3583,11 @@ with tab_car:
         _cap_txt = ""
         if _cap:
             if _metric == "heat":
-                _cap_txt = (f" · cooling can move <b>{_cap:.3f} m³/s</b> of airflow")
+                _cap_txt = (f" · cooling can move <b>{uval(_cap, 'm³/s', fmt='{:.3f}')}</b> of airflow")
             elif _metric == "power":
                 _cap_txt = f" · LV supply <b>{_cap:.0f} W</b>"
             else:
-                _cap_txt = f" · mass target <b>{_cap:.0f} kg</b>"
+                _cap_txt = f" · mass target <b>{uval(_cap, 'kg')}</b>"
         st.markdown(
             f'<div style="margin:6px 0 2px;">'
             f'<div style="height:12px;border-radius:6px;border:1px solid var(--line);'
@@ -3827,7 +3844,7 @@ with tab_aero:
                 _led_a.set(_it)
                 st.session_state.ledger = _led_a.as_dict()
                 st.success("Declared. The aero wings, lap sim and heatmap now use "
-                           f"{_target:.0f} N @ {_aero_v:.0f} km/h.")
+                           f"{uval(_target, 'N')} @ {uval(_aero_v, 'km/h')}.")
                 st.rerun()
             except Exception as _e2:
                 st.warning(f"Couldn't write it: {_e2}")
@@ -4243,8 +4260,8 @@ with tab_accum:
     # 80 kW power
     _checks.append((
         _max_power_kw <= 80.0 + 1e-6,
-        f"Tractive power ≤ 80 kW — deliverable {_max_power_kw:.0f} kW at peak current.",
-        f"Deliverable power {_max_power_kw:.0f} kW exceeds the 80 kW cap; "
+        f"Tractive power ≤ 80 kW — deliverable {uval(_max_power_kw, 'kW')} at peak current.",
+        f"Deliverable power {uval(_max_power_kw, 'kW')} exceeds the 80 kW cap; "
         f"the BMS/inverter must limit current."))
     # cell current within rating
     _checks.append((
@@ -4276,7 +4293,7 @@ with tab_accum:
     if _all_ok:
         st.markdown(
             f'<p class="hint">This pack is rules-legal as configured: <b>{_series}s{_parallel}p</b>, '
-            f'<b>{_pack_v:.0f} V</b> nominal, <b>{_pack_kwh:.2f} kWh</b>, <b>{_pack_mass:.0f} kg</b> '
+            f'<b>{_pack_v:.0f} V</b> nominal, <b>{_pack_kwh:.2f} kWh</b>, <b>{uval(_pack_mass, "kg")}</b> '
             f'of cells, in <b>{_n_segments} segments</b>. Build the accumulator container around this '
             f'and the structural/SES work follows.</p>', unsafe_allow_html=True)
 
@@ -4328,7 +4345,7 @@ with tab_accum:
             st.success(f"Declared: {_pack_v:.0f} V, "
                        f"{units_mod.from_metric(_pack_mass*1.4, 'kg'):.0f} "
                        f"{units_mod.label('kg')} (incl. housing), "
-                       f"{_pack_heat_w/1000:.1f} kW heat. The heatmap, mass roll-up and "
+                       f"{uval(_pack_heat_w/1000, 'kW', fmt='{:.1f}')} heat. The heatmap, mass roll-up and "
                        "electrical checks now use this pack.")
             st.rerun()
         except Exception as _e3:
@@ -4904,14 +4921,15 @@ def _render_envelope_vs_chassis(subsys, led):
             legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
         st.plotly_chart(fig, width='stretch')
 
+        _smm = [units_mod.from_metric(_v, "mm") for _v in summ["size_mm"]]
         st.markdown(f'<p class="hint">Chassis: {summ["triangles"]:,} triangles, '
-                    f'{summ["size_mm"][0]:.0f}×{summ["size_mm"][1]:.0f}×{summ["size_mm"][2]:.0f} mm. '
+                    f'{_smm[0]:.0f}×{_smm[1]:.0f}×{_smm[2]:.0f} {units_mod.label("mm")}. '
                     'If the envelope sits in the wrong place, adjust the origin or the '
                     'CAD offset so the frames align.</p>', unsafe_allow_html=True)
 
         if res["verdict"] in ("COLLISION", "TIGHT", "OUTSIDE"):
             sug = (f"{subsys}: envelope {res['verdict'].lower()} vs chassis "
-                   f"(min clearance {res['min_clearance_mm']:.1f} mm"
+                   f"(min clearance {uval(res['min_clearance_mm'], 'mm', fmt='{:.1f}')}"
                    + (f", outside on {', '.join(res['oob_axes'])}" if res["oob_axes"] else "")
                    + "). Flagged before mounting.")
             note = st.text_area("Decision note (edit before logging)", value=sug,
@@ -5042,9 +5060,10 @@ def render_suspension_vs_chassis():
                 legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
             st.plotly_chart(fig, width='stretch')
 
+            _smm2 = [units_mod.from_metric(_v, "mm") for _v in summ["size_mm"]]
             st.markdown(f'<p class="hint">Chassis mesh: {summ["triangles"]:,} triangles, '
-                        f'bounding box {summ["size_mm"][0]:.0f}×{summ["size_mm"][1]:.0f}×'
-                        f'{summ["size_mm"][2]:.0f} mm. If the linkage and chassis look '
+                        f'bounding box {_smm2[0]:.0f}×{_smm2[1]:.0f}×'
+                        f'{_smm2[2]:.0f} {units_mod.label("mm")}. If the linkage and chassis look '
                         f'misaligned above, adjust the offset boxes so the origins match.</p>',
                         unsafe_allow_html=True)
 
@@ -5416,13 +5435,13 @@ def render_mountpoint_clash():
             kowner = st.selectbox("Owned by", _SUBS, index=_SUBS.index("chassis"),
                                   key="ko_owner")
             kl = st.columns(3)
-            lo = (kl[0].number_input("lo x", value=1380.0, key="ko_lox"),
-                  kl[1].number_input("lo y", value=-180.0, key="ko_loy"),
-                  kl[2].number_input("lo z", value=480.0, key="ko_loz"))
+            lo = (unum(kl[0], "lo x (mm)", -10000.0, 10000.0, 1380.0, "mm", key="ko_lox"),
+                  unum(kl[1], "lo y (mm)", -10000.0, 10000.0, -180.0, "mm", key="ko_loy"),
+                  unum(kl[2], "lo z (mm)", -10000.0, 10000.0, 480.0, "mm", key="ko_loz"))
             kh = st.columns(3)
-            hi = (kh[0].number_input("hi x", value=1430.0, key="ko_hix"),
-                  kh[1].number_input("hi y", value=180.0, key="ko_hiy"),
-                  kh[2].number_input("hi z", value=1050.0, key="ko_hiz"))
+            hi = (unum(kh[0], "hi x (mm)", -10000.0, 10000.0, 1430.0, "mm", key="ko_hix"),
+                  unum(kh[1], "hi y (mm)", -10000.0, 10000.0, 180.0, "mm", key="ko_hiy"),
+                  unum(kh[2], "hi z (mm)", -10000.0, 10000.0, 1050.0, "mm", key="ko_hiz"))
             kest = st.checkbox("Estimated geometry", value=False, key="ko_est")
             if st.button("Save keep-out", key="ko_save"):
                 store.set_keepout(KeepOut(kname, kowner, lo_mm=lo, hi_mm=hi,
@@ -5437,7 +5456,7 @@ def render_mountpoint_clash():
                 f'{_MP_EMOJI.get(ko.owner_subsystem,"")} <b>{name}</b> '
                 f'<span style="color:#8d99a6;font-size:.8rem">{ko.owner_subsystem}{est}</span><br>'
                 f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'{tuple(round(v) for v in ko.lo_mm)} → {tuple(round(v) for v in ko.hi_mm)} mm</span></div>',
+                f'{tuple(round(units_mod.from_metric(v,"mm")) for v in ko.lo_mm)} → {tuple(round(units_mod.from_metric(v,"mm")) for v in ko.hi_mm)} {units_mod.label("mm")}</span></div>',
                 unsafe_allow_html=True)
             if kc[1].button("✕", key=f"ko_del_{name}"):
                 store.remove_keepout(name); store.save(); st.rerun()
@@ -5451,11 +5470,11 @@ def render_mountpoint_clash():
             pmounts = st.selectbox("Mounts onto", _SUBS,
                                    index=_SUBS.index("chassis"), key="mp_mounts")
             pc = st.columns(3)
-            pxyz = (pc[0].number_input("x", value=1350.0, key="mp_x"),
-                    pc[1].number_input("y", value=120.0, key="mp_y"),
-                    pc[2].number_input("z", value=900.0, key="mp_z"))
-            pclr = st.number_input("Required clearance", 0.0, 100.0,
-                                   value=8.0, key="mp_clr")
+            pxyz = (unum(pc[0], "x (mm)", -10000.0, 10000.0, 1350.0, "mm", key="mp_x"),
+                    unum(pc[1], "y (mm)", -10000.0, 10000.0, 120.0, "mm", key="mp_y"),
+                    unum(pc[2], "z (mm)", -10000.0, 10000.0, 900.0, "mm", key="mp_z"))
+            pclr = unum(st, "Required clearance (mm)", 0.0, 100.0, 8.0, "mm",
+                        key="mp_clr")
             pest = st.checkbox("Estimated geometry", value=False, key="mp_est")
             if st.button("Save mount point", key="mp_save"):
                 store.set_mount_point(MountPoint(pname, xyz_mm=pxyz,
@@ -5474,7 +5493,7 @@ def render_mountpoint_clash():
                 f'<span style="color:#8d99a6;font-size:.8rem">{mp.owner_subsystem} '
                 f'→ {mp.mounts_on}{est}</span><br>'
                 f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'{tuple(round(v) for v in mp.xyz_mm)} mm · clr {mp.min_clearance_mm:.0f}</span></div>',
+                f'{tuple(round(units_mod.from_metric(v,"mm")) for v in mp.xyz_mm)} {units_mod.label("mm")} · clr {units_mod.from_metric(mp.min_clearance_mm,"mm"):.0f}</span></div>',
                 unsafe_allow_html=True)
             if pc[1].button("✕", key=f"mp_del_{name}"):
                 store.remove_mount_point(name); store.save(); st.rerun()
@@ -5647,7 +5666,7 @@ def render_pcb_board():
                 f'{_MP_EMOJI.get(tr.owner_subsystem,"")} <b>{name}</b> '
                 f'<span style="color:#8d99a6;font-size:.8rem">{tr.owner_subsystem} → {tr.feeds}{est}</span><br>'
                 f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'{tr.width_mm:.2f} mm · {tr.copper_oz:.0f} oz · {tr.length_mm:.0f} mm · '
+                f'{units_mod.from_metric(tr.width_mm,"mm"):.2f} {units_mod.label("mm")} · {tr.copper_oz:.0f} oz · {units_mod.from_metric(tr.length_mm,"mm"):.0f} {units_mod.label("mm")} · '
                 f'fuses @ {tr.fusing_current_a(ambient_c=board.ambient_c):.1f} A</span></div>',
                 unsafe_allow_html=True)
             if row[1].button("✕", key=f"tr_del_{name}"):
@@ -5948,7 +5967,7 @@ def render_harness():
                 save_store(store); st.rerun()
         for name, c in list(harness.connectors.items()):
             est = " · est" if c.is_estimate else ""
-            mtxt = f"{c.mass_g:.0f} g" if c.mass_g is not None else "mass —"
+            mtxt = uval(c.mass_g, "g_mass") if c.mass_g is not None else "mass —"
             row = st.columns([5, 1])
             row[0].markdown(
                 f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
@@ -5956,8 +5975,8 @@ def render_harness():
                 f'<span style="color:#8d99a6;font-size:.8rem">{c.owner_subsystem} · '
                 f'{c.part_number or "—"}{est}</span><br>'
                 f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'({c.xyz_mm[0]:.0f}, {c.xyz_mm[1]:.0f}, {c.xyz_mm[2]:.0f}) mm · '
-                f'{c.cavities} cav · {mtxt} · SR {c.strain_relief_mm:.0f} mm</span></div>',
+                f'({units_mod.from_metric(c.xyz_mm[0],"mm"):.0f}, {units_mod.from_metric(c.xyz_mm[1],"mm"):.0f}, {units_mod.from_metric(c.xyz_mm[2],"mm"):.0f}) {units_mod.label("mm")} · '
+                f'{c.cavities} cav · {mtxt} · SR {units_mod.from_metric(c.strain_relief_mm,"mm"):.0f} {units_mod.label("mm")}</span></div>',
                 unsafe_allow_html=True)
             if row[1].button("✕", key=f"cn_del_{name}"):
                 store.remove_connector(name); save_store(store); st.rerun()
@@ -5973,8 +5992,8 @@ def render_harness():
             wg = st.columns(3)
             wawg = wg[0].number_input("Gauge (AWG)", 8, 30, value=10, key="wr_awg")
             wnet = wg[1].text_input("Net", key="wr_net", value="hv_pwr")
-            wod = wg[2].number_input("OD (mm, 0=AWG nom)", 0.0, 30.0,
-                                     value=0.0, key="wr_od")
+            wod = unum(wg[2], "OD (mm, 0=AWG nom)", 0.0, 30.0, 0.0, "mm",
+                       key="wr_od")
             wg2 = st.columns(2)
             wfrom = wg2[0].selectbox("From connector", conn_names, key="wr_from")
             wto = wg2[1].selectbox("To connector", conn_names, key="wr_to")
@@ -6011,8 +6030,8 @@ def render_harness():
                 f'{w.net or "—"}{est}</span><br>'
                 f'<span style="font-size:.82rem;color:#8d99a6">'
                 f'{w.from_conn or "?"} → {w.to_conn or "?"} · '
-                f'cut {w.cut_length_mm():.0f} mm · {w.copper_mass_g():.1f} g Cu · '
-                f'min bend {w.min_bend_radius_mm:.0f} mm</span></div>',
+                f'cut {units_mod.from_metric(w.cut_length_mm(),"mm"):.0f} {units_mod.label("mm")} · {uval(w.copper_mass_g(), "g_mass", fmt="{:.1f}")} Cu · '
+                f'min bend {units_mod.from_metric(w.min_bend_radius_mm,"mm"):.0f} {units_mod.label("mm")}</span></div>',
                 unsafe_allow_html=True)
             if row[1].button("✕", key=f"wr_del_{name}"):
                 store.remove_wire(name); save_store(store); st.rerun()
@@ -6067,8 +6086,8 @@ def render_harness():
             st.dataframe(pd.DataFrame(bom["connectors"]), hide_index=True,
                          use_container_width=True)
         st.markdown(
-            f'<p class="hint">Totals: <b>{bom.get("total_wire_m",0):.2f} m</b> wire · '
-            f'<b>{bom.get("total_copper_g",0):.0f} g</b> copper · '
+            f'<p class="hint">Totals: <b>{uval(bom.get("total_wire_m",0), "m", fmt="{:.2f}")}</b> wire · '
+            f'<b>{uval(bom.get("total_copper_g",0), "g_mass")}</b> copper · '
             f'<b>{bom.get("contacts_total",0)}</b> crimp contacts.</p>',
             unsafe_allow_html=True)
 
@@ -6077,19 +6096,25 @@ def render_harness():
         md = res.mass
         st.markdown(
             f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:3px 0;">'
-            f'<span style="font-size:.95rem"><b>{md.get("total_copper_g",0):.1f} g</b> '
-            f'copper · <b>{md.get("total_harness_g",0):.1f} g</b> total harness</span><br>'
+            f'<span style="font-size:.95rem"><b>{uval(md.get("total_copper_g",0), "g_mass", fmt="{:.1f}")}</b> '
+            f'copper · <b>{uval(md.get("total_harness_g",0), "g_mass", fmt="{:.1f}")}</b> total harness</span><br>'
             f'<span style="font-size:.85rem;color:#8d99a6">harness CG: '
-            f'{md.get("harness_cg_mm")} mm (x rearward, y right, z up)</span></div>',
+            f'{tuple(round(units_mod.from_metric(float(v),"mm"),1) for v in md.get("harness_cg_mm")) if md.get("harness_cg_mm") is not None else md.get("harness_cg_mm")} {units_mod.label("mm")} (x rearward, y right, z up)</span></div>',
             unsafe_allow_html=True)
         if md.get("connectors_without_declared_mass"):
             st.caption("Excluded from CG (mass not declared): " +
                        ", ".join(md["connectors_without_declared_mass"]))
         if md.get("per_wire"):
             import pandas as pd
-            st.dataframe(pd.DataFrame(md["per_wire"])[
-                ["wire", "gauge_awg", "copper_g", "total_g"]],
-                hide_index=True, use_container_width=True)
+            _pw_df = pd.DataFrame(md["per_wire"])[
+                ["wire", "gauge_awg", "copper_g", "total_g"]].copy()
+            _mass_u = units_mod.label("g_mass")
+            for _c in ("copper_g", "total_g"):
+                _pw_df[_c] = _pw_df[_c].map(
+                    lambda v: units_mod.from_metric(float(v), "g_mass"))
+            _pw_df = _pw_df.rename(columns={
+                "copper_g": f"copper ({_mass_u})", "total_g": f"total ({_mass_u})"})
+            st.dataframe(_pw_df, hide_index=True, use_container_width=True)
         st.caption("Sag of unsupported runs under vibration: *not computed* — "
                    "needs a flexible-body solver; the route is measured, not solved.")
 
@@ -6101,7 +6126,7 @@ def render_harness():
             f'<p class="hint">The harness unfolded to a length-true 2-D nail-board: '
             f'every branch segment is the exact length of its 3-D run, so the '
             f'fabricator pins the loom out 1:1. Board extent '
-            f'~{fb.extent_mm[0]:.0f} × {fb.extent_mm[1]:.0f} mm.</p>',
+            f'~{units_mod.from_metric(fb.extent_mm[0],"mm"):.0f} × {units_mod.from_metric(fb.extent_mm[1],"mm"):.0f} {units_mod.label("mm")}.</p>',
             unsafe_allow_html=True)
         st.markdown(_formboard_svg(fb), unsafe_allow_html=True)
     else:
@@ -6195,25 +6220,29 @@ with tab5c:
         if kind in ("Rubber bushing", "Polyurethane bushing"):
             is_rub = kind.startswith("Rubber")
             c1, c2, c3 = st.columns(3)
-            k = c1.number_input("radial rate k₁", 100.0, 50000.0,
-                                1500.0 if is_rub else 6000.0, 100.0, key=f"{prefix}_k")
-            hard = c2.number_input("hardening ×k₁ (/mm²)", 0.0, 50.0,
-                                   8.0 if is_rub else 4.0, 0.5, key=f"{prefix}_h")
+            k = unum(c1, "radial rate k₁ (N/mm)", 100.0, 50000.0,
+                     1500.0 if is_rub else 6000.0, "N/mm", step=100.0,
+                     key=f"{prefix}_k")
+            hard = unum(c2, "hardening ×k₁ (/mm²)", 0.0, 50.0,
+                        8.0 if is_rub else 4.0, "/mm²", step=0.5,
+                        key=f"{prefix}_h")
             loss = c3.number_input("loss factor η", 0.0, 0.5,
                                    0.12 if is_rub else 0.05, 0.01, key=f"{prefix}_l")
             return _JCui.cubic(k, hard * k, loss_factor=loss, label=kind)
         if kind == "Spherical bearing":
             c1, c2, c3 = st.columns(3)
-            lash = c1.number_input("lash", 0.0, 0.5, 0.05, 0.01,
-                                   key=f"{prefix}_lash")
-            k = c2.number_input("engaged k", 10000.0, 500000.0, 120000.0,
-                                5000.0, key=f"{prefix}_k")
+            lash = unum(c1, "lash (mm)", 0.0, 0.5, 0.05, "mm", step=0.01,
+                        key=f"{prefix}_lash")
+            k = unum(c2, "engaged k (N/mm)", 10000.0, 500000.0, 120000.0,
+                     "N/mm", step=5000.0, key=f"{prefix}_k")
             loss = c3.number_input("loss factor η", 0.0, 0.2, 0.01, 0.01,
                                    key=f"{prefix}_l")
             return _JCui.spherical_bearing(lash_mm=lash, k=k, loss_factor=loss)
         c1, c2, c3 = st.columns(3)   # Custom (cubic)
-        k1 = c1.number_input("k₁", 50.0, 200000.0, 3000.0, 50.0, key=f"{prefix}_k1")
-        k3 = c2.number_input("k₃ (N/mm³)", 0.0, 500000.0, 0.0, 100.0, key=f"{prefix}_k3")
+        k1 = unum(c1, "k₁ (N/mm)", 50.0, 200000.0, 3000.0, "N/mm", step=50.0,
+                  key=f"{prefix}_k1")
+        k3 = unum(c2, "k₃ (N/mm³)", 0.0, 500000.0, 0.0, "N/mm³", step=100.0,
+                  key=f"{prefix}_k3")
         loss = c3.number_input("loss factor η", 0.0, 0.5, 0.05, 0.01, key=f"{prefix}_l")
         return _JCui.cubic(k1, k3, loss_factor=loss, label="custom")
 
@@ -6524,11 +6553,11 @@ with tab6:
                 if res["verdict"] == "COLLISION":
                     suggested = (f"{tlabel}: {part_name} intersects the chassis "
                                  f"(overlap {res['collision_fraction']*100:.0f}%, "
-                                 f"worst point {res['min_clearance_mm']:.0f} mm inside). "
+                                 f"worst point {uval(res['min_clearance_mm'], 'mm')} inside). "
                                  f"Repositioned / flagged for redesign before fabrication.")
                 else:
                     suggested = (f"{tlabel}: {part_name} clears the chassis by only "
-                                 f"{res['min_clearance_mm']:.1f} mm — below the 5 mm "
+                                 f"{uval(res['min_clearance_mm'], 'mm', fmt='{:.1f}')} — below the {uval(5.0, 'mm')} "
                                  f"margin. Reviewed for clearance before fabrication.")
                 st.markdown('<p class="hint" style="margin-top:.4rem;">⚑ This is worth '
                             'recording for handover — log it so next year knows the '
@@ -6558,7 +6587,7 @@ with tab6:
                         _s.add_note(project_mod.Note(
                             from_team=team, to_team=notify_team,
                             message=(f"{part_name} {res['verdict'].lower()} vs chassis "
-                                     f"(min {res['min_clearance_mm']:.1f} mm). {edited}"),
+                                     f"(min {uval(res['min_clearance_mm'], 'mm', fmt='{:.1f}')}). {edited}"),
                             author=note_author or "TEAM FIT",
                             is_request=True, urgent=notify_urgent))
                         posted = f" · note sent to {integ_mod.TEAMS[notify_team]['label']}"
@@ -6709,8 +6738,8 @@ with tab7:
                            unsafe_allow_html=True)
             cc[1].write(w.name)
             cc[2].write(f"×{w.qty}")
-            cc[3].write(f"{w.mass_g:.0f} g")
-            cc[4].write(f"= {w.total_g/1000:.2f} kg")
+            cc[3].write(uval(w.mass_g, "g_mass"))
+            cc[4].write("= " + uval(w.total_g/1000, "kg", fmt="{:.2f}"))
             if cc[5].button("✕", key=f"del_{i}"):
                 store.remove_weight(i)
                 store.save()
@@ -7379,8 +7408,11 @@ with tab9:
                                        "is the most data-hungry part and is flagged "
                                        "synthesized when on.")
 
-        _t_cold_psi = tcol[0].number_input("Cold set pressure (psi)", 6.0, 35.0,
-                                           value=12.0, step=0.5, key="therm_psi")
+        _t_cold_bar = unum(tcol[0], "Cold set pressure (bar)",
+                           6.0 / 14.503773773, 35.0 / 14.503773773,
+                           12.0 / 14.503773773, "bar", step=0.5 / 14.503773773,
+                           fmt="%.2f", key="therm_psi")
+        _t_cold_psi = _t_cold_bar * 14.503773773
 
         _trun = _cached_thermal_warmup(
             coeffs=tuple(sorted(dict(st.session_state.tire_coeffs).items())),
@@ -7463,19 +7495,20 @@ with tab9:
                 'transient (turn-in / pitch) model on the roadmap is built on.</p>',
                 unsafe_allow_html=True)
     dmp_cols = st.columns(4)
-    _cbl = dmp_cols[0].number_input("Bump low (N·s/m)", 0.0, 30000.0, value=6000.0, step=250.0)
-    _crl = dmp_cols[1].number_input("Rebound low (N·s/m)", 0.0, 30000.0, value=9000.0, step=250.0)
-    _cbh = dmp_cols[2].number_input("Bump high (N·s/m)", 0.0, 15000.0, value=2000.0, step=100.0)
-    _crh = dmp_cols[3].number_input("Rebound high (N·s/m)", 0.0, 15000.0, value=3000.0, step=100.0)
+    _cbl = unum(dmp_cols[0], "Bump low (N·s/m)", 0.0, 30000.0, 6000.0, "N·s/m", step=250.0)
+    _crl = unum(dmp_cols[1], "Rebound low (N·s/m)", 0.0, 30000.0, 9000.0, "N·s/m", step=250.0)
+    _cbh = unum(dmp_cols[2], "Bump high (N·s/m)", 0.0, 15000.0, 2000.0, "N·s/m", step=100.0)
+    _crh = unum(dmp_cols[3], "Rebound high (N·s/m)", 0.0, 15000.0, 3000.0, "N·s/m", step=100.0)
     _dc = damper_mod.DamperCurve(c_bump_low=_cbl, c_reb_low=_crl,
                                  c_bump_high=_cbh, c_reb_high=_crh)
     _vv, _ff = _dc.curve_points(v_max=0.4)
     figD = go.Figure()
     figD.add_trace(go.Scatter(
-        x=_vv, y=[units_mod.from_metric(v, "N") for v in _ff], mode="lines",
+        x=[units_mod.from_metric(v, "m/s") for v in _vv],
+        y=[units_mod.from_metric(v, "N") for v in _ff], mode="lines",
         line=dict(color=AMBER, width=2.5), name="damper"))
     figD.update_layout(**PLOT_LAYOUT, title="Damper force vs shaft velocity",
-                       xaxis_title="shaft velocity (m/s)  +bump / −rebound",
+                       xaxis_title=units_mod.ulabel("shaft velocity (m/s)  +bump / −rebound"),
                        yaxis_title=units_mod.ulabel("force (N)"), height=320)
     st.plotly_chart(figD, width='stretch')
     try:
@@ -7674,13 +7707,13 @@ with tab11:
         _motor_map = None
         if use_map:
             mpc = st.columns(3)
-            mt = mpc[0].number_input("Peak torque", 20.0, 600.0, value=230.0, step=10.0)
-            mp = mpc[1].number_input("Peak power", 10.0, 200.0, value=80.0, step=5.0)
+            mt = unum(mpc[0], "Peak torque (N·m)", 20.0, 600.0, 230.0, "N·m", step=10.0)
+            mp = unum(mpc[1], "Peak power (kW)", 10.0, 200.0, 80.0, "kW", step=5.0)
             mr_in = mpc[2].number_input("Redline (rpm)", 3000.0, 20000.0, value=6000.0, step=500.0)
             mpc2 = st.columns(2)
             fd = mpc2[0].number_input("Final drive ratio", 1.0, 10.0, value=3.5, step=0.1)
-            wr_ = mpc2[1].number_input("Loaded wheel radius (m)", 0.15, 0.30,
-                                       value=0.20, step=0.005, format="%.3f")
+            wr_ = unum(mpc2[1], "Loaded wheel radius (m)", 0.15, 0.30, 0.20, "m",
+                       step=0.005, fmt="%.3f")
             _motor_map = lap_mod.MotorMap.from_peak(mt, mp, mr_in, final_drive=fd,
                                                     wheel_radius_m=wr_)
             st.caption(f"Motor map source: {_motor_map.source} (from datasheet peaks; "
@@ -7708,7 +7741,7 @@ with tab11:
         tcol = st.columns(3)
         fmt = tcol[0].selectbox("CSV format", ["centreline x,y (m)",
                                                "GPS lat,lon", "cones L/R x,y"])
-        width_m = tcol[1].number_input("Track width (m)", 2.0, 6.0, value=3.5, step=0.5)
+        width_m = unum(tcol[1], "Track width (m)", 2.0, 6.0, 3.5, "m", step=0.5)
         do_line = tcol[2].checkbox("Optimise racing line", value=True,
                                    help="Use the track width to straighten corners — "
                                         "reports the time gained vs the centreline.")
@@ -7802,14 +7835,15 @@ with tab11:
                                "good" if _lc["gained"] >= 0 else "warn"),
                         unsafe_allow_html=True)
             figRL = go.Figure()
-            figRL.add_trace(go.Scatter(x=_lc["cx"], y=_lc["cy"], mode="lines",
+            figRL.add_trace(go.Scatter(x=uconv_series(_lc["cx"], "m"), y=uconv_series(_lc["cy"], "m"), mode="lines",
                                        line=dict(color="#8d99a6", width=1.5, dash="dot"),
                                        name="centreline"))
-            figRL.add_trace(go.Scatter(x=_lc["lx"], y=_lc["ly"], mode="lines",
+            figRL.add_trace(go.Scatter(x=uconv_series(_lc["lx"], "m"), y=uconv_series(_lc["ly"], "m"), mode="lines",
                                        line=dict(color=CYAN, width=2.5),
                                        name="racing line"))
             figRL.update_layout(**PLOT_LAYOUT, title="Racing line (uses track width)",
-                                xaxis_title="x (m)", yaxis_title="y (m)", height=360)
+                                xaxis_title=units_mod.ulabel("x (m)"),
+                                yaxis_title=units_mod.ulabel("y (m)"), height=360)
             figRL.update_yaxes(scaleanchor="x", scaleratio=1)
             st.plotly_chart(figRL, width='stretch')
             st.markdown('<p class="hint">Curvature-optimal line within the track '
@@ -7855,7 +7889,7 @@ with tab11:
                     "suspension", "Lap-time prediction",
                     f"Skidpad {_skt}s, autocross {_axt}s on "
                     f"{'TTC tire' if not st.session_state.get('tire_is_default', True) else 'generic tire'} "
-                    f"(power {pw:.0f}kW, ClA {cla:.2f}).")
+                    f"(power {uval(pw, 'kW')}, ClA {cla:.2f}).")
                 st.success("Logged to handover record.")
             lc2.markdown('<p class="hint">Tip: change a hardpoint or a setup lever, '
                          're-run, and watch the skidpad delta. That delta — in seconds '
@@ -7931,9 +7965,9 @@ with tab12:
                         "timed-circle time — the other is derived so both are checked.")
             sc = st.columns(3)
             mode = sc[0].selectbox("I measured", ["peak lateral g", "timed-circle time (s)"])
-            radius = sc[2].number_input("Circle radius (m)", 5.0, 12.0, value=9.125,
-                                        step=0.125, format="%.3f",
-                                        help="FSAE timed-circle path radius (centreline).")
+            radius = unum(sc[2], "Circle radius (m)", 5.0, 12.0, 9.125, "m",
+                          step=0.125, fmt="%.3f",
+                          help="FSAE timed-circle path radius (centreline).")
             if mode == "peak lateral g":
                 mg = sc[1].number_input("Measured peak lateral g", 0.5, 2.5,
                                         value=1.40, step=0.01)
@@ -8505,29 +8539,29 @@ if _show_ledger:
     # ---- car-level shared limits the checks validate against -------------- #
     with st.expander("Car-level budgets & limits (the shared contract)", expanded=False):
         lc = st.columns(3)
-        led.target_mass_kg = lc[0].number_input("Mass target (kg, incl. driver)",
-                                                100.0, 400.0, value=float(led.target_mass_kg), step=5.0)
-        led.includes_driver_kg = lc[1].number_input("of which driver",
-                                                     0.0, 120.0, value=float(led.includes_driver_kg), step=5.0)
-        led.driveline_torque_limit_nm = lc[2].number_input("Driveline torque rating",
-                                                            0.0, 1000.0,
-                                                            value=float(led.driveline_torque_limit_nm or 0.0), step=10.0) or None
+        led.target_mass_kg = unum(lc[0], "Mass target (kg, incl. driver)",
+                                   100.0, 400.0, float(led.target_mass_kg), "kg", step=5.0)
+        led.includes_driver_kg = unum(lc[1], "of which driver (kg)",
+                                      0.0, 120.0, float(led.includes_driver_kg), "kg", step=5.0)
+        led.driveline_torque_limit_nm = unum(lc[2], "Driveline torque rating (N·m)",
+                                             0.0, 1000.0,
+                                             float(led.driveline_torque_limit_nm or 0.0), "N·m", step=10.0) or None
         lc2 = st.columns(3)
         led.lv_voltage_v = lc2[0].number_input("LV bus (V)", 6.0, 60.0, value=float(led.lv_voltage_v), step=1.0)
-        led.lv_supply_capacity_w = lc2[1].number_input("LV supply capacity", 0.0, 5000.0,
+        led.lv_supply_capacity_w = lc2[1].number_input("LV supply capacity (W)", 0.0, 5000.0,
                                                         value=float(led.lv_supply_capacity_w), step=50.0)
         led.accumulator_voltage_v = lc2[2].number_input("Accumulator (V)", 0.0, 600.0,
                                                          value=float(led.accumulator_voltage_v), step=10.0)
         lc3 = st.columns(4)
-        ex = lc3[0].number_input("Chassis interior X", 0.0, 3000.0,
-                                 value=float((led.chassis_envelope_mm or (0, 0, 0))[0]), step=10.0)
-        ey = lc3[1].number_input("interior Y", 0.0, 2000.0,
-                                 value=float((led.chassis_envelope_mm or (0, 0, 0))[1]), step=10.0)
-        ez = lc3[2].number_input("interior Z", 0.0, 2000.0,
-                                 value=float((led.chassis_envelope_mm or (0, 0, 0))[2]), step=10.0)
+        ex = unum(lc3[0], "Chassis interior X (mm)", 0.0, 3000.0,
+                  float((led.chassis_envelope_mm or (0, 0, 0))[0]), "mm", step=10.0)
+        ey = unum(lc3[1], "interior Y (mm)", 0.0, 2000.0,
+                  float((led.chassis_envelope_mm or (0, 0, 0))[1]), "mm", step=10.0)
+        ez = unum(lc3[2], "interior Z (mm)", 0.0, 2000.0,
+                  float((led.chassis_envelope_mm or (0, 0, 0))[2]), "mm", step=10.0)
         led.chassis_envelope_mm = (ex, ey, ez) if (ex and ey and ez) else None
-        led.total_cooling_airflow_cms = lc3[3].number_input("Cooling airflow (m³/s)", 0.0, 5.0,
-                                                            value=float(led.total_cooling_airflow_cms), step=0.05)
+        led.total_cooling_airflow_cms = unum(lc3[3], "Cooling airflow (m³/s)", 0.0, 5.0,
+                                             float(led.total_cooling_airflow_cms), "m³/s", step=0.05)
 
     # Which fields each subsystem typically declares — keeps each editor focused.
     # Every physical subsystem that the "Subsystem ↔ chassis (CAD fit)" view can
@@ -8715,8 +8749,8 @@ if _show_ledger:
             st.session_state.vp["cg_height"] = float(cgz)
             _logged = log_decision_now(
                 "integration", "Build mass/CG pushed to vehicle model",
-                f"Subsystem ledger: {total_with_driver:.1f} kg total, "
-                f"CG height {cgz:.0f} mm. Now driving load transfer & lap sim.",
+                f"Subsystem ledger: {uval(total_with_driver, 'kg', fmt='{:.1f}')} total, "
+                f"CG height {uval(cgz, 'mm')}. Now driving load transfer & lap sim.",
                 author="integration")
             st.success(f"Vehicle model updated: {_twd:.1f} {_uM}, "
                        f"CG {_cgz:.0f} {_uL}. Other tabs now use it."
@@ -8964,7 +8998,7 @@ with tab_ggv:
                   f"{int(160 + 50 * t)},0.95)"
             figG.add_trace(go.Scatter(x=x, y=y, mode="lines",
                                       line=dict(color=col, width=2),
-                                      name=f"{v:.0f} m/s"))
+                                      name=uval(v, "m/s")))
         figG.update_layout(**PLOT_LAYOUT,
                            title="GGV cross-sections — combined g envelope by speed",
                            xaxis_title="lateral g", yaxis_title="longitudinal g  (+accel / −brake)",
@@ -8987,13 +9021,13 @@ with tab_ggv:
             _vmax = max(p[1] for p in _lift_pts)
             _g_rng = (f"{_gmin:.2f} g" if abs(_gmax - _gmin) < 0.005
                       else f"{_gmin:.2f}–{_gmax:.2f} g")
-            _v_rng = (f"{_vmin:.0f} m/s" if abs(_vmax - _vmin) < 0.5
-                      else f"{_vmin:.0f}–{_vmax:.0f} m/s")
+            _v_rng = (uval(_vmin, "m/s") if abs(_vmax - _vmin) < 0.5
+                      else f"{units_mod.from_metric(_vmin,'m/s'):.0f}–{uval(_vmax, 'm/s')}")
             _chips = " ".join(
                 f'<span style="display:inline-block;font-family:\'JetBrains Mono\',monospace;'
                 f'font-size:.72rem;color:var(--amber);background:rgba(255,176,46,.08);'
                 f'border:1px solid #5a4317;border-radius:6px;padding:.12rem .45rem;'
-                f'margin:.12rem .2rem .12rem 0;">{v:.0f} m/s · {g:.2f} g</span>'
+                f'margin:.12rem .2rem .12rem 0;">{uval(v, "m/s")} · {g:.2f} g</span>'
                 for g, v in _lift_pts)
             st.markdown(
                 f'<div style="border:1px solid #5a4317;border-left:3px solid var(--amber);'
@@ -9073,7 +9107,7 @@ with tab_ggv:
                                           line=dict(color=CYAN, width=2.5)))
                 figS.update_layout(**PLOT_LAYOUT,
                                    title=f"{_metric_label} vs {_param_label} "
-                                         f"@ {_sweep_v:.0f} m/s",
+                                         f"@ {uval(_sweep_v, 'm/s')}",
                                    xaxis_title=_param_label, yaxis_title=_metric_label,
                                    height=300)
                 st.plotly_chart(figS, width='stretch')
