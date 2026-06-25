@@ -39,21 +39,6 @@ except Exception:  # pragma: no cover
 METRIC = "metric"
 US = "us"
 
-# Module-level active system. Set explicitly by the app at the top of each rerun
-# via set_system(); falls back to reading session_state for backward compatibility.
-_active_system: str = METRIC
-
-
-def set_system(system: str) -> None:
-    """Explicitly set the active unit system for this rerun.
-
-    Call this once at the top of the app (right after the sidebar radio widget)
-    so every subsequent units_mod call in the same rerun uses the correct system
-    without relying on session_state reads.
-    """
-    global _active_system
-    _active_system = system
-
 # Conversion table keyed by the metric unit string used throughout the app.
 # Each entry: metric_unit -> (us_label, metric->us factor, metric->us offset)
 # value_us = value_metric * factor + offset
@@ -62,6 +47,8 @@ _CONVERSIONS = {
     "cm":      ("in",      1.0 / 2.54,        0.0),
     "m":       ("ft",      3.280839895,       0.0),
     "kg":      ("lb",      2.2046226218,      0.0),
+    "g_mass":  ("oz",      0.0352739619,      0.0),     # small mass (grams)
+    "g":       ("g", 1.0, 0.0),                     # acceleration g — unchanged
     "m/s":     ("mph",     2.2369362921,      0.0),
     "km/h":    ("mph",     0.6213711922,      0.0),
     "N":       ("lbf",     0.2248089431,      0.0),
@@ -69,10 +56,21 @@ _CONVERSIONS = {
     "N·m":     ("lbf·ft",  0.7375621493,      0.0),
     "Nm":      ("lbf·ft",  0.7375621493,      0.0),
     "N/mm":    ("lbf/in",  5.7101471627,      0.0),
+    "N/mm³":   ("lbf/in³", 3683.6055,         0.0),    # cubic stiffness coeff
+    "/mm²":    ("/in²",    645.16,            0.0),     # per-area hardening coeff
     "N·m/°":   ("lbf·ft/°", 0.7375621493,     0.0),
     "bar":     ("psi",     14.503773773,      0.0),
     "kPa":     ("psi",     0.1450377377,      0.0),
+    "MPa":     ("ksi",     0.1450377377,      0.0),    # thermal/structural stress
+    "kW":      ("hp",      1.3410220888,      0.0),     # power (mechanical hp)
+    "W":       ("hp",      0.0013410221,      0.0),
+    "kJ":      ("BTU",     0.9478171203,      0.0),     # energy
+    "J":       ("ft·lbf",  0.7375621493,      0.0),
     "°C":      ("°F",      9.0 / 5.0,         32.0),
+    "N·s/m":   ("lbf·s/in", 0.0057101471627, 0.0),     # damping coefficient
+    "N·s/mm":  ("lbf·s/in", 5.7101471627,     0.0),
+    "m³/s":    ("ft³/s",   35.314666721,      0.0),     # volumetric flow
+    "L/s":     ("ft³/s",   0.0353146667,      0.0),
 }
 
 # Units that are identical in both systems (kept explicit for clarity / safety).
@@ -80,14 +78,13 @@ _PASSTHROUGH = {"", "°", "%", "g", "s", "psi", "spring/wheel", "fail", "—"}
 
 
 def current_system() -> str:
-    """Active unit system for the current rerun.
-
-    Reads the module-level ``_active_system`` variable (set via :func:`set_system`
-    by the app after the sidebar radio renders).  Falls back to
-    ``session_state['unit_system']`` for backward compatibility, and to
-    ``'metric'`` if neither is available.
-    """
-    return _active_system
+    """Active unit system, defaulting to metric and safe outside Streamlit."""
+    if st is not None:
+        try:
+            return st.session_state.get("unit_system", METRIC)
+        except Exception:
+            return METRIC
+    return METRIC
 
 
 def is_us() -> bool:
@@ -109,6 +106,18 @@ def from_metric(value: float, unit: str) -> float:
         return value
     _, factor, offset = _CONVERSIONS[unit]
     return value * factor + offset
+
+
+def from_metric_delta(value: float, unit: str) -> float:
+    """Convert a metric DIFFERENCE (gradient, margin, ΔT) to the active system.
+
+    A difference scales by the factor but takes NO offset — a 10 °C rise is an
+    18 °F rise, not (10·9/5+32). Use this for any quantity that is a delta rather
+    than an absolute reading (temperature gradients, margins, spans)."""
+    if not is_us() or unit not in _CONVERSIONS:
+        return value
+    _, factor, _offset = _CONVERSIONS[unit]
+    return value * factor
 
 
 def to_metric(value: float, unit: str) -> float:
@@ -200,3 +209,38 @@ def convert_compound(value_str: str, unit: str) -> Tuple[str, str]:
         return new_val, "lbf/in" + suffix
 
     return convert_value_str(value_str, unit), label(unit)
+
+
+# --- relabel unit TOKENS inside any header / title / widget-label string ---- #
+
+# Longest-first so multi-char units (km/h, N·m, N/mm) match before their parts.
+_TOKEN_ORDER = sorted(_CONVERSIONS.keys(), key=len, reverse=True)
+
+
+def ulabel(text: str) -> str:
+    """Rewrite metric unit tokens inside a free-text label/title/header to the
+    active unit system. Leaves everything else untouched.
+
+    Handles units wherever they appear: in parentheses ("Mass (kg)" -> "Mass
+    (lb)"), after a space or slash, etc. In metric mode it is a no-op, so it is
+    safe to wrap every title and label unconditionally.
+
+    Examples (US active):
+        "rotor mass (g)"               -> "rotor mass (g)"        (g passes through)
+        "single-stop peak temp (°C)"   -> "single-stop peak temp (°F)"
+        "travel (mm, + bump)"          -> "travel (in, + bump)"
+        "downforce (N) @ 80 km/h"      -> "downforce (lbf) @ 80 mph"
+        "ride height (mm)  ← lower …"  -> "ride height (in)  ← lower …"
+    """
+    if not is_us() or not text:
+        return text
+    out = text
+    for metric_u in _TOKEN_ORDER:
+        us_u = _CONVERSIONS[metric_u][0]
+        if us_u == metric_u:
+            continue  # passthrough (e.g. "g")
+        # Replace the token only on a word/symbol boundary so we don't corrupt
+        # substrings (e.g. don't turn "Nm" inside a word, or "m" inside "mm").
+        pattern = r"(?<![A-Za-z0-9·/°])" + re.escape(metric_u) + r"(?![A-Za-z0-9·/])"
+        out = re.sub(pattern, us_u, out)
+    return out
