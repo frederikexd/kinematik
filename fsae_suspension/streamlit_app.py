@@ -3906,9 +3906,9 @@ with tab_aero:
     # ---------------------------------------------------------------- VIEW 4 #
     else:  # Scale model planning
         st.markdown(
-            '<p class="hint">Plan a <b>scaled-model tunnel run</b> before you test. '
+            '<p class="hint">Plan a <b>scaled-model wind tunnel run</b> before you test. '
             'Three decisions quietly mortgage every scaled-model correlation: '
-            '<b>Reynolds similitude</b> (does the tunnel run fast enough to match the '
+            '<b>Reynolds similitude</b> (does the wind tunnel run fast enough to match the '
             'flow regime?), <b>build tolerance</b> (does the machining/print error '
             'swamp the coefficient you are trying to measure?), and <b>mount alignment</b> '
             '(did a weld-tab shift the incidence after you fixed the Dzus holes?). '
@@ -4099,13 +4099,217 @@ with tab_aero:
                      "build didn't already allow.")
             with st.expander("Full run-plan report", expanded=True):
                 st.code(_plan.report(), language=None)
+
+            st.divider()
+
+            # ── 6. Tunnel provenance & physical aero map ──────────────────── #
+            st.markdown("##### 6 · Record wind tunnel results → Physical Aero Map")
             st.markdown(
-                '<p class="hint">Copy the <b>provenance string</b> from the report above '
-                'into <code>TunnelProvenance(notes=...)</code> when you create a '
-                '<code>PhysicalAeroMap</code> for this run — that keeps the scale factor, '
-                'Reynolds state and coefficient uncertainty attached to every coefficient '
-                'all the way through the correlation chain into the lap sim.</p>',
+                '<p class="hint">After the wind tunnel run, log your measured coefficients '
+                'here. The run-plan settings above (scale, Reynolds, uncertainty) are '
+                'automatically carried into every measurement as <b>provenance</b> — '
+                'no copy-pasting needed. The resulting Physical Aero Map feeds straight '
+                'into the lap sim.</p>',
                 unsafe_allow_html=True)
+
+            # Facility inputs — the few fields the plan doesn't already know
+            _prov_cols = st.columns([2, 1, 1])
+            _prov_facility = _prov_cols[0].text_input(
+                "Tunnel facility name", value="in-house tunnel",
+                key="sm_prov_facility",
+                help="Name of the wind tunnel used for this run (appears in all "
+                     "downstream provenance labels).")
+            _prov_ground = _prov_cols[1].selectbox(
+                "Tunnel floor type",
+                ["moving-belt", "fixed-floor", "suction-fixed"],
+                key="sm_prov_ground",
+                help="Moving belt is the only ground-effect-true state. "
+                     "Fixed floor underpredicts underbody downforce — flagged in provenance.")
+            _prov_blk = _prov_cols[2].checkbox(
+                "Blockage-corrected", value=True, key="sm_prov_blk",
+                help="Were the coefficients corrected for solid + wake blockage? "
+                     "Uncorrected coefficients are inflated by the test-section walls.")
+
+            _GS_SM = {"moving-belt": wt_mod.GroundState.MOVING_BELT,
+                      "fixed-floor": wt_mod.GroundState.FIXED_FLOOR,
+                      "suction-fixed": wt_mod.GroundState.SUCTION_FIXED}
+
+            # Build TunnelProvenance from the plan (no manual copy required)
+            _sm_prov = wt_mod.TunnelProvenance(
+                facility=_prov_facility or "tunnel",
+                ground_state=_GS_SM[_prov_ground],
+                model_scale=_plan.model_scale(),
+                blockage_corrected=bool(_prov_blk),
+                reynolds=_plan.tunnel_reynolds(),
+                reference_area_m2=float(_aero_area),
+                reference_length_m=float(_sc_chord) / 1000.0,
+                notes=_plan.provenance(),
+            )
+            st.info(f"**Provenance status:** {_sm_prov.status()}")
+
+            # Wheelbase for ride-height → attitude conversion
+            _prov_wb_cols = st.columns([1, 1, 2])
+            _sm_wb = _prov_wb_cols[0].number_input(
+                "Wheelbase (mm)", 1000.0, 2000.0, value=1550.0, step=10.0,
+                key="sm_prov_wb",
+                help="Distance between front and rear ride-height reference planes.")
+            _sm_ref_len = _prov_wb_cols[1].number_input(
+                "Reference length (mm)", 100.0, 2000.0,
+                value=float(_sc_chord), step=10.0,
+                key="sm_prov_reflen",
+                help="Streamwise reference length for coefficient normalisation — "
+                     "defaults to the scaled chord above.")
+
+            # Measured points: upload CSV or enter manually
+            st.markdown("**Add measured points**")
+            _input_mode = st.radio(
+                "How do you want to enter results?",
+                ["Upload CSV", "Enter manually"],
+                horizontal=True, key="sm_input_mode")
+
+            _phys_map = wt_mod.PhysicalAeroMap(
+                _sm_prov,
+                reference_area_m2=float(_aero_area),
+                reference_length_m=float(_sm_ref_len) / 1000.0,
+                wheelbase_mm=float(_sm_wb),
+            )
+
+            if _input_mode == "Upload CSV":
+                st.markdown(
+                    '<p class="hint">One row per ride-height point. '
+                    'Required columns: <code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code>. '
+                    'Optional: <code>aero_balance_front</code>. '
+                    'Sign convention: <b>c_lift negative = downforce</b>.</p>',
+                    unsafe_allow_html=True)
+                _sm_csv = st.file_uploader(
+                    "Physical aero-map CSV", type=["csv"], key="sm_phys_csv")
+                if _sm_csv is not None:
+                    try:
+                        import csv as _csv2, io as _io3
+                        _raw2 = _sm_csv.getvalue().decode("utf-8", errors="replace")
+                        _rdr2 = _csv2.DictReader(_io3.StringIO(_raw2))
+                        _n_rows2 = 0
+                        for _row2 in _rdr2:
+                            def _f2(k, d=None):
+                                v = (_row2.get(k) or "").strip()
+                                return float(v) if v not in ("", None) else d
+                            _bal2 = _f2("aero_balance_front", None)
+                            _rh2 = wt_mod.RideHeights(
+                                front_mm=_f2("front_mm", 30.0),
+                                rear_mm=_f2("rear_mm", 30.0),
+                                speed_ms=_f2("speed_ms", 20.0),
+                                wheelbase_mm=float(_sm_wb))
+                            _phys_map.add_measurement(
+                                _rh2,
+                                c_lift=_f2("c_lift"),
+                                c_drag=_f2("c_drag"),
+                                aero_balance_front=_bal2)
+                            _n_rows2 += 1
+                        st.success(
+                            f"✅ Loaded {len(_phys_map)} measurement(s) from {_n_rows2} row(s).")
+                    except Exception as _e_csv:
+                        st.error(f"Couldn't parse CSV: {_e_csv}")
+
+            else:  # Manual entry
+                st.markdown(
+                    '<p class="hint">Enter one measurement point at a time. '
+                    'Sign convention: <b>c_lift negative = downforce</b>.</p>',
+                    unsafe_allow_html=True)
+                _man_cols = st.columns([1, 1, 1, 1, 1, 1])
+                _man_front = _man_cols[0].number_input(
+                    "Front RH (mm)", 10.0, 150.0, value=30.0, step=2.5,
+                    key="sm_man_front")
+                _man_rear = _man_cols[1].number_input(
+                    "Rear RH (mm)", 10.0, 150.0, value=30.0, step=2.5,
+                    key="sm_man_rear")
+                _man_speed = _man_cols[2].number_input(
+                    "Speed (m/s)", 5.0, 100.0,
+                    value=float(round(_sim.achievable_speed_ms, 1)),
+                    step=1.0, key="sm_man_speed",
+                    help="Defaults to the planned tunnel speed from section 2.")
+                _man_cl = _man_cols[3].number_input(
+                    "C_lift (−ve = downforce)", -5.0, 5.0, value=-1.0, step=0.05,
+                    key="sm_man_cl")
+                _man_cd = _man_cols[4].number_input(
+                    "C_drag", 0.0, 5.0, value=0.3, step=0.01,
+                    key="sm_man_cd")
+                _man_bal = _man_cols[5].number_input(
+                    "Aero balance (0–1, opt.)", 0.0, 1.0, value=0.45, step=0.01,
+                    key="sm_man_bal",
+                    help="Front aero balance fraction. Leave at 0 to omit.")
+
+                if st.button("➕ Add this point", key="sm_man_add"):
+                    _rh_man = wt_mod.RideHeights(
+                        front_mm=float(_man_front),
+                        rear_mm=float(_man_rear),
+                        speed_ms=float(_man_speed),
+                        wheelbase_mm=float(_sm_wb))
+                    _bal_val = float(_man_bal) if _man_bal > 0 else None
+                    if "sm_manual_points" not in st.session_state:
+                        st.session_state["sm_manual_points"] = []
+                    st.session_state["sm_manual_points"].append({
+                        "front_mm": float(_man_front),
+                        "rear_mm": float(_man_rear),
+                        "speed_ms": float(_man_speed),
+                        "c_lift": float(_man_cl),
+                        "c_drag": float(_man_cd),
+                        "aero_balance_front": _bal_val,
+                    })
+                    st.rerun()
+
+                # Replay stored manual points into the map
+                for _mp in st.session_state.get("sm_manual_points", []):
+                    _rh_mp = wt_mod.RideHeights(
+                        front_mm=_mp["front_mm"], rear_mm=_mp["rear_mm"],
+                        speed_ms=_mp["speed_ms"], wheelbase_mm=float(_sm_wb))
+                    _phys_map.add_measurement(
+                        _rh_mp, c_lift=_mp["c_lift"], c_drag=_mp["c_drag"],
+                        aero_balance_front=_mp["aero_balance_front"])
+
+                if st.session_state.get("sm_manual_points"):
+                    _pts_display = [
+                        {k: (f"{v:.3f}" if isinstance(v, float) and v is not None else v)
+                         for k, v in p.items()}
+                        for p in st.session_state["sm_manual_points"]]
+                    st.dataframe(_pts_display, use_container_width=True)
+                    if st.button("🗑 Clear all manual points", key="sm_man_clear"):
+                        st.session_state["sm_manual_points"] = []
+                        st.rerun()
+
+            # Show summary of whatever map we have
+            if len(_phys_map) > 0:
+                st.success(
+                    f"**Physical Aero Map ready** — {len(_phys_map)} point(s) · "
+                    f"scale {_plan.model_scale():.0%} · Re={_plan.tunnel_reynolds():.2e} · "
+                    f"combined C_L uncertainty ±{_plan.combined_cl_uncertainty_frac()*100:.1f}%")
+
+                # Summary table of measured points
+                with st.expander("Measured points", expanded=True):
+                    _rows = []
+                    for _pt in _phys_map.measured_points():
+                        from suspension.aero.windtunnel import attitude_to_ride_heights
+                        _rh_out = attitude_to_ride_heights(_pt.attitude, float(_sm_wb))
+                        _rows.append({
+                            "Front (mm)": f"{_rh_out.front_mm:.1f}",
+                            "Rear (mm)": f"{_rh_out.rear_mm:.1f}",
+                            "Speed (m/s)": f"{_rh_out.speed_ms:.1f}",
+                            "C_lift": f"{_pt.c_lift:.4f}",
+                            "C_drag": f"{_pt.c_drag:.4f}",
+                            "Aero bal.": (
+                                f"{_pt.aero_balance_front:.3f}"
+                                if _pt.aero_balance_front is not None else "—"),
+                        })
+                    st.dataframe(_rows, use_container_width=True)
+
+                # Store in session state so other tabs (e.g. Validation) can use it
+                st.session_state["sm_physical_aero_map"] = _phys_map
+                st.markdown(
+                    '<p class="hint">This Physical Aero Map is now available in the '
+                    '<b>Validation → Wind tunnel (CFD calibration)</b> tab for '
+                    'correlation against your CFD runs.</p>',
+                    unsafe_allow_html=True)
+            else:
+                st.info("Add measured points above to build the Physical Aero Map.")
 
     with st.expander("How honest is this? (provenance)", expanded=False):
         _prov = _aero_model.provenance()
@@ -8382,59 +8586,79 @@ with tab12:
             wt_solver = "ANSYS Fluent (verified)"
 
             st.markdown('<div class="wt-step"><span class="n">STEP 1</span>'
-                        '<span class="t">Upload what the tunnel measured</span></div>',
+                        '<span class="t">Load what the tunnel measured</span></div>',
                         unsafe_allow_html=True)
-            st.markdown(
-                '<p class="wt-sub">One row per ride-height point you ran in the tunnel. '
-                'Columns: <code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code> '
-                '(optionally <code>aero_balance_front</code>). Sign convention: '
-                '<b>c_lift negative = downforce</b>. Logged forces in Newtons instead? '
-                'Convert with <code>downforce_to_clift</code> / <code>drag_to_cdrag</code> '
-                'first.</p>',
-                unsafe_allow_html=True)
-            wt_phys_up = st.file_uploader("Physical aero-map CSV", type=["csv"],
-                                          key="wt_phys_up")
 
             _GS = {"moving-belt": wt_mod.GroundState.MOVING_BELT,
                    "fixed-floor": wt_mod.GroundState.FIXED_FLOOR,
                    "suction-fixed": wt_mod.GroundState.SUCTION_FIXED}
 
+            # ── Source selector ──────────────────────────────────────────── #
+            _wt_has_plan_map = ("sm_physical_aero_map" in st.session_state and
+                                len(st.session_state["sm_physical_aero_map"]) > 0)
+            _wt_src_opts = (["From Scale Model Planning (this session)", "Upload CSV"]
+                            if _wt_has_plan_map else ["Upload CSV"])
+            _wt_src = st.radio(
+                "Aero-map source", _wt_src_opts, horizontal=True, key="wt_src",
+                help="If you already logged results in Aero → Scale model planning, "
+                     "select the first option to use that map directly — no CSV needed.")
+
             phys_map = None
-            if wt_phys_up is not None:
-                try:
-                    import csv as _csv, io as _io2
-                    raw = wt_phys_up.getvalue().decode("utf-8", errors="replace")
-                    rdr = _csv.DictReader(_io2.StringIO(raw))
-                    prov = wt_mod.TunnelProvenance(
-                        facility=wt_facility or "tunnel",
-                        ground_state=_GS[wt_ground], model_scale=1.0,
-                        blockage_corrected=bool(wt_blkcorr),
-                        reference_area_m2=float(wt_area),
-                        reference_length_m=float(wt_wb) / 1000.0)
-                    phys_map = wt_mod.PhysicalAeroMap(
-                        prov, reference_area_m2=float(wt_area),
-                        reference_length_m=float(wt_wb) / 1000.0,
-                        wheelbase_mm=float(wt_wb))
-                    n_rows = 0
-                    for row in rdr:
-                        def _f(k, d=None):
-                            v = (row.get(k) or "").strip()
-                            return float(v) if v not in ("", None) else d
-                        bal = _f("aero_balance_front", None)
-                        rh = wt_mod.RideHeights(
-                            front_mm=_f("front_mm", 30.0), rear_mm=_f("rear_mm", 30.0),
-                            speed_ms=_f("speed_ms", 20.0), wheelbase_mm=float(wt_wb))
-                        phys_map.add_measurement(
-                            rh, c_lift=_f("c_lift"), c_drag=_f("c_drag"),
-                            aero_balance_front=bal)
-                        n_rows += 1
-                    st.success(f"Loaded {len(phys_map)} physical map point(s) "
-                               f"from {n_rows} row(s).")
-                    st.markdown(f'<p class="hint">{prov.status()}</p>',
-                                unsafe_allow_html=True)
-                except Exception as e:
-                    phys_map = None
-                    st.error(f"Couldn't parse the aero-map CSV: {e}")
+
+            if _wt_src == "From Scale Model Planning (this session)":
+                phys_map = st.session_state["sm_physical_aero_map"]
+                st.success(
+                    f"\u2705 Using Physical Aero Map from Scale Model Planning \u2014 "
+                    f"{len(phys_map)} point(s), provenance already attached.")
+                st.markdown(f'<p class="hint">{phys_map.tunnel.status()}</p>',
+                            unsafe_allow_html=True)
+
+            else:
+                st.markdown(
+                    '<p class="wt-sub">One row per ride-height point you ran in the tunnel. '
+                    'Columns: <code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code> '
+                    '(optionally <code>aero_balance_front</code>). Sign convention: '
+                    '<b>c_lift negative = downforce</b>. Logged forces in Newtons instead? '
+                    'Convert with <code>downforce_to_clift</code> / <code>drag_to_cdrag</code> '
+                    'first.</p>',
+                    unsafe_allow_html=True)
+                wt_phys_up = st.file_uploader("Physical aero-map CSV", type=["csv"],
+                                              key="wt_phys_up")
+                if wt_phys_up is not None:
+                    try:
+                        import csv as _csv, io as _io2
+                        raw = wt_phys_up.getvalue().decode("utf-8", errors="replace")
+                        rdr = _csv.DictReader(_io2.StringIO(raw))
+                        prov = wt_mod.TunnelProvenance(
+                            facility=wt_facility or "tunnel",
+                            ground_state=_GS[wt_ground], model_scale=1.0,
+                            blockage_corrected=bool(wt_blkcorr),
+                            reference_area_m2=float(wt_area),
+                            reference_length_m=float(wt_wb) / 1000.0)
+                        phys_map = wt_mod.PhysicalAeroMap(
+                            prov, reference_area_m2=float(wt_area),
+                            reference_length_m=float(wt_wb) / 1000.0,
+                            wheelbase_mm=float(wt_wb))
+                        n_rows = 0
+                        for row in rdr:
+                            def _f(k, d=None):
+                                v = (row.get(k) or "").strip()
+                                return float(v) if v not in ("", None) else d
+                            bal = _f("aero_balance_front", None)
+                            rh = wt_mod.RideHeights(
+                                front_mm=_f("front_mm", 30.0), rear_mm=_f("rear_mm", 30.0),
+                                speed_ms=_f("speed_ms", 20.0), wheelbase_mm=float(wt_wb))
+                            phys_map.add_measurement(
+                                rh, c_lift=_f("c_lift"), c_drag=_f("c_drag"),
+                                aero_balance_front=bal)
+                            n_rows += 1
+                        st.success(f"Loaded {len(phys_map)} physical map point(s) "
+                                   f"from {n_rows} row(s).")
+                        st.markdown(f'<p class="hint">{prov.status()}</p>',
+                                    unsafe_allow_html=True)
+                    except Exception as e:
+                        phys_map = None
+                        st.error(f"Couldn't parse the aero-map CSV: {e}")
 
             if phys_map is not None and len(phys_map) > 0:
                 vwt = wt_mod.VirtualWindTunnel(phys_map, geometry_path=wt_geom,
