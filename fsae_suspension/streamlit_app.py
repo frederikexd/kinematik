@@ -47,6 +47,9 @@ from suspension import laptime as lap_mod
 from suspension import correlation as corr_mod
 from suspension.aero import windtunnel as wt_mod
 from suspension.aero import ReferenceAeroModel as _AeroRefModel, Attitude as _AeroAttitude
+from suspension.aero import (
+    ScaleSpec, SimilitudePlan, ToleranceBudget, MountAlignment, ScaledRunPlan,
+)
 from suspension import ev_powertrain as ev_mod
 from suspension import lapsim as lapsim_mod
 from suspension import pack_thermal as pack_mod
@@ -3696,7 +3699,7 @@ with tab_aero:
 
     _view = st.radio(
         "View", ["Downforce & ground effect", "Wing & diffuser sizing",
-                 "Aero map (attitude sweep)"],
+                 "Aero map (attitude sweep)", "Scale model planning"],
         horizontal=True, key="aero_view", label_visibility="collapsed")
 
     # Live headline numbers at the chosen attitude — shared across views.
@@ -3850,7 +3853,7 @@ with tab_aero:
                 st.warning(f"Couldn't write it: {_e2}")
 
     # ---------------------------------------------------------------- VIEW 3 #
-    else:
+    elif _view == "Aero map (attitude sweep)":
         st.markdown(
             '<p class="hint">The <b>aero map</b>: how downforce, drag and balance move '
             'as the car changes attitude through a lap — ride height (bumps, braking '
@@ -3899,6 +3902,210 @@ with tab_aero:
             'the real flow, ground image and all) and correlate it against the virtual '
             'wind tunnel + Fluent deck — all already in KinematiK.</p>',
             unsafe_allow_html=True)
+
+    # ---------------------------------------------------------------- VIEW 4 #
+    else:  # Scale model planning
+        st.markdown(
+            '<p class="hint">Plan a <b>scaled-model tunnel run</b> before you test. '
+            'Three decisions quietly mortgage every scaled-model correlation: '
+            '<b>Reynolds similitude</b> (does the tunnel run fast enough to match the '
+            'flow regime?), <b>build tolerance</b> (does the machining/print error '
+            'swamp the coefficient you are trying to measure?), and <b>mount alignment</b> '
+            '(did a weld-tab shift the incidence after you fixed the Dzus holes?). '
+            'Fill in your scale decision and the as-built deviations — the plan tells you '
+            'whether the coefficient will transfer, and what uncertainty band to carry '
+            'into the correlation. All three feed directly into '
+            '<code>TunnelProvenance</code> / <code>PhysicalAeroMap</code> so a scaled '
+            'coefficient is never silently read as a full-car number.</p>',
+            unsafe_allow_html=True)
+
+        # ── 1. Geometry ──────────────────────────────────────────────────── #
+        st.markdown("##### 1 · Scale decision")
+        _sc_cols = st.columns([1, 1, 1, 1])
+        _sc_ratio = _sc_cols[0].number_input(
+            "Scale ratio (model/full)", 0.10, 1.0, value=0.4, step=0.05,
+            help="0.4 = 40% = 1:2.5 model.  Full-size dimensions are recovered as "
+                 "scaled ÷ ratio — the two can never drift apart.")
+        _sc_chord = _sc_cols[1].number_input(
+            "Scaled chord (mm)", 50.0, 2000.0, value=500.0, step=10.0,
+            help="Streamwise reference length OF THE MODEL.  Sets the Reynolds number.")
+        _sc_height = _sc_cols[2].number_input(
+            "Scaled height (mm)", 0.0, 1000.0, value=260.0, step=5.0,
+            help="Spanwise height of the scaled article (optional — used for blockage "
+                 "and frontal area, not similitude).")
+        _sc_width = _sc_cols[3].number_input(
+            "Scaled width (mm)", 0.0, 1000.0, value=250.0, step=5.0,
+            help="Depth / width of the scaled article.")
+
+        try:
+            _spec = ScaleSpec(
+                ratio=_sc_ratio,
+                scaled_chord_mm=_sc_chord,
+                scaled_height_mm=_sc_height if _sc_height > 0 else None,
+                scaled_width_mm=_sc_width if _sc_width > 0 else None,
+            )
+            _sm_cols = st.columns(3)
+            _sm_cols[0].info(f"**Scale:** {_spec.label()}")
+            _sm_cols[1].info(f"**Full-size chord:** {_spec.full_chord_mm:.0f} mm")
+            if _spec.full_height_mm is not None and _spec.full_width_mm is not None:
+                _sm_cols[2].info(
+                    f"**Full-size envelope:** {_spec.full_height_mm:.0f} × "
+                    f"{_spec.full_width_mm:.0f} mm (H × W)")
+        except ValueError as _sve:
+            st.error(f"Scale spec error: {_sve}")
+            _spec = None
+
+        if _spec is not None:
+            st.divider()
+
+            # ── 2. Similitude ─────────────────────────────────────────────── #
+            st.markdown("##### 2 · Reynolds similitude")
+            _sim_cols = st.columns([1, 1, 1])
+            _full_speed_kmh = _sim_cols[0].number_input(
+                "Full-size race speed (km/h)", 10.0, 200.0, value=60.0, step=5.0,
+                help="The on-track speed you want the scaled run to reproduce. "
+                     "FSAE corners are 40–70 km/h; endurance straight ~100+.")
+            _tunnel_max_kmh = _sim_cols[1].number_input(
+                "Tunnel max speed (km/h)", 10.0, 300.0, value=160.0, step=5.0,
+                help="Your tunnel's ceiling. A 40%-scale model at 60 km/h full-size "
+                     "needs 150 km/h to match Reynolds — check the tunnel can reach it.")
+            _temp_c = _sim_cols[2].number_input(
+                "Air temperature (°C)", -10.0, 50.0, value=15.0, step=1.0,
+                help="Shop / tunnel temperature. Kinematic viscosity varies ~5% over "
+                     "a typical seasonal range — worth getting right.")
+
+            _sim = SimilitudePlan.match_reynolds(
+                _spec,
+                full_speed_ms=_full_speed_kmh / 3.6,
+                tunnel_max_speed_ms=_tunnel_max_kmh / 3.6,
+                temp_c=_temp_c,
+            )
+            _sim_metric_cols = st.columns(4)
+            _sim_metric_cols[0].metric(
+                "Full-size Re", f"{_sim.full_reynolds:.2e}",
+                help="Reynolds number the full-size part sees at race speed.")
+            _sim_metric_cols[1].metric(
+                "Matched tunnel speed",
+                f"{_sim.matched_speed_ms * 3.6:.0f} km/h",
+                help="Speed the tunnel must reach to give the model the same Re.")
+            _sim_metric_cols[2].metric(
+                "Achieved Re", f"{_sim.achieved_reynolds:.2e}",
+                delta=f"{(_sim.reynolds_match_ratio - 1.0) * 100:+.0f}% vs full-size",
+                delta_color="normal" if _sim.reachable else "inverse",
+                help="Re the model will actually see at the tunnel's achievable speed.")
+            _sim_metric_cols[3].metric(
+                "Re match", f"{_sim.reynolds_match_ratio * 100:.0f}%",
+                help="1.0 = perfect similitude; below ~80% the coefficient may not "
+                     "transfer reliably.")
+            if _sim.reachable and not _sim.warnings:
+                st.success(f"✅ {_sim.verdict}")
+            elif _sim.reachable:
+                st.warning(f"⚠️ {_sim.verdict}")
+            else:
+                st.error(f"❌ {_sim.verdict}")
+
+            st.divider()
+
+            # ── 3. Build tolerance ────────────────────────────────────────── #
+            st.markdown("##### 3 · Build tolerance budget")
+            st.markdown(
+                '<p class="hint">Enter the <em>as-built</em> deviations from the CAD '
+                'for your scaled part. Leave a field at 0 to omit that source. '
+                'An <b>unmeasured build has unknown, not zero, uncertainty</b> — the '
+                'report says so explicitly.</p>',
+                unsafe_allow_html=True)
+            _tol_cols = st.columns([1, 1, 1, 1])
+            _dev_chord = _tol_cols[0].number_input(
+                "Chord deviation (mm)", 0.0, 50.0, value=0.0, step=0.5,
+                help="Streamwise chord built long or short of nominal. "
+                     "~1:1 fractional error on C_l reference.")
+            _dev_camber = _tol_cols[1].number_input(
+                "Camber / LE deviation (mm)", 0.0, 20.0, value=0.0, step=0.5,
+                help="Leading-edge or camber-line off the CAD — the big one on a "
+                     "moldless / 3-D-printed part. ~3× chord-fraction onto C_l.")
+            _dev_span = _tol_cols[2].number_input(
+                "Span deviation (mm)", 0.0, 50.0, value=0.0, step=0.5,
+                help="Span (height) built off-nominal. ~1:1 onto C_l via planform area.")
+            _dev_wave = _tol_cols[3].number_input(
+                "Surface waviness (mm)", 0.0, 5.0, value=0.0, step=0.1,
+                help="Print-layer steps / weave print-through. Trips the boundary layer "
+                     "and loads heavily onto C_d (~2.5×), little onto C_l.")
+
+            _budget = ToleranceBudget(_spec)
+            if _dev_chord > 0:
+                _budget.add_chord_deviation_mm(_dev_chord)
+            if _dev_camber > 0:
+                _budget.add_camber_deviation_mm(_dev_camber)
+            if _dev_span > 0 and _sc_height > 0:
+                _budget.add_span_deviation_mm(_dev_span, _sc_height)
+            if _dev_wave > 0:
+                _budget.add_surface_waviness_mm(_dev_wave)
+            _tol_report = _budget.report()
+
+            _tol_m = st.columns(2)
+            _tol_m[0].metric(
+                "C_L uncertainty (build)",
+                f"±{_tol_report.cl_uncertainty_frac * 100:.1f}%",
+                help="RSS of all entered deviation sources on the lift coefficient.")
+            _tol_m[1].metric(
+                "C_D uncertainty (build)",
+                f"±{_tol_report.cd_uncertainty_frac * 100:.1f}%",
+                help="RSS of all entered deviation sources on the drag coefficient.")
+            with st.expander("Tolerance breakdown", expanded=False):
+                st.code(_tol_report.summary, language=None)
+
+            st.divider()
+
+            # ── 4. Mount alignment ────────────────────────────────────────── #
+            st.markdown("##### 4 · Mount alignment (the Dzus-weld lesson)")
+            st.markdown(
+                '<p class="hint">Mounting tabs can move during welding — '
+                '<b>do not drill or finalise Dzus holes before welding is complete.</b> '
+                'Enter the as-built incidence error and any fore/aft shift; they fold '
+                'into the same uncertainty band as the build tolerance above.</p>',
+                unsafe_allow_html=True)
+            _mnt_cols = st.columns(2)
+            _mnt_inc = _mnt_cols[0].number_input(
+                "Incidence error (°)", 0.0, 10.0, value=0.0, step=0.25,
+                help="As-built pitch / angle-of-attack of the element vs the CAD. "
+                     "Even 1° shifts C_l measurably on a high-load FSAE element.")
+            _mnt_pos = _mnt_cols[1].number_input(
+                "Fore/aft position error (mm)", 0.0, 50.0, value=0.0, step=1.0,
+                help="How far the element sits forward/aft of its design station.")
+            _mount = MountAlignment(
+                incidence_error_deg=_mnt_inc,
+                position_error_mm=_mnt_pos,
+            )
+            st.info(_mount.status())
+
+            st.divider()
+
+            # ── 5. Combined plan & provenance ─────────────────────────────── #
+            st.markdown("##### 5 · Scaled run plan & provenance")
+            _plan = ScaledRunPlan(similitude=_sim, tolerance=_budget, mount=_mount)
+            _plan_cols = st.columns(3)
+            _plan_cols[0].metric(
+                "Run speed",
+                f"{_sim.achievable_speed_ms * 3.6:.0f} km/h",
+                help="Tunnel speed to use for this scaled run.")
+            _plan_cols[1].metric(
+                "Model Re", f"{_plan.tunnel_reynolds():.2e}",
+                help="Reynolds number the model will see — carry this into TunnelProvenance.")
+            _plan_cols[2].metric(
+                "Combined C_L uncertainty",
+                f"±{_plan.combined_cl_uncertainty_frac() * 100:.1f}%",
+                help="Build tolerance and mount error combined in quadrature. A CFD "
+                     "correlation that lands inside this band has confirmed nothing the "
+                     "build didn't already allow.")
+            with st.expander("Full run-plan report", expanded=True):
+                st.code(_plan.report(), language=None)
+            st.markdown(
+                '<p class="hint">Copy the <b>provenance string</b> from the report above '
+                'into <code>TunnelProvenance(notes=...)</code> when you create a '
+                '<code>PhysicalAeroMap</code> for this run — that keeps the scale factor, '
+                'Reynolds state and coefficient uncertainty attached to every coefficient '
+                'all the way through the correlation chain into the lap sim.</p>',
+                unsafe_allow_html=True)
 
     with st.expander("How honest is this? (provenance)", expanded=False):
         _prov = _aero_model.provenance()
