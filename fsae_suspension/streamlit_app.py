@@ -3675,11 +3675,11 @@ with tab_aero:
         help="Planform/frontal area the coefficients are referenced to. FSAE cars "
              "are ~1.0 m². Forces scale linearly with this.")
     _aero_v = _ac[1].number_input(
-        "Speed", 10.0, 140.0, value=60.0, step=5.0,
+        f"Speed ({units_mod.label('km/h')})", 10.0, 140.0, value=60.0, step=5.0,
         help="A typical FSAE corner is 40–70 km/h; the endurance straight ~100+.")
     _aero_v_ms = _aero_v / 3.6
     _aero_ride = _ac[2].number_input(
-        "Ride height", 10.0, 70.0, value=30.0, step=2.5,
+        f"Ride height ({units_mod.label('mm')})", 10.0, 70.0, value=30.0, step=2.5,
         help="Front floor clearance. Lower = more ground effect, to a floor.")
     _aero_yaw = _ac[3].number_input(
         "Yaw / sideslip (°)", 0.0, 12.0, value=0.0, step=1.0,
