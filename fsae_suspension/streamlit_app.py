@@ -3906,9 +3906,9 @@ with tab_aero:
     # ---------------------------------------------------------------- VIEW 4 #
     else:  # Scale model planning
         st.markdown(
-            '<p class="hint">Plan a <b>scaled-model tunnel run</b> before you test. '
+            '<p class="hint">Plan a <b>scaled-model wind tunnel run</b> before you test. '
             'Three decisions quietly mortgage every scaled-model correlation: '
-            '<b>Reynolds similitude</b> (does the tunnel run fast enough to match the '
+            '<b>Reynolds similitude</b> (does the wind tunnel run fast enough to match the '
             'flow regime?), <b>build tolerance</b> (does the machining/print error '
             'swamp the coefficient you are trying to measure?), and <b>mount alignment</b> '
             '(did a weld-tab shift the incidence after you fixed the Dzus holes?). '
@@ -4103,9 +4103,9 @@ with tab_aero:
             st.divider()
 
             # ── 6. Tunnel provenance & physical aero map ──────────────────── #
-            st.markdown("##### 6 · Record tunnel results → Physical Aero Map")
+            st.markdown("##### 6 · Record wind tunnel results → Physical Aero Map")
             st.markdown(
-                '<p class="hint">After the tunnel run, log your measured coefficients '
+                '<p class="hint">After the wind tunnel run, log your measured coefficients '
                 'here. The run-plan settings above (scale, Reynolds, uncertainty) are '
                 'automatically carried into every measurement as <b>provenance</b> — '
                 'no copy-pasting needed. The resulting Physical Aero Map feeds straight '
