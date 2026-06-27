@@ -1096,7 +1096,7 @@ _ROLE_TABS = {
                    "setup", "ggv", "transient"],
     "aero":       ["aero"],
     "powertrain": ["ev", "laptime", "ggv", "dfmea"],
-    "electrics":  ["accum", "pcb", "tractive", "dfmea"],
+    "electrics":  ["accum", "laptime", "pcb", "tractive", "dfmea"],
     "cooling":    ["tractive"],   # PCM buffer lives alongside the precharge gate
     "dataacq":    ["pcb"],       # data-acquisition — lives in the Electronics/PCB tab
     "brakes":     ["brakes"],
@@ -8644,20 +8644,24 @@ with tab11:
             else:
                 try:
                     _t_arr, _v_arr = elec_check_mod.load_speed_vs_time_from_bytes(_elec_bytes)
-                    if len(_t_arr) >= 2:
-                        _elec_result = elec_check_mod.check_lap_from_speed_csv(
-                            _v_arr, _t_arr, _elec_params,
-                            drivetrain_eff=float(_elec_driveff),
-                            vehicle_mass_kg=float(_elec_mass),
-                            drag_cda=float(_elec_cda),
-                            crr=float(_elec_crr),
-                        )
-                        st.caption(
-                            f"SpeedVsTime: {len(_t_arr)} pts, "
-                            f"{_t_arr[-1]:.1f} s total, "
-                            f"{min(_v_arr):.0f}\u2013{max(_v_arr):.0f} mph.")
-                    else:
-                        st.warning("SpeedVsTime sheet appears empty.")
+                    # _t_arr = time (s), _v_arr = speed (mph) — already validated ≥2 rows
+                    _elec_result = elec_check_mod.check_lap_from_speed_csv(
+                        _v_arr, _t_arr, _elec_params,
+                        drivetrain_eff=float(_elec_driveff),
+                        vehicle_mass_kg=float(_elec_mass),
+                        drag_cda=float(_elec_cda),
+                        crr=float(_elec_crr),
+                    )
+                    st.caption(
+                        f"SpeedVsTime: {len(_t_arr)} pts, "
+                        f"{_t_arr[-1]:.1f} s total, "
+                        f"{min(_v_arr):.0f}\u2013{max(_v_arr):.0f} mph.")
+                except ValueError as _ee2:
+                    st.error(
+                        f"\u274c SpeedVsTime data problem: {_ee2}\n\n"
+                        f"Add a sheet named **SpeedVsTime** with **column A = time (s)** "
+                        f"and **column B = speed (mph)**, starting from row 2 (row 1 = header)."
+                    )
                 except Exception as _ee2:
                     st.warning(f"Could not read SpeedVsTime: {_ee2}")
 
