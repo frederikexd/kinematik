@@ -22,6 +22,7 @@ trimesh>=4.0
 
 # --- optional features: imported lazily, only when the feature is used ---
 # The app boots fine without these; each one just unlocks its feature.
+openpyxl>=3.1      # Excel workbook read/write           (ev_electrical_check.py, ev_excel_roundtrip.py)
 cascadio>=0.0.16   # STEP/STP chassis import            (chassis.py, integration.py)
 fast_simplification>=0.1   # faster CAD-part decimation for the 3D model (optional;
                            # falls back to built-in vertex clustering if absent)
