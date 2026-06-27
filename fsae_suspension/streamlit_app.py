@@ -52,6 +52,8 @@ from suspension.aero import (
 )
 from suspension import ev_powertrain as ev_mod
 from suspension import lapsim as lapsim_mod
+from suspension import ev_electrical_check as elec_check_mod
+from suspension import ev_excel_roundtrip as roundtrip_mod
 from suspension import pack_thermal as pack_mod
 from suspension import damper as damper_mod
 from suspension import interfaces as interfaces_mod
@@ -8500,6 +8502,11 @@ with tab11:
                     f"{d:+.3f} s</span>", unsafe_allow_html=True)
             st.session_state._last_skidpad = skid.lap_time_s
 
+        # Store lap speed/distance profile so the ⚡ electrical check below can access it
+        if lap.ok and lap.v and lap.s:
+            st.session_state._last_lap_v = list(lap.v)
+            st.session_state._last_lap_s = list(lap.s)
+
         # Log it to the handover record so the reasoning survives.
         if lap.ok and np.isfinite(lap.lap_time_s):
             lc1, lc2 = st.columns([1, 2])
@@ -8527,6 +8534,504 @@ with tab11:
                     'between setups, not to predict the absolute clock to the tenth.</p>',
                     unsafe_allow_html=True)
 
+
+
+
+    # ================================================================== #
+    #  ⚡ ELECTRICAL FEASIBILITY CHECK  (Electrics Lead Integration)      #
+    # ================================================================== #
+    # The lap-time sim finds the mechanically fastest lap. But if that lap
+    # demands more current than the fuse rating, drains the pack, or pushes
+    # individual cells past their rated current, the lap simply does not
+    # happen. This section bridges the gap between the mechanical lap and
+    # the electrical reality — using the electrics lead's own Excel workbook.
+    st.markdown("---")
+    st.markdown("#### ⚡ Electrical Feasibility Check")
+    st.markdown(
+        '<p class="hint">The lap-time sim finds the <i>mechanically</i> fastest lap. '
+        'This check tells you whether the <b>electrical system can actually deliver it</b>. '
+        'Upload the electrics lead\'s Excel workbook (the one with Battery Pack Calcs, '
+        'ElecPropulsion, and SpeedVsTime sheets) and the checker will flag any fuse '
+        'violations, cell overcurrent, or energy deficits — in plain English, '
+        'before you freeze the build.</p>',
+        unsafe_allow_html=True)
+
+    _elec_file = st.file_uploader(
+        "Upload FSAE_EV_Power_Draw.xlsx (electrics lead's workbook)",
+        type=["xlsx"],
+        key="elec_check_xlsx",
+        help="Needs sheets: 'Battery Pack Calcs', 'ElecPropulsion', 'SpeedVsTime'. "
+             "This is the same file the electrics lead maintains.")
+
+    _elec_col1, _elec_col2 = st.columns(2)
+    _elec_mass = _elec_col1.number_input(
+        "Vehicle mass incl. driver (kg)", 150.0, 400.0, 230.0, 5.0,
+        key="elec_mass",
+        help="Used to compute acceleration power demand along the lap.")
+    _elec_driveff = _elec_col2.slider(
+        "Drivetrain efficiency (%)", 70, 98, 90, 1,
+        key="elec_driveff",
+        help="Combined inverter + motor + gearbox efficiency (%). "
+             "Use 90% if unsure.") / 100.0
+
+    _elec_cda = _elec_col1.number_input(
+        "Drag CdA (m\u00b2)", 0.0, 3.0, 1.10, 0.05,
+        key="elec_cda",
+        help="Aerodynamic drag area. Match the value used in the lap sim above.")
+    _elec_crr = _elec_col2.number_input(
+        "Rolling resistance crr", 0.005, 0.05, 0.018, 0.002,
+        format="%.3f",
+        key="elec_crr",
+        help="Tyre rolling resistance coefficient.")
+
+    if _elec_file is not None:
+        try:
+            _elec_bytes  = _elec_file.read()
+            _elec_params = elec_check_mod.ElecParams.from_excel_bytes(_elec_bytes)
+
+            with st.expander("\U0001f4cb Parsed electrical parameters", expanded=False):
+                _pc = st.columns(4)
+                _pc[0].markdown(metric("Pack voltage",
+                    f"{_elec_params.pack_voltage_v:.0f}", "V"), unsafe_allow_html=True)
+                _pc[1].markdown(metric("Pack capacity",
+                    f"{_elec_params.pack_capacity_ah:.1f}", "Ah"), unsafe_allow_html=True)
+                _pc[2].markdown(metric("Fuse rating",
+                    f"{_elec_params.fuse_max_a:.0f}", "A"), unsafe_allow_html=True)
+                _pc[3].markdown(metric("Usable energy",
+                    f"{_elec_params.usable_energy_kwh:.3f}", "kWh"), unsafe_allow_html=True)
+                _pc2 = st.columns(4)
+                _pc2[0].markdown(metric("Parallel strings",
+                    f"{_elec_params.n_parallel}", ""), unsafe_allow_html=True)
+                _pc2[1].markdown(metric("Series cells",
+                    f"{_elec_params.n_series}", ""), unsafe_allow_html=True)
+                _pc2[2].markdown(metric("Cell rating",
+                    f"{_elec_params.nominal_cell_current_a:.1f}", "A"), unsafe_allow_html=True)
+                _pc2[3].markdown(metric("Fuse power ceiling",
+                    f"{_elec_params.max_power_from_fuse_kw:.1f}", "kW"), unsafe_allow_html=True)
+
+            _elec_src = st.radio(
+                "Speed profile to check",
+                ["Use the lap sim result above (if run)",
+                 "Use Speed vs Time data from the uploaded Excel"],
+                horizontal=True,
+                key="elec_src_radio",
+                help="The lap sim gives a track-specific profile. "
+                     "The Excel SpeedVsTime sheet is the electrics lead's measured/modelled run.")
+
+            _elec_result = None
+
+            if _elec_src.startswith("Use the lap sim"):
+                if st.session_state.get("_run_lap"):
+                    try:
+                        _lap_v_check = st.session_state.get("_last_lap_v")
+                        _lap_s_check = st.session_state.get("_last_lap_s")
+                        if _lap_v_check is not None and _lap_s_check is not None:
+                            _elec_result = elec_check_mod.check_lap_electrical(
+                                _lap_v_check, _lap_s_check,
+                                _elec_params,
+                                drivetrain_eff=float(_elec_driveff),
+                                vehicle_mass_kg=float(_elec_mass),
+                                drag_cda=float(_elec_cda),
+                                crr=float(_elec_crr),
+                            )
+                        else:
+                            st.info("Run the lap sim first (\u25b6 Run lap-time sim above), "
+                                    "then re-open this file uploader to run the electrical check.")
+                    except Exception as _ee:
+                        st.warning(f"Could not extract lap profile: {_ee}")
+                else:
+                    st.info("Run the lap sim first (\u25b6 Run lap-time sim above).")
+            else:
+                try:
+                    _t_arr, _v_arr = elec_check_mod.load_speed_vs_time_from_bytes(_elec_bytes)
+                    if len(_t_arr) >= 2:
+                        _elec_result = elec_check_mod.check_lap_from_speed_csv(
+                            _v_arr, _t_arr, _elec_params,
+                            drivetrain_eff=float(_elec_driveff),
+                            vehicle_mass_kg=float(_elec_mass),
+                            drag_cda=float(_elec_cda),
+                            crr=float(_elec_crr),
+                        )
+                        st.caption(
+                            f"SpeedVsTime: {len(_t_arr)} pts, "
+                            f"{_t_arr[-1]:.1f} s total, "
+                            f"{min(_v_arr):.0f}\u2013{max(_v_arr):.0f} mph.")
+                    else:
+                        st.warning("SpeedVsTime sheet appears empty.")
+                except Exception as _ee2:
+                    st.warning(f"Could not read SpeedVsTime: {_ee2}")
+
+            if _elec_result is not None:
+                if _elec_result.ok:
+                    st.success(_elec_result.summary)
+                else:
+                    st.error(_elec_result.summary)
+
+                _cc = st.columns(3)
+                _fuse_cls = "bad" if _elec_result.fuse_blown else "good"
+                _cc[0].markdown(
+                    metric("Peak pack current", f"{_elec_result.peak_current_a:.1f}", "A",
+                           _fuse_cls), unsafe_allow_html=True)
+                _cc[0].markdown(
+                    f'<span class="tag {_fuse_cls}">'
+                    f'{"\U0001f6a8 FUSE LIMIT EXCEEDED" if _elec_result.fuse_blown else "\u2705 Fuse OK"} '
+                    f'(limit {_elec_result.fuse_max_a:.0f} A)</span>',
+                    unsafe_allow_html=True)
+
+                _cell_cls = "bad" if _elec_result.cell_overcurrent else "good"
+                _cc[1].markdown(
+                    metric("Peak cell current", f"{_elec_result.peak_cell_current_a:.1f}", "A",
+                           _cell_cls), unsafe_allow_html=True)
+                _cc[1].markdown(
+                    f'<span class="tag {_cell_cls}">'
+                    f'{"\u26a0\ufe0f CELL OVERCURRENT" if _elec_result.cell_overcurrent else "\u2705 Cell OK"} '
+                    f'(limit {_elec_result.cell_current_limit_a:.1f} A/cell)</span>',
+                    unsafe_allow_html=True)
+
+                _nrg_cls = "bad" if _elec_result.energy_empty else "good"
+                _cc[2].markdown(
+                    metric("Lap energy draw", f"{_elec_result.energy_used_kwh:.3f}", "kWh",
+                           _nrg_cls), unsafe_allow_html=True)
+                _cc[2].markdown(
+                    f'<span class="tag {_nrg_cls}">'
+                    f'{"\U0001f6a8 PACK RUNS DRY" if _elec_result.energy_empty else "\u2705 Energy OK"} '
+                    f'(usable {_elec_result.usable_energy_kwh:.3f} kWh)</span>',
+                    unsafe_allow_html=True)
+
+                st.write("")
+                _ceil_kmh = _elec_result.max_safe_speed_ms * 3.6
+                _ceil_mph = _ceil_kmh / 1.60934
+                st.markdown(
+                    f'<p class="hint" style="border-left:3px solid '
+                    f'{"#e74c3c" if _elec_result.fuse_blown else "#37e0d0"};'
+                    f'padding-left:10px;">'
+                    f'\u26a1 <b>Fuse-limited speed ceiling:</b> '
+                    f'{_ceil_kmh:.1f} km/h ({_ceil_mph:.1f} mph) continuous. '
+                    f'Above this the {_elec_result.fuse_max_a:.0f} A fuse '
+                    f'({_elec_result.max_safe_power_kw:.1f} kW at '
+                    f'{_elec_params.pack_voltage_v:.0f} V) is the hard constraint — '
+                    f'not the tyres, not the motor.</p>',
+                    unsafe_allow_html=True)
+
+                with st.expander("\U0001f4cb Detailed electrical analysis", expanded=False):
+                    st.markdown(f"**Fuse:** {_elec_result.fuse_message}")
+                    st.markdown(f"**Cells:** {_elec_result.cell_message}")
+                    st.markdown(f"**Energy:** {_elec_result.energy_message}")
+                    if _elec_result.warnings:
+                        for _w in _elec_result.warnings:
+                            st.caption(f"\u26a0\ufe0f {_w}")
+                    st.markdown(
+                        f"Average pack current (traction): "
+                        f"**{_elec_result.avg_current_a:.1f} A**")
+
+                if len(_elec_result.current_profile_a) > 2:
+                    import plotly.graph_objects as _go_ec
+                    _fig_ec = _go_ec.Figure()
+                    _x_ec   = list(range(len(_elec_result.current_profile_a)))
+                    _fig_ec.add_trace(_go_ec.Scatter(
+                        x=_x_ec, y=list(_elec_result.current_profile_a),
+                        name="Pack current (A)",
+                        line=dict(color="#3b7cff", width=2),
+                        fill="tozeroy", fillcolor="rgba(59,124,255,0.10)"))
+                    _fig_ec.add_hline(
+                        y=float(_elec_result.fuse_max_a),
+                        line=dict(color="#e74c3c", dash="dash", width=2),
+                        annotation_text=f"Fuse {_elec_result.fuse_max_a:.0f} A",
+                        annotation_position="top right")
+                    _fig_ec.add_trace(_go_ec.Scatter(
+                        x=_x_ec, y=list(_elec_result.power_profile_kw),
+                        name="Electrical power (kW)", yaxis="y2",
+                        line=dict(color="#37e0d0", width=1.5, dash="dot")))
+                    _fig_ec.update_layout(
+                        title="Pack current & electrical power demand along the lap",
+                        xaxis_title="sample (distance proxy)",
+                        yaxis=dict(title="current (A)", color="#3b7cff"),
+                        yaxis2=dict(title="power (kW)", overlaying="y",
+                                    side="right", color="#37e0d0"),
+                        height=320,
+                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#cdd6df", size=11),
+                        margin=dict(l=0, r=0, t=36, b=0),
+                        legend=dict(bgcolor="rgba(0,0,0,0)"))
+                    st.plotly_chart(_fig_ec, width='stretch', key="elec_current_chart")
+
+                if st.button("Log electrical check to handover", key="log_elec_check"):
+                    log_decision_now(
+                        "electrics", "Electrical feasibility check",
+                        f"'PASS' if _elec_result.ok else 'FAIL': "
+                        f"peak {_elec_result.peak_current_a:.1f} A / "
+                        f"{_elec_result.fuse_max_a:.0f} A fuse, "
+                        f"{_elec_result.energy_used_kwh:.3f} kWh / "
+                        f"{_elec_result.usable_energy_kwh:.3f} kWh usable. "
+                        f"Ceiling {_elec_result.max_safe_speed_ms * 3.6:.1f} km/h.")
+                    st.success("Logged to handover record.")
+
+        except Exception as _elec_err:
+            st.error(f"Could not run the electrical check: {_elec_err}")
+    else:
+        st.markdown(
+            '<p class="hint" style="border-left:2px solid #3b7cff; padding-left:10px;">'
+            '\U0001f4c2 Upload the electrics lead\'s Excel workbook above to activate this check. '
+            'Until then the lap-time number is the <i>mechanical</i> limit only — '
+            'the electrical system may not be able to sustain it.</p>',
+            unsafe_allow_html=True)
+
+
+    # ================================================================== #
+    #  🔄 EXCEL ROUND-TRIP  — Lap Sim → Excel → Recalc → Results Back   #
+    # ================================================================== #
+    st.markdown("---")
+    st.markdown("#### 🔄 Excel Round-Trip: Send Lap Data → Recalculate → Get Results Back")
+    st.markdown(
+        '<p class="hint">'
+        'This takes the lap sim speed profile, writes it directly into the electrics lead\'s '
+        'Excel workbook as the new <code>SpeedVsTime</code> data, triggers a full '
+        'recalculation of every formula in the sheet (Battery Pack Calcs, the RPM grid, '
+        'the Current Draw section — everything), then reads every result back into KinematiK. '
+        'The updated workbook is also available to download, so the electrics lead always '
+        'has a copy with the actual sim data in it, not a manually estimated speed trace.'
+        '</p>',
+        unsafe_allow_html=True)
+
+    _rt_file = st.file_uploader(
+        "Upload FSAE_EV_Power_Draw.xlsx for round-trip recalculation",
+        type=["xlsx"],
+        key="roundtrip_xlsx",
+        help="The same workbook the electrics lead uses. "
+             "KinematiK will overwrite SpeedVsTime with the lap sim data "
+             "and return the fully recalculated file.")
+
+    if _rt_file is not None:
+        _rt_bytes = _rt_file.read()
+
+        _rt_source = st.radio(
+            "Speed profile source",
+            ["Lap sim result (run the sim above first)",
+             "Custom: paste avg speed + lap time (quick estimate)"],
+            key="rt_source_radio",
+            horizontal=True)
+
+        if _rt_source.startswith("Custom"):
+            _rt_c1, _rt_c2 = st.columns(2)
+            _rt_avg_ms = _rt_c1.number_input(
+                "Average lap speed (m/s)", 0.0, 50.0, 15.0, 0.5, key="rt_avg_ms")
+            _rt_laptime = _rt_c2.number_input(
+                "Lap time (s)", 10.0, 300.0, 75.0, 1.0, key="rt_laptime")
+            # Synthesise a simple trapezoidal speed profile: ramp up, cruise, ramp down
+            import numpy as _np_rt
+            _rt_t_synth = _np_rt.linspace(0, _rt_laptime, 200)
+            _ramp = min(5.0, _rt_laptime * 0.15)
+            _v_synth = _np_rt.ones(200) * _rt_avg_ms
+            for _i, _t in enumerate(_rt_t_synth):
+                if _t < _ramp:
+                    _v_synth[_i] = _rt_avg_ms * (_t / _ramp)
+                elif _t > _rt_laptime - _ramp:
+                    _v_synth[_i] = _rt_avg_ms * ((_rt_laptime - _t) / _ramp)
+            _rt_v_ms_in   = _v_synth
+            _rt_t_in      = _rt_t_synth
+            _rt_laptime_in = float(_rt_laptime)
+            _rt_topspd_in  = float(_np_rt.max(_v_synth))
+            _rt_avgspd_in  = float(_rt_avg_ms)
+        else:
+            _rt_v_ms_in   = st.session_state.get("_last_lap_v")
+            _rt_t_raw     = st.session_state.get("_last_lap_s")   # distance, not time yet
+            _rt_laptime_in = 0.0
+            _rt_topspd_in  = 0.0
+            _rt_avgspd_in  = 0.0
+            if _rt_v_ms_in is not None and _rt_t_raw is not None:
+                import numpy as _np_rt
+                _v_arr_rt = _np_rt.array(_rt_v_ms_in, dtype=float)
+                _s_arr_rt = _np_rt.array(_rt_t_raw,   dtype=float)
+                _rt_t_in  = roundtrip_mod.lap_result_to_time_axis(_v_arr_rt, _s_arr_rt)
+                _rt_laptime_in = float(_rt_t_in[-1]) if len(_rt_t_in) else 0.0
+                _rt_topspd_in  = float(_np_rt.max(_v_arr_rt))
+                _rt_avgspd_in  = float(_np_rt.mean(_v_arr_rt))
+            else:
+                st.info("▶ Run the lap sim above first, then come back here to send its "
+                        "speed profile to Excel.")
+                _rt_v_ms_in = None
+
+        if _rt_v_ms_in is not None:
+            _rt_btn_col, _rt_info_col = st.columns([1, 3])
+            _go_rt = _rt_btn_col.button(
+                "🔄 Send to Excel & Recalculate", width="stretch", key="rt_go_btn")
+            _rt_info_col.markdown(
+                f'<p class="hint" style="margin-top:8px">'
+                f'{len(_rt_v_ms_in)} speed points, '
+                f't = {_rt_laptime_in:.1f} s, '
+                f'v_max = {_rt_topspd_in * 3.6:.1f} km/h</p>',
+                unsafe_allow_html=True)
+
+            if _go_rt:
+                with st.spinner("Writing lap data to Excel and recalculating all formulas…"):
+                    import numpy as _np_rt2
+                    _rt_result = roundtrip_mod.lap_to_excel_roundtrip(
+                        speed_ms   = _np_rt2.array(_rt_v_ms_in, dtype=float),
+                        time_s     = _np_rt2.array(_rt_t_in,    dtype=float),
+                        excel_bytes= _rt_bytes,
+                        lap_time_s = _rt_laptime_in,
+                        top_speed_ms  = _rt_topspd_in,
+                        avg_speed_ms  = _rt_avgspd_in,
+                    )
+                st.session_state["_rt_result"] = _rt_result
+
+        # Display round-trip results
+        _rt_res = st.session_state.get("_rt_result")
+        if _rt_res is not None:
+            if not _rt_res.ok:
+                st.error(f"Round-trip failed: {_rt_res.error}")
+            else:
+                for _w in _rt_res.warnings:
+                    st.warning(f"⚠ {_w}")
+
+                st.markdown("###### 📊 Recalculated Excel Results")
+
+                # ── Pack Summary ──────────────────────────────────────────────
+                with st.expander("🔋 Battery Pack Calcs (recalculated)", expanded=True):
+                    _pk = _rt_res.pack
+                    _pkcols = st.columns(4)
+                    _pkcols[0].markdown(metric("Pack voltage",
+                        f"{_pk.get('pack_voltage_v', 0):.0f}", "V"), unsafe_allow_html=True)
+                    _pkcols[1].markdown(metric("Fuse max",
+                        f"{_pk.get('fuse_max_a', 0):.0f}", "A"), unsafe_allow_html=True)
+                    _pkcols[2].markdown(metric("Pack capacity",
+                        f"{_pk.get('pack_capacity_ah', 0):.1f}", "Ah"), unsafe_allow_html=True)
+                    _pkcols[3].markdown(metric("Pack energy",
+                        f"{(_pk.get('pack_energy_wh', 0) or 0):.3f}", "kWh"),
+                        unsafe_allow_html=True)
+                    _pkcols2 = st.columns(4)
+                    _pkcols2[0].markdown(metric("Cell current",
+                        f"{_pk.get('cell_current_a', 0):.2f}", "A"), unsafe_allow_html=True)
+                    _pkcols2[1].markdown(metric("Power draw",
+                        f"{_pk.get('power_draw_kw', 0):.2f}", "kW"), unsafe_allow_html=True)
+                    _pkcols2[2].markdown(metric("Joule heating",
+                        f"{_pk.get('joule_heating_kwh', 0):.3f}", "kWh"), unsafe_allow_html=True)
+                    _pkcols2[3].markdown(metric("Pack cells",
+                        f"{int(_pk.get('pack_cell_count', 0) or 0)}", ""),
+                        unsafe_allow_html=True)
+
+                # ── Lap-level electrical results ──────────────────────────────
+                st.markdown("###### ⚡ Electrical Results from This Lap Profile")
+                _rc = st.columns(4)
+                _fuse_limit = _rt_res.pack.get("fuse_max_a") or 50.0
+                _peak_cls   = "bad" if _rt_res.peak_current_a > _fuse_limit else "good"
+                _rc[0].markdown(metric("Peak current",
+                    f"{_rt_res.peak_current_a:.1f}", "A", _peak_cls), unsafe_allow_html=True)
+                _rc[1].markdown(metric("Avg current",
+                    f"{_rt_res.avg_current_a:.1f}", "A"), unsafe_allow_html=True)
+                _rc[2].markdown(metric("Peak power",
+                    f"{_rt_res.peak_power_kw:.1f}", "kW"), unsafe_allow_html=True)
+                _rc[3].markdown(metric("Total energy",
+                    f"{_rt_res.total_energy_kwh:.3f}", "kWh"), unsafe_allow_html=True)
+                _rc2 = st.columns(3)
+                _rc2[0].markdown(metric("Max speed (Excel MAX)",
+                    f"{_rt_res.max_speed_mph:.1f}", "mph"), unsafe_allow_html=True)
+                _rc2[1].markdown(metric("Max RPM (gear 1)",
+                    f"{float(_rt_res.rpm_gear1.max()):.0f}" if len(_rt_res.rpm_gear1) else "—",
+                    "rpm"), unsafe_allow_html=True)
+                _fuse_headroom = _fuse_limit - _rt_res.peak_current_a
+                _rc2[2].markdown(metric("Fuse headroom",
+                    f"{_fuse_headroom:.1f}", "A",
+                    "good" if _fuse_headroom > 0 else "bad"), unsafe_allow_html=True)
+
+                # ── Current + RPM charts ──────────────────────────────────────
+                if len(_rt_res.current_draw_a) > 2 and len(_rt_res.rpm_gear1) > 2:
+                    import plotly.graph_objects as _go_rt2
+                    _t_axis = list(_rt_res.time_s)
+
+                    _fig_rt = _go_rt2.Figure()
+                    _fig_rt.add_trace(_go_rt2.Scatter(
+                        x=_t_axis, y=list(_rt_res.current_draw_a),
+                        name="Pack current (A)", yaxis="y1",
+                        line=dict(color="#3b7cff", width=2),
+                        fill="tozeroy", fillcolor="rgba(59,124,255,0.08)"))
+                    _fig_rt.add_hline(
+                        y=float(_fuse_limit),
+                        line=dict(color="#e74c3c", dash="dash", width=1.5),
+                        annotation_text=f"Fuse {_fuse_limit:.0f} A",
+                        annotation_position="top right")
+                    _fig_rt.add_trace(_go_rt2.Scatter(
+                        x=_t_axis, y=list(_rt_res.rpm_gear1),
+                        name="Wheel RPM (gear 1)", yaxis="y2",
+                        line=dict(color="#f0a500", width=1.5, dash="dot")))
+                    _fig_rt.update_layout(
+                        title="Excel-recalculated: pack current & wheel RPM vs lap time",
+                        xaxis_title="time (s)",
+                        yaxis=dict(title="current (A)", color="#3b7cff"),
+                        yaxis2=dict(title="RPM", overlaying="y",
+                                    side="right", color="#f0a500"),
+                        height=320,
+                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#cdd6df", size=11),
+                        margin=dict(l=0, r=0, t=36, b=0),
+                        legend=dict(bgcolor="rgba(0,0,0,0)"))
+                    st.plotly_chart(_fig_rt, width="stretch", key="rt_main_chart")
+
+                # ── Speed overlay chart ───────────────────────────────────────
+                if len(_rt_res.speed_ms) > 2:
+                    import plotly.graph_objects as _go_rt3
+                    _fig_spd = _go_rt3.Figure()
+                    _fig_spd.add_trace(_go_rt3.Scatter(
+                        x=list(_rt_res.time_s),
+                        y=[v * 3.6 for v in _rt_res.speed_ms],
+                        name="Speed (km/h)", line=dict(color="#37e0d0", width=2)))
+                    _fig_spd.add_trace(_go_rt3.Scatter(
+                        x=list(_rt_res.time_s),
+                        y=list(_rt_res.power_kw),
+                        name="Electrical power (kW)", yaxis="y2",
+                        line=dict(color="#a855f7", width=1.5, dash="dot")))
+                    _fig_spd.update_layout(
+                        title="Speed & electrical power over lap time",
+                        xaxis_title="time (s)",
+                        yaxis=dict(title="speed (km/h)", color="#37e0d0"),
+                        yaxis2=dict(title="power (kW)", overlaying="y",
+                                    side="right", color="#a855f7"),
+                        height=260,
+                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#cdd6df", size=11),
+                        margin=dict(l=0, r=0, t=36, b=0),
+                        legend=dict(bgcolor="rgba(0,0,0,0)"))
+                    st.plotly_chart(_fig_spd, width="stretch", key="rt_spd_chart")
+
+                # ── Download button ───────────────────────────────────────────
+                st.markdown("---")
+                _dl_col1, _dl_col2 = st.columns([1, 2])
+                _dl_col1.download_button(
+                    label="⬇ Download recalculated Excel",
+                    data=_rt_res.excel_bytes,
+                    file_name="FSAE_EV_PowerDraw_LapSim.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key="rt_download_btn",
+                    help="Open in Excel to see the full formula recalculation. "
+                         "SpeedVsTime is now the lap sim profile; "
+                         "all downstream formulas have been recalculated.")
+                _dl_col2.markdown(
+                    '<p class="hint" style="margin-top:10px;">'
+                    'The downloaded file contains the lap sim speed trace in SpeedVsTime, '
+                    'all Battery Pack Calcs formulas recalculated, the full RPM grid '
+                    'updated, and a KinematiK Lap Sim Summary section added to '
+                    'Battery Pack Calcs rows 18+. Open it in Excel and every formula '
+                    'will re-evaluate live against the new data.</p>',
+                    unsafe_allow_html=True)
+
+                # Log it
+                if st.button("Log round-trip to handover", key="rt_log_btn"):
+                    log_decision_now(
+                        "electrics", "Excel round-trip",
+                        f"Lap sim data ({len(_rt_res.speed_ms)} pts, "
+                        f"{_rt_laptime_in:.1f} s) written to FSAE_EV_Power_Draw.xlsx. "
+                        f"Peak current: {_rt_res.peak_current_a:.1f} A / "
+                        f"{_fuse_limit:.0f} A fuse. "
+                        f"Total energy: {_rt_res.total_energy_kwh:.3f} kWh. "
+                        f"Max RPM (gear 1): {float(_rt_res.rpm_gear1.max()):.0f}.")
+                    st.success("Logged to handover record.")
+    else:
+        st.markdown(
+            '<p class="hint" style="border-left:2px solid #a855f7; padding-left:10px;">'
+            '📂 Upload the electrics lead\'s Excel workbook above to enable the round-trip. '
+            'You\'ll get the fully recalculated file back with the lap sim speed trace '
+            'baked in — no manual copy-paste required.</p>',
+            unsafe_allow_html=True)
 
 # ----------------------------- TAB 12 -------------------------------------- #
 with tab12:
