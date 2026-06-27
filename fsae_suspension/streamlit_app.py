@@ -582,18 +582,21 @@ def save_store(store):
 def log_decision_now(team, title, rationale, author="auto"):
     """Append a decision to the persistent store from any tab.
 
+    Uses the shared session-state store (get_store()) so the decision is
+    immediately visible to the rest of the app — in particular the Weight &
+    Handover tab — without requiring a full page reload.
+
     Fail-safe: a logging convenience must NEVER take down the app. If the backend
     write fails (e.g. a remote Supabase/Postgres backend is misconfigured or
     unreachable), swallow the error, record it quietly, and return False so the
     caller can fall back. Returns True on success.
     """
     try:
-        st_ = project_mod.ProjectStore(PROJECT_PATH)
+        st_ = get_store()
         st_.add_decision(project_mod.Decision(
             team=team, title=title, rationale=rationale, author=author,
             tags="auto-captured"))
-        st_.save()
-        return True
+        return save_store(st_)
     except Exception as e:
         try:
             st.session_state.setdefault("_log_errors", [])
