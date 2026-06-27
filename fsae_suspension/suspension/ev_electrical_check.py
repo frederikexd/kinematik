@@ -340,7 +340,8 @@ def check_lap_electrical(
     # ── Step 7: limits ────────────────────────────────────────────────────────
     peak_I     = float(np.max(I_pack))
     peak_speed = float(v[int(np.argmax(I_pack))])
-    avg_I      = float(np.mean(I_pack[I_pack > 0.1]))
+    _traction_mask = I_pack > 0.1
+    avg_I      = float(np.mean(I_pack[_traction_mask])) if _traction_mask.any() else 0.0
 
     peak_I_cell  = float(np.max(I_cell))
     fuse_limit   = params.fuse_max_a
@@ -515,12 +516,12 @@ def load_speed_vs_time_from_bytes(file_bytes: bytes) -> tuple[np.ndarray, np.nda
     Load the SpeedVsTime sheet from in-memory Excel bytes.
 
     Returns (time_s, speed_mph) arrays.
+
+    Raises
+    ------
+    ValueError / ImportError  propagated from load_speed_vs_time on bad data.
     """
-    import io, tempfile, os
-    try:
-        import openpyxl
-    except ImportError:
-        return np.array([0.0, 1.0]), np.array([0.0, 0.0])
+    import tempfile, os
     tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
     tmp.write(file_bytes)
     tmp.close()
@@ -538,24 +539,41 @@ def load_speed_vs_time(path: str) -> tuple[np.ndarray, np.ndarray]:
     Returns
     -------
     (time_s, speed_mph)  — both as float arrays, header row stripped.
+
+    Raises
+    ------
+    ValueError  if the sheet is missing or contains fewer than 2 numeric rows.
     """
     try:
         import openpyxl
     except ImportError:
-        return np.array([0.0, 1.0]), np.array([0.0, 0.0])
+        raise ImportError("openpyxl is required to read Excel files. Install it with: pip install openpyxl")
     try:
         wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    except Exception:
-        return np.array([0.0, 1.0]), np.array([0.0, 0.0])
+    except Exception as exc:
+        raise ValueError(f"Could not open Excel workbook: {exc}") from exc
 
     if "SpeedVsTime" not in wb.sheetnames:
-        return np.array([0.0, 1.0]), np.array([0.0, 0.0])
+        available = ", ".join(wb.sheetnames) or "(none)"
+        raise ValueError(
+            f"No 'SpeedVsTime' sheet found in the workbook. "
+            f"Available sheets: {available}. "
+            f"Please add a sheet named exactly 'SpeedVsTime' with columns: time_s, speed_mph."
+        )
 
     times, speeds = [], []
     for row in wb["SpeedVsTime"].iter_rows(values_only=True):
+        if len(row) < 2:
+            continue
         t, v = row[0], row[1]
         if isinstance(t, (int, float)) and isinstance(v, (int, float)):
             times.append(float(t))
             speeds.append(float(v))
+
+    if len(times) < 2:
+        raise ValueError(
+            f"SpeedVsTime sheet has only {len(times)} numeric data row(s) — need at least 2. "
+            f"Make sure column A = time (s) and column B = speed (mph), with a header row on row 1."
+        )
 
     return np.array(times), np.array(speeds)
