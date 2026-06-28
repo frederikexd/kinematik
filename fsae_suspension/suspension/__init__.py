@@ -88,6 +88,20 @@ from .ev_powertrain import (
 )
 from . import ev_powertrain
 
+# Powertrain integration layer — gear-ratio solver, sprocket/chain sizing, SPAL
+# fan operating point, and the live spec sheet. The engine that lets the EV
+# Powertrain tab publish to the ledger and retire the team's Excel artifacts.
+from . import pt_integration
+from .pt_integration import (
+    GearObjective, GearRatioSolver, GearSweepResult, GearCandidate,
+    SprocketDesign, sprocket_design, driveline_peak_torque_nm,
+    FanCurve, CoolingOperatingPoint, cooling_operating_point,
+    system_k_from_point, powertrain_spec_sheet, estimate_motor_heat_w,
+    SPAL_VA14_AP11_C34A, dfmea_rows_from_analysis,
+    MotorEnvelope, motor_envelope, MythCheck, power_rpm_myth_checks,
+    FSAE_TRACTIVE_POWER_CAP_KW,
+)
+
 # Transient per-cell battery-pack thermal model (which cell cooks first, and
 # where to put the fan). Wraps the EV lap sim at the energy seam: turns a virtual
 # lap into a pack current-vs-time history, then time-steps a lumped-capacitance
