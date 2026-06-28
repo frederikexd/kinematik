@@ -5273,7 +5273,7 @@ with tab_ev:
             '<p class="hint" style="margin:0 0 6px;">The powertrain numbers you '
             'commit here flow straight into the car-wide <b>INTEGRATION</b> ledger, '
             'so every other sub-team reads the same truth — no more re-keying '
-            'a spreadsheet, screenshotting a spec sheet, or finding out at '
+            'the spreadsheet, screenshotting a spec sheet, or finding out at '
             'assembly that the motor torque overloads the driveline. Each panel '
             'below replaces something the team still does by hand.</p>',
             unsafe_allow_html=True)
@@ -5294,7 +5294,7 @@ with tab_ev:
         ])
 
         # ---------- shared motor inputs (used across the panels) ----------- #
-        # Pull stored Excel params if the team already imported the workbook,
+        # Pull stored Excel params if the team already imported their workbook,
         # so this is pre-filled from their own data when available.
         try:
             _ev_store = getattr(get_store(), "ev_excel_params", {}) or {}
@@ -5381,7 +5381,7 @@ with tab_ev:
                                 overlaying="y", side="right"),
                     height=380, paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#cdd6df", size=11),
-                    margin=dict(l=0, r=0, t=40, b=0),
+                    margin=dict(l=0, r=0, t=80, b=0),
                     legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h",
                                 yanchor="bottom", y=1.02))
                 st.plotly_chart(fm, width='stretch', key="pti_envelope")
@@ -5424,12 +5424,12 @@ with tab_ev:
                 st.warning(f"Motor envelope unavailable: {_mee}")
 
         # ================================================================= #
-        #  PANEL 1 — Gear-ratio solver + sprocket  (spreadsheet)      #
+        #  PANEL 1 — Gear-ratio solver + sprocket                             #
         # ================================================================= #
         with _pt_tabs[1]:
             st.markdown(
-                '<p class="hint" style="margin:0 0 6px;">This is <b>the \u2019s gear-ratio '
-                'spreadsheet</b>, made live. KinematiK sweeps final-drive ratios against '
+                '<p class="hint" style="margin:0 0 6px;">The <b>gear-ratio '
+                'solver</b> sweeps final-drive ratios against '
                 'your real motor curve and the actual car mass, then picks the optimum '
                 'for what you\u2019re chasing. Pick the objective, set the motor, and read '
                 'the winner \u2014 then size the output-shaft sprocket and get the tooth '
@@ -5540,7 +5540,7 @@ with tab_ev:
         with _pt_tabs[2]:
             st.markdown(
                 '<p class="hint" style="margin:0 0 6px;">The <b>cooling test rig</b> '
-                '(summer project) exists to pin down one number: how much the coolant '
+                'exists to pin down one number: how much the coolant '
                 'loop resists flow. KinematiK takes the rig\u2019s <b>SPAL VA14-AP11/C-34A</b> '
                 'fan curve, crosses it with that loop restriction to find the real '
                 'operating airflow, and checks it against the heat your motor and pack '
@@ -13303,13 +13303,13 @@ with tab_dfmea:
     _help = st.columns([3, 1, 1])
     _help[0].markdown(
         '<p class="hint" style="margin:2px 0 6px;">Pre-loaded with the User-Guide '
-        'failure modes <b>plus your summer projects</b> (cooling test rig, gear '
+        'failure modes <b>plus active projects</b> (cooling test rig, gear '
         'ratio / sprocket, motor &amp; diff mount, accumulator cooling). Edit '
         'any cell; add rows with the <b>＋</b> at the bottom of the table. One '
         'failure mode per row — keep leak, crack and blockage separate.</p>',
         unsafe_allow_html=True)
     if _help[1].button("↻ Re-seed starter log", key="dfmea_reseed",
-                       help="Rebuild the example log from the User Guide + summer "
+                       help="Rebuild the example log from the User Guide + active "
                             "projects. Your manual edits are replaced."):
         st.session_state.dfmea_rows = dfmea_mod.seed_rows()
         st.rerun()
