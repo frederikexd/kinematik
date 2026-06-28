@@ -5406,16 +5406,111 @@ with tab_ev:
                         if "exceeds the FSAE" in _nt:
                             st.error(_nt)
 
-                # --- myth-buster table tied to these numbers -------------- #
-                st.markdown("##### Myth check — caught before it becomes a decision")
+                # --- myth buster: user types their assumption, math checks it --- #
+                st.markdown("##### Myth buster")
+                st.markdown(
+                    '<p class="hint" style="margin:0 0 8px;">Type any assumption '
+                    'about this motor \u2014 RPM limits, power caps, torque at a speed, '
+                    'top speed, continuous power \u2014 and the math will tell you '
+                    'whether it holds against these numbers. No AI.</p>',
+                    unsafe_allow_html=True)
+
                 _fd_ctx = float(st.session_state.get("_pti_final_drive", 3.5))
-                _checks = pti_mod.power_rpm_myth_checks(
-                    _env, gear_final_drive=_fd_ctx, wheel_r_m=_def_wheel_r)
-                _vmark = {"myth": "❌ Myth", "depends": "⚠️ Depends", "true": "✅ True"}
-                for _c in _checks:
+
+                _mb_col1, _mb_col2 = st.columns([5, 1])
+                _mb_input = _mb_col1.text_input(
+                    "Your assumption",
+                    placeholder='e.g. "80 kW cap means we limit RPM to 7000" '
+                                'or "torque at 5000 rpm is 150 Nm"',
+                    label_visibility="collapsed",
+                    key="pti_myth_input")
+                _mb_check = _mb_col2.button(
+                    "Check it \u2192", key="pti_myth_btn", use_container_width=True)
+
+                _vcfg_mb = {
+                    "myth":    dict(label="\u274c Myth",    bg="#1f1214", border="#5a2422",
+                                   accent="#ff5a52", badge_bg="#3d1a18"),
+                    "depends": dict(label="\u26a0\ufe0f Depends", bg="#171510", border="#5a4317",
+                                   accent="#ffb02e", badge_bg="#3a2c10"),
+                    "true":    dict(label="\u2705 True",    bg="#0f1c1a", border="#1f4d49",
+                                   accent="#37e0d0", badge_bg="#0e2a27"),
+                    "unknown": dict(label="\u2753 Unknown",  bg="#131318", border="#303050",
+                                   accent="#9b8cff", badge_bg="#1a1a2e"),
+                }
+
+                def _render_verdict_card(claim_text, result):
+                    _v = _vcfg_mb.get(result.verdict, _vcfg_mb["unknown"])
+                    import re as _re2
+                    _hl = _re2.sub(
+                        r'(\b\d[\d\s,.]*(?:kW|rpm|km/h|N\u00b7m|%|:\d)?)',
+                        lambda m: (
+                            '<span style="font-family:\'JetBrains Mono\',monospace;'
+                            'font-weight:600;color:' + _v["accent"] + ';">'
+                            + m.group() + '</span>'),
+                        result.explanation)
                     st.markdown(
-                        f"**{_vmark.get(_c.verdict, _c.verdict)}** — _{_c.claim}_  \n"
-                        f"{_c.correction}")
+                        f'<div style="background:{_v["bg"]};border:1px solid {_v["border"]};'
+                        f'border-left:3px solid {_v["accent"]};border-radius:12px;'
+                        f'padding:.85rem 1.1rem;margin:.4rem 0;">'
+                        f'<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.45rem;">'
+                        f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.68rem;'
+                        f'font-weight:700;letter-spacing:.1em;text-transform:uppercase;'
+                        f'background:{_v["badge_bg"]};color:{_v["accent"]};'
+                        f'border:1px solid {_v["border"]};border-radius:6px;'
+                        f'padding:.15rem .5rem;white-space:nowrap;flex:0 0 auto;">{_v["label"]}</span>'
+                        f'<span style="font-size:.85rem;font-style:italic;color:#8d99a6;">'
+                        f'\u201c{claim_text}\u201d</span></div>'
+                        f'<p style="margin:0;font-size:.83rem;line-height:1.65;color:#c4cdd6;">{_hl}</p>'
+                        f'</div>',
+                        unsafe_allow_html=True)
+
+                # show result for the current input
+                _checked_input = st.session_state.get("pti_myth_checked_input", "")
+                _checked_result = st.session_state.get("pti_myth_checked_result", None)
+
+                if _mb_check and _mb_input.strip():
+                    _result = pti_mod.check_assumption(
+                        _mb_input, _env,
+                        gear_final_drive=_fd_ctx,
+                        wheel_r_m=_def_wheel_r)
+                    st.session_state["pti_myth_checked_input"] = _mb_input
+                    st.session_state["pti_myth_checked_result"] = _result
+                    _checked_input = _mb_input
+                    _checked_result = _result
+                elif _mb_check and not _mb_input.strip():
+                    st.caption("Type an assumption first.")
+
+                if _checked_result is not None:
+                    _render_verdict_card(_checked_input, _checked_result)
+
+                # reference myths (collapsed)
+                with st.expander("Reference — known myths for these numbers", expanded=False):
+                    _ref_checks = pti_mod.power_rpm_myth_checks(
+                        _env, gear_final_drive=_fd_ctx, wheel_r_m=_def_wheel_r)
+                    for _rc in _ref_checks:
+                        _rv = _vcfg_mb.get(_rc.verdict, _vcfg_mb["unknown"])
+                        import re as _re3
+                        _rhl = _re3.sub(
+                            r'(\b\d[\d\s,.]*(?:kW|rpm|km/h|N\u00b7m|%|:\d)?)',
+                            lambda m: (
+                                '<span style="font-family:\'JetBrains Mono\',monospace;'
+                                'font-weight:600;color:' + _rv["accent"] + ';">'
+                                + m.group() + '</span>'),
+                            _rc.correction)
+                        st.markdown(
+                            f'<div style="background:{_rv["bg"]};border:1px solid {_rv["border"]};'
+                            f'border-left:3px solid {_rv["accent"]};border-radius:10px;'
+                            f'padding:.75rem 1rem;margin:.35rem 0;">'
+                            f'<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;">'
+                            f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.65rem;'
+                            f'font-weight:700;letter-spacing:.1em;text-transform:uppercase;'
+                            f'background:{_rv["badge_bg"]};color:{_rv["accent"]};'
+                            f'border:1px solid {_rv["border"]};border-radius:5px;'
+                            f'padding:.12rem .45rem;white-space:nowrap;flex:0 0 auto;">{_rv["label"]}</span>'
+                            f'<span style="font-size:.84rem;font-weight:600;color:#e7ecf1;">{_rc.claim}</span></div>'
+                            f'<p style="margin:0;font-size:.8rem;line-height:1.6;color:#a8b4bf;">{_rhl}</p>'
+                            f'</div>',
+                            unsafe_allow_html=True)
                 st.caption("Share this tab in the channel instead of re-explaining: it "
                            "answers the power-vs-rpm and peak-vs-continuous questions "
                            "with the actual motor numbers, so the thread doesn\u2019t "
