@@ -849,3 +849,308 @@ def dfmea_rows_from_analysis(*, sprocket: Optional[SprocketDesign] = None,
                "Auto-seeded from publish panel; link mount FEA + chassis confirmation"}))
 
     return rows
+
+
+# --------------------------------------------------------------------------- #
+#  Free-text assumption checker  (no AI — pure math against the live envelope) #
+# --------------------------------------------------------------------------- #
+
+import re as _re
+
+@dataclass
+class AssumptionResult:
+    """Result of checking a user-typed assumption against the live motor envelope."""
+    verdict: str           # "myth" | "true" | "depends" | "unknown"
+    matched_rule: str      # which rule fired (for debug / transparency)
+    explanation: str       # plain-language verdict with live numbers
+    user_values: dict      # numbers we extracted from their text
+
+
+def _extract_numbers(text: str) -> dict:
+    """Pull every number+unit pair from free text into a dict keyed by unit."""
+    result: dict = {}
+    patterns = [
+        ("rpm",  r'(\d[\d,\.]*)\s*(?:rpm|RPM|rev(?:olutions)?(?:\s*per\s*min(?:ute)?)?)'),
+        ("kw",   r'(\d[\d,\.]*)\s*(?:kW|KW|kilowatt)'),
+        ("nm",   r'(\d[\d,\.]*)\s*(?:N[\u00b7\u22c5·*]?m|Nm|newton[\s-]?met(?:er|re))'),
+        ("kmh",  r'(\d[\d,\.]*)\s*(?:km/h|kmh|kph|km\s*per\s*h)'),
+        ("pct",  r'(\d[\d,\.]*)\s*%'),
+        ("ratio",r'(\d[\d,\.]*)[\s]*:[\s]*1'),
+    ]
+    for key, pat in patterns:
+        m = _re.search(pat, text, _re.IGNORECASE)
+        if m:
+            try:
+                result[key] = float(m.group(1).replace(",", ""))
+            except ValueError:
+                pass
+    return result
+
+
+def _contains(text: str, *phrases) -> bool:
+    t = text.lower()
+    return any(p.lower() in t for p in phrases)
+
+
+def check_assumption(text: str, env: MotorEnvelope, *,
+                     gear_final_drive: Optional[float] = None,
+                     wheel_r_m: float = 0.228) -> AssumptionResult:
+    """
+    Check a free-text assumption against the live MotorEnvelope using
+    deterministic rule matching only — no AI, no LLM.
+
+    Rules are evaluated in priority order; the first match wins.
+    Returns AssumptionResult with verdict, matched rule name, and explanation.
+    """
+    t = text.strip()
+    nums = _extract_numbers(t)
+
+    # ------------------------------------------------------------------ #
+    # RULE 1 — "power cap limits / sets RPM"
+    # e.g. "80 kW cap means we can't go above 7000 rpm"
+    #      "limiting power to 60 kW limits redline"
+    # ------------------------------------------------------------------ #
+    if (_contains(t, "cap", "limit", "restrict", "max", "ceiling", "cannot exceed",
+                  "can't exceed", "can not exceed")
+            and _contains(t, "rpm", "redline", "rev", "speed")
+            and _contains(t, "kw", "kilowatt", "power", "watt")):
+
+        user_rpm = nums.get("rpm")
+        claimed_rpm_text = (f"~{user_rpm:.0f} rpm" if user_rpm else "some RPM limit")
+
+        if user_rpm and abs(user_rpm - env.redline_rpm) < 200:
+            # They got the rpm right but for the wrong reason
+            verdict, rule = "depends", "power_caps_rpm__coincidence"
+            expl = (
+                f"The {env.redline_rpm:.0f} rpm figure is correct but the reasoning "
+                f"is wrong. The motor reaches {env.peak_power_kw:.0f} kW at the base "
+                f"speed ({env.base_speed_rpm:.0f} rpm) and holds it to redline — power "
+                f"doesn\u2019t set redline. Redline comes from the motor\u2019s mechanical "
+                f"limit and your gearing choice, independently of the power cap."
+            )
+        else:
+            verdict, rule = "myth", "power_caps_rpm"
+            expl = (
+                f"Power and RPM are independent limits. This motor reaches "
+                f"{env.peak_power_kw:.0f} kW at {env.base_speed_rpm:.0f} rpm (base speed) "
+                f"and holds that power all the way to {env.redline_rpm:.0f} rpm. The "
+                f"controller caps torque — not rpm — at the point where T\u00d7\u03c9 = "
+                f"{env.peak_power_kw:.0f} kW. Redline is {env.redline_rpm:.0f} rpm "
+                f"regardless of the power cap; {claimed_rpm_text} is not implied."
+            )
+        return AssumptionResult(verdict=verdict, matched_rule=rule,
+                                explanation=expl, user_values=nums)
+
+    # ------------------------------------------------------------------ #
+    # RULE 2 — "continuous power is higher than / equal to / exceeds peak"
+    # e.g. "continuous can be 90 kW if peak is 80"
+    # ------------------------------------------------------------------ #
+    if _contains(t, "continuous", "sustained", "steady") and _contains(t, "kw", "power"):
+        user_kw = nums.get("kw")
+        if user_kw and user_kw > env.peak_power_kw + 0.5:
+            verdict, rule = "myth", "continuous_exceeds_peak"
+            expl = (
+                f"Continuous power can never exceed peak. You stated "
+                f"{user_kw:.0f} kW continuous but this motor\u2019s peak is "
+                f"{env.peak_power_kw:.0f} kW (itself capped at {env.rule_cap_kw:.0f} kW "
+                f"by the FSAE rule). Continuous ({env.continuous_power_kw:.0f} kW here) "
+                f"is what the cooling system can sustain — always \u2264 peak."
+            )
+        elif user_kw and abs(user_kw - env.continuous_power_kw) < env.peak_power_kw * 0.05:
+            verdict, rule = "true", "continuous_correct"
+            expl = (
+                f"Correct. {user_kw:.0f} kW matches the continuous rating for this "
+                f"envelope ({env.continuous_power_kw:.0f} kW), which is {env.continuous_power_kw/env.peak_power_kw*100:.0f}% "
+                f"of the {env.peak_power_kw:.0f} kW peak — the thermal limit your "
+                f"cooling can sustain indefinitely."
+            )
+        else:
+            verdict, rule = "depends", "continuous_unverified"
+            kw_str = f"{user_kw:.0f} kW " if user_kw else ""
+            expl = (
+                f"Continuous {kw_str}power is set by cooling capacity, not a rule. "
+                f"With these motor params the continuous limit is "
+                f"{env.continuous_power_kw:.0f} kW "
+                f"({env.continuous_power_kw/env.peak_power_kw*100:.0f}% of peak). "
+                f"It is always \u2264 peak ({env.peak_power_kw:.0f} kW) and \u2264 the "
+                f"{env.rule_cap_kw:.0f} kW FSAE cap."
+            )
+        return AssumptionResult(verdict=verdict, matched_rule=rule,
+                                explanation=expl, user_values=nums)
+
+    # ------------------------------------------------------------------ #
+    # RULE 3 — claim about base speed / corner speed / where peak power hits
+    # e.g. "peak power is at redline" / "base speed is 4000 rpm"
+    # ------------------------------------------------------------------ #
+    if _contains(t, "base speed", "corner speed", "peak power", "max power",
+                 "full power") and _contains(t, "rpm", "redline"):
+        user_rpm = nums.get("rpm")
+
+        if _contains(t, "redline", "max rpm", "maximum rpm"):
+            verdict, rule = "myth", "peak_power_at_redline"
+            expl = (
+                f"Peak power is reached at the base speed ({env.base_speed_rpm:.0f} rpm), "
+                f"not at redline ({env.redline_rpm:.0f} rpm). Above base speed the motor "
+                f"holds {env.peak_power_kw:.0f} kW while torque falls as 1/\u03c9 — "
+                f"power at redline is only {env.power_at_redline_kw():.0f} kW."
+            )
+        elif user_rpm:
+            err_pct = abs(user_rpm - env.base_speed_rpm) / env.base_speed_rpm * 100
+            if err_pct < 5:
+                verdict, rule = "true", "base_speed_correct"
+                expl = (
+                    f"Correct. Base speed for this envelope is "
+                    f"{env.base_speed_rpm:.0f} rpm — that\u2019s where {env.peak_power_kw:.0f} kW "
+                    f"is first reached (T \u00d7 \u03c9 = P). Above that, torque falls; power stays flat."
+                )
+            else:
+                verdict, rule = "myth", "base_speed_wrong"
+                expl = (
+                    f"The base speed is {env.base_speed_rpm:.0f} rpm, not "
+                    f"{user_rpm:.0f} rpm. That\u2019s where peak power "
+                    f"({env.peak_power_kw:.0f} kW) is first reached. Your figure is "
+                    f"{err_pct:.0f}% off."
+                )
+        else:
+            verdict, rule = "depends", "base_speed_no_number"
+            expl = (
+                f"Base speed (corner speed) for this motor is {env.base_speed_rpm:.0f} rpm. "
+                f"Below that, torque is flat at {env.peak_torque_nm:.0f} N\u00b7m and power "
+                f"rises linearly. Above it, torque falls and power stays at "
+                f"{env.peak_power_kw:.0f} kW to redline."
+            )
+        return AssumptionResult(verdict=verdict, matched_rule=rule,
+                                explanation=expl, user_values=nums)
+
+    # ------------------------------------------------------------------ #
+    # RULE 4 — claim about top speed / what redline gives you
+    # e.g. "6000 rpm gives us 120 km/h" / "redline means 95 km/h top speed"
+    # ------------------------------------------------------------------ #
+    if (_contains(t, "top speed", "max speed", "maximum speed", "km/h", "kmh", "kph",
+                  "fast", "velocity") and gear_final_drive):
+        v_redline = (env.redline_rpm * 2 * math.pi / 60.0) * wheel_r_m / gear_final_drive * 3.6
+        user_kmh = nums.get("kmh")
+        user_rpm = nums.get("rpm")
+
+        if user_kmh:
+            err = abs(user_kmh - v_redline)
+            if err < 5:
+                verdict, rule = "true", "top_speed_correct"
+                expl = (
+                    f"Correct. With {env.redline_rpm:.0f} rpm redline and "
+                    f"{gear_final_drive:.2f}:1 final drive ({wheel_r_m*1000:.0f} mm wheel) "
+                    f"top speed is {v_redline:.0f} km/h \u2014 your {user_kmh:.0f} km/h matches."
+                )
+            else:
+                verdict, rule = "myth", "top_speed_wrong"
+                expl = (
+                    f"With {env.redline_rpm:.0f} rpm and {gear_final_drive:.2f}:1 final "
+                    f"drive the top speed is {v_redline:.0f} km/h, not {user_kmh:.0f} km/h "
+                    f"(off by {err:.0f} km/h). Check your wheel radius "
+                    f"({wheel_r_m*1000:.0f} mm here) and final drive."
+                )
+        else:
+            verdict, rule = "depends", "top_speed_no_number"
+            expl = (
+                f"With {env.redline_rpm:.0f} rpm redline and {gear_final_drive:.2f}:1 "
+                f"final drive ({wheel_r_m*1000:.0f} mm wheel) top speed is "
+                f"{v_redline:.0f} km/h. Give me your expected figure and I\u2019ll verify it."
+            )
+        return AssumptionResult(verdict=verdict, matched_rule=rule,
+                                explanation=expl, user_values=nums)
+
+    # ------------------------------------------------------------------ #
+    # RULE 5 — claim about torque at a specific RPM
+    # e.g. "torque at 5000 rpm is 100 Nm"
+    # ------------------------------------------------------------------ #
+    if _contains(t, "torque") and nums.get("rpm") and nums.get("nm"):
+        user_rpm = nums["rpm"]
+        user_nm  = nums["nm"]
+        # interpolate actual torque from the envelope curve
+        actual_nm = float(np.interp(user_rpm, env.rpm, env.torque_nm))
+        err_pct = abs(user_nm - actual_nm) / max(actual_nm, 1.0) * 100
+
+        if err_pct < 8:
+            verdict, rule = "true", "torque_at_rpm_correct"
+            expl = (
+                f"Correct. At {user_rpm:.0f} rpm this envelope gives "
+                f"{actual_nm:.0f} N\u00b7m \u2014 your {user_nm:.0f} N\u00b7m is within "
+                f"{err_pct:.1f}%."
+            )
+        else:
+            region = "below base speed (flat torque region)" if user_rpm < env.base_speed_rpm \
+                     else "above base speed (power-limited region)"
+            verdict, rule = "myth", "torque_at_rpm_wrong"
+            expl = (
+                f"At {user_rpm:.0f} rpm ({region}) this motor produces "
+                f"{actual_nm:.0f} N\u00b7m, not {user_nm:.0f} N\u00b7m "
+                f"({err_pct:.0f}% error). "
+                + (f"Below {env.base_speed_rpm:.0f} rpm torque is flat at "
+                   f"{env.peak_torque_nm:.0f} N\u00b7m. "
+                   if user_rpm < env.base_speed_rpm
+                   else f"Above {env.base_speed_rpm:.0f} rpm torque falls as "
+                        f"P/\u03c9 = {env.peak_power_kw:.0f}\u00d71000/({user_rpm:.0f}\u00d72\u03c0/60).")
+            )
+        return AssumptionResult(verdict=verdict, matched_rule=rule,
+                                explanation=expl, user_values=nums)
+
+    # ------------------------------------------------------------------ #
+    # RULE 6 — FSAE cap claims ("80 kW rule", "we're compliant")
+    # ------------------------------------------------------------------ #
+    if _contains(t, "80 kw", "80kw", "fsae cap", "fsae limit", "rule", "compliant",
+                 "comply", "legal", "within the cap", "under the cap"):
+        if env.over_cap:
+            verdict, rule = "myth", "cap_compliance__over"
+            expl = (
+                f"This envelope\u2019s declared peak ({env.peak_power_kw:.0f} kW) exceeds "
+                f"the FSAE {env.rule_cap_kw:.0f} kW tractive cap — the car is not "
+                f"compliant without an electronic limiter. The envelope is shown "
+                f"clamped to {env.rule_cap_kw:.0f} kW."
+            )
+        else:
+            verdict, rule = "true", "cap_compliance__ok"
+            expl = (
+                f"Correct. Peak power ({env.peak_power_kw:.0f} kW) is within the FSAE "
+                f"{env.rule_cap_kw:.0f} kW tractive cap. Continuous "
+                f"({env.continuous_power_kw:.0f} kW) is also under the cap."
+            )
+        return AssumptionResult(verdict=verdict, matched_rule=rule,
+                                explanation=expl, user_values=nums)
+
+    # ------------------------------------------------------------------ #
+    # RULE 7 — "more power = more speed" / "higher peak means faster"
+    # ------------------------------------------------------------------ #
+    if (_contains(t, "more power", "higher power", "increase power", "bigger motor",
+                  "more kw", "higher kw")
+            and _contains(t, "faster", "more speed", "higher speed", "quicker",
+                          "better acceleration", "higher top speed")):
+        verdict, rule = "depends", "more_power_more_speed"
+        expl = (
+            f"It depends on which constraint is binding. With {env.peak_power_kw:.0f} kW "
+            f"and {env.peak_torque_nm:.0f} N\u00b7m, if you\u2019re traction-limited "
+            f"(low speed) more torque helps; if you\u2019re power-limited (high speed) "
+            f"more kW helps. Above {env.redline_rpm:.0f} rpm you need a different gear "
+            f"ratio, not more power. The FSAE {env.rule_cap_kw:.0f} kW cap also means "
+            f"power above that is ruled out entirely."
+        )
+        return AssumptionResult(verdict=verdict, matched_rule=rule,
+                                explanation=expl, user_values=nums)
+
+    # ------------------------------------------------------------------ #
+    # FALLBACK — unrecognised claim
+    # ------------------------------------------------------------------ #
+    return AssumptionResult(
+        verdict="unknown",
+        matched_rule="no_rule_matched",
+        explanation=(
+            "I couldn\u2019t match that to a checkable motor-physics rule. "
+            "Try phrasing it around RPM, kW, N\u00b7m, km/h, base speed, "
+            "continuous power, or FSAE cap compliance \u2014 "
+            f"using this motor\u2019s numbers: "
+            f"{env.peak_torque_nm:.0f} N\u00b7m peak torque, "
+            f"{env.peak_power_kw:.0f} kW peak power, "
+            f"{env.redline_rpm:.0f} rpm redline, "
+            f"{env.base_speed_rpm:.0f} rpm base speed."
+        ),
+        user_values=nums,
+    )
