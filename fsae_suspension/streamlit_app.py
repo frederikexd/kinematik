@@ -65,6 +65,8 @@ from suspension import bracket_fos as bracket_mod
 from suspension import tractive_system as tract_mod
 from suspension import pcm_cooling as pcm_mod
 from suspension import dfmea as dfmea_mod
+from suspension import risk_propagation as riskprop_mod
+from suspension import process_library as proclib_mod
 
 # --------------------------------------------------------------------------- #
 #  Cached compute layer.
@@ -1590,6 +1592,306 @@ def _subsystem_cad_import(subsys_key, *, key_prefix, title=None):
                     st.rerun()
 
 
+# ========================================================================== #
+#  Manufacturing Process Library  (shared Excel/CSV knowledge base)
+# ========================================================================== #
+#  Lives inside every subsystem tab except Cost/BOM. The team's shared workbook
+#  (process_library.xlsx, next to project.json) is read once on first use and
+#  cached; typing a component/process filters it down to relevant articles —
+#  each with a one-line summary so you click the right one — scoped to this
+#  subsystem's pool plus cross-team "general" rows. Anyone can add a row, which
+#  is written straight back to disk so the next teammate sees it.
+
+def _proclib_load(force=False):
+    """Load (and cache in session) the shared process library DataFrame."""
+    if force or "proclib_df" not in st.session_state:
+        try:
+            st.session_state.proclib_df = proclib_mod.load_library()
+        except Exception as _e:
+            st.session_state.proclib_df = proclib_mod.seed_dataframe()
+            st.session_state.proclib_load_err = str(_e)
+    return st.session_state.proclib_df
+
+
+def _proclib_chip_words(df, subsystem_key, n=6):
+    """A handful of real example terms drawn from THIS pool, for one-tap chips.
+
+    New members often don't know the vocabulary to type. We seed the chips with
+    actual terms from their own subsystem's articles so the very first tap lands
+    on something relevant. We prefer the most *distinctive* word in each
+    component name (skipping generic leads like "Brake" / "Any") so the chips
+    span the pool instead of all starting with the same word.
+    """
+    try:
+        pool = proclib_mod.filter_library(df, "", subsystem=subsystem_key,
+                                           include_general=False)
+    except Exception:
+        pool = df.iloc[0:0]
+
+    _generic = {"any", "brake", "the", "a", "an"}
+    words = []
+    seen = set()
+    for _i in range(len(pool)):
+        comp = str(pool.iloc[_i]["Component"]).strip()
+        head = comp.split("/")[0].strip()
+        if not head:
+            continue
+        toks = [t for t in head.split() if t]
+        # Pick the first non-generic token; fall back to the leading token.
+        pick = next((t for t in toks if t.lower() not in _generic), toks[0])
+        key = pick.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        words.append(pick)
+        if len(words) >= n:
+            break
+    return words
+
+
+def _render_proclib_questionnaire(df, subsystem_key, *, key_prefix):
+    """A tap-only 'What are you developing?' flow for a subsystem.
+
+    Two quick questions, both answered by tapping (no typing, no vocabulary
+    needed): (1) which component are you making? — options are the real parts in
+    this subsystem's pool; (2) optionally, which process/approach? — options are
+    the processes the library actually has for that part. We then show the
+    matching article cards. This is the gentlest possible on-ramp for a brand-new
+    member who doesn't yet know what to search for.
+    """
+    _label = proclib_mod.SUBSYSTEM_LABELS.get(subsystem_key, subsystem_key)
+    _comps = proclib_mod.components_for(df, subsystem_key, include_general=False)
+    if not _comps:
+        return
+
+    with st.expander("🧭  Not sure where to start? Tell us what you're making",
+                     expanded=False):
+        st.markdown(
+            '<p class="hint" style="margin:0 0 6px;">Answer one or two quick '
+            "questions \u2014 just tap \u2014 and we'll pull up exactly the "
+            f"resources for what you're building in <b>{_label}</b>. No need to "
+            "know the right words to search for.</p>",
+            unsafe_allow_html=True)
+
+        _ckey = f"{key_prefix}_quiz_comp"
+        _comp = st.radio(
+            "**1. What are you developing or manufacturing?**",
+            ["\u2014 pick one \u2014"] + _comps,
+            key=_ckey, index=0)
+
+        if _comp and _comp != "\u2014 pick one \u2014":
+            _procs = proclib_mod.processes_for(df, subsystem_key, _comp,
+                                               include_general=False)
+            _proc_choice = None
+            if len(_procs) > 1:
+                _proc_choice = st.radio(
+                    "**2. Which approach are you leaning toward?** "
+                    "(optional \u2014 pick *Show me everything* if unsure)",
+                    ["Show me everything"] + _procs,
+                    key=f"{key_prefix}_quiz_proc", index=0)
+                if _proc_choice == "Show me everything":
+                    _proc_choice = None
+
+            _rows = proclib_mod.rows_for(df, subsystem_key, _comp, _proc_choice,
+                                         include_general=False)
+            st.markdown(
+                f'<p class="hint" style="margin:8px 0 4px;">Here\u2019s what the '
+                f"library has for <b>{_comp}</b>"
+                + (f" \u00b7 <i>{_proc_choice}</i>" if _proc_choice else "")
+                + f" \u2014 {len(_rows)} resource"
+                + ("s" if len(_rows) != 1 else "") + ":</p>",
+                unsafe_allow_html=True)
+            _proclib_render_cards(_rows, show_subsystem=False)
+
+            st.markdown(
+                '<p class="hint" style="margin:6px 0 0;">Don\u2019t see your '
+                "exact part? Use the search box below, or add the resource you "
+                "wish existed at the bottom of this panel.</p>",
+                unsafe_allow_html=True)
+
+
+def _proclib_render_cards(res, *, show_subsystem):
+    """Render article rows as cards: bold component·process, 2-sentence summary,
+    tagged link. Shared by the questionnaire, browse, and search paths so every
+    link is presented identically (and always with its summary)."""
+    if len(res) == 0:
+        return
+    for _i in range(len(res)):
+        _row = res.iloc[_i]
+        _comp = str(_row["Component"]).strip() or "\u2014"
+        _proc = str(_row["Process"]).strip()
+        _summ = str(_row["Summary"]).strip()
+        _link = str(_row["Link"]).strip()
+        _rsub = str(_row["Subsystem"]).strip().lower()
+        _rsub_lbl = proclib_mod.SUBSYSTEM_LABELS.get(_rsub, _rsub)
+        _head = f"**{_comp}**" + (f" \u00b7 {_proc}" if _proc else "")
+        _tagline = (f'<span class="hint">[{_rsub_lbl}]</span> '
+                    if (show_subsystem or _rsub == "general") else "")
+        st.markdown(_tagline + _head, unsafe_allow_html=True)
+        # Every link carries its 1-2 sentence summary, right above it.
+        if _summ:
+            st.markdown(
+                f'<p class="hint" style="margin:2px 0 2px;">{_summ}</p>',
+                unsafe_allow_html=True)
+        else:
+            st.markdown('<p class="hint" style="margin:2px 0 2px; '
+                        'font-style:italic;">(No summary yet \u2014 add one so '
+                        "teammates know what this covers.)</p>",
+                        unsafe_allow_html=True)
+        if _link:
+            st.markdown(f"[Open resource \u2197]({_link})")
+        st.markdown(
+            '<hr style="margin:6px 0; border:none; '
+            'border-top:1px solid rgba(128,128,128,.18);">',
+            unsafe_allow_html=True)
+
+
+def render_process_library(subsystem_key, *, key_prefix, title=None):
+    """Render the 'how is this made?' search box + results inside a tab.
+
+    Designed to be frictionless for a brand-new member who does NOT yet know
+    manufacturing vocabulary: the search box is always visible (no hunting in an
+    expander), the subsystem's articles are shown immediately even before you
+    type anything, and one-tap example chips run a real search for you. Results
+    are scoped to ``subsystem_key`` plus shared "general" rows; ``key_prefix``
+    keeps widget keys unique so the feature can live in many tabs at once.
+    """
+    _label = proclib_mod.SUBSYSTEM_LABELS.get(subsystem_key, subsystem_key)
+    df = _proclib_load()
+
+    _qkey = f"{key_prefix}_proclib_q"
+    # A pending chip tap writes the query here, before the text_input is built.
+    _pending = st.session_state.pop(f"{_qkey}__pending", None)
+    if _pending is not None:
+        st.session_state[_qkey] = _pending
+
+    # --- Always-visible header + search box (no outer expander to click). --- #
+    st.markdown(
+        '<p class="hint" style="margin:6px 0 4px;">🛠️ <b>New to this part? '
+        'Not sure how it\u2019s made?</b> Type what you\u2019re working on below '
+        "\u2014 a component (<i>upright, wishbone, busbar, rotor</i>) or a "
+        "process (<i>carbon layup, TIG, bonding</i>) \u2014 or just tap one of "
+        "the examples. Real resources appear instantly, each with a one-line "
+        "summary so you click the right one.</p>",
+        unsafe_allow_html=True)
+
+    # Tap-only questionnaire on-ramp (sits above the search box).
+    _render_proclib_questionnaire(df, subsystem_key, key_prefix=key_prefix)
+
+    _qcol, _btncol = st.columns([7, 1])
+    _q = _qcol.text_input(
+        "Search the process library",
+        key=_qkey,
+        placeholder="e.g. upright, carbon layup, busbar welding, brake rotor…",
+        label_visibility="collapsed")
+    if _btncol.button("Clear", key=f"{key_prefix}_proclib_clear",
+                      help="Clear the search and browse the whole pool again."):
+        st.session_state[f"{_qkey}__pending"] = ""
+        st.rerun()
+
+    # --- One-tap example chips, pulled from THIS subsystem's real articles. -- #
+    _chips = _proclib_chip_words(df, subsystem_key, n=6)
+    if _chips:
+        st.markdown('<p class="hint" style="margin:6px 0 2px;">Try:</p>',
+                    unsafe_allow_html=True)
+        _ccols = st.columns(len(_chips))
+        for _ci, _word in enumerate(_chips):
+            if _ccols[_ci].button(_word, key=f"{key_prefix}_chip_{_ci}",
+                                  use_container_width=True):
+                st.session_state[f"{_qkey}__pending"] = _word
+                st.rerun()
+
+    _all_pool = st.checkbox(
+        "Search every subsystem (not just this one)",
+        key=f"{key_prefix}_proclib_all", value=False)
+
+    _sub = None if _all_pool else subsystem_key
+    try:
+        _res = proclib_mod.filter_library(df, _q, subsystem=_sub,
+                                          include_general=True)
+    except Exception:
+        _res = df.iloc[0:0]
+
+    _total_pool = len(proclib_mod.filter_library(df, "", subsystem=_sub,
+                                                 include_general=True))
+    if not _q.strip():
+        # Empty box: browse the whole pool right away — no dead end for someone
+        # who doesn't know what to type yet.
+        st.caption(f"Showing all {_total_pool} articles for {_label} "
+                   "(plus shared basics). Type or tap above to narrow it down.")
+    else:
+        st.caption(f"{len(_res)} of {_total_pool} articles match "
+                   f"\u201c{_q.strip()}\u201d.")
+
+    if len(_res) == 0 and _q.strip():
+        st.info("No matches yet. Try a shorter or more general word (e.g. just "
+                "\u201cweld\u201d or \u201ccarbon\u201d), tap a *Try* chip, or "
+                "tick *Search every subsystem*. Still nothing? Add the resource "
+                "you wish existed at the bottom \u2014 the next new member will "
+                "thank you.")
+    else:
+        # Card per article: bold component + process, 2-sentence summary, link.
+        _proclib_render_cards(_res, show_subsystem=_all_pool)
+
+    # ---- Add to the shared library (anyone on the team) ---------------- #
+    with st.expander("➕  Add an article to the shared library", expanded=False):
+            st.markdown(
+                '<p class="hint" style="margin:0 0 6px;">Found a good resource, '
+                "or know how a part is really made here? Add it — it saves to the "
+                "team's shared workbook so everyone sees it on their next "
+                "load.</p>", unsafe_allow_html=True)
+            _c1, _c2 = st.columns(2)
+            _f_comp = _c1.text_input("Component", key=f"{key_prefix}_pl_comp",
+                                     placeholder="e.g. Upright / Knuckle")
+            _f_proc = _c2.text_input("Process", key=f"{key_prefix}_pl_proc",
+                                     placeholder="e.g. 5-axis CNC")
+            _sub_keys = list(proclib_mod.SUBSYSTEMS)
+            _def_idx = _sub_keys.index(subsystem_key) if subsystem_key in _sub_keys else len(_sub_keys) - 1
+            _f_sub = st.selectbox(
+                "Subsystem pool", _sub_keys, index=_def_idx,
+                format_func=lambda k: proclib_mod.SUBSYSTEM_LABELS.get(k, k),
+                key=f"{key_prefix}_pl_sub")
+            _f_summ = st.text_input(
+                "Summary (1\u20132 sentences: what it covers + why it helps)",
+                key=f"{key_prefix}_pl_summ",
+                placeholder="What does the article cover, and why is it useful "
+                            "to someone making this part?")
+            _f_link = st.text_input("Link (URL)", key=f"{key_prefix}_pl_link",
+                                    placeholder="https://…")
+            _c3, _c4 = st.columns(2)
+            _f_tags = _c3.text_input("Extra search tags (optional)",
+                                     key=f"{key_prefix}_pl_tags",
+                                     placeholder="comma, separated, keywords")
+            _f_who = _c4.text_input("Your name (optional)",
+                                    key=f"{key_prefix}_pl_who",
+                                    placeholder="so the team knows who to ask")
+            if st.button("Add to library", key=f"{key_prefix}_pl_add"):
+                if not _f_comp.strip() and not _f_proc.strip():
+                    st.warning("Give at least a component or a process.")
+                elif not _f_link.strip():
+                    st.warning("Add a link so the article is actually reachable.")
+                else:
+                    try:
+                        st.session_state.proclib_df = proclib_mod.append_row(
+                            _f_comp, _f_proc, _f_sub, _f_summ, _f_link,
+                            tags=_f_tags, added_by=_f_who)
+                        st.success("Added to the shared library. Reloading…")
+                        st.rerun()
+                    except Exception as _e:
+                        st.error(f"Couldn't save: {_e}")
+
+    # Download the whole workbook for offline reference / backup.
+    try:
+        _full = _proclib_load()
+        _csv = _full.to_csv(index=False)
+        st.download_button(
+            "⬇️  Download the full library (CSV)", _csv,
+            file_name="process_library.csv", mime="text/csv",
+            key=f"{key_prefix}_proclib_dl")
+    except Exception:
+        pass
+
+
 def _render_rotor_thermal(_bt, _mass, kin):
     """The Brakes ▸ Rotor thermal view. `_bt` is the imported brake_thermal
     module (already verified present by the caller), `_mass` the live car mass,
@@ -2382,6 +2684,10 @@ _U_TRAVEL = units_mod.label("mm")
 
 # ----------------------------- TAB 1 --------------------------------------- #
 with tab1:
+  try:
+    render_process_library("suspension", key_prefix="kin_pl")
+  except Exception:
+    pass
     # --- SUSPENSION HEADLINE CARDS ----------------------------------------- #
     # Relocated from the global header so each subteam's numbers live inside its
     # own tab. Computations (s, kin, camber_gain, _mr, _ad, _as, …) happen
@@ -2474,6 +2780,10 @@ with tab1:
 
 # ----------------------------- TAB 2 --------------------------------------- #
 with tab2:
+  try:
+    render_process_library("suspension", key_prefix="roll_pl")
+  except Exception:
+    pass
     rc_heights = []
     for st_ in sweep:
         kin._tmp = st_
@@ -2548,6 +2858,10 @@ with tab2:
 
 # ----------------------------- TAB 3 --------------------------------------- #
 with tab3:
+  try:
+    render_process_library("suspension", key_prefix="grip_pl")
+  except Exception:
+    pass
     max_g = veh.max_lateral_g()
     bal, uf, ur = veh.balance_index(min(1.2, max_g))
     verdict = ("NEUTRAL", "good") if abs(bal) < 0.03 else \
@@ -3867,6 +4181,10 @@ with tab_car:
 # a Navier–Stokes result — the panel method + Fluent deck are the correlation path.
 with tab_aero:
   try:
+    render_process_library("aero", key_prefix="aero_pl")
+  except Exception:
+    pass
+  try:
     _subsystem_cad_import("aerodynamics", key_prefix="aero")
     _RHO = 1.225  # kg/m³, sea-level ISA — same default as the aero coupling
     st.markdown(
@@ -4554,6 +4872,10 @@ with tab_aero:
 # tab puts that decision in front of the user on the live car and track.
 with tab_ev:
   try:
+    render_process_library("powertrain", key_prefix="ev_pl")
+  except Exception:
+    pass
+  try:
     _subsystem_cad_import("powertrain", key_prefix="ev")
     _subsystem_cad_import("cooling", key_prefix="ev_cooling")
     st.markdown(
@@ -4775,6 +5097,10 @@ with tab_ev:
 # hands the layout straight to KinematiK's per-cell thermal model and the ledger.
 with tab_accum:
   try:
+    render_process_library("electrics", key_prefix="accum_pl")
+  except Exception:
+    pass
+  try:
     _subsystem_cad_import("electrics", key_prefix="accum")
     st.markdown(
         '<p class="hint" style="margin:0 0 6px;">Build the <b>HV accumulator</b> from the '
@@ -4990,6 +5316,10 @@ with tab_accum:
 # live car: dynamic load transfer sets the ideal bias and the lock-all-four check;
 # the hydraulic chain sizes the parts and reports the pedal force a driver needs.
 with tab_brake:
+  try:
+    render_process_library("brakes", key_prefix="brake_pl")
+  except Exception:
+    pass
   try:
     _subsystem_cad_import("brakes", key_prefix="brake")
     try:
@@ -6776,6 +7106,10 @@ def _parse_path(s: str):
 
 # ----------------------------- TAB 5c (COMPLIANCE / FLEX) ------------------ #
 with tab5c:
+  try:
+    render_process_library("suspension", key_prefix="compliance_pl")
+  except Exception:
+    pass
   if _topo != "double_wishbone":
     st.info("The flex / compliance solver models axial deflection of the "
             "double-wishbone member set (upper & lower arms + tie rod). For "
@@ -7094,6 +7428,10 @@ with tab5c:
 
 # ----------------------------- TAB 6 --------------------------------------- #
 with tab6:
+  try:
+    render_process_library("chassis", key_prefix="teamfit_pl")
+  except Exception:
+    pass
     st.markdown('<p class="hint">Any Elbee subteam: load the shared chassis once as '
                 'the reference, then load your part (caliper, radiator, battery box, '
                 'wing mount, ECU tray — anything). You get the same collision / tight / '
@@ -7707,6 +8045,10 @@ with tab8:
 # extracting every bit of truth from your tire data and running the whole grip/
 # balance stack on it instead of a guess.
 with tab9:
+  try:
+    render_process_library("suspension", key_prefix="tire_pl")
+  except Exception:
+    pass
     st.markdown('<p class="hint">You can only afford <b>one set of tires</b>. The way '
                 'you beat a team that can test rubber all year is to make every '
                 'geometry and setup call against <b>your actual tire</b> before you '
@@ -8158,6 +8500,10 @@ with tab9:
 # SETUP OPTIMISER — spend the one tire set wisely. Rank the levers by grip
 # impact and search for the best setup, all on the live tire.
 with tab10:
+  try:
+    render_process_library("suspension", key_prefix="setup_pl")
+  except Exception:
+    pass
     st.markdown('<p class="hint">Which change actually buys grip? With one set of '
                 'tires you cannot afford to chase the wrong lever. This ranks every '
                 'setup knob by how much limit grip and balance it moves — on your live '
@@ -8274,6 +8620,10 @@ with tab10:
 #  TAB 11 — LAP TIME : turn the grip envelope into seconds
 # --------------------------------------------------------------------------- #
 with tab11:
+  try:
+    render_process_library("powertrain", key_prefix="laptime_pl")
+  except Exception:
+    pass
     st.markdown('<p class="hint">Grip is a means; <b>lap time is the score.</b> This '
                 'tab runs your <i>live</i> geometry, setup and tire around the FSAE '
                 'skidpad and a representative autocross, so every change you make '
@@ -8785,116 +9135,227 @@ with tab11:
 
 
     # ================================================================== #
-    #  🔄 EXCEL ROUND-TRIP  — Lap Sim → Excel → Recalc → Results Back   #
+    #  🔄 ELECTRICAL DATABASE + ROUND-TRIP                               #
+    #  Parameters are stored once in the project; no re-upload needed.   #
     # ================================================================== #
     st.markdown("---")
-    st.markdown("#### 🔄 Excel Round-Trip: Send Lap Data → Recalculate → Get Results Back")
+    st.markdown("#### 🔋 EV Electrical Database & Lap Round-Trip")
     st.markdown(
         '<p class="hint">'
-        'This takes the lap sim speed profile, writes it directly into the electrics lead\'s '
-        'Excel workbook as the new <code>SpeedVsTime</code> data, triggers a full '
-        'recalculation of every formula in the sheet (Battery Pack Calcs, the RPM grid, '
-        'the Current Draw section — everything), then reads every result back into KinematiK. '
-        'The updated workbook is also available to download, so the electrics lead always '
-        'has a copy with the actual sim data in it, not a manually estimated speed trace.'
+        'Battery pack and motor constants are read once from your '
+        '<code>FSAE_EV_Power_Draw.xlsx</code> and stored in the project — '
+        'they stay there across sessions, restarts, and team members. '
+        'The round-trip calculation uses the stored values instantly; '
+        'upload a new workbook only when the electrics lead updates the numbers.'
         '</p>',
         unsafe_allow_html=True)
 
-    _rt_file = st.file_uploader(
-        "Upload FSAE_EV_Power_Draw.xlsx for round-trip recalculation",
-        type=["xlsx"],
-        key="roundtrip_xlsx",
-        help="The same workbook the electrics lead uses. "
-             "KinematiK will overwrite SpeedVsTime with the lap sim data "
-             "and return the fully recalculated file.")
+    # ── Load / display / edit the stored EV params ─────────────────────
+    _store_rt = get_store()
+    _ev_db: dict = getattr(_store_rt, "ev_excel_params", {}) or {}
+    _pack_db: dict  = _ev_db.get("pack",  {})
+    _motor_db: dict = _ev_db.get("motor", {})
+    _gr_db: list    = _ev_db.get("gear_ratios", [])
 
-    if _rt_file is not None:
-        _rt_bytes = _rt_file.read()
+    _db_has_data = bool(_pack_db or _motor_db)
 
-        _rt_source = st.radio(
+    # ── Update-from-xlsx expander ───────────────────────────────────────
+    with st.expander(
+        "📂 Update from Excel workbook" if _db_has_data else "📂 Import Excel workbook (one-time setup)",
+        expanded=not _db_has_data,
+    ):
+        if _db_has_data:
+            st.markdown(
+                '<p class="hint" style="margin:0 0 8px 0">'
+                'The project already has electrical parameters stored. '
+                'Upload a new workbook only if the electrics lead has changed the numbers.</p>',
+                unsafe_allow_html=True)
+        _rt_up = st.file_uploader(
+            "FSAE_EV_Power_Draw.xlsx",
+            type=["xlsx"],
+            key="rt_db_uploader",
+            help="Upload once. KinematiK extracts all pack and motor constants and saves "
+                 "them to the project so you never have to re-upload.")
+        if _rt_up is not None:
+            _rt_raw = _rt_up.read()
+            _extracted = roundtrip_mod.extract_params_from_excel(_rt_raw)
+            if "_error" in _extracted:
+                st.error(f"Could not read workbook: {_extracted['_error']}")
+            else:
+                _store_rt.ev_excel_params = _extracted
+                # Cache the raw bytes too so Download still works this session
+                st.session_state["_rt_excel_bytes"] = _rt_raw
+                save_store(_store_rt)
+                _ev_db    = _extracted
+                _pack_db  = _ev_db.get("pack", {})
+                _motor_db = _ev_db.get("motor", {})
+                _gr_db    = _ev_db.get("gear_ratios", [])
+                _db_has_data = True
+                st.success(
+                    f"✅ Imported and saved — "
+                    f"pack voltage {_pack_db.get('pack_voltage_v', 0):.0f} V, "
+                    f"fuse {_pack_db.get('fuse_max_a', 0):.0f} A, "
+                    f"{len(_gr_db)} gear ratios. "
+                    f"These values are now stored in the project.")
+
+    # ── Manual param editor (always visible when data exists) ──────────
+    if _db_has_data:
+        with st.expander("✏️ Edit stored electrical parameters", expanded=False):
+            st.markdown(
+                '<p class="hint">Changes here update the project database immediately. '
+                'No Excel upload needed to tweak a single value.</p>',
+                unsafe_allow_html=True)
+            _ed_cols = st.columns(4)
+            _pack_db["pack_voltage_v"]   = _ed_cols[0].number_input(
+                "Pack voltage (V)", 100.0, 1000.0,
+                float(_pack_db.get("pack_voltage_v", 504.0) or 504.0), 1.0,
+                key="ev_db_pack_v")
+            _pack_db["fuse_max_a"]       = _ed_cols[1].number_input(
+                "Fuse max (A)", 10.0, 500.0,
+                float(_pack_db.get("fuse_max_a", 50.0) or 50.0), 1.0,
+                key="ev_db_fuse")
+            _pack_db["pack_capacity_ah"] = _ed_cols[2].number_input(
+                "Pack capacity (Ah)", 1.0, 100.0,
+                float(_pack_db.get("pack_capacity_ah", 15.0) or 15.0), 0.5,
+                key="ev_db_cap_ah")
+            _pack_db["pack_energy_wh"]   = _ed_cols[3].number_input(
+                "Pack energy (Wh)", 100.0, 20000.0,
+                float(_pack_db.get("pack_energy_wh", 7560.0) or 7560.0), 10.0,
+                key="ev_db_energy_wh")
+            _ed_cols2 = st.columns(4)
+            _motor_db["wheel_diam_in"]     = _ed_cols2[0].number_input(
+                "Wheel diameter (in)", 10.0, 30.0,
+                float(_motor_db.get("wheel_diam_in", 18.0) or 18.0), 0.5,
+                key="ev_db_whl")
+            _motor_db["motor_pf"]          = _ed_cols2[1].number_input(
+                "Motor power factor", 0.5, 1.0,
+                float(_motor_db.get("motor_pf", 0.95) or 0.95), 0.01,
+                key="ev_db_pf")
+            _motor_db["motor_efficiency"]  = _ed_cols2[2].number_input(
+                "Motor efficiency", 0.5, 1.0,
+                float(_motor_db.get("motor_efficiency", 0.9545) or 0.9545), 0.005,
+                key="ev_db_eff")
+            _motor_db["pack_voltage_ep_v"] = _ed_cols2[3].number_input(
+                "Pack voltage (ElecProp sheet, V)", 100.0, 1000.0,
+                float(_motor_db.get("pack_voltage_ep_v", 504.0) or 504.0), 1.0,
+                key="ev_db_pack_v_ep")
+            if st.button("💾 Save edited parameters", key="ev_db_save_edits"):
+                _store_rt.ev_excel_params["pack"]  = _pack_db
+                _store_rt.ev_excel_params["motor"] = _motor_db
+                save_store(_store_rt)
+                st.success("Saved to project.")
+
+    # ── Stored params summary card ──────────────────────────────────────
+    if _db_has_data:
+        st.markdown("###### 📋 Stored electrical parameters")
+        _sc = st.columns(5)
+        _sc[0].markdown(metric("Pack voltage",
+            f"{_pack_db.get('pack_voltage_v', 0):.0f}", "V"), unsafe_allow_html=True)
+        _sc[1].markdown(metric("Fuse max",
+            f"{_pack_db.get('fuse_max_a', 0):.0f}", "A"), unsafe_allow_html=True)
+        _sc[2].markdown(metric("Pack capacity",
+            f"{_pack_db.get('pack_capacity_ah', 0):.1f}", "Ah"), unsafe_allow_html=True)
+        _sc[3].markdown(metric("Pack energy",
+            f"{(_pack_db.get('pack_energy_wh', 0) or 0)/1000:.3f}", "kWh"),
+            unsafe_allow_html=True)
+        _sc[4].markdown(metric("Gear ratios",
+            f"{len(_gr_db)}", ""), unsafe_allow_html=True)
+
+    # ── Round-trip calculation ──────────────────────────────────────────
+    if _db_has_data:
+        st.markdown("---")
+        st.markdown("##### 🔄 Lap round-trip (using stored parameters)")
+
+        _rt_source2 = st.radio(
             "Speed profile source",
             ["Lap sim result (run the sim above first)",
              "Custom: paste avg speed + lap time (quick estimate)"],
             key="rt_source_radio",
             horizontal=True)
 
-        if _rt_source.startswith("Custom"):
+        if _rt_source2.startswith("Custom"):
             _rt_c1, _rt_c2 = st.columns(2)
-            _rt_avg_ms = _rt_c1.number_input(
-                "Average lap speed (m/s)", 0.0, 50.0, 15.0, 0.5, key="rt_avg_ms")
-            _rt_laptime = _rt_c2.number_input(
-                "Lap time (s)", 10.0, 300.0, 75.0, 1.0, key="rt_laptime")
-            # Synthesise a simple trapezoidal speed profile: ramp up, cruise, ramp down
-            import numpy as _np_rt
-            _rt_t_synth = _np_rt.linspace(0, _rt_laptime, 200)
-            _ramp = min(5.0, _rt_laptime * 0.15)
-            _v_synth = _np_rt.ones(200) * _rt_avg_ms
-            for _i, _t in enumerate(_rt_t_synth):
-                if _t < _ramp:
-                    _v_synth[_i] = _rt_avg_ms * (_t / _ramp)
-                elif _t > _rt_laptime - _ramp:
-                    _v_synth[_i] = _rt_avg_ms * ((_rt_laptime - _t) / _ramp)
-            _rt_v_ms_in   = _v_synth
-            _rt_t_in      = _rt_t_synth
-            _rt_laptime_in = float(_rt_laptime)
-            _rt_topspd_in  = float(_np_rt.max(_v_synth))
-            _rt_avgspd_in  = float(_rt_avg_ms)
+            _rt_avg_ms2 = _rt_c1.number_input(
+                "Average lap speed (m/s)", 0.0, 50.0, 15.0, 0.5, key="rt_avg_ms2")
+            _rt_laptime2 = _rt_c2.number_input(
+                "Lap time (s)", 10.0, 300.0, 75.0, 1.0, key="rt_laptime2")
+            import numpy as _np_rt2
+            _rt_t2      = _np_rt2.linspace(0, _rt_laptime2, 200)
+            _ramp2      = min(5.0, _rt_laptime2 * 0.15)
+            _v2         = _np_rt2.ones(200) * _rt_avg_ms2
+            for _i2, _t2 in enumerate(_rt_t2):
+                if _t2 < _ramp2:
+                    _v2[_i2] = _rt_avg_ms2 * (_t2 / _ramp2)
+                elif _t2 > _rt_laptime2 - _ramp2:
+                    _v2[_i2] = _rt_avg_ms2 * ((_rt_laptime2 - _t2) / _ramp2)
+            _rt_v_ms2, _rt_t_ms2 = _v2, _rt_t2
+            _rt_laptime_in2 = float(_rt_laptime2)
+            _rt_topspd_in2  = float(_np_rt2.max(_v2))
+            _rt_avgspd_in2  = float(_rt_avg_ms2)
         else:
-            _rt_v_ms_in   = st.session_state.get("_last_lap_v")
-            _rt_t_raw     = st.session_state.get("_last_lap_s")   # distance, not time yet
-            _rt_laptime_in = 0.0
-            _rt_topspd_in  = 0.0
-            _rt_avgspd_in  = 0.0
-            if _rt_v_ms_in is not None and _rt_t_raw is not None:
-                import numpy as _np_rt
-                _v_arr_rt = _np_rt.array(_rt_v_ms_in, dtype=float)
-                _s_arr_rt = _np_rt.array(_rt_t_raw,   dtype=float)
-                _rt_t_in  = roundtrip_mod.lap_result_to_time_axis(_v_arr_rt, _s_arr_rt)
-                _rt_laptime_in = float(_rt_t_in[-1]) if len(_rt_t_in) else 0.0
-                _rt_topspd_in  = float(_np_rt.max(_v_arr_rt))
-                _rt_avgspd_in  = float(_np_rt.mean(_v_arr_rt))
+            _rt_v_ms2   = st.session_state.get("_last_lap_v")
+            _rt_t_raw2  = st.session_state.get("_last_lap_s")
+            _rt_laptime_in2 = 0.0
+            _rt_topspd_in2  = 0.0
+            _rt_avgspd_in2  = 0.0
+            _rt_t_ms2 = None
+            if _rt_v_ms2 is not None and _rt_t_raw2 is not None:
+                import numpy as _np_rt2
+                _v_arr_rt2 = _np_rt2.array(_rt_v_ms2, dtype=float)
+                _s_arr_rt2 = _np_rt2.array(_rt_t_raw2, dtype=float)
+                _rt_t_ms2  = roundtrip_mod.lap_result_to_time_axis(_v_arr_rt2, _s_arr_rt2)
+                _rt_laptime_in2 = float(_rt_t_ms2[-1]) if len(_rt_t_ms2) else 0.0
+                _rt_topspd_in2  = float(_np_rt2.max(_v_arr_rt2))
+                _rt_avgspd_in2  = float(_np_rt2.mean(_v_arr_rt2))
             else:
-                st.info("▶ Run the lap sim above first, then come back here to send its "
-                        "speed profile to Excel.")
-                _rt_v_ms_in = None
+                st.info("▶ Run the lap sim above first, then come back here.")
+                _rt_v_ms2 = None
 
-        if _rt_v_ms_in is not None:
-            _rt_btn_col, _rt_info_col = st.columns([1, 3])
-            _go_rt = _rt_btn_col.button(
-                "🔄 Send to Excel & Recalculate", width="stretch", key="rt_go_btn")
-            _rt_info_col.markdown(
+        if _rt_v_ms2 is not None:
+            _rt_btn_col2, _rt_info_col2 = st.columns([1, 3])
+            _go_rt2 = _rt_btn_col2.button(
+                "⚡ Run electrical check", width="stretch", key="rt_go_db_btn")
+            _rt_info_col2.markdown(
                 f'<p class="hint" style="margin-top:8px">'
-                f'{len(_rt_v_ms_in)} speed points, '
-                f't = {_rt_laptime_in:.1f} s, '
-                f'v_max = {_rt_topspd_in * 3.6:.1f} km/h</p>',
+                f'{len(_rt_v_ms2)} speed points, '
+                f't = {_rt_laptime_in2:.1f} s, '
+                f'v_max = {_rt_topspd_in2 * 3.6:.1f} km/h — '
+                f'parameters from project database</p>',
                 unsafe_allow_html=True)
 
-            if _go_rt:
-                with st.spinner("Writing lap data to Excel and recalculating all formulas…"):
-                    import numpy as _np_rt2
-                    _rt_result = roundtrip_mod.lap_to_excel_roundtrip(
-                        speed_ms   = _np_rt2.array(_rt_v_ms_in, dtype=float),
-                        time_s     = _np_rt2.array(_rt_t_in,    dtype=float),
-                        excel_bytes= _rt_bytes,
-                        lap_time_s = _rt_laptime_in,
-                        top_speed_ms  = _rt_topspd_in,
-                        avg_speed_ms  = _rt_avgspd_in,
+            if _go_rt2:
+                import numpy as _np_rt3
+                with st.spinner("Running electrical calculations from stored parameters…"):
+                    _rt_result2 = roundtrip_mod.lap_to_excel_roundtrip_from_db(
+                        speed_ms     = _np_rt3.array(_rt_v_ms2, dtype=float),
+                        time_s       = _np_rt3.array(_rt_t_ms2, dtype=float),
+                        ev_params    = _ev_db,
+                        lap_time_s   = _rt_laptime_in2,
+                        top_speed_ms = _rt_topspd_in2,
+                        avg_speed_ms = _rt_avgspd_in2,
                     )
-                st.session_state["_rt_result"] = _rt_result
+                st.session_state["_rt_result"] = _rt_result2
 
-        # Display round-trip results
+        # ── Display results ─────────────────────────────────────────────
         _rt_res = st.session_state.get("_rt_result")
         if _rt_res is not None:
             if not _rt_res.ok:
-                st.error(f"Round-trip failed: {_rt_res.error}")
+                st.error(f"Calculation failed: {_rt_res.error}")
             else:
                 for _w in _rt_res.warnings:
                     st.warning(f"⚠ {_w}")
 
-                st.markdown("###### 📊 Recalculated Excel Results")
+                _verdict_colour = "#37e0d0" if _rt_res.feasible else "#e74c3c"
+                st.markdown(
+                    f'<div style="border-left:3px solid {_verdict_colour};'
+                    f'padding:6px 12px;margin:8px 0;border-radius:4px;">'
+                    f'{_rt_res.verdict}</div>',
+                    unsafe_allow_html=True)
 
-                # ── Pack Summary ──────────────────────────────────────────────
-                with st.expander("🔋 Battery Pack Calcs (recalculated)", expanded=True):
+                st.markdown("###### 📊 Recalculated electrical results")
+
+                # Pack summary
+                with st.expander("🔋 Battery Pack Calcs", expanded=True):
                     _pk = _rt_res.pack
                     _pkcols = st.columns(4)
                     _pkcols[0].markdown(metric("Pack voltage",
@@ -8904,7 +9365,7 @@ with tab11:
                     _pkcols[2].markdown(metric("Pack capacity",
                         f"{_pk.get('pack_capacity_ah', 0):.1f}", "Ah"), unsafe_allow_html=True)
                     _pkcols[3].markdown(metric("Pack energy",
-                        f"{(_pk.get('pack_energy_wh', 0) or 0):.3f}", "kWh"),
+                        f"{(_pk.get('pack_energy_wh', 0) or 0)/1000:.3f}", "kWh"),
                         unsafe_allow_html=True)
                     _pkcols2 = st.columns(4)
                     _pkcols2[0].markdown(metric("Cell current",
@@ -8917,13 +9378,13 @@ with tab11:
                         f"{int(_pk.get('pack_cell_count', 0) or 0)}", ""),
                         unsafe_allow_html=True)
 
-                # ── Lap-level electrical results ──────────────────────────────
-                st.markdown("###### ⚡ Electrical Results from This Lap Profile")
+                # Lap electrical results
+                st.markdown("###### ⚡ Electrical results from this lap profile")
                 _rc = st.columns(4)
-                _fuse_limit = _rt_res.pack.get("fuse_max_a") or 50.0
-                _peak_cls   = "bad" if _rt_res.peak_current_a > _fuse_limit else "good"
+                _fuse_limit2 = _rt_res.pack.get("fuse_max_a") or 50.0
+                _peak_cls2   = "bad" if _rt_res.peak_current_a > _fuse_limit2 else "good"
                 _rc[0].markdown(metric("Peak current",
-                    f"{_rt_res.peak_current_a:.1f}", "A", _peak_cls), unsafe_allow_html=True)
+                    f"{_rt_res.peak_current_a:.1f}", "A", _peak_cls2), unsafe_allow_html=True)
                 _rc[1].markdown(metric("Avg current",
                     f"{_rt_res.avg_current_a:.1f}", "A"), unsafe_allow_html=True)
                 _rc[2].markdown(metric("Peak power",
@@ -8931,21 +9392,20 @@ with tab11:
                 _rc[3].markdown(metric("Total energy",
                     f"{_rt_res.total_energy_kwh:.3f}", "kWh"), unsafe_allow_html=True)
                 _rc2 = st.columns(3)
-                _rc2[0].markdown(metric("Max speed (Excel MAX)",
+                _rc2[0].markdown(metric("Max speed",
                     f"{_rt_res.max_speed_mph:.1f}", "mph"), unsafe_allow_html=True)
                 _rc2[1].markdown(metric("Max RPM (gear 1)",
                     f"{float(_rt_res.rpm_gear1.max()):.0f}" if len(_rt_res.rpm_gear1) else "—",
                     "rpm"), unsafe_allow_html=True)
-                _fuse_headroom = _fuse_limit - _rt_res.peak_current_a
+                _fuse_headroom2 = _fuse_limit2 - _rt_res.peak_current_a
                 _rc2[2].markdown(metric("Fuse headroom",
-                    f"{_fuse_headroom:.1f}", "A",
-                    "good" if _fuse_headroom > 0 else "bad"), unsafe_allow_html=True)
+                    f"{_fuse_headroom2:.1f}", "A",
+                    "good" if _fuse_headroom2 > 0 else "bad"), unsafe_allow_html=True)
 
-                # ── Current + RPM charts ──────────────────────────────────────
+                # Current + RPM charts
                 if len(_rt_res.current_draw_a) > 2 and len(_rt_res.rpm_gear1) > 2:
                     import plotly.graph_objects as _go_rt2
                     _t_axis = list(_rt_res.time_s)
-
                     _fig_rt = _go_rt2.Figure()
                     _fig_rt.add_trace(_go_rt2.Scatter(
                         x=_t_axis, y=list(_rt_res.current_draw_a),
@@ -8953,16 +9413,16 @@ with tab11:
                         line=dict(color="#3b7cff", width=2),
                         fill="tozeroy", fillcolor="rgba(59,124,255,0.08)"))
                     _fig_rt.add_hline(
-                        y=float(_fuse_limit),
+                        y=float(_fuse_limit2),
                         line=dict(color="#e74c3c", dash="dash", width=1.5),
-                        annotation_text=f"Fuse {_fuse_limit:.0f} A",
+                        annotation_text=f"Fuse {_fuse_limit2:.0f} A",
                         annotation_position="top right")
                     _fig_rt.add_trace(_go_rt2.Scatter(
                         x=_t_axis, y=list(_rt_res.rpm_gear1),
                         name="Wheel RPM (gear 1)", yaxis="y2",
                         line=dict(color="#f0a500", width=1.5, dash="dot")))
                     _fig_rt.update_layout(
-                        title="Excel-recalculated: pack current & wheel RPM vs lap time",
+                        title="Pack current & wheel RPM vs lap time",
                         xaxis_title="time (s)",
                         yaxis=dict(title="current (A)", color="#3b7cff"),
                         yaxis2=dict(title="RPM", overlaying="y",
@@ -8974,7 +9434,7 @@ with tab11:
                         legend=dict(bgcolor="rgba(0,0,0,0)"))
                     st.plotly_chart(_fig_rt, width="stretch", key="rt_main_chart")
 
-                # ── Speed overlay chart ───────────────────────────────────────
+                # Speed + power chart
                 if len(_rt_res.speed_ms) > 2:
                     import plotly.graph_objects as _go_rt3
                     _fig_spd = _go_rt3.Figure()
@@ -9000,45 +9460,404 @@ with tab11:
                         legend=dict(bgcolor="rgba(0,0,0,0)"))
                     st.plotly_chart(_fig_spd, width="stretch", key="rt_spd_chart")
 
-                # ── Download button ───────────────────────────────────────────
+                # Download updated workbook (only if we have raw bytes from this session)
                 st.markdown("---")
                 _dl_col1, _dl_col2 = st.columns([1, 2])
-                _dl_col1.download_button(
-                    label="⬇ Download recalculated Excel",
-                    data=_rt_res.excel_bytes,
-                    file_name="FSAE_EV_PowerDraw_LapSim.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    key="rt_download_btn",
-                    help="Open in Excel to see the full formula recalculation. "
-                         "SpeedVsTime is now the lap sim profile; "
-                         "all downstream formulas have been recalculated.")
-                _dl_col2.markdown(
-                    '<p class="hint" style="margin-top:10px;">'
-                    'The downloaded file contains the lap sim speed trace in SpeedVsTime, '
-                    'all Battery Pack Calcs formulas recalculated, the full RPM grid '
-                    'updated, and a KinematiK Lap Sim Summary section added to '
-                    'Battery Pack Calcs rows 18+. Open it in Excel and every formula '
-                    'will re-evaluate live against the new data.</p>',
+                _cached_bytes = st.session_state.get("_rt_excel_bytes")
+                if _cached_bytes:
+                    # Re-run the full roundtrip write to produce updated xlsx
+                    import numpy as _np_dl
+                    _rt_write = roundtrip_mod.lap_to_excel_roundtrip(
+                        speed_ms    = _np_dl.array(_rt_res.speed_ms, dtype=float),
+                        time_s      = _np_dl.array(_rt_res.time_s,   dtype=float),
+                        excel_bytes = _cached_bytes,
+                        lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
+                        top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2"  in dir() else 0.0,
+                        avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2"  in dir() else 0.0,
+                    )
+                    if _rt_write.ok and _rt_write.excel_bytes:
+                        _dl_col1.download_button(
+                            label="⬇ Download recalculated Excel",
+                            data=_rt_write.excel_bytes,
+                            file_name="FSAE_EV_PowerDraw_LapSim.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            key="rt_download_btn",
+                            help="Workbook with SpeedVsTime updated and all values baked in.")
+                        _dl_col2.markdown(
+                            '<p class="hint" style="margin-top:10px;">'
+                            'SpeedVsTime updated with the lap sim trace; all downstream '
+                            'formulas recalculated as plain numbers. '
+                            'Re-upload a new workbook to refresh the stored parameters.</p>',
+                            unsafe_allow_html=True)
+                else:
+                    _dl_col1.markdown(
+                        '<p class="hint" style="margin-top:10px;">'
+                        '💡 Re-upload the workbook (above) to enable the download — '
+                        'the raw file isn\'t stored between sessions for size reasons; '
+                        'only the extracted parameters are.</p>',
+                        unsafe_allow_html=True)
+
+                # ── Extended analysis: thermals, SoC, feasible pack ────────
+                import numpy as _np_ext
+                _thermals = roundtrip_mod.compute_cell_thermals(
+                    current_draw_a=_rt_res.current_draw_a,
+                    time_s=_rt_res.time_s,
+                    pack=_rt_res.pack,
+                )
+                _soc_data = roundtrip_mod.compute_soc_and_stop(
+                    power_kw=_rt_res.power_kw,
+                    time_s=_rt_res.time_s,
+                    pack=_rt_res.pack,
+                    motor=_rt_res.motor,
+                )
+                _min_pack = roundtrip_mod.compute_minimum_feasible_pack(
+                    power_kw=_rt_res.power_kw,
+                    time_s=_rt_res.time_s,
+                    current_draw_a=_rt_res.current_draw_a,
+                    pack=_rt_res.pack,
+                    motor=_rt_res.motor,
+                )
+
+                # ── 🔥 Pack thermal heatmap ─────────────────────────────────
+                st.markdown("---")
+                st.markdown("##### 🔥 Pack Thermal Heatmap")
+                st.markdown(
+                    '<p class="hint">Each square is one physical cell. '
+                    'Colour maps estimated surface temperature from the Joule '
+                    'heat model (I²R per cell, with convective cooling). '
+                    'Series rows at the bottom of the stack run hotter — '
+                    'thermal gradient applied from the BMS data.</p>',
                     unsafe_allow_html=True)
 
-                # Log it
+                _n_s = max(int(_rt_res.pack.get("n_series",   1) or 1), 1)
+                _n_p = max(int(_rt_res.pack.get("n_parallel", 1) or 1), 1)
+                _t_lo = 25.0
+                _t_hi = max(_thermals["peak_temp_c"], 30.0)
+                _grad = _np_ext.linspace(0.85, 1.15, _n_s)
+
+                import plotly.graph_objects as _go_hm
+                _hm_z    = []
+                _hm_text = []
+                for _si in range(_n_s):
+                    row_z, row_t = [], []
+                    for _pi in range(_n_p):
+                        _ct = _t_lo + (_t_hi - _t_lo) * _grad[_si]
+                        row_z.append(_ct)
+                        row_t.append(f"S{_si+1}/P{_pi+1}<br>{_ct:.1f}°C")
+                    _hm_z.append(row_z)
+                    _hm_text.append(row_t)
+
+                _fig_hm = _go_hm.Figure(data=_go_hm.Heatmap(
+                    z=_hm_z,
+                    text=_hm_text,
+                    hovertemplate="%{text}<extra></extra>",
+                    colorscale=[[0,"#37E0D0"],[0.5,"#F0A500"],[1,"#E74C3C"]],
+                    zmin=_t_lo, zmax=_t_hi,
+                    colorbar=dict(
+                        title="°C",
+                        tickfont=dict(color="#cdd6df"),
+                        titlefont=dict(color="#cdd6df"),
+                        bgcolor="rgba(0,0,0,0)"),
+                    xgap=2, ygap=2,
+                ))
+                _fig_hm.update_layout(
+                    title=dict(
+                        text=f"Battery pack — {_n_s}S × {_n_p}P "
+                             f"({_n_s*_n_p} cells) | "
+                             f"Peak {_t_hi:.1f}°C | "
+                             f"Joule: {_thermals['total_joule_kwh']*1000:.1f} Wh/cell",
+                        font=dict(color="#cdd6df", size=12)),
+                    xaxis=dict(
+                        title="Parallel string (P)", showgrid=False,
+                        tickfont=dict(color="#8899aa"),
+                        tickmode="array",
+                        tickvals=list(range(_n_p)),
+                        ticktext=[f"P{p+1}" for p in range(_n_p)]),
+                    yaxis=dict(
+                        title="Series row (S)", showgrid=False,
+                        tickfont=dict(color="#8899aa"),
+                        tickmode="array",
+                        tickvals=list(range(_n_s)),
+                        ticktext=[f"S{s+1}" for s in range(_n_s)],
+                        autorange="reversed"),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    height=max(200, min(_n_s * 36 + 100, 520)),
+                    margin=dict(l=0, r=60, t=48, b=0),
+                )
+                st.plotly_chart(_fig_hm, width="stretch", key="rt_heatmap")
+
+                _hm_c = st.columns(4)
+                _hm_c[0].markdown(metric("Peak cell temp",
+                    f"{_thermals['peak_temp_c']:.1f}", "°C",
+                    "bad" if _thermals["peak_temp_c"] > 60 else "good"),
+                    unsafe_allow_html=True)
+                _hm_c[1].markdown(metric("Peak Joule power",
+                    f"{_thermals['peak_joule_w']:.2f}", "W/cell"),
+                    unsafe_allow_html=True)
+                _hm_c[2].markdown(metric("Total Joule heat",
+                    f"{_thermals['total_joule_kwh']*1000:.2f}", "Wh/cell"),
+                    unsafe_allow_html=True)
+                _hm_c[3].markdown(metric("Pack topology",
+                    f"{_n_s}S×{_n_p}P", ""),
+                    unsafe_allow_html=True)
+
+                # Cell temperature over lap time
+                import plotly.graph_objects as _go_ct
+                _fig_ct = _go_ct.Figure()
+                _fig_ct.add_trace(_go_ct.Scatter(
+                    x=list(_rt_res.time_s),
+                    y=list(_thermals["temp_c"]),
+                    name="Cell surface temp (°C)",
+                    line=dict(color="#E74C3C", width=2),
+                    fill="tozeroy",
+                    fillcolor="rgba(231,76,60,0.12)"))
+                _fig_ct.add_trace(_go_ct.Scatter(
+                    x=list(_rt_res.time_s),
+                    y=list(_thermals["joule_w"]),
+                    name="Joule power/cell (W)",
+                    yaxis="y2",
+                    line=dict(color="#F0A500", width=1.5, dash="dot")))
+                _fig_ct.add_hline(y=60.0,
+                    line=dict(color="#E74C3C", dash="dash", width=1),
+                    annotation_text="60°C warn",
+                    annotation_position="top right")
+                _fig_ct.update_layout(
+                    title="Cell temperature & Joule power over lap",
+                    xaxis_title="time (s)",
+                    yaxis=dict(title="cell temp (°C)", color="#E74C3C"),
+                    yaxis2=dict(title="Joule W/cell", overlaying="y",
+                                side="right", color="#F0A500"),
+                    height=260,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=36, b=0),
+                    legend=dict(bgcolor="rgba(0,0,0,0)"))
+                st.plotly_chart(_fig_ct, width="stretch", key="rt_celltemp")
+
+                # ── 🛑 Lap stop predictor ───────────────────────────────────
+                st.markdown("---")
+                st.markdown("##### 🛑 Lap Stop Predictor")
+                if _soc_data["finishes"]:
+                    st.markdown(
+                        f'<div style="border-left:3px solid #37e0d0;padding:8px 14px;'
+                        f'border-radius:4px;margin:6px 0;">'
+                        f'✅ <b>Car finishes the lap</b> — '
+                        f'{_soc_data["usable_kwh"]:.3f} kWh usable, '
+                        f'{_rt_res.total_energy_kwh:.3f} kWh drawn, '
+                        f'{(_soc_data["usable_kwh"] - _rt_res.total_energy_kwh)*1000:.0f} Wh remaining</div>',
+                        unsafe_allow_html=True)
+                else:
+                    _stop_pct = _soc_data["pct_lap_done"] * 100
+                    _stop_t   = _soc_data["stop_time_s"]
+                    _lap_t    = float(_rt_res.time_s[-1])
+                    st.markdown(
+                        f'<div style="border-left:3px solid #e74c3c;padding:8px 14px;'
+                        f'border-radius:4px;margin:6px 0;">'
+                        f'🛑 <b>Car stops at {_stop_t:.1f} s '
+                        f'({_stop_pct:.1f}% through the lap)</b> — '
+                        f'{_soc_data["deficit_kwh"]*1000:.0f} Wh short. '
+                        f'{_lap_t - _stop_t:.1f} s of lap remaining.</div>',
+                        unsafe_allow_html=True)
+
+                import plotly.graph_objects as _go_soc
+                _fig_soc = _go_soc.Figure()
+                _fig_soc.add_trace(_go_soc.Scatter(
+                    x=list(_rt_res.time_s),
+                    y=list(_soc_data["soc_pct"]),
+                    name="State of charge (%)",
+                    line=dict(color="#3b7cff", width=2.5),
+                    fill="tozeroy",
+                    fillcolor="rgba(59,124,255,0.12)"))
+                _fig_soc.add_trace(_go_soc.Scatter(
+                    x=list(_rt_res.time_s),
+                    y=list(_rt_res.power_kw),
+                    name="Power draw (kW)",
+                    yaxis="y2",
+                    line=dict(color="#a855f7", width=1.5, dash="dot")))
+                _fig_soc.add_hline(y=20.0,
+                    line=dict(color="#F0A500", dash="dash", width=1),
+                    annotation_text="20% SoC warn",
+                    annotation_position="bottom right")
+                _fig_soc.add_hline(y=0.0,
+                    line=dict(color="#E74C3C", dash="solid", width=1.5),
+                    annotation_text="Empty",
+                    annotation_position="bottom right")
+                if not _soc_data["finishes"] and _soc_data["stop_time_s"]:
+                    _fig_soc.add_vline(
+                        x=_soc_data["stop_time_s"],
+                        line=dict(color="#E74C3C", dash="dash", width=2),
+                        annotation_text=f"🛑 Stop {_soc_data['stop_time_s']:.0f}s",
+                        annotation_position="top left")
+                _fig_soc.update_layout(
+                    title="State of charge & power draw over lap",
+                    xaxis_title="time (s)",
+                    yaxis=dict(title="SoC (%)", color="#3b7cff",
+                               range=[-5, 105]),
+                    yaxis2=dict(title="power (kW)", overlaying="y",
+                                side="right", color="#a855f7"),
+                    height=300,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=36, b=0),
+                    legend=dict(bgcolor="rgba(0,0,0,0)"))
+                st.plotly_chart(_fig_soc, width="stretch", key="rt_soc_chart")
+
+                # ── 📐 Minimum feasible pack ────────────────────────────────
+                st.markdown("---")
+                st.markdown("##### 📐 Minimum Feasible Pack")
+                st.markdown(
+                    '<p class="hint">Based on this lap\'s energy draw. '
+                    'Recommended adds 10% safety margin. '
+                    'Cell count assumes the same series string, adding parallel '
+                    'strings to hit the required capacity.</p>',
+                    unsafe_allow_html=True)
+
+                _fp_ok = _min_pack["energy_shortfall_kwh"] == 0
+                _fp_col = st.columns(4)
+                _fp_col[0].markdown(metric("Current pack energy",
+                    f"{_min_pack['current_usable_kwh']:.3f}", "kWh",
+                    "good" if _fp_ok else "bad"), unsafe_allow_html=True)
+                _fp_col[1].markdown(metric("Minimum needed",
+                    f"{_min_pack['min_energy_kwh']:.3f}", "kWh"),
+                    unsafe_allow_html=True)
+                _fp_col[2].markdown(metric("Recommended (+10%)",
+                    f"{_min_pack['rec_energy_kwh']:.3f}", "kWh"),
+                    unsafe_allow_html=True)
+                _fp_col[3].markdown(metric("Energy shortfall",
+                    f"{_min_pack['energy_shortfall_kwh']*1000:.0f}", "Wh",
+                    "good" if _fp_ok else "bad"), unsafe_allow_html=True)
+
+                _fp_col2 = st.columns(4)
+                _fp_col2[0].markdown(metric("Min capacity",
+                    f"{_min_pack['min_capacity_ah']:.1f}", "Ah"),
+                    unsafe_allow_html=True)
+                _fp_col2[1].markdown(metric("Rec. capacity",
+                    f"{_min_pack['rec_capacity_ah']:.1f}", "Ah"),
+                    unsafe_allow_html=True)
+                _fp_col2[2].markdown(metric("Rec. cell count",
+                    f"{_min_pack['rec_total_cells']}", "cells"),
+                    unsafe_allow_html=True)
+                _fp_col2[3].markdown(metric("Rec. pack mass",
+                    f"{_min_pack['rec_pack_mass_kg']:.1f}", "kg"),
+                    unsafe_allow_html=True)
+
+                # What-if bar chart: capacity vs laps
+                _wif_caps  = [5, 8, 10, 12, 15, 18, 20, 25, 30]
+                _wif_e     = [c * _min_pack["pack_voltage_v"] * 0.92 / 1000.0
+                              for c in _wif_caps]
+                _wif_laps  = [e / max(_rt_res.total_energy_kwh, 0.001)
+                              for e in _wif_e]
+                _wif_ok    = [e >= _rt_res.total_energy_kwh for e in _wif_e]
+                import plotly.graph_objects as _go_fp
+                _fig_fp = _go_fp.Figure()
+                _fig_fp.add_trace(_go_fp.Bar(
+                    x=[f"{c} Ah" for c in _wif_caps],
+                    y=_wif_laps,
+                    marker_color=["#37E0D0" if ok else "#E74C3C" for ok in _wif_ok],
+                    text=[f"{v:.1f}×" for v in _wif_laps],
+                    textposition="outside",
+                    textfont=dict(color="#cdd6df", size=9),
+                    name="Laps per charge"))
+                _fig_fp.add_hline(y=1.0,
+                    line=dict(color="#F0A500", dash="dash", width=1.5),
+                    annotation_text="1 lap minimum",
+                    annotation_position="top right")
+                _fig_fp.add_hline(y=22.0,
+                    line=dict(color="#a855f7", dash="dash", width=1),
+                    annotation_text="22 laps (endurance)",
+                    annotation_position="top right")
+                _fig_fp.update_layout(
+                    title="Pack capacity → laps per charge (green = clears 1 lap)",
+                    xaxis_title="Pack capacity (Ah)",
+                    yaxis_title="Laps per charge",
+                    height=280,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=36, b=0),
+                    showlegend=False)
+                st.plotly_chart(_fig_fp, width="stretch", key="rt_feaspack_chart")
+
+                # ── Enhanced Excel download ─────────────────────────────────
+                st.markdown("---")
+                _enh_col1, _enh_col2 = st.columns([1, 2])
+                _cached_b2 = st.session_state.get("_rt_excel_bytes")
+                if _cached_b2:
+                    import numpy as _np_enh
+                    with st.spinner("Building enhanced workbook with heatmap, SoC, and feasibility sheets…"):
+                        # First produce the standard round-trip workbook
+                        _rt_base = roundtrip_mod.lap_to_excel_roundtrip(
+                            speed_ms    = _np_enh.array(_rt_res.speed_ms, dtype=float),
+                            time_s      = _np_enh.array(_rt_res.time_s,   dtype=float),
+                            excel_bytes = _cached_b2,
+                            lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
+                            top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2" in dir() else 0.0,
+                            avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2" in dir() else 0.0,
+                        )
+                        if _rt_base.ok and _rt_base.excel_bytes:
+                            _enh_bytes = roundtrip_mod.build_enhanced_excel(
+                                result      = _rt_res,
+                                excel_bytes = _rt_base.excel_bytes,
+                                thermals    = _thermals,
+                                soc_data    = _soc_data,
+                                min_pack    = _min_pack,
+                                lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
+                                top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2" in dir() else 0.0,
+                                avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2" in dir() else 0.0,
+                            )
+                            _enh_col1.download_button(
+                                label="⬇ Download enhanced Excel (+3 sheets)",
+                                data=_enh_bytes,
+                                file_name="FSAE_EV_KinematiK_Enhanced.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                key="rt_enh_download_btn")
+                            _enh_col2.markdown(
+                                '<p class="hint" style="margin-top:10px;">'
+                                'Includes all original sheets plus: '
+                                '<b>PackHeatmap</b> (cell grid with thermal colours + '
+                                'Python xlwings macro stub to regenerate the chart), '
+                                '<b>LapEnergy</b> (SoC depletion curve, stop marker, '
+                                'energy timeline + chart), '
+                                '<b>FeasiblePack</b> (minimum pack advisor + what-if '
+                                'capacity table).</p>',
+                                unsafe_allow_html=True)
+                else:
+                    _enh_col1.markdown(
+                        '<p class="hint">'
+                        '💡 Re-upload the workbook above to enable the enhanced Excel download.</p>',
+                        unsafe_allow_html=True)
+
+                # Log
                 if st.button("Log round-trip to handover", key="rt_log_btn"):
+                    _stop_note = (
+                        f"Car stops at {_soc_data['stop_time_s']:.1f}s "
+                        f"({_soc_data['pct_lap_done']*100:.1f}% lap done). "
+                        if not _soc_data["finishes"] else "Car finishes lap. "
+                    )
                     log_decision_now(
                         "electrics", "Excel round-trip",
-                        f"Lap sim data ({len(_rt_res.speed_ms)} pts, "
-                        f"{_rt_laptime_in:.1f} s) written to FSAE_EV_Power_Draw.xlsx. "
+                        f"Lap sim data ({len(_rt_res.speed_ms)} pts) — "
                         f"Peak current: {_rt_res.peak_current_a:.1f} A / "
-                        f"{_fuse_limit:.0f} A fuse. "
+                        f"{_fuse_limit2:.0f} A fuse. "
                         f"Total energy: {_rt_res.total_energy_kwh:.3f} kWh. "
-                        f"Max RPM (gear 1): {float(_rt_res.rpm_gear1.max()):.0f}.")
+                        f"Max RPM (gear 1): {float(_rt_res.rpm_gear1.max()):.0f}. "
+                        f"{_stop_note}"
+                        f"Min pack needed: {_min_pack['rec_capacity_ah']:.1f} Ah / "
+                        f"{_min_pack['rec_energy_kwh']:.3f} kWh. "
+                        f"Peak cell temp: {_thermals['peak_temp_c']:.1f}°C. "
+                        f"Verdict: {_rt_res.verdict}")
                     st.success("Logged to handover record.")
     else:
         st.markdown(
             '<p class="hint" style="border-left:2px solid #a855f7; padding-left:10px;">'
-            '📂 Upload the electrics lead\'s Excel workbook above to enable the round-trip. '
-            'You\'ll get the fully recalculated file back with the lap sim speed trace '
-            'baked in — no manual copy-paste required.</p>',
+            '📂 Import <code>FSAE_EV_Power_Draw.xlsx</code> once using the expander above. '
+            'KinematiK extracts all pack and motor constants and stores them in the project — '
+            'you won\'t need to re-upload it next session.</p>',
             unsafe_allow_html=True)
+
 
 # ----------------------------- TAB 12 -------------------------------------- #
 with tab12:
@@ -9771,6 +10590,12 @@ if _show_ledger:
                "not a silent pass). Untick “estimate” once a value is CAD/measured.")
     for s in _IF.SUBSYSTEMS:
         it = led.get(s) or _IF.SubsystemInterface(name=s)
+        # Snapshot the PRE-edit interface so risk propagation below can diff
+        # old→new and report real directions (not blank→new, which would read
+        # every delta-based coupling as neutral and hide risk — a false green).
+        _pre_edit = st.session_state.setdefault("_iface_pre_edit", {})
+        if s not in _pre_edit:
+            _pre_edit[s] = it.as_dict()
         with st.expander(f"{EMOJI.get(s,'•')}  {s}", expanded=False):
             fields = FIELDSETS["common"] + [f for f in FIELDSETS.get(s, [])
                                             if f not in FIELDSETS["common"]]
@@ -9875,6 +10700,246 @@ if _show_ledger:
             f'<span style="font-size:.92rem">{f.message}</span></div>',
             unsafe_allow_html=True)
 
+    # ---- cross-discipline risk propagation + manufacturing-release gate ---- #
+    # When a sub-team edits an interface, KinematiK already diffed it above. Here
+    # we walk those changes through the coupling graph so the DOWNSTREAM risk on
+    # every other subsystem shows up unprompted — the whole point being that a
+    # freshman who bumps the motor map sees it just loaded the upright and heated
+    # the cooling loop, before anyone has to think to ask.
+    _rp_changed = sorted({e["subsystem"] for e in
+                          st.session_state.get("_iface_changelog", [])})
+    if _rp_changed:
+        st.markdown("###### Cross-discipline risk — what your edits just touched")
+        st.markdown('<p class="hint">Every interface change, walked through the '
+                    'coupling graph. Each effect names both disciplines and carries an '
+                    'honest confidence tag: <b>measured</b> (a KinematiK solver ran), '
+                    '<b>coupled</b> (a modelled edge), or <b>judgement</b> '
+                    '(engineering judgement, no backing physics).</p>',
+                    unsafe_allow_html=True)
+        _all_effects = []
+        _pre = st.session_state.get("_iface_pre_edit", {})
+        for _sub in _rp_changed:
+            _new_iface = led.get(_sub)
+            if _new_iface is None:
+                continue
+            # Diff against the captured PRE-edit snapshot so delta-based couplings
+            # report real directions. Falling back to a blank baseline only when
+            # no snapshot exists (first-ever edit) — and in that case the values
+            # are genuinely new, so reporting their loads is still correct.
+            _old_iface = (riskprop_mod.SubsystemInterface.from_dict(_pre[_sub])
+                          if _sub in _pre else
+                          riskprop_mod.SubsystemInterface(name=_sub))
+            _rep = riskprop_mod.propagate_interface_edit(led, _old_iface, _new_iface)
+            _all_effects.extend(_rep.effects)
+
+        _DIR = {"worse": ("bad", "↑ risk"), "better": ("good", "↓ risk"),
+                "neutral": ("", "→")}
+        _CONF = {"measured": "good", "coupled": "warn", "judgement": "warn"}
+        if _all_effects:
+            for _e in sorted(_all_effects,
+                             key=lambda x: {"worse": 0, "neutral": 1, "better": 2}[x.direction.value]):
+                _dcls, _dlbl = _DIR[_e.direction.value]
+                _q = (f"&nbsp;<b>{_e.delta_value:+g} {_e.delta_unit}</b>"
+                      if _e.delta_value is not None else "")
+                st.markdown(
+                    f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+                    f'<span class="tag {_dcls}">{_dlbl}</span> '
+                    f'<span class="tag {_CONF.get(_e.confidence.value,"")}">{_e.confidence.value}</span> '
+                    f'<b>{EMOJI.get(_e.source_subsystem,"")}{_e.source_subsystem}</b> '
+                    f'<span style="color:#8d99a6">→</span> '
+                    f'<b>{EMOJI.get(_e.target_subsystem,"")}{_e.target_subsystem}</b>{_q}<br>'
+                    f'<span style="font-size:.9rem">{_e.mechanism}</span></div>',
+                    unsafe_allow_html=True)
+
+            # roll the effects onto the team's LIVE DFMEA log (their wording)
+            _rep_all = riskprop_mod.PropagationReport(effects=_all_effects)
+            _sugg = riskprop_mod.dfmea_deltas(
+                _rep_all, st.session_state.get("dfmea_rows", []))
+            if _sugg:
+                st.markdown('<p class="hint">These edits make existing DFMEA rows '
+                            'more or less likely. Suggested Occurrence nudges (RPN '
+                            'recomputed by the DFMEA engine — you still own the log):</p>',
+                            unsafe_allow_html=True)
+                for _s in _sugg:
+                    _up = _s["rpn_suggested"] > _s["rpn_old"]
+                    st.markdown(
+                        f'<div style="font-size:.86rem;padding:2px 0;">'
+                        f'<span class="tag {"bad" if _up else "good"}">'
+                        f'RPN {_s["rpn_old"]}→{_s["rpn_suggested"]}</span> '
+                        f'<b>{_s["failure_mode"]}</b> '
+                        f'<span style="color:#8d99a6">(Occ {_s["occurrence_old"]}→'
+                        f'{_s["occurrence_suggested"]}, via {_s["source"]})</span></div>',
+                        unsafe_allow_html=True)
+
+    # ---- MANUFACTURING-RELEASE GATE ---------------------------------------- #
+    # One manufacturing shot: the failure that ends a season is a part cut to a
+    # number that was still an estimate, or designed against a load that was only
+    # an engineering-judgement coupling. This gate is a literal go/no-go per
+    # subsystem about to be made: is every interface feeding it CONFIRMED (not an
+    # estimate), and does every coupling into it rest on real physics?
+    with st.expander("🔒 Manufacturing-release gate — clear a part before you cut it",
+                     expanded=False):
+        st.markdown(
+            '<div style="border:1px solid #e0b000;background:rgba(224,176,0,.08);'
+            'border-radius:6px;padding:10px 14px;margin-bottom:10px;">'
+            '<b style="color:#e0b000">⚠ Always confirm with your subsystem lead before '
+            'cutting.</b><br><span style="font-size:.9rem;color:#c9d3dd">'
+            'This gate checks the data you entered against KinematiK\'s built-in coupling '
+            'graph — it is a safety net, not a sign-off. The coupling edges are a sensible '
+            'starting set, not gospel for <i>your</i> car: a real load path may be missing, '
+            'and a "clear" verdict only means the numbers you declared are self-consistent. '
+            'Have the lead sanity-check the approach and the edges loading this part before '
+            'committing anything to manufacture.</span></div>',
+            unsafe_allow_html=True)
+        st.markdown('<p class="hint">Pick the subsystem whose parts are going to '
+                    'manufacture. The gate passes only if its interface is marked '
+                    '<b>confirmed</b> (not an estimate) and the cross-discipline '
+                    'couplings loading it are solver-backed — because metal you cut '
+                    'wrong, you cut once.</p>', unsafe_allow_html=True)
+        _gate_sub = st.selectbox("Subsystem releasing to manufacture",
+                                 interfaces_mod.SUBSYSTEMS, key="_mfg_gate_sub")
+        if st.button("Run release gate", key="_mfg_gate_run"):
+            _blocks, _warns, _oks = [], [], []
+            _gi = led.get(_gate_sub)
+            # 1) is the subsystem's own interface confirmed and populated?
+            if _gi is None or not _gi.declared_fields():
+                _blocks.append("This subsystem hasn't declared an interface yet — "
+                               "nothing to check the part against.")
+            else:
+                if _gi.is_estimate:
+                    _blocks.append("Interface is still flagged ESTIMATE. Confirm the "
+                                   "numbers before committing geometry to manufacture.")
+                else:
+                    _oks.append("Interface is confirmed (not an estimate).")
+                if not (getattr(_gi, "rationale", "") or "").strip():
+                    _warns.append("No design rationale recorded — judges ask for the "
+                                  "‘why’, and so should you before cutting.")
+
+            # 2) any unresolved hard conflict / missing data involving this part?
+            for _f in findings:
+                if _gate_sub in getattr(_f, "subsystems", []):
+                    if _f.severity.value == "fail":
+                        _blocks.append(f"Open integration conflict: {_f.message}")
+                    elif _f.severity.value == "missing":
+                        _warns.append(f"Missing data: {_f.message}")
+
+            # 3) couplings that LOAD this part — are they solver-backed?
+            for _c in riskprop_mod.COUPLINGS:
+                if _c.target_subsystem != _gate_sub:
+                    continue
+                _src = led.get(_c.source_subsystem)
+                _src_declared = _src is not None and bool(_src.declared_fields())
+                if not _src_declared:
+                    continue  # nothing flowing in on this edge yet
+                if _c.confidence.value == "judgement":
+                    _warns.append(
+                        f"Load from {_c.source_subsystem} rests on engineering "
+                        f"judgement, not physics ({_c.mechanism.split('.')[0]}).")
+                if _src is not None and _src.is_estimate and _c.severity_hint.value in ("fail", "warning"):
+                    _blocks.append(
+                        f"{_c.source_subsystem} feeds a load into this part but its "
+                        f"interface is still an ESTIMATE — confirm it before cutting.")
+
+            # Persist the result so the sign-off interlock below survives the
+            # checkbox/button reruns (a verdict computed only inside this button
+            # block would vanish the moment the user ticks the confirm box).
+            _gi_for_record = led.get(_gate_sub)
+            st.session_state["_mfg_gate_result"] = dict(
+                subsystem=_gate_sub,
+                verdict=("block" if _blocks else "caution" if _warns else "clear"),
+                blocks=list(_blocks), warns=list(_warns), oks=list(_oks),
+                declared=(_gi_for_record.numeric_values() if _gi_for_record else {}),
+                confirmed=(_gi_for_record is not None and not _gi_for_record.is_estimate),
+            )
+
+        # ---- render the stored verdict + sign-off interlock ---- #
+        _gr = st.session_state.get("_mfg_gate_result")
+        if _gr and _gr["subsystem"] == _gate_sub:
+            _blocks, _warns, _oks = _gr["blocks"], _gr["warns"], _gr["oks"]
+            # verdict
+            if _gr["verdict"] == "block":
+                st.markdown(f'<div class="tag bad" style="font-size:1rem">⛔ DO NOT '
+                            f'RELEASE — {len(_blocks)} blocker(s)</div>',
+                            unsafe_allow_html=True)
+            elif _gr["verdict"] == "caution":
+                st.markdown('<div class="tag warn" style="font-size:1rem">⚠ RELEASE '
+                            'WITH CAUTION — review the items below</div>',
+                            unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="tag good" style="font-size:1rem">✅ CLEAR TO '
+                            'MANUFACTURE — interface confirmed, loads solver-backed</div>',
+                            unsafe_allow_html=True)
+            for _b in _blocks:
+                st.markdown(f'<div style="color:#ff6b6b;font-size:.9rem;padding:2px 0">⛔ {_b}</div>',
+                            unsafe_allow_html=True)
+            for _w in _warns:
+                st.markdown(f'<div style="color:#e0b000;font-size:.9rem;padding:2px 0">⚠ {_w}</div>',
+                            unsafe_allow_html=True)
+            for _o in _oks:
+                st.markdown(f'<div style="color:#5fd38a;font-size:.9rem;padding:2px 0">✓ {_o}</div>',
+                            unsafe_allow_html=True)
+            st.markdown(
+                '<div style="font-size:.85rem;color:#e0b000;padding:8px 0 2px 0;">'
+                '⚠ Whatever this verdict says, confirm with your subsystem lead before '
+                'you cut — the lead should sanity-check both the approach and the '
+                'coupling edges loading this part. A green gate means your declared '
+                'numbers are consistent, not that the design is signed off.</div>',
+                unsafe_allow_html=True)
+
+            # ---- sign-off interlock ---- #
+            # Only offer sign-off when the gate didn't hard-block: you cannot
+            # record approval of a "DO NOT RELEASE". For block verdicts, the path
+            # forward is fixing the blockers, not signing them off.
+            if _gr["verdict"] == "block":
+                st.markdown('<p class="hint">Resolve the blocker(s) above and re-run '
+                            'the gate before any sign-off is possible.</p>',
+                            unsafe_allow_html=True)
+            else:
+                st.markdown("###### Manufacturing sign-off")
+                _so = st.columns([3, 2])
+                _confirmed = _so[0].checkbox(
+                    "I have confirmed this approach **and** the coupling edges loading "
+                    "this part with my subsystem lead.",
+                    key=f"_mfg_signoff_chk_{_gate_sub}")
+                _lead = _so[1].text_input(
+                    "Lead who confirmed", key=f"_mfg_signoff_lead_{_gate_sub}",
+                    placeholder="lead's name")
+                _ready = _confirmed and bool(_lead.strip())
+                if not _ready:
+                    st.caption("Tick the box and name the lead to record the sign-off.")
+                if st.button("📝 Record manufacturing sign-off",
+                             key=f"_mfg_signoff_btn_{_gate_sub}",
+                             disabled=not _ready):
+                    _vlabel = {"clear": "CLEAR TO MANUFACTURE",
+                               "caution": "RELEASE WITH CAUTION"}[_gr["verdict"]]
+                    _declared_txt = ", ".join(
+                        f"{k}={v}" for k, v in _gr["declared"].items()) or "—"
+                    _open_items = _gr["warns"]
+                    _body = (
+                        f"Manufacturing release sign-off for **{_gate_sub}**. "
+                        f"Gate verdict: {_vlabel}. "
+                        f"Confirmed with lead: {_lead.strip()}. "
+                        f"Interface {'confirmed (not estimate)' if _gr['confirmed'] else 'still flagged ESTIMATE'}. "
+                        f"Declared values at sign-off: {_declared_txt}."
+                        + (f" Open caution items acknowledged: {'; '.join(_open_items)}."
+                           if _open_items else ""))
+                    _ok = log_decision_now(
+                        "integration",
+                        f"Manufacturing sign-off — {_gate_sub} ({_vlabel})",
+                        _body, author=_lead.strip() or "—")
+                    if _ok:
+                        st.success(
+                            f"Sign-off recorded for {_gate_sub}, confirmed with "
+                            f"{_lead.strip()}, at {_datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. "
+                            "It's in the decision log and will appear in the handover "
+                            "export (PDF/Markdown/JSON) — a durable record, not a "
+                            "file that gets lost on a laptop.")
+                    else:
+                        st.warning(
+                            "Couldn't write to the handover record (backend "
+                            "unavailable). Nothing was lost — re-try, or capture the "
+                            "sign-off manually in Weight & Handover.")
+
     # ---- close the loop with the real physics ---- #
     st.markdown("###### Feed the build back into the physics")
     if roll["cg_mm"]:
@@ -9938,6 +11003,8 @@ if _show_ledger:
                     ok += 1
             if ok == len(_pending):
                 st.session_state["_iface_changelog"] = []
+                # Re-baseline: committed values are the new "old" for future edits.
+                st.session_state["_iface_pre_edit"] = {}
                 st.success(f"Committed {ok} change(s) to the handover record.")
             else:
                 st.warning(f"Committed {ok} of {len(_pending)}. The handover backend "
@@ -9945,6 +11012,7 @@ if _show_ledger:
                            "your edits are safe; try again or export the report instead.")
         if pcols[1].button("Discard pending", width='stretch'):
             st.session_state["_iface_changelog"] = []
+            st.session_state["_iface_pre_edit"] = {}
             st.rerun()
 
     # surface any backend logging errors quietly, without having crashed
@@ -9997,6 +11065,10 @@ if _show_ledger:
 #  GGV DIAGRAM TAB — combined acceleration envelope vs speed
 # --------------------------------------------------------------------------- #
 with tab_ggv:
+  try:
+    render_process_library("suspension", key_prefix="ggv_pl")
+  except Exception:
+    pass
     st.markdown('<p class="hint">The <b>GGV diagram</b> is the car\'s combined '
                 'acceleration envelope: at each speed, the boundary of longitudinal '
                 'g (accel up / brake down) vs lateral g it can sustain. It is the '
@@ -10318,6 +11390,10 @@ with tab_ggv:
 #  TRANSIENT TAB — explicit high-frequency time-step DAE solver
 # --------------------------------------------------------------------------- #
 with tab_tr:
+  try:
+    render_process_library("suspension", key_prefix="transient_pl")
+  except Exception:
+    pass
     st.markdown("#### ◢ TRANSIENT — explicit high-frequency time-step solver")
     st.markdown(
         '<p class="hint">The LAP TIME tab is <b>quasi-steady-state</b>: it assumes the '
@@ -10704,6 +11780,10 @@ with sc3:
 
 # ----------------------------- TAB PCB (ELECTRONICS) ----------------------- #
 with tab_pcb:
+  try:
+    render_process_library("electrics", key_prefix="pcb_pl")
+  except Exception:
+    pass
     _subsystem_cad_import("data-acquisition", key_prefix="pcb")
     render_pcb_board()
     render_harness()
@@ -10712,6 +11792,10 @@ with tab_pcb:
 
 # --------------------------- TAB TRACTIVE SAFETY --------------------------- #
 with tab_tractive:
+  try:
+    render_process_library("electrics", key_prefix="tractive_pl")
+  except Exception:
+    pass
     st.header("⚡ Tractive-System Safety & PCM Cooling")
     st.caption("The pre-tech gate: precharge/discharge, the shutdown chain "
                "(TSAL · BSPD · AMS · IMD · MSD), and the PCM wax buffer — checked "
@@ -10940,6 +12024,10 @@ with tab_tractive:
 
 # --------------------------- TAB DFMEA ------------------------------------- #
 with tab_dfmea:
+  try:
+    render_process_library("general", key_prefix="dfmea_pl")
+  except Exception:
+    pass
   try:
     import pandas as _pd_d
 
