@@ -1759,137 +1759,145 @@ def render_process_library(subsystem_key, *, key_prefix, title=None):
     _label = proclib_mod.SUBSYSTEM_LABELS.get(subsystem_key, subsystem_key)
     df = _proclib_load()
 
-    _qkey = f"{key_prefix}_proclib_q"
-    # A pending chip tap writes the query here, before the text_input is built.
-    _pending = st.session_state.pop(f"{_qkey}__pending", None)
-    if _pending is not None:
-        st.session_state[_qkey] = _pending
 
-    # --- Always-visible header + search box (no outer expander to click). --- #
-    st.markdown(
-        '<p class="hint" style="margin:6px 0 4px;">🛠️ <b>New to this part? '
-        'Not sure how it\u2019s made?</b> Type what you\u2019re working on below '
-        "\u2014 a component (<i>upright, wishbone, busbar, rotor</i>) or a "
-        "process (<i>carbon layup, TIG, bonding</i>) \u2014 or just tap one of "
-        "the examples. Real resources appear instantly, each with a one-line "
-        "summary so you click the right one.</p>",
-        unsafe_allow_html=True)
+    # Gate: only show the process library if the user opts in.
+    _show_pl = st.checkbox(
+        "New on this part / not sure how to approach it?",
+        key=f"{key_prefix}_proclib_gate",
+        value=False,
+    )
+    if _show_pl:
+        _qkey = f"{key_prefix}_proclib_q"
+        # A pending chip tap writes the query here, before the text_input is built.
+        _pending = st.session_state.pop(f"{_qkey}__pending", None)
+        if _pending is not None:
+            st.session_state[_qkey] = _pending
 
-    # Tap-only questionnaire on-ramp (sits above the search box).
-    _render_proclib_questionnaire(df, subsystem_key, key_prefix=key_prefix)
+        # --- Always-visible header + search box (no outer expander to click). --- #
+        st.markdown(
+            '<p class="hint" style="margin:6px 0 4px;">🛠️ <b>New to this part? '
+            'Not sure how it\u2019s made?</b> Type what you\u2019re working on below '
+            "\u2014 a component (<i>upright, wishbone, busbar, rotor</i>) or a "
+            "process (<i>carbon layup, TIG, bonding</i>) \u2014 or just tap one of "
+            "the examples. Real resources appear instantly, each with a one-line "
+            "summary so you click the right one.</p>",
+            unsafe_allow_html=True)
 
-    _qcol, _btncol = st.columns([7, 1])
-    _q = _qcol.text_input(
-        "Search the process library",
-        key=_qkey,
-        placeholder="e.g. upright, carbon layup, busbar welding, brake rotor…",
-        label_visibility="collapsed")
-    if _btncol.button("Clear", key=f"{key_prefix}_proclib_clear",
-                      help="Clear the search and browse the whole pool again."):
-        st.session_state[f"{_qkey}__pending"] = ""
-        st.rerun()
+        # Tap-only questionnaire on-ramp (sits above the search box).
+        _render_proclib_questionnaire(df, subsystem_key, key_prefix=key_prefix)
 
-    # --- One-tap example chips, pulled from THIS subsystem's real articles. -- #
-    _chips = _proclib_chip_words(df, subsystem_key, n=6)
-    if _chips:
-        st.markdown('<p class="hint" style="margin:6px 0 2px;">Try:</p>',
-                    unsafe_allow_html=True)
-        _ccols = st.columns(len(_chips))
-        for _ci, _word in enumerate(_chips):
-            if _ccols[_ci].button(_word, key=f"{key_prefix}_chip_{_ci}",
-                                  use_container_width=True):
-                st.session_state[f"{_qkey}__pending"] = _word
-                st.rerun()
+        _qcol, _btncol = st.columns([7, 1])
+        _q = _qcol.text_input(
+            "Search the process library",
+            key=_qkey,
+            placeholder="e.g. upright, carbon layup, busbar welding, brake rotor…",
+            label_visibility="collapsed")
+        if _btncol.button("Clear", key=f"{key_prefix}_proclib_clear",
+                          help="Clear the search and browse the whole pool again."):
+            st.session_state[f"{_qkey}__pending"] = ""
+            st.rerun()
 
-    _all_pool = st.checkbox(
-        "Search every subsystem (not just this one)",
-        key=f"{key_prefix}_proclib_all", value=False)
+        # --- One-tap example chips, pulled from THIS subsystem's real articles. -- #
+        _chips = _proclib_chip_words(df, subsystem_key, n=6)
+        if _chips:
+            st.markdown('<p class="hint" style="margin:6px 0 2px;">Try:</p>',
+                        unsafe_allow_html=True)
+            _ccols = st.columns(len(_chips))
+            for _ci, _word in enumerate(_chips):
+                if _ccols[_ci].button(_word, key=f"{key_prefix}_chip_{_ci}",
+                                      use_container_width=True):
+                    st.session_state[f"{_qkey}__pending"] = _word
+                    st.rerun()
 
-    _sub = None if _all_pool else subsystem_key
-    try:
-        _res = proclib_mod.filter_library(df, _q, subsystem=_sub,
-                                          include_general=True)
-    except Exception:
-        _res = df.iloc[0:0]
+        _all_pool = st.checkbox(
+            "Search every subsystem (not just this one)",
+            key=f"{key_prefix}_proclib_all", value=False)
 
-    _total_pool = len(proclib_mod.filter_library(df, "", subsystem=_sub,
-                                                 include_general=True))
-    if not _q.strip():
-        # Empty box: browse the whole pool right away — no dead end for someone
-        # who doesn't know what to type yet.
-        st.caption(f"Showing all {_total_pool} articles for {_label} "
-                   "(plus shared basics). Type or tap above to narrow it down.")
-    else:
-        st.caption(f"{len(_res)} of {_total_pool} articles match "
-                   f"\u201c{_q.strip()}\u201d.")
+        _sub = None if _all_pool else subsystem_key
+        try:
+            _res = proclib_mod.filter_library(df, _q, subsystem=_sub,
+                                              include_general=True)
+        except Exception:
+            _res = df.iloc[0:0]
 
-    if len(_res) == 0 and _q.strip():
-        st.info("No matches yet. Try a shorter or more general word (e.g. just "
-                "\u201cweld\u201d or \u201ccarbon\u201d), tap a *Try* chip, or "
-                "tick *Search every subsystem*. Still nothing? Add the resource "
-                "you wish existed at the bottom \u2014 the next new member will "
-                "thank you.")
-    else:
-        # Card per article: bold component + process, 2-sentence summary, link.
-        _proclib_render_cards(_res, show_subsystem=_all_pool)
+        _total_pool = len(proclib_mod.filter_library(df, "", subsystem=_sub,
+                                                     include_general=True))
+        if not _q.strip():
+            # Empty box: browse the whole pool right away — no dead end for someone
+            # who doesn't know what to type yet.
+            st.caption(f"Showing all {_total_pool} articles for {_label} "
+                       "(plus shared basics). Type or tap above to narrow it down.")
+        else:
+            st.caption(f"{len(_res)} of {_total_pool} articles match "
+                       f"\u201c{_q.strip()}\u201d.")
 
-    # ---- Add to the shared library (anyone on the team) ---------------- #
-    with st.expander("➕  Add an article to the shared library", expanded=False):
-            st.markdown(
-                '<p class="hint" style="margin:0 0 6px;">Found a good resource, '
-                "or know how a part is really made here? Add it — it saves to the "
-                "team's shared workbook so everyone sees it on their next "
-                "load.</p>", unsafe_allow_html=True)
-            _c1, _c2 = st.columns(2)
-            _f_comp = _c1.text_input("Component", key=f"{key_prefix}_pl_comp",
-                                     placeholder="e.g. Upright / Knuckle")
-            _f_proc = _c2.text_input("Process", key=f"{key_prefix}_pl_proc",
-                                     placeholder="e.g. 5-axis CNC")
-            _sub_keys = list(proclib_mod.SUBSYSTEMS)
-            _def_idx = _sub_keys.index(subsystem_key) if subsystem_key in _sub_keys else len(_sub_keys) - 1
-            _f_sub = st.selectbox(
-                "Subsystem pool", _sub_keys, index=_def_idx,
-                format_func=lambda k: proclib_mod.SUBSYSTEM_LABELS.get(k, k),
-                key=f"{key_prefix}_pl_sub")
-            _f_summ = st.text_input(
-                "Summary (1\u20132 sentences: what it covers + why it helps)",
-                key=f"{key_prefix}_pl_summ",
-                placeholder="What does the article cover, and why is it useful "
-                            "to someone making this part?")
-            _f_link = st.text_input("Link (URL)", key=f"{key_prefix}_pl_link",
-                                    placeholder="https://…")
-            _c3, _c4 = st.columns(2)
-            _f_tags = _c3.text_input("Extra search tags (optional)",
-                                     key=f"{key_prefix}_pl_tags",
-                                     placeholder="comma, separated, keywords")
-            _f_who = _c4.text_input("Your name (optional)",
-                                    key=f"{key_prefix}_pl_who",
-                                    placeholder="so the team knows who to ask")
-            if st.button("Add to library", key=f"{key_prefix}_pl_add"):
-                if not _f_comp.strip() and not _f_proc.strip():
-                    st.warning("Give at least a component or a process.")
-                elif not _f_link.strip():
-                    st.warning("Add a link so the article is actually reachable.")
-                else:
-                    try:
-                        st.session_state.proclib_df = proclib_mod.append_row(
-                            _f_comp, _f_proc, _f_sub, _f_summ, _f_link,
-                            tags=_f_tags, added_by=_f_who)
-                        st.success("Added to the shared library. Reloading…")
-                        st.rerun()
-                    except Exception as _e:
-                        st.error(f"Couldn't save: {_e}")
+        if len(_res) == 0 and _q.strip():
+            st.info("No matches yet. Try a shorter or more general word (e.g. just "
+                    "\u201cweld\u201d or \u201ccarbon\u201d), tap a *Try* chip, or "
+                    "tick *Search every subsystem*. Still nothing? Add the resource "
+                    "you wish existed at the bottom \u2014 the next new member will "
+                    "thank you.")
+        else:
+            # Card per article: bold component + process, 2-sentence summary, link.
+            _proclib_render_cards(_res, show_subsystem=_all_pool)
 
-    # Download the whole workbook for offline reference / backup.
-    try:
-        _full = _proclib_load()
-        _csv = _full.to_csv(index=False)
-        st.download_button(
-            "⬇️  Download the full library (CSV)", _csv,
-            file_name="process_library.csv", mime="text/csv",
-            key=f"{key_prefix}_proclib_dl")
-    except Exception:
-        pass
+        # ---- Add to the shared library (anyone on the team) ---------------- #
+        with st.expander("➕  Add an article to the shared library", expanded=False):
+                st.markdown(
+                    '<p class="hint" style="margin:0 0 6px;">Found a good resource, '
+                    "or know how a part is really made here? Add it — it saves to the "
+                    "team's shared workbook so everyone sees it on their next "
+                    "load.</p>", unsafe_allow_html=True)
+                _c1, _c2 = st.columns(2)
+                _f_comp = _c1.text_input("Component", key=f"{key_prefix}_pl_comp",
+                                         placeholder="e.g. Upright / Knuckle")
+                _f_proc = _c2.text_input("Process", key=f"{key_prefix}_pl_proc",
+                                         placeholder="e.g. 5-axis CNC")
+                _sub_keys = list(proclib_mod.SUBSYSTEMS)
+                _def_idx = _sub_keys.index(subsystem_key) if subsystem_key in _sub_keys else len(_sub_keys) - 1
+                _f_sub = st.selectbox(
+                    "Subsystem pool", _sub_keys, index=_def_idx,
+                    format_func=lambda k: proclib_mod.SUBSYSTEM_LABELS.get(k, k),
+                    key=f"{key_prefix}_pl_sub")
+                _f_summ = st.text_input(
+                    "Summary (1\u20132 sentences: what it covers + why it helps)",
+                    key=f"{key_prefix}_pl_summ",
+                    placeholder="What does the article cover, and why is it useful "
+                                "to someone making this part?")
+                _f_link = st.text_input("Link (URL)", key=f"{key_prefix}_pl_link",
+                                        placeholder="https://…")
+                _c3, _c4 = st.columns(2)
+                _f_tags = _c3.text_input("Extra search tags (optional)",
+                                         key=f"{key_prefix}_pl_tags",
+                                         placeholder="comma, separated, keywords")
+                _f_who = _c4.text_input("Your name (optional)",
+                                        key=f"{key_prefix}_pl_who",
+                                        placeholder="so the team knows who to ask")
+                if st.button("Add to library", key=f"{key_prefix}_pl_add"):
+                    if not _f_comp.strip() and not _f_proc.strip():
+                        st.warning("Give at least a component or a process.")
+                    elif not _f_link.strip():
+                        st.warning("Add a link so the article is actually reachable.")
+                    else:
+                        try:
+                            st.session_state.proclib_df = proclib_mod.append_row(
+                                _f_comp, _f_proc, _f_sub, _f_summ, _f_link,
+                                tags=_f_tags, added_by=_f_who)
+                            st.success("Added to the shared library. Reloading…")
+                            st.rerun()
+                        except Exception as _e:
+                            st.error(f"Couldn't save: {_e}")
+
+        # Download the whole workbook for offline reference / backup.
+        try:
+            _full = _proclib_load()
+            _csv = _full.to_csv(index=False)
+            st.download_button(
+                "⬇️  Download the full library (CSV)", _csv,
+                file_name="process_library.csv", mime="text/csv",
+                key=f"{key_prefix}_proclib_dl")
+        except Exception:
+            pass
 
 
 def _render_rotor_thermal(_bt, _mass, kin):
