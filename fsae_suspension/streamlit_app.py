@@ -99,6 +99,19 @@ st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
                    initial_sidebar_state="expanded")
 
+# Delete stale persisted process-library files on first run of this session
+# so they are regenerated from the current seed data, removing any old / broken
+# links written by a previous version of the app.
+if "proclib_stale_purged" not in st.session_state:
+    import os as _os
+    for _stale in (proclib_mod.default_xlsx_path(), proclib_mod.default_csv_path()):
+        try:
+            if _os.path.exists(_stale):
+                _os.remove(_stale)
+        except Exception:
+            pass
+    st.session_state.proclib_stale_purged = True
+
 # --------------------------------------------------------------------------- #
 #  Aesthetic: technical instrument panel. Dark carbon, amber/cyan telemetry,
 #  monospace data, a single high-contrast accent. No generic dashboard look.
@@ -1610,6 +1623,13 @@ def _proclib_load(force=False):
         except Exception as _e:
             st.session_state.proclib_df = proclib_mod.seed_dataframe()
             st.session_state.proclib_load_err = str(_e)
+    # Always overwrite seed rows with current canonical URLs so stale cached
+    # files or session state can never surface old / broken links.
+    try:
+        st.session_state.proclib_df = proclib_mod._apply_seed_links(
+            st.session_state.proclib_df)
+    except Exception:
+        pass
     return st.session_state.proclib_df
 
 
