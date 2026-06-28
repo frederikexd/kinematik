@@ -5273,7 +5273,7 @@ with tab_ev:
             '<p class="hint" style="margin:0 0 6px;">The powertrain numbers you '
             'commit here flow straight into the car-wide <b>INTEGRATION</b> ledger, '
             'so every other sub-team reads the same truth — no more re-keying '
-            'Alec\u2019s spreadsheet, screenshotting a spec sheet, or finding out at '
+            'a \u2019s spreadsheet, screenshotting a spec sheet, or finding out at '
             'assembly that the motor torque overloads the driveline. Each panel '
             'below replaces something the team still does by hand.</p>',
             unsafe_allow_html=True)
@@ -5294,7 +5294,7 @@ with tab_ev:
         ])
 
         # ---------- shared motor inputs (used across the panels) ----------- #
-        # Pull stored Excel params if the team already imported Alec's workbook,
+        # Pull stored Excel params if the team already imported the workbook,
         # so this is pre-filled from their own data when available.
         try:
             _ev_store = getattr(get_store(), "ev_excel_params", {}) or {}
@@ -5424,11 +5424,11 @@ with tab_ev:
                 st.warning(f"Motor envelope unavailable: {_mee}")
 
         # ================================================================= #
-        #  PANEL 1 — Gear-ratio solver + sprocket  (Alec's spreadsheet)      #
+        #  PANEL 1 — Gear-ratio solver + sprocket  (spreadsheet)      #
         # ================================================================= #
         with _pt_tabs[1]:
             st.markdown(
-                '<p class="hint" style="margin:0 0 6px;">This is <b>Alec\u2019s gear-ratio '
+                '<p class="hint" style="margin:0 0 6px;">This is <b>the \u2019s gear-ratio '
                 'spreadsheet</b>, made live. KinematiK sweeps final-drive ratios against '
                 'your real motor curve and the actual car mass, then picks the optimum '
                 'for what you\u2019re chasing. Pick the objective, set the motor, and read '
