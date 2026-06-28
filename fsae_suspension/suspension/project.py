@@ -274,6 +274,10 @@ class ProjectStore:
             self.harness = None
         self.load_error = None
         self.save_error = None
+        # EV electrical database: pack + motor params extracted from the
+        # electrics lead's Excel workbook. Persisted here so teams don't
+        # have to re-upload the xlsx every session — configure once, use always.
+        self.ev_excel_params: dict = {}
         # Pick a backend: explicit > auto-detected Supabase > local JSON file.
         self.backend = backend or _auto_backend(path)
         self.load()
@@ -289,6 +293,7 @@ class ProjectStore:
             "geometry": self.geometry.as_dict() if self.geometry else {},
             "board": self.board.as_dict() if self.board else {},
             "harness": self.harness.as_dict() if getattr(self, "harness", None) else {},
+            "ev_excel_params": getattr(self, "ev_excel_params", {}),
             "updated": _dt.datetime.now().isoformat(timespec="seconds"),
         }
 
@@ -313,6 +318,9 @@ class ProjectStore:
         if harness:
             from .harness import HarnessLedger
             self.harness = HarnessLedger.from_dict(harness)
+        ev_p = d.get("ev_excel_params")
+        if ev_p and isinstance(ev_p, dict):
+            self.ev_excel_params = ev_p
 
     # ----------------------------- io ---------------------------------- #
     def load(self):

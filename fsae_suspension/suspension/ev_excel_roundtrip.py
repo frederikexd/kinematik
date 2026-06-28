@@ -269,8 +269,168 @@ def check_lap_from_speed_csv(
               drag_cda=drag_cda, crr=crr)
 
 
+def extract_params_from_excel(excel_bytes: bytes) -> dict:
+    """
+    Extract only the static parameters from the workbook — pack specs, motor
+    constants, and gear ratios — without writing anything back or running the
+    full round-trip.  The returned dict is JSON-serialisable and can be stored
+    in ProjectStore.ev_excel_params so teams never have to re-upload the file.
+
+    Keys (always present, defaulting to 0.0 if the sheet cell is blank):
+        pack:   {fuse_max_a, n_parallel, n_series, cell_voltage_v,
+                 cell_capacity_ah, endurance_km, max_cells, cell_r_ohm,
+                 cell_weight_kg, pack_cell_count, pack_voltage_v,
+                 cell_current_a, power_draw_kw, pack_capacity_ah,
+                 pack_energy_wh, joule_heating_kwh}
+        motor:  {motor_peak_torque_nm, motor_peak_power_kw, motor_freq_khz,
+                 motor_poles, motor_max_dc_v, motor_efficiency,
+                 current_from_pack_a, pack_voltage_ep_v, motor_max_rpm,
+                 wheel_diam_in, motor_pf, no_load_speed, synchronous_rpm}
+        gear_ratios: [float × 15]
+        _source: "excel"
+    """
+    try:
+        import openpyxl
+    except ImportError:
+        return {"_source": "excel", "_error": "openpyxl not installed"}
+
+    try:
+        wb = openpyxl.load_workbook(io.BytesIO(excel_bytes), data_only=True)
+    except Exception as exc:
+        return {"_source": "excel", "_error": str(exc)}
+
+    pack: dict[str, float] = {}
+    ws_pack = wb[_PACK_SHEET] if _PACK_SHEET in wb.sheetnames else None
+    if ws_pack:
+        for key, (row, col) in _PACK_CELLS.items():
+            pack[key] = _safe_float(ws_pack.cell(row=row, column=col).value)
+
+    motor: dict[str, float] = {}
+    ws_ep = wb[_EP_SHEET] if _EP_SHEET in wb.sheetnames else None
+    if ws_ep:
+        for key, (row, col) in _EP_PARAMS.items():
+            motor[key] = _safe_float(ws_ep.cell(row=row, column=col).value)
+
+    gear_ratios: list[float] = []
+    if ws_ep:
+        for col in range(_EP_GEAR_COL_START, _EP_GEAR_COL_END + 1):
+            v = ws_ep.cell(row=_EP_GEAR_RATIO_ROW, column=col).value
+            gear_ratios.append(_safe_float(v, default=1.0))
+    else:
+        gear_ratios = [1.0] * 15
+
+    return {
+        "pack": pack,
+        "motor": motor,
+        "gear_ratios": gear_ratios,
+        "_source": "excel",
+    }
+
+
+def lap_to_excel_roundtrip_from_db(
+    speed_ms:    "Sequence[float]",
+    time_s:      "Sequence[float]",
+    ev_params:   dict,
+    *,
+    lap_time_s:   float = 0.0,
+    top_speed_ms: float = 0.0,
+    avg_speed_ms: float = 0.0,
+) -> "ExcelRoundTripResult":
+    """
+    Run the full round-trip calculation using parameters stored in the project
+    database (ev_params dict, as written by extract_params_from_excel), instead
+    of requiring the raw xlsx bytes.  No workbook is written; the excel_bytes
+    field of the returned result will be empty.  Use lap_to_excel_roundtrip()
+    when you do need the updated workbook file.
+    """
+    v_ms  = np.asarray(speed_ms, dtype=float)
+    t_arr = np.asarray(time_s,   dtype=float)
+    if len(v_ms) < 2:
+        return ExcelRoundTripResult(ok=False, error="Need ≥2 speed points.")
+    if len(t_arr) != len(v_ms):
+        t_arr = np.arange(len(v_ms)) * 0.1
+
+    v_mph = v_ms * 2.23694
+    n_pts = len(v_mph)
+
+    pack        = ev_params.get("pack", {})
+    motor       = ev_params.get("motor", {})
+    gear_ratios = ev_params.get("gear_ratios") or [1.0] * 15
+
+    wheel_diam_in = motor.get("wheel_diam_in", 18.0) or 18.0
+    pack_v_ep     = motor.get("pack_voltage_ep_v", 504.0) or 504.0
+    motor_pf      = motor.get("motor_pf", 0.95) or 0.95
+    motor_eff     = motor.get("motor_efficiency", 0.9545) or 0.9545
+    pack_v_bpc    = pack.get("pack_voltage_v", 504.0) or 504.0
+    fuse_limit    = pack.get("fuse_max_a", 50.0) or 50.0
+    usable_kwh    = (pack_v_bpc * pack.get("pack_capacity_ah", 15.0)) * 0.92 / 1000.0
+
+    k_rpm    = 1056.0 / (math.pi * wheel_diam_in)
+    rpm_all  = np.zeros((n_pts, len(gear_ratios)), dtype=float)
+    for gi, gr in enumerate(gear_ratios):
+        rpm_all[:, gi] = v_mph * gr * k_rpm
+    rpm_gear1 = rpm_all[:, 0]
+
+    current_draw_a  = (pack_v_ep * motor_pf * rpm_gear1) / 1000.0
+    phase_current_a = motor_pf * math.sqrt(3) * motor_eff * rpm_gear1
+    power_kw        = current_draw_a * pack_v_ep / 1000.0
+
+    dt_arr = np.diff(t_arr, prepend=t_arr[0])
+    total_energy_kwh = float(np.sum(power_kw * np.abs(dt_arr))) / 3600.0
+
+    peak_i    = float(np.max(current_draw_a))
+    avg_i     = float(np.mean(current_draw_a))
+    peak_pw   = float(np.max(power_kw))
+    fuse_ok   = peak_i <= fuse_limit
+    energy_ok = total_energy_kwh <= usable_kwh
+    feasible  = fuse_ok and energy_ok
+    fuse_margin = fuse_limit - peak_i
+
+    P_fuse_kw = fuse_limit * pack_v_ep / 1000.0
+    v_test = np.linspace(0.1, 100.0, 5000)
+    P_test = (0.5 * 1.225 * 1.10 * v_test**3 + 0.018 * 230.0 * 9.81 * v_test) / 1000.0
+    idx_ceil = int(np.searchsorted(P_test, P_fuse_kw * 0.90))
+    fuse_speed_ms = float(v_test[min(idx_ceil, len(v_test) - 1)])
+
+    if feasible:
+        verdict = (f"✅ Electrically feasible — peak {peak_i:.1f} A / "
+                   f"{fuse_limit:.0f} A fuse  |  "
+                   f"{total_energy_kwh:.3f} kWh / {usable_kwh:.3f} kWh usable")
+    else:
+        issues = []
+        if not fuse_ok:   issues.append(f"fuse blown (+{-fuse_margin:.1f} A over)")
+        if not energy_ok: issues.append(f"energy deficit ({total_energy_kwh-usable_kwh:.3f} kWh short)")
+        verdict = f"❌ NOT feasible — {', '.join(issues)}"
+
+    return ExcelRoundTripResult(
+        ok=True,
+        time_s=t_arr,
+        speed_mph=v_mph,
+        speed_ms=v_ms,
+        rpm_gear1=rpm_gear1,
+        current_draw_a=current_draw_a,
+        phase_current_a=phase_current_a,
+        power_kw=power_kw,
+        pack=pack,
+        motor=motor,
+        max_speed_mph=float(np.max(v_mph)),
+        peak_current_a=peak_i,
+        avg_current_a=avg_i,
+        peak_power_kw=peak_pw,
+        total_energy_kwh=total_energy_kwh,
+        fuse_margin_a=fuse_margin,
+        fuse_speed_ceiling_ms=fuse_speed_ms,
+        usable_energy_kwh=usable_kwh,
+        fuse_ok=fuse_ok,
+        energy_ok=energy_ok,
+        feasible=feasible,
+        verdict=verdict,
+        excel_bytes=b"",
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
-# Core round-trip
+# Core round-trip (writes back to workbook)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def lap_to_excel_roundtrip(
@@ -511,3 +671,644 @@ def lap_to_excel_roundtrip(
         verdict=verdict,
         excel_bytes=out_bytes,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Extended analysis: Joule heat per cell, SoC depletion, lap-stop prediction,
+# minimum-feasible pack advisor, and the enhanced Excel export.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_cell_thermals(
+    current_draw_a: np.ndarray,
+    time_s:         np.ndarray,
+    pack:           dict,
+    *,
+    ambient_c:       float = 25.0,
+    thermal_mass_j_k: float | None = None,
+    h_conv_w_m2k:    float = 10.0,
+    cell_surface_m2:  float = 0.0020,
+) -> dict:
+    """
+    Per-cell Joule heat time-series and thermal model.
+
+    The pack current is shared across n_parallel strings, so each cell sees
+    I_cell = I_pack / n_parallel.  Joule power per cell = I_cell² × R_cell.
+
+    Returns a dict with numpy arrays keyed as:
+        i_cell_a        — per-cell current (A)
+        joule_w         — instantaneous Joule power per cell (W)
+        cumulative_j    — cumulative Joule energy per cell (J)
+        temp_c          — estimated cell surface temperature (°C)
+        peak_temp_c     — max temperature reached (°C)
+        peak_joule_w    — peak instantaneous Joule power (W)
+        total_joule_kwh — total Joule heat per cell over the lap (kWh)
+    """
+    n_parallel = max(int(pack.get("n_parallel", 1) or 1), 1)
+    r_cell     = float(pack.get("cell_r_ohm", 0.003) or 0.003)
+    cell_mass  = float(pack.get("cell_weight_kg", 0.065) or 0.065)
+
+    # Specific heat of LFP/NMC cells ~ 900 J/(kg·K)
+    cp = 900.0
+    if thermal_mass_j_k is None:
+        thermal_mass_j_k = cell_mass * cp
+
+    i_cell = current_draw_a / n_parallel
+    joule_w = i_cell ** 2 * r_cell
+
+    dt = np.diff(time_s, prepend=time_s[0])
+    dt = np.abs(dt)
+
+    # Simple lumped thermal model: dT/dt = (Q_gen - Q_conv) / C_th
+    # Q_conv = h * A * (T - T_amb)
+    temp_c = np.zeros(len(time_s))
+    temp_c[0] = ambient_c
+    for k in range(1, len(time_s)):
+        q_gen  = joule_w[k] * dt[k]
+        q_conv = h_conv_w_m2k * cell_surface_m2 * (temp_c[k-1] - ambient_c) * dt[k]
+        temp_c[k] = temp_c[k-1] + (q_gen - q_conv) / thermal_mass_j_k
+
+    cumulative_j    = np.cumsum(joule_w * dt)
+    total_joule_j   = float(cumulative_j[-1]) if len(cumulative_j) else 0.0
+    total_joule_kwh = total_joule_j / 3_600_000.0
+
+    return {
+        "i_cell_a":        i_cell,
+        "joule_w":         joule_w,
+        "cumulative_j":    cumulative_j,
+        "temp_c":          temp_c,
+        "peak_temp_c":     float(np.max(temp_c)),
+        "peak_joule_w":    float(np.max(joule_w)),
+        "total_joule_kwh": total_joule_kwh,
+    }
+
+
+def compute_soc_and_stop(
+    power_kw: np.ndarray,
+    time_s:   np.ndarray,
+    pack:     dict,
+    motor:    dict,
+    *,
+    usable_frac: float = 0.92,
+) -> dict:
+    """
+    Integrate power draw vs time to track state-of-charge and find exactly
+    where on the lap the car would run out of energy.
+
+    Returns:
+        soc_pct         — SoC array (100 % → 0 %)
+        energy_used_kwh — cumulative energy used at each time step
+        stop_time_s     — time at which pack hits 0 % (None if it finishes)
+        stop_idx        — array index of stop (None if finishes)
+        pct_lap_done    — fraction of lap completed at stop (None if finishes)
+        finishes        — bool
+        deficit_kwh     — how much energy is still needed after pack is empty (0 if finishes)
+    """
+    pack_v     = float(pack.get("pack_voltage_v", 504.0) or 504.0)
+    cap_ah     = float(pack.get("pack_capacity_ah", 15.0) or 15.0)
+    usable_kwh = pack_v * cap_ah * usable_frac / 1000.0
+
+    dt = np.abs(np.diff(time_s, prepend=time_s[0]))
+    energy_used_kwh = np.cumsum(power_kw * dt) / 3600.0
+
+    soc_pct = np.clip(100.0 * (1.0 - energy_used_kwh / usable_kwh), 0.0, 100.0)
+
+    stop_idx = None
+    stop_time_s = None
+    pct_lap_done = None
+    finishes = True
+    deficit_kwh = 0.0
+
+    depleted = np.where(energy_used_kwh >= usable_kwh)[0]
+    if len(depleted):
+        stop_idx     = int(depleted[0])
+        stop_time_s  = float(time_s[stop_idx])
+        lap_time     = float(time_s[-1])
+        pct_lap_done = stop_time_s / lap_time if lap_time > 0 else 0.0
+        finishes     = False
+        deficit_kwh  = float(energy_used_kwh[-1] - usable_kwh)
+
+    return {
+        "soc_pct":         soc_pct,
+        "energy_used_kwh": energy_used_kwh,
+        "usable_kwh":      usable_kwh,
+        "stop_time_s":     stop_time_s,
+        "stop_idx":        stop_idx,
+        "pct_lap_done":    pct_lap_done,
+        "finishes":        finishes,
+        "deficit_kwh":     deficit_kwh,
+    }
+
+
+def compute_minimum_feasible_pack(
+    power_kw:  np.ndarray,
+    time_s:    np.ndarray,
+    current_draw_a: np.ndarray,
+    pack:      dict,
+    motor:     dict,
+    *,
+    usable_frac:  float = 0.92,
+    safety_margin: float = 0.10,   # 10 % headroom on top of calculated need
+) -> dict:
+    """
+    Work backwards from the lap profile to answer:
+      "What is the smallest pack that lets this car finish the lap?"
+
+    Constraints:
+      1. Energy: usable pack energy ≥ total energy drawn × (1 + safety_margin)
+      2. Current: peak I_pack ≤ fuse limit (pack topology doesn't change this)
+
+    Returns a dict with:
+        min_energy_kwh      — minimum usable energy needed
+        min_capacity_ah     — minimum Ah at current pack voltage
+        rec_capacity_ah     — recommended (with safety margin)
+        rec_energy_kwh      — recommended usable energy
+        rec_cells_series    — cells in series (same voltage per cell, min count)
+        rec_cells_parallel  — strings in parallel for capacity
+        rec_total_cells     — total cell count
+        rec_pack_mass_kg    — estimated pack mass
+        current_usable_kwh  — what the current pack provides
+        energy_shortfall_kwh— energy gap (0 if already feasible)
+        fuse_ok             — bool: is peak current already within fuse?
+        peak_current_a      — peak pack current seen on the lap
+        fuse_limit_a        — fuse rating from pack params
+    """
+    pack_v    = float(pack.get("pack_voltage_v", 504.0) or 504.0)
+    cell_v    = float(pack.get("cell_voltage_v", 3.6) or 3.6)
+    cell_ah   = float(pack.get("cell_capacity_ah", 2.5) or 2.5)
+    cell_mass = float(pack.get("cell_weight_kg", 0.065) or 0.065)
+    n_series  = int(pack.get("n_series", 1) or max(1, round(pack_v / max(cell_v, 0.1))))
+    fuse_a    = float(pack.get("fuse_max_a", 50.0) or 50.0)
+
+    dt = np.abs(np.diff(time_s, prepend=time_s[0]))
+    total_energy_kwh = float(np.sum(power_kw * dt)) / 3600.0
+    peak_i = float(np.max(current_draw_a))
+
+    min_energy_kwh  = total_energy_kwh / usable_frac
+    rec_energy_kwh  = min_energy_kwh * (1.0 + safety_margin)
+
+    # Capacity from energy: E = V × Ah  → Ah = E×1000 / V
+    min_cap_ah = min_energy_kwh * 1000.0 / max(pack_v, 1.0)
+    rec_cap_ah = rec_energy_kwh * 1000.0 / max(pack_v, 1.0)
+
+    # How many parallel strings: ceil(rec_cap_ah / cell_ah)
+    n_par_rec   = max(1, math.ceil(rec_cap_ah / max(cell_ah, 0.01)))
+    total_cells = n_series * n_par_rec
+    pack_mass   = total_cells * cell_mass
+
+    cur_usable  = (pack_v * float(pack.get("pack_capacity_ah", 15.0) or 15.0)
+                   * usable_frac / 1000.0)
+    shortfall   = max(0.0, total_energy_kwh - cur_usable)
+
+    return {
+        "min_energy_kwh":       round(min_energy_kwh, 4),
+        "min_capacity_ah":      round(min_cap_ah, 2),
+        "rec_capacity_ah":      round(rec_cap_ah, 2),
+        "rec_energy_kwh":       round(rec_energy_kwh, 4),
+        "rec_cells_series":     n_series,
+        "rec_cells_parallel":   n_par_rec,
+        "rec_total_cells":      total_cells,
+        "rec_pack_mass_kg":     round(pack_mass, 2),
+        "current_usable_kwh":   round(cur_usable, 4),
+        "energy_shortfall_kwh": round(shortfall, 4),
+        "fuse_ok":              peak_i <= fuse_a,
+        "peak_current_a":       round(peak_i, 2),
+        "fuse_limit_a":         fuse_a,
+        "safety_margin_pct":    safety_margin * 100,
+        "pack_voltage_v":       pack_v,
+        "cell_voltage_v":       cell_v,
+        "cell_capacity_ah":     cell_ah,
+    }
+
+
+def build_enhanced_excel(
+    result:         "ExcelRoundTripResult",
+    excel_bytes:    bytes,
+    thermals:       dict,
+    soc_data:       dict,
+    min_pack:       dict,
+    *,
+    lap_time_s:     float = 0.0,
+    top_speed_ms:   float = 0.0,
+    avg_speed_ms:   float = 0.0,
+) -> bytes:
+    """
+    Write three new sheets into the workbook on top of the existing round-trip:
+      1. PackHeatmap    — per-cell Joule heat grid with conditional formatting
+      2. LapEnergy      — SoC depletion curve, stop marker, energy timeline
+      3. FeasiblePack   — minimum feasible pack advisor + what-if table
+
+    Also embeds a Python xlwings-compatible macro stub in PackHeatmap so the
+    team can refresh the heat map with one click if they have xlwings installed.
+
+    Returns updated xlsx bytes.
+    """
+    try:
+        import openpyxl
+        from openpyxl.styles import (
+            PatternFill, Font, Alignment, Border, Side,
+            GradientFill,
+        )
+        from openpyxl.utils import get_column_letter
+        from openpyxl.chart import AreaChart, Reference
+        from openpyxl.chart.series import SeriesLabel
+    except ImportError:
+        # Return original bytes if openpyxl not available
+        return excel_bytes
+
+    wb = openpyxl.load_workbook(io.BytesIO(excel_bytes), data_only=False)
+
+    # ── colour helpers ────────────────────────────────────────────────────────
+    def _heat_colour(val: float, lo: float, hi: float) -> str:
+        """Map val in [lo,hi] → hex fill colour green→yellow→red."""
+        if hi <= lo:
+            return "FF37E0D0"
+        t = max(0.0, min(1.0, (val - lo) / (hi - lo)))
+        if t < 0.5:
+            # green → yellow
+            r = int(55  + t * 2 * 200)
+            g = int(224 - t * 2 * 24)
+            b = int(192 - t * 2 * 192)
+        else:
+            # yellow → red
+            r = int(255)
+            g = int(200 - (t - 0.5) * 2 * 200)
+            b = 0
+        return f"FF{r:02X}{g:02X}{b:02X}"
+
+    def _cell_fill(colour_hex: str) -> PatternFill:
+        return PatternFill(fill_type="solid", fgColor=colour_hex)
+
+    def _header(ws, row: int, col: int, text: str, bold=True):
+        c = ws.cell(row=row, column=col, value=text)
+        c.font = Font(bold=bold, color="FFFFFFFF", size=10)
+        c.fill = PatternFill(fill_type="solid", fgColor="FF1A2433")
+        c.alignment = Alignment(horizontal="center", vertical="center")
+        return c
+
+    def _thin_border():
+        s = Side(border_style="thin", color="FF2D3748")
+        return Border(left=s, right=s, top=s, bottom=s)
+
+    pack  = result.pack
+    motor = result.motor
+    t_arr = result.time_s
+    n_pts = len(t_arr)
+
+    # ── Sheet 1: PackHeatmap ─────────────────────────────────────────────────
+    _HM = "PackHeatmap"
+    if _HM in wb.sheetnames:
+        del wb[_HM]
+    ws_hm = wb.create_sheet(_HM)
+    ws_hm.sheet_properties.tabColor = "E74C3C"
+
+    n_series  = max(int(pack.get("n_series",   1) or 1), 1)
+    n_par     = max(int(pack.get("n_parallel", 1) or 1), 1)
+    joule_w   = thermals["joule_w"]
+    temp_c    = thermals["temp_c"]
+    i_cell    = thermals["i_cell_a"]
+
+    # Downsample to ≤500 pts for the grid snapshot
+    step = max(1, n_pts // 200)
+    snap_idx = list(range(0, n_pts, step))
+
+    # ── Title block
+    ws_hm.merge_cells("A1:H1")
+    t = ws_hm["A1"]
+    t.value = "🔋 Battery Pack Thermal Heatmap — KinematiK Lap Analysis"
+    t.font = Font(bold=True, size=13, color="FFFFFFFF")
+    t.fill = PatternFill(fill_type="solid", fgColor="FF0D1117")
+    t.alignment = Alignment(horizontal="center")
+    ws_hm.row_dimensions[1].height = 24
+
+    # ── Key metrics row
+    metrics = [
+        ("Peak cell temp", f"{thermals['peak_temp_c']:.1f} °C"),
+        ("Peak Joule power", f"{thermals['peak_joule_w']:.2f} W/cell"),
+        ("Total Joule heat", f"{thermals['total_joule_kwh']*1000:.2f} Wh/cell"),
+        ("Pack topology", f"{n_series}S × {n_par}P"),
+        ("Cells total", f"{n_series * n_par}"),
+        ("Cell R", f"{pack.get('cell_r_ohm', '?')} Ω"),
+    ]
+    for ci, (label, val) in enumerate(metrics):
+        col = ci + 1
+        ws_hm.cell(row=2, column=col, value=label).font = Font(
+            bold=True, size=9, color="FF8899AA")
+        ws_hm.cell(row=2, column=col).fill = PatternFill(
+            fill_type="solid", fgColor="FF0D1117")
+        ws_hm.cell(row=3, column=col, value=val).font = Font(
+            bold=True, size=11, color="FFFFFFFF")
+        ws_hm.cell(row=3, column=col).fill = PatternFill(
+            fill_type="solid", fgColor="FF131B24")
+
+    # ── Cell grid header
+    _header(ws_hm, 5, 1, "Cell position →  (columns = parallel strings)")
+    _header(ws_hm, 6, 1, "Series\nRow↓", bold=True)
+    for p in range(n_par):
+        _header(ws_hm, 6, p + 2, f"P{p+1}")
+
+    # ── Fill cell grid with Joule heat colour
+    # Each cell in the grid represents one physical cell.
+    # Joule heat per cell is the same for all cells at the same parallel
+    # position (they share the same string current), so the n_series rows
+    # differ only if cell-level resistance differs — we use a single lap
+    # total here and modulate by series position (thermal gradient proxy).
+    total_j_per_cell = thermals["total_joule_kwh"] * 3_600_000.0  # J
+    # Series cells at the bottom of the stack tend to run hotter in real packs.
+    # Approximate with a ±15% gradient across the stack.
+    series_gradient = np.linspace(0.85, 1.15, n_series)
+
+    # temperature range for colour mapping
+    t_lo = 25.0
+    t_hi = max(thermals["peak_temp_c"], 30.0)
+
+    for s in range(n_series):
+        row = 7 + s
+        ws_hm.cell(row=row, column=1, value=f"S{s+1}").font = Font(
+            bold=True, size=9, color="FF8899AA")
+        for p in range(n_par):
+            col = p + 2
+            cell_j = total_j_per_cell * series_gradient[s]
+            cell_t = t_lo + (t_hi - t_lo) * series_gradient[s]
+            colour  = _heat_colour(cell_t, t_lo, t_hi)
+            c = ws_hm.cell(row=row, column=col, value=round(cell_t, 1))
+            c.fill      = _cell_fill(colour)
+            c.font      = Font(size=8, color="FF000000" if cell_t < (t_lo+t_hi)/2 else "FFFFFFFF")
+            c.alignment = Alignment(horizontal="center")
+            c.border    = _thin_border()
+            c.number_format = "0.0"
+
+    # ── Legend
+    legend_row = 7 + n_series + 2
+    ws_hm.cell(row=legend_row, column=1, value="Temperature legend:").font = Font(
+        bold=True, size=9, color="FF8899AA")
+    labels = ["Cool (25°C)", "Warm", "Hot", f"Peak ({t_hi:.0f}°C)"]
+    for i, label in enumerate(labels):
+        t_val = t_lo + (t_hi - t_lo) * i / (len(labels) - 1)
+        colour = _heat_colour(t_val, t_lo, t_hi)
+        col = i + 2
+        c = ws_hm.cell(row=legend_row, column=col, value=label)
+        c.fill = _cell_fill(colour)
+        c.font = Font(size=9, color="FF000000" if t_val < (t_lo+t_hi)/2 else "FFFFFFFF")
+        c.alignment = Alignment(horizontal="center")
+
+    # ── Time-series data table (Joule W and cell temp per time step)
+    ts_start_row = legend_row + 3
+    _header(ws_hm, ts_start_row, 1, "Time (s)")
+    _header(ws_hm, ts_start_row, 2, "Speed (km/h)")
+    _header(ws_hm, ts_start_row, 3, "Pack I (A)")
+    _header(ws_hm, ts_start_row, 4, "Cell I (A)")
+    _header(ws_hm, ts_start_row, 5, "Joule/cell (W)")
+    _header(ws_hm, ts_start_row, 6, "Cell temp (°C)")
+    _header(ws_hm, ts_start_row, 7, "Cum. heat/cell (J)")
+
+    cum_j = thermals["cumulative_j"]
+    for ri, idx in enumerate(snap_idx):
+        r = ts_start_row + 1 + ri
+        ws_hm.cell(row=r, column=1, value=round(float(t_arr[idx]), 2))
+        ws_hm.cell(row=r, column=2, value=round(float(result.speed_ms[idx]) * 3.6, 2))
+        ws_hm.cell(row=r, column=3, value=round(float(result.current_draw_a[idx]), 3))
+        ws_hm.cell(row=r, column=4, value=round(float(i_cell[idx]), 4))
+        ws_hm.cell(row=r, column=5, value=round(float(joule_w[idx]), 4))
+        ws_hm.cell(row=r, column=6, value=round(float(temp_c[idx]), 2))
+        ws_hm.cell(row=r, column=7, value=round(float(cum_j[idx]), 2))
+
+        # heat-colour the cell-temp column
+        t_val = float(temp_c[idx])
+        ws_hm.cell(row=r, column=6).fill = _cell_fill(_heat_colour(t_val, t_lo, t_hi))
+        ws_hm.cell(row=r, column=6).font = Font(
+            size=9, color="FFFFFFFF" if t_val > (t_lo + t_hi) / 2 else "FF000000")
+
+    # ── Python macro stub (embedded as a named comment range so xlwings can find it)
+    pycode_row = ts_start_row + len(snap_idx) + 3
+    ws_hm.cell(row=pycode_row, column=1,
+               value="# ── KinematiK Python Macro (run via xlwings) ──────────────────────").font = Font(
+                   bold=True, color="FF37E0D0", size=9)
+    macro_lines = [
+        "import xlwings as xw, pandas as pd, matplotlib.pyplot as plt",
+        "from matplotlib.colors import LinearSegmentedColormap",
+        "",
+        "def refresh_heatmap():",
+        "    wb  = xw.books.active",
+        "    ws  = wb.sheets['PackHeatmap']",
+        "    # Read the time-series block written by KinematiK",
+        f"    df = ws.range('A{ts_start_row+1}').expand().options(pd.DataFrame, header=1).value",
+        "    df.columns = ['time_s','speed_kmh','pack_i_a','cell_i_a','joule_w','cell_t_c','cum_j']",
+        "    cmap = LinearSegmentedColormap.from_list('heat', ['#37E0D0','#F0A500','#E74C3C'])",
+        "    fig, ax = plt.subplots(figsize=(10, 3))",
+        "    sc = ax.scatter(df.time_s, df.cell_t_c, c=df.cell_t_c, cmap=cmap, s=4)",
+        "    plt.colorbar(sc, ax=ax, label='Cell temperature (°C)')",
+        "    ax.set_xlabel('Lap time (s)'); ax.set_ylabel('Cell temp (°C)')",
+        "    ax.set_title('KinematiK — Cell thermal profile over lap')",
+        "    ax.set_facecolor('#0D1117'); fig.patch.set_facecolor('#0D1117')",
+        "    ax.tick_params(colors='white'); ax.xaxis.label.set_color('white')",
+        "    ax.yaxis.label.set_color('white'); ax.title.set_color('white')",
+        "    plt.tight_layout()",
+        "    pic_path = 'kinematik_heatmap.png'",
+        "    fig.savefig(pic_path, dpi=150, bbox_inches='tight')",
+        "    ws.pictures.add(pic_path, name='HeatmapChart', update=True,",
+        "                    left=ws.range('I2').left, top=ws.range('I2').top)",
+        "    print('Heatmap refreshed.')",
+        "",
+        "refresh_heatmap()",
+    ]
+    for li, line in enumerate(macro_lines):
+        ws_hm.cell(row=pycode_row + 1 + li, column=1, value=line).font = Font(
+            name="Courier New", size=8, color="FF8899AA")
+
+    # Column widths
+    ws_hm.column_dimensions["A"].width = 18
+    for ci in range(2, n_par + 2):
+        ws_hm.column_dimensions[get_column_letter(ci)].width = 8
+
+    # ── Sheet 2: LapEnergy ──────────────────────────────────────────────────
+    _LE = "LapEnergy"
+    if _LE in wb.sheetnames:
+        del wb[_LE]
+    ws_le = wb.create_sheet(_LE)
+    ws_le.sheet_properties.tabColor = "3B7CFF"
+
+    ws_le.merge_cells("A1:G1")
+    t2 = ws_le["A1"]
+    t2.value = "⚡ Lap Energy & State-of-Charge — KinematiK"
+    t2.font = Font(bold=True, size=13, color="FFFFFFFF")
+    t2.fill = PatternFill(fill_type="solid", fgColor="FF0D1117")
+    t2.alignment = Alignment(horizontal="center")
+
+    # Summary metrics
+    soc_meta = [
+        ("Usable pack energy",    f"{soc_data['usable_kwh']:.3f} kWh"),
+        ("Total energy drawn",    f"{result.total_energy_kwh:.3f} kWh"),
+        ("Pack finishes lap",     "✅ YES" if soc_data["finishes"] else "❌ NO"),
+        ("Stop time",             f"{soc_data['stop_time_s']:.1f} s" if soc_data["stop_time_s"] else "—"),
+        ("Lap % complete at stop", f"{(soc_data['pct_lap_done'] or 0)*100:.1f} %" if not soc_data["finishes"] else "100 %"),
+        ("Energy deficit",        f"{soc_data['deficit_kwh']:.3f} kWh" if not soc_data['finishes'] else "—"),
+    ]
+    for ci, (label, val) in enumerate(soc_meta):
+        col = ci + 1
+        ws_le.cell(row=2, column=col, value=label).font = Font(
+            bold=True, size=9, color="FF8899AA")
+        ws_le.cell(row=2, column=col).fill = PatternFill(
+            fill_type="solid", fgColor="FF0D1117")
+        bad = "NO" in val or "deficit" in label.lower()
+        ws_le.cell(row=3, column=col, value=val).font = Font(
+            bold=True, size=11,
+            color="FFE74C3C" if bad else "FF37E0D0")
+        ws_le.cell(row=3, column=col).fill = PatternFill(
+            fill_type="solid", fgColor="FF131B24")
+
+    # Data table
+    _header(ws_le, 5, 1, "Time (s)")
+    _header(ws_le, 5, 2, "Speed (km/h)")
+    _header(ws_le, 5, 3, "Power (kW)")
+    _header(ws_le, 5, 4, "Energy used (kWh)")
+    _header(ws_le, 5, 5, "SoC (%)")
+    _header(ws_le, 5, 6, "Pack I (A)")
+    _header(ws_le, 5, 7, "Marker")
+
+    soc_arr  = soc_data["soc_pct"]
+    e_used   = soc_data["energy_used_kwh"]
+    stop_idx = soc_data["stop_idx"]
+
+    for ri, idx in enumerate(snap_idx):
+        r = 6 + ri
+        soc_val = float(soc_arr[idx])
+        ws_le.cell(row=r, column=1, value=round(float(t_arr[idx]), 2))
+        ws_le.cell(row=r, column=2, value=round(float(result.speed_ms[idx]) * 3.6, 2))
+        ws_le.cell(row=r, column=3, value=round(float(result.power_kw[idx]), 3))
+        ws_le.cell(row=r, column=4, value=round(float(e_used[idx]), 4))
+        soc_c = ws_le.cell(row=r, column=5, value=round(soc_val, 1))
+        soc_c.fill = _cell_fill(_heat_colour(100.0 - soc_val, 0, 100))
+        soc_c.font = Font(size=9, color="FF000000" if soc_val > 50 else "FFFFFFFF")
+        ws_le.cell(row=r, column=6, value=round(float(result.current_draw_a[idx]), 2))
+        # mark the stop point
+        if stop_idx is not None and idx >= stop_idx and (
+                ri == 0 or snap_idx[ri-1] < stop_idx):
+            ws_le.cell(row=r, column=7, value="🛑 STOP").font = Font(
+                bold=True, color="FFE74C3C", size=10)
+
+    # SoC chart
+    try:
+        chart_ref_soc = Reference(ws_le,
+            min_col=5, min_row=5, max_row=5 + len(snap_idx))
+        chart_ref_t   = Reference(ws_le,
+            min_col=1, min_row=6, max_row=5 + len(snap_idx))
+        from openpyxl.chart import LineChart
+        lc = LineChart()
+        lc.title  = "State of Charge over Lap"
+        lc.y_axis.title = "SoC (%)"
+        lc.x_axis.title = "Time (s)"
+        lc.height = 12
+        lc.width  = 22
+        lc.add_data(chart_ref_soc, titles_from_data=True)
+        lc.set_categories(chart_ref_t)
+        lc.series[0].graphicalProperties.line.solidFill = "3B7CFF"
+        lc.series[0].graphicalProperties.line.width = 20000
+        ws_le.add_chart(lc, f"I5")
+    except Exception:
+        pass
+
+    for col_idx, w in enumerate([12, 12, 10, 16, 8, 10, 14], 1):
+        ws_le.column_dimensions[get_column_letter(col_idx)].width = w
+
+    # ── Sheet 3: FeasiblePack ────────────────────────────────────────────────
+    _FP = "FeasiblePack"
+    if _FP in wb.sheetnames:
+        del wb[_FP]
+    ws_fp = wb.create_sheet(_FP)
+    ws_fp.sheet_properties.tabColor = "A855F7"
+
+    ws_fp.merge_cells("A1:E1")
+    t3 = ws_fp["A1"]
+    t3.value = "📐 Minimum Feasible Pack Advisor — KinematiK"
+    t3.font = Font(bold=True, size=13, color="FFFFFFFF")
+    t3.fill = PatternFill(fill_type="solid", fgColor="FF0D1117")
+    t3.alignment = Alignment(horizontal="center")
+
+    # Current pack vs minimum
+    fp_rows = [
+        ("",                             "Current pack",   "Minimum needed",    "Recommended (+10%)", "Unit"),
+        ("Energy (usable)",              f"{min_pack['current_usable_kwh']:.3f}",
+                                          f"{min_pack['min_energy_kwh']:.3f}",
+                                          f"{min_pack['rec_energy_kwh']:.3f}",   "kWh"),
+        ("Capacity",                     f"{pack.get('pack_capacity_ah','?')}",
+                                          f"{min_pack['min_capacity_ah']:.2f}",
+                                          f"{min_pack['rec_capacity_ah']:.2f}",  "Ah"),
+        ("Parallel strings",             f"{pack.get('n_parallel','?')}",
+                                          "—",
+                                          f"{min_pack['rec_cells_parallel']}",    "strings"),
+        ("Total cells",                  f"{pack.get('pack_cell_count','?')}",
+                                          "—",
+                                          f"{min_pack['rec_total_cells']}",       "cells"),
+        ("Estimated pack mass",          f"{pack.get('cell_weight_kg',0.065) * (pack.get('pack_cell_count',0) or min_pack['rec_total_cells']):.1f}",
+                                          "—",
+                                          f"{min_pack['rec_pack_mass_kg']:.1f}", "kg"),
+        ("Energy shortfall",             "—",
+                                          f"{min_pack['energy_shortfall_kwh']:.3f}",
+                                          "—",                                   "kWh"),
+        ("Fuse OK for this lap",         "—",
+                                          "✅" if min_pack["fuse_ok"] else "❌",
+                                          "—",                                   ""),
+        ("Peak pack current",            "—",
+                                          f"{min_pack['peak_current_a']:.1f}",
+                                          "—",                                   "A"),
+        ("Fuse rating",                  f"{min_pack['fuse_limit_a']:.0f}",
+                                          f"{min_pack['fuse_limit_a']:.0f}",
+                                          f"{min_pack['fuse_limit_a']:.0f}",     "A"),
+    ]
+
+    col_colours = ["FF1A2433", "FF131B24", "FF0D1B2A", "FF1A0D2A"]
+    for ri, row_data in enumerate(fp_rows):
+        for ci, val in enumerate(row_data):
+            c = ws_fp.cell(row=ri + 2, column=ci + 1, value=val)
+            c.fill = PatternFill(fill_type="solid", fgColor=col_colours[min(ci, 3)])
+            if ri == 0:
+                c.font = Font(bold=True, size=10, color="FF8899AA")
+                c.alignment = Alignment(horizontal="center")
+            else:
+                is_bad = ("shortfall" in row_data[0].lower() and ci == 2 and
+                          min_pack["energy_shortfall_kwh"] > 0)
+                is_good = ("Fuse OK" in row_data[0] and ci == 2 and min_pack["fuse_ok"])
+                c.font = Font(
+                    size=10,
+                    color=("FFE74C3C" if is_bad else
+                           "FF37E0D0" if is_good else "FFFFFFFF"))
+            c.border = _thin_border()
+
+    # What-if table: capacity vs laps completed
+    ws_fp.cell(row=14, column=1, value="What-if: capacity → laps completed").font = Font(
+        bold=True, size=11, color="FFA855F7")
+
+    total_e = result.total_energy_kwh
+    pack_v_fp = min_pack["pack_voltage_v"]
+    _header(ws_fp, 15, 1, "Capacity (Ah)")
+    _header(ws_fp, 15, 2, "Usable energy (kWh)")
+    _header(ws_fp, 15, 3, "Laps (endurance ~22)")
+    _header(ws_fp, 15, 4, "Energy margin (%)")
+    _header(ws_fp, 15, 5, "Status")
+
+    for wi, cap_ah in enumerate([5, 8, 10, 12, 15, 18, 20, 25, 30]):
+        usable = pack_v_fp * cap_ah * 0.92 / 1000.0
+        laps   = usable / max(total_e, 0.001)
+        margin = (usable / max(total_e, 0.001) - 1.0) * 100.0
+        ok     = usable >= total_e
+        r = 16 + wi
+        ws_fp.cell(row=r, column=1, value=cap_ah)
+        ws_fp.cell(row=r, column=2, value=round(usable, 3))
+        ws_fp.cell(row=r, column=3, value=round(laps, 2))
+        ws_fp.cell(row=r, column=4, value=round(margin, 1))
+        status_c = ws_fp.cell(row=r, column=5,
+                               value="✅ Feasible" if ok else "❌ Short")
+        status_c.font = Font(color="FF37E0D0" if ok else "FFE74C3C", bold=True)
+        for col_idx in range(1, 6):
+            ws_fp.cell(row=r, column=col_idx).fill = PatternFill(
+                fill_type="solid",
+                fgColor="FF131B24" if ok else "FF2A1010")
+            ws_fp.cell(row=r, column=col_idx).border = _thin_border()
+
+    for col_idx, w in enumerate([16, 20, 20, 16, 12], 1):
+        ws_fp.column_dimensions[get_column_letter(col_idx)].width = w
+
+    # ── Save ──────────────────────────────────────────────────────────────────
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
