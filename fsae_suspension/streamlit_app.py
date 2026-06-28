@@ -62,11 +62,13 @@ from suspension import ggv as ggv_mod
 from suspension import tire_thermal as thermal_mod
 from suspension import units as units_mod
 from suspension import bracket_fos as bracket_mod
+from suspension import bolted_joint as bolt_mod
 from suspension import tractive_system as tract_mod
 from suspension import pcm_cooling as pcm_mod
 from suspension import dfmea as dfmea_mod
 from suspension import risk_propagation as riskprop_mod
 from suspension import process_library as proclib_mod
+from suspension import pt_integration as pti_mod
 
 # --------------------------------------------------------------------------- #
 #  Cached compute layer.
@@ -2673,6 +2675,152 @@ def _render_rotor_thermal(_bt, _mass, kin):
                    "in Ansys.")
 
 
+def _render_mount_bolt_check(key_prefix, *, default_ext_n=2000.0,
+                             default_base="Aluminium 6061",
+                             ledger_subsys=None, context_label="this mount"):
+    """A self-contained preloaded-bolt check for ANY mounting joint — the same
+    VDI 2230 / Shigley solver the Brakes ▸ Bolt view uses, factored out so the
+    pedal-box, accumulator and other mount tabs get the identical tool instead of
+    each member re-deriving bolt torque in a spreadsheet and meshing a guess.
+
+    `key_prefix` namespaces the widgets so several copies coexist. If
+    `ledger_subsys` is given, a declare-button writes the clamp force + torque
+    spec into that subsystem's interface, exactly like the brakes view.
+    """
+    st.markdown(
+        f'<p class="hint" style="margin:0 0 6px;">Same wall the brakes team hit: '
+        f'<b>{context_label}</b> is clamped by bolt torque, and the only stress the '
+        'FEA shows is a ring at the holes because the preload was a guess. Spec the '
+        'torque here first (preload, bolt stress vs proof, joint separation, head '
+        'crush) — then let the sim <i>verify</i> it.</p>', unsafe_allow_html=True)
+
+    c = st.columns(4)
+    g = c[0].selectbox("Bolt grade", list(bolt_mod.BOLT_GRADES.keys()), index=1,
+                       key=f"{key_prefix}_grade")
+    d = c[1].selectbox("Thread", list(bolt_mod.METRIC_COARSE.keys()), index=1,
+                       format_func=lambda x: f"M{x:.0f}", key=f"{key_prefix}_dia")
+    K = c[2].selectbox("Nut factor K", [0.20, 0.15, 0.12],
+                       format_func=lambda k: {0.20: "0.20 — dry",
+                                              0.15: "0.15 — light oil",
+                                              0.12: "0.12 — anti-seize"}[k],
+                       key=f"{key_prefix}_K",
+                       help="Lubrication state — the biggest preload scatter source.")
+    T = unum(c[3], "Assembly torque (N·m)", 2.0, 40.0,
+             float(st.session_state.get(f"{key_prefix}_torque", 8.0)), "N·m",
+             step=0.5, key=f"{key_prefix}_torque")
+
+    c2 = st.columns(4)
+    base = c2[0].selectbox("Clamped base material",
+                           ["Aluminium 6061", "Aluminium 7075", "Steel 4130",
+                            "Steel mild"],
+                           index=["Aluminium 6061", "Aluminium 7075", "Steel 4130",
+                                  "Steel mild"].index(default_base)
+                           if default_base in ["Aluminium 6061", "Aluminium 7075",
+                                               "Steel 4130", "Steel mild"] else 0,
+                           key=f"{key_prefix}_base",
+                           help="Softer clamped face — sets the head-bearing crush "
+                                "limit.")
+    chas = c2[1].selectbox("Other face material",
+                           ["Aluminium 6061", "Aluminium 7075", "Steel 4130",
+                            "Steel mild"], key=f"{key_prefix}_chas")
+    grip = unum(c2[2], "Grip / stack (mm)", 3.0, 30.0, 8.0, "mm", step=0.5,
+                key=f"{key_prefix}_grip")
+    headd = unum(c2[3], "Head/washer ⌀ (mm)", 8.0, 24.0, float(d) * 1.8, "mm",
+                 step=0.5, key=f"{key_prefix}_headd",
+                 help="A bigger washer spreads the crush — the hardened-washer fix.")
+
+    c3 = st.columns([1, 1])
+    extN = unum(c3[0], "External tensile load / bolt (N)", 0.0, 20000.0,
+                float(default_ext_n), "N", step=50.0, key=f"{key_prefix}_extN",
+                help="Pull-off load this ONE bolt's region reacts, before prying.")
+    pry = c3[1].slider("Prying factor", 1.0, 3.0, 1.0, 0.1,
+                       key=f"{key_prefix}_pry",
+                       help="1.0 = even share. >1 = a moment levers extra tension "
+                            "into the far-edge bolt (a peeling base). >1 flags the "
+                            "result as an estimate.")
+
+    try:
+        fast = bolt_mod.Fastener(grade=g, nominal_d_mm=float(d), K_factor=float(K),
+                                 head_dia_mm=float(headd),
+                                 hole_dia_mm=float(d) * 1.1)
+        stack = bolt_mod.ClampedStack(base_material=base, chassis_material=chas,
+                                      grip_mm=float(grip))
+        jr = bolt_mod.analyze_joint(fast, stack, assembly_torque_Nm=float(T),
+                                    external_tensile_N=float(extN),
+                                    prying_factor=float(pry))
+    except Exception as _e:
+        st.error(f"Couldn't analyse the joint: {_e}")
+        return
+
+    pf = jr.sigma_bolt / max(jr.sigma_proof, 1e-6)
+    m = st.columns(4)
+    umetric(m[0], "Preload from torque", jr.F_preload, "N",
+            help="Set the FEA bolt-preload to this clamp force.")
+    m[1].metric("Bolt stress vs proof", f"{pf*100:.0f}%",
+                delta=f"{(pf-0.75)*100:+.0f}% vs 75% cap", delta_color="inverse")
+    m[2].metric("Separation margin", f"{jr.separation_safety:.2f}×",
+                delta=("closed" if not jr.separated else "GAPPED"),
+                delta_color=("normal" if not jr.separated else "inverse"))
+    if jr.sigma_bearing is not None:
+        m[3].metric("Head bearing vs crush",
+                    f"{jr.sigma_bearing:.0f}/{jr.bearing_allow:.0f} MPa",
+                    delta=("OK" if not jr.bearing_yield else "CRUSHES"),
+                    delta_color=("normal" if not jr.bearing_yield else "inverse"))
+
+    sound = (not jr.separated and pf <= 0.75 and not (jr.bearing_yield or False))
+    if jr.separated:
+        st.error(f"✗ Joint separates: {uval(extN,'N')} pull-off exceeds the "
+                 f"{uval(jr.F_sep,'N')} gap-opening load. Raise torque, go up a "
+                 "bolt size, or add bolts.")
+    elif pf > 0.75:
+        st.error(f"✗ Over-torqued: the bolt sits at {pf*100:.0f}% of proof before "
+                 "the load is fully on — it yields at install. This is the red "
+                 "ring the FEA shows; fix it here.")
+    elif jr.bearing_yield:
+        st.error(f"✗ Head crushes the base: {jr.sigma_bearing:.0f} MPa > "
+                 f"{jr.bearing_allow:.0f} MPa. Fit a hardened steel washer or a "
+                 "harder base.")
+    else:
+        st.success(f"✓ Sound spec: preload {uval(jr.F_preload,'N')}, "
+                   f"{pf*100:.0f}% of proof, {jr.separation_safety:.1f}× "
+                   "separation margin, no crush. Set the FEA preload to the clamp "
+                   "force and the sim should confirm it.")
+    if jr.is_estimate:
+        st.info(f"⚠ Prying factor {jr.prying_factor:.1f} → ESTIMATE. The bolt "
+                "mechanics are exact; only the load amplification is assumed "
+                "(comes from the bracket stiffness / a hand-calc or FEA).")
+    if jr.notes:
+        st.caption(jr.notes)
+
+    if sound and ledger_subsys:
+        if st.button(f"📌 Declare this torque spec into the INTEGRATION ledger",
+                     key=f"{key_prefix}_declare",
+                     help="Records the clamp force as the mount load and the torque "
+                          "+ bolt spec in the rationale, so the structures member "
+                          "sees the real number."):
+            try:
+                _led = interfaces_mod.IntegrationLedger.from_dict(
+                    st.session_state.ledger)
+                _it = (_led.get(ledger_subsys)
+                       or interfaces_mod.SubsystemInterface(name=ledger_subsys))
+                _it.mount_load_n = round(jr.F_preload, 0)
+                _it.mounts_on = "chassis"
+                _it.is_estimate = bool(jr.is_estimate)
+                _it.rationale = (
+                    f"{context_label} bolt spec: M{d:.0f} {g}, K={K:.2f}, "
+                    f"torque {uval(T,'N·m')} → preload {uval(jr.F_preload,'N')}/bolt "
+                    f"({pf*100:.0f}% of proof), separation {jr.separation_safety:.1f}×. "
+                    "Set FEA bolt-preload to the clamp force.")
+                _it.updated_by = ledger_subsys
+                _led.set(_it)
+                st.session_state.ledger = _led.as_dict()
+                st.success(f"Declared {uval(jr.F_preload,'N')}/bolt clamp force for "
+                           f"{ledger_subsys}.")
+                st.rerun()
+            except Exception as _e:
+                st.warning(f"Couldn't declare: {_e}")
+
+
 tab1        = _id_to_container["kinematics"]
 tab2        = _id_to_container["roll"]
 tab3        = _id_to_container["grip"]
@@ -5110,6 +5258,621 @@ with tab_ev:
                 for r in _cmp.results:
                     for w in (r.warnings or []):
                         st.caption(f"• [{r.architecture.label()}] {w}")
+
+        # =================================================================== #
+        #  POWERTRAIN INTEGRATION  —  retire the Excel/screenshot workflow.    #
+        # =================================================================== #
+        # Everything below replaces a specific artifact the powertrain sub-team
+        # still keeps in Excel or as a slide screenshot, and — crucially — wires
+        # the result into the INTEGRATION ledger so the cross-team checks
+        # (driveline torque, HV voltage, thermal, mount loads) finally include
+        # powertrain. This is what makes their traditional, siloed flow obsolete.
+        st.markdown("---")
+        st.markdown("### 🔗 Make it the single source of truth")
+        st.markdown(
+            '<p class="hint" style="margin:0 0 6px;">The powertrain numbers you '
+            'commit here flow straight into the car-wide <b>INTEGRATION</b> ledger, '
+            'so every other sub-team reads the same truth — no more re-keying '
+            'Alec\u2019s spreadsheet, screenshotting a spec sheet, or finding out at '
+            'assembly that the motor torque overloads the driveline. Each panel '
+            'below replaces something the team still does by hand.</p>',
+            unsafe_allow_html=True)
+
+        # representative motor numbers for the integration tools; defaults are
+        # FSAE-EV-typical and clearly editable.
+        _arch_best_label = (_best.architecture.label() if _best
+                            else "Single motor + diff")
+        _n_motors = (_best.architecture.n_motors() if _best else 1)
+
+        _pt_tabs = st.tabs([
+            "📈 Power & RPM explained",
+            "⚙️ Gear ratio & sprocket",
+            "🌡️ Cooling rig & fan",
+            "📤 Publish to ledger",
+            "🔀 Cross-team checks",
+            "📋 Live spec sheet",
+        ])
+
+        # ---------- shared motor inputs (used across the panels) ----------- #
+        # Pull stored Excel params if the team already imported Alec's workbook,
+        # so this is pre-filled from their own data when available.
+        try:
+            _ev_store = getattr(get_store(), "ev_excel_params", {}) or {}
+        except Exception:
+            _ev_store = {}
+        _motor_store = _ev_store.get("motor", {}) if isinstance(_ev_store, dict) else {}
+        _pack_store = _ev_store.get("pack", {}) if isinstance(_ev_store, dict) else {}
+        _def_peak_tq = float(_motor_store.get("motor_peak_torque_nm", 230.0) or 230.0)
+        _def_peak_pw = float(_motor_store.get("motor_peak_power_kw", float(_power_kw)) or _power_kw)
+        _def_redline = float(_motor_store.get("motor_max_rpm", 6000.0) or 6000.0)
+        _def_hv_v = float(_pack_store.get("pack_voltage_v", 400.0) or 400.0)
+        _def_wheel_r = float(_motor_store.get("wheel_diam_in", 18.0) or 18.0) * 0.0254 / 2.0
+        if not (0.15 <= _def_wheel_r <= 0.30):
+            _def_wheel_r = 0.228
+
+        # ================================================================= #
+        #  PANEL 0 — Power & RPM explained  (kills the chat-thread confusion) #
+        # ================================================================= #
+        # Resolves the exact misunderstanding between the chassis and powertrain
+        # leads: "are we limiting rpm to 7k because power can't exceed 80 kW?" and
+        # "peak 80 kW AND 80 kW continuous, not sure how that works." Both are
+        # answered here with the team's own numbers, on one curve, so nobody has
+        # to litigate it in Discord again.
+        with _pt_tabs[0]:
+            st.markdown(
+                '<p class="hint" style="margin:0 0 6px;">A motor\u2019s <b>power cap and '
+                'its RPM limit are two different things</b>, and that trips teams up '
+                'constantly. Set your three datasheet numbers and KinematiK draws the '
+                'real envelope: where peak power is reached (<b>base speed</b>), how '
+                'torque falls while power stays flat to redline, and what '
+                '<b>peak vs continuous</b> actually means under the FSAE 80 kW cap.</p>',
+                unsafe_allow_html=True)
+
+            mcol = st.columns(4)
+            _me_tq = unum(mcol[0], "Peak torque (N·m)", 20.0, 600.0,
+                          _def_peak_tq, "N·m", step=5.0, key="pti_me_tq")
+            _me_pw = unum(mcol[1], "Peak power (kW)", 10.0, 200.0,
+                          _def_peak_pw, "kW", step=5.0, key="pti_me_pw")
+            _me_rl = mcol[2].number_input("Redline (rpm)", 3000.0, 20000.0,
+                                          value=_def_redline, step=500.0, key="pti_me_rl")
+            _me_cont = mcol[3].slider("Continuous power (% of peak)", 30, 100, 70, 5,
+                                      key="pti_me_cont",
+                                      help="What cooling lets you sustain. Always ≤ peak "
+                                           "— this is the thermal limit, set by the "
+                                           "cooling rig, not a separate higher number.")
+
+            try:
+                _env = pti_mod.motor_envelope(
+                    _me_tq, _me_pw, _me_rl,
+                    continuous_frac=_me_cont / 100.0)
+
+                # --- dual-axis torque + power vs RPM ---------------------- #
+                import plotly.graph_objects as _go_m
+                fm = _go_m.Figure()
+                fm.add_trace(_go_m.Scatter(
+                    x=_env.rpm, y=_env.torque_nm, name="Torque (N·m)",
+                    line=dict(color="#37e0d0", width=3)))
+                fm.add_trace(_go_m.Scatter(
+                    x=_env.rpm, y=_env.power_kw, name="Power (kW)", yaxis="y2",
+                    line=dict(color="#ff9f43", width=3)))
+                # FSAE cap line on the power axis
+                fm.add_trace(_go_m.Scatter(
+                    x=[_env.rpm.min(), _env.rpm.max()],
+                    y=[_env.rule_cap_kw, _env.rule_cap_kw], yaxis="y2",
+                    name=f"FSAE {_env.rule_cap_kw:.0f} kW cap", mode="lines",
+                    line=dict(color="#ff5a52", width=1.5, dash="dash")))
+                # continuous power band
+                fm.add_trace(_go_m.Scatter(
+                    x=[_env.rpm.min(), _env.rpm.max()],
+                    y=[_env.continuous_power_kw, _env.continuous_power_kw], yaxis="y2",
+                    name=f"Continuous {_env.continuous_power_kw:.0f} kW", mode="lines",
+                    line=dict(color="#9b8cff", width=1.5, dash="dot")))
+                # base-speed marker
+                fm.add_vline(x=_env.base_speed_rpm,
+                             line=dict(color="#e7ecf1", width=1.2, dash="dot"),
+                             annotation_text=f"base speed {_env.base_speed_rpm:.0f} rpm",
+                             annotation_position="top")
+                fm.update_layout(
+                    title="Motor envelope — power flat to redline, torque falls; "
+                          "power ≠ rpm limit",
+                    xaxis_title="motor speed (rpm)",
+                    yaxis=dict(title="torque (N·m)", color="#37e0d0"),
+                    yaxis2=dict(title="power (kW)", color="#ff9f43",
+                                overlaying="y", side="right"),
+                    height=380, paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=40, b=0),
+                    legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h",
+                                yanchor="bottom", y=1.02))
+                st.plotly_chart(fm, width='stretch', key="pti_envelope")
+
+                _em = st.columns(4)
+                _em[0].markdown(metric("Base speed",
+                    f"{_env.base_speed_rpm:.0f}", "rpm"), unsafe_allow_html=True)
+                _em[1].markdown(metric("Power @ redline",
+                    f"{_env.power_at_redline_kw():.0f}", "kW"), unsafe_allow_html=True)
+                _em[2].markdown(metric("Peak (usable)",
+                    f"{_env.peak_power_kw:.0f}", "kW"), unsafe_allow_html=True)
+                _em[3].markdown(metric("Continuous",
+                    f"{_env.continuous_power_kw:.0f}", "kW"), unsafe_allow_html=True)
+
+                # --- the two plain-language answers ----------------------- #
+                st.markdown("##### Does capping power cap RPM?")
+                st.info(_env.explanation())
+                st.markdown("##### What does 'peak vs continuous' mean?")
+                st.info(_env.peak_vs_continuous_note())
+                if _env.over_cap:
+                    for _nt in _env.notes:
+                        if "exceeds the FSAE" in _nt:
+                            st.error(_nt)
+
+                # --- myth-buster table tied to these numbers -------------- #
+                st.markdown("##### Myth check — caught before it becomes a decision")
+                _fd_ctx = float(st.session_state.get("_pti_final_drive", 3.5))
+                _checks = pti_mod.power_rpm_myth_checks(
+                    _env, gear_final_drive=_fd_ctx, wheel_r_m=_def_wheel_r)
+                _vmark = {"myth": "❌ Myth", "depends": "⚠️ Depends", "true": "✅ True"}
+                for _c in _checks:
+                    st.markdown(
+                        f"**{_vmark.get(_c.verdict, _c.verdict)}** — _{_c.claim}_  \n"
+                        f"{_c.correction}")
+                st.caption("Share this tab in the channel instead of re-explaining: it "
+                           "answers the power-vs-rpm and peak-vs-continuous questions "
+                           "with the actual motor numbers, so the thread doesn\u2019t "
+                           "happen twice.")
+            except Exception as _mee:
+                st.warning(f"Motor envelope unavailable: {_mee}")
+
+        # ================================================================= #
+        #  PANEL 1 — Gear-ratio solver + sprocket  (Alec's spreadsheet)      #
+        # ================================================================= #
+        with _pt_tabs[1]:
+            st.markdown(
+                '<p class="hint" style="margin:0 0 6px;">This is <b>Alec\u2019s gear-ratio '
+                'spreadsheet</b>, made live. KinematiK sweeps final-drive ratios against '
+                'your real motor curve and the actual car mass, then picks the optimum '
+                'for what you\u2019re chasing. Pick the objective, set the motor, and read '
+                'the winner \u2014 then size the output-shaft sprocket and get the tooth '
+                'force your FEA has to clear (the slide-4 task).</p>',
+                unsafe_allow_html=True)
+
+            gcol = st.columns(4)
+            _gm_tq = unum(gcol[0], "Motor peak torque (N·m)", 20.0, 600.0,
+                          _def_peak_tq, "N·m", step=5.0, key="pti_gm_tq")
+            _gm_pw = unum(gcol[1], "Motor peak power (kW)", 10.0, 200.0,
+                          _def_peak_pw, "kW", step=5.0, key="pti_gm_pw")
+            _gm_rl = gcol[2].number_input("Redline (rpm)", 3000.0, 20000.0,
+                                          value=_def_redline, step=500.0,
+                                          key="pti_gm_rl")
+            _gm_wr = unum(gcol[3], "Loaded wheel radius (m)", 0.15, 0.30,
+                          _def_wheel_r, "m", step=0.005, fmt="%.3f", key="pti_gm_wr")
+
+            gcol2 = st.columns(4)
+            _g_obj_label = gcol2[0].selectbox(
+                "Optimise for", [o.label() for o in pti_mod.GearObjective],
+                index=2, key="pti_g_obj",
+                help="Acceleration wants a shorter (numerically larger) ratio; top "
+                     "speed a taller one; balanced is the autocross/endurance pick.")
+            _g_obj = next(o for o in pti_mod.GearObjective
+                          if o.label() == _g_obj_label)
+            _g_lo = gcol2[1].number_input("Sweep from", 1.5, 8.0, value=2.5,
+                                          step=0.25, key="pti_g_lo")
+            _g_hi = gcol2[2].number_input("Sweep to", 1.5, 10.0, value=5.0,
+                                          step=0.25, key="pti_g_hi")
+            _g_n = int(gcol2[3].number_input("Steps", 4, 30, value=11, step=1,
+                                             key="pti_g_n"))
+
+            try:
+                _mmap = lap_mod.MotorMap.from_peak(
+                    _gm_tq, _gm_pw, _gm_rl, final_drive=3.5, wheel_radius_m=_gm_wr)
+                _veh_mass = float(getattr(_veh_ev, "mass_kg", None)
+                                  or st.session_state.vp.get("mass_kg", 230.0) or 230.0)
+                # add the architecture mass delta so the gear choice is on the
+                # actual car the user is comparing
+                if _best is not None:
+                    _veh_mass = float(_best.effective_mass_kg)
+                _solver = pti_mod.GearRatioSolver(
+                    _mmap, mass_kg=_veh_mass, wheel_r_m=_gm_wr,
+                    drivetrain_eff=0.90, mu=1.4)
+                _ratios = list(np.linspace(min(_g_lo, _g_hi), max(_g_lo, _g_hi), _g_n))
+                _sweep = _solver.sweep(_ratios, _g_obj)
+
+                import pandas as _pd_g
+                st.dataframe(_pd_g.DataFrame(_sweep.as_table()),
+                             hide_index=True, width='stretch')
+                if _sweep.best is not None:
+                    _b = _sweep.best
+                    st.success(
+                        f"Best final drive for **{_g_obj.label()}**: "
+                        f"**{_b.final_drive:.2f}:1** — 0–75 m in {_b.accel_0_75_s:.2f} s, "
+                        f"top speed {_b.top_speed_kmh:.0f} km/h "
+                        f"({'redline-limited' if _b.redline_limited else 'power/drag-limited'}).")
+                    for _nt in _b.notes:
+                        st.caption("• " + _nt)
+                    # stash the chosen ratio for the other panels / ledger
+                    st.session_state["_pti_final_drive"] = float(_b.final_drive)
+                    st.session_state["_pti_peak_tq"] = float(_gm_tq)
+                    st.session_state["_pti_peak_pw"] = float(_gm_pw)
+                    st.session_state["_pti_hv_v"] = float(_def_hv_v)
+
+                # --- sprocket / output-shaft design (slide 4) ------------- #
+                st.markdown("##### Output-shaft sprocket")
+                scol = st.columns(3)
+                _chain_label = scol[0].selectbox(
+                    "Chain", list(pti_mod.CHAIN_PITCH_MM.keys()), index=1,
+                    key="pti_chain")
+                _motor_teeth = int(scol[1].number_input(
+                    "Motor pinion teeth", 9, 30, value=14, step=1, key="pti_pinion"))
+                _fd_for_sprk = float(st.session_state.get(
+                    "_pti_final_drive", _sweep.best.final_drive if _sweep.best else 3.5))
+                scol[2].metric("Designing for ratio", f"{_fd_for_sprk:.2f}:1")
+
+                _sd = pti_mod.sprocket_design(
+                    _fd_for_sprk, _gm_tq, _chain_label, motor_sprocket_teeth=_motor_teeth)
+                _sm = st.columns(4)
+                _sm[0].markdown(metric("Driven teeth",
+                    f"{_sd.driven_sprocket_teeth}", ""), unsafe_allow_html=True)
+                _sm[1].markdown(metric("Driven pitch Ø",
+                    f"{_sd.driven_pitch_dia_mm:.0f}", "mm"), unsafe_allow_html=True)
+                _sm[2].markdown(metric("Chain tension",
+                    f"{_sd.chain_tension_n:.0f}", "N"), unsafe_allow_html=True)
+                _sm[3].markdown(metric("Tooth force (FEA)",
+                    f"{_sd.tooth_force_n:.0f}", "N"), unsafe_allow_html=True)
+                _out_tq = pti_mod.driveline_peak_torque_nm(_fd_for_sprk, _gm_tq)
+                st.caption(
+                    f"Actual integer-tooth ratio {_sd.actual_ratio:.2f}:1 "
+                    f"({_motor_teeth}→{_sd.driven_sprocket_teeth} teeth). "
+                    f"Output-shaft peak torque ≈ **{_out_tq:.0f} N·m** — that\u2019s the "
+                    f"load the sprocket FEA and the driveline rating must clear. "
+                    f"The **{_sd.tooth_force_n:.0f} N** tooth force is your FEA input.")
+                for _w in _sd.warnings:
+                    st.warning(_w)
+                st.session_state["_pti_out_torque"] = float(_out_tq)
+                st.session_state["_pti_sprocket"] = dict(
+                    motor=_motor_teeth, driven=_sd.driven_sprocket_teeth,
+                    tension=float(_sd.chain_tension_n))
+            except Exception as _ge:
+                st.warning(f"Gear solver unavailable: {_ge}")
+
+        # ================================================================= #
+        #  PANEL 2 — Cooling test rig + SPAL fan operating point             #
+        # ================================================================= #
+        with _pt_tabs[2]:
+            st.markdown(
+                '<p class="hint" style="margin:0 0 6px;">The <b>cooling test rig</b> '
+                '(summer project) exists to pin down one number: how much the coolant '
+                'loop resists flow. KinematiK takes the rig\u2019s <b>SPAL VA14-AP11/C-34A</b> '
+                'fan curve, crosses it with that loop restriction to find the real '
+                'operating airflow, and checks it against the heat your motor and pack '
+                'actually reject. The placeholder radiator CAD stops being a guess.</p>',
+                unsafe_allow_html=True)
+
+            ccol = st.columns(4)
+            _heat_default = pti_mod.estimate_motor_heat_w(
+                float(_gm_pw if '_gm_pw' in dir() else _power_kw))
+            _heat_w = ccol[0].number_input(
+                "Heat to reject — motor+inverter (W)", 200.0, 20000.0,
+                value=float(round(_heat_default, 0)), step=100.0, key="pti_heat",
+                help="Estimated from (1−efficiency) over an endurance duty cycle; "
+                     "replace with a measured dyno/thermal number when you have it.")
+            _pack_heat_w = ccol[1].number_input(
+                "Pack heat add (W)", 0.0, 10000.0, value=600.0, step=100.0,
+                key="pti_packheat",
+                help="Accumulator joule heating that shares the loop, if any.")
+            _rig_flow = ccol[2].number_input(
+                "Rig measured flow (m³/h)", 50.0, 700.0, value=400.0, step=10.0,
+                key="pti_rigflow",
+                help="A point you read off the cooling test rig: airflow…")
+            _rig_dp = ccol[3].number_input(
+                "…at static pressure (Pa)", 10.0, 349.0, value=150.0, step=10.0,
+                key="pti_rigdp", help="…and the static pressure at that flow. "
+                "KinematiK backs out the loop restriction k = Δp/Q².")
+
+            ccol2 = st.columns(2)
+            _air_dt = ccol2[0].slider("Design air-side ΔT (°C)", 5, 40, 20, 1,
+                                      key="pti_airdt",
+                                      help="Temperature rise of the air through the "
+                                           "radiator core at the design point.")
+            try:
+                _fan = pti_mod.FanCurve.spal_default()
+                _k = pti_mod.system_k_from_point(_rig_flow, _rig_dp)
+                _op = pti_mod.cooling_operating_point(
+                    _fan, _k, heat_to_reject_w=float(_heat_w + _pack_heat_w),
+                    air_delta_t_c=float(_air_dt))
+
+                # fan curve + system curve + operating point plot
+                import plotly.graph_objects as _go_c
+                _qs = np.linspace(0, _fan.flow_m3h.max(), 200)
+                fc = _go_c.Figure()
+                fc.add_trace(_go_c.Scatter(
+                    x=_fan.flow_m3h, y=_fan.dp_pa, name="SPAL fan curve",
+                    line=dict(color="#37e0d0", width=3)))
+                fc.add_trace(_go_c.Scatter(
+                    x=_qs, y=_k * _qs * _qs, name="System resistance (your loop)",
+                    line=dict(color="#ff9f43", width=2, dash="dot")))
+                fc.add_trace(_go_c.Scatter(
+                    x=[_op.flow_m3h], y=[_op.static_pressure_pa],
+                    name="Operating point", mode="markers",
+                    marker=dict(color="#ff5a52", size=12, symbol="x")))
+                fc.update_layout(
+                    title="Fan vs loop — where the cooling actually runs",
+                    xaxis_title="airflow (m³/h)", yaxis_title="static pressure (Pa)",
+                    height=340, paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=36, b=0),
+                    legend=dict(bgcolor="rgba(0,0,0,0)"))
+                ccol2[1].plotly_chart(fc, width='stretch', key="pti_fan")
+
+                _om = st.columns(4)
+                _om[0].markdown(metric("Operating airflow",
+                    f"{_op.flow_m3h:.0f}", "m³/h"), unsafe_allow_html=True)
+                _om[1].markdown(metric("= airflow",
+                    f"{_op.flow_cms:.3f}", "m³/s"), unsafe_allow_html=True)
+                _om[2].markdown(metric("Cooling capacity",
+                    f"{_op.cooling_capacity_w:.0f}", "W"), unsafe_allow_html=True)
+                _om[3].markdown(metric("Margin",
+                    f"{_op.margin_w:+.0f}", "W"), unsafe_allow_html=True)
+
+                if _op.adequate:
+                    st.success(
+                        f"At {_op.flow_m3h:.0f} m³/h the fan carries "
+                        f"{_op.cooling_capacity_w:.0f} W vs {_heat_w+_pack_heat_w:.0f} W "
+                        f"needed — **adequate** with {_op.margin_w:.0f} W to spare.")
+                else:
+                    st.error(
+                        f"**Under-cooled by {-_op.margin_w:.0f} W.** The loop is too "
+                        "restrictive for this fan at the design ΔT.")
+                for _w in _op.warnings:
+                    st.caption("• " + _w)
+                # stash cooling airflow requirement for the ledger publish
+                st.session_state["_pti_cooling_cms"] = float(_op.flow_cms)
+                st.session_state["_pti_heat_w"] = float(_heat_w)
+                st.caption("This airflow is what powertrain *requires*; publishing it "
+                           "to the ledger lets the cross-team thermal check confirm "
+                           "the cooling package can actually move it.")
+            except Exception as _ce:
+                st.warning(f"Cooling operating point unavailable: {_ce}")
+
+        # ================================================================= #
+        #  PANEL 3 — Publish powertrain to the integration ledger           #
+        # ================================================================= #
+        with _pt_tabs[3]:
+            st.markdown(
+                '<p class="hint" style="margin:0 0 6px;">This is the step the team '
+                'has been missing. <b>Every other sub-team publishes their numbers to '
+                'the ledger; powertrain didn\u2019t</b> — which is exactly why the '
+                'miscommunication happens. Press the button and powertrain\u2019s torque, '
+                'power, HV voltage, mass, heat and mount loads become visible to the '
+                'whole car, and the cross-team checks start including you.</p>',
+                unsafe_allow_html=True)
+
+            pcol = st.columns(4)
+            _pub_tq = unum(pcol[0], "Peak motor torque (N·m)", 20.0, 600.0,
+                           float(st.session_state.get("_pti_peak_tq", _def_peak_tq)),
+                           "N·m", step=5.0, key="pti_pub_tq")
+            _pub_out_tq = unum(pcol[1], "Output-shaft torque (N·m)", 20.0, 3000.0,
+                               float(st.session_state.get("_pti_out_torque",
+                                     pti_mod.driveline_peak_torque_nm(3.5, _pub_tq))),
+                               "N·m", step=10.0, key="pti_pub_outtq",
+                               help="Peak torque after the gear reduction — what the "
+                                    "driveline must survive. From the gear panel.")
+            _pub_pw = unum(pcol[2], "Peak power (kW)", 10.0, 80.0,
+                           float(st.session_state.get("_pti_peak_pw", _def_peak_pw)),
+                           "kW", step=5.0, key="pti_pub_pw")
+            _pub_hv = unum(pcol[3], "HV voltage (V)", 60.0, 600.0,
+                           float(st.session_state.get("_pti_hv_v", _def_hv_v)),
+                           "V", step=4.0, key="pti_pub_hv")
+
+            pcol2 = st.columns(4)
+            _pub_mass = unum(pcol2[0], "Motor+drivetrain mass (kg)", 5.0, 80.0,
+                             18.0 + 6.0 * (_n_motors - 1), "kg", step=0.5,
+                             key="pti_pub_mass")
+            _pub_heat = unum(pcol2[1], "Heat reject (W)", 100.0, 20000.0,
+                             float(st.session_state.get("_pti_heat_w",
+                                   pti_mod.estimate_motor_heat_w(_pub_pw))),
+                             "W", step=100.0, key="pti_pub_heat")
+            _pub_cool = pcol2[2].number_input(
+                "Cooling airflow req (m³/s)", 0.0, 2.0,
+                value=float(st.session_state.get("_pti_cooling_cms", 0.10)),
+                step=0.01, format="%.3f", key="pti_pub_cool")
+            _pub_mounts = int(pcol2[3].number_input(
+                "Mount points", 2, 8, value=4, step=1, key="pti_pub_mounts"))
+
+            pcol3 = st.columns(3)
+            _pub_mount_load = unum(pcol3[0], "Peak mount load (N)", 100.0, 20000.0,
+                                   float(round(_pub_out_tq / 0.15, 0)), "N", step=100.0,
+                                   key="pti_pub_mountload",
+                                   help="Peak reaction the motor/diff mount feeds into "
+                                        "the chassis (≈ torque / mount arm). The chassis "
+                                        "check compares this to what they designed for.")
+            _pub_owner = pcol3[1].text_input("Owner", value="", key="pti_pub_owner",
+                                             placeholder="who owns these numbers")
+            _pub_est = pcol3[2].checkbox("These are estimates", value=True,
+                                         key="pti_pub_est",
+                                         help="Leave on until the numbers come from CAD "
+                                              "/ measurement. The board flags estimates "
+                                              "so nothing looks more certain than it is.")
+            _pub_rationale = st.text_input(
+                "Rationale (the 'why' judges ask for)", value="", key="pti_pub_why",
+                placeholder="e.g. torque from motor datasheet peak; mass from CAD; "
+                            "heat from endurance duty estimate")
+
+            if st.button("📤 Publish powertrain to the INTEGRATION ledger",
+                         key="pti_publish", type="primary"):
+                try:
+                    _led_pt = interfaces_mod.IntegrationLedger.from_dict(
+                        st.session_state.ledger)
+                    _it = (_led_pt.get("powertrain")
+                           or interfaces_mod.SubsystemInterface(name="powertrain"))
+                    _it.peak_torque_nm = float(_pub_tq)
+                    _it.peak_power_kw = float(_pub_pw)
+                    _it.voltage_v = float(_pub_hv)
+                    _it.mass_kg = float(_pub_mass)
+                    _it.heat_reject_w = float(_pub_heat)
+                    _it.cooling_airflow_cms = float(_pub_cool)
+                    _it.mount_load_n = float(_pub_mount_load)
+                    _it.mount_points = int(_pub_mounts)
+                    _it.mounts_on = "chassis"
+                    _it.is_estimate = bool(_pub_est)
+                    _it.owner = _pub_owner
+                    _it.rationale = _pub_rationale
+                    import datetime as _dt_pt
+                    _it.updated_on = _dt_pt.date.today().isoformat()
+                    _led_pt.set(_it)
+                    # also record the driveline torque limit so the check has a
+                    # rating to compare the output torque against
+                    _led_pt.driveline_torque_limit_nm = float(_pub_out_tq)
+                    st.session_state.ledger = _led_pt.as_dict()
+                    if float(_pub_pw) > pti_mod.FSAE_TRACTIVE_POWER_CAP_KW + 1e-6:
+                        st.error(
+                            f"⚠️ Declared peak power {_pub_pw:.0f} kW exceeds the FSAE "
+                            f"{pti_mod.FSAE_TRACTIVE_POWER_CAP_KW:.0f} kW tractive cap. "
+                            "The controller must limit tractive power to 80 kW — "
+                            "publish the capped figure so the whole team plans to the "
+                            "real ceiling.")
+                    st.success(
+                        f"Published. Powertrain now declares {_pub_tq:.0f} N·m motor "
+                        f"torque, {_pub_pw:.0f} kW, {_pub_hv:.0f} V, {_pub_mass:.1f} kg, "
+                        f"{_pub_heat:.0f} W heat. The driveline-torque, HV-voltage, "
+                        "thermal and mount-load checks now include powertrain — see the "
+                        "Cross-team checks tab and the INTEGRATION tab.")
+                    st.rerun()
+                except Exception as _pe:
+                    st.warning(f"Couldn't publish: {_pe}")
+
+        # ================================================================= #
+        #  PANEL 4 — Cross-team checks (powertrain's findings, live)         #
+        # ================================================================= #
+        with _pt_tabs[4]:
+            st.markdown(
+                '<p class="hint" style="margin:0 0 6px;">The cross-team physics checks '
+                'that touch powertrain, run live against whatever\u2019s in the ledger right '
+                'now. Red is a real conflict to resolve <i>before</i> assembly; this is '
+                'the miscommunication, made visible.</p>',
+                unsafe_allow_html=True)
+            try:
+                _led_chk = interfaces_mod.IntegrationLedger.from_dict(
+                    st.session_state.ledger)
+                _all_find = _led_chk.check_all()
+                _pt_find = interfaces_mod.findings_for(_all_find, "powertrain")
+                if not _led_chk.get("powertrain") or not _led_chk.get("powertrain").declared_fields():
+                    st.info("Powertrain hasn\u2019t published anything yet — use the "
+                            "**Publish to ledger** tab first, then these checks light up.")
+                elif not _pt_find:
+                    st.success("No powertrain-related findings — nothing flagged.")
+                else:
+                    _sev_icon = {"fail": "🔴", "warn": "🟠", "missing": "🟡",
+                                 "info": "🔵", "ok": "🟢"}
+                    for _f in sorted(_pt_find,
+                                     key=lambda f: {"fail": 0, "warn": 1, "missing": 2,
+                                                    "info": 3, "ok": 4}.get(
+                                                    str(getattr(f.severity, "value",
+                                                        f.severity)), 5)):
+                        _sv = str(getattr(_f.severity, "value", _f.severity))
+                        _ic = _sev_icon.get(_sv, "•")
+                        _who = ", ".join(_f.subsystems) if _f.subsystems else "—"
+                        st.markdown(f"{_ic} **{_f.check}** ({_who}) — {_f.message}")
+                st.caption("Full car-wide view, including non-powertrain rules, lives "
+                           "in the INTEGRATION tab.")
+            except Exception as _ke:
+                st.warning(f"Couldn't run cross-team checks: {_ke}")
+
+        # ================================================================= #
+        #  PANEL 5 — Live spec sheet (replaces the screenshot)              #
+        # ================================================================= #
+        with _pt_tabs[5]:
+            st.markdown(
+                '<p class="hint" style="margin:0 0 6px;">The <b>Design EV Spec Sheet</b>, '
+                'generated from the numbers you\u2019ve committed instead of a screenshot '
+                'that goes stale the moment anything changes. Export it for a design '
+                'review; it always reflects the current ledger.</p>',
+                unsafe_allow_html=True)
+            try:
+                _led_spec = interfaces_mod.IntegrationLedger.from_dict(
+                    st.session_state.ledger)
+                _pt_iface = _led_spec.get("powertrain")
+                _spr = st.session_state.get("_pti_sprocket", {})
+                _spec_rows = pti_mod.powertrain_spec_sheet(
+                    architecture=_arch_best_label,
+                    power_kw=float(getattr(_pt_iface, "peak_power_kw", None)
+                                   or _power_kw),
+                    peak_torque_nm=float(getattr(_pt_iface, "peak_torque_nm", None)
+                                         or st.session_state.get("_pti_peak_tq", _def_peak_tq)),
+                    hv_voltage_v=float(getattr(_pt_iface, "voltage_v", None)
+                                       or _def_hv_v),
+                    pack_kwh=float(_pack_kwh),
+                    final_drive=float(st.session_state.get("_pti_final_drive", 3.5)),
+                    motor_teeth=_spr.get("motor"),
+                    driven_teeth=_spr.get("driven"),
+                    chain_tension_n=_spr.get("tension"),
+                    driveline_torque_nm=st.session_state.get("_pti_out_torque"),
+                    motor_mass_kg=float(getattr(_pt_iface, "mass_kg", None) or 0) or None,
+                    heat_reject_w=float(getattr(_pt_iface, "heat_reject_w", None) or 0) or None,
+                    cooling_flow_cms=float(getattr(_pt_iface, "cooling_airflow_cms", None) or 0) or None,
+                    is_estimate=bool(getattr(_pt_iface, "is_estimate", True)),
+                )
+                import pandas as _pd_s
+                _spec_df = _pd_s.DataFrame(_spec_rows)
+                st.dataframe(_spec_df, hide_index=True, width='stretch')
+                st.download_button(
+                    "⬇️ Download spec sheet (CSV)",
+                    data=_spec_df.to_csv(index=False).encode("utf-8"),
+                    file_name="FSAE_EV_Powertrain_Spec_Sheet.csv",
+                    mime="text/csv", key="pti_spec_dl")
+                if _pt_iface is None or not _pt_iface.declared_fields():
+                    st.info("Publish to the ledger first for a fully-populated, "
+                            "single-source-of-truth spec sheet.")
+
+                # --- answer slide 9: auto-fill the DFMEA from this analysis --- #
+                st.markdown("##### Stop hand-writing the DFMEA")
+                st.markdown(
+                    '<p class="hint" style="margin:0 0 6px;">The team\u2019s open question '
+                    'is whether DFMEAs are worth the time. They are when the tool fills '
+                    'them: KinematiK turns the analysis above \u2014 chain tension, cooling '
+                    'margin, mount load \u2014 into ready-to-edit DFMEA rows with the real '
+                    'numbers already in the cause and evidence fields. You edit real '
+                    'rows on the <b>DFMEA</b> tab instead of starting from blank.</p>',
+                    unsafe_allow_html=True)
+                if st.button("➕ Auto-fill DFMEA rows from this analysis",
+                             key="pti_dfmea_gen"):
+                    try:
+                        _spr2 = st.session_state.get("_pti_sprocket", {})
+                        _sd_obj = None
+                        if _spr2:
+                            _sd_obj = pti_mod.sprocket_design(
+                                float(st.session_state.get("_pti_final_drive", 3.5)),
+                                float(st.session_state.get("_pti_peak_tq", _def_peak_tq)),
+                                motor_sprocket_teeth=int(_spr2.get("motor", 14)))
+                        _cool_obj = None
+                        try:
+                            _fan2 = pti_mod.FanCurve.spal_default()
+                            _k2 = pti_mod.system_k_from_point(
+                                float(st.session_state.get("pti_rigflow", 400.0)),
+                                float(st.session_state.get("pti_rigdp", 150.0)))
+                            _cool_obj = pti_mod.cooling_operating_point(
+                                _fan2, _k2,
+                                heat_to_reject_w=float(st.session_state.get("_pti_heat_w", 2000.0)),
+                                air_delta_t_c=float(st.session_state.get("pti_airdt", 20)))
+                        except Exception:
+                            pass
+                        _new_rows = pti_mod.dfmea_rows_from_analysis(
+                            sprocket=_sd_obj, cooling=_cool_obj,
+                            output_torque_nm=st.session_state.get("_pti_out_torque"),
+                            mount_load_n=(float(getattr(_pt_iface, "mount_load_n", 0) or 0)
+                                          or None),
+                            owner=str(getattr(_pt_iface, "owner", "") or ""))
+                        if "dfmea_rows" not in st.session_state:
+                            st.session_state.dfmea_rows = dfmea_mod.seed_rows()
+                        st.session_state.dfmea_rows = (
+                            st.session_state.dfmea_rows + _new_rows)
+                        st.success(
+                            f"Added {len(_new_rows)} evidence-backed rows to the DFMEA "
+                            "tab — open it to review and assign owners/dates.")
+                    except Exception as _de:
+                        st.warning(f"Couldn't generate DFMEA rows: {_de}")
+            except Exception as _se:
+                st.warning(f"Couldn't build the spec sheet: {_se}")
+
   except Exception as _eev:
     st.error(f"Could not build the EV powertrain workspace: {_eev}")
 
@@ -5331,6 +6094,37 @@ with tab_accum:
     ac[1].caption("Per-cell transient thermal — which cell cooks first and where to put "
                   "the fan — runs from this layout via KinematiK's pack-thermal model "
                   "(see the pack_thermal module / demo_pack_thermal).")
+
+    # ---- ACCUMULATOR MOUNT BOLTS ------------------------------------------- #
+    #  The Discord thread flagged that the acc mounts hit the SAME bolt-torque
+    #  wall the brakes pedal did ("an issue that acc mounts are facing"). The
+    #  accumulator is heavy and the rules demand its mounts survive big decel
+    #  loads, so the same VDI 2230 check belongs here — same tool, same honesty.
+    with st.expander("🔩 Accumulator mount-bolt torque & FoS "
+                     "(the bolt-preload check, same as Brakes)"):
+        try:
+            _acc_mass = float(st.session_state.get("accum_pack_mass_est",
+                                                   _pack_mass if "_pack_mass" in
+                                                   dir() else 8.0))
+        except Exception:
+            _acc_mass = 8.0
+        # FSAE EV rules: accumulator mounts are designed to a high decel (≥ 20 g
+        # in some load cases). Use a representative 20 g pull-off as the default
+        # external load, divided over a typical bolt count, so the seed is honest.
+        _acc_nbolt = st.columns(3)[0].number_input(
+            "Accumulator mount bolts", 4, 12, 6, 1, key="accum_bolt_n",
+            help="Bolts carrying the pack. FSAE-EV requires the mounts survive "
+                 "high decel load cases.")
+        _acc_g = st.columns(3)[0].slider(
+            "Design decel (g)", 5.0, 40.0, 20.0, 1.0, key="accum_bolt_g",
+            help="The load case the mounts are designed to. EV rules call out "
+                 "demanding decel cases for the accumulator container.")
+        _acc_extN = (_acc_mass * 9.81 * _acc_g) / max(_acc_nbolt, 1)
+        _render_mount_bolt_check(
+            "accum_bolt", default_ext_n=float(round(_acc_extN, 0)),
+            default_base="Aluminium 6061", ledger_subsys="electrics",
+            context_label=f"the accumulator container mount "
+                          f"(~{_acc_mass:.0f} kg pack at {_acc_g:.0f} g)")
   except Exception as _eac:
     st.error(f"Could not build the accumulator workspace: {_eac}")
 
@@ -5371,7 +6165,7 @@ with tab_brake:
         'and wheelbase.</p>', unsafe_allow_html=True)
 
     _bview = st.radio("View", ["Bias & lock-up", "Hydraulic sizing",
-                               "Rotor thermal"],
+                               "Bolt & bracket FoS", "Rotor thermal"],
                       horizontal=True, key="brake_view", label_visibility="collapsed")
 
     _wheel_r_mm = st.session_state.get("brake_wheel_r", 228.0)
@@ -5519,6 +6313,7 @@ with tab_brake:
         _cal_dia = unum(hc2[1], "Caliper piston ⌀ (mm)", 20, 45, 30, "mm", step=1.0)
         _rotor_dia = unum(hc2[2], "Rotor ⌀ (mm)", 180, 300, 220, "mm", step=5.0,
                           help="Bigger rotor = more torque arm = less clamp needed.")
+        st.session_state["brake_rotor_dia_mm"] = float(_rotor_dia)
         _pedal_force = unum(hc2[3], "Driver pedal force (N)", 100, 1200, 500, "N",
                             step=25.0, help="A strong driver can apply ~600–800 N.")
 
@@ -5592,6 +6387,437 @@ with tab_brake:
                 st.rerun()
             except Exception as _e4:
                 st.warning(f"Couldn't declare: {_e4}")
+
+    # =================================================================== #
+    elif _bview == "Bolt & bracket FoS":
+        # ---------------------------------------------------------------- #
+        #  THE "OLD WAY" KILLER.
+        #  Every brakes member on this team has hit the same wall: a pedal,
+        #  caliper bracket or pedal-box foot is held together by BOLT TORQUE,
+        #  and when you drop it into Ansys the only stress you see is a red
+        #  ring around the bolt holes — because the preload you typed in was a
+        #  guess. "I need to figure out how much torque we will need" is the
+        #  pain point verbatim. The old way is: guess a torque, mesh it, see
+        #  red, guess again. This view replaces the GUESS with a VDI 2230 /
+        #  Shigley hand calc that gives the torque spec, the bolt working
+        #  stress, the joint-separation margin and the head-bearing crush
+        #  check in closed form — so Ansys becomes a VERIFICATION of a number
+        #  you already trust, not the place you discover it.
+        # ---------------------------------------------------------------- #
+        st.markdown(
+            '<p class="hint">The recurring brakes problem: a pedal, caliper '
+            'bracket or pedal-box foot is clamped by <b>bolt torque</b>, and the '
+            'only stress Ansys shows is a red ring at the bolt holes — because '
+            'the preload was a guess. This view computes the <b>torque spec</b> '
+            'from first principles (VDI&nbsp;2230 / Shigley): preload from '
+            'torque, the bolt working stress, the load at which the joint '
+            '<i>gaps open</i>, and whether the head crushes the aluminium. Get '
+            'the number here, then let Ansys <i>verify</i> it instead of '
+            'discovering it.</p>', unsafe_allow_html=True)
+
+        _bb_mode = st.radio(
+            "Check", ["Bolt preload & torque", "Bracket Factor-of-Safety"],
+            horizontal=True, key="brake_bolt_mode", label_visibility="collapsed")
+
+        # The braking event that actually loads these joints comes from the
+        # Bias & lock-up view: the per-corner lock-up torque the tyre can apply.
+        # That torque reacts through the caliper-mount bolts as a tangential
+        # force at the rotor effective radius — the external load these bolts see.
+        _Tf_corner = float(st.session_state.get("brake_Tf", 380.0))
+        _Tr_corner = float(st.session_state.get("brake_Tr", 180.0))
+        _reff_m = (st.session_state.get("brake_rotor_dia_mm", 220.0) / 1000.0 / 2) * 0.92
+
+        # ================================================================ #
+        if _bb_mode == "Bolt preload & torque":
+            st.markdown("##### 🔩 Bolt preload from torque")
+            st.markdown(
+                '<p class="hint" style="margin:-2px 0 8px;">Pick the bolt and the '
+                'joint it clamps. The external tensile load is what one bolt\'s '
+                'region must hold; you can seed it from the live brake-torque '
+                'reaction below, or type the pull-off load your hand-calc/FEA '
+                'gives.</p>', unsafe_allow_html=True)
+
+            _bbc = st.columns(4)
+            _b_grade = _bbc[0].selectbox(
+                "Bolt grade", list(bolt_mod.BOLT_GRADES.keys()), index=1,
+                help="ISO 898-1 property class. 10.9 is the usual motorsport "
+                     "socket-head choice.")
+            _b_dia = _bbc[1].selectbox(
+                "Thread", list(bolt_mod.METRIC_COARSE.keys()),
+                index=1, format_func=lambda d: f"M{d:.0f}",
+                help="Nominal diameter; the tensile stress-area comes from "
+                     "ISO 898-1 metric-coarse.")
+            _b_K = _bbc[2].selectbox(
+                "Nut factor K", [0.20, 0.15, 0.12],
+                format_func=lambda k: {0.20: "0.20 — dry", 0.15: "0.15 — light oil",
+                                       0.12: "0.12 — anti-seize"}[k],
+                help="The K in T = K·F·d. Lubrication state is the single biggest "
+                     "source of preload scatter, so it is exposed, not hidden.")
+            _b_torque = unum(_bbc[3], "Assembly torque (N·m)", 2.0, 40.0,
+                             float(st.session_state.get("brake_bolt_torque", 8.0)),
+                             "N·m", step=0.5, key="brake_bolt_torque",
+                             help="The torque the bolt is installed to. This is the "
+                                  "number you are trying to spec.")
+
+            _bbc2 = st.columns(4)
+            _b_base = _bbc2[0].selectbox(
+                "Clamped base material", ["Aluminium 7075", "Aluminium 6061",
+                                          "Steel 4130", "Steel mild"],
+                help="The softer clamped face (pedal-box base / bracket). Sets the "
+                     "head-bearing crush limit.")
+            _b_chassis = _bbc2[1].selectbox(
+                "Chassis face material", ["Aluminium 6061", "Aluminium 7075",
+                                          "Steel 4130", "Steel mild"], index=0)
+            _b_grip = unum(_bbc2[2], "Grip / stack thickness (mm)", 3.0, 30.0, 8.0,
+                           "mm", step=0.5,
+                           help="Total clamped thickness between head and nut.")
+            _b_headd = unum(_bbc2[3], "Head/washer ⌀ (mm)", 8.0, 24.0,
+                            float(_b_dia) * 1.8, "mm", step=0.5,
+                            help="Outer bearing diameter of the head or washer — a "
+                                 "bigger washer spreads the crush, exactly the fix "
+                                 "the chassis lead suggested.")
+
+            # external tensile load — seedable from the brake-torque reaction
+            _bbc3 = st.columns([1, 1, 2])
+            _axle_pick = _bbc3[0].selectbox("Reaction from", ["Front corner",
+                                                              "Rear corner"],
+                                            key="brake_bolt_axle")
+            _n_mount = _bbc3[1].number_input("Mount bolts / caliper", 2, 6, 2, 1,
+                                             key="brake_bolt_nmount",
+                                             help="Bolts sharing the caliper "
+                                                  "reaction.")
+            _T_corner = _Tf_corner if _axle_pick.startswith("Front") else _Tr_corner
+            _F_react = _T_corner / max(_reff_m, 1e-3)        # tangential N at rotor
+            _F_perbolt_seed = _F_react / max(_n_mount, 1)
+            _seed_lbl = (f"Seed from braking: {uval(_T_corner, 'N·m')} corner torque "
+                         f"→ {uval(_F_react, 'N')} at the rotor → "
+                         f"{uval(_F_perbolt_seed, 'N')}/bolt")
+            if _bbc3[2].button("↻ " + _seed_lbl, key="brake_bolt_seed",
+                               help="Pull the external load straight from the live "
+                                    "lock-up torque the Bias view computed."):
+                st.session_state["brake_bolt_extN_val"] = float(round(_F_perbolt_seed, 0))
+                st.session_state.pop("brake_bolt_extN", None)
+                st.session_state.pop("_u_brake_bolt_extN", None)
+                st.rerun()
+
+            _b_extN = unum(st.columns(2)[0], "External tensile load / bolt (N)",
+                           0.0, 20000.0,
+                           float(st.session_state.get("brake_bolt_extN_val",
+                                                      _F_perbolt_seed)),
+                           "N", step=50.0, key="brake_bolt_extN",
+                           help="Pull-off / separating load this ONE bolt's region "
+                                "reacts, before prying. Seed it from braking above, "
+                                "or enter your hand-calc value.")
+            _b_pry = st.columns(3)[0].slider(
+                "Prying factor", 1.0, 3.0, 1.0, 0.1, key="brake_bolt_pry",
+                help="1.0 = even share, no prying. >1 = a bending moment levers "
+                     "extra tension into the far-edge bolt (the peeling pedal-box "
+                     "base). This is the genuinely FEA-shaped input — any value "
+                     "above 1.0 flags the result as an estimate.")
+
+            try:
+                _fast = bolt_mod.Fastener(
+                    grade=_b_grade, nominal_d_mm=float(_b_dia), K_factor=float(_b_K),
+                    head_dia_mm=float(_b_headd),
+                    hole_dia_mm=float(_b_dia) * 1.1)
+                _stack = bolt_mod.ClampedStack(
+                    base_material=_b_base, chassis_material=_b_chassis,
+                    grip_mm=float(_b_grip))
+                _jr = bolt_mod.analyze_joint(
+                    _fast, _stack, assembly_torque_Nm=float(_b_torque),
+                    external_tensile_N=float(_b_extN),
+                    prying_factor=float(_b_pry))
+            except Exception as _ejb:
+                _jr = None
+                st.error(f"Couldn't analyse the joint: {_ejb}")
+
+            if _jr is not None:
+                _proof_frac = _jr.sigma_bolt / max(_jr.sigma_proof, 1e-6)
+                m = st.columns(4)
+                umetric(m[0], "Preload from torque", _jr.F_preload, "N",
+                        help="F = T/(K·d). This clamp force is what your Ansys "
+                             "bolt-preload field should be set to.")
+                m[1].metric("Bolt stress vs proof", f"{_proof_frac*100:.0f}%",
+                            delta=f"{(_proof_frac-0.75)*100:+.0f}% vs 75% cap",
+                            delta_color="inverse",
+                            help="Working stress as a fraction of proof. Stay under "
+                                 "~75% so the bolt doesn't yield at install + load.")
+                m[2].metric("Joint separation margin",
+                            f"{_jr.separation_safety:.2f}×",
+                            help="External load to gap the joint ÷ load applied. "
+                                 ">1 means the clamp stays closed (good fatigue).",
+                            delta=("closed" if not _jr.separated else "GAPPED"),
+                            delta_color=("normal" if not _jr.separated else "inverse"))
+                if _jr.sigma_bearing is not None:
+                    m[3].metric("Head bearing vs crush",
+                                f"{_jr.sigma_bearing:.0f}/{_jr.bearing_allow:.0f} MPa",
+                                delta=("OK" if not _jr.bearing_yield else "CRUSHES"),
+                                delta_color=("normal" if not _jr.bearing_yield
+                                             else "inverse"),
+                                help="Bearing pressure under the head/washer vs the "
+                                     "base material allowance. A bigger washer or a "
+                                     "harder base fixes a crush.")
+
+                # the verdict the team actually needs: a torque spec, or a fix
+                if _jr.separated:
+                    st.error(
+                        f"✗ Joint SEPARATES at this load: the {uval(_b_extN,'N')} "
+                        f"pull-off exceeds the {uval(_jr.F_sep,'N')} gap-opening "
+                        "load, so the bolt takes the full raw load and spikes. "
+                        "Raise the torque, go up a bolt size, or add bolts — then "
+                        "re-check.")
+                elif _proof_frac > 0.75:
+                    st.error(
+                        f"✗ Over-torqued: at {uval(_b_torque,'N·m')} the bolt sits "
+                        f"at {_proof_frac*100:.0f}% of proof before the brake load "
+                        "is fully on — it will yield at install. Drop the torque or "
+                        "use a higher grade. This is exactly the red ring Ansys "
+                        "shows; the fix is here, not in the mesh.")
+                elif _jr.bearing_yield:
+                    st.error(
+                        f"✗ Head bearing crushes the base: "
+                        f"{_jr.sigma_bearing:.0f} MPa > "
+                        f"{_jr.bearing_allow:.0f} MPa allowable. Fit a hardened "
+                        "steel washer to spread the load (the chassis lead's tip), "
+                        "or use a harder base material.")
+                else:
+                    _hi_t = _b_torque * (0.75 / max(_proof_frac, 1e-6))
+                    st.success(
+                        f"✓ Torque spec is sound: at {uval(_b_torque,'N·m')} the "
+                        f"preload is {uval(_jr.F_preload,'N')}, the bolt sits at "
+                        f"{_proof_frac*100:.0f}% of proof, the joint stays clamped "
+                        f"({_jr.separation_safety:.1f}× separation margin) and the "
+                        "head doesn't crush the base. You have head-room to "
+                        f"~{uval(_hi_t,'N·m')} before hitting the 75% proof cap. "
+                        "Set your Ansys bolt-preload to the clamp force above and "
+                        "the sim should confirm — not surprise — you.")
+                if _jr.is_estimate:
+                    st.info(
+                        f"⚠ Prying factor {_jr.prying_factor:.1f} makes this an "
+                        "ESTIMATE — the true lever ratio comes from the bracket's "
+                        "stiffness/footprint (hand-calc or FEA). The bolt mechanics "
+                        "above are exact; only the load amplification is assumed.")
+                if _jr.notes:
+                    st.caption(_jr.notes)
+
+                # ---- DECLARE THE TORQUE SPEC INTO THE INTEGRATION LEDGER ---- #
+                #  Mirrors the brake-torque declare in the Hydraulic view: once a
+                #  defensible torque spec exists, push it to the ledger so the rest
+                #  of the car (and the design-review board) sees the clamp force the
+                #  structure must carry and the exact assembly torque + bolt spec —
+                #  the provenance judges ask for, instead of a number in someone's
+                #  head. Only offered when the joint is actually sound.
+                _spec_ok = (not _jr.separated and _proof_frac <= 0.75
+                            and not (_jr.bearing_yield or False))
+                if _spec_ok:
+                    _dc = st.columns([3, 2])
+                    if _dc[0].button(
+                            "📌 Declare this bolt torque spec in the INTEGRATION "
+                            "ledger", key="brake_bolt_declare",
+                            help="Writes the clamp force into the brakes interface "
+                                 "mount load, and records the torque + bolt spec in "
+                                 "the rationale so the board and the structures "
+                                 "member see the exact number, not a guess."):
+                        try:
+                            _led_bb = interfaces_mod.IntegrationLedger.from_dict(
+                                st.session_state.ledger)
+                            _it_bb = (_led_bb.get("brakes")
+                                      or interfaces_mod.SubsystemInterface(
+                                          name="brakes"))
+                            _it_bb.mount_load_n = round(_jr.F_preload, 0)
+                            _it_bb.mount_points = int(_n_mount)
+                            _it_bb.mounts_on = "chassis"
+                            _it_bb.is_estimate = bool(_jr.is_estimate)
+                            _spec_txt = (
+                                f"Caliper-mount bolt spec ({_axle_pick.lower()}): "
+                                f"M{_b_dia:.0f} {_b_grade}, K={_b_K:.2f}, "
+                                f"torque {uval(_b_torque,'N·m')} → preload "
+                                f"{uval(_jr.F_preload,'N')}/bolt "
+                                f"({_proof_frac*100:.0f}% of proof), "
+                                f"separation margin {_jr.separation_safety:.1f}×. "
+                                "Set ANSYS bolt-preload to the clamp force above.")
+                            _it_bb.rationale = _spec_txt
+                            _it_bb.updated_by = "brakes"
+                            _led_bb.set(_it_bb)
+                            st.session_state.ledger = _led_bb.as_dict()
+                            st.success(
+                                f"Declared {uval(_jr.F_preload,'N')}/bolt clamp "
+                                f"force over {int(_n_mount)} mount bolts. The "
+                                "structures member now sees the load the chassis "
+                                "must carry, and the torque spec is on record.")
+                            st.rerun()
+                        except Exception as _edb:
+                            st.warning(f"Couldn't declare: {_edb}")
+                    _dc[1].caption("Keeps the spec out of someone's head and in "
+                                   "the shared ledger.")
+
+                # torque sweep: stress & separation margin vs assembly torque, so
+                # the team SEES the safe torque window instead of guessing inside it
+                _Tsweep = np.linspace(2.0, 40.0, 60)
+                _sig, _sepm = [], []
+                for _Tt in _Tsweep:
+                    try:
+                        _rr = bolt_mod.analyze_joint(
+                            _fast, _stack, assembly_torque_Nm=float(_Tt),
+                            external_tensile_N=float(_b_extN),
+                            prying_factor=float(_b_pry))
+                        _sig.append(_rr.sigma_bolt / _rr.sigma_proof * 100.0)
+                        _sepm.append(min(_rr.separation_safety, 10.0))
+                    except Exception:
+                        _sig.append(float("nan")); _sepm.append(float("nan"))
+                _Tdisp = [units_mod.from_metric(t, "N·m") for t in _Tsweep]
+                _uT = units_mod.label("N·m")
+                _fbt = go.Figure()
+                _fbt.add_trace(go.Scatter(
+                    x=_Tdisp, y=_sig, name="bolt stress (% of proof)",
+                    line=dict(color="#ff9f43", width=3)))
+                _fbt.add_trace(go.Scatter(
+                    x=_Tdisp, y=_sepm, name="separation margin (×, capped 10)",
+                    line=dict(color="#37e0d0", width=2, dash="dot"), yaxis="y2"))
+                _fbt.add_hline(y=75, line=dict(color="#ff5a52", dash="dash"),
+                               annotation_text="75% proof cap",
+                               annotation_position="top left")
+                _fbt.add_vline(
+                    x=units_mod.from_metric(float(_b_torque), "N·m"),
+                    line=dict(color="#6f7d8c", dash="dot"),
+                    annotation_text="your torque")
+                _fbt.update_layout(
+                    title="Bolt stress & separation margin vs assembly torque",
+                    xaxis_title=f"assembly torque ({_uT})",
+                    yaxis=dict(title="bolt stress (% proof)", color="#ff9f43"),
+                    yaxis2=dict(title="separation ×", overlaying="y", side="right",
+                                color="#37e0d0", range=[0, 10]),
+                    height=340, paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=36, b=0),
+                    legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h",
+                                y=-0.25))
+                st.plotly_chart(_fbt, width='stretch', key="brake_bolt_sweep")
+                st.markdown(
+                    '<p class="hint">The window between "too loose" (low '
+                    'separation margin, left) and "yields at install" (crosses the '
+                    '75% proof line, right) <b>is</b> your torque spec. Pick the '
+                    'middle of it, then verify in Ansys with the preload set to the '
+                    'clamp force — the sim should be boring.</p>',
+                    unsafe_allow_html=True)
+
+        # ================================================================ #
+        else:   # Bracket Factor-of-Safety
+            st.markdown("##### 📐 Bracket Factor-of-Safety (yield, FoS ≥ 1.5)")
+            st.markdown(
+                '<p class="hint" style="margin:-2px 0 8px;">The chassis-team rule '
+                'is FoS&nbsp;≥&nbsp;1.5 on <b>yield</b> for every mount. Screen a '
+                'caliper bracket or pedal tab here in five seconds and find which '
+                'failure mode governs — root bending almost always wins, which is '
+                'why the plate looks fine but the FEA lights up at the root. '
+                'Passing here means the part is worth meshing; failing means fix '
+                'it before you waste a sim.</p>', unsafe_allow_html=True)
+
+            _kc = st.columns(4)
+            _k_mat = _kc[0].selectbox(
+                "Bracket material", list(bracket_mod.MATERIALS.keys()),
+                help="Yield comes from this library — welded HAZ grades carry the "
+                     "knock-down already.")
+            _k_w = unum(_kc[1], "Width (mm)", 8.0, 80.0, 30.0, "mm", step=1.0,
+                        help="Plate width across the bending section.")
+            _k_t = unum(_kc[2], "Thickness (mm)", 1.0, 12.0, 3.175, "mm", step=0.25,
+                        help="Plate thickness. 1/8 in = 3.175 mm — the sheet the "
+                             "team is already simulating.")
+            _k_lever = unum(_kc[3], "Lever arm to root (mm)", 0.0, 80.0, 20.0, "mm",
+                            step=1.0,
+                            help="Distance from the load line to the welded/bolted "
+                                 "root. This arm is what creates the root bending "
+                                 "moment that governs.")
+
+            _kc2 = st.columns(4)
+            _k_hole = unum(_kc2[0], "Bolt-hole ⌀ (mm)", 3.0, 14.0, 6.6, "mm",
+                           step=0.1, help="Clearance hole — sets bearing & tear-out.")
+            _k_edge = unum(_kc2[1], "Edge distance (mm)", 4.0, 30.0, 10.0, "mm",
+                           step=0.5, help="Hole centre to nearest free edge "
+                                          "(tear-out path).")
+            _k_nb = _kc2[2].number_input("Bolts in pattern", 1, 6, 2, 1,
+                                         help="Bolts sharing the direct load.")
+            _k_shear = _kc2[3].selectbox(
+                "Direct load is", ["Shear (in-plane)", "Tension (pull-off)"],
+                help="How the non-bending part of the load hits the section.")
+
+            # seed the load from the live caliper reaction
+            _kc3 = st.columns([1, 2])
+            _k_axle = _kc3[0].selectbox("Load from", ["Front corner", "Rear corner"],
+                                        key="brake_brk_axle")
+            _T_k = _Tf_corner if _k_axle.startswith("Front") else _Tr_corner
+            _F_k_seed = _T_k / max(_reff_m, 1e-3)
+            if _kc3[1].button(
+                    f"↻ Seed load from braking: {uval(_F_k_seed,'N')} caliper "
+                    "reaction", key="brake_brk_seed"):
+                st.session_state["brake_brk_P_val"] = float(round(_F_k_seed, 0))
+                st.session_state.pop("brake_brk_P", None)
+                st.session_state.pop("_u_brake_brk_P", None)
+                st.rerun()
+            _k_P = unum(st.columns(2)[0], "Worst-case load on bracket (N)",
+                        0.0, 20000.0,
+                        float(st.session_state.get("brake_brk_P_val", _F_k_seed)),
+                        "N", step=50.0, key="brake_brk_P",
+                        help="The reaction the bracket carries. Seed from braking "
+                             "or enter your own.")
+
+            try:
+                _brk = bracket_mod.Bracket(
+                    name="brake bracket", material=_k_mat,
+                    width_mm=float(_k_w), thickness_mm=float(_k_t),
+                    P_N=float(_k_P), lever_arm_mm=float(_k_lever),
+                    hole_dia_mm=float(_k_hole), edge_dist_mm=float(_k_edge),
+                    n_bolts=int(_k_nb),
+                    load_is_shear=_k_shear.startswith("Shear"))
+                _kres = bracket_mod.screen_bracket(_brk, fos_target=1.5)
+            except Exception as _ekb:
+                _kres = None
+                st.error(f"Couldn't screen the bracket: {_ekb}")
+
+            if _kres is not None:
+                _vmap = {"PASS": ("✓", st.success), "TIGHT": ("≈", st.warning),
+                         "FAIL": ("✗", st.error), "INVALID": ("?", st.warning)}
+                _vi, _vfn = _vmap.get(_kres.verdict, ("·", st.info))
+                m = st.columns(3)
+                m[0].metric("Min FoS (yield)", f"{_kres.min_fos:.2f}",
+                            delta=f"{_kres.min_fos-1.5:+.2f} vs 1.5",
+                            delta_color=("normal" if _kres.min_fos >= 1.5
+                                         else "inverse"))
+                m[1].metric("Governing mode", _kres.governing_mode.title())
+                m[2].metric("Verdict", _kres.verdict)
+                _vfn(f"{_vi} {_kres.verdict}: minimum FoS {_kres.min_fos:.2f} in "
+                     f"{_kres.governing_mode}. "
+                     + ("Worth meshing — Ansys should confirm this margin."
+                        if _kres.verdict in ("PASS", "TIGHT")
+                        else "Fix it before you mesh: thicken the plate, shorten "
+                             "the lever arm, or widen the section. Root bending "
+                             "scales with t², so a thicker plate pays off fast."))
+
+                # per-mode FoS bar — shows WHICH mode governs at a glance
+                _modes = [mm for mm in _kres.modes]
+                if _modes:
+                    _fk = go.Figure()
+                    _fk.add_trace(go.Bar(
+                        x=[mm.fos if mm.fos < 20 else 20 for mm in _modes],
+                        y=[mm.mode for mm in _modes], orientation="h",
+                        marker_color=["#ff5a52" if mm.governs else "#5ad17a"
+                                      for mm in _modes],
+                        text=[f"{mm.fos:.2f}" for mm in _modes],
+                        textposition="auto"))
+                    _fk.add_vline(x=1.5, line=dict(color="#37e0d0", dash="dash"),
+                                  annotation_text="FoS 1.5")
+                    _fk.update_layout(
+                        title="Factor of Safety by failure mode (capped at 20)",
+                        xaxis_title="FoS on yield", height=300,
+                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#cdd6df", size=11),
+                        margin=dict(l=0, r=0, t=36, b=0))
+                    st.plotly_chart(_fk, width='stretch', key="brake_brk_modes")
+                if _kres.screening_only:
+                    st.caption("Screening only — closed-form hand calc, no stress "
+                               "concentration or weld-toe HAZ. A PASS here earns "
+                               "the Ansys run; it doesn't replace it.")
 
     # =================================================================== #
     elif _bview == "Rotor thermal":
@@ -10669,8 +11895,13 @@ if _show_ledger:
             # NOT write to the persistent backend on every edit: that fired a remote
             # DB round-trip inside the render loop (and a backend hiccup could crash
             # the app). Changes are batched and committed on demand below.
+            # Diff against the PERSISTED pre-edit snapshot (captured once per
+            # session above), NOT against `it` — which is the live ledger value
+            # and on every rerun already equals the edited text-input values, so
+            # the diff would always come back empty and the cross-discipline risk
+            # section below (gated on this changelog) would never appear.
             try:
-                _changes = _IF.diff_interfaces(it.as_dict(), new_it)
+                _changes = _IF.diff_interfaces(_pre_edit.get(s), new_it)
             except Exception:
                 _changes = []
             if _changes:
