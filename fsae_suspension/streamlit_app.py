@@ -5273,7 +5273,7 @@ with tab_ev:
             '<p class="hint" style="margin:0 0 6px;">The powertrain numbers you '
             'commit here flow straight into the car-wide <b>INTEGRATION</b> ledger, '
             'so every other sub-team reads the same truth — no more re-keying '
-            'a \u2019s spreadsheet, screenshotting a spec sheet, or finding out at '
+            'a spreadsheet, screenshotting a spec sheet, or finding out at '
             'assembly that the motor torque overloads the driveline. Each panel '
             'below replaces something the team still does by hand.</p>',
             unsafe_allow_html=True)
