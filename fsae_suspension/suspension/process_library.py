@@ -338,27 +338,54 @@ def write_library(df, xlsx_path=None, csv_path=None):
     return wrote_xlsx
 
 
+def _apply_seed_links(df):
+    """Overwrite any seed rows in df with the current canonical seed links.
+
+    User-added rows (AddedBy != 'seed') are preserved untouched. This ensures
+    stale persisted files can never display old / broken seed URLs.
+    """
+    seed_df = seed_dataframe()
+    seed_key = seed_df[["Component", "Process"]].apply(
+        lambda r: (r["Component"].strip().lower(), r["Process"].strip().lower()), axis=1
+    )
+    seed_map = {k: i for i, k in enumerate(seed_key)}
+
+    def _update_row(row):
+        key = (row["Component"].strip().lower(), row["Process"].strip().lower())
+        if key in seed_map and str(row.get("AddedBy", "seed")).strip() == "seed":
+            return seed_df.iloc[seed_map[key]]
+        return row
+
+    return _normalise(df.apply(_update_row, axis=1))
+
+
 def load_library(xlsx_path=None, csv_path=None, seed_if_missing=True):
     """Load the shared library, seeding the file on first run.
 
     Order of preference: existing .xlsx, then existing .csv, then (if allowed)
     seed it from SEED_ROWS and write it out. Always returns a normalised
     DataFrame with the canonical columns.
+
+    Seed rows are always refreshed from the current SEED_ROWS constants so
+    stale persisted files can never display old or broken URLs.
     """
     xlsx_path = xlsx_path or default_xlsx_path()
     csv_path = csv_path or default_csv_path()
 
     if os.path.exists(xlsx_path):
         try:
-            return _normalise(pd.read_excel(xlsx_path, sheet_name="ProcessLibrary"))
+            df = _normalise(pd.read_excel(xlsx_path, sheet_name="ProcessLibrary"))
+            return _apply_seed_links(df)
         except Exception:
             try:
-                return _normalise(pd.read_excel(xlsx_path))
+                df = _normalise(pd.read_excel(xlsx_path))
+                return _apply_seed_links(df)
             except Exception:
                 pass
     if os.path.exists(csv_path):
         try:
-            return _normalise(pd.read_csv(csv_path))
+            df = _normalise(pd.read_csv(csv_path))
+            return _apply_seed_links(df)
         except Exception:
             pass
 
