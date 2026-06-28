@@ -11804,220 +11804,220 @@ with tab_tractive:
     render_process_library("electrics", key_prefix="tractive_pl")
   except Exception:
     pass
-    st.header("⚡ Tractive-System Safety & PCM Cooling")
-    st.caption("The pre-tech gate: precharge/discharge, the shutdown chain "
-               "(TSAL · BSPD · AMS · IMD · MSD), and the PCM wax buffer — checked "
-               "against the season's rules, no SPICE required.")
+  st.header("⚡ Tractive-System Safety & PCM Cooling")
+  st.caption("The pre-tech gate: precharge/discharge, the shutdown chain "
+             "(TSAL · BSPD · AMS · IMD · MSD), and the PCM wax buffer — checked "
+             "against the season's rules, no SPICE required.")
 
-    def _render_findings(findings):
-        """Render typed Findings with the same severity vocabulary as the board."""
-        _icon = {"ok": "✅", "info": "ℹ️", "warning": "⚠️",
-                 "fail": "❌", "missing": "◻️"}
-        for f in findings:
-            sev = f.severity.value if hasattr(f.severity, "value") else str(f.severity)
-            who = (" · " + ", ".join(f.subsystems)) if f.subsystems else ""
-            st.markdown(f"{_icon.get(sev,'•')} **{f.check}**{who} — {f.message}")
+  def _render_findings(findings):
+      """Render typed Findings with the same severity vocabulary as the board."""
+      _icon = {"ok": "✅", "info": "ℹ️", "warning": "⚠️",
+               "fail": "❌", "missing": "◻️"}
+      for f in findings:
+          sev = f.severity.value if hasattr(f.severity, "value") else str(f.severity)
+          who = (" · " + ", ".join(f.subsystems)) if f.subsystems else ""
+          st.markdown(f"{_icon.get(sev,'•')} **{f.check}**{who} — {f.message}")
 
-    # season/series rule limits (editable — they move year to year)
-    with st.expander("Rule limits for this season/series", expanded=False):
-        _rc = st.columns(4)
-        _safe_v = _rc[0].number_input("Safe-to-touch voltage (V)", 1.0, 600.0,
-                                      60.0, key="tr_safe_v")
-        _disc_t = _rc[1].number_input("Discharge time limit (s)", 0.1, 60.0,
-                                      5.0, key="tr_disc_t")
-        _pre_frac = _rc[2].number_input("Precharge fraction", 0.5, 0.99,
-                                        0.90, key="tr_pre_frac")
-        _pre_t = _rc[3].number_input("Precharge time limit (s)", 0.1, 30.0,
-                                     5.0, key="tr_pre_t")
-        _rules = tract_mod.Rules(safe_voltage_v=_safe_v, discharge_time_s=_disc_t,
-                                 precharge_fraction=_pre_frac,
-                                 precharge_max_time_s=_pre_t)
+  # season/series rule limits (editable — they move year to year)
+  with st.expander("Rule limits for this season/series", expanded=False):
+      _rc = st.columns(4)
+      _safe_v = _rc[0].number_input("Safe-to-touch voltage (V)", 1.0, 600.0,
+                                    60.0, key="tr_safe_v")
+      _disc_t = _rc[1].number_input("Discharge time limit (s)", 0.1, 60.0,
+                                    5.0, key="tr_disc_t")
+      _pre_frac = _rc[2].number_input("Precharge fraction", 0.5, 0.99,
+                                      0.90, key="tr_pre_frac")
+      _pre_t = _rc[3].number_input("Precharge time limit (s)", 0.1, 30.0,
+                                   5.0, key="tr_pre_t")
+      _rules = tract_mod.Rules(safe_voltage_v=_safe_v, discharge_time_s=_disc_t,
+                               precharge_fraction=_pre_frac,
+                               precharge_max_time_s=_pre_t)
 
-    _t_pre, _t_shut, _t_pcm = st.tabs(
-        ["🔌 Precharge / Discharge", "🛑 Shutdown chain · TSAL · BSPD",
-         "🧊 PCM cooling buffer"])
+  _t_pre, _t_shut, _t_pcm = st.tabs(
+      ["🔌 Precharge / Discharge", "🛑 Shutdown chain · TSAL · BSPD",
+       "🧊 PCM cooling buffer"])
 
-    # ---- PRECHARGE / DISCHARGE (slides 4 & 5) ----------------------------- #
-    with _t_pre:
-        st.markdown("**The slide-5 experiment, solved in closed form.** Declare "
-                    "the R-C and (optionally) the instant a switch shorts the "
-                    "precharge resistor; read V_cap, inrush and resistor energy.")
-        _pc1 = st.columns(4)
-        _vpack = _pc1[0].number_input("Pack voltage (V)", 1.0, 600.0, 400.0,
-                                      key="pc_v")
-        _clink_uf = _pc1[1].number_input("DC-link capacitance (µF)", 1.0, 1e5,
-                                         600.0, key="pc_c")
-        _rpre = _pc1[2].number_input("Precharge R (Ω)", 0.1, 1e5, 30.0,
-                                     key="pc_rpre")
-        _rdis = _pc1[3].number_input("Discharge R (Ω, 0 = none)", 0.0, 1e7,
-                                     15000.0, key="pc_rdis")
-        _pc2 = st.columns(3)
-        _e_rate = _pc2[0].number_input("Resistor energy rating (J, 0 = unknown)",
-                                       0.0, 1e5, 100.0, key="pc_erate")
-        _tsw = _pc2[1].number_input("Switch shorts R at t = (s, 0 = never)",
-                                    0.0, 30.0, 2.0, key="pc_tsw")
+  # ---- PRECHARGE / DISCHARGE (slides 4 & 5) ----------------------------- #
+  with _t_pre:
+      st.markdown("**The slide-5 experiment, solved in closed form.** Declare "
+                  "the R-C and (optionally) the instant a switch shorts the "
+                  "precharge resistor; read V_cap, inrush and resistor energy.")
+      _pc1 = st.columns(4)
+      _vpack = _pc1[0].number_input("Pack voltage (V)", 1.0, 600.0, 400.0,
+                                    key="pc_v")
+      _clink_uf = _pc1[1].number_input("DC-link capacitance (µF)", 1.0, 1e5,
+                                       600.0, key="pc_c")
+      _rpre = _pc1[2].number_input("Precharge R (Ω)", 0.1, 1e5, 30.0,
+                                   key="pc_rpre")
+      _rdis = _pc1[3].number_input("Discharge R (Ω, 0 = none)", 0.0, 1e7,
+                                   15000.0, key="pc_rdis")
+      _pc2 = st.columns(3)
+      _e_rate = _pc2[0].number_input("Resistor energy rating (J, 0 = unknown)",
+                                     0.0, 1e5, 100.0, key="pc_erate")
+      _tsw = _pc2[1].number_input("Switch shorts R at t = (s, 0 = never)",
+                                  0.0, 30.0, 2.0, key="pc_tsw")
 
-        pc = tract_mod.PrechargeCircuit(
-            pack_voltage_v=_vpack, link_capacitance_f=_clink_uf * 1e-6,
-            precharge_r_ohm=_rpre,
-            discharge_r_ohm=(_rdis if _rdis > 0 else None),
-            resistor_energy_rating_j=(_e_rate if _e_rate > 0 else None),
-            set_by="electrics", is_estimate=False)
+      pc = tract_mod.PrechargeCircuit(
+          pack_voltage_v=_vpack, link_capacitance_f=_clink_uf * 1e-6,
+          precharge_r_ohm=_rpre,
+          discharge_r_ohm=(_rdis if _rdis > 0 else None),
+          resistor_energy_rating_j=(_e_rate if _e_rate > 0 else None),
+          set_by="electrics", is_estimate=False)
 
-        _m = st.columns(4)
-        _m[0].metric("τ precharge", f"{pc.tau_precharge_s*1000:.1f} ms")
-        _m[1].metric("Peak inrush", f"{pc.peak_inrush_a:.0f} A")
-        _m[2].metric("Pulse energy ½CV²", f"{pc.precharge_pulse_energy_j:.1f} J")
-        _tts = pc.time_to_safe_s(_safe_v)
-        _m[3].metric(f"Bleed to {_safe_v:.0f} V",
-                     "—" if _tts is None else f"{_tts:.2f} s")
+      _m = st.columns(4)
+      _m[0].metric("τ precharge", f"{pc.tau_precharge_s*1000:.1f} ms")
+      _m[1].metric("Peak inrush", f"{pc.peak_inrush_a:.0f} A")
+      _m[2].metric("Pulse energy ½CV²", f"{pc.precharge_pulse_energy_j:.1f} J")
+      _tts = pc.time_to_safe_s(_safe_v)
+      _m[3].metric(f"Bleed to {_safe_v:.0f} V",
+                   "—" if _tts is None else f"{_tts:.2f} s")
 
-        tr = tract_mod.simulate_precharge(
-            pc, t_switch_s=(_tsw if _tsw > 0 else None))
-        if tr.ok:
-            try:
-                import plotly.graph_objects as _go
-                _fig = _go.Figure()
-                _fig.add_trace(_go.Scatter(x=tr.time_s, y=tr.v_cap_v,
-                                           name="V_cap (V)", mode="lines"))
-                _fig.add_trace(_go.Scatter(x=tr.time_s, y=tr.i_a,
-                                           name="I_resistor (A)", mode="lines",
-                                           yaxis="y2"))
-                if _tsw > 0:
-                    _fig.add_vline(x=_tsw, line_dash="dash",
-                                   annotation_text="switch shorts R")
-                _fig.update_layout(
-                    height=320, margin=dict(l=10, r=10, t=30, b=10),
-                    yaxis=dict(title="V_cap (V)"),
-                    yaxis2=dict(title="I (A)", overlaying="y", side="right"),
-                    legend=dict(orientation="h", y=1.15))
-                st.plotly_chart(_fig, use_container_width=True)
-            except Exception:
-                st.line_chart({"V_cap (V)": tr.v_cap_v}, x=None)
-        for _w in tr.warnings:
-            st.caption("⚠ " + _w)
+      tr = tract_mod.simulate_precharge(
+          pc, t_switch_s=(_tsw if _tsw > 0 else None))
+      if tr.ok:
+          try:
+              import plotly.graph_objects as _go
+              _fig = _go.Figure()
+              _fig.add_trace(_go.Scatter(x=tr.time_s, y=tr.v_cap_v,
+                                         name="V_cap (V)", mode="lines"))
+              _fig.add_trace(_go.Scatter(x=tr.time_s, y=tr.i_a,
+                                         name="I_resistor (A)", mode="lines",
+                                         yaxis="y2"))
+              if _tsw > 0:
+                  _fig.add_vline(x=_tsw, line_dash="dash",
+                                 annotation_text="switch shorts R")
+              _fig.update_layout(
+                  height=320, margin=dict(l=10, r=10, t=30, b=10),
+                  yaxis=dict(title="V_cap (V)"),
+                  yaxis2=dict(title="I (A)", overlaying="y", side="right"),
+                  legend=dict(orientation="h", y=1.15))
+              st.plotly_chart(_fig, use_container_width=True)
+          except Exception:
+              st.line_chart({"V_cap (V)": tr.v_cap_v}, x=None)
+      for _w in tr.warnings:
+          st.caption("⚠ " + _w)
 
-        st.divider()
-        _render_findings(tract_mod.check_precharge(pc, _rules))
+      st.divider()
+      _render_findings(tract_mod.check_precharge(pc, _rules))
 
-    # ---- SHUTDOWN CHAIN + TSAL + BSPD (slides 3 & 8) ---------------------- #
-    with _t_shut:
-        st.markdown("**The series safety loop, checked for rule-completeness and "
-                    "fail-safe wiring.** Tick the nodes your shutdown circuit "
-                    "actually has (MSD/accumulator/inverter interlocks included).")
-        _present = {}
-        _cc = st.columns(4)
-        _labels = {
-            "master_switch": "Master switch(es)", "bspd": "BSPD",
-            "ams": "AMS / BMS", "imd": "IMD",
-            "interlock": "HV interlocks (MSD/accum/inverter)",
-            "inertia": "Inertia / crash switch", "estop": "E-stops (cockpit + sides)"}
-        for _i, (_k, _lab) in enumerate(_labels.items()):
-            _present[_k] = _cc[_i % 4].checkbox(_lab, value=True, key=f"sd_{_k}")
-        _nc = st.checkbox("All nodes wired normally-CLOSED (open-to-trip)",
-                          value=True, key="sd_nc")
+  # ---- SHUTDOWN CHAIN + TSAL + BSPD (slides 3 & 8) ---------------------- #
+  with _t_shut:
+      st.markdown("**The series safety loop, checked for rule-completeness and "
+                  "fail-safe wiring.** Tick the nodes your shutdown circuit "
+                  "actually has (MSD/accumulator/inverter interlocks included).")
+      _present = {}
+      _cc = st.columns(4)
+      _labels = {
+          "master_switch": "Master switch(es)", "bspd": "BSPD",
+          "ams": "AMS / BMS", "imd": "IMD",
+          "interlock": "HV interlocks (MSD/accum/inverter)",
+          "inertia": "Inertia / crash switch", "estop": "E-stops (cockpit + sides)"}
+      for _i, (_k, _lab) in enumerate(_labels.items()):
+          _present[_k] = _cc[_i % 4].checkbox(_lab, value=True, key=f"sd_{_k}")
+      _nc = st.checkbox("All nodes wired normally-CLOSED (open-to-trip)",
+                        value=True, key="sd_nc")
 
-        _chain = tract_mod.ShutdownChain()
-        for _k, _on in _present.items():
-            if _on:
-                _chain.add(tract_mod.ShutdownNode(
-                    name=_k, kind=_k, normally_closed=_nc,
-                    set_by="glv", is_estimate=False))
-        _render_findings(tract_mod.check_shutdown_chain(_chain, _rules))
+      _chain = tract_mod.ShutdownChain()
+      for _k, _on in _present.items():
+          if _on:
+              _chain.add(tract_mod.ShutdownNode(
+                  name=_k, kind=_k, normally_closed=_nc,
+                  set_by="glv", is_estimate=False))
+      _render_findings(tract_mod.check_shutdown_chain(_chain, _rules))
 
-        st.divider()
-        _tc = st.columns(2)
-        with _tc[0]:
-            st.markdown("**TSAL**")
-            _flash = st.number_input("Flash rate (Hz)", 0.1, 20.0, 3.0,
-                                     key="tsal_hz")
-            _tsal_v = st.number_input("Indicates 'safe' below (V)", 1.0, 600.0,
-                                      55.0, key="tsal_v")
-            _render_findings(tract_mod.check_tsal(
-                tract_mod.TSAL(flash_hz=_flash, safe_threshold_v=_tsal_v), _rules))
-        with _tc[1]:
-            st.markdown("**BSPD**")
-            _react = st.number_input("Reaction time (ms)", 1.0, 2000.0, 300.0,
-                                     key="bspd_ms")
-            _bp = st.number_input("Trip power threshold (W)", 0.0, 1e5, 5000.0,
-                                  key="bspd_w")
-            _render_findings(tract_mod.check_bspd(
-                tract_mod.BSPD(brake_threshold=10.0, power_threshold_w=_bp,
-                               reaction_time_s=_react / 1000.0), _rules))
+      st.divider()
+      _tc = st.columns(2)
+      with _tc[0]:
+          st.markdown("**TSAL**")
+          _flash = st.number_input("Flash rate (Hz)", 0.1, 20.0, 3.0,
+                                   key="tsal_hz")
+          _tsal_v = st.number_input("Indicates 'safe' below (V)", 1.0, 600.0,
+                                    55.0, key="tsal_v")
+          _render_findings(tract_mod.check_tsal(
+              tract_mod.TSAL(flash_hz=_flash, safe_threshold_v=_tsal_v), _rules))
+      with _tc[1]:
+          st.markdown("**BSPD**")
+          _react = st.number_input("Reaction time (ms)", 1.0, 2000.0, 300.0,
+                                   key="bspd_ms")
+          _bp = st.number_input("Trip power threshold (W)", 0.0, 1e5, 5000.0,
+                                key="bspd_w")
+          _render_findings(tract_mod.check_bspd(
+              tract_mod.BSPD(brake_threshold=10.0, power_threshold_w=_bp,
+                             reaction_time_s=_react / 1000.0), _rules))
 
-    # ---- PCM COOLING BUFFER (slides 3 & 7) ------------------------------- #
-    with _t_pcm:
-        st.markdown("**The 'liquid wax' buffer — how long it holds the cells, and "
-                    "how much you need.** Latent heat flattens the corner-exit "
-                    "spikes; this tells you when the wax runs out and the fan has "
-                    "to take over.")
-        _wc = st.columns(4)
-        _series = _wc[0].number_input("Series (s)", 1, 400, 140, key="pcm_s")
-        _par = _wc[1].number_input("Parallel (p)", 1, 50, 3, key="pcm_p")
-        _mass_g = _wc[2].number_input("Wax per cell (g)", 0.0, 500.0, 15.0,
-                                      key="pcm_g")
-        _ambient = _wc[3].number_input("Inlet air (°C)", 0.0, 60.0, 35.0,
-                                       key="pcm_amb")
-        _wc2 = st.columns(4)
-        _tmelt = _wc2[0].number_input("Wax melt temp (°C)", 20.0, 90.0, 45.0,
-                                      key="pcm_tm")
-        _lheat = _wc2[1].number_input("Latent heat (J/g)", 50.0, 400.0, 200.0,
-                                      key="pcm_l")
-        _stint = _wc2[2].number_input("Endurance stint (s)", 60.0, 3000.0, 1500.0,
-                                      key="pcm_stint")
-        _peakA = _wc2[3].number_input("Pack current peak (A)", 10.0, 800.0, 300.0,
-                                      key="pcm_a")
+  # ---- PCM COOLING BUFFER (slides 3 & 7) ------------------------------- #
+  with _t_pcm:
+      st.markdown("**The 'liquid wax' buffer — how long it holds the cells, and "
+                  "how much you need.** Latent heat flattens the corner-exit "
+                  "spikes; this tells you when the wax runs out and the fan has "
+                  "to take over.")
+      _wc = st.columns(4)
+      _series = _wc[0].number_input("Series (s)", 1, 400, 140, key="pcm_s")
+      _par = _wc[1].number_input("Parallel (p)", 1, 50, 3, key="pcm_p")
+      _mass_g = _wc[2].number_input("Wax per cell (g)", 0.0, 500.0, 15.0,
+                                    key="pcm_g")
+      _ambient = _wc[3].number_input("Inlet air (°C)", 0.0, 60.0, 35.0,
+                                     key="pcm_amb")
+      _wc2 = st.columns(4)
+      _tmelt = _wc2[0].number_input("Wax melt temp (°C)", 20.0, 90.0, 45.0,
+                                    key="pcm_tm")
+      _lheat = _wc2[1].number_input("Latent heat (J/g)", 50.0, 400.0, 200.0,
+                                    key="pcm_l")
+      _stint = _wc2[2].number_input("Endurance stint (s)", 60.0, 3000.0, 1500.0,
+                                    key="pcm_stint")
+      _peakA = _wc2[3].number_input("Pack current peak (A)", 10.0, 800.0, 300.0,
+                                    key="pcm_a")
 
-        _ncells = int(_series) * int(_par)
-        # square-ish packaging grid for the n cells
-        _rows = max(int(round(_ncells ** 0.5)), 1)
-        _cols = max(int(round(_ncells / _rows)), 1)
-        try:
-            _cell = pack_mod.default_cell_params()
-            _layout = pack_mod.PackLayout(rows=_rows, cols=_cols,
-                                          series=int(_series), parallel=int(_par),
-                                          cell=_cell, ambient_c=_ambient)
-            _t = np.linspace(0, 120, 800)
-            _cur = 0.4 * _peakA + _peakA * np.clip(np.sin(2 * np.pi * _t / 8), 0, 1)
-            _model = pack_mod.PackThermalModel(layout=_layout, fans=[],
-                                               airflow=pack_mod.AirflowParams())
-            _res = _model.simulate(_t, _cur, n_laps=3)
-            _mat = pcm_mod.PCMMaterial(t_melt_c=_tmelt, latent_heat_j_per_g=_lheat)
-            _alloc = pcm_mod.PCMAllocation(material=_mat, mass_per_cell_g=_mass_g,
-                                           set_by="cooling")
-            _pr = pcm_mod.evaluate_pcm_buffer(_res, _layout, _alloc)
+      _ncells = int(_series) * int(_par)
+      # square-ish packaging grid for the n cells
+      _rows = max(int(round(_ncells ** 0.5)), 1)
+      _cols = max(int(round(_ncells / _rows)), 1)
+      try:
+          _cell = pack_mod.default_cell_params()
+          _layout = pack_mod.PackLayout(rows=_rows, cols=_cols,
+                                        series=int(_series), parallel=int(_par),
+                                        cell=_cell, ambient_c=_ambient)
+          _t = np.linspace(0, 120, 800)
+          _cur = 0.4 * _peakA + _peakA * np.clip(np.sin(2 * np.pi * _t / 8), 0, 1)
+          _model = pack_mod.PackThermalModel(layout=_layout, fans=[],
+                                             airflow=pack_mod.AirflowParams())
+          _res = _model.simulate(_t, _cur, n_laps=3)
+          _mat = pcm_mod.PCMMaterial(t_melt_c=_tmelt, latent_heat_j_per_g=_lheat)
+          _alloc = pcm_mod.PCMAllocation(material=_mat, mass_per_cell_g=_mass_g,
+                                         set_by="cooling")
+          _pr = pcm_mod.evaluate_pcm_buffer(_res, _layout, _alloc)
 
-            _mm = st.columns(4)
-            _mm[0].metric("Cells (grid)", f"{_layout.n_cells}")
-            _hold = ("holds full stint" if _pr.hold_time_s is None
-                     else f"{_pr.hold_time_s:.0f} s")
-            _mm[1].metric("Wax hold time", _hold)
-            _mm[2].metric("Pack wax mass", f"{_pr.total_pcm_mass_kg:.1f} kg")
-            _mm[3].metric("Pack wax volume", f"{_pr.total_pcm_volume_cc:.0f} cc")
+          _mm = st.columns(4)
+          _mm[0].metric("Cells (grid)", f"{_layout.n_cells}")
+          _hold = ("holds full stint" if _pr.hold_time_s is None
+                   else f"{_pr.hold_time_s:.0f} s")
+          _mm[1].metric("Wax hold time", _hold)
+          _mm[2].metric("Pack wax mass", f"{_pr.total_pcm_mass_kg:.1f} kg")
+          _mm[3].metric("Pack wax volume", f"{_pr.total_pcm_volume_cc:.0f} cc")
 
-            _render_findings(pcm_mod.check_pcm(_pr, endurance_time_s=_stint))
+          _render_findings(pcm_mod.check_pcm(_pr, endurance_time_s=_stint))
 
-            st.divider()
-            st.markdown("**Inverse sizing** — wax needed to hold the full stint:")
-            _sz = pcm_mod.size_pcm_for_hold(_res, _layout, _mat, hold_time_s=_stint)
-            if _sz.get("ok"):
-                _sc = st.columns(3)
-                _sc[0].metric("Per cell", f"{_sz['pcm_mass_per_cell_g']:.0f} g")
-                _sc[1].metric("Pack mass", f"{_sz['pack_pcm_mass_kg']:.1f} kg")
-                _sc[2].metric("Pack volume", f"{_sz['pack_pcm_volume_cc']:.0f} cc")
-                if _sz["pack_pcm_mass_kg"] > 10:
-                    st.caption("⚠ That much wax to hold the *whole* stint on "
-                               "latent heat alone is impractical — the honest read "
-                               "is: PCM buffers the spikes, the fan carries the "
-                               "steady load. Size the wax for the burst, not the "
-                               "stint.")
-            if _pr.synthesized:
-                st.caption("⚠ Synthesized: energy balances are exact, but cell and "
-                           "wax properties are representative (uncalibrated). Use "
-                           "for ranking layouts and finding where the wax runs out; "
-                           "confirm absolute °C in Ansys.")
-        except Exception as _e:
-            st.error(f"PCM model couldn't run: {_e}")
+          st.divider()
+          st.markdown("**Inverse sizing** — wax needed to hold the full stint:")
+          _sz = pcm_mod.size_pcm_for_hold(_res, _layout, _mat, hold_time_s=_stint)
+          if _sz.get("ok"):
+              _sc = st.columns(3)
+              _sc[0].metric("Per cell", f"{_sz['pcm_mass_per_cell_g']:.0f} g")
+              _sc[1].metric("Pack mass", f"{_sz['pack_pcm_mass_kg']:.1f} kg")
+              _sc[2].metric("Pack volume", f"{_sz['pack_pcm_volume_cc']:.0f} cc")
+              if _sz["pack_pcm_mass_kg"] > 10:
+                  st.caption("⚠ That much wax to hold the *whole* stint on "
+                             "latent heat alone is impractical — the honest read "
+                             "is: PCM buffers the spikes, the fan carries the "
+                             "steady load. Size the wax for the burst, not the "
+                             "stint.")
+          if _pr.synthesized:
+              st.caption("⚠ Synthesized: energy balances are exact, but cell and "
+                         "wax properties are representative (uncalibrated). Use "
+                         "for ranking layouts and finding where the wax runs out; "
+                         "confirm absolute °C in Ansys.")
+      except Exception as _e:
+          st.error(f"PCM model couldn't run: {_e}")
 
 
 
