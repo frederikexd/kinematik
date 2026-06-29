@@ -69,6 +69,9 @@ from suspension import dfmea as dfmea_mod
 from suspension import risk_propagation as riskprop_mod
 from suspension import process_library as proclib_mod
 from suspension import pt_integration as pti_mod
+from suspension import registry as registry_mod
+from suspension import cad_ingest as ingest_mod
+from suspension import analytics as _axn
 
 # --------------------------------------------------------------------------- #
 #  Cached compute layer.
@@ -1005,6 +1008,121 @@ st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
             f'<span class="sub">{_TOPO_LABELS.get(_topo, _topo)} · agnostic engine · open source</span></div>',
             unsafe_allow_html=True)
 
+# =========================================================================== #
+#  ◢ STATUS DASHBOARD — front-page "is the car ready?" at a glance            #
+# --------------------------------------------------------------------------- #
+#  Reads the Registry, validates each component's declared metadata against    #
+#  its rules (status_dashboard.py — a metadata validator, NOT a CAD parser),   #
+#  and shows one red/amber/green verdict per part plus a car-level rollup. The #
+#  moment a lead sees this, "which Drive file is current and is it OK?" is     #
+#  already answered — so the Drive folder stops being the source of truth.     #
+# =========================================================================== #
+def _render_status_dashboard():
+    from suspension import status_dashboard as _sd
+    from suspension import registry as _reg_mod
+
+    _STATUS_COLORS = {"green": "var(--cyan)", "amber": "var(--amber)",
+                      "red": "var(--red)"}
+    _STATUS_DOT = {"green": "🟢", "amber": "🟡", "red": "🔴"}
+
+    try:
+        reg = _reg_mod.Registry(os.path.join(os.getcwd(), "registry.json"))
+    except Exception:
+        return  # registry not available; skip the banner silently
+
+    rows = reg.summary_rows()
+    statuses = [_sd.status_for_component(r, r.get("rules", [])) for r in rows]
+
+    # Cross-system flags: a failing myth recorded this session pushes the board.
+    _extra = []
+    _myth = st.session_state.get("mb_last_result_dict")
+    if _myth and _myth.get("verdict") == "myth":
+        _extra.append({"status": "red",
+                       "message": "A checked assumption came back FALSE — "
+                                  "see Integration ▸ Myth-Buster"})
+    car = _sd.roll_up(statuses, _extra)
+
+    # ---- the headline banner (always visible) ---------------------------- #
+    _c = _STATUS_COLORS.get(car.overall, "var(--dim)")
+    _dot = _STATUS_DOT.get(car.overall, "○")
+    _ready = car.counts.get("green", 0)
+    _total = len(statuses)
+    st.markdown(
+        f'<div class="card" style="border-left:4px solid {_c};'
+        f'display:flex;align-items:center;gap:1rem;margin:.2rem 0 .4rem;">'
+        f'<div style="font-size:1.6rem;line-height:1">{_dot}</div>'
+        f'<div style="flex:1">'
+        f'<div style="font-family:\'JetBrains Mono\';font-size:.7rem;'
+        f'letter-spacing:.14em;text-transform:uppercase;color:var(--dim)">'
+        f'Design status</div>'
+        f'<div style="font-weight:600;font-size:1.05rem;color:{_c}">'
+        f'{car.headline}</div></div>'
+        f'<div style="text-align:right;font-family:\'JetBrains Mono\'">'
+        f'<div style="font-size:1.45rem;font-weight:600;color:{_c}">'
+        f'{_ready}/{_total}</div>'
+        f'<div style="font-size:.7rem;color:var(--dim)">ready to cut</div>'
+        f'</div></div>', unsafe_allow_html=True)
+
+    # ---- per-component chips + drill-down -------------------------------- #
+    with st.expander(
+            f"Design status — {car.counts.get('red',0)} red · "
+            f"{car.counts.get('amber',0)} amber · {car.counts.get('green',0)} green",
+            expanded=(car.overall == "red")):
+
+        if not statuses:
+            st.markdown(
+                '<p class="hint">No components registered yet. Add the parts '
+                'everyone keeps re-sharing in the <b>🗂️ Registry</b> tab, give '
+                'each a few key numbers (Weight, Offset, Clash distance) and a '
+                'rule, and the whole car\'s readiness shows up here — replacing '
+                'the Drive folder with one honest red/green board.</p>',
+                unsafe_allow_html=True)
+            return
+
+        # sort worst-first so problems are at the top
+        _order = {"red": 0, "amber": 1, "green": 2}
+        for cs in sorted(statuses, key=lambda s: _order.get(s.status, 3)):
+            _cc = _STATUS_COLORS.get(cs.status, "var(--dim)")
+            _cd = _STATUS_DOT.get(cs.status, "○")
+            _cols = st.columns([3, 4])
+            with _cols[0]:
+                st.markdown(
+                    f'{_cd} **{cs.name}** '
+                    f'<span class="tag">{cs.subteam}</span>',
+                    unsafe_allow_html=True)
+            with _cols[1]:
+                st.markdown(
+                    f'<span style="color:{_cc};font-size:.85rem">{cs.headline}</span>',
+                    unsafe_allow_html=True)
+            # show each rule result as a mini chip
+            if cs.rule_results:
+                _chips = []
+                for rr in cs.rule_results:
+                    _rc = {"green": "good", "amber": "warn", "red": "bad"}.get(
+                        rr.status, "tag")
+                    _chips.append(
+                        f'<span class="tag {_rc}">{rr.label}: {rr.message}</span>')
+                st.markdown(" ".join(_chips), unsafe_allow_html=True)
+            if not cs.has_file:
+                st.markdown(
+                    '<span class="hint">↳ register the file/link in the Registry tab</span>',
+                    unsafe_allow_html=True)
+            st.markdown(
+                '<hr style="border:none;border-top:1px solid var(--line);'
+                'margin:.3rem 0;">', unsafe_allow_html=True)
+
+        st.caption("Red = needs attention (file missing, a rule failed, a clash "
+                   "too tight, a failing myth). Green = file registered, signed "
+                   "off, every declared number within its rule. Set the numbers "
+                   "and rules per part in the 🗂️ Registry tab.")
+
+
+try:
+    _render_status_dashboard()
+except Exception:
+    pass  # the dashboard is a convenience banner; never let it break the page
+
+
 s = kin.static
 mid = veh.lateral_load_transfer(1.2)[1]
 
@@ -1098,6 +1216,8 @@ _TAB_META = {
     "transient":   ("〰️", "Transient"),
     "validation":  ("✔️", "Validation"),
     "integration": ("🔗", "Integration"),
+    "registry":    ("🗂️", "Registry"),
+    "analytics":   ("📊", "Analytics"),
     "pcb":         ("🔌", "Electronics (PCB)"),
     "tractive":    ("⚡", "Tractive Safety"),
     "dfmea":       ("🧯", "DFMEA"),
@@ -1106,7 +1226,7 @@ _FULL_ORDER = list(_TAB_META.keys())
 
 # Tabs every member uses no matter their subteam — the shared spine of the
 # project (see one car, declare your numbers once, read/leave notes).
-_SHARED_IDS = ["model3d", "integration", "notes", "weight", "validation"]
+_SHARED_IDS = ["model3d", "integration", "registry", "notes", "weight", "validation", "analytics"]
 
 # Subteam -> the tabs that team actually works in (most-used first). Shared
 # tabs are appended automatically, so they're listed here only where a team
@@ -1291,6 +1411,21 @@ with _pctl:
     else:
         _names = " + ".join(_ROLE_LABELS[r].split(" / ")[0] for r in _roles)
         st.caption(f"Showing **{_names}** + shared tabs")
+
+    # --- analytics: start the usage-telemetry session (fire-and-forget) ----- #
+    # Records foot traffic, individual use, latency, errors, retention and the
+    # hours-saved ROI automatically. No-ops with no Supabase configured, and can
+    # be killed entirely via the KINEMATIK_ANALYTICS=off secret. Identity is an
+    # anonymous per-session id unless the member types their name in Analytics.
+    try:
+        _ax_subteam = (_roles[0] if _roles and _roles != ["everyone"]
+                       else "unknown")
+        _axn.init(member=st.session_state.get("_ax_member"),
+                subteam=_ax_subteam,
+                is_new_member=not st.session_state.get("_ax_returning", False))
+        st.session_state["_ax_returning"] = True
+    except Exception:
+        pass
 
     if st.button("Show all tabs" if not _show_all else "Back to focus mode",
                  use_container_width=True,
@@ -2841,6 +2976,8 @@ tab_ggv     = _id_to_container["ggv"]
 tab_tr      = _id_to_container["transient"]
 tab12       = _id_to_container["validation"]
 tab13       = _id_to_container["integration"]
+tab_registry = _id_to_container["registry"]
+tab_analytics = _id_to_container["analytics"]
 tab_pcb     = _id_to_container["pcb"]
 tab_tractive = _id_to_container["tractive"]
 tab_dfmea    = _id_to_container["dfmea"]
@@ -7334,6 +7471,25 @@ def _mb_render_card(claim_text, result, *, compact=False):
         unsafe_allow_html=True)
 
 
+def _mb_coerce_float(v):
+    """Best-effort float from a ledger value that might be a number, a dict with
+    a 'value' field, or a string like '42.0 mm'. Returns None if not numeric."""
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    if isinstance(v, dict):
+        return _mb_coerce_float(v.get("value", v.get("val")))
+    import re as _re
+    m = _re.search(r'-?\d[\d,]*\.?\d*', str(v))
+    if m:
+        try:
+            return float(m.group(0).replace(",", ""))
+        except ValueError:
+            return None
+    return None
+
+
 def _mb_build_context():
     """Assemble the live context bundle the engine hands to whichever rule fires.
 
@@ -7374,6 +7530,29 @@ def render_mythbuster():
     cross-discipline place (the Integration tab)."""
     from suspension import mythbuster as _mb
 
+    # Activate the data-driven entity engine as a fallback under the hand-written
+    # rules (idempotent). Its registry_lookup pulls VERIFIED declared values from
+    # the Integration ledger so a formula that uses one scores higher confidence.
+    try:
+        from suspension import myth_bridge as _mb_bridge
+
+        def _verified_lookup(key):
+            """Resolve an entity's registry_key (e.g. 'aero.downforce_n') to a
+            verified live number from the Integration ledger, or None."""
+            led = st.session_state.get("integration_ledger") or {}
+            # ledger is keyed by declared field; accept either dotted or leaf key
+            if key in led:
+                return _mb_coerce_float(led.get(key))
+            leaf = key.split(".")[-1]
+            for _k, _v in led.items():
+                if str(_k).split(".")[-1] == leaf:
+                    return _mb_coerce_float(_v)
+            return None
+
+        _mb_bridge.install_entity_engine(registry_lookup=_verified_lookup)
+    except Exception:
+        pass  # the hand-written rules still work without the entity engine
+
     st.markdown(
         '<p class="hint" style="margin:0 0 10px;">Type an assumption from <b>any</b> '
         'subsystem \u2014 tyres, aero, brakes, cooling, electrics, structures, '
@@ -7401,11 +7580,24 @@ def render_mythbuster():
     _ctx = _mb_build_context()
 
     if _go and _input.strip():
+        _ax = globals().get("_axn")
         try:
+            if _ax is not None:
+                _ax.engage("mythbuster", "check")
+            import time as _t
+            _t0 = _t.perf_counter()
             _res = _mb.check(_input, _ctx)
+            if _ax is not None:
+                _ax.render("mythbuster", int((_t.perf_counter() - _t0) * 1000),
+                           "check")
             st.session_state["mb_last_input"] = _input
             st.session_state["mb_last_result_dict"] = _res.as_dict()
+            if _ax is not None:
+                _ax.complete("mythbuster", "check",
+                             payload={"verdict": _res.as_dict().get("verdict")})
         except Exception as _e:
+            if _ax is not None:
+                _ax.error("mythbuster", _e)
             st.warning(f"Couldn't check that: {_e}")
     elif _go:
         st.caption("Type an assumption first.")
@@ -14032,6 +14224,757 @@ with tab_dfmea:
     st.error(f"The DFMEA workbench hit an error: {_e}")
     with st.expander("Details"):
         st.exception(_e)
+
+
+
+
+# =========================================================================== #
+#  🗂️  REGISTRY — the component "Source of Truth"                              #
+# --------------------------------------------------------------------------- #
+#  Replaces the "here's a Drive link, sorry the folder's a mess" workflow with #
+#  a dashboard that always shows the CURRENT, verified version of each part,   #
+#  the numbers that matter (offset, mass, material…), who signed it off, and a #
+#  one-click pull of the exact released file. Ingest parses real provenance    #
+#  out of the CAD itself instead of just storing a blob.                       #
+# =========================================================================== #
+REGISTRY_PATH = os.path.join(os.getcwd(), "registry.json")
+
+
+def _registry():
+    """Load (once per rerun) the on-disk registry into session state."""
+    reg = registry_mod.Registry(REGISTRY_PATH)
+    return reg
+
+
+def _status_tag(status):
+    cls = {"verified": "good", "unverified": "warn",
+           "superseded": "bad", "empty": "tag"}.get(status, "tag")
+    label = {"verified": "✓ Verified", "unverified": "● Unverified",
+             "superseded": "↩ Superseded", "empty": "○ No file"}.get(
+                 status, status)
+    return f'<span class="tag {cls}">{label}</span>'
+
+
+with tab_registry:
+    _axn.tab_open("registry")
+    st.markdown(
+        '<div class="brand"><span class="mark">Registry</span>'
+        '<span class="sub">Source of truth · released CAD</span></div>',
+        unsafe_allow_html=True)
+
+    st.markdown(
+        '<div class="wt-intro"><div class="ic">◢</div><div>'
+        '<p>One table, always current. Each component shows its <b>latest '
+        'verified version</b>, the numbers that matter, who signed it off, and '
+        'a one-click pull of the exact released file — so a part lives here, not '
+        'in a Drive link buried in a chat.</p>'
+        '<p>Add a version by dropping the CAD/assembly bundle (or pasting a '
+        'link). KinematiK reads the provenance straight out of the file — model '
+        'name, units, CAD system, author, FEA mesh — instead of just storing a '
+        'blob.</p></div></div>',
+        unsafe_allow_html=True)
+
+    try:
+        reg = _registry()
+        rows = reg.summary_rows()
+
+        # ----- headline metrics ------------------------------------------- #
+        _verified = sum(1 for r in rows if r["status"] == "verified")
+        _unver = sum(1 for r in rows if r["status"] in ("unverified", "empty"))
+        _m1, _m2, _m3 = st.columns(3)
+        _m1.markdown(
+            f'<div class="metric"><div class="k">Components</div>'
+            f'<div class="v">{len(rows)}</div></div>', unsafe_allow_html=True)
+        _m2.markdown(
+            f'<div class="metric"><div class="k">Verified current</div>'
+            f'<div class="v" style="color:var(--cyan)">{_verified}</div></div>',
+            unsafe_allow_html=True)
+        _m3.markdown(
+            f'<div class="metric"><div class="k">Needs sign-off</div>'
+            f'<div class="v" style="color:var(--amber)">{_unver}</div></div>',
+            unsafe_allow_html=True)
+
+        st.markdown("")
+
+        # ----- the dashboard table ---------------------------------------- #
+        if not rows:
+            st.markdown(
+                '<div class="card"><b>No components yet.</b><br>'
+                '<span class="hint">Add your first one below — start with the '
+                'part everyone keeps re-sharing (the diff mount is a good '
+                'first row).</span></div>', unsafe_allow_html=True)
+        else:
+            st.markdown("#### Current versions")
+            for r in rows:
+                cur = reg.get(r["comp_id"]).current()
+                with st.container():
+                    c_name, c_ver, c_status, c_act = st.columns([3, 2.4, 1.8, 1.4])
+                    with c_name:
+                        st.markdown(
+                            f'**{r["name"]}**  '
+                            f'<span class="tag">{r["subteam"]}</span>',
+                            unsafe_allow_html=True)
+                        if r["owner"]:
+                            st.caption(f'Owner · {r["owner"]}')
+                    with c_ver:
+                        st.markdown(f'`{r["version"]}`')
+                        # the specs that matter — shown inline as the golden record
+                        if r["specs"]:
+                            _spec_txt = "  ·  ".join(
+                                f"**{k}** {v}" for k, v in r["specs"].items())
+                            st.markdown(
+                                f'<span class="hint">{_spec_txt}</span>',
+                                unsafe_allow_html=True)
+                    with c_status:
+                        st.markdown(_status_tag(r["status"]),
+                                    unsafe_allow_html=True)
+                        if r["verified_by"]:
+                            st.caption(f'{r["verified_by"]} · '
+                                       f'{r["verified_on"][:10]}')
+                    with c_act:
+                        # one-click export: pull the verified bytes or open link
+                        _bp = reg.blob_path(cur) if cur else None
+                        if _bp and os.path.exists(_bp):
+                            with open(_bp, "rb") as _fh:
+                                if st.download_button(
+                                    "⬇ Get file", _fh.read(),
+                                    file_name=cur.blob_name or os.path.basename(_bp),
+                                    key=f"dl_{r['comp_id']}",
+                                    use_container_width=True):
+                                    _axn.engage("registry", "pull_file")
+                                    _axn.complete("registry", "pull_file")
+                        elif r["link"]:
+                            st.link_button("↗ Open link", r["link"],
+                                           use_container_width=True)
+                        else:
+                            st.caption("no file")
+                    st.markdown(
+                        '<hr style="border:none;border-top:1px solid var(--line);'
+                        'margin:.35rem 0;">', unsafe_allow_html=True)
+
+        # ----- per-component management ----------------------------------- #
+        if rows:
+            st.markdown("#### Manage a component")
+            _names = {r["name"]: r["comp_id"] for r in rows}
+            _sel_name = st.selectbox("Component", list(_names.keys()),
+                                     key="reg_manage_sel")
+            _cid = _names[_sel_name]
+            _comp = reg.get(_cid)
+            _cur = _comp.current()
+
+            _mc1, _mc2 = st.columns([1.3, 1])
+            with _mc1:
+                # --- the golden-record specs editor ----------------------- #
+                st.markdown("**Declared numbers** — the golden record")
+                st.caption("These show on the dashboard. The diff-mount offset "
+                           "lives here so nobody re-reads it off a chat message.")
+                if _cur:
+                    _sk1, _sk2, _sk3 = st.columns([1.3, 1.3, .6])
+                    _new_k = _sk1.text_input("Name", key=f"spec_k_{_cid}",
+                                             placeholder="Offset")
+                    _new_v = _sk2.text_input("Value", key=f"spec_v_{_cid}",
+                                             placeholder="42.0 mm")
+                    _sk3.markdown("<div style='height:1.7rem'></div>",
+                                  unsafe_allow_html=True)
+                    if _sk3.button("Set", key=f"spec_set_{_cid}",
+                                   use_container_width=True):
+                        if _new_k.strip():
+                            reg.set_spec(_cid, _cur.id, _new_k.strip(),
+                                         _new_v.strip())
+                            reg.save()
+                            st.rerun()
+                    if _cur.specs:
+                        for _k, _v in list(_cur.specs.items()):
+                            _r1, _r2 = st.columns([4, .8])
+                            _r1.markdown(f"`{_k}` → **{_v}**")
+                            if _r2.button("✕", key=f"spec_del_{_cid}_{_k}"):
+                                reg.set_spec(_cid, _cur.id, _k, "")
+                                reg.save()
+                                st.rerun()
+                else:
+                    st.caption("Add a version first.")
+
+                # --- status-dashboard rules (the metadata validator) ------ #
+                st.markdown("**Pass/fail rules** — drives the front-page status")
+                st.caption("Declare what “OK” means for the numbers above. No "
+                           "CAD parsing — just number-vs-threshold. These turn "
+                           "the home page red or green.")
+                from suspension import status_dashboard as _sd_mod
+                _rules = list(_comp.rules or [])
+                # existing rules with delete
+                for _ri, _rule in enumerate(_rules):
+                    _rc1, _rc2 = st.columns([5, .8])
+                    _tgt = _rule.get("value")
+                    _tgt_s = (f"[{_tgt[0]}, {_tgt[1]}]"
+                              if isinstance(_tgt, (list, tuple)) else _tgt)
+                    _rc1.markdown(
+                        f'`{_rule.get("param")}` **{_rule.get("op")}** '
+                        f'{_tgt_s} {_rule.get("unit","")}')
+                    if _rc2.button("✕", key=f"rule_del_{_cid}_{_ri}"):
+                        _rules.pop(_ri)
+                        reg.set_rules(_cid, _rules)
+                        reg.save()
+                        st.rerun()
+                # add a rule
+                _rk1, _rk2, _rk3, _rk4 = st.columns([1.5, .9, 1.2, .7])
+                _param = _rk1.text_input("Parameter", key=f"rule_p_{_cid}",
+                                         placeholder="Weight",
+                                         label_visibility="collapsed")
+                _op = _rk2.selectbox("op", ["<=", "<", ">=", ">", "==", "between"],
+                                     key=f"rule_op_{_cid}",
+                                     label_visibility="collapsed")
+                _val = _rk3.text_input("value", key=f"rule_v_{_cid}",
+                                       placeholder="2.5  or  41,43",
+                                       label_visibility="collapsed")
+                _rk4.markdown("<div style='height:.1rem'></div>",
+                              unsafe_allow_html=True)
+                if _rk4.button("Add", key=f"rule_add_{_cid}",
+                               use_container_width=True):
+                    if _param.strip() and _val.strip():
+                        if _op == "between":
+                            _parts = [p for p in re.split(r"[,\s]+", _val.strip())
+                                      if p]
+                            try:
+                                _value = [float(_parts[0]), float(_parts[1])]
+                            except (ValueError, IndexError):
+                                _value = None
+                        else:
+                            _value = _sd_mod.coerce_number(_val)
+                        if _value is not None:
+                            _rules.append({
+                                "param": _param.strip(), "op": _op,
+                                "value": _value, "unit": "",
+                                "label": _param.strip()})
+                            reg.set_rules(_cid, _rules)
+                            reg.save()
+                            st.rerun()
+                        else:
+                            st.warning("Enter a number (or two for 'between').")
+                # quick-add from templates
+                _tpl = st.selectbox(
+                    "Quick-add a standard rule",
+                    ["—"] + list(_sd_mod.DEFAULT_RULE_TEMPLATES.keys()),
+                    key=f"rule_tpl_{_cid}")
+                if _tpl != "—" and st.button("Add standard rule",
+                                             key=f"rule_tpl_add_{_cid}"):
+                    _rules.append(_sd_mod.template_for(_tpl))
+                    reg.set_rules(_cid, _rules)
+                    reg.save()
+                    st.rerun()
+
+            with _mc2:
+                # --- sign-off -------------------------------------------- #
+                st.markdown("**Sign-off**")
+                if _cur:
+                    st.markdown(_status_tag(_cur.status),
+                                unsafe_allow_html=True)
+                    _who = st.text_input("Verified by (lead)",
+                                         value=_cur.verified_by,
+                                         key=f"verby_{_cid}")
+                    if st.button("✓ Mark current version verified",
+                                 key=f"verify_{_cid}",
+                                 use_container_width=True):
+                        if _who.strip():
+                            reg.verify_version(_cid, _cur.id, _who.strip())
+                            reg.save()
+                            st.success("Signed off and timestamped.")
+                            st.rerun()
+                        else:
+                            st.warning("Name the lead who checked it first.")
+                    st.caption("Confirm with the subsystem lead before relying "
+                               "on a part — sign-off records that you did.")
+
+            # --- provenance + FEA read-out (ingest payoff) ---------------- #
+            if _cur and (_cur.provenance or _cur.manifest):
+                with st.expander("What KinematiK read out of this file", True):
+                    _prov = _cur.provenance or {}
+                    if _prov:
+                        _pcols = st.columns(2)
+                        _fields = [
+                            ("Model", _prov.get("model_name")),
+                            ("CAD system", _prov.get("cad_system")),
+                            ("Units", _prov.get("units")),
+                            ("Author", _prov.get("author")),
+                            ("Exported", _prov.get("exported")),
+                            ("Source folder", _prov.get("source_dir")),
+                        ]
+                        for _i, (_lab, _val) in enumerate(
+                                [f for f in _fields if f[1]]):
+                            _pcols[_i % 2].markdown(
+                                f'<span class="hint">{_lab}</span><br>'
+                                f'<code>{_val}</code>', unsafe_allow_html=True)
+                    # FEA studies found inside the bundle
+                    _man = _cur.manifest or {}
+                    _fea = [f for f in _man.get("files", [])
+                            if f.get("parsed", {}).get("format", "").startswith(
+                                "SW Simulation")]
+                    if _fea:
+                        st.markdown("**FEA studies in this bundle**")
+                        for _f in _fea:
+                            _p = _f["parsed"]
+                            if "nodes" in _p:
+                                st.markdown(
+                                    f'<span class="tag good">{_f["name"]}</span> '
+                                    f'<span class="hint">{_p.get("nodes","?")} '
+                                    f'nodes · {_p.get("elements","?")} elements · '
+                                    f'solve {_p.get("solve_time","?")}</span>',
+                                    unsafe_allow_html=True)
+                            else:
+                                st.markdown(
+                                    f'<span class="tag">{_f["name"]}</span> '
+                                    f'<span class="hint">'
+                                    f'{_p.get("study","study")} · '
+                                    f'{_p.get("solver_mode","")}</span>',
+                                    unsafe_allow_html=True)
+                    if _man.get("kinds"):
+                        _kt = " · ".join(f"{v} {k}"
+                                         for k, v in _man["kinds"].items())
+                        st.caption(f"Bundle · {_man.get('file_count', 0)} files "
+                                   f"· {ingest_mod.human_size(_man.get('total_bytes', 0))} "
+                                   f"· {_kt}")
+
+            # --- version history ------------------------------------------ #
+            _hist = _comp.history()
+            if _hist:
+                with st.expander(f"Version history ({len(_hist)} older)"):
+                    for _v in _hist:
+                        _h1, _h2 = st.columns([4, 1])
+                        _h1.markdown(
+                            f'`{_v.label}` {_status_tag(_v.status)} '
+                            f'<span class="hint">{_v.created[:16]}</span>',
+                            unsafe_allow_html=True)
+                        if _h2.button("Make current", key=f"mc_{_v.id}",
+                                      use_container_width=True):
+                            reg.set_current(_cid, _v.id)
+                            reg.save()
+                            st.rerun()
+
+        st.markdown("---")
+
+        # ----- add a component / version ---------------------------------- #
+        st.markdown("#### Add a version")
+        _ac1, _ac2 = st.columns(2)
+        with _ac1:
+            _existing = ["➕ New component…"] + [r["name"] for r in rows]
+            _target = st.selectbox("Component", _existing, key="reg_add_target")
+            if _target == "➕ New component…":
+                _new_name = st.text_input("New component name",
+                                          placeholder="Differential Mount",
+                                          key="reg_new_name")
+                _new_team = st.selectbox(
+                    "Subteam",
+                    ["suspension", "powertrain", "aero", "electrics",
+                     "cooling", "brakes", "chassis", "dataacq", "cost"],
+                    key="reg_new_team")
+                _new_owner = st.text_input("Owner (optional)",
+                                           key="reg_new_owner")
+            _ver_label = st.text_input(
+                "Version label",
+                value="Rev " + _datetime.date.today().strftime("%b %d %Y"),
+                key="reg_ver_label")
+            _ver_notes = st.text_area("Notes (optional)", key="reg_ver_notes",
+                                      height=70)
+
+        with _ac2:
+            _mode = st.radio("Where's the file?",
+                             ["Upload CAD bundle", "Just a link"],
+                             key="reg_file_mode", horizontal=True)
+            _upload = None
+            _link = ""
+            if _mode == "Upload CAD bundle":
+                _upload = st.file_uploader(
+                    "Drop a .zip of the folder, or a single CAD file",
+                    type=["zip", "sldprt", "sldasm", "slddrw", "igs", "iges",
+                          "step", "stp", "stl", "obj", "glb", "x_t", "x_b"],
+                    key="reg_upload",
+                    help="A zip of the whole released folder is ideal — "
+                         "KinematiK parses every file inside it.")
+                st.caption("Bytes are stored locally (content-addressed) so the "
+                           "exact released file is always one click away.")
+            else:
+                _link = st.text_input("Link (Drive, etc.)",
+                                      placeholder="https://drive.google.com/…",
+                                      key="reg_link")
+
+        if st.button("Add to registry", type="primary", key="reg_commit",
+                     use_container_width=True):
+            # resolve / create the component
+            if _target == "➕ New component…":
+                _nm = (st.session_state.get("reg_new_name") or "").strip()
+                if not _nm:
+                    st.warning("Name the component first.")
+                    st.stop()
+                _comp_obj = reg.get_by_name(_nm) or reg.add_component(
+                    _nm,
+                    subteam=st.session_state.get("reg_new_team", "suspension"),
+                    owner=st.session_state.get("reg_new_owner", ""))
+            else:
+                _comp_obj = reg.get_by_name(_target)
+
+            _kw = dict(label=_ver_label, notes=_ver_notes)
+            if _upload is not None:
+                _data = _upload.getvalue()
+                _man = ingest_mod.ingest_bundle(_upload.name, _data)
+                reg.store_blob(_data, _man["bundle_sha"], _upload.name)
+                _kw.update(blob_sha=_man["bundle_sha"], blob_name=_upload.name,
+                           provenance=_man["provenance"], manifest=_man)
+                # auto-seed obvious specs from provenance so the row isn't empty
+                _seed = {}
+                _p = _man["provenance"]
+                if _p.get("units"):
+                    _seed["Units"] = _p["units"]
+                if _man.get("file_count"):
+                    _seed["Files"] = str(_man["file_count"])
+                _kw["specs"] = _seed
+            elif _link.strip():
+                _kw.update(link=_link.strip())
+            else:
+                st.warning("Add a file or a link.")
+                st.stop()
+
+            _v = reg.add_version(_comp_obj.id, **_kw)
+            reg.save()
+            _axn.engage("registry", "add_version")
+            _axn.complete("registry", "add_version")
+            if _upload is not None and _v and _v.provenance.get("model_name"):
+                st.success(f"Added — read “{_v.provenance['model_name']}” "
+                           f"({_v.provenance.get('cad_system', 'CAD')}, "
+                           f"{_man['file_count']} files). Set the verified "
+                           f"offset above, then sign it off.")
+            else:
+                st.success("Added to the registry.")
+            st.rerun()
+
+        # ----- export the whole registry ---------------------------------- #
+        st.markdown("---")
+        _ex1, _ex2 = st.columns([1, 3])
+        with _ex1:
+            _reg_json = json.dumps(
+                {"components": [c.to_dict() for c in reg.components]}, indent=2)
+            st.download_button("⬇ Registry (.json)", _reg_json,
+                               file_name="registry.json",
+                               mime="application/json",
+                               key="reg_export",
+                               use_container_width=True)
+        with _ex2:
+            st.caption("The registry persists to `registry.json` in the project "
+                       "folder — commit it to the repo and the table travels "
+                       "with the car. Stored CAD blobs live alongside it in "
+                       "`registry_blobs/`.")
+
+    except Exception as _reg_e:
+        _axn.error("registry", _reg_e)
+        st.error(f"The Registry hit an error: {_reg_e}")
+        with st.expander("Details"):
+            st.exception(_reg_e)
+
+
+
+
+# =========================================================================== #
+#  📊  ANALYTICS — usage telemetry & ROI dashboard                            #
+# --------------------------------------------------------------------------- #
+#  Reads the metric views defined in suspension/analytics_schema.sql and turns #
+#  months of real event data into the board slide: foot traffic, individual   #
+#  use, latency, error rate, retention, time-to-first-result, the adoption    #
+#  funnel, and the headline hours-saved -> dollars. Degrades gracefully with  #
+#  no Supabase (shows the locally-buffered events so the page is never blank). #
+# =========================================================================== #
+def _ax_local_events():
+    """Read locally-buffered events (offline / pre-Supabase) so the dashboard
+    can show *something* real before the DB fills up."""
+    path = os.path.join(os.getcwd(), "analytics_buffer.jsonl")
+    if not os.path.exists(path):
+        return []
+    out = []
+    try:
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    out.append(json.loads(line))
+    except Exception:
+        pass
+    return out
+
+
+def _ax_metric(col, label, value, sub="", color="var(--ink)"):
+    col.markdown(
+        f'<div class="metric"><div class="k">{label}</div>'
+        f'<div class="v" style="color:{color}">{value}</div>'
+        f'<div class="u">{sub}</div></div>', unsafe_allow_html=True)
+
+
+with tab_analytics:
+    _axn.tab_open("analytics")
+    st.markdown(
+        '<div class="brand"><span class="mark">Analytics</span>'
+        '<span class="sub">Usage · reliability · ROI</span></div>',
+        unsafe_allow_html=True)
+
+    st.markdown(
+        '<div class="wt-intro"><div class="ic">◢</div><div>'
+        '<p>Every interaction with KinematiK is logged automatically, so by '
+        'review season there are <b>months of real data</b> behind the pitch — '
+        'not vibes. The headline is <b>hours saved → dollars</b>: completed '
+        'workflows × (manual time − in-tool time) × labour rate.</p>'
+        '<p class="hint">Anonymous by default (a per-session id). A member name '
+        'is recorded only if someone enters one below. Set '
+        '<code>KINEMATIK_ANALYTICS=off</code> in secrets to disable entirely.</p>'
+        '</div></div>', unsafe_allow_html=True)
+
+    _live = False
+    try:
+        _live = _axn.is_live()
+    except Exception:
+        _live = False
+
+    # optional: let the member attach their name to this session (opt-in)
+    _ac1, _ac2 = st.columns([2, 3])
+    with _ac1:
+        _nm = st.text_input("Your name (optional — for per-member stats)",
+                            value=st.session_state.get("_ax_member", ""),
+                            key="_ax_name_field",
+                            placeholder="leave blank to stay anonymous")
+        if _nm.strip() and _nm.strip() != st.session_state.get("_ax_member"):
+            st.session_state["_ax_member"] = _nm.strip()
+            try:
+                _axn.init(member=_nm.strip())
+            except Exception:
+                pass
+    with _ac2:
+        if _live:
+            st.markdown('<span class="tag good">● Supabase connected — live data</span>',
+                        unsafe_allow_html=True)
+            if st.button("Replay any locally-buffered events", key="ax_replay"):
+                n = _axn.replay_local_buffer()
+                st.success(f"Replayed {n} buffered events into Supabase.")
+        else:
+            st.markdown('<span class="tag warn">● No Supabase — showing local buffer. '
+                        'Run analytics_schema.sql and set SUPABASE_URL/KEY to go live.</span>',
+                        unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ----- pull the views (Supabase) or fall back to the local buffer ------ #
+    roi = _axn.fetch_view("v_roi_summary")
+    hours_by_feat = _axn.fetch_view("v_hours_saved_by_feature")
+    foot = _axn.fetch_view("v_foot_traffic_daily")
+    feat_use = _axn.fetch_view("v_feature_use")
+    funnel = _axn.fetch_view("v_adoption_funnel")
+    errors = _axn.fetch_view("v_error_rate")
+    latency = _axn.fetch_view("v_latency_by_feature")
+    retention = _axn.fetch_view("v_retention")
+    ttfr = _axn.fetch_view("v_time_to_first_result")
+    comparison = _axn.fetch_view("v_comparison_to_alternatives")
+    individuals = _axn.fetch_view("v_individual_use")
+
+    _have_db = bool(roi or foot or feat_use)
+
+    # ====================================================================== #
+    #  HEADLINE — hours saved -> dollars (the board slide)                   #
+    # ====================================================================== #
+    st.markdown("#### The board number")
+    if roi:
+        r0 = roi[0]
+        _h = r0.get("total_hours_saved") or 0
+        _d = r0.get("total_dollars_saved") or 0
+        _rate = r0.get("labour_rate_usd_hr") or 0
+        _val = r0.get("total_value_usd") or _d
+        m1, m2, m3 = st.columns(3)
+        _ax_metric(m1, "Hours saved", f"{_h:,.0f}", "across all workflows",
+                   "var(--cyan)")
+        _ax_metric(m2, "Dollars saved", f"${_d:,.0f}", f"at ${_rate:.0f}/hr labour",
+                   "var(--amber)")
+        _ax_metric(m3, "Total value", f"${_val:,.0f}",
+                   "incl. avoided licence spend", "var(--cyan)")
+    else:
+        # compute the headline from local buffer + bundled baselines so the page
+        # is never empty in a demo / pre-Supabase state.
+        _evs = _ax_local_events()
+        _baselines = {
+            "kinematics": (180, 5), "laptime": (240, 8), "ggv": (120, 3),
+            "brakes": (150, 10), "registry": (25, 1), "integration": (90, 5),
+            "dfmea": (120, 15), "cost": (180, 20), "accum": (150, 10),
+            "mythbuster": (20, 1),
+        }
+        _completes = {}
+        for e in _evs:
+            if e.get("event_type") == "workflow_complete" and e.get("feature"):
+                _completes[e["feature"]] = _completes.get(e["feature"], 0) + 1
+        _h = sum(n * (_baselines.get(f, (0, 0))[0] - _baselines.get(f, (0, 0))[1]) / 60.0
+                 for f, n in _completes.items())
+        _d = _h * 30.0
+        m1, m2, m3 = st.columns(3)
+        _ax_metric(m1, "Hours saved", f"{_h:,.1f}", "from local buffer (demo)",
+                   "var(--cyan)")
+        _ax_metric(m2, "Dollars saved", f"${_d:,.0f}", "at $30/hr (default)",
+                   "var(--amber)")
+        _ax_metric(m3, "Workflows logged", f"{sum(_completes.values())}",
+                   "completed locally", "var(--dim)")
+        if not _evs:
+            st.caption("No events yet. As the team uses KinematiK, this fills in "
+                       "automatically — wire Supabase to persist across sessions.")
+
+    # per-feature hours-saved bar (the contribution breakdown)
+    if hours_by_feat:
+        st.markdown("###### Where the savings come from")
+        _rows = [r for r in hours_by_feat if (r.get("hours_saved") or 0) > 0]
+        if _rows:
+            _fig = go.Figure(go.Bar(
+                x=[r["hours_saved"] for r in _rows],
+                y=[r.get("label") or r["feature"] for r in _rows],
+                orientation="h",
+                marker_color="#37e0d0",
+                text=[f"${r.get('dollars_saved', 0):,.0f}" for r in _rows],
+                textposition="auto"))
+            _fig.update_layout(
+                height=max(220, 38 * len(_rows)), margin=dict(l=10, r=10, t=10, b=10),
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#e7ecf1"), xaxis_title="hours saved")
+            st.plotly_chart(_fig, use_container_width=True)
+            st.caption("Each bar: completed workflows × (manual − in-tool) minutes, "
+                       "valued at the configured labour rate. Tune the baselines in "
+                       "the `feature_baselines` table to match your team's reality.")
+
+    st.markdown("---")
+
+    # ====================================================================== #
+    #  USAGE — foot traffic, feature use, individuals                        #
+    # ====================================================================== #
+    st.markdown("#### Usage")
+    u1, u2, u3, u4 = st.columns(4)
+    if retention:
+        rt = retention[0]
+        _ax_metric(u1, "Total users", f"{rt.get('total_users', 0)}", "ever")
+        _ax_metric(u2, "Returning", f"{rt.get('retention_pct', 0):.0f}%",
+                   f"{rt.get('returning_users', 0)} came back",
+                   "var(--cyan)")
+    if ttfr:
+        tf = ttfr[0]
+        _v = tf.get("avg_minutes_to_first_result")
+        _ax_metric(u3, "Time-to-first-result",
+                   f"{_v:.0f} min" if _v else "—", "new-member onboarding",
+                   "var(--amber)")
+    if foot:
+        _ax_metric(u4, "Active days", f"{len(foot)}", "with recorded traffic")
+
+    # foot-traffic time series
+    if foot:
+        st.markdown("###### Foot traffic")
+        _fig = go.Figure()
+        _fig.add_trace(go.Scatter(
+            x=[r["day"] for r in foot], y=[r["sessions"] for r in foot],
+            mode="lines+markers", name="sessions", line=dict(color="#37e0d0")))
+        _fig.add_trace(go.Scatter(
+            x=[r["day"] for r in foot], y=[r.get("named_members", 0) for r in foot],
+            mode="lines+markers", name="named members", line=dict(color="#ffb02e")))
+        _fig.update_layout(
+            height=260, margin=dict(l=10, r=10, t=10, b=10),
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#e7ecf1"), legend=dict(orientation="h"))
+        st.plotly_chart(_fig, use_container_width=True)
+
+    # feature use table
+    if feat_use:
+        st.markdown("###### Per-feature use")
+        st.dataframe(
+            [{"Feature": r["feature"], "Opens": r.get("opens", 0),
+              "Engagements": r.get("engagements", 0),
+              "Completions": r.get("completions", 0),
+              "Unique users": r.get("unique_users", 0)} for r in feat_use],
+            use_container_width=True, hide_index=True)
+
+    # individual use
+    if individuals:
+        with st.expander("Individual use (per member)"):
+            st.dataframe(
+                [{"Who": r["who"], "Subteam": r.get("subteam", ""),
+                  "Sessions": r.get("sessions", 0),
+                  "Feature uses": r.get("feature_uses", 0),
+                  "Workflows": r.get("workflows_completed", 0),
+                  "Distinct features": r.get("distinct_features_used", 0)}
+                 for r in individuals],
+                use_container_width=True, hide_index=True)
+
+    st.markdown("---")
+
+    # ====================================================================== #
+    #  FUNNEL + RELIABILITY + LATENCY                                        #
+    # ====================================================================== #
+    fcol, ecol = st.columns(2)
+    with fcol:
+        st.markdown("#### Adoption funnel")
+        if funnel:
+            for r in funnel[:8]:
+                _o = r.get("opened", 0) or 0
+                _e = r.get("engaged", 0) or 0
+                _c = r.get("completed", 0) or 0
+                st.markdown(
+                    f'**{r["feature"]}** '
+                    f'<span class="hint">open {_o} → engage {_e} '
+                    f'({r.get("open_to_engage_pct", 0) or 0:.0f}%) → '
+                    f'complete {_c} '
+                    f'({r.get("engage_to_complete_pct", 0) or 0:.0f}%)</span>',
+                    unsafe_allow_html=True)
+        else:
+            st.caption("Funnel fills in as tabs are opened and workflows complete.")
+
+    with ecol:
+        st.markdown("#### Reliability (error rate)")
+        if errors:
+            _bad = [r for r in errors if (r.get("error_rate_pct") or 0) > 0]
+            if _bad:
+                for r in _bad[:8]:
+                    _rate = r.get("error_rate_pct", 0) or 0
+                    _cls = "bad" if _rate > 5 else "warn"
+                    st.markdown(
+                        f'<span class="tag {_cls}">{r["feature"]} · {_rate:.1f}%</span> '
+                        f'<span class="hint">{r.get("failures", 0)} of '
+                        f'{r.get("attempts", 0)} ops</span>',
+                        unsafe_allow_html=True)
+            else:
+                st.markdown('<span class="tag good">No errors recorded — 100% clean</span>',
+                            unsafe_allow_html=True)
+        else:
+            st.caption("Error rate per feature appears here once ops are logged.")
+
+    if latency:
+        st.markdown("#### Render & pull latency")
+        st.dataframe(
+            [{"Feature": r["feature"], "Type": r["event_type"],
+              "n": r.get("n", 0), "avg ms": r.get("avg_ms"),
+              "p50 ms": r.get("p50_ms"), "p95 ms": r.get("p95_ms"),
+              "max ms": r.get("max_ms")} for r in latency],
+            use_container_width=True, hide_index=True)
+
+    # ====================================================================== #
+    #  COMPARISON TO ALTERNATIVES                                            #
+    # ====================================================================== #
+    if comparison:
+        st.markdown("---")
+        st.markdown("#### vs. the alternatives")
+        st.dataframe(
+            [{"Replaces": r["alternative"],
+              "Features": r.get("features_replacing", 0),
+              "Manual (min)": r.get("avg_manual_minutes"),
+              "In KinematiK (min)": r.get("avg_in_tool_minutes"),
+              "Saved each (min)": r.get("avg_minutes_saved_each"),
+              "% faster": f'{r.get("pct_faster", 0):.0f}%',
+              "Their licence $/yr": r.get("alternative_annual_cost_usd", 0)}
+             for r in comparison],
+            use_container_width=True, hide_index=True)
+        st.caption("Manual-vs-in-tool minutes come from the `feature_baselines` "
+                   "table. Replace estimates with timed measurements as you "
+                   "collect them — each row carries a confidence flag so the "
+                   "board sees measured vs estimated honestly.")
+
+    st.markdown("---")
+    st.caption("Schema: run `suspension/analytics_schema.sql` in the Supabase SQL "
+               "editor once. Telemetry then flows automatically from every tab. "
+               "The views (v_roi_summary, v_hours_saved_by_feature, "
+               "v_adoption_funnel, …) are what this page reads — query them "
+               "directly in Supabase for ad-hoc board questions.")
 
 
 st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · MIT. Fork it, '
