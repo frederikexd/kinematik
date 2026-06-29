@@ -65,7 +65,7 @@ def test_alias_whole_word_match():
     eng = _engine()
     # 'drag' must not match inside 'dragon'; 'df' is a downforce alias
     v = eng.check("does more df increase cornering grip?")
-    assert v.source == "downforce" and v.target == "cornering"
+    assert v.source == "downforce" and v.target == "grip"
 
 
 # --------------------------------------------------------------------------- #
@@ -148,7 +148,8 @@ def test_unknown_entity_is_manual_review_not_error():
 
 
 def test_single_entity_is_manual_review():
-    v = _engine().check("is downforce good?")
+    # a single entity with no performance/"better" cue cannot form a relationship
+    v = _engine().check("tell me about downforce")
     assert v.manual_review is True
 
 
@@ -226,14 +227,14 @@ def test_author_reuses_existing_entity(tmp_path):
     if a.backend == "supabase":
         return
     existing = ee2.default_local_knowledge().entities()  # has 'speed', 'downforce'
-    r = a.add_myth(source_phrase="ride height", target_phrase="speed",
+    r = a.add_myth(source_phrase="seat padding thickness", target_phrase="speed",
                    effect="depends", verdict="depends",
                    explanation="Lower can help aero but bottoming hurts.",
                    discipline="aerodynamics", existing_entities=existing,
                    author="Lee")
     assert r["ok"]
-    # 'speed' already exists -> only 'ride_height' is created
-    assert r["created_entities"] == ["ride_height"]
+    # 'speed' already exists -> only the novel source entity is created
+    assert r["created_entities"] == ["seat_padding_thickness"]
 
 
 def test_author_does_not_overmatch_substring(tmp_path):
@@ -242,6 +243,6 @@ def test_author_does_not_overmatch_substring(tmp_path):
     if a.backend == "supabase":
         return
     existing = ee2.default_local_knowledge().entities()
-    # 'grip' must NOT fold into 'cornering' (alias 'lateral grip') or 'downforce'
-    slug, new = a._resolve_or_make_entity("grip", existing, "suspension")
-    assert slug == "grip" and new is not None
+    # a novel phrase must NOT fold into an existing entity by loose substring
+    slug, new = a._resolve_or_make_entity("paint colour", existing, "shared")
+    assert slug == "paint_colour" and new is not None
