@@ -7625,9 +7625,63 @@ def render_mythbuster():
             _ex = _r.user_values  # not the claim; fall through to explanation
             _mb_render_card(_mb_reference_claim_for(_mb, _r), _r, compact=True)
 
-    st.caption("Add the myths your channel actually argues about: each rule is a "
-               "few lines in suspension/myth_rules/<discipline>.py \u2014 no engine "
-               "code changes. The lead who owns the discipline owns its rules.")
+    # ---- Add a myth from the UI (no code, no SQL) ------------------------ #
+    with st.expander("➕ Add a myth your channel argues about", expanded=False):
+        st.caption("The lead who owns a discipline owns its rules — and adds them "
+                   "right here. Type the claim in plain language; KinematiK turns "
+                   "it into a rule the checker uses from now on. No code, no SQL.")
+        try:
+            from suspension import myth_bridge as _mb_br
+            _author = _mb_br.author()
+            _ents = _mb_br.existing_entities()
+            _backend_label = {"supabase": "saved to Supabase (shared with the team)",
+                              "local": "saved locally (this install)",
+                              "memory": "in-memory only"}.get(_author.backend, "")
+            _af1, _af2 = st.columns(2)
+            _src = _af1.text_input("More of this…", key="myth_src",
+                                   placeholder="tyre pressure")
+            _tgt = _af2.text_input("…affects this", key="myth_tgt",
+                                   placeholder="grip")
+            _ef1, _ef2, _ef3 = st.columns(3)
+            _eff = _ef1.selectbox("Effect", ["increases", "decreases", "depends",
+                                             "none"], index=2, key="myth_eff")
+            _verd = _ef2.selectbox("Verdict the checker returns",
+                                   ["depends", "true", "myth"], key="myth_verd")
+            _disc_opts = ["shared", "suspension", "aerodynamics", "powertrain",
+                          "electrics", "brakes", "chassis", "cooling"]
+            _mdisc = _ef3.selectbox("Discipline", _disc_opts, key="myth_disc")
+            _expl = st.text_area(
+                "Explanation the checker shows", key="myth_expl", height=90,
+                placeholder="Why it's true / a myth / depends — the reasoning a "
+                            "teammate should see, plus where to verify it "
+                            "(lap sim, skidpad, FEA).")
+            _who = st.text_input("Your name (recorded as the author)",
+                                 key="myth_author",
+                                 value=st.session_state.get("_ax_member", ""))
+            if _backend_label:
+                st.caption(f"This rule will be {_backend_label}.")
+            if st.button("Add this myth rule", type="primary", key="myth_add_btn"):
+                if not (_src.strip() and _tgt.strip() and _expl.strip()):
+                    st.warning("Fill in both quantities and an explanation.")
+                else:
+                    _ax = globals().get("_axn")
+                    _r = _author.add_myth(
+                        source_phrase=_src, target_phrase=_tgt, effect=_eff,
+                        verdict=_verd, explanation=_expl, discipline=_mdisc,
+                        existing_entities=_ents, author=_who.strip())
+                    if _r.get("ok"):
+                        _mb_br.refresh_entity_engine()
+                        if _ax is not None:
+                            _ax.complete("mythbuster", "add_rule")
+                        _newp = (f" Created {', '.join(_r['created_entities'])}."
+                                 if _r.get("created_entities") else "")
+                        st.success(
+                            f"Added — “more {_src.strip()} → {_tgt.strip()}” is now "
+                            f"checkable.{_newp} Try asking it above.")
+                    else:
+                        st.error(f"Couldn't save the rule: {_r.get('error')}")
+        except Exception as _myth_e:
+            st.caption(f"Authoring unavailable right now: {_myth_e}")
 
 
 def _mb_reference_claim_for(_mb, result):
