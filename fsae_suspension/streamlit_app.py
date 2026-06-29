@@ -14860,9 +14860,23 @@ with tab_analytics:
                 n = _axn.replay_local_buffer()
                 st.success(f"Replayed {n} buffered events into Supabase.")
         else:
-            st.markdown('<span class="tag warn">● No Supabase — showing local buffer. '
-                        'Run analytics_schema.sql and set SUPABASE_URL/KEY to go live.</span>',
+            st.markdown('<span class="tag warn">● No Supabase — showing local buffer only '
+                        '(historical data from seeded viewers not visible here yet)</span>',
                         unsafe_allow_html=True)
+            with st.expander('🔌 Connect Supabase to see all 17 historical viewers'):
+                st.markdown(
+                    '**Two steps to go live:**\n\n'
+                    '**1. Add secrets** — in Streamlit Cloud open your app → '
+                    '⋮ menu → **Settings → Secrets** and paste:\n'
+                    '```toml\n'
+                    'SUPABASE_URL = "https://your-project.supabase.co"\n'
+                    'SUPABASE_KEY = "your-anon-or-service-key"\n'
+                    '```\n'
+                    '*(Find these in your Supabase project → Settings → API)*\n\n'
+                    '**2. Reboot the app** — Streamlit Cloud picks up new secrets '
+                    'on reboot (⋮ → Reboot app). The dashboard will then show '
+                    'all 17 seeded sessions and live telemetry from every tab.'
+                )
 
     st.markdown("---")
 
@@ -14968,24 +14982,36 @@ with tab_analytics:
 
             # --- retention ---
             if not retention:
+                # Mirror the SQL view: group by coalesce(member, visitor_id, session_id).
+                # A user counts as "returning" if they have 2+ distinct session_ids
+                # OR appeared on 2+ distinct calendar days — whichever is broader.
                 _vis: dict = {}
                 for e in _evs:
                     _uid = (e.get("member")
                             or e.get("visitor_id")
                             or e.get("session_id", ""))
                     if _uid not in _vis:
-                        _vis[_uid] = set()
+                        _vis[_uid] = {"sessions": set(), "days": set()}
+                    _sid = e.get("session_id", "")
+                    if _sid:
+                        _vis[_uid]["sessions"].add(_sid)
                     _ts = e.get("occurred_at", "")
                     if _ts:
-                        _vis[_uid].add(_ts[:10])
+                        _vis[_uid]["days"].add(_ts[:10])
                 _total = len(_vis)
-                _returning = sum(1 for v in _vis.values() if len(v) >= 2)
+                _returning = sum(
+                    1 for v in _vis.values()
+                    if len(v["sessions"]) >= 2 or len(v["days"]) >= 2
+                )
+                _avg_visits = (
+                    round(sum(len(v["sessions"]) for v in _vis.values()) / _total, 2)
+                    if _total else 0
+                )
                 retention = [{"total_users": _total,
                                "one_time_users": _total - _returning,
                                "returning_users": _returning,
                                "retention_pct": round(100.0 * _returning / _total, 1) if _total else 0,
-                               "avg_visits_per_user": round(
-                                   sum(len(v) for v in _vis.values()) / _total, 2) if _total else 0}]
+                               "avg_visits_per_user": _avg_visits}]
 
     # ====================================================================== #
     #  HEADLINE — hours saved -> dollars (the board slide)                   #
