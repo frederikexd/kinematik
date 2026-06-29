@@ -3,205 +3,364 @@
 #  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
+"""
+KinematiK public package API.
 
-from .kinematics import SuspensionKinematics, Hardpoints, CornerState
+This package spans many disciplines — kinematics, vehicle dynamics, tyre
+models, lap/GGV simulation, EV powertrain & energy, battery-pack and tyre
+thermals, the tyre/CFD co-simulation boundaries, the cross-discipline
+interface ledger, electronics/harness checks, and the 3-D viewers.
 
-# Architecture-agnostic topology engine: a general multibody kinematics kernel,
-# a library of parameterised topology templates (MacPherson, multi-link,
-# trailing/semi-trailing arm, solid axle, twist-beam, heavy-truck steer linkage,
-# plus a free-form builder for experimental layouts), and an adapter that runs
-# the whole KinematiK pipeline on any of them.
-from . import topology
-from . import topologies
-from .topology import (
-    Point, Body, Constraint, Link, Coincident, OnLine, InPlane, Revolute,
-    DriveZ, RackTranslation, AxleRoll, Mechanism, MechanismBuilder,
-)
-from .topologies import (
-    double_wishbone, macpherson_strut, multilink, trailing_arm,
-    semi_trailing_arm, solid_axle, twist_beam, truck_steer_linkage,
-    from_links, TEMPLATES, list_templates, example,
-)
-from .adapter import GenericKinematics
-from . import fullcar3d
-from .fullcar3d import build_full_car_figure, influence_summary
-from .dynamics import VehicleDynamics, VehicleParams, CornerLoads
-from .tiremodel import (PacejkaLateral, default_tire, CombinedSlipTire,
-                        default_combined_tire, relaxation_length)
-from .ggv import (GGVGenerator, GGVParams, GGVResult,
-                  sweep_parameter, quick_ggv)
-from . import ggv
-from . import chassis
-from . import bracket_fos
-from . import integration
-from . import project
-from . import tiremodel
-from . import tirefit
-from . import setup
-from . import laptime
-from . import correlation
-from . import damper
-from . import interfaces
+Why this file uses LAZY imports (PEP 562 ``__getattr__``)
+---------------------------------------------------------
+Historically this ``__init__`` eagerly imported every submodule at package
+load. That meant ``import suspension`` — or even ``from suspension.interfaces
+import Severity`` — transitively pulled in scipy (kinematics), plotly
+(fullcar3d) and trimesh (chassis), because the package body ran first. So the
+pure-standard-library integration ledger and the powertrain myth-checker, both
+of which depend on *nothing* heavy, could not be imported or unit-tested
+without the entire scientific stack installed. That is the opposite of what the
+ledger is for.
 
-# Flexible-body / compliance (ADAMS Flex-style) extension
-from .flex import (
-    Material, MATERIALS, tube_section, solid_rod_section,
-    axial_stiffness_tube, FlexElement, FlexMesh, guyan_condense,
-    CondensedFlexBody, load_flex_body, read_mnf,
-)
-from .loadpath import (
-    WheelLoad, MemberForces, solve_member_forces,
-    wheel_load_from_corner, MEMBERS,
-)
-from .compliance import (
-    MemberStiffness, CompliantResult, CompliantCorner, corner_wheel_load,
-)
-from .joints import JointCompliance
-from .bolted_joint import (
-    BoltGrade, BOLT_GRADES, METRIC_COARSE,
-    Fastener, ClampedStack, JointResult,
-    analyze_joint, joint_findings,
-)
-from . import flex
-from . import loadpath
-from . import compliance
-from . import joints
-from . import bolted_joint
+The public API is UNCHANGED. Every name and submodule that used to be importable
+from ``suspension`` still is::
 
-# Explicit high-frequency transient time-step DAE solver (the unsteady half of
-# the lap: yaw/sideslip, pitch/dive, kerb strikes, snap-oversteer recovery).
-from .transient import (
-    TransientSolver, TransientParams, TransientResult, SettlingResult,
-    DriverInput, RoadInput,
-    step_steer_maneuver, snap_oversteer_maneuver, brake_to_throttle_maneuver,
-    curb_strike_maneuver, run_maneuver, transient_vs_qss_corner,
-)
-from . import transient
+    from suspension import SuspensionKinematics, build_full_car_figure   # works
+    import suspension; suspension.fullcar3d                              # works
+    from suspension.interfaces import Severity                           # now free
 
-# EV powertrain & energy layer (architecture comparison in seconds + kWh):
-# single motor + diff vs two-motor axle split vs four-motor torque vectoring,
-# with a regen/pack-energy budget. Wraps the QSS lap sim; never fakes the
-# closed-loop yaw benefit QSS can't earn.
-from .ev_powertrain import (
-    Powertrain, EVParams, EVLapSimulator,
-    EVRunResult, ArchitectureComparison,
-)
-from . import ev_powertrain
+The difference is *when* the cost is paid: importing the package itself is now
+free, and each feature pays its own import cost the first time you touch one of
+its names. A lead who only wants the interface ledger never imports plotly.
 
-# Powertrain integration layer — gear-ratio solver, sprocket/chain sizing, SPAL
-# fan operating point, and the live spec sheet. The engine that lets the EV
-# Powertrain tab publish to the ledger and retire the team's Excel artifacts.
-from . import pt_integration
-from .pt_integration import (
-    GearObjective, GearRatioSolver, GearSweepResult, GearCandidate,
-    SprocketDesign, sprocket_design, driveline_peak_torque_nm,
-    FanCurve, CoolingOperatingPoint, cooling_operating_point,
-    system_k_from_point, powertrain_spec_sheet, estimate_motor_heat_w,
-    SPAL_VA14_AP11_C34A, dfmea_rows_from_analysis,
-    MotorEnvelope, motor_envelope, MythCheck, power_rpm_myth_checks,
-    FSAE_TRACTIVE_POWER_CAP_KW,
+How it works
+------------
+``_SUBMODULES`` lists the submodules exposed as attributes (e.g.
+``suspension.aero``). ``_FROM`` maps every re-exported symbol to the
+``(submodule, original_name)`` that provides it. ``__getattr__`` resolves a
+name on first access, imports just the submodule it needs, binds the result
+into the package namespace (so the second access is a normal attribute lookup),
+and returns it. ``__dir__`` advertises the full surface so tab-completion and
+``dir(suspension)`` behave exactly as before.
+
+If you add a new public symbol, add it to ``_FROM`` (or ``_SUBMODULES``) and to
+``__all__``. The test ``tests/test_lazy_init`` guards that the two stay in sync
+and that ``import suspension`` stays dependency-free.
+"""
+
+from importlib import import_module as _import_module
+
+_SUBMODULES = (
+    "mythbuster",
+    "myth_rules",
+    "aero",
+    "bolted_joint",
+    "bracket_fos",
+    "chassis",
+    "compliance",
+    "correlation",
+    "damper",
+    "electronics",
+    "ev_powertrain",
+    "flex",
+    "fullcar3d",
+    "ggv",
+    "harness",
+    "integration",
+    "interfaces",
+    "joints",
+    "laptime",
+    "loadpath",
+    "mountpoints",
+    "pack_thermal",
+    "pcm_cooling",
+    "project",
+    "pt_integration",
+    "setup",
+    "tire_cosim",
+    "tire_cosim_driver",
+    "tire_cosim_ftire_example",
+    "tire_thermal",
+    "tirefit",
+    "tiremodel",
+    "topologies",
+    "topology",
+    "tractive_system",
+    "transient",
 )
 
-# Transient per-cell battery-pack thermal model (which cell cooks first, and
-# where to put the fan). Wraps the EV lap sim at the energy seam: turns a virtual
-# lap into a pack current-vs-time history, then time-steps a lumped-capacitance
-# network over a grid of cells with a fan-position-dependent airflow map. Same
-# calibration/never-raise contract as tire_thermal.
-from .pack_thermal import (
-    CellParams, default_cell_params, PackLayout,
-    Fan, AirflowParams, PackThermalModel, PackThermalResult,
-    pack_current_trace, simulate_pack_thermal,
-    FanPlacementCandidate, FanPlacementStudy,
-    optimize_fan_placement, fan_grid_candidates,
-)
-from . import pack_thermal
+_FROM = {
+    "check_myth": ("mythbuster", "check"),
+    "MythEngine": ("mythbuster", "MythEngine"),
+    "MythResult": ("mythbuster", "MythResult"),
+    "MythRule": ("mythbuster", "Rule"),
+    "MythVerdict": ("mythbuster", "Verdict"),
+    "parse_claim": ("mythbuster", "parse_claim"),
+    "myth_disciplines": ("mythbuster", "disciplines"),
+    "myth_reference_list": ("mythbuster", "reference_myths"),
+    "AeroMap": ("aero", "AeroMap"),
+    "AeroOrchestrator": ("aero", "AeroOrchestrator"),
+    "AeroProvider": ("aero", "AeroProvider"),
+    "AeroQuery": ("aero", "AeroQuery"),
+    "Aggressor": ("electronics", "Aggressor"),
+    "AirflowParams": ("pack_thermal", "AirflowParams"),
+    "ArchitectureComparison": ("ev_powertrain", "ArchitectureComparison"),
+    "AssumptionResult": ("pt_integration", "AssumptionResult"),
+    "Attitude": ("aero", "Attitude"),
+    "AxleRoll": ("topology", "AxleRoll"),
+    "BOLT_GRADES": ("bolted_joint", "BOLT_GRADES"),
+    "BSPD": ("tractive_system", "BSPD"),
+    "BoardCheckResult": ("electronics", "BoardCheckResult"),
+    "BoardLedger": ("electronics", "BoardLedger"),
+    "Body": ("topology", "Body"),
+    "BoltGrade": ("bolted_joint", "BoltGrade"),
+    "CDTireModel": ("tire_cosim", "CDTireModel"),
+    "CFDProvenance": ("aero", "CFDProvenance"),
+    "CFDSolver": ("aero", "CFDSolver"),
+    "CaseSpec": ("aero", "CaseSpec"),
+    "CellParams": ("pack_thermal", "CellParams"),
+    "ClampedStack": ("bolted_joint", "ClampedStack"),
+    "CoeffResult": ("aero", "CoeffResult"),
+    "Coincident": ("topology", "Coincident"),
+    "CombinedSlipTire": ("tiremodel", "CombinedSlipTire"),
+    "CompliantCorner": ("compliance", "CompliantCorner"),
+    "CompliantResult": ("compliance", "CompliantResult"),
+    "CondensedFlexBody": ("flex", "CondensedFlexBody"),
+    "Connector": ("harness", "Connector"),
+    "Constraint": ("topology", "Constraint"),
+    "CoolingOperatingPoint": ("pt_integration", "CoolingOperatingPoint"),
+    "CornerLoads": ("dynamics", "CornerLoads"),
+    "CornerState": ("kinematics", "CornerState"),
+    "CosimCornerSet": ("tire_cosim_driver", "CosimCornerSet"),
+    "CosimTireHistory": ("tire_cosim_driver", "CosimTireHistory"),
+    "DiffPair": ("electronics", "DiffPair"),
+    "DriveZ": ("topology", "DriveZ"),
+    "DriverInput": ("transient", "DriverInput"),
+    "EVLapSimulator": ("ev_powertrain", "EVLapSimulator"),
+    "EVParams": ("ev_powertrain", "EVParams"),
+    "EVRunResult": ("ev_powertrain", "EVRunResult"),
+    "FSAE_TRACTIVE_POWER_CAP_KW": ("pt_integration", "FSAE_TRACTIVE_POWER_CAP_KW"),
+    "FTireModel": ("tire_cosim", "FTireModel"),
+    "Fan": ("pack_thermal", "Fan"),
+    "FanCurve": ("pt_integration", "FanCurve"),
+    "FanPlacementCandidate": ("pack_thermal", "FanPlacementCandidate"),
+    "FanPlacementStudy": ("pack_thermal", "FanPlacementStudy"),
+    "Fastener": ("bolted_joint", "Fastener"),
+    "FlexElement": ("flex", "FlexElement"),
+    "FlexMesh": ("flex", "FlexMesh"),
+    "FluentSolver": ("aero", "FluentSolver"),
+    "Formboard": ("harness", "Formboard"),
+    "FormboardBranch": ("harness", "FormboardBranch"),
+    "GGVGenerator": ("ggv", "GGVGenerator"),
+    "GGVParams": ("ggv", "GGVParams"),
+    "GGVResult": ("ggv", "GGVResult"),
+    "GearCandidate": ("pt_integration", "GearCandidate"),
+    "GearObjective": ("pt_integration", "GearObjective"),
+    "GearRatioSolver": ("pt_integration", "GearRatioSolver"),
+    "GearSweepResult": ("pt_integration", "GearSweepResult"),
+    "GenericKinematics": ("adapter", "GenericKinematics"),
+    "GeometryLedger": ("mountpoints", "GeometryLedger"),
+    "Hardpoints": ("kinematics", "Hardpoints"),
+    "HarnessCheckResult": ("harness", "HarnessCheckResult"),
+    "HarnessLedger": ("harness", "HarnessLedger"),
+    "InPlane": ("topology", "InPlane"),
+    "JointCompliance": ("joints", "JointCompliance"),
+    "JointResult": ("bolted_joint", "JointResult"),
+    "KeepOut": ("mountpoints", "KeepOut"),
+    "Link": ("topology", "Link"),
+    "LocalSubmitter": ("aero", "LocalSubmitter"),
+    "MATERIALS": ("flex", "MATERIALS"),
+    "MEMBERS": ("loadpath", "MEMBERS"),
+    "METRIC_COARSE": ("bolted_joint", "METRIC_COARSE"),
+    "Material": ("flex", "Material"),
+    "Mechanism": ("topology", "Mechanism"),
+    "MechanismBuilder": ("topology", "MechanismBuilder"),
+    "MemberForces": ("loadpath", "MemberForces"),
+    "MemberStiffness": ("compliance", "MemberStiffness"),
+    "MeshParams": ("aero", "MeshParams"),
+    "MotorEnvelope": ("pt_integration", "MotorEnvelope"),
+    "MountPoint": ("mountpoints", "MountPoint"),
+    "MythCheck": ("pt_integration", "MythCheck"),
+    "OnLine": ("topology", "OnLine"),
+    "OpenFOAMSolver": ("aero", "OpenFOAMSolver"),
+    "OrchestratorReport": ("aero", "OrchestratorReport"),
+    "PCMAllocation": ("pcm_cooling", "PCMAllocation"),
+    "PCMMaterial": ("pcm_cooling", "PCMMaterial"),
+    "PCMResult": ("pcm_cooling", "PCMResult"),
+    "PacejkaLateral": ("tiremodel", "PacejkaLateral"),
+    "PackLayout": ("pack_thermal", "PackLayout"),
+    "PackThermalModel": ("pack_thermal", "PackThermalModel"),
+    "PackThermalResult": ("pack_thermal", "PackThermalResult"),
+    "Point": ("topology", "Point"),
+    "Powertrain": ("ev_powertrain", "Powertrain"),
+    "PrechargeCircuit": ("tractive_system", "PrechargeCircuit"),
+    "PrechargeTrace": ("tractive_system", "PrechargeTrace"),
+    "PropagationResult": ("mountpoints", "PropagationResult"),
+    "REQUIRED_SHUTDOWN_NODES": ("tractive_system", "REQUIRED_SHUTDOWN_NODES"),
+    "RackTranslation": ("topology", "RackTranslation"),
+    "ReferenceAeroModel": ("aero", "ReferenceAeroModel"),
+    "ReferenceTireModel": ("tire_cosim", "ReferenceTireModel"),
+    "Revolute": ("topology", "Revolute"),
+    "RoadInput": ("transient", "RoadInput"),
+    "Rules": ("tractive_system", "Rules"),
+    "RunMatrix": ("aero", "RunMatrix"),
+    "SPAL_VA14_AP11_C34A": ("pt_integration", "SPAL_VA14_AP11_C34A"),
+    "SettlingResult": ("transient", "SettlingResult"),
+    "ShutdownChain": ("tractive_system", "ShutdownChain"),
+    "ShutdownNode": ("tractive_system", "ShutdownNode"),
+    "SlurmSSHSubmitter": ("aero", "SlurmSSHSubmitter"),
+    "SnappyMesher": ("aero", "SnappyMesher"),
+    "SolverFidelity": ("aero", "SolverFidelity"),
+    "SolverUnavailable": ("aero", "SolverUnavailable"),
+    "SprocketDesign": ("pt_integration", "SprocketDesign"),
+    "StarCCMSolver": ("aero", "StarCCMSolver"),
+    "StructuralTireModel": ("tire_cosim", "StructuralTireModel"),
+    "SubmitResult": ("aero", "SubmitResult"),
+    "SuspensionKinematics": ("kinematics", "SuspensionKinematics"),
+    "TEMPLATES": ("topologies", "TEMPLATES"),
+    "TSAL": ("tractive_system", "TSAL"),
+    "ThermalParams": ("tire_thermal", "ThermalParams"),
+    "ThermalRun": ("tire_thermal", "ThermalRun"),
+    "ThermalTireModel": ("tire_thermal", "ThermalTireModel"),
+    "TireFidelity": ("tire_cosim", "TireFidelity"),
+    "TireOutput": ("tire_cosim", "TireOutput"),
+    "TireProvenance": ("tire_cosim", "TireProvenance"),
+    "Trace": ("electronics", "Trace"),
+    "TractiveSafetyResult": ("tractive_system", "TractiveSafetyResult"),
+    "TransientParams": ("transient", "TransientParams"),
+    "TransientResult": ("transient", "TransientResult"),
+    "TransientSolver": ("transient", "TransientSolver"),
+    "VehicleDynamics": ("dynamics", "VehicleDynamics"),
+    "VehicleParams": ("dynamics", "VehicleParams"),
+    "WheelLoad": ("loadpath", "WheelLoad"),
+    "WheelState": ("tire_cosim", "WheelState"),
+    "WireRun": ("harness", "WireRun"),
+    "analyze_joint": ("bolted_joint", "analyze_joint"),
+    "attitude_from_dynamics": ("aero", "attitude_from_dynamics"),
+    "awg_area_mm2": ("harness", "awg_area_mm2"),
+    "awg_nominal_od_mm": ("harness", "awg_nominal_od_mm"),
+    "axial_stiffness_tube": ("flex", "axial_stiffness_tube"),
+    "brake_to_throttle_maneuver": ("transient", "brake_to_throttle_maneuver"),
+    "build_full_car_figure": ("fullcar3d", "build_full_car_figure"),
+    "check_assumption": ("pt_integration", "check_assumption"),
+    "check_board": ("electronics", "check_board"),
+    "check_bspd": ("tractive_system", "check_bspd"),
+    "check_harness": ("harness", "check_harness"),
+    "check_pcm": ("pcm_cooling", "check_pcm"),
+    "check_precharge": ("tractive_system", "check_precharge"),
+    "check_shutdown_chain": ("tractive_system", "check_shutdown_chain"),
+    "check_tractive_system": ("tractive_system", "check_tractive_system"),
+    "check_tsal": ("tractive_system", "check_tsal"),
+    "cooling_operating_point": ("pt_integration", "cooling_operating_point"),
+    "corner_wheel_load": ("compliance", "corner_wheel_load"),
+    "curb_strike_maneuver": ("transient", "curb_strike_maneuver"),
+    "default_cell_params": ("pack_thermal", "default_cell_params"),
+    "default_combined_tire": ("tiremodel", "default_combined_tire"),
+    "default_pcm": ("pcm_cooling", "default_pcm"),
+    "default_structural_tire": ("tire_cosim", "default_structural_tire"),
+    "default_thermal_params": ("tire_thermal", "default_thermal_params"),
+    "default_tire": ("tiremodel", "default_tire"),
+    "dfmea_rows_from_analysis": ("pt_integration", "dfmea_rows_from_analysis"),
+    "double_wishbone": ("topologies", "double_wishbone"),
+    "driveline_peak_torque_nm": ("pt_integration", "driveline_peak_torque_nm"),
+    "estimate_attitude": ("aero", "estimate_attitude"),
+    "estimate_motor_heat_w": ("pt_integration", "estimate_motor_heat_w"),
+    "evaluate_pcm_buffer": ("pcm_cooling", "evaluate_pcm_buffer"),
+    "example": ("topologies", "example"),
+    "fan_grid_candidates": ("pack_thermal", "fan_grid_candidates"),
+    "from_links": ("topologies", "from_links"),
+    "get_aero_backend": ("aero", "get_backend"),
+    "guyan_condense": ("flex", "guyan_condense"),
+    "influence_summary": ("fullcar3d", "influence_summary"),
+    "joint_findings": ("bolted_joint", "joint_findings"),
+    "list_templates": ("topologies", "list_templates"),
+    "load_flex_body": ("flex", "load_flex_body"),
+    "macpherson_strut": ("topologies", "macpherson_strut"),
+    "make_tire_backend": ("tire_cosim", "make_tire_backend"),
+    "min_parallel_distance_mm": ("electronics", "min_parallel_distance_mm"),
+    "motor_envelope": ("pt_integration", "motor_envelope"),
+    "multilink": ("topologies", "multilink"),
+    "optimize_fan_placement": ("pack_thermal", "optimize_fan_placement"),
+    "pack_current_trace": ("pack_thermal", "pack_current_trace"),
+    "parallel_run_length_mm": ("electronics", "parallel_run_length_mm"),
+    "parse_checkmesh": ("aero", "parse_checkmesh"),
+    "power_rpm_myth_checks": ("pt_integration", "power_rpm_myth_checks"),
+    "powertrain_spec_sheet": ("pt_integration", "powertrain_spec_sheet"),
+    "propagate_mount_move": ("mountpoints", "propagate_mount_move"),
+    "quick_ggv": ("ggv", "quick_ggv"),
+    "read_mnf": ("flex", "read_mnf"),
+    "relaxation_length": ("tiremodel", "relaxation_length"),
+    "run_cosim_maneuver": ("tire_cosim_driver", "run_cosim_maneuver"),
+    "run_maneuver": ("transient", "run_maneuver"),
+    "semi_trailing_arm": ("topologies", "semi_trailing_arm"),
+    "simulate_pack_thermal": ("pack_thermal", "simulate_pack_thermal"),
+    "simulate_precharge": ("tractive_system", "simulate_precharge"),
+    "simulate_warmup": ("tire_thermal", "simulate_warmup"),
+    "size_pcm_for_hold": ("pcm_cooling", "size_pcm_for_hold"),
+    "snap_oversteer_maneuver": ("transient", "snap_oversteer_maneuver"),
+    "solid_axle": ("topologies", "solid_axle"),
+    "solid_rod_section": ("flex", "solid_rod_section"),
+    "solve_member_forces": ("loadpath", "solve_member_forces"),
+    "sprocket_design": ("pt_integration", "sprocket_design"),
+    "step_steer_maneuver": ("transient", "step_steer_maneuver"),
+    "sweep_parameter": ("ggv", "sweep_parameter"),
+    "system_k_from_point": ("pt_integration", "system_k_from_point"),
+    "trailing_arm": ("topologies", "trailing_arm"),
+    "transient_vs_qss_corner": ("transient", "transient_vs_qss_corner"),
+    "truck_steer_linkage": ("topologies", "truck_steer_linkage"),
+    "tube_section": ("flex", "tube_section"),
+    "twist_beam": ("topologies", "twist_beam"),
+    "undeclared_loads": ("electronics", "undeclared_loads"),
+    "wheel_load_from_corner": ("loadpath", "wheel_load_from_corner"),
+    "worst_case_currents": ("electronics", "worst_case_currents"),
+}
 
-# Phase-change-material (PCM) cooling buffer — the "liquid wax inside the cell
-# holder" the cooling team is modelling. Adds the latent-heat plateau pack_thermal
-# can't represent on its own and answers the sizing question ("how much wax holds
-# the cells for the endurance stint, or do I still need the fan?"). Post-processes
-# a bare PackThermalResult at the seam pack_thermal exposes; never re-runs the
-# integrator. Same calibration/never-raise contract.
-from .pcm_cooling import (
-    PCMMaterial, default_pcm, PCMAllocation, PCMResult,
-    evaluate_pcm_buffer, size_pcm_for_hold, check_pcm,
-)
-from . import pcm_cooling
 
-# Tractive-system safety layer — the precharge transient and the shutdown chain
-# (TSAL / BSPD / AMS / IMD) the electrics team validates before tech inspection.
-# Reproduces the slide's "R-C on a DC source, switch shorts the resistor after
-# ~2s" experiment without SPICE, checks discharge/precharge against the season's
-# rules, and gates the series shutdown loop for completeness + fail-safe wiring.
-# Emits the same typed Findings the integration board renders.
-from .tractive_system import (
-    Rules, PrechargeCircuit, PrechargeTrace,
-    simulate_precharge, check_precharge,
-    ShutdownNode, ShutdownChain, REQUIRED_SHUTDOWN_NODES, check_shutdown_chain,
-    TSAL, check_tsal, BSPD, check_bspd,
-    TractiveSafetyResult, check_tractive_system,
-)
-from . import tractive_system
+# --------------------------------------------------------------------------- #
+#  Lazy attribute resolution (PEP 562). See the module docstring above.        #
+# --------------------------------------------------------------------------- #
+# Submodules accessible as attributes. _SUBMODULES are the ones the original
+# __init__ exposed via `from . import X`. We also expose every submodule that
+# provides a re-exported symbol (e.g. `kinematics`, `dynamics`, `adapter`):
+# CPython binds those as package attributes as a side effect of
+# `from .X import ...`, so accessing `suspension.kinematics` worked before this
+# refactor and must keep working.
+_ATTR_SUBMODULES = frozenset(_SUBMODULES) | {mod for (mod, _) in _FROM.values()}
 
-# Structural tire co-simulation boundary (the FTire / CDTire integration seam):
-# a stateful tyre contract, a Pacejka-backed reference backend that refuses to
-# fake structural/thermal channels, vendor adapter stubs, and a staggered co-sim
-# driver around the transient solver.
-from .tire_cosim import (
-    StructuralTireModel, ReferenceTireModel, FTireModel, CDTireModel,
-    WheelState, TireOutput, TireProvenance, TireFidelity,
-    make_tire_backend, default_structural_tire,
-)
-from .tire_cosim_driver import (
-    CosimCornerSet, CosimTireHistory, run_cosim_maneuver,
-)
-from .tire_thermal import (
-    ThermalTireModel, ThermalParams, ThermalRun,
-    default_thermal_params, simulate_warmup,
-)
-from . import tire_cosim
-from . import tire_cosim_driver
-from . import tire_cosim_ftire_example
-from . import tire_thermal
 
-# Aerodynamic CFD co-simulation boundary (OpenFOAM / STAR-CCM+ / Fluent seam).
-# The aero analogue of tire_cosim: KinematiK owns the attitude sweep, the run
-# orchestration and the aero map; the meshing and Navier-Stokes solve live outside,
-# on the team's cluster with the team's license. Provenance is first-class.
-from . import aero
-from .aero import (
-    Attitude, RunMatrix, CaseSpec, CoeffResult, CFDProvenance,
-    SolverFidelity, CFDSolver, SolverUnavailable,
-    ReferenceAeroModel, OpenFOAMSolver, StarCCMSolver, FluentSolver,
-    LocalSubmitter, SlurmSSHSubmitter, SubmitResult,
-    AeroMap, AeroQuery, AeroOrchestrator, OrchestratorReport,
-    AeroProvider, estimate_attitude, attitude_from_dynamics,
-    MeshParams, SnappyMesher, parse_checkmesh,
-)
-from .aero import get_backend as get_aero_backend
-from . import mountpoints
-from .mountpoints import (
-    MountPoint, KeepOut, GeometryLedger, PropagationResult, propagate_mount_move,
-)
+def __getattr__(name):
+    # 1) A submodule exposed directly (e.g. `suspension.aero`, `suspension.kinematics`).
+    if name in _ATTR_SUBMODULES:
+        mod = _import_module(f"{__name__}.{name}")
+        globals()[name] = mod          # cache so future access is a plain lookup
+        return mod
+    # 2) A symbol re-exported from a submodule (e.g. `SuspensionKinematics`).
+    src = _FROM.get(name)
+    if src is not None:
+        submod_name, attr = src
+        submod = _import_module(f"{__name__}.{submod_name}")
+        try:
+            value = getattr(submod, attr)
+        except AttributeError as exc:   # pragma: no cover - guards refactors
+            raise ImportError(
+                f"suspension.{submod_name} no longer provides '{attr}', "
+                f"which suspension.__init__ re-exports as '{name}'. "
+                f"Update _FROM in suspension/__init__.py."
+            ) from exc
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-# Electronics / PCB layer: copper-survival (IPC-2221 heating, Onderdonk fusing,
-# IR-drop / ECU brown-out) and signal-integrity (differential-pair impedance +
-# HV-aggressor coupling) checks, emitting the same Finding objects the rest of
-# the integration board renders.
-from . import electronics
-from .electronics import (
-    Trace, DiffPair, Aggressor, BoardLedger, BoardCheckResult,
-    check_board, worst_case_currents, undeclared_loads,
-    min_parallel_distance_mm, parallel_run_length_mm,
-)
-from . import harness
-from .harness import (
-    Connector, WireRun, HarnessLedger, HarnessCheckResult,
-    Formboard, FormboardBranch, check_harness,
-    awg_area_mm2, awg_nominal_od_mm,
-)
+
+def __dir__():
+    # Full public surface for tab-completion / dir(), without importing anything.
+    return sorted(set(globals()) | set(_ATTR_SUBMODULES) | set(_FROM) | set(__all__))
+
 
 __all__ = [
+    # cross-discipline myth-buster engine
+    "check_myth", "MythEngine", "MythResult", "MythRule", "MythVerdict",
+    "parse_claim", "myth_disciplines", "myth_reference_list", "mythbuster",
     "SuspensionKinematics", "Hardpoints", "CornerState",
     # architecture-agnostic topology engine
     "topology", "topologies", "GenericKinematics",
