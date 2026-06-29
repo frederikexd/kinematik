@@ -437,20 +437,18 @@ class EntityResolver:
         """Given >=2 hits, pick (source, target) using claim direction.
 
         Heuristic, deterministic:
-          * If a direction verb ("increase", "make", "mean"…) sits between the
-            first two entities, the one BEFORE the verb is source, the one AFTER
-            is target ("more DOWNFORCE increases SPEED" -> source=downforce).
-          * Otherwise fall back to reading order: first entity = source.
-        Returns (source_entity, target_entity) or None if <2 hits.
+          * The generic 'performance' entity ("better/improves") is a LAST-RESORT
+            target: if two or more real (non-performance) entities are present, we
+            ignore the performance hit so the real target wins ("higher tyre
+            pressure improves GRIP" -> target=grip, not 'performance').
+          * Reading order otherwise: first entity = source, second = target.
+        Returns (source_entity, target_entity) or None if <2 usable hits.
         """
-        if len(hits) < 2:
+        real = [h for h in hits if h.entity.slug != "performance"]
+        usable = real if len(real) >= 2 else hits
+        if len(usable) < 2:
             return None
-        a, b = hits[0], hits[1]
-        lower = text.lower()
-        between = lower[a.position:b.position]
-        if any(v in between for v in _DIRECTION_VERBS):
-            return a.entity, b.entity
-        # no verb between — still default to reading order (source first)
+        a, b = usable[0], usable[1]
         return a.entity, b.entity
 
 
@@ -629,8 +627,27 @@ class EntityMythEngine:
 
         pair = self._resolver.directional_pair(text, hits)
         if pair is None:
-            # exactly one entity recognised — not enough for a relationship.
+            # Exactly one entity recognised. If the claim is a "is X better /
+            # worse / always faster" question and we have a generic performance
+            # entity, pair against it so the fallback laws can give a real verdict
+            # instead of 'unknown'. This is what makes single-quantity claims like
+            # "is a stiffer chassis better?" resolve.
             ent = hits[0].entity
+            perf = self._ent_by_slug.get("performance")
+            low = text.lower()
+            try:
+                from . import myth_knowledge_base as _kb
+                _cues = _kb.PERFORMANCE_CUES
+            except Exception:
+                _cues = ("better", "worse", "best", "always", "faster", "good")
+            if perf is not None and ent.slug != "performance" \
+                    and any(c in low for c in _cues):
+                rel = self._rel_index.get((ent.slug, "performance"))
+                if rel is not None:
+                    return self._resolve_relationship(rel, claim, ent, perf)
+                fb = self._match_fallback(ent, perf)
+                if fb is not None:
+                    return self._resolve_fallback(fb, claim, ent, perf)
             return EntityVerdict(
                 verdict="unknown",
                 explanation=(f"Recognised “{ent.label}” but only one quantity — a "
@@ -744,70 +761,14 @@ class EntityMythEngine:
 #  no DB configured (and gives tests a fixture). Leads override via Supabase.   #
 # =========================================================================== #
 def default_local_knowledge() -> LocalKnowledge:
-    entities = [
-        dict(slug="downforce", label="Downforce", discipline="aerodynamics",
-             symbol="F_z", canonical_unit="N", kind="force",
-             aliases=["downforce", "down force", "df", "aero load",
-                      "vertical load", "grip from aero"],
-             registry_key="aero.downforce_n"),
-        dict(slug="drag", label="Drag", discipline="aerodynamics", symbol="F_x",
-             canonical_unit="N", kind="force",
-             aliases=["drag", "aero drag", "cda"]),
-        dict(slug="speed", label="Speed", discipline="shared", symbol="v",
-             canonical_unit="m/s", kind="speed",
-             aliases=["speed", "velocity", "top speed", "straight line speed",
-                      "straight-line speed", "how fast", "faster", "quicker",
-                      "accelerate", "acceleration"]),
-        dict(slug="cornering", label="Cornering grip", discipline="suspension",
-             symbol="F_y", canonical_unit="N", kind="force",
-             aliases=["cornering", "corner speed", "lateral grip",
-                      "cornering grip", "grip in corners"]),
-        dict(slug="laptime", label="Lap time", discipline="shared", symbol="t",
-             canonical_unit="s", kind="time",
-             aliases=["lap time", "laptime", "faster lap", "quicker lap",
-                      "lower lap"]),
-    ]
-    formulas = [
-        dict(slug="aero_force", label="Aerodynamic force", discipline="aerodynamics",
-             expression="0.5 * rho * v**2 * CA", inputs=["rho", "v", "CA"],
-             defaults={"rho": 1.225, "CA": 1.0}, output_unit="N", basis="physics"),
-        dict(slug="speed_force_ratio", label="Force ratio from speed ratio",
-             discipline="shared", expression="(v2 / v1)**2", inputs=["v1", "v2"],
-             defaults={}, output_unit="ratio", basis="physics"),
-    ]
-    relationships = [
-        dict(slug="aero.downforce_vs_speed", discipline="aerodynamics",
-             source_slug="downforce", target_slug="speed", effect="depends",
-             verdict="depends", formula_slug=None, confidence_basis="modeled",
-             priority=20,
-             provenance="F=1/2 rho V^2 C A: downforce and drag both scale with V^2",
-             explanation=(
-                 "More downforce raises cornering grip but its drag lowers "
-                 "straight-line speed and uses more energy — on an EV with a fixed "
-                 "pack that's a real cost. It's a lap-time trade, track-dependent: "
-                 "downforce wins on tight autocross and can LOSE on a fast track. "
-                 "Resolve it in the lap sim with your real aero map.")),
-        dict(slug="aero.downforce_vs_cornering", discipline="aerodynamics",
-             source_slug="downforce", target_slug="cornering", effect="increases",
-             verdict="true", formula_slug="aero_force", confidence_basis="verified",
-             priority=15,
-             provenance="downforce adds tyre normal load -> more lateral grip",
-             explanation=(
-                 "More downforce increases the vertical load on the tyres, which "
-                 "raises the lateral force they can make — so corner speed goes up. "
-                 "The gain tapers with tyre load sensitivity and costs drag, but the "
-                 "sign is positive.")),
-    ]
-    fallbacks = [
-        dict(slug="aero_scaling_v2", source_kind="force", target_kind="speed",
-             effect="increases", verdict="depends", formula_slug="speed_force_ratio",
-             explanation=(
-                 "Aerodynamic force scales with the SQUARE of speed "
-                 "(F = 1/2 rho V^2 C A): double the speed gives 4x the force, both "
-                 "downforce and drag. Evaluate aero at the speeds the track actually "
-                 "spends time at, from the lap sim.")),
-    ]
-    return LocalKnowledge(entities, formulas, relationships, fallbacks)
+    """The bundled FSAE physics graph. Loads the comprehensive knowledge base
+    (myth_knowledge_base.py) — ~40 entities, ~45 relationships and broad fallback
+    laws spanning aero, tyres, mass, suspension, powertrain, braking and chassis —
+    so almost any vehicle-dynamics assumption resolves to true/myth/depends rather
+    than 'unknown'. Leads extend it from the UI; this stays the offline default."""
+    from . import myth_knowledge_base as kb
+    return LocalKnowledge(kb.ENTITIES, kb.FORMULAS, kb.RELATIONSHIPS,
+                          kb.FALLBACK_LAWS)
 
 
 def default_engine(registry_lookup=None) -> EntityMythEngine:
