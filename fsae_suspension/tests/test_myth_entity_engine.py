@@ -196,3 +196,52 @@ if __name__ == "__main__":
             print("✗", n)
             traceback.print_exc()
     print(f"\n{passed}/{len(fns)} passed")
+
+
+# --------------------------------------------------------------------------- #
+#  authoring (UI-added rules, no code)                                        #
+# --------------------------------------------------------------------------- #
+def test_author_creates_new_entities_and_relationship(tmp_path):
+    import suspension.myth_entity_engine as ee2
+    a = ee2.MythAuthor(local_path=str(tmp_path / "user_rules.json"))
+    assert a.backend in ("local", "supabase", "memory")
+    if a.backend == "supabase":
+        return  # don't hit a live DB in tests
+    r = a.add_myth(source_phrase="tyre pressure", target_phrase="grip",
+                   effect="depends", verdict="depends",
+                   explanation="There is an optimum pressure.",
+                   discipline="suspension", existing_entities=[], author="Sam")
+    assert r["ok"]
+    assert set(r["created_entities"]) == {"tyre_pressure", "grip"}
+    # the rule answers via a merged engine
+    eng = ee2.merged_local_engine(author=a)
+    v = eng.check("does more tyre pressure increase grip?")
+    assert v.source == "tyre_pressure" and v.target == "grip"
+    assert v.verdict == "depends"
+
+
+def test_author_reuses_existing_entity(tmp_path):
+    import suspension.myth_entity_engine as ee2
+    a = ee2.MythAuthor(local_path=str(tmp_path / "user_rules.json"))
+    if a.backend == "supabase":
+        return
+    existing = ee2.default_local_knowledge().entities()  # has 'speed', 'downforce'
+    r = a.add_myth(source_phrase="ride height", target_phrase="speed",
+                   effect="depends", verdict="depends",
+                   explanation="Lower can help aero but bottoming hurts.",
+                   discipline="aerodynamics", existing_entities=existing,
+                   author="Lee")
+    assert r["ok"]
+    # 'speed' already exists -> only 'ride_height' is created
+    assert r["created_entities"] == ["ride_height"]
+
+
+def test_author_does_not_overmatch_substring(tmp_path):
+    import suspension.myth_entity_engine as ee2
+    a = ee2.MythAuthor(local_path=str(tmp_path / "user_rules.json"))
+    if a.backend == "supabase":
+        return
+    existing = ee2.default_local_knowledge().entities()
+    # 'grip' must NOT fold into 'cornering' (alias 'lateral grip') or 'downforce'
+    slug, new = a._resolve_or_make_entity("grip", existing, "suspension")
+    assert slug == "grip" and new is not None
