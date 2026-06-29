@@ -80,9 +80,13 @@ class _Sink:
 
     # -- supabase client (lazy; reuses KinematiK's credential resolver) --
     def _get_client(self):
-        if self._client_tried:
+        # Return immediately if we already have a working client.
+        if self._client is not None:
             return self._client
-        self._client_tried = True
+        # Always re-read credentials rather than short-circuiting on
+        # _client_tried. The first cold import happens before st.secrets is
+        # populated, so _client_tried=True would permanently lock out a valid
+        # Supabase config. Re-reading costs two dict lookups — negligible.
         try:
             from .project import _read_credential
             url = _read_credential("SUPABASE_URL")
@@ -90,6 +94,7 @@ class _Sink:
             if url and key:
                 from supabase import create_client
                 self._client = create_client(url, key)
+                self._client_tried = True
         except Exception:
             self._client = None
         return self._client
