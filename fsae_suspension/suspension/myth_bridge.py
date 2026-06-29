@@ -57,12 +57,17 @@ _ENGINE: Optional[_ee.EntityMythEngine] = None
 
 
 def _build_engine(registry_lookup: Optional[Callable[[str], Optional[float]]]):
-    """Prefer Supabase (live, lead-editable); fall back to the bundled default
-    knowledge so the engine always works, even with no DB configured."""
+    """Prefer Supabase (live, lead-editable); fall back to the bundled defaults
+    PLUS any locally-authored rules so myths a lead adds from the UI work even
+    with no DB configured."""
     eng = _ee.supabase_engine(registry_lookup)
     if eng is None:
-        eng = _ee.default_engine(registry_lookup)
+        eng = _ee.merged_local_engine(registry_lookup)
     return eng
+
+
+# remember the lookup so a rebuild after authoring keeps the same registry wiring
+_REGISTRY_LOOKUP: Optional[Callable[[str], Optional[float]]] = None
 
 
 def install_entity_engine(
@@ -74,7 +79,9 @@ def install_entity_engine(
     than registering a duplicate (the underlying ``register`` would raise on a
     duplicate name otherwise).
     """
-    global _INSTALLED, _ENGINE
+    global _INSTALLED, _ENGINE, _REGISTRY_LOOKUP
+    if registry_lookup is not None:
+        _REGISTRY_LOOKUP = registry_lookup
     _ENGINE = engine or _build_engine(registry_lookup)
 
     if _INSTALLED:
@@ -86,9 +93,37 @@ def install_entity_engine(
 
 
 def refresh_entity_engine():
-    """Re-pull the knowledge graph after a lead edits rows in Supabase."""
-    if _ENGINE is not None:
+    """Re-pull the knowledge graph after a myth is added (Supabase or local).
+
+    For the Supabase backend this re-queries; for the local backend it rebuilds
+    the engine so the freshly-written JSON rule is loaded. Either way the new
+    myth answers immediately, no restart.
+    """
+    global _ENGINE
+    if _ENGINE is None:
+        return
+    if hasattr(_ENGINE.source, "refresh"):
         _ENGINE.refresh()
+    else:
+        # local/merged engine has no live source to re-pull — rebuild it
+        _ENGINE = _build_engine(_REGISTRY_LOOKUP)
+
+
+def author():
+    """Return a MythAuthor wired to the same backend the engine uses, for the UI
+    to write new rules without touching code or SQL."""
+    return _ee.MythAuthor()
+
+
+def existing_entities():
+    """Entities the engine currently knows, so the authoring UI can match a typed
+    phrase to one that already exists instead of duplicating it."""
+    if _ENGINE is not None:
+        try:
+            return _ENGINE.source.entities()
+        except Exception:
+            return []
+    return []
 
 
 def _bridge_check(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
