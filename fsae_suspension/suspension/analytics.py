@@ -165,8 +165,16 @@ atexit.register(lambda: _SINK.flush_blocking())
 
 
 # --------------------------------------------------------------------------- #
-#  Session state (kept off Streamlit so this module is import-safe everywhere) #
+#  Session state                                                              #
 # --------------------------------------------------------------------------- #
+#  IMPORTANT: in Streamlit the Python *process* is shared across every browser
+#  session and persists across reruns. So per-user / per-visit state CANNOT live
+#  in a module-global object — if it did, `session_start` would fire only once
+#  for the whole server and a returning user (or a second user) would never be
+#  logged. Per-session state therefore lives in st.session_state, which is unique
+#  to each browser session and is freshly empty when someone returns. We keep a
+#  module-level mirror only as a fallback for non-Streamlit callers (tests,
+#  scripts), where "one session per process" is the right behaviour.
 class _Session:
     enabled: bool = True
     session_id: str = ""
@@ -177,7 +185,48 @@ class _Session:
     first_result_logged: bool = False
 
 
-_SESS = _Session()
+_SESS = _Session()   # process-level fallback only (non-Streamlit contexts)
+
+
+def _store():
+    """Return the per-session store: st.session_state when running inside a real
+    Streamlit script run (unique per browser session), else the process-level
+    _SESS mirror. We check for an ACTIVE script-run context, not merely whether
+    streamlit imports — otherwise tests and headless scripts (where streamlit is
+    installed but there's no session) would get a contextless, non-persistent
+    session_state and lose per-session state between calls.
+
+    IMPORTANT: we try multiple Streamlit internal APIs because the location of
+    get_script_run_ctx changed across versions. We never fall back to the
+    process-level _SESS singleton while streamlit is importable and a session
+    state object is accessible — doing so collapses all concurrent users into
+    one identity.
+    """
+    try:
+        import streamlit as st
+        # Fastest path: if session_state is accessible we are in an active run.
+        # Accessing st.session_state outside a script run raises a RuntimeError,
+        # so we use that as the gating signal rather than get_script_run_ctx(),
+        # which has moved between Streamlit versions.
+        _ = st.session_state  # raises RuntimeError if no active run
+        return st.session_state
+    except Exception:
+        return None
+
+
+def _sget(key, default=None):
+    s = _store()
+    if s is not None:
+        return s.get(f"_ax_{key}", default)
+    return getattr(_SESS, key, default)
+
+
+def _sset(key, value):
+    s = _store()
+    if s is not None:
+        s[f"_ax_{key}"] = value
+    else:
+        setattr(_SESS, key, value)
 
 
 def _opted_out() -> bool:
@@ -196,46 +245,59 @@ def init(member: Optional[str] = None, subteam: str = "unknown",
          is_new_member: bool = False) -> None:
     """Start (or update) the analytics session. Safe to call every rerun.
 
-    Streamlit reruns the whole script constantly, so this is written to be
-    cheap and idempotent: it only emits `session_start` once per session_id.
+    Streamlit reruns the whole script constantly, so this is cheap and emits
+    `session_start` exactly ONCE PER BROWSER SESSION — keyed off st.session_state,
+    not a process global. That means:
+      * the same user's reruns within one visit do NOT double-log;
+      * a user who closes the tab and comes back later (a fresh browser session)
+        DOES log a new session_start — every logon is recorded;
+      * concurrent users each get their own session_start.
     """
     try:
         if _opted_out():
-            _SESS.enabled = False
+            _sset("enabled", False)
             return
-        # a stable id per browser session; generated once and stored in
-        # st.session_state if available, else a process-level fallback.
-        if not _SESS.session_id:
-            _SESS.session_id = _resolve_session_id()
+        _sset("enabled", True)
+        # stable id per browser session (st.session_state), minted once per visit
+        if not _sget("session_id"):
+            _sset("session_id", _new_session_id())
         # update mutable identity each call (user may type their name later)
         if member:
-            _SESS.member = member.strip() or None
+            _sset("member", member.strip() or None)
         if subteam:
-            _SESS.subteam = subteam
-        _SESS.is_new_member = is_new_member
-        if not _SESS.started:
-            _SESS.started = True
+            _sset("subteam", subteam)
+        # emit session_start once per browser session
+        if not _sget("started"):
+            _sset("started", True)
             _emit("session_start", feature=None, is_new_member=is_new_member)
     except Exception:
         pass
 
 
-def _resolve_session_id() -> str:
+def _new_session_id() -> str:
     import uuid
+    return uuid.uuid4().hex
+
+
+def set_visitor_id(visitor_id: str) -> None:
+    """Record a DURABLE per-browser id (persisted by the app to localStorage),
+    used to recognise a returning visitor across separate sessions — including
+    anonymous ones who never type a name. Safe to call every rerun."""
     try:
-        import streamlit as st
-        sid = st.session_state.get("_ax_session_id")
-        if not sid:
-            sid = uuid.uuid4().hex
-            st.session_state["_ax_session_id"] = sid
-            # first time we mint an id this session => likely a new visitor in
-            # this browser; the schema's is_new_member is best-effort.
-        return sid
+        if visitor_id and str(visitor_id).strip():
+            _sset("visitor_id", str(visitor_id).strip())
     except Exception:
-        # non-streamlit context (tests/scripts): one id per process
-        if not getattr(_resolve_session_id, "_pid_id", None):
-            _resolve_session_id._pid_id = uuid.uuid4().hex  # type: ignore
-        return _resolve_session_id._pid_id  # type: ignore
+        pass
+
+
+def _resolve_session_id() -> str:
+    """Return this session's id, minting one if needed. Per browser session in
+    Streamlit; per process otherwise."""
+    sid = _sget("session_id")
+    if not sid:
+        sid = _new_session_id()
+        _sset("session_id", sid)
+    return sid
 
 
 # --------------------------------------------------------------------------- #
@@ -246,19 +308,19 @@ def _emit(event_type: str, *, feature: Optional[str] = None,
           success: Optional[bool] = None, error_kind: Optional[str] = None,
           value_payload: Optional[dict] = None,
           is_new_member: bool = False) -> None:
-    if not _SESS.enabled:
+    if not _sget("enabled", True):
         return
     if event_type not in _EVENT_TYPES:
         return
     try:
-        if not _SESS.session_id:
-            _SESS.session_id = _resolve_session_id()
+        sid = _resolve_session_id()
         event = {
             "occurred_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
-            "session_id": _SESS.session_id,
-            "member": _SESS.member,
-            "subteam": _SESS.subteam,
-            "is_new_member": bool(is_new_member or _SESS.is_new_member),
+            "session_id": sid,
+            "visitor_id": _sget("visitor_id"),
+            "member": _sget("member"),
+            "subteam": _sget("subteam", "unknown"),
+            "is_new_member": bool(is_new_member or _sget("is_new_member", False)),
             "event_type": event_type,
             "feature": feature,
             "action": action,
@@ -299,9 +361,9 @@ def complete(feature: str, action: Optional[str] = None,
 def first_result() -> None:
     """Mark the first useful output of this session (time-to-first-result).
     Idempotent — only the first call per session emits."""
-    if _SESS.first_result_logged:
+    if _sget("first_result_logged", False):
         return
-    _SESS.first_result_logged = True
+    _sset("first_result_logged", True)
     _emit("first_result")
 
 
@@ -392,4 +454,4 @@ def fetch_view(view_name: str) -> list[dict]:
 
 def is_live() -> bool:
     """True if a Supabase client is configured and telemetry is on."""
-    return _SESS.enabled and _SINK._get_client() is not None
+    return _sget("enabled", True) and _SINK._get_client() is not None
