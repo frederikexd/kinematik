@@ -14881,6 +14881,112 @@ with tab_analytics:
 
     _have_db = bool(roi or foot or feat_use)
 
+    # ------------------------------------------------------------------ #
+    #  Local-buffer fallbacks for Usage section (no Supabase needed)      #
+    #  Mirrors what the board-number section already does for roi/hours.  #
+    # ------------------------------------------------------------------ #
+    if not foot or not feat_use or not individuals or not retention:
+        _evs = _ax_local_events()
+        if _evs:
+            import collections as _col, datetime as _ldt
+
+            # --- foot traffic ---
+            if not foot:
+                _day_sessions: dict = {}
+                _day_members: dict = {}
+                for e in _evs:
+                    _ts = e.get("occurred_at", "")
+                    _day = _ts[:10] if _ts else None
+                    if not _day:
+                        continue
+                    _sid = e.get("session_id", "")
+                    _mem = e.get("member")
+                    if _day not in _day_sessions:
+                        _day_sessions[_day] = set()
+                        _day_members[_day] = set()
+                    _day_sessions[_day].add(_sid)
+                    if _mem:
+                        _day_members[_day].add(_mem)
+                foot = [
+                    {"day": d, "sessions": len(_day_sessions[d]),
+                     "named_members": len(_day_members[d]),
+                     "events": sum(1 for e in _evs if (e.get("occurred_at",""))[:10] == d)}
+                    for d in sorted(_day_sessions)
+                ]
+
+            # --- feature use ---
+            if not feat_use:
+                _fu: dict = {}
+                for e in _evs:
+                    _f = e.get("feature")
+                    if not _f:
+                        continue
+                    if _f not in _fu:
+                        _fu[_f] = {"opens": 0, "engagements": 0,
+                                   "completions": 0, "users": set()}
+                    _et = e.get("event_type", "")
+                    if _et == "tab_open":
+                        _fu[_f]["opens"] += 1
+                    elif _et == "feature_engage":
+                        _fu[_f]["engagements"] += 1
+                    elif _et == "workflow_complete":
+                        _fu[_f]["completions"] += 1
+                    _fu[_f]["users"].add(e.get("member") or e.get("session_id", ""))
+                feat_use = sorted(
+                    [{"feature": f, "opens": v["opens"],
+                      "engagements": v["engagements"],
+                      "completions": v["completions"],
+                      "unique_users": len(v["users"])}
+                     for f, v in _fu.items()],
+                    key=lambda r: r["engagements"], reverse=True)
+
+            # --- individuals ---
+            if not individuals:
+                _iu: dict = {}
+                for e in _evs:
+                    _who = e.get("member") or ("anon:" + (e.get("session_id") or "")[:8])
+                    if _who not in _iu:
+                        _iu[_who] = {"subteam": e.get("subteam", ""),
+                                     "sessions": set(), "feature_uses": 0,
+                                     "workflows_completed": 0, "features": set()}
+                    _iu[_who]["sessions"].add(e.get("session_id", ""))
+                    _et = e.get("event_type", "")
+                    if _et == "feature_engage":
+                        _iu[_who]["feature_uses"] += 1
+                    if _et == "workflow_complete":
+                        _iu[_who]["workflows_completed"] += 1
+                    if e.get("feature"):
+                        _iu[_who]["features"].add(e["feature"])
+                individuals = sorted(
+                    [{"who": w, "subteam": v["subteam"],
+                      "sessions": len(v["sessions"]),
+                      "feature_uses": v["feature_uses"],
+                      "workflows_completed": v["workflows_completed"],
+                      "distinct_features_used": len(v["features"])}
+                     for w, v in _iu.items()],
+                    key=lambda r: r["feature_uses"], reverse=True)
+
+            # --- retention ---
+            if not retention:
+                _vis: dict = {}
+                for e in _evs:
+                    _uid = (e.get("member")
+                            or e.get("visitor_id")
+                            or e.get("session_id", ""))
+                    if _uid not in _vis:
+                        _vis[_uid] = set()
+                    _ts = e.get("occurred_at", "")
+                    if _ts:
+                        _vis[_uid].add(_ts[:10])
+                _total = len(_vis)
+                _returning = sum(1 for v in _vis.values() if len(v) >= 2)
+                retention = [{"total_users": _total,
+                               "one_time_users": _total - _returning,
+                               "returning_users": _returning,
+                               "retention_pct": round(100.0 * _returning / _total, 1) if _total else 0,
+                               "avg_visits_per_user": round(
+                                   sum(len(v) for v in _vis.values()) / _total, 2) if _total else 0}]
+
     # ====================================================================== #
     #  HEADLINE — hours saved -> dollars (the board slide)                   #
     # ====================================================================== #
