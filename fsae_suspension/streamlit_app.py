@@ -5345,15 +5345,26 @@ with tab_ev:
                 _env = pti_mod.motor_envelope(
                     _me_tq, _me_pw, _me_rl,
                     continuous_frac=_me_cont / 100.0)
+                # Make the live envelope available to the cross-discipline
+                # myth-buster (Integration tab) so powertrain claims typed there
+                # check against the same numbers shown here.
+                st.session_state["pti_last_envelope"] = _env
 
                 # --- dual-axis torque + power vs RPM ---------------------- #
+                # Torque axis respects the active unit system (N·m or lbf·ft).
+                _tq_label = units_mod.label("N·m")        # "N·m" or "lbf·ft"
+                _pw_label = units_mod.label("kW")          # "kW"  or "hp"
+                _tq_values = [units_mod.from_metric(float(v), "N·m")
+                               for v in _env.torque_nm]
+                _pw_values = list(_env.power_kw)           # kW stays on right axis
                 import plotly.graph_objects as _go_m
                 fm = _go_m.Figure()
                 fm.add_trace(_go_m.Scatter(
-                    x=_env.rpm, y=_env.torque_nm, name="Torque (N·m)",
+                    x=_env.rpm, y=_tq_values,
+                    name=f"Torque ({_tq_label})",
                     line=dict(color="#37e0d0", width=3)))
                 fm.add_trace(_go_m.Scatter(
-                    x=_env.rpm, y=_env.power_kw, name="Power (kW)", yaxis="y2",
+                    x=_env.rpm, y=_pw_values, name=f"Power ({_pw_label})", yaxis="y2",
                     line=dict(color="#ff9f43", width=3)))
                 # FSAE cap line on the power axis
                 fm.add_trace(_go_m.Scatter(
@@ -5376,8 +5387,8 @@ with tab_ev:
                     title="Motor envelope — power flat to redline, torque falls; "
                           "power ≠ rpm limit",
                     xaxis_title="motor speed (rpm)",
-                    yaxis=dict(title="torque (N·m)", color="#37e0d0"),
-                    yaxis2=dict(title="power (kW)", color="#ff9f43",
+                    yaxis=dict(title=f"torque ({_tq_label})", color="#37e0d0"),
+                    yaxis2=dict(title=f"power ({_pw_label})", color="#ff9f43",
                                 overlaying="y", side="right"),
                     height=380, paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#cdd6df", size=11),
@@ -7249,6 +7260,205 @@ def _render_envelope_vs_chassis(subsys, led):
             os.unlink(cad_path)
         except Exception:
             pass
+
+
+_MB_VCFG = {
+    "myth":    dict(label="\u274c Myth",    bg="#1f1214", border="#5a2422",
+                    accent="#ff5a52", badge_bg="#3d1a18"),
+    "depends": dict(label="\u26a0\ufe0f Depends", bg="#171510", border="#5a4317",
+                    accent="#ffb02e", badge_bg="#3a2c10"),
+    "true":    dict(label="\u2705 True",    bg="#0f1c1a", border="#1f4d49",
+                    accent="#37e0d0", badge_bg="#0e2a27"),
+    "unknown": dict(label="\u2753 Unknown",  bg="#131318", border="#303050",
+                    accent="#9b8cff", badge_bg="#1a1a2e"),
+}
+
+# Discipline labels for the picker. The engine's discipline ids map to the eight
+# channels; we group tyres+balance under Suspension and structures under Chassis,
+# matching how the rules register.
+_MB_DISCIPLINES = [
+    ("Any (auto-detect)", None),
+    ("Powertrain",        "powertrain"),
+    ("Suspension / tyres", "suspension"),
+    ("Aerodynamics",      "aerodynamics"),
+    ("Brakes",            "brakes"),
+    ("Cooling",           "cooling"),
+    ("Electrics",         "electrics"),
+    ("Chassis / structures", "chassis"),
+]
+
+
+def _mb_verdict_value(result):
+    """Return the verdict as a plain string whether it's a str-enum or str."""
+    v = getattr(result, "verdict", "unknown")
+    return getattr(v, "value", v)
+
+
+def _mb_render_card(claim_text, result, *, compact=False):
+    """Render one verdict card, reusing the powertrain myth-buster styling."""
+    import re as _rem
+    _v = _MB_VCFG.get(_mb_verdict_value(result), _MB_VCFG["unknown"])
+    _disc = getattr(result, "discipline", "") or ""
+    _prov = getattr(result, "provenance", "") or ""
+    _hl = _rem.sub(
+        r'(\b\d[\d\s,.]*(?:kW|rpm|km/h|N\u00b7m|V|A|\u00b0C|mm|kg|%|:\d)?)',
+        lambda m: ('<span style="font-family:\'JetBrains Mono\',monospace;'
+                   'font-weight:600;color:' + _v["accent"] + ';">'
+                   + m.group() + '</span>'),
+        getattr(result, "explanation", ""))
+    _disc_chip = (
+        f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.6rem;'
+        f'font-weight:700;letter-spacing:.08em;text-transform:uppercase;'
+        f'color:#8d99a6;margin-left:.4rem;">{_disc}</span>' if _disc else "")
+    _prov_line = (
+        f'<p style="margin:.4rem 0 0;font-size:.7rem;color:#7d8893;'
+        f'font-family:\'JetBrains Mono\',monospace;">\u2514 {_prov}</p>'
+        if _prov else "")
+    _rad = "10px" if compact else "12px"
+    st.markdown(
+        f'<div style="background:{_v["bg"]};border:1px solid {_v["border"]};'
+        f'border-left:3px solid {_v["accent"]};border-radius:{_rad};'
+        f'padding:.85rem 1.1rem;margin:.4rem 0;">'
+        f'<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.45rem;'
+        f'flex-wrap:wrap;">'
+        f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.68rem;'
+        f'font-weight:700;letter-spacing:.1em;text-transform:uppercase;'
+        f'background:{_v["badge_bg"]};color:{_v["accent"]};'
+        f'border:1px solid {_v["border"]};border-radius:6px;'
+        f'padding:.15rem .5rem;white-space:nowrap;flex:0 0 auto;">{_v["label"]}</span>'
+        f'<span style="font-size:.85rem;font-style:italic;color:#8d99a6;">'
+        f'\u201c{claim_text}\u201d</span>{_disc_chip}</div>'
+        f'<p style="margin:0;font-size:.83rem;line-height:1.65;color:#c4cdd6;">{_hl}</p>'
+        f'{_prov_line}'
+        f'</div>',
+        unsafe_allow_html=True)
+
+
+def _mb_build_context():
+    """Assemble the live context bundle the engine hands to whichever rule fires.
+
+    Keyed by discipline so each rule gets the object it expects: the fitted tyre
+    for suspension/tyre rules, the motor envelope for powertrain, vehicle params
+    for balance. Everything is best-effort — a rule with no context degrades to a
+    DEPENDS/UNKNOWN rather than crashing, by design.
+    """
+    ctx = {}
+    # tyre (suspension rules)
+    try:
+        _tire = tire_mod.PacejkaLateral(
+            coeffs=dict(st.session_state.get("tire_coeffs", {})),
+            FNOMIN=float(st.session_state.get("tire_fnomin", 1100.0)))
+        ctx["suspension"] = {"tire": _tire,
+                             "veh": VehicleParams(**{
+                                 k: v for k, v in st.session_state.get("vp", {}).items()
+                                 if k in VehicleParams().__dict__})}
+    except Exception:
+        pass
+    # powertrain envelope, if the powertrain tab has defined one this session
+    try:
+        from suspension.myth_rules.powertrain import PowertrainContext
+        _env = st.session_state.get("pti_last_envelope")
+        if _env is not None:
+            ctx["powertrain"] = PowertrainContext(
+                env=_env,
+                gear_final_drive=float(st.session_state.get("_pti_final_drive", 3.5)))
+    except Exception:
+        pass
+    return ctx
+
+
+def render_mythbuster():
+    """Cross-discipline myth-buster: any lead types an assumption, the math
+    checks it against the live models and names the physics. The powertrain tab
+    has had this for one discipline; this surfaces it for all eight, in the
+    cross-discipline place (the Integration tab)."""
+    from suspension import mythbuster as _mb
+
+    st.markdown(
+        '<p class="hint" style="margin:0 0 10px;">Type an assumption from <b>any</b> '
+        'subsystem \u2014 tyres, aero, brakes, cooling, electrics, structures, '
+        'powertrain \u2014 and the math checks it against the live models and names '
+        'the physics. <b>No AI.</b> Same claim always gives the same answer, and '
+        'every verdict shows the numbers it used so it can\u2019t be argued away in '
+        'a meeting. Share the verdict in the channel instead of re-running the '
+        'argument.</p>',
+        unsafe_allow_html=True)
+
+    _labels = [l for l, _ in _MB_DISCIPLINES]
+    _c1, _c2 = st.columns([2, 5])
+    _pick = _c1.selectbox("Discipline", _labels, index=0,
+                          key="mb_discipline", label_visibility="collapsed")
+    _disc = dict(_MB_DISCIPLINES).get(_pick, None)
+
+    _input = _c2.text_input(
+        "Your assumption",
+        placeholder='e.g. "twice the load gives twice the grip" \u00b7 '
+                    '"more downforce always means a faster lap" \u00b7 '
+                    '"a stronger chassis is a stiffer chassis"',
+        label_visibility="collapsed", key="mb_input_xdisc")
+    _go = st.button("Check it \u2192", key="mb_btn_xdisc")
+
+    _ctx = _mb_build_context()
+
+    if _go and _input.strip():
+        try:
+            _res = _mb.check(_input, _ctx)
+            st.session_state["mb_last_input"] = _input
+            st.session_state["mb_last_result_dict"] = _res.as_dict()
+        except Exception as _e:
+            st.warning(f"Couldn't check that: {_e}")
+    elif _go:
+        st.caption("Type an assumption first.")
+
+    # Render last result (persisted across reruns via its dict form).
+    _last_in = st.session_state.get("mb_last_input", "")
+    _last = st.session_state.get("mb_last_result_dict")
+    if _last:
+        _mb_render_card(_last_in, _MBDictResult(_last))
+
+    # Reference myths for the selected discipline, evaluated against live context.
+    _ref_disc = _disc or None
+    with st.expander("Reference \u2014 known myths"
+                     + (f" for {_pick}" if _disc else " across all disciplines"),
+                     expanded=False):
+        try:
+            _refs = _mb.reference_myths(_ref_disc, _ctx, limit=12)
+        except Exception:
+            _refs = []
+        if not _refs:
+            st.caption("No reference myths registered for that discipline yet.")
+        for _r in _refs:
+            _claim = getattr(_r.matched_rule, "reference_claim", None) or _last_in
+            # use the rule's own example claim where available
+            _ex = _r.user_values  # not the claim; fall through to explanation
+            _mb_render_card(_mb_reference_claim_for(_mb, _r), _r, compact=True)
+
+    st.caption("Add the myths your channel actually argues about: each rule is a "
+               "few lines in suspension/myth_rules/<discipline>.py \u2014 no engine "
+               "code changes. The lead who owns the discipline owns its rules.")
+
+
+def _mb_reference_claim_for(_mb, result):
+    """Best-effort: recover the example claim text that produced a reference
+    result, so the card shows the claim, not a blank."""
+    rule = next((r for r in _mb.all_rules() if r.name == result.matched_rule), None)
+    if rule is not None:
+        ex = getattr(rule.check, "reference_claim", None)
+        if ex:
+            return ex
+    return "(reference)"
+
+
+class _MBDictResult:
+    """Adapt a stored result-dict back to the attribute interface the card
+    renderer expects (Streamlit reruns lose the live object)."""
+    def __init__(self, d):
+        self.verdict = d.get("verdict", "unknown")
+        self.matched_rule = d.get("matched_rule", "")
+        self.explanation = d.get("explanation", "")
+        self.discipline = d.get("discipline", "")
+        self.provenance = d.get("provenance", "")
+        self.user_values = d.get("user_values", {})
 
 
 def render_suspension_vs_chassis():
@@ -10610,6 +10820,157 @@ with tab11:
       _sc[4].markdown(metric("Gear ratios",
           f"{len(_gr_db)}", ""), unsafe_allow_html=True)
 
+      # ── Erick's feedback (Discord 26-06): make the workbook the cross-team
+      #    source of truth, surface a feasible-pack sheet if present, and
+      #    visualise the raw data straight from the file. ──────────────────
+      _rt_raw_bytes = st.session_state.get("_rt_excel_bytes")
+
+      # (A) Declare the pulled stats into the INTEGRATION ledger, the same way
+      #     the Accumulator tab declares numbers — so his Excel feeds the whole
+      #     car, not just this tab.
+      st.markdown("###### 🔗 Push these numbers into the integration ledger")
+      st.markdown(
+          '<p class="hint" style="margin:0 0 8px 0">Joule heat and the key '
+          'propulsion stats from your workbook become the cross-team source of '
+          'truth — powertrain peak power/torque/voltage, electrics peak current '
+          'and the heat the cooling team has to reject. Declared numbers flow '
+          'into the feasibility checks and the 3D heatmap automatically.</p>',
+          unsafe_allow_html=True)
+      try:
+          _decl = roundtrip_mod.ledger_declarations_from_ev_params(_ev_db)
+          _decl_pt = _decl.get("powertrain", {})
+          _decl_el = _decl.get("electrics", {})
+          _dcols = st.columns(4)
+          _dcols[0].markdown(metric("PT peak power",
+              f"{_decl_pt.get('peak_power_kw', 0):.0f}", "kW"), unsafe_allow_html=True)
+          _dcols[1].markdown(metric("PT peak torque",
+              f"{_decl_pt.get('peak_torque_nm', 0):.0f}", "N·m"), unsafe_allow_html=True)
+          _dcols[2].markdown(metric("Elec peak current",
+              f"{_decl_el.get('peak_current_a', 0):.0f}", "A"), unsafe_allow_html=True)
+          _dcols[3].markdown(metric("Heat to reject",
+              f"{_decl_el.get('heat_reject_w', 0):.0f}", "W"), unsafe_allow_html=True)
+          if _decl.get("_notes"):
+              st.caption("ℹ️ " + " ".join(_decl["_notes"]))
+          if st.button("📌 Declare into integration ledger", key="ev_db_declare_ledger"):
+              try:
+                  _led_ev = interfaces_mod.IntegrationLedger.from_dict(
+                      st.session_state.ledger)
+                  for _subsys, _fields in (("powertrain", _decl_pt),
+                                           ("electrics", _decl_el)):
+                      if not _fields:
+                          continue
+                      _it = (_led_ev.get(_subsys)
+                             or interfaces_mod.SubsystemInterface(name=_subsys))
+                      for _k, _v in _fields.items():
+                          setattr(_it, _k, _v)
+                      # workbook-sourced numbers are real measurements, not
+                      # placeholders, so is_estimate stays False — but provenance
+                      # is recorded so the board shows where they came from.
+                      _it.is_estimate = False
+                      _it.updated_by = "electrics (from Excel)"
+                      _led_ev.set(_it)
+                  st.session_state.ledger = _led_ev.as_dict()
+                  _save_target = get_store()
+                  if hasattr(_save_target, "ledger"):
+                      _save_target.ledger = _led_ev.as_dict()
+                      save_store(_save_target)
+                  st.success(
+                      "Declared powertrain + electrics numbers from the workbook "
+                      "into the ledger. Open 🔗 Integration to see them checked "
+                      "against the rest of the car.")
+              except Exception as _de:
+                  st.warning(f"Couldn't declare into ledger: {_de}")
+      except Exception as _decl_e:
+          st.caption(f"Ledger declaration unavailable: {_decl_e}")
+
+      # (B) "What pack would you actually need" — surface the team's own sheet
+      #     if they authored one in the file.
+      if _rt_raw_bytes:
+          try:
+              _fp_sheet = roundtrip_mod.find_feasible_pack_sheet(_rt_raw_bytes)
+          except Exception:
+              _fp_sheet = {"found": False}
+          if _fp_sheet.get("found"):
+              st.markdown("###### 🎯 Your “what pack would you need” sheet")
+              st.markdown(
+                  f'<p class="hint" style="margin:0 0 8px 0">Read directly from '
+                  f'the <code>{_fp_sheet["sheet"]}</code> sheet in your workbook. '
+                  f'KinematiK surfaces it as-is alongside its own minimum-feasible '
+                  f'pack estimate below.</p>',
+                  unsafe_allow_html=True)
+              _fp_rows = _fp_sheet.get("rows", [])
+              if _fp_rows:
+                  import pandas as _pd_fp
+                  _hdr = _fp_rows[0]
+                  _body = _fp_rows[1:] if len(_fp_rows) > 1 else []
+                  try:
+                      _df_fp = _pd_fp.DataFrame(_body, columns=_hdr)
+                      st.dataframe(_df_fp, width="stretch", hide_index=True)
+                  except Exception:
+                      st.table(_fp_rows)
+
+      # (C) Visualise the raw data straight from the sheet — Erick's
+      #     "take that raw data from my sheet and visualise it".
+      if _rt_raw_bytes:
+          with st.expander("📈 Visualise raw data from your workbook", expanded=False):
+              st.markdown(
+                  '<p class="hint" style="margin:0 0 8px 0">Plot any numeric '
+                  'columns straight from your file — cell voltages, currents, '
+                  'temperatures, whatever you logged. This reads your sheets '
+                  'verbatim; nothing is recomputed or invented.</p>',
+                  unsafe_allow_html=True)
+              try:
+                  _raw = roundtrip_mod.read_raw_sheets(_rt_raw_bytes)
+              except Exception as _re:
+                  _raw = {"sheets": [], "_error": str(_re)}
+              if _raw.get("_error"):
+                  st.caption(f"Couldn't read raw data: {_raw['_error']}")
+              _raw_sheets = _raw.get("sheets", [])
+              if not _raw_sheets:
+                  st.caption("No numeric data columns found to plot.")
+              else:
+                  _sheet_names = [s["name"] for s in _raw_sheets]
+                  _pick_sheet = st.selectbox(
+                      "Sheet", _sheet_names, key="rt_raw_sheet_pick")
+                  _sheet_obj = next(s for s in _raw_sheets if s["name"] == _pick_sheet)
+                  _col_headers = [c["header"] for c in _sheet_obj["columns"]]
+                  _rc1, _rc2 = st.columns(2)
+                  _x_col = _rc1.selectbox(
+                      "X axis", ["(row index)"] + _col_headers,
+                      key="rt_raw_x")
+                  _y_cols = _rc2.multiselect(
+                      "Y axis (one or more)", _col_headers,
+                      default=_col_headers[1:3] if len(_col_headers) > 1
+                      else _col_headers[:1],
+                      key="rt_raw_y")
+                  if _y_cols:
+                      import plotly.graph_objects as _go_raw
+                      _by_header = {c["header"]: c["values"]
+                                    for c in _sheet_obj["columns"]}
+                      _fig_raw = _go_raw.Figure()
+                      if _x_col == "(row index)":
+                          _xvals = None
+                      else:
+                          _xvals = _by_header.get(_x_col)
+                      for _yh in _y_cols:
+                          _yv = _by_header.get(_yh, [])
+                          _xx = (list(range(len(_yv))) if _xvals is None
+                                 else _xvals[:len(_yv)])
+                          _fig_raw.add_trace(_go_raw.Scatter(
+                              x=_xx, y=_yv, mode="lines", name=_yh))
+                      _fig_raw.update_layout(
+                          height=360, margin=dict(l=10, r=10, t=30, b=10),
+                          paper_bgcolor="rgba(0,0,0,0)",
+                          plot_bgcolor="rgba(0,0,0,0)",
+                          font=dict(color="#cdd6df"),
+                          xaxis=dict(title=_x_col, gridcolor="#2a2f3a"),
+                          yaxis=dict(gridcolor="#2a2f3a"),
+                          legend=dict(bgcolor="rgba(0,0,0,0)"))
+                      st.plotly_chart(_fig_raw, width="stretch",
+                                      key="rt_raw_chart")
+                  else:
+                      st.caption("Pick at least one Y column to plot.")
+
   # ── Round-trip calculation ──────────────────────────────────────────
   if _db_has_data:
       st.markdown("---")
@@ -11826,7 +12187,7 @@ with tab13:
     _iview = st.radio(
         "Integration view",
         ["Cross-subsystem ledger", "Subsystem ↔ chassis (CAD fit)",
-         "Mount-point clash"],
+         "Mount-point clash", "Myth-buster"],
         horizontal=True, label_visibility="collapsed", key="integration_view")
 
     _show_ledger = (_iview == "Cross-subsystem ledger")
@@ -11834,6 +12195,8 @@ with tab13:
         render_suspension_vs_chassis()
     elif _iview == "Mount-point clash":
         render_mountpoint_clash()
+    elif _iview == "Myth-buster":
+        render_mythbuster()
 
 if _show_ledger:
   with tab13:
