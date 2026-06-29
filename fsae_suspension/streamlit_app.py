@@ -1415,14 +1415,70 @@ with _pctl:
     # --- analytics: start the usage-telemetry session (fire-and-forget) ----- #
     # Records foot traffic, individual use, latency, errors, retention and the
     # hours-saved ROI automatically. No-ops with no Supabase configured, and can
-    # be killed entirely via the KINEMATIK_ANALYTICS=off secret. Identity is an
-    # anonymous per-session id unless the member types their name in Analytics.
+    # be killed entirely via the KINEMATIK_ANALYTICS=off secret.
+    #
+    # Two identities, on purpose:
+    #   session_id  — minted fresh every browser SESSION, so EVERY logon (incl.
+    #                 a returning user) produces a new session_start event.
+    #   visitor_id  — durable per BROWSER, persisted to localStorage below, so a
+    #                 returning visitor is recognised across visits even if they
+    #                 never type their name. This is what makes retention / return
+    #                 counts correct rather than every visit looking brand-new.
     try:
+        # durable visitor id: persisted to localStorage so a returning user is
+        # recognised across browser sessions even if they never type a name.
+        #
+        # Flow:
+        #   1. If already cached in st.session_state (same visit) reuse it.
+        #   2. If passed back via ?vid= query param (written by JS on a prior
+        #      rerun of this page load) use it and cache in session_state.
+        #   3. Otherwise mint a fresh UUID, store as session seed, inject JS that
+        #      reads/writes localStorage and updates ?vid= so the NEXT rerun gets
+        #      the durable stored id instead of the freshly-minted seed.
+        #
+        # Caching in session_state (step 1) is the critical fix: without it every
+        # rerun that lacks a query param mints a new UUID, making every rerun look
+        # like a new user.
+        _vid = st.session_state.get("_ax_visitor_id")
+        if not _vid:
+            try:
+                _vid = st.query_params.get("vid") or None
+            except Exception:
+                _vid = None
+        if not _vid:
+            import uuid as _uuid
+            _seed = st.session_state.get("_ax_visitor_seed")
+            if not _seed:
+                _seed = _uuid.uuid4().hex
+                st.session_state["_ax_visitor_seed"] = _seed
+            _vid = _seed
+            try:
+                import streamlit.components.v1 as _components
+                _components.html(
+                    "<script>"
+                    "const k='kinematik_visitor_id';"
+                    f"let v=localStorage.getItem(k)||'{_seed}';"
+                    "localStorage.setItem(k,v);"
+                    "const u=new URL(window.parent.location);"
+                    "if(u.searchParams.get('vid')!==v){"
+                    "u.searchParams.set('vid',v);"
+                    "window.parent.history.replaceState({},'',u);}"
+                    "</script>", height=0)
+            except Exception:
+                pass
+        # Cache in session_state so reruns within this visit never re-mint
+        st.session_state["_ax_visitor_id"] = _vid
+        if _vid:
+            _axn.set_visitor_id(_vid)
+
         _ax_subteam = (_roles[0] if _roles and _roles != ["everyone"]
                        else "unknown")
+        # is_new_member is best-effort: true only on the very first run of THIS
+        # browser session (a fresh visit). Cross-visit "new vs returning" is
+        # derived properly in SQL from visitor_id, not from this flag.
         _axn.init(member=st.session_state.get("_ax_member"),
-                subteam=_ax_subteam,
-                is_new_member=not st.session_state.get("_ax_returning", False))
+                  subteam=_ax_subteam,
+                  is_new_member=not st.session_state.get("_ax_returning", False))
         st.session_state["_ax_returning"] = True
     except Exception:
         pass
