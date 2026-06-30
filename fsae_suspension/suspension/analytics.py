@@ -56,6 +56,18 @@ APP_VERSION = "0.9"
 _LOCAL_BUFFER = os.path.join(os.getcwd(), "analytics_buffer.jsonl")
 _TABLE = "analytics_events"
 
+# Write-health tracker — records the outcome of the most recent flush so the
+# dashboard can surface silent write failures (the cause of metrics freezing:
+# inserts were failing, getting buffered to an ephemeral local file, and never
+# replayed). Updated in _Sink._flush.
+_LAST_WRITE: dict = {
+    "ok": None,       # True/False/None(=no write attempted yet this process)
+    "at": None,       # iso timestamp of last attempt
+    "error": None,    # last error string, if any
+    "sent": 0,        # events successfully sent this process
+    "buffered": 0,    # events buffered locally due to failures this process
+}
+
 # Controlled event vocabulary — mirrors the CHECK constraint in the schema.
 _EVENT_TYPES = {
     "session_start", "tab_open", "feature_engage", "workflow_complete",
@@ -80,13 +92,9 @@ class _Sink:
 
     # -- supabase client (lazy; reuses KinematiK's credential resolver) --
     def _get_client(self):
-        # Return immediately if we already have a working client.
-        if self._client is not None:
+        if self._client_tried:
             return self._client
-        # Always re-read credentials rather than short-circuiting on
-        # _client_tried. The first cold import happens before st.secrets is
-        # populated, so _client_tried=True would permanently lock out a valid
-        # Supabase config. Re-reading costs two dict lookups — negligible.
+        self._client_tried = True
         try:
             from .project import _read_credential
             url = _read_credential("SUPABASE_URL")
@@ -94,7 +102,6 @@ class _Sink:
             if url and key:
                 from supabase import create_client
                 self._client = create_client(url, key)
-                self._client_tried = True
         except Exception:
             self._client = None
         return self._client
@@ -142,11 +149,20 @@ class _Sink:
         if client is not None:
             try:
                 client.table(_TABLE).insert(batch).execute()
+                # record success so the dashboard can show write-health
+                _LAST_WRITE["ok"] = True
+                _LAST_WRITE["at"] = _dt.datetime.now(_dt.timezone.utc).isoformat()
+                _LAST_WRITE["error"] = None
+                _LAST_WRITE["sent"] = _LAST_WRITE.get("sent", 0) + len(batch)
                 return
-            except Exception:
-                # network/db hiccup — fall through to local buffer so the data
-                # is not lost; a later run can replay it.
-                pass
+            except Exception as _e:
+                # network/db hiccup — record it (so it's not silent) and fall
+                # through to the local buffer so the data is not lost; it will
+                # be replayed automatically on a later run when the DB is back.
+                _LAST_WRITE["ok"] = False
+                _LAST_WRITE["at"] = _dt.datetime.now(_dt.timezone.utc).isoformat()
+                _LAST_WRITE["error"] = str(_e)[:300]
+                _LAST_WRITE["buffered"] = _LAST_WRITE.get("buffered", 0) + len(batch)
         self._buffer_local(batch)
 
     @staticmethod
@@ -199,21 +215,12 @@ def _store():
     _SESS mirror. We check for an ACTIVE script-run context, not merely whether
     streamlit imports — otherwise tests and headless scripts (where streamlit is
     installed but there's no session) would get a contextless, non-persistent
-    session_state and lose per-session state between calls.
-
-    IMPORTANT: we try multiple Streamlit internal APIs because the location of
-    get_script_run_ctx changed across versions. We never fall back to the
-    process-level _SESS singleton while streamlit is importable and a session
-    state object is accessible — doing so collapses all concurrent users into
-    one identity.
-    """
+    session_state and lose per-session state between calls."""
     try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        if get_script_run_ctx() is None:
+            return None
         import streamlit as st
-        # Fastest path: if session_state is accessible we are in an active run.
-        # Accessing st.session_state outside a script run raises a RuntimeError,
-        # so we use that as the gating signal rather than get_script_run_ctx(),
-        # which has moved between Streamlit versions.
-        _ = st.session_state  # raises RuntimeError if no active run
         return st.session_state
     except Exception:
         return None
@@ -438,6 +445,30 @@ def replay_local_buffer() -> int:
             client.table(_TABLE).insert(rows[i:i + 200]).execute()
         os.remove(_LOCAL_BUFFER)
         return len(rows)
+    except Exception:
+        return 0
+
+
+def write_health() -> dict:
+    """Outcome of the most recent flush, so the dashboard can show whether
+    events are actually reaching Supabase right now. Keys: ok, at, error,
+    sent, buffered. ok is None if no write has been attempted this process."""
+    return dict(_LAST_WRITE)
+
+
+def auto_replay_once() -> int:
+    """Replay the local buffer at most once per browser session, automatically,
+    when Supabase is reachable — so buffered events recover without anyone
+    having to click a button (the manual-only path meant the buffer was usually
+    wiped by an ephemeral-host restart before it was ever replayed). Returns the
+    number replayed (0 if nothing to do / already done this session)."""
+    try:
+        if _sget("_replayed_once"):
+            return 0
+        _sset("_replayed_once", True)
+        if _SINK._get_client() is None:
+            return 0
+        return replay_local_buffer()
     except Exception:
         return 0
 
