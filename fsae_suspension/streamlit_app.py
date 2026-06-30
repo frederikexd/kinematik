@@ -1454,30 +1454,65 @@ with _pctl:
             _vid = st.query_params.get("vid")
         except Exception:
             _vid = None
+        # durable visitor id. Resolution order, with the KEY FIX for returning
+        # users:
+        #   1. If the server already has ?vid=... in the URL this run, trust it
+        #      (it came from localStorage on a prior run / reload).
+        #   2. Otherwise, ask the browser. The JS reads localStorage FIRST:
+        #        - if a stored id exists and the URL doesn't match it, write it
+        #          to the URL and RELOAD so the server actually sees it this
+        #          time (history.replaceState alone does NOT rerun Streamlit, so
+        #          the old code silently lost the stored id on every return
+        #          visit and minted a brand-new one — making every returning
+        #          user look new).
+        #        - only if localStorage is genuinely empty does it mint+store a
+        #          fresh id, then reload so the server picks it up.
+        #   3. Python only calls set_visitor_id() when it actually has the
+        #      durable id from the URL — it does NOT commit a freshly-minted,
+        #      not-yet-persisted id, which was the second half of the bug.
+        _vid = None
+        try:
+            _vid = st.query_params.get("vid")
+        except Exception:
+            _vid = None
         if not _vid:
-            import uuid as _uuid
-            _vid = st.session_state.get("_ax_visitor_seed")
-            if not _vid:
-                _vid = _uuid.uuid4().hex
-                st.session_state["_ax_visitor_seed"] = _vid
-            # persist/restore via localStorage; on first load this writes the id,
-            # on a return it restores the stored one into the URL so the server
-            # sees the SAME visitor_id as last visit.
-            try:
-                import streamlit.components.v1 as _components
-                _components.html(
-                    "<script>"
-                    "const k='kinematik_visitor_id';"
-                    "let v=localStorage.getItem(k);"
-                    f"if(!v){{v='{_vid}';localStorage.setItem(k,v);}}"
-                    "const u=new URL(window.parent.location);"
-                    "if(u.searchParams.get('vid')!==v){"
-                    "u.searchParams.set('vid',v);"
-                    "window.parent.history.replaceState({},'',u);}"
-                    "</script>", height=0)
-            except Exception:
-                pass
+            # No durable id from the URL yet — let the browser supply it from
+            # localStorage (or mint one there) and reload so we see it next run.
+            # Guarded to fire at most once per session: if the reload somehow
+            # doesn't surface ?vid= (unexpected host/proxy rewriting the URL,
+            # etc.), we fall back to the per-session seed rather than reloading
+            # forever.
+            if not st.session_state.get("_ax_vid_reload_done"):
+                st.session_state["_ax_vid_reload_done"] = True
+                try:
+                    import uuid as _uuid
+                    import streamlit.components.v1 as _components
+                    _seed = st.session_state.get("_ax_visitor_seed")
+                    if not _seed:
+                        _seed = _uuid.uuid4().hex
+                        st.session_state["_ax_visitor_seed"] = _seed
+                    _components.html(
+                        "<script>"
+                        "const k='kinematik_visitor_id';"
+                        "let v=localStorage.getItem(k);"
+                        f"if(!v){{v='{_seed}';localStorage.setItem(k,v);}}"
+                        "const u=new URL(window.parent.location);"
+                        "if(u.searchParams.get('vid')!==v){"
+                        "u.searchParams.set('vid',v);"
+                        "window.parent.location.replace(u.toString());}"
+                        "</script>", height=0)
+                except Exception:
+                    pass
+            else:
+                # Reload already attempted this session but no ?vid= came back —
+                # fall back to the per-session seed so retention still has a
+                # stable-within-session id rather than nothing. (Less durable
+                # across visits than localStorage, but better than null.)
+                _fallback = st.session_state.get("_ax_visitor_seed")
+                if _fallback:
+                    _axn.set_visitor_id(_fallback)
         if _vid:
+            # Only commit a durable id we actually resolved from the browser.
             _axn.set_visitor_id(_vid)
 
         _ax_subteam = (_roles[0] if _roles and _roles != ["everyone"]
@@ -1653,11 +1688,37 @@ else:
         _id_to_container[_id] = _top[_i]
 
 # Snapshot which feature id is genuinely the active tab THIS run, before
-# wrapping containers below. Each container's own `.open` is independent —
-# an inner "More tools" tab's `.open` is True only when that inner tab is
-# actually selected, regardless of whether the outer wrapper tab is current.
-_ax_active_ids = {_id for _id, _c in _id_to_container.items()
-                  if getattr(_c, "open", None)}
+# wrapping containers below.
+#
+# CAREFUL: Streamlit's st.tabs() reports its FIRST tab as .open=True BY
+# DEFAULT, even when the user isn't looking at that tab strip at all. With a
+# nested "More tools" strip that means TWO containers report .open every run:
+# the genuinely-selected top-strip tab AND the first inner More-tools tab
+# (phantom). If both land in the active set, the single-active-tab dedup in
+# _TabOpenProxy flip-flops between them by body-execution order, and real
+# tabs (brakes, etc.) frequently never log a tab_open at all — which is why
+# they went missing from per-feature use.
+#
+# Correct rule: an inner More-tools tab is only genuinely active when the
+# outer "⋯ More tools" wrapper is ALSO the selected top tab. So we gate the
+# inner-tab .open readings on the wrapper being open.
+_ax_active_ids = set()
+if _more_ids:
+    # primary (top-strip) tabs: their .open is the real selection signal
+    for _id in _primary_ids:
+        if getattr(_id_to_container[_id], "open", None):
+            _ax_active_ids.add(_id)
+    # the "More tools" wrapper is the LAST container in _top
+    _more_wrapper_open = bool(getattr(_top[-1], "open", None))
+    if _more_wrapper_open:
+        # only NOW do the inner tabs' .open readings mean anything
+        for _id in _more_ids:
+            if getattr(_id_to_container[_id], "open", None):
+                _ax_active_ids.add(_id)
+else:
+    for _id in _primary_ids:
+        if getattr(_id_to_container[_id], "open", None):
+            _ax_active_ids.add(_id)
 
 # Map the stable ids back onto the legacy tab variable names the bodies below
 # already use, so not a single tab body needs to change.
