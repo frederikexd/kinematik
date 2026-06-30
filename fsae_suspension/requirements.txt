@@ -14,7 +14,7 @@
 # streamlit_app.py), which is where Streamlit Cloud looks for it.
 
 # --- core: imported at package-init time; the app will NOT start without these ---
-streamlit>=1.49,<2
+streamlit>=1.50,<2
 numpy>=1.26
 scipy>=1.11
 plotly>=5.18
