@@ -15272,6 +15272,20 @@ with tab_analytics:
     #  USAGE — foot traffic, feature use, individuals                        #
     # ====================================================================== #
     st.markdown("#### Usage")
+    # Deployment verification stamp: if the build version below isn't the latest,
+    # the new code isn't actually deployed (push to the branch Streamlit Cloud
+    # watches, or reboot the app to reinstall requirements). The runtime version
+    # confirms whether requirements `streamlit>=1.50` actually took effect — the
+    # visitor-identity fix needs st.context (1.42+) and tab .open (1.50+); on an
+    # older runtime it silently falls back and returning counts stay frozen.
+    try:
+        st.caption(
+            f"build `{_axn.APP_VERSION}` · streamlit runtime `{st.__version__}`"
+            + ("  ⚠️ runtime <1.50 — identity tracking degraded, update requirements & reboot"
+               if tuple(int(x) for x in st.__version__.split('.')[:2]) < (1, 50)
+               else "  ✅ runtime OK for identity tracking"))
+    except Exception:
+        pass
     u1, u2, u3, u4 = st.columns(4)
     if retention:
         rt = retention[0]
