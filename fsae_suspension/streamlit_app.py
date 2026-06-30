@@ -15288,6 +15288,17 @@ with tab_analytics:
     if comparison:
         st.markdown("---")
         st.markdown("#### vs. the alternatives")
+        _cost_audience = st.radio(
+            "Show licence cost as",
+            ["What our team pays", "What a company would pay (commercial)"],
+            horizontal=True, key="ax_cost_audience",
+            help="The right cost number depends on who's reading this. "
+                 "Several of these tools are free or discounted for FSAE "
+                 "student teams via vendor sponsorship — that's the real "
+                 "number for a faculty/team review. A company evaluating "
+                 "KinematiK would face full commercial pricing instead, "
+                 "which is what this toggle switches to.")
+        _use_commercial = _cost_audience.startswith("What a company")
         st.dataframe(
             [{"Replaces": r["alternative"],
               "Features": r.get("features_replacing", 0),
@@ -15295,9 +15306,26 @@ with tab_analytics:
               "In KinematiK (min)": r.get("avg_in_tool_minutes"),
               "Saved each (min)": r.get("avg_minutes_saved_each"),
               "% faster": f'{r.get("pct_faster", 0):.0f}%',
-              "Their licence $/yr": r.get("alternative_annual_cost_usd", 0)}
+              ("Commercial $/yr" if _use_commercial else "Their licence $/yr"):
+                  (r.get("commercial_annual_cost_usd")
+                   if _use_commercial else r.get("alternative_annual_cost_usd", 0)),
+              "Confidence": ("✓ measured" if r.get("all_measured")
+                            else f'estimate ({r.get("n_measured", 0)}/'
+                                 f'{r.get("n_baselines", 0)} measured)')}
              for r in comparison],
             use_container_width=True, hide_index=True)
+        if _use_commercial:
+            st.caption("Commercial pricing is sourced to the low end of each "
+                       "vendor's published range (entry tier, single seat) — "
+                       "treat as a floor, not a quote. Several FSAE teams pay "
+                       "$0 or a discounted academic rate instead via vendor "
+                       "student/team sponsorship programs; switch the toggle "
+                       "above to see that number.")
+        else:
+            st.caption("This is what THIS team actually pays — several tools "
+                       "are free or university-funded via FSAE sponsorship "
+                       "programs, which is real and worth saying plainly "
+                       "rather than implying a cost nobody here pays.")
         st.caption("Manual-vs-in-tool minutes come from the `feature_baselines` "
                    "table. Replace estimates with timed measurements as you "
                    "collect them — each row carries a confidence flag so the "
