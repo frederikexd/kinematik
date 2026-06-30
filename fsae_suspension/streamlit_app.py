@@ -1447,72 +1447,90 @@ with _pctl:
     #                 never type their name. This is what makes retention / return
     #                 counts correct rather than every visit looking brand-new.
     try:
-        # durable visitor id: read from (or mint into) the browser's localStorage
-        # and surface it back to the server via a query param. Streamlit-native.
+        # Durable visitor id — resolved SERVER-SIDE via st.context, which works
+        # on Streamlit Cloud without the sandboxed-iframe cross-origin problems
+        # that made the previous localStorage approach silently fail in prod
+        # (st.components.v1.html runs in a sandboxed iframe; window.parent
+        # access throws cross-origin, so the id never reached the server and
+        # every visit looked new — which is why returning-user counts stuck).
+        #
+        # Resolution order, best to worst:
+        #   1. A durable cookie the browser already sent (set on a prior visit).
+        #      Read server-side from st.context.cookies — no iframe needed.
+        #   2. A stable per-device fingerprint: a hash of ip_address + a coarse
+        #      slice of the user-agent. NOT perfect (people behind one NAT with
+        #      identical devices could collide, and a UA/IP change makes a new
+        #      id), but it's STABLE across visits for the same device — far
+        #      better for retention than a fresh UUID every visit, which is what
+        #      was happening. This is a fallback only.
+        #   3. A per-session UUID as a last resort (no IP available, e.g. local).
+        # We also try to SET the cookie via JS so future visits hit case (1),
+        # the most reliable path — but we no longer DEPEND on that write
+        # succeeding, because the fingerprint already gives cross-visit
+        # stability on its own.
         _vid = None
+        _COOKIE = "kinematik_vid"
         try:
-            _vid = st.query_params.get("vid")
+            _vid = st.context.cookies.get(_COOKIE)
         except Exception:
             _vid = None
-        # durable visitor id. Resolution order, with the KEY FIX for returning
-        # users:
-        #   1. If the server already has ?vid=... in the URL this run, trust it
-        #      (it came from localStorage on a prior run / reload).
-        #   2. Otherwise, ask the browser. The JS reads localStorage FIRST:
-        #        - if a stored id exists and the URL doesn't match it, write it
-        #          to the URL and RELOAD so the server actually sees it this
-        #          time (history.replaceState alone does NOT rerun Streamlit, so
-        #          the old code silently lost the stored id on every return
-        #          visit and minted a brand-new one — making every returning
-        #          user look new).
-        #        - only if localStorage is genuinely empty does it mint+store a
-        #          fresh id, then reload so the server picks it up.
-        #   3. Python only calls set_visitor_id() when it actually has the
-        #      durable id from the URL — it does NOT commit a freshly-minted,
-        #      not-yet-persisted id, which was the second half of the bug.
-        _vid = None
-        try:
-            _vid = st.query_params.get("vid")
-        except Exception:
-            _vid = None
-        if not _vid:
-            # No durable id from the URL yet — let the browser supply it from
-            # localStorage (or mint one there) and reload so we see it next run.
-            # Guarded to fire at most once per session: if the reload somehow
-            # doesn't surface ?vid= (unexpected host/proxy rewriting the URL,
-            # etc.), we fall back to the per-session seed rather than reloading
-            # forever.
-            if not st.session_state.get("_ax_vid_reload_done"):
-                st.session_state["_ax_vid_reload_done"] = True
-                try:
-                    import uuid as _uuid
-                    import streamlit.components.v1 as _components
-                    _seed = st.session_state.get("_ax_visitor_seed")
-                    if not _seed:
-                        _seed = _uuid.uuid4().hex
-                        st.session_state["_ax_visitor_seed"] = _seed
-                    _components.html(
-                        "<script>"
-                        "const k='kinematik_visitor_id';"
-                        "let v=localStorage.getItem(k);"
-                        f"if(!v){{v='{_seed}';localStorage.setItem(k,v);}}"
-                        "const u=new URL(window.parent.location);"
-                        "if(u.searchParams.get('vid')!==v){"
-                        "u.searchParams.set('vid',v);"
-                        "window.parent.location.replace(u.toString());}"
-                        "</script>", height=0)
-                except Exception:
-                    pass
-            else:
-                # Reload already attempted this session but no ?vid= came back —
-                # fall back to the per-session seed so retention still has a
-                # stable-within-session id rather than nothing. (Less durable
-                # across visits than localStorage, but better than null.)
-                _fallback = st.session_state.get("_ax_visitor_seed")
-                if _fallback:
-                    _axn.set_visitor_id(_fallback)
         if _vid:
-            # Only commit a durable id we actually resolved from the browser.
+            st.session_state["_ax_resolved_vid_kind"] = "cookie (durable)"
+        if not _vid:
+            # Server-side device fingerprint fallback.
+            try:
+                import hashlib as _hl
+                _ip = None
+                _ua = ""
+                try:
+                    _ip = st.context.ip_address
+                except Exception:
+                    _ip = None
+                try:
+                    _ua = st.context.headers.get("User-Agent") or ""
+                except Exception:
+                    _ua = ""
+                if _ip:
+                    # Coarse UA slice (browser family) so minor version bumps
+                    # don't churn the id; combined with IP for per-device-ish
+                    # stability. Hashed so we never store raw IP in analytics.
+                    _ua_coarse = _ua[:80]
+                    _fp = _hl.sha256(
+                        f"{_ip}|{_ua_coarse}".encode("utf-8")).hexdigest()
+                    _vid = "fp-" + _fp[:24]
+                    st.session_state["_ax_resolved_vid_kind"] = "ip+ua fingerprint"
+            except Exception:
+                _vid = None
+        if not _vid:
+            # Last resort: stable within this session at least.
+            _vid = st.session_state.get("_ax_visitor_seed")
+            if not _vid:
+                import uuid as _uuid
+                _vid = "ses-" + _uuid.uuid4().hex[:24]
+                st.session_state["_ax_visitor_seed"] = _vid
+            st.session_state["_ax_resolved_vid_kind"] = "per-session (NOT durable)"
+
+        # Best-effort: persist a real cookie so the NEXT visit resolves via the
+        # most reliable path (case 1) instead of the fingerprint. Safe if it
+        # fails — fingerprint already gives cross-visit stability. Only attempt
+        # once per session.
+        if not st.session_state.get("_ax_cookie_set"):
+            st.session_state["_ax_cookie_set"] = True
+            try:
+                import streamlit.components.v1 as _components
+                # 1-year cookie on the parent document. Wrapped in try/catch in
+                # JS so a cross-origin failure is silent rather than throwing.
+                _components.html(
+                    "<script>try{"
+                    f"const k='{_COOKIE}';const val='{_vid}';"
+                    "const d=window.parent.document;"
+                    "if(!d.cookie.split('; ').some(c=>c.startsWith(k+'='))){"
+                    "d.cookie=k+'='+val+';path=/;max-age=31536000;SameSite=Lax';}"
+                    "}catch(e){}</script>", height=0)
+            except Exception:
+                pass
+
+        if _vid:
             _axn.set_visitor_id(_vid)
 
         _ax_subteam = (_roles[0] if _roles and _roles != ["everyone"]
@@ -1524,6 +1542,12 @@ with _pctl:
                   subteam=_ax_subteam,
                   is_new_member=not st.session_state.get("_ax_returning", False))
         st.session_state["_ax_returning"] = True
+        # Auto-recover any events buffered locally during a past DB outage,
+        # once per session, without needing a manual button click.
+        try:
+            _axn.auto_replay_once()
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -15130,6 +15154,27 @@ with tab_analytics:
         if _live:
             st.markdown('<span class="tag good">● Supabase connected — live data</span>',
                         unsafe_allow_html=True)
+            # Write-health: surface whether events are actually LANDING in the
+            # DB right now. Silent write failures (buffered to an ephemeral
+            # local file, never replayed) are what freeze the date/identity
+            # metrics — make that visible instead of guessing.
+            try:
+                _wh = _axn.write_health()
+                if _wh.get("ok") is False:
+                    st.markdown(
+                        '<span class="tag warn">⚠ Writes FAILING — events are '
+                        'being buffered locally, not saved. Metrics will freeze '
+                        'until this clears.</span>', unsafe_allow_html=True)
+                    if _wh.get("error"):
+                        st.caption(f"Last write error: {_wh['error']}")
+                    st.caption(f"Buffered this session: {_wh.get('buffered', 0)} "
+                               f"event(s). Click replay below once the DB is "
+                               f"reachable, or they auto-replay next session.")
+                elif _wh.get("ok") is True:
+                    st.caption(f"✅ Writes OK — {_wh.get('sent', 0)} event(s) "
+                               f"saved this session.")
+            except Exception:
+                pass
             if st.button("Replay any locally-buffered events", key="ax_replay"):
                 n = _axn.replay_local_buffer()
                 st.success(f"Replayed {n} buffered events into Supabase.")
@@ -15242,6 +15287,43 @@ with tab_analytics:
                    "var(--amber)")
     if foot:
         _ax_metric(u4, "Active days", f"{len(foot)}", "with recorded traffic")
+
+    # Visitor-identity diagnostic — surfaces WHICH durable-id path is actually
+    # resolving in THIS deployment, so a stuck returning-user count is
+    # observable rather than a mystery. (Cookie is best; fingerprint works only
+    # if the host exposes a real client IP — some proxies/load balancers return
+    # None, in which case retention falls back to per-session ids and returning
+    # counts won't grow.)
+    with st.expander("🔍 Visitor-identity diagnostic (why returning counts may be stuck)"):
+        try:
+            _diag_ip = None
+            try:
+                _diag_ip = st.context.ip_address
+            except Exception:
+                _diag_ip = None
+            _diag_cookie = None
+            try:
+                _diag_cookie = st.context.cookies.get("kinematik_vid")
+            except Exception:
+                _diag_cookie = None
+            _resolved = st.session_state.get("_ax_resolved_vid_kind", "unknown")
+            st.markdown(
+                f"- **Durable cookie present:** "
+                f"{'✅ yes' if _diag_cookie else '❌ no — relying on fallback'}\n"
+                f"- **Server sees a client IP:** "
+                f"{'✅ yes' if _diag_ip else '❌ no — IP fingerprint unavailable on this host'}\n"
+                f"- **This visit resolved id via:** `{_resolved}`")
+            if not _diag_cookie and not _diag_ip:
+                st.warning(
+                    "Neither a durable cookie nor a client IP is available on "
+                    "this host, so returning visitors can only be tracked once "
+                    "the cookie write succeeds. If returning counts stay flat, "
+                    "the cookie isn't persisting — most likely the app is "
+                    "embedded/iframed or the host strips cookies. Ask users to "
+                    "enter their name (top of any tab); named identity is fully "
+                    "durable and bypasses this entirely.")
+        except Exception:
+            st.caption("Diagnostic unavailable.")
 
     # foot-traffic time series
     if foot:
