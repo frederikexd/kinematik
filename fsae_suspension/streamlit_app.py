@@ -15211,8 +15211,19 @@ with tab_analytics:
     # individual use
     if individuals:
         with st.expander("Individual use (per member)"):
+            _n_named = sum(1 for r in individuals if r.get("is_named"))
+            _n_anon = len(individuals) - _n_named
+            if _n_anon:
+                st.caption(
+                    f"**{_n_named} named** + **{_n_anon} anonymous** browser(s). "
+                    "Anonymous rows are real people who haven't typed a name "
+                    "above — each is one distinct browser, tracked consistently "
+                    "across their visits, not one row per visit. Ask the team "
+                    "to enter their name here for accurate per-member credit.")
             st.dataframe(
-                [{"Who": r["who"], "Subteam": r.get("subteam", ""),
+                [{"Identity": (r["who"] if r.get("is_named")
+                              else f"🕶️ anonymous ({r['who'][-8:]})"),
+                  "Subteam": r.get("subteam", ""),
                   "Sessions": r.get("sessions", 0),
                   "Feature uses": r.get("feature_uses", 0),
                   "Workflows": r.get("workflows_completed", 0),
