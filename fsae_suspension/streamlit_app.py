@@ -1470,14 +1470,74 @@ with _pctl:
         # stability on its own.
         _vid = None
         _COOKIE = "kinematik_vid"
-        try:
-            _vid = st.context.cookies.get(_COOKIE)
-        except Exception:
-            _vid = None
-        if _vid:
-            st.session_state["_ax_resolved_vid_kind"] = "cookie (durable)"
+
+        # If we already resolved a durable id earlier this session, keep it —
+        # don't re-run resolution every rerun (which risks churn).
+        _vid = st.session_state.get("_ax_resolved_vid")
+
+        # --- 1. durable cookie via CookieManager ---------------------------- #
+        # extra-streamlit-components reads/writes cookies on the PARENT document
+        # correctly even inside Streamlit Cloud's sandboxed component iframe —
+        # unlike raw document.cookie from a component, which the sandbox blocks.
+        # IMPORTANT async caveat: CookieManager.get() returns None on the FIRST
+        # render of a session even when a cookie exists (the component populates
+        # one rerun later). So we must NOT mint+overwrite on first sight of
+        # None — that would clobber a returning user's cookie and break
+        # retention. Instead we wait until the component has populated (tracked
+        # by _ax_cookie_ready) before deciding the cookie is genuinely absent.
         if not _vid:
-            # Server-side device fingerprint fallback.
+            try:
+                import extra_streamlit_components as _stx
+                import uuid as _uuid
+                if "_ax_cookie_mgr" not in st.session_state:
+                    st.session_state["_ax_cookie_mgr"] = _stx.CookieManager(
+                        key="ax_cookie_mgr")
+                _cm = st.session_state["_ax_cookie_mgr"]
+                _ck = _cm.get(_COOKIE)
+                if _ck:
+                    # Cookie exists -> returning visitor. Use it, lock it in.
+                    _vid = _ck
+                    st.session_state["_ax_resolved_vid"] = _vid
+                    st.session_state["_ax_resolved_vid_kind"] = "cookie (durable)"
+                else:
+                    # get() returned None. Could be (a) genuinely no cookie, or
+                    # (b) first render before async populate. Distinguish by
+                    # whether we've already seen a populated read this session.
+                    if st.session_state.get("_ax_cookie_ready"):
+                        # We've had a populated read before and it's still empty
+                        # -> genuinely no cookie. Safe to mint + set now.
+                        _seed = st.session_state.get("_ax_visitor_seed")
+                        if not _seed:
+                            _seed = "ck-" + _uuid.uuid4().hex[:24]
+                            st.session_state["_ax_visitor_seed"] = _seed
+                        try:
+                            import datetime as _dtm
+                            _cm.set(_COOKIE, _seed,
+                                    expires_at=_dtm.datetime.now()
+                                    + _dtm.timedelta(days=365),
+                                    key="ax_cookie_set")
+                        except Exception:
+                            pass
+                        _vid = _seed
+                        st.session_state["_ax_resolved_vid"] = _vid
+                        st.session_state["_ax_resolved_vid_kind"] = "cookie (just set)"
+                    else:
+                        # First render — mark ready for next rerun, and DON'T set
+                        # a cookie yet. Use a temporary session id for this run so
+                        # events still log; it'll be reconciled once the cookie
+                        # read populates (or we set one next rerun).
+                        st.session_state["_ax_cookie_ready"] = True
+                        _seed = st.session_state.get("_ax_visitor_seed")
+                        if not _seed:
+                            _seed = "ck-" + _uuid.uuid4().hex[:24]
+                            st.session_state["_ax_visitor_seed"] = _seed
+                        _vid = _seed
+                        st.session_state["_ax_resolved_vid_kind"] = "cookie (resolving…)"
+            except Exception:
+                _vid = _vid or None
+
+        # --- 2. server-side device fingerprint fallback --------------------- #
+        if not _vid:
             try:
                 import hashlib as _hl
                 _ip = None
@@ -1491,44 +1551,23 @@ with _pctl:
                 except Exception:
                     _ua = ""
                 if _ip:
-                    # Coarse UA slice (browser family) so minor version bumps
-                    # don't churn the id; combined with IP for per-device-ish
-                    # stability. Hashed so we never store raw IP in analytics.
                     _ua_coarse = _ua[:80]
                     _fp = _hl.sha256(
                         f"{_ip}|{_ua_coarse}".encode("utf-8")).hexdigest()
                     _vid = "fp-" + _fp[:24]
+                    st.session_state["_ax_resolved_vid"] = _vid
                     st.session_state["_ax_resolved_vid_kind"] = "ip+ua fingerprint"
             except Exception:
                 _vid = None
+
+        # --- 3. per-session last resort ------------------------------------- #
         if not _vid:
-            # Last resort: stable within this session at least.
             _vid = st.session_state.get("_ax_visitor_seed")
             if not _vid:
                 import uuid as _uuid
                 _vid = "ses-" + _uuid.uuid4().hex[:24]
                 st.session_state["_ax_visitor_seed"] = _vid
             st.session_state["_ax_resolved_vid_kind"] = "per-session (NOT durable)"
-
-        # Best-effort: persist a real cookie so the NEXT visit resolves via the
-        # most reliable path (case 1) instead of the fingerprint. Safe if it
-        # fails — fingerprint already gives cross-visit stability. Only attempt
-        # once per session.
-        if not st.session_state.get("_ax_cookie_set"):
-            st.session_state["_ax_cookie_set"] = True
-            try:
-                import streamlit.components.v1 as _components
-                # 1-year cookie on the parent document. Wrapped in try/catch in
-                # JS so a cross-origin failure is silent rather than throwing.
-                _components.html(
-                    "<script>try{"
-                    f"const k='{_COOKIE}';const val='{_vid}';"
-                    "const d=window.parent.document;"
-                    "if(!d.cookie.split('; ').some(c=>c.startsWith(k+'='))){"
-                    "d.cookie=k+'='+val+';path=/;max-age=31536000;SameSite=Lax';}"
-                    "}catch(e){}</script>", height=0)
-            except Exception:
-                pass
 
         if _vid:
             _axn.set_visitor_id(_vid)
@@ -15317,25 +15356,38 @@ with tab_analytics:
                 _diag_ip = None
             _diag_cookie = None
             try:
-                _diag_cookie = st.context.cookies.get("kinematik_vid")
+                _cm_d = st.session_state.get("_ax_cookie_mgr")
+                if _cm_d is not None:
+                    _diag_cookie = _cm_d.get("kinematik_vid")
             except Exception:
                 _diag_cookie = None
             _resolved = st.session_state.get("_ax_resolved_vid_kind", "unknown")
+            _durable = _resolved.startswith("cookie") or _resolved == "ip+ua fingerprint"
             st.markdown(
-                f"- **Durable cookie present:** "
-                f"{'✅ yes' if _diag_cookie else '❌ no — relying on fallback'}\n"
-                f"- **Server sees a client IP:** "
+                f"- **Durable cookie readable:** "
+                f"{'✅ yes' if _diag_cookie else '⏳ not yet (set this visit; readable next visit)'}\n"
+                f"- **Server sees a client IP (fingerprint fallback):** "
                 f"{'✅ yes' if _diag_ip else '❌ no — IP fingerprint unavailable on this host'}\n"
                 f"- **This visit resolved id via:** `{_resolved}`")
-            if not _diag_cookie and not _diag_ip:
+            if _resolved == "per-session (NOT durable)":
                 st.warning(
-                    "Neither a durable cookie nor a client IP is available on "
-                    "this host, so returning visitors can only be tracked once "
-                    "the cookie write succeeds. If returning counts stay flat, "
-                    "the cookie isn't persisting — most likely the app is "
-                    "embedded/iframed or the host strips cookies. Ask users to "
-                    "enter their name (top of any tab); named identity is fully "
-                    "durable and bypasses this entirely.")
+                    "This visit fell all the way back to a per-session id, which "
+                    "is NOT durable — every reopen will look like a new user and "
+                    "returning counts won't grow. That means both the cookie AND "
+                    "the IP fingerprint failed on this host. Most reliable fix: "
+                    "ask users to enter their name (top of any tab); named "
+                    "identity is fully durable and bypasses browser storage "
+                    "entirely.")
+            elif _resolved == "cookie (just set)":
+                st.info(
+                    "A durable cookie was just set this visit. It can't be read "
+                    "back until the NEXT visit — that's expected. If returning "
+                    "counts climb after people reopen the app, the cookie is "
+                    "persisting correctly.")
+            elif _durable:
+                st.success(
+                    "Durable identity is resolving — returning users should be "
+                    "tracked correctly from here.")
         except Exception:
             st.caption("Diagnostic unavailable.")
 
