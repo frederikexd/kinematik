@@ -1425,40 +1425,29 @@ with _pctl:
     #                 never type their name. This is what makes retention / return
     #                 counts correct rather than every visit looking brand-new.
     try:
-        # durable visitor id: persisted to localStorage so a returning user is
-        # recognised across browser sessions even if they never type a name.
-        #
-        # Flow:
-        #   1. If already cached in st.session_state (same visit) reuse it.
-        #   2. If passed back via ?vid= query param (written by JS on a prior
-        #      rerun of this page load) use it and cache in session_state.
-        #   3. Otherwise mint a fresh UUID, store as session seed, inject JS that
-        #      reads/writes localStorage and updates ?vid= so the NEXT rerun gets
-        #      the durable stored id instead of the freshly-minted seed.
-        #
-        # Caching in session_state (step 1) is the critical fix: without it every
-        # rerun that lacks a query param mints a new UUID, making every rerun look
-        # like a new user.
-        _vid = st.session_state.get("_ax_visitor_id")
-        if not _vid:
-            try:
-                _vid = st.query_params.get("vid") or None
-            except Exception:
-                _vid = None
+        # durable visitor id: read from (or mint into) the browser's localStorage
+        # and surface it back to the server via a query param. Streamlit-native.
+        _vid = None
+        try:
+            _vid = st.query_params.get("vid")
+        except Exception:
+            _vid = None
         if not _vid:
             import uuid as _uuid
-            _seed = st.session_state.get("_ax_visitor_seed")
-            if not _seed:
-                _seed = _uuid.uuid4().hex
-                st.session_state["_ax_visitor_seed"] = _seed
-            _vid = _seed
+            _vid = st.session_state.get("_ax_visitor_seed")
+            if not _vid:
+                _vid = _uuid.uuid4().hex
+                st.session_state["_ax_visitor_seed"] = _vid
+            # persist/restore via localStorage; on first load this writes the id,
+            # on a return it restores the stored one into the URL so the server
+            # sees the SAME visitor_id as last visit.
             try:
                 import streamlit.components.v1 as _components
                 _components.html(
                     "<script>"
                     "const k='kinematik_visitor_id';"
-                    f"let v=localStorage.getItem(k)||'{_seed}';"
-                    "localStorage.setItem(k,v);"
+                    "let v=localStorage.getItem(k);"
+                    f"if(!v){{v='{_vid}';localStorage.setItem(k,v);}}"
                     "const u=new URL(window.parent.location);"
                     "if(u.searchParams.get('vid')!==v){"
                     "u.searchParams.set('vid',v);"
@@ -1466,8 +1455,6 @@ with _pctl:
                     "</script>", height=0)
             except Exception:
                 pass
-        # Cache in session_state so reruns within this visit never re-mint
-        st.session_state["_ax_visitor_id"] = _vid
         if _vid:
             _axn.set_visitor_id(_vid)
 
@@ -2516,6 +2503,37 @@ def _render_rotor_thermal(_bt, _mass, kin):
                              "candidate too, and rejects HIGH crack-risk "
                              "geometries — narrows the mesh short-list further.")
 
+    # ---- Pin dimensions: optimise material + vent at a KNOWN disc size ------
+    # If the team already knows the rotor diameter and thickness (common once the
+    # upright/caliper package is frozen), they don't want the lightest disc in the
+    # whole space — they want the lightest material + vent combination AT THEIR
+    # dimensions. Pinning collapses the diameter and thickness sweeps to a single
+    # value each (steps=1), so the optimiser searches only material × vent.
+    _opt_pin = st.checkbox(
+        "Pin disc dimensions (optimise material + vent only)",
+        value=False, key="bt_opt_pin",
+        help="Hold diameter and thickness fixed at known values and search only "
+             "material and vent fraction. Use this once the disc size is frozen "
+             "and you just need to pick material and how much to vent/slot it.")
+    _opt_dia_fix = None
+    _opt_th_fix = None
+    if _opt_pin:
+        _pc = st.columns(2)
+        _opt_dia_fix = unum(_pc[0], "Rotor diameter (mm)", 180.0, 320.0,
+                            float(st.session_state.get("bt_opt_dia_fix", 240.0)),
+                            "mm", step=2.0, key="bt_opt_dia_fix",
+                            help="Your known outer diameter. Held fixed; the "
+                                 "optimiser won't sweep it.")
+        _opt_th_fix = unum(_pc[1], "Rotor thickness (mm)", 3.0, 12.0,
+                           float(st.session_state.get("bt_opt_th_fix", 5.0)),
+                           "mm", step=0.5, key="bt_opt_th_fix",
+                           help="Your known disc thickness. Held fixed; the "
+                                "optimiser won't sweep it.")
+        _opt_vent_steps = st.slider(
+            "Vent fractions to search", 2, 9, 6, 1, key="bt_opt_vent_steps",
+            help="How many vent fractions (0 → 50%) to evaluate at your fixed "
+                 "size. More steps = finer resolution on how much to vent/slot.")
+
     if st.button("🎯 Optimise rotor", key="bt_opt_run", type="primary"):
         if not _opt_mats:
             st.warning("Pick at least one material to search.")
@@ -2524,13 +2542,24 @@ def _render_rotor_thermal(_bt, _mass, kin):
                      if _opt_crack else "Searching the design space…")
             with st.spinner(_spin):
                 _steps = ((14, 8) if _opt_fine else (10, 6))
+                if _opt_pin:
+                    # Collapse diameter & thickness to the fixed values (steps=1)
+                    # and sweep only vent fraction across the chosen resolution.
+                    _opt_kwargs = dict(
+                        dia_range=(float(_opt_dia_fix), float(_opt_dia_fix)),
+                        dia_steps=1,
+                        th_range=(float(_opt_th_fix), float(_opt_th_fix)),
+                        th_steps=1,
+                        vent_steps=int(_opt_vent_steps),
+                    )
+                else:
+                    _opt_kwargs = dict(dia_steps=_steps[0], th_steps=_steps[1])
                 _optres = _bt.optimise_rotor(
                     mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
                     T_constraint_c=float(_opt_Tcon), materials=_opt_mats,
-                    dia_steps=_steps[0], th_steps=_steps[1],
                     n_stops=int(_opt_nstops), area_factor=float(_tk_area),
                     duct_gain=float(st.session_state.get("bt_duct", 1.0)),
-                    screen_cracks=bool(_opt_crack))
+                    screen_cracks=bool(_opt_crack), **_opt_kwargs)
             st.session_state["bt_opt_result"] = _optres
             st.session_state["bt_opt_had_crack"] = bool(_opt_crack)
 
@@ -14860,23 +14889,9 @@ with tab_analytics:
                 n = _axn.replay_local_buffer()
                 st.success(f"Replayed {n} buffered events into Supabase.")
         else:
-            st.markdown('<span class="tag warn">● No Supabase — showing local buffer only '
-                        '(historical data from seeded viewers not visible here yet)</span>',
+            st.markdown('<span class="tag warn">● No Supabase — showing local buffer. '
+                        'Run analytics_schema.sql and set SUPABASE_URL/KEY to go live.</span>',
                         unsafe_allow_html=True)
-            with st.expander('🔌 Connect Supabase to see all 17 historical viewers'):
-                st.markdown(
-                    '**Two steps to go live:**\n\n'
-                    '**1. Add secrets** — in Streamlit Cloud open your app → '
-                    '⋮ menu → **Settings → Secrets** and paste:\n'
-                    '```toml\n'
-                    'SUPABASE_URL = "https://your-project.supabase.co"\n'
-                    'SUPABASE_KEY = "your-anon-or-service-key"\n'
-                    '```\n'
-                    '*(Find these in your Supabase project → Settings → API)*\n\n'
-                    '**2. Reboot the app** — Streamlit Cloud picks up new secrets '
-                    'on reboot (⋮ → Reboot app). The dashboard will then show '
-                    'all 17 seeded sessions and live telemetry from every tab.'
-                )
 
     st.markdown("---")
 
@@ -14894,124 +14909,6 @@ with tab_analytics:
     individuals = _axn.fetch_view("v_individual_use")
 
     _have_db = bool(roi or foot or feat_use)
-
-    # ------------------------------------------------------------------ #
-    #  Local-buffer fallbacks for Usage section (no Supabase needed)      #
-    #  Mirrors what the board-number section already does for roi/hours.  #
-    # ------------------------------------------------------------------ #
-    if not foot or not feat_use or not individuals or not retention:
-        _evs = _ax_local_events()
-        if _evs:
-            import collections as _col, datetime as _ldt
-
-            # --- foot traffic ---
-            if not foot:
-                _day_sessions: dict = {}
-                _day_members: dict = {}
-                for e in _evs:
-                    _ts = e.get("occurred_at", "")
-                    _day = _ts[:10] if _ts else None
-                    if not _day:
-                        continue
-                    _sid = e.get("session_id", "")
-                    _mem = e.get("member")
-                    if _day not in _day_sessions:
-                        _day_sessions[_day] = set()
-                        _day_members[_day] = set()
-                    _day_sessions[_day].add(_sid)
-                    if _mem:
-                        _day_members[_day].add(_mem)
-                foot = [
-                    {"day": d, "sessions": len(_day_sessions[d]),
-                     "named_members": len(_day_members[d]),
-                     "events": sum(1 for e in _evs if (e.get("occurred_at",""))[:10] == d)}
-                    for d in sorted(_day_sessions)
-                ]
-
-            # --- feature use ---
-            if not feat_use:
-                _fu: dict = {}
-                for e in _evs:
-                    _f = e.get("feature")
-                    if not _f:
-                        continue
-                    if _f not in _fu:
-                        _fu[_f] = {"opens": 0, "engagements": 0,
-                                   "completions": 0, "users": set()}
-                    _et = e.get("event_type", "")
-                    if _et == "tab_open":
-                        _fu[_f]["opens"] += 1
-                    elif _et == "feature_engage":
-                        _fu[_f]["engagements"] += 1
-                    elif _et == "workflow_complete":
-                        _fu[_f]["completions"] += 1
-                    _fu[_f]["users"].add(e.get("member") or e.get("session_id", ""))
-                feat_use = sorted(
-                    [{"feature": f, "opens": v["opens"],
-                      "engagements": v["engagements"],
-                      "completions": v["completions"],
-                      "unique_users": len(v["users"])}
-                     for f, v in _fu.items()],
-                    key=lambda r: r["engagements"], reverse=True)
-
-            # --- individuals ---
-            if not individuals:
-                _iu: dict = {}
-                for e in _evs:
-                    _who = e.get("member") or ("anon:" + (e.get("session_id") or "")[:8])
-                    if _who not in _iu:
-                        _iu[_who] = {"subteam": e.get("subteam", ""),
-                                     "sessions": set(), "feature_uses": 0,
-                                     "workflows_completed": 0, "features": set()}
-                    _iu[_who]["sessions"].add(e.get("session_id", ""))
-                    _et = e.get("event_type", "")
-                    if _et == "feature_engage":
-                        _iu[_who]["feature_uses"] += 1
-                    if _et == "workflow_complete":
-                        _iu[_who]["workflows_completed"] += 1
-                    if e.get("feature"):
-                        _iu[_who]["features"].add(e["feature"])
-                individuals = sorted(
-                    [{"who": w, "subteam": v["subteam"],
-                      "sessions": len(v["sessions"]),
-                      "feature_uses": v["feature_uses"],
-                      "workflows_completed": v["workflows_completed"],
-                      "distinct_features_used": len(v["features"])}
-                     for w, v in _iu.items()],
-                    key=lambda r: r["feature_uses"], reverse=True)
-
-            # --- retention ---
-            if not retention:
-                # Mirror the SQL view: group by coalesce(member, visitor_id, session_id).
-                # A user counts as "returning" if they have 2+ distinct session_ids
-                # OR appeared on 2+ distinct calendar days — whichever is broader.
-                _vis: dict = {}
-                for e in _evs:
-                    _uid = (e.get("member")
-                            or e.get("visitor_id")
-                            or e.get("session_id", ""))
-                    if _uid not in _vis:
-                        _vis[_uid] = {"sessions": set(), "days": set()}
-                    _sid = e.get("session_id", "")
-                    if _sid:
-                        _vis[_uid]["sessions"].add(_sid)
-                    _ts = e.get("occurred_at", "")
-                    if _ts:
-                        _vis[_uid]["days"].add(_ts[:10])
-                _total = len(_vis)
-                _returning = sum(
-                    1 for v in _vis.values()
-                    if len(v["sessions"]) >= 2 or len(v["days"]) >= 2
-                )
-                _avg_visits = (
-                    round(sum(len(v["sessions"]) for v in _vis.values()) / _total, 2)
-                    if _total else 0
-                )
-                retention = [{"total_users": _total,
-                               "one_time_users": _total - _returning,
-                               "returning_users": _returning,
-                               "retention_pct": round(100.0 * _returning / _total, 1) if _total else 0,
-                               "avg_visits_per_user": _avg_visits}]
 
     # ====================================================================== #
     #  HEADLINE — hours saved -> dollars (the board slide)                   #
