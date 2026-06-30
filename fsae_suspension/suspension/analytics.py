@@ -52,7 +52,7 @@ import datetime as _dt
 import contextlib
 from typing import Any, Optional
 
-APP_VERSION = "0.9"
+APP_VERSION = "0.10-analytics-fixes"
 _LOCAL_BUFFER = os.path.join(os.getcwd(), "analytics_buffer.jsonl")
 _TABLE = "analytics_events"
 
