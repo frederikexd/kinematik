@@ -15290,15 +15290,35 @@ with tab_analytics:
         st.markdown("#### vs. the alternatives")
         _cost_audience = st.radio(
             "Show licence cost as",
-            ["What our team pays", "What a company would pay (commercial)"],
+            ["What our team pays", "Typical university/academic tier",
+             "What a company would pay (commercial)"],
             horizontal=True, key="ax_cost_audience",
-            help="The right cost number depends on who's reading this. "
-                 "Several of these tools are free or discounted for FSAE "
-                 "student teams via vendor sponsorship — that's the real "
-                 "number for a faculty/team review. A company evaluating "
-                 "KinematiK would face full commercial pricing instead, "
-                 "which is what this toggle switches to.")
-        _use_commercial = _cost_audience.startswith("What a company")
+            help="The right cost number depends on who's reading this. Some "
+                 "tools are free or discounted for FSAE student teams via "
+                 "vendor sponsorship; some are accessed through a university "
+                 "site licence that's real but not on the team's own budget "
+                 "line; a company evaluating KinematiK would face full "
+                 "commercial pricing instead. Pick the lens that matches "
+                 "your audience.")
+        _mode = ("commercial" if _cost_audience.startswith("What a company")
+                 else "academic" if _cost_audience.startswith("Typical university")
+                 else "team")
+
+        def _cost_cell(r):
+            if _mode == "commercial":
+                return r.get("commercial_annual_cost_usd")
+            if _mode == "academic":
+                lo, hi = r.get("academic_low_annual_cost_usd"), r.get("academic_high_annual_cost_usd")
+                if lo is None and hi is None:
+                    return None
+                if lo == hi or hi is None:
+                    return lo
+                return f"{lo:,.0f}–{hi:,.0f}"
+            return r.get("alternative_annual_cost_usd", 0)
+
+        _cost_label = {"commercial": "Commercial $/yr",
+                       "academic": "Academic $/yr (range)",
+                       "team": "Their licence $/yr"}[_mode]
         st.dataframe(
             [{"Replaces": r["alternative"],
               "Features": r.get("features_replacing", 0),
@@ -15306,26 +15326,29 @@ with tab_analytics:
               "In KinematiK (min)": r.get("avg_in_tool_minutes"),
               "Saved each (min)": r.get("avg_minutes_saved_each"),
               "% faster": f'{r.get("pct_faster", 0):.0f}%',
-              ("Commercial $/yr" if _use_commercial else "Their licence $/yr"):
-                  (r.get("commercial_annual_cost_usd")
-                   if _use_commercial else r.get("alternative_annual_cost_usd", 0)),
+              _cost_label: _cost_cell(r),
               "Confidence": ("✓ measured" if r.get("all_measured")
                             else f'estimate ({r.get("n_measured", 0)}/'
                                  f'{r.get("n_baselines", 0)} measured)')}
              for r in comparison],
             use_container_width=True, hide_index=True)
-        if _use_commercial:
+        if _mode == "commercial":
             st.caption("Commercial pricing is sourced to the low end of each "
                        "vendor's published range (entry tier, single seat) — "
-                       "treat as a floor, not a quote. Several FSAE teams pay "
-                       "$0 or a discounted academic rate instead via vendor "
-                       "student/team sponsorship programs; switch the toggle "
-                       "above to see that number.")
+                       "treat as a floor, not a quote.")
+        elif _mode == "academic":
+            st.caption("Sourced public reference range for a typical "
+                       "university research/academic licence (see "
+                       "`feature_baselines.notes` for citations) — NOT "
+                       "necessarily this team's own confirmed contract "
+                       "figure, since university deals are individually "
+                       "negotiated and usually not public.")
         else:
-            st.caption("This is what THIS team actually pays — several tools "
-                       "are free or university-funded via FSAE sponsorship "
-                       "programs, which is real and worth saying plainly "
-                       "rather than implying a cost nobody here pays.")
+            st.caption("This is what THIS team pays out of pocket — some "
+                       "tools are free via FSAE sponsorship, others are a "
+                       "real cost paid by the university rather than the "
+                       "team's own budget (see the academic-tier view for "
+                       "a sense of that scale).")
         st.caption("Manual-vs-in-tool minutes come from the `feature_baselines` "
                    "table. Replace estimates with timed measurements as you "
                    "collect them — each row carries a confidence flag so the "
