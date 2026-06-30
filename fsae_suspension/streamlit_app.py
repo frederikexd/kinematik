@@ -15239,6 +15239,33 @@ with tab_analytics:
 
     _have_db = bool(roi or foot or feat_use)
 
+    # Surface any view that ERRORED (vs genuinely empty) — e.g. a view dropped
+    # but not yet recreated because a migration half-applied. Without this, a
+    # broken view just renders as a blank tile and looks like data loss.
+    _view_errs = {}
+    for _vn in ["v_roi_summary", "v_hours_saved_by_feature", "v_foot_traffic_daily",
+                "v_feature_use", "v_adoption_funnel", "v_error_rate",
+                "v_latency_by_feature", "v_retention", "v_time_to_first_result",
+                "v_comparison_to_alternatives", "v_individual_use"]:
+        _e = _axn.view_error(_vn)
+        if _e:
+            _view_errs[_vn] = _e
+    if _view_errs:
+        _missing = [v for v, e in _view_errs.items()
+                    if "does not exist" in e.lower() or "relation" in e.lower()]
+        if _missing:
+            st.error(
+                "⚠️ Some analytics views are **unavailable** — this usually means "
+                "a database migration was interrupted partway (a view was dropped "
+                "but not recreated), so tiles below may be blank. **Fix:** re-run "
+                "`analytics_hardening.sql` in full from the top — it's safe to "
+                "re-run. Affected: " + ", ".join(f"`{v}`" for v in _missing))
+        _other = {v: e for v, e in _view_errs.items() if v not in _missing}
+        if _other:
+            with st.expander("⚠️ Other analytics view errors"):
+                for _v, _e in _other.items():
+                    st.caption(f"`{_v}`: {_e}")
+
     # ====================================================================== #
     #  HEADLINE — hours saved -> dollars (the board slide)                   #
     # ====================================================================== #
