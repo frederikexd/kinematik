@@ -15243,13 +15243,22 @@ with tab_analytics:
     # but not yet recreated because a migration half-applied. Without this, a
     # broken view just renders as a blank tile and looks like data loss.
     _view_errs = {}
-    for _vn in ["v_roi_summary", "v_hours_saved_by_feature", "v_foot_traffic_daily",
-                "v_feature_use", "v_adoption_funnel", "v_error_rate",
-                "v_latency_by_feature", "v_retention", "v_time_to_first_result",
-                "v_comparison_to_alternatives", "v_individual_use"]:
-        _e = _axn.view_error(_vn)
-        if _e:
-            _view_errs[_vn] = _e
+    # getattr guard: if a mismatched deploy has this streamlit_app.py but an
+    # older analytics.py without view_error(), don't crash the whole tab —
+    # just skip the banner. (That mismatch is itself the bug that caused this
+    # crash; the guard makes the app tolerant of it.)
+    _view_error_fn = getattr(_axn, "view_error", None)
+    if callable(_view_error_fn):
+        for _vn in ["v_roi_summary", "v_hours_saved_by_feature", "v_foot_traffic_daily",
+                    "v_feature_use", "v_adoption_funnel", "v_error_rate",
+                    "v_latency_by_feature", "v_retention", "v_time_to_first_result",
+                    "v_comparison_to_alternatives", "v_individual_use"]:
+            try:
+                _e = _view_error_fn(_vn)
+            except Exception:
+                _e = None
+            if _e:
+                _view_errs[_vn] = _e
     if _view_errs:
         _missing = [v for v, e in _view_errs.items()
                     if "does not exist" in e.lower() or "relation" in e.lower()]
