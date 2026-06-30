@@ -1004,6 +1004,28 @@ if not solve_ok:
     st.warning("Some travel positions did not converge for this topology; "
                "results outside the converged band may be incomplete.")
 
+# --- analytics: kinematics has no explicit "run" button — it solves live on
+# every hardpoint edit. Logging a completion on every recompute would fire
+# dozens of times a session and inflate the numbers, so instead we log ONCE
+# per session, the first time a real solve succeeds — a debounced signal of
+# "this session got a working result" rather than pretending every keystroke
+# is a separate workflow.
+#
+# NOTE: this only covers `kinematics`. roll/grip/accum read off this same
+# solved state but are separate tabs a user may never actually open this
+# session — Streamlit executes every tab body every run regardless of which
+# tab is visually selected, so there is no cheap "did they look at this tab"
+# signal to gate those three on without deeper instrumentation. Marking them
+# complete here would overcount; better to undercount (tab_open only, no
+# completion) than report engagement that didn't happen.
+if solve_ok and not st.session_state.get("_ax_kin_solved_once"):
+    st.session_state["_ax_kin_solved_once"] = True
+    try:
+        _axn.engage("kinematics", "live_solve")
+        _axn.complete("kinematics", "live_solve")
+    except Exception:
+        pass
+
 st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
             f'<span class="sub">{_TOPO_LABELS.get(_topo, _topo)} · agnostic engine · open source</span></div>',
             unsafe_allow_html=True)
@@ -1600,26 +1622,102 @@ def _tab_label(_id):
 # --- Build the actual Streamlit tab widgets. ------------------------------- #
 # Every one of the 21 tab bodies below still executes; we just route each id's
 # container either into the top strip or into the nested "More tools" strip.
+#
+# on_change="rerun" + a key turns on each returned container's `.open` flag
+# (Streamlit >=1.5x): a real, server-side "is THIS tab the one currently
+# selected" signal, with no DOM scraping. We don't use it to skip rendering
+# (every tab body still runs unconditionally, exactly as before — other state
+# on the page depends on that) — we use it ONLY to log accurate tab_open
+# events, see _TabOpenProxy below. Without this, _id_to_container[_id].open
+# is always None and every tab body executing every run would make tab_open
+# fire identically for all 24 features on every interaction, which is not
+# usage data — see _ax_active_ids below for how that signal is consumed.
 _id_to_container = {}
 if _more_ids:
     _top_labels = [_tab_label(i) for i in _primary_ids] + ["⋯  More tools"]
-    _top = st.tabs(_top_labels)
+    _top = st.tabs(_top_labels, on_change="rerun", key="_top_tabs_nav")
     for _i, _id in enumerate(_primary_ids):
         _id_to_container[_id] = _top[_i]
     with _top[-1]:
         st.caption("Everything outside your subteam — still live, still reads "
                    "the same shared numbers. Set your subteam above to pull any "
                    "of these up front.")
-        _more = st.tabs([_tab_label(i) for i in _more_ids])
+        _more = st.tabs([_tab_label(i) for i in _more_ids],
+                        on_change="rerun", key="_more_tabs_nav")
         for _i, _id in enumerate(_more_ids):
             _id_to_container[_id] = _more[_i]
 else:
-    _top = st.tabs([_tab_label(i) for i in _primary_ids])
+    _top = st.tabs([_tab_label(i) for i in _primary_ids],
+                   on_change="rerun", key="_top_tabs_nav")
     for _i, _id in enumerate(_primary_ids):
         _id_to_container[_id] = _top[_i]
 
+# Snapshot which feature id is genuinely the active tab THIS run, before
+# wrapping containers below. Each container's own `.open` is independent —
+# an inner "More tools" tab's `.open` is True only when that inner tab is
+# actually selected, regardless of whether the outer wrapper tab is current.
+_ax_active_ids = {_id for _id, _c in _id_to_container.items()
+                  if getattr(_c, "open", None)}
+
 # Map the stable ids back onto the legacy tab variable names the bodies below
 # already use, so not a single tab body needs to change.
+
+
+
+
+class _TabOpenProxy:
+    """Wraps a Streamlit tab container so simply doing `with tab_X:` fires
+    `ax.tab_open(feature)` automatically — the single point that makes EVERY
+    tab instrumented, instead of relying on each of the ~24 tab bodies to
+    remember to call it themselves. Proxies every other attribute/call
+    straight through to the real Streamlit container, so no tab body needs
+    to change.
+
+    IMPORTANT: every tab body executes on every Streamlit script-run
+    regardless of which tab is visually selected (Streamlit tabs are not
+    lazy here — see the comment above _id_to_container). Without a real
+    "is this tab actually selected" signal, naively logging tab_open on
+    every `with tab_X:` would fire identically for all 24 features on every
+    click anywhere in the app — that looks like real foot traffic but
+    isn't. `_ax_active_ids` (built just above from each container's `.open`,
+    enabled via `on_change="rerun"` on the underlying `st.tabs()` calls) is
+    the real signal: it is True only for the tab the user is actually
+    looking at this run.
+
+    Logs at most once per genuine switch into the tab, not once per
+    script-run while the user keeps interacting with widgets inside a tab
+    they're already on (which would inflate "opens" into "every click while
+    on this tab")."""
+
+    __slots__ = ("_container", "_feature")
+
+    def __init__(self, container, feature: str):
+        object.__setattr__(self, "_container", container)
+        object.__setattr__(self, "_feature", feature)
+
+    def __enter__(self):
+        _key = self._feature
+        _is_active = _key in _ax_active_ids
+        _last_active = st.session_state.get("_ax_last_active_tab")
+        if _is_active and _last_active != _key:
+            try:
+                _axn.tab_open(_key)
+            except Exception:
+                pass  # telemetry must never break the tab itself
+        if _is_active:
+            st.session_state["_ax_last_active_tab"] = _key
+        return self._container.__enter__()
+
+    def __exit__(self, *exc):
+        return self._container.__exit__(*exc)
+
+    def __getattr__(self, name):
+        return getattr(self._container, name)
+
+
+for _id in list(_id_to_container.keys()):
+    _id_to_container[_id] = _TabOpenProxy(_id_to_container[_id], _id)
+
 
 
 def _subsystem_default_placement(subsys_key):
@@ -2538,6 +2636,10 @@ def _render_rotor_thermal(_bt, _mass, kin):
         if not _opt_mats:
             st.warning("Pick at least one material to search.")
         else:
+            try:
+                _axn.engage("brakes", "optimise_rotor")
+            except Exception:
+                pass
             _spin = ("Searching the design space (with crack screen)…"
                      if _opt_crack else "Searching the design space…")
             with st.spinner(_spin):
@@ -2554,14 +2656,25 @@ def _render_rotor_thermal(_bt, _mass, kin):
                     )
                 else:
                     _opt_kwargs = dict(dia_steps=_steps[0], th_steps=_steps[1])
-                _optres = _bt.optimise_rotor(
-                    mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
-                    T_constraint_c=float(_opt_Tcon), materials=_opt_mats,
-                    n_stops=int(_opt_nstops), area_factor=float(_tk_area),
-                    duct_gain=float(st.session_state.get("bt_duct", 1.0)),
-                    screen_cracks=bool(_opt_crack), **_opt_kwargs)
+                try:
+                    _optres = _bt.optimise_rotor(
+                        mass_kg=_mass, v0_ms=_tk_v0 / 3.6, front_bias=_tk_bias,
+                        T_constraint_c=float(_opt_Tcon), materials=_opt_mats,
+                        n_stops=int(_opt_nstops), area_factor=float(_tk_area),
+                        duct_gain=float(st.session_state.get("bt_duct", 1.0)),
+                        screen_cracks=bool(_opt_crack), **_opt_kwargs)
+                except Exception as _opt_e:
+                    try:
+                        _axn.error("brakes", _opt_e, kind="optimise_rotor_failed")
+                    except Exception:
+                        pass
+                    raise
             st.session_state["bt_opt_result"] = _optres
             st.session_state["bt_opt_had_crack"] = bool(_opt_crack)
+            try:
+                _axn.complete("brakes", "optimise_rotor")
+            except Exception:
+                pass
 
     _optres = st.session_state.get("bt_opt_result")
     if _optres is not None:
@@ -6703,6 +6816,10 @@ with tab_brake:
                      help="Writes the lock-up brake torque into the brakes interface so "
                           "the 3D model disc size, heatmap and checks use it."):
             try:
+                _axn.engage("brakes", "declare_torque")
+            except Exception:
+                pass
+            try:
                 _led_b = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
                 _it = _led_b.get("brakes") or interfaces_mod.SubsystemInterface(name="brakes")
                 _it.brake_torque_nm = round(max(_Tf_need, _Tr_need), 0)
@@ -6712,9 +6829,17 @@ with tab_brake:
                            f"{units_mod.from_metric(max(_Tf_need,_Tr_need), 'N·m'):.0f} "
                            f"{units_mod.label('N·m')}/corner. The 3D brake "
                            "discs and heatmap now reflect it.")
+                try:
+                    _axn.complete("brakes", "declare_torque")
+                except Exception:
+                    pass
                 st.rerun()
             except Exception as _e4:
                 st.warning(f"Couldn't declare: {_e4}")
+                try:
+                    _axn.error("brakes", _e4, kind="declare_torque_failed")
+                except Exception:
+                    pass
 
     # =================================================================== #
     elif _bview == "Bolt & bracket FoS":
@@ -7339,9 +7464,14 @@ with tab_cost:
 
     _csv = _ed[["Commodity", "Part", "Qty", "Material", "Mass (kg)",
                 "Material $/kg", "Process $", "Fastener $", "Make_Buy", "Part $"]].to_csv(index=False)
-    st.download_button("⬇ Export BOM as CSV", _csv, file_name="kinematik_cost_bom.csv",
-                       mime="text/csv", key="cost_export",
-                       help="The full Bill of Materials, ready to drop into your cost report.")
+    if st.download_button("⬇ Export BOM as CSV", _csv, file_name="kinematik_cost_bom.csv",
+                          mime="text/csv", key="cost_export",
+                          help="The full Bill of Materials, ready to drop into your cost report."):
+        try:
+            _axn.export("cost", "bom_csv")
+            _axn.complete("cost", "export_bom")
+        except Exception:
+            pass
     st.caption("Hierarchy follows the FSAE cost report: System (Commodity) → Part → "
                "Material / Process / Fastener. Mark each part Make or Buy; the roll-up "
                "and charts update live so the cost of every engineering choice is visible.")
@@ -10635,6 +10765,10 @@ with tab11:
 
   if st.button("▶ Run lap-time sim", width='stretch'):
       st.session_state._run_lap = True
+      try:
+          _axn.engage("laptime", "run_sim")
+      except Exception:
+          pass
 
   if st.session_state.get("_run_lap"):
       with st.spinner("Driving your car around on the live tire…"):
@@ -10664,6 +10798,17 @@ with tab11:
       for r in (skid, lap):
           if r.warning:
               st.warning(f"⚠ {r.warning}")
+
+      if lap.ok:
+          try:
+              _axn.complete("laptime", "run_sim")
+          except Exception:
+              pass
+      else:
+          try:
+              _axn.error("laptime", kind="lap_sim_not_ok")
+          except Exception:
+              pass
 
       # ---- Skidpad ---- #
       st.markdown("###### FSAE skidpad (one timed circle)")
@@ -12847,6 +12992,11 @@ if _show_ledger:
         _gate_sub = st.selectbox("Subsystem releasing to manufacture",
                                  interfaces_mod.SUBSYSTEMS, key="_mfg_gate_sub")
         if st.button("Run release gate", key="_mfg_gate_run"):
+            try:
+                _axn.engage("integration", "release_gate")
+                _axn.complete("integration", "release_gate")
+            except Exception:
+                pass
             _blocks, _warns, _oks = [], [], []
             _gi = led.get(_gate_sub)
             # 1) is the subsystem's own interface confirmed and populated?
@@ -12958,6 +13108,10 @@ if _show_ledger:
                 if st.button("📝 Record manufacturing sign-off",
                              key=f"_mfg_signoff_btn_{_gate_sub}",
                              disabled=not _ready):
+                    try:
+                        _axn.engage("integration", "manufacturing_signoff")
+                    except Exception:
+                        pass
                     _vlabel = {"clear": "CLEAR TO MANUFACTURE",
                                "caution": "RELEASE WITH CAUTION"}[_gr["verdict"]]
                     _declared_txt = ", ".join(
@@ -12982,11 +13136,19 @@ if _show_ledger:
                             "It's in the decision log and will appear in the handover "
                             "export (PDF/Markdown/JSON) — a durable record, not a "
                             "file that gets lost on a laptop.")
+                        try:
+                            _axn.complete("integration", "manufacturing_signoff")
+                        except Exception:
+                            pass
                     else:
                         st.warning(
                             "Couldn't write to the handover record (backend "
                             "unavailable). Nothing was lost — re-try, or capture the "
                             "sign-off manually in Weight & Handover.")
+                        try:
+                            _axn.error("integration", kind="signoff_write_failed")
+                        except Exception:
+                            pass
 
     # ---- close the loop with the real physics ---- #
     st.markdown("###### Feed the build back into the physics")
@@ -13402,6 +13564,10 @@ with tab_ggv:
                       unsafe_allow_html=True)
           if st.button("Run cross-check", key="ggv_validate_btn"):
               try:
+                  _axn.engage("ggv", "cross_check")
+              except Exception:
+                  pass
+              try:
                   _vres = ggv_mod.validate_against_laptime(_veh_ggv, _pt_ggv)
                   _cls = "good" if _vres["ok"] else "warn"
                   st.markdown(metric("Max difference vs Lap Sim",
@@ -13423,8 +13589,16 @@ with tab_ggv:
                       "brake Lap": [round(x, 3) for x in _vres["brake_lap"]],
                   })
                   st.dataframe(_df, width='stretch', hide_index=True)
+                  try:
+                      _axn.complete("ggv", "cross_check")
+                  except Exception:
+                      pass
               except Exception as e:
                   st.error(f"Cross-check failed: {e}")
+                  try:
+                      _axn.error("ggv", e, kind="cross_check_failed")
+                  except Exception:
+                      pass
 
       if st.session_state.get("tire_is_default", True):
           st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
@@ -14119,6 +14293,10 @@ with tab_dfmea:
                           horizontal=True, key="dfmea_import_mode")
         if _up is not None and st.button("Import rows", key="dfmea_do_import"):
             try:
+                _axn.engage("dfmea", "import_rows")
+            except Exception:
+                pass
+            try:
                 if _up.name.lower().endswith(".csv"):
                     _idf = _pd_d.read_csv(_up)
                 else:
@@ -14131,9 +14309,17 @@ with tab_dfmea:
                     st.session_state.dfmea_rows = (
                         st.session_state.dfmea_rows + _recs)
                 st.success(f"Imported {len(_recs)} row(s).")
+                try:
+                    _axn.complete("dfmea", "import_rows")
+                except Exception:
+                    pass
                 st.rerun()
             except Exception as _e:
                 st.error(f"Couldn't read that file: {_e}")
+                try:
+                    _axn.error("dfmea", _e, kind="import_failed")
+                except Exception:
+                    pass
 
     # ---- rating-scale reference (the consistency anchor) ---------------- #
     with st.expander("📊 Rating scales — Severity · Occurrence · Detection (1–10)",
@@ -14395,7 +14581,6 @@ def _status_tag(status):
 
 
 with tab_registry:
-    _axn.tab_open("registry")
     st.markdown(
         '<div class="brand"><span class="mark">Registry</span>'
         '<span class="sub">Source of truth · released CAD</span></div>',
@@ -14845,7 +15030,6 @@ def _ax_metric(col, label, value, sub="", color="var(--ink)"):
 
 
 with tab_analytics:
-    _axn.tab_open("analytics")
     st.markdown(
         '<div class="brand"><span class="mark">Analytics</span>'
         '<span class="sub">Usage · reliability · ROI</span></div>',
