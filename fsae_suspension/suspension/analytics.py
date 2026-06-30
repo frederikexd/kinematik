@@ -476,16 +476,36 @@ def auto_replay_once() -> int:
 # --------------------------------------------------------------------------- #
 #  Read side — small helpers the dashboard uses to pull the metric views       #
 # --------------------------------------------------------------------------- #
+_VIEW_ERRORS: dict = {}  # view_name -> last error string (or None if last fetch was clean)
+
+
 def fetch_view(view_name: str) -> list[dict]:
     """Read a metric view (e.g. 'v_roi_summary') from Supabase. Returns [] if
-    unconfigured or on any error, so the dashboard degrades gracefully."""
+    unconfigured, empty, or on error. Records whether the LAST fetch errored in
+    _VIEW_ERRORS so the dashboard can tell a broken/missing view (e.g. mid-
+    migration, when a view is dropped but not yet recreated) apart from a view
+    that's simply empty — otherwise both render as blank and look like data
+    loss. Use view_error(view_name) to check."""
     client = _SINK._get_client()
     if client is None:
+        _VIEW_ERRORS[view_name] = None  # not an error, just not configured
         return []
     try:
-        return client.table(view_name).select("*").execute().data or []
-    except Exception:
+        data = client.table(view_name).select("*").execute().data or []
+        _VIEW_ERRORS[view_name] = None
+        return data
+    except Exception as _e:
+        # Most commonly: the view doesn't exist (relation does not exist) because
+        # a migration is half-applied, or a permission/RLS error. Record it.
+        _VIEW_ERRORS[view_name] = str(_e)[:300]
         return []
+
+
+def view_error(view_name: str) -> str | None:
+    """Returns the error string from the last fetch_view(view_name) call, or
+    None if it succeeded (even if it returned zero rows). Lets the UI show
+    'view unavailable — re-run migration' instead of a silently-blank tile."""
+    return _VIEW_ERRORS.get(view_name)
 
 
 def is_live() -> bool:
