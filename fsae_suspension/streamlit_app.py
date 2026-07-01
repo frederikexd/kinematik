@@ -15382,8 +15382,8 @@ with tab_analytics:
     if ttfr:
         tf = ttfr[0]
         _v = tf.get("avg_minutes_to_first_result")
-        _ax_metric(u3, "Time-to-first-result",
-                   f"{_v:.0f} min" if _v else "—", "new-member onboarding",
+        _ttfr_str = f"{float(_v) * 60:.0f} sec" if _v else "—"
+        _ax_metric(u3, "Time-to-first-result", _ttfr_str, "new-member onboarding",
                    "var(--amber)")
     if foot:
         _ax_metric(u4, "Active days", f"{len(foot)}", "with recorded traffic")
