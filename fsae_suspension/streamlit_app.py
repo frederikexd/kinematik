@@ -1834,13 +1834,17 @@ class _TabOpenProxy:
         _is_active = _key in _ax_active_ids
         _last_active = st.session_state.get("_ax_last_active_tab")
         if _is_active and _last_active != _key:
-            try:
-                _axn.tab_open(_key)
-                # mark that THIS feature's open was logged this session, so any
-                # solver-side open-backfill (e.g. kinematics) won't double-log.
-                st.session_state[f"_ax_open_{_key}"] = True
-            except Exception:
-                pass  # telemetry must never break the tab itself
+            # Use the per-feature session flag as the single source of truth for
+            # "an open was already logged for this feature this session" — shared
+            # with any solver-side backfill (e.g. kinematics). This prevents the
+            # proxy and the backfill from EACH logging an open (which caused
+            # tab_open to fire ~2x per session where it fired at all).
+            if not st.session_state.get(f"_ax_open_{_key}"):
+                try:
+                    _axn.tab_open(_key)
+                    st.session_state[f"_ax_open_{_key}"] = True
+                except Exception:
+                    pass  # telemetry must never break the tab itself
         if _is_active:
             st.session_state["_ax_last_active_tab"] = _key
         return self._container.__enter__()
