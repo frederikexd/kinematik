@@ -1540,17 +1540,14 @@ with _pctl:
                         st.session_state["_ax_resolved_vid"] = _vid
                         st.session_state["_ax_resolved_vid_kind"] = "cookie (just set)"
                     else:
-                        # First render — mark ready for next rerun, and DON'T set
-                        # a cookie yet. Use a temporary session id for this run so
-                        # events still log; it'll be reconciled once the cookie
-                        # read populates (or we set one next rerun).
+                        # First render — the cookie hasn't populated yet.
+                        # Do NOT assign _vid here; leave it None so the
+                        # fingerprint fallback (block 2 below) runs instead.
+                        # The fingerprint is stable across visits so returning
+                        # users are recognised. The ck- seed was being set here
+                        # before, which blocked the fingerprint and gave every
+                        # session a unique id — breaking returning_users.
                         st.session_state["_ax_cookie_ready"] = True
-                        _seed = st.session_state.get("_ax_visitor_seed")
-                        if not _seed:
-                            _seed = "ck-" + _uuid.uuid4().hex[:24]
-                            st.session_state["_ax_visitor_seed"] = _seed
-                        _vid = _seed
-                        st.session_state["_ax_resolved_vid"] = _seed  # lock seed so render-2 early-exit fires and does not re-resolve to a different id
                         st.session_state["_ax_resolved_vid_kind"] = "cookie (resolving…)"
             except Exception:
                 _vid = _vid or None
