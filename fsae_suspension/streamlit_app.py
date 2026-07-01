@@ -1481,9 +1481,17 @@ with _pctl:
         _vid = None
         _COOKIE = "kinematik_vid"
 
-        # If we already resolved a durable id earlier this session, keep it —
-        # don't re-run resolution every rerun (which risks churn).
-        _vid = st.session_state.get("_ax_resolved_vid")
+        # If we already resolved a DURABLE id earlier this session, keep it.
+        # Only skip re-resolution when the kind is confirmed durable — if it's
+        # still "cookie (resolving…)" we must re-enter the cookie block so
+        # render 2 can promote the seed to the real cookie id before
+        # session_start fires.
+        _resolved_kind = st.session_state.get("_ax_resolved_vid_kind", "")
+        _vid = (
+            st.session_state.get("_ax_resolved_vid")
+            if _resolved_kind not in ("", "cookie (resolving…)")
+            else None
+        )
 
         # --- 1. durable cookie via CookieManager ---------------------------- #
         # extra-streamlit-components reads/writes cookies on the PARENT document
