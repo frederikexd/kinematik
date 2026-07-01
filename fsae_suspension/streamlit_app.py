@@ -1522,23 +1522,11 @@ with _pctl:
                     # (b) first render before async populate. Distinguish by
                     # whether we've already seen a populated read this session.
                     if st.session_state.get("_ax_cookie_ready"):
-                        # We've had a populated read before and it's still empty
-                        # -> genuinely no cookie. Safe to mint + set now.
-                        _seed = st.session_state.get("_ax_visitor_seed")
-                        if not _seed:
-                            _seed = "ck-" + _uuid.uuid4().hex[:24]
-                            st.session_state["_ax_visitor_seed"] = _seed
-                        try:
-                            import datetime as _dtm
-                            _cm.set(_COOKIE, _seed,
-                                    expires_at=_dtm.datetime.now()
-                                    + _dtm.timedelta(days=365),
-                                    key="ax_cookie_set")
-                        except Exception:
-                            pass
-                        _vid = _seed
-                        st.session_state["_ax_resolved_vid"] = _vid
-                        st.session_state["_ax_resolved_vid_kind"] = "cookie (just set)"
+                        # Cookie confirmed absent — skip minting a ck- seed.
+                        # Cookie writes are silently failing on this deployment
+                        # (44 sessions produced 43 distinct ck- ids — not durable).
+                        # Leave _vid as None so the fingerprint fallback runs.
+                        pass
                     else:
                         # First render — the cookie hasn't populated yet.
                         # Do NOT assign _vid here; leave it None so the
