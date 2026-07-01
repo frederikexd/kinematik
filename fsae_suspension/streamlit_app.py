@@ -15469,18 +15469,6 @@ with tab_analytics:
             font=dict(color="#e7ecf1"), legend=dict(orientation="h"))
         st.plotly_chart(_fig, use_container_width=True)
 
-    # Roster-size control for the "Return vs FSAE members" tile above. Kept as a
-    # small input (the bar charts were removed) since the roster headcount isn't
-    # in the DB and the tile's denominator needs it.
-    if retention:
-        with st.expander("Set FSAE roster size (for the return-vs-members tile)"):
-            _roster = st.number_input(
-                "Active FSAE members", min_value=1, max_value=500,
-                value=int(st.session_state.get("_ax_roster", 70)), step=1,
-                key="ax_roster_input",
-                help="Your team's active headcount — not stored in the "
-                     "database, so set it here. Drives the roster-reach %.")
-            st.session_state["_ax_roster"] = _roster
 
     # feature use table
     if feat_use:
