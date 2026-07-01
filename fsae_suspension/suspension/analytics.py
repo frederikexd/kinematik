@@ -278,8 +278,20 @@ def init(member: Optional[str] = None, subteam: str = "unknown",
             _sset("member", member.strip() or None)
         if subteam:
             _sset("subteam", subteam)
-        # emit session_start once per browser session
+        # emit session_start once per browser session — but NOT until the
+        # visitor_id is stable. On the very first Streamlit render the
+        # CookieManager hasn't populated yet, so _ax_resolved_vid_kind is
+        # "cookie (resolving…)". Emitting here would tag the event with a
+        # throwaway seed id that differs from the durable cookie id resolved
+        # on render 2, making the user appear as a brand-new visitor on every
+        # reopen and freezing returning_users at 0. We defer by one rerun:
+        # init() is called again on every rerun (it's idempotent), so the
+        # emit fires on render 2 when the id is locked in.
         if not _sget("started"):
+            s = _store()
+            vid_kind = (s.get("_ax_resolved_vid_kind") or "") if s is not None else ""
+            if vid_kind == "cookie (resolving\u2026)":
+                return  # defer to next rerun — visitor_id not yet stable
             _sset("started", True)
             _emit("session_start", feature=None, is_new_member=is_new_member)
     except Exception:
