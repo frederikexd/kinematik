@@ -1021,6 +1021,16 @@ if not solve_ok:
 if solve_ok and not st.session_state.get("_ax_kin_solved_once"):
     st.session_state["_ax_kin_solved_once"] = True
     try:
+        # Guarantee the invariant opens >= engagements: the solver auto-runs
+        # (and logs engage) even in sessions where the tab_open wasn't counted
+        # — kinematics is the default landing tab, and the active-tab dedup can
+        # suppress its open-log. Without this, the per-feature table showed
+        # engagements/unique-users EXCEEDING opens (a logical impossibility).
+        # If no kinematics tab_open was recorded this session, log one now so an
+        # engagement always has a corresponding open behind it.
+        if not st.session_state.get("_ax_open_kinematics"):
+            st.session_state["_ax_open_kinematics"] = True
+            _axn.tab_open("kinematics")
         _axn.engage("kinematics", "live_solve")
         _axn.complete("kinematics", "live_solve")
     except Exception:
@@ -1826,6 +1836,9 @@ class _TabOpenProxy:
         if _is_active and _last_active != _key:
             try:
                 _axn.tab_open(_key)
+                # mark that THIS feature's open was logged this session, so any
+                # solver-side open-backfill (e.g. kinematics) won't double-log.
+                st.session_state[f"_ax_open_{_key}"] = True
             except Exception:
                 pass  # telemetry must never break the tab itself
         if _is_active:
