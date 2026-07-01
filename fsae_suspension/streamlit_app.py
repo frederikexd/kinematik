@@ -1542,6 +1542,7 @@ with _pctl:
                             _seed = "ck-" + _uuid.uuid4().hex[:24]
                             st.session_state["_ax_visitor_seed"] = _seed
                         _vid = _seed
+                        st.session_state["_ax_resolved_vid"] = _seed  # lock seed so render-2 early-exit fires and does not re-resolve to a different id
                         st.session_state["_ax_resolved_vid_kind"] = "cookie (resolving…)"
             except Exception:
                 _vid = _vid or None
