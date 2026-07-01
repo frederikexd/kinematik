@@ -15465,57 +15465,18 @@ with tab_analytics:
             font=dict(color="#e7ecf1"), legend=dict(orientation="h"))
         st.plotly_chart(_fig, use_container_width=True)
 
-    # adoption / penetration — returning vs all visits, and vs the FSAE roster.
-    # Computed live from v_retention so it tracks as the numbers move. The
-    # roster size isn't in the DB (it's the team's own headcount), so it's an
-    # editable input that defaults to 70 and persists in session.
+    # Roster-size control for the "Return vs FSAE members" tile above. Kept as a
+    # small input (the bar charts were removed) since the roster headcount isn't
+    # in the DB and the tile's denominator needs it.
     if retention:
-        _rt = retention[0]
-        _total = int(_rt.get("total_users", 0) or 0)
-        _returning = int(_rt.get("returning_users", 0) or 0)
-        _one_time = max(_total - _returning, 0)
-        st.markdown("###### Adoption — who comes back")
-        _rcol1, _rcol2 = st.columns(2)
-
-        with _rcol1:
-            _figv = go.Figure(go.Bar(
-                y=["returning", "one-time"], x=[_returning, _one_time],
-                orientation="h", marker_color=["#378add", "#b4b2a9"],
-                text=[_returning, _one_time], textposition="auto"))
-            _figv.update_layout(
-                height=170, margin=dict(l=10, r=10, t=24, b=10),
-                title=dict(text=f"of {_total} visitors ever", font=dict(size=12)),
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#e7ecf1"), xaxis=dict(showgrid=False))
-            st.plotly_chart(_figv, use_container_width=True)
-            if _total:
-                st.caption(f"{_returning} of {_total} visitors return "
-                           f"({100*_returning/_total:.0f}% of all traffic).")
-
-        with _rcol2:
+        with st.expander("Set FSAE roster size (for the return-vs-members tile)"):
             _roster = st.number_input(
-                "Active FSAE members (roster size)", min_value=1, max_value=500,
+                "Active FSAE members", min_value=1, max_value=500,
                 value=int(st.session_state.get("_ax_roster", 70)), step=1,
                 key="ax_roster_input",
-                help="Your team's active headcount — not stored in the database, "
-                     "so set it here. Used only for the roster-reach %.")
+                help="Your team's active headcount — not stored in the "
+                     "database, so set it here. Drives the roster-reach %.")
             st.session_state["_ax_roster"] = _roster
-            _reach = min(_returning, _roster)
-            _rest = max(_roster - _reach, 0)
-            _figr = go.Figure(go.Bar(
-                y=["return", "don't"], x=[_reach, _rest],
-                orientation="h", marker_color=["#1d9e75", "#9fe1cb"],
-                text=[_reach, _rest], textposition="auto"))
-            _figr.update_layout(
-                height=130, margin=dict(l=10, r=10, t=24, b=10),
-                title=dict(text=f"of ~{_roster} active members",
-                           font=dict(size=12)),
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#e7ecf1"),
-                xaxis=dict(showgrid=False, range=[0, _roster]))
-            st.plotly_chart(_figr, use_container_width=True)
-            st.caption(f"{_reach} of ~{_roster} members return "
-                       f"(**{100*_reach/_roster:.0f}%** roster reach).")
 
     # feature use table
     if feat_use:
