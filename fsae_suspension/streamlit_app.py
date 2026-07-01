@@ -15377,6 +15377,28 @@ with tab_analytics:
     if foot:
         _ax_metric(u4, "Active days", f"{len(foot)}", "with recorded traffic")
 
+    # Second tile row: the two returning comparisons as their own blocks, in the
+    # same style as the row above. Computed live from v_retention. The FSAE
+    # roster size comes from the number input further down (defaults to 70).
+    if retention:
+        _rt2 = retention[0]
+        _tot2 = int(_rt2.get("total_users", 0) or 0)
+        _ret2 = int(_rt2.get("returning_users", 0) or 0)
+        _roster2 = int(st.session_state.get("_ax_roster", 70))
+        r1, r2 = st.columns(2)
+        _ax_metric(
+            r1, "Return vs total users",
+            f"{_ret2}/{_tot2}",
+            f"{(100*_ret2/_tot2):.0f}% of all visitors ever"
+            if _tot2 else "no visitors yet",
+            "var(--cyan)")
+        _ax_metric(
+            r2, "Return vs FSAE members",
+            f"{min(_ret2, _roster2)}/{_roster2}",
+            f"{(100*min(_ret2, _roster2)/_roster2):.0f}% of the active roster"
+            if _roster2 else "set roster below",
+            "var(--cyan)")
+
     # Visitor-identity diagnostic — surfaces WHICH durable-id path is actually
     # resolving in THIS deployment, so a stuck returning-user count is
     # observable rather than a mystery. (Cookie is best; fingerprint works only
