@@ -8038,13 +8038,47 @@ with tab_brake:
                             "unknown": "Couldn't match that to a known check",
                         }.get(_mv, _mv)
                         _mfn(f"**{_head}**\n\n{_mres.explanation}")
-                        # Keep the raw engine string, but out of the way — it's for
-                        # someone who wants to trace the number, not the headline.
-                        if _mres.provenance:
-                            with st.expander("How it got this (technical)"):
-                                st.caption("Computed live from your springs above — "
-                                           "no AI, just the numbers:")
-                                st.code(_mres.provenance, language=None)
+                        # "How it got this" in PLAIN terms: show the worst single-
+                        # failure case as a force comparison a brakes lead understands
+                        # — the surviving spring's closing effort vs the drag it must
+                        # beat — instead of echoing an internal function name.
+                        _worst_label = getattr(_rr, "worst_case", None)
+                        _worst = None
+                        for _c in getattr(_rr, "cases", []):
+                            if _c.label == _worst_label:
+                                _worst = _c
+                                break
+                        if _worst is not None:
+                            _spring_name = _worst_label
+                            if isinstance(_worst_label, str) and \
+                                    _worst_label.startswith("without '"):
+                                _spring_name = _worst_label[len("without '"):-1]
+                            # net_closed/net_open already = spring closing torque
+                            # minus drag at each end of travel; show the WORSE end so
+                            # the number matches the verdict (a spring can clear drag
+                            # at the closed stop but not wide open, or vice versa).
+                            _drag = _res.total_Nm
+                            _worst_net = min(_worst.net_closed_Nm, _worst.net_open_Nm)
+                            _survivor = _worst_net + _drag
+                            with st.expander("See the check"):
+                                st.markdown(
+                                    f"The toughest case is **if the {_spring_name} "
+                                    f"spring fails**. At the hardest point in the "
+                                    f"throttle's travel, the spring left has to shut "
+                                    f"it against the friction and cable drag:")
+                                _b1, _b2, _b3 = st.columns(3)
+                                _b1.metric("surviving spring pushes",
+                                           f"{_survivor:.2f} N·m")
+                                _b2.metric("has to beat (drag)",
+                                           f"{_drag:.2f} N·m")
+                                _closes = _worst_net > 0
+                                _b3.metric("spare force",
+                                           f"{_worst_net:+.2f} N·m",
+                                           "closes" if _closes else "won't close",
+                                           delta_color="normal" if _closes
+                                           else "inverse")
+                                st.caption("Computed live from the springs you entered "
+                                           "above — no AI, just the numbers.")
                     except Exception as _me:
                         st.warning(f"Couldn't run the myth-buster: {_me}")
 
