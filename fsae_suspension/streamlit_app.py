@@ -8211,12 +8211,36 @@ with tab_brake:
                            "mm", step=5.0, key="pedal_lever",
                            help="Distance from where the foot loads the pad to the "
                                 "pedal pivot.")
-                _pload = unum(st, "Applied load (N)", 500.0, 5000.0,
-                              float(_tr.BRAKE_PEDAL_RULE_LOAD_N), "N", step=100.0,
-                              key="pedal_load",
-                              help="The rule load is 2000 N (≈450 lbf). Raise it only "
-                                   "if your team screens at a self-imposed higher case "
-                                   "load.")
+                # Applied load. In imperial the lbf value converts back to newtons
+                # and nudging it drifts off the exact rule figure — so offer a tickbox
+                # to pin it to exactly 2000 N (the rule is defined in newtons).
+                _pin_2000 = False
+                if units_mod.is_us():
+                    _lc = st.columns([3, 2])
+                    with _lc[1]:
+                        st.markdown("<div style='height:1.7rem'></div>",
+                                    unsafe_allow_html=True)
+                        _pin_2000 = st.checkbox(
+                            "Rather apply exactly 2000 N (FSAE rule)?",
+                            value=True, key="pedal_load_pin2000",
+                            help="The FSAE rule load is defined as 2000 N. Tick this "
+                                 "to screen at exactly 2000 N; untick to enter your "
+                                 "own load in lbf.")
+                    _load_container = _lc[0]
+                else:
+                    _load_container = st
+                if _pin_2000:
+                    _pload = float(_tr.BRAKE_PEDAL_RULE_LOAD_N)
+                    _load_container.metric(
+                        "Applied load", "2000 N",
+                        f"≈ {units_mod.from_metric(_pload, 'N'):.0f} lbf — FSAE rule")
+                else:
+                    _pload = unum(_load_container, "Applied load (N)", 500.0, 5000.0,
+                                  float(_tr.BRAKE_PEDAL_RULE_LOAD_N), "N", step=100.0,
+                                  key="pedal_load",
+                                  help="The rule load is 2000 N (≈450 lbf). Raise it "
+                                       "only if your team screens at a self-imposed "
+                                       "higher case load.")
 
                 # Optional pivot-lug + weld geometry. Without these, only bending is
                 # screened and a clean-looking pass is demoted to TIGHT — an
@@ -14968,6 +14992,7 @@ project_bundle = {
             "tr_k_measured",
             # brake pedal geometry
             "pedal_mat", "pedal_w", "pedal_t", "pedal_lever", "pedal_load",
+            "pedal_load_pin2000",
             "pedal_bolt", "pedal_edge", "pedal_weld_leg", "pedal_weld_len",
             "pedal_box_nfeet",
             # transient snap inputs
