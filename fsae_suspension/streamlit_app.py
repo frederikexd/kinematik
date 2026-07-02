@@ -7989,21 +7989,42 @@ with tab_brake:
                                                                      None)
                                     else:
                                         st.caption(
-                                            "Writes a solver-neutral forced-"
-                                            "oscillation case. Run it in Fluent / "
-                                            "STAR-CCM+ / OpenFOAM, then read the "
-                                            "result back — KinematiK won't fake the "
-                                            "solve.")
-                                        if st.button("Write external CFD case",
-                                                     key="fco_write"):
-                                            import tempfile as _tf
-                                            _wd = _tf.mkdtemp(prefix="kinematik_flutter_")
-                                            _ext = _fco.ExternalCFDFlutterBackend()
-                                            _p = _ext.write_case(_oc, _wd)
-                                            st.success(f"Case written to {_p}. Run it "
-                                                       f"on your cluster and place the "
-                                                       f"result JSON alongside, then "
-                                                       f"read it back via the API.")
+                                            "Generates a forced-oscillation case in "
+                                            "formats ANSYS uses — download, run it in "
+                                            "Fluent/CFX (or a SolidWorks Flow "
+                                            "transient study), and read the result "
+                                            "back. KinematiK won't fake the solve.")
+                                        _arts = _fco.ExternalCFDFlutterBackend(
+                                        ).case_artifacts(_oc)
+                                        # Offer each format as a direct download —
+                                        # no server /tmp, no API round-trip needed.
+                                        _labels = {
+                                            ".jou": "⬇ Fluent journal (.jou)",
+                                            ".csv": "⬇ Parameters (.csv)",
+                                            ".txt": "⬇ Setup sheet (.txt)",
+                                            ".json": "⬇ Case JSON (.json)",
+                                        }
+                                        _dl = st.columns(2)
+                                        for _i, (_fn, _content) in enumerate(
+                                                _arts.items()):
+                                            _ext_key = "." + _fn.rsplit(".", 1)[-1]
+                                            _mime = ("application/json"
+                                                     if _ext_key == ".json"
+                                                     else "text/csv"
+                                                     if _ext_key == ".csv"
+                                                     else "text/plain")
+                                            _dl[_i % 2].download_button(
+                                                _labels.get(_ext_key, f"⬇ {_fn}"),
+                                                data=_content, file_name=_fn,
+                                                mime=_mime,
+                                                key=f"fco_dl_{_i}",
+                                                use_container_width=True)
+                                        st.caption(
+                                            "Start with the **setup sheet** if you're "
+                                            "meshing it, or the **Fluent journal** to "
+                                            "script it. When the run is done, drop the "
+                                            "`c_aero_Nms` into the result JSON and read "
+                                            "it back to feed the flutter screen.")
 
                             # A co-sim result (stored under a non-widget key) wins
                             # over the typed box; otherwise use what was typed.
