@@ -7440,6 +7440,19 @@ with tab_brake:
 
             # ============================================================ #
             if _pv == "Throttle return springs":
+                # Brief imperial read-out under a metric field so US members can read
+                # the numbers, WITHOUT converting the inputs (spring specs stay in
+                # mm / N·m / N·mm — unambiguous and matching datasheets — so the
+                # safety calc never round-trips through a unit conversion).
+                def _imp(container, metric_val, unit, fmt="{:.2f}"):
+                    try:
+                        if units_mod.is_us():
+                            _iv = units_mod.from_metric(float(metric_val), unit)
+                            container.caption(
+                                f"≈ {fmt.format(_iv)} {units_mod.label(unit)}")
+                    except Exception:
+                        pass
+
                 st.markdown(
                     '<p class="hint">FSAE requires <b>two</b> return springs, '
                     'arranged so the throttle still returns to <b>closed</b> if '
@@ -7449,6 +7462,10 @@ with tab_brake:
                     'every single spring removed in turn: it passes only if the car '
                     'still shuts the throttle on one spring, with margin over '
                     'friction and cable drag.</p>', unsafe_allow_html=True)
+                if units_mod.is_us():
+                    st.caption("You're in US/Imperial — spring specs stay in mm / "
+                               "N·mm / N·m (how spring datasheets read), with the "
+                               "imperial equivalent shown under each field.")
 
                 # ---- "We don't know k" — get it honestly -------------------
                 with st.expander("Don't know the spring constant? Get it here "
@@ -7512,8 +7529,10 @@ with tab_brake:
                                               step=1.0, key="tr_bench_F",
                                               help="A labelled gym plate or a luggage "
                                                    "scale pulled to a mark.")
+                        _imp(st, _bf, "N", "{:.1f}")
                         _bx = st.number_input("Deflection (mm)", 1.0, 300.0, 35.0,
                                               step=1.0, key="tr_bench_x")
+                        _imp(st, _bx, "mm", "{:.2f}")
                         try:
                             _kb = _tr.k_from_deflection(_bf, _bx / 1000.0)
                             st.success(f"k = {_kb:.0f} N/m  (= {_kb/1000:.2f} N/mm)")
@@ -7526,9 +7545,11 @@ with tab_brake:
                         st.markdown("**Coil geometry** (datasheet or measure)")
                         _wd = st.number_input("Wire dia d (mm)", 0.2, 6.0, 1.2,
                                               step=0.1, key="tr_wire_d")
+                        _imp(st, _wd, "mm", "{:.3f}")
                         _cd = st.number_input("Mean coil dia D (mm)", 2.0, 40.0, 9.0,
                                               step=0.5, key="tr_coil_D",
                                               help="Mean = outer dia − wire dia.")
+                        _imp(st, _cd, "mm", "{:.3f}")
                         _na = st.number_input("Active coils Na", 1.0, 40.0, 6.0,
                                               step=0.5, key="tr_active_n",
                                               help="Total turns minus the dead end "
@@ -7577,18 +7598,22 @@ with tab_brake:
                     _sk = _sc[0].number_input(
                         f"rate k (N/mm) [{_nm}]", 0.05, 200.0,
                         round(_k_seed / 1000.0, 2), step=0.05, key=f"tr_k_{_nm}")
+                    _imp(_sc[0], _sk, "N/mm", "{:.1f}")
                     _sarm = _sc[1].number_input(
                         f"moment arm (mm) [{_nm}]", 2.0, 120.0, 30.0, step=1.0,
                         key=f"tr_arm_{_nm}",
                         help="Perpendicular distance pivot→spring line of action.")
+                    _imp(_sc[1], _sarm, "mm", "{:.2f}")
                     _spre = _sc[2].number_input(
                         f"preload stretch (mm) [{_nm}]", 0.0, 100.0, 15.0, step=1.0,
                         key=f"tr_pre_{_nm}",
                         help="How far the spring is stretched at the CLOSED stop — "
                              "this is what holds the pedal shut when released.")
+                    _imp(_sc[2], _spre, "mm", "{:.2f}")
                     _strav = _sc[3].number_input(
                         f"extra stretch, closed→open (mm) [{_nm}]", 0.0, 120.0,
                         40.0, step=1.0, key=f"tr_trav_{_nm}")
+                    _imp(_sc[3], _strav, "mm", "{:.2f}")
                     _smeas = _sc[4].checkbox(f"measured k? [{_nm}]", value=False,
                                              key=f"tr_meas_{_nm}")
                     _springs.append(_tr.ReturnSpring.from_linear_spring(
@@ -7603,12 +7628,15 @@ with tab_brake:
                                           step=0.02, key="tr_fric",
                                           help="Worst-case Coulomb friction / stiction "
                                                "at the pivot and linkage.")
+                _imp(_rc[0], _fr, "N·m", "{:.3f}")
                 _cdg = _rc[1].number_input("cable/rod drag (N·m)", 0.0, 5.0, 0.05,
                                            step=0.02, key="tr_cable")
+                _imp(_rc[1], _cdg, "N·m", "{:.3f}")
                 _sd = _rc[2].number_input("sensor detent (N·m)", 0.0, 5.0, 0.02,
                                           step=0.02, key="tr_sensor",
                                           help="Any return-fighting torque from the "
                                                "TPS/APPS body. Sensors are not springs.")
+                _imp(_rc[2], _sd, "N·m", "{:.3f}")
                 _mt = _rc[3].number_input("margin target", 0.25, 4.0, 1.0, step=0.25,
                                           key="tr_margin",
                                           help="Required net closing authority over "
@@ -7649,12 +7677,22 @@ with tab_brake:
                 # Table of every case
                 try:
                     import pandas as _pd
-                    _df = _pd.DataFrame([{
-                        "case": _c.label,
-                        "net closing @ closed (N·m)": round(_c.net_closed_Nm, 3),
-                        "net closing @ open (N·m)": round(_c.net_open_Nm, 3),
-                        "returns to closed?": "yes" if _c.closes else "NO — HANGS OPEN",
-                    } for _c in _rr.cases])
+                    _us = units_mod.is_us()
+                    def _row(_c):
+                        r = {
+                            "case": _c.label,
+                            "net closing @ closed (N·m)": round(_c.net_closed_Nm, 3),
+                            "net closing @ open (N·m)": round(_c.net_open_Nm, 3),
+                        }
+                        if _us:
+                            r["closed (lbf·ft)"] = round(
+                                units_mod.from_metric(_c.net_closed_Nm, "N·m"), 3)
+                            r["open (lbf·ft)"] = round(
+                                units_mod.from_metric(_c.net_open_Nm, "N·m"), 3)
+                        r["returns to closed?"] = ("yes" if _c.closes
+                                                   else "NO — HANGS OPEN")
+                        return r
+                    _df = _pd.DataFrame([_row(_c) for _c in _rr.cases])
                     st.dataframe(_df, width='stretch', hide_index=True)
                 except Exception:
                     for _c in _rr.cases:
@@ -7693,18 +7731,22 @@ with tab_brake:
                         "throttle plate mass (g)", 1.0, 200.0, 25.0, step=1.0,
                         key="snap_plate_m",
                         help="Mass of the throttle plate/flap.") / 1000.0
+                    _imp(_ic[0], _plate_m * 1000.0, "g_mass", "{:.2f}")
                     _plate_r = _ic[1].number_input(
                         "plate half-width (mm)", 2.0, 60.0, 20.0, step=1.0,
                         key="snap_plate_r",
                         help="Half the plate width (rotation radius).") / 1000.0
+                    _imp(_ic[1], _plate_r * 1000.0, "mm", "{:.2f}")
                     _refl_m = _ic[2].number_input(
                         "cable+pedal mass (g)", 0.0, 1000.0, 0.0, step=10.0,
                         key="snap_refl_m",
                         help="Optional: pedal/cable mass reflected to the shaft.") / 1000.0
+                    _imp(_ic[2], _refl_m * 1000.0, "g_mass", "{:.2f}")
                     _refl_a = _ic[3].number_input(
                         "at arm (mm)", 0.0, 200.0, 0.0, step=5.0,
                         key="snap_refl_a",
                         help="Lever arm for that reflected mass.") / 1000.0
+                    _imp(_ic[3], _refl_a * 1000.0, "mm", "{:.2f}")
                     _theta_open = st.number_input(
                         "throttle travel, closed→open (deg)", 10.0, 120.0, 90.0,
                         step=5.0, key="snap_theta_open")
@@ -8116,6 +8158,11 @@ with tab_brake:
                                            "closes" if _closes else "won't close",
                                            delta_color="normal" if _closes
                                            else "inverse")
+                                if units_mod.is_us():
+                                    _cv = lambda v: units_mod.from_metric(v, "N·m")
+                                    _b1.caption(f"≈ {_cv(_survivor):.2f} lbf·ft")
+                                    _b2.caption(f"≈ {_cv(_drag):.2f} lbf·ft")
+                                    _b3.caption(f"≈ {_cv(_worst_net):+.2f} lbf·ft")
                                 st.caption("Computed live from the springs you entered "
                                            "above — no AI, just the numbers.")
                     except Exception as _me:
@@ -8155,20 +8202,21 @@ with tab_brake:
                     if "Aluminium 7075-T6" in bracket_mod.MATERIALS else 0,
                     key="pedal_mat",
                     help="7075-T6 is the usual aluminium pedal stock.")
-                _pw = _pc[1].number_input("Pedal width (mm)", 5.0, 120.0, 35.0,
-                                          step=1.0, key="pedal_w",
-                                          help="Section width resisting the bend.")
-                _pt = _pc[2].number_input("Pedal thickness (mm)", 2.0, 40.0, 8.0,
-                                          step=0.5, key="pedal_t")
-                _pl = _pc[3].number_input("Lever arm, pad→pivot (mm)", 10.0, 250.0,
-                                          90.0, step=5.0, key="pedal_lever",
-                                          help="Distance from where the foot loads "
-                                               "the pad to the pedal pivot.")
-                _pload = st.number_input(
-                    "Applied load (N)", 500.0, 5000.0,
-                    float(_tr.BRAKE_PEDAL_RULE_LOAD_N), step=100.0, key="pedal_load",
-                    help="The rule load is 2000 N. Raise it only if your team screens "
-                         "at a self-imposed higher case load.")
+                _pw = unum(_pc[1], "Pedal width (mm)", 5.0, 120.0, 35.0, "mm",
+                           step=1.0, key="pedal_w",
+                           help="Section width resisting the bend.")
+                _pt = unum(_pc[2], "Pedal thickness (mm)", 2.0, 40.0, 8.0, "mm",
+                           step=0.5, key="pedal_t")
+                _pl = unum(_pc[3], "Lever arm, pad→pivot (mm)", 10.0, 250.0, 90.0,
+                           "mm", step=5.0, key="pedal_lever",
+                           help="Distance from where the foot loads the pad to the "
+                                "pedal pivot.")
+                _pload = unum(st, "Applied load (N)", 500.0, 5000.0,
+                              float(_tr.BRAKE_PEDAL_RULE_LOAD_N), "N", step=100.0,
+                              key="pedal_load",
+                              help="The rule load is 2000 N (≈450 lbf). Raise it only "
+                                   "if your team screens at a self-imposed higher case "
+                                   "load.")
 
                 # Optional pivot-lug + weld geometry. Without these, only bending is
                 # screened and a clean-looking pass is demoted to TIGHT — an
@@ -8184,18 +8232,17 @@ with tab_brake:
                         'it did, so a partial pass never poses as a clean one.</p>',
                         unsafe_allow_html=True)
                     _gc = st.columns(4)
-                    _pbd = _gc[0].number_input("pivot bolt Ø (mm)", 0.0, 16.0, 0.0,
-                                               step=1.0, key="pedal_bolt",
-                                               help="0 = not screened.")
-                    _ped = _gc[1].number_input("edge distance (mm)", 0.0, 40.0, 0.0,
-                                               step=1.0, key="pedal_edge",
-                                               help="Hole centre → free edge. "
-                                                    "0 = tear-out not screened.")
-                    _pwl = _gc[2].number_input("weld leg (mm)", 0.0, 12.0, 0.0,
-                                               step=0.5, key="pedal_weld_leg",
-                                               help="0 = weld not screened.")
-                    _pwL = _gc[3].number_input("weld length (mm)", 0.0, 200.0, 0.0,
-                                               step=5.0, key="pedal_weld_len")
+                    _pbd = unum(_gc[0], "pivot bolt Ø (mm)", 0.0, 16.0, 0.0, "mm",
+                                step=1.0, key="pedal_bolt", help="0 = not screened.")
+                    _ped = unum(_gc[1], "edge distance (mm)", 0.0, 40.0, 0.0, "mm",
+                                step=1.0, key="pedal_edge",
+                                help="Hole centre → free edge. 0 = tear-out not "
+                                     "screened.")
+                    _pwl = unum(_gc[2], "weld leg (mm)", 0.0, 12.0, 0.0, "mm",
+                                step=0.5, key="pedal_weld_leg",
+                                help="0 = weld not screened.")
+                    _pwL = unum(_gc[3], "weld length (mm)", 0.0, 200.0, 0.0, "mm",
+                                step=5.0, key="pedal_weld_len")
 
                 # Boundary-breaker (validation side): cross-check the TYPED dimensions
                 # against the real CAD model's envelope + units, so a mistyped lever
