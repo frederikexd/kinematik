@@ -7963,15 +7963,30 @@ with tab_brake:
                                                 backend=_fco.QuasiSteadyFlutterModel(
                                                     reduces_stability=_destab))
                                             if _d.c_aero_Nms is not None:
-                                                st.session_state["td_caero"] = \
+                                                # Store under NON-widget keys — writing
+                                                # td_caero directly is illegal once its
+                                                # number_input widget exists this run.
+                                                st.session_state["td_caero_cosim"] = \
                                                     float(_d.c_aero_Nms)
-                                                st.session_state["td_crefv"] = \
+                                                st.session_state["td_crefv_cosim"] = \
                                                     float(_d.ref_speed_ms)
                                                 st.info(f"c_aero = {_d.c_aero_Nms:.3e} "
                                                         f"N·m·s — {_d.provenance.status()}")
                                                 for _df in _d.findings:
                                                     st.caption(_df.message)
-                                                st.rerun()
+                                        # Show/clear any co-sim value in effect
+                                        if "td_caero_cosim" in st.session_state:
+                                            st.caption(
+                                                "Using the co-sim coefficient "
+                                                f"{st.session_state['td_caero_cosim']:.3e} "
+                                                "N·m·s below (overrides the typed box). "
+                                                "Clear it to type your own.")
+                                            if st.button("Clear co-sim value",
+                                                         key="fco_clear"):
+                                                st.session_state.pop("td_caero_cosim",
+                                                                     None)
+                                                st.session_state.pop("td_crefv_cosim",
+                                                                     None)
                                     else:
                                         st.caption(
                                             "Writes a solver-neutral forced-"
@@ -7990,11 +8005,14 @@ with tab_brake:
                                                        f"result JSON alongside, then "
                                                        f"read it back via the API.")
 
+                            # A co-sim result (stored under a non-widget key) wins
+                            # over the typed box; otherwise use what was typed.
+                            _caero_eff = st.session_state.get("td_caero_cosim", _caero)
+                            _crefv_eff = st.session_state.get("td_crefv_cosim", _crefv)
                             _fp = _td.FlutterParams(
                                 k_theta_Nm_per_rad=_ktheta, c_struct_Nms=_cstruct,
-                                c_aero_Nms=st.session_state.get("td_caero", _caero),
-                                c_aero_ref_speed_ms=st.session_state.get("td_crefv",
-                                                                         _crefv))
+                                c_aero_Nms=_caero_eff,
+                                c_aero_ref_speed_ms=_crefv_eff)
                             _fr = _td.screen_plate_flutter(
                                 _inertia, _fp, intake_speed_ms=_fintake)
                             _fcc1, _fcc2 = st.columns(2)
@@ -14894,6 +14912,7 @@ project_bundle = {
             # manifold coupling + flutter
             "td_plenum", "td_bore", "td_draw", "td_mtc", "td_ktheta", "td_cstruct",
             "td_caero", "td_crefv", "td_fintake",
+            "td_caero_cosim", "td_crefv_cosim",
         )
         if st.session_state.get(k) is not None
     },
