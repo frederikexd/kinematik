@@ -133,6 +133,34 @@ def test_extract_with_external_backend_yields_none_not_fabrication():
     assert d.findings
 
 
+def test_case_artifacts_are_downloadable_ansys_formats():
+    # The team has ANSYS/SolidWorks, not a JSON pipeline — the case must be offered
+    # in formats they can actually run, as in-memory strings (no /tmp).
+    arts = ExternalCFDFlutterBackend(name="external-urans").case_artifacts(_case())
+    names = list(arts.keys())
+    assert any(n.endswith(".jou") for n in names)     # Fluent journal
+    assert any(n.endswith(".csv") for n in names)     # parameter table
+    assert any(n.endswith(".txt") for n in names)     # setup sheet
+    assert any(n.endswith(".json") for n in names)    # machine round-trip
+    # every artifact is a non-empty string
+    assert all(isinstance(v, str) and v.strip() for v in arts.values())
+
+
+def test_case_artifacts_carry_the_real_case_numbers():
+    import json as _json
+    c = _case(frequency_hz=50, intake_speed_ms=40)
+    arts = ExternalCFDFlutterBackend(name="external-urans").case_artifacts(c)
+    # the CSV holds the actual frequency and speed
+    csv = arts["external-urans_flutter_params.csv"]
+    assert "oscillation_frequency,50" in csv
+    assert "intake_speed,40" in csv
+    # the JSON round-trips to the same case
+    js = _json.loads(arts["external-urans_flutter_case.json"])
+    assert js["case"]["frequency_hz"] == 50
+    # the journal names the extract target
+    assert "c_aero" in arts["external-urans_flutter_case.jou"].lower()
+
+
 # --------------------------------------------------------------------------- #
 #  Provenance status string + package surface
 # --------------------------------------------------------------------------- #
