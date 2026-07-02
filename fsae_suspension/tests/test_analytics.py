@@ -150,3 +150,49 @@ if __name__ == "__main__":
             print("✗", n)
             traceback.print_exc()
     print(f"\n{passed} passed (run via pytest for monkeypatch tests)")
+
+
+def test_return_visit_logs_new_session_start(tmp_path):
+    """The reported bug: a returning user must produce a NEW session_start, and
+    each visit must get its own session_id. In headless mode the per-session
+    store is the process-level _SESS mirror, so we simulate a 'return' by
+    clearing it the way a fresh browser session would be."""
+    ax = _fresh_module(tmp_path)
+    ax.init(member="Aidan", subteam="aero")           # visit 1
+    ax.tab_open("kinematics")
+    # simulate the browser closing + returning: fresh per-session state
+    ax._SESS.started = False
+    ax._SESS.session_id = ""
+    ax._SESS.first_result_logged = False
+    ax.init(member="Aidan", subteam="aero")           # visit 2 (return)
+    ax.tab_open("kinematics")
+    path = os.path.join(str(tmp_path), "analytics_buffer.jsonl")
+    rows = _drain(ax, path)
+    starts = [r for r in rows if r["event_type"] == "session_start"]
+    assert len(starts) == 2, "a returning visit must log a second session_start"
+    # two distinct session ids
+    assert len({r["session_id"] for r in rows}) == 2
+
+
+def test_session_start_not_duplicated_within_one_visit(tmp_path):
+    """Within a single visit, repeated init() calls (Streamlit reruns) must NOT
+    spam session_start."""
+    ax = _fresh_module(tmp_path)
+    for _ in range(5):
+        ax.init(member="Sam", subteam="suspension")   # 5 reruns, one visit
+        ax.tab_open("weight")
+    path = os.path.join(str(tmp_path), "analytics_buffer.jsonl")
+    rows = _drain(ax, path)
+    starts = [r for r in rows if r["event_type"] == "session_start"]
+    assert len(starts) == 1, "one visit must log exactly one session_start"
+
+
+def test_visitor_id_recorded(tmp_path):
+    ax = _fresh_module(tmp_path)
+    ax.init(subteam="aero")
+    ax.set_visitor_id("browser-abc-123")
+    ax.tab_open("kinematics")
+    path = os.path.join(str(tmp_path), "analytics_buffer.jsonl")
+    rows = _drain(ax, path)
+    tab = [r for r in rows if r["event_type"] == "tab_open"][0]
+    assert tab["visitor_id"] == "browser-abc-123"
