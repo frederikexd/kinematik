@@ -6741,7 +6741,8 @@ with tab_brake:
         'and wheelbase.</p>', unsafe_allow_html=True)
 
     _bview = st.radio("View", ["Bias & lock-up", "Hydraulic sizing",
-                               "Bolt & bracket FoS", "Rotor thermal"],
+                               "Bolt & bracket FoS", "Pedal box & throttle",
+                               "Rotor thermal"],
                       horizontal=True, key="brake_view", label_visibility="collapsed")
 
     _wheel_r_mm = st.session_state.get("brake_wheel_r", 228.0)
@@ -6878,6 +6879,7 @@ with tab_brake:
         _T_need = _Tf_need if _axle.startswith("Front") else _Tr_need
         _pedal_ratio = hc[1].number_input("Pedal ratio", 3.0, 8.0, value=5.0, step=0.25,
                                           help="Mechanical advantage of the brake pedal (lever).")
+        st.session_state["brake_pedal_ratio"] = float(_pedal_ratio)
         _mc_dia = unum(hc[2], "Master cyl. ⌀ (mm)", 12, 25, 15.875, "mm", step=0.397,
                        help="Smaller bore = more line pressure for the same pedal force, "
                             "but more pedal travel. 5/8\" = 15.875 mm is common.")
@@ -6892,6 +6894,7 @@ with tab_brake:
         st.session_state["brake_rotor_dia_mm"] = float(_rotor_dia)
         _pedal_force = unum(hc2[3], "Driver pedal force (N)", 100, 1200, 500, "N",
                             step=25.0, help="A strong driver can apply ~600–800 N.")
+        st.session_state["brake_driver_pedal_force"] = float(_pedal_force)
 
         # hydraulic chain
         _A_mc = np.pi * (_mc_dia / 1000.0 / 2) ** 2          # master cyl area m²
@@ -7408,6 +7411,783 @@ with tab_brake:
                                "the Ansys run; it doesn't replace it.")
 
     # =================================================================== #
+    elif _bview == "Pedal box & throttle":
+        # ---------------------------------------------------------------- #
+        #  What the brakes / pedal-box lead asked for, in one place:
+        #    (a) throttle return: TWO springs, and it must STILL return to
+        #        closed if any ONE unhooks  ("needs to still bounce if even
+        #        one unhooks") — the FSAE two-independent-return-spring rule,
+        #        modelled as net closing torque with each spring removed;
+        #    (b) "we don't know the spring constant" — back k out on the bench
+        #        or from coil geometry, no magic default;
+        #    (c) the brake pedal must withstand 2000 N — screened on the same
+        #        FoS>=1.5-on-yield rule every other bracket uses.
+        #  This is the Simulink-replacement: the redundancy logic and the
+        #  pedal gate live next to the hydraulic chain, not in a side model.
+        # ---------------------------------------------------------------- #
+        try:
+            from suspension import throttle_return as _tr
+            from suspension import throttle_return_ingest as _ing
+        except Exception as _tre:   # pragma: no cover - defensive UI guard
+            _tr = None
+            _ing = None
+            st.error(f"Throttle-return module unavailable: {_tre}")
+
+        if _tr is not None:
+            _pv = st.radio(
+                "Check", ["Throttle return springs", "Brake pedal 2000 N"],
+                horizontal=True, key="pedal_view", label_visibility="collapsed")
+
+            # ============================================================ #
+            if _pv == "Throttle return springs":
+                st.markdown(
+                    '<p class="hint">FSAE requires <b>two</b> return springs, '
+                    'arranged so the throttle still returns to <b>closed</b> if '
+                    '<i>any one component fails</i> — including one spring coming '
+                    'unhooked. Sensors (TPS/APPS) do <b>not</b> count. This view '
+                    'models the <b>net closing torque</b> across pedal travel with '
+                    'every single spring removed in turn: it passes only if the car '
+                    'still shuts the throttle on one spring, with margin over '
+                    'friction and cable drag.</p>', unsafe_allow_html=True)
+
+                # ---- "We don't know k" — get it honestly -------------------
+                with st.expander("Don't know the spring constant? Get it here "
+                                 "(bench log, single measurement, or coil geometry)",
+                                 expanded=False):
+                    st.markdown(
+                        '<p class="hint" style="margin:-2px 0 8px;">Three honest ways. '
+                        'A <b>bench log</b> is best — upload the CSV and the rate is '
+                        'fitted from the real part, no retyping, with the R² so you '
+                        'can see how linear it actually is.</p>',
+                        unsafe_allow_html=True)
+
+                    # Boundary-breaker: fit k straight from a measured force/deflection
+                    # log, so the number the redundancy check uses IS the real spring's
+                    # rate, not something a human transcribed off the bench.
+                    _blog = st.file_uploader(
+                        "Bench log CSV (force + deflection columns)",
+                        type=["csv", "tsv", "txt"], key="tr_bench_log",
+                        help="Columns like 'force_N' and 'deflection_mm'. Hang several "
+                             "known loads, record deflection at each. The rate is "
+                             "least-squares fitted from the data.")
+                    _bcol = st.columns(2)
+                    _kgf = _bcol[0].checkbox(
+                        "force column is mass in kgf", value=False, key="tr_bench_kgf",
+                        help="Tick if you logged hung MASS (kg) rather than force (N).")
+                    _bcol[1].download_button(
+                        "⬇ Template CSV", key="tr_bench_template",
+                        data=("deflection_mm,force_N\n0,0\n10,5\n20,10\n30,15\n"
+                              "40,20\n50,25\n"),
+                        file_name="throttle_spring_bench_log_template.csv",
+                        mime="text/csv",
+                        help="Fill in your measured deflection at each hung load, then "
+                             "upload it above.")
+                    if _blog is not None:
+                        try:
+                            _fit = _ing.spring_rate_from_bench_log(
+                                _blog.getvalue(), force_in_kgf=_kgf)
+                            for _ff in _fit.findings:
+                                _sev = {"ok": st.success, "warning": st.warning,
+                                        "fail": st.error,
+                                        "missing": st.info}.get(_ff.severity.value,
+                                                                st.info)
+                                _sev(_ff.message)
+                            if _fit.is_trustworthy:
+                                st.session_state["tr_k_measured"] = _fit.k_N_per_m
+                                st.caption(
+                                    f"Using fitted k = {_fit.k_N_per_m:.0f} N/m "
+                                    f"(R²={_fit.r_squared:.4f}, {_fit.n_points} pts). "
+                                    "The spring inputs below are pre-filled from this.")
+                            else:
+                                st.caption("Fit not trustworthy — not feeding it "
+                                           "forward. Fix the log or use another method.")
+                        except Exception as _fe:
+                            st.warning(f"Couldn't read the bench log: {_fe}")
+
+                    st.markdown("---")
+                    _kc = st.columns(2)
+                    with _kc[0]:
+                        st.markdown("**Single measurement:** one known load & travel")
+                        _bf = st.number_input("Load hung (N)", 1.0, 500.0, 19.6,
+                                              step=1.0, key="tr_bench_F",
+                                              help="A labelled gym plate or a luggage "
+                                                   "scale pulled to a mark.")
+                        _bx = st.number_input("Deflection (mm)", 1.0, 300.0, 35.0,
+                                              step=1.0, key="tr_bench_x")
+                        try:
+                            _kb = _tr.k_from_deflection(_bf, _bx / 1000.0)
+                            st.success(f"k = {_kb:.0f} N/m  (= {_kb/1000:.2f} N/mm)")
+                            # A single point is weaker than a fitted log; only seed the
+                            # default if a trustworthy log hasn't already set it.
+                            st.session_state.setdefault("tr_k_measured", _kb)
+                        except Exception as _ke:
+                            st.warning(str(_ke))
+                    with _kc[1]:
+                        st.markdown("**Coil geometry** (datasheet or measure)")
+                        _wd = st.number_input("Wire dia d (mm)", 0.2, 6.0, 1.2,
+                                              step=0.1, key="tr_wire_d")
+                        _cd = st.number_input("Mean coil dia D (mm)", 2.0, 40.0, 9.0,
+                                              step=0.5, key="tr_coil_D",
+                                              help="Mean = outer dia − wire dia.")
+                        _na = st.number_input("Active coils Na", 1.0, 40.0, 6.0,
+                                              step=0.5, key="tr_active_n",
+                                              help="Total turns minus the dead end "
+                                                   "coils (~2 for squared/ground ends).")
+                        _wm = st.selectbox("Wire material",
+                                           list(_tr.WIRE_SHEAR_MODULUS_PA.keys()),
+                                           key="tr_wire_mat")
+                        try:
+                            _kg = _tr.k_compression_spring(
+                                _wd / 1000.0, _cd / 1000.0, _na, material=_wm)
+                            st.info(f"k = {_kg:.0f} N/m  (= {_kg/1000:.2f} N/mm)")
+                        except Exception as _ge:
+                            st.warning(str(_ge))
+
+                st.markdown("##### Return springs on the pedal")
+                st.markdown(
+                    '<p class="hint" style="margin:-2px 0 8px;">Both springs are '
+                    'checked as entered — the tool never assumes the backup matches '
+                    'the primary, because the whole point is surviving the loss of '
+                    '<i>either specific</i> spring. If your two springs really are the '
+                    'same part, use <b>Copy primary → backup</b> to fill it fast, then '
+                    'confirm the backup\'s arm/preload (they often differ even with an '
+                    'identical spring). If a rate is a guess, leave <i>measured k?</i> '
+                    'unticked.</p>', unsafe_allow_html=True)
+
+                # Convenience only, NOT an assumption: this copies the primary's values
+                # into the backup's input keys, then the backup is still shown and still
+                # checked as its own spring. Nothing is cloned behind the user's back.
+                if st.button("⧉ Copy primary → backup",
+                             key="tr_copy_primary",
+                             help="Pre-fill the backup with the primary's numbers so "
+                                  "you can tweak from there. The backup is still shown "
+                                  "and checked on its own values — this only saves "
+                                  "typing, it does not assume they match."):
+                    for _fld in ("k", "arm", "pre", "trav", "meas"):
+                        _src = st.session_state.get(f"tr_{_fld}_primary")
+                        if _src is not None:
+                            st.session_state[f"tr_{_fld}_backup"] = _src
+                    st.rerun()
+
+                _k_seed = float(st.session_state.get("tr_k_measured", 500.0))
+                _springs = []
+                for _i, _nm in enumerate(("primary", "backup")):
+                    st.markdown(f"**Spring {_i+1} — {_nm}**")
+                    _sc = st.columns(5)
+                    _sk = _sc[0].number_input(
+                        f"rate k (N/mm) [{_nm}]", 0.05, 200.0,
+                        round(_k_seed / 1000.0, 2), step=0.05, key=f"tr_k_{_nm}")
+                    _sarm = _sc[1].number_input(
+                        f"moment arm (mm) [{_nm}]", 2.0, 120.0, 30.0, step=1.0,
+                        key=f"tr_arm_{_nm}",
+                        help="Perpendicular distance pivot→spring line of action.")
+                    _spre = _sc[2].number_input(
+                        f"preload stretch (mm) [{_nm}]", 0.0, 100.0, 15.0, step=1.0,
+                        key=f"tr_pre_{_nm}",
+                        help="How far the spring is stretched at the CLOSED stop — "
+                             "this is what holds the pedal shut when released.")
+                    _strav = _sc[3].number_input(
+                        f"extra stretch, closed→open (mm) [{_nm}]", 0.0, 120.0,
+                        40.0, step=1.0, key=f"tr_trav_{_nm}")
+                    _smeas = _sc[4].checkbox(f"measured k? [{_nm}]", value=False,
+                                             key=f"tr_meas_{_nm}")
+                    _springs.append(_tr.ReturnSpring.from_linear_spring(
+                        _nm, k_N_per_m=_sk * 1000.0, moment_arm_m=_sarm / 1000.0,
+                        preload_stretch_m=_spre / 1000.0,
+                        travel_stretch_m=_strav / 1000.0,
+                        is_estimate=not _smeas))
+
+                st.markdown("##### What fights the return (be generous)")
+                _rc = st.columns(4)
+                _fr = _rc[0].number_input("pivot friction (N·m)", 0.0, 5.0, 0.10,
+                                          step=0.02, key="tr_fric",
+                                          help="Worst-case Coulomb friction / stiction "
+                                               "at the pivot and linkage.")
+                _cdg = _rc[1].number_input("cable/rod drag (N·m)", 0.0, 5.0, 0.05,
+                                           step=0.02, key="tr_cable")
+                _sd = _rc[2].number_input("sensor detent (N·m)", 0.0, 5.0, 0.02,
+                                          step=0.02, key="tr_sensor",
+                                          help="Any return-fighting torque from the "
+                                               "TPS/APPS body. Sensors are not springs.")
+                _mt = _rc[3].number_input("margin target", 0.25, 4.0, 1.0, step=0.25,
+                                          key="tr_margin",
+                                          help="Required net closing authority over "
+                                               "resistance in the worst single-failure "
+                                               "case. 1.0 = clears resistance with 100% "
+                                               "margin on the surviving spring.")
+                _res = _tr.ReturnResistance(friction_Nm=_fr, cable_drag_Nm=_cdg,
+                                            sensor_detent_Nm=_sd)
+
+                _rr = _tr.check_return_redundancy(_springs, _res, margin_target=_mt)
+
+                # Make the live result available to the cross-discipline mythbuster,
+                # so a claim like "the springs are identical, backup's fine" is checked
+                # against THESE numbers, not just physics.
+                st.session_state["throttle_return_result"] = _rr
+
+                # Frictionless framing: if the user hasn't entered their OWN numbers
+                # yet (both springs still estimates, no bench-fitted rate), don't shout
+                # a red FAIL at them on example data — say plainly it's provisional and
+                # what to do. A FAIL should mean YOUR car fails, not "you haven't
+                # started". The computation is unchanged; only the framing adapts.
+                _on_example_data = (
+                    _rr.is_estimate
+                    and st.session_state.get("tr_k_measured") is None)
+                if _on_example_data:
+                    st.info(
+                        f"▶ Provisional (example numbers): would be **{_rr.verdict}** — "
+                        f"worst single-failure case {_rr.worst_case}, margin "
+                        f"{_rr.worst_margin:.2f}. Enter your springs (or drop a bench "
+                        f"log above) to check your actual throttle. Nothing here is "
+                        f"your car yet.")
+                else:
+                    _vcol = {"PASS": st.success, "TIGHT": st.warning,
+                             "FAIL": st.error, "INVALID": st.error}[_rr.verdict]
+                    _vcol(f"{_rr.verdict} — worst single-failure case: {_rr.worst_case} "
+                          f"(margin {_rr.worst_margin:.2f} over resistance)")
+
+                # Table of every case
+                try:
+                    import pandas as _pd
+                    _df = _pd.DataFrame([{
+                        "case": _c.label,
+                        "net closing @ closed (N·m)": round(_c.net_closed_Nm, 3),
+                        "net closing @ open (N·m)": round(_c.net_open_Nm, 3),
+                        "returns to closed?": "yes" if _c.closes else "NO — HANGS OPEN",
+                    } for _c in _rr.cases])
+                    st.dataframe(_df, width='stretch', hide_index=True)
+                except Exception:
+                    for _c in _rr.cases:
+                        st.write(f"{_c.label}: closed={_c.net_closed_Nm:.2f} "
+                                 f"open={_c.net_open_Nm:.2f} "
+                                 f"{'closes' if _c.closes else 'HANGS OPEN'}")
+
+                for _f in _rr.findings:
+                    _msev = {"ok": st.success, "warning": st.warning,
+                             "fail": st.error}.get(_f.severity.value, st.info)
+                    _msev(_f.message)
+                for _n in _rr.notes:
+                    st.caption("note: " + _n)
+
+                # -------------------------------------------------------- #
+                #  Transient return-time (snap-shut) — how FAST it closes,
+                #  and whether stiction stalls it, with each spring removed.
+                #  The redundancy table above is a torque balance; this is
+                #  the dynamics: spin the throttle inertia against the spring.
+                # -------------------------------------------------------- #
+                with st.expander("Return time & snap (transient) — how fast does it "
+                                 "actually close, with one spring gone?",
+                                 expanded=False):
+                    st.markdown(
+                        '<p class="hint" style="margin:-2px 0 8px;">The table above is '
+                        'a torque balance (does it close). This spins the throttle\'s '
+                        'rotating <b>inertia</b> against the spring to time the '
+                        '<b>snap-shut</b> — and catches a return that stalls on '
+                        'stiction partway. Inertia is the unknown here, like the '
+                        'spring rate was; estimate it from geometry or type a measured '
+                        'value. Result is flagged as an estimate until the inertia '
+                        'is real.</p>', unsafe_allow_html=True)
+
+                    _ic = st.columns(4)
+                    _plate_m = _ic[0].number_input(
+                        "throttle plate mass (g)", 1.0, 200.0, 25.0, step=1.0,
+                        key="snap_plate_m",
+                        help="Mass of the throttle plate/flap.") / 1000.0
+                    _plate_r = _ic[1].number_input(
+                        "plate half-width (mm)", 2.0, 60.0, 20.0, step=1.0,
+                        key="snap_plate_r",
+                        help="Half the plate width (rotation radius).") / 1000.0
+                    _refl_m = _ic[2].number_input(
+                        "cable+pedal mass (g)", 0.0, 1000.0, 0.0, step=10.0,
+                        key="snap_refl_m",
+                        help="Optional: pedal/cable mass reflected to the shaft.") / 1000.0
+                    _refl_a = _ic[3].number_input(
+                        "at arm (mm)", 0.0, 200.0, 0.0, step=5.0,
+                        key="snap_refl_a",
+                        help="Lever arm for that reflected mass.") / 1000.0
+                    _theta_open = st.number_input(
+                        "throttle travel, closed→open (deg)", 10.0, 120.0, 90.0,
+                        step=5.0, key="snap_theta_open")
+
+                    _inertia = _tr.estimate_throttle_inertia(
+                        plate_mass_kg=_plate_m, plate_radius_m=_plate_r,
+                        cable_pedal_mass_kg=_refl_m, pedal_arm_m=_refl_a)
+                    st.caption(f"Estimated rotating inertia ≈ {_inertia.I_kgm2:.2e} "
+                               f"kg·m² (geometry estimate — replace with CAD "
+                               f"mass-properties or a spin-down test to trust the ms).")
+
+                    # Advanced physics: cable slack/backlash, nonlinear cam, aero.
+                    # All default OFF, so the simple model is unchanged unless used.
+                    _snap_model = None
+                    with st.expander("Advanced: cable slack/backlash · nonlinear cam · "
+                                     "aero load on the plate", expanded=False):
+                        _ac = st.columns(2)
+                        _lash_deg = _ac[0].number_input(
+                            "cable backlash / dead band (deg)", 0.0, 45.0, 0.0,
+                            step=1.0, key="snap_lash_deg",
+                            help="Plate travel at the start of the return where the "
+                                 "spring is taking up cable/linkage slack and isn't "
+                                 "yet acting on the plate.")
+                        _lash_frac = _ac[1].number_input(
+                            "spring fraction reaching plate in that band", 0.0, 1.0,
+                            0.0, step=0.1, key="snap_lash_frac",
+                            help="0 = spring fully disconnected through the slack "
+                                 "(plate unsprung there); 1 = no effect.")
+                        st.markdown("**Nonlinear cam profile** (plate angle → torque "
+                                    "multiplier; leave default for a linear mechanism)")
+                        _cam_on = st.checkbox("use a cam profile", value=False,
+                                              key="snap_cam_on")
+                        _cam_profile = None
+                        if _cam_on:
+                            _cc = st.columns(3)
+                            _m_closed = _cc[0].number_input(
+                                "mult @ closed (0°)", 0.1, 3.0, 0.7, step=0.1,
+                                key="snap_cam_closed")
+                            _m_mid = _cc[1].number_input(
+                                "mult @ mid", 0.1, 3.0, 1.0, step=0.1,
+                                key="snap_cam_mid")
+                            _m_open = _cc[2].number_input(
+                                "mult @ open", 0.1, 3.0, 1.3, step=0.1,
+                                key="snap_cam_open")
+                            _cam_profile = [(0.0, _m_closed),
+                                            (_theta_open / 2.0, _m_mid),
+                                            (_theta_open, _m_open)]
+                        st.markdown("**Aero load on the plate** (needs a real "
+                                    "coefficient — defaults to zero and is flagged)")
+                        _aec = st.columns(4)
+                        _intake_v = _aec[0].number_input(
+                            "intake speed (m/s)", 0.0, 120.0, 0.0, step=5.0,
+                            key="snap_intake_v",
+                            help="Airflow speed past the plate. If you set this but "
+                                 "leave the coefficient at 0, aero is treated as zero "
+                                 "and flagged — no invented number.")
+                        _aero_coeff = _aec[1].number_input(
+                            "aero torque coeff", 0.0, 10.0, 0.0, step=0.1,
+                            key="snap_aero_coeff",
+                            help="From a flow bench or CFD. 0 = aero off.")
+                        _plate_A = _aec[2].number_input(
+                            "plate area (cm²)", 0.0, 50.0, 0.0, step=0.5,
+                            key="snap_plate_A") / 1e4
+                        _aero_opens = _aec[3].checkbox(
+                            "aero opens plate", value=True, key="snap_aero_opens",
+                            help="Airflow tends to hold the plate OPEN (the dangerous "
+                                 "case) rather than help it close.")
+                        if (_lash_deg > 0 or _cam_profile is not None
+                                or _intake_v > 0):
+                            _snap_model = _tr.SnapModel(
+                                backlash_deg=_lash_deg,
+                                backlash_spring_frac=_lash_frac,
+                                cam_profile=_cam_profile,
+                                aero_torque_coeff=_aero_coeff,
+                                aero_opens_plate=_aero_opens,
+                                intake_speed_ms=_intake_v,
+                                plate_area_m2=_plate_A,
+                                plate_radius_m=_plate_r)
+
+                    _snaps = _tr.simulate_return_snap_single_failures(
+                        _springs, _inertia, _res, theta_open_deg=_theta_open,
+                        model=_snap_model)
+                    try:
+                        import pandas as _pd2
+                        _sd = _pd2.DataFrame([{
+                            "case": _lbl,
+                            "returns?": "yes" if _sr.returns else "NO — HANGS",
+                            "return time": (f"{_sr.return_time_s*1000:.0f} ms"
+                                            if _sr.returns
+                                            else f"stalls @ {_sr.hung_at_deg:.0f}°"),
+                            "peak speed (rad/s)": round(_sr.peak_speed_rad_s, 1),
+                        } for _lbl, _sr in _snaps.items()])
+                        st.dataframe(_sd, width='stretch', hide_index=True)
+                    except Exception:
+                        for _lbl, _sr in _snaps.items():
+                            _t = (f"{_sr.return_time_s*1000:.0f} ms" if _sr.returns
+                                  else f"HANGS @ {_sr.hung_at_deg:.0f}°")
+                            st.write(f"{_lbl}: {_t}")
+
+                    # surface the worst single-failure case's finding
+                    _sf = {k: v for k, v in _snaps.items() if k.startswith("without")}
+                    if _sf:
+                        _worst = max(_sf.values(),
+                                     key=lambda s: (0 if s.returns else 1,
+                                                    s.return_time_s if s.returns else 0))
+                        for _f in _worst.findings:
+                            _msev = {"ok": st.success, "warning": st.warning,
+                                     "fail": st.error}.get(_f.severity.value, st.info)
+                            _msev(_f.message)
+
+                # -------------------------------------------------------- #
+                #  Manifold-pressure coupling + plate-flutter screen.
+                #  Deeper physics for the ANSYS hand-off: the coupled plate+
+                #  plenum ODE and a flutter stability screen. Both are honest
+                #  about being SCREENS — flutter especially needs a real aero
+                #  coefficient or it says so.
+                # -------------------------------------------------------- #
+                try:
+                    from suspension import throttle_dynamics as _td
+                except Exception:
+                    _td = None
+                if _td is not None:
+                    with st.expander("Manifold coupling & plate flutter (pre-ANSYS "
+                                     "screen)", expanded=False):
+                        st.markdown(
+                            '<p class="hint" style="margin:-2px 0 8px;">Two coupled '
+                            'effects for the CFD/FEA hand-off: the <b>plate+manifold '
+                            'pressure</b> ODE (does the developing vacuum change the '
+                            'return, how deep does it go) and a <b>flutter</b> '
+                            'stability screen. Both are <b>screens</b>, not '
+                            'validation — flutter needs a real aero-damping '
+                            'coefficient from CFD or a flow rig, and says so if you '
+                            'don\'t have one. A green screen earns the ANSYS run; it '
+                            'doesn\'t replace it.</p>', unsafe_allow_html=True)
+
+                        _md1, _md2 = st.tabs(["Manifold coupling", "Flutter screen"])
+
+                        with _md1:
+                            _mc = st.columns(4)
+                            _plenum = _mc[0].number_input(
+                                "plenum volume (cc)", 100.0, 8000.0, 2000.0,
+                                step=100.0, key="td_plenum") / 1e6
+                            _bore = _mc[1].number_input(
+                                "throttle bore area (cm²)", 1.0, 60.0, 15.0,
+                                step=1.0, key="td_bore") / 1e4
+                            _draw = _mc[2].number_input(
+                                "engine airflow draw (kg/s)", 0.0, 0.3, 0.05,
+                                step=0.01, key="td_draw",
+                                help="Mean mass flow the engine pulls from the plenum "
+                                     "at the operating point. 0 = engine off.")
+                            _mtc = _mc[3].number_input(
+                                "manifold torque coeff", 0.0, 1e-3, 0.0,
+                                format="%.6f", step=1e-5, key="td_mtc",
+                                help="Plate-side pressure torque per Pa of vacuum "
+                                     "(from geometry/flow bench). 0 = pressure is "
+                                     "tracked but not fed back as plate torque.")
+                            _mp = _td.ManifoldParams(
+                                plenum_volume_m3=_plenum, bore_area_m2=_bore,
+                                engine_draw_kgps=_draw)
+                            _cr = _td.simulate_coupled_return(
+                                _springs, _inertia, _mp, _res,
+                                theta_open_deg=_theta_open,
+                                manifold_torque_coeff=_mtc)
+                            _cc1, _cc2, _cc3 = st.columns(3)
+                            _cc1.metric("return (coupled)",
+                                        f"{_cr.return_time_s*1000:.0f} ms"
+                                        if _cr.returns else "HANGS")
+                            _cc2.metric("manifold vacuum (max)",
+                                        f"{101.325 - _cr.min_manifold_kpa:.1f} kPa")
+                            _cc3.metric("plate peak speed",
+                                        f"{_cr.peak_speed_rad_s:.0f} rad/s")
+                            for _f in _cr.findings:
+                                _msev = {"ok": st.success, "warning": st.warning,
+                                         "fail": st.error}.get(_f.severity.value,
+                                                               st.info)
+                                _msev(_f.message)
+                            # plot the coupled trace if available
+                            try:
+                                import pandas as _pdc
+                                if _cr.trace:
+                                    _tr_df = _pdc.DataFrame(
+                                        _cr.trace,
+                                        columns=["t", "angle_deg", "omega",
+                                                 "manifold_kPa"]).set_index("t")
+                                    st.line_chart(_tr_df[["angle_deg",
+                                                          "manifold_kPa"]])
+                            except Exception:
+                                pass
+
+                        with _md2:
+                            _fc = st.columns(4)
+                            _ktheta = _fc[0].number_input(
+                                "torsional stiffness (N·m/rad)", 0.1, 50.0, 2.0,
+                                step=0.5, key="td_ktheta",
+                                help="Return-spring rate about the axis + shaft.")
+                            _cstruct = _fc[1].number_input(
+                                "structural damping (N·m·s)", 0.0, 0.1, 0.001,
+                                format="%.4f", step=0.001, key="td_cstruct")
+                            _caero = _fc[2].number_input(
+                                "aero damping coeff (N·m·s)", -0.05, 0.05, 0.0,
+                                format="%.4f", step=0.001, key="td_caero",
+                                help="From CFD or a flow rig. NEGATIVE = aero feeds "
+                                     "energy in (flutter risk). 0 = aeroelastic part "
+                                     "NOT modelled (the screen will say so).")
+                            _crefv = _fc[3].number_input(
+                                "aero ref speed (m/s)", 0.0, 120.0, 30.0, step=5.0,
+                                key="td_crefv",
+                                help="Speed the aero coeff was measured at.")
+                            _fintake = st.number_input(
+                                "intake speed to screen at (m/s)", 0.0, 120.0, 40.0,
+                                step=5.0, key="td_fintake")
+
+                            # Co-sim: source the aero-damping coefficient from CFD
+                            # instead of typing it. Closes the loop honestly — the
+                            # CFD run becomes the SOURCE of the number, with provenance.
+                            try:
+                                from suspension import throttle_flutter_cosim as _fco
+                            except Exception:
+                                _fco = None
+                            if _fco is not None:
+                                with st.expander("Get the aero-damping coefficient "
+                                                 "from CFD co-sim (instead of typing "
+                                                 "it)", expanded=False):
+                                    st.markdown(
+                                        '<p class="hint" style="margin:-2px 0 8px;">'
+                                        'The flutter coefficient really comes from a '
+                                        'forced-oscillation CFD study. This runs the '
+                                        'co-sim seam: a <b>quasi-steady reference</b> '
+                                        'model (trends/sign only — for wiring up the '
+                                        'loop), or write a <b>real URANS/DES case</b> '
+                                        'your team runs on their cluster and reads '
+                                        'back. Either way the number carries its '
+                                        'provenance.</p>', unsafe_allow_html=True)
+                                    _bk = st.radio(
+                                        "Backend", ["Quasi-steady reference (trends "
+                                                    "only)", "External URANS/DES "
+                                                    "(write case for cluster)"],
+                                        key="fco_backend",
+                                        label_visibility="collapsed")
+                                    _oc = _fco.OscillationCase(
+                                        mean_angle_deg=_theta_open / 2.0,
+                                        intake_speed_ms=_fintake or 40.0,
+                                        plate_radius_m=_plate_r,
+                                        plate_area_m2=max(_plate_A, 1e-4)
+                                        if 'snap_plate_A' in st.session_state
+                                        else 1e-3)
+                                    if _bk.startswith("Quasi"):
+                                        _destab = st.checkbox(
+                                            "known destabilising layout (negative "
+                                            "damping)", value=False,
+                                            key="fco_destab")
+                                        if st.button("Run co-sim → coefficient",
+                                                     key="fco_run"):
+                                            _d = _fco.extract_flutter_derivative(
+                                                _oc,
+                                                backend=_fco.QuasiSteadyFlutterModel(
+                                                    reduces_stability=_destab))
+                                            if _d.c_aero_Nms is not None:
+                                                st.session_state["td_caero"] = \
+                                                    float(_d.c_aero_Nms)
+                                                st.session_state["td_crefv"] = \
+                                                    float(_d.ref_speed_ms)
+                                                st.info(f"c_aero = {_d.c_aero_Nms:.3e} "
+                                                        f"N·m·s — {_d.provenance.status()}")
+                                                for _df in _d.findings:
+                                                    st.caption(_df.message)
+                                                st.rerun()
+                                    else:
+                                        st.caption(
+                                            "Writes a solver-neutral forced-"
+                                            "oscillation case. Run it in Fluent / "
+                                            "STAR-CCM+ / OpenFOAM, then read the "
+                                            "result back — KinematiK won't fake the "
+                                            "solve.")
+                                        if st.button("Write external CFD case",
+                                                     key="fco_write"):
+                                            import tempfile as _tf
+                                            _wd = _tf.mkdtemp(prefix="kinematik_flutter_")
+                                            _ext = _fco.ExternalCFDFlutterBackend()
+                                            _p = _ext.write_case(_oc, _wd)
+                                            st.success(f"Case written to {_p}. Run it "
+                                                       f"on your cluster and place the "
+                                                       f"result JSON alongside, then "
+                                                       f"read it back via the API.")
+
+                            _fp = _td.FlutterParams(
+                                k_theta_Nm_per_rad=_ktheta, c_struct_Nms=_cstruct,
+                                c_aero_Nms=st.session_state.get("td_caero", _caero),
+                                c_aero_ref_speed_ms=st.session_state.get("td_crefv",
+                                                                         _crefv))
+                            _fr = _td.screen_plate_flutter(
+                                _inertia, _fp, intake_speed_ms=_fintake)
+                            _fcc1, _fcc2 = st.columns(2)
+                            _fcc1.metric("natural freq",
+                                         f"{_fr.natural_freq_hz:.0f} Hz")
+                            _fcc2.metric("damping ratio",
+                                         f"{_fr.damping_ratio:.3f}")
+                            for _f in _fr.findings:
+                                _msev = {"ok": st.success, "warning": st.warning,
+                                         "fail": st.error}.get(_f.severity.value,
+                                                               st.info)
+                                _msev(_f.message)
+
+                _mbc = st.columns([3, 2])
+                _claim = _mbc[0].text_input(
+                    "Sanity-check a throttle assumption",
+                    value="The two return springs are identical, so if one fails "
+                          "the other is fine.",
+                    key="throttle_myth_input",
+                    help="Runs against the live result above via KinematiK's "
+                         "cross-discipline myth-buster — the same engine on the "
+                         "Myth-buster tab. Deterministic, no AI.")
+                if _mbc[1].button("Bust it →", key="throttle_myth_btn",
+                                  help="Check this claim against the numbers above."):
+                    try:
+                        from suspension import mythbuster as _mb
+                        _mres = _mb.check(_claim,
+                                          context={"brakes": {"return_result": _rr}})
+                        _mv = _mb_verdict_value(_mres)
+                        _mfn = {"myth": st.error, "true": st.success,
+                                "depends": st.warning}.get(_mv, st.info)
+                        _label = {"myth": "MYTH — false",
+                                  "true": "TRUE — confirmed",
+                                  "depends": "DEPENDS",
+                                  "unknown": "no rule matched"}.get(_mv, _mv)
+                        _mfn(f"{_label}: {_mres.explanation}")
+                        if _mres.provenance:
+                            st.caption("computed from: " + _mres.provenance)
+                    except Exception as _me:
+                        st.warning(f"Couldn't run the myth-buster: {_me}")
+
+            # ============================================================ #
+            else:   # Brake pedal 2000 N
+                st.markdown(
+                    '<p class="hint">FSAE Brake System: the <b>brake pedal shall '
+                    'withstand 2000 N</b> applied at the pad without failure. This '
+                    'screens the pedal as a levered member on the same '
+                    '<b>FoS ≥ 1.5-on-yield</b> rule every other bracket uses, so you '
+                    'get a PASS/TIGHT/FAIL in five seconds — before you mesh it. '
+                    'It fails the obviously-undersized pedal instantly; a PASS earns '
+                    'the SolidWorks/Ansys run, it does not replace it.</p>',
+                    unsafe_allow_html=True)
+
+                # Live continuity with Hydraulic sizing: if the team set a pedal
+                # ratio there, the master-cylinder clevis sits at (arm / ratio) from
+                # the pivot — show it so the two views describe one pedal, not two.
+                _pratio = float(st.session_state.get("brake_pedal_ratio", 0.0))
+                _dforce = float(st.session_state.get("brake_driver_pedal_force", 0.0))
+                if _pratio > 0:
+                    st.caption(
+                        f"From Hydraulic sizing: pedal ratio {_pratio:.2f}"
+                        + (f", driver force {units_mod.from_metric(_dforce,'N'):.0f} "
+                           f"{units_mod.label('N')}" if _dforce > 0 else "")
+                        + ". The MC pushrod clevis reacts at ≈ (lever arm ÷ ratio) "
+                          "from the pivot; the 2000 N rule load is the structural case "
+                          "regardless of driver force.")
+
+                _pc = st.columns(4)
+                _pmat = _pc[0].selectbox(
+                    "Pedal material", list(bracket_mod.MATERIALS.keys()),
+                    index=list(bracket_mod.MATERIALS.keys()).index(
+                        "Aluminium 7075-T6")
+                    if "Aluminium 7075-T6" in bracket_mod.MATERIALS else 0,
+                    key="pedal_mat",
+                    help="7075-T6 is the usual aluminium pedal stock.")
+                _pw = _pc[1].number_input("Pedal width (mm)", 5.0, 120.0, 35.0,
+                                          step=1.0, key="pedal_w",
+                                          help="Section width resisting the bend.")
+                _pt = _pc[2].number_input("Pedal thickness (mm)", 2.0, 40.0, 8.0,
+                                          step=0.5, key="pedal_t")
+                _pl = _pc[3].number_input("Lever arm, pad→pivot (mm)", 10.0, 250.0,
+                                          90.0, step=5.0, key="pedal_lever",
+                                          help="Distance from where the foot loads "
+                                               "the pad to the pedal pivot.")
+                _pload = st.number_input(
+                    "Applied load (N)", 500.0, 5000.0,
+                    float(_tr.BRAKE_PEDAL_RULE_LOAD_N), step=100.0, key="pedal_load",
+                    help="The rule load is 2000 N. Raise it only if your team screens "
+                         "at a self-imposed higher case load.")
+
+                # Optional pivot-lug + weld geometry. Without these, only bending is
+                # screened and a clean-looking pass is demoted to TIGHT — an
+                # incomplete screen must not read as a validated pedal.
+                with st.expander("Pivot lug & weld geometry — screen bearing, "
+                                 "tear-out and weld (recommended before you trust a "
+                                 "pass)", expanded=False):
+                    st.markdown(
+                        '<p class="hint" style="margin:-2px 0 8px;">A real pedal also '
+                        'fails at the <b>pivot lug</b> (bolt bearing, tear-out to the '
+                        'edge) and, if fabricated, at the <b>welds</b>. Leave these '
+                        'blank and the screen checks bending only — and will flag that '
+                        'it did, so a partial pass never poses as a clean one.</p>',
+                        unsafe_allow_html=True)
+                    _gc = st.columns(4)
+                    _pbd = _gc[0].number_input("pivot bolt Ø (mm)", 0.0, 16.0, 0.0,
+                                               step=1.0, key="pedal_bolt",
+                                               help="0 = not screened.")
+                    _ped = _gc[1].number_input("edge distance (mm)", 0.0, 40.0, 0.0,
+                                               step=1.0, key="pedal_edge",
+                                               help="Hole centre → free edge. "
+                                                    "0 = tear-out not screened.")
+                    _pwl = _gc[2].number_input("weld leg (mm)", 0.0, 12.0, 0.0,
+                                               step=0.5, key="pedal_weld_leg",
+                                               help="0 = weld not screened.")
+                    _pwL = _gc[3].number_input("weld length (mm)", 0.0, 200.0, 0.0,
+                                               step=5.0, key="pedal_weld_len")
+
+                # Boundary-breaker (validation side): cross-check the TYPED dimensions
+                # against the real CAD model's envelope + units, so a mistyped lever
+                # arm (inches vs mm, extra digit) is caught against the source of
+                # truth rather than silently screened.
+                with st.expander("Cross-check these dimensions against your CAD "
+                                 "(IGES) — catch a mistyped number", expanded=False):
+                    st.markdown(
+                        '<p class="hint" style="margin:-2px 0 8px;">Upload the pedal '
+                        'IGES. KinematiK can\'t read the section thickness out of the '
+                        'header (that solid geometry isn\'t there) — but it checks your '
+                        'typed dimensions against the model\'s overall size and units, '
+                        'which catches the transcription error that actually bites: '
+                        'inches vs mm, or an extra zero.</p>', unsafe_allow_html=True)
+                    _cadf = st.file_uploader(
+                        "Pedal CAD (IGES / IGS, or a zip)",
+                        type=["igs", "iges", "zip"], key="pedal_cad")
+                    if _cadf is not None and _ing is not None:
+                        try:
+                            from suspension import cad_ingest as _ci
+                            _manifest = _ci.ingest_bundle(_cadf.name, _cadf.getvalue())
+                            _cc = _ing.crosscheck_pedal_against_cad(
+                                _pw, _pt, _pl, _manifest)
+                            for _cf in _cc.findings:
+                                _sev = {"ok": st.success, "warning": st.warning,
+                                        "fail": st.error,
+                                        "missing": st.info}.get(_cf.severity.value,
+                                                                st.info)
+                                _sev(_cf.message)
+                        except Exception as _ce:
+                            st.warning(f"Couldn't cross-check against CAD: {_ce}")
+
+                _pres = _tr.check_brake_pedal_2000N(
+                    width_mm=_pw, thickness_mm=_pt, lever_arm_mm=_pl,
+                    material=_pmat, load_N=_pload,
+                    pivot_bolt_dia_mm=_pbd or None, edge_dist_mm=_ped or None,
+                    weld_leg_mm=_pwl or None, weld_length_mm=_pwL or None)
+
+                _pcol = {"PASS": st.success, "TIGHT": st.warning,
+                         "FAIL": st.error, "INVALID": st.error}[_pres.verdict]
+                _pcol(f"{_pres.verdict} — governing mode {_pres.governing_mode}, "
+                      f"min FoS {_pres.min_fos:.2f} vs required "
+                      f"{_pres.fos_target:.2f} at {_pload:.0f} N")
+                for _f in _pres.findings:
+                    _msev = {"ok": st.success, "warning": st.warning,
+                             "fail": st.error}.get(_f.severity.value, st.info)
+                    _msev(_f.message)
+                for _n in _pres.notes:
+                    st.caption("note: " + _n)
+                if _pres.screening_only:
+                    st.caption("Screening only — closed-form hand calc, no stress "
+                               "concentration or 3-D pedal stiffness. A full-coverage "
+                               "PASS here earns the Ansys run; it doesn't replace it.")
+
+                # Frictionless handoff to the bolt view: the pedal-box mounting bolts
+                # react the same 2000 N through the box feet. Seed that load with one
+                # click instead of re-typing it, the same way the caliper-mount seed
+                # works from the Bias view.
+                st.markdown("")
+                _mnt = st.columns([3, 2])
+                _n_feet = _mnt[1].number_input(
+                    "Pedal-box mount bolts", 2, 8, 4, step=1, key="pedal_box_nfeet",
+                    help="Bolts sharing the 2000 N pedal-box reaction.")
+                _F_perfoot = _pload / max(int(_n_feet), 1)
+                if _mnt[0].button(
+                        f"↻ Seed the Bolt view: {_pload:.0f} N ÷ {int(_n_feet)} "
+                        f"= {_F_perfoot:.0f} N/bolt",
+                        key="pedal_box_seed",
+                        help="Push the pedal-box mount load into Bolt & bracket FoS so "
+                             "you can spec the mounting-bolt torque without re-typing."):
+                    st.session_state["brake_bolt_extN_val"] = float(round(_F_perfoot, 0))
+                    st.session_state.pop("brake_bolt_extN", None)
+                    st.session_state.pop("_u_brake_bolt_extN", None)
+                    st.success("Seeded. Open Bolt & bracket FoS ▸ Bolt preload & torque "
+                               "to spec the pedal-box mount bolts against this load.")
+
+    # =================================================================== #
     elif _bview == "Rotor thermal":
         try:
             import suspension.brake_thermal as _bt
@@ -7868,6 +8648,15 @@ def _mb_build_context():
             ctx["powertrain"] = PowertrainContext(
                 env=_env,
                 gear_final_drive=float(st.session_state.get("_pti_final_drive", 3.5)))
+    except Exception:
+        pass
+    # brakes: live throttle-return redundancy result, if the pedal-box view has
+    # computed one this session. Lets the mythbuster refute "identical springs so
+    # the backup is fine" against the ACTUAL per-spring numbers, not just theory.
+    try:
+        _rr = st.session_state.get("throttle_return_result")
+        if _rr is not None:
+            ctx["brakes"] = {"return_result": _rr}
     except Exception:
         pass
     return ctx
@@ -14030,6 +14819,38 @@ project_bundle = {
     "vehicle": st.session_state.vp,
     "ledger": st.session_state.get("ledger"),
     "handover": json.loads(_store_for_save.as_json()),
+    # Pedal-box / throttle-return inputs, so measured springs and pedal geometry
+    # survive save/load and never have to be re-entered. Only the raw widget
+    # values are stored (not the derived verdict, which recomputes on load).
+    "pedal_throttle": {
+        k: st.session_state.get(k)
+        for k in (
+            # throttle springs (primary + backup, each: rate/arm/preload/travel/measured)
+            "tr_k_primary", "tr_arm_primary", "tr_pre_primary", "tr_trav_primary",
+            "tr_meas_primary",
+            "tr_k_backup", "tr_arm_backup", "tr_pre_backup", "tr_trav_backup",
+            "tr_meas_backup",
+            # resistance + margin
+            "tr_fric", "tr_cable", "tr_sensor", "tr_margin",
+            # a measured rate fitted from a bench log this session
+            "tr_k_measured",
+            # brake pedal geometry
+            "pedal_mat", "pedal_w", "pedal_t", "pedal_lever", "pedal_load",
+            "pedal_bolt", "pedal_edge", "pedal_weld_leg", "pedal_weld_len",
+            "pedal_box_nfeet",
+            # transient snap inputs
+            "snap_plate_m", "snap_plate_r", "snap_refl_m", "snap_refl_a",
+            "snap_theta_open",
+            # advanced snap physics
+            "snap_lash_deg", "snap_lash_frac", "snap_cam_on", "snap_cam_closed",
+            "snap_cam_mid", "snap_cam_open", "snap_intake_v", "snap_aero_coeff",
+            "snap_plate_A", "snap_aero_opens",
+            # manifold coupling + flutter
+            "td_plenum", "td_bore", "td_draw", "td_mtc", "td_ktheta", "td_cstruct",
+            "td_caero", "td_crefv", "td_fintake",
+        )
+        if st.session_state.get(k) is not None
+    },
 }
 
 # --------------------------------------------------------------------------- #
@@ -14129,7 +14950,14 @@ with sc3:
                 _s = get_store()
                 _s._apply(data["handover"])
                 save_store(_s)
-            st.success("Project loaded — geometry, vehicle, and handover restored.")
+            # restore pedal-box / throttle inputs so measured springs + pedal
+            # geometry come back exactly as saved — no re-entry
+            if isinstance(data.get("pedal_throttle"), dict):
+                for _pk, _pv in data["pedal_throttle"].items():
+                    if _pv is not None:
+                        st.session_state[_pk] = _pv
+            st.success("Project loaded — geometry, vehicle, handover, and "
+                       "pedal-box/throttle inputs restored.")
             if st.button("Apply loaded project"):
                 st.rerun()
         except Exception as e:

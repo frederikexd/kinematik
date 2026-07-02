@@ -14,11 +14,7 @@
 # streamlit_app.py), which is where Streamlit Cloud looks for it.
 
 # --- core: imported at package-init time; the app will NOT start without these ---
-streamlit>=1.50,<2
-# Reliable browser-cookie read/write on Streamlit Cloud (raw document.cookie
-# from a component iframe is blocked by the sandbox; this component does it
-# correctly). Used for durable visitor identity / returning-user tracking.
-extra-streamlit-components>=0.1.71
+streamlit>=1.49,<2
 numpy>=1.26
 scipy>=1.11
 plotly>=5.18
