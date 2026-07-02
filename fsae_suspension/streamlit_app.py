@@ -8023,7 +8023,10 @@ with tab_brake:
                         from suspension import mythbuster as _mb
                         _mres = _mb.check(_claim,
                                           context={"brakes": {"return_result": _rr}})
-                        _mv = _mb_verdict_value(_mres)
+                        # Unwrap the verdict (str-enum or str) inline — the shared
+                        # helper is defined later in the file and isn't bound yet here.
+                        _mvraw = getattr(_mres, "verdict", "unknown")
+                        _mv = getattr(_mvraw, "value", _mvraw)
                         _mfn = {"myth": st.error, "true": st.success,
                                 "depends": st.warning}.get(_mv, st.info)
                         _label = {"myth": "MYTH — false",
