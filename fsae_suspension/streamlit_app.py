@@ -8027,15 +8027,24 @@ with tab_brake:
                         # helper is defined later in the file and isn't bound yet here.
                         _mvraw = getattr(_mres, "verdict", "unknown")
                         _mv = getattr(_mvraw, "value", _mvraw)
+                        # Plain-language headline: answer the yes/no question first,
+                        # in words a brakes lead reads at a glance — not "MYTH".
                         _mfn = {"myth": st.error, "true": st.success,
                                 "depends": st.warning}.get(_mv, st.info)
-                        _label = {"myth": "MYTH — false",
-                                  "true": "TRUE — confirmed",
-                                  "depends": "DEPENDS",
-                                  "unknown": "no rule matched"}.get(_mv, _mv)
-                        _mfn(f"{_label}: {_mres.explanation}")
+                        _head = {
+                            "myth": "❌ Not true for your throttle",
+                            "true": "✅ True — your throttle checks out",
+                            "depends": "⚠️ Only just — worth a closer look",
+                            "unknown": "Couldn't match that to a known check",
+                        }.get(_mv, _mv)
+                        _mfn(f"**{_head}**\n\n{_mres.explanation}")
+                        # Keep the raw engine string, but out of the way — it's for
+                        # someone who wants to trace the number, not the headline.
                         if _mres.provenance:
-                            st.caption("computed from: " + _mres.provenance)
+                            with st.expander("How it got this (technical)"):
+                                st.caption("Computed live from your springs above — "
+                                           "no AI, just the numbers:")
+                                st.code(_mres.provenance, language=None)
                     except Exception as _me:
                         st.warning(f"Couldn't run the myth-buster: {_me}")
 
