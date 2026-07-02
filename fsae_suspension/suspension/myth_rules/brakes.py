@@ -137,28 +137,38 @@ def _r_throttle_identical_backup(claim: ParsedClaim, context: Any) -> Optional[C
         verdict = str(getattr(rr, "verdict", "")).upper()
         worst = getattr(rr, "worst_case", "the worst single-failure case")
         margin = getattr(rr, "worst_margin", float("nan"))
+        # Translate the internal case label into plain English: "without 'primary'"
+        # -> "if the primary spring fails".
+        plain = worst
+        if isinstance(worst, str) and worst.startswith("without '") and worst.endswith("'"):
+            plain = f"if the {worst[len('without \''):-1]} spring lets go"
         if verdict == "PASS":
             return CheckOutcome(
                 Verdict.TRUE,
-                ("Checked against the live throttle-return model: with any ONE spring "
-                 f"removed the throttle still closes, worst case {worst} at margin "
-                 f"{margin:.2f} over resistance. The redundancy holds — but note it "
-                 "holds because the model evaluated each spring on its OWN arm and "
-                 "preload, not because they're 'identical'. Keep it that way: re-check "
-                 "if either spring's mounting changes."),
+                (f"Yes — your throttle still closes with either spring gone. Even in "
+                 f"the worst case ({plain}) the remaining spring has enough force to "
+                 f"shut it, against friction and cable drag. One thing to know: this "
+                 f"works because each spring was checked on its own real mounting, not "
+                 f"because they're 'identical' — so if you change either spring's arm "
+                 f"or preload, run this again."),
                 provenance=f"check_return_redundancy PASS; worst {worst} margin {margin:.2f}")
         if verdict in ("TIGHT", "FAIL"):
             v = Verdict.MYTH if verdict == "FAIL" else Verdict.DEPENDS
-            lead = ("FALSE against the live numbers. " if verdict == "FAIL"
-                    else "Only marginally true — the model flags it TIGHT. ")
+            if verdict == "FAIL":
+                lead = (f"No — and this matters. With your current numbers, {plain} "
+                        f"the throttle would NOT close on its own. ")
+            else:
+                lead = (f"Barely — it closes {plain}, but with almost no margin, so "
+                        f"a sticky pivot in the car could hang it. ")
             return CheckOutcome(
                 v,
-                (lead + f"The governing single-failure case is {worst} at margin "
-                 f"{margin:.2f}. 'Identical springs' does not save you: the tool "
-                 "removes each spring in turn and checks the REMAINING one against "
-                 "friction and cable drag on its actual arm/preload. Fix the weak "
-                 "case (more preload/rate, or less drag), don't assume the backup "
-                 "matches the primary."),
+                (lead
+                 + "The catch with 'identical springs': the tool doesn't trust that. "
+                 "It removes each spring in turn and checks whether the one left can "
+                 "still shut the throttle against friction and cable drag, on its "
+                 "actual arm and preload. Here the surviving spring comes up short. "
+                 "Fix it by adding preload or a stiffer spring, or by cutting friction "
+                 "and cable drag — then re-run."),
                 provenance=f"check_return_redundancy {verdict}; worst {worst} margin {margin:.2f}")
 
     # No live data — answer on the rule + physics, honestly labelled.
