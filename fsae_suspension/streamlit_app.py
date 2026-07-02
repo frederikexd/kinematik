@@ -6742,7 +6742,7 @@ with tab_brake:
 
     _bview = st.radio("View", ["Bias & lock-up", "Hydraulic sizing",
                                "Bolt & bracket FoS", "Pedal box & throttle",
-                               "Rotor thermal"],
+                               "Rotor thermal", "Documentation"],
                       horizontal=True, key="brake_view", label_visibility="collapsed")
 
     _wheel_r_mm = st.session_state.get("brake_wheel_r", 228.0)
@@ -8357,6 +8357,141 @@ with tab_brake:
                     "endurance rotor temperatures.")
         else:
             _render_rotor_thermal(_bt, float(_mass), kin)
+
+    # =================================================================== #
+    elif _bview == "Documentation":
+        st.markdown(
+            '<p class="hint">Generate a <b>brakes subsystem report</b> (PDF) from '
+            'everything you\'ve worked out in this workspace — bias, hydraulics, '
+            'pedal box, throttle return. Download it for your design binder, and '
+            'optionally <b>record it in the Handover</b> so next year\'s team (and '
+            'the rest of Elbee) can see what the brakes team decided and why.</p>',
+            unsafe_allow_html=True)
+
+        # ---- assemble the brakes report markdown from live session state -------
+        def _brakes_report_md():
+            import datetime as _dt
+            L = []
+            L.append("# Elbee Racing — Brakes Subsystem Report")
+            L.append(f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._")
+            L.append("")
+            # Bias & lock-up
+            _bias = st.session_state.get("brake_front_bias_pct")
+            _rotor = st.session_state.get("brake_rotor_dia_mm")
+            if _bias is not None or _rotor is not None:
+                L.append("## Bias & lock-up")
+                if _bias is not None:
+                    L.append(f"- Front brake bias: **{_bias:.0f}%**")
+                if _rotor is not None:
+                    L.append(f"- Rotor diameter: **{_rotor:.0f} mm**")
+                L.append("")
+            # Hydraulics / pedal
+            _pratio = st.session_state.get("brake_pedal_ratio")
+            _dforce = st.session_state.get("brake_driver_pedal_force")
+            if _pratio is not None or _dforce is not None:
+                L.append("## Hydraulics & pedal")
+                if _pratio is not None:
+                    L.append(f"- Pedal ratio: **{_pratio:.2f}**")
+                if _dforce is not None:
+                    L.append(f"- Driver pedal force: **{_dforce:.0f} N**")
+                L.append("")
+            # Brake pedal 2000 N gate — recompute from stored inputs if present
+            _pw = st.session_state.get("pedal_w")
+            if _pw is not None:
+                try:
+                    from suspension import throttle_return as _trd
+                    _pres_doc = _trd.check_brake_pedal_2000N(
+                        width_mm=st.session_state.get("pedal_w", 35.0),
+                        thickness_mm=st.session_state.get("pedal_t", 8.0),
+                        lever_arm_mm=st.session_state.get("pedal_lever", 90.0),
+                        material=st.session_state.get("pedal_mat",
+                                                      "Aluminium 7075-T6"),
+                        load_N=st.session_state.get("pedal_load", 2000.0)
+                        if not st.session_state.get("pedal_load_pin2000", False)
+                        else 2000.0)
+                    L.append("## Brake pedal — 2000 N rule")
+                    L.append(f"- Verdict: **{_pres_doc.verdict}** "
+                             f"(min FoS {_pres_doc.min_fos:.2f} vs "
+                             f"{_pres_doc.fos_target:.2f}, governing "
+                             f"{_pres_doc.governing_mode})")
+                    L.append(f"- Material {st.session_state.get('pedal_mat','?')}, "
+                             f"{st.session_state.get('pedal_w',0):.0f}×"
+                             f"{st.session_state.get('pedal_t',0):.0f} mm, "
+                             f"lever {st.session_state.get('pedal_lever',0):.0f} mm")
+                    if _pres_doc.screening_only:
+                        L.append("- _Screening only — a PASS earns the SolidWorks/"
+                                 "Ansys run, it does not replace it._")
+                    L.append("")
+                except Exception:
+                    pass
+            # Throttle return redundancy
+            _rr_doc = st.session_state.get("throttle_return_result")
+            if _rr_doc is not None:
+                L.append("## Throttle return springs — single-fault redundancy")
+                L.append(f"- Verdict: **{getattr(_rr_doc,'verdict','?')}** "
+                         f"(worst single-failure case "
+                         f"{getattr(_rr_doc,'worst_case','?')}, "
+                         f"margin {getattr(_rr_doc,'worst_margin',float('nan')):.2f})")
+                for _c in getattr(_rr_doc, "cases", []):
+                    _ok = "closes" if _c.closes else "HANGS OPEN"
+                    L.append(f"  - {_c.label}: net closed {_c.net_closed_Nm:.2f} N·m, "
+                             f"net open {_c.net_open_Nm:.2f} N·m — {_ok}")
+                L.append("")
+            if len(L) <= 3:
+                L.append("_No brakes results recorded yet — work through the Bias, "
+                         "Hydraulic, Pedal box & throttle views first, then come back "
+                         "here to generate the report._")
+            return "\n".join(L)
+
+        _md = _brakes_report_md()
+        with st.expander("Preview the report", expanded=False):
+            st.markdown(_md)
+
+        _mode = st.radio(
+            "What should this do?",
+            ["Just create a PDF for the brakes subsystem",
+             "Create the PDF **and** record it in the Handover"],
+            key="brake_doc_mode")
+
+        _cols = st.columns([2, 3])
+        # Build the PDF bytes
+        _pdf_ok = False
+        try:
+            import tempfile as _tf2
+            import os as _os2
+            _pdf_path = _os2.path.join(_tf2.gettempdir(),
+                                       "elbee_brakes_report.pdf")
+            project_mod.render_pdf(_md, _pdf_path)
+            with open(_pdf_path, "rb") as _pf:
+                _pdf_bytes = _pf.read()
+            _pdf_ok = True
+        except Exception as _pe:
+            _cols[0].warning(f"PDF unavailable: {_pe}")
+
+        if _pdf_ok:
+            _cols[0].download_button(
+                "⬇ Brakes report (.pdf)", _pdf_bytes,
+                file_name="elbee_brakes_report.pdf", mime="application/pdf",
+                width='stretch')
+            # Also offer the markdown, which never needs reportlab
+            _cols[1].download_button(
+                "⬇ Brakes report (.md)", _md.encode("utf-8"),
+                file_name="elbee_brakes_report.md", mime="text/markdown",
+                width='stretch')
+
+        if _mode.startswith("Create the PDF **and**"):
+            if st.button("✓ Record this report in the Handover", key="brake_doc_log"):
+                _ok = log_decision_now(
+                    "brakes",
+                    "Brakes subsystem report generated",
+                    _md, author="brakes")
+                if _ok:
+                    st.success("Recorded in the Handover — visible in the Weight & "
+                               "Handover tab and carried into the season handover "
+                               "report.")
+                else:
+                    st.warning("Couldn't write to the Handover log (backend "
+                               "offline) — the PDF above is still yours to download.")
 
 
   except Exception as _eb:
