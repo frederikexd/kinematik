@@ -17218,12 +17218,20 @@ with tab_analytics:
     with fcol:
         st.markdown("#### Adoption funnel")
         if funnel:
-            for r in funnel[:8]:
+            # Reflect exactly the same features, by the same exact names, as the
+            # Per-feature use tab: iterate _TAB_META (the 25 canonical features)
+            # in the same order, pull each one's funnel row by id, and label it
+            # with the exact display name. Features not yet opened show zeros;
+            # ids not in _TAB_META (e.g. the 'mythbuster' sub-workflow) are not
+            # shown here, matching the Per-feature tab.
+            _fn_by_id = {r.get("feature"): r for r in funnel}
+            for _fid, (_emj, _flabel) in _TAB_META.items():
+                r = _fn_by_id.get(_fid, {})
                 _o = r.get("opened", 0) or 0
                 _e = r.get("engaged", 0) or 0
                 _c = r.get("completed", 0) or 0
                 st.markdown(
-                    f'**{r["feature"]}** '
+                    f'**{_flabel}** '
                     f'<span class="hint">open {_o} → engage {_e} '
                     f'({r.get("open_to_engage_pct", 0) or 0:.0f}%) → '
                     f'complete {_c} '
