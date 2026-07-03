@@ -795,10 +795,16 @@ def build_full_car_figure(
         try:
             _pl = float(_car_part.get("l_mm", 0) or 0)   # part length (fore-aft)
             _pw = float(_car_part.get("w_mm", 0) or 0)   # part width  (lateral)
+            # Axles sit just beyond the tub ends: an FSAE tub runs roughly the
+            # full wheelbase, so the wheelbase is close to the part length (a
+            # touch longer so the wheels frame the ends rather than sit inside).
             if _pl > 200:
-                wb = _clamp(_pl / 0.66, 900.0, 2200.0)
+                wb = _clamp(_pl * 1.05, 900.0, 2200.0)
+            # Track = tub width + just enough for the upright + tyre on each side,
+            # so the wheels hug the chassis instead of splaying wide.
             if _pw > 100:
-                _track = _clamp(_pw + 2.0 * (tire_width_mm + 260.0), 900.0, 1700.0)
+                _track = _clamp(_pw + 2.0 * (tire_width_mm * 0.5 + 90.0),
+                                800.0, 1700.0)
                 tf = tr = _track
         except Exception:
             pass
