@@ -107,9 +107,66 @@ def _ax_wrap_input(_orig):
         return _res
     return _wrapped
 
+
+def _ax_wrap_button(_orig):
+    def _wrapped(*args, **kwargs):
+        _res = _orig(*args, **kwargs)
+        # A button/download click is an unambiguous, deliberate action on the
+        # active tab: it returns True only on the run where it was pressed. That
+        # is a strong "the user did the thing here" signal — count it as
+        # engagement (deduped once-per-session per feature). Completion is left
+        # to the spinner hook, which fires when the click actually triggers a
+        # computation, so non-compute buttons (reset, add-row) don't inflate
+        # completions.
+        try:
+            if _res is True:
+                _af = st.session_state.get("_ax_last_active_tab")
+                if _af:
+                    _axn.auto_engage(_af, action="click")
+        except Exception:
+            pass
+        return _res
+    return _wrapped
+
+
+def _ax_wrap_download(_orig):
+    def _wrapped(*args, **kwargs):
+        _res = _orig(*args, **kwargs)
+        # A download click means a useful artifact was produced and taken away —
+        # a genuine completion for the active tab (also back-fills engagement).
+        try:
+            if _res is True:
+                _af = st.session_state.get("_ax_last_active_tab")
+                if _af:
+                    _axn.auto_complete(_af, action="export", require_engaged=False)
+        except Exception:
+            pass
+        return _res
+    return _wrapped
+
 if not getattr(st, "_ax_input_patched", False):
+    # Numeric entry (the original "insert a number" signal)…
     st.number_input = _ax_wrap_input(st.number_input)
     st.slider = _ax_wrap_input(st.slider)
+    # …and selection widgets, so viewer/browser tabs that are driven by picking
+    # an option rather than typing a number (e.g. 3D Model choosing a part to
+    # view, Registry browsing entries) also register engagement when the user
+    # actually changes a selection. Same change-detection: firing only on a real
+    # value change, never on mere re-render.
+    st.selectbox = _ax_wrap_input(st.selectbox)
+    st.radio = _ax_wrap_input(st.radio)
+    st.multiselect = _ax_wrap_input(st.multiselect)
+    st.select_slider = _ax_wrap_input(st.select_slider)
+    st.checkbox = _ax_wrap_input(st.checkbox)
+    st.toggle = _ax_wrap_input(st.toggle)
+    st.text_input = _ax_wrap_input(st.text_input)
+    st.date_input = _ax_wrap_input(st.date_input)
+    # Buttons: a click is deliberate engagement on the active tab. This catches
+    # compute tabs whose "Run/Generate/Fit/Sweep" is a button rather than a
+    # tracked input, so they stop showing 0 engagement despite clear use.
+    st.button = _ax_wrap_button(st.button)
+    # A download/export is a genuine COMPLETION — a useful result was produced.
+    st.download_button = _ax_wrap_download(st.download_button)
     st._ax_input_patched = True
 
 # --------------------------------------------------------------------------- #
