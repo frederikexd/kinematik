@@ -1919,11 +1919,12 @@ _CAD_PART_SLOTS = {
 def _cad_slot_target(slot_label):
     """Return (centre_xyz, envelope_lwh, subsys_key, dummy_name) for a slot.
 
-    The centre + envelope come from fullcar_mod.suggest_part_geometry so the
-    "Snap to part" and "Fit scale to the area" actions land the imported mesh
-    exactly where the built-in dummy for that subsystem sits, at a size the car
-    can actually accommodate.  Falls back to a neutral mid-car box for the
-    custom/unassigned slot.
+    When the slot maps to a real placeholder body (e.g. the monocoque), we
+    measure that body's ACTUAL footprint on the current car and use it as the
+    target, so a replacing CAD fills the same space the placeholder occupied
+    (the monocoque spans ~2 m nose-to-tail — far bigger than the generic
+    per-subsystem guess). For slots without a placeholder we fall back to
+    fullcar_mod.suggest_part_geometry, and to a neutral mid-car box on error.
     """
     subsys, dummy = _CAD_PART_SLOTS.get(slot_label,
                                         ("(custom / unassigned)", None))
@@ -1937,6 +1938,26 @@ def _cad_slot_target(slot_label):
         _led_s = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
     except Exception:
         _led_s = None
+
+    # Preferred: the placeholder body's real footprint on this car.
+    if dummy is not None:
+        try:
+            _fp = st.session_state.get("_dummy_footprints", {}).get(dummy)
+            if _fp is None:
+                _fig0 = fullcar_mod.build_full_car_figure(vp=_vp_s, ledger=_led_s)
+                _fp = fullcar_mod.dummy_body_footprint(_fig0, dummy)
+                _cache = st.session_state.get("_dummy_footprints", {})
+                _cache[dummy] = _fp
+                st.session_state["_dummy_footprints"] = _cache
+            if _fp:
+                centre = (float(_fp["x_mm"]), float(_fp["y_mm"]),
+                          float(_fp["z_mm"]))
+                env = (float(_fp["l_mm"]), float(_fp["w_mm"]), float(_fp["h_mm"]))
+                return centre, env, subsys, dummy
+        except Exception:
+            pass
+
+    # Fallback: the per-subsystem suggested envelope.
     try:
         _g = fullcar_mod.suggest_part_geometry(_vp_s, _sub_for, ledger=_led_s)
         centre = (float(_g["x_mm"]), float(_g["y_mm"]), float(_g["z_mm"]))
@@ -1947,8 +1968,8 @@ def _cad_slot_target(slot_label):
 
 
 def _cad_fit_scale(part_lwh, envelope_lwh):
-    """Uniform scale so a part's bounding box fills the slot envelope without
-    poking out of it (the largest factor keeping every axis inside the area)."""
+    """Uniform scale so a part's bounding box fits INSIDE the slot envelope
+    without poking out (the largest factor keeping every axis within the area)."""
     ratios = []
     for p, e in zip(part_lwh, envelope_lwh):
         if p and p > 1e-6 and e and e > 1e-6:
@@ -1956,6 +1977,23 @@ def _cad_fit_scale(part_lwh, envelope_lwh):
     if not ratios:
         return 1.0
     return max(0.01, min(ratios))
+
+
+def _cad_fill_scale(part_lwh, envelope_lwh):
+    """Uniform scale so a part FILLS the slot envelope along its dominant axis.
+
+    For "replace this body" the user wants the CAD to occupy the same space the
+    placeholder did — a chassis should span nose-to-tail. A pure inside-fit is
+    driven by the tightest axis and leaves a long part far too short, so here we
+    match the part's LONGEST extent to the envelope's LONGEST extent, keeping
+    true shape. The part may then sit slightly taller/thinner than the
+    placeholder, which is expected — it's the real geometry.
+    """
+    p_max = max((float(v) for v in part_lwh if v and v > 1e-6), default=0.0)
+    e_max = max((float(v) for v in envelope_lwh if v and v > 1e-6), default=0.0)
+    if p_max <= 1e-6 or e_max <= 1e-6:
+        return 1.0
+    return max(0.01, e_max / p_max)
 
 
 def _subsystem_cad_import(subsys_key, *, key_prefix, title=None):
@@ -4454,9 +4492,12 @@ with tab_car:
 
                 # ---- Live "Placed size · offset from slot" read -------------- #
                 _auto_size = st.session_state.get("car3d_cad_autosize", False)
-                if _auto_size and _dummy_name is not None:
-                    _fs_prev = _cad_fit_scale((_L0, _W0, _H0), _slot_env)
-                    _eff_scale = _fs_prev
+                _replace_now = st.session_state.get("car3d_cad_replace", False) \
+                    and _dummy_name is not None
+                if _replace_now:
+                    _eff_scale = _cad_fill_scale((_L0, _W0, _H0), _slot_env)
+                elif _auto_size and _dummy_name is not None:
+                    _eff_scale = _cad_fit_scale((_L0, _W0, _H0), _slot_env)
                 else:
                     _eff_scale = float(_cad_scale)
                 _pL, _pW, _pH = (_L0 * _eff_scale, _W0 * _eff_scale,
@@ -4525,9 +4566,13 @@ with tab_car:
 
                 if st.button("Add CAD part to car", key="car3d_cad_add",
                              type="primary"):
-                    # Final scale: auto-size fits to the slot area, otherwise the
-                    # Scale × box (which the "Fit scale" button may have filled).
-                    if _cad_autosize:
+                    # Final scale. When replacing a placeholder, FILL the
+                    # placeholder's footprint so the CAD spans the same space
+                    # (e.g. a chassis spans the whole wheelbase). Otherwise honour
+                    # the Auto-size toggle (fit inside), else the Scale × box.
+                    if _replace_dummy and _dummy_name:
+                        _final_scale = _cad_fill_scale((_L0, _W0, _H0), _slot_env)
+                    elif _cad_autosize:
                         _final_scale = _cad_fit_scale((_L0, _W0, _H0), _slot_env)
                     else:
                         _final_scale = float(_cad_scale)
