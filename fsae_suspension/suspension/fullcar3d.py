@@ -778,36 +778,19 @@ def build_full_car_figure(
     tf = float(getattr(vp, "track_front", 1200.0))
     tr = float(getattr(vp, "track_rear", 1180.0))
 
-    # ---- imported CAD chassis drives the whole car -------------------------- #
-    # When the user drops in a real chassis/tub CAD and asks the car to fit
-    # around it (part flagged define_car=True, e.g. via "Replace the dummy" on
-    # the Chassis slot), we DERIVE the wheelbase and track from that part's real
-    # footprint. Every downstream body — wheels, suspension corners, hoops,
-    # sidepods, wings — is positioned off wb/tf/tr, so overriding them here makes
-    # the rest of the car rearrange to sit around the imported part, reading as
-    # one coherent car rather than a mismatched frame floating in a fixed shell.
+    # ---- imported CAD chassis is scaled to the car ------------------------- #
+    # A `define_car` part (e.g. a chassis dropped via the Chassis slot with "fit
+    # the rest of the car around this part") should read as one coherent car with
+    # the wheels. Rather than shrinking the whole car down to a small CAD (which
+    # leaves the real-sized wheels towering over it), we keep the car at its
+    # realistic wheelbase/track/tyre size and scale the imported part to SPAN the
+    # wheelbase and sit at ride height between the wheels — computed just below,
+    # once wb/track/tyre are known. We only note its presence here.
     _car_part = None
     for _cp in (custom_parts or []):
         if _cp.get("define_car") and _cp.get("mesh"):
             _car_part = _cp
             break
-    if _car_part is not None:
-        try:
-            _pl = float(_car_part.get("l_mm", 0) or 0)   # part length (fore-aft)
-            _pw = float(_car_part.get("w_mm", 0) or 0)   # part width  (lateral)
-            # Axles sit just beyond the tub ends: an FSAE tub runs roughly the
-            # full wheelbase, so the wheelbase is close to the part length (a
-            # touch longer so the wheels frame the ends rather than sit inside).
-            if _pl > 200:
-                wb = _clamp(_pl * 1.05, 900.0, 2200.0)
-            # Track = tub width + just enough for the upright + tyre on each side,
-            # so the wheels hug the chassis instead of splaying wide.
-            if _pw > 100:
-                _track = _clamp(_pw + 2.0 * (tire_width_mm * 0.5 + 90.0),
-                                800.0, 1700.0)
-                tf = tr = _track
-        except Exception:
-            pass
 
     # Softer front spring -> more static sag -> body visibly lower. Cue, not a calc.
     kf = float(getattr(vp, "spring_rate_front", 35.0) or 35.0)
@@ -1118,6 +1101,38 @@ def build_full_car_figure(
                  - front_corner["contact_patch"][2]) or 228.0
     inner_y_f = tf / 2.0 - tire_width_mm - 40
     inner_y_r = tr / 2.0 - tire_width_mm - 40
+
+    # For a `define_car` chassis: scale it (uniformly, true shape) to SPAN the
+    # car and sit at ride height, so it reads as one whole car with the wheels
+    # instead of a tiny frame dwarfed by real-sized tyres. We size it to reach
+    # ~92% of the wheelbase in x, and place its centre at mid-wheelbase, hub
+    # height. The custom-parts loop reads these to set mesh_scale + centre.
+    _def_target = None
+    if _car_part is not None:
+        try:
+            _pl0 = float(_car_part.get("l_mm", 0) or 0)
+            _pw0 = float(_car_part.get("w_mm", 0) or 0)
+            _ph0 = float(_car_part.get("h_mm", 0) or 0)
+            # Fit inside: length ~92% of wheelbase, width within the inner track,
+            # height within roughly floor-to-hoop; take the tightest so it never
+            # pokes past the wheels, keeping the true CAD proportions.
+            _tgt_l = 0.92 * wb
+            _tgt_w = max(160.0, min(inner_y_f, inner_y_r) * 2.0 * 0.95)
+            _tgt_h = _clamp(tire_r * 1.7, 240.0, 520.0)
+            _ratios = []
+            if _pl0 > 1:
+                _ratios.append(_tgt_l / _pl0)
+            if _pw0 > 1:
+                _ratios.append(_tgt_w / _pw0)
+            if _ph0 > 1:
+                _ratios.append(_tgt_h / _ph0)
+            _def_scale = min(_ratios) if _ratios else 1.0
+            _def_scale = max(0.01, _def_scale)
+            _def_target = dict(
+                scale=_def_scale,
+                centre=(0.0, 0.0, max(tire_r * 0.85, _ph0 * _def_scale / 2.0 + 30.0)))
+        except Exception:
+            _def_target = None
 
     # ---- 2) chassis: FSAE monocoque + nosecone + roll hoops + driver ---- #
     #  Reshaped to read as a real Formula Student car (cf. the reference photo):
@@ -1507,6 +1522,13 @@ def build_full_car_figure(
                 _kind = "CAD mesh" if has_mesh else "%.0f×%.0f×%.0f mm" % (l, w, h)
                 hov = "%s — %s @ (x %.0f, y %.0f, z %.0f)" % (nm, _kind, cx, cy, cz)
             shape = cp.get("shape", "box")
+            # A `define_car` chassis is scaled + centred to fit the real car
+            # (computed above), so it reads as one whole car with the wheels.
+            _msc = float(cp.get("mesh_scale", 1.0) or 1.0)
+            _mcx, _mcy, _mcz = cx, cy, cz
+            if cp.get("define_car") and has_mesh and _def_target is not None:
+                _msc = float(_def_target["scale"])
+                _mcx, _mcy, _mcz = _def_target["centre"]
             if has_mesh:
                 # Draw the ACTUAL imported geometry, oriented + placed on the car.
                 faces = np.asarray(mesh_payload["faces"], int)
@@ -1516,8 +1538,8 @@ def build_full_car_figure(
                     yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
                     roll_deg=float(cp.get("roll_deg", 0.0) or 0.0),
                     pitch_deg=float(cp.get("pitch_deg", 0.0) or 0.0),
-                    scale=float(cp.get("mesh_scale", 1.0) or 1.0),
-                    centre=(cx, cy, cz))
+                    scale=_msc,
+                    centre=(_mcx, _mcy, _mcz))
                 mesh(V, faces[:, 0], faces[:, 1], faces[:, 2],
                      col, nm_draw, sub, base_op, hov)
             elif shape == "cylinder":
