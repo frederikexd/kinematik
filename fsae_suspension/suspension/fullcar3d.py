@@ -778,6 +778,31 @@ def build_full_car_figure(
     tf = float(getattr(vp, "track_front", 1200.0))
     tr = float(getattr(vp, "track_rear", 1180.0))
 
+    # ---- imported CAD chassis drives the whole car -------------------------- #
+    # When the user drops in a real chassis/tub CAD and asks the car to fit
+    # around it (part flagged define_car=True, e.g. via "Replace the dummy" on
+    # the Chassis slot), we DERIVE the wheelbase and track from that part's real
+    # footprint. Every downstream body — wheels, suspension corners, hoops,
+    # sidepods, wings — is positioned off wb/tf/tr, so overriding them here makes
+    # the rest of the car rearrange to sit around the imported part, reading as
+    # one coherent car rather than a mismatched frame floating in a fixed shell.
+    _car_part = None
+    for _cp in (custom_parts or []):
+        if _cp.get("define_car") and _cp.get("mesh"):
+            _car_part = _cp
+            break
+    if _car_part is not None:
+        try:
+            _pl = float(_car_part.get("l_mm", 0) or 0)   # part length (fore-aft)
+            _pw = float(_car_part.get("w_mm", 0) or 0)   # part width  (lateral)
+            if _pl > 200:
+                wb = _clamp(_pl / 0.66, 900.0, 2200.0)
+            if _pw > 100:
+                _track = _clamp(_pw + 2.0 * (tire_width_mm + 260.0), 900.0, 1700.0)
+                tf = tr = _track
+        except Exception:
+            pass
+
     # Softer front spring -> more static sag -> body visibly lower. Cue, not a calc.
     kf = float(getattr(vp, "spring_rate_front", 35.0) or 35.0)
     ride_drop = _clamp((35.0 - kf) * 0.6, -12.0, 18.0)
