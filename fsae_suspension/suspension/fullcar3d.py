@@ -1132,40 +1132,48 @@ def build_full_car_figure(
     inner_y_f = tf / 2.0 - tire_width_mm - 40
     inner_y_r = tr / 2.0 - tire_width_mm - 40
 
-    # For a `define_car` chassis: scale it (uniformly, true shape) so its LENGTH
-    # spans the tub-fraction of the wheelbase — the real proportion of an FSAE
-    # frame to its wheels — and centre it at mid-wheelbase, resting at hub
-    # height. This keeps the imported frame in correct proportion to the
-    # realistically-sized wheels, so it reads as one compact car.
+    # For a `define_car` chassis: scale it to MATCH the dummy monocoque's real
+    # footprint — the placeholder is already proportioned correctly to the wheels
+    # and the rest of the car, so matching it makes the imported frame sit in the
+    # same envelope. We compute the dummy's exact extents (the same formulas the
+    # monocoque uses below) and scale the CAD uniformly (true shape) so its
+    # dominant length matches, centred on the dummy's centre.
     _def_target = None
     if _car_part is not None:
         try:
             _pl0 = float(_car_part.get("l_mm", 0) or 0)
             _pw0 = float(_car_part.get("w_mm", 0) or 0)
             _ph0 = float(_car_part.get("h_mm", 0) or 0)
-            _TUB_FRACTION = 0.62
-            # length target: tub spans ~62% of the wheelbase.
-            _tgt_l = _TUB_FRACTION * wb
-            # width target: tub sits inside the track (leave room for wheels).
-            _tgt_w = _clamp(min(inner_y_f, inner_y_r) * 2.0 * 1.05, 260.0, tf * 0.8)
-            # height target: floor to roughly hoop height.
-            _tgt_h = _clamp(tire_r * 1.7, 240.0, 560.0)
-            _ratios = []
+
+            # --- dummy monocoque footprint (mirror the section-2 formulas) ---
+            _dummy_tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
+            _dummy_tub_bot = max(z_lo * 0.5, tire_r * 0.14)
+            _dummy_tub_top = _dummy_tub_bot + _clamp(tire_r * 0.95, 180, 360)
+            _dummy_nose_x = x_front + tire_r * 1.9
+            _dummy_tail_x = x_rear + tire_r * 0.15
+            _dummy_len = abs(_dummy_nose_x - _dummy_tail_x)
+            _dummy_wid = _dummy_tub_w
+            _dummy_hgt = _dummy_tub_top - _dummy_tub_bot
+            _dummy_cx = (_dummy_nose_x + _dummy_tail_x) / 2.0
+            _dummy_cz = (_dummy_tub_top + _dummy_tub_bot) / 2.0
+
+            # Scale so the CAD's length matches the dummy monocoque's length
+            # exactly — the most direct "align ratio-wise with the placeholder".
+            # Uniform (true shape). If the CAD has no meaningful length, fall back
+            # to the tightest inside-fit.
             if _pl0 > 1:
-                _ratios.append(_tgt_l / _pl0)
-            if _pw0 > 1:
-                _ratios.append(_tgt_w / _pw0)
-            if _ph0 > 1:
-                _ratios.append(_tgt_h / _ph0)
-            # Use the LENGTH ratio as the primary (keeps the car's fore-aft
-            # proportion right); it also keeps true shape since it's uniform.
-            _def_scale = (_tgt_l / _pl0) if _pl0 > 1 else (
-                min(_ratios) if _ratios else 1.0)
+                _def_scale = _dummy_len / _pl0
+            else:
+                _ratios = []
+                if _pw0 > 1:
+                    _ratios.append(_dummy_wid / _pw0)
+                if _ph0 > 1:
+                    _ratios.append(_dummy_hgt / _ph0)
+                _def_scale = min(_ratios) if _ratios else 1.0
             _def_scale = max(0.01, _def_scale)
             _def_target = dict(
                 scale=_def_scale,
-                centre=(0.0, 0.0,
-                        max(tire_r * 0.55, _ph0 * _def_scale / 2.0 + 20.0)))
+                centre=(_dummy_cx, 0.0, _dummy_cz))
         except Exception:
             _def_target = None
 
