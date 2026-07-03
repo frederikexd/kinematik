@@ -2046,3 +2046,51 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
                 x_mm=round(float(x), 0), y_mm=round(float(y), 0),
                 z_mm=round(float(z), 0), shape=shape, basis=basis,
                 from_declared=from_declared)
+
+
+def dummy_body_footprint(fig, name: str) -> dict | None:
+    """Measure a built-in body's real bounding box (mm) from a rendered figure.
+
+    `suggest_part_geometry` gives a rough per-subsystem envelope, but a body like
+    the monocoque actually spans ~2 m nose-to-tail — far bigger than the generic
+    guess. When a user replaces a placeholder with real CAD we want the CAD to
+    fill the SAME footprint the placeholder occupied, so it truly takes its
+    place. This scans every trace drawn under `name` and returns the merged
+    axis-aligned box:
+
+        l_mm, w_mm, h_mm     extents in x, y, z
+        x_mm, y_mm, z_mm     centre of that box
+
+    Returns None if the body isn't present in the figure (e.g. already hidden).
+    """
+    xs_lo = ys_lo = zs_lo = float("inf")
+    xs_hi = ys_hi = zs_hi = float("-inf")
+    found = False
+    for t in getattr(fig, "data", []):
+        if getattr(t, "name", None) != name:
+            continue
+        x = getattr(t, "x", None)
+        y = getattr(t, "y", None)
+        z = getattr(t, "z", None)
+        if x is None or y is None or z is None:
+            continue
+        try:
+            xa = np.asarray(x, float); ya = np.asarray(y, float)
+            za = np.asarray(z, float)
+            xa = xa[np.isfinite(xa)]; ya = ya[np.isfinite(ya)]
+            za = za[np.isfinite(za)]
+            if not len(xa) or not len(ya) or not len(za):
+                continue
+        except Exception:
+            continue
+        xs_lo = min(xs_lo, xa.min()); xs_hi = max(xs_hi, xa.max())
+        ys_lo = min(ys_lo, ya.min()); ys_hi = max(ys_hi, ya.max())
+        zs_lo = min(zs_lo, za.min()); zs_hi = max(zs_hi, za.max())
+        found = True
+    if not found:
+        return None
+    return dict(
+        l_mm=float(xs_hi - xs_lo), w_mm=float(ys_hi - ys_lo),
+        h_mm=float(zs_hi - zs_lo),
+        x_mm=float((xs_lo + xs_hi) / 2.0), y_mm=float((ys_lo + ys_hi) / 2.0),
+        z_mm=float((zs_lo + zs_hi) / 2.0))
