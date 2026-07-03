@@ -147,7 +147,7 @@ def _ax_wrap_button(_orig):
             if _res is True:
                 _af = st.session_state.get("_ax_last_active_tab")
                 if _af:
-                    _already = st.session_state.get(f"_ax_engaged_{_af}", False)
+                    _already = _axn.has_engaged(_af)
                     _axn.auto_engage(_af, action="click")
                     if _already:
                         _axn.auto_complete(_af, action="run",
@@ -17159,10 +17159,45 @@ with tab_analytics:
             "usage was real even where those two columns show 0.")
         st.markdown("---")
 
-    # ====================================================================== #
-    #  HEADLINE — hours saved -> dollars (the board slide)                   #
-    # ====================================================================== #
-    st.markdown("#### The board number")
+    # --- live instrumentation diagnostic (why a feature may read 0) -------- #
+    with st.expander("🔧 Instrumentation diagnostic (live)"):
+        _cur_active = st.session_state.get("_ax_last_active_tab")
+        st.caption(
+            f"Active tab this run: **{_cur_active or '(none set)'}**. "
+            "Open a feature tab, change a number and run it, then come back "
+            "here — the flags below flip to ✓ when engagement/completion were "
+            "recorded for that feature this session.")
+        # write-health: are events actually reaching Supabase?
+        _wh_fn = getattr(_axn, "write_health", None)
+        if callable(_wh_fn):
+            _wh = _wh_fn() or {}
+            _ok = _wh.get("ok")
+            _status = ("✓ writing to Supabase" if _ok
+                       else ("⚠️ buffering locally (DB unreachable)"
+                             if _ok is False else "— no write attempted yet"))
+            st.caption(
+                f"Event sink: {_status} · sent={_wh.get('sent', 0)} · "
+                f"buffered={_wh.get('buffered', 0)}"
+                + (f" · last error: {_wh.get('error')}" if _wh.get("error") else ""))
+        # per-feature session flags set by auto_engage/auto_complete
+        _diag_rows = []
+        for _fid, (_emj, _flabel) in _TAB_META.items():
+            if _fid == "analytics":
+                continue
+            _eng = _axn.has_engaged(_fid) if hasattr(_axn, "has_engaged") else False
+            _comp = _axn.has_completed(_fid) if hasattr(_axn, "has_completed") else False
+            _opn = _axn.has_opened(_fid) if hasattr(_axn, "has_opened") else False
+            if _opn or _eng or _comp:
+                _diag_rows.append({
+                    "Feature": _flabel,
+                    "Opened (this session)": "✓" if _opn else "—",
+                    "Engaged (this session)": "✓" if _eng else "—",
+                    "Completed (this session)": "✓" if _comp else "—",
+                })
+        if _diag_rows:
+            st.dataframe(_diag_rows, use_container_width=True, hide_index=True)
+        else:
+            st.caption("No features touched yet this session.")
     if roi:
         r0 = roi[0]
         _h = r0.get("total_hours_saved") or 0
@@ -17366,6 +17401,17 @@ with tab_analytics:
             _comp = _r.get("completions", 0) or 0
             _users = _r.get("unique_users", 0) or 0
 
+            # Myth-buster is logged under its own feature id but lives inside the
+            # Validation workflow, so fold its usage into the Validation row —
+            # otherwise the Myth-buster checks (a real validation activity) are
+            # invisible here.
+            if _fid == "validation":
+                _mb = _fu_by_id.get("mythbuster", {})
+                _opens += _mb.get("opens", 0) or 0
+                _eng += _mb.get("engagements", 0) or 0
+                _comp += _mb.get("completions", 0) or 0
+                _users = max(_users, _mb.get("unique_users", 0) or 0)
+
             # Make a "0" read meaningfully instead of looking broken:
             #  • opened but no engagement logged  -> "—" (used, not fully tracked)
             #  • never opened at all              -> "0" (genuinely untouched)
@@ -17511,14 +17557,24 @@ with tab_analytics:
             _fn_items = [(_fid, _emj, _flabel)
                          for _fid, (_emj, _flabel) in _TAB_META.items()
                          if _fid != "analytics"]
-            _fn_items.sort(
-                key=lambda t: (_fn_by_id.get(t[0], {}).get("opened", 0) or 0),
-                reverse=True)
+            def _fn_opens(_fid):
+                _v = _fn_by_id.get(_fid, {}).get("opened", 0) or 0
+                if _fid == "validation":
+                    _v += _fn_by_id.get("mythbuster", {}).get("opened", 0) or 0
+                return _v
+            _fn_items.sort(key=lambda t: _fn_opens(t[0]), reverse=True)
             for _fid, _emj, _flabel in _fn_items:
                 r = _fn_by_id.get(_fid, {})
                 _o = r.get("opened", 0) or 0
                 _e = r.get("engaged", 0) or 0
                 _c = r.get("completed", 0) or 0
+                # Fold Myth-buster (its own feature id, but part of the
+                # Validation workflow) into the Validation funnel row.
+                if _fid == "validation":
+                    _mb = _fn_by_id.get("mythbuster", {})
+                    _o += _mb.get("opened", 0) or 0
+                    _e += _mb.get("engaged", 0) or 0
+                    _c += _mb.get("completed", 0) or 0
                 # "—" where a feature was opened but engagement wasn't captured,
                 # so a real 0 doesn't look like the funnel is broken.
                 _e_txt = str(_e) if _e > 0 else ("—" if _o > 0 else "0")
