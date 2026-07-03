@@ -68,7 +68,7 @@ COLORS = dict(
     battery="#1f2a20", batt_edge="#5ad17a",
     brake="#c2410c", logger="#33373d",
     point="#e7ecf1", floor="#0c1014", cg="#ffd166",
-    custom="#37e0d0",
+    custom="#37e0d0", cad="#1f8bff",
 )
 
 
@@ -1462,7 +1462,15 @@ def build_full_car_figure(
                 hov = "%s — PROVISIONAL stand-in, %.0f×%.0f×%.0f mm @ (x %.0f, y %.0f, z %.0f)" % (
                     nm, l, w, h, cx, cy, cz)
             else:
-                col = cp.get("color") or COLORS.get(sub_color_key(sub), COLORS["custom"])
+                # Imported CAD meshes always render neon blue so the real
+                # geometry stays visible on the dark scene (and any part saved
+                # earlier with a dark hue is corrected here too). Non-mesh custom
+                # boxes/cylinders keep their chosen/subsystem colour.
+                if has_mesh:
+                    col = COLORS["cad"]
+                else:
+                    col = cp.get("color") or COLORS.get(sub_color_key(sub),
+                                                         COLORS["custom"])
                 base_op = 0.95 if has_mesh else 0.82
                 nm_draw = nm
                 _kind = "CAD mesh" if has_mesh else "%.0f×%.0f×%.0f mm" % (l, w, h)
