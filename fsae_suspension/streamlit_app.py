@@ -4495,10 +4495,10 @@ with tab_car:
 
                 # Live placed size at the current scale + orientation.
                 _sx, _sy, _sz2 = _sz
-                _axn = st.session_state.get("car3d_cad_axis", "auto")
-                if _axn == "y_up":
+                _axis_now = st.session_state.get("car3d_cad_axis", "auto")
+                if _axis_now == "y_up":
                     _Lr, _Wr, _Hr = _sx, _sz2, _sy
-                elif _axn == "x_up":
+                elif _axis_now == "x_up":
                     _Lr, _Wr, _Hr = _sz2, _sy, _sx
                 else:
                     _Lr, _Wr, _Hr = _sx, _sy, _sz2
