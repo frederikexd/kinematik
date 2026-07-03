@@ -17141,23 +17141,7 @@ with tab_analytics:
             elif _last7 > 0:
                 _trend_txt = "new this week"
 
-        st.markdown("#### At a glance")
-        g1, g2, g3, g4 = st.columns(4)
-        _ax_metric(g1, "Sessions", f"{_tot_sessions:,}",
-                   _trend_txt or "all recorded visits", "var(--cyan)")
-        _ax_metric(g2, "People", f"{_tot_people:,}",
-                   f"{_tot_named} named · {_tot_people - _tot_named} anonymous",
-                   "var(--cyan)")
-        _ax_metric(g3, "Workflows completed", f"{_tot_workflows:,}",
-                   "results produced", "var(--amber)")
-        _ax_metric(g4, "Features in use", f"{_feats_in_use}/24",
-                   "opened at least once", "var(--cyan)")
-        st.caption(
-            "These four are the reliable top-line: sessions, people and opens "
-            "are counted exactly. Per-feature engagement/completion below can "
-            "read low for a few tabs that were instrumented after release — the "
-            "usage was real even where those two columns show 0.")
-        st.markdown("---")
+
 
     # --- live instrumentation diagnostic (why a feature may read 0) -------- #
     with st.expander("🔧 Instrumentation diagnostic (live)"):
