@@ -4582,13 +4582,38 @@ with tab_car:
                          "millimetres where the slot sits. On: uniformly scales "
                          "it to fill the slot envelope while keeping its shape.")
 
+                # ---- Reshape the whole car around this part ------------------ #
+                # For a chassis/tub, the powerful move is the opposite of fitting
+                # the part to the car: reshape the CAR around the imported part so
+                # the wheels, suspension, hoops and bodywork all rearrange to sit
+                # around it and it reads as one coherent car. Offered for the
+                # Chassis slot (on by default there); available for any slot.
+                _is_chassis_slot = (_cad_sub == "chassis")
+                if "car3d_cad_definecar" not in st.session_state:
+                    st.session_state["car3d_cad_definecar"] = True
+                _define_car = st.checkbox(
+                    "Fit the rest of the car around this part "
+                    "(wheels, suspension & bodywork adapt to it)",
+                    key="car3d_cad_definecar",
+                    help="On: the imported part becomes the reference \u2014 the "
+                         "car's wheelbase and track are derived from its real "
+                         "size, so every other body rearranges around it into a "
+                         "whole car. Best for a chassis/tub. Off: the part just "
+                         "sits in the existing car.")
+
                 if st.button("Add CAD part to car", key="car3d_cad_add",
                              type="primary"):
-                    # Final scale. When replacing a placeholder, FILL the
-                    # placeholder's footprint so the CAD spans the same space
-                    # (e.g. a chassis spans the whole wheelbase). Otherwise honour
-                    # the Auto-size toggle (fit inside), else the Scale × box.
-                    if _replace_dummy and _dummy_name:
+                    _define_car_now = bool(st.session_state.get(
+                        "car3d_cad_definecar", False))
+                    # Final scale.
+                    #  * define_car: keep the part at REAL size — the CAR reshapes
+                    #    around it, so we must not distort the part.
+                    #  * replace a placeholder: FILL its footprint so the part
+                    #    spans the same space.
+                    #  * auto-size: fit inside the slot. Else the Scale × box.
+                    if _define_car_now:
+                        _final_scale = float(_cad_scale)
+                    elif _replace_dummy and _dummy_name:
                         _final_scale = _cad_fill_scale((_L0, _W0, _H0), _slot_env)
                     elif _cad_autosize:
                         _final_scale = _cad_fit_scale((_L0, _W0, _H0), _slot_env)
@@ -4601,14 +4626,17 @@ with tab_car:
                     # when it replaces a dark body like the monocoque. The
                     # subsystem tag still drives click-to-zoom / spotlight.
                     _col = "#1f8bff"
-                    # Where to place it. Normally the user's typed centre; but
-                    # when replacing a dummy and the position is still the untouched
-                    # default (0, 0, 250), land it on the slot the placeholder
-                    # occupied so the real part actually takes its place.
+                    # Where to place it.
                     _px, _py, _pz = float(_cad_x), float(_cad_y), float(_cad_z)
                     _is_default_pos = (abs(_px) < 1.0 and abs(_py) < 1.0
                                        and abs(_pz - 250.0) < 1.0)
-                    if _replace_dummy and _dummy_name and _is_default_pos:
+                    if _define_car_now and _is_default_pos:
+                        # The part defines the car: centre it on the car origin at
+                        # a sensible ride height (half its own height off the
+                        # ground), so the reshaped car is built symmetrically
+                        # around it.
+                        _px, _py, _pz = 0.0, 0.0, max(120.0, _Hp / 2.0 + 40.0)
+                    elif _replace_dummy and _dummy_name and _is_default_pos:
                         _px, _py, _pz = (float(_slot_centre[0]),
                                          float(_slot_centre[1]),
                                          float(_slot_centre[2]))
@@ -4621,6 +4649,7 @@ with tab_car:
                         x_mm=float(_px), y_mm=float(_py), z_mm=float(_pz),
                         l_mm=float(_Lp), w_mm=float(_Wp), h_mm=float(_Hp),
                         color=_col, mass_kg=float(_cad_mass),
+                        define_car=_define_car_now,
                         replaces_dummy=(_dummy_name if _replace_dummy else None))
                     st.session_state.car3d_custom_parts.append(_new_part)
 
@@ -4628,6 +4657,13 @@ with tab_car:
                     if _replace_dummy and _dummy_name:
                         _ov = dict(st.session_state.get("car3d_overrides", {}))
                         _ov[_dummy_name] = {**_ov.get(_dummy_name, {}),
+                                            "hide": True}
+                        st.session_state.car3d_overrides = _ov
+                    # If this part defines the car, also hide the built-in
+                    # monocoque so the real tub isn't doubled by the placeholder.
+                    if _define_car_now:
+                        _ov = dict(st.session_state.get("car3d_overrides", {}))
+                        _ov["Monocoque"] = {**_ov.get("Monocoque", {}),
                                             "hide": True}
                         st.session_state.car3d_overrides = _ov
 
