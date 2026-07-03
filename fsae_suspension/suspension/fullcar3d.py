@@ -159,27 +159,47 @@ def _cylinder(center, axis, radius, length, n=24, cap=True):
 
 
 def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
-                      centre=(0.0, 0.0, 0.0)):
+                      centre=(0.0, 0.0, 0.0), roll_deg=0.0, pitch_deg=0.0):
     """Place an imported CAD part's vertices into the car's SAE frame.
 
     verts come recentred on the part's own bbox centre (from chassis.load_part_mesh).
-    We optionally remap axes (CAD up-axis -> car z-up), apply a yaw about car z,
-    scale, then translate the part's centre to `centre`. Returns an (N,3) array.
+    We optionally remap axes (CAD up-axis -> car z-up), apply free rotation about
+    the car's three axes, scale, then translate the part's centre to `centre`.
+    Returns an (N,3) array.
 
         axis_map : "z_up"  CAD already z-up (no swap)
                    "y_up"  CAD is y-up (Y->Z, Z->-Y): common SolidWorks export
                    "x_up"  CAD is x-up (X->Z, Z->-X)
+
+    roll_deg   : rotation about the car's x-axis (fore-aft) — tips the part L/R.
+    pitch_deg  : rotation about the car's y-axis (lateral) — noses it up/down.
+    yaw_deg    : rotation about the car's z-axis (vertical) — spins it flat.
+    The three are applied roll -> pitch -> yaw, after the CAD-up-axis remap.
     """
     V = np.asarray(verts, float).reshape(-1, 3) * float(scale)
     if axis_map == "y_up":
         V = np.column_stack([V[:, 0], -V[:, 2], V[:, 1]])
     elif axis_map == "x_up":
         V = np.column_stack([-V[:, 2], V[:, 1], V[:, 0]])
+
+    def _rot_x(deg):
+        a = np.radians(float(deg)); c, s = np.cos(a), np.sin(a)
+        return np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
+
+    def _rot_y(deg):
+        a = np.radians(float(deg)); c, s = np.cos(a), np.sin(a)
+        return np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
+
+    def _rot_z(deg):
+        a = np.radians(float(deg)); c, s = np.cos(a), np.sin(a)
+        return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+
+    if roll_deg:
+        V = V @ _rot_x(roll_deg).T
+    if pitch_deg:
+        V = V @ _rot_y(pitch_deg).T
     if yaw_deg:
-        a = np.radians(float(yaw_deg))
-        ca, sa = np.cos(a), np.sin(a)
-        R = np.array([[ca, -sa, 0.0], [sa, ca, 0.0], [0.0, 0.0, 1.0]])
-        V = V @ R.T
+        V = V @ _rot_z(yaw_deg).T
     return V + np.asarray(centre, float)
 
 
@@ -1455,6 +1475,8 @@ def build_full_car_figure(
                     mesh_payload["verts"],
                     axis_map=cp.get("axis_map", "z_up"),
                     yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
+                    roll_deg=float(cp.get("roll_deg", 0.0) or 0.0),
+                    pitch_deg=float(cp.get("pitch_deg", 0.0) or 0.0),
                     scale=float(cp.get("mesh_scale", 1.0) or 1.0),
                     centre=(cx, cy, cz))
                 mesh(V, faces[:, 0], faces[:, 1], faces[:, 2],
