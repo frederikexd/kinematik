@@ -4308,6 +4308,25 @@ with tab_car:
                     f'mm</b>{_unit_note}. Set where it sits and which way is up, then '
                     'add it.</p>', unsafe_allow_html=True)
 
+                # Seed the scale/yaw widget keys once so they can be key-driven
+                # (and button-seeded) without passing value= on every run.
+                if "car3d_cad_scale" not in st.session_state:
+                    st.session_state["car3d_cad_scale"] = 1.0
+                if "car3d_cad_yaw" not in st.session_state:
+                    st.session_state["car3d_cad_yaw"] = 0.0
+
+                # Apply any pending values queued by the Fit-scale / Snap buttons
+                # on the PREVIOUS run, BEFORE the widgets below instantiate. You
+                # cannot assign a widget's key after it has been created in the
+                # same run, so those buttons stash the value here and rerun; we
+                # push it into the widget key now, while it's still legal.
+                for _pend, _wkey in (("_pend_cad_scale", "car3d_cad_scale"),
+                                     ("_pend_cad_x", "car3d_cad_x"),
+                                     ("_pend_cad_y", "car3d_cad_y"),
+                                     ("_pend_cad_z", "car3d_cad_z")):
+                    if _pend in st.session_state:
+                        st.session_state[_wkey] = st.session_state.pop(_pend)
+
                 # ---- Part name  +  "Which part is this?" slot picker -------- #
                 # The slot sets the render colour, the subsystem it lights up as,
                 # and the snap / fit-scale target (and which dummy body it can
@@ -4342,16 +4361,14 @@ with tab_car:
                          "side.")
                 _orient_mode = _ORIENT_OPTS[_orient_label]
 
-                # Scale × — start from any fit already computed for this file.
-                _fit_key = f"car3d_cad_fitscale_{_sig}"
+                # Scale × — the Fit button seeds this via _pend_cad_scale above.
                 _cad_scale = _oc[1].number_input(
                     "Scale ×", 0.01, 100.0,
-                    value=float(st.session_state.get(_fit_key, 1.0)),
                     step=0.01, format="%.2f", key="car3d_cad_scale",
                     help="Uniform scale applied to the imported mesh. 1.00 keeps "
                          "the real CAD size.")
                 _cad_yaw = _oc[2].number_input(
-                    "Yaw °", -180.0, 180.0, value=0.0, step=15.0,
+                    "Yaw °", -180.0, 180.0, step=15.0,
                     key="car3d_cad_yaw",
                     help="Spin the part about the car's vertical axis to line it up.")
 
@@ -4381,8 +4398,7 @@ with tab_car:
                 if st.button(f'\u2195 Fit scale to the \u201c{_cad_slot}\u201d area',
                              key="car3d_cad_fit"):
                     _fs = _cad_fit_scale((_L0, _W0, _H0), _slot_env)
-                    st.session_state[_fit_key] = round(_fs, 3)
-                    st.session_state["car3d_cad_scale"] = round(_fs, 3)
+                    st.session_state["_pend_cad_scale"] = round(_fs, 3)
                     st.rerun()
 
                 # ---- Position of its centre  +  Snap to part ----------------- #
@@ -4401,11 +4417,11 @@ with tab_car:
                 if _cp[3].button("\u2295 Snap to part", key="car3d_cad_snap",
                                  help="Jump the part's centre onto the "
                                       f"\u201c{_cad_slot}\u201d slot on the car."):
-                    st.session_state["car3d_cad_x"] = units_mod.from_metric(
+                    st.session_state["_pend_cad_x"] = units_mod.from_metric(
                         float(_slot_centre[0]), "mm")
-                    st.session_state["car3d_cad_y"] = units_mod.from_metric(
+                    st.session_state["_pend_cad_y"] = units_mod.from_metric(
                         float(_slot_centre[1]), "mm")
-                    st.session_state["car3d_cad_z"] = units_mod.from_metric(
+                    st.session_state["_pend_cad_z"] = units_mod.from_metric(
                         float(_slot_centre[2]), "mm")
                     st.rerun()
 
@@ -4495,7 +4511,6 @@ with tab_car:
                         _cad_sub if _cad_sub != "(custom / unassigned)" else None)
                     # Clear the uploader cache so a re-add doesn't double-trigger.
                     st.session_state.pop("car3d_cad_sig", None)
-                    st.session_state.pop(_fit_key, None)
                     st.rerun()
 
         st.markdown('<p class="hint" style="margin:8px 0 2px;border-top:1px solid '
