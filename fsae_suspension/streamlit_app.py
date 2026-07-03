@@ -4437,18 +4437,7 @@ with tab_car:
                     key="car3d_cad_yaw",
                     help="Spin the part about the car's vertical axis.")
 
-                # Resolve the axis map used for extents + fit (auto -> best guess).
-                if _orient_mode == "auto":
-                    # Pick the up-axis whose mapped H best matches the slot height.
-                    _sx0, _sy0, _sz0 = _sz
-                    _cands = {"z_up": (_sx0, _sy0, _sz0),
-                              "y_up": (_sx0, _sz0, _sy0),
-                              "x_up": (_sz0, _sy0, _sx0)}
-                    _ax = min(_cands, key=lambda a:
-                              abs(_cands[a][2] - _slot_env[2]))
-                else:
-                    _ax = _orient_mode
-
+                # Resolve the axis map used for extents + fit.
                 def _extents_for_axis(_axm):
                     _sx0, _sy0, _sz0 = _sz
                     if _axm == "y_up":
@@ -4456,6 +4445,35 @@ with tab_car:
                     if _axm == "x_up":
                         return _sz0, _sy0, _sx0
                     return _sx0, _sy0, _sz0
+
+                if _orient_mode == "auto":
+                    # Choose the up-axis remap whose resulting (L,W,H) best matches
+                    # the slot's shape — so the part's LONGEST side runs fore-aft
+                    # (car x) and its shortest ends up vertical, the way a real
+                    # chassis/radiator/etc. lies. We score each candidate by how
+                    # closely its axis-length ORDER matches the slot's, favouring
+                    # length alignment most (that's what "lying flat" means).
+                    def _order(v):
+                        # rank 0 = biggest axis … 2 = smallest, per (x,y,z)
+                        idx = sorted(range(3), key=lambda i: -v[i])
+                        r = [0, 0, 0]
+                        for rank, i in enumerate(idx):
+                            r[i] = rank
+                        return r
+                    _slot_order = _order(_slot_env)
+                    _best, _best_score = "z_up", 1e9
+                    for _cand in ("z_up", "y_up", "x_up"):
+                        _e = _extents_for_axis(_cand)
+                        _co = _order(_e)
+                        # weight the x (fore-aft) match hardest, then z (up), then y
+                        _score = (4 * abs(_co[0] - _slot_order[0])
+                                  + 2 * abs(_co[2] - _slot_order[2])
+                                  + 1 * abs(_co[1] - _slot_order[1]))
+                        if _score < _best_score:
+                            _best_score, _best = _score, _cand
+                    _ax = _best
+                else:
+                    _ax = _orient_mode
 
                 _L0, _W0, _H0 = _extents_for_axis(_ax)
 
