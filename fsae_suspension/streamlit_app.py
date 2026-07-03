@@ -17121,28 +17121,70 @@ with tab_analytics:
             })
         st.dataframe(_fu_rows, use_container_width=True, hide_index=True)
 
-    # individual use
+    # individual use — grouped BY SUBSYSTEM so it reads as "who is on each
+    # subteam and how active are they", not one undifferentiated list where
+    # subteam is just a column people have to eyeball.
     if individuals:
-        with st.expander("Individual use (per member)"):
+        with st.expander("Individual use (by subsystem)"):
             _n_named = sum(1 for r in individuals if r.get("is_named"))
             _n_anon = len(individuals) - _n_named
+            _n_total = len(individuals)
             if _n_anon:
                 st.caption(
-                    f"**{_n_named} named** + **{_n_anon} anonymous** browser(s). "
-                    "Anonymous rows are real people who haven't typed a name "
-                    "above — each is one distinct browser, tracked consistently "
-                    "across their visits, not one row per visit. Ask the team "
-                    "to enter their name here for accurate per-member credit.")
-            st.dataframe(
-                [{"Identity": (r["who"] if r.get("is_named")
-                              else f"🕶️ anonymous ({r['who'][-8:]})"),
-                  "Subteam": r.get("subteam", ""),
-                  "Sessions": r.get("sessions", 0),
-                  "Feature uses": r.get("feature_uses", 0),
-                  "Workflows": r.get("workflows_completed", 0),
-                  "Distinct features": r.get("distinct_features_used", 0)}
-                 for r in individuals],
-                use_container_width=True, hide_index=True)
+                    f"**{_n_total} "
+                    f"{'user' if _n_total == 1 else 'users'}.** "
+                    "Some haven't typed a name above — each of those is one "
+                    "distinct browser, tracked consistently across their "
+                    "visits, not one row per visit. Ask the team to enter "
+                    "their name here for accurate per-member credit.")
+
+            # Bucket every person under their (most-recent, non-unknown)
+            # subteam. Anyone whose subteam never resolved lands in a single
+            # "No subteam picked" group shown last, rather than being sprinkled
+            # through the table as blanks.
+            _UNKNOWN_KEYS = {"", "unknown", None}
+            _by_team: dict = {}
+            for _r in individuals:
+                _st = (_r.get("subteam") or "unknown")
+                _key = "unknown" if _st in _UNKNOWN_KEYS else _st
+                _by_team.setdefault(_key, []).append(_r)
+
+            def _team_activity(_rows):
+                # order subsystems by total activity so the busiest teams lead.
+                return sum((_x.get("feature_uses", 0) or 0) for _x in _rows)
+
+            # Real subteams first (most active on top), the unknown bucket last.
+            _ordered_keys = sorted(
+                (k for k in _by_team if k != "unknown"),
+                key=lambda k: _team_activity(_by_team[k]), reverse=True)
+            if "unknown" in _by_team:
+                _ordered_keys.append("unknown")
+
+            for _key in _ordered_keys:
+                _rows = _by_team[_key]
+                if _key == "unknown":
+                    _label = "❔ No subteam picked"
+                else:
+                    _label = _ROLE_LABELS.get(_key, _key.title())
+                _members = len(_rows)
+                _uses = _team_activity(_rows)
+                _wf = sum((_x.get("workflows_completed", 0) or 0) for _x in _rows)
+                st.markdown(
+                    f"**{_label}** — {_members} "
+                    f"{'person' if _members == 1 else 'people'} · "
+                    f"{_uses} feature uses · {_wf} workflows")
+                st.dataframe(
+                    [{"Identity": (r["who"] if r.get("is_named")
+                                  else f"🕶️ anonymous ({r['who'][-8:]})"),
+                      "Sessions": r.get("sessions", 0),
+                      "Feature uses": r.get("feature_uses", 0),
+                      "Workflows": r.get("workflows_completed", 0),
+                      "Distinct features": r.get("distinct_features_used", 0)}
+                     for r in sorted(
+                         _rows,
+                         key=lambda x: (x.get("feature_uses", 0) or 0),
+                         reverse=True)],
+                    use_container_width=True, hide_index=True)
 
     st.markdown("---")
 
