@@ -17200,9 +17200,10 @@ with tab_analytics:
                     [{"Identity": (r["who"] if r.get("is_named")
                                   else f"🕶️ anonymous ({r['who'][-8:]})"),
                       "Sessions": r.get("sessions", 0),
-                      "Feature uses": r.get("feature_uses", 0),
-                      "Workflows": r.get("workflows_completed", 0),
-                      "Distinct features": r.get("distinct_features_used", 0)}
+                      "Feature uses": (
+                          f"{r.get('feature_uses', 0) or 0} "
+                          f"({r.get('distinct_features_used', 0) or 0} distinct)"),
+                      "Workflows": r.get("workflows_completed", 0)}
                      for r in sorted(
                          _rows,
                          key=lambda x: (x.get("feature_uses", 0) or 0),
