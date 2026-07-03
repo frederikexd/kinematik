@@ -134,18 +134,24 @@ def _ax_wrap_input(_orig):
 def _ax_wrap_button(_orig):
     def _wrapped(*args, **kwargs):
         _res = _orig(*args, **kwargs)
-        # A button/download click is an unambiguous, deliberate action on the
-        # active tab: it returns True only on the run where it was pressed. That
-        # is a strong "the user did the thing here" signal — count it as
-        # engagement (deduped once-per-session per feature). Completion is left
-        # to the spinner hook, which fires when the click actually triggers a
-        # computation, so non-compute buttons (reset, add-row) don't inflate
-        # completions.
+        # A button click is a deliberate action on the active tab.
+        #  • Always count it as engagement (the user did something here).
+        #  • If the tab was ALREADY engaged this session (the user had entered/
+        #    changed inputs first), treat the click as running those inputs —
+        #    i.e. a completion. This captures "input a number, then click Run"
+        #    on tabs that compute inline with no spinner or chart (e.g.
+        #    Integration's mass/CG push). require_engaged=True keeps pure-nav
+        #    buttons (reset, discard) on a fresh tab from fabricating a
+        #    completion, since those fire before any input engagement.
         try:
             if _res is True:
                 _af = st.session_state.get("_ax_last_active_tab")
                 if _af:
+                    _already = st.session_state.get(f"_ax_engaged_{_af}", False)
                     _axn.auto_engage(_af, action="click")
+                    if _already:
+                        _axn.auto_complete(_af, action="run",
+                                           require_engaged=True)
         except Exception:
             pass
         return _res
@@ -185,35 +191,45 @@ def _ax_wrap_result(_orig):
     return _wrapped
 
 if not getattr(st, "_ax_input_patched", False):
-    # CRITICAL: most widgets in this app are called as CONTAINER methods —
+    # Most widgets in this app are called as CONTAINER methods —
     # `col.number_input(...)`, `tab.button(...)`, `_ac[0].number_input(...)` —
-    # not `st.number_input(...)`. Patching only the `st.` module misses all of
-    # those (which is why whole tabs stayed at 0 engagement). Every container,
-    # column, and tab is a DeltaGenerator, and `st.number_input` itself is just
-    # the root DeltaGenerator's method — so patching the CLASS covers both the
-    # `st.*` calls and every container-level call in one place.
+    # which resolve through the DeltaGenerator CLASS, so patching the class
+    # covers all of those. BUT `st.number_input(...)` and friends are methods
+    # already BOUND to the root container at import time, so they do NOT go
+    # through the class lookup — those we must patch on the `st` module too.
+    # We therefore patch BOTH: the class (for container calls) and the module
+    # (for direct st.* calls).
     from streamlit.delta_generator import DeltaGenerator as _AxDG
 
-    for _mname in ("number_input", "slider", "selectbox", "radio",
-                   "multiselect", "select_slider", "checkbox", "toggle",
-                   "text_input", "text_area", "date_input", "time_input",
-                   "color_picker"):
+    _ax_input_names = ("number_input", "slider", "selectbox", "radio",
+                       "multiselect", "select_slider", "checkbox", "toggle",
+                       "text_input", "text_area", "date_input", "time_input",
+                       "color_picker")
+    for _mname in _ax_input_names:
         if hasattr(_AxDG, _mname):
             setattr(_AxDG, _mname, _ax_wrap_input(getattr(_AxDG, _mname)))
-    # Buttons: a click is deliberate engagement on the active tab.
+        # module-level st.<widget> is a separately-bound reference — patch it too
+        if hasattr(st, _mname):
+            setattr(st, _mname, _ax_wrap_input(getattr(st, _mname)))
+    # Buttons: a click is deliberate engagement (and completion if already
+    # engaged) on the active tab.
     if hasattr(_AxDG, "button"):
         _AxDG.button = _ax_wrap_button(_AxDG.button)
+    if hasattr(st, "button"):
+        st.button = _ax_wrap_button(st.button)
     # Download/export: a genuine completion — a useful result was produced.
     if hasattr(_AxDG, "download_button"):
         _AxDG.download_button = _ax_wrap_download(_AxDG.download_button)
-    # Result render: a chart/plot appearing means the entered numbers actually
-    # ran and produced output. For reactive tabs (EV, Cost, Roll, Tire, …) that
-    # recompute on input change without a spinner, this is the "the number ran"
-    # completion signal. Gated on prior engagement so merely landing on a tab
-    # whose body renders a default chart doesn't fabricate a completion — it
-    # only counts once the user has actually changed something on that tab.
+    if hasattr(st, "download_button"):
+        st.download_button = _ax_wrap_download(st.download_button)
+    # Result render (chart/plot) = the entered numbers ran and produced output.
+    # For reactive tabs (EV, Cost, Roll, Tire, …) that recompute on input change
+    # without a spinner, this is the "the number ran" completion signal, gated
+    # on prior engagement so a default chart on open doesn't fabricate one.
     if hasattr(_AxDG, "plotly_chart"):
         _AxDG.plotly_chart = _ax_wrap_result(_AxDG.plotly_chart)
+    if hasattr(st, "plotly_chart"):
+        st.plotly_chart = _ax_wrap_result(st.plotly_chart)
 
     st._ax_input_patched = True
 
@@ -15068,6 +15084,7 @@ if _show_ledger:
                        unsafe_allow_html=True)
         if cc[1].button("→ Use this mass & CG in the vehicle model",
                         width='stretch'):
+            _axn.auto_engage("integration", action="mass_cg_push")
             st.session_state.vp["mass"] = float(total_with_driver)
             st.session_state.vp["cg_height"] = float(cgz)
             _logged = log_decision_now(
@@ -15075,6 +15092,7 @@ if _show_ledger:
                 f"Subsystem ledger: {uval(total_with_driver, 'kg', fmt='{:.1f}')} total, "
                 f"CG height {uval(cgz, 'mm')}. Now driving load transfer & lap sim.",
                 author="integration")
+            _axn.auto_complete("integration", action="mass_cg_push")
             st.success(f"Vehicle model updated: {_twd:.1f} {_uM}, "
                        f"CG {_cgz:.0f} {_uL}. Other tabs now use it."
                        + ("" if _logged else " (note: couldn't write to the handover "
