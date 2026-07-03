@@ -4347,8 +4347,8 @@ with tab_car:
                 _slot_centre, _slot_env, _cad_sub, _dummy_name = \
                     _cad_slot_target(_cad_slot)
 
-                # ---- Orientation / Scale / Yaw ------------------------------- #
-                _oc = st.columns([3, 2, 2])
+                # ---- Orientation / Scale ------------------------------------- #
+                _oc = st.columns([3, 2])
                 _ORIENT_OPTS = {
                     "Auto-align to the slot": "auto",
                     "Keep CAD z-up": "z_up",
@@ -4356,11 +4356,12 @@ with tab_car:
                     "CAD is x-up": "x_up",
                 }
                 _orient_label = _oc[0].selectbox(
-                    "Orientation", list(_ORIENT_OPTS.keys()),
+                    "Orientation (up-axis)", list(_ORIENT_OPTS.keys()),
                     key="car3d_cad_orient",
-                    help="Auto-align picks the up-axis that best matches the slot; "
-                         "or force a specific CAD up-axis if the part lies on its "
-                         "side.")
+                    help="Which axis points UP in your CAD. Auto-align picks the "
+                         "up-axis that best matches the slot; or force one if the "
+                         "part lies on its side. Fine-tune with the X/Y/Z angles "
+                         "below.")
                 _orient_mode = _ORIENT_OPTS[_orient_label]
 
                 # Scale × — the Fit button seeds this via _pend_cad_scale above.
@@ -4369,10 +4370,34 @@ with tab_car:
                     step=0.01, format="%.2f", key="car3d_cad_scale",
                     help="Uniform scale applied to the imported mesh. 1.00 keeps "
                          "the real CAD size.")
-                _cad_yaw = _oc[2].number_input(
-                    "Yaw °", -180.0, 180.0, step=15.0,
+
+                # ---- Free rotation about the car's three axes ---------------- #
+                # Beyond the up-axis remap, let the user dial the part's rotation
+                # on each car axis: X = roll (tips left/right), Y = pitch (noses
+                # up/down), Z = yaw (spins it flat). Applied roll -> pitch -> yaw.
+                for _rk, _rdef in (("car3d_cad_roll", 0.0),
+                                   ("car3d_cad_pitch", 0.0),
+                                   ("car3d_cad_yaw", 0.0)):
+                    if _rk not in st.session_state:
+                        st.session_state[_rk] = _rdef
+                st.markdown(
+                    '<p class="hint" style="margin:6px 0 2px;"><b>Rotate the part '
+                    '(\u00b0)</b> \u2014 about the car\u2019s axes: X rolls it '
+                    'left/right, Y pitches it nose up/down, Z spins it flat.</p>',
+                    unsafe_allow_html=True)
+                _rc = st.columns(3)
+                _cad_roll = _rc[0].number_input(
+                    "Rotate X \u00b7 roll \u00b0", -180.0, 180.0, step=15.0,
+                    key="car3d_cad_roll",
+                    help="Tip the part about the fore\u2013aft axis.")
+                _cad_pitch = _rc[1].number_input(
+                    "Rotate Y \u00b7 pitch \u00b0", -180.0, 180.0, step=15.0,
+                    key="car3d_cad_pitch",
+                    help="Nose the part up or down about the lateral axis.")
+                _cad_yaw = _rc[2].number_input(
+                    "Rotate Z \u00b7 yaw \u00b0", -180.0, 180.0, step=15.0,
                     key="car3d_cad_yaw",
-                    help="Spin the part about the car's vertical axis to line it up.")
+                    help="Spin the part about the car's vertical axis.")
 
                 # Resolve the axis map used for extents + fit (auto -> best guess).
                 if _orient_mode == "auto":
@@ -4428,7 +4453,7 @@ with tab_car:
                     st.rerun()
 
                 # ---- Live "Placed size · offset from slot" read -------------- #
-                _auto_size = st.session_state.get("car3d_cad_autosize", True)
+                _auto_size = st.session_state.get("car3d_cad_autosize", False)
                 if _auto_size and _dummy_name is not None:
                     _fs_prev = _cad_fit_scale((_L0, _W0, _H0), _slot_env)
                     _eff_scale = _fs_prev
@@ -4436,9 +4461,21 @@ with tab_car:
                     _eff_scale = float(_cad_scale)
                 _pL, _pW, _pH = (_L0 * _eff_scale, _W0 * _eff_scale,
                                  _H0 * _eff_scale)
-                _off = (float(_cad_x) - _slot_centre[0],
-                        float(_cad_y) - _slot_centre[1],
-                        float(_cad_z) - _slot_centre[2])
+                # If "Replace the dummy" is on and the position is still the
+                # untouched default, the part will snap onto the slot on Add, so
+                # preview a zero offset rather than the misleading default gap.
+                _will_replace = st.session_state.get("car3d_cad_replace", False) \
+                    and _dummy_name is not None
+                _is_default_pos = (abs(float(_cad_x)) < 1.0
+                                   and abs(float(_cad_y)) < 1.0
+                                   and abs(float(_cad_z) - 250.0) < 1.0)
+                if _will_replace and _is_default_pos:
+                    _eff_pos = _slot_centre
+                else:
+                    _eff_pos = (float(_cad_x), float(_cad_y), float(_cad_z))
+                _off = (_eff_pos[0] - _slot_centre[0],
+                        _eff_pos[1] - _slot_centre[1],
+                        _eff_pos[2] - _slot_centre[2])
                 _off_mag = (_off[0] ** 2 + _off[1] ** 2 + _off[2] ** 2) ** 0.5
                 _off_col = "#5ad17a" if _off_mag < 50 else (
                     "#ffd166" if _off_mag < 200 else "#ff6b5a")
@@ -4481,10 +4518,10 @@ with tab_car:
                 _cad_autosize = st.checkbox(
                     "Auto-size into the area (uniform, true shape) \u2014 "
                     "otherwise keep real CAD size", key="car3d_cad_autosize",
-                    value=True,
-                    help="On: uniformly scales the part to fill the slot envelope "
-                         "while keeping its true shape. Off: places it at real "
-                         "CAD millimetres.")
+                    value=False,
+                    help="Off (default): places the part at its real CAD "
+                         "millimetres where the slot sits. On: uniformly scales "
+                         "it to fill the slot envelope while keeping its shape.")
 
                 if st.button("Add CAD part to car", key="car3d_cad_add",
                              type="primary"):
@@ -4496,16 +4533,44 @@ with tab_car:
                         _final_scale = float(_cad_scale)
                     _Lp, _Wp, _Hp = (_L0 * _final_scale, _W0 * _final_scale,
                                      _H0 * _final_scale)
-                    _col = fullcar_mod.COLORS.get(
-                        fullcar_mod.sub_color_key(
-                            _cad_sub if _cad_sub != "(custom / unassigned)"
-                            else None),
-                        fullcar_mod.COLORS["custom"])
+                    # Colour: imported CAD renders in the bright accent so the
+                    # real geometry is always clearly visible, even when it
+                    # replaces a dark body like the monocoque. The subsystem tag
+                    # still drives click-to-zoom / spotlight; only the hue differs.
+                    _sub_key = fullcar_mod.sub_color_key(
+                        _cad_sub if _cad_sub != "(custom / unassigned)" else None)
+                    _sub_col = fullcar_mod.COLORS.get(_sub_key,
+                                                      fullcar_mod.COLORS["custom"])
+                    # If the subsystem hue is a dark/near-black body colour, fall
+                    # back to the bright "custom" accent so it doesn't vanish.
+                    def _too_dark(hexc):
+                        try:
+                            h = hexc.lstrip("#")
+                            r, g, b = (int(h[0:2], 16), int(h[2:4], 16),
+                                       int(h[4:6], 16))
+                            return (0.299 * r + 0.587 * g + 0.114 * b) < 70
+                        except Exception:
+                            return False
+                    _col = (fullcar_mod.COLORS["custom"]
+                            if _too_dark(_sub_col) else _sub_col)
+                    # Where to place it. Normally the user's typed centre; but
+                    # when replacing a dummy and the position is still the untouched
+                    # default (0, 0, 250), land it on the slot the placeholder
+                    # occupied so the real part actually takes its place.
+                    _px, _py, _pz = float(_cad_x), float(_cad_y), float(_cad_z)
+                    _is_default_pos = (abs(_px) < 1.0 and abs(_py) < 1.0
+                                       and abs(_pz - 250.0) < 1.0)
+                    if _replace_dummy and _dummy_name and _is_default_pos:
+                        _px, _py, _pz = (float(_slot_centre[0]),
+                                         float(_slot_centre[1]),
+                                         float(_slot_centre[2]))
                     _new_part = dict(
                         name=(_cad_name.strip() or "CAD part"), subsys=_cad_sub,
                         shape="mesh", mesh=_payload, axis_map=_ax,
-                        yaw_deg=float(_cad_yaw), mesh_scale=float(_final_scale),
-                        x_mm=float(_cad_x), y_mm=float(_cad_y), z_mm=float(_cad_z),
+                        yaw_deg=float(_cad_yaw), roll_deg=float(_cad_roll),
+                        pitch_deg=float(_cad_pitch),
+                        mesh_scale=float(_final_scale),
+                        x_mm=float(_px), y_mm=float(_py), z_mm=float(_pz),
                         l_mm=float(_Lp), w_mm=float(_Wp), h_mm=float(_Hp),
                         color=_col, mass_kg=float(_cad_mass),
                         replaces_dummy=(_dummy_name if _replace_dummy else None))
