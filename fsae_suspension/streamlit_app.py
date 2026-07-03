@@ -17094,9 +17094,6 @@ with tab_analytics:
         _fig.add_trace(go.Scatter(
             x=[r["day"] for r in foot], y=[r["sessions"] for r in foot],
             mode="lines+markers", name="sessions", line=dict(color="#37e0d0")))
-        _fig.add_trace(go.Scatter(
-            x=[r["day"] for r in foot], y=[r.get("named_members", 0) for r in foot],
-            mode="lines+markers", name="named members", line=dict(color="#ffb02e")))
         _fig.update_layout(
             height=260, margin=dict(l=10, r=10, t=10, b=10),
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -17105,14 +17102,24 @@ with tab_analytics:
 
 
     # feature use table
-    if feat_use:
+    # Always list EVERY KinematiK feature by its exact name (from _TAB_META),
+    # merging in logged stats where present and showing zeros otherwise, so a
+    # feature that simply hasn't been opened yet still appears by name rather
+    # than silently dropping out of the table.
+    if _have_db:
         st.markdown("###### Per-feature use")
-        st.dataframe(
-            [{"Feature": r["feature"], "Opens": r.get("opens", 0),
-              "Engagements": r.get("engagements", 0),
-              "Completions": r.get("completions", 0),
-              "Unique users": r.get("unique_users", 0)} for r in feat_use],
-            use_container_width=True, hide_index=True)
+        _fu_by_id = {r.get("feature"): r for r in (feat_use or [])}
+        _fu_rows = []
+        for _fid, (_emj, _flabel) in _TAB_META.items():
+            _r = _fu_by_id.get(_fid, {})
+            _fu_rows.append({
+                "Feature": _flabel,
+                "Opens": _r.get("opens", 0),
+                "Engagements": _r.get("engagements", 0),
+                "Completions": _r.get("completions", 0),
+                "Unique users": _r.get("unique_users", 0),
+            })
+        st.dataframe(_fu_rows, use_container_width=True, hide_index=True)
 
     # individual use
     if individuals:
