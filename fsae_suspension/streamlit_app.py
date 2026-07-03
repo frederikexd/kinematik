@@ -4350,18 +4350,18 @@ with tab_car:
                 # ---- Orientation / Scale ------------------------------------- #
                 _oc = st.columns([3, 2])
                 _ORIENT_OPTS = {
-                    "Auto-align to the slot": "auto",
-                    "Keep CAD z-up": "z_up",
-                    "CAD is y-up (SolidWorks)": "y_up",
-                    "CAD is x-up": "x_up",
+                    "Auto (match the slot)": "auto",
+                    "Z is up": "z_up",
+                    "Y is up (SolidWorks default)": "y_up",
+                    "X is up": "x_up",
                 }
                 _orient_label = _oc[0].selectbox(
-                    "Orientation (up-axis)", list(_ORIENT_OPTS.keys()),
+                    "Which CAD axis points up?", list(_ORIENT_OPTS.keys()),
                     key="car3d_cad_orient",
-                    help="Which axis points UP in your CAD. Auto-align picks the "
-                         "up-axis that best matches the slot; or force one if the "
-                         "part lies on its side. Fine-tune with the X/Y/Z angles "
-                         "below.")
+                    help="Pick which axis is UP in your CAD file \u2014 X, Y or Z. "
+                         "SolidWorks parts are usually Y-up. Auto lets the app "
+                         "choose the up-axis that best matches the slot. Fine-tune "
+                         "further with the X/Y/Z rotation angles below.")
                 _orient_mode = _ORIENT_OPTS[_orient_label]
 
                 # Scale × — the Fit button seeds this via _pend_cad_scale above.
@@ -4533,26 +4533,11 @@ with tab_car:
                         _final_scale = float(_cad_scale)
                     _Lp, _Wp, _Hp = (_L0 * _final_scale, _W0 * _final_scale,
                                      _H0 * _final_scale)
-                    # Colour: imported CAD renders in the bright accent so the
-                    # real geometry is always clearly visible, even when it
-                    # replaces a dark body like the monocoque. The subsystem tag
-                    # still drives click-to-zoom / spotlight; only the hue differs.
-                    _sub_key = fullcar_mod.sub_color_key(
-                        _cad_sub if _cad_sub != "(custom / unassigned)" else None)
-                    _sub_col = fullcar_mod.COLORS.get(_sub_key,
-                                                      fullcar_mod.COLORS["custom"])
-                    # If the subsystem hue is a dark/near-black body colour, fall
-                    # back to the bright "custom" accent so it doesn't vanish.
-                    def _too_dark(hexc):
-                        try:
-                            h = hexc.lstrip("#")
-                            r, g, b = (int(h[0:2], 16), int(h[2:4], 16),
-                                       int(h[4:6], 16))
-                            return (0.299 * r + 0.587 * g + 0.114 * b) < 70
-                        except Exception:
-                            return False
-                    _col = (fullcar_mod.COLORS["custom"]
-                            if _too_dark(_sub_col) else _sub_col)
+                    # Colour: imported CAD renders in neon blue so the real
+                    # geometry is always clearly visible on the dark scene, even
+                    # when it replaces a dark body like the monocoque. The
+                    # subsystem tag still drives click-to-zoom / spotlight.
+                    _col = "#1f8bff"
                     # Where to place it. Normally the user's typed centre; but
                     # when replacing a dummy and the position is still the untouched
                     # default (0, 0, 250), land it on the slot the placeholder
