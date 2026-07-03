@@ -90,15 +90,32 @@ def _ax_wrap_input(_orig):
         # Engagement must mean the user actually CHANGED a value, not merely
         # that an input rendered — every tab body re-runs on every interaction,
         # so firing on render would mark a tab engaged just for being open.
-        # We remember each keyed widget's last value and only count engagement
-        # when it moves. Inputs without a key can't be tracked this way and are
-        # deliberately skipped here (unum-based inputs are covered separately).
+        # We remember each widget's last value and only count engagement when it
+        # moves. Widgets carry an explicit key when available; when they don't
+        # (many container-level inputs in this app are keyless), we fall back to
+        # a stable identity built from the active feature + the widget's label,
+        # so keyless inputs are still change-tracked instead of being ignored.
         try:
-            _key = kwargs.get("key")
             _af = st.session_state.get("_ax_last_active_tab")
-            if _key and _af:
+            if _af:
+                _key = kwargs.get("key")
+                if not _key:
+                    # Build a stable identity from the active feature + the
+                    # widget's label. When patched at the class level and called
+                    # as `container.widget(label, ...)`, the first positional arg
+                    # is the container (self); the label is the first positional
+                    # arg that is a string.
+                    _lbl = kwargs.get("label")
+                    if _lbl is None:
+                        for _a in args:
+                            if isinstance(_a, str):
+                                _lbl = _a
+                                break
+                    _key = f"{_af}::{_lbl}"
                 _seen = f"_ax_seen_{_key}"
                 _prev = st.session_state.get(_seen, "___init___")
+                # lists (multiselect) aren't hashable for set membership but do
+                # support !=; compare directly and store a copy.
                 if _prev != "___init___" and _prev != _res:
                     _axn.auto_engage(_af, action="input")
                 st.session_state[_seen] = _res
@@ -145,28 +162,28 @@ def _ax_wrap_download(_orig):
     return _wrapped
 
 if not getattr(st, "_ax_input_patched", False):
-    # Numeric entry (the original "insert a number" signal)…
-    st.number_input = _ax_wrap_input(st.number_input)
-    st.slider = _ax_wrap_input(st.slider)
-    # …and selection widgets, so viewer/browser tabs that are driven by picking
-    # an option rather than typing a number (e.g. 3D Model choosing a part to
-    # view, Registry browsing entries) also register engagement when the user
-    # actually changes a selection. Same change-detection: firing only on a real
-    # value change, never on mere re-render.
-    st.selectbox = _ax_wrap_input(st.selectbox)
-    st.radio = _ax_wrap_input(st.radio)
-    st.multiselect = _ax_wrap_input(st.multiselect)
-    st.select_slider = _ax_wrap_input(st.select_slider)
-    st.checkbox = _ax_wrap_input(st.checkbox)
-    st.toggle = _ax_wrap_input(st.toggle)
-    st.text_input = _ax_wrap_input(st.text_input)
-    st.date_input = _ax_wrap_input(st.date_input)
-    # Buttons: a click is deliberate engagement on the active tab. This catches
-    # compute tabs whose "Run/Generate/Fit/Sweep" is a button rather than a
-    # tracked input, so they stop showing 0 engagement despite clear use.
-    st.button = _ax_wrap_button(st.button)
-    # A download/export is a genuine COMPLETION — a useful result was produced.
-    st.download_button = _ax_wrap_download(st.download_button)
+    # CRITICAL: most widgets in this app are called as CONTAINER methods —
+    # `col.number_input(...)`, `tab.button(...)`, `_ac[0].number_input(...)` —
+    # not `st.number_input(...)`. Patching only the `st.` module misses all of
+    # those (which is why whole tabs stayed at 0 engagement). Every container,
+    # column, and tab is a DeltaGenerator, and `st.number_input` itself is just
+    # the root DeltaGenerator's method — so patching the CLASS covers both the
+    # `st.*` calls and every container-level call in one place.
+    from streamlit.delta_generator import DeltaGenerator as _AxDG
+
+    for _mname in ("number_input", "slider", "selectbox", "radio",
+                   "multiselect", "select_slider", "checkbox", "toggle",
+                   "text_input", "text_area", "date_input", "time_input",
+                   "color_picker"):
+        if hasattr(_AxDG, _mname):
+            setattr(_AxDG, _mname, _ax_wrap_input(getattr(_AxDG, _mname)))
+    # Buttons: a click is deliberate engagement on the active tab.
+    if hasattr(_AxDG, "button"):
+        _AxDG.button = _ax_wrap_button(_AxDG.button)
+    # Download/export: a genuine completion — a useful result was produced.
+    if hasattr(_AxDG, "download_button"):
+        _AxDG.download_button = _ax_wrap_download(_AxDG.download_button)
+
     st._ax_input_patched = True
 
 # --------------------------------------------------------------------------- #
@@ -503,20 +520,6 @@ def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
     if key is not None:
         extra["key"] = key
     result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
-    # Auto-engagement: count engagement only when the user actually CHANGES a
-    # number on the active tab (not merely when the input renders — every tab
-    # body re-runs each interaction). Tracked per widget key; keyless unum
-    # inputs are skipped here to avoid false positives.
-    try:
-        _af = st.session_state.get("_ax_last_active_tab")
-        if _af and key is not None:
-            _seen = f"_ax_seen_u_{key}"
-            _prev = st.session_state.get(_seen, "___init___")
-            if _prev != "___init___" and _prev != result:
-                _axn.auto_engage(_af, action="input")
-            st.session_state[_seen] = result
-    except Exception:
-        pass
     metric_result = units_mod.to_metric(float(result), unit)
     if key is not None:
         st.session_state[f"_u_{key}"] = (metric_result, units_mod.current_system())
@@ -17061,6 +17064,53 @@ with tab_analytics:
                     st.caption(f"`{_v}`: {_e}")
 
     # ====================================================================== #
+    #  AT A GLANCE — the numbers that are unambiguously accurate (opens,      #
+    #  sessions, people, completions), shown first so the whole tab is        #
+    #  anchored by a believable top-line before any per-feature detail.       #
+    # ====================================================================== #
+    if _have_db:
+        _tot_sessions = sum((d.get("sessions", 0) or 0) for d in (foot or []))
+        _tot_people = len(individuals or [])
+        _tot_named = sum(1 for r in (individuals or []) if r.get("is_named"))
+        _tot_workflows = sum((r.get("completions", 0) or 0) for r in (feat_use or []))
+        # features people actually opened at least once (real, from accurate opens)
+        _feats_in_use = sum(1 for r in (feat_use or [])
+                            if (r.get("opens", 0) or 0) > 0
+                            and r.get("feature") != "analytics")
+
+        # 7-day vs previous-7-day session trend (a true, instrumentation-proof
+        # signal since it's built from sessions/opens, not engagement).
+        _trend_txt = ""
+        if foot and len(foot) >= 2:
+            _rows = sorted(foot, key=lambda d: str(d.get("day")))
+            _last7 = sum((d.get("sessions", 0) or 0) for d in _rows[-7:])
+            _prev7 = sum((d.get("sessions", 0) or 0) for d in _rows[-14:-7])
+            if _prev7 > 0:
+                _delta = 100.0 * (_last7 - _prev7) / _prev7
+                _arrow = "▲" if _delta >= 0 else "▼"
+                _trend_txt = f"{_arrow} {abs(_delta):.0f}% vs prior 7 days"
+            elif _last7 > 0:
+                _trend_txt = "new this week"
+
+        st.markdown("#### At a glance")
+        g1, g2, g3, g4 = st.columns(4)
+        _ax_metric(g1, "Sessions", f"{_tot_sessions:,}",
+                   _trend_txt or "all recorded visits", "var(--cyan)")
+        _ax_metric(g2, "People", f"{_tot_people:,}",
+                   f"{_tot_named} named · {_tot_people - _tot_named} anonymous",
+                   "var(--cyan)")
+        _ax_metric(g3, "Workflows completed", f"{_tot_workflows:,}",
+                   "results produced", "var(--amber)")
+        _ax_metric(g4, "Features in use", f"{_feats_in_use}/24",
+                   "opened at least once", "var(--cyan)")
+        st.caption(
+            "These four are the reliable top-line: sessions, people and opens "
+            "are counted exactly. Per-feature engagement/completion below can "
+            "read low for a few tabs that were instrumented after release — the "
+            "usage was real even where those two columns show 0.")
+        st.markdown("---")
+
+    # ====================================================================== #
     #  HEADLINE — hours saved -> dollars (the board slide)                   #
     # ====================================================================== #
     st.markdown("#### The board number")
@@ -17248,20 +17298,53 @@ with tab_analytics:
     # than silently dropping out of the table.
     if _have_db:
         st.markdown("###### Per-feature use")
+        st.caption(
+            "⚠️ Some features may show 0 engagements/completions despite real "
+            "opens and users. A few tabs work differently (viewers, browsers) "
+            "or were instrumented later than they were released, so earlier "
+            "usage wasn't captured as engagement/completion. Every other number "
+            "here — opens, users, and all counts outside the engagement/"
+            "completion discrepancy — is accurate; only engagement/completion "
+            "is affected, and it is most accurate for recent activity.")
         _fu_by_id = {r.get("feature"): r for r in (feat_use or [])}
         _fu_rows = []
         for _fid, (_emj, _flabel) in _TAB_META.items():
             if _fid == "analytics":
                 continue  # the analytics tab itself is not a tracked feature
             _r = _fu_by_id.get(_fid, {})
+            _opens = _r.get("opens", 0) or 0
+            _eng = _r.get("engagements", 0) or 0
+            _comp = _r.get("completions", 0) or 0
+            _users = _r.get("unique_users", 0) or 0
+
+            # Make a "0" read meaningfully instead of looking broken:
+            #  • opened but no engagement logged  -> "—" (used, not fully tracked)
+            #  • never opened at all              -> "0" (genuinely untouched)
+            # This is the difference between "we didn't capture it" and
+            # "nobody used it", which is exactly what made the table feel wrong.
+            def _stage(v, opened):
+                if v > 0:
+                    return v
+                return "—" if opened else 0
+
             _fu_rows.append({
                 "Feature": _flabel,
-                "Opens": _r.get("opens", 0),
-                "Engagements": _r.get("engagements", 0),
-                "Completions": _r.get("completions", 0),
-                "Unique users": _r.get("unique_users", 0),
+                "Opens": _opens,
+                "Engagements": _stage(_eng, _opens > 0),
+                "Completions": _stage(_comp, _opens > 0),
+                "Unique users": _users,
+                "_sort": _opens,  # activity key, dropped before display
             })
+        # Sort by real activity (opens) so thriving features lead and the quiet
+        # ones fall to the bottom — signal first, not alphabetical noise.
+        _fu_rows.sort(key=lambda r: r["_sort"], reverse=True)
+        for _row in _fu_rows:
+            _row.pop("_sort", None)
         st.dataframe(_fu_rows, use_container_width=True, hide_index=True)
+        st.caption(
+            "“—” means the feature was opened but its engagement/completion "
+            "wasn't captured (works differently, or instrumented later). "
+            "“0” means genuinely no opens. Sorted by opens, busiest first.")
 
     # individual use — grouped BY SUBSYSTEM so it reads as "who is on each
     # subteam and how active are they", not one undifferentiated list where
@@ -17360,6 +17443,12 @@ with tab_analytics:
     fcol, ecol = st.columns(2)
     with fcol:
         st.markdown("#### Adoption funnel")
+        st.caption(
+            "⚠️ Some features may show 0 engagement/completion despite real "
+            "opens — a few tabs work differently or were instrumented after "
+            "release, so earlier use wasn't captured. Every other number is "
+            "accurate; only the engagement/completion discrepancy is affected, "
+            "and recent activity is the most accurate.")
         if funnel:
             # Reflect exactly the same features, by the same exact names, as the
             # Per-feature use tab: iterate _TAB_META (the 25 canonical features)
@@ -17368,19 +17457,27 @@ with tab_analytics:
             # ids not in _TAB_META (e.g. the 'mythbuster' sub-workflow) are not
             # shown here, matching the Per-feature tab.
             _fn_by_id = {r.get("feature"): r for r in funnel}
-            for _fid, (_emj, _flabel) in _TAB_META.items():
-                if _fid == "analytics":
-                    continue  # the analytics tab itself is not a tracked feature
+            # Order by real activity (opens), busiest first, so the funnel leads
+            # with features that are clearly alive rather than alphabetically.
+            _fn_items = [(_fid, _emj, _flabel)
+                         for _fid, (_emj, _flabel) in _TAB_META.items()
+                         if _fid != "analytics"]
+            _fn_items.sort(
+                key=lambda t: (_fn_by_id.get(t[0], {}).get("opened", 0) or 0),
+                reverse=True)
+            for _fid, _emj, _flabel in _fn_items:
                 r = _fn_by_id.get(_fid, {})
                 _o = r.get("opened", 0) or 0
                 _e = r.get("engaged", 0) or 0
                 _c = r.get("completed", 0) or 0
+                # "—" where a feature was opened but engagement wasn't captured,
+                # so a real 0 doesn't look like the funnel is broken.
+                _e_txt = str(_e) if _e > 0 else ("—" if _o > 0 else "0")
+                _c_txt = str(_c) if _c > 0 else ("—" if _o > 0 else "0")
                 st.markdown(
                     f'**{_flabel}** '
-                    f'<span class="hint">open {_o} → engage {_e} '
-                    f'({r.get("open_to_engage_pct", 0) or 0:.0f}%) → '
-                    f'complete {_c} '
-                    f'({r.get("engage_to_complete_pct", 0) or 0:.0f}%)</span>',
+                    f'<span class="hint">open {_o} → engage {_e_txt} → '
+                    f'complete {_c_txt}</span>',
                     unsafe_allow_html=True)
         else:
             st.caption("Funnel fills in as tabs are opened and workflows complete.")
