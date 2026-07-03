@@ -717,6 +717,8 @@ def build_full_car_figure(
     tire_width_mm: float = 180.0,
     part_overrides: dict | None = None,
     custom_parts: list | None = None,
+    suppress_subsystems: set | None = None,
+    suppress_parts: set | None = None,
     height: int = 720,
 ):
     """Assemble a live Formula-car 3D figure.
@@ -828,6 +830,27 @@ def build_full_car_figure(
     # mesh/seg chokepoint, before _accrue, so click-to-zoom frames the moved part.
     _ov = part_overrides or {}
 
+    # Subsystems / parts whose PROCEDURAL body is replaced by a user CAD/custom
+    # part: skip drawing the stand-in so only the real geometry shows there. A
+    # suppressed SUBSYSTEM also suppresses every catalog body it owns (via
+    # PART_CATALOG). Callers may pass either subsystem keys (suppress_subsystems)
+    # or explicit draw-names (suppress_parts); the two are unioned into one set
+    # of draw-names that the mesh/seg chokepoint honours through _is_hidden.
+    _suppress = set(suppress_subsystems or ())
+    _suppress_names = set(suppress_parts or ())
+    try:
+        for _pk, _pdn, _ps, _pc in PART_CATALOG:
+            if _ps in _suppress:
+                _suppress_names.add(_pdn)
+    except Exception:
+        pass
+
+    # Real drawn extent of each built-in body, keyed by draw-name — recorded even
+    # when the body is then suppressed, so a replacing CAD part can be fitted to
+    # EXACTLY the box its placeholder occupied. Exposed on the returned figure as
+    # `_part_boxes` for the Streamlit CAD "fit to area" tool.
+    _part_boxes: dict = {}
+
     def _ov_for(name):
         o = _ov.get(name) if name else None
         if not o:
@@ -845,8 +868,11 @@ def build_full_car_figure(
         return (dx, dy, dz, sx, sy, sz)
 
     def _is_hidden(name):
-        """True when a part_override asks to hide this body (e.g. a dummy
-        placeholder the user has replaced with their real imported CAD)."""
+        """True when this body should be skipped — either because a part_override
+        asks to hide it, or because a user CAD/custom part replaces its subsystem
+        or the body itself (suppress_subsystems / suppress_parts)."""
+        if name and name in _suppress_names:
+            return True
         o = _ov.get(name) if name else None
         return bool(o and o.get("hide"))
 
@@ -982,6 +1008,22 @@ def build_full_car_figure(
 
     def mesh(verts, i, j, k, color, name, subsys, base_op=0.6, hover=None,
              corner=None):
+        # Record this body's true drawn box (keyed by draw-name) BEFORE any
+        # suppression, so a replacing CAD part can land in exactly the same place
+        # its placeholder occupied — even when the placeholder is now hidden.
+        if name:
+            try:
+                _vv = _apply_ov(name, verts)
+                _lo = np.asarray(_vv, float).reshape(-1, 3).min(axis=0)
+                _hi = np.asarray(_vv, float).reshape(-1, 3).max(axis=0)
+                if name in _part_boxes:
+                    _pb = _part_boxes[name]
+                    _pb[0] = np.minimum(_pb[0], _lo)
+                    _pb[1] = np.maximum(_pb[1], _hi)
+                else:
+                    _part_boxes[name] = [_lo.copy(), _hi.copy()]
+            except Exception:
+                pass
         if _is_hidden(name):
             return
         once = name not in legend_done
@@ -1676,6 +1718,21 @@ def build_full_car_figure(
         object.__setattr__(fig, "_kk_subsys_centroids", _centroids)
     except Exception:
         pass
+    # Expose the real drawn boxes (centre+size in car mm) so the CAD "fit to
+    # area" tool can size a replacement to the ACTUAL placeholder box a part
+    # occupies, not just the rough anchor. Same object.__setattr__ approach as
+    # the centroids above, to bypass plotly's Figure.__setattr__ guard.
+    try:
+        object.__setattr__(fig, "_part_boxes", {
+            nm: dict(
+                centre=[float((lo[i] + hi[i]) / 2.0) for i in range(3)],
+                size=[float(hi[i] - lo[i]) for i in range(3)])
+            for nm, (lo, hi) in _part_boxes.items()})
+    except Exception:
+        try:
+            object.__setattr__(fig, "_part_boxes", {})
+        except Exception:
+            pass
     return fig
 
 
@@ -2120,6 +2177,128 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
                 x_mm=round(float(x), 0), y_mm=round(float(y), 0),
                 z_mm=round(float(z), 0), shape=shape, basis=basis,
                 from_declared=from_declared)
+
+
+# Every body the car draws is individually replaceable by a CAD / sketch /
+# estimate. This catalog maps each legend part to: the draw-name the renderer
+# uses (so we can suppress exactly that body), its subsystem (colour + zoom),
+# and an envelope+home so a dropped part auto-fits where THAT part belongs.
+# `key` is a stable id used in session-state and suppression sets.
+# SIMPLIFIED to seven subsystems. Each is replaceable as ONE unit by a CAD /
+# sketch / estimate. Replacing a subsystem hides ALL of its procedural bodies
+# (listed in `drawnames`) so only the real geometry shows there, while every
+# OTHER subsystem stays on screen as a dummy suggestion — wheels, wings, driver,
+# CG, etc. — so the user always sees their part in the context of a full car.
+SUBSYSTEM_CATALOG = [
+    # key            display name        draw-names this subsystem owns
+    ("chassis",      "Chassis",          ["Monocoque", "Roll hoop", "Driver"]),
+    ("aerodynamics", "Aerodynamics",     ["Front wing", "Rear wing"]),
+    ("cooling",      "Cooling",          ["Sidepod (cooling)", "Radiator core"]),
+    ("powertrain",   "Powertrain",       ["Motor + inverter"]),
+    ("electrics",    "Electrics",        ["Accumulator"]),
+    ("suspension",   "Suspension",       ["Tire", "Upright", "Wheel hub",
+                                          "Upper wishbone", "Lower wishbone",
+                                          "Tie rod", "Pushrod", "Rocker",
+                                          "Spring/damper"]),
+    ("brakes",       "Brakes",           ["Brake disc"]),
+]
+SUBSYS_DRAWNAMES = {k: dn for k, _d, dn in SUBSYSTEM_CATALOG}
+SUBSYS_DISPLAY = {k: d for k, d, _dn in SUBSYSTEM_CATALOG}
+
+# Kept for the renderer's internal anchor/box lookups (per representative body).
+PART_CATALOG = [
+    ("front_wing",      "Front wing",          "aerodynamics", False),
+    ("rear_wing",       "Rear wing",           "aerodynamics", False),
+    ("monocoque",       "Monocoque",           "chassis",      False),
+    ("roll_hoop",       "Roll hoop",           "chassis",      False),
+    ("driver",          "Driver",              "chassis",      False),
+    ("sidepod",         "Sidepod (cooling)",   "cooling",      False),
+    ("radiator",        "Radiator core",       "cooling",      False),
+    ("motor",           "Motor + inverter",    "powertrain",   False),
+    ("accumulator",     "Accumulator",         "electrics",    False),
+    ("tire",            "Tire",                "suspension",   True),
+    ("brake_disc",      "Brake disc",          "brakes",       True),
+    ("upright",         "Upright",             "suspension",   True),
+]
+# draw-name -> key, for suppression (the renderer suppresses by draw-name).
+PART_DRAWNAME_BY_KEY = {k: dn for k, dn, _s, _c in PART_CATALOG}
+PART_KEY_BY_DRAWNAME = {dn: k for k, dn, _s, _c in PART_CATALOG}
+PART_SUBSYS_BY_KEY = {k: s for k, _dn, s, _c in PART_CATALOG}
+
+# A representative body per subsystem, used to size/anchor a replacement.
+SUBSYS_ANCHOR_PART = {
+    "chassis": "monocoque", "aerodynamics": "front_wing", "cooling": "radiator",
+    "powertrain": "motor", "electrics": "accumulator", "suspension": "tire",
+    "brakes": "brake_disc",
+}
+
+
+def subsystem_catalog():
+    """Public list of (key, display_name, [draw-names]) for the simplified UI."""
+    return list(SUBSYSTEM_CATALOG)
+
+
+def part_catalog():
+    """Public list of (key, display_name, subsystem, is_corner) — internal."""
+    return list(PART_CATALOG)
+
+
+def suggest_part_geometry_for(vp, part_key: str, ledger=None) -> dict:
+    """Per-PART target envelope + home position (finer than per-subsystem).
+
+    Falls back to the subsystem suggestion, then refines for parts that are
+    smaller than their whole subsystem (a roll hoop is not the whole chassis).
+    """
+    sub = PART_SUBSYS_BY_KEY.get(part_key, "chassis")
+    base = suggest_part_geometry(vp, sub, ledger=ledger)
+    wb = float(getattr(vp, "wheelbase", 1550.0))
+    tf = float(getattr(vp, "track_front", 1200.0))
+    tr = float(getattr(vp, "track_rear", 1180.0))
+    tire_r = 228.0
+    x_front, x_rear = wb / 2.0, -wb / 2.0
+
+    def out(l, w, h, x, y, z, shape="box", basis=None):
+        return dict(l_mm=round(l, 0), w_mm=round(w, 0), h_mm=round(h, 0),
+                    x_mm=round(x, 0), y_mm=round(y, 0), z_mm=round(z, 0),
+                    shape=shape, basis=basis or base["basis"],
+                    from_declared=base.get("from_declared", []))
+
+    if part_key == "front_wing":
+        return out(tire_r * 0.65, tf * 0.98, 80, x_front + tire_r * 1.6, 0, tire_r * 0.32,
+                   basis=["chord", "≈ front track", "element stack"])
+    if part_key == "rear_wing":
+        return out(tire_r * 0.7, tr * 0.92, 120, x_rear - tire_r * 0.8, 0, tire_r * 1.15,
+                   basis=["chord", "≈ rear track", "tall element stack"])
+    if part_key == "roll_hoop":
+        return out(60, min(tf, tr) * 0.55, tire_r * 1.7, x_rear + wb * 0.30, 0, tire_r * 1.2,
+                   basis=["tube thickness", "shoulder width", "above the driver"])
+    if part_key == "driver":
+        return out(280, 300, 600, x_front - wb * 0.16, 0, tire_r * 1.4,
+                   basis=["torso", "shoulders", "seated height"])
+    if part_key == "data_logger":
+        return out(160, 120, 80, -wb * 0.16, 0, tire_r * 1.1,
+                   basis=["compact box", "beside driver", "above floor"])
+    if part_key == "tire":
+        return out(360, 200, 360, x_front, tf / 2.0, tire_r,
+                   shape="cylinder", basis=["diameter", "section width", "diameter"])
+    if part_key == "brake_disc":
+        return out(40, 280, 280, x_front, tf / 2.0 - 40, tire_r * 0.9,
+                   shape="cylinder", basis=["disc thickness", "Ø", "Ø at wheel"])
+    if part_key == "upright":
+        return out(180, 160, 260, x_front, tf / 2.0 - 110, tire_r,
+                   basis=["upright depth", "width", "hub-to-arm"])
+    # monocoque, sidepod, radiator, motor, accumulator: subsystem suggestion fits.
+    return base
+
+
+# Single source of truth for WHERE and HOW BIG each part is. Both the placeholder
+# renderer (via _placeholder_box, drawn when a part has no replacement) and the
+# replacement auto-fit read this, so a CAD/sketch/estimate lands in EXACTLY the
+# same box its placeholder occupied — every part integrates on one coordinate
+# system. Honours ledger env_* declarations through suggest_part_geometry_for.
+def part_anchor(vp, part_key: str, ledger=None) -> dict:
+    """Canonical (centre + size + shape) box for a catalog part, in car SAE mm."""
+    return suggest_part_geometry_for(vp, part_key, ledger=ledger)
 
 
 def dummy_body_footprint(fig, name: str) -> dict | None:
