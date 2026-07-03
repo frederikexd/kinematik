@@ -2179,6 +2179,207 @@ def _proclib_render_cards(res, *, show_subsystem):
             unsafe_allow_html=True)
 
 
+def render_myth_check(subsystem_key, *, key_prefix, context=None,
+                      placeholder=None):
+    """Generic inline 'sanity-check a claim' box, wired to the deterministic
+    myth-buster and (optionally) a live result context for this subsystem.
+
+    Same engine and plain-language output as the brakes 'Bust it →' button, so any
+    tab can let a member test an assumption against real numbers in one line —
+    without leaving the tab or opening the full Myth-buster view. `context` is the
+    optional live-result dict the rules can check the claim against; None falls back
+    to the physics/rule answer.
+    """
+    _ph = placeholder or "e.g. a common assumption you want to sanity-check"
+    _c = st.columns([3, 1])
+    _claim = _c[0].text_input(
+        f"Sanity-check a {subsystem_key.replace('-', ' ')} assumption",
+        key=f"{key_prefix}_myth_claim", placeholder=_ph,
+        label_visibility="visible")
+    _go = _c[1].button("Bust it →", key=f"{key_prefix}_myth_go",
+                       help="Check this claim against the deterministic myth-buster "
+                            "(and your live numbers where available). No AI.")
+    if _go and _claim.strip():
+        try:
+            from suspension import mythbuster as _mb
+            _res = _mb.check(_claim, context=context)
+            _vraw = getattr(_res, "verdict", "unknown")
+            _v = getattr(_vraw, "value", _vraw)
+            _fn = {"myth": st.error, "true": st.success,
+                   "depends": st.warning}.get(_v, st.info)
+            _head = {"myth": "❌ Not true for your setup",
+                     "true": "✅ True — checks out",
+                     "depends": "⚠️ It depends — worth a closer look",
+                     "unknown": "Couldn't match that to a known check"}.get(_v, _v)
+            _fn(f"**{_head}**\n\n{_res.explanation}")
+            if getattr(_res, "provenance", ""):
+                with st.expander("How it got this (technical)"):
+                    st.caption("Computed from the deterministic rules "
+                               "(and your live numbers where available):")
+                    st.code(_res.provenance, language=None)
+        except Exception as _me:
+            st.warning(f"Couldn't run the myth-buster: {_me}")
+
+
+def render_provisional_note(is_example, verdict, detail=""):
+    """Shared 'this is example data, not your car yet' banner.
+
+    A verdict computed on default/placeholder inputs shouldn't alarm a member who
+    hasn't entered their own numbers. When `is_example` is True this shows a neutral
+    provisional note instead of a hard pass/fail and returns True (caller then skips
+    its own verdict banner); otherwise returns False.
+    """
+    if not is_example:
+        return False
+    st.info(f"▶ Provisional (example numbers): would be **{verdict}**"
+            + (f" — {detail}" if detail else "")
+            + ". Enter your own inputs to check your actual subsystem — nothing here "
+              "is your car yet.")
+    return True
+
+
+def render_subsystem_documentation(subsystem_key, *, key_prefix,
+                                   extra_sections=None, title_name=None):
+    """Generic per-subsystem Documentation view: PDF report + optional handover log.
+
+    Every subsystem publishes the same shape of data to the INTEGRATION ledger
+    (mass, CG, loads, thermal, rationale, owner...), so ONE helper builds a clean
+    report for ANY of them — no per-tab copy-paste. A tab calls this with its
+    subsystem key; it assembles the declared ledger interface (only fields actually
+    filled), rationale/owner/estimate flag, any live cross-team findings touching
+    this subsystem, plus any `extra_sections` the tab passes — a list of
+    (heading, [lines]) for results that don't live in the ledger. It then offers a
+    PDF + Markdown download and, if chosen, records the report in the Handover via
+    the same log_decision_now used everywhere else.
+
+    This is the streamline-the-team feature generalised: a member finishes their
+    analysis and captures it — for their binder and for next year — without leaving
+    the tab or hand-writing notes.
+    """
+    _name = title_name or subsystem_key.replace("-", " ").title()
+
+    def _build_md():
+        import datetime as _dt
+        L = [f"# Elbee Racing — {_name} Subsystem Report",
+             f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._", ""]
+        try:
+            _led = interfaces_mod.IntegrationLedger.from_dict(
+                st.session_state.get("ledger", {}) or {})
+            _it = _led.get(subsystem_key)
+        except Exception:
+            _led, _it = None, None
+        if _it is not None and _it.declared_fields():
+            L.append("## Declared to INTEGRATION")
+            for _f in _it.declared_fields():
+                _lbl = interfaces_mod.FIELD_LABELS.get(_f, (_f, ""))[0]
+                L.append(f"- {_lbl}: "
+                         f"**{interfaces_mod._fmt_val(_f, getattr(_it, _f))}**")
+            if _it.is_estimate:
+                L.append("- _Marked ESTIMATE — placeholder data, not yet confirmed._")
+            if getattr(_it, "rationale", ""):
+                L.append(f"- Rationale: {_it.rationale}")
+            if getattr(_it, "owner", ""):
+                L.append(f"- Owner: {_it.owner}")
+            if getattr(_it, "updated_on", ""):
+                L.append(f"- Last updated: {_it.updated_on}")
+            L.append("")
+        for _heading, _lines in (extra_sections or []):
+            if _lines:
+                L.append(f"## {_heading}")
+                L.extend(_lines)
+                L.append("")
+        if _led is not None:
+            try:
+                _finds = interfaces_mod.findings_for(
+                    _led.check_all(), subsystem_key)
+                if _finds:
+                    L.append("## Cross-team checks (live)")
+                    for _fd in _finds:
+                        _sv = getattr(_fd.severity, "value", _fd.severity)
+                        L.append(f"- [{str(_sv).upper()}] {_fd.message}")
+                    L.append("")
+            except Exception:
+                pass
+        if len(L) <= 3:
+            L.append(f"_No {_name.lower()} results recorded yet — work through this "
+                     f"subsystem's views and publish to INTEGRATION first, then come "
+                     f"back here to generate the report._")
+        return "\n".join(L)
+
+    _md = _build_md()
+    with st.expander("Preview the report", expanded=False):
+        st.markdown(_md)
+
+    _mode = st.radio(
+        "What should this do?",
+        [f"Just create a PDF for the {_name.lower()} subsystem",
+         "Create the PDF **and** record it in the Handover"],
+        key=f"{key_prefix}_doc_mode")
+
+    _cols = st.columns([2, 3])
+    _safe = subsystem_key.replace("-", "_")
+    _pdf_ok = False
+    try:
+        import tempfile as _tf3
+        import os as _os3
+        _pdf_path = _os3.path.join(_tf3.gettempdir(), f"elbee_{_safe}_report.pdf")
+        project_mod.render_pdf(_md, _pdf_path)
+        with open(_pdf_path, "rb") as _pf:
+            _pdf_bytes = _pf.read()
+        _pdf_ok = True
+    except Exception as _pe:
+        _cols[0].warning(f"PDF unavailable: {_pe}")
+
+    if _pdf_ok:
+        _cols[0].download_button(
+            f"⬇ {_name} report (.pdf)", _pdf_bytes,
+            file_name=f"elbee_{_safe}_report.pdf", mime="application/pdf",
+            width='stretch', key=f"{key_prefix}_doc_pdf")
+        _cols[1].download_button(
+            f"⬇ {_name} report (.md)", _md.encode("utf-8"),
+            file_name=f"elbee_{_safe}_report.md", mime="text/markdown",
+            width='stretch', key=f"{key_prefix}_doc_md")
+
+    if _mode.startswith("Create the PDF **and**"):
+        if st.button("✓ Record this report in the Handover",
+                     key=f"{key_prefix}_doc_log"):
+            _ok = log_decision_now(
+                subsystem_key, f"{_name} subsystem report generated",
+                _md, author=subsystem_key)
+            if _ok:
+                st.success("Recorded in the Handover — visible in the Weight & "
+                           "Handover tab and carried into the season handover report.")
+            else:
+                st.warning("Couldn't write to the Handover log (backend offline) — "
+                           "the PDF above is still yours to download.")
+
+
+def render_documentation_expander(subsystem_key, *, key_prefix,
+                                  extra_sections=None, title_name=None):
+    """Collapsed 'Documentation' expander wrapping render_subsystem_documentation,
+    so any tab gets a PDF-export + handover-log affordance with one call — uniform
+    across every subsystem, independent of the tab's internal view structure."""
+    _nm = title_name or subsystem_key.replace("-", " ").title()
+    with st.expander(f"📄  {_nm} documentation — export a PDF / record in Handover",
+                     expanded=False):
+        st.markdown(
+            f'<p class="hint" style="margin:-2px 0 8px;">Capture what you\'ve worked '
+            f'out here as a <b>{_nm} subsystem report</b> — download the PDF for your '
+            f'design binder, and optionally record it in the <b>Handover</b> so the '
+            f'rest of Elbee and next year\'s team can see it.</p>',
+            unsafe_allow_html=True)
+        render_subsystem_documentation(
+            subsystem_key, key_prefix=key_prefix, extra_sections=extra_sections,
+            title_name=title_name)
+        st.markdown(
+            '<hr style="margin:10px 0 6px; border:none; '
+            'border-top:1px solid rgba(128,128,128,.15);">', unsafe_allow_html=True)
+        try:
+            render_myth_check(subsystem_key, key_prefix=key_prefix)
+        except Exception:
+            pass
+
+
 def render_process_library(subsystem_key, *, key_prefix, title=None):
     """Render the 'how is this made?' search box + results inside a tab.
 
@@ -3332,6 +3533,11 @@ _U_TRAVEL = units_mod.label("mm")
 with tab1:
   try:
     render_process_library("suspension", key_prefix="kin_pl")
+  except Exception:
+    pass
+  try:
+    render_documentation_expander("suspension", key_prefix="susp_main",
+                                  title_name="Suspension")
   except Exception:
     pass
   # --- SUSPENSION HEADLINE CARDS ----------------------------------------- #
@@ -4831,6 +5037,11 @@ with tab_aero:
   except Exception:
     pass
   try:
+    render_documentation_expander("aerodynamics", key_prefix="aero",
+                                  title_name="Aerodynamics")
+  except Exception:
+    pass
+  try:
     _subsystem_cad_import("aerodynamics", key_prefix="aero")
     _RHO = 1.225  # kg/m³, sea-level ISA — same default as the aero coupling
     st.markdown(
@@ -5522,8 +5733,18 @@ with tab_ev:
   except Exception:
     pass
   try:
+    render_documentation_expander("powertrain", key_prefix="ev",
+                                  title_name="Powertrain")
+  except Exception:
+    pass
+  try:
     _subsystem_cad_import("powertrain", key_prefix="ev")
     _subsystem_cad_import("cooling", key_prefix="ev_cooling")
+    try:
+        render_documentation_expander("cooling", key_prefix="cooling",
+                                      title_name="Cooling")
+    except Exception:
+        pass
     st.markdown(
         '<p class="hint" style="margin:0 0 6px;">Pick the <b>motor architecture</b> and '
         'size the pack. KinematiK runs the same lap on each option, with each one '
@@ -6465,6 +6686,11 @@ with tab_ev:
 with tab_accum:
   try:
     render_process_library("electrics", key_prefix="accum_pl")
+  except Exception:
+    pass
+  try:
+    render_documentation_expander("electrics", key_prefix="accum",
+                                  title_name="Accumulator / Electrics")
   except Exception:
     pass
   try:
@@ -8368,130 +8594,63 @@ with tab_brake:
             'the rest of Elbee) can see what the brakes team decided and why.</p>',
             unsafe_allow_html=True)
 
-        # ---- assemble the brakes report markdown from live session state -------
-        def _brakes_report_md():
-            import datetime as _dt
-            L = []
-            L.append("# Elbee Racing — Brakes Subsystem Report")
-            L.append(f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._")
-            L.append("")
-            # Bias & lock-up
-            _bias = st.session_state.get("brake_front_bias_pct")
-            _rotor = st.session_state.get("brake_rotor_dia_mm")
-            if _bias is not None or _rotor is not None:
-                L.append("## Bias & lock-up")
-                if _bias is not None:
-                    L.append(f"- Front brake bias: **{_bias:.0f}%**")
-                if _rotor is not None:
-                    L.append(f"- Rotor diameter: **{_rotor:.0f} mm**")
-                L.append("")
-            # Hydraulics / pedal
-            _pratio = st.session_state.get("brake_pedal_ratio")
-            _dforce = st.session_state.get("brake_driver_pedal_force")
-            if _pratio is not None or _dforce is not None:
-                L.append("## Hydraulics & pedal")
-                if _pratio is not None:
-                    L.append(f"- Pedal ratio: **{_pratio:.2f}**")
-                if _dforce is not None:
-                    L.append(f"- Driver pedal force: **{_dforce:.0f} N**")
-                L.append("")
-            # Brake pedal 2000 N gate — recompute from stored inputs if present
-            _pw = st.session_state.get("pedal_w")
-            if _pw is not None:
-                try:
-                    from suspension import throttle_return as _trd
-                    _pres_doc = _trd.check_brake_pedal_2000N(
-                        width_mm=st.session_state.get("pedal_w", 35.0),
-                        thickness_mm=st.session_state.get("pedal_t", 8.0),
-                        lever_arm_mm=st.session_state.get("pedal_lever", 90.0),
-                        material=st.session_state.get("pedal_mat",
-                                                      "Aluminium 7075-T6"),
-                        load_N=st.session_state.get("pedal_load", 2000.0)
-                        if not st.session_state.get("pedal_load_pin2000", False)
-                        else 2000.0)
-                    L.append("## Brake pedal — 2000 N rule")
-                    L.append(f"- Verdict: **{_pres_doc.verdict}** "
-                             f"(min FoS {_pres_doc.min_fos:.2f} vs "
-                             f"{_pres_doc.fos_target:.2f}, governing "
-                             f"{_pres_doc.governing_mode})")
-                    L.append(f"- Material {st.session_state.get('pedal_mat','?')}, "
-                             f"{st.session_state.get('pedal_w',0):.0f}×"
-                             f"{st.session_state.get('pedal_t',0):.0f} mm, "
-                             f"lever {st.session_state.get('pedal_lever',0):.0f} mm")
-                    if _pres_doc.screening_only:
-                        L.append("- _Screening only — a PASS earns the SolidWorks/"
-                                 "Ansys run, it does not replace it._")
-                    L.append("")
-                except Exception:
-                    pass
-            # Throttle return redundancy
-            _rr_doc = st.session_state.get("throttle_return_result")
-            if _rr_doc is not None:
-                L.append("## Throttle return springs — single-fault redundancy")
-                L.append(f"- Verdict: **{getattr(_rr_doc,'verdict','?')}** "
-                         f"(worst single-failure case "
-                         f"{getattr(_rr_doc,'worst_case','?')}, "
-                         f"margin {getattr(_rr_doc,'worst_margin',float('nan')):.2f})")
-                for _c in getattr(_rr_doc, "cases", []):
-                    _ok = "closes" if _c.closes else "HANGS OPEN"
-                    L.append(f"  - {_c.label}: net closed {_c.net_closed_Nm:.2f} N·m, "
-                             f"net open {_c.net_open_Nm:.2f} N·m — {_ok}")
-                L.append("")
-            if len(L) <= 3:
-                L.append("_No brakes results recorded yet — work through the Bias, "
-                         "Hydraulic, Pedal box & throttle views first, then come back "
-                         "here to generate the report._")
-            return "\n".join(L)
+        # brakes-specific result sections that don't live in the ledger
+        _bx = []
+        _bias = st.session_state.get("brake_front_bias_pct")
+        _rotor = st.session_state.get("brake_rotor_dia_mm")
+        if _bias is not None or _rotor is not None:
+            _l = []
+            if _bias is not None:
+                _l.append(f"- Front brake bias: **{_bias:.0f}%**")
+            if _rotor is not None:
+                _l.append(f"- Rotor diameter: **{_rotor:.0f} mm**")
+            _bx.append(("Bias & lock-up", _l))
+        _pratio = st.session_state.get("brake_pedal_ratio")
+        _dforce = st.session_state.get("brake_driver_pedal_force")
+        if _pratio is not None or _dforce is not None:
+            _l = []
+            if _pratio is not None:
+                _l.append(f"- Pedal ratio: **{_pratio:.2f}**")
+            if _dforce is not None:
+                _l.append(f"- Driver pedal force: **{_dforce:.0f} N**")
+            _bx.append(("Hydraulics & pedal", _l))
+        if st.session_state.get("pedal_w") is not None:
+            try:
+                from suspension import throttle_return as _trd
+                _pres_doc = _trd.check_brake_pedal_2000N(
+                    width_mm=st.session_state.get("pedal_w", 35.0),
+                    thickness_mm=st.session_state.get("pedal_t", 8.0),
+                    lever_arm_mm=st.session_state.get("pedal_lever", 90.0),
+                    material=st.session_state.get("pedal_mat", "Aluminium 7075-T6"),
+                    load_N=2000.0
+                    if st.session_state.get("pedal_load_pin2000", False)
+                    else st.session_state.get("pedal_load", 2000.0))
+                _l = [f"- Verdict: **{_pres_doc.verdict}** (min FoS "
+                      f"{_pres_doc.min_fos:.2f} vs {_pres_doc.fos_target:.2f}, "
+                      f"governing {_pres_doc.governing_mode})",
+                      f"- Material {st.session_state.get('pedal_mat','?')}, "
+                      f"{st.session_state.get('pedal_w',0):.0f}×"
+                      f"{st.session_state.get('pedal_t',0):.0f} mm, lever "
+                      f"{st.session_state.get('pedal_lever',0):.0f} mm"]
+                if _pres_doc.screening_only:
+                    _l.append("- _Screening only — a PASS earns the SolidWorks/Ansys "
+                              "run, it does not replace it._")
+                _bx.append(("Brake pedal — 2000 N rule", _l))
+            except Exception:
+                pass
+        _rr_doc = st.session_state.get("throttle_return_result")
+        if _rr_doc is not None:
+            _l = [f"- Verdict: **{getattr(_rr_doc,'verdict','?')}** (worst "
+                  f"single-failure case {getattr(_rr_doc,'worst_case','?')}, margin "
+                  f"{getattr(_rr_doc,'worst_margin',float('nan')):.2f})"]
+            for _c in getattr(_rr_doc, "cases", []):
+                _l.append(f"  - {_c.label}: net closed {_c.net_closed_Nm:.2f} N·m, "
+                          f"net open {_c.net_open_Nm:.2f} N·m — "
+                          f"{'closes' if _c.closes else 'HANGS OPEN'}")
+            _bx.append(("Throttle return springs — single-fault redundancy", _l))
 
-        _md = _brakes_report_md()
-        with st.expander("Preview the report", expanded=False):
-            st.markdown(_md)
-
-        _mode = st.radio(
-            "What should this do?",
-            ["Just create a PDF for the brakes subsystem",
-             "Create the PDF **and** record it in the Handover"],
-            key="brake_doc_mode")
-
-        _cols = st.columns([2, 3])
-        # Build the PDF bytes
-        _pdf_ok = False
-        try:
-            import tempfile as _tf2
-            import os as _os2
-            _pdf_path = _os2.path.join(_tf2.gettempdir(),
-                                       "elbee_brakes_report.pdf")
-            project_mod.render_pdf(_md, _pdf_path)
-            with open(_pdf_path, "rb") as _pf:
-                _pdf_bytes = _pf.read()
-            _pdf_ok = True
-        except Exception as _pe:
-            _cols[0].warning(f"PDF unavailable: {_pe}")
-
-        if _pdf_ok:
-            _cols[0].download_button(
-                "⬇ Brakes report (.pdf)", _pdf_bytes,
-                file_name="elbee_brakes_report.pdf", mime="application/pdf",
-                width='stretch')
-            # Also offer the markdown, which never needs reportlab
-            _cols[1].download_button(
-                "⬇ Brakes report (.md)", _md.encode("utf-8"),
-                file_name="elbee_brakes_report.md", mime="text/markdown",
-                width='stretch')
-
-        if _mode.startswith("Create the PDF **and**"):
-            if st.button("✓ Record this report in the Handover", key="brake_doc_log"):
-                _ok = log_decision_now(
-                    "brakes",
-                    "Brakes subsystem report generated",
-                    _md, author="brakes")
-                if _ok:
-                    st.success("Recorded in the Handover — visible in the Weight & "
-                               "Handover tab and carried into the season handover "
-                               "report.")
-                else:
-                    st.warning("Couldn't write to the Handover log (backend "
-                               "offline) — the PDF above is still yours to download.")
+        render_subsystem_documentation("brakes", key_prefix="brake",
+                                       extra_sections=_bx, title_name="Brakes")
 
 
   except Exception as _eb:
@@ -10665,6 +10824,11 @@ with tab5c:
 with tab6:
   try:
     render_process_library("chassis", key_prefix="teamfit_pl")
+  except Exception:
+    pass
+  try:
+    render_documentation_expander("chassis", key_prefix="chassis",
+                                  title_name="Chassis")
   except Exception:
     pass
   st.markdown('<p class="hint">Any Elbee subteam: load the shared chassis once as '
@@ -15260,6 +15424,11 @@ with sc3:
 with tab_pcb:
   try:
     render_process_library("electrics", key_prefix="pcb_pl")
+  except Exception:
+    pass
+  try:
+    render_documentation_expander("data-acquisition", key_prefix="pcb",
+                                  title_name="Data Acquisition / PCB")
   except Exception:
     pass
   _subsystem_cad_import("data-acquisition", key_prefix="pcb")
