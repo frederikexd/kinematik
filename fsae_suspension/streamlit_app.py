@@ -17142,11 +17142,31 @@ with tab_analytics:
             # subteam. Anyone whose subteam never resolved lands in a single
             # "No subteam picked" group shown last, rather than being sprinkled
             # through the table as blanks.
-            _UNKNOWN_KEYS = {"", "unknown", None}
+            #
+            # Normalize legacy/variant spellings to the canonical role key so a
+            # subsystem never splits into two groups: older events stored
+            # "accumulator"/"electronics"/"electrical" before those merged into
+            # "electrics", and mixed casing/spacing can slip in from imports.
+            _SUBTEAM_ALIAS = {
+                "accumulator": "electrics", "electronics": "electrics",
+                "electrical": "electrics", "electric": "electrics",
+                "data-acquisition": "dataacq", "data_acquisition": "dataacq",
+                "data acquisition": "dataacq",
+                "aerodynamics": "aero",
+                "drivetrain": "powertrain", "powertrain / drivetrain": "powertrain",
+                "frame": "chassis", "chassis / frame": "chassis",
+                "business": "cost", "cost / business": "cost",
+            }
+
+            def _canon_subteam(_raw):
+                _s = (str(_raw).strip().lower() if _raw is not None else "")
+                if _s in ("", "unknown", "none", "everyone", "all"):
+                    return "unknown"
+                return _SUBTEAM_ALIAS.get(_s, _s)
+
             _by_team: dict = {}
             for _r in individuals:
-                _st = (_r.get("subteam") or "unknown")
-                _key = "unknown" if _st in _UNKNOWN_KEYS else _st
+                _key = _canon_subteam(_r.get("subteam"))
                 _by_team.setdefault(_key, []).append(_r)
 
             def _team_activity(_rows):
