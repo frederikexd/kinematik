@@ -1900,7 +1900,8 @@ def _subsystem_default_placement(subsys_key):
 # --------------------------------------------------------------------------- #
 _CAD_PART_SLOTS = {
     # label shown in dropdown : (subsystem key, dummy body display-name or None)
-    "Custom / unassigned":      ("(custom / unassigned)", None),
+    # Chassis is first so it's the default selection — a dummy-backed slot, so
+    # the "Replace the dummy" checkbox is live immediately instead of greyed out.
     "Chassis":                  ("chassis",           "Monocoque"),
     "Front wing":               ("aerodynamics",      "Front wing"),
     "Rear wing":                ("aerodynamics",      "Rear wing"),
@@ -1911,6 +1912,7 @@ _CAD_PART_SLOTS = {
     "Brake disc / caliper":     ("brakes",            "Brake disc"),
     "Data logger":              ("data-acquisition",  "Data logger"),
     "Suspension package":       ("suspension",        None),
+    "Custom / unassigned":      ("(custom / unassigned)", None),
 }
 
 
@@ -4452,14 +4454,23 @@ with tab_car:
                     f'</span></div>', unsafe_allow_html=True)
 
                 # ---- Replace the dummy  +  Mass ------------------------------ #
+                if "car3d_cad_replace" not in st.session_state:
+                    st.session_state["car3d_cad_replace"] = False
                 _rm1, _rm2 = st.columns([3, 2])
+                _has_dummy = _dummy_name is not None
                 _replace_dummy = _rm1.checkbox(
                     f'Replace the dummy \u201c{_slot_word}\u201d (hide its '
                     'placeholder)', key="car3d_cad_replace",
-                    value=False, disabled=(_dummy_name is None),
+                    disabled=(not _has_dummy),
                     help=("Hides the built-in placeholder body so your real CAD "
-                          "takes its place." if _dummy_name is not None else
-                          "This slot has no placeholder body to hide."))
+                          "takes its place." if _has_dummy else
+                          "Pick a specific part in \u201cWhich part is this?\u201d "
+                          "above to enable this \u2014 the Custom/Suspension slots "
+                          "have no placeholder body to hide."))
+                # A disabled checkbox still returns its stored state; force it off
+                # so we never try to hide a dummy that doesn't exist for this slot.
+                if not _has_dummy:
+                    _replace_dummy = False
                 _cad_mass = _rm2.number_input(
                     "Mass kg (moves CG)", 0.0, 500.0, value=0.0, step=0.5,
                     key="car3d_cad_mass",
