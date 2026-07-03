@@ -1889,6 +1889,73 @@ def _subsystem_default_placement(subsys_key):
     return _map.get(subsys_key, (0.0, 0.0, 250.0))
 
 
+# --------------------------------------------------------------------------- #
+#  CAD part "slots" — the named built-in bodies a user can drop a real part
+#  into.  Picking one in the "Which part is this?" dropdown sets (a) the colour
+#  the imported mesh renders in, (b) the subsystem it lights up as, (c) the
+#  target position + envelope to snap / fit to, and (d) which dummy placeholder
+#  body can be hidden once the real CAD replaces it.  The display name MUST match
+#  the ``name=`` a body is drawn with in fullcar3d.build_full_car_figure so that
+#  part_overrides can hide the dummy.
+# --------------------------------------------------------------------------- #
+_CAD_PART_SLOTS = {
+    # label shown in dropdown : (subsystem key, dummy body display-name or None)
+    "Custom / unassigned":      ("(custom / unassigned)", None),
+    "Chassis":                  ("chassis",           "Monocoque"),
+    "Front wing":               ("aerodynamics",      "Front wing"),
+    "Rear wing":                ("aerodynamics",      "Rear wing"),
+    "Sidepod / bodywork":       ("cooling",           "Sidepod (cooling)"),
+    "Radiator":                 ("cooling",           "Radiator core"),
+    "Motor / inverter":         ("powertrain",        "Motor + inverter"),
+    "Accumulator / battery":    ("electrics",         "Accumulator"),
+    "Brake disc / caliper":     ("brakes",            "Brake disc"),
+    "Data logger":              ("data-acquisition",  "Data logger"),
+    "Suspension package":       ("suspension",        None),
+}
+
+
+def _cad_slot_target(slot_label):
+    """Return (centre_xyz, envelope_lwh, subsys_key, dummy_name) for a slot.
+
+    The centre + envelope come from fullcar_mod.suggest_part_geometry so the
+    "Snap to part" and "Fit scale to the area" actions land the imported mesh
+    exactly where the built-in dummy for that subsystem sits, at a size the car
+    can actually accommodate.  Falls back to a neutral mid-car box for the
+    custom/unassigned slot.
+    """
+    subsys, dummy = _CAD_PART_SLOTS.get(slot_label,
+                                        ("(custom / unassigned)", None))
+    _sub_for = subsys if subsys != "(custom / unassigned)" else "chassis"
+    try:
+        _vp_s = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
+                                 if k in set(VehicleParams.__dataclass_fields__.keys())})
+    except Exception:
+        _vp_s = VehicleParams()
+    try:
+        _led_s = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+    except Exception:
+        _led_s = None
+    try:
+        _g = fullcar_mod.suggest_part_geometry(_vp_s, _sub_for, ledger=_led_s)
+        centre = (float(_g["x_mm"]), float(_g["y_mm"]), float(_g["z_mm"]))
+        env = (float(_g["l_mm"]), float(_g["w_mm"]), float(_g["h_mm"]))
+    except Exception:
+        centre, env = (0.0, 0.0, 250.0), (300.0, 200.0, 200.0)
+    return centre, env, subsys, dummy
+
+
+def _cad_fit_scale(part_lwh, envelope_lwh):
+    """Uniform scale so a part's bounding box fills the slot envelope without
+    poking out of it (the largest factor keeping every axis inside the area)."""
+    ratios = []
+    for p, e in zip(part_lwh, envelope_lwh):
+        if p and p > 1e-6 and e and e > 1e-6:
+            ratios.append(float(e) / float(p))
+    if not ratios:
+        return 1.0
+    return max(0.01, min(ratios))
+
+
 def _subsystem_cad_import(subsys_key, *, key_prefix, title=None):
     """Render a compact CAD/sketch importer scoped to ONE subsystem.
 
@@ -4241,50 +4308,194 @@ with tab_car:
                     f'mm</b>{_unit_note}. Set where it sits and which way is up, then '
                     'add it.</p>', unsafe_allow_html=True)
 
-                _cc = st.columns([3, 2, 2])
+                # ---- Part name  +  "Which part is this?" slot picker -------- #
+                # The slot sets the render colour, the subsystem it lights up as,
+                # and the snap / fit-scale target (and which dummy body it can
+                # replace).  This is the "sets colour + snap target" dropdown.
+                _cc = st.columns([3, 3])
                 _cad_name = _cc[0].text_input(
                     "Part name", key="car3d_cad_name",
                     value=st.session_state.get("car3d_cad_name_default", "CAD part"))
-                _cad_sub = _cc[1].selectbox("Belongs to", _CP_SUBSYS,
-                                            key="car3d_cad_subsys")
-                _cad_axis = _cc[2].selectbox(
-                    "Up axis in CAD", ["z_up", "y_up", "x_up"], key="car3d_cad_axis",
-                    help="Which axis points UP in your CAD. SolidWorks defaults are "
-                         "often Y-up; if the part lies on its side, switch this.")
+                _slot_labels = list(_CAD_PART_SLOTS.keys())
+                _cad_slot = _cc[1].selectbox(
+                    "Which part is this? (sets colour + snap target)",
+                    _slot_labels, key="car3d_cad_slot",
+                    help="Picks the team colour the part renders in, the subsystem "
+                         "it lights up as, and the area it snaps / fits to. Choose "
+                         "the matching body to replace its placeholder dummy.")
+                _slot_centre, _slot_env, _cad_sub, _dummy_name = \
+                    _cad_slot_target(_cad_slot)
 
-                _cp = st.columns(4)
+                # ---- Orientation / Scale / Yaw ------------------------------- #
+                _oc = st.columns([3, 2, 2])
+                _ORIENT_OPTS = {
+                    "Auto-align to the slot": "auto",
+                    "Keep CAD z-up": "z_up",
+                    "CAD is y-up (SolidWorks)": "y_up",
+                    "CAD is x-up": "x_up",
+                }
+                _orient_label = _oc[0].selectbox(
+                    "Orientation", list(_ORIENT_OPTS.keys()),
+                    key="car3d_cad_orient",
+                    help="Auto-align picks the up-axis that best matches the slot; "
+                         "or force a specific CAD up-axis if the part lies on its "
+                         "side.")
+                _orient_mode = _ORIENT_OPTS[_orient_label]
+
+                # Scale × — start from any fit already computed for this file.
+                _fit_key = f"car3d_cad_fitscale_{_sig}"
+                _cad_scale = _oc[1].number_input(
+                    "Scale ×", 0.01, 100.0,
+                    value=float(st.session_state.get(_fit_key, 1.0)),
+                    step=0.01, format="%.2f", key="car3d_cad_scale",
+                    help="Uniform scale applied to the imported mesh. 1.00 keeps "
+                         "the real CAD size.")
+                _cad_yaw = _oc[2].number_input(
+                    "Yaw °", -180.0, 180.0, value=0.0, step=15.0,
+                    key="car3d_cad_yaw",
+                    help="Spin the part about the car's vertical axis to line it up.")
+
+                # Resolve the axis map used for extents + fit (auto -> best guess).
+                if _orient_mode == "auto":
+                    # Pick the up-axis whose mapped H best matches the slot height.
+                    _sx0, _sy0, _sz0 = _sz
+                    _cands = {"z_up": (_sx0, _sy0, _sz0),
+                              "y_up": (_sx0, _sz0, _sy0),
+                              "x_up": (_sz0, _sy0, _sx0)}
+                    _ax = min(_cands, key=lambda a:
+                              abs(_cands[a][2] - _slot_env[2]))
+                else:
+                    _ax = _orient_mode
+
+                def _extents_for_axis(_axm):
+                    _sx0, _sy0, _sz0 = _sz
+                    if _axm == "y_up":
+                        return _sx0, _sz0, _sy0
+                    if _axm == "x_up":
+                        return _sz0, _sy0, _sx0
+                    return _sx0, _sy0, _sz0
+
+                _L0, _W0, _H0 = _extents_for_axis(_ax)
+
+                # ---- Fit scale to the slot area ------------------------------ #
+                if st.button(f'\u2195 Fit scale to the \u201c{_cad_slot}\u201d area',
+                             key="car3d_cad_fit"):
+                    _fs = _cad_fit_scale((_L0, _W0, _H0), _slot_env)
+                    st.session_state[_fit_key] = round(_fs, 3)
+                    st.session_state["car3d_cad_scale"] = round(_fs, 3)
+                    st.rerun()
+
+                # ---- Position of its centre  +  Snap to part ----------------- #
+                st.markdown(
+                    '<p class="hint" style="margin:8px 0 2px;"><b>Position of its '
+                    'centre (mm)</b> \u2014 x: \u2212rear / +front, y: +right, '
+                    'z: up. Type coordinates, or Snap to the part below.</p>',
+                    unsafe_allow_html=True)
+                _cp = st.columns([2, 2, 2, 2])
                 _cad_x = unum(_cp[0], "Centre x (mm)", -1500, 1500, 0, "mm",
                               step=10.0, key="car3d_cad_x")
                 _cad_y = unum(_cp[1], "Centre y (mm)", -900, 900, 0, "mm",
                               step=10.0, key="car3d_cad_y")
                 _cad_z = unum(_cp[2], "Centre z (mm)", 0, 1500, 250, "mm",
                               step=10.0, key="car3d_cad_z")
-                _cad_yaw = _cp[3].number_input("Yaw °", -180.0, 180.0, value=0.0,
-                                               step=15.0, key="car3d_cad_yaw",
-                                               help="Spin the part about the car's "
-                                                    "vertical axis to line it up.")
+                if _cp[3].button("\u2295 Snap to part", key="car3d_cad_snap",
+                                 help="Jump the part's centre onto the "
+                                      f"\u201c{_cad_slot}\u201d slot on the car."):
+                    st.session_state["car3d_cad_x"] = units_mod.from_metric(
+                        float(_slot_centre[0]), "mm")
+                    st.session_state["car3d_cad_y"] = units_mod.from_metric(
+                        float(_slot_centre[1]), "mm")
+                    st.session_state["car3d_cad_z"] = units_mod.from_metric(
+                        float(_slot_centre[2]), "mm")
+                    st.rerun()
+
+                # ---- Live "Placed size · offset from slot" read -------------- #
+                _auto_size = st.session_state.get("car3d_cad_autosize", True)
+                if _auto_size and _dummy_name is not None:
+                    _fs_prev = _cad_fit_scale((_L0, _W0, _H0), _slot_env)
+                    _eff_scale = _fs_prev
+                else:
+                    _eff_scale = float(_cad_scale)
+                _pL, _pW, _pH = (_L0 * _eff_scale, _W0 * _eff_scale,
+                                 _H0 * _eff_scale)
+                _off = (float(_cad_x) - _slot_centre[0],
+                        float(_cad_y) - _slot_centre[1],
+                        float(_cad_z) - _slot_centre[2])
+                _off_mag = (_off[0] ** 2 + _off[1] ** 2 + _off[2] ** 2) ** 0.5
+                _off_col = "#5ad17a" if _off_mag < 50 else (
+                    "#ffd166" if _off_mag < 200 else "#ff6b5a")
+                _slot_word = ("Chassis" if _cad_slot == "Chassis"
+                              else _cad_slot)
+                st.markdown(
+                    f'<div style="border:1px solid var(--line);border-left:4px '
+                    f'solid {_off_col};border-radius:8px;padding:8px 12px;'
+                    f'margin:6px 0;">Placed size <b>{_pL:.0f}\u00d7{_pW:.0f}\u00d7'
+                    f'{_pH:.0f} mm</b> \u00b7 <span style="color:{_off_col};">'
+                    f'offset {_off_mag:.0f} mm from the {_slot_word} slot '
+                    f'(\u0394 {_off[0]:+.0f}, {_off[1]:+.0f}, {_off[2]:+.0f})'
+                    f'</span></div>', unsafe_allow_html=True)
+
+                # ---- Replace the dummy  +  Mass ------------------------------ #
+                _rm1, _rm2 = st.columns([3, 2])
+                _replace_dummy = _rm1.checkbox(
+                    f'Replace the dummy \u201c{_slot_word}\u201d (hide its '
+                    'placeholder)', key="car3d_cad_replace",
+                    value=False, disabled=(_dummy_name is None),
+                    help=("Hides the built-in placeholder body so your real CAD "
+                          "takes its place." if _dummy_name is not None else
+                          "This slot has no placeholder body to hide."))
+                _cad_mass = _rm2.number_input(
+                    "Mass kg (moves CG)", 0.0, 500.0, value=0.0, step=0.5,
+                    key="car3d_cad_mass",
+                    help="Optional. A non-zero mass adds this part to the "
+                         "centre-of-gravity calculation.")
+
+                # ---- Auto-size into the area --------------------------------- #
+                _cad_autosize = st.checkbox(
+                    "Auto-size into the area (uniform, true shape) \u2014 "
+                    "otherwise keep real CAD size", key="car3d_cad_autosize",
+                    value=True,
+                    help="On: uniformly scales the part to fill the slot envelope "
+                         "while keeping its true shape. Off: places it at real "
+                         "CAD millimetres.")
 
                 if st.button("Add CAD part to car", key="car3d_cad_add",
                              type="primary"):
-                    # Derive the placed extents for the fit read, honouring axis map.
-                    _ax = st.session_state.get("car3d_cad_axis", "z_up")
-                    _sx, _sy, _sz2 = _sz
-                    if _ax == "y_up":
-                        _L, _W, _H = _sx, _sz2, _sy
-                    elif _ax == "x_up":
-                        _L, _W, _H = _sz2, _sy, _sx
+                    # Final scale: auto-size fits to the slot area, otherwise the
+                    # Scale × box (which the "Fit scale" button may have filled).
+                    if _cad_autosize:
+                        _final_scale = _cad_fit_scale((_L0, _W0, _H0), _slot_env)
                     else:
-                        _L, _W, _H = _sx, _sy, _sz2
-                    st.session_state.car3d_custom_parts.append(dict(
+                        _final_scale = float(_cad_scale)
+                    _Lp, _Wp, _Hp = (_L0 * _final_scale, _W0 * _final_scale,
+                                     _H0 * _final_scale)
+                    _col = fullcar_mod.COLORS.get(
+                        fullcar_mod.sub_color_key(
+                            _cad_sub if _cad_sub != "(custom / unassigned)"
+                            else None),
+                        fullcar_mod.COLORS["custom"])
+                    _new_part = dict(
                         name=(_cad_name.strip() or "CAD part"), subsys=_cad_sub,
                         shape="mesh", mesh=_payload, axis_map=_ax,
-                        yaw_deg=float(_cad_yaw), mesh_scale=1.0,
+                        yaw_deg=float(_cad_yaw), mesh_scale=float(_final_scale),
                         x_mm=float(_cad_x), y_mm=float(_cad_y), z_mm=float(_cad_z),
-                        l_mm=float(_L), w_mm=float(_W), h_mm=float(_H)))
+                        l_mm=float(_Lp), w_mm=float(_Wp), h_mm=float(_Hp),
+                        color=_col, mass_kg=float(_cad_mass),
+                        replaces_dummy=(_dummy_name if _replace_dummy else None))
+                    st.session_state.car3d_custom_parts.append(_new_part)
+
+                    # Hide the placeholder body if the user asked us to replace it.
+                    if _replace_dummy and _dummy_name:
+                        _ov = dict(st.session_state.get("car3d_overrides", {}))
+                        _ov[_dummy_name] = {**_ov.get(_dummy_name, {}),
+                                            "hide": True}
+                        st.session_state.car3d_overrides = _ov
+
                     st.session_state.car3d_focus = (
                         _cad_sub if _cad_sub != "(custom / unassigned)" else None)
                     # Clear the uploader cache so a re-add doesn't double-trigger.
                     st.session_state.pop("car3d_cad_sig", None)
+                    st.session_state.pop(_fit_key, None)
                     st.rerun()
 
         st.markdown('<p class="hint" style="margin:8px 0 2px;border-top:1px solid '
