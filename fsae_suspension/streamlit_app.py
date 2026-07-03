@@ -84,44 +84,50 @@ from suspension import analytics as _axn
 #  Wrapping is idempotent and fully guarded — telemetry can never break a
 #  widget or change its return value.
 # --------------------------------------------------------------------------- #
+def _ax_engage_cb(_feature, _user_cb, _user_args, _user_kwargs):
+    """on_change/on_click handler: Streamlit calls this ONLY when the widget's
+    value actually changes (a real user edit), not on every rerun — so it's an
+    accurate engagement signal free of the cross-tab contamination that plagues
+    compare-on-render. Fires engagement for the feature the widget belongs to,
+    then calls through to any user-supplied callback."""
+    try:
+        if _feature:
+            _axn.auto_engage(_feature, action="input")
+    except Exception:
+        pass
+    if _user_cb is not None:
+        return _user_cb(*(_user_args or ()), **(_user_kwargs or {}))
+
+
 def _ax_wrap_input(_orig):
     def _wrapped(*args, **kwargs):
-        _res = _orig(*args, **kwargs)
-        # Engagement must mean the user actually CHANGED a value, not merely
-        # that an input rendered — every tab body re-runs on every interaction,
-        # so firing on render would mark a tab engaged just for being open.
-        # We remember each widget's last value and only count engagement when it
-        # moves. Widgets carry an explicit key when available; when they don't
-        # (many container-level inputs in this app are keyless), we fall back to
-        # a stable identity built from the active feature + the widget's label,
-        # so keyless inputs are still change-tracked instead of being ignored.
+        # Attach an on_change callback that fires engagement for the ACTIVE tab
+        # only when the user genuinely changes this widget. Streamlit fires
+        # on_change on real edits, not on rerun, so this is contamination-free.
+        # A key is required to attach the callback; when the widget has none we
+        # mint one that is STABLE across reruns (feature + label + widget type),
+        # so Streamlit keeps the widget's state correctly. Keyless widgets have
+        # no external session_state consumer, so adding a key is safe.
         try:
             _af = st.session_state.get("_ax_last_active_tab")
             if _af:
-                _key = kwargs.get("key")
-                if not _key:
-                    # Build a stable identity from the active feature + the
-                    # widget's label. When patched at the class level and called
-                    # as `container.widget(label, ...)`, the first positional arg
-                    # is the container (self); the label is the first positional
-                    # arg that is a string.
+                if not kwargs.get("key"):
                     _lbl = kwargs.get("label")
                     if _lbl is None:
                         for _a in args:
                             if isinstance(_a, str):
                                 _lbl = _a
                                 break
-                    _key = f"{_af}::{_lbl}"
-                _seen = f"_ax_seen_{_key}"
-                _prev = st.session_state.get(_seen, "___init___")
-                # lists (multiselect) aren't hashable for set membership but do
-                # support !=; compare directly and store a copy.
-                if _prev != "___init___" and _prev != _res:
-                    _axn.auto_engage(_af, action="input")
-                st.session_state[_seen] = _res
+                    kwargs["key"] = f"_axk_{_af}_{_orig.__name__}_{_lbl}"
+                _user_cb = kwargs.get("on_change")
+                _user_args = kwargs.get("args")
+                _user_kwargs = kwargs.get("kwargs")
+                kwargs["on_change"] = _ax_engage_cb
+                kwargs["args"] = (_af, _user_cb, _user_args, _user_kwargs)
+                kwargs["kwargs"] = None
         except Exception:
-            pass  # never let telemetry break an input
-        return _res
+            pass
+        return _orig(*args, **kwargs)
     return _wrapped
 
 
@@ -161,6 +167,23 @@ def _ax_wrap_download(_orig):
         return _res
     return _wrapped
 
+
+def _ax_wrap_result(_orig):
+    def _wrapped(*args, **kwargs):
+        # A result render (chart/plot) means the entered numbers ran and
+        # produced output. Count it as completion for the active tab, but ONLY
+        # if the user already engaged this tab this session (require_engaged) —
+        # so a tab that draws a default chart on open, before any input, doesn't
+        # fabricate a completion. Fully guarded; never affects the render.
+        try:
+            _af = st.session_state.get("_ax_last_active_tab")
+            if _af:
+                _axn.auto_complete(_af, action="result", require_engaged=True)
+        except Exception:
+            pass
+        return _orig(*args, **kwargs)
+    return _wrapped
+
 if not getattr(st, "_ax_input_patched", False):
     # CRITICAL: most widgets in this app are called as CONTAINER methods —
     # `col.number_input(...)`, `tab.button(...)`, `_ac[0].number_input(...)` —
@@ -183,6 +206,14 @@ if not getattr(st, "_ax_input_patched", False):
     # Download/export: a genuine completion — a useful result was produced.
     if hasattr(_AxDG, "download_button"):
         _AxDG.download_button = _ax_wrap_download(_AxDG.download_button)
+    # Result render: a chart/plot appearing means the entered numbers actually
+    # ran and produced output. For reactive tabs (EV, Cost, Roll, Tire, …) that
+    # recompute on input change without a spinner, this is the "the number ran"
+    # completion signal. Gated on prior engagement so merely landing on a tab
+    # whose body renders a default chart doesn't fabricate a completion — it
+    # only counts once the user has actually changed something on that tab.
+    if hasattr(_AxDG, "plotly_chart"):
+        _AxDG.plotly_chart = _ax_wrap_result(_AxDG.plotly_chart)
 
     st._ax_input_patched = True
 
