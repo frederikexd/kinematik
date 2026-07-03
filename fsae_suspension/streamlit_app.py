@@ -17156,6 +17156,9 @@ with tab_analytics:
                 "drivetrain": "powertrain", "powertrain / drivetrain": "powertrain",
                 "frame": "chassis", "chassis / frame": "chassis",
                 "business": "cost", "cost / business": "cost",
+                "dynamics": "suspension", "vehicle dynamics": "suspension",
+                "vehicle-dynamics": "suspension", "vehicledynamics": "suspension",
+                "suspension / dynamics": "suspension",
             }
 
             def _canon_subteam(_raw):
