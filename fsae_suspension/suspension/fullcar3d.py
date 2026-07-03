@@ -298,10 +298,18 @@ def _sphere(center, radius, n=16):
 # --------------------------------------------------------------------------- #
 #  Corner geometry transforms
 # --------------------------------------------------------------------------- #
-def _corner_transform(p, *, mirror_y, lateral_scale, x_shift, y_center_ref):
+def _corner_transform(p, *, mirror_y, lateral_scale, x_shift, y_center_ref,
+                      size_scale=1.0, z_ground=0.0):
     if p is None:
         return None
     q = np.array(p, float).copy()
+    # Global size scale (from an imported define_car chassis): grow/shrink the
+    # corner's own geometry about the ground contact so the wheel radius, upright
+    # height and link lengths track the car's overall size. Applied to x and z
+    # about (x_shift-relative 0, ground); lateral handled by lateral_scale.
+    if size_scale != 1.0:
+        q[0] = q[0] * size_scale
+        q[2] = z_ground + (q[2] - z_ground) * size_scale
     dy = (q[1] - y_center_ref) * lateral_scale
     q[1] = y_center_ref + (-dy if mirror_y else dy)
     q[0] = q[0] + x_shift
@@ -778,19 +786,36 @@ def build_full_car_figure(
     tf = float(getattr(vp, "track_front", 1200.0))
     tr = float(getattr(vp, "track_rear", 1180.0))
 
-    # ---- imported CAD chassis is scaled to the car ------------------------- #
-    # A `define_car` part (e.g. a chassis dropped via the Chassis slot with "fit
-    # the rest of the car around this part") should read as one coherent car with
-    # the wheels. Rather than shrinking the whole car down to a small CAD (which
-    # leaves the real-sized wheels towering over it), we keep the car at its
-    # realistic wheelbase/track/tyre size and scale the imported part to SPAN the
-    # wheelbase and sit at ride height between the wheels — computed just below,
-    # once wb/track/tyre are known. We only note its presence here.
+    # ---- imported CAD chassis drives the whole car ------------------------- #
+    # A `define_car` chassis (dropped via the Chassis slot with "fit the rest of
+    # the car around this part") becomes the REFERENCE the whole car is built
+    # from. We derive the wheelbase and track from its real footprint AND a
+    # single global scale factor from its length vs. the nominal wheelbase. That
+    # global scale is applied to the suspension-corner geometry and tyre radius
+    # below, so the wheels, uprights, hoops, sidepods and wings all resize AND
+    # reposition to match the imported part — it always reads as one complete car
+    # (and as each subsystem is later replaced by its own CAD, those fit in too).
     _car_part = None
     for _cp in (custom_parts or []):
         if _cp.get("define_car") and _cp.get("mesh"):
             _car_part = _cp
             break
+    _car_scale = 1.0            # global size multiplier for corners/tyres
+    if _car_part is not None:
+        try:
+            _pl = float(_car_part.get("l_mm", 0) or 0)   # chassis length (x)
+            _pw = float(_car_part.get("w_mm", 0) or 0)   # chassis width  (y)
+            _nominal_wb = wb
+            if _pl > 200:
+                # Wheelbase ~ chassis length (axles just outside the tub ends).
+                wb = _clamp(_pl * 1.06, 700.0, 2400.0)
+                _car_scale = _clamp(wb / max(_nominal_wb, 1.0), 0.35, 2.2)
+            if _pw > 100:
+                # Track = tub width + an upright + tyre each side, then let the
+                # global scale keep the wheels proportional to the car.
+                tf = tr = _clamp(_pw + _pw * 0.55, 700.0, 1800.0)
+        except Exception:
+            _car_scale = 1.0
 
     # Softer front spring -> more static sag -> body visibly lower. Cue, not a calc.
     kf = float(getattr(vp, "spring_rate_front", 35.0) or 35.0)
@@ -1029,7 +1054,8 @@ def build_full_car_figure(
 
     def _xform(p, mirror, lat_scale, x_shift):
         return _corner_transform(p, mirror_y=mirror, lateral_scale=lat_scale,
-                                 x_shift=x_shift, y_center_ref=y_center)
+                                 x_shift=x_shift, y_center_ref=y_center,
+                                 size_scale=_car_scale)
 
     for axle, corner, lat_scale, x_shift, mirror in stations:
         # Stable corner id (FL/FR/RL/RR) for per-corner focus. Side comes from the
@@ -1097,40 +1123,21 @@ def build_full_car_figure(
             z_all += [p[2], q[2]]
         z_all += [corner["wheel_center"][2], corner["contact_patch"][2]]
     z_lo, z_hi = (min(z_all), max(z_all)) if z_all else (0.0, 300.0)
-    tire_r = abs(front_corner["wheel_center"][2]
-                 - front_corner["contact_patch"][2]) or 228.0
+    tire_r = (abs(front_corner["wheel_center"][2]
+                  - front_corner["contact_patch"][2]) or 228.0) * _car_scale
     inner_y_f = tf / 2.0 - tire_width_mm - 40
     inner_y_r = tr / 2.0 - tire_width_mm - 40
 
-    # For a `define_car` chassis: scale it (uniformly, true shape) to SPAN the
-    # car and sit at ride height, so it reads as one whole car with the wheels
-    # instead of a tiny frame dwarfed by real-sized tyres. We size it to reach
-    # ~92% of the wheelbase in x, and place its centre at mid-wheelbase, hub
-    # height. The custom-parts loop reads these to set mesh_scale + centre.
+    # For a `define_car` chassis: keep it at its REAL size (the car was built
+    # around it above) and just centre it at mid-wheelbase, resting at hub
+    # height, so it reads as one coherent car with the resized wheels.
     _def_target = None
     if _car_part is not None:
         try:
-            _pl0 = float(_car_part.get("l_mm", 0) or 0)
-            _pw0 = float(_car_part.get("w_mm", 0) or 0)
             _ph0 = float(_car_part.get("h_mm", 0) or 0)
-            # Fit inside: length ~92% of wheelbase, width within the inner track,
-            # height within roughly floor-to-hoop; take the tightest so it never
-            # pokes past the wheels, keeping the true CAD proportions.
-            _tgt_l = 0.92 * wb
-            _tgt_w = max(160.0, min(inner_y_f, inner_y_r) * 2.0 * 0.95)
-            _tgt_h = _clamp(tire_r * 1.7, 240.0, 520.0)
-            _ratios = []
-            if _pl0 > 1:
-                _ratios.append(_tgt_l / _pl0)
-            if _pw0 > 1:
-                _ratios.append(_tgt_w / _pw0)
-            if _ph0 > 1:
-                _ratios.append(_tgt_h / _ph0)
-            _def_scale = min(_ratios) if _ratios else 1.0
-            _def_scale = max(0.01, _def_scale)
             _def_target = dict(
-                scale=_def_scale,
-                centre=(0.0, 0.0, max(tire_r * 0.85, _ph0 * _def_scale / 2.0 + 30.0)))
+                scale=1.0,
+                centre=(0.0, 0.0, max(tire_r * 0.45, _ph0 / 2.0 + 20.0)))
         except Exception:
             _def_target = None
 
