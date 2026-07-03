@@ -801,6 +801,12 @@ def build_full_car_figure(
             return None
         return (dx, dy, dz, sx, sy, sz)
 
+    def _is_hidden(name):
+        """True when a part_override asks to hide this body (e.g. a dummy
+        placeholder the user has replaced with their real imported CAD)."""
+        o = _ov.get(name) if name else None
+        return bool(o and o.get("hide"))
+
     _scale_centre: dict[str, np.ndarray] = {}
     # Parts drawn once per corner (4×): scale each instance about ITS OWN
     # centroid (so each tire/disc grows in place) rather than a shared car-wide
@@ -903,6 +909,8 @@ def build_full_car_figure(
         # Override key: prefer the legend name, fall back to the group token so
         # unnamed members of a named part (hoop braces, wing mounts) move too.
         _ovk = name if (name and name in _ov) else (group if group in _ov else name)
+        if _is_hidden(name) or _is_hidden(group):
+            return
         pq = _apply_ov(_ovk, np.array([p, q], float))
         p, q = pq[0], pq[1]
         # Accrue under a STABLE part key. corner_name() returns a label only the
@@ -931,6 +939,8 @@ def build_full_car_figure(
 
     def mesh(verts, i, j, k, color, name, subsys, base_op=0.6, hover=None,
              corner=None):
+        if _is_hidden(name):
+            return
         once = name not in legend_done
         legend_done.add(name)
         verts = _apply_ov(name, verts)
@@ -1332,6 +1342,45 @@ def build_full_car_figure(
                 cg_label = "CG (declared %.0f kg)" % roll["total_kg"]
         except Exception:
             pass
+    # Fold in any user-dropped custom parts that carry a mass, so a heavy
+    # imported CAD (accumulator, motor…) visibly shifts the CG marker. We treat
+    # the params/declared CG as the baseline car mass acting at (cg_x,cy,cg_h)
+    # and add each part's mass at its own centre, then recompute the weighted
+    # mean. Parts with no mass_kg don't move the CG (packaging-only bodies).
+    _cp_masses = []
+    for _cpm in (custom_parts or []):
+        try:
+            _m = float(_cpm.get("mass_kg", 0.0) or 0.0)
+        except Exception:
+            _m = 0.0
+        if _m > 0:
+            _cp_masses.append((_m, float(_cpm.get("x_mm", 0) or 0),
+                               float(_cpm.get("y_mm", 0) or 0),
+                               float(_cpm.get("z_mm", 0) or 0)))
+    if _cp_masses and cg_h > 0:
+        _base_kg = 0.0
+        if ledger is not None:
+            try:
+                _base_kg = float(ledger.mass_rollup().get("total_kg", 0.0) or 0.0)
+            except Exception:
+                _base_kg = 0.0
+        if _base_kg <= 0:
+            _base_kg = float(getattr(vp, "mass", 0.0) or 0.0)
+        if _base_kg <= 0:
+            _base_kg = 220.0  # nominal FSAE car mass so the blend is sensible
+        _tot = _base_kg
+        _sx = cg_x * _base_kg
+        _sy = cg_y * _base_kg
+        _sz = cg_h * _base_kg
+        for _m, _px, _py, _pz in _cp_masses:
+            _tot += _m
+            _sx += _px * _m
+            _sy += _py * _m
+            _sz += _pz * _m
+        if _tot > 0:
+            cg_x, cg_y, cg_h = _sx / _tot, _sy / _tot, _sz / _tot
+            cg_label = "CG (+%.1f kg parts)" % sum(m for m, *_ in _cp_masses)
+
     if show_cg and cg_h > 0:
         # When a subsystem is spotlit, fade the CG marker too — it's a global
         # readout, not part of any subteam, so it shouldn't out-shine the
