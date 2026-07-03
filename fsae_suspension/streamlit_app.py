@@ -17679,8 +17679,7 @@ with tab_analytics:
                "directly in Supabase for ad-hoc board questions.")
 
 
-st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · AGPL-3.0. Fork it, '
-            'validate against your OptimumK model, send a PR. '
+st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · AGPL-3.0. '
             '<i>Tip: on the hosted app, save your project before closing the tab — '
             'geometry tweaks aren\'t auto-saved the way the handover log is.</i></p>',
             unsafe_allow_html=True)
