@@ -788,13 +788,13 @@ def build_full_car_figure(
 
     # ---- imported CAD chassis drives the whole car ------------------------- #
     # A `define_car` chassis (dropped via the Chassis slot with "fit the rest of
-    # the car around this part") becomes the REFERENCE the whole car is built
-    # from. We derive the wheelbase and track from its real footprint AND a
-    # single global scale factor from its length vs. the nominal wheelbase. That
-    # global scale is applied to the suspension-corner geometry and tyre radius
-    # below, so the wheels, uprights, hoops, sidepods and wings all resize AND
-    # reposition to match the imported part — it always reads as one complete car
-    # (and as each subsystem is later replaced by its own CAD, those fit in too).
+    # the car around this part") makes the car read as one coherent vehicle with
+    # the imported frame. The frame must sit in REALISTIC proportion to the
+    # wheels — a real FSAE tub spans roughly 62% of the wheelbase, with the tyres
+    # at the corners just outside it. So we hold the wheels/tyres at a sensible
+    # size and scale the imported chassis to that tub-fraction of the wheelbase,
+    # keeping its true shape. As each subsystem is later replaced by its own CAD,
+    # those parts drop into the same correctly-scaled car.
     _car_part = None
     for _cp in (custom_parts or []):
         if _cp.get("define_car") and _cp.get("mesh"):
@@ -805,15 +805,19 @@ def build_full_car_figure(
         try:
             _pl = float(_car_part.get("l_mm", 0) or 0)   # chassis length (x)
             _pw = float(_car_part.get("w_mm", 0) or 0)   # chassis width  (y)
-            _nominal_wb = wb
+            # Keep the wheelbase/track sensible for an FSAE car so the wheels stay
+            # a realistic size; the chassis is scaled to fit (see _def_target).
+            # A slight nudge from the part's aspect keeps very long/short frames
+            # looking right, but we never blow the wheels up to chassis size.
+            _TUB_FRACTION = 0.62          # tub length ÷ wheelbase (FSAE-typical)
             if _pl > 200:
-                # Wheelbase ~ chassis length (axles just outside the tub ends).
-                wb = _clamp(_pl * 1.06, 700.0, 2400.0)
-                _car_scale = _clamp(wb / max(_nominal_wb, 1.0), 0.35, 2.2)
+                # target wheelbase = chassis length / tub-fraction, but clamped to
+                # a realistic FSAE range so wheels never become giant or tiny.
+                wb = _clamp(_pl / _TUB_FRACTION, 1400.0, 1800.0)
             if _pw > 100:
-                # Track = tub width + an upright + tyre each side, then let the
-                # global scale keep the wheels proportional to the car.
-                tf = tr = _clamp(_pw + _pw * 0.55, 700.0, 1800.0)
+                # track from the chassis width, in a realistic FSAE band.
+                tf = tr = _clamp(_pw * 1.35, 1050.0, 1350.0)
+            _car_scale = 1.0     # wheels/tyres stay at their natural size
         except Exception:
             _car_scale = 1.0
 
@@ -1128,16 +1132,40 @@ def build_full_car_figure(
     inner_y_f = tf / 2.0 - tire_width_mm - 40
     inner_y_r = tr / 2.0 - tire_width_mm - 40
 
-    # For a `define_car` chassis: keep it at its REAL size (the car was built
-    # around it above) and just centre it at mid-wheelbase, resting at hub
-    # height, so it reads as one coherent car with the resized wheels.
+    # For a `define_car` chassis: scale it (uniformly, true shape) so its LENGTH
+    # spans the tub-fraction of the wheelbase — the real proportion of an FSAE
+    # frame to its wheels — and centre it at mid-wheelbase, resting at hub
+    # height. This keeps the imported frame in correct proportion to the
+    # realistically-sized wheels, so it reads as one compact car.
     _def_target = None
     if _car_part is not None:
         try:
+            _pl0 = float(_car_part.get("l_mm", 0) or 0)
+            _pw0 = float(_car_part.get("w_mm", 0) or 0)
             _ph0 = float(_car_part.get("h_mm", 0) or 0)
+            _TUB_FRACTION = 0.62
+            # length target: tub spans ~62% of the wheelbase.
+            _tgt_l = _TUB_FRACTION * wb
+            # width target: tub sits inside the track (leave room for wheels).
+            _tgt_w = _clamp(min(inner_y_f, inner_y_r) * 2.0 * 1.05, 260.0, tf * 0.8)
+            # height target: floor to roughly hoop height.
+            _tgt_h = _clamp(tire_r * 1.7, 240.0, 560.0)
+            _ratios = []
+            if _pl0 > 1:
+                _ratios.append(_tgt_l / _pl0)
+            if _pw0 > 1:
+                _ratios.append(_tgt_w / _pw0)
+            if _ph0 > 1:
+                _ratios.append(_tgt_h / _ph0)
+            # Use the LENGTH ratio as the primary (keeps the car's fore-aft
+            # proportion right); it also keeps true shape since it's uniform.
+            _def_scale = (_tgt_l / _pl0) if _pl0 > 1 else (
+                min(_ratios) if _ratios else 1.0)
+            _def_scale = max(0.01, _def_scale)
             _def_target = dict(
-                scale=1.0,
-                centre=(0.0, 0.0, max(tire_r * 0.45, _ph0 / 2.0 + 20.0)))
+                scale=_def_scale,
+                centre=(0.0, 0.0,
+                        max(tire_r * 0.55, _ph0 * _def_scale / 2.0 + 20.0)))
         except Exception:
             _def_target = None
 
