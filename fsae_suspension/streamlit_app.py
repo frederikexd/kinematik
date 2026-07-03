@@ -74,6 +74,75 @@ from suspension import cad_ingest as ingest_mod
 from suspension import analytics as _axn
 
 # --------------------------------------------------------------------------- #
+#  Central auto-instrumentation of ENGAGEMENT.
+#
+#  Many tabs never called ax.engage() manually, so their adoption funnel sat at
+#  0% even when people clearly used them. Rather than hand-instrument ~250
+#  scattered inputs, we wrap Streamlit's numeric-entry widgets once here: the
+#  first time a user puts a number into whichever tab is active, it counts as
+#  engagement for that feature (deduped once-per-session inside auto_engage).
+#  Wrapping is idempotent and fully guarded — telemetry can never break a
+#  widget or change its return value.
+# --------------------------------------------------------------------------- #
+def _ax_wrap_input(_orig):
+    def _wrapped(*args, **kwargs):
+        _res = _orig(*args, **kwargs)
+        # Engagement must mean the user actually CHANGED a value, not merely
+        # that an input rendered — every tab body re-runs on every interaction,
+        # so firing on render would mark a tab engaged just for being open.
+        # We remember each keyed widget's last value and only count engagement
+        # when it moves. Inputs without a key can't be tracked this way and are
+        # deliberately skipped here (unum-based inputs are covered separately).
+        try:
+            _key = kwargs.get("key")
+            _af = st.session_state.get("_ax_last_active_tab")
+            if _key and _af:
+                _seen = f"_ax_seen_{_key}"
+                _prev = st.session_state.get(_seen, "___init___")
+                if _prev != "___init___" and _prev != _res:
+                    _axn.auto_engage(_af, action="input")
+                st.session_state[_seen] = _res
+        except Exception:
+            pass  # never let telemetry break an input
+        return _res
+    return _wrapped
+
+if not getattr(st, "_ax_input_patched", False):
+    st.number_input = _ax_wrap_input(st.number_input)
+    st.slider = _ax_wrap_input(st.slider)
+    st._ax_input_patched = True
+
+# --------------------------------------------------------------------------- #
+#  Central auto-instrumentation of COMPLETION.
+#
+#  "Completion" = the entered numbers actually ran and produced a result. Heavy
+#  tabs run their compute inside `st.spinner(...)`, so entering (and exiting)
+#  a spinner is a reliable, universal "a computation ran" signal. We wrap it to
+#  auto_complete the active feature once per session. auto_complete also
+#  back-fills engagement, so completions can never sit below engagements.
+#  Fully guarded; the spinner still behaves exactly as before.
+# --------------------------------------------------------------------------- #
+if not getattr(st, "_ax_spinner_patched", False):
+    import contextlib as _ax_ctxlib
+    _ax_orig_spinner = st.spinner
+
+    @_ax_ctxlib.contextmanager
+    def _ax_spinner(*args, **kwargs):
+        with _ax_orig_spinner(*args, **kwargs):
+            yield
+        # runs only if the spinner body completed without raising — i.e. the
+        # computation finished and a result was produced.
+        try:
+            _af = st.session_state.get("_ax_last_active_tab")
+            if _af:
+                _axn.auto_complete(_af, action="run", require_engaged=True)
+        except Exception:
+            pass
+
+    st.spinner = _ax_spinner
+    st._ax_spinner_patched = True
+
+# --------------------------------------------------------------------------- #
 #  Cached compute layer.
 #
 #  Streamlit re-executes this entire script top-to-bottom on EVERY widget
@@ -377,6 +446,20 @@ def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
     if key is not None:
         extra["key"] = key
     result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
+    # Auto-engagement: count engagement only when the user actually CHANGES a
+    # number on the active tab (not merely when the input renders — every tab
+    # body re-runs each interaction). Tracked per widget key; keyless unum
+    # inputs are skipped here to avoid false positives.
+    try:
+        _af = st.session_state.get("_ax_last_active_tab")
+        if _af and key is not None:
+            _seen = f"_ax_seen_u_{key}"
+            _prev = st.session_state.get(_seen, "___init___")
+            if _prev != "___init___" and _prev != result:
+                _axn.auto_engage(_af, action="input")
+            st.session_state[_seen] = result
+    except Exception:
+        pass
     metric_result = units_mod.to_metric(float(result), unit)
     if key is not None:
         st.session_state[f"_u_{key}"] = (metric_result, units_mod.current_system())
@@ -17111,6 +17194,8 @@ with tab_analytics:
         _fu_by_id = {r.get("feature"): r for r in (feat_use or [])}
         _fu_rows = []
         for _fid, (_emj, _flabel) in _TAB_META.items():
+            if _fid == "analytics":
+                continue  # the analytics tab itself is not a tracked feature
             _r = _fu_by_id.get(_fid, {})
             _fu_rows.append({
                 "Feature": _flabel,
@@ -17227,6 +17312,8 @@ with tab_analytics:
             # shown here, matching the Per-feature tab.
             _fn_by_id = {r.get("feature"): r for r in funnel}
             for _fid, (_emj, _flabel) in _TAB_META.items():
+                if _fid == "analytics":
+                    continue  # the analytics tab itself is not a tracked feature
                 r = _fn_by_id.get(_fid, {})
                 _o = r.get("opened", 0) or 0
                 _e = r.get("engaged", 0) or 0
