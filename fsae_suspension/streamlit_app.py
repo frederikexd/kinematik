@@ -1487,19 +1487,28 @@ for _cid in _FULL_ORDER:
 # project (see one car, declare your numbers once, read/leave notes).
 _SHARED_IDS = ["model3d", "integration", "registry", "notes", "weight", "validation", "analytics"]
 
-# Subteam -> the tabs that team actually works in (most-used first). Shared
-# tabs are appended automatically, so they're listed here only where a team
-# leans on them especially hard.
+# Subteam -> the tabs that team actually works in (most-used first). The shared
+# spine (_SHARED_IDS: 3D model, integration, registry, notes, weight,
+# validation, analytics) is appended automatically to every role, so it's not
+# repeated here. This list is now used for STRICT filtering — a member sees ONLY
+# these tabs plus the shared spine, nothing else — so each role is deliberately
+# widened to include every tab that subsystem genuinely needs (e.g. cooling
+# needs the EV tab, where radiator sizing/CAD lives; brakes wants lap time & GGV
+# to see how brake balance plays out on track).
 _ROLE_TABS = {
     "suspension": ["kinematics", "roll", "grip", "compliance", "tire",
-                   "setup", "ggv", "transient"],
-    "aero":       ["aero"],
-    "powertrain": ["ev", "laptime", "ggv", "dfmea"],
-    "electrics":  ["accum", "laptime", "pcb", "tractive", "dfmea"],
-    "cooling":    ["dfmea", "tractive"],   # DFMEA surfaces for Cooling; PCM buffer lives alongside the precharge gate
-    "dataacq":    ["pcb"],       # data-acquisition — lives in the Electronics/PCB tab
-    "brakes":     ["brakes"],
-    "chassis":    ["teamfit"],
+                   "setup", "ggv", "transient", "laptime"],
+    "aero":       ["aero", "laptime", "ggv", "transient", "setup"],
+    "powertrain": ["ev", "laptime", "ggv", "transient", "setup", "dfmea"],
+    "electrics":  ["accum", "ev", "laptime", "pcb", "tractive", "dfmea"],
+    # cooling's radiator sizing / CAD import lives in the EV tab; it also owns
+    # the DFMEA + tractive (precharge/PCM) surfaces.
+    "cooling":    ["ev", "dfmea", "tractive"],
+    # data-acquisition lives in the Electronics/PCB tab.
+    "dataacq":    ["pcb", "dfmea"],
+    # brakes wants lap time + GGV to see brake balance on track, plus tyre grip.
+    "brakes":     ["brakes", "tire", "laptime", "ggv"],
+    "chassis":    ["teamfit", "compliance"],
     "cost":       ["cost"],
     "everyone":   [],   # just the shared spine
 }
@@ -2006,22 +2015,34 @@ def _tab_label(_id):
 # usage data — see _ax_active_ids below for how that signal is consumed.
 _id_to_container = {}
 
-# The member's priority order across ALL tabs (own subteam first, then shared,
-# then the rest). We reuse it to order tabs WITHIN each category so a member's
-# own tools float to the front of their category too.
-_priority_order = _primary_ids + _more_ids
+# STRICT FILTER: a member sees ONLY their subteam's tabs (_ROLE_TABS) plus the
+# shared spine (_SHARED_IDS) — together that's _primary_ids. Everything else
+# (_more_ids) is NOT shown in the nav. But every tab BODY below still executes
+# (other page state depends on that), so non-shown tabs get a real container
+# that simply isn't placed in any visible strip. In "All tabs" power mode,
+# _primary_ids is already the full list, so nothing is hidden.
+_visible_ids = list(_primary_ids)          # shown in the category nav
+_hidden_ids = [i for i in _FULL_ORDER if i not in _visible_ids]
+
+# One off-screen host for every hidden tab's body. st.container() renders but we
+# never surface it in a tab strip, so the member never sees these tabs while
+# their bodies still run and keep shared state consistent.
+if _hidden_ids:
+    _hidden_host = st.container()
+    with _hidden_host:
+        # Kept collapsed and unlabeled; purely a home for non-applicable tab
+        # bodies so they execute without cluttering the member's view.
+        _hidden_expander = st.expander(
+            "⋯ Other tools (outside your subteam)", expanded=False)
 
 def _cat_ordered(cat_key):
-    """Tab ids for one category, in the member's priority order."""
-    _ids_in_cat = [i for i in _priority_order if _ID_CATEGORY.get(i) == cat_key]
-    return _ids_in_cat
+    """VISIBLE tab ids for one category, in the member's priority order."""
+    return [i for i in _visible_ids if _ID_CATEGORY.get(i) == cat_key]
 
 # Build the category strip, then a sub-tab strip inside each non-empty category.
-# Category order: any category that contains one of the member's OWN/priority
-# tabs comes first, so their day-to-day work is the leftmost category.
+# Only categories that contain at least one VISIBLE tab appear.
 _cats_nonempty = [(ck, cem, clab) for ck, cem, clab, _ in _TAB_CATEGORIES
                   if _cat_ordered(ck)]
-# stable: keep declared category order (Testing, Design, Checks, Docs, Data)
 
 _cat_labels = [f"{cem}  {clab}" for ck, cem, clab in _cats_nonempty]
 _cat_tabs = st.tabs(_cat_labels, on_change="rerun", key="_cat_tabs_nav")
@@ -2040,6 +2061,21 @@ for _ci, (_ck, _cem, _clab) in enumerate(_cats_nonempty):
                            key=f"_subtabs_{_ck}")
             for _si, _sid in enumerate(_sub_ids):
                 _id_to_container[_sid] = _sub[_si]
+
+# Give every HIDDEN (non-applicable) tab a container inside the off-screen
+# expander, so its body still executes (shared state depends on it) but it never
+# appears in the member's category nav. Reachable if a member expands "Other
+# tools", but out of the way by default.
+if _hidden_ids:
+    with _hidden_expander:
+        st.caption("These are outside your subteam. They still run in the "
+                   "background so the shared numbers stay consistent; open one "
+                   "only if you need it. Pick that subteam in the selector to "
+                   "bring its tools up front properly.")
+        _hidden_sub = st.tabs([_tab_label(i) for i in _hidden_ids],
+                              on_change="rerun", key="_hidden_tabs_nav")
+        for _hi, _hid in enumerate(_hidden_ids):
+            _id_to_container[_hid] = _hidden_sub[_hi]
 
 
 # Snapshot which feature id is genuinely the active tab THIS run, before
