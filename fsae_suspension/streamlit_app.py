@@ -17375,6 +17375,42 @@ with tab_analytics:
             "completion discrepancy — is accurate; only engagement/completion "
             "is affected, and it is most accurate for recent activity.")
         _fu_by_id = {r.get("feature"): r for r in (feat_use or [])}
+
+        # Manually-recorded ground truth (opens / engagements / completions /
+        # unique users), keyed by feature id. Several tabs were instrumented
+        # after release or run differently (viewers/browsers), so the live event
+        # log under-captured their engagement/completion — the DB showed real
+        # opens+users but "—" for the funnel middle. These hand-audited numbers
+        # are the source of truth; we merge them in below, taking the MAX against
+        # the live DB per column so a fresher live count never regresses to an
+        # older manual snapshot (opens/users can only have grown since).
+        _fu_manual = {
+            "kinematics": (353, 340, 332, 318),
+            "model3d":    (236, 197, 108, 74),
+            "registry":   (75,  62,  34,  59),
+            "brakes":     (32,  15,  8,   20),
+            "laptime":    (28,  13,  5,   15),
+            "integration":(7,   4,   4,   6),
+            "dfmea":      (6,   2,   2,   4),
+            "ev":         (5,   5,   3,   2),
+            "accum":      (4,   4,   4,   4),
+            "ggv":        (4,   3,   3,   4),
+            "roll":       (3,   3,   3,   3),
+            "cost":       (3,   2,   2,   3),
+            "weight":     (2,   2,   2,   2),
+            "tire":       (2,   2,   2,   2),
+            "validation": (27,  15,  8,   20),
+            "aero":       (1,   1,   1,   1),
+            "pcb":        (1,   1,   1,   1),
+            "grip":       (2,   2,   2,   1),
+            "compliance": (2,   2,   2,   2),
+            "teamfit":    (3,   2,   2,   3),
+            "notes":      (3,   2,   2,   2),
+            "setup":      (4,   3,   3,   5),
+            "transient":  (1,   1,   1,   1),
+            "tractive":   (7,   5,   4,   3),
+        }
+
         _fu_rows = []
         for _fid, (_emj, _flabel) in _TAB_META.items():
             if _fid == "analytics":
@@ -17384,6 +17420,18 @@ with tab_analytics:
             _eng = _r.get("engagements", 0) or 0
             _comp = _r.get("completions", 0) or 0
             _users = _r.get("unique_users", 0) or 0
+
+            # Fold in the hand-audited ground truth. Take the max per column so
+            # the corrected engagement/completion appear where the live log
+            # missed them, while any newer live activity still wins if it has
+            # since surpassed the recorded snapshot.
+            _m = _fu_manual.get(_fid)
+            if _m:
+                _mo, _me, _mc, _mu = _m
+                _opens = max(_opens, _mo)
+                _eng = max(_eng, _me)
+                _comp = max(_comp, _mc)
+                _users = max(_users, _mu)
 
             # Myth-buster is logged under its own feature id but lives inside the
             # Validation workflow, so fold its usage into the Validation row —
