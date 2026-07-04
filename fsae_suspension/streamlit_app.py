@@ -19324,9 +19324,17 @@ with tab_analytics:
     if retention:
         rt = retention[0]
         _total_ever = _total_people or int(rt.get("total_users", 0) or 0)
+        # Derive the returning percentage from the SAME numerator/denominator the
+        # "Return vs total users" tile uses (returning people ÷ total people), so
+        # the two tiles never disagree. Previously this tile showed the view's
+        # own retention_pct — computed against a distinct-SESSION denominator —
+        # while the ratio tile below divided by the distinct-PERSON count, so they
+        # rounded to different numbers (e.g. 48% vs 246/520 = 47%).
+        _returning = int(rt.get("returning_users", 0) or 0)
+        _ret_pct = (100.0 * _returning / _total_ever) if _total_ever else 0.0
         _ax_metric(u1, "Total users", f"{_total_ever}", "ever")
-        _ax_metric(u2, "Returning", f"{rt.get('retention_pct', 0):.0f}%",
-                   f"{rt.get('returning_users', 0)} came back",
+        _ax_metric(u2, "Returning", f"{_ret_pct:.0f}%",
+                   f"{_returning} came back",
                    "var(--cyan)")
     if ttfr:
         tf = ttfr[0]
@@ -19342,10 +19350,16 @@ with tab_analytics:
     # Return vs total users tile
     if retention:
         _rt2 = retention[0]
-        # Same distinct-person total as the headline tile so this ratio matches
-        # the Individual-use tab rather than session counts.
-        _tot2 = (len(individuals or [])) or int(_rt2.get("total_users", 0) or 0)
-        _ret2 = int(_rt2.get("returning_users", 0) or 0)
+        # Reuse the exact same total (_total_ever) and returning count (_returning)
+        # the "Returning" tile above uses, so the ratio and its percentage always
+        # match that tile. Fall back to recomputing from _rt2 only if the headline
+        # block above didn't run (e.g. retention present but columns skipped).
+        try:
+            _tot2 = _total_ever
+            _ret2 = _returning
+        except NameError:
+            _tot2 = (len(individuals or [])) or int(_rt2.get("total_users", 0) or 0)
+            _ret2 = int(_rt2.get("returning_users", 0) or 0)
         r1, = st.columns(1)
         _ax_metric(
             r1, "Return vs total users",
