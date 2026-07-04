@@ -11410,26 +11410,27 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
     st.markdown(
         f'<p class="hint" style="margin:0 0 10px;">'
         f'Build the <b>{_name}</b> document without starting from a blank page. '
-        f'Tick the sections you need — each one opens with a pre-filled skeleton '
-        f'you can edit inline before exporting.</p>',
+        f'Choose the sections you need from the library — each one opens with '
+        f'a pre-filled skeleton you can edit inline before exporting.</p>',
         unsafe_allow_html=True)
 
-    st.markdown("###### 📚 Template library — tick what you need")
+    # Build the label list shown in the dropdown (icon + label)
+    _all_labels  = [f"{t[2]} {t[1]}" for t in _DOC_TEMPLATES]
+    _label_to_id = {f"{t[2]} {t[1]}": t[0] for t in _DOC_TEMPLATES}
+    _default_labels = [f"{t[2]} {t[1]}" for t in _DOC_TEMPLATES if t[3]]
 
-    # Two-column grid of checkboxes (icon + label)
-    _ncols = 3
-    _tpl_cols = st.columns(_ncols)
-    _picked_ids = []
-    for _i, (_tid, _tlabel, _ticon, _tdefault, _tbody) in enumerate(_DOC_TEMPLATES):
-        _checked = _tpl_cols[_i % _ncols].checkbox(
-            f"{_ticon} {_tlabel}",
-            value=st.session_state.get(f"{key_prefix}_tpl_{_tid}", _tdefault),
-            key=f"{key_prefix}_tpl_{_tid}")
-        if _checked:
-            _picked_ids.append(_tid)
+    _selected_labels = st.multiselect(
+        "📚 Template library — choose sections to include",
+        options=_all_labels,
+        default=st.session_state.get(f"{key_prefix}_tpl_picks", _default_labels),
+        key=f"{key_prefix}_tpl_picks",
+        help="Pick as many or as few as you need. Each section will appear "
+             "below as an editable text area before being merged into the report.")
+
+    _picked_ids = [_label_to_id[lbl] for lbl in _selected_labels]
 
     if not _picked_ids:
-        st.caption("No sections ticked — the report will still include your "
+        st.caption("No sections selected — the report will still include your "
                    "declared numbers and everything you did this session.")
     else:
         st.caption(
