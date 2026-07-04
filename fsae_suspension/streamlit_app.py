@@ -1378,42 +1378,75 @@ _as = kin.anti_squat_pct(st.session_state.vp.get("cg_height", 300.0),
                          st.session_state.vp.get("wheelbase", 1550.0))
 
 st.write("")
-with st.expander("👋 New here? 20 seconds, then pick your subteam below", expanded=False):
+with st.expander("👋 New here? Your 30-second tour",
+                 expanded=not bool(st.session_state.get("kk_entered", False))):
     st.markdown("""
-**Three steps and you're working:**
+**The whole app in 30 seconds:**
 
 1. **Pick your subteam(s)** in the selector right below this box — one, or
    several if you own more than one (brakes *and* electronics, say). As you pick,
    the parts that subteam owns **light up on the 3D car** beside the selector
-   (drag it to spin it), so you can see exactly what's yours before you touch a
-   tab. You'll get those teams' tabs combined up front; everything else is one
-   click away under **⋯ More tools** (or hit **Show all tabs** any time).
-2. **Declare your numbers once** in **🔗 Integration** — mass, CG, envelope,
-   heat, power, downforce. They flow into the 3D model, lap sim, cost BOM and
-   every cross-team check automatically. You never type the same number twice.
-3. **Leave a trail** in **📝 Lead Notes** / **⚖️ Weight & Handover** — log the
-   calls you make (especially what *didn't* work). It's the difference between
-   next year starting ahead or relearning everything.
+   (drag it to spin it). Nothing else opens until you choose, so you're never
+   dropped into a wall of tabs. *Just browsing?* Hit **Just looking** to see the
+   shared tabs.
+2. **You only see your tools.** After you pick, the tabs are grouped into a few
+   simple **categories** — 🧪 Testing & Simulation, 🛠️ Design & Sizing,
+   ✅ Checks & Integration, 📄 Documentation, 📊 Data & Cost. Open a category,
+   then a tab inside it. You see **only your subteam's tabs plus the shared ones**
+   (Integration, Validation, Analytics, Registry, Notes, 3D Model) — not all 25.
+3. **Declare your numbers once** in **✅ Checks & Integration ▸ 🔗 Integration** —
+   mass, CG, envelope, heat, power, downforce. They flow into the 3D model, lap
+   sim, cost BOM and every cross-team check automatically. You never type the
+   same number twice.
+4. **Check the whole car** in **✅ Checks & Integration ▸ 🔗 Integration ▸
+   Verdict Center** — one page shows every subsystem as ✅ works / 🔎 look closer
+   / 🛑 needs attention, so you know what's solid before you commit.
+
+---
+
+### 📐 Getting a DXF you can build from (import → extrude → mesh)
+
+Every subsystem can hand you a **real 2-D section as a DXF** — a wing airfoil, a
+mount plate with its bolt holes, a radiator core face, a motor flange — ready to
+drop straight into SolidWorks and extrude. Here's exactly where and how:
+
+1. Open **your subsystem's tab** (e.g. Suspension is in 🧪 Testing, Brakes is in
+   🛠️ Design).
+2. Near the top of the tab, open the panel titled
+   **"📄 &lt;Subsystem&gt; — documentation, verdict & export."**
+3. Click the **📐 Mesh & DXF** sub-tab inside it.
+4. If it says *"nothing to export yet,"* run that tab's tool first (enter your
+   real numbers — chord, hardpoints, cell grid, part size). The DXF is built from
+   **your** geometry, never a guess, so it stays empty until the numbers exist.
+5. Pick the section from the short-list, watch for the **✓ ready to extrude**
+   check, and hit **⬇ Download DXF**.
+6. In SolidWorks: **File ▸ Open ▸ (set type to DXF) ▸ import as a 2D sketch**,
+   then **Extruded Boss/Base**. Mesh the solid in ANSYS. Done.
+
+The units are embedded, holes come in as separate closed loops, and each profile
+is checked so it imports as one clean closed contour — no manual geometry entry.
+
+---
 
 Suspension topology and the live hardpoint editor live in the **sidebar** on the
-left. Want the full description of every single tab? It's in the project README.
+left. Want every tab described? It's in the project README.
     """)
 
 # ========================================================================== #
-#  ROLE-AWARE TAB ROUTING
+#  ROLE-AWARE TAB ROUTING (category-grouped)
 #
-#  The studio carries 22 tabs. Showing all 22 to every user — when a brakes
+#  The studio carries 25 tabs. Showing all 25 to every user — when a brakes
 #  lead never touches the aero map and a cost lead never edits a hardpoint —
-#  is the single biggest source of "this is overwhelming". So instead of one
-#  flat strip of 22, each user picks their subteam ONCE (remembered for the
-#  session); we then surface only that team's working tabs plus the handful
-#  everyone shares, and tuck the rest into a single "⋯ More tools" tab.
+#  is the single biggest source of "this is overwhelming". So: each user picks
+#  their subteam ONCE (remembered for the session); nothing renders until they
+#  do. We then show ONLY that team's applicable tabs plus the shared spine,
+#  grouped into a handful of CATEGORIES (Testing, Design, Checks, Docs, Data)
+#  so navigation is Category -> Sub-tab -> Feature — never a wall of tabs.
 #
-#  Nothing is removed and nothing is hidden behind a wall: every tab body
-#  below still runs exactly as before (same physics, same single source of
-#  truth), and "All tabs (power user)" restores the original flat 22. The
-#  only thing that changes is how many tabs a given person has to look at to
-#  find their work.
+#  Non-applicable tab BODIES still execute (shared page state depends on them)
+#  inside a collapsed "⋯ Other tools" expander, and "All tabs (power user)"
+#  restores the full 25. Same physics, same single source of truth — only how
+#  many tabs a given person looks at changes.
 # ========================================================================== #
 
 # Stable id -> (emoji, short label). Order here is the canonical full order.
