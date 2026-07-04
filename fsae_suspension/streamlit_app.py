@@ -20,6 +20,7 @@ Run:  streamlit run app.py
 import json
 import os
 import re
+import html as _html
 import tempfile
 import datetime as _datetime
 import numpy as np
@@ -410,6 +411,38 @@ body, p, span, div, label{ font-family:'Archivo',sans-serif; }
       background:#0e1a1955; }
 hr{ border-color:var(--line);}
 [data-testid="stMetricValue"]{ font-family:'JetBrains Mono'!important;}
+
+/* --- Export empty-state ("waiting on numbers", not a dead end) --------- */
+.es-card{ border:1px solid var(--line); border-left:3px solid var(--amber);
+      background:linear-gradient(180deg,var(--panel2),var(--panel));
+      border-radius:12px; padding:.95rem 1.05rem; margin:.3rem 0 .5rem; }
+.es-head{ display:flex; flex-direction:column; gap:.35rem; margin-bottom:.7rem; }
+.es-badge{ align-self:flex-start; font-family:'JetBrains Mono'; font-weight:700;
+      font-size:.66rem; letter-spacing:.08em; text-transform:uppercase;
+      color:var(--amber); border:1px solid #5a4317; border-radius:6px;
+      padding:.15rem .5rem; }
+.es-lead{ color:var(--ink); font-size:.88rem; line-height:1.5; }
+.es-where{ color:var(--dim); font-size:.83rem; margin:.2rem 0 .55rem; }
+.es-where b{ color:var(--ink); }
+.es-step{ display:flex; gap:.6rem; align-items:baseline; margin:.3rem 0; }
+.es-step .es-n{ font-family:'JetBrains Mono'; font-weight:700; font-size:.7rem;
+      color:var(--bg); background:var(--amber); border-radius:6px;
+      padding:.1rem .42rem; flex:0 0 auto; }
+.es-step .es-t{ font-size:.86rem; line-height:1.45; color:var(--ink); }
+.es-check-h{ font-family:'JetBrains Mono'; font-size:.68rem; letter-spacing:.09em;
+      text-transform:uppercase; color:var(--dim); margin:.75rem 0 .35rem;
+      padding-top:.6rem; border-top:1px solid var(--line); }
+.es-check{ list-style:none; padding:0; margin:0; display:flex;
+      flex-direction:column; gap:.28rem; }
+.es-check li{ display:flex; gap:.5rem; align-items:center; font-size:.84rem;
+      font-family:'JetBrains Mono'; }
+.es-check .es-mark{ flex:0 0 auto; width:1rem; text-align:center; }
+.es-check li.es-todo{ color:var(--dim); }
+.es-check li.es-todo .es-mark{ color:var(--amber); }
+.es-check li.es-done{ color:var(--ink); }
+.es-check li.es-done .es-mark{ color:var(--cyan); }
+.es-foot{ color:var(--dim); font-size:.78rem; line-height:1.5;
+      margin-top:.75rem; padding-top:.6rem; border-top:1px solid var(--line); }
 
 /* Buttons and download buttons — dark theme (Streamlit defaults render white) */
 .stButton > button, .stDownloadButton > button{
@@ -3698,26 +3731,136 @@ def _validate_candidate_geometry(cand):
     return (len(warns) == 0), warns
 
 
-# Where each subsystem's export geometry comes from — shown in the empty state so
-# a member knows exactly which tool to run to light up the export (like brakes).
+# Where each subsystem's export geometry comes from. Shown in the empty state as
+# concrete, do-this-now steps so a member knows exactly which numbers to enter to
+# light up the export — instead of a dead-end "nothing here" message.
+#
+# Each entry:
+#   where   — the tab/panel to go to, named the way it appears in the UI.
+#   steps   — 1-3 short, imperative actions the member takes there.
+#   needs   — the specific input fields whose presence flips the export on. Each
+#             is (human label, key in the published/derived geom dict). We use
+#             these to show a live "still missing" checklist, so the member can
+#             see how close they are rather than guessing.
 _EXPORT_SOURCE_HINT = {
-    "aerodynamics": "Run the Aerodynamics tab's scale-model / aeromap so it "
-                    "publishes the real chord and t/c.",
-    "suspension":   "Set your hardpoints in the Kinematics tab so the upright "
-                    "mount PCD and bolt count are known.",
-    "brakes":       "Enter the caliper mount + brake torque in the Brakes tab "
-                    "(the rotor export is in that tab's optimiser).",
-    "electrics":    "Run the Accumulator tab's segmentation so the segment box "
-                    "dimensions and cell grid are known.",
-    "cooling":      "Size the radiator in the Cooling tab so the core face and "
-                    "depth are published.",
-    "chassis":      "Define the tube node in the Chassis / Team Fit tab so the "
-                    "gusset legs are known.",
-    "data-acquisition": "Enter the board / sensor footprint in the Electronics "
-                    "(PCB) tab.",
-    "powertrain":   "Enter the motor face (bore + bolt PCD) and peak torque in "
-                    "the EV Powertrain tab.",
+    "aerodynamics": {
+        "where": "the Aerodynamics tab",
+        "steps": ["Run the scale-model / aeromap so it publishes the wing "
+                  "section."],
+        "needs": [("Chord (mm)", "chord_mm"),
+                  ("Thickness ratio", "thickness_frac")],
+    },
+    "suspension": {
+        "where": "the Kinematics tab",
+        "steps": ["Set your hardpoints so the upright mount is defined."],
+        "needs": [("Mount bolt PCD (mm)", "pcd_mm"),
+                  ("Bolt count", "n_bolts")],
+    },
+    "brakes": {
+        "where": "the Brakes tab optimiser",
+        "steps": ["Enter the caliper mount and brake torque, then run the "
+                  "optimiser."],
+        "needs": [("Mount bolt PCD (mm)", "pcd_mm"),
+                  ("Brake torque (N·m)", "peak_torque_nm")],
+    },
+    "electrics": {
+        "where": "the Accumulator tab",
+        "steps": ["Run the segmentation so the segment box is sized."],
+        "needs": [("Segment width (mm)", "w_mm"),
+                  ("Segment height (mm)", "h_mm")],
+    },
+    "cooling": {
+        "where": "the Cooling tab",
+        "steps": ["Size the radiator so its core face is published."],
+        "needs": [("Core width (mm)", "core_w_mm"),
+                  ("Core height (mm)", "core_h_mm")],
+    },
+    "chassis": {
+        "where": "the Chassis / Team Fit tab",
+        "steps": ["Define the tube node so the gusset legs are known."],
+        "needs": [("Gusset leg A (mm)", "leg_a_mm"),
+                  ("Gusset leg B (mm)", "leg_b_mm")],
+    },
+    "data-acquisition": {
+        "where": "the Electronics (PCB) tab",
+        "steps": ["Enter the board / sensor footprint."],
+        "needs": [("Board width (mm)", "w_mm"),
+                  ("Board height (mm)", "h_mm")],
+    },
+    "powertrain": {
+        "where": "the ⚡ EV Powertrain tab (the sub-tab you were just on)",
+        "steps": ["Enter the motor face — bore diameter and bolt PCD.",
+                  "Enter peak torque so the flange can be sized."],
+        "needs": [("Motor bore (mm)", "bore_d_mm"),
+                  ("Bolt PCD (mm)", "pcd_mm"),
+                  ("Peak torque (N·m)", "peak_torque_nm")],
+    },
 }
+
+
+def _render_export_empty_state(subsystem_key, name):
+    """Structured, non-dead-end empty state for the Mesh & DXF export.
+
+    Replaces the old flat blue paragraph (which told people to go to a tab they
+    were often already inside, and buried a developer aside about the rotor
+    exporter). Instead: a clear 'waiting, not broken' line, numbered steps in
+    the app's own visual language, and a live checklist of exactly which inputs
+    are still missing so the member can see how close the export is."""
+    hint = _EXPORT_SOURCE_HINT.get(subsystem_key)
+    if not hint:
+        st.info("**Waiting on real geometry.** Run this subsystem's tab tool "
+                "first — the DXF is built from your computed numbers, so it "
+                "stays empty until those exist.")
+        return
+
+    where = hint["where"]
+    steps = hint.get("steps", [])
+    needs = hint.get("needs", [])
+
+    # What's already been entered vs. what's still missing. We read whatever the
+    # owning tab / 3D-part entry has published so far, so a half-filled subsystem
+    # shows a partial checklist rather than an all-or-nothing wall.
+    geom = get_export_geometry(subsystem_key) or {}
+
+    def _have(dict_key):
+        v = geom.get(dict_key)
+        return v is not None and v != "" and v != 0
+
+    _step_html = "".join(
+        f'<div class="es-step"><span class="es-n">{i+1}</span>'
+        f'<span class="es-t">{_html.escape(s)}</span></div>'
+        for i, s in enumerate(steps))
+
+    _check_html = ""
+    if needs:
+        _rows = ""
+        for label, dkey in needs:
+            done = _have(dkey)
+            _mark = "✓" if done else "○"
+            _cls = "es-done" if done else "es-todo"
+            _rows += (f'<li class="{_cls}"><span class="es-mark">{_mark}</span>'
+                      f'{_html.escape(label)}</li>')
+        _check_html = (
+            '<div class="es-check-h">What the export needs</div>'
+            f'<ul class="es-check">{_rows}</ul>')
+
+    st.markdown(
+        f'''
+<div class="es-card">
+  <div class="es-head">
+    <span class="es-badge">Waiting on numbers</span>
+    <span class="es-lead">This export builds from your real computed
+      geometry, so it&rsquo;s empty until those numbers exist &mdash;
+      it isn&rsquo;t an error.</span>
+  </div>
+  <div class="es-where">Add them in <b>{_html.escape(where)}</b>:</div>
+  {_step_html}
+  {_check_html}
+  <div class="es-foot">Come back here once they&rsquo;re in &mdash; the
+    short-list and DXF appear automatically.</div>
+</div>
+''',
+        unsafe_allow_html=True)
 
 
 def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
@@ -3752,12 +3895,7 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
                    "is the caliper-mount bracket section, once the tab has it.")
 
     if not candidates:
-        _hint = _EXPORT_SOURCE_HINT.get(
-            subsystem_key, "Run this subsystem's tab tool first.")
-        st.info(f"**Nothing to export yet.** {_hint} The DXF is built from your "
-                f"real computed geometry — not a guess — so it stays empty until "
-                f"the numbers exist. (Same as the rotor exporter: nothing until "
-                f"you optimise.)")
+        _render_export_empty_state(subsystem_key, _name)
         return
 
     # --- the short-list table (what's worth meshing) ----------------------- #
