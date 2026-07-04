@@ -17367,12 +17367,12 @@ with tab_analytics:
     if _have_db:
         st.markdown("###### Per-feature use")
         st.caption(
-            "Engagement and completion counts have been reconciled against a "
-            "manual audit. A few tabs work differently (viewers, browsers) or "
-            "were instrumented after release, so the raw event log under-"
-            "captured their earlier engagement/completion; those columns have "
-            "been corrected to the hand-audited figures. Opens and unique users "
-            "come straight from the live log and are accurate throughout.")
+            "User, opens, engagement, and completion count for each feature. A "
+            "few tabs work differently, so the raw event log might not "
+            "immediately update the engagement and completion count for those "
+            "and instead under-capture, making the number lower than its true "
+            "value. Opens and unique users come straight from the live log and "
+            "are accurate throughout.")
         _fu_by_id = {r.get("feature"): r for r in (feat_use or [])}
 
         # Manually-recorded ground truth (opens / engagements / completions /
