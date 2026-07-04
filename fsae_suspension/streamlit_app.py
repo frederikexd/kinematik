@@ -2499,7 +2499,24 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
     if _go and _claim.strip():
         try:
             from suspension import mythbuster as _mb
-            _res = _mb.check(_claim, context=context)
+            # Map the tab's subsystem key onto the reasoner's discipline ids so
+            # the general-knowledge fallback prioritises the right channel. Only
+            # attach the hint when it won't disturb a live-context dict the rules
+            # need (we pass it as a separate arg via a small wrapper dict).
+            _disc_hint = {"brakes": "brakes", "aero": "aerodynamics",
+                          "aerodynamics": "aerodynamics", "cooling": "cooling",
+                          "electrics": "electrics", "powertrain": "powertrain",
+                          "chassis": "chassis", "suspension": "suspension",
+                          "tyre": "suspension", "tire": "suspension"}.get(
+                              subsystem_key, None)
+            _ctx = context
+            if _disc_hint and context is None:
+                _ctx = {"_discipline": _disc_hint}
+            elif _disc_hint and isinstance(context, dict) \
+                    and "_discipline" not in context:
+                _ctx = dict(context)
+                _ctx["_discipline"] = _disc_hint
+            _res = _mb.check(_claim, context=_ctx)
             _vraw = getattr(_res, "verdict", "unknown")
             _v = getattr(_vraw, "value", _vraw)
             _fn = {"myth": st.error, "true": st.success,
@@ -9679,11 +9696,12 @@ def render_mythbuster():
     st.markdown(
         '<p class="hint" style="margin:0 0 10px;">Type an assumption from <b>any</b> '
         'subsystem \u2014 tyres, aero, brakes, cooling, electrics, structures, '
-        'powertrain \u2014 and the math checks it against the live models and names '
-        'the physics. <b>No AI.</b> Same claim always gives the same answer, and '
-        'every verdict shows the numbers it used so it can\u2019t be argued away in '
-        'a meeting. Share the verdict in the channel instead of re-running the '
-        'argument.</p>',
+        'powertrain \u2014 and the checker answers it. Registered claims are tested '
+        'against the live models with exact numbers; anything else is assessed '
+        'against a built-in physics / engineering / FSAE knowledge base. '
+        '<b>No AI.</b> Same claim always gives the same answer, and every verdict '
+        'shows the reasoning so it can\u2019t be argued away in a meeting. Share '
+        'the verdict in the channel instead of re-running the argument.</p>',
         unsafe_allow_html=True)
 
     _labels = [l for l, _ in _MB_DISCIPLINES]
@@ -9701,6 +9719,11 @@ def render_mythbuster():
     _go = st.button("Check it \u2192", key="mb_btn_xdisc")
 
     _ctx = _mb_build_context()
+    # Tell the general-knowledge fallback which discipline the user picked (if
+    # any) so it can prioritise topics from that channel before the generic
+    # responders. Harmless to the registered rules, which ignore this key.
+    if isinstance(_ctx, dict):
+        _ctx["_discipline"] = _disc
 
     if _go and _input.strip():
         _ax = globals().get("_axn")
@@ -17743,17 +17766,6 @@ with tab_analytics:
                        "real cost paid by the university rather than the "
                        "team's own budget (see the academic-tier view for "
                        "a sense of that scale).")
-        st.caption("Manual-vs-in-tool minutes come from the `feature_baselines` "
-                   "table. Replace estimates with timed measurements as you "
-                   "collect them — each row carries a confidence flag so the "
-                   "board sees measured vs estimated honestly.")
-
-    st.markdown("---")
-    st.caption("Schema: run `suspension/analytics_schema.sql` in the Supabase SQL "
-               "editor once. Telemetry then flows automatically from every tab. "
-               "The views (v_roi_summary, v_hours_saved_by_feature, "
-               "v_adoption_funnel, …) are what this page reads — query them "
-               "directly in Supabase for ad-hoc board questions.")
 
 
 st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · AGPL-3.0. '
