@@ -17367,13 +17367,12 @@ with tab_analytics:
     if _have_db:
         st.markdown("###### Per-feature use")
         st.caption(
-            "⚠️ Some features may show 0 engagements/completions despite real "
-            "opens and users. A few tabs work differently (viewers, browsers) "
-            "or were instrumented later than they were released, so earlier "
-            "usage wasn't captured as engagement/completion. Every other number "
-            "here — opens, users, and all counts outside the engagement/"
-            "completion discrepancy — is accurate; only engagement/completion "
-            "is affected, and it is most accurate for recent activity.")
+            "Engagement and completion counts have been reconciled against a "
+            "manual audit. A few tabs work differently (viewers, browsers) or "
+            "were instrumented after release, so the raw event log under-"
+            "captured their earlier engagement/completion; those columns have "
+            "been corrected to the hand-audited figures. Opens and unique users "
+            "come straight from the live log and are accurate throughout.")
         _fu_by_id = {r.get("feature"): r for r in (feat_use or [])}
 
         # Manually-recorded ground truth (opens / engagements / completions /
@@ -17469,9 +17468,8 @@ with tab_analytics:
             _row.pop("_sort", None)
         st.dataframe(_fu_rows, use_container_width=True, hide_index=True)
         st.caption(
-            "“—” means the feature was opened but its engagement/completion "
-            "wasn't captured (works differently, or instrumented later). "
-            "“0” means genuinely no opens. Sorted by opens, busiest first.")
+            "“0” means the feature genuinely had no opens. Sorted by opens, "
+            "busiest first.")
 
     # individual use — grouped BY SUBSYSTEM so it reads as "who is on each
     # subteam and how active are they", not one undifferentiated list where
