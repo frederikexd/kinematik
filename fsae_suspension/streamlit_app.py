@@ -17265,9 +17265,16 @@ with tab_analytics:
     except Exception:
         pass
     u1, u2, u3, u4 = st.columns(4)
+    # "Total users ever" reconciles with the Individual-use tab, which lists one
+    # row per distinct PERSON (v_individual_use). v_retention.total_users is a
+    # distinct-SESSION count, which disagreed with the person list (493 sessions
+    # vs 503 people). Use the person count in both places so the headline and
+    # the Individual tab always agree.
+    _total_people = len(individuals or [])
     if retention:
         rt = retention[0]
-        _ax_metric(u1, "Total users", f"{rt.get('total_users', 0)}", "ever")
+        _total_ever = _total_people or int(rt.get("total_users", 0) or 0)
+        _ax_metric(u1, "Total users", f"{_total_ever}", "ever")
         _ax_metric(u2, "Returning", f"{rt.get('retention_pct', 0):.0f}%",
                    f"{rt.get('returning_users', 0)} came back",
                    "var(--cyan)")
@@ -17285,7 +17292,9 @@ with tab_analytics:
     # Return vs total users tile
     if retention:
         _rt2 = retention[0]
-        _tot2 = int(_rt2.get("total_users", 0) or 0)
+        # Same distinct-person total as the headline tile so this ratio matches
+        # the Individual-use tab rather than session counts.
+        _tot2 = (len(individuals or [])) or int(_rt2.get("total_users", 0) or 0)
         _ret2 = int(_rt2.get("returning_users", 0) or 0)
         r1, = st.columns(1)
         _ax_metric(
@@ -17478,11 +17487,7 @@ with tab_analytics:
         with st.expander("Individual use (by subsystem)"):
             _n_named = sum(1 for r in individuals if r.get("is_named"))
             _n_anon = len(individuals) - _n_named
-            # Show the same headline user count as the "Total users ever" tile,
-            # which is pulled from v_retention.total_users — so this number and
-            # the top-of-page total always agree rather than contradicting.
-            _n_total = int(retention[0].get("total_users", 0) or 0) if retention \
-                else len(individuals)
+            _n_total = len(individuals)
             if _n_anon:
                 st.caption(
                     f"**{_n_total} "
