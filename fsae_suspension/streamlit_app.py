@@ -3812,8 +3812,14 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
                 render_documentation_center(
                     subsystem_key, key_prefix=f"{key_prefix}_dc",
                     title_name=_nm)
-            except Exception:
-                # graceful fallback to the original simple report
+            except Exception as _dc_err:
+                # Graceful fallback to the original simple report. We surface a
+                # short note (instead of silently swallowing) so a member — or
+                # whoever is deploying — can see the merged Template + Sanity-check
+                # hub failed to load and why, rather than wondering where the
+                # template library went.
+                st.caption(f"Showing the simple report — the merged template "
+                           f"library couldn’t load here ({type(_dc_err).__name__}).")
                 render_subsystem_documentation(
                     subsystem_key, key_prefix=key_prefix,
                     extra_sections=extra_sections, title_name=title_name)
@@ -11415,28 +11421,52 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
         unsafe_allow_html=True)
 
     # ------------------------------------------------------------------ #
-    #  2. Template multiselect                                             #
+    #  2. Templates checkbox  →  template library multiselect             #
+    #                                                                      #
+    #  The team asked for a single, obvious "Templates" checkbox: opening  #
+    #  it reveals a small library of ready-made documentation sections a   #
+    #  member can pick from and fill out before downloading the PDF,       #
+    #  instead of writing every subsystem doc from a blank page. Left      #
+    #  unchecked, the report still assembles from declared numbers and     #
+    #  everything recorded this session — so the checkbox only ever adds   #
+    #  structure, never gets in the way.                                   #
     # ------------------------------------------------------------------ #
     _all_labels   = [f"{t[2]} {t[1]}" for t in _DOC_TEMPLATES]
     _label_to_id  = {f"{t[2]} {t[1]}": t[0] for t in _DOC_TEMPLATES}
     _default_labels = [f"{t[2]} {t[1]}" for t in _DOC_TEMPLATES if t[3]]
 
-    _selected_labels = st.multiselect(
-        "📚 Template library — choose sections to include",
-        options=_all_labels,
-        default=st.session_state.get(f"{key_prefix}_tpl_picks", _default_labels),
-        key=f"{key_prefix}_tpl_picks",
-        help="Pick as many or as few as you need. "
-             "Each selected section appears below as an editable text area.")
+    _use_templates = st.checkbox(
+        "📚 Templates",
+        value=st.session_state.get(f"{key_prefix}_tpl_on", False),
+        key=f"{key_prefix}_tpl_on",
+        help="Open a small library of ready-made documentation sections "
+             "(design intent, assumptions, calculations, test plan, "
+             "manufacturing, risks, handover…). Tick the ones you need, fill "
+             "them out inline, and they’re merged into the report you download.")
 
-    _picked_ids = [_label_to_id[lbl] for lbl in _selected_labels]
+    _picked_ids = []
+    if _use_templates:
+        st.caption("Pick the sections you need — each one drops in below as an "
+                   "editable, pre-filled skeleton. Untick anything you don’t need.")
+        _selected_labels = st.multiselect(
+            "Template library — choose sections to include",
+            options=_all_labels,
+            default=st.session_state.get(f"{key_prefix}_tpl_picks",
+                                         _default_labels),
+            key=f"{key_prefix}_tpl_picks",
+            label_visibility="collapsed",
+            help="Pick as many or as few as you need. "
+                 "Each selected section appears below as an editable text area.")
 
-    if _picked_ids:
-        st.caption(f"{len(_picked_ids)} section(s) selected — edit below, "
-                   f"then scroll down to sanity-check and export.")
-    else:
-        st.caption("No sections selected — the report will still include your "
-                   "declared numbers and everything recorded this session.")
+        _picked_ids = [_label_to_id[lbl] for lbl in _selected_labels]
+
+        if _picked_ids:
+            st.caption(f"{len(_picked_ids)} section(s) selected — edit below, "
+                       f"then scroll down to sanity-check and export.")
+        else:
+            st.caption("No sections selected yet — tick some above, or leave "
+                       "them off and the report will still include your declared "
+                       "numbers and everything recorded this session.")
 
     # ------------------------------------------------------------------ #
     #  3. Inline section editors                                           #
