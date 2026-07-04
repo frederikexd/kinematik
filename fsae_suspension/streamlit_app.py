@@ -1554,6 +1554,16 @@ else:
     _roles = _normalize_roles(st.session_state.get("kk_role", "everyone"))
 _show_all = bool(st.session_state.get("kk_show_all", False))
 
+# GATE: nothing downstream (category strip, sub-tabs, tab bodies) renders until
+# the member has made a deliberate choice — picked subteam(s), chosen "just
+# looking", or turned on "all tabs". `kk_entered` is the explicit "I've chosen"
+# flag; it is set by the picker below the moment the user makes any real choice.
+# Until then we show ONLY the picker + prompt and st.stop() before the tabs, so
+# a member isn't dropped into a wall of tabs before saying who they are.
+_has_picked = bool(st.session_state.get("kk_entered", False)) or _show_all \
+    or ("kk_roles" in st.session_state
+        and _normalize_roles(st.session_state.get("kk_roles")) not in ([], ["everyone"]))
+
 # --- Role picker: pick subteam(s) from a dropdown and watch the parts that --
 #     subteam owns light up on a live, rotatable 3D car. Selecting "Aero +
 #     Brakes" glows the wings and the brake discs while the rest of the car
@@ -1633,6 +1643,7 @@ with _pctl:
     _picked_norm = _normalize_roles(_picked)
     if not _show_all and _picked_norm != _roles:
         st.session_state.kk_roles = _picked_norm
+        st.session_state.kk_entered = True   # a real choice was made
         _roles = _picked_norm
         st.rerun()
 
@@ -1826,7 +1837,20 @@ with _pctl:
                  help="Toggle between your focused (blended) tab set and the full "
                       "21-tab view."):
         st.session_state.kk_show_all = not _show_all
+        st.session_state.kk_entered = True
         st.rerun()
+
+    # Explicit "just browsing" entry so an EMPTY subteam pick is a deliberate
+    # choice (shared tabs only), not the "haven't chosen yet" state. Only shown
+    # while the member hasn't entered yet.
+    if not _has_picked:
+        if st.button("Just looking — show me the shared tabs",
+                     use_container_width=True,
+                     help="Enter with the shared tabs only; you can pick a "
+                          "subteam any time to pull your own tools up front."):
+            st.session_state.kk_roles = ["everyone"]
+            st.session_state.kk_entered = True
+            st.rerun()
 
 with _pcar:
     # Union the 3D subsystems owned by the currently selected roles. When "All
@@ -1923,6 +1947,25 @@ with _pcar:
         st.caption("3D preview unavailable — pick your subteam(s) on the right.")
         with st.expander("Why is the 3D preview unavailable?", expanded=False):
             st.exception(_e)
+
+# ========================================================================== #
+#  GATE: don't show the tabs until the member has chosen who they are.
+#  Everything below (category strip, sub-tabs, all 25 tab bodies) is skipped
+#  until a deliberate choice is made — so a member lands on the picker, not on
+#  a wall of tabs. The picker + 3D car above have already rendered; we simply
+#  stop here with a prompt until they pick.
+# ========================================================================== #
+if not _has_picked:
+    st.markdown(
+        '<div style="max-width:640px;margin:1.4rem auto 0;text-align:center;">'
+        '<div style="font-size:1.05rem;font-weight:600;margin-bottom:.3rem;">'
+        '👆 Pick your subteam to begin</div>'
+        '<p class="hint" style="line-height:1.5;">Choose the subteam(s) you own '
+        'above and only <b>your</b> tools open up — grouped into a few simple '
+        'categories so you\'re never facing every tab at once. You can change '
+        'this any time, or choose <b>Just looking</b> to browse the shared '
+        'tabs.</p></div>', unsafe_allow_html=True)
+    st.stop()
 
 # --- Decide which ids are primary (own strip) vs folded into "More". ------- #
 if _show_all:
