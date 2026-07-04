@@ -3870,6 +3870,251 @@ _DOC_TEMPLATES = [
 _TMPL_BY_ID = {t[0]: t for t in _DOC_TEMPLATES}
 
 
+
+
+# --------------------------------------------------------------------------- #
+#  3.  Documentation — merged report + template library + sanity check         #
+# --------------------------------------------------------------------------- #
+# NOTE: the template library data (_DOC_TEMPLATES / _TMPL_BY_ID) is defined much
+# earlier in the file — just above render_documentation_expander — because
+# Streamlit executes this script top-to-bottom and the first subsystem tabs
+# (suspension, powertrain, …) call render_documentation_center before this point
+# in the file is ever reached. Defining the data here would raise NameError at
+# those call sites and silently drop every tab to the simple fallback report.
+
+
+def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
+    """Merged documentation hub.
+
+    Strict render order:
+      1. Intro blurb
+      2. Template multiselect  — choose sections from the library
+      3. Section editors       — edit each chosen section inline
+      4. Sanity-check          — myth-buster; result auto-appended to report
+      5. Report preview        — collapsed expander with the merged markdown
+      6. Export                — PDF + Markdown download, optional Handover log
+    """
+    _name = title_name or _VC_LABEL.get(
+        subsystem_key, subsystem_key.replace("-", " ").title())
+    _safe = subsystem_key.replace("-", "_")
+
+    # ------------------------------------------------------------------ #
+    #  1. Intro                                                            #
+    # ------------------------------------------------------------------ #
+    st.markdown(
+        f'<p class="hint" style="margin:0 0 10px;">'
+        f'Build the <b>{_name}</b> document without starting from a blank page. '
+        f'Choose sections from the library, edit them inline, sanity-check any '
+        f'assumptions, then export the merged report as PDF or Markdown.</p>',
+        unsafe_allow_html=True)
+
+    # ------------------------------------------------------------------ #
+    #  2. Templates checkbox  →  template library multiselect             #
+    #                                                                      #
+    #  The team asked for a single, obvious "Templates" checkbox: opening  #
+    #  it reveals a small library of ready-made documentation sections a   #
+    #  member can pick from and fill out before downloading the PDF,       #
+    #  instead of writing every subsystem doc from a blank page. Left      #
+    #  unchecked, the report still assembles from declared numbers and     #
+    #  everything recorded this session — so the checkbox only ever adds   #
+    #  structure, never gets in the way.                                   #
+    # ------------------------------------------------------------------ #
+    _all_labels   = [f"{t[2]} {t[1]}" for t in _DOC_TEMPLATES]
+    _label_to_id  = {f"{t[2]} {t[1]}": t[0] for t in _DOC_TEMPLATES}
+    _default_labels = [f"{t[2]} {t[1]}" for t in _DOC_TEMPLATES if t[3]]
+
+    _use_templates = st.checkbox(
+        "📚 Templates",
+        value=st.session_state.get(f"{key_prefix}_tpl_on", False),
+        key=f"{key_prefix}_tpl_on",
+        help="Open a small library of ready-made documentation sections "
+             "(design intent, assumptions, calculations, test plan, "
+             "manufacturing, risks, handover…). Tick the ones you need, fill "
+             "them out inline, and they’re merged into the report you download.")
+
+    _picked_ids = []
+    if _use_templates:
+        st.caption("Pick the sections you need — each one drops in below as an "
+                   "editable, pre-filled skeleton. Untick anything you don’t need.")
+        _selected_labels = st.multiselect(
+            "Template library — choose sections to include",
+            options=_all_labels,
+            default=st.session_state.get(f"{key_prefix}_tpl_picks",
+                                         _default_labels),
+            key=f"{key_prefix}_tpl_picks",
+            label_visibility="collapsed",
+            help="Pick as many or as few as you need. "
+                 "Each selected section appears below as an editable text area.")
+
+        _picked_ids = [_label_to_id[lbl] for lbl in _selected_labels]
+
+        if _picked_ids:
+            st.caption(f"{len(_picked_ids)} section(s) selected — edit below, "
+                       f"then scroll down to sanity-check and export.")
+        else:
+            st.caption("No sections selected yet — tick some above, or leave "
+                       "them off and the report will still include your declared "
+                       "numbers and everything recorded this session.")
+
+    # ------------------------------------------------------------------ #
+    #  3. Inline section editors                                           #
+    # ------------------------------------------------------------------ #
+    _edited_sections = []  # [(heading_str, [lines]), ...]
+
+    if _picked_ids:
+        st.markdown(
+            '<hr style="margin:10px 0 6px;border:none;'
+            'border-top:1px solid rgba(128,128,128,.12);">',
+            unsafe_allow_html=True)
+        st.markdown("###### ✏️ Edit your sections")
+        for _tid in _picked_ids:
+            _, _tlabel, _ticon, _tdefault, _tbody = _TMPL_BY_ID[_tid]
+            _heading = next(
+                (ln[3:] for ln in _tbody.splitlines() if ln.startswith("## ")),
+                _tlabel)
+            _skeleton = "\n".join(
+                ln for ln in _tbody.splitlines() if not ln.startswith("## "))
+            with st.expander(f"{_ticon} {_tlabel}", expanded=False):
+                _edited = st.text_area(
+                    "Content",
+                    value=st.session_state.get(
+                        f"{key_prefix}_edit_{_tid}", _skeleton),
+                    height=160,
+                    key=f"{key_prefix}_edit_{_tid}",
+                    label_visibility="collapsed",
+                    help="Edit freely. Lines starting with '- ' become bullets "
+                         "in the report. Your edits persist while this tab is open.")
+                _edited_sections.append((
+                    _heading,
+                    [ln for ln in _edited.splitlines() if ln.strip()]))
+
+    # ------------------------------------------------------------------ #
+    #  4. Sanity-check                                                     #
+    # ------------------------------------------------------------------ #
+    st.markdown(
+        '<hr style="margin:14px 0 8px;border:none;'
+        'border-top:1px solid rgba(128,128,128,.15);">',
+        unsafe_allow_html=True)
+    st.markdown("###### 🔎 Sanity-check an assumption")
+    st.markdown(
+        '<p class="hint" style="margin:0 0 6px;font-size:.75rem;">'
+        'Type any claim and hit <b>Bust it →</b>. '
+        'The verdict is automatically added to your report under '
+        '<i>Assumptions checked this session</i>.</p>',
+        unsafe_allow_html=True)
+    try:
+        render_myth_check(subsystem_key, key_prefix=f"{key_prefix}_docmyth")
+    except Exception:
+        pass
+
+    # ------------------------------------------------------------------ #
+    #  5 & 6. Build markdown, preview, and export                          #
+    # ------------------------------------------------------------------ #
+    st.markdown(
+        '<hr style="margin:14px 0 8px;border:none;'
+        'border-top:1px solid rgba(128,128,128,.15);">',
+        unsafe_allow_html=True)
+    st.markdown("###### 📄 Report")
+
+    # Build the merged markdown here so the export buttons always reflect
+    # the current editors + activity — no double-appending of activity.
+    _all_extra = _edited_sections + _activity_sections(subsystem_key)
+
+    def _build_md():
+        import datetime as _dt
+        L = [f"# Elbee Racing — {_name} Subsystem Report",
+             f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._", ""]
+        try:
+            _led = interfaces_mod.IntegrationLedger.from_dict(
+                st.session_state.get("ledger", {}) or {})
+            _it = _led.get(subsystem_key)
+        except Exception:
+            _led, _it = None, None
+        if _it is not None and _it.declared_fields():
+            L.append("## Declared to INTEGRATION")
+            for _f in _it.declared_fields():
+                _lbl = interfaces_mod.FIELD_LABELS.get(_f, (_f, ""))[0]
+                L.append(f"- {_lbl}: "
+                         f"**{interfaces_mod._fmt_val(_f, getattr(_it, _f))}**")
+            if _it.is_estimate:
+                L.append("- _Marked ESTIMATE — placeholder, not yet confirmed._")
+            if getattr(_it, "rationale", ""):
+                L.append(f"- Rationale: {_it.rationale}")
+            if getattr(_it, "owner", ""):
+                L.append(f"- Owner: {_it.owner}")
+            if getattr(_it, "updated_on", ""):
+                L.append(f"- Last updated: {_it.updated_on}")
+            L.append("")
+        for _heading, _lines in _all_extra:
+            if _lines:
+                L.append(f"## {_heading}")
+                L.extend(_lines)
+                L.append("")
+        if _led is not None:
+            try:
+                _finds = interfaces_mod.findings_for(
+                    _led.check_all(), subsystem_key)
+                if _finds:
+                    L.append("## Cross-team checks (live)")
+                    for _fd in _finds:
+                        _sv = getattr(_fd.severity, "value", _fd.severity)
+                        L.append(f"- [{str(_sv).upper()}] {_fd.message}")
+                    L.append("")
+            except Exception:
+                pass
+        if len(L) <= 3:
+            L.append(f"_No {_name.lower()} results yet — work through this "
+                     f"subsystem's views and publish to INTEGRATION first._")
+        return "\n".join(L)
+
+    _md = _build_md()
+
+    with st.expander("Preview the report", expanded=False):
+        st.markdown(_md)
+
+    _mode = st.radio(
+        "What should this do?",
+        [f"Just create a PDF for the {_name.lower()} subsystem",
+         "Create the PDF **and** record it in the Handover"],
+        key=f"{key_prefix}_doc_mode")
+
+    _cols = st.columns([2, 3])
+    _pdf_ok = False
+    try:
+        import tempfile as _tf3, os as _os3
+        _pdf_path = _os3.path.join(_tf3.gettempdir(), f"elbee_{_safe}_report.pdf")
+        project_mod.render_pdf(_md, _pdf_path)
+        with open(_pdf_path, "rb") as _pf:
+            _pdf_bytes = _pf.read()
+        _pdf_ok = True
+    except Exception as _pe:
+        _cols[0].warning(f"PDF unavailable: {_pe}")
+
+    if _pdf_ok:
+        _cols[0].download_button(
+            f"⬇ {_name} report (.pdf)", _pdf_bytes,
+            file_name=f"elbee_{_safe}_report.pdf", mime="application/pdf",
+            width="stretch", key=f"{key_prefix}_doc_pdf")
+        _cols[1].download_button(
+            f"⬇ {_name} report (.md)", _md.encode("utf-8"),
+            file_name=f"elbee_{_safe}_report.md", mime="text/markdown",
+            width="stretch", key=f"{key_prefix}_doc_md")
+
+    if _mode.startswith("Create the PDF **and**"):
+        if st.button("✓ Record this report in the Handover",
+                     key=f"{key_prefix}_doc_log"):
+            _ok = log_decision_now(
+                subsystem_key, f"{_name} subsystem report generated",
+                _md, author=subsystem_key)
+            if _ok:
+                st.success("Recorded in the Handover — visible in the Weight & "
+                           "Handover tab and carried into the season handover report.")
+            else:
+                st.warning("Couldn't write to the Handover log (backend offline) — "
+                           "the PDF above is still yours to download.")
+
+    _vc_disclaimer(f"the {_name.lower()} document")
+
 def render_documentation_expander(subsystem_key, *, key_prefix,
                                   extra_sections=None, title_name=None,
                                   mesh_candidates=None):
@@ -11396,250 +11641,6 @@ def render_verdict_center():
                 pass
             _vc_disclaimer(f"the {_l.lower()} verdict")
             return
-
-
-# --------------------------------------------------------------------------- #
-#  3.  Documentation — merged report + template library + sanity check         #
-# --------------------------------------------------------------------------- #
-# NOTE: the template library data (_DOC_TEMPLATES / _TMPL_BY_ID) is defined much
-# earlier in the file — just above render_documentation_expander — because
-# Streamlit executes this script top-to-bottom and the first subsystem tabs
-# (suspension, powertrain, …) call render_documentation_center before this point
-# in the file is ever reached. Defining the data here would raise NameError at
-# those call sites and silently drop every tab to the simple fallback report.
-
-
-def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
-    """Merged documentation hub.
-
-    Strict render order:
-      1. Intro blurb
-      2. Template multiselect  — choose sections from the library
-      3. Section editors       — edit each chosen section inline
-      4. Sanity-check          — myth-buster; result auto-appended to report
-      5. Report preview        — collapsed expander with the merged markdown
-      6. Export                — PDF + Markdown download, optional Handover log
-    """
-    _name = title_name or _VC_LABEL.get(
-        subsystem_key, subsystem_key.replace("-", " ").title())
-    _safe = subsystem_key.replace("-", "_")
-
-    # ------------------------------------------------------------------ #
-    #  1. Intro                                                            #
-    # ------------------------------------------------------------------ #
-    st.markdown(
-        f'<p class="hint" style="margin:0 0 10px;">'
-        f'Build the <b>{_name}</b> document without starting from a blank page. '
-        f'Choose sections from the library, edit them inline, sanity-check any '
-        f'assumptions, then export the merged report as PDF or Markdown.</p>',
-        unsafe_allow_html=True)
-
-    # ------------------------------------------------------------------ #
-    #  2. Templates checkbox  →  template library multiselect             #
-    #                                                                      #
-    #  The team asked for a single, obvious "Templates" checkbox: opening  #
-    #  it reveals a small library of ready-made documentation sections a   #
-    #  member can pick from and fill out before downloading the PDF,       #
-    #  instead of writing every subsystem doc from a blank page. Left      #
-    #  unchecked, the report still assembles from declared numbers and     #
-    #  everything recorded this session — so the checkbox only ever adds   #
-    #  structure, never gets in the way.                                   #
-    # ------------------------------------------------------------------ #
-    _all_labels   = [f"{t[2]} {t[1]}" for t in _DOC_TEMPLATES]
-    _label_to_id  = {f"{t[2]} {t[1]}": t[0] for t in _DOC_TEMPLATES}
-    _default_labels = [f"{t[2]} {t[1]}" for t in _DOC_TEMPLATES if t[3]]
-
-    _use_templates = st.checkbox(
-        "📚 Templates",
-        value=st.session_state.get(f"{key_prefix}_tpl_on", False),
-        key=f"{key_prefix}_tpl_on",
-        help="Open a small library of ready-made documentation sections "
-             "(design intent, assumptions, calculations, test plan, "
-             "manufacturing, risks, handover…). Tick the ones you need, fill "
-             "them out inline, and they’re merged into the report you download.")
-
-    _picked_ids = []
-    if _use_templates:
-        st.caption("Pick the sections you need — each one drops in below as an "
-                   "editable, pre-filled skeleton. Untick anything you don’t need.")
-        _selected_labels = st.multiselect(
-            "Template library — choose sections to include",
-            options=_all_labels,
-            default=st.session_state.get(f"{key_prefix}_tpl_picks",
-                                         _default_labels),
-            key=f"{key_prefix}_tpl_picks",
-            label_visibility="collapsed",
-            help="Pick as many or as few as you need. "
-                 "Each selected section appears below as an editable text area.")
-
-        _picked_ids = [_label_to_id[lbl] for lbl in _selected_labels]
-
-        if _picked_ids:
-            st.caption(f"{len(_picked_ids)} section(s) selected — edit below, "
-                       f"then scroll down to sanity-check and export.")
-        else:
-            st.caption("No sections selected yet — tick some above, or leave "
-                       "them off and the report will still include your declared "
-                       "numbers and everything recorded this session.")
-
-    # ------------------------------------------------------------------ #
-    #  3. Inline section editors                                           #
-    # ------------------------------------------------------------------ #
-    _edited_sections = []  # [(heading_str, [lines]), ...]
-
-    if _picked_ids:
-        st.markdown(
-            '<hr style="margin:10px 0 6px;border:none;'
-            'border-top:1px solid rgba(128,128,128,.12);">',
-            unsafe_allow_html=True)
-        st.markdown("###### ✏️ Edit your sections")
-        for _tid in _picked_ids:
-            _, _tlabel, _ticon, _tdefault, _tbody = _TMPL_BY_ID[_tid]
-            _heading = next(
-                (ln[3:] for ln in _tbody.splitlines() if ln.startswith("## ")),
-                _tlabel)
-            _skeleton = "\n".join(
-                ln for ln in _tbody.splitlines() if not ln.startswith("## "))
-            with st.expander(f"{_ticon} {_tlabel}", expanded=False):
-                _edited = st.text_area(
-                    "Content",
-                    value=st.session_state.get(
-                        f"{key_prefix}_edit_{_tid}", _skeleton),
-                    height=160,
-                    key=f"{key_prefix}_edit_{_tid}",
-                    label_visibility="collapsed",
-                    help="Edit freely. Lines starting with '- ' become bullets "
-                         "in the report. Your edits persist while this tab is open.")
-                _edited_sections.append((
-                    _heading,
-                    [ln for ln in _edited.splitlines() if ln.strip()]))
-
-    # ------------------------------------------------------------------ #
-    #  4. Sanity-check                                                     #
-    # ------------------------------------------------------------------ #
-    st.markdown(
-        '<hr style="margin:14px 0 8px;border:none;'
-        'border-top:1px solid rgba(128,128,128,.15);">',
-        unsafe_allow_html=True)
-    st.markdown("###### 🔎 Sanity-check an assumption")
-    st.markdown(
-        '<p class="hint" style="margin:0 0 6px;font-size:.75rem;">'
-        'Type any claim and hit <b>Bust it →</b>. '
-        'The verdict is automatically added to your report under '
-        '<i>Assumptions checked this session</i>.</p>',
-        unsafe_allow_html=True)
-    try:
-        render_myth_check(subsystem_key, key_prefix=f"{key_prefix}_docmyth")
-    except Exception:
-        pass
-
-    # ------------------------------------------------------------------ #
-    #  5 & 6. Build markdown, preview, and export                          #
-    # ------------------------------------------------------------------ #
-    st.markdown(
-        '<hr style="margin:14px 0 8px;border:none;'
-        'border-top:1px solid rgba(128,128,128,.15);">',
-        unsafe_allow_html=True)
-    st.markdown("###### 📄 Report")
-
-    # Build the merged markdown here so the export buttons always reflect
-    # the current editors + activity — no double-appending of activity.
-    _all_extra = _edited_sections + _activity_sections(subsystem_key)
-
-    def _build_md():
-        import datetime as _dt
-        L = [f"# Elbee Racing — {_name} Subsystem Report",
-             f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._", ""]
-        try:
-            _led = interfaces_mod.IntegrationLedger.from_dict(
-                st.session_state.get("ledger", {}) or {})
-            _it = _led.get(subsystem_key)
-        except Exception:
-            _led, _it = None, None
-        if _it is not None and _it.declared_fields():
-            L.append("## Declared to INTEGRATION")
-            for _f in _it.declared_fields():
-                _lbl = interfaces_mod.FIELD_LABELS.get(_f, (_f, ""))[0]
-                L.append(f"- {_lbl}: "
-                         f"**{interfaces_mod._fmt_val(_f, getattr(_it, _f))}**")
-            if _it.is_estimate:
-                L.append("- _Marked ESTIMATE — placeholder, not yet confirmed._")
-            if getattr(_it, "rationale", ""):
-                L.append(f"- Rationale: {_it.rationale}")
-            if getattr(_it, "owner", ""):
-                L.append(f"- Owner: {_it.owner}")
-            if getattr(_it, "updated_on", ""):
-                L.append(f"- Last updated: {_it.updated_on}")
-            L.append("")
-        for _heading, _lines in _all_extra:
-            if _lines:
-                L.append(f"## {_heading}")
-                L.extend(_lines)
-                L.append("")
-        if _led is not None:
-            try:
-                _finds = interfaces_mod.findings_for(
-                    _led.check_all(), subsystem_key)
-                if _finds:
-                    L.append("## Cross-team checks (live)")
-                    for _fd in _finds:
-                        _sv = getattr(_fd.severity, "value", _fd.severity)
-                        L.append(f"- [{str(_sv).upper()}] {_fd.message}")
-                    L.append("")
-            except Exception:
-                pass
-        if len(L) <= 3:
-            L.append(f"_No {_name.lower()} results yet — work through this "
-                     f"subsystem's views and publish to INTEGRATION first._")
-        return "\n".join(L)
-
-    _md = _build_md()
-
-    with st.expander("Preview the report", expanded=False):
-        st.markdown(_md)
-
-    _mode = st.radio(
-        "What should this do?",
-        [f"Just create a PDF for the {_name.lower()} subsystem",
-         "Create the PDF **and** record it in the Handover"],
-        key=f"{key_prefix}_doc_mode")
-
-    _cols = st.columns([2, 3])
-    _pdf_ok = False
-    try:
-        import tempfile as _tf3, os as _os3
-        _pdf_path = _os3.path.join(_tf3.gettempdir(), f"elbee_{_safe}_report.pdf")
-        project_mod.render_pdf(_md, _pdf_path)
-        with open(_pdf_path, "rb") as _pf:
-            _pdf_bytes = _pf.read()
-        _pdf_ok = True
-    except Exception as _pe:
-        _cols[0].warning(f"PDF unavailable: {_pe}")
-
-    if _pdf_ok:
-        _cols[0].download_button(
-            f"⬇ {_name} report (.pdf)", _pdf_bytes,
-            file_name=f"elbee_{_safe}_report.pdf", mime="application/pdf",
-            width="stretch", key=f"{key_prefix}_doc_pdf")
-        _cols[1].download_button(
-            f"⬇ {_name} report (.md)", _md.encode("utf-8"),
-            file_name=f"elbee_{_safe}_report.md", mime="text/markdown",
-            width="stretch", key=f"{key_prefix}_doc_md")
-
-    if _mode.startswith("Create the PDF **and**"):
-        if st.button("✓ Record this report in the Handover",
-                     key=f"{key_prefix}_doc_log"):
-            _ok = log_decision_now(
-                subsystem_key, f"{_name} subsystem report generated",
-                _md, author=subsystem_key)
-            if _ok:
-                st.success("Recorded in the Handover — visible in the Weight & "
-                           "Handover tab and carried into the season handover report.")
-            else:
-                st.warning("Couldn't write to the Handover log (backend offline) — "
-                           "the PDF above is still yours to download.")
-
-    _vc_disclaimer(f"the {_name.lower()} document")
 
 # --------------------------------------------------------------------------- #
 #  4.  Generic "short-list to mesh + export DXF" for any subsystem             #
