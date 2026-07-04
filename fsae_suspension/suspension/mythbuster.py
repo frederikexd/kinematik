@@ -454,9 +454,39 @@ def _ensure_rulesets_loaded() -> None:
 
 def check(text: str, context: Any = None) -> MythResult:
     """Check a claim against the default engine, auto-loading all discipline
-    rule-sets on first use. This is the one call the app/CLI needs."""
+    rule-sets on first use. This is the one call the app/CLI needs.
+
+    Registered rules run first (exact arithmetic against the live models). If
+    none match, a deterministic general-knowledge reasoner assesses the claim
+    against a broad physics/engineering/FSAE knowledge base so the user always
+    gets a substantive answer instead of a bare 'no rule matched'. The reasoner
+    is still pure Python — no AI, no network — and never claims more certainty
+    than it has (unmatched-but-plausible claims come back as DEPENDS)."""
     _ensure_rulesets_loaded()
-    return DEFAULT_ENGINE.check(text, context)
+    result = DEFAULT_ENGINE.check(text, context)
+    if result.verdict != Verdict.UNKNOWN:
+        return result
+    # No exact rule matched — fall back to the general reasoner.
+    try:
+        from . import myth_reasoner as _reasoner
+        _disc = context.get("_discipline") if isinstance(context, dict) else None
+        _r = _reasoner.assess(parse_claim(text), discipline=_disc)
+    except Exception:
+        _r = None
+    if _r is None:
+        return result  # keep the honest "couldn't check" message
+    try:
+        _verdict = Verdict(_r.verdict)
+    except ValueError:
+        _verdict = Verdict.DEPENDS
+    return MythResult(
+        verdict=_verdict,
+        matched_rule="general_reasoner",
+        explanation=_r.explanation,
+        discipline=_r.discipline,
+        user_values=dict(parse_claim(text).numbers),
+        provenance=_r.provenance,
+    )
 
 
 def reference_myths(discipline: Optional[str] = None, context: Any = None,
