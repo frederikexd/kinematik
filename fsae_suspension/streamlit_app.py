@@ -3264,6 +3264,104 @@ def publish_geometry_from_parts():
         })
 
 
+# --------------------------------------------------------------------------- #
+def _generic_dxf_bytes(name, points_mm=None, *, notes=None,
+                       polylines=None, circles=None):
+    """Build a minimal DXF R12 from real geometry. Unit-aware (mm or in).
+
+    Two ways to call it:
+      * simple:  points_mm=[(x,y),...]                       -> one closed profile
+      * rich:    polylines=[{"pts":[(x,y),...], "closed":bool,
+                             "layer":"PROFILE"|"CENTRELINE"|"ANNOTATION"}, ...]
+                 circles=[{"c":(x,y), "r":r, "layer":...}, ...]   (bolt holes etc.)
+
+    So a subsystem can emit its *actual* section — an airfoil, a rotor half-
+    section, a mount plate with a bolt-hole PCD, a radiator core face — not just
+    a rectangle. Everything drops into CAD as a sketch ready to revolve/extrude.
+    """
+    try:
+        _is_us = units_mod.is_us()
+    except Exception:
+        _is_us = False
+
+    def _cv(mm_val):
+        try:
+            return units_mod.from_metric(mm_val, "mm")
+        except Exception:
+            return mm_val
+
+    _insunits = "1" if _is_us else "4"
+    _unit_lbl = "in" if _is_us else "mm"
+    _th = _cv(4.0)
+    _gap = _cv(6.0)
+
+    # Normalise the simple form into the rich form.
+    polys = []
+    if polylines:
+        for pl in polylines:
+            polys.append({
+                "pts": [(_cv(x), _cv(y)) for (x, y) in pl.get("pts", [])],
+                "closed": bool(pl.get("closed", True)),
+                "layer": pl.get("layer", "PROFILE"),
+            })
+    if points_mm:
+        polys.append({"pts": [(_cv(x), _cv(y)) for (x, y) in points_mm],
+                      "closed": True, "layer": "PROFILE"})
+    circs = []
+    if circles:
+        for c in circles:
+            cx, cy = c.get("c", (0, 0))
+            circs.append({"c": (_cv(cx), _cv(cy)), "r": _cv(c.get("r", 0)),
+                          "layer": c.get("layer", "PROFILE")})
+
+    lines = []
+
+    def L(*parts):
+        lines.append("".join(str(p) for p in parts))
+
+    L("  0\nSECTION"); L("  2\nHEADER")
+    L("  9\n$ACADVER"); L("  1\nAC1009")
+    L("  9\n$INSUNITS"); L(" 70\n", _insunits)
+    L("  0\nENDSEC")
+    L("  0\nSECTION"); L("  2\nTABLES")
+    L("  0\nTABLE"); L("  2\nLAYER"); L(" 70\n3")
+    for lyr, col in (("PROFILE", 7), ("CENTRELINE", 1), ("ANNOTATION", 3)):
+        L("  0\nLAYER"); L("  2\n", lyr); L(" 70\n0")
+        L(" 62\n", col); L("  6\nCONTINUOUS")
+    L("  0\nENDTAB"); L("  0\nENDSEC")
+    L("  0\nSECTION"); L("  2\nENTITIES")
+
+    for pl in polys:
+        if not pl["pts"]:
+            continue
+        L("  0\nPOLYLINE"); L("  8\n", pl["layer"]); L(" 66\n1")
+        L(" 70\n", "1" if pl["closed"] else "0")
+        L(" 10\n0.0"); L(" 20\n0.0"); L(" 30\n0.0")
+        for px, py in pl["pts"]:
+            L("  0\nVERTEX"); L("  8\n", pl["layer"])
+            L(" 10\n", f"{px:.5f}"); L(" 20\n", f"{py:.5f}"); L(" 30\n0.0")
+        L("  0\nSEQEND"); L("  8\n", pl["layer"])
+
+    for c in circs:
+        L("  0\nCIRCLE"); L("  8\n", c["layer"])
+        L(" 10\n", f"{c['c'][0]:.5f}"); L(" 20\n", f"{c['c'][1]:.5f}")
+        L(" 30\n0.0"); L(" 40\n", f"{c['r']:.5f}")
+
+    # annotation block, stacked above the geometry
+    _ann = [f"KinematiK — {name}", f"Units: {_unit_lbl}"]
+    if notes:
+        _ann.extend(list(notes))
+    _all_y = [p[1] for pl in polys for p in pl["pts"]] + \
+             [c["c"][1] + c["r"] for c in circs]
+    _ymax = max(_all_y, default=0.0)
+    for ti, txt in enumerate(_ann):
+        L("  0\nTEXT"); L("  8\nANNOTATION")
+        L(" 10\n0.0"); L(" 20\n", f"{_ymax + _gap + ti * (_th*1.4):.5f}")
+        L(" 30\n0.0"); L(" 40\n", f"{_th:.5f}"); L("  1\n", txt)
+    L("  0\nENDSEC"); L("  0\nEOF")
+    return "\n".join(lines).encode("ascii", errors="replace")
+
+
 def _subsystem_profile_candidates(subsystem_key):
     """Build the subsystem's characteristic 2-D section(s) from the REAL geometry
     its tab published via publish_export_geometry(). Returns [] (honest gate)
@@ -11311,106 +11409,6 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
 
 # --------------------------------------------------------------------------- #
 #  4.  Generic "short-list to mesh + export DXF" for any subsystem             #
-# --------------------------------------------------------------------------- #
-def _generic_dxf_bytes(name, points_mm=None, *, notes=None,
-                       polylines=None, circles=None):
-    """Build a minimal DXF R12 from real geometry. Unit-aware (mm or in).
-
-    Two ways to call it:
-      * simple:  points_mm=[(x,y),...]                       -> one closed profile
-      * rich:    polylines=[{"pts":[(x,y),...], "closed":bool,
-                             "layer":"PROFILE"|"CENTRELINE"|"ANNOTATION"}, ...]
-                 circles=[{"c":(x,y), "r":r, "layer":...}, ...]   (bolt holes etc.)
-
-    So a subsystem can emit its *actual* section — an airfoil, a rotor half-
-    section, a mount plate with a bolt-hole PCD, a radiator core face — not just
-    a rectangle. Everything drops into CAD as a sketch ready to revolve/extrude.
-    """
-    try:
-        _is_us = units_mod.is_us()
-    except Exception:
-        _is_us = False
-
-    def _cv(mm_val):
-        try:
-            return units_mod.from_metric(mm_val, "mm")
-        except Exception:
-            return mm_val
-
-    _insunits = "1" if _is_us else "4"
-    _unit_lbl = "in" if _is_us else "mm"
-    _th = _cv(4.0)
-    _gap = _cv(6.0)
-
-    # Normalise the simple form into the rich form.
-    polys = []
-    if polylines:
-        for pl in polylines:
-            polys.append({
-                "pts": [(_cv(x), _cv(y)) for (x, y) in pl.get("pts", [])],
-                "closed": bool(pl.get("closed", True)),
-                "layer": pl.get("layer", "PROFILE"),
-            })
-    if points_mm:
-        polys.append({"pts": [(_cv(x), _cv(y)) for (x, y) in points_mm],
-                      "closed": True, "layer": "PROFILE"})
-    circs = []
-    if circles:
-        for c in circles:
-            cx, cy = c.get("c", (0, 0))
-            circs.append({"c": (_cv(cx), _cv(cy)), "r": _cv(c.get("r", 0)),
-                          "layer": c.get("layer", "PROFILE")})
-
-    lines = []
-
-    def L(*parts):
-        lines.append("".join(str(p) for p in parts))
-
-    L("  0\nSECTION"); L("  2\nHEADER")
-    L("  9\n$ACADVER"); L("  1\nAC1009")
-    L("  9\n$INSUNITS"); L(" 70\n", _insunits)
-    L("  0\nENDSEC")
-    L("  0\nSECTION"); L("  2\nTABLES")
-    L("  0\nTABLE"); L("  2\nLAYER"); L(" 70\n3")
-    for lyr, col in (("PROFILE", 7), ("CENTRELINE", 1), ("ANNOTATION", 3)):
-        L("  0\nLAYER"); L("  2\n", lyr); L(" 70\n0")
-        L(" 62\n", col); L("  6\nCONTINUOUS")
-    L("  0\nENDTAB"); L("  0\nENDSEC")
-    L("  0\nSECTION"); L("  2\nENTITIES")
-
-    for pl in polys:
-        if not pl["pts"]:
-            continue
-        L("  0\nPOLYLINE"); L("  8\n", pl["layer"]); L(" 66\n1")
-        L(" 70\n", "1" if pl["closed"] else "0")
-        L(" 10\n0.0"); L(" 20\n0.0"); L(" 30\n0.0")
-        for px, py in pl["pts"]:
-            L("  0\nVERTEX"); L("  8\n", pl["layer"])
-            L(" 10\n", f"{px:.5f}"); L(" 20\n", f"{py:.5f}"); L(" 30\n0.0")
-        L("  0\nSEQEND"); L("  8\n", pl["layer"])
-
-    for c in circs:
-        L("  0\nCIRCLE"); L("  8\n", c["layer"])
-        L(" 10\n", f"{c['c'][0]:.5f}"); L(" 20\n", f"{c['c'][1]:.5f}")
-        L(" 30\n0.0"); L(" 40\n", f"{c['r']:.5f}")
-
-    # annotation block, stacked above the geometry
-    _ann = [f"KinematiK — {name}", f"Units: {_unit_lbl}"]
-    if notes:
-        _ann.extend(list(notes))
-    _all_y = [p[1] for pl in polys for p in pl["pts"]] + \
-             [c["c"][1] + c["r"] for c in circs]
-    _ymax = max(_all_y, default=0.0)
-    for ti, txt in enumerate(_ann):
-        L("  0\nTEXT"); L("  8\nANNOTATION")
-        L(" 10\n0.0"); L(" 20\n", f"{_ymax + _gap + ti * (_th*1.4):.5f}")
-        L(" 30\n0.0"); L(" 40\n", f"{_th:.5f}"); L("  1\n", txt)
-    L("  0\nENDSEC"); L("  0\nEOF")
-    return "\n".join(lines).encode("ascii", errors="replace")
-
-
-
-
 def render_suspension_vs_chassis():
     _IFm = interfaces_mod
     _led_cad = _IFm.IntegrationLedger.from_dict(st.session_state.ledger)
