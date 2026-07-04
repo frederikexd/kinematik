@@ -2534,11 +2534,11 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
                         st.caption("No live-model rule matched this claim, so it "
                                    "was assessed against the built-in physics / "
                                    "engineering / FSAE knowledge base "
-                                   "(deterministic, no live numbers):")
+                                   "(deterministic, no live numbers).")
                     else:
                         st.caption("Computed from the deterministic rules "
                                    "(and your live numbers where available):")
-                    st.code(_res.provenance, language=None)
+                        st.code(_res.provenance, language=None)
         except Exception as _me:
             st.warning(f"Couldn't run the myth-buster: {_me}")
 
