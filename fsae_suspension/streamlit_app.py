@@ -444,6 +444,41 @@ hr{ border-color:var(--line);}
 .es-foot{ color:var(--dim); font-size:.78rem; line-height:1.5;
       margin-top:.75rem; padding-top:.6rem; border-top:1px solid var(--line); }
 
+/* --- In-tab hardpoint summary (brings the sidebar's numbers into the tab) */
+.hp-card{ border:1px solid var(--line); border-left:3px solid var(--cyan);
+      background:linear-gradient(180deg,var(--panel2),var(--panel));
+      border-radius:12px; padding:.9rem 1.05rem; margin:.1rem 0 .7rem; }
+.hp-top{ display:flex; align-items:baseline; justify-content:space-between;
+      gap:.8rem; flex-wrap:wrap; margin-bottom:.6rem; }
+.hp-ttl{ font-family:'Archivo'; font-weight:700; font-size:.98rem;
+      color:var(--ink); }
+.hp-src{ font-family:'JetBrains Mono'; font-size:.68rem; letter-spacing:.06em;
+      color:var(--dim); }
+.hp-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:.5rem; margin:.2rem 0 .3rem; }
+.hp-pt{ border:1px solid var(--line); border-radius:9px; background:var(--panel2);
+      padding:.5rem .65rem; }
+.hp-pt .l{ font-size:.68rem; letter-spacing:.04em; color:var(--dim);
+      text-transform:uppercase; margin-bottom:.2rem; }
+.hp-pt .v{ font-family:'JetBrains Mono'; font-size:.86rem; color:var(--ink); }
+.hp-pt.miss{ border-style:dashed; border-color:#5a4317; }
+.hp-pt.miss .v{ color:var(--amber); }
+.hp-derived{ display:flex; gap:1.4rem; flex-wrap:wrap; margin:.55rem 0 .2rem;
+      padding-top:.55rem; border-top:1px solid var(--line); }
+.hp-d{ display:flex; flex-direction:column; gap:.1rem; }
+.hp-d .k{ font-size:.66rem; letter-spacing:.1em; text-transform:uppercase;
+      color:var(--dim); }
+.hp-d .n{ font-family:'JetBrains Mono'; font-weight:600; font-size:1.15rem;
+      color:var(--cyan); }
+.hp-d .n.warn{ color:var(--amber); }
+.hp-note{ font-size:.8rem; line-height:1.5; color:var(--dim);
+      margin-top:.5rem; }
+.hp-note b{ color:var(--ink); }
+.hp-here{ display:inline-flex; align-items:center; gap:.35rem;
+      font-family:'JetBrains Mono'; font-size:.7rem; color:var(--cyan);
+      border:1px solid #1f4d49; border-radius:6px; padding:.15rem .5rem;
+      background:#0e1a1955; }
+
 /* Buttons and download buttons — dark theme (Streamlit defaults render white) */
 .stButton > button, .stDownloadButton > button{
   background:var(--panel2)!important;
@@ -1463,19 +1498,41 @@ with st.expander("👋 New here? Your 30-second tour",
 
 Every subsystem can hand you a **real 2-D section as a DXF** — a wing airfoil, a
 mount plate with its bolt holes, a radiator core face, a motor flange — ready to
-drop straight into SolidWorks and extrude. Here's exactly where and how:
+drop straight into SolidWorks and extrude.
 
-1. Open **your subsystem's tab** (e.g. Suspension is in 🧪 Testing, Brakes is in
-   🛠️ Design).
-2. Near the top of the tab, open the panel titled
-   **"📄 &lt;Subsystem&gt; — documentation, verdict & export."**
-3. Click the **📐 Mesh & DXF** sub-tab inside it.
-4. If it says *"nothing to export yet,"* run that tab's tool first (enter your
-   real numbers — chord, hardpoints, cell grid, part size). The DXF is built from
-   **your** geometry, never a guess, so it stays empty until the numbers exist.
-5. Pick the section from the short-list, watch for the **✓ ready to extrude**
-   check, and hit **⬇ Download DXF**.
-6. In SolidWorks: **File ▸ Open ▸ (set type to DXF) ▸ import as a 2D sketch**,
+**Where do the numbers come from? You. Never the app guessing.** This is the part
+people miss, so here it is plainly:
+
+> You type a few **real numbers** into your own tab — the motor bore and bolt PCD,
+> the wing chord, the hardpoints, the radiator core size. The app turns *those*
+> numbers into the exact 2-D section and its DXF. **You never draw anything, and
+> the app never invents dimensions.** That's the whole trade: no numbers in → no
+> section out. So an empty export doesn't mean it's broken — it means the tab that
+> owns those numbers hasn't been filled in yet.
+
+Each subsystem draws from its own inputs — for example:
+
+- **EV Powertrain** → motor bore, bolt PCD, peak torque → motor flange
+- **Suspension** → ball-joint hardpoints (in the **left sidebar**, not the tab
+  body) → upright mount plate + bolt PCD
+- **Aerodynamics** → wing chord + thickness → airfoil section
+- **Cooling** → radiator core width × height → core face
+- **Brakes** → caliper mount + brake torque → mount bracket (rotor is in the
+  Brakes optimiser)
+
+**Then, to get the file:**
+
+1. Open **your subsystem's tab** and enter its real numbers (above). The
+   **📐 Mesh & DXF** export reads them live.
+2. In that same tab, open the panel titled
+   **"📄 &lt;Subsystem&gt; — documentation, verdict & export"** and click the
+   **📐 Mesh & DXF** sub-tab.
+3. If it says **"Waiting on numbers,"** it lists exactly which inputs are still
+   missing — fill those in the tab and they tick off. Once they're all in, the
+   short-list and DXF appear on their own.
+4. Pick the section, watch for the **✓ ready to extrude** check, and hit
+   **⬇ Download DXF**.
+5. In SolidWorks: **File ▸ Open ▸ (set type to DXF) ▸ import as a 2D sketch**,
    then **Extruded Boss/Base**. Mesh the solid in ANSYS. Done.
 
 The units are embedded, holes come in as separate closed loops, and each profile
@@ -3751,10 +3808,18 @@ _EXPORT_SOURCE_HINT = {
                   ("Thickness ratio", "thickness_frac")],
     },
     "suspension": {
-        "where": "the Kinematics tab",
-        "steps": ["Set your hardpoints so the upright mount is defined."],
-        "needs": [("Mount bolt PCD (mm)", "pcd_mm"),
-                  ("Bolt count", "n_bolts")],
+        "where": "the sidebar &rarr; Suspension geometry (hardpoint editor)",
+        "steps": ["Open the <b>hardpoint editor</b> in the left sidebar and set "
+                  "your <b>upper</b> and <b>lower outer ball joints</b>. The "
+                  "app measures the span between them &mdash; that becomes the "
+                  "upright mount PCD.",
+                  "Add a <b>tie-rod outer</b> point too, if you have one, for a "
+                  "3-bolt mount instead of 2.",
+                  "The editor is fullest on a <b>double-wishbone</b> topology "
+                  "&mdash; pick that in the sidebar if the ball-joint fields "
+                  "aren&rsquo;t showing."],
+        "needs": [("Upper &amp; lower ball joints set (\u2192 PCD)", "pcd_mm"),
+                  ("Mount bolt count", "n_bolts")],
     },
     "brakes": {
         "where": "the Brakes tab optimiser",
@@ -3826,9 +3891,12 @@ def _render_export_empty_state(subsystem_key, name):
         v = geom.get(dict_key)
         return v is not None and v != "" and v != 0
 
+    # NOTE: the hint strings below are trusted, hard-coded app constants (never
+    # user input) and intentionally contain inline HTML (e.g. <b>…</b>, &mdash;),
+    # so we render them as-authored rather than HTML-escaping them.
     _step_html = "".join(
         f'<div class="es-step"><span class="es-n">{i+1}</span>'
-        f'<span class="es-t">{_html.escape(s)}</span></div>'
+        f'<span class="es-t">{s}</span></div>'
         for i, s in enumerate(steps))
 
     _check_html = ""
@@ -3839,7 +3907,7 @@ def _render_export_empty_state(subsystem_key, name):
             _mark = "✓" if done else "○"
             _cls = "es-done" if done else "es-todo"
             _rows += (f'<li class="{_cls}"><span class="es-mark">{_mark}</span>'
-                      f'{_html.escape(label)}</li>')
+                      f'{label}</li>')
         _check_html = (
             '<div class="es-check-h">What the export needs</div>'
             f'<ul class="es-check">{_rows}</ul>')
@@ -3849,15 +3917,16 @@ def _render_export_empty_state(subsystem_key, name):
 <div class="es-card">
   <div class="es-head">
     <span class="es-badge">Waiting on numbers</span>
-    <span class="es-lead">This export builds from your real computed
-      geometry, so it&rsquo;s empty until those numbers exist &mdash;
-      it isn&rsquo;t an error.</span>
+    <span class="es-lead">The DXF is built from the real numbers <b>you</b> enter
+      in your tab &mdash; the app draws the section from them, it never guesses.
+      So an empty export isn&rsquo;t an error; it just means those inputs
+      aren&rsquo;t filled in yet.</span>
   </div>
-  <div class="es-where">Add them in <b>{_html.escape(where)}</b>:</div>
+  <div class="es-where">Enter them in <b>{where}</b>:</div>
   {_step_html}
   {_check_html}
-  <div class="es-foot">Come back here once they&rsquo;re in &mdash; the
-    short-list and DXF appear automatically.</div>
+  <div class="es-foot">Fill the inputs above and they tick off here. Once
+    they&rsquo;re all in, the short-list and DXF appear on their own.</div>
 </div>
 ''',
         unsafe_allow_html=True)
@@ -4546,6 +4615,112 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
                     candidates=mesh_candidates, title_name=_nm)
             except Exception as _me:
                 st.caption(f"Mesh/DXF export unavailable: {_me}")
+
+
+def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
+    """Bring the sidebar hardpoint editor's live numbers INTO the suspension tab.
+
+    Suspension is the one subsystem whose export inputs (the ball-joint
+    hardpoints) live in the left sidebar, not in the tab body — which is exactly
+    what confused members hunting for 'where the numbers come from'. This panel
+    closes that gap: it shows the actual upper/lower/tie-rod points and the PCD +
+    bolt count they derive (the very numbers the DXF export reads), flags any
+    that are missing or the wrong topology, and points plainly to the sidebar
+    editor. It reads state only — the sidebar remains the single place you edit —
+    so there's one source of truth, mirrored where people look first."""
+    hp = st.session_state.get("hp", {}) or {}
+    topo = st.session_state.get("topology", "double_wishbone")
+    is_wb = (topo == "double_wishbone")
+
+    _pts = [("upper_outer", "Upper ball joint"),
+            ("lower_outer", "Lower ball joint"),
+            ("tie_rod_outer", "Tie-rod outer")]
+
+    def _fmt(v):
+        if not v or len(v) < 3:
+            return None
+        try:
+            xs = [units_mod.from_metric(float(c), "mm") for c in v[:3]]
+        except Exception:
+            return None
+        fmt = "%.1f" if _U_LEN == "in" else "%.0f"
+        return "(" + ", ".join(fmt % c for c in xs) + f") {_U_LEN}"
+
+    # Build the point tiles + track which of the two PCD-defining joints exist.
+    _tiles = ""
+    _have_uo = _have_lo = False
+    for key, label in _pts:
+        disp = _fmt(hp.get(key))
+        if key == "upper_outer":
+            _have_uo = disp is not None
+        if key == "lower_outer":
+            _have_lo = disp is not None
+        if disp is None:
+            _optional = (key == "tie_rod_outer")
+            _txt = "not set" + (" (optional)" if _optional else "")
+            _tiles += (f'<div class="hp-pt miss"><div class="l">{label}</div>'
+                       f'<div class="v">{_txt}</div></div>')
+        else:
+            _tiles += (f'<div class="hp-pt"><div class="l">{label}</div>'
+                       f'<div class="v">{disp}</div></div>')
+
+    # Derived numbers the export actually reads (span → PCD, tie-rod → 3rd bolt).
+    _pcd = None
+    _uo, _lo = hp.get("upper_outer"), hp.get("lower_outer")
+    if _have_uo and _have_lo:
+        try:
+            _span = ((_uo[0]-_lo[0])**2 + (_uo[1]-_lo[1])**2
+                     + (_uo[2]-_lo[2])**2) ** 0.5
+            _pcd = units_mod.from_metric(float(_span), "mm")
+        except Exception:
+            _pcd = None
+    _tro = hp.get("tie_rod_outer")
+    _nb = 3 if (_tro and len(_tro) >= 3) else 2
+
+    _pcd_fmt = "%.1f" if _U_LEN == "in" else "%.0f"
+    _pcd_txt = (f'{_pcd_fmt % _pcd} {_U_LEN}' if _pcd is not None else "—")
+    _pcd_cls = "" if _pcd is not None else "warn"
+
+    _derived = (
+        f'<div class="hp-derived">'
+        f'<div class="hp-d"><span class="k">Mount PCD (span)</span>'
+        f'<span class="n {_pcd_cls}">{_pcd_txt}</span></div>'
+        f'<div class="hp-d"><span class="k">Bolt count</span>'
+        f'<span class="n">{_nb}</span></div>'
+        f'</div>')
+
+    # Status note: name the exact next action, in the sidebar, where it happens.
+    if not is_wb:
+        _note = ('<div class="hp-note">The full ball-joint editor shows on a '
+                 '<b>double-wishbone</b> topology. Open the left sidebar and set '
+                 '<b>Suspension topology → Double wishbone</b> to edit these '
+                 'points. Other topologies still export from a representative '
+                 'set.</div>')
+    elif _pcd is None:
+        _note = ('<div class="hp-note">Set the <b>upper</b> and <b>lower ball '
+                 'joints</b> to define the mount PCD. Edit them in the left '
+                 'sidebar under <b>Suspension geometry (hardpoint editor) → '
+                 'Pickup coordinates</b>.</div>')
+    else:
+        _note = ('<div class="hp-note"><span class="hp-here">✓ feeding the '
+                 'export</span> &nbsp;These are the numbers the Mesh &amp; DXF '
+                 'exporter reads. Edit any point in the left sidebar under '
+                 '<b>Suspension geometry (hardpoint editor)</b> and this '
+                 'updates live.</div>')
+
+    st.markdown(
+        f'''
+<div class="hp-card">
+  <div class="hp-top">
+    <span class="hp-ttl">📐 Upright mount — from your hardpoints</span>
+    <span class="hp-src">SIDEBAR ▸ HARDPOINT EDITOR · {_U_LEN}</span>
+  </div>
+  <div class="hp-grid">{_tiles}</div>
+  {_derived}
+  {_note}
+</div>
+''',
+        unsafe_allow_html=True)
 
 
 def render_process_library(subsystem_key, *, key_prefix, title=None):
@@ -5742,6 +5917,13 @@ with tab1:
           })
   except Exception:
       pass
+  # Mirror the sidebar hardpoint numbers here in the tab, so a member sees the
+  # exact points + derived PCD/bolt-count that feed the DXF export without having
+  # to go hunting for where the inputs live.
+  try:
+    render_suspension_hardpoint_summary(key_prefix="susp_hp_main")
+  except Exception:
+    pass
   try:
     render_process_library("suspension", key_prefix="kin_pl")
   except Exception:
