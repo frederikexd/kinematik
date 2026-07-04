@@ -4090,6 +4090,16 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
 
     _picked_ids = []
     if _use_templates:
+        # Seed the picker's selection ONCE, before the multiselect widget is
+        # created. Streamlit forbids passing both `default=` and `key=` when the
+        # keyed value already lives in session_state — doing so logs a state-rules
+        # warning and, combined with the bundle buttons writing that same key,
+        # made the widgets below intermittently drop out. So we own the value in
+        # session_state and never pass `default=` to the widget.
+        _picks_key = f"{key_prefix}_tpl_picks"
+        if _picks_key not in st.session_state:
+            st.session_state[_picks_key] = list(_default_labels)
+
         # Quick-start bundles: one tap fills the multiselect with a sensible set
         # for a whole family, so a member isn't ticking sections one by one.
         st.markdown(
@@ -4112,8 +4122,7 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
                                   help="Load this family's sections into the "
                                        "picker (replaces the current selection)."
                                   if _bids else "Clear all selected sections."):
-                st.session_state[f"{key_prefix}_tpl_picks"] = [
-                    _id_to_label[i] for i in _bids]
+                st.session_state[_picks_key] = [_id_to_label[i] for i in _bids]
                 _do_rerun()
 
         st.caption("Pick the sections you need — each one drops in below as an "
@@ -4121,19 +4130,23 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
 
         # One grouped multiselect: options are ordered by family so related
         # sections sit together. Streamlit doesn't do optgroups, so the group
-        # tag lives in each label and we order the option list by family.
+        # tag lives in each label and we order the option list by family. The
+        # current selection is owned via session_state[_picks_key] (no default=).
         _ordered_options = []
         for _g in _TMPL_GROUP_ORDER:
             _ordered_options.extend(_labels_by_group.get(_g, []))
 
+        # Guard: drop any stale saved labels that aren't valid options anymore
+        # (e.g. after a template rename), so the widget never errors on init.
+        st.session_state[_picks_key] = [
+            lbl for lbl in st.session_state.get(_picks_key, [])
+            if lbl in _ordered_options]
+
         _selected_labels = st.multiselect(
             "Template library — choose sections to include",
             options=_ordered_options,
-            default=st.session_state.get(f"{key_prefix}_tpl_picks",
-                                         _default_labels),
-            key=f"{key_prefix}_tpl_picks",
+            key=_picks_key,
             label_visibility="collapsed",
-            format_func=lambda lbl: lbl,
             help="Grouped: Engineering (subsystem-specific), then Process "
                  "documentation, then Project & team management. Pick as many "
                  "or as few as you need.")
