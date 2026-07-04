@@ -2527,9 +2527,17 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
                      "unknown": "Couldn't match that to a known check"}.get(_v, _v)
             _fn(f"**{_head}**\n\n{_res.explanation}")
             if getattr(_res, "provenance", ""):
+                _from_reasoner = getattr(_res, "matched_rule", "") == \
+                    "general_reasoner"
                 with st.expander("How it got this (technical)"):
-                    st.caption("Computed from the deterministic rules "
-                               "(and your live numbers where available):")
+                    if _from_reasoner:
+                        st.caption("No live-model rule matched this claim, so it "
+                                   "was assessed against the built-in physics / "
+                                   "engineering / FSAE knowledge base "
+                                   "(deterministic, no live numbers):")
+                    else:
+                        st.caption("Computed from the deterministic rules "
+                                   "(and your live numbers where available):")
                     st.code(_res.provenance, language=None)
         except Exception as _me:
             st.warning(f"Couldn't run the myth-buster: {_me}")
