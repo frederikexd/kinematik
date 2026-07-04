@@ -2926,6 +2926,80 @@ def render_subsystem_documentation(subsystem_key, *, key_prefix,
                            "the PDF above is still yours to download.")
 
 
+# === BEGIN spliced Verdict Center / Docs templates / Mesh+DXF ===
+# ============================================================================
+#  Feature-menu drill-down (Tab -> Sub-tab -> Feature)
+#
+#  Feature-collection tabs (aero, brakes, 3D model, integration, DFMEA…) used a
+#  horizontal radio that landed the member straight on the first feature's full
+#  content — a wall of controls before they'd chosen anything. This helper turns
+#  that into the sketch the team drew: land on a short MENU of feature names with
+#  NOTHING expanded; pick one; only that feature renders, with a "← All <tab>
+#  tools" control to step back. Same features, same code per feature — only how
+#  they're surfaced changes, so a member sees a handful of names instead of a
+#  screen of everything at once.
+# ============================================================================
+def feature_menu(tab_key, features, *, title=None, intro=None, columns=3,
+                 descriptions=None):
+    """Render a feature menu and return the chosen feature name, or None while
+    the member is still on the menu.
+
+    features:      list of feature names (the same strings the tab already
+                   dispatches on, so wiring is a one-line swap from a radio).
+    descriptions:  optional {name: one-line hint} shown under each menu button.
+    Usage:
+        _pick = feature_menu("brakes", [...], title="Brakes tools")
+        if _pick == "Bias & lock-up": ...
+    Nothing is shown until the member picks; picking is remembered per tab in
+    session_state so reruns keep the chosen feature open."""
+    _state_key = f"_featmenu_{tab_key}"
+    _active = st.session_state.get(_state_key)
+
+    # If a feature is active, show a compact header + back control, then let the
+    # caller render that feature.
+    if _active in features:
+        _hc = st.columns([1, 4])
+        if _hc[0].button("← All tools", key=f"{_state_key}_back",
+                         help="Back to this tab's feature menu"):
+            st.session_state[_state_key] = None
+            _do_rerun()
+            return None
+        _hc[1].markdown(
+            f'<div style="font-family:\'JetBrains Mono\',monospace;'
+            f'font-size:.8rem;letter-spacing:.06em;color:var(--dim);'
+            f'padding-top:.45rem;">{title or tab_key} ▸ '
+            f'<b style="color:var(--text,#d8d8e0)">{_active}</b></div>',
+            unsafe_allow_html=True)
+        st.markdown('<hr style="margin:6px 0 10px;border:none;'
+                    'border-top:1px solid rgba(128,128,128,.15);">',
+                    unsafe_allow_html=True)
+        return _active
+
+    # Otherwise render the menu — nothing expanded.
+    if title:
+        st.markdown(f"###### {title}")
+    if intro:
+        st.markdown(f'<p class="hint" style="margin:-2px 0 8px;">{intro}</p>',
+                    unsafe_allow_html=True)
+    st.caption("Pick a tool to open it — nothing loads until you choose, so you "
+               "see a short list instead of everything at once.")
+    descriptions = descriptions or {}
+    _cols = st.columns(columns)
+    for _i, _name in enumerate(features):
+        with _cols[_i % columns]:
+            if st.button(_name, key=f"{_state_key}_pick_{_i}",
+                         use_container_width=True):
+                st.session_state[_state_key] = _name
+                _do_rerun()
+                return _name
+            _d = descriptions.get(_name)
+            if _d:
+                st.markdown(
+                    f'<p class="hint" style="margin:-6px 0 10px;font-size:.72rem;'
+                    f'color:var(--dim);">{_d}</p>', unsafe_allow_html=True)
+    return None
+
+
 # --------------------------------------------------------------------------- #
 #  0.  Small shared helpers                                                    #
 # --------------------------------------------------------------------------- #
@@ -11097,80 +11171,6 @@ class _MBDictResult:
         self.user_values = d.get("user_values", {})
 
 
-
-
-# === BEGIN spliced Verdict Center / Docs templates / Mesh+DXF ===
-# ============================================================================
-#  Feature-menu drill-down (Tab -> Sub-tab -> Feature)
-#
-#  Feature-collection tabs (aero, brakes, 3D model, integration, DFMEA…) used a
-#  horizontal radio that landed the member straight on the first feature's full
-#  content — a wall of controls before they'd chosen anything. This helper turns
-#  that into the sketch the team drew: land on a short MENU of feature names with
-#  NOTHING expanded; pick one; only that feature renders, with a "← All <tab>
-#  tools" control to step back. Same features, same code per feature — only how
-#  they're surfaced changes, so a member sees a handful of names instead of a
-#  screen of everything at once.
-# ============================================================================
-def feature_menu(tab_key, features, *, title=None, intro=None, columns=3,
-                 descriptions=None):
-    """Render a feature menu and return the chosen feature name, or None while
-    the member is still on the menu.
-
-    features:      list of feature names (the same strings the tab already
-                   dispatches on, so wiring is a one-line swap from a radio).
-    descriptions:  optional {name: one-line hint} shown under each menu button.
-    Usage:
-        _pick = feature_menu("brakes", [...], title="Brakes tools")
-        if _pick == "Bias & lock-up": ...
-    Nothing is shown until the member picks; picking is remembered per tab in
-    session_state so reruns keep the chosen feature open."""
-    _state_key = f"_featmenu_{tab_key}"
-    _active = st.session_state.get(_state_key)
-
-    # If a feature is active, show a compact header + back control, then let the
-    # caller render that feature.
-    if _active in features:
-        _hc = st.columns([1, 4])
-        if _hc[0].button("← All tools", key=f"{_state_key}_back",
-                         help="Back to this tab's feature menu"):
-            st.session_state[_state_key] = None
-            _do_rerun()
-            return None
-        _hc[1].markdown(
-            f'<div style="font-family:\'JetBrains Mono\',monospace;'
-            f'font-size:.8rem;letter-spacing:.06em;color:var(--dim);'
-            f'padding-top:.45rem;">{title or tab_key} ▸ '
-            f'<b style="color:var(--text,#d8d8e0)">{_active}</b></div>',
-            unsafe_allow_html=True)
-        st.markdown('<hr style="margin:6px 0 10px;border:none;'
-                    'border-top:1px solid rgba(128,128,128,.15);">',
-                    unsafe_allow_html=True)
-        return _active
-
-    # Otherwise render the menu — nothing expanded.
-    if title:
-        st.markdown(f"###### {title}")
-    if intro:
-        st.markdown(f'<p class="hint" style="margin:-2px 0 8px;">{intro}</p>',
-                    unsafe_allow_html=True)
-    st.caption("Pick a tool to open it — nothing loads until you choose, so you "
-               "see a short list instead of everything at once.")
-    descriptions = descriptions or {}
-    _cols = st.columns(columns)
-    for _i, _name in enumerate(features):
-        with _cols[_i % columns]:
-            if st.button(_name, key=f"{_state_key}_pick_{_i}",
-                         use_container_width=True):
-                st.session_state[_state_key] = _name
-                _do_rerun()
-                return _name
-            _d = descriptions.get(_name)
-            if _d:
-                st.markdown(
-                    f'<p class="hint" style="margin:-6px 0 10px;font-size:.72rem;'
-                    f'color:var(--dim);">{_d}</p>', unsafe_allow_html=True)
-    return None
 
 
 def _do_rerun():
