@@ -3788,6 +3788,88 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
 # === END spliced block ===
 
 
+# --------------------------------------------------------------------------- #
+#  Documentation template library                                             #
+# --------------------------------------------------------------------------- #
+# A small library of ready-to-use documentation blocks, each an entry of
+# (id, label, icon, default_on, short_markdown_skeleton). A member ticks the
+# ones they want; KinematiK merges them with the declared interface numbers +
+# session activity into one report — so nobody starts from a blank page or hunts
+# for the right headings.
+#
+# Defined HERE (above render_documentation_expander / render_documentation_center
+# and above every subsystem tab that calls them) on purpose: Streamlit runs the
+# script top-to-bottom, so the data must exist before the first tab renders.
+# Placing it lower in the file raised NameError at those early call sites, which
+# dropped every subsystem to the simple fallback report.
+_DOC_TEMPLATES = [
+    ("design_intent", "Design intent & requirements", "🎯", True,
+     "## Design intent\n"
+     "- What this subsystem must achieve:\n"
+     "- Key performance targets (with numbers):\n"
+     "- Rules / regulations it answers to:\n"
+     "- Constraints (mass budget, envelope, cost, manufacturing):\n"),
+
+    ("assumptions", "Assumptions", "💡", True,
+     "## Assumptions\n"
+     "- Assumption 1 — sanity-checked below? (y/n):\n"
+     "- Assumption 2 —\n"
+     "- Anything taken on trust that a teammate should verify:\n"),
+
+    ("calc_summary", "Calculation summary", "🔢", True,
+     "## Calculation summary\n"
+     "- Method / tool used:\n"
+     "- Key inputs (with units):\n"
+     "- Key results (with units):\n"
+     "- Safety factor / margin:\n"),
+
+    ("test_plan", "Validation & test plan", "🧪", False,
+     "## Validation plan\n"
+     "- What still needs FEA / CFD / bench test:\n"
+     "- Pass criteria (measurable):\n"
+     "- Test rig / equipment needed:\n"
+     "- Who signs it off:\n"),
+
+    ("interfaces", "Interface & integration notes", "🔗", False,
+     "## Interface & integration\n"
+     "- Load paths into / out of this subsystem:\n"
+     "- Mounting points and bolt patterns:\n"
+     "- Clearances to check with adjacent subsystems:\n"
+     "- What this subsystem needs from others to be finalised:\n"),
+
+    ("manufacturing", "Manufacturing & assembly notes", "🏭", False,
+     "## Manufacturing & assembly\n"
+     "- Process (see the process library tab):\n"
+     "- Material & stock form:\n"
+     "- Tolerances that matter:\n"
+     "- Assembly sequence / fit notes:\n"
+     "- Lead time to order / make:\n"),
+
+    ("risks", "Risks & open items", "⚠️", False,
+     "## Risks & open items\n"
+     "- Risk 1 (likelihood · impact · mitigation):\n"
+     "- Risk 2:\n"
+     "- Decisions still pending:\n"
+     "- Dependencies on another subsystem:\n"),
+
+    ("changes", "Changes from last iteration", "🔄", False,
+     "## Changes from last iteration\n"
+     "- What was changed and why:\n"
+     "- Previous value → new value:\n"
+     "- Effect on other subsystems:\n"),
+
+    ("handover", "Handover to next year", "📦", False,
+     "## Handover notes\n"
+     "- What worked and should be kept:\n"
+     "- What to change next iteration (with reasoning):\n"
+     "- Where the CAD / data / code lives:\n"
+     "- Who to ask questions (name + contact):\n"),
+]
+
+# Lookup for fast access
+_TMPL_BY_ID = {t[0]: t for t in _DOC_TEMPLATES}
+
+
 def render_documentation_expander(subsystem_key, *, key_prefix,
                                   extra_sections=None, title_name=None,
                                   mesh_candidates=None):
@@ -11319,80 +11401,12 @@ def render_verdict_center():
 # --------------------------------------------------------------------------- #
 #  3.  Documentation — merged report + template library + sanity check         #
 # --------------------------------------------------------------------------- #
-# A small library of ready-to-use documentation blocks. Each is (id, label,
-# short markdown skeleton). A member ticks the ones they want; KinematiK merges
-# them, with the declared interface + activity, into one report — so nobody
-# A small library of ready-to-use documentation blocks. Each entry is
-# (id, label, icon, default_on, short_markdown_skeleton).
-# A member ticks the ones they want; KinematiK merges them with declared
-# interface numbers + session activity into one report — nobody starts from
-# a blank page or hunts for the right headings.
-_DOC_TEMPLATES = [
-    ("design_intent", "Design intent & requirements", "🎯", True,
-     "## Design intent\n"
-     "- What this subsystem must achieve:\n"
-     "- Key performance targets (with numbers):\n"
-     "- Rules / regulations it answers to:\n"
-     "- Constraints (mass budget, envelope, cost, manufacturing):\n"),
-
-    ("assumptions", "Assumptions", "💡", True,
-     "## Assumptions\n"
-     "- Assumption 1 — sanity-checked below? (y/n):\n"
-     "- Assumption 2 —\n"
-     "- Anything taken on trust that a teammate should verify:\n"),
-
-    ("calc_summary", "Calculation summary", "🔢", True,
-     "## Calculation summary\n"
-     "- Method / tool used:\n"
-     "- Key inputs (with units):\n"
-     "- Key results (with units):\n"
-     "- Safety factor / margin:\n"),
-
-    ("test_plan", "Validation & test plan", "🧪", False,
-     "## Validation plan\n"
-     "- What still needs FEA / CFD / bench test:\n"
-     "- Pass criteria (measurable):\n"
-     "- Test rig / equipment needed:\n"
-     "- Who signs it off:\n"),
-
-    ("interfaces", "Interface & integration notes", "🔗", False,
-     "## Interface & integration\n"
-     "- Load paths into / out of this subsystem:\n"
-     "- Mounting points and bolt patterns:\n"
-     "- Clearances to check with adjacent subsystems:\n"
-     "- What this subsystem needs from others to be finalised:\n"),
-
-    ("manufacturing", "Manufacturing & assembly notes", "🏭", False,
-     "## Manufacturing & assembly\n"
-     "- Process (see the process library tab):\n"
-     "- Material & stock form:\n"
-     "- Tolerances that matter:\n"
-     "- Assembly sequence / fit notes:\n"
-     "- Lead time to order / make:\n"),
-
-    ("risks", "Risks & open items", "⚠️", False,
-     "## Risks & open items\n"
-     "- Risk 1 (likelihood · impact · mitigation):\n"
-     "- Risk 2:\n"
-     "- Decisions still pending:\n"
-     "- Dependencies on another subsystem:\n"),
-
-    ("changes", "Changes from last iteration", "🔄", False,
-     "## Changes from last iteration\n"
-     "- What was changed and why:\n"
-     "- Previous value → new value:\n"
-     "- Effect on other subsystems:\n"),
-
-    ("handover", "Handover to next year", "📦", False,
-     "## Handover notes\n"
-     "- What worked and should be kept:\n"
-     "- What to change next iteration (with reasoning):\n"
-     "- Where the CAD / data / code lives:\n"
-     "- Who to ask questions (name + contact):\n"),
-]
-
-# Lookup for fast access
-_TMPL_BY_ID = {t[0]: t for t in _DOC_TEMPLATES}
+# NOTE: the template library data (_DOC_TEMPLATES / _TMPL_BY_ID) is defined much
+# earlier in the file — just above render_documentation_expander — because
+# Streamlit executes this script top-to-bottom and the first subsystem tabs
+# (suspension, powertrain, …) call render_documentation_center before this point
+# in the file is ever reached. Defining the data here would raise NameError at
+# those call sites and silently drop every tab to the simple fallback report.
 
 
 def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
