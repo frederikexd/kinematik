@@ -11316,96 +11316,200 @@ def render_verdict_center():
 # A small library of ready-to-use documentation blocks. Each is (id, label,
 # short markdown skeleton). A member ticks the ones they want; KinematiK merges
 # them, with the declared interface + activity, into one report — so nobody
-# starts from a blank page or hunts for the right headings.
+# A small library of ready-to-use documentation blocks. Each entry is
+# (id, label, icon, default_on, short_markdown_skeleton).
+# A member ticks the ones they want; KinematiK merges them with declared
+# interface numbers + session activity into one report — nobody starts from
+# a blank page or hunts for the right headings.
 _DOC_TEMPLATES = [
-    ("design_intent", "Design intent & requirements",
-     "## Design intent\n- What this subsystem must achieve:\n- Key requirements / rules "
-     "it answers to:\n- Constraints (mass, envelope, cost, manufacturing):\n"),
-    ("assumptions", "Assumptions & sanity-checks",
-     "## Assumptions\n- Assumption 1 — checked with the sanity-check below? (y/n)\n"
-     "- Assumption 2 —\n- Anything taken on trust that a teammate should verify:\n"),
-    ("calc_summary", "Calculation summary",
-     "## Calculation summary\n- Method / tool used:\n- Key inputs:\n- Key results:\n"
+    ("design_intent", "Design intent & requirements", "🎯", True,
+     "## Design intent\n"
+     "- What this subsystem must achieve:\n"
+     "- Key performance targets (with numbers):\n"
+     "- Rules / regulations it answers to:\n"
+     "- Constraints (mass budget, envelope, cost, manufacturing):\n"),
+
+    ("assumptions", "Assumptions", "💡", True,
+     "## Assumptions\n"
+     "- Assumption 1 — sanity-checked below? (y/n):\n"
+     "- Assumption 2 —\n"
+     "- Anything taken on trust that a teammate should verify:\n"),
+
+    ("calc_summary", "Calculation summary", "🔢", True,
+     "## Calculation summary\n"
+     "- Method / tool used:\n"
+     "- Key inputs (with units):\n"
+     "- Key results (with units):\n"
      "- Safety factor / margin:\n"),
-    ("test_plan", "Validation / test plan",
-     "## Validation plan\n- What still needs FEA / CFD / bench test:\n"
-     "- Pass criteria:\n- Who signs it off:\n"),
-    ("manufacturing", "Manufacturing & assembly notes",
-     "## Manufacturing & assembly\n- Process (see the process library):\n"
-     "- Material & stock:\n- Tolerances that matter:\n- Assembly order / fit notes:\n"),
-    ("risks", "Risks & open items",
-     "## Risks & open items\n- Open risk 1 (impact, mitigation):\n- Decision still "
-     "pending:\n- Depends on another subsystem:\n"),
-    ("handover", "Handover to next year",
-     "## Handover notes\n- What worked and should be kept:\n- What to change next "
-     "iteration:\n- Where the CAD / data lives:\n"),
+
+    ("test_plan", "Validation & test plan", "🧪", False,
+     "## Validation plan\n"
+     "- What still needs FEA / CFD / bench test:\n"
+     "- Pass criteria (measurable):\n"
+     "- Test rig / equipment needed:\n"
+     "- Who signs it off:\n"),
+
+    ("interfaces", "Interface & integration notes", "🔗", False,
+     "## Interface & integration\n"
+     "- Load paths into / out of this subsystem:\n"
+     "- Mounting points and bolt patterns:\n"
+     "- Clearances to check with adjacent subsystems:\n"
+     "- What this subsystem needs from others to be finalised:\n"),
+
+    ("manufacturing", "Manufacturing & assembly notes", "🏭", False,
+     "## Manufacturing & assembly\n"
+     "- Process (see the process library tab):\n"
+     "- Material & stock form:\n"
+     "- Tolerances that matter:\n"
+     "- Assembly sequence / fit notes:\n"
+     "- Lead time to order / make:\n"),
+
+    ("risks", "Risks & open items", "⚠️", False,
+     "## Risks & open items\n"
+     "- Risk 1 (likelihood · impact · mitigation):\n"
+     "- Risk 2:\n"
+     "- Decisions still pending:\n"
+     "- Dependencies on another subsystem:\n"),
+
+    ("changes", "Changes from last iteration", "🔄", False,
+     "## Changes from last iteration\n"
+     "- What was changed and why:\n"
+     "- Previous value → new value:\n"
+     "- Effect on other subsystems:\n"),
+
+    ("handover", "Handover to next year", "📦", False,
+     "## Handover notes\n"
+     "- What worked and should be kept:\n"
+     "- What to change next iteration (with reasoning):\n"
+     "- Where the CAD / data / code lives:\n"
+     "- Who to ask questions (name + contact):\n"),
 ]
+
+# Lookup for fast access
+_TMPL_BY_ID = {t[0]: t for t in _DOC_TEMPLATES}
 
 
 def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
-    """Merged documentation view: a template LIBRARY the member ticks on/off,
-    merged with the live ledger interface + this session's activity into ONE
-    report, with the sanity-check built in and a double-check disclaimer at the
-    bottom.  A friendlier front-end over render_subsystem_documentation."""
-    _name = title_name or _VC_LABEL.get(subsystem_key,
-                                        subsystem_key.replace("-", " ").title())
+    """Merged documentation hub: template library → editable sections → report.
+
+    Flow:
+      1. Template library  — tick/untick sections; defaults pre-selected.
+      2. Section editors   — each picked section expands inline for quick edits
+                             before the report is built; content is pre-filled
+                             with the skeleton so nobody starts blank.
+      3. Report preview    — merged markdown (templates + ledger + activity).
+      4. Sanity-check      — the myth-buster inline, results auto-appended to report.
+      5. Export            — PDF + Markdown download, optional Handover log entry.
+    """
+    _name = title_name or _VC_LABEL.get(
+        subsystem_key, subsystem_key.replace("-", " ").title())
+
+    # ------------------------------------------------------------------ #
+    #  1. Template library                                                 #
+    # ------------------------------------------------------------------ #
     st.markdown(
-        f'<p class="hint" style="margin:0 0 8px;">Build the <b>{_name}</b> '
-        f'document without starting from a blank page. Tick the sections you '
-        f'need from the library, drop in what\'s relevant, and KinematiK merges '
-        f'them with your declared numbers into one report you can export.</p>',
+        f'<p class="hint" style="margin:0 0 10px;">'
+        f'Build the <b>{_name}</b> document without starting from a blank page. '
+        f'Tick the sections you need — each one opens with a pre-filled skeleton '
+        f'you can edit inline before exporting.</p>',
         unsafe_allow_html=True)
 
-    # --- 3a. the template library (tick on/off) ---------------------------- #
     st.markdown("###### 📚 Template library — tick what you need")
-    _picked = []
-    _cols = st.columns(2)
-    for _i, (_tid, _tlabel, _tbody) in enumerate(_DOC_TEMPLATES):
-        _on = _cols[_i % 2].checkbox(
-            _tlabel, value=(_tid in ("design_intent", "assumptions",
-                                     "calc_summary")),
-            key=f"{key_prefix}_doctpl_{_tid}")
-        if _on:
-            _picked.append((_tid, _tlabel, _tbody))
 
-    # --- 3b. build the merged sections from picked templates + activity ---- #
-    _extra_sections = []
-    for _tid, _tlabel, _tbody in _picked:
-        _lines = [ln for ln in _tbody.splitlines() if not ln.startswith("## ")]
-        # heading comes from the template's '## ...' line
-        _heading = next((ln[3:] for ln in _tbody.splitlines()
-                         if ln.startswith("## ")), _tlabel)
-        _extra_sections.append((_heading, _lines))
+    # Two-column grid of checkboxes (icon + label)
+    _ncols = 3
+    _tpl_cols = st.columns(_ncols)
+    _picked_ids = []
+    for _i, (_tid, _tlabel, _ticon, _tdefault, _tbody) in enumerate(_DOC_TEMPLATES):
+        _checked = _tpl_cols[_i % _ncols].checkbox(
+            f"{_ticon} {_tlabel}",
+            value=st.session_state.get(f"{key_prefix}_tpl_{_tid}", _tdefault),
+            key=f"{key_prefix}_tpl_{_tid}")
+        if _checked:
+            _picked_ids.append(_tid)
 
-    if _picked:
-        st.caption(f"{len(_picked)} section(s) will be merged into the report, "
-                   f"together with your declared interface numbers and everything "
-                   f"you did this session.")
+    if not _picked_ids:
+        st.caption("No sections ticked — the report will still include your "
+                   "declared numbers and everything you did this session.")
     else:
-        st.caption("No template sections ticked — the report will still include "
-                   "your declared numbers and session activity.")
+        st.caption(
+            f"{len(_picked_ids)} section(s) selected · "
+            f"edit any of them below before exporting.")
 
-    # --- 3c. the actual report builder (reuses the existing generic one) --- #
-    st.markdown("###### 📄 Report")
-    try:
-        render_subsystem_documentation(
-            subsystem_key, key_prefix=f"{key_prefix}_docmerged",
-            extra_sections=_extra_sections, title_name=_name)
-    except Exception as _de:
-        st.warning(f"Report builder unavailable: {_de}")
+    # ------------------------------------------------------------------ #
+    #  2. Inline section editors                                           #
+    # ------------------------------------------------------------------ #
+    _edited_sections = []   # list of (heading_str, [content_lines])
 
-    # --- 3d. sanity-check built in ----------------------------------------- #
+    if _picked_ids:
+        st.markdown("###### ✏️ Edit your sections")
+        for _tid in _picked_ids:
+            _tid, _tlabel, _ticon, _tdefault, _tbody = _TMPL_BY_ID[_tid]
+            # Strip the "## Heading\n" line — we put that back ourselves
+            _skeleton_lines = [
+                ln for ln in _tbody.splitlines() if not ln.startswith("## ")]
+            _heading = next(
+                (ln[3:] for ln in _tbody.splitlines() if ln.startswith("## ")),
+                _tlabel)
+            _skeleton_text = "\n".join(_skeleton_lines)
+
+            with st.expander(f"{_ticon} {_tlabel}", expanded=False):
+                _edited = st.text_area(
+                    "Content",
+                    value=st.session_state.get(
+                        f"{key_prefix}_edit_{_tid}", _skeleton_text),
+                    height=160,
+                    key=f"{key_prefix}_edit_{_tid}",
+                    label_visibility="collapsed",
+                    help="Edit this section. Each bullet starts with '- '. "
+                         "Your changes are used when you build the report.")
+                _content_lines = [ln for ln in _edited.splitlines() if ln.strip()]
+                _edited_sections.append((_heading, _content_lines))
+
+    # ------------------------------------------------------------------ #
+    #  3. Auto-captured activity appended after templates                  #
+    # ------------------------------------------------------------------ #
+    _auto_sections = _activity_sections(subsystem_key)
+    _all_extra = _edited_sections + _auto_sections
+
+    # ------------------------------------------------------------------ #
+    #  4. Sanity-check (myth-buster inline)                                #
+    # ------------------------------------------------------------------ #
     st.markdown(
-        '<hr style="margin:10px 0 6px;border:none;'
-        'border-top:1px solid rgba(128,128,128,.15);">', unsafe_allow_html=True)
+        '<hr style="margin:14px 0 8px;border:none;'
+        'border-top:1px solid rgba(128,128,128,.15);">',
+        unsafe_allow_html=True)
     st.markdown("###### 🔎 Sanity-check an assumption before you write it down")
+    st.markdown(
+        '<p class="hint" style="margin:0 0 6px;font-size:.75rem;">'
+        'Type any claim or assumption below and hit <b>Bust it →</b>. '
+        'The result is automatically appended to your report so your '
+        'documented assumptions show what was actually checked.</p>',
+        unsafe_allow_html=True)
     try:
         render_myth_check(subsystem_key, key_prefix=f"{key_prefix}_docmyth")
     except Exception:
         pass
 
-    _vc_disclaimer(f"the {_name.lower()} document")
+    # ------------------------------------------------------------------ #
+    #  5. Report preview + export                                          #
+    # ------------------------------------------------------------------ #
+    st.markdown(
+        '<hr style="margin:14px 0 8px;border:none;'
+        'border-top:1px solid rgba(128,128,128,.15);">',
+        unsafe_allow_html=True)
+    st.markdown("###### 📄 Report")
 
+    try:
+        render_subsystem_documentation(
+            subsystem_key,
+            key_prefix=f"{key_prefix}_docmerged",
+            extra_sections=_all_extra,
+            title_name=_name)
+    except Exception as _de:
+        st.warning(f"Report builder unavailable: {_de}")
+
+    _vc_disclaimer(f"the {_name.lower()} document")
 
 # --------------------------------------------------------------------------- #
 #  4.  Generic "short-list to mesh + export DXF" for any subsystem             #
