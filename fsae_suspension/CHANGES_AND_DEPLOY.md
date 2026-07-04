@@ -2,6 +2,96 @@
 
 Build: `0.12-analytics-hardened`
 
+## Latest round — feature-menu drill-down (Tab ▸ Sub-tab ▸ Feature)
+
+The feature-collection tabs used a horizontal "View" radio that landed the
+member straight on the first feature's full content — a wall of controls before
+they'd picked anything. Those tabs now follow the team's sketched pattern:
+land on a short MENU of feature names with NOTHING expanded, pick one, and only
+that feature renders, with a "← All tools" control to step back. Same features,
+same per-feature code — only how they're surfaced changes.
+
+- New shared `feature_menu(tab_key, features, …)` helper: renders the menu,
+  remembers the pick per tab in session_state, returns the active feature name
+  (or None while on the menu). One-line swap from the old radio; the existing
+  `if _view == "…"` dispatch is unchanged, so on the menu nothing matches and
+  nothing heavy renders.
+- Applied to the genuine feature-collection tabs: **Aerodynamics** (Downforce /
+  Wing & diffuser / Aero map / Scale model), **Brakes** (Bias & lock-up /
+  Hydraulic / Bolt & bracket / Pedal box / Rotor thermal / Documentation),
+  **Integration** (Verdict Center / Ledger / CAD fit / Mount-point clash),
+  **DFMEA** (Risk log / Dashboard / Action tracker). Each menu item carries a
+  one-line description so the member knows what opens before clicking.
+- Deliberately NOT applied to single-workflow tabs (Kinematics live hardpoints,
+  EV comparison, the 3D-model viewport toggle) — hiding their primary content
+  behind a menu would bury the thing the tab is for, not de-clutter it.
+
+## Latest round — Verdict Center, merged docs & universal Mesh/DXF (UX)
+
+**Category navigation (Category → Sub-tab → Feature).** The single biggest
+overwhelm — a member facing 10-20 tabs after picking their role — is gone. Tabs
+are now grouped by KIND OF WORK into 5 category tabs: 🧪 Testing & Simulation,
+🛠️ Design & Sizing, ✅ Checks & Integration, 📄 Documentation, 📊 Data & Cost.
+Each category opens into a sub-tab strip of just that kind of tool; a member's
+own subteam tools float to the front of each category. So the hierarchy is
+Category → Sub-tab → Feature — never more than a handful of choices at any one
+level. This only changes which container each tab id nests inside; every tab
+body runs unchanged (same physics, same features, same single source of truth),
+and the per-tab tab_open analytics gating was generalised from the old "More
+tools wrapper" to "category tab open AND sub-tab open". `_TAB_CATEGORIES` maps
+every id to a category with a safety net so nothing can vanish.
+
+
+Goal: the myth-buster / verdict area was one long scroll — a member didn't
+realise how much was there. It's now organised into pages and boxes, with no
+physics or data-source changes (same single source of truth: the Integration
+ledger, the registry, the session activity log).
+
+- **Verdict Center** (Integration tab ▸ first view). A page picker acts like
+  arrows to different pages: **Overview** (whole-car picture — one coloured box
+  per subsystem with counts and the top headline), one **page per subsystem**,
+  and the **Sanity-check** page (the unchanged deterministic myth-buster).
+- **Three-box verdict per subsystem** — every subsystem page (and the Verdict
+  sub-tab on each tab's documentation panel) shows one tidy box each for
+  **✅ This works · 🔎 Take a closer look · 🛑 Pay attention to this**, built
+  from live ledger findings, the declared interface, and busted assumptions.
+- **Documentation, merged + template library.** Each subsystem's documentation
+  panel is now three sub-tabs (**📄 Document · ✅ Verdict · 📐 Mesh & DXF**).
+  The Document tab offers a small **library of doc templates** a member ticks
+  on/off (design intent, assumptions, calc summary, test plan, manufacturing,
+  risks, handover); picked sections merge with the declared numbers + activity
+  into the existing report/PDF. The **sanity-check** (myth-buster) is built in.
+- **Short-list to mesh + DXF, specialised per subsystem, from REAL geometry.**
+  Each subsystem exports the actual 2-D section it takes into CAD, built from
+  what its own tab COMPUTED — not defaults. Tabs publish via
+  `publish_export_geometry()` and the exporter consumes only that (exactly the
+  brakes rotor pattern: nothing until the tool runs). ALL EIGHT are wired: aero
+  (full-size chord + t/c from the scale model → NACA section, two thicknesses),
+  suspension (upright ball-joint span from the live hardpoints → mount-plate
+  PCD + bolt count), accumulator (segment box from the real cell grid), and
+  cooling / powertrain / chassis / data-acq derive their section from the
+  member-entered dimensions in the 3D-model "drop your part — type its size in
+  mm" entry (radiator core face, motor flange with real ⌀ + peak torque, node
+  gusset, DAQ bracket). Brakes keeps its dedicated rotor Pareto short-list +
+  half-section exporter and adds a caliper bracket. Nothing invents a default:
+  a subsystem with no computed/entered geometry gates with a "run this tab's
+  tool first" message — no section a member could extrude by mistake.
+  Because these teams build straight off the DXF (import → extrude → validate
+  in ANSYS, no prior CAD), every profile is run through a self-intersection
+  guard so it imports as ONE clean closed contour; the UI confirms "✓ ready to
+  extrude" or warns before download. Holes are separate closed loops, units are
+  embedded ($INSUNITS) so it never comes in at 25.4×, and annotation sits on
+  its own layer off the profile. DXF builder extended to multiple polylines +
+  circles; all ezdxf-validated R12, and the aero airfoil was confirmed to
+  import + extrude cleanly at correct scale in a real SolidWorks seat.
+- **"Double-check before you commit" disclaimer** appended under every verdict,
+  report and export surface via one shared `_vc_disclaimer()` helper.
+
+All new code is spliced into `streamlit_app.py` (no new files, no new deps);
+callers of `render_documentation_expander(...)` are unchanged (keyword-only,
+backward compatible).
+
+
 ## Files in this package
 
 - `streamlit_app.py` — main app (repo root)

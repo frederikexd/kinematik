@@ -13,7 +13,7 @@ sdk: streamlit
 sdk_version: 1.58.0
 app_file: streamlit_app.py
 pinned: false
-license: mit
+license: agpl-3.0
 ---
 
 # ◢ KinematiK
@@ -179,6 +179,6 @@ All outputs are for design direction. Always validate with full simulation (ANSY
 
 ## License
 
-MIT. Free to use, fork, and build on. Attribution appreciated.
+AGPL-3.0. Free to use, fork, and build on. Any modifications must be shared under the same license.
 
 © 2026 Frederik Thio

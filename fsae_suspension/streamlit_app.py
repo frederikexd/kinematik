@@ -1446,6 +1446,43 @@ _TAB_META = {
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
+# ========================================================================== #
+#  CATEGORY GROUPING — the "don't show me 20 tabs" layer
+#
+#  Instead of one flat strip of ~22 subsystem tabs, the tabs are grouped by
+#  the KIND OF WORK they are. A member sees a handful of category tabs; each
+#  category opens into a sub-tab strip of just the tools of that kind. This is
+#  the Category → Sub-tab → Feature drill-down: never more than a few choices
+#  at any one level, so nobody is overwhelmed by the full toolset at once.
+#
+#  Every tab body below still runs unchanged — this only changes which
+#  container each tab id is nested inside (a category's sub-tab strip instead
+#  of the flat top strip). Nothing about the physics or the features moves.
+# ========================================================================== #
+_TAB_CATEGORIES = [
+    ("testing",  "🧪", "Testing & Simulation",
+     ["kinematics", "roll", "grip", "tire", "aero", "ev", "laptime",
+      "ggv", "transient", "setup"]),
+    ("design",   "🛠️", "Design & Sizing",
+     ["brakes", "accum", "pcb", "compliance", "teamfit", "model3d"]),
+    ("checks",   "✅", "Checks & Integration",
+     ["integration", "validation", "dfmea", "tractive"]),
+    ("docs",     "📄", "Documentation",
+     ["notes", "weight"]),
+    ("data",     "📊", "Data & Cost",
+     ["registry", "analytics", "cost"]),
+]
+# id -> (category_key, emoji, label) for quick lookup
+_ID_CATEGORY = {}
+for _ck, _cem, _clab, _ids in _TAB_CATEGORIES:
+    for _cid in _ids:
+        _ID_CATEGORY[_cid] = _ck
+# Safety net: any tab id not explicitly placed lands in Testing so it never
+# vanishes if the meta list grows.
+for _cid in _FULL_ORDER:
+    _ID_CATEGORY.setdefault(_cid, "testing")
+
+
 # Tabs every member uses no matter their subteam — the shared spine of the
 # project (see one car, declare your numbers once, read/leave notes).
 _SHARED_IDS = ["model3d", "integration", "registry", "notes", "weight", "validation", "analytics"]
@@ -1925,24 +1962,42 @@ def _tab_label(_id):
 # fire identically for all 24 features on every interaction, which is not
 # usage data — see _ax_active_ids below for how that signal is consumed.
 _id_to_container = {}
-if _more_ids:
-    _top_labels = [_tab_label(i) for i in _primary_ids] + ["⋯  More tools"]
-    _top = st.tabs(_top_labels, on_change="rerun", key="_top_tabs_nav")
-    for _i, _id in enumerate(_primary_ids):
-        _id_to_container[_id] = _top[_i]
-    with _top[-1]:
-        st.caption("Everything outside your subteam — still live, still reads "
-                   "the same shared numbers. Set your subteam above to pull any "
-                   "of these up front.")
-        _more = st.tabs([_tab_label(i) for i in _more_ids],
-                        on_change="rerun", key="_more_tabs_nav")
-        for _i, _id in enumerate(_more_ids):
-            _id_to_container[_id] = _more[_i]
-else:
-    _top = st.tabs([_tab_label(i) for i in _primary_ids],
-                   on_change="rerun", key="_top_tabs_nav")
-    for _i, _id in enumerate(_primary_ids):
-        _id_to_container[_id] = _top[_i]
+
+# The member's priority order across ALL tabs (own subteam first, then shared,
+# then the rest). We reuse it to order tabs WITHIN each category so a member's
+# own tools float to the front of their category too.
+_priority_order = _primary_ids + _more_ids
+
+def _cat_ordered(cat_key):
+    """Tab ids for one category, in the member's priority order."""
+    _ids_in_cat = [i for i in _priority_order if _ID_CATEGORY.get(i) == cat_key]
+    return _ids_in_cat
+
+# Build the category strip, then a sub-tab strip inside each non-empty category.
+# Category order: any category that contains one of the member's OWN/priority
+# tabs comes first, so their day-to-day work is the leftmost category.
+_cats_nonempty = [(ck, cem, clab) for ck, cem, clab, _ in _TAB_CATEGORIES
+                  if _cat_ordered(ck)]
+# stable: keep declared category order (Testing, Design, Checks, Docs, Data)
+
+_cat_labels = [f"{cem}  {clab}" for ck, cem, clab in _cats_nonempty]
+_cat_tabs = st.tabs(_cat_labels, on_change="rerun", key="_cat_tabs_nav")
+
+_cat_container = {}   # category_key -> its outer tab container (for .open gating)
+for _ci, (_ck, _cem, _clab) in enumerate(_cats_nonempty):
+    _cat_container[_ck] = _cat_tabs[_ci]
+    _sub_ids = _cat_ordered(_ck)
+    with _cat_tabs[_ci]:
+        if len(_sub_ids) == 1:
+            # a single-tool category needs no sub-strip; render straight in
+            _id_to_container[_sub_ids[0]] = _cat_tabs[_ci]
+        else:
+            _sub_labels = [_tab_label(i) for i in _sub_ids]
+            _sub = st.tabs(_sub_labels, on_change="rerun",
+                           key=f"_subtabs_{_ck}")
+            for _si, _sid in enumerate(_sub_ids):
+                _id_to_container[_sid] = _sub[_si]
+
 
 # Snapshot which feature id is genuinely the active tab THIS run, before
 # wrapping containers below.
@@ -1960,21 +2015,15 @@ else:
 # outer "⋯ More tools" wrapper is ALSO the selected top tab. So we gate the
 # inner-tab .open readings on the wrapper being open.
 _ax_active_ids = set()
-if _more_ids:
-    # primary (top-strip) tabs: their .open is the real selection signal
-    for _id in _primary_ids:
-        if getattr(_id_to_container[_id], "open", None):
-            _ax_active_ids.add(_id)
-    # the "More tools" wrapper is the LAST container in _top
-    _more_wrapper_open = bool(getattr(_top[-1], "open", None))
-    if _more_wrapper_open:
-        # only NOW do the inner tabs' .open readings mean anything
-        for _id in _more_ids:
-            if getattr(_id_to_container[_id], "open", None):
-                _ax_active_ids.add(_id)
-else:
-    for _id in _primary_ids:
-        if getattr(_id_to_container[_id], "open", None):
+# A tab is genuinely active only when BOTH its category tab is the selected
+# category AND it is the selected sub-tab within that category. This mirrors the
+# old "More tools wrapper must be open" gate, generalised to N categories.
+for _ck, _cem, _clab in _cats_nonempty:
+    _cat_open = bool(getattr(_cat_container.get(_ck), "open", None))
+    if not _cat_open:
+        continue
+    for _id in _cat_ordered(_ck):
+        if getattr(_id_to_container.get(_id), "open", None):
             _ax_active_ids.add(_id)
 
 # Map the stable ids back onto the legacy tab variable names the bodies below
@@ -2526,19 +2575,13 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
                      "depends": "⚠️ It depends — worth a closer look",
                      "unknown": "Couldn't match that to a known check"}.get(_v, _v)
             _fn(f"**{_head}**\n\n{_res.explanation}")
-            if getattr(_res, "provenance", ""):
-                _from_reasoner = getattr(_res, "matched_rule", "") == \
-                    "general_reasoner"
-                with st.expander("How it got this (technical)"):
-                    if _from_reasoner:
-                        st.caption("No live-model rule matched this claim, so it "
-                                   "was assessed against the built-in physics / "
-                                   "engineering / FSAE knowledge base "
-                                   "(deterministic, no live numbers).")
-                    else:
-                        st.caption("Computed from the deterministic rules "
-                                   "(and your live numbers where available):")
-                        st.code(_res.provenance, language=None)
+            # Capture what was sanity-checked so the Documentation report can
+            # list the assumptions this member busted in this subsystem.
+            _verdict_label = {"myth": "MYTH (false)", "true": "TRUE",
+                              "depends": "DEPENDS", "unknown": "no match"}.get(
+                                  _v, str(_v))
+            record_activity(subsystem_key, "myth",
+                            f"\u201c{_claim.strip()}\u201d \u2192 {_verdict_label}")
         except Exception as _me:
             st.warning(f"Couldn't run the myth-buster: {_me}")
 
@@ -2560,6 +2603,95 @@ def render_provisional_note(is_example, verdict, detail=""):
     return True
 
 
+_ACTIVITY_KEY = "_kinematik_activity_log"
+
+
+def record_activity(subsystem, kind, summary, *, detail=None):
+    """Record one thing the user did in a subsystem, for the Documentation report.
+
+    ``kind`` is a short category ("myth", "material", "condition", "calculation",
+    …). ``summary`` is a one-line human description; ``detail`` is optional extra
+    text. Entries are de-duplicated (same subsystem+kind+summary won't pile up on
+    reruns) and time-stamped, kept in session_state so the per-subsystem report
+    can list exactly what was done — myths busted, materials chosen, conditions
+    applied, calculations run — without each tab re-implementing capture.
+    """
+    import datetime as _dt
+    try:
+        _log = st.session_state.setdefault(_ACTIVITY_KEY, {})
+        _rows = _log.setdefault(str(subsystem), [])
+        _sig = (str(kind), str(summary))
+        for _r in _rows:
+            if (_r.get("kind"), _r.get("summary")) == _sig:
+                _r["ts"] = f"{_dt.datetime.now():%Y-%m-%d %H:%M}"
+                _r["count"] = _r.get("count", 1) + 1
+                if detail:
+                    _r["detail"] = detail
+                return
+        _rows.append({
+            "kind": str(kind),
+            "summary": str(summary),
+            "detail": detail,
+            "ts": f"{_dt.datetime.now():%Y-%m-%d %H:%M}",
+            "count": 1,
+        })
+    except Exception:
+        pass  # activity capture must never break a tab
+
+
+def get_activity(subsystem):
+    """Return the recorded activity rows for one subsystem (newest last)."""
+    try:
+        return list(st.session_state.get(_ACTIVITY_KEY, {}).get(
+            str(subsystem), []))
+    except Exception:
+        return []
+
+
+_ACTIVITY_KIND_HEADINGS = [
+    ("myth", "Assumptions sanity-checked (myth-buster)"),
+    ("material", "Materials used"),
+    ("condition", "Conditions applied"),
+    ("calculation", "Calculations run"),
+    ("optimisation", "Optimisations run"),
+    ("note", "Other actions"),
+]
+
+
+def _activity_sections(subsystem):
+    """Turn recorded activity into report ``extra_sections`` — a list of
+    (heading, [markdown lines]) grouped by kind, in a sensible fixed order.
+    Returns [] if nothing was recorded, so the report simply omits it."""
+    rows = get_activity(subsystem)
+    if not rows:
+        return []
+    by_kind = {}
+    for r in rows:
+        by_kind.setdefault(r.get("kind", "note"), []).append(r)
+    sections = []
+    seen_kinds = set()
+    for kind, heading in _ACTIVITY_KIND_HEADINGS:
+        group = by_kind.get(kind)
+        if not group:
+            continue
+        seen_kinds.add(kind)
+        lines = []
+        for r in group:
+            _c = r.get("count", 1)
+            _times = f" _(\u00d7{_c})_" if _c and _c > 1 else ""
+            _dtl = f" — {r['detail']}" if r.get("detail") else ""
+            _ts = f"  \u00b7 {r['ts']}" if r.get("ts") else ""
+            lines.append(f"- {r.get('summary','')}{_dtl}{_times}{_ts}")
+        sections.append((heading, lines))
+    # any kinds we didn't have an explicit heading for
+    for kind, group in by_kind.items():
+        if kind in seen_kinds:
+            continue
+        lines = [f"- {r.get('summary','')}" for r in group]
+        sections.append((kind.title(), lines))
+    return sections
+
+
 def render_subsystem_documentation(subsystem_key, *, key_prefix,
                                    extra_sections=None, title_name=None):
     """Generic per-subsystem Documentation view: PDF report + optional handover log.
@@ -2579,6 +2711,12 @@ def render_subsystem_documentation(subsystem_key, *, key_prefix,
     the tab or hand-writing notes.
     """
     _name = title_name or subsystem_key.replace("-", " ").title()
+
+    # Auto-captured activity (myths busted, materials, conditions, calculations)
+    # is appended after any sections the tab explicitly passed, so the report
+    # reflects everything the user actually did in this subsystem this session.
+    _auto_sections = _activity_sections(subsystem_key)
+    _all_extra = list(extra_sections or []) + _auto_sections
 
     def _build_md():
         import datetime as _dt
@@ -2605,7 +2743,7 @@ def render_subsystem_documentation(subsystem_key, *, key_prefix,
             if getattr(_it, "updated_on", ""):
                 L.append(f"- Last updated: {_it.updated_on}")
             L.append("")
-        for _heading, _lines in (extra_sections or []):
+        for _heading, _lines in _all_extra:
             if _lines:
                 L.append(f"## {_heading}")
                 L.extend(_lines)
@@ -2677,29 +2815,53 @@ def render_subsystem_documentation(subsystem_key, *, key_prefix,
 
 
 def render_documentation_expander(subsystem_key, *, key_prefix,
-                                  extra_sections=None, title_name=None):
-    """Collapsed 'Documentation' expander wrapping render_subsystem_documentation,
-    so any tab gets a PDF-export + handover-log affordance with one call — uniform
-    across every subsystem, independent of the tab's internal view structure."""
-    _nm = title_name or subsystem_key.replace("-", " ").title()
-    with st.expander(f"📄  {_nm} documentation — export a PDF / record in Handover",
+                                  extra_sections=None, title_name=None,
+                                  mesh_candidates=None):
+    """Collapsed 'Documentation & checks' panel for any subsystem.
+
+    Reorganised so it isn't one overwhelming scroll: inside the expander the
+    work is split into three clearly-labelled sub-tabs —
+        📄 Document  ·  ✅ Verdict  ·  📐 Mesh & DXF
+    The Document tab is the merged report + template library + sanity-check; the
+    Verdict tab is this subsystem's works / closer-look / attention box; the
+    Mesh & DXF tab offers the short-list-to-mesh + DXF export for this subsystem.
+    Any tab that already called this helper gets all three for free."""
+    _nm = title_name or _VC_LABEL.get(
+        subsystem_key, subsystem_key.replace("-", " ").title())
+    with st.expander(f"📄  {_nm} — documentation, verdict & export",
                      expanded=False):
-        st.markdown(
-            f'<p class="hint" style="margin:-2px 0 8px;">Capture what you\'ve worked '
-            f'out here as a <b>{_nm} subsystem report</b> — download the PDF for your '
-            f'design binder, and optionally record it in the <b>Handover</b> so the '
-            f'rest of Elbee and next year\'s team can see it.</p>',
-            unsafe_allow_html=True)
-        render_subsystem_documentation(
-            subsystem_key, key_prefix=key_prefix, extra_sections=extra_sections,
-            title_name=title_name)
-        st.markdown(
-            '<hr style="margin:10px 0 6px; border:none; '
-            'border-top:1px solid rgba(128,128,128,.15);">', unsafe_allow_html=True)
-        try:
-            render_myth_check(subsystem_key, key_prefix=key_prefix)
-        except Exception:
-            pass
+        _dt_doc, _dt_verdict, _dt_mesh = st.tabs(
+            ["📄 Document", "✅ Verdict", "📐 Mesh & DXF"])
+
+        with _dt_doc:
+            try:
+                render_documentation_center(
+                    subsystem_key, key_prefix=f"{key_prefix}_dc",
+                    title_name=_nm)
+            except Exception:
+                # graceful fallback to the original simple report
+                render_subsystem_documentation(
+                    subsystem_key, key_prefix=key_prefix,
+                    extra_sections=extra_sections, title_name=title_name)
+                try:
+                    render_myth_check(subsystem_key, key_prefix=key_prefix)
+                except Exception:
+                    pass
+
+        with _dt_verdict:
+            try:
+                render_subsystem_verdict_card(subsystem_key)
+                _vc_disclaimer(f"the {_nm.lower()} verdict")
+            except Exception as _ve:
+                st.caption(f"Verdict view unavailable: {_ve}")
+
+        with _dt_mesh:
+            try:
+                render_mesh_and_dxf(
+                    subsystem_key, key_prefix=f"{key_prefix}_mesh",
+                    candidates=mesh_candidates, title_name=_nm)
+            except Exception as _me:
+                st.caption(f"Mesh/DXF export unavailable: {_me}")
 
 
 def render_process_library(subsystem_key, *, key_prefix, title=None):
@@ -3069,6 +3231,16 @@ def _render_rotor_thermal(_bt, _mass, kin):
                              key="bt_duct", help="1.0 = no duct. A good cooling "
                              "duct raises local airflow 2–3×.")
 
+    # Capture the material + test conditions for the Documentation report.
+    try:
+        record_activity("brakes", "material",
+                        f"Rotor material: {_bt.ROTOR_MATERIALS[_ft_mat].name}")
+        record_activity("brakes", "condition",
+                        f"Fade test: {int(_ft_n)} stops, {_ft_gap:g}s cooling gap, "
+                        f"{_ft_duct:g}× duct airflow")
+    except Exception:
+        pass
+
     _tn = _bt.TwoNodeParams(
         rotor_mat=_ft_mat, diameter_mm=_tk_dia, thickness_mm=_tk_th,
         vented_fraction=_tk_vent, area_factor=float(_tk_area),
@@ -3086,6 +3258,17 @@ def _render_rotor_thermal(_bt, _mass, kin):
     umetric(_ftm[2], "Material ceiling", _trace.material_T_max_c, "°C",
             delta=("OVER" if _trace.over_material_limit else "ok"),
             delta_color=("inverse" if _trace.over_material_limit else "normal"))
+
+    try:
+        record_activity(
+            "brakes", "calculation",
+            f"Fade test result: rotor peak {_trace.T_rotor_peak_c:.0f}°C, "
+            f"pad peak {_trace.T_pad_peak_c:.0f}°C vs "
+            f"{_bt.ROTOR_MATERIALS[_ft_mat].name} limit "
+            f"{_trace.material_T_max_c:.0f}°C "
+            f"({'OVER LIMIT' if _trace.over_material_limit else 'within limit'})")
+    except Exception:
+        pass
 
     _fig_ft = go.Figure()
     _fig_ft.add_trace(go.Scatter(x=_trace.t_s,
@@ -3853,6 +4036,28 @@ _U_TRAVEL = units_mod.label("mm")
 
 # ----------------------------- TAB 1 --------------------------------------- #
 with tab1:
+  # Publish the REAL upright mount section from the live hardpoints so the DXF
+  # exporter draws the actual ball-joint span, not a guess. The upper/lower
+  # outer ball joints define the upright mounting PCD a member builds to.
+  try:
+      _hp = st.session_state.get("hp", {}) or {}
+      _uo = _hp.get("upper_outer")
+      _lo = _hp.get("lower_outer")
+      if _uo and _lo and len(_uo) >= 3 and len(_lo) >= 3:
+          _span = ((_uo[0]-_lo[0])**2 + (_uo[1]-_lo[1])**2
+                   + (_uo[2]-_lo[2])**2) ** 0.5
+          # tie-rod outer as a third mount if present → 3 bolts, else 2
+          _tro = _hp.get("tie_rod_outer")
+          _nb = 3 if (_tro and len(_tro) >= 3) else 2
+          publish_export_geometry("suspension", {
+              "n_bolts": _nb,
+              "pcd_mm": round(float(_span), 1),
+              "hole_d_mm": 8.0,
+              "load_n": None,
+              "source": "hardpoints (ball-joint span)",
+          })
+  except Exception:
+      pass
   try:
     render_process_library("suspension", key_prefix="kin_pl")
   except Exception:
@@ -3880,6 +4085,14 @@ with tab1:
   ]
   for _c, (_k, _v, _u, _cls) in zip(_kc, _kitems):
       _c.markdown(metric(_k, _v, _u, _cls), unsafe_allow_html=True)
+  try:
+      record_activity(
+          "suspension", "calculation",
+          f"Kinematics: static camber {s.camber:+.2f}°, camber gain "
+          f"{camber_gain*10:+.2f}°/10mm, bump steer {bump_steer*10:+.3f}°/10mm, "
+          f"caster {s.caster:+.1f}°, scrub {s.scrub_radius:+.0f} mm")
+  except Exception:
+      pass
   if not solve_ok:
       st.markdown('<span class="tag bad">⚠ linkage does not close over full '
                   'travel — check wishbone lengths</span>',
@@ -5644,20 +5857,39 @@ with tab_aero:
         drag = q * (cd * area)
         return downforce, drag, cl, cd, fb
 
-    _view = st.radio(
-        "View", ["Downforce & ground effect", "Wing & diffuser sizing",
-                 "Aero map (attitude sweep)", "Scale model planning"],
-        horizontal=True, key="aero_view", label_visibility="collapsed")
+    _view = feature_menu("aerodynamics",
+        ["Downforce & ground effect", "Wing & diffuser sizing",
+         "Aero map (attitude sweep)", "Scale model planning"],
+        title="Aerodynamics tools",
+        descriptions={
+            "Downforce & ground effect": "Downforce, drag, L/D at attitude",
+            "Wing & diffuser sizing": "Element sizing & diffuser geometry",
+            "Aero map (attitude sweep)": "Ride/yaw attitude sweep map",
+            "Scale model planning": "Wind-tunnel scale + full-size chord (DXF source)"})
 
-    # Live headline numbers at the chosen attitude — shared across views.
-    _df, _dr, _cl, _cd, _fb = _aero_forces(_aero_ride, _aero_yaw, _aero_v_ms, _aero_area)
-    _ld = (_df / _dr) if _dr else 0.0
-    mcol = st.columns(4)
-    umetric(mcol[0], "Downforce", _df, "N", help="≈ %.0f kgf of grip-adding load" % (_df/9.81))
-    umetric(mcol[1], "Drag", _dr, "N")
-    mcol[2].metric("Efficiency L/D", f"{_ld:.2f}", help="Downforce per unit drag — higher is better.")
-    mcol[3].metric("Aero balance", f"{_fb*100:.0f}% front",
-                   help="Share of downforce on the front axle. ~45% front is a typical FSAE target.")
+    # Live headline numbers at the chosen attitude — shared across the tools.
+    # Only rendered once a tool is picked, so the menu stays clean.
+    if _view:
+      _df, _dr, _cl, _cd, _fb = _aero_forces(_aero_ride, _aero_yaw, _aero_v_ms, _aero_area)
+      _ld = (_df / _dr) if _dr else 0.0
+      mcol = st.columns(4)
+      umetric(mcol[0], "Downforce", _df, "N", help="≈ %.0f kgf of grip-adding load" % (_df/9.81))
+      umetric(mcol[1], "Drag", _dr, "N")
+      mcol[2].metric("Efficiency L/D", f"{_ld:.2f}", help="Downforce per unit drag — higher is better.")
+      mcol[3].metric("Aero balance", f"{_fb*100:.0f}% front",
+                     help="Share of downforce on the front axle. ~45% front is a typical FSAE target.")
+
+      try:
+        record_activity(
+            "aerodynamics", "condition",
+            f"Evaluated at {units_mod.from_metric(_aero_v_ms*3.6,'km/h'):.0f} "
+            f"km/h, ride {_aero_ride:g}, yaw {_aero_yaw:g}°")
+        record_activity(
+            "aerodynamics", "calculation",
+            f"Aero: downforce {_df:.0f} N, drag {_dr:.0f} N, L/D {_ld:.2f}, "
+            f"balance {_fb*100:.0f}% front (Cl {_cl:.2f}, Cd {_cd:.2f})")
+      except Exception:
+        pass
 
     # ---------------------------------------------------------------- VIEW 1 #
     if _view == "Downforce & ground effect":
@@ -5898,6 +6130,17 @@ with tab_aero:
                 _sm_cols[2].info(
                     f"**Full-size envelope:** {_spec.full_height_mm:.0f} × "
                     f"{_spec.full_width_mm:.0f} mm (H × W)")
+            # Publish the REAL full-size wing chord for the DXF exporter: the
+            # airfoil section a member extrudes to span, at two typical FSAE
+            # thicknesses to mesh both.
+            try:
+                publish_export_geometry("aerodynamics", {
+                    "chord_mm": float(_spec.full_chord_mm),
+                    "thickness_fracs": [0.12, 0.16],
+                    "source": f"scale model {_spec.label()}",
+                })
+            except Exception:
+                pass
         except ValueError as _sve:
             st.error(f"Scale spec error: {_sve}")
             _spec = None
@@ -6657,6 +6900,17 @@ with tab_ev:
                 _em[3].markdown(metric("Continuous",
                     f"{_env.continuous_power_kw:.0f}", "kW"), unsafe_allow_html=True)
 
+                try:
+                    record_activity(
+                        "powertrain", "calculation",
+                        f"Motor envelope: base speed {_env.base_speed_rpm:.0f} rpm, "
+                        f"peak {_env.peak_power_kw:.0f} kW, continuous "
+                        f"{_env.continuous_power_kw:.0f} kW vs "
+                        f"{_env.rule_cap_kw:.0f} kW FSAE cap"
+                        f"{' (OVER CAP)' if getattr(_env,'over_cap',False) else ''}")
+                except Exception:
+                    pass
+
                 # --- the two plain-language answers ----------------------- #
                 st.markdown("##### Does capping power cap RPM?")
                 st.info(_env.explanation())
@@ -6968,6 +7222,22 @@ with tab_ev:
                     f"{_op.cooling_capacity_w:.0f}", "W"), unsafe_allow_html=True)
                 _om[3].markdown(metric("Margin",
                     f"{_op.margin_w:+.0f}", "W"), unsafe_allow_html=True)
+
+                try:
+                    record_activity(
+                        "cooling", "condition",
+                        f"Heat load {(_heat_w+_pack_heat_w):.0f} W "
+                        f"(motor+inverter {_heat_w:.0f} W, pack {_pack_heat_w:.0f} W), "
+                        f"air-side ΔT {_air_dt:g}°C, rig point "
+                        f"{_rig_flow:g} m³/h @ {_rig_dp:g} Pa")
+                    record_activity(
+                        "cooling", "calculation",
+                        f"Cooling operating point: {_op.flow_m3h:.0f} m³/h, "
+                        f"capacity {_op.cooling_capacity_w:.0f} W, margin "
+                        f"{_op.margin_w:+.0f} W "
+                        f"({'adequate' if _op.adequate else 'UNDER-COOLED'})")
+                except Exception:
+                    pass
 
                 if _op.adequate:
                     st.success(
@@ -7337,6 +7607,38 @@ with tab_accum:
     umetric(m[4], "Pack mass", _pack_mass, "kg", fmt="{:.1f}",
             help="Cells only — add ~30–50% for housing, BMS, bus bars, cooling.")
 
+    try:
+        record_activity(
+            "electrics", "calculation",
+            f"Accumulator: {_series}s{_parallel}p, {_pack_v:.0f} V, "
+            f"{_pack_kwh:.2f} kWh, {_pack_ah:.1f} Ah, {_n_cells} cells, "
+            f"{_pack_mass:.1f} kg (cells), C-rate {_c_rate:.1f}")
+    except Exception:
+        pass
+
+    # Publish the REAL segment-box section for the DXF exporter. Segment = one
+    # isolatable < 120 V block; cells laid out as a series×parallel grid on an
+    # 18650 footprint (18 mm pitch) with a housing wall. This is the container
+    # cross-section a member extrudes to segment length, then meshes.
+    try:
+        _seg_series = max(1, int(140.0 / max(_cv, 1e-6)))     # cells to stay <120 V
+        _seg_series = min(_seg_series, _series)
+        _cell_pitch = 20.0    # mm, 18650 ⌀18 + 2 mm holder web
+        _wall = 8.0
+        _cols_grid = _seg_series
+        _rows_grid = _parallel
+        _seg_w = _cols_grid * _cell_pitch + 2 * _wall
+        _seg_h = _rows_grid * _cell_pitch + 2 * _wall
+        publish_export_geometry("electrics", {
+            "seg_w_mm": round(_seg_w, 1), "seg_h_mm": round(_seg_h, 1),
+            "wall_mm": _wall, "n_cells": _n_cells,
+            "config": f"{_series}s{_parallel}p "
+                      f"(segment {_seg_series}s{_parallel}p)",
+            "source": f"accumulator {_series}s{_parallel}p",
+        })
+    except Exception:
+        pass
+
     m2 = st.columns(4)
     m2[0].metric("Per-cell current", f"{_per_cell_a:.0f} A",
                  help="Pack current shared across the parallel cells — this drives I²R heat.")
@@ -7525,10 +7827,18 @@ with tab_brake:
         'stays straight. Everything below comes from the live car\u2019s mass, CG height '
         'and wheelbase.</p>', unsafe_allow_html=True)
 
-    _bview = st.radio("View", ["Bias & lock-up", "Hydraulic sizing",
-                               "Bolt & bracket FoS", "Pedal box & throttle",
-                               "Rotor thermal", "Documentation"],
-                      horizontal=True, key="brake_view", label_visibility="collapsed")
+    _bview = feature_menu("brakes",
+                          ["Bias & lock-up", "Hydraulic sizing",
+                           "Bolt & bracket FoS", "Pedal box & throttle",
+                           "Rotor thermal", "Documentation"],
+                          title="Brakes tools",
+                          descriptions={
+                              "Bias & lock-up": "Front/rear bias, decel, lock-up margin",
+                              "Hydraulic sizing": "Master cylinder, pedal ratio, line pressure",
+                              "Bolt & bracket FoS": "Mount bolt + bracket safety factors",
+                              "Pedal box & throttle": "Pedal geometry & throttle bench",
+                              "Rotor thermal": "Rotor temp, optimiser, mesh & DXF export",
+                              "Documentation": "Report, verdict, export for brakes"})
 
     _wheel_r_mm = st.session_state.get("brake_wheel_r", 228.0)
 
@@ -8162,6 +8472,15 @@ with tab_brake:
                                          else "inverse"))
                 m[1].metric("Governing mode", _kres.governing_mode.title())
                 m[2].metric("Verdict", _kres.verdict)
+                try:
+                    record_activity("brakes", "material",
+                                    f"Bracket material: {_k_mat}")
+                    record_activity(
+                        "brakes", "calculation",
+                        f"Bracket FoS: min {_kres.min_fos:.2f} in "
+                        f"{_kres.governing_mode} → {_kres.verdict}")
+                except Exception:
+                    pass
                 _vfn(f"{_vi} {_kres.verdict}: minimum FoS {_kres.min_fos:.2f} in "
                      f"{_kres.governing_mode}. "
                      + ("Worth meshing — Ansys should confirm this margin."
@@ -9746,6 +10065,23 @@ def render_mythbuster():
                            "check")
             st.session_state["mb_last_input"] = _input
             st.session_state["mb_last_result_dict"] = _res.as_dict()
+            # Capture into the subsystem activity log so the Documentation report
+            # for that discipline lists this busted assumption. Map the checker's
+            # discipline id (from the picked channel or the matched rule) onto a
+            # subsystem key; fall back to the result's own discipline.
+            _rd = _res.as_dict()
+            _res_disc = _disc or _rd.get("discipline") or ""
+            _disc_to_sub = {"aerodynamics": "aerodynamics", "brakes": "brakes",
+                            "cooling": "cooling", "electrics": "electrics",
+                            "powertrain": "powertrain", "chassis": "chassis",
+                            "suspension": "suspension"}
+            _sub = _disc_to_sub.get(_res_disc)
+            if _sub:
+                _vl = {"myth": "MYTH (false)", "true": "TRUE",
+                       "depends": "DEPENDS", "unknown": "no match"}.get(
+                           _rd.get("verdict"), _rd.get("verdict", ""))
+                record_activity(_sub, "myth",
+                                f"\u201c{_input.strip()}\u201d \u2192 {_vl}")
             if _ax is not None:
                 _ax.complete("mythbuster", "check",
                              payload={"verdict": _res.as_dict().get("verdict")})
@@ -9859,6 +10195,1106 @@ class _MBDictResult:
         self.discipline = d.get("discipline", "")
         self.provenance = d.get("provenance", "")
         self.user_values = d.get("user_values", {})
+
+
+
+
+# === BEGIN spliced Verdict Center / Docs templates / Mesh+DXF ===
+# ============================================================================
+#  Feature-menu drill-down (Tab -> Sub-tab -> Feature)
+#
+#  Feature-collection tabs (aero, brakes, 3D model, integration, DFMEA…) used a
+#  horizontal radio that landed the member straight on the first feature's full
+#  content — a wall of controls before they'd chosen anything. This helper turns
+#  that into the sketch the team drew: land on a short MENU of feature names with
+#  NOTHING expanded; pick one; only that feature renders, with a "← All <tab>
+#  tools" control to step back. Same features, same code per feature — only how
+#  they're surfaced changes, so a member sees a handful of names instead of a
+#  screen of everything at once.
+# ============================================================================
+def feature_menu(tab_key, features, *, title=None, intro=None, columns=3,
+                 descriptions=None):
+    """Render a feature menu and return the chosen feature name, or None while
+    the member is still on the menu.
+
+    features:      list of feature names (the same strings the tab already
+                   dispatches on, so wiring is a one-line swap from a radio).
+    descriptions:  optional {name: one-line hint} shown under each menu button.
+    Usage:
+        _pick = feature_menu("brakes", [...], title="Brakes tools")
+        if _pick == "Bias & lock-up": ...
+    Nothing is shown until the member picks; picking is remembered per tab in
+    session_state so reruns keep the chosen feature open."""
+    _state_key = f"_featmenu_{tab_key}"
+    _active = st.session_state.get(_state_key)
+
+    # If a feature is active, show a compact header + back control, then let the
+    # caller render that feature.
+    if _active in features:
+        _hc = st.columns([1, 4])
+        if _hc[0].button("← All tools", key=f"{_state_key}_back",
+                         help="Back to this tab's feature menu"):
+            st.session_state[_state_key] = None
+            _do_rerun()
+            return None
+        _hc[1].markdown(
+            f'<div style="font-family:\'JetBrains Mono\',monospace;'
+            f'font-size:.8rem;letter-spacing:.06em;color:var(--dim);'
+            f'padding-top:.45rem;">{title or tab_key} ▸ '
+            f'<b style="color:var(--text,#d8d8e0)">{_active}</b></div>',
+            unsafe_allow_html=True)
+        st.markdown('<hr style="margin:6px 0 10px;border:none;'
+                    'border-top:1px solid rgba(128,128,128,.15);">',
+                    unsafe_allow_html=True)
+        return _active
+
+    # Otherwise render the menu — nothing expanded.
+    if title:
+        st.markdown(f"###### {title}")
+    if intro:
+        st.markdown(f'<p class="hint" style="margin:-2px 0 8px;">{intro}</p>',
+                    unsafe_allow_html=True)
+    st.caption("Pick a tool to open it — nothing loads until you choose, so you "
+               "see a short list instead of everything at once.")
+    descriptions = descriptions or {}
+    _cols = st.columns(columns)
+    for _i, _name in enumerate(features):
+        with _cols[_i % columns]:
+            if st.button(_name, key=f"{_state_key}_pick_{_i}",
+                         use_container_width=True):
+                st.session_state[_state_key] = _name
+                _do_rerun()
+                return _name
+            _d = descriptions.get(_name)
+            if _d:
+                st.markdown(
+                    f'<p class="hint" style="margin:-6px 0 10px;font-size:.72rem;'
+                    f'color:var(--dim);">{_d}</p>', unsafe_allow_html=True)
+    return None
+
+
+def _do_rerun():
+    """Streamlit rerun that works across versions."""
+    try:
+        st.rerun()
+    except Exception:
+        try:
+            st.experimental_rerun()
+        except Exception:
+            pass
+
+
+
+#
+#    * a Verdict Center with an OVERVIEW page (the whole-car picture) and one
+#      sub-tab PER SUBSYSTEM, each a single tidy box that answers three things:
+#          ✅ This works
+#          🔎 Take a closer look
+#          🛑 Pay attention to this
+#    * a Documentation view that MERGES the report + a small LIBRARY of ready
+#      templates a member ticks on/off, with the sanity-check (myth-buster)
+#      built in, and a "double-check before you cut" disclaimer at the bottom;
+#    * a generic "short-list to mesh + export DXF" affordance any subsystem
+#      can offer, mirroring the brakes rotor exporter.
+#
+#  Everything is deterministic and reads the SAME single source of truth (the
+#  Integration ledger, the registry, the activity log) the rest of the app uses.
+# ============================================================================
+
+
+# --------------------------------------------------------------------------- #
+#  0.  Small shared helpers                                                    #
+# --------------------------------------------------------------------------- #
+# Human labels + emoji for the eight subsystem channels, reused everywhere so
+# the Verdict Center, the docs templates and the mesh/DXF picker all speak the
+# same language.
+_VC_SUBSYS = [
+    ("suspension",       "🩷", "Suspension / Dynamics"),
+    ("aerodynamics",     "💛", "Aerodynamics"),
+    ("powertrain",       "❤️", "Powertrain"),
+    ("electrics",        "💙", "Electrics"),
+    ("brakes",           "🧡", "Brakes"),
+    ("cooling",          "🩵", "Cooling"),
+    ("chassis",          "💜", "Chassis / Frame"),
+    ("data-acquisition", "💚", "Data Acquisition"),
+]
+_VC_LABEL = {k: lab for k, _e, lab in _VC_SUBSYS}
+_VC_EMOJI = {k: e for k, e, _lab in _VC_SUBSYS}
+
+
+def _vc_disclaimer(where="this"):
+    """The 'double-check before you cut' footer.  Kept in one place so every
+    surface that produces a verdict, a report or an export carries the same
+    honest reminder that KinematiK is a screening tool, not the final word."""
+    st.markdown(
+        '<hr style="border:none;border-top:1px solid rgba(128,128,128,.18);'
+        'margin:14px 0 8px;">', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="hint" style="font-size:.72rem;line-height:1.5;'
+        'color:var(--dim);margin:0;">'
+        '⚠️ <b>Double-check before you commit.</b> '
+        f'{where.capitalize()} is a fast screening result from declared numbers '
+        'and simple rules — not a substitute for your own FEA/CFD, a bench test, '
+        'or a second set of eyes. Confirm anything you\'re about to cut, order or '
+        'sign off against the real analysis and your team lead.</p>',
+        unsafe_allow_html=True)
+
+
+# --------------------------------------------------------------------------- #
+#  1.  Per-subsystem verdict:  works / closer-look / attention                 #
+# --------------------------------------------------------------------------- #
+def _vc_collect(subsys_key):
+    """Gather everything known about ONE subsystem and bucket it into three
+    honest lists — (works, closer_look, attention) — from the live ledger
+    findings, the declared interface, and this session's activity log.
+
+    Returns a dict:
+        {"works": [...], "closer": [...], "attention": [...],
+         "declared": int, "verdict": "green|amber|red|empty"}
+    Pure data; the renderer below turns it into boxes.
+    """
+    works, closer, attention = [], [], []
+    declared = 0
+    try:
+        _led = interfaces_mod.IntegrationLedger.from_dict(
+            st.session_state.get("ledger", {}) or {})
+    except Exception:
+        _led = None
+
+    # --- declared interface: what this subsystem has actually committed ---- #
+    _it = None
+    if _led is not None:
+        try:
+            _it = _led.get(subsys_key)
+        except Exception:
+            _it = None
+    if _it is not None:
+        try:
+            _fields = _it.declared_fields()
+        except Exception:
+            _fields = []
+        declared = len(_fields)
+        if _fields and not getattr(_it, "is_estimate", False):
+            works.append(
+                f"{len(_fields)} interface number(s) declared and marked final.")
+        elif _fields and getattr(_it, "is_estimate", False):
+            closer.append(
+                f"{len(_fields)} number(s) declared but still flagged "
+                f"**estimate** — confirm and untick once CAD/measured.")
+        else:
+            closer.append("Nothing declared to Integration yet — enter this "
+                          "subsystem's key numbers so the car-level checks can "
+                          "see it.")
+        if _fields and not getattr(_it, "rationale", ""):
+            closer.append("No design rationale recorded — judges ask for the "
+                          "'why', and it goes straight into the report.")
+        if _fields and not getattr(_it, "owner", ""):
+            closer.append("No owner set on this interface.")
+
+    # --- live cross-team findings that touch this subsystem ---------------- #
+    if _led is not None:
+        try:
+            _finds = interfaces_mod.findings_for(_led.check_all(), subsys_key)
+        except Exception:
+            _finds = []
+        for _f in _finds:
+            _sv = str(getattr(_f.severity, "value", _f.severity)).lower()
+            if _sv in ("fail",):
+                attention.append(_f.message)
+            elif _sv in ("warning", "warn"):
+                closer.append(_f.message)
+            elif _sv in ("missing",):
+                closer.append(_f.message)
+            elif _sv in ("ok",):
+                works.append(_f.message)
+            # 'info' is intentionally dropped from the three-box view to reduce noise
+
+    # --- a failing myth recorded this session ------------------------------ #
+    _myth = st.session_state.get("mb_last_result_dict")
+    if _myth and _myth.get("verdict") == "myth" \
+            and (_myth.get("discipline") or "") == subsys_key:
+        attention.append("A checked assumption came back FALSE for this "
+                         "subsystem — see the sanity-check below.")
+
+    # --- session activity: myths busted true / calcs run ------------------- #
+    try:
+        for _row in get_activity(subsys_key):
+            _s = _row.get("summary", "")
+            if _row.get("kind") == "myth" and "TRUE" in _s:
+                works.append(f"Assumption held up: {_s}")
+            elif _row.get("kind") == "myth" and "MYTH" in _s:
+                attention.append(f"Assumption failed: {_s}")
+    except Exception:
+        pass
+
+    # de-dup while preserving order
+    def _uniq(seq):
+        seen, out = set(), []
+        for x in seq:
+            if x not in seen:
+                seen.add(x)
+                out.append(x)
+        return out
+    works, closer, attention = _uniq(works), _uniq(closer), _uniq(attention)
+
+    if attention:
+        verdict = "red"
+    elif closer:
+        verdict = "amber"
+    elif works:
+        verdict = "green"
+    else:
+        verdict = "empty"
+    return {"works": works, "closer": closer, "attention": attention,
+            "declared": declared, "verdict": verdict}
+
+
+def _vc_box(title, emoji, items, accent, empty_msg):
+    """Render one of the three coloured boxes inside a subsystem card."""
+    _inner = ""
+    if items:
+        _lis = "".join(
+            f'<li style="margin:0 0 4px;line-height:1.45;">{i}</li>'
+            for i in items)
+        _inner = (f'<ul style="margin:6px 0 0;padding-left:1.1rem;'
+                  f'font-size:.85rem;color:var(--text,#d8d8e0);">{_lis}</ul>')
+    else:
+        _inner = (f'<p style="margin:6px 0 0;font-size:.8rem;color:var(--dim);'
+                  f'font-style:italic;">{empty_msg}</p>')
+    st.markdown(
+        f'<div style="border:1px solid {accent}44;border-left:4px solid {accent};'
+        f'border-radius:8px;padding:10px 12px;margin:0 0 10px;'
+        f'background:{accent}0d;">'
+        f'<div style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;'
+        f'letter-spacing:.1em;text-transform:uppercase;color:{accent};'
+        f'font-weight:600;">{emoji} {title}'
+        f'<span style="color:var(--dim);font-weight:400;"> · {len(items)}</span>'
+        f'</div>{_inner}</div>', unsafe_allow_html=True)
+
+
+def render_subsystem_verdict_card(subsys_key):
+    """One subsystem's full three-box verdict: works / closer look / attention."""
+    data = _vc_collect(subsys_key)
+    _emoji = _VC_EMOJI.get(subsys_key, "•")
+    _name = _VC_LABEL.get(subsys_key, subsys_key.title())
+    _dot = {"green": "🟢", "amber": "🟡", "red": "🔴", "empty": "⚪"}[data["verdict"]]
+    _head = {"green": "Looks clear on what's declared",
+             "amber": "Usable, but some things need a closer look",
+             "red": "Needs attention before you commit",
+             "empty": "Nothing to check yet — declare this subsystem's numbers"
+             }[data["verdict"]]
+    st.markdown(
+        f"#### {_emoji} {_name} &nbsp; {_dot}")
+    st.caption(_head)
+
+    _vc_box("This works", "✅", data["works"], "#37e0d0",
+            "No confirmed-good items yet.")
+    _vc_box("Take a closer look", "🔎", data["closer"], "#ffb02e",
+            "Nothing flagged as soft right now.")
+    _vc_box("Pay attention to this", "🛑", data["attention"], "#ff5a52",
+            "No hard problems detected. ✔")
+
+
+# --------------------------------------------------------------------------- #
+#  2.  The Verdict Center — Overview page + per-subsystem sub-tabs             #
+# --------------------------------------------------------------------------- #
+def render_verdict_center():
+    """The reorganised myth-buster / verdict home.
+
+    Top level: a small radio that behaves like arrows to different pages —
+        Overview · one page per subsystem · Sanity-check (myth-buster)
+    The Overview is the whole-car picture (a box per subsystem); each subsystem
+    page is its own tidy three-box verdict; the Sanity-check page is the full
+    deterministic myth-buster (unchanged engine)."""
+    st.markdown(
+        '<p class="hint" style="margin:0 0 10px;">One place to see <b>how the car '
+        'is doing</b>. Start on <b>Overview</b> for the whole-car picture, then '
+        'step into any subsystem for the detail — each one tells you plainly '
+        'what works, what to look at, and what needs attention. '
+        'The <b>Sanity-check</b> page is the deterministic myth-buster.</p>',
+        unsafe_allow_html=True)
+
+    # Page picker — the "arrows to different pages" the request asked for.
+    _pages = ["📋 Overview"] + [
+        f"{_VC_EMOJI[k]} {_VC_LABEL[k]}" for k, _e, _l in _VC_SUBSYS
+    ] + ["🔎 Sanity-check (myth-buster)"]
+    _page = st.radio("Verdict page", _pages, horizontal=True,
+                     label_visibility="collapsed", key="vc_page_nav")
+
+    # ---- OVERVIEW --------------------------------------------------------- #
+    if _page == "📋 Overview":
+        _all = {k: _vc_collect(k) for k, _e, _l in _VC_SUBSYS}
+        _counts = {"green": 0, "amber": 0, "red": 0, "empty": 0}
+        for d in _all.values():
+            _counts[d["verdict"]] += 1
+        _worst = ("red" if _counts["red"] else
+                  "amber" if _counts["amber"] else
+                  "green" if _counts["green"] else "empty")
+        _c = {"green": "#37e0d0", "amber": "#ffb02e",
+              "red": "#ff5a52", "empty": "#9b8cff"}[_worst]
+        _dot = {"green": "🟢", "amber": "🟡", "red": "🔴", "empty": "⚪"}[_worst]
+        _msg = {"green": "Every declared subsystem is clear.",
+                "amber": "Some subsystems need a closer look.",
+                "red": "At least one subsystem needs attention.",
+                "empty": "Declare some subsystem numbers to light this up."}[_worst]
+        st.markdown(
+            f'<div class="card" style="border-left:4px solid {_c};display:flex;'
+            f'align-items:center;gap:1rem;margin:.2rem 0 .8rem;">'
+            f'<div style="font-size:1.6rem;line-height:1">{_dot}</div>'
+            f'<div style="flex:1"><div style="font-family:\'JetBrains Mono\';'
+            f'font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;'
+            f'color:var(--dim)">Whole-car verdict</div>'
+            f'<div style="font-weight:600;font-size:1.05rem;color:{_c}">{_msg}'
+            f'</div></div>'
+            f'<div style="text-align:right;font-family:\'JetBrains Mono\'">'
+            f'<div style="font-size:.8rem;color:#37e0d0">🟢 {_counts["green"]} clear</div>'
+            f'<div style="font-size:.8rem;color:#ffb02e">🟡 {_counts["amber"]} watch</div>'
+            f'<div style="font-size:.8rem;color:#ff5a52">🔴 {_counts["red"]} attention</div>'
+            f'</div></div>', unsafe_allow_html=True)
+
+        st.markdown("###### Per-subsystem — one box each")
+        st.caption("Tap a subsystem's page above for the detail. Worst-first.")
+        _rank = {"red": 0, "amber": 1, "green": 2, "empty": 3}
+        _ordered = sorted(_VC_SUBSYS, key=lambda t: _rank[_all[t[0]]["verdict"]])
+        _cols = st.columns(2)
+        for _i, (k, _e, _l) in enumerate(_ordered):
+            d = _all[k]
+            _dot2 = {"green": "🟢", "amber": "🟡", "red": "🔴",
+                     "empty": "⚪"}[d["verdict"]]
+            _cc = {"green": "#37e0d0", "amber": "#ffb02e",
+                   "red": "#ff5a52", "empty": "#9b8cff"}[d["verdict"]]
+            _headline = (d["attention"][0] if d["attention"] else
+                         d["closer"][0] if d["closer"] else
+                         d["works"][0] if d["works"] else
+                         "Nothing declared yet.")
+            with _cols[_i % 2]:
+                st.markdown(
+                    f'<div style="border:1px solid {_cc}44;border-left:4px solid {_cc};'
+                    f'border-radius:8px;padding:10px 12px;margin:0 0 10px;'
+                    f'background:{_cc}0d;min-height:88px;">'
+                    f'<div style="font-weight:600;font-size:.92rem;">'
+                    f'{_e} {_l} &nbsp;{_dot2}</div>'
+                    f'<div style="font-size:.75rem;color:var(--dim);margin-top:2px;">'
+                    f'✅ {len(d["works"])} · 🔎 {len(d["closer"])} · '
+                    f'🛑 {len(d["attention"])}</div>'
+                    f'<div style="font-size:.8rem;margin-top:6px;'
+                    f'line-height:1.4;">{_headline}</div>'
+                    f'</div>', unsafe_allow_html=True)
+        _vc_disclaimer("this overview")
+        return
+
+    # ---- SANITY-CHECK (full myth-buster, unchanged engine) ---------------- #
+    if _page.startswith("🔎"):
+        render_mythbuster()
+        _vc_disclaimer("the sanity-check")
+        return
+
+    # ---- a single subsystem page ------------------------------------------ #
+    for k, _e, _l in _VC_SUBSYS:
+        if _page == f"{_e} {_l}":
+            render_subsystem_verdict_card(k)
+            # inline sanity-check scoped to this subsystem
+            st.markdown("###### Sanity-check an assumption here")
+            try:
+                render_myth_check(k, key_prefix=f"vc_{k}")
+            except Exception:
+                pass
+            _vc_disclaimer(f"the {_l.lower()} verdict")
+            return
+
+
+# --------------------------------------------------------------------------- #
+#  3.  Documentation — merged report + template library + sanity check         #
+# --------------------------------------------------------------------------- #
+# A small library of ready-to-use documentation blocks. Each is (id, label,
+# short markdown skeleton). A member ticks the ones they want; KinematiK merges
+# them, with the declared interface + activity, into one report — so nobody
+# starts from a blank page or hunts for the right headings.
+_DOC_TEMPLATES = [
+    ("design_intent", "Design intent & requirements",
+     "## Design intent\n- What this subsystem must achieve:\n- Key requirements / rules "
+     "it answers to:\n- Constraints (mass, envelope, cost, manufacturing):\n"),
+    ("assumptions", "Assumptions & sanity-checks",
+     "## Assumptions\n- Assumption 1 — checked with the sanity-check below? (y/n)\n"
+     "- Assumption 2 —\n- Anything taken on trust that a teammate should verify:\n"),
+    ("calc_summary", "Calculation summary",
+     "## Calculation summary\n- Method / tool used:\n- Key inputs:\n- Key results:\n"
+     "- Safety factor / margin:\n"),
+    ("test_plan", "Validation / test plan",
+     "## Validation plan\n- What still needs FEA / CFD / bench test:\n"
+     "- Pass criteria:\n- Who signs it off:\n"),
+    ("manufacturing", "Manufacturing & assembly notes",
+     "## Manufacturing & assembly\n- Process (see the process library):\n"
+     "- Material & stock:\n- Tolerances that matter:\n- Assembly order / fit notes:\n"),
+    ("risks", "Risks & open items",
+     "## Risks & open items\n- Open risk 1 (impact, mitigation):\n- Decision still "
+     "pending:\n- Depends on another subsystem:\n"),
+    ("handover", "Handover to next year",
+     "## Handover notes\n- What worked and should be kept:\n- What to change next "
+     "iteration:\n- Where the CAD / data lives:\n"),
+]
+
+
+def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
+    """Merged documentation view: a template LIBRARY the member ticks on/off,
+    merged with the live ledger interface + this session's activity into ONE
+    report, with the sanity-check built in and a double-check disclaimer at the
+    bottom.  A friendlier front-end over render_subsystem_documentation."""
+    _name = title_name or _VC_LABEL.get(subsystem_key,
+                                        subsystem_key.replace("-", " ").title())
+    st.markdown(
+        f'<p class="hint" style="margin:0 0 8px;">Build the <b>{_name}</b> '
+        f'document without starting from a blank page. Tick the sections you '
+        f'need from the library, drop in what\'s relevant, and KinematiK merges '
+        f'them with your declared numbers into one report you can export.</p>',
+        unsafe_allow_html=True)
+
+    # --- 3a. the template library (tick on/off) ---------------------------- #
+    st.markdown("###### 📚 Template library — tick what you need")
+    _picked = []
+    _cols = st.columns(2)
+    for _i, (_tid, _tlabel, _tbody) in enumerate(_DOC_TEMPLATES):
+        _on = _cols[_i % 2].checkbox(
+            _tlabel, value=(_tid in ("design_intent", "assumptions",
+                                     "calc_summary")),
+            key=f"{key_prefix}_doctpl_{_tid}")
+        if _on:
+            _picked.append((_tid, _tlabel, _tbody))
+
+    # --- 3b. build the merged sections from picked templates + activity ---- #
+    _extra_sections = []
+    for _tid, _tlabel, _tbody in _picked:
+        _lines = [ln for ln in _tbody.splitlines() if not ln.startswith("## ")]
+        # heading comes from the template's '## ...' line
+        _heading = next((ln[3:] for ln in _tbody.splitlines()
+                         if ln.startswith("## ")), _tlabel)
+        _extra_sections.append((_heading, _lines))
+
+    if _picked:
+        st.caption(f"{len(_picked)} section(s) will be merged into the report, "
+                   f"together with your declared interface numbers and everything "
+                   f"you did this session.")
+    else:
+        st.caption("No template sections ticked — the report will still include "
+                   "your declared numbers and session activity.")
+
+    # --- 3c. the actual report builder (reuses the existing generic one) --- #
+    st.markdown("###### 📄 Report")
+    try:
+        render_subsystem_documentation(
+            subsystem_key, key_prefix=f"{key_prefix}_docmerged",
+            extra_sections=_extra_sections, title_name=_name)
+    except Exception as _de:
+        st.warning(f"Report builder unavailable: {_de}")
+
+    # --- 3d. sanity-check built in ----------------------------------------- #
+    st.markdown(
+        '<hr style="margin:10px 0 6px;border:none;'
+        'border-top:1px solid rgba(128,128,128,.15);">', unsafe_allow_html=True)
+    st.markdown("###### 🔎 Sanity-check an assumption before you write it down")
+    try:
+        render_myth_check(subsystem_key, key_prefix=f"{key_prefix}_docmyth")
+    except Exception:
+        pass
+
+    _vc_disclaimer(f"the {_name.lower()} document")
+
+
+# --------------------------------------------------------------------------- #
+#  4.  Generic "short-list to mesh + export DXF" for any subsystem             #
+# --------------------------------------------------------------------------- #
+def _generic_dxf_bytes(name, points_mm=None, *, notes=None,
+                       polylines=None, circles=None):
+    """Build a minimal DXF R12 from real geometry. Unit-aware (mm or in).
+
+    Two ways to call it:
+      * simple:  points_mm=[(x,y),...]                       -> one closed profile
+      * rich:    polylines=[{"pts":[(x,y),...], "closed":bool,
+                             "layer":"PROFILE"|"CENTRELINE"|"ANNOTATION"}, ...]
+                 circles=[{"c":(x,y), "r":r, "layer":...}, ...]   (bolt holes etc.)
+
+    So a subsystem can emit its *actual* section — an airfoil, a rotor half-
+    section, a mount plate with a bolt-hole PCD, a radiator core face — not just
+    a rectangle. Everything drops into CAD as a sketch ready to revolve/extrude.
+    """
+    try:
+        _is_us = units_mod.is_us()
+    except Exception:
+        _is_us = False
+
+    def _cv(mm_val):
+        try:
+            return units_mod.from_metric(mm_val, "mm")
+        except Exception:
+            return mm_val
+
+    _insunits = "1" if _is_us else "4"
+    _unit_lbl = "in" if _is_us else "mm"
+    _th = _cv(4.0)
+    _gap = _cv(6.0)
+
+    # Normalise the simple form into the rich form.
+    polys = []
+    if polylines:
+        for pl in polylines:
+            polys.append({
+                "pts": [(_cv(x), _cv(y)) for (x, y) in pl.get("pts", [])],
+                "closed": bool(pl.get("closed", True)),
+                "layer": pl.get("layer", "PROFILE"),
+            })
+    if points_mm:
+        polys.append({"pts": [(_cv(x), _cv(y)) for (x, y) in points_mm],
+                      "closed": True, "layer": "PROFILE"})
+    circs = []
+    if circles:
+        for c in circles:
+            cx, cy = c.get("c", (0, 0))
+            circs.append({"c": (_cv(cx), _cv(cy)), "r": _cv(c.get("r", 0)),
+                          "layer": c.get("layer", "PROFILE")})
+
+    lines = []
+
+    def L(*parts):
+        lines.append("".join(str(p) for p in parts))
+
+    L("  0\nSECTION"); L("  2\nHEADER")
+    L("  9\n$ACADVER"); L("  1\nAC1009")
+    L("  9\n$INSUNITS"); L(" 70\n", _insunits)
+    L("  0\nENDSEC")
+    L("  0\nSECTION"); L("  2\nTABLES")
+    L("  0\nTABLE"); L("  2\nLAYER"); L(" 70\n3")
+    for lyr, col in (("PROFILE", 7), ("CENTRELINE", 1), ("ANNOTATION", 3)):
+        L("  0\nLAYER"); L("  2\n", lyr); L(" 70\n0")
+        L(" 62\n", col); L("  6\nCONTINUOUS")
+    L("  0\nENDTAB"); L("  0\nENDSEC")
+    L("  0\nSECTION"); L("  2\nENTITIES")
+
+    for pl in polys:
+        if not pl["pts"]:
+            continue
+        L("  0\nPOLYLINE"); L("  8\n", pl["layer"]); L(" 66\n1")
+        L(" 70\n", "1" if pl["closed"] else "0")
+        L(" 10\n0.0"); L(" 20\n0.0"); L(" 30\n0.0")
+        for px, py in pl["pts"]:
+            L("  0\nVERTEX"); L("  8\n", pl["layer"])
+            L(" 10\n", f"{px:.5f}"); L(" 20\n", f"{py:.5f}"); L(" 30\n0.0")
+        L("  0\nSEQEND"); L("  8\n", pl["layer"])
+
+    for c in circs:
+        L("  0\nCIRCLE"); L("  8\n", c["layer"])
+        L(" 10\n", f"{c['c'][0]:.5f}"); L(" 20\n", f"{c['c'][1]:.5f}")
+        L(" 30\n0.0"); L(" 40\n", f"{c['r']:.5f}")
+
+    # annotation block, stacked above the geometry
+    _ann = [f"KinematiK — {name}", f"Units: {_unit_lbl}"]
+    if notes:
+        _ann.extend(list(notes))
+    _all_y = [p[1] for pl in polys for p in pl["pts"]] + \
+             [c["c"][1] + c["r"] for c in circs]
+    _ymax = max(_all_y, default=0.0)
+    for ti, txt in enumerate(_ann):
+        L("  0\nTEXT"); L("  8\nANNOTATION")
+        L(" 10\n0.0"); L(" 20\n", f"{_ymax + _gap + ti * (_th*1.4):.5f}")
+        L(" 30\n0.0"); L(" 40\n", f"{_th:.5f}"); L("  1\n", txt)
+    L("  0\nENDSEC"); L("  0\nEOF")
+    return "\n".join(lines).encode("ascii", errors="replace")
+
+
+# --------------------------------------------------------------------------- #
+#  Per-subsystem PROFILE LIBRARY                                               #
+#  Each builder returns a candidate dict:                                      #
+#     {"label", "meta", "dxf_kwargs"}  where dxf_kwargs feeds _generic_dxf_bytes
+#  built from that subsystem's OWN numbers (declared or sensible defaults), so  #
+#  the export is the real section that subsystem revolves/extrudes — not a box.#
+# --------------------------------------------------------------------------- #
+def _naca4_points(chord_mm, thickness_frac=0.12, n=40):
+    """Symmetric NACA-4 half-thickness airfoil outline (upper then lower),
+    a real revolvable/extrudable wing section scaled to `chord_mm`."""
+    import math as _m
+    t = thickness_frac
+    xs = [0.5 * (1 - _m.cos(_m.pi * i / n)) for i in range(n + 1)]  # cosine spacing
+
+    def yt(x):
+        return 5 * t * (0.2969 * _m.sqrt(x) - 0.1260 * x - 0.3516 * x**2
+                        + 0.2843 * x**3 - 0.1015 * x**4)
+    upper = [(x * chord_mm, yt(x) * chord_mm) for x in xs]
+    lower = [(x * chord_mm, -yt(x) * chord_mm) for x in reversed(xs)]
+    return upper + lower
+
+
+def _bolt_circle(pcd_mm, n_bolts, hole_d_mm, layer="PROFILE"):
+    """n bolt holes on a pitch-circle diameter — returned as circle dicts."""
+    import math as _m
+    r = pcd_mm / 2.0
+    out = []
+    for i in range(max(1, int(n_bolts))):
+        a = 2 * _m.pi * i / max(1, int(n_bolts))
+        out.append({"c": (r * _m.cos(a), r * _m.sin(a)),
+                    "r": hole_d_mm / 2.0, "layer": layer})
+    return out
+
+
+def _rect(w, h, x0=0.0, y0=0.0):
+    return [(x0, y0), (x0 + w, y0), (x0 + w, y0 + h), (x0, y0 + h)]
+
+
+# --------------------------------------------------------------------------- #
+#  Publish / consume convention for REAL computed geometry                     #
+#                                                                              #
+#  Exactly like brakes: the tab that owns a subsystem publishes what it just   #
+#  computed to a dedicated session_state slot; the DXF exporter consumes ONLY  #
+#  that slot. No ledger fallback, no invented defaults — if a tab hasn't run   #
+#  its tool yet, the export honestly says "run it first" (the rotor exporter   #
+#  behaves the same: nothing until you optimise).                              #
+# --------------------------------------------------------------------------- #
+def publish_export_geometry(subsystem_key, geom):
+    """A tab calls this once it has computed real geometry, e.g.:
+        publish_export_geometry("aerodynamics",
+            {"chord_mm": 240.0, "thickness_frac": 0.14, "source": "aeromap"})
+    `geom` is a small dict of real numbers; the exporter turns it into the
+    subsystem's characteristic 2-D section. Stored per-subsystem in session."""
+    try:
+        _slot = st.session_state.setdefault("_export_geom", {})
+        _slot[str(subsystem_key)] = dict(geom or {})
+    except Exception:
+        pass
+
+
+def get_export_geometry(subsystem_key):
+    """Read back what a tab published, or None if it hasn't run its tool yet."""
+    try:
+        return st.session_state.get("_export_geom", {}).get(str(subsystem_key))
+    except Exception:
+        return None
+
+
+def publish_geometry_from_parts():
+    """Derive real export sections for cooling / powertrain / chassis / data-acq
+    from the ACTUAL part dimensions a member typed into the 3D-model "drop your
+    part — type its size in mm" entry (or uploaded as CAD). Those l/w/h numbers
+    are real, member-entered geometry — not a guess — so each subsystem's DXF is
+    the true face/section of the part they're building. Publishes nothing for a
+    subsystem with no part entered yet (honest gate). Cheap; safe to call each
+    rerun before the exporter reads."""
+    try:
+        parts = st.session_state.get("car3d_custom_parts", []) or []
+    except Exception:
+        parts = []
+    if not parts:
+        return
+
+    # newest part per subsystem wins (most recent thing they entered)
+    latest = {}
+    for p in parts:
+        s = p.get("subsys")
+        if s:
+            latest[s] = p
+
+    # --- cooling: radiator core FACE = width × height of the part --------- #
+    p = latest.get("cooling")
+    if p and p.get("w_mm") and p.get("h_mm"):
+        publish_export_geometry("cooling", {
+            "core_w_mm": float(p["w_mm"]), "core_h_mm": float(p["h_mm"]),
+            "core_depth_mm": float(p.get("l_mm") or 0) or None,
+            "source": f"3D part '{p.get('name','radiator')}'",
+        })
+
+    # --- powertrain: motor flange from the motor's real diameter ---------- #
+    p = latest.get("powertrain")
+    if p:
+        # a cylinder's face diameter is w_mm (== h_mm for a round motor)
+        _dia = None
+        if p.get("shape") == "cylinder" and p.get("w_mm"):
+            _dia = float(p["w_mm"])
+        elif p.get("h_mm"):
+            _dia = float(p["h_mm"])
+        if _dia and _dia > 20:
+            # flange bore ~ 0.4×motor OD; bolt PCD ~ 0.8×OD; 4 bolts typical
+            _tq = None
+            try:
+                _evs = getattr(get_store(), "ev_excel_params", {}) or {}
+                _mstore = _evs.get("motor", {}) if isinstance(_evs, dict) else {}
+                _tq = _mstore.get("motor_peak_torque_nm")
+            except Exception:
+                _tq = None
+            publish_export_geometry("powertrain", {
+                "n_bolts": 4, "pcd_mm": round(_dia * 0.8, 1),
+                "bore_d_mm": round(_dia * 0.4, 1), "hole_d_mm": 9.0,
+                "peak_torque_nm": _tq,
+                "source": f"3D part '{p.get('name','motor')}' (⌀{_dia:g} mm)",
+            })
+
+    # --- chassis: node gusset legs from the part footprint ---------------- #
+    p = latest.get("chassis")
+    if p and p.get("l_mm") and p.get("h_mm"):
+        _a = float(p["l_mm"]); _b = float(p["h_mm"])
+        publish_export_geometry("chassis", {
+            "leg_a_mm": _a, "leg_b_mm": _b,
+            "holes": [{"c": (_a*0.28, _b*0.18), "r": 5.0},
+                      {"c": (_a*0.14, _b*0.5), "r": 5.0}],
+            "source": f"3D part '{p.get('name','node')}'",
+        })
+
+    # --- data-acquisition: PCB/sensor bracket from its footprint ---------- #
+    p = latest.get("data-acquisition")
+    if p and p.get("l_mm") and p.get("w_mm"):
+        publish_export_geometry("data-acquisition", {
+            "w_mm": float(p["l_mm"]), "h_mm": float(p["w_mm"]),
+            "hole_r_mm": 1.6, "margin_mm": 6.0,
+            "source": f"3D part '{p.get('name','board')}'",
+        })
+
+
+def _subsystem_profile_candidates(subsystem_key):
+    """Build the subsystem's characteristic 2-D section(s) from the REAL geometry
+    its tab published via publish_export_geometry(). Returns [] (honest gate)
+    when the tab hasn't computed anything yet — never invents defaults, so a
+    member never extrudes a wrong-sized part that looks authoritative."""
+    # Refresh sections that come from member-entered 3D part dimensions
+    # (cooling / powertrain / chassis / data-acq) so they're current.
+    try:
+        publish_geometry_from_parts()
+    except Exception:
+        pass
+    G = get_export_geometry(subsystem_key)
+    if not G:
+        return []           # honest gate — caller shows "run the tab's tool first"
+    cands = []
+
+    if subsystem_key == "aerodynamics":
+        # Real chord + t/c from the aero tab (aeromap / scale-model spec).
+        chord = G.get("chord_mm")
+        if not chord:
+            return []
+        tfs = G.get("thickness_fracs") or [G.get("thickness_frac", 0.12)]
+        for tf in tfs:
+            pts = _naca4_points(chord, tf)
+            cands.append({
+                "label": f"Wing element — chord {chord:g} mm, t/c {int(tf*100)}%",
+                "meta": {"Chord (mm)": round(chord, 1),
+                         "Thickness (%c)": int(tf * 100),
+                         "Max thickness (mm)": round(chord * tf, 1),
+                         "Source": G.get("source", "aero tab")},
+                "dxf_kwargs": {"polylines": [{"pts": pts, "closed": True}]},
+                "notes": [f"Airfoil, chord {chord:g} mm, t/c {int(tf*100)}% "
+                          f"(from {G.get('source','aero tab')})",
+                          "Extrude to span; add camber/flap in CAD"],
+            })
+
+    elif subsystem_key == "suspension":
+        # Real bolt pattern from the hardpoints the suspension tab holds.
+        n = int(G.get("n_bolts") or 0)
+        pcd = G.get("pcd_mm")
+        hole = G.get("hole_d_mm", 8.0)
+        if not (n and pcd):
+            return []
+        plate = pcd + 3 * hole
+        outline = [(-plate/2, -plate/2), (plate/2, -plate/2),
+                   (plate/2, plate/2), (-plate/2, plate/2)]
+        cands.append({
+            "label": f"Mount plate — {n} bolts on {pcd:g} mm PCD",
+            "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
+                     "Hole ⌀ (mm)": hole, "Peak load (N)": G.get("load_n"),
+                     "Source": G.get("source", "hardpoints")},
+            "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
+                           "circles": _bolt_circle(pcd, n, hole)},
+            "notes": [f"{n}-bolt mount plate, {pcd:g} mm PCD "
+                      f"(from {G.get('source','hardpoints')})",
+                      "Set plate thickness from FEA on the peak load"],
+        })
+
+    elif subsystem_key == "brakes":
+        # Caliper bracket from the real brake torque + mount geometry the tab has.
+        n = int(G.get("n_bolts") or 0)
+        pcd = G.get("pcd_mm")
+        hole = G.get("hole_d_mm", 8.0)
+        if not (n and pcd):
+            return []
+        w = pcd + 4 * hole
+        h = w * 0.7
+        outline = _rect(w, h, -w/2, -h/2)
+        cands.append({
+            "label": f"Caliper bracket — {n}-bolt, {pcd:g} mm PCD",
+            "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
+                     "Brake torque/corner (N·m)": G.get("brake_torque_nm"),
+                     "Source": G.get("source", "brakes tab")},
+            "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
+                           "circles": _bolt_circle(pcd, n, hole)},
+            "notes": ["Caliper mount bracket blank",
+                      "Rotor half-section export lives in the Brakes optimiser"],
+        })
+
+    elif subsystem_key == "electrics":
+        # Accumulator segment box from the real cell grid / segment dims.
+        w = G.get("seg_w_mm")
+        h = G.get("seg_h_mm")
+        wall = G.get("wall_mm", 8.0)
+        if not (w and h):
+            return []
+        outer = _rect(w, h)
+        inner = _rect(w - 2*wall, h - 2*wall, wall, wall)
+        cands.append({
+            "label": f"Accumulator segment — {w:g}×{h:g} mm box",
+            "meta": {"Outer W (mm)": round(w, 1), "Outer H (mm)": round(h, 1),
+                     "Wall (mm)": wall, "Cells": G.get("n_cells"),
+                     "Config": G.get("config"),
+                     "Source": G.get("source", "accumulator tab")},
+            "dxf_kwargs": {"polylines": [
+                {"pts": outer, "closed": True},
+                {"pts": inner, "closed": True}]},
+            "notes": [f"Segment box {w:g}x{h:g} mm, {wall:g} mm wall "
+                      f"({G.get('config','')} — {G.get('source','accumulator tab')})",
+                      "Extrude to segment length"],
+        })
+
+    elif subsystem_key == "cooling":
+        # Radiator core face from the real sizing the cooling tab computed.
+        w = G.get("core_w_mm")
+        h = G.get("core_h_mm")
+        if not (w and h):
+            return []
+        cands.append({
+            "label": f"Radiator core face — {w:g}×{h:g} mm",
+            "meta": {"Face W (mm)": round(w, 1), "Face H (mm)": round(h, 1),
+                     "Core depth (mm)": G.get("core_depth_mm"),
+                     "Airflow req (m³/s)": G.get("airflow_cms"),
+                     "Heat reject (W)": G.get("heat_reject_w"),
+                     "Source": G.get("source", "cooling tab")},
+            "dxf_kwargs": {"polylines": [{"pts": _rect(w, h), "closed": True}]},
+            "notes": [f"Core face {w:g}x{h:g} mm (from {G.get('source','cooling tab')})",
+                      f"Extrude by core depth "
+                      f"{('= %g mm' % G['core_depth_mm']) if G.get('core_depth_mm') else ''}"],
+        })
+
+    elif subsystem_key == "chassis":
+        # Node gusset from the real tube-node geometry the chassis tab holds.
+        a = G.get("leg_a_mm")
+        b = G.get("leg_b_mm")
+        if not (a and b):
+            return []
+        tri = [(0, 0), (a, 0), (0, b)]
+        holes = G.get("holes") or [{"c": (a*0.28, b*0.18), "r": 5.0},
+                                   {"c": (a*0.14, b*0.5), "r": 5.0}]
+        cands.append({
+            "label": f"Node gusset — {a:g}×{b:g} mm",
+            "meta": {"Leg A (mm)": round(a, 1), "Leg B (mm)": round(b, 1),
+                     "Peak load (N)": G.get("load_n"),
+                     "Source": G.get("source", "chassis tab")},
+            "dxf_kwargs": {"polylines": [{"pts": tri, "closed": True}],
+                           "circles": holes},
+            "notes": [f"Node gusset {a:g}x{b:g} mm (from {G.get('source','chassis tab')})",
+                      "Cut from plate; set thickness from the joint load"],
+        })
+
+    elif subsystem_key == "data-acquisition":
+        # Sensor / PCB bracket from the real board/sensor footprint.
+        w = G.get("w_mm")
+        h = G.get("h_mm")
+        hole_r = G.get("hole_r_mm", 1.6)
+        m = G.get("margin_mm", 6.0)
+        if not (w and h):
+            return []
+        holes = [{"c": (m, m), "r": hole_r}, {"c": (w-m, m), "r": hole_r},
+                 {"c": (m, h-m), "r": hole_r}, {"c": (w-m, h-m), "r": hole_r}]
+        cands.append({
+            "label": f"Sensor/PCB bracket — {w:g}×{h:g} mm",
+            "meta": {"W (mm)": round(w, 1), "H (mm)": round(h, 1),
+                     "Corner holes": 4, "Source": G.get("source", "data-acq tab")},
+            "dxf_kwargs": {"polylines": [{"pts": _rect(w, h), "closed": True}],
+                           "circles": holes},
+            "notes": [f"Bracket {w:g}x{h:g} mm, 4x corner holes "
+                      f"(from {G.get('source','data-acq tab')})",
+                      "Extrude to bracket thickness"],
+        })
+
+    elif subsystem_key == "powertrain":
+        # Motor mount flange from the real motor face + bolt pattern.
+        n = int(G.get("n_bolts") or 0)
+        pcd = G.get("pcd_mm")
+        bore = G.get("bore_d_mm")
+        hole = G.get("hole_d_mm", 9.0)
+        if not (n and pcd and bore):
+            return []
+        plate = pcd + 3.5 * hole
+        outline = [(-plate/2, -plate/2), (plate/2, -plate/2),
+                   (plate/2, plate/2), (-plate/2, plate/2)]
+        circles = [{"c": (0, 0), "r": bore/2.0}] + _bolt_circle(pcd, n, hole)
+        cands.append({
+            "label": f"Motor mount flange — {n} bolts on {pcd:g} mm PCD",
+            "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
+                     "Bore ⌀ (mm)": bore,
+                     "Peak torque (N·m)": G.get("peak_torque_nm"),
+                     "Source": G.get("source", "powertrain tab")},
+            "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
+                           "circles": circles},
+            "notes": [f"Motor flange, {n} bolts on {pcd:g} mm PCD, "
+                      f"⌀{bore:g} mm bore (from {G.get('source','powertrain tab')})",
+                      "Set thickness from the peak torque reaction"],
+        })
+
+    return cands
+
+
+
+def _seg_intersect(p1, p2, p3, p4):
+    """True if segment p1p2 properly crosses p3p4 (shared endpoints don't count)."""
+    def _o(a, b, c):
+        return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0])
+    d1, d2 = _o(p3, p4, p1), _o(p3, p4, p2)
+    d3, d4 = _o(p1, p2, p3), _o(p1, p2, p4)
+    if ((d1 > 0) != (d2 > 0)) and ((d3 > 0) != (d4 > 0)):
+        return True
+    return False
+
+
+def _profile_is_clean(pts):
+    """Cheap self-intersection guard so SolidWorks imports the sketch as a
+    single closed contour it can extrude without 'open/self-intersecting'
+    repair. Checks non-adjacent edges of a closed loop. Returns (ok, reason)."""
+    n = len(pts)
+    if n < 3:
+        return False, "fewer than 3 points"
+    edges = [(pts[i], pts[(i+1) % n]) for i in range(n)]
+    for i in range(n):
+        for j in range(i+1, n):
+            # skip adjacent edges (they share a vertex) and the wrap pair
+            if j == i or j == (i+1) % n or (i == 0 and j == n-1):
+                continue
+            if abs(i-j) <= 1:
+                continue
+            if _seg_intersect(edges[i][0], edges[i][1],
+                              edges[j][0], edges[j][1]):
+                return False, f"edges {i} and {j} cross"
+    return True, "clean"
+
+
+def _validate_candidate_geometry(cand):
+    """Run each closed profile in a candidate through the self-intersection guard.
+    Returns (ok, [warnings]). Non-fatal: we still let the member download, but we
+    warn loudly so they check it before extruding."""
+    warns = []
+    kw = cand.get("dxf_kwargs") or {}
+    polys = kw.get("polylines") or []
+    if cand.get("profile_mm"):
+        polys = polys + [{"pts": cand["profile_mm"], "closed": True}]
+    for idx, pl in enumerate(polys):
+        if pl.get("closed", True):
+            ok, why = _profile_is_clean(pl.get("pts", []))
+            if not ok:
+                warns.append(f"profile {idx+1}: {why}")
+    return (len(warns) == 0), warns
+
+
+# Where each subsystem's export geometry comes from — shown in the empty state so
+# a member knows exactly which tool to run to light up the export (like brakes).
+_EXPORT_SOURCE_HINT = {
+    "aerodynamics": "Run the Aerodynamics tab's scale-model / aeromap so it "
+                    "publishes the real chord and t/c.",
+    "suspension":   "Set your hardpoints in the Kinematics tab so the upright "
+                    "mount PCD and bolt count are known.",
+    "brakes":       "Enter the caliper mount + brake torque in the Brakes tab "
+                    "(the rotor export is in that tab's optimiser).",
+    "electrics":    "Run the Accumulator tab's segmentation so the segment box "
+                    "dimensions and cell grid are known.",
+    "cooling":      "Size the radiator in the Cooling tab so the core face and "
+                    "depth are published.",
+    "chassis":      "Define the tube node in the Chassis / Team Fit tab so the "
+                    "gusset legs are known.",
+    "data-acquisition": "Enter the board / sensor footprint in the Electronics "
+                    "(PCB) tab.",
+    "powertrain":   "Enter the motor face (bore + bolt PCD) and peak torque in "
+                    "the EV Powertrain tab.",
+}
+
+
+def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
+                        title_name=None):
+    """Short-list to mesh + DXF export, specialised per subsystem.
+
+    Each subsystem exports the ACTUAL 2-D section it takes into CAD — an airfoil
+    for aero, a mount/flange plate with its real bolt PCD for suspension /
+    powertrain / brakes, a segment box for the accumulator, a radiator core face
+    for cooling, a node gusset for chassis, a sensor bracket for data-acq. The
+    geometry comes from what the owning tab PUBLISHED via
+    publish_export_geometry() — no invented defaults. If a tab hasn't run its
+    tool yet the export honestly gates (exactly like the brakes rotor exporter,
+    which shows nothing until you optimise). Every profile is checked for self-
+    intersection so it imports into SolidWorks as one clean closed contour ready
+    to extrude and validate in ANSYS. Callers may inject bespoke `candidates`
+    (e.g. the brakes rotor Pareto short-list)."""
+    _name = title_name or _VC_LABEL.get(subsystem_key,
+                                        subsystem_key.replace("-", " ").title())
+
+    if not candidates:
+        try:
+            candidates = _subsystem_profile_candidates(subsystem_key)
+        except Exception:
+            candidates = []
+
+    st.markdown(f"###### 📐 Short-list to mesh &amp; export — {_name}")
+
+    if subsystem_key == "brakes":
+        st.caption("The full rotor short-list (mass-vs-temp Pareto) and its "
+                   "half-section DXF live in the 🛑 Brakes tab optimiser. Below "
+                   "is the caliper-mount bracket section, once the tab has it.")
+
+    if not candidates:
+        _hint = _EXPORT_SOURCE_HINT.get(
+            subsystem_key, "Run this subsystem's tab tool first.")
+        st.info(f"**Nothing to export yet.** {_hint} The DXF is built from your "
+                f"real computed geometry — not a guess — so it stays empty until "
+                f"the numbers exist. (Same as the rotor exporter: nothing until "
+                f"you optimise.)")
+        return
+
+    # --- the short-list table (what's worth meshing) ----------------------- #
+    _rows = []
+    for c in candidates:
+        _r = {"Section": c.get("label", "?")}
+        _r.update({k: v for k, v in (c.get("meta") or {}).items()
+                   if v is not None})
+        _rows.append(_r)
+    st.markdown("**Short-list to mesh** — each row is a real section from your "
+                "computed numbers; confirm in Ansys / your FEA:")
+    st.dataframe(_rows, width="stretch", hide_index=True)
+
+    # --- DXF export per short-listed geometry ------------------------------ #
+    st.markdown("**Export to CAD (DXF)** — imports into SolidWorks as one closed "
+                "sketch; extrude/revolve, then mesh in ANSYS:")
+    _labels = {i: c.get("label", f"section {i+1}")
+               for i, c in enumerate(candidates)}
+    _pick = st.selectbox("Section to export", options=list(_labels.keys()),
+                         format_func=lambda i: _labels[i],
+                         key=f"{key_prefix}_gdxf_pick")
+    _cand = candidates[_pick]
+    _notes = list(_cand.get("notes", [])) or [
+        f"{k}: {v}" for k, v in (_cand.get("meta") or {}).items() if v is not None]
+
+    # SolidWorks-import guard: warn on any self-intersecting closed profile.
+    _clean, _warns = _validate_candidate_geometry(_cand)
+    if not _clean:
+        st.warning("⚠️ This section may not import as a clean closed contour "
+                   "(" + "; ".join(_warns) + "). Check it in SolidWorks before "
+                   "extruding.")
+    else:
+        st.caption("✓ Profile checked: single closed contour, holes as separate "
+                   "loops, units embedded — imports ready to extrude.")
+
+    _dxf_kwargs = _cand.get("dxf_kwargs")
+    if _dxf_kwargs:
+        _dxf = _generic_dxf_bytes(_cand.get("label", _name),
+                                  notes=_notes, **_dxf_kwargs)
+    else:
+        _dxf = _generic_dxf_bytes(_cand.get("label", _name),
+                                  _cand.get("profile_mm", [(0, 0)]),
+                                  notes=_notes)
+    _safe = subsystem_key.replace("-", "_")
+    st.download_button(
+        "⬇ Download DXF", data=_dxf,
+        file_name=f"kinematik_{_safe}_{_pick+1}.dxf",
+        mime="application/dxf", key=f"{key_prefix}_gdxf_dl")
+    _vc_disclaimer(f"the {_name.lower()} section")
+# === END spliced block ===
 
 
 def render_suspension_vs_chassis():
@@ -11105,6 +12541,12 @@ with tab5c:
                                   key="comp_od")
         comp_wall = st.number_input("Tube wall", 0.4, 4.0, 0.9, 0.05,
                                     key="comp_wall")
+        try:
+            record_activity("chassis", "material",
+                            f"Link tube material: {comp_mat} "
+                            f"(OD {comp_od:g} mm, wall {comp_wall:g} mm)")
+        except Exception:
+            pass
         comp_use_tab = st.checkbox("Add chassis-tab compliance (series)",
                                    value=False, key="comp_use_tab")
         comp_ktab = None
@@ -11267,6 +12709,15 @@ with tab5c:
                            f"{res.summary()['iterations']} it",
                            "good" if res.converged else "bad"),
                     unsafe_allow_html=True)
+
+        try:
+            record_activity(
+                "chassis", "calculation",
+                f"Corner compliance: toe {toe:+.3f}°, camber {cam:+.3f}°, "
+                f"patch shift {res.contact_patch_lateral_shift_mm:+.2f} mm "
+                f"({'converged' if res.converged else 'did NOT converge'})")
+        except Exception:
+            pass
 
         # member force / deflection bar chart
         _uF = units_mod.label("N")
@@ -14604,19 +16055,27 @@ with tab12:
 # INTEGRATION — suspension↔chassis CAD fit + the interface ledger across the
 # eight sub-teams, combined into one tab.
 with tab13:
-    _iview = st.radio(
-        "Integration view",
-        ["Cross-subsystem ledger", "Subsystem ↔ chassis (CAD fit)",
-         "Mount-point clash", "Myth-buster"],
-        horizontal=True, label_visibility="collapsed", key="integration_view")
+    _iview = feature_menu("integration",
+        ["Verdict Center", "Cross-subsystem ledger",
+         "Subsystem ↔ chassis (CAD fit)", "Mount-point clash"],
+        title="Integration tools",
+        descriptions={
+            "Verdict Center": "Whole-car verdict, per-subsystem boxes, sanity-check",
+            "Cross-subsystem ledger": "Declare each subsystem's interface numbers",
+            "Subsystem ↔ chassis (CAD fit)": "Does it fit the chassis envelope?",
+            "Mount-point clash": "Mount-point clearance & clash check"})
 
     _show_ledger = (_iview == "Cross-subsystem ledger")
-    if _iview == "Subsystem ↔ chassis (CAD fit)":
+    if _iview == "Verdict Center":
+        try:
+            render_verdict_center()
+        except Exception as _vce:
+            st.warning(f"Verdict Center unavailable: {_vce}")
+            render_mythbuster()
+    elif _iview == "Subsystem ↔ chassis (CAD fit)":
         render_suspension_vs_chassis()
     elif _iview == "Mount-point clash":
         render_mountpoint_clash()
-    elif _iview == "Myth-buster":
-        render_mythbuster()
 
 if _show_ledger:
   with tab13:
@@ -16333,8 +17792,13 @@ with tab_dfmea:
             columns=["D", "Meaning"]).set_index("D"))
 
     # ---- the editable risk log ------------------------------------------ #
-    _view = st.radio("View", ["📝 Risk log", "📈 Dashboard", "✅ Action tracker"],
-                     horizontal=True, key="dfmea_view")
+    _view = feature_menu("dfmea",
+                         ["📝 Risk log", "📈 Dashboard", "✅ Action tracker"],
+                         title="DFMEA tools",
+                         descriptions={
+                             "📝 Risk log": "The editable failure-mode table (RPN, risk band)",
+                             "📈 Dashboard": "Risk distribution & top items",
+                             "✅ Action tracker": "Open mitigations and owners"})
 
     # Build the working DataFrame with a live RPN + Risk Band for display.
     _df = _pd_d.DataFrame(st.session_state.dfmea_rows,
