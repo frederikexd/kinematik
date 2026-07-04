@@ -396,6 +396,77 @@ def export(feature: str, kind: str) -> None:
     _emit("export", feature=feature, action=kind, success=True)
 
 
+def has_engaged(feature: str) -> bool:
+    """True if engagement has already been recorded for this feature this
+    session. Reads the SAME internal store auto_engage writes to, so callers in
+    streamlit_app.py don't have to know the key-prefixing convention (a source
+    of silent bugs — st.session_state keys and the analytics store differ)."""
+    return bool(_sget(f"_ax_engaged_{feature}", False))
+
+
+def has_completed(feature: str) -> bool:
+    """True if a completion has already been recorded for this feature this
+    session. Companion to has_engaged()."""
+    return bool(_sget(f"_ax_completed_{feature}", False))
+
+
+def has_opened(feature: str) -> bool:
+    """True if a tab_open has already been logged for this feature this
+    session. The tab proxy writes this flag directly to st.session_state (not
+    via the prefixing store), so read it the same way."""
+    try:
+        s = _store()
+        if s is not None:
+            return bool(s.get(f"_ax_open_{feature}", False))
+    except Exception:
+        pass
+    return False
+
+
+def auto_engage(feature: str, action: Optional[str] = None) -> bool:
+    """Fire ``feature_engage`` at most ONCE per session per feature.
+
+    Intended for central/auto instrumentation: safe to call on every rerun
+    (e.g. the moment a user first types a number into a tab). Returns True only
+    on the call that actually emitted, so callers can chain follow-up logic.
+    """
+    flag = f"_ax_engaged_{feature}"
+    if _sget(flag, False):
+        return False
+    _sset(flag, True)
+    engage(feature, action=action)
+    return True
+
+
+def auto_complete(feature: str, action: Optional[str] = None,
+                  payload: Optional[dict] = None,
+                  require_engaged: bool = False) -> bool:
+    """Fire ``workflow_complete`` at most ONCE per session per feature.
+
+    Intended for central/auto instrumentation: safe to call on every rerun
+    (e.g. once a tab has produced a computed result). Also implies engagement,
+    so it back-fills ``feature_engage`` if that hasn't fired yet — a completed
+    run can never sit below its own engagement in the funnel. Returns True only
+    on the call that actually emitted the completion.
+
+    If ``require_engaged`` is True, the completion is only recorded when the
+    user has already engaged this feature this session. This is used by central
+    auto-instrumentation (e.g. the spinner hook) so that a computation running
+    inside a non-visible tab's body — Streamlit executes every tab body on each
+    rerun — cannot fabricate a completion for a tab the user never touched.
+    """
+    if require_engaged and not _sget(f"_ax_engaged_{feature}", False):
+        return False
+    # a completion logically entails engagement; make sure engage <= complete.
+    auto_engage(feature, action=action)
+    flag = f"_ax_completed_{feature}"
+    if _sget(flag, False):
+        return False
+    _sset(flag, True)
+    complete(feature, action=action, payload=payload)
+    return True
+
+
 def error(feature: str, exc: Any = None, kind: Optional[str] = None) -> None:
     """A feature errored. Drives the reliability (error-rate) metric."""
     ek = kind or (type(exc).__name__ if exc is not None else "error")
