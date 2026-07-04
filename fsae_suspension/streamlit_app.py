@@ -17074,6 +17074,10 @@ with tab_analytics:
     comparison = _axn.fetch_view("v_comparison_to_alternatives")
     individuals = _axn.fetch_view("v_individual_use")
 
+    # Corrected per-feature numbers (manual-merged), populated by the Per-feature
+    # use table below and reused by the Adoption funnel so both always match.
+    _fu_corrected: dict = {}
+
     _have_db = bool(roi or foot or feat_use)
 
     # Surface any view that ERRORED (vs genuinely empty) — e.g. a view dropped
@@ -17462,6 +17466,13 @@ with tab_analytics:
                     return v
                 return "—" if opened else 0
 
+            _fu_corrected[_fid] = {
+                "opened": _opens,
+                "engaged": _eng,
+                "completed": _comp,
+                "users": _users,
+            }
+
             _fu_rows.append({
                 "Feature": _flabel,
                 "Opens": _opens,
@@ -17578,42 +17589,44 @@ with tab_analytics:
     with fcol:
         st.markdown("#### Adoption funnel")
         st.caption(
-            "⚠️ Some features may show 0 engagement/completion despite real "
-            "opens — a few tabs work differently or were instrumented after "
-            "release, so earlier use wasn't captured. Every other number is "
-            "accurate; only the engagement/completion discrepancy is affected, "
-            "and recent activity is the most accurate.")
-        if funnel:
-            # Reflect exactly the same features, by the same exact names, as the
-            # Per-feature use tab: iterate _TAB_META (the 25 canonical features)
-            # in the same order, pull each one's funnel row by id, and label it
-            # with the exact display name. Features not yet opened show zeros;
-            # ids not in _TAB_META (e.g. the 'mythbuster' sub-workflow) are not
-            # shown here, matching the Per-feature tab.
-            _fn_by_id = {r.get("feature"): r for r in funnel}
-            # Order by real activity (opens), busiest first, so the funnel leads
-            # with features that are clearly alive rather than alphabetically.
+            "Open → engage → complete for each feature, using the same "
+            "corrected counts as the Per-feature use table above. A few tabs "
+            "work differently, so the raw event log can under-capture "
+            "engagement/completion; those are corrected here too.")
+        if funnel or _fu_corrected:
+            # Reflect exactly the same features AND the same numbers as the
+            # Per-feature use tab. Prefer the corrected (manual-merged) values
+            # stashed by that table; fall back to the raw funnel view only for
+            # any feature it didn't cover. ids not in _TAB_META (e.g. the
+            # 'mythbuster' sub-workflow) are not shown, matching the table.
+            _fn_by_id = {r.get("feature"): r for r in (funnel or [])}
             _fn_items = [(_fid, _emj, _flabel)
                          for _fid, (_emj, _flabel) in _TAB_META.items()
                          if _fid != "analytics"]
-            def _fn_opens(_fid):
-                _v = _fn_by_id.get(_fid, {}).get("opened", 0) or 0
-                if _fid == "validation":
-                    _v += _fn_by_id.get("mythbuster", {}).get("opened", 0) or 0
-                return _v
-            _fn_items.sort(key=lambda t: _fn_opens(t[0]), reverse=True)
-            for _fid, _emj, _flabel in _fn_items:
-                r = _fn_by_id.get(_fid, {})
-                _o = r.get("opened", 0) or 0
-                _e = r.get("engaged", 0) or 0
-                _c = r.get("completed", 0) or 0
-                # Fold Myth-buster (its own feature id, but part of the
-                # Validation workflow) into the Validation funnel row.
+
+            def _fn_vals(_fid):
+                # corrected values win; Validation already has Myth-buster folded
+                # in, so do NOT re-add it here.
+                _cv = _fu_corrected.get(_fid)
+                if _cv is not None:
+                    return (_cv.get("opened", 0) or 0,
+                            _cv.get("engaged", 0) or 0,
+                            _cv.get("completed", 0) or 0)
+                _r = _fn_by_id.get(_fid, {})
+                _o = _r.get("opened", 0) or 0
+                _e = _r.get("engaged", 0) or 0
+                _c = _r.get("completed", 0) or 0
                 if _fid == "validation":
                     _mb = _fn_by_id.get("mythbuster", {})
                     _o += _mb.get("opened", 0) or 0
                     _e += _mb.get("engaged", 0) or 0
                     _c += _mb.get("completed", 0) or 0
+                return (_o, _e, _c)
+
+            # Order by real activity (opens), busiest first — same as the table.
+            _fn_items.sort(key=lambda t: _fn_vals(t[0])[0], reverse=True)
+            for _fid, _emj, _flabel in _fn_items:
+                _o, _e, _c = _fn_vals(_fid)
                 # "—" where a feature was opened but engagement wasn't captured,
                 # so a real 0 doesn't look like the funnel is broken.
                 _e_txt = str(_e) if _e > 0 else ("—" if _o > 0 else "0")
