@@ -73,6 +73,28 @@ from suspension import registry as registry_mod
 from suspension import cad_ingest as ingest_mod
 from suspension import analytics as _axn
 
+
+# --------------------------------------------------------------------------- #
+#  _do_rerun — defined EARLY (right after imports) on purpose.                 #
+#                                                                              #
+#  Streamlit runs this script top-to-bottom. Several tab helpers call          #
+#  _do_rerun() while rendering — feature_menu (menu navigation) and the        #
+#  documentation template picker (quick-start bundle buttons) — and those tabs #
+#  execute long before the middle of the file. If _do_rerun were defined       #
+#  further down, those call sites would raise NameError at click time and the  #
+#  surrounding view would collapse to its fallback. Keeping the definition up  #
+#  here guarantees every caller can see it.                                    #
+# --------------------------------------------------------------------------- #
+def _do_rerun():
+    """Streamlit rerun that works across versions."""
+    try:
+        st.rerun()
+    except Exception:
+        try:
+            st.experimental_rerun()
+        except Exception:
+            pass
+
 # --------------------------------------------------------------------------- #
 #  Central auto-instrumentation of ENGAGEMENT.
 #
@@ -11723,15 +11745,8 @@ class _MBDictResult:
 
 
 
-def _do_rerun():
-    """Streamlit rerun that works across versions."""
-    try:
-        st.rerun()
-    except Exception:
-        try:
-            st.experimental_rerun()
-        except Exception:
-            pass
+# (_do_rerun is defined near the top of the file, right after the imports, so
+#  that tab helpers which call it during render can always see it.)
 
 
 
