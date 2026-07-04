@@ -3802,40 +3802,56 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
 # script top-to-bottom, so the data must exist before the first tab renders.
 # Placing it lower in the file raised NameError at those early call sites, which
 # dropped every subsystem to the simple fallback report.
+# Each entry is (id, label, icon, default_on, skeleton_markdown, group).
+# `group` sorts the section into one of three families in the picker:
+#   • "Engineering"  — subsystem-specific blocks native to KinematiK
+#   • "Process"      — general process-documentation blocks, structured after the
+#                       Atlassian Confluence / Miro process-doc templates
+#                       (document info, process overview, step detail, roles)
+#   • "Project"      — project & team-management blocks, structured after the
+#                       Notion / Slite project-documentation templates
+#                       (charter, plan & timeline, risk log, status, closure)
+# Older callers that only unpack five values still work — see _TMPL_UNPACK below.
 _DOC_TEMPLATES = [
+    # ---- Engineering (subsystem-native) --------------------------------- #
     ("design_intent", "Design intent & requirements", "🎯", True,
      "## Design intent\n"
      "- What this subsystem must achieve:\n"
      "- Key performance targets (with numbers):\n"
      "- Rules / regulations it answers to:\n"
-     "- Constraints (mass budget, envelope, cost, manufacturing):\n"),
+     "- Constraints (mass budget, envelope, cost, manufacturing):\n",
+     "Engineering"),
 
     ("assumptions", "Assumptions", "💡", True,
      "## Assumptions\n"
      "- Assumption 1 — sanity-checked below? (y/n):\n"
      "- Assumption 2 —\n"
-     "- Anything taken on trust that a teammate should verify:\n"),
+     "- Anything taken on trust that a teammate should verify:\n",
+     "Engineering"),
 
     ("calc_summary", "Calculation summary", "🔢", True,
      "## Calculation summary\n"
      "- Method / tool used:\n"
      "- Key inputs (with units):\n"
      "- Key results (with units):\n"
-     "- Safety factor / margin:\n"),
+     "- Safety factor / margin:\n",
+     "Engineering"),
 
     ("test_plan", "Validation & test plan", "🧪", False,
      "## Validation plan\n"
      "- What still needs FEA / CFD / bench test:\n"
      "- Pass criteria (measurable):\n"
      "- Test rig / equipment needed:\n"
-     "- Who signs it off:\n"),
+     "- Who signs it off:\n",
+     "Engineering"),
 
     ("interfaces", "Interface & integration notes", "🔗", False,
      "## Interface & integration\n"
      "- Load paths into / out of this subsystem:\n"
      "- Mounting points and bolt patterns:\n"
      "- Clearances to check with adjacent subsystems:\n"
-     "- What this subsystem needs from others to be finalised:\n"),
+     "- What this subsystem needs from others to be finalised:\n",
+     "Engineering"),
 
     ("manufacturing", "Manufacturing & assembly notes", "🏭", False,
      "## Manufacturing & assembly\n"
@@ -3843,28 +3859,156 @@ _DOC_TEMPLATES = [
      "- Material & stock form:\n"
      "- Tolerances that matter:\n"
      "- Assembly sequence / fit notes:\n"
-     "- Lead time to order / make:\n"),
+     "- Lead time to order / make:\n",
+     "Engineering"),
 
     ("risks", "Risks & open items", "⚠️", False,
      "## Risks & open items\n"
      "- Risk 1 (likelihood · impact · mitigation):\n"
      "- Risk 2:\n"
      "- Decisions still pending:\n"
-     "- Dependencies on another subsystem:\n"),
+     "- Dependencies on another subsystem:\n",
+     "Engineering"),
 
     ("changes", "Changes from last iteration", "🔄", False,
      "## Changes from last iteration\n"
      "- What was changed and why:\n"
      "- Previous value → new value:\n"
-     "- Effect on other subsystems:\n"),
+     "- Effect on other subsystems:\n",
+     "Engineering"),
 
     ("handover", "Handover to next year", "📦", False,
      "## Handover notes\n"
      "- What worked and should be kept:\n"
      "- What to change next iteration (with reasoning):\n"
      "- Where the CAD / data / code lives:\n"
-     "- Who to ask questions (name + contact):\n"),
+     "- Who to ask questions (name + contact):\n",
+     "Engineering"),
+
+    # ---- Process documentation (Atlassian Confluence / Miro shape) ------- #
+    ("doc_information", "Document information", "🗂️", False,
+     "## Document information\n"
+     "- Title:\n"
+     "- Version / revision:\n"
+     "- Status (draft / approved / archived):\n"
+     "- Author(s):\n"
+     "- Created / last updated:\n",
+     "Process"),
+
+    ("process_overview", "Process overview", "🧭", False,
+     "## Process overview\n"
+     "- Purpose — what this process is for:\n"
+     "- Objectives (measurable):\n"
+     "- Scope — what's in / out:\n"
+     "- Key stakeholders:\n"
+     "- Resources / tools required:\n",
+     "Process"),
+
+    ("process_steps", "Process steps & detail", "🪜", False,
+     "## Process steps\n"
+     "- Step 1 — action, input → output:\n"
+     "- Step 2 —\n"
+     "- Decision point (condition → which branch):\n"
+     "- Timing / deadline that matters:\n",
+     "Process"),
+
+    ("roles_resp", "Roles & responsibilities", "👥", False,
+     "## Roles & responsibilities\n"
+     "- Who does each step (name / role):\n"
+     "- Who approves / signs off:\n"
+     "- Who to contact for help:\n"
+     "- Backup / cover if the owner is away:\n",
+     "Process"),
+
+    ("sop_checklist", "SOP checklist", "✅", False,
+     "## Standard-operating-procedure checklist\n"
+     "- [ ] Pre-checks done (what to confirm before starting):\n"
+     "- [ ] Step completed and verified:\n"
+     "- [ ] Post-checks / clean-up:\n"
+     "- [ ] Signed off by:\n",
+     "Process"),
+
+    ("incident_report", "Incident / issue report", "🚨", False,
+     "## Incident report\n"
+     "- What happened (summary):\n"
+     "- When / where / who was involved:\n"
+     "- Root cause (if known):\n"
+     "- Immediate fix applied:\n"
+     "- Follow-up action to prevent recurrence:\n",
+     "Process"),
+
+    # ---- Project & team management (Notion / Slite shape) --------------- #
+    ("project_charter", "Project charter / proposal", "📜", False,
+     "## Project charter\n"
+     "- Problem / opportunity this addresses:\n"
+     "- Goal & success criteria (measurable):\n"
+     "- Project lead & core team:\n"
+     "- Scope statement (in / out):\n"
+     "- Key milestones & target dates:\n",
+     "Project"),
+
+    ("project_plan", "Project plan & timeline", "🗓️", False,
+     "## Project plan & timeline\n"
+     "- Work breakdown (major tasks):\n"
+     "- Owner per task:\n"
+     "- Start / due dates:\n"
+     "- Dependencies between tasks:\n"
+     "- Budget / cost estimate:\n",
+     "Project"),
+
+    ("risk_issue_log", "Risk & issues log", "📛", False,
+     "## Risk & issues log\n"
+     "- Risk / issue — description:\n"
+     "- Likelihood · impact:\n"
+     "- Owner:\n"
+     "- Mitigation / action:\n"
+     "- Status (open / watching / closed):\n",
+     "Project"),
+
+    ("status_report", "Project status report", "📈", False,
+     "## Status report\n"
+     "- Overall status (on track / at risk / off track):\n"
+     "- Done since last update:\n"
+     "- Planned for next period:\n"
+     "- Blockers / help needed:\n"
+     "- Decisions awaiting sign-off:\n",
+     "Project"),
+
+    ("comms_plan", "Communication plan", "📣", False,
+     "## Communication plan\n"
+     "- Who needs updating & how often:\n"
+     "- Channel (meeting / chat / doc):\n"
+     "- Who owns the update:\n"
+     "- Escalation path for urgent issues:\n",
+     "Project"),
+
+    ("project_closure", "Project closure / review", "🏁", False,
+     "## Project closure\n"
+     "- Goals met? (against the charter):\n"
+     "- What went well:\n"
+     "- What to improve next time:\n"
+     "- Outstanding items handed off (to whom):\n"
+     "- Where final deliverables live:\n",
+     "Project"),
 ]
+
+# Order the family groups appear in the picker.
+_TMPL_GROUP_ORDER = ["Engineering", "Process", "Project"]
+_TMPL_GROUP_LABELS = {
+    "Engineering": "🔧 Engineering (subsystem-specific)",
+    "Process":     "📚 Process documentation",
+    "Project":     "📋 Project & team management",
+}
+
+
+def _TMPL_UNPACK(entry):
+    """Return (id, label, icon, default_on, body, group) for a template entry,
+    tolerating older 5-field entries (group defaults to 'Engineering')."""
+    if len(entry) >= 6:
+        return entry[0], entry[1], entry[2], entry[3], entry[4], entry[5]
+    _id, _label, _icon, _default, _body = entry
+    return _id, _label, _icon, _default, _body, "Engineering"
+
 
 # Lookup for fast access
 _TMPL_BY_ID = {t[0]: t for t in _DOC_TEMPLATES}
@@ -3919,38 +4063,97 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
     #  everything recorded this session — so the checkbox only ever adds   #
     #  structure, never gets in the way.                                   #
     # ------------------------------------------------------------------ #
-    _all_labels   = [f"{t[2]} {t[1]}" for t in _DOC_TEMPLATES]
-    _label_to_id  = {f"{t[2]} {t[1]}": t[0] for t in _DOC_TEMPLATES}
-    _default_labels = [f"{t[2]} {t[1]}" for t in _DOC_TEMPLATES if t[3]]
+    # Build the label ↔ id maps once, using the safe unpacker so both the old
+    # 5-field and the new 6-field (grouped) entries work. Labels are prefixed
+    # with a short group tag so the same option list stays readable even though
+    # Streamlit's multiselect is a flat control.
+    _entries = [_TMPL_UNPACK(t) for t in _DOC_TEMPLATES]
+    _label_to_id = {}
+    _id_to_label = {}
+    _labels_by_group = {g: [] for g in _TMPL_GROUP_ORDER}
+    for _id, _lbl, _icon, _default, _body, _group in _entries:
+        _full = f"{_icon} {_lbl}"
+        _label_to_id[_full] = _id
+        _id_to_label[_id] = _full
+        _labels_by_group.setdefault(_group, []).append(_full)
+    _default_labels = [_id_to_label[_id]
+                       for (_id, _l, _ic, _default, _b, _g) in _entries if _default]
 
     _use_templates = st.checkbox(
         "📚 Templates",
         value=st.session_state.get(f"{key_prefix}_tpl_on", False),
         key=f"{key_prefix}_tpl_on",
-        help="Open a small library of ready-made documentation sections "
-             "(design intent, assumptions, calculations, test plan, "
-             "manufacturing, risks, handover…). Tick the ones you need, fill "
-             "them out inline, and they’re merged into the report you download.")
+        help="Open a small library of ready-made documentation sections, grouped "
+             "into Engineering (subsystem-specific), Process documentation, and "
+             "Project & team management. Tick the ones you need, fill them out "
+             "inline, and they’re merged into the report you download.")
 
     _picked_ids = []
     if _use_templates:
+        # Quick-start bundles: one tap fills the multiselect with a sensible set
+        # for a whole family, so a member isn't ticking sections one by one.
+        st.markdown(
+            '<p class="hint" style="margin:2px 0 4px;font-size:.75rem;">'
+            'Quick-start a family, then fine-tune below:</p>',
+            unsafe_allow_html=True)
+        _bcols = st.columns(4)
+        def _ids_in_group(group):
+            return [_TMPL_UNPACK(t)[0] for t in _DOC_TEMPLATES
+                    if _TMPL_UNPACK(t)[5] == group]
+        _bundles = {
+            "🔧 Engineering": _ids_in_group("Engineering"),
+            "📚 Process":     _ids_in_group("Process"),
+            "📋 Project":     _ids_in_group("Project"),
+            "✨ Clear":       [],
+        }
+        for _bi, (_blabel, _bids) in enumerate(_bundles.items()):
+            if _bcols[_bi].button(_blabel, key=f"{key_prefix}_bundle_{_bi}",
+                                  use_container_width=True,
+                                  help="Load this family's sections into the "
+                                       "picker (replaces the current selection)."
+                                  if _bids else "Clear all selected sections."):
+                st.session_state[f"{key_prefix}_tpl_picks"] = [
+                    _id_to_label[i] for i in _bids]
+                _do_rerun()
+
         st.caption("Pick the sections you need — each one drops in below as an "
                    "editable, pre-filled skeleton. Untick anything you don’t need.")
+
+        # One grouped multiselect: options are ordered by family so related
+        # sections sit together. Streamlit doesn't do optgroups, so the group
+        # tag lives in each label and we order the option list by family.
+        _ordered_options = []
+        for _g in _TMPL_GROUP_ORDER:
+            _ordered_options.extend(_labels_by_group.get(_g, []))
+
         _selected_labels = st.multiselect(
             "Template library — choose sections to include",
-            options=_all_labels,
+            options=_ordered_options,
             default=st.session_state.get(f"{key_prefix}_tpl_picks",
                                          _default_labels),
             key=f"{key_prefix}_tpl_picks",
             label_visibility="collapsed",
-            help="Pick as many or as few as you need. "
-                 "Each selected section appears below as an editable text area.")
+            format_func=lambda lbl: lbl,
+            help="Grouped: Engineering (subsystem-specific), then Process "
+                 "documentation, then Project & team management. Pick as many "
+                 "or as few as you need.")
 
-        _picked_ids = [_label_to_id[lbl] for lbl in _selected_labels]
+        _picked_ids = [_label_to_id[lbl] for lbl in _selected_labels
+                       if lbl in _label_to_id]
 
+        # Show which families the current picks span, as a quick orientation.
         if _picked_ids:
-            st.caption(f"{len(_picked_ids)} section(s) selected — edit below, "
-                       f"then scroll down to sanity-check and export.")
+            _picked_groups = []
+            for _g in _TMPL_GROUP_ORDER:
+                _n = sum(1 for pid in _picked_ids
+                         if _TMPL_BY_ID.get(pid) is not None
+                         and _TMPL_UNPACK(_TMPL_BY_ID[pid])[5] == _g)
+                if _n:
+                    _picked_groups.append(
+                        f"{_TMPL_GROUP_LABELS[_g].split(' ',1)[0]} {_n}")
+            st.caption(f"{len(_picked_ids)} section(s) selected "
+                       f"({' · '.join(_picked_groups)}) — edit below, then "
+                       f"scroll down to sanity-check and export.")
         else:
             st.caption("No sections selected yet — tick some above, or leave "
                        "them off and the report will still include your declared "
@@ -3968,7 +4171,8 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
             unsafe_allow_html=True)
         st.markdown("###### ✏️ Edit your sections")
         for _tid in _picked_ids:
-            _, _tlabel, _ticon, _tdefault, _tbody = _TMPL_BY_ID[_tid]
+            _, _tlabel, _ticon, _tdefault, _tbody, _tgroup = _TMPL_UNPACK(
+                _TMPL_BY_ID[_tid])
             _heading = next(
                 (ln[3:] for ln in _tbody.splitlines() if ln.startswith("## ")),
                 _tlabel)
