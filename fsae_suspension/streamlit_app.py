@@ -17478,7 +17478,11 @@ with tab_analytics:
         with st.expander("Individual use (by subsystem)"):
             _n_named = sum(1 for r in individuals if r.get("is_named"))
             _n_anon = len(individuals) - _n_named
-            _n_total = len(individuals)
+            # Show the same headline user count as the "Total users ever" tile,
+            # which is pulled from v_retention.total_users — so this number and
+            # the top-of-page total always agree rather than contradicting.
+            _n_total = int(retention[0].get("total_users", 0) or 0) if retention \
+                else len(individuals)
             if _n_anon:
                 st.caption(
                     f"**{_n_total} "
