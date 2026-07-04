@@ -17590,8 +17590,9 @@ with tab_analytics:
         st.markdown("#### Adoption funnel")
         st.caption(
             "Open → engage → complete for each feature, using the same "
-            "corrected counts as the Per-feature use table above. A few tabs "
-            "work differently, so the raw event log can under-capture "
+            "corrected counts as the Per-feature use table above. Percentages "
+            "show engage as a share of opens and complete as a share of engage. "
+            "A few tabs work differently, so the raw event log can under-capture "
             "engagement/completion; those are corrected here too.")
         if funnel or _fu_corrected:
             # Reflect exactly the same features AND the same numbers as the
@@ -17631,10 +17632,18 @@ with tab_analytics:
                 # so a real 0 doesn't look like the funnel is broken.
                 _e_txt = str(_e) if _e > 0 else ("—" if _o > 0 else "0")
                 _c_txt = str(_c) if _c > 0 else ("—" if _o > 0 else "0")
+                # Conversion rates: engage as a share of opens, complete as a
+                # share of engage. Only shown when the denominator is > 0 and the
+                # numerator was actually captured, so we never print a rate off a
+                # missing ("—") stage.
+                _e_pct = (f" ({100 * _e / _o:.0f}% of opens)"
+                          if _o > 0 and _e > 0 else "")
+                _c_pct = (f" ({100 * _c / _e:.0f}% of engage)"
+                          if _e > 0 and _c > 0 else "")
                 st.markdown(
                     f'**{_flabel}** '
-                    f'<span class="hint">open {_o} → engage {_e_txt} → '
-                    f'complete {_c_txt}</span>',
+                    f'<span class="hint">open {_o} → engage {_e_txt}{_e_pct} → '
+                    f'complete {_c_txt}{_c_pct}</span>',
                     unsafe_allow_html=True)
         else:
             st.caption("Funnel fills in as tabs are opened and workflows complete.")
