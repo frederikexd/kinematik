@@ -2926,6 +2926,696 @@ def render_subsystem_documentation(subsystem_key, *, key_prefix,
                            "the PDF above is still yours to download.")
 
 
+# --------------------------------------------------------------------------- #
+#  0.  Small shared helpers                                                    #
+# --------------------------------------------------------------------------- #
+# Human labels + emoji for the eight subsystem channels, reused everywhere so
+# the Verdict Center, the docs templates and the mesh/DXF picker all speak the
+# same language.
+_VC_SUBSYS = [
+    ("suspension",       "🩷", "Suspension / Dynamics"),
+    ("aerodynamics",     "💛", "Aerodynamics"),
+    ("powertrain",       "❤️", "Powertrain"),
+    ("electrics",        "💙", "Electrics"),
+    ("brakes",           "🧡", "Brakes"),
+    ("cooling",          "🩵", "Cooling"),
+    ("chassis",          "💜", "Chassis / Frame"),
+    ("data-acquisition", "💚", "Data Acquisition"),
+]
+_VC_LABEL = {k: lab for k, _e, lab in _VC_SUBSYS}
+_VC_EMOJI = {k: e for k, e, _lab in _VC_SUBSYS}
+
+
+def _vc_disclaimer(where="this"):
+    """The 'double-check before you cut' footer.  Kept in one place so every
+    surface that produces a verdict, a report or an export carries the same
+    honest reminder that KinematiK is a screening tool, not the final word."""
+    st.markdown(
+        '<hr style="border:none;border-top:1px solid rgba(128,128,128,.18);'
+        'margin:14px 0 8px;">', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="hint" style="font-size:.72rem;line-height:1.5;'
+        'color:var(--dim);margin:0;">'
+        '⚠️ <b>Double-check before you commit.</b> '
+        f'{where.capitalize()} is a fast screening result from declared numbers '
+        'and simple rules — not a substitute for your own FEA/CFD, a bench test, '
+        'or a second set of eyes. Confirm anything you\'re about to cut, order or '
+        'sign off against the real analysis and your team lead.</p>',
+        unsafe_allow_html=True)
+
+
+# --------------------------------------------------------------------------- #
+#  1.  Per-subsystem verdict:  works / closer-look / attention                 #
+# --------------------------------------------------------------------------- #
+def _vc_collect(subsys_key):
+    """Gather everything known about ONE subsystem and bucket it into three
+    honest lists — (works, closer_look, attention) — from the live ledger
+    findings, the declared interface, and this session's activity log.
+
+    Returns a dict:
+        {"works": [...], "closer": [...], "attention": [...],
+         "declared": int, "verdict": "green|amber|red|empty"}
+    Pure data; the renderer below turns it into boxes.
+    """
+    works, closer, attention = [], [], []
+    declared = 0
+    try:
+        _led = interfaces_mod.IntegrationLedger.from_dict(
+            st.session_state.get("ledger", {}) or {})
+    except Exception:
+        _led = None
+
+    # --- declared interface: what this subsystem has actually committed ---- #
+    _it = None
+    if _led is not None:
+        try:
+            _it = _led.get(subsys_key)
+        except Exception:
+            _it = None
+    if _it is not None:
+        try:
+            _fields = _it.declared_fields()
+        except Exception:
+            _fields = []
+        declared = len(_fields)
+        if _fields and not getattr(_it, "is_estimate", False):
+            works.append(
+                f"{len(_fields)} interface number(s) declared and marked final.")
+        elif _fields and getattr(_it, "is_estimate", False):
+            closer.append(
+                f"{len(_fields)} number(s) declared but still flagged "
+                f"**estimate** — confirm and untick once CAD/measured.")
+        else:
+            closer.append("Nothing declared to Integration yet — enter this "
+                          "subsystem's key numbers so the car-level checks can "
+                          "see it.")
+        if _fields and not getattr(_it, "rationale", ""):
+            closer.append("No design rationale recorded — judges ask for the "
+                          "'why', and it goes straight into the report.")
+        if _fields and not getattr(_it, "owner", ""):
+            closer.append("No owner set on this interface.")
+
+    # --- live cross-team findings that touch this subsystem ---------------- #
+    if _led is not None:
+        try:
+            _finds = interfaces_mod.findings_for(_led.check_all(), subsys_key)
+        except Exception:
+            _finds = []
+        for _f in _finds:
+            _sv = str(getattr(_f.severity, "value", _f.severity)).lower()
+            if _sv in ("fail",):
+                attention.append(_f.message)
+            elif _sv in ("warning", "warn"):
+                closer.append(_f.message)
+            elif _sv in ("missing",):
+                closer.append(_f.message)
+            elif _sv in ("ok",):
+                works.append(_f.message)
+            # 'info' is intentionally dropped from the three-box view to reduce noise
+
+    # --- a failing myth recorded this session ------------------------------ #
+    _myth = st.session_state.get("mb_last_result_dict")
+    if _myth and _myth.get("verdict") == "myth" \
+            and (_myth.get("discipline") or "") == subsys_key:
+        attention.append("A checked assumption came back FALSE for this "
+                         "subsystem — see the sanity-check below.")
+
+    # --- session activity: myths busted true / calcs run ------------------- #
+    try:
+        for _row in get_activity(subsys_key):
+            _s = _row.get("summary", "")
+            if _row.get("kind") == "myth" and "TRUE" in _s:
+                works.append(f"Assumption held up: {_s}")
+            elif _row.get("kind") == "myth" and "MYTH" in _s:
+                attention.append(f"Assumption failed: {_s}")
+    except Exception:
+        pass
+
+    # de-dup while preserving order
+    def _uniq(seq):
+        seen, out = set(), []
+        for x in seq:
+            if x not in seen:
+                seen.add(x)
+                out.append(x)
+        return out
+    works, closer, attention = _uniq(works), _uniq(closer), _uniq(attention)
+
+    if attention:
+        verdict = "red"
+    elif closer:
+        verdict = "amber"
+    elif works:
+        verdict = "green"
+    else:
+        verdict = "empty"
+    return {"works": works, "closer": closer, "attention": attention,
+            "declared": declared, "verdict": verdict}
+
+
+def _vc_box(title, emoji, items, accent, empty_msg):
+    """Render one of the three coloured boxes inside a subsystem card."""
+    _inner = ""
+    if items:
+        _lis = "".join(
+            f'<li style="margin:0 0 4px;line-height:1.45;">{i}</li>'
+            for i in items)
+        _inner = (f'<ul style="margin:6px 0 0;padding-left:1.1rem;'
+                  f'font-size:.85rem;color:var(--text,#d8d8e0);">{_lis}</ul>')
+    else:
+        _inner = (f'<p style="margin:6px 0 0;font-size:.8rem;color:var(--dim);'
+                  f'font-style:italic;">{empty_msg}</p>')
+    st.markdown(
+        f'<div style="border:1px solid {accent}44;border-left:4px solid {accent};'
+        f'border-radius:8px;padding:10px 12px;margin:0 0 10px;'
+        f'background:{accent}0d;">'
+        f'<div style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;'
+        f'letter-spacing:.1em;text-transform:uppercase;color:{accent};'
+        f'font-weight:600;">{emoji} {title}'
+        f'<span style="color:var(--dim);font-weight:400;"> · {len(items)}</span>'
+        f'</div>{_inner}</div>', unsafe_allow_html=True)
+
+
+def render_subsystem_verdict_card(subsys_key):
+    """One subsystem's full three-box verdict: works / closer look / attention."""
+    data = _vc_collect(subsys_key)
+    _emoji = _VC_EMOJI.get(subsys_key, "•")
+    _name = _VC_LABEL.get(subsys_key, subsys_key.title())
+    _dot = {"green": "🟢", "amber": "🟡", "red": "🔴", "empty": "⚪"}[data["verdict"]]
+    _head = {"green": "Looks clear on what's declared",
+             "amber": "Usable, but some things need a closer look",
+             "red": "Needs attention before you commit",
+             "empty": "Nothing to check yet — declare this subsystem's numbers"
+             }[data["verdict"]]
+    st.markdown(
+        f"#### {_emoji} {_name} &nbsp; {_dot}")
+    st.caption(_head)
+
+    _vc_box("This works", "✅", data["works"], "#37e0d0",
+            "No confirmed-good items yet.")
+    _vc_box("Take a closer look", "🔎", data["closer"], "#ffb02e",
+            "Nothing flagged as soft right now.")
+    _vc_box("Pay attention to this", "🛑", data["attention"], "#ff5a52",
+            "No hard problems detected. ✔")
+
+
+# --------------------------------------------------------------------------- #
+#  Per-subsystem PROFILE LIBRARY                                               #
+#  Each builder returns a candidate dict:                                      #
+#     {"label", "meta", "dxf_kwargs"}  where dxf_kwargs feeds _generic_dxf_bytes
+#  built from that subsystem's OWN numbers (declared or sensible defaults), so  #
+#  the export is the real section that subsystem revolves/extrudes — not a box.#
+# --------------------------------------------------------------------------- #
+def _naca4_points(chord_mm, thickness_frac=0.12, n=40):
+    """Symmetric NACA-4 half-thickness airfoil outline (upper then lower),
+    a real revolvable/extrudable wing section scaled to `chord_mm`."""
+    import math as _m
+    t = thickness_frac
+    xs = [0.5 * (1 - _m.cos(_m.pi * i / n)) for i in range(n + 1)]  # cosine spacing
+
+    def yt(x):
+        return 5 * t * (0.2969 * _m.sqrt(x) - 0.1260 * x - 0.3516 * x**2
+                        + 0.2843 * x**3 - 0.1015 * x**4)
+    upper = [(x * chord_mm, yt(x) * chord_mm) for x in xs]
+    lower = [(x * chord_mm, -yt(x) * chord_mm) for x in reversed(xs)]
+    return upper + lower
+
+
+def _bolt_circle(pcd_mm, n_bolts, hole_d_mm, layer="PROFILE"):
+    """n bolt holes on a pitch-circle diameter — returned as circle dicts."""
+    import math as _m
+    r = pcd_mm / 2.0
+    out = []
+    for i in range(max(1, int(n_bolts))):
+        a = 2 * _m.pi * i / max(1, int(n_bolts))
+        out.append({"c": (r * _m.cos(a), r * _m.sin(a)),
+                    "r": hole_d_mm / 2.0, "layer": layer})
+    return out
+
+
+def _rect(w, h, x0=0.0, y0=0.0):
+    return [(x0, y0), (x0 + w, y0), (x0 + w, y0 + h), (x0, y0 + h)]
+
+
+# --------------------------------------------------------------------------- #
+#  Publish / consume convention for REAL computed geometry                     #
+#                                                                              #
+#  Exactly like brakes: the tab that owns a subsystem publishes what it just   #
+#  computed to a dedicated session_state slot; the DXF exporter consumes ONLY  #
+#  that slot. No ledger fallback, no invented defaults — if a tab hasn't run   #
+#  its tool yet, the export honestly says "run it first" (the rotor exporter   #
+#  behaves the same: nothing until you optimise).                              #
+# --------------------------------------------------------------------------- #
+def publish_export_geometry(subsystem_key, geom):
+    """A tab calls this once it has computed real geometry, e.g.:
+        publish_export_geometry("aerodynamics",
+            {"chord_mm": 240.0, "thickness_frac": 0.14, "source": "aeromap"})
+    `geom` is a small dict of real numbers; the exporter turns it into the
+    subsystem's characteristic 2-D section. Stored per-subsystem in session."""
+    try:
+        _slot = st.session_state.setdefault("_export_geom", {})
+        _slot[str(subsystem_key)] = dict(geom or {})
+    except Exception:
+        pass
+
+
+def get_export_geometry(subsystem_key):
+    """Read back what a tab published, or None if it hasn't run its tool yet."""
+    try:
+        return st.session_state.get("_export_geom", {}).get(str(subsystem_key))
+    except Exception:
+        return None
+
+
+def publish_geometry_from_parts():
+    """Derive real export sections for cooling / powertrain / chassis / data-acq
+    from the ACTUAL part dimensions a member typed into the 3D-model "drop your
+    part — type its size in mm" entry (or uploaded as CAD). Those l/w/h numbers
+    are real, member-entered geometry — not a guess — so each subsystem's DXF is
+    the true face/section of the part they're building. Publishes nothing for a
+    subsystem with no part entered yet (honest gate). Cheap; safe to call each
+    rerun before the exporter reads."""
+    try:
+        parts = st.session_state.get("car3d_custom_parts", []) or []
+    except Exception:
+        parts = []
+    if not parts:
+        return
+
+    # newest part per subsystem wins (most recent thing they entered)
+    latest = {}
+    for p in parts:
+        s = p.get("subsys")
+        if s:
+            latest[s] = p
+
+    # --- cooling: radiator core FACE = width × height of the part --------- #
+    p = latest.get("cooling")
+    if p and p.get("w_mm") and p.get("h_mm"):
+        publish_export_geometry("cooling", {
+            "core_w_mm": float(p["w_mm"]), "core_h_mm": float(p["h_mm"]),
+            "core_depth_mm": float(p.get("l_mm") or 0) or None,
+            "source": f"3D part '{p.get('name','radiator')}'",
+        })
+
+    # --- powertrain: motor flange from the motor's real diameter ---------- #
+    p = latest.get("powertrain")
+    if p:
+        # a cylinder's face diameter is w_mm (== h_mm for a round motor)
+        _dia = None
+        if p.get("shape") == "cylinder" and p.get("w_mm"):
+            _dia = float(p["w_mm"])
+        elif p.get("h_mm"):
+            _dia = float(p["h_mm"])
+        if _dia and _dia > 20:
+            # flange bore ~ 0.4×motor OD; bolt PCD ~ 0.8×OD; 4 bolts typical
+            _tq = None
+            try:
+                _evs = getattr(get_store(), "ev_excel_params", {}) or {}
+                _mstore = _evs.get("motor", {}) if isinstance(_evs, dict) else {}
+                _tq = _mstore.get("motor_peak_torque_nm")
+            except Exception:
+                _tq = None
+            publish_export_geometry("powertrain", {
+                "n_bolts": 4, "pcd_mm": round(_dia * 0.8, 1),
+                "bore_d_mm": round(_dia * 0.4, 1), "hole_d_mm": 9.0,
+                "peak_torque_nm": _tq,
+                "source": f"3D part '{p.get('name','motor')}' (⌀{_dia:g} mm)",
+            })
+
+    # --- chassis: node gusset legs from the part footprint ---------------- #
+    p = latest.get("chassis")
+    if p and p.get("l_mm") and p.get("h_mm"):
+        _a = float(p["l_mm"]); _b = float(p["h_mm"])
+        publish_export_geometry("chassis", {
+            "leg_a_mm": _a, "leg_b_mm": _b,
+            "holes": [{"c": (_a*0.28, _b*0.18), "r": 5.0},
+                      {"c": (_a*0.14, _b*0.5), "r": 5.0}],
+            "source": f"3D part '{p.get('name','node')}'",
+        })
+
+    # --- data-acquisition: PCB/sensor bracket from its footprint ---------- #
+    p = latest.get("data-acquisition")
+    if p and p.get("l_mm") and p.get("w_mm"):
+        publish_export_geometry("data-acquisition", {
+            "w_mm": float(p["l_mm"]), "h_mm": float(p["w_mm"]),
+            "hole_r_mm": 1.6, "margin_mm": 6.0,
+            "source": f"3D part '{p.get('name','board')}'",
+        })
+
+
+def _subsystem_profile_candidates(subsystem_key):
+    """Build the subsystem's characteristic 2-D section(s) from the REAL geometry
+    its tab published via publish_export_geometry(). Returns [] (honest gate)
+    when the tab hasn't computed anything yet — never invents defaults, so a
+    member never extrudes a wrong-sized part that looks authoritative."""
+    # Refresh sections that come from member-entered 3D part dimensions
+    # (cooling / powertrain / chassis / data-acq) so they're current.
+    try:
+        publish_geometry_from_parts()
+    except Exception:
+        pass
+    G = get_export_geometry(subsystem_key)
+    if not G:
+        return []           # honest gate — caller shows "run the tab's tool first"
+    cands = []
+
+    if subsystem_key == "aerodynamics":
+        # Real chord + t/c from the aero tab (aeromap / scale-model spec).
+        chord = G.get("chord_mm")
+        if not chord:
+            return []
+        tfs = G.get("thickness_fracs") or [G.get("thickness_frac", 0.12)]
+        for tf in tfs:
+            pts = _naca4_points(chord, tf)
+            cands.append({
+                "label": f"Wing element — chord {chord:g} mm, t/c {int(tf*100)}%",
+                "meta": {"Chord (mm)": round(chord, 1),
+                         "Thickness (%c)": int(tf * 100),
+                         "Max thickness (mm)": round(chord * tf, 1),
+                         "Source": G.get("source", "aero tab")},
+                "dxf_kwargs": {"polylines": [{"pts": pts, "closed": True}]},
+                "notes": [f"Airfoil, chord {chord:g} mm, t/c {int(tf*100)}% "
+                          f"(from {G.get('source','aero tab')})",
+                          "Extrude to span; add camber/flap in CAD"],
+            })
+
+    elif subsystem_key == "suspension":
+        # Real bolt pattern from the hardpoints the suspension tab holds.
+        n = int(G.get("n_bolts") or 0)
+        pcd = G.get("pcd_mm")
+        hole = G.get("hole_d_mm", 8.0)
+        if not (n and pcd):
+            return []
+        plate = pcd + 3 * hole
+        outline = [(-plate/2, -plate/2), (plate/2, -plate/2),
+                   (plate/2, plate/2), (-plate/2, plate/2)]
+        cands.append({
+            "label": f"Mount plate — {n} bolts on {pcd:g} mm PCD",
+            "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
+                     "Hole ⌀ (mm)": hole, "Peak load (N)": G.get("load_n"),
+                     "Source": G.get("source", "hardpoints")},
+            "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
+                           "circles": _bolt_circle(pcd, n, hole)},
+            "notes": [f"{n}-bolt mount plate, {pcd:g} mm PCD "
+                      f"(from {G.get('source','hardpoints')})",
+                      "Set plate thickness from FEA on the peak load"],
+        })
+
+    elif subsystem_key == "brakes":
+        # Caliper bracket from the real brake torque + mount geometry the tab has.
+        n = int(G.get("n_bolts") or 0)
+        pcd = G.get("pcd_mm")
+        hole = G.get("hole_d_mm", 8.0)
+        if not (n and pcd):
+            return []
+        w = pcd + 4 * hole
+        h = w * 0.7
+        outline = _rect(w, h, -w/2, -h/2)
+        cands.append({
+            "label": f"Caliper bracket — {n}-bolt, {pcd:g} mm PCD",
+            "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
+                     "Brake torque/corner (N·m)": G.get("brake_torque_nm"),
+                     "Source": G.get("source", "brakes tab")},
+            "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
+                           "circles": _bolt_circle(pcd, n, hole)},
+            "notes": ["Caliper mount bracket blank",
+                      "Rotor half-section export lives in the Brakes optimiser"],
+        })
+
+    elif subsystem_key == "electrics":
+        # Accumulator segment box from the real cell grid / segment dims.
+        w = G.get("seg_w_mm")
+        h = G.get("seg_h_mm")
+        wall = G.get("wall_mm", 8.0)
+        if not (w and h):
+            return []
+        outer = _rect(w, h)
+        inner = _rect(w - 2*wall, h - 2*wall, wall, wall)
+        cands.append({
+            "label": f"Accumulator segment — {w:g}×{h:g} mm box",
+            "meta": {"Outer W (mm)": round(w, 1), "Outer H (mm)": round(h, 1),
+                     "Wall (mm)": wall, "Cells": G.get("n_cells"),
+                     "Config": G.get("config"),
+                     "Source": G.get("source", "accumulator tab")},
+            "dxf_kwargs": {"polylines": [
+                {"pts": outer, "closed": True},
+                {"pts": inner, "closed": True}]},
+            "notes": [f"Segment box {w:g}x{h:g} mm, {wall:g} mm wall "
+                      f"({G.get('config','')} — {G.get('source','accumulator tab')})",
+                      "Extrude to segment length"],
+        })
+
+    elif subsystem_key == "cooling":
+        # Radiator core face from the real sizing the cooling tab computed.
+        w = G.get("core_w_mm")
+        h = G.get("core_h_mm")
+        if not (w and h):
+            return []
+        cands.append({
+            "label": f"Radiator core face — {w:g}×{h:g} mm",
+            "meta": {"Face W (mm)": round(w, 1), "Face H (mm)": round(h, 1),
+                     "Core depth (mm)": G.get("core_depth_mm"),
+                     "Airflow req (m³/s)": G.get("airflow_cms"),
+                     "Heat reject (W)": G.get("heat_reject_w"),
+                     "Source": G.get("source", "cooling tab")},
+            "dxf_kwargs": {"polylines": [{"pts": _rect(w, h), "closed": True}]},
+            "notes": [f"Core face {w:g}x{h:g} mm (from {G.get('source','cooling tab')})",
+                      f"Extrude by core depth "
+                      f"{('= %g mm' % G['core_depth_mm']) if G.get('core_depth_mm') else ''}"],
+        })
+
+    elif subsystem_key == "chassis":
+        # Node gusset from the real tube-node geometry the chassis tab holds.
+        a = G.get("leg_a_mm")
+        b = G.get("leg_b_mm")
+        if not (a and b):
+            return []
+        tri = [(0, 0), (a, 0), (0, b)]
+        holes = G.get("holes") or [{"c": (a*0.28, b*0.18), "r": 5.0},
+                                   {"c": (a*0.14, b*0.5), "r": 5.0}]
+        cands.append({
+            "label": f"Node gusset — {a:g}×{b:g} mm",
+            "meta": {"Leg A (mm)": round(a, 1), "Leg B (mm)": round(b, 1),
+                     "Peak load (N)": G.get("load_n"),
+                     "Source": G.get("source", "chassis tab")},
+            "dxf_kwargs": {"polylines": [{"pts": tri, "closed": True}],
+                           "circles": holes},
+            "notes": [f"Node gusset {a:g}x{b:g} mm (from {G.get('source','chassis tab')})",
+                      "Cut from plate; set thickness from the joint load"],
+        })
+
+    elif subsystem_key == "data-acquisition":
+        # Sensor / PCB bracket from the real board/sensor footprint.
+        w = G.get("w_mm")
+        h = G.get("h_mm")
+        hole_r = G.get("hole_r_mm", 1.6)
+        m = G.get("margin_mm", 6.0)
+        if not (w and h):
+            return []
+        holes = [{"c": (m, m), "r": hole_r}, {"c": (w-m, m), "r": hole_r},
+                 {"c": (m, h-m), "r": hole_r}, {"c": (w-m, h-m), "r": hole_r}]
+        cands.append({
+            "label": f"Sensor/PCB bracket — {w:g}×{h:g} mm",
+            "meta": {"W (mm)": round(w, 1), "H (mm)": round(h, 1),
+                     "Corner holes": 4, "Source": G.get("source", "data-acq tab")},
+            "dxf_kwargs": {"polylines": [{"pts": _rect(w, h), "closed": True}],
+                           "circles": holes},
+            "notes": [f"Bracket {w:g}x{h:g} mm, 4x corner holes "
+                      f"(from {G.get('source','data-acq tab')})",
+                      "Extrude to bracket thickness"],
+        })
+
+    elif subsystem_key == "powertrain":
+        # Motor mount flange from the real motor face + bolt pattern.
+        n = int(G.get("n_bolts") or 0)
+        pcd = G.get("pcd_mm")
+        bore = G.get("bore_d_mm")
+        hole = G.get("hole_d_mm", 9.0)
+        if not (n and pcd and bore):
+            return []
+        plate = pcd + 3.5 * hole
+        outline = [(-plate/2, -plate/2), (plate/2, -plate/2),
+                   (plate/2, plate/2), (-plate/2, plate/2)]
+        circles = [{"c": (0, 0), "r": bore/2.0}] + _bolt_circle(pcd, n, hole)
+        cands.append({
+            "label": f"Motor mount flange — {n} bolts on {pcd:g} mm PCD",
+            "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
+                     "Bore ⌀ (mm)": bore,
+                     "Peak torque (N·m)": G.get("peak_torque_nm"),
+                     "Source": G.get("source", "powertrain tab")},
+            "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
+                           "circles": circles},
+            "notes": [f"Motor flange, {n} bolts on {pcd:g} mm PCD, "
+                      f"⌀{bore:g} mm bore (from {G.get('source','powertrain tab')})",
+                      "Set thickness from the peak torque reaction"],
+        })
+
+    return cands
+
+
+
+def _seg_intersect(p1, p2, p3, p4):
+    """True if segment p1p2 properly crosses p3p4 (shared endpoints don't count)."""
+    def _o(a, b, c):
+        return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0])
+    d1, d2 = _o(p3, p4, p1), _o(p3, p4, p2)
+    d3, d4 = _o(p1, p2, p3), _o(p1, p2, p4)
+    if ((d1 > 0) != (d2 > 0)) and ((d3 > 0) != (d4 > 0)):
+        return True
+    return False
+
+
+def _profile_is_clean(pts):
+    """Cheap self-intersection guard so SolidWorks imports the sketch as a
+    single closed contour it can extrude without 'open/self-intersecting'
+    repair. Checks non-adjacent edges of a closed loop. Returns (ok, reason)."""
+    n = len(pts)
+    if n < 3:
+        return False, "fewer than 3 points"
+    edges = [(pts[i], pts[(i+1) % n]) for i in range(n)]
+    for i in range(n):
+        for j in range(i+1, n):
+            # skip adjacent edges (they share a vertex) and the wrap pair
+            if j == i or j == (i+1) % n or (i == 0 and j == n-1):
+                continue
+            if abs(i-j) <= 1:
+                continue
+            if _seg_intersect(edges[i][0], edges[i][1],
+                              edges[j][0], edges[j][1]):
+                return False, f"edges {i} and {j} cross"
+    return True, "clean"
+
+
+def _validate_candidate_geometry(cand):
+    """Run each closed profile in a candidate through the self-intersection guard.
+    Returns (ok, [warnings]). Non-fatal: we still let the member download, but we
+    warn loudly so they check it before extruding."""
+    warns = []
+    kw = cand.get("dxf_kwargs") or {}
+    polys = kw.get("polylines") or []
+    if cand.get("profile_mm"):
+        polys = polys + [{"pts": cand["profile_mm"], "closed": True}]
+    for idx, pl in enumerate(polys):
+        if pl.get("closed", True):
+            ok, why = _profile_is_clean(pl.get("pts", []))
+            if not ok:
+                warns.append(f"profile {idx+1}: {why}")
+    return (len(warns) == 0), warns
+
+
+# Where each subsystem's export geometry comes from — shown in the empty state so
+# a member knows exactly which tool to run to light up the export (like brakes).
+_EXPORT_SOURCE_HINT = {
+    "aerodynamics": "Run the Aerodynamics tab's scale-model / aeromap so it "
+                    "publishes the real chord and t/c.",
+    "suspension":   "Set your hardpoints in the Kinematics tab so the upright "
+                    "mount PCD and bolt count are known.",
+    "brakes":       "Enter the caliper mount + brake torque in the Brakes tab "
+                    "(the rotor export is in that tab's optimiser).",
+    "electrics":    "Run the Accumulator tab's segmentation so the segment box "
+                    "dimensions and cell grid are known.",
+    "cooling":      "Size the radiator in the Cooling tab so the core face and "
+                    "depth are published.",
+    "chassis":      "Define the tube node in the Chassis / Team Fit tab so the "
+                    "gusset legs are known.",
+    "data-acquisition": "Enter the board / sensor footprint in the Electronics "
+                    "(PCB) tab.",
+    "powertrain":   "Enter the motor face (bore + bolt PCD) and peak torque in "
+                    "the EV Powertrain tab.",
+}
+
+
+def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
+                        title_name=None):
+    """Short-list to mesh + DXF export, specialised per subsystem.
+
+    Each subsystem exports the ACTUAL 2-D section it takes into CAD — an airfoil
+    for aero, a mount/flange plate with its real bolt PCD for suspension /
+    powertrain / brakes, a segment box for the accumulator, a radiator core face
+    for cooling, a node gusset for chassis, a sensor bracket for data-acq. The
+    geometry comes from what the owning tab PUBLISHED via
+    publish_export_geometry() — no invented defaults. If a tab hasn't run its
+    tool yet the export honestly gates (exactly like the brakes rotor exporter,
+    which shows nothing until you optimise). Every profile is checked for self-
+    intersection so it imports into SolidWorks as one clean closed contour ready
+    to extrude and validate in ANSYS. Callers may inject bespoke `candidates`
+    (e.g. the brakes rotor Pareto short-list)."""
+    _name = title_name or _VC_LABEL.get(subsystem_key,
+                                        subsystem_key.replace("-", " ").title())
+
+    if not candidates:
+        try:
+            candidates = _subsystem_profile_candidates(subsystem_key)
+        except Exception:
+            candidates = []
+
+    st.markdown(f"###### 📐 Short-list to mesh &amp; export — {_name}")
+
+    if subsystem_key == "brakes":
+        st.caption("The full rotor short-list (mass-vs-temp Pareto) and its "
+                   "half-section DXF live in the 🛑 Brakes tab optimiser. Below "
+                   "is the caliper-mount bracket section, once the tab has it.")
+
+    if not candidates:
+        _hint = _EXPORT_SOURCE_HINT.get(
+            subsystem_key, "Run this subsystem's tab tool first.")
+        st.info(f"**Nothing to export yet.** {_hint} The DXF is built from your "
+                f"real computed geometry — not a guess — so it stays empty until "
+                f"the numbers exist. (Same as the rotor exporter: nothing until "
+                f"you optimise.)")
+        return
+
+    # --- the short-list table (what's worth meshing) ----------------------- #
+    _rows = []
+    for c in candidates:
+        _r = {"Section": c.get("label", "?")}
+        _r.update({k: v for k, v in (c.get("meta") or {}).items()
+                   if v is not None})
+        _rows.append(_r)
+    st.markdown("**Short-list to mesh** — each row is a real section from your "
+                "computed numbers; confirm in Ansys / your FEA:")
+    st.dataframe(_rows, width="stretch", hide_index=True)
+
+    # --- DXF export per short-listed geometry ------------------------------ #
+    st.markdown("**Export to CAD (DXF)** — imports into SolidWorks as one closed "
+                "sketch; extrude/revolve, then mesh in ANSYS:")
+    _labels = {i: c.get("label", f"section {i+1}")
+               for i, c in enumerate(candidates)}
+    _pick = st.selectbox("Section to export", options=list(_labels.keys()),
+                         format_func=lambda i: _labels[i],
+                         key=f"{key_prefix}_gdxf_pick")
+    _cand = candidates[_pick]
+    _notes = list(_cand.get("notes", [])) or [
+        f"{k}: {v}" for k, v in (_cand.get("meta") or {}).items() if v is not None]
+
+    # SolidWorks-import guard: warn on any self-intersecting closed profile.
+    _clean, _warns = _validate_candidate_geometry(_cand)
+    if not _clean:
+        st.warning("⚠️ This section may not import as a clean closed contour "
+                   "(" + "; ".join(_warns) + "). Check it in SolidWorks before "
+                   "extruding.")
+    else:
+        st.caption("✓ Profile checked: single closed contour, holes as separate "
+                   "loops, units embedded — imports ready to extrude.")
+
+    _dxf_kwargs = _cand.get("dxf_kwargs")
+    if _dxf_kwargs:
+        _dxf = _generic_dxf_bytes(_cand.get("label", _name),
+                                  notes=_notes, **_dxf_kwargs)
+    else:
+        _dxf = _generic_dxf_bytes(_cand.get("label", _name),
+                                  _cand.get("profile_mm", [(0, 0)]),
+                                  notes=_notes)
+    _safe = subsystem_key.replace("-", "_")
+    st.download_button(
+        "⬇ Download DXF", data=_dxf,
+        file_name=f"kinematik_{_safe}_{_pick+1}.dxf",
+        mime="application/dxf", key=f"{key_prefix}_gdxf_dl")
+    _vc_disclaimer(f"the {_name.lower()} section")
+# === END spliced block ===
+
+
 def render_documentation_expander(subsystem_key, *, key_prefix,
                                   extra_sections=None, title_name=None,
                                   mesh_candidates=None):
@@ -10415,199 +11105,6 @@ def _do_rerun():
 
 
 # --------------------------------------------------------------------------- #
-#  0.  Small shared helpers                                                    #
-# --------------------------------------------------------------------------- #
-# Human labels + emoji for the eight subsystem channels, reused everywhere so
-# the Verdict Center, the docs templates and the mesh/DXF picker all speak the
-# same language.
-_VC_SUBSYS = [
-    ("suspension",       "🩷", "Suspension / Dynamics"),
-    ("aerodynamics",     "💛", "Aerodynamics"),
-    ("powertrain",       "❤️", "Powertrain"),
-    ("electrics",        "💙", "Electrics"),
-    ("brakes",           "🧡", "Brakes"),
-    ("cooling",          "🩵", "Cooling"),
-    ("chassis",          "💜", "Chassis / Frame"),
-    ("data-acquisition", "💚", "Data Acquisition"),
-]
-_VC_LABEL = {k: lab for k, _e, lab in _VC_SUBSYS}
-_VC_EMOJI = {k: e for k, e, _lab in _VC_SUBSYS}
-
-
-def _vc_disclaimer(where="this"):
-    """The 'double-check before you cut' footer.  Kept in one place so every
-    surface that produces a verdict, a report or an export carries the same
-    honest reminder that KinematiK is a screening tool, not the final word."""
-    st.markdown(
-        '<hr style="border:none;border-top:1px solid rgba(128,128,128,.18);'
-        'margin:14px 0 8px;">', unsafe_allow_html=True)
-    st.markdown(
-        '<p class="hint" style="font-size:.72rem;line-height:1.5;'
-        'color:var(--dim);margin:0;">'
-        '⚠️ <b>Double-check before you commit.</b> '
-        f'{where.capitalize()} is a fast screening result from declared numbers '
-        'and simple rules — not a substitute for your own FEA/CFD, a bench test, '
-        'or a second set of eyes. Confirm anything you\'re about to cut, order or '
-        'sign off against the real analysis and your team lead.</p>',
-        unsafe_allow_html=True)
-
-
-# --------------------------------------------------------------------------- #
-#  1.  Per-subsystem verdict:  works / closer-look / attention                 #
-# --------------------------------------------------------------------------- #
-def _vc_collect(subsys_key):
-    """Gather everything known about ONE subsystem and bucket it into three
-    honest lists — (works, closer_look, attention) — from the live ledger
-    findings, the declared interface, and this session's activity log.
-
-    Returns a dict:
-        {"works": [...], "closer": [...], "attention": [...],
-         "declared": int, "verdict": "green|amber|red|empty"}
-    Pure data; the renderer below turns it into boxes.
-    """
-    works, closer, attention = [], [], []
-    declared = 0
-    try:
-        _led = interfaces_mod.IntegrationLedger.from_dict(
-            st.session_state.get("ledger", {}) or {})
-    except Exception:
-        _led = None
-
-    # --- declared interface: what this subsystem has actually committed ---- #
-    _it = None
-    if _led is not None:
-        try:
-            _it = _led.get(subsys_key)
-        except Exception:
-            _it = None
-    if _it is not None:
-        try:
-            _fields = _it.declared_fields()
-        except Exception:
-            _fields = []
-        declared = len(_fields)
-        if _fields and not getattr(_it, "is_estimate", False):
-            works.append(
-                f"{len(_fields)} interface number(s) declared and marked final.")
-        elif _fields and getattr(_it, "is_estimate", False):
-            closer.append(
-                f"{len(_fields)} number(s) declared but still flagged "
-                f"**estimate** — confirm and untick once CAD/measured.")
-        else:
-            closer.append("Nothing declared to Integration yet — enter this "
-                          "subsystem's key numbers so the car-level checks can "
-                          "see it.")
-        if _fields and not getattr(_it, "rationale", ""):
-            closer.append("No design rationale recorded — judges ask for the "
-                          "'why', and it goes straight into the report.")
-        if _fields and not getattr(_it, "owner", ""):
-            closer.append("No owner set on this interface.")
-
-    # --- live cross-team findings that touch this subsystem ---------------- #
-    if _led is not None:
-        try:
-            _finds = interfaces_mod.findings_for(_led.check_all(), subsys_key)
-        except Exception:
-            _finds = []
-        for _f in _finds:
-            _sv = str(getattr(_f.severity, "value", _f.severity)).lower()
-            if _sv in ("fail",):
-                attention.append(_f.message)
-            elif _sv in ("warning", "warn"):
-                closer.append(_f.message)
-            elif _sv in ("missing",):
-                closer.append(_f.message)
-            elif _sv in ("ok",):
-                works.append(_f.message)
-            # 'info' is intentionally dropped from the three-box view to reduce noise
-
-    # --- a failing myth recorded this session ------------------------------ #
-    _myth = st.session_state.get("mb_last_result_dict")
-    if _myth and _myth.get("verdict") == "myth" \
-            and (_myth.get("discipline") or "") == subsys_key:
-        attention.append("A checked assumption came back FALSE for this "
-                         "subsystem — see the sanity-check below.")
-
-    # --- session activity: myths busted true / calcs run ------------------- #
-    try:
-        for _row in get_activity(subsys_key):
-            _s = _row.get("summary", "")
-            if _row.get("kind") == "myth" and "TRUE" in _s:
-                works.append(f"Assumption held up: {_s}")
-            elif _row.get("kind") == "myth" and "MYTH" in _s:
-                attention.append(f"Assumption failed: {_s}")
-    except Exception:
-        pass
-
-    # de-dup while preserving order
-    def _uniq(seq):
-        seen, out = set(), []
-        for x in seq:
-            if x not in seen:
-                seen.add(x)
-                out.append(x)
-        return out
-    works, closer, attention = _uniq(works), _uniq(closer), _uniq(attention)
-
-    if attention:
-        verdict = "red"
-    elif closer:
-        verdict = "amber"
-    elif works:
-        verdict = "green"
-    else:
-        verdict = "empty"
-    return {"works": works, "closer": closer, "attention": attention,
-            "declared": declared, "verdict": verdict}
-
-
-def _vc_box(title, emoji, items, accent, empty_msg):
-    """Render one of the three coloured boxes inside a subsystem card."""
-    _inner = ""
-    if items:
-        _lis = "".join(
-            f'<li style="margin:0 0 4px;line-height:1.45;">{i}</li>'
-            for i in items)
-        _inner = (f'<ul style="margin:6px 0 0;padding-left:1.1rem;'
-                  f'font-size:.85rem;color:var(--text,#d8d8e0);">{_lis}</ul>')
-    else:
-        _inner = (f'<p style="margin:6px 0 0;font-size:.8rem;color:var(--dim);'
-                  f'font-style:italic;">{empty_msg}</p>')
-    st.markdown(
-        f'<div style="border:1px solid {accent}44;border-left:4px solid {accent};'
-        f'border-radius:8px;padding:10px 12px;margin:0 0 10px;'
-        f'background:{accent}0d;">'
-        f'<div style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;'
-        f'letter-spacing:.1em;text-transform:uppercase;color:{accent};'
-        f'font-weight:600;">{emoji} {title}'
-        f'<span style="color:var(--dim);font-weight:400;"> · {len(items)}</span>'
-        f'</div>{_inner}</div>', unsafe_allow_html=True)
-
-
-def render_subsystem_verdict_card(subsys_key):
-    """One subsystem's full three-box verdict: works / closer look / attention."""
-    data = _vc_collect(subsys_key)
-    _emoji = _VC_EMOJI.get(subsys_key, "•")
-    _name = _VC_LABEL.get(subsys_key, subsys_key.title())
-    _dot = {"green": "🟢", "amber": "🟡", "red": "🔴", "empty": "⚪"}[data["verdict"]]
-    _head = {"green": "Looks clear on what's declared",
-             "amber": "Usable, but some things need a closer look",
-             "red": "Needs attention before you commit",
-             "empty": "Nothing to check yet — declare this subsystem's numbers"
-             }[data["verdict"]]
-    st.markdown(
-        f"#### {_emoji} {_name} &nbsp; {_dot}")
-    st.caption(_head)
-
-    _vc_box("This works", "✅", data["works"], "#37e0d0",
-            "No confirmed-good items yet.")
-    _vc_box("Take a closer look", "🔎", data["closer"], "#ffb02e",
-            "Nothing flagged as soft right now.")
-    _vc_box("Pay attention to this", "🛑", data["attention"], "#ff5a52",
-            "No hard problems detected. ✔")
-
-
-# --------------------------------------------------------------------------- #
 #  2.  The Verdict Center — Overview page + per-subsystem sub-tabs             #
 # --------------------------------------------------------------------------- #
 def render_verdict_center():
@@ -10912,501 +11409,6 @@ def _generic_dxf_bytes(name, points_mm=None, *, notes=None,
     return "\n".join(lines).encode("ascii", errors="replace")
 
 
-# --------------------------------------------------------------------------- #
-#  Per-subsystem PROFILE LIBRARY                                               #
-#  Each builder returns a candidate dict:                                      #
-#     {"label", "meta", "dxf_kwargs"}  where dxf_kwargs feeds _generic_dxf_bytes
-#  built from that subsystem's OWN numbers (declared or sensible defaults), so  #
-#  the export is the real section that subsystem revolves/extrudes — not a box.#
-# --------------------------------------------------------------------------- #
-def _naca4_points(chord_mm, thickness_frac=0.12, n=40):
-    """Symmetric NACA-4 half-thickness airfoil outline (upper then lower),
-    a real revolvable/extrudable wing section scaled to `chord_mm`."""
-    import math as _m
-    t = thickness_frac
-    xs = [0.5 * (1 - _m.cos(_m.pi * i / n)) for i in range(n + 1)]  # cosine spacing
-
-    def yt(x):
-        return 5 * t * (0.2969 * _m.sqrt(x) - 0.1260 * x - 0.3516 * x**2
-                        + 0.2843 * x**3 - 0.1015 * x**4)
-    upper = [(x * chord_mm, yt(x) * chord_mm) for x in xs]
-    lower = [(x * chord_mm, -yt(x) * chord_mm) for x in reversed(xs)]
-    return upper + lower
-
-
-def _bolt_circle(pcd_mm, n_bolts, hole_d_mm, layer="PROFILE"):
-    """n bolt holes on a pitch-circle diameter — returned as circle dicts."""
-    import math as _m
-    r = pcd_mm / 2.0
-    out = []
-    for i in range(max(1, int(n_bolts))):
-        a = 2 * _m.pi * i / max(1, int(n_bolts))
-        out.append({"c": (r * _m.cos(a), r * _m.sin(a)),
-                    "r": hole_d_mm / 2.0, "layer": layer})
-    return out
-
-
-def _rect(w, h, x0=0.0, y0=0.0):
-    return [(x0, y0), (x0 + w, y0), (x0 + w, y0 + h), (x0, y0 + h)]
-
-
-# --------------------------------------------------------------------------- #
-#  Publish / consume convention for REAL computed geometry                     #
-#                                                                              #
-#  Exactly like brakes: the tab that owns a subsystem publishes what it just   #
-#  computed to a dedicated session_state slot; the DXF exporter consumes ONLY  #
-#  that slot. No ledger fallback, no invented defaults — if a tab hasn't run   #
-#  its tool yet, the export honestly says "run it first" (the rotor exporter   #
-#  behaves the same: nothing until you optimise).                              #
-# --------------------------------------------------------------------------- #
-def publish_export_geometry(subsystem_key, geom):
-    """A tab calls this once it has computed real geometry, e.g.:
-        publish_export_geometry("aerodynamics",
-            {"chord_mm": 240.0, "thickness_frac": 0.14, "source": "aeromap"})
-    `geom` is a small dict of real numbers; the exporter turns it into the
-    subsystem's characteristic 2-D section. Stored per-subsystem in session."""
-    try:
-        _slot = st.session_state.setdefault("_export_geom", {})
-        _slot[str(subsystem_key)] = dict(geom or {})
-    except Exception:
-        pass
-
-
-def get_export_geometry(subsystem_key):
-    """Read back what a tab published, or None if it hasn't run its tool yet."""
-    try:
-        return st.session_state.get("_export_geom", {}).get(str(subsystem_key))
-    except Exception:
-        return None
-
-
-def publish_geometry_from_parts():
-    """Derive real export sections for cooling / powertrain / chassis / data-acq
-    from the ACTUAL part dimensions a member typed into the 3D-model "drop your
-    part — type its size in mm" entry (or uploaded as CAD). Those l/w/h numbers
-    are real, member-entered geometry — not a guess — so each subsystem's DXF is
-    the true face/section of the part they're building. Publishes nothing for a
-    subsystem with no part entered yet (honest gate). Cheap; safe to call each
-    rerun before the exporter reads."""
-    try:
-        parts = st.session_state.get("car3d_custom_parts", []) or []
-    except Exception:
-        parts = []
-    if not parts:
-        return
-
-    # newest part per subsystem wins (most recent thing they entered)
-    latest = {}
-    for p in parts:
-        s = p.get("subsys")
-        if s:
-            latest[s] = p
-
-    # --- cooling: radiator core FACE = width × height of the part --------- #
-    p = latest.get("cooling")
-    if p and p.get("w_mm") and p.get("h_mm"):
-        publish_export_geometry("cooling", {
-            "core_w_mm": float(p["w_mm"]), "core_h_mm": float(p["h_mm"]),
-            "core_depth_mm": float(p.get("l_mm") or 0) or None,
-            "source": f"3D part '{p.get('name','radiator')}'",
-        })
-
-    # --- powertrain: motor flange from the motor's real diameter ---------- #
-    p = latest.get("powertrain")
-    if p:
-        # a cylinder's face diameter is w_mm (== h_mm for a round motor)
-        _dia = None
-        if p.get("shape") == "cylinder" and p.get("w_mm"):
-            _dia = float(p["w_mm"])
-        elif p.get("h_mm"):
-            _dia = float(p["h_mm"])
-        if _dia and _dia > 20:
-            # flange bore ~ 0.4×motor OD; bolt PCD ~ 0.8×OD; 4 bolts typical
-            _tq = None
-            try:
-                _evs = getattr(get_store(), "ev_excel_params", {}) or {}
-                _mstore = _evs.get("motor", {}) if isinstance(_evs, dict) else {}
-                _tq = _mstore.get("motor_peak_torque_nm")
-            except Exception:
-                _tq = None
-            publish_export_geometry("powertrain", {
-                "n_bolts": 4, "pcd_mm": round(_dia * 0.8, 1),
-                "bore_d_mm": round(_dia * 0.4, 1), "hole_d_mm": 9.0,
-                "peak_torque_nm": _tq,
-                "source": f"3D part '{p.get('name','motor')}' (⌀{_dia:g} mm)",
-            })
-
-    # --- chassis: node gusset legs from the part footprint ---------------- #
-    p = latest.get("chassis")
-    if p and p.get("l_mm") and p.get("h_mm"):
-        _a = float(p["l_mm"]); _b = float(p["h_mm"])
-        publish_export_geometry("chassis", {
-            "leg_a_mm": _a, "leg_b_mm": _b,
-            "holes": [{"c": (_a*0.28, _b*0.18), "r": 5.0},
-                      {"c": (_a*0.14, _b*0.5), "r": 5.0}],
-            "source": f"3D part '{p.get('name','node')}'",
-        })
-
-    # --- data-acquisition: PCB/sensor bracket from its footprint ---------- #
-    p = latest.get("data-acquisition")
-    if p and p.get("l_mm") and p.get("w_mm"):
-        publish_export_geometry("data-acquisition", {
-            "w_mm": float(p["l_mm"]), "h_mm": float(p["w_mm"]),
-            "hole_r_mm": 1.6, "margin_mm": 6.0,
-            "source": f"3D part '{p.get('name','board')}'",
-        })
-
-
-def _subsystem_profile_candidates(subsystem_key):
-    """Build the subsystem's characteristic 2-D section(s) from the REAL geometry
-    its tab published via publish_export_geometry(). Returns [] (honest gate)
-    when the tab hasn't computed anything yet — never invents defaults, so a
-    member never extrudes a wrong-sized part that looks authoritative."""
-    # Refresh sections that come from member-entered 3D part dimensions
-    # (cooling / powertrain / chassis / data-acq) so they're current.
-    try:
-        publish_geometry_from_parts()
-    except Exception:
-        pass
-    G = get_export_geometry(subsystem_key)
-    if not G:
-        return []           # honest gate — caller shows "run the tab's tool first"
-    cands = []
-
-    if subsystem_key == "aerodynamics":
-        # Real chord + t/c from the aero tab (aeromap / scale-model spec).
-        chord = G.get("chord_mm")
-        if not chord:
-            return []
-        tfs = G.get("thickness_fracs") or [G.get("thickness_frac", 0.12)]
-        for tf in tfs:
-            pts = _naca4_points(chord, tf)
-            cands.append({
-                "label": f"Wing element — chord {chord:g} mm, t/c {int(tf*100)}%",
-                "meta": {"Chord (mm)": round(chord, 1),
-                         "Thickness (%c)": int(tf * 100),
-                         "Max thickness (mm)": round(chord * tf, 1),
-                         "Source": G.get("source", "aero tab")},
-                "dxf_kwargs": {"polylines": [{"pts": pts, "closed": True}]},
-                "notes": [f"Airfoil, chord {chord:g} mm, t/c {int(tf*100)}% "
-                          f"(from {G.get('source','aero tab')})",
-                          "Extrude to span; add camber/flap in CAD"],
-            })
-
-    elif subsystem_key == "suspension":
-        # Real bolt pattern from the hardpoints the suspension tab holds.
-        n = int(G.get("n_bolts") or 0)
-        pcd = G.get("pcd_mm")
-        hole = G.get("hole_d_mm", 8.0)
-        if not (n and pcd):
-            return []
-        plate = pcd + 3 * hole
-        outline = [(-plate/2, -plate/2), (plate/2, -plate/2),
-                   (plate/2, plate/2), (-plate/2, plate/2)]
-        cands.append({
-            "label": f"Mount plate — {n} bolts on {pcd:g} mm PCD",
-            "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
-                     "Hole ⌀ (mm)": hole, "Peak load (N)": G.get("load_n"),
-                     "Source": G.get("source", "hardpoints")},
-            "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
-                           "circles": _bolt_circle(pcd, n, hole)},
-            "notes": [f"{n}-bolt mount plate, {pcd:g} mm PCD "
-                      f"(from {G.get('source','hardpoints')})",
-                      "Set plate thickness from FEA on the peak load"],
-        })
-
-    elif subsystem_key == "brakes":
-        # Caliper bracket from the real brake torque + mount geometry the tab has.
-        n = int(G.get("n_bolts") or 0)
-        pcd = G.get("pcd_mm")
-        hole = G.get("hole_d_mm", 8.0)
-        if not (n and pcd):
-            return []
-        w = pcd + 4 * hole
-        h = w * 0.7
-        outline = _rect(w, h, -w/2, -h/2)
-        cands.append({
-            "label": f"Caliper bracket — {n}-bolt, {pcd:g} mm PCD",
-            "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
-                     "Brake torque/corner (N·m)": G.get("brake_torque_nm"),
-                     "Source": G.get("source", "brakes tab")},
-            "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
-                           "circles": _bolt_circle(pcd, n, hole)},
-            "notes": ["Caliper mount bracket blank",
-                      "Rotor half-section export lives in the Brakes optimiser"],
-        })
-
-    elif subsystem_key == "electrics":
-        # Accumulator segment box from the real cell grid / segment dims.
-        w = G.get("seg_w_mm")
-        h = G.get("seg_h_mm")
-        wall = G.get("wall_mm", 8.0)
-        if not (w and h):
-            return []
-        outer = _rect(w, h)
-        inner = _rect(w - 2*wall, h - 2*wall, wall, wall)
-        cands.append({
-            "label": f"Accumulator segment — {w:g}×{h:g} mm box",
-            "meta": {"Outer W (mm)": round(w, 1), "Outer H (mm)": round(h, 1),
-                     "Wall (mm)": wall, "Cells": G.get("n_cells"),
-                     "Config": G.get("config"),
-                     "Source": G.get("source", "accumulator tab")},
-            "dxf_kwargs": {"polylines": [
-                {"pts": outer, "closed": True},
-                {"pts": inner, "closed": True}]},
-            "notes": [f"Segment box {w:g}x{h:g} mm, {wall:g} mm wall "
-                      f"({G.get('config','')} — {G.get('source','accumulator tab')})",
-                      "Extrude to segment length"],
-        })
-
-    elif subsystem_key == "cooling":
-        # Radiator core face from the real sizing the cooling tab computed.
-        w = G.get("core_w_mm")
-        h = G.get("core_h_mm")
-        if not (w and h):
-            return []
-        cands.append({
-            "label": f"Radiator core face — {w:g}×{h:g} mm",
-            "meta": {"Face W (mm)": round(w, 1), "Face H (mm)": round(h, 1),
-                     "Core depth (mm)": G.get("core_depth_mm"),
-                     "Airflow req (m³/s)": G.get("airflow_cms"),
-                     "Heat reject (W)": G.get("heat_reject_w"),
-                     "Source": G.get("source", "cooling tab")},
-            "dxf_kwargs": {"polylines": [{"pts": _rect(w, h), "closed": True}]},
-            "notes": [f"Core face {w:g}x{h:g} mm (from {G.get('source','cooling tab')})",
-                      f"Extrude by core depth "
-                      f"{('= %g mm' % G['core_depth_mm']) if G.get('core_depth_mm') else ''}"],
-        })
-
-    elif subsystem_key == "chassis":
-        # Node gusset from the real tube-node geometry the chassis tab holds.
-        a = G.get("leg_a_mm")
-        b = G.get("leg_b_mm")
-        if not (a and b):
-            return []
-        tri = [(0, 0), (a, 0), (0, b)]
-        holes = G.get("holes") or [{"c": (a*0.28, b*0.18), "r": 5.0},
-                                   {"c": (a*0.14, b*0.5), "r": 5.0}]
-        cands.append({
-            "label": f"Node gusset — {a:g}×{b:g} mm",
-            "meta": {"Leg A (mm)": round(a, 1), "Leg B (mm)": round(b, 1),
-                     "Peak load (N)": G.get("load_n"),
-                     "Source": G.get("source", "chassis tab")},
-            "dxf_kwargs": {"polylines": [{"pts": tri, "closed": True}],
-                           "circles": holes},
-            "notes": [f"Node gusset {a:g}x{b:g} mm (from {G.get('source','chassis tab')})",
-                      "Cut from plate; set thickness from the joint load"],
-        })
-
-    elif subsystem_key == "data-acquisition":
-        # Sensor / PCB bracket from the real board/sensor footprint.
-        w = G.get("w_mm")
-        h = G.get("h_mm")
-        hole_r = G.get("hole_r_mm", 1.6)
-        m = G.get("margin_mm", 6.0)
-        if not (w and h):
-            return []
-        holes = [{"c": (m, m), "r": hole_r}, {"c": (w-m, m), "r": hole_r},
-                 {"c": (m, h-m), "r": hole_r}, {"c": (w-m, h-m), "r": hole_r}]
-        cands.append({
-            "label": f"Sensor/PCB bracket — {w:g}×{h:g} mm",
-            "meta": {"W (mm)": round(w, 1), "H (mm)": round(h, 1),
-                     "Corner holes": 4, "Source": G.get("source", "data-acq tab")},
-            "dxf_kwargs": {"polylines": [{"pts": _rect(w, h), "closed": True}],
-                           "circles": holes},
-            "notes": [f"Bracket {w:g}x{h:g} mm, 4x corner holes "
-                      f"(from {G.get('source','data-acq tab')})",
-                      "Extrude to bracket thickness"],
-        })
-
-    elif subsystem_key == "powertrain":
-        # Motor mount flange from the real motor face + bolt pattern.
-        n = int(G.get("n_bolts") or 0)
-        pcd = G.get("pcd_mm")
-        bore = G.get("bore_d_mm")
-        hole = G.get("hole_d_mm", 9.0)
-        if not (n and pcd and bore):
-            return []
-        plate = pcd + 3.5 * hole
-        outline = [(-plate/2, -plate/2), (plate/2, -plate/2),
-                   (plate/2, plate/2), (-plate/2, plate/2)]
-        circles = [{"c": (0, 0), "r": bore/2.0}] + _bolt_circle(pcd, n, hole)
-        cands.append({
-            "label": f"Motor mount flange — {n} bolts on {pcd:g} mm PCD",
-            "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
-                     "Bore ⌀ (mm)": bore,
-                     "Peak torque (N·m)": G.get("peak_torque_nm"),
-                     "Source": G.get("source", "powertrain tab")},
-            "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
-                           "circles": circles},
-            "notes": [f"Motor flange, {n} bolts on {pcd:g} mm PCD, "
-                      f"⌀{bore:g} mm bore (from {G.get('source','powertrain tab')})",
-                      "Set thickness from the peak torque reaction"],
-        })
-
-    return cands
-
-
-
-def _seg_intersect(p1, p2, p3, p4):
-    """True if segment p1p2 properly crosses p3p4 (shared endpoints don't count)."""
-    def _o(a, b, c):
-        return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0])
-    d1, d2 = _o(p3, p4, p1), _o(p3, p4, p2)
-    d3, d4 = _o(p1, p2, p3), _o(p1, p2, p4)
-    if ((d1 > 0) != (d2 > 0)) and ((d3 > 0) != (d4 > 0)):
-        return True
-    return False
-
-
-def _profile_is_clean(pts):
-    """Cheap self-intersection guard so SolidWorks imports the sketch as a
-    single closed contour it can extrude without 'open/self-intersecting'
-    repair. Checks non-adjacent edges of a closed loop. Returns (ok, reason)."""
-    n = len(pts)
-    if n < 3:
-        return False, "fewer than 3 points"
-    edges = [(pts[i], pts[(i+1) % n]) for i in range(n)]
-    for i in range(n):
-        for j in range(i+1, n):
-            # skip adjacent edges (they share a vertex) and the wrap pair
-            if j == i or j == (i+1) % n or (i == 0 and j == n-1):
-                continue
-            if abs(i-j) <= 1:
-                continue
-            if _seg_intersect(edges[i][0], edges[i][1],
-                              edges[j][0], edges[j][1]):
-                return False, f"edges {i} and {j} cross"
-    return True, "clean"
-
-
-def _validate_candidate_geometry(cand):
-    """Run each closed profile in a candidate through the self-intersection guard.
-    Returns (ok, [warnings]). Non-fatal: we still let the member download, but we
-    warn loudly so they check it before extruding."""
-    warns = []
-    kw = cand.get("dxf_kwargs") or {}
-    polys = kw.get("polylines") or []
-    if cand.get("profile_mm"):
-        polys = polys + [{"pts": cand["profile_mm"], "closed": True}]
-    for idx, pl in enumerate(polys):
-        if pl.get("closed", True):
-            ok, why = _profile_is_clean(pl.get("pts", []))
-            if not ok:
-                warns.append(f"profile {idx+1}: {why}")
-    return (len(warns) == 0), warns
-
-
-# Where each subsystem's export geometry comes from — shown in the empty state so
-# a member knows exactly which tool to run to light up the export (like brakes).
-_EXPORT_SOURCE_HINT = {
-    "aerodynamics": "Run the Aerodynamics tab's scale-model / aeromap so it "
-                    "publishes the real chord and t/c.",
-    "suspension":   "Set your hardpoints in the Kinematics tab so the upright "
-                    "mount PCD and bolt count are known.",
-    "brakes":       "Enter the caliper mount + brake torque in the Brakes tab "
-                    "(the rotor export is in that tab's optimiser).",
-    "electrics":    "Run the Accumulator tab's segmentation so the segment box "
-                    "dimensions and cell grid are known.",
-    "cooling":      "Size the radiator in the Cooling tab so the core face and "
-                    "depth are published.",
-    "chassis":      "Define the tube node in the Chassis / Team Fit tab so the "
-                    "gusset legs are known.",
-    "data-acquisition": "Enter the board / sensor footprint in the Electronics "
-                    "(PCB) tab.",
-    "powertrain":   "Enter the motor face (bore + bolt PCD) and peak torque in "
-                    "the EV Powertrain tab.",
-}
-
-
-def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
-                        title_name=None):
-    """Short-list to mesh + DXF export, specialised per subsystem.
-
-    Each subsystem exports the ACTUAL 2-D section it takes into CAD — an airfoil
-    for aero, a mount/flange plate with its real bolt PCD for suspension /
-    powertrain / brakes, a segment box for the accumulator, a radiator core face
-    for cooling, a node gusset for chassis, a sensor bracket for data-acq. The
-    geometry comes from what the owning tab PUBLISHED via
-    publish_export_geometry() — no invented defaults. If a tab hasn't run its
-    tool yet the export honestly gates (exactly like the brakes rotor exporter,
-    which shows nothing until you optimise). Every profile is checked for self-
-    intersection so it imports into SolidWorks as one clean closed contour ready
-    to extrude and validate in ANSYS. Callers may inject bespoke `candidates`
-    (e.g. the brakes rotor Pareto short-list)."""
-    _name = title_name or _VC_LABEL.get(subsystem_key,
-                                        subsystem_key.replace("-", " ").title())
-
-    if not candidates:
-        try:
-            candidates = _subsystem_profile_candidates(subsystem_key)
-        except Exception:
-            candidates = []
-
-    st.markdown(f"###### 📐 Short-list to mesh &amp; export — {_name}")
-
-    if subsystem_key == "brakes":
-        st.caption("The full rotor short-list (mass-vs-temp Pareto) and its "
-                   "half-section DXF live in the 🛑 Brakes tab optimiser. Below "
-                   "is the caliper-mount bracket section, once the tab has it.")
-
-    if not candidates:
-        _hint = _EXPORT_SOURCE_HINT.get(
-            subsystem_key, "Run this subsystem's tab tool first.")
-        st.info(f"**Nothing to export yet.** {_hint} The DXF is built from your "
-                f"real computed geometry — not a guess — so it stays empty until "
-                f"the numbers exist. (Same as the rotor exporter: nothing until "
-                f"you optimise.)")
-        return
-
-    # --- the short-list table (what's worth meshing) ----------------------- #
-    _rows = []
-    for c in candidates:
-        _r = {"Section": c.get("label", "?")}
-        _r.update({k: v for k, v in (c.get("meta") or {}).items()
-                   if v is not None})
-        _rows.append(_r)
-    st.markdown("**Short-list to mesh** — each row is a real section from your "
-                "computed numbers; confirm in Ansys / your FEA:")
-    st.dataframe(_rows, width="stretch", hide_index=True)
-
-    # --- DXF export per short-listed geometry ------------------------------ #
-    st.markdown("**Export to CAD (DXF)** — imports into SolidWorks as one closed "
-                "sketch; extrude/revolve, then mesh in ANSYS:")
-    _labels = {i: c.get("label", f"section {i+1}")
-               for i, c in enumerate(candidates)}
-    _pick = st.selectbox("Section to export", options=list(_labels.keys()),
-                         format_func=lambda i: _labels[i],
-                         key=f"{key_prefix}_gdxf_pick")
-    _cand = candidates[_pick]
-    _notes = list(_cand.get("notes", [])) or [
-        f"{k}: {v}" for k, v in (_cand.get("meta") or {}).items() if v is not None]
-
-    # SolidWorks-import guard: warn on any self-intersecting closed profile.
-    _clean, _warns = _validate_candidate_geometry(_cand)
-    if not _clean:
-        st.warning("⚠️ This section may not import as a clean closed contour "
-                   "(" + "; ".join(_warns) + "). Check it in SolidWorks before "
-                   "extruding.")
-    else:
-        st.caption("✓ Profile checked: single closed contour, holes as separate "
-                   "loops, units embedded — imports ready to extrude.")
-
-    _dxf_kwargs = _cand.get("dxf_kwargs")
-    if _dxf_kwargs:
-        _dxf = _generic_dxf_bytes(_cand.get("label", _name),
-                                  notes=_notes, **_dxf_kwargs)
-    else:
-        _dxf = _generic_dxf_bytes(_cand.get("label", _name),
-                                  _cand.get("profile_mm", [(0, 0)]),
-                                  notes=_notes)
-    _safe = subsystem_key.replace("-", "_")
-    st.download_button(
-        "⬇ Download DXF", data=_dxf,
-        file_name=f"kinematik_{_safe}_{_pick+1}.dxf",
-        mime="application/dxf", key=f"{key_prefix}_gdxf_dl")
-    _vc_disclaimer(f"the {_name.lower()} section")
-# === END spliced block ===
 
 
 def render_suspension_vs_chassis():
