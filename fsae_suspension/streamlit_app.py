@@ -27,7 +27,8 @@ import datetime as _datetime
 import numpy as np
 import streamlit as st
 
-# Force a clean up on initial page load
+# Force a clean up on initial page load (mem_utils.memory_guard runs below,
+# once Streamlit and the helper are both imported, to shed cache if RSS is high)
 gc.collect()
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -77,6 +78,7 @@ from suspension import pt_integration as pti_mod
 from suspension import registry as registry_mod
 from suspension import cad_ingest as ingest_mod
 from suspension import analytics as _axn
+from suspension import mem_utils as _mem   # RAM hygiene: keep under the 1 GB cloud limit
 
 
 # --------------------------------------------------------------------------- #
@@ -320,6 +322,12 @@ def _cached_thermal_warmup(coeffs, fnomin, enable_mu, cold_pa,
 st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
                    initial_sidebar_state="expanded")
+
+# RAM watchdog: below the soft limit this is one cheap file read; as the session
+# approaches the 1 GB Community-Cloud ceiling it sheds Streamlit's data cache
+# (recomputable results only) so a viewer never hits the "over its resource
+# limits" page. Runs once per rerun, near the top.
+_mem.memory_guard()
 
 # Delete stale persisted process-library files on first run of this session
 # so they are regenerated from the current seed data, removing any old / broken
@@ -2093,6 +2101,12 @@ with _pcar:
             _fig_pick, width="stretch", key="role_pick_car3d",
             config={"scrollZoom": True, "displaylogo": False,
                     "displayModeBar": False})
+        # The 3D full-car figure is the single heaviest object in a rerun (all
+        # its mesh coordinate arrays). Once Streamlit has it, drop the Python
+        # side and force one collect so those arrays don't coexist with every
+        # other tab's figures (st.tabs runs them all).
+        _mem.release_figure(_fig_pick)
+        _mem.maybe_collect(force=True)
         if _hl:
             _lit = " + ".join(_ROLE_LABELS[r].split(" / ")[0] for r in _roles
                               if _ROLE_TO_3D.get(r))
@@ -4053,9 +4067,11 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
         "⬇ Download DXF", data=_dxf,
         file_name=f"kinematik_{_safe}_{_pick+1}.dxf",
         mime="application/dxf", key=f"{key_prefix}_gdxf_dl")
-    # Immediately free up the memory holding those DXF text blocks
+    # Immediately free up the memory holding those DXF text blocks. The del is
+    # the actual win; the collection is throttled so it doesn't stall every
+    # rerun (st.tabs runs this tab's code on every interaction).
     del _dxf
-    gc.collect()
+    _mem.maybe_collect()
     _vc_disclaimer(f"the {_name.lower()} section")
 # === END spliced block ===
 
@@ -5724,9 +5740,11 @@ def _render_rotor_thermal(_bt, _mass, kin):
                     "Fusion 360, FreeCAD, or AutoCAD. Revolve the profile "
                     "around the centre-line to get the 3-D solid."
                 ))
-            # Immediately free up the memory holding those DXF text blocks
+            # Immediately free up the memory holding those DXF text blocks. The
+            # del frees it now; the collection is throttled to avoid a per-rerun
+            # stall (st.tabs executes this code on every interaction).
             del _dxf_bytes
-            gc.collect()
+            _mem.maybe_collect()
             if _dxf_is_us:
                 _od_in  = units_mod.from_metric(_dxf_cand.diameter_mm, "mm")
                 _th_in  = units_mod.from_metric(_dxf_cand.thickness_mm, "mm")
@@ -20555,5 +20573,10 @@ st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · AGPL-3.0.
             'geometry tweaks aren\'t auto-saved the way the handover log is.</i></p>',
             unsafe_allow_html=True)
 
-# Place this at the very bottom of your streamlit_app.py script
-gc.collect()
+# --- End-of-run memory hygiene (bottom of the script) --------------------- #
+# Bound the one unbounded-growth structure (the activity log) and run a
+# THROTTLED collection: a full gc.collect() only every Nth rerun instead of on
+# every single interaction, so we keep memory flat without adding a stall to
+# every click. See suspension/mem_utils.py for the thresholds.
+_mem.cap_session_log()
+_mem.maybe_collect()
