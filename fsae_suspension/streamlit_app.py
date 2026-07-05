@@ -1608,6 +1608,7 @@ _TAB_META = {
     "compliance":  ("🧬", "Compliance (Flex)"),
     "teamfit":     ("🧩", "Team Fit"),
     "weight":      ("⚖️", "Weight & Handover"),
+    "docs":        ("📄", "Documentation"),
     "notes":       ("📝", "Lead Notes"),
     "tire":        ("🛞", "Tire & Grip"),
     "setup":       ("🎛️", "Setup Optimiser"),
@@ -1644,7 +1645,7 @@ _TAB_CATEGORIES = [
     ("checks",   "✅", "Checks & Integration",
      ["integration", "validation", "dfmea", "tractive"]),
     ("docs",     "📄", "Documentation",
-     ["notes", "weight"]),
+     ["docs", "notes", "weight"]),
     ("data",     "📊", "Data & Cost",
      ["registry", "analytics", "cost"]),
 ]
@@ -1661,7 +1662,7 @@ for _cid in _FULL_ORDER:
 
 # Tabs every member uses no matter their subteam — the shared spine of the
 # project (see one car, declare your numbers once, read/leave notes).
-_SHARED_IDS = ["model3d", "integration", "registry", "notes", "weight", "validation", "analytics"]
+_SHARED_IDS = ["model3d", "integration", "registry", "docs", "notes", "weight", "validation", "analytics"]
 
 # Subteam -> the tabs that team actually works in (most-used first). The shared
 # spine (_SHARED_IDS: 3D model, integration, registry, notes, weight,
@@ -4718,74 +4719,117 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
 
       _vc_disclaimer(f"the {_name.lower()} document")
 
+_DOC_EXTRA_KEY = "_kinematik_doc_extra_sections"
+
+
+def publish_doc_sections(subsystem_key, sections):
+    """Let a subsystem tab hand its live, computed report sections to the central
+    DOCUMENTATION tab.
+
+    The docs panels no longer live inside each subsystem tab, but some subsystems
+    (e.g. Brakes) build report sections from numbers only computed while their tab
+    runs. Those tabs call this to stash the sections in session_state; the
+    Documentation tab reads them back via `get_doc_sections` so the report there
+    still carries that subsystem-specific content. Never raises."""
+    try:
+        _store = st.session_state.setdefault(_DOC_EXTRA_KEY, {})
+        _store[str(subsystem_key)] = list(sections or [])
+    except Exception:
+        pass
+
+
+def get_doc_sections(subsystem_key):
+    """Return whatever a subsystem tab last published for its report, or []."""
+    try:
+        return list(st.session_state.get(_DOC_EXTRA_KEY, {}).get(
+            str(subsystem_key), []))
+    except Exception:
+        return []
+
+
+def _render_doc_and_verdict(subsystem_key, *, key_prefix, extra_sections=None,
+                            title_name=None):
+    """Render the Document (report) and Verdict surfaces for one subsystem.
+
+    Shared by the new Documentation tab and the legacy per-subsystem panel, so
+    the two never drift. Two inner sub-tabs: 📄 Document · ✅ Verdict."""
+    _nm = title_name or _VC_LABEL.get(
+        subsystem_key, subsystem_key.replace("-", " ").title())
+    _dt_doc, _dt_verdict = st.tabs(["📄 Document", "✅ Verdict"])
+
+    with _dt_doc:
+        try:
+            render_documentation_center(
+                subsystem_key, key_prefix=f"{key_prefix}_dc",
+                title_name=_nm, extra_sections=extra_sections)
+        except Exception as _dc_err:
+            # Graceful fallback to the original simple report. We surface a
+            # short note (instead of silently swallowing) so a member — or
+            # whoever is deploying — can see the merged Template + Sanity-check
+            # hub failed to load and why, rather than wondering where the
+            # template library went.
+            st.caption(f"Showing the simple report — the merged template "
+                       f"library couldn’t load here ({type(_dc_err).__name__}).")
+            render_subsystem_documentation(
+                subsystem_key, key_prefix=key_prefix,
+                extra_sections=extra_sections, title_name=title_name)
+            try:
+                render_myth_check(subsystem_key, key_prefix=key_prefix)
+            except Exception:
+                pass
+
+    with _dt_verdict:
+        try:
+            render_subsystem_verdict_card(subsystem_key)
+            _vc_disclaimer(f"the {_nm.lower()} verdict")
+        except Exception as _ve:
+            st.caption(f"Verdict view unavailable: {_ve}")
+
+
+def _render_mesh_section(subsystem_key, *, key_prefix, mesh_candidates=None,
+                         title_name=None):
+    """Render the Mesh & DXF export surface for one subsystem.
+
+    The flow strip explains input → calculate → mesh → export; render_mesh_and_dxf
+    does the actual section short-list + DXF work."""
+    _nm = title_name or _VC_LABEL.get(
+        subsystem_key, subsystem_key.replace("-", " ").title())
+    try:
+        _hint = _EXPORT_SOURCE_HINT.get(subsystem_key) or {}
+        _where = _hint.get("where", f"the {_nm} tab")
+        _render_mesh_dxf_flow_strip(_where)
+        render_mesh_and_dxf(
+            subsystem_key, key_prefix=f"{key_prefix}_mesh",
+            candidates=mesh_candidates, title_name=_nm)
+    except Exception as _me:
+        st.caption(f"Mesh/DXF export unavailable: {_me}")
+
+
 def render_documentation_expander(subsystem_key, *, key_prefix,
                                   extra_sections=None, title_name=None,
                                   mesh_candidates=None):
-    """Collapsed 'Documentation & checks' panel for any subsystem.
+    """Legacy collapsed 'Documentation & checks' panel for any subsystem.
 
-    Reorganised so it isn't one overwhelming scroll: inside the expander the
-    work is split into three clearly-labelled sub-tabs —
-        📄 Document  ·  ✅ Verdict  ·  📐 Mesh & DXF
-    The Document tab is the merged report + template library + sanity-check (and
-    it now auto-aggregates everything logged for this subsystem — declared
-    numbers, session activity, Handover decisions and Lead Notes — so the export
-    is near-complete before any editing); the Verdict tab is this subsystem's
-    works / closer-look / attention box; the Mesh & DXF tab is the section
-    short-list + DXF export.
-
-    `mesh_candidates` (optional) is forwarded to the Mesh & DXF sub-tab — e.g.
-    the Brakes rotor Pareto short-list. The standalone
-    `render_mesh_and_dxf_expander(...)` is kept for any tab that still wants the
-    export inline, but subsystem tabs should prefer this unified panel."""
+    Documentation now lives in its own top-level DOCUMENTATION tab (a subsystem
+    picker with 📄 Document & Verdict and 📐 Mesh & DXF sub-tabs), so this panel
+    is no longer dropped into each subsystem tab. It is kept as a thin wrapper —
+    delegating to the same `_render_doc_and_verdict` / `_render_mesh_section`
+    helpers the Documentation tab uses — so any remaining caller still works and
+    the two surfaces can never drift."""
     _nm = title_name or _VC_LABEL.get(
         subsystem_key, subsystem_key.replace("-", " ").title())
     with st.expander(f"📄  {_nm} — documentation & verdict",
                      expanded=False):
-        _dt_doc, _dt_verdict, _dt_mesh = st.tabs(
-            ["📄 Document", "✅ Verdict", "📐 Mesh & DXF"])
-
-        with _dt_doc:
-            try:
-                render_documentation_center(
-                    subsystem_key, key_prefix=f"{key_prefix}_dc",
-                    title_name=_nm, extra_sections=extra_sections)
-            except Exception as _dc_err:
-                # Graceful fallback to the original simple report. We surface a
-                # short note (instead of silently swallowing) so a member — or
-                # whoever is deploying — can see the merged Template + Sanity-check
-                # hub failed to load and why, rather than wondering where the
-                # template library went.
-                st.caption(f"Showing the simple report — the merged template "
-                           f"library couldn’t load here ({type(_dc_err).__name__}).")
-                render_subsystem_documentation(
-                    subsystem_key, key_prefix=key_prefix,
-                    extra_sections=extra_sections, title_name=title_name)
-                try:
-                    render_myth_check(subsystem_key, key_prefix=key_prefix)
-                except Exception:
-                    pass
-
-        with _dt_verdict:
-            try:
-                render_subsystem_verdict_card(subsystem_key)
-                _vc_disclaimer(f"the {_nm.lower()} verdict")
-            except Exception as _ve:
-                st.caption(f"Verdict view unavailable: {_ve}")
-
-        with _dt_mesh:
-            # Mesh & DXF export lives here as its own sub-tab (Document · Verdict
-            # · Mesh & DXF), so every subsystem's documentation panel carries the
-            # same three surfaces. render_mesh_and_dxf does the work; the flow
-            # strip explains input → calculate → mesh → export at a glance.
-            try:
-                _hint = _EXPORT_SOURCE_HINT.get(subsystem_key) or {}
-                _where = _hint.get("where", f"the {_nm} tab")
-                _render_mesh_dxf_flow_strip(_where)
-                render_mesh_and_dxf(
-                    subsystem_key, key_prefix=f"{key_prefix}_mesh",
-                    candidates=mesh_candidates, title_name=_nm)
-            except Exception as _me:
-                st.caption(f"Mesh/DXF export unavailable: {_me}")
+        _doc_verdict, _mesh = st.tabs(
+            ["📄 Document & Verdict", "📐 Mesh & DXF"])
+        with _doc_verdict:
+            _render_doc_and_verdict(
+                subsystem_key, key_prefix=key_prefix,
+                extra_sections=extra_sections, title_name=_nm)
+        with _mesh:
+            _render_mesh_section(
+                subsystem_key, key_prefix=key_prefix,
+                mesh_candidates=mesh_candidates, title_name=_nm)
 
 
 def _render_mesh_dxf_flow_strip(where_label):
@@ -6115,6 +6159,7 @@ tab_track   = _id_to_container["laptime"]
 tab12       = _id_to_container["validation"]
 tab13       = _id_to_container["integration"]
 tab_registry = _id_to_container["registry"]
+tab_docs    = _id_to_container["docs"]
 tab_analytics = _id_to_container["analytics"]
 tab_pcb     = _id_to_container["pcb"]
 tab_tractive = _id_to_container["tractive"]
@@ -6166,11 +6211,6 @@ with tab1:
     pass
   try:
     render_process_library("suspension", key_prefix="kin_pl")
-  except Exception:
-    pass
-  try:
-    render_documentation_expander("suspension", key_prefix="susp_main",
-                                  title_name="Suspension")
   except Exception:
     pass
   # --- SUSPENSION HEADLINE CARDS ----------------------------------------- #
@@ -7929,11 +7969,6 @@ with tab_aero:
     render_process_library("aero", key_prefix="aero_pl")
   except Exception:
     pass
-  try:
-    render_documentation_expander("aerodynamics", key_prefix="aero",
-                                  title_name="Aerodynamics")
-  except Exception:
-    pass
 
   try:
     _subsystem_cad_import("aerodynamics", key_prefix="aero")
@@ -8653,18 +8688,8 @@ with tab_ev:
   except Exception:
     pass
   try:
-    render_documentation_expander("powertrain", key_prefix="ev",
-                                  title_name="Powertrain")
-  except Exception:
-    pass
-  try:
     _subsystem_cad_import("powertrain", key_prefix="ev")
     _subsystem_cad_import("cooling", key_prefix="ev_cooling")
-    try:
-        render_documentation_expander("cooling", key_prefix="cooling",
-                                      title_name="Cooling")
-    except Exception:
-        pass
     st.markdown(
         '<p class="hint" style="margin:0 0 6px;">Pick the <b>motor architecture</b> and '
         'size the pack. KinematiK runs the same lap on each option, with each one '
@@ -9765,11 +9790,6 @@ with tab_ev:
 with tab_accum:
   try:
     render_process_library("electrics", key_prefix="accum_pl")
-  except Exception:
-    pass
-  try:
-    render_documentation_expander("electrics", key_prefix="accum",
-                                  title_name="Accumulator / Electrics")
   except Exception:
     pass
 
@@ -11720,11 +11740,12 @@ with tab_brake:
     # =================================================================== #
     elif _bview == "Documentation":
         st.markdown(
-            '<p class="hint">Generate a <b>brakes subsystem report</b> (PDF) from '
-            'everything you\'ve worked out in this workspace — bias, hydraulics, '
-            'pedal box, throttle return. Download it for your design binder, and '
-            'optionally <b>record it in the Handover</b> so next year\'s team (and '
-            'the rest of Elbee) can see what the brakes team decided and why.</p>',
+            '<p class="hint">The full <b>brakes documentation &amp; verdict</b> — report '
+            'builder, PDF export and Handover logging — now lives in the '
+            '<b>📄 Documentation</b> tab (pick <i>Brakes</i> there). This keeps every '
+            'subsystem\'s docs in one place. Everything you\'ve worked out here — bias, '
+            'hydraulics, pedal box, throttle return — is carried over automatically, '
+            'so you only tweak wording before downloading.</p>',
             unsafe_allow_html=True)
 
         # brakes-specific result sections that don't live in the ledger
@@ -11782,8 +11803,9 @@ with tab_brake:
                           f"{'closes' if _c.closes else 'HANGS OPEN'}")
             _bx.append(("Throttle return springs — single-fault redundancy", _l))
 
-        render_documentation_expander("brakes", key_prefix="brake",
-                                       extra_sections=_bx, title_name="Brakes")
+        # Documentation now lives in the central DOCUMENTATION tab. Publish the
+        # brakes-specific report sections there so they're not lost.
+        publish_doc_sections("brakes", _bx)
 
 
   except Exception as _eb:
@@ -14189,11 +14211,6 @@ with tab6:
     render_process_library("chassis", key_prefix="teamfit_pl")
   except Exception:
     pass
-  try:
-    render_documentation_expander("chassis", key_prefix="chassis",
-                                  title_name="Chassis")
-  except Exception:
-    pass
 
   # ---- Node gusset — DXF export inputs -------------------------------- #
   # The Chassis Mesh & DXF tab draws a node gusset plate from these leg
@@ -14847,6 +14864,48 @@ with tab8:
                       nstore.reopen_note(n.id)
                       nstore.save()
                       st.rerun()
+
+
+# --------------------------------------------------------------------------- #
+#  DOCUMENTATION TAB — every subsystem's documentation in one place.
+#
+#  Moved here out of each subsystem tab. Pick a subsystem, then work in two
+#  sub-tabs: 📄 Document & Verdict (the auto-aggregated report + verdict card)
+#  and 📐 Mesh & DXF export. The report pulls in everything logged for that
+#  subsystem automatically (declared numbers, session activity, Handover
+#  decisions, Lead Notes, plus anything a subsystem tab published), so the PDF
+#  is near-complete before any editing.
+# --------------------------------------------------------------------------- #
+with tab_docs:
+  st.markdown(
+      '<div class="brand"><span class="mark">Documentation</span>'
+      '<span class="sub">Every subsystem&rsquo;s report, verdict &amp; DXF export '
+      'in one place</span></div>', unsafe_allow_html=True)
+  st.markdown(
+      '<p class="hint" style="margin:0 0 10px;">Pick a subsystem, then build its '
+      'document or export its section. Everything you&rsquo;ve logged anywhere — '
+      'declared numbers, calculations, Handover decisions and Lead Notes — is '
+      'pulled into the report automatically; you only tweak a few words before '
+      'downloading the PDF.</p>', unsafe_allow_html=True)
+
+  _doc_labels = [f"{_e}  {_lab}" for _k, _e, _lab in _VC_SUBSYS]
+  _doc_keys = [_k for _k, _e, _lab in _VC_SUBSYS]
+  _doc_pick = st.selectbox(
+      "Subsystem", options=list(range(len(_doc_keys))),
+      format_func=lambda i: _doc_labels[i], key="docs_subsys_pick")
+  _doc_key = _doc_keys[_doc_pick]
+  _doc_nm = _VC_LABEL.get(_doc_key, _doc_key.replace("-", " ").title())
+  _doc_prefix = "docs_" + _doc_key.replace("-", "_")
+
+  _dv_tab, _mesh_tab = st.tabs(
+      ["📄 Document & Verdict", "📐 Mesh & DXF export"])
+  with _dv_tab:
+      _render_doc_and_verdict(
+          _doc_key, key_prefix=_doc_prefix,
+          extra_sections=get_doc_sections(_doc_key), title_name=_doc_nm)
+  with _mesh_tab:
+      _render_mesh_section(_doc_key, key_prefix=_doc_prefix, title_name=_doc_nm)
+
 
 # ----------------------------- TAB 9 --------------------------------------- #
 # TIRE & GRIP — the competitive core. You get one set of tires; the edge is
@@ -18870,11 +18929,6 @@ with sc3:
 with tab_pcb:
   try:
     render_process_library("electrics", key_prefix="pcb_pl")
-  except Exception:
-    pass
-  try:
-    render_documentation_expander("data-acquisition", key_prefix="pcb",
-                                  title_name="Data Acquisition / PCB")
   except Exception:
     pass
   _subsystem_cad_import("data-acquisition", key_prefix="pcb")
