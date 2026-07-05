@@ -6108,6 +6108,11 @@ with tab2:
               'but not transient load: turn-in, trail-braking, kerb strikes, or damper '
               'behaviour. Use it for balance and geometry tuning, not for transient '
               'response.</p>', unsafe_allow_html=True)
+  try:
+      render_documentation_expander("suspension", key_prefix="roll_doc",
+                                    title_name="Suspension / Roll")
+  except Exception:
+      pass
 
 # ----------------------------- TAB 3 --------------------------------------- #
 with tab3:
@@ -6167,6 +6172,11 @@ with tab3:
               'only as trustworthy as the tire it runs on — fit yours from TTC data '
               'in the TIRE &amp; GRIP tab.</p>',
               unsafe_allow_html=True)
+  try:
+      render_documentation_expander("suspension", key_prefix="grip_doc",
+                                    title_name="Suspension / Grip Balance")
+  except Exception:
+      pass
 
 # ----------------------------- TAB 4 (merged 3D MODEL) --------------------- #
 # One tab, two views. A radio switches between the live suspension linkage
@@ -11389,8 +11399,8 @@ with tab_brake:
                           f"{'closes' if _c.closes else 'HANGS OPEN'}")
             _bx.append(("Throttle return springs — single-fault redundancy", _l))
 
-        render_subsystem_documentation("brakes", key_prefix="brake",
-                                       extra_sections=_bx, title_name="Brakes")
+        render_documentation_expander("brakes", key_prefix="brake_doc",
+                                       title_name="Brakes")
 
 
   except Exception as _eb:
@@ -13735,6 +13745,11 @@ with tab5c:
                     'content an MNF carries, which is what governs load↔deflection mid- '
                     'corner. It is not a transient or NVH model: no damper dynamics, no '
                     'modal response, no kerb strikes.</p>', unsafe_allow_html=True)
+  try:
+      render_documentation_expander("suspension", key_prefix="compliance_doc",
+                                    title_name="Suspension / Compliance")
+  except Exception:
+      pass
 
 # ----------------------------- TAB 6 --------------------------------------- #
 with tab6:
@@ -14810,6 +14825,11 @@ with tab9:
                     unsafe_allow_html=True)
     except Exception as e:
         st.info(f"Damping-ratio diagnostic unavailable: {e}")
+  try:
+      render_documentation_expander("suspension", key_prefix="tire_doc",
+                                    title_name="Suspension / Tire & Grip")
+  except Exception:
+      pass
 
 # ----------------------------- TAB 10 -------------------------------------- #
 # SETUP OPTIMISER — spend the one tire set wisely. Rank the levers by grip
@@ -14930,6 +14950,11 @@ with tab10:
                         'trusting the magnitudes — your tire\'s load and camber '
                         'sensitivity is exactly what sets which lever wins.</p>',
                         unsafe_allow_html=True)
+  try:
+      render_documentation_expander("suspension", key_prefix="setup_doc",
+                                    title_name="Suspension / Setup Optimiser")
+  except Exception:
+      pass
 
 # --------------------------------------------------------------------------- #
 #  TAB 11 — LAP TIME : turn the grip envelope into seconds
@@ -16331,6 +16356,11 @@ with tab11:
             'KinematiK extracts all pack and motor constants and stores them in the project — '
             'you won\'t need to re-upload it next session.</p>',
             unsafe_allow_html=True)
+  try:
+      render_documentation_expander("powertrain", key_prefix="laptime_doc",
+                                    title_name="Powertrain / Lap Time")
+  except Exception:
+      pass
 
 
 # ----------------------------- TAB 12 -------------------------------------- #
@@ -17905,6 +17935,11 @@ with tab_ggv:
                         'The envelope shape and the way it responds to setup changes are '
                         'right; load your TTC-fitted tire in TIRE &amp; GRIP before '
                         'quoting absolute g numbers.</p>', unsafe_allow_html=True)
+  try:
+      render_documentation_expander("suspension", key_prefix="ggv_doc",
+                                    title_name="Suspension / GGV Diagram")
+  except Exception:
+      pass
 
 
 # --------------------------------------------------------------------------- #
@@ -18339,6 +18374,11 @@ with sc3:
                 st.rerun()
         except Exception as e:
             st.error(f"Couldn't read that project file: {e}")
+  try:
+      render_documentation_expander("suspension", key_prefix="transient_doc",
+                                    title_name="Suspension / Transient")
+  except Exception:
+      pass
 
 # ----------------------------- TAB PCB (ELECTRONICS) ----------------------- #
 with tab_pcb:
@@ -18823,6 +18863,11 @@ with tab_tractive:
 
       except Exception as _e:
           st.error(f"PCM model couldn't run: {_e}")
+  try:
+      render_documentation_expander("electrics", key_prefix="tractive_doc",
+                                    title_name="Electrics / Tractive Safety")
+  except Exception:
+      pass
 
 
 
