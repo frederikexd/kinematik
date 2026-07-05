@@ -6108,11 +6108,6 @@ with tab2:
               'but not transient load: turn-in, trail-braking, kerb strikes, or damper '
               'behaviour. Use it for balance and geometry tuning, not for transient '
               'response.</p>', unsafe_allow_html=True)
-  try:
-      render_documentation_expander("suspension", key_prefix="roll_doc",
-                                    title_name="Suspension / Roll")
-  except Exception:
-      pass
 
 # ----------------------------- TAB 3 --------------------------------------- #
 with tab3:
@@ -6172,11 +6167,6 @@ with tab3:
               'only as trustworthy as the tire it runs on — fit yours from TTC data '
               'in the TIRE &amp; GRIP tab.</p>',
               unsafe_allow_html=True)
-  try:
-      render_documentation_expander("suspension", key_prefix="grip_doc",
-                                    title_name="Suspension / Grip Balance")
-  except Exception:
-      pass
 
 # ----------------------------- TAB 4 (merged 3D MODEL) --------------------- #
 # One tab, two views. A radio switches between the live suspension linkage
@@ -8625,6 +8615,76 @@ with tab_ev:
                         st.caption(f"• [{r.architecture.label()}] {w}")
 
         # =================================================================== #
+        #  MOTOR FACE — DXF EXPORT INPUTS                                      #
+        # =================================================================== #
+        # These three numbers are what the Mesh & DXF tab needs to draw the
+        # motor-mount flange. They live here so the user can see and fill them
+        # in the same tab where they do the rest of their powertrain work.
+        # publish_export_geometry() is called immediately on every rerun so the
+        # DXF tab always has fresh values — no button to press.
+        st.markdown("---")
+        st.markdown("### 📐 Motor face — DXF export inputs")
+        st.markdown(
+            '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> tab '
+            'draws your motor-mount flange from these three numbers. Fill them in '
+            'here and the export unlocks automatically — no separate step.</p>',
+            unsafe_allow_html=True)
+        with st.expander("📐 Enter motor face dimensions", expanded=True):
+            _mf_cols = st.columns(4)
+            _mf_bore = _mf_cols[0].number_input(
+                "Motor bore ⌀ (mm)",
+                min_value=10.0, max_value=500.0,
+                value=float(st.session_state.get("_mf_bore_mm", 80.0)),
+                step=1.0, key="mf_bore_mm",
+                help="Inner bore diameter of the motor face — the central clearance "
+                     "hole the shaft passes through. From your motor datasheet.")
+            _mf_pcd = _mf_cols[1].number_input(
+                "Bolt PCD (mm)",
+                min_value=20.0, max_value=800.0,
+                value=float(st.session_state.get("_mf_pcd_mm", 160.0)),
+                step=1.0, key="mf_pcd_mm",
+                help="Pitch-circle diameter of the motor-face bolt pattern. "
+                     "From the motor datasheet or measured face-to-face.")
+            _mf_nbolts = int(_mf_cols[2].number_input(
+                "Number of bolts",
+                min_value=2, max_value=12,
+                value=int(st.session_state.get("_mf_n_bolts", 4)),
+                step=1, key="mf_n_bolts",
+                help="Bolt count on the motor-face flange — typically 4 for FSAE motors."))
+            _mf_tq = _mf_cols[3].number_input(
+                "Peak torque (N·m)",
+                min_value=1.0, max_value=2000.0,
+                value=float(st.session_state.get("_mf_peak_tq", _def_peak_tq)),
+                step=5.0, key="mf_peak_tq",
+                help="Motor peak torque used to size the flange wall thickness. "
+                     "Matches the value on your motor datasheet.")
+            # Cache the values so they survive reruns without the expander open
+            st.session_state["_mf_bore_mm"] = _mf_bore
+            st.session_state["_mf_pcd_mm"]  = _mf_pcd
+            st.session_state["_mf_n_bolts"] = _mf_nbolts
+            st.session_state["_mf_peak_tq"] = _mf_tq
+            # Publish immediately — the DXF tab reads this every rerun
+            if _mf_bore > 0 and _mf_pcd > 0:
+                try:
+                    publish_export_geometry("powertrain", {
+                        "bore_d_mm":      round(float(_mf_bore), 1),
+                        "pcd_mm":         round(float(_mf_pcd), 1),
+                        "n_bolts":        int(_mf_nbolts),
+                        "hole_d_mm":      9.0,
+                        "peak_torque_nm": float(_mf_tq) if _mf_tq > 0 else None,
+                        "source":         "EV Powertrain tab — motor face inputs",
+                    })
+                    st.success(
+                        f"✓ Motor face locked in: ⌀{_mf_bore:g} mm bore, "
+                        f"{_mf_pcd:g} mm PCD, {_mf_nbolts} bolts, "
+                        f"{_mf_tq:g} N·m — the Mesh & DXF tab will now draw "
+                        "the flange.")
+                except Exception as _mf_err:
+                    st.warning(f"Couldn't publish motor face geometry: {_mf_err}")
+            else:
+                st.info("Enter bore diameter and bolt PCD above to unlock the DXF export.")
+
+        # =================================================================== #
         #  POWERTRAIN INTEGRATION  —  retire the Excel/screenshot workflow.    #
         # =================================================================== #
         # Everything below replaces a specific artifact the powertrain sub-team
@@ -9130,6 +9190,59 @@ with tab_ev:
                            "the cooling package can actually move it.")
             except Exception as _ce:
                 st.warning(f"Cooling operating point unavailable: {_ce}")
+
+            # ---- Radiator core face — DXF export inputs ------------------- #
+            # The Cooling Mesh & DXF tab draws the radiator core face from
+            # these two numbers. They live here alongside the rig inputs so the
+            # user enters all cooling geometry in one place.
+            st.markdown("---")
+            st.markdown("#### 📐 Radiator core face — DXF export inputs")
+            st.markdown(
+                '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> tab '
+                'draws your radiator core face from these dimensions. Fill them in '
+                'once and the export unlocks automatically.</p>',
+                unsafe_allow_html=True)
+            _rc_cols = st.columns(3)
+            _rc_w = _rc_cols[0].number_input(
+                "Core width (mm)",
+                min_value=50.0, max_value=1000.0,
+                value=float(st.session_state.get("_rc_w_mm", 280.0)),
+                step=5.0, key="rc_w_mm",
+                help="Width of the radiator core face — the dimension across the "
+                     "car. From your radiator datasheet or sizing calculation.")
+            _rc_h = _rc_cols[1].number_input(
+                "Core height (mm)",
+                min_value=50.0, max_value=1000.0,
+                value=float(st.session_state.get("_rc_h_mm", 200.0)),
+                step=5.0, key="rc_h_mm",
+                help="Height of the radiator core face. Together with width this "
+                     "defines the cross-section the DXF will draw.")
+            _rc_depth = _rc_cols[2].number_input(
+                "Core depth (mm)",
+                min_value=0.0, max_value=200.0,
+                value=float(st.session_state.get("_rc_depth_mm", 32.0)),
+                step=1.0, key="rc_depth_mm",
+                help="Radiator core depth (thickness). Used for notes on the DXF "
+                     "— does not change the 2D face outline.")
+            st.session_state["_rc_w_mm"]     = _rc_w
+            st.session_state["_rc_h_mm"]     = _rc_h
+            st.session_state["_rc_depth_mm"] = _rc_depth
+            if _rc_w > 0 and _rc_h > 0:
+                try:
+                    publish_export_geometry("cooling", {
+                        "core_w_mm":    round(float(_rc_w), 1),
+                        "core_h_mm":    round(float(_rc_h), 1),
+                        "core_depth_mm": round(float(_rc_depth), 1) or None,
+                        "source": "Cooling rig tab — core face inputs",
+                    })
+                    st.success(
+                        f"✓ Radiator core face locked in: {_rc_w:g} × {_rc_h:g} mm "
+                        f"({_rc_depth:g} mm deep) — the Mesh & DXF tab will now draw "
+                        "the core face.")
+                except Exception as _rc_err:
+                    st.warning(f"Couldn't publish radiator core geometry: {_rc_err}")
+            else:
+                st.info("Enter core width and height above to unlock the cooling DXF export.")
 
         # ================================================================= #
         #  PANEL 3 — Publish powertrain to the integration ledger           #
@@ -11399,8 +11512,8 @@ with tab_brake:
                           f"{'closes' if _c.closes else 'HANGS OPEN'}")
             _bx.append(("Throttle return springs — single-fault redundancy", _l))
 
-        render_documentation_expander("brakes", key_prefix="brake_doc",
-                                       title_name="Brakes")
+        render_subsystem_documentation("brakes", key_prefix="brake",
+                                       extra_sections=_bx, title_name="Brakes")
 
 
   except Exception as _eb:
@@ -13745,11 +13858,6 @@ with tab5c:
                     'content an MNF carries, which is what governs load↔deflection mid- '
                     'corner. It is not a transient or NVH model: no damper dynamics, no '
                     'modal response, no kerb strikes.</p>', unsafe_allow_html=True)
-  try:
-      render_documentation_expander("suspension", key_prefix="compliance_doc",
-                                    title_name="Suspension / Compliance")
-  except Exception:
-      pass
 
 # ----------------------------- TAB 6 --------------------------------------- #
 with tab6:
@@ -13762,6 +13870,52 @@ with tab6:
                                   title_name="Chassis")
   except Exception:
     pass
+
+  # ---- Node gusset — DXF export inputs -------------------------------- #
+  # The Chassis Mesh & DXF tab draws a node gusset plate from these leg
+  # lengths. They live here so the user enters the export geometry in the
+  # chassis tab, not only via a 3D part.
+  st.markdown("#### 📐 Node gusset — DXF export inputs")
+  st.markdown(
+      '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> tab '
+      'draws a tube-node gusset plate from these two leg lengths. Fill them '
+      'in here and the export unlocks automatically.</p>',
+      unsafe_allow_html=True)
+  with st.expander("📐 Enter gusset leg lengths", expanded=False):
+      _gu_cols = st.columns(2)
+      _gu_a = _gu_cols[0].number_input(
+          "Gusset leg A (mm)",
+          min_value=10.0, max_value=500.0,
+          value=float(st.session_state.get("_gu_leg_a_mm", 60.0)),
+          step=1.0, key="gu_leg_a_mm",
+          help="Length of the first gusset leg — one edge of the triangular "
+               "reinforcement plate at the tube node.")
+      _gu_b = _gu_cols[1].number_input(
+          "Gusset leg B (mm)",
+          min_value=10.0, max_value=500.0,
+          value=float(st.session_state.get("_gu_leg_b_mm", 45.0)),
+          step=1.0, key="gu_leg_b_mm",
+          help="Length of the second gusset leg — the other edge meeting at "
+               "the node.")
+      st.session_state["_gu_leg_a_mm"] = _gu_a
+      st.session_state["_gu_leg_b_mm"] = _gu_b
+      if _gu_a > 0 and _gu_b > 0:
+          try:
+              publish_export_geometry("chassis", {
+                  "leg_a_mm": round(float(_gu_a), 1),
+                  "leg_b_mm": round(float(_gu_b), 1),
+                  "holes": [{"c": (_gu_a * 0.28, _gu_b * 0.18), "r": 5.0},
+                            {"c": (_gu_a * 0.14, _gu_b * 0.5), "r": 5.0}],
+                  "source": "Chassis tab — gusset leg inputs",
+              })
+              st.success(
+                  f"✓ Gusset locked in: legs {_gu_a:g} × {_gu_b:g} mm — the "
+                  "Mesh & DXF tab will now draw the gusset plate.")
+          except Exception as _gu_err:
+              st.warning(f"Couldn't publish gusset geometry: {_gu_err}")
+      else:
+          st.info("Enter both gusset legs above to unlock the chassis DXF export.")
+
   st.markdown('<p class="hint">Any Elbee subteam: load the shared chassis once as '
               'the reference, then load your part (caliper, radiator, battery box, '
               'wing mount, ECU tray — anything). You get the same collision / tight / '
@@ -14825,11 +14979,6 @@ with tab9:
                     unsafe_allow_html=True)
     except Exception as e:
         st.info(f"Damping-ratio diagnostic unavailable: {e}")
-  try:
-      render_documentation_expander("suspension", key_prefix="tire_doc",
-                                    title_name="Suspension / Tire & Grip")
-  except Exception:
-      pass
 
 # ----------------------------- TAB 10 -------------------------------------- #
 # SETUP OPTIMISER — spend the one tire set wisely. Rank the levers by grip
@@ -14950,11 +15099,6 @@ with tab10:
                         'trusting the magnitudes — your tire\'s load and camber '
                         'sensitivity is exactly what sets which lever wins.</p>',
                         unsafe_allow_html=True)
-  try:
-      render_documentation_expander("suspension", key_prefix="setup_doc",
-                                    title_name="Suspension / Setup Optimiser")
-  except Exception:
-      pass
 
 # --------------------------------------------------------------------------- #
 #  TAB 11 — LAP TIME : turn the grip envelope into seconds
@@ -16055,7 +16199,7 @@ with tab11:
                     colorbar=dict(
                         title="°C",
                         tickfont=dict(color="#cdd6df"),
-                        title_font=dict(color="#cdd6df"),
+                        titlefont=dict(color="#cdd6df"),
                         bgcolor="rgba(0,0,0,0)"),
                     xgap=2, ygap=2,
                 ))
@@ -16356,11 +16500,6 @@ with tab11:
             'KinematiK extracts all pack and motor constants and stores them in the project — '
             'you won\'t need to re-upload it next session.</p>',
             unsafe_allow_html=True)
-  try:
-      render_documentation_expander("powertrain", key_prefix="laptime_doc",
-                                    title_name="Powertrain / Lap Time")
-  except Exception:
-      pass
 
 
 # ----------------------------- TAB 12 -------------------------------------- #
@@ -17935,11 +18074,6 @@ with tab_ggv:
                         'The envelope shape and the way it responds to setup changes are '
                         'right; load your TTC-fitted tire in TIRE &amp; GRIP before '
                         'quoting absolute g numbers.</p>', unsafe_allow_html=True)
-  try:
-      render_documentation_expander("suspension", key_prefix="ggv_doc",
-                                    title_name="Suspension / GGV Diagram")
-  except Exception:
-      pass
 
 
 # --------------------------------------------------------------------------- #
@@ -18206,11 +18340,6 @@ with tab_tr:
           'and a closed-loop racing line are out of scope — flagged, not faked. '
           'Use QSS (LAP TIME) for the lap-time number; use this for the unsteady '
           'behaviour behind it.</p>', unsafe_allow_html=True)
-  try:
-      render_documentation_expander("suspension", key_prefix="transient_doc",
-                                    title_name="Suspension / Transient")
-  except Exception:
-      pass
 
 
 # --------------------------------------------------------------------------- #
@@ -18392,6 +18521,56 @@ with tab_pcb:
   except Exception:
     pass
   _subsystem_cad_import("data-acquisition", key_prefix="pcb")
+
+  # ---- Board / sensor footprint — DXF export inputs ------------------- #
+  # The Data-Acquisition Mesh & DXF tab draws a PCB/sensor bracket outline
+  # from these dimensions. They live here so the user enters the export
+  # geometry in the PCB tab, not only via a 3D part.
+  st.markdown("#### 📐 Board / sensor footprint — DXF export inputs")
+  st.markdown(
+      '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> tab '
+      'draws your PCB / sensor-bracket outline from these dimensions. Fill '
+      'them in here and the export unlocks automatically.</p>',
+      unsafe_allow_html=True)
+  with st.expander("📐 Enter board footprint", expanded=False):
+      _bd_cols = st.columns(3)
+      _bd_w = _bd_cols[0].number_input(
+          "Board width (mm)",
+          min_value=10.0, max_value=500.0,
+          value=float(st.session_state.get("_bd_w_mm", 80.0)),
+          step=1.0, key="bd_w_mm",
+          help="Width of the PCB / sensor board footprint.")
+      _bd_h = _bd_cols[1].number_input(
+          "Board height (mm)",
+          min_value=10.0, max_value=500.0,
+          value=float(st.session_state.get("_bd_h_mm", 60.0)),
+          step=1.0, key="bd_h_mm",
+          help="Height (length) of the PCB / sensor board footprint.")
+      _bd_margin = _bd_cols[2].number_input(
+          "Mount margin (mm)",
+          min_value=2.0, max_value=30.0,
+          value=float(st.session_state.get("_bd_margin_mm", 6.0)),
+          step=0.5, key="bd_margin_mm",
+          help="Inset from the board edge to the mounting-hole centres.")
+      st.session_state["_bd_w_mm"]      = _bd_w
+      st.session_state["_bd_h_mm"]      = _bd_h
+      st.session_state["_bd_margin_mm"] = _bd_margin
+      if _bd_w > 0 and _bd_h > 0:
+          try:
+              publish_export_geometry("data-acquisition", {
+                  "w_mm": round(float(_bd_w), 1),
+                  "h_mm": round(float(_bd_h), 1),
+                  "hole_r_mm": 1.6, "margin_mm": float(_bd_margin),
+                  "source": "PCB tab — board footprint inputs",
+              })
+              st.success(
+                  f"✓ Board footprint locked in: {_bd_w:g} × {_bd_h:g} mm — the "
+                  "Mesh & DXF tab will now draw the bracket outline.")
+          except Exception as _bd_err:
+              st.warning(f"Couldn't publish board geometry: {_bd_err}")
+      else:
+          st.info("Enter board width and height above to unlock the data-acq DXF export.")
+
   render_pcb_board()
   render_harness()
 
@@ -18546,75 +18725,31 @@ with tab_tractive:
 
   # ---- PCM COOLING BUFFER (slides 3 & 7) ------------------------------- #
   with _t_pcm:
-      # ------------------------------------------------------------------ #
-      #  Intro card — one sentence of context, not a wall of text            #
-      # ------------------------------------------------------------------ #
-      st.markdown("""
-<div class="wt-intro">
-  <div class="ic">🧊</div>
-  <div>
-    <p><b>Wax melts at nearly constant temperature, absorbing the corner-exit heat spike.</b>
-    This tool tells you when it runs out — and how much you need to last the stint.</p>
-    <p>Adjust the sliders below; results update live. The <b>Wax Hold Timeline</b> shows
-    exactly when the wax exhausts and the fan must take over.</p>
-  </div>
-</div>""", unsafe_allow_html=True)
+      st.markdown("**The 'liquid wax' buffer — how long it holds the cells, and "
+                  "how much you need.** Latent heat flattens the corner-exit "
+                  "spikes; this tells you when the wax runs out and the fan has "
+                  "to take over.")
+      _wc = st.columns(4)
+      _series = _wc[0].number_input("Series (s)", 1, 400, 140, key="pcm_s")
+      _par = _wc[1].number_input("Parallel (p)", 1, 50, 3, key="pcm_p")
+      _mass_g = _wc[2].number_input("Wax per cell (g)", 0.0, 500.0, 15.0,
+                                    key="pcm_g")
+      _ambient = _wc[3].number_input("Inlet air (°C)", 0.0, 60.0, 35.0,
+                                     key="pcm_amb")
+      _wc2 = st.columns(4)
+      _tmelt = _wc2[0].number_input("Wax melt temp (°C)", 20.0, 90.0, 45.0,
+                                    key="pcm_tm")
+      _lheat = _wc2[1].number_input("Latent heat (J/g)", 50.0, 400.0, 200.0,
+                                    key="pcm_l")
+      _stint = _wc2[2].number_input("Endurance stint (s)", 60.0, 3000.0, 1500.0,
+                                    key="pcm_stint")
+      _peakA = _wc2[3].number_input("Pack current peak (A)", 10.0, 800.0, 300.0,
+                                    key="pcm_a")
 
-      # ------------------------------------------------------------------ #
-      #  Input groups — two collapsible sections for clarity                 #
-      # ------------------------------------------------------------------ #
-      _pcm_left, _pcm_right = st.columns([3, 2], gap="large")
-
-      with _pcm_left:
-          st.markdown("#### 🔋 Pack configuration")
-          _pg1 = st.columns(2)
-          _series = _pg1[0].number_input(
-              "Series cells (s)", 1, 400, 140, key="pcm_s",
-              help="Number of cells in series — sets nominal pack voltage. "
-                   "Default 140s matches a typical FSAE EV accumulator.")
-          _par = _pg1[1].number_input(
-              "Parallel cells (p)", 1, 50, 3, key="pcm_p",
-              help="Cells in parallel per series group. "
-                   "140s × 3p = 420 cells total.")
-          _pg2 = st.columns(2)
-          _peakA = _pg2[0].number_input(
-              "Peak current (A)", 10.0, 800.0, 300.0, key="pcm_a",
-              help="Peak discharge current of the pack at full throttle out of "
-                   "a corner. Drives the heat generation rate in the model.")
-          _ambient = _pg2[1].number_input(
-              "Inlet air temp (°C)", 0.0, 60.0, 35.0, key="pcm_amb",
-              help="Temperature of cooling air entering the pack. "
-                   "35 °C is a warm competition-day estimate.")
-          _stint = st.slider(
-              "Endurance stint duration (s)", 60, 3000, 1500, step=30,
-              key="pcm_stint",
-              help="Target hold time — the wax should last at least this long. "
-                   "A standard FSAE Endurance run is ~1 500 s (~25 min).")
-
-          st.markdown("#### 🕯️ Wax (PCM) properties")
-          _wp1 = st.columns(2)
-          _mass_g = _wp1[0].number_input(
-              "Wax per cell (g)", 0.0, 500.0, 15.0, step=1.0, key="pcm_g",
-              help="Mass of PCM surrounding each cell in the nylon holder. "
-                   "The key design variable — more wax = longer hold time.")
-          _tmelt = _wp1[1].number_input(
-              "Wax melt temperature (°C)", 20.0, 90.0, 45.0, key="pcm_tm",
-              help="The temperature at which the wax transitions from solid to "
-                   "liquid and absorbs latent heat. Choose a wax that melts "
-                   "just below the cell's warning temperature.")
-          _lheat = st.slider(
-              "Latent heat (J/g)", 50, 400, 200, step=5, key="pcm_l",
-              help="Energy absorbed per gram during the melt — the bigger this "
-                   "number, the more heat the wax can absorb. Typical paraffin "
-                   "wax: 180–230 J/g. Enter your datasheet value here.")
-
-      # ------------------------------------------------------------------ #
-      #  Live compute                                                         #
-      # ------------------------------------------------------------------ #
       _ncells = int(_series) * int(_par)
+      # square-ish packaging grid for the n cells
       _rows = max(int(round(_ncells ** 0.5)), 1)
       _cols = max(int(round(_ncells / _rows)), 1)
-
       try:
           _cell = pack_mod.default_cell_params()
           _layout = pack_mod.PackLayout(rows=_rows, cols=_cols,
@@ -18629,245 +18764,38 @@ with tab_tractive:
           _alloc = pcm_mod.PCMAllocation(material=_mat, mass_per_cell_g=_mass_g,
                                          set_by="cooling")
           _pr = pcm_mod.evaluate_pcm_buffer(_res, _layout, _alloc)
-          _sz = pcm_mod.size_pcm_for_hold(_res, _layout, _mat, hold_time_s=_stint)
 
-          # -------------------------------------------------------------- #
-          #  Right column: headline status card + key metrics                #
-          # -------------------------------------------------------------- #
-          with _pcm_right:
-              # Status pill
-              _hold_s = _pr.hold_time_s
-              _hold_ok = (_hold_s is None) or (_hold_s >= _stint)
-              _status_color = "var(--cyan)" if _hold_ok else "var(--amber)"
-              _status_border = "#1f4d49" if _hold_ok else "#5a4317"
-              _status_icon = "✅" if _hold_ok else "⚠️"
-              if _hold_s is None:
-                  _hold_label = "Holds full stint"
-                  _hold_sub = f"Wax never fully melts over {_stint} s"
-              else:
-                  _hold_label = f"{_hold_s:.0f} s hold"
-                  _short = _stint - _hold_s
-                  _hold_sub = (f"Lasts full {_stint} s ✓" if _hold_ok
-                               else f"{_short:.0f} s short of the {_stint} s stint")
+          _mm = st.columns(4)
+          _mm[0].metric("Cells (grid)", f"{_layout.n_cells}")
+          _hold = ("holds full stint" if _pr.hold_time_s is None
+                   else f"{_pr.hold_time_s:.0f} s")
+          _mm[1].metric("Wax hold time", _hold)
+          _mm[2].metric("Pack wax mass", f"{_pr.total_pcm_mass_kg:.1f} kg")
+          _mm[3].metric("Pack wax volume", f"{_pr.total_pcm_volume_cc:.0f} cc")
 
-              st.markdown(f"""
-<div style="border:1px solid {_status_border}; border-left:4px solid {_status_color};
-     border-radius:14px; background:var(--panel2); padding:1rem 1.1rem; margin:.3rem 0 .8rem;">
-  <div style="font-family:'JetBrains Mono'; font-size:.68rem; letter-spacing:.1em;
-       text-transform:uppercase; color:var(--dim); margin-bottom:.3rem;">Wax hold status</div>
-  <div style="font-size:1.6rem; font-weight:800; color:{_status_color};
-       font-family:'Archivo'; line-height:1;">{_status_icon} {_hold_label}</div>
-  <div style="font-size:.83rem; color:var(--dim); margin-top:.35rem;">{_hold_sub}</div>
-</div>""", unsafe_allow_html=True)
-
-              # Key metrics grid
-              st.markdown(f"""
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-bottom:.7rem;">
-  <div class="metric">
-    <div class="k">Total cells</div>
-    <div class="v">{_layout.n_cells}</div>
-  </div>
-  <div class="metric">
-    <div class="k">Wax mass (pack)</div>
-    <div class="v">{_pr.total_pcm_mass_kg:.2f} <span class="u">kg</span></div>
-  </div>
-  <div class="metric">
-    <div class="k">Wax volume (pack)</div>
-    <div class="v">{_pr.total_pcm_volume_cc:.0f} <span class="u">cc</span></div>
-  </div>
-  <div class="metric">
-    <div class="k">Latent buffer/cell</div>
-    <div class="v">{_alloc.latent_buffer_j_per_cell():.0f} <span class="u">J</span></div>
-  </div>
-</div>""", unsafe_allow_html=True)
-
-              # Progress bar: hold time vs stint
-              if _hold_s is not None:
-                  _pct = min(_hold_s / max(_stint, 1), 1.0) * 100
-                  _bar_color = "#37e0d0" if _hold_ok else "#ffb02e"
-                  st.markdown(f"""
-<div style="margin:.2rem 0 .8rem;">
-  <div style="font-family:'JetBrains Mono'; font-size:.68rem; letter-spacing:.08em;
-       text-transform:uppercase; color:var(--dim); margin-bottom:.4rem;">
-    Hold time vs stint ({_pct:.0f}%)
-  </div>
-  <div style="background:var(--panel); border:1px solid var(--line);
-       border-radius:6px; height:10px; overflow:hidden;">
-    <div style="width:{_pct:.1f}%; height:100%; background:{_bar_color};
-         border-radius:6px; transition:width .4s ease;"></div>
-  </div>
-  <div style="display:flex; justify-content:space-between;
-       font-family:'JetBrains Mono'; font-size:.68rem; color:var(--dim); margin-top:.3rem;">
-    <span>0 s</span><span style="color:{_bar_color};">{_hold_s:.0f} s melt-out</span>
-    <span>{_stint} s target</span>
-  </div>
-</div>""", unsafe_allow_html=True)
-              else:
-                  st.markdown(f"""
-<div style="margin:.2rem 0 .8rem;">
-  <div style="font-family:'JetBrains Mono'; font-size:.68rem; letter-spacing:.08em;
-       text-transform:uppercase; color:var(--dim); margin-bottom:.4rem;">
-    Hold time vs stint (100%)
-  </div>
-  <div style="background:var(--panel); border:1px solid var(--line);
-       border-radius:6px; height:10px; overflow:hidden;">
-    <div style="width:100%; height:100%; background:#37e0d0; border-radius:6px;"></div>
-  </div>
-  <div style="display:flex; justify-content:space-between;
-       font-family:'JetBrains Mono'; font-size:.68rem; color:var(--dim); margin-top:.3rem;">
-    <span>0 s</span><span style="color:#37e0d0;">Full stint ✓</span>
-    <span>{_stint} s target</span>
-  </div>
-</div>""", unsafe_allow_html=True)
-
-              # Inverse sizing callout
-              if _sz.get("ok"):
-                  _inv_mass = _sz["pcm_mass_per_cell_g"]
-                  _inv_pkg  = _sz["pack_pcm_mass_kg"]
-                  _inv_vol  = _sz["pack_pcm_volume_cc"]
-                  _impractical = _inv_pkg > 10
-                  _inv_color = "var(--amber)" if _impractical else "var(--cyan)"
-                  _inv_border = "#5a4317" if _impractical else "#1f4d49"
-                  _inv_note = (
-                      "⚠ Impractical on latent heat alone — size for the burst, "
-                      "not the stint. The fan handles the steady load."
-                      if _impractical else
-                      "This is the wax needed so the plateau lasts the whole stint.")
-                  st.markdown(f"""
-<div style="border:1px solid {_inv_border}; border-left:3px solid {_inv_color};
-     border-radius:12px; background:var(--panel2); padding:.8rem .9rem; margin-top:.2rem;">
-  <div style="font-family:'JetBrains Mono'; font-size:.66rem; letter-spacing:.09em;
-       text-transform:uppercase; color:var(--dim); margin-bottom:.5rem;">
-    Inverse sizing — wax needed for full stint
-  </div>
-  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.4rem; margin-bottom:.5rem;">
-    <div><div style="font-size:.68rem; color:var(--dim);">Per cell</div>
-         <div style="font-family:'JetBrains Mono'; font-weight:600; font-size:1.0rem;
-              color:{_inv_color};">{_inv_mass:.0f} g</div></div>
-    <div><div style="font-size:.68rem; color:var(--dim);">Pack mass</div>
-         <div style="font-family:'JetBrains Mono'; font-weight:600; font-size:1.0rem;
-              color:{_inv_color};">{_inv_pkg:.1f} kg</div></div>
-    <div><div style="font-size:.68rem; color:var(--dim);">Pack volume</div>
-         <div style="font-family:'JetBrains Mono'; font-weight:600; font-size:1.0rem;
-              color:{_inv_color};">{_inv_vol:.0f} cc</div></div>
-  </div>
-  <div style="font-size:.78rem; color:var(--dim); line-height:1.45;">{_inv_note}</div>
-</div>""", unsafe_allow_html=True)
-
-          # -------------------------------------------------------------- #
-          #  Wax hold timeline chart (full width, below the two columns)    #
-          # -------------------------------------------------------------- #
-          st.markdown("#### 📈 Wax hold timeline")
-
-          # Build the timeline: heat absorbed vs buffer capacity over simulated time
-          try:
-              import plotly.graph_objects as _go2
-              _T_hist = np.asarray(_res.temp_history_c, float)
-              _t_sim  = np.asarray(_res.time_s, float)
-              _hot_i  = int(_res.hottest_cell_index)
-              _T_hot  = _T_hist[:, _hot_i]
-
-              _onset = _tmelt - 2.0   # half of default melt_window_c=4
-              _C_cell = max(_cell.mass_kg * _cell.cp, 1e-9)
-              _dT = np.diff(_T_hot)
-              _T_mid = 0.5 * (_T_hot[1:] + _T_hot[:-1])
-              _q_step = _C_cell * np.clip(_dT, 0, None) * (_T_mid >= _onset)
-              _cum_q  = np.concatenate([[0.0], np.cumsum(_q_step)])
-              _buf_j  = _alloc.latent_buffer_j_per_cell()
-
-              _fig_pcm = _go2.Figure()
-
-              # Cell temperature trace
-              _fig_pcm.add_trace(_go2.Scatter(
-                  x=_t_sim, y=_T_hot, name="Hottest cell (°C)",
-                  mode="lines", line=dict(color="#37e0d0", width=2),
-                  yaxis="y1"))
-
-              # Cumulative heat absorbed vs buffer
-              _fig_pcm.add_trace(_go2.Scatter(
-                  x=_t_sim, y=_cum_q, name="Heat absorbed (J)",
-                  mode="lines", line=dict(color="#ffb02e", width=2, dash="dot"),
-                  yaxis="y2"))
-
-              # Buffer capacity line
-              _fig_pcm.add_hline(
-                  y=_buf_j, yref="y2",
-                  line=dict(color="#ff5a52", width=1.5, dash="dash"),
-                  annotation_text=f"Wax capacity ({_buf_j:.0f} J)",
-                  annotation_position="top right",
-                  annotation_font=dict(color="#ff5a52", size=11))
-
-              # Melt temperature line
-              _fig_pcm.add_hline(
-                  y=_tmelt, yref="y1",
-                  line=dict(color="#ffb02e", width=1, dash="dot"),
-                  annotation_text=f"Melt temp ({_tmelt:.0f}°C)",
-                  annotation_position="top left",
-                  annotation_font=dict(color="#ffb02e", size=11))
-
-              # Melt-out vertical marker
-              if _pr.hold_time_s is not None:
-                  _first_onset_i = int(np.argmax(_T_hot >= _onset)) if np.any(_T_hot >= _onset) else 0
-                  _meltout_t = _t_sim[_first_onset_i] + _pr.hold_time_s
-                  _meltout_t = min(_meltout_t, float(_t_sim[-1]))
-                  _fig_pcm.add_vline(
-                      x=_meltout_t, line=dict(color="#ff5a52", width=2, dash="dash"),
-                      annotation_text=f"Wax exhausted at {_pr.hold_time_s:.0f}s",
-                      annotation_position="top left",
-                      annotation_font=dict(color="#ff5a52", size=11))
-
-              # Stint target line
-              _fig_pcm.add_vline(
-                  x=float(min(_stint, float(_t_sim[-1]))),
-                  line=dict(color="#37e0d0" if _hold_ok else "#8d99a6",
-                            width=1.5, dash="longdash"),
-                  annotation_text=f"Stint target ({_stint}s)",
-                  annotation_position="top right",
-                  annotation_font=dict(color="#37e0d0" if _hold_ok else "#8d99a6",
-                                       size=11))
-
-              _fig_pcm.update_layout(
-                  height=320, margin=dict(l=10, r=10, t=30, b=10),
-                  paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#13171c",
-                  font=dict(family="JetBrains Mono", size=11, color="#8d99a6"),
-                  xaxis=dict(title="Time (s)", gridcolor="#1d242c",
-                             zerolinecolor="#262d36"),
-                  yaxis=dict(title="Cell temp (°C)", gridcolor="#1d242c",
-                             zerolinecolor="#262d36", title_font=dict(color="#37e0d0"),
-                             tickfont=dict(color="#37e0d0")),
-                  yaxis2=dict(title="Heat absorbed (J)", overlaying="y", side="right",
-                              gridcolor="rgba(0,0,0,0)",
-                              title_font=dict(color="#ffb02e"),
-                              tickfont=dict(color="#ffb02e")),
-                  legend=dict(orientation="h", y=1.12, bgcolor="rgba(0,0,0,0)",
-                              font=dict(size=11)),
-                  showlegend=True)
-              st.plotly_chart(_fig_pcm, use_container_width=True)
-
-          except Exception as _chart_err:
-              st.caption(f"Chart unavailable: {_chart_err}")
-
-          # -------------------------------------------------------------- #
-          #  Findings + calibration note                                     #
-          # -------------------------------------------------------------- #
           _render_findings(pcm_mod.check_pcm(_pr, endurance_time_s=_stint))
 
+          st.divider()
+          st.markdown("**Inverse sizing** — wax needed to hold the full stint:")
+          _sz = pcm_mod.size_pcm_for_hold(_res, _layout, _mat, hold_time_s=_stint)
+          if _sz.get("ok"):
+              _sc = st.columns(3)
+              _sc[0].metric("Per cell", f"{_sz['pcm_mass_per_cell_g']:.0f} g")
+              _sc[1].metric("Pack mass", f"{_sz['pack_pcm_mass_kg']:.1f} kg")
+              _sc[2].metric("Pack volume", f"{_sz['pack_pcm_volume_cc']:.0f} cc")
+              if _sz["pack_pcm_mass_kg"] > 10:
+                  st.caption("⚠ That much wax to hold the *whole* stint on "
+                             "latent heat alone is impractical — the honest read "
+                             "is: PCM buffers the spikes, the fan carries the "
+                             "steady load. Size the wax for the burst, not the "
+                             "stint.")
           if _pr.synthesized:
-              st.markdown("""
-<div class="wt-note">
-  <b>⚠ Synthesized result — treat as directional, not absolute.</b>
-  Energy balances are exact, but cell and wax properties use representative defaults
-  (uncalibrated). Use this to rank layouts and spot where the wax runs out; confirm
-  absolute temperatures in Ansys before committing to a wax mass.
-</div>""", unsafe_allow_html=True)
-
+              st.caption("⚠ Synthesized: energy balances are exact, but cell and "
+                         "wax properties are representative (uncalibrated). Use "
+                         "for ranking layouts and finding where the wax runs out; "
+                         "confirm absolute °C in Ansys.")
       except Exception as _e:
           st.error(f"PCM model couldn't run: {_e}")
-  try:
-      render_documentation_expander("electrics", key_prefix="tractive_doc",
-                                    title_name="Electrics / Tractive Safety")
-  except Exception:
-      pass
 
 
 
