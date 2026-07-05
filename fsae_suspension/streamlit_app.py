@@ -1317,7 +1317,7 @@ if solve_ok and not st.session_state.get("_ax_kin_solved_once"):
         pass
 
 st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
-            f'<span class="sub">{_TOPO_LABELS.get(_topo, _topo)} · the hour before ANSYS, SolidWorks &amp; MATLAB · open source</span></div>',
+            '<span class="sub">the hour before ANSYS, SolidWorks &amp; MATLAB · open source</span></div>',
             unsafe_allow_html=True)
 
 # =========================================================================== #
@@ -2807,10 +2807,10 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
                                   _v, str(_v))
             record_activity(subsystem_key, "myth",
                             f"\u201c{_claim.strip()}\u201d \u2192 {_verdict_label}")
-            # Same honest reminder as the full myth-buster view: screening pass,
-            # validate in the real tools.
+            # Compact reminder attached directly under the verdict, so the
+            # "validate in the real tools" note travels with the outcome.
             try:
-                _mb_validation_disclaimer()
+                _mb_validation_disclaimer(compact=True)
             except Exception:
                 pass
         except Exception as _me:
@@ -11321,7 +11321,7 @@ with tab_brake:
                         st.warning(f"Couldn't run the myth-buster: {_me}")
                     else:
                         try:
-                            _mb_validation_disclaimer()
+                            _mb_validation_disclaimer(compact=True)
                         except Exception:
                             pass
 
@@ -12150,6 +12150,9 @@ def render_mythbuster():
     _last = st.session_state.get("mb_last_result_dict")
     if _last:
         _mb_render_card(_last_in, _MBDictResult(_last))
+        # Compact reminder right under the verdict, so the "validate in the real
+        # tools" note is alongside the outcome, not only in the page footer.
+        _mb_validation_disclaimer(compact=True)
 
     # Reference myths for the selected discipline, evaluated against live context.
     _ref_disc = _disc or None
@@ -12231,14 +12234,28 @@ def render_mythbuster():
     _mb_validation_disclaimer()
 
 
-def _mb_validation_disclaimer():
-    """The 'validate in the real tools' footer for the Myth-Buster.
+def _mb_validation_disclaimer(compact: bool = False):
+    """The 'validate in the real tools' reminder for the Myth-Buster.
 
     Kept in one place so every myth-buster surface (the full view and the
     inline per-subsystem checks) carries the same honest reminder: this is a
     deterministic screening pass, the hour BEFORE you open the analysis
     packages — not a replacement for them.
+
+    ``compact=True`` renders a tight one-line note meant to sit DIRECTLY under a
+    verdict card (no divider, small margin) so the disclaimer travels with the
+    outcome; ``compact=False`` is the fuller footer for the bottom of a view.
     """
+    if compact:
+        st.markdown(
+            '<p class="hint" style="font-size:.7rem;line-height:1.5;'
+            'color:var(--dim);margin:6px 2px 2px;">'
+            '⚠️ <b>Screening result — the hour before ANSYS, SolidWorks &amp; '
+            'MATLAB.</b> Deterministic sanity check, not FEA/CFD or a full sim. '
+            'Validate anything you\'ll design, cut, order or sign off in the real '
+            'tools, and confirm rule limits against the current rulebook.</p>',
+            unsafe_allow_html=True)
+        return
     st.markdown(
         '<hr style="border:none;border-top:1px solid rgba(128,128,128,.18);'
         'margin:14px 0 8px;">', unsafe_allow_html=True)
