@@ -1095,67 +1095,67 @@ with st.sidebar:
             preset = colB.selectbox("Preset", ["Front (default)", "Low roll-centre",
                                                "High anti-dive"], label_visibility="collapsed")
 
-            st.markdown("###### Design intent")
-            c1, c2 = st.columns(2)
-            st.session_state.hp["static_camber"] = c1.number_input(
-                "Static camber °", value=float(st.session_state.hp.get("static_camber", -1.5)),
-                step=0.1, format="%.2f")
-            st.session_state.hp["static_toe"] = c2.number_input(
-                "Static toe °", value=float(st.session_state.hp.get("static_toe", 0.0)),
-                step=0.05, format="%.2f")
+            with st.expander("⚙️ Design intent", expanded=False):
+              c1, c2 = st.columns(2)
+              st.session_state.hp["static_camber"] = c1.number_input(
+                  "Static camber °", value=float(st.session_state.hp.get("static_camber", -1.5)),
+                  step=0.1, format="%.2f")
+              st.session_state.hp["static_toe"] = c2.number_input(
+                  "Static toe °", value=float(st.session_state.hp.get("static_toe", 0.0)),
+                  step=0.05, format="%.2f")
 
-            st.markdown("###### Pickup coordinates")
-            _coord_step = 0.1 if _US else 2.0
-            _coord_fmt = "%.2f" if _US else "%.1f"
-            for key, label in POINTS:
-                with st.expander(label, expanded=False):
-                    v = st.session_state.hp[key]
-                    cols = st.columns(3)
-                    nv = []
-                    for i, ax in enumerate("xyz"):
-                        _disp = cols[i].number_input(
-                            f"{ax} ({_U_LEN})",
-                            value=units_mod.from_metric(float(v[i]), "mm"),
-                            step=_coord_step, key=f"{key}_{ax}",
-                            format=_coord_fmt, label_visibility="visible")
-                        nv.append(units_mod.to_metric(_disp, "mm"))
-                    st.session_state.hp[key] = nv
+            with st.expander("⚙️ Pickup coordinates", expanded=False):
+              _coord_step = 0.1 if _US else 2.0
+              _coord_fmt = "%.2f" if _US else "%.1f"
+              for key, label in POINTS:
+                  with st.expander(label, expanded=False):
+                      v = st.session_state.hp[key]
+                      cols = st.columns(3)
+                      nv = []
+                      for i, ax in enumerate("xyz"):
+                          _disp = cols[i].number_input(
+                              f"{ax} ({_U_LEN})",
+                              value=units_mod.from_metric(float(v[i]), "mm"),
+                              step=_coord_step, key=f"{key}_{ax}",
+                              format=_coord_fmt, label_visibility="visible")
+                          nv.append(units_mod.to_metric(_disp, "mm"))
+                      st.session_state.hp[key] = nv
 
-            st.markdown("###### Pushrod / rocker")
-            rocker_on = st.checkbox(
-                "Pushrod-actuated (real motion ratio)",
-                value=bool(st.session_state.hp.get("pushrod_outer") is not None),
-                help="When on, the motion ratio and wheel rate come from the actual "
-                     "bell-crank geometry. When off, a direct-acting proxy is used and "
-                     "reported spring→wheel rates are only indicative.")
-            if rocker_on:
-                # Seed rocker points from the default if the project doesn't carry them.
-                _def = Hardpoints.default().as_dict()
-                for key, label in ROCKER_POINTS:
-                    if st.session_state.hp.get(key) is None:
-                        st.session_state.hp[key] = _def[key]
-                attach = st.selectbox(
-                    "Pushrod mounts on", ["lower", "upper", "upright"],
-                    index=["lower", "upper", "upright"].index(
-                        st.session_state.hp.get("pushrod_attach", "lower")))
-                st.session_state.hp["pushrod_attach"] = attach
-                for key, label in ROCKER_POINTS:
-                    with st.expander(label, expanded=False):
-                        v = st.session_state.hp[key]
-                        cols = st.columns(3)
-                        nv = []
-                        for i, ax in enumerate("xyz"):
-                            _disp = cols[i].number_input(
-                                f"{ax} ({_U_LEN})",
-                                value=units_mod.from_metric(float(v[i]), "mm"),
-                                step=_coord_step, key=f"{key}_{ax}",
-                                format="%.2f", label_visibility="visible")
-                            nv.append(units_mod.to_metric(_disp, "mm"))
-                        st.session_state.hp[key] = nv
-            else:
-                # Clear rocker points so has_rocker() is False and the proxy is used.
-                for key, _ in ROCKER_POINTS:
-                    st.session_state.hp[key] = None
+            with st.expander("⚙️ Pushrod / rocker", expanded=False):
+              rocker_on = st.checkbox(
+                  "Pushrod-actuated (real motion ratio)",
+                  value=bool(st.session_state.hp.get("pushrod_outer") is not None),
+                  help="When on, the motion ratio and wheel rate come from the actual "
+                       "bell-crank geometry. When off, a direct-acting proxy is used and "
+                       "reported spring→wheel rates are only indicative.")
+              if rocker_on:
+                  # Seed rocker points from the default if the project doesn't carry them.
+                  _def = Hardpoints.default().as_dict()
+                  for key, label in ROCKER_POINTS:
+                      if st.session_state.hp.get(key) is None:
+                          st.session_state.hp[key] = _def[key]
+                  attach = st.selectbox(
+                      "Pushrod mounts on", ["lower", "upper", "upright"],
+                      index=["lower", "upper", "upright"].index(
+                          st.session_state.hp.get("pushrod_attach", "lower")))
+                  st.session_state.hp["pushrod_attach"] = attach
+                  for key, label in ROCKER_POINTS:
+                      with st.expander(label, expanded=False):
+                          v = st.session_state.hp[key]
+                          cols = st.columns(3)
+                          nv = []
+                          for i, ax in enumerate("xyz"):
+                              _disp = cols[i].number_input(
+                                  f"{ax} ({_U_LEN})",
+                                  value=units_mod.from_metric(float(v[i]), "mm"),
+                                  step=_coord_step, key=f"{key}_{ax}",
+                                  format="%.2f", label_visibility="visible")
+                              nv.append(units_mod.to_metric(_disp, "mm"))
+                          st.session_state.hp[key] = nv
+              else:
+                  # Clear rocker points so has_rocker() is False and the proxy is used.
+                  for key, _ in ROCKER_POINTS:
+                      st.session_state.hp[key] = None
         else:
             # Generic topologies: edit the Mechanism's named points directly. Every
             # architecture now has a live hardpoint editor, not just the wishbone.
@@ -1165,64 +1165,64 @@ with st.sidebar:
             _topo_coords = render_generic_point_editor(topo_choice)
 
     st.markdown("---")
-    st.markdown("###### Vehicle")
-    vp = st.session_state.vp
-    if _US:
-        _m_lo, _m_hi = units_mod.from_metric(180, "kg"), units_mod.from_metric(360, "kg")
-        _m_disp = st.slider(f"Mass + driver ({_U_MASS})", round(_m_lo), round(_m_hi),
-                            round(units_mod.from_metric(float(vp["mass"]), "kg")))
-        vp["mass"] = units_mod.to_metric(_m_disp, "kg")
-        _cg_lo, _cg_hi = units_mod.from_metric(200, "mm"), units_mod.from_metric(400, "mm")
-        _cg_disp = st.slider(f"CG height ({_U_LEN})", round(_cg_lo, 1), round(_cg_hi, 1),
-                             round(units_mod.from_metric(float(vp["cg_height"]), "mm"), 1))
-        vp["cg_height"] = units_mod.to_metric(_cg_disp, "mm")
-    else:
-        vp["mass"] = st.slider("Mass + driver (kg)", 180, 360, int(vp["mass"]))
-        vp["cg_height"] = st.slider("CG height (mm)", 200, 400, int(vp["cg_height"]))
-    vp["weight_dist_front"] = st.slider("Front weight (%)", 40, 60,
-                                        int(vp["weight_dist_front"] * 100)) / 100
+    with st.expander("⚙️ Vehicle", expanded=False):
+      vp = st.session_state.vp
+      if _US:
+          _m_lo, _m_hi = units_mod.from_metric(180, "kg"), units_mod.from_metric(360, "kg")
+          _m_disp = st.slider(f"Mass + driver ({_U_MASS})", round(_m_lo), round(_m_hi),
+                              round(units_mod.from_metric(float(vp["mass"]), "kg")))
+          vp["mass"] = units_mod.to_metric(_m_disp, "kg")
+          _cg_lo, _cg_hi = units_mod.from_metric(200, "mm"), units_mod.from_metric(400, "mm")
+          _cg_disp = st.slider(f"CG height ({_U_LEN})", round(_cg_lo, 1), round(_cg_hi, 1),
+                               round(units_mod.from_metric(float(vp["cg_height"]), "mm"), 1))
+          vp["cg_height"] = units_mod.to_metric(_cg_disp, "mm")
+      else:
+          vp["mass"] = st.slider("Mass + driver (kg)", 180, 360, int(vp["mass"]))
+          vp["cg_height"] = st.slider("CG height (mm)", 200, 400, int(vp["cg_height"]))
+      vp["weight_dist_front"] = st.slider("Front weight (%)", 40, 60,
+                                          int(vp["weight_dist_front"] * 100)) / 100
 
-    st.markdown("###### Springs & roll stiffness")
-    use_springs = st.checkbox(
-        "Drive roll stiffness from spring rates × motion ratio",
-        value=bool(vp.get("use_spring_rates", False)),
-        help="On: axle roll stiffness = spring rate × MR² (+ ARB), using the live "
-             "rocker geometry. This is the physically correct path and is what the "
-             "optimiser uses. Off: type roll stiffness directly (legacy).")
-    vp["use_spring_rates"] = use_springs
-    if use_springs:
-        s1, s2 = st.columns(2)
-        _sf = s1.number_input(
-            f"Spring F ({_U_RATE})",
-            value=units_mod.from_metric(float(vp.get("spring_rate_front", 35.0)), "N/mm"),
-            step=units_mod.from_metric(2.5, "N/mm"))
-        vp["spring_rate_front"] = units_mod.to_metric(_sf, "N/mm")
-        _sr = s2.number_input(
-            f"Spring R ({_U_RATE})",
-            value=units_mod.from_metric(float(vp.get("spring_rate_rear", 35.0)), "N/mm"),
-            step=units_mod.from_metric(2.5, "N/mm"))
-        vp["spring_rate_rear"] = units_mod.to_metric(_sr, "N/mm")
-        a1, a2 = st.columns(2)
-        _af = a1.number_input(
-            f"ARB F ({_U_TORQ}/°)",
-            value=units_mod.from_metric(float(vp.get("arb_rate_front", 0.0)), "N·m"),
-            step=units_mod.from_metric(10.0, "N·m"))
-        vp["arb_rate_front"] = units_mod.to_metric(_af, "N·m")
-        _ar = a2.number_input(
-            f"ARB R ({_U_TORQ}/°)",
-            value=units_mod.from_metric(float(vp.get("arb_rate_rear", 0.0)), "N·m"),
-            step=units_mod.from_metric(10.0, "N·m"))
-        vp["arb_rate_rear"] = units_mod.to_metric(_ar, "N·m")
-    else:
-        cc1, cc2 = st.columns(2)
-        _rf = cc1.number_input(f"Roll stiff F ({_U_TORQ}/°)",
-                               value=units_mod.from_metric(float(vp["roll_stiffness_front"]), "N·m"),
-                               step=units_mod.from_metric(10.0, "N·m"))
-        vp["roll_stiffness_front"] = units_mod.to_metric(_rf, "N·m")
-        _rr = cc2.number_input(f"Roll stiff R ({_U_TORQ}/°)",
-                               value=units_mod.from_metric(float(vp["roll_stiffness_rear"]), "N·m"),
-                               step=units_mod.from_metric(10.0, "N·m"))
-        vp["roll_stiffness_rear"] = units_mod.to_metric(_rr, "N·m")
+    with st.expander("⚙️ Springs & roll stiffness", expanded=False):
+      use_springs = st.checkbox(
+          "Drive roll stiffness from spring rates × motion ratio",
+          value=bool(vp.get("use_spring_rates", False)),
+          help="On: axle roll stiffness = spring rate × MR² (+ ARB), using the live "
+               "rocker geometry. This is the physically correct path and is what the "
+               "optimiser uses. Off: type roll stiffness directly (legacy).")
+      vp["use_spring_rates"] = use_springs
+      if use_springs:
+          s1, s2 = st.columns(2)
+          _sf = s1.number_input(
+              f"Spring F ({_U_RATE})",
+              value=units_mod.from_metric(float(vp.get("spring_rate_front", 35.0)), "N/mm"),
+              step=units_mod.from_metric(2.5, "N/mm"))
+          vp["spring_rate_front"] = units_mod.to_metric(_sf, "N/mm")
+          _sr = s2.number_input(
+              f"Spring R ({_U_RATE})",
+              value=units_mod.from_metric(float(vp.get("spring_rate_rear", 35.0)), "N/mm"),
+              step=units_mod.from_metric(2.5, "N/mm"))
+          vp["spring_rate_rear"] = units_mod.to_metric(_sr, "N/mm")
+          a1, a2 = st.columns(2)
+          _af = a1.number_input(
+              f"ARB F ({_U_TORQ}/°)",
+              value=units_mod.from_metric(float(vp.get("arb_rate_front", 0.0)), "N·m"),
+              step=units_mod.from_metric(10.0, "N·m"))
+          vp["arb_rate_front"] = units_mod.to_metric(_af, "N·m")
+          _ar = a2.number_input(
+              f"ARB R ({_U_TORQ}/°)",
+              value=units_mod.from_metric(float(vp.get("arb_rate_rear", 0.0)), "N·m"),
+              step=units_mod.from_metric(10.0, "N·m"))
+          vp["arb_rate_rear"] = units_mod.to_metric(_ar, "N·m")
+      else:
+          cc1, cc2 = st.columns(2)
+          _rf = cc1.number_input(f"Roll stiff F ({_U_TORQ}/°)",
+                                 value=units_mod.from_metric(float(vp["roll_stiffness_front"]), "N·m"),
+                                 step=units_mod.from_metric(10.0, "N·m"))
+          vp["roll_stiffness_front"] = units_mod.to_metric(_rf, "N·m")
+          _rr = cc2.number_input(f"Roll stiff R ({_U_TORQ}/°)",
+                                 value=units_mod.from_metric(float(vp["roll_stiffness_rear"]), "N·m"),
+                                 step=units_mod.from_metric(10.0, "N·m"))
+          vp["roll_stiffness_rear"] = units_mod.to_metric(_rr, "N·m")
 
 
 # Apply presets (simple variations on the default)
@@ -4411,28 +4411,28 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
             '<hr style="margin:10px 0 6px;border:none;'
             'border-top:1px solid rgba(128,128,128,.12);">',
             unsafe_allow_html=True)
-        st.markdown("###### ✏️ Edit your sections")
-        for _tid in _picked_ids:
-            _, _tlabel, _ticon, _tdefault, _tbody, _tgroup = _TMPL_UNPACK(
-                _TMPL_BY_ID[_tid])
-            _heading = next(
-                (ln[3:] for ln in _tbody.splitlines() if ln.startswith("## ")),
-                _tlabel)
-            _skeleton = "\n".join(
-                ln for ln in _tbody.splitlines() if not ln.startswith("## "))
-            with st.expander(f"{_ticon} {_tlabel}", expanded=False):
-                _edited = st.text_area(
-                    "Content",
-                    value=st.session_state.get(
-                        f"{key_prefix}_edit_{_tid}", _skeleton),
-                    height=160,
-                    key=f"{key_prefix}_edit_{_tid}",
-                    label_visibility="collapsed",
-                    help="Edit freely. Lines starting with '- ' become bullets "
-                         "in the report. Your edits persist while this tab is open.")
-                _edited_sections.append((
-                    _heading,
-                    [ln for ln in _edited.splitlines() if ln.strip()]))
+        with st.expander("⚙️ ✏️ Edit your sections", expanded=False):
+          for _tid in _picked_ids:
+              _, _tlabel, _ticon, _tdefault, _tbody, _tgroup = _TMPL_UNPACK(
+                  _TMPL_BY_ID[_tid])
+              _heading = next(
+                  (ln[3:] for ln in _tbody.splitlines() if ln.startswith("## ")),
+                  _tlabel)
+              _skeleton = "\n".join(
+                  ln for ln in _tbody.splitlines() if not ln.startswith("## "))
+              with st.expander(f"{_ticon} {_tlabel}", expanded=False):
+                  _edited = st.text_area(
+                      "Content",
+                      value=st.session_state.get(
+                          f"{key_prefix}_edit_{_tid}", _skeleton),
+                      height=160,
+                      key=f"{key_prefix}_edit_{_tid}",
+                      label_visibility="collapsed",
+                      help="Edit freely. Lines starting with '- ' become bullets "
+                           "in the report. Your edits persist while this tab is open.")
+                  _edited_sections.append((
+                      _heading,
+                      [ln for ln in _edited.splitlines() if ln.strip()]))
 
     # ------------------------------------------------------------------ #
     #  4. Sanity-check                                                     #
@@ -4441,125 +4441,125 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
         '<hr style="margin:14px 0 8px;border:none;'
         'border-top:1px solid rgba(128,128,128,.15);">',
         unsafe_allow_html=True)
-    st.markdown("###### 🔎 Sanity-check an assumption")
-    st.markdown(
-        '<p class="hint" style="margin:0 0 6px;font-size:.75rem;">'
-        'Type any claim and hit <b>Bust it →</b>. '
-        'The verdict is automatically added to your report under '
-        '<i>Assumptions checked this session</i>.</p>',
-        unsafe_allow_html=True)
-    try:
-        render_myth_check(subsystem_key, key_prefix=f"{key_prefix}_docmyth")
-    except Exception:
-        pass
+    with st.expander("⚙️ 🔎 Sanity-check an assumption", expanded=False):
+      st.markdown(
+          '<p class="hint" style="margin:0 0 6px;font-size:.75rem;">'
+          'Type any claim and hit <b>Bust it →</b>. '
+          'The verdict is automatically added to your report under '
+          '<i>Assumptions checked this session</i>.</p>',
+          unsafe_allow_html=True)
+      try:
+          render_myth_check(subsystem_key, key_prefix=f"{key_prefix}_docmyth")
+      except Exception:
+          pass
 
-    # ------------------------------------------------------------------ #
-    #  5 & 6. Build markdown, preview, and export                          #
-    # ------------------------------------------------------------------ #
-    st.markdown(
-        '<hr style="margin:14px 0 8px;border:none;'
-        'border-top:1px solid rgba(128,128,128,.15);">',
-        unsafe_allow_html=True)
-    st.markdown("###### 📄 Report")
+      # ------------------------------------------------------------------ #
+      #  5 & 6. Build markdown, preview, and export                          #
+      # ------------------------------------------------------------------ #
+      st.markdown(
+          '<hr style="margin:14px 0 8px;border:none;'
+          'border-top:1px solid rgba(128,128,128,.15);">',
+          unsafe_allow_html=True)
+    with st.expander("⚙️ 📄 Report", expanded=False):
 
-    # Build the merged markdown here so the export buttons always reflect
-    # the current editors + activity — no double-appending of activity.
-    _all_extra = _edited_sections + _activity_sections(subsystem_key)
+      # Build the merged markdown here so the export buttons always reflect
+      # the current editors + activity — no double-appending of activity.
+      _all_extra = _edited_sections + _activity_sections(subsystem_key)
 
-    def _build_md():
-        import datetime as _dt
-        L = [f"# Elbee Racing — {_name} Subsystem Report",
-             f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._", ""]
-        try:
-            _led = interfaces_mod.IntegrationLedger.from_dict(
-                st.session_state.get("ledger", {}) or {})
-            _it = _led.get(subsystem_key)
-        except Exception:
-            _led, _it = None, None
-        if _it is not None and _it.declared_fields():
-            L.append("## Declared to INTEGRATION")
-            for _f in _it.declared_fields():
-                _lbl = interfaces_mod.FIELD_LABELS.get(_f, (_f, ""))[0]
-                L.append(f"- {_lbl}: "
-                         f"**{interfaces_mod._fmt_val(_f, getattr(_it, _f))}**")
-            if _it.is_estimate:
-                L.append("- _Marked ESTIMATE — placeholder, not yet confirmed._")
-            if getattr(_it, "rationale", ""):
-                L.append(f"- Rationale: {_it.rationale}")
-            if getattr(_it, "owner", ""):
-                L.append(f"- Owner: {_it.owner}")
-            if getattr(_it, "updated_on", ""):
-                L.append(f"- Last updated: {_it.updated_on}")
-            L.append("")
-        for _heading, _lines in _all_extra:
-            if _lines:
-                L.append(f"## {_heading}")
-                L.extend(_lines)
-                L.append("")
-        if _led is not None:
-            try:
-                _finds = interfaces_mod.findings_for(
-                    _led.check_all(), subsystem_key)
-                if _finds:
-                    L.append("## Cross-team checks (live)")
-                    for _fd in _finds:
-                        _sv = getattr(_fd.severity, "value", _fd.severity)
-                        L.append(f"- [{str(_sv).upper()}] {_fd.message}")
-                    L.append("")
-            except Exception:
-                pass
-        if len(L) <= 3:
-            L.append(f"_No {_name.lower()} results yet — work through this "
-                     f"subsystem's views and publish to INTEGRATION first._")
-        return "\n".join(L)
+      def _build_md():
+          import datetime as _dt
+          L = [f"# Elbee Racing — {_name} Subsystem Report",
+               f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._", ""]
+          try:
+              _led = interfaces_mod.IntegrationLedger.from_dict(
+                  st.session_state.get("ledger", {}) or {})
+              _it = _led.get(subsystem_key)
+          except Exception:
+              _led, _it = None, None
+          if _it is not None and _it.declared_fields():
+              L.append("## Declared to INTEGRATION")
+              for _f in _it.declared_fields():
+                  _lbl = interfaces_mod.FIELD_LABELS.get(_f, (_f, ""))[0]
+                  L.append(f"- {_lbl}: "
+                           f"**{interfaces_mod._fmt_val(_f, getattr(_it, _f))}**")
+              if _it.is_estimate:
+                  L.append("- _Marked ESTIMATE — placeholder, not yet confirmed._")
+              if getattr(_it, "rationale", ""):
+                  L.append(f"- Rationale: {_it.rationale}")
+              if getattr(_it, "owner", ""):
+                  L.append(f"- Owner: {_it.owner}")
+              if getattr(_it, "updated_on", ""):
+                  L.append(f"- Last updated: {_it.updated_on}")
+              L.append("")
+          for _heading, _lines in _all_extra:
+              if _lines:
+                  L.append(f"## {_heading}")
+                  L.extend(_lines)
+                  L.append("")
+          if _led is not None:
+              try:
+                  _finds = interfaces_mod.findings_for(
+                      _led.check_all(), subsystem_key)
+                  if _finds:
+                      L.append("## Cross-team checks (live)")
+                      for _fd in _finds:
+                          _sv = getattr(_fd.severity, "value", _fd.severity)
+                          L.append(f"- [{str(_sv).upper()}] {_fd.message}")
+                      L.append("")
+              except Exception:
+                  pass
+          if len(L) <= 3:
+              L.append(f"_No {_name.lower()} results yet — work through this "
+                       f"subsystem's views and publish to INTEGRATION first._")
+          return "\n".join(L)
 
-    _md = _build_md()
+      _md = _build_md()
 
-    with st.expander("Preview the report", expanded=False):
-        st.markdown(_md)
+      with st.expander("Preview the report", expanded=False):
+          st.markdown(_md)
 
-    _mode = st.radio(
-        "What should this do?",
-        [f"Just create a PDF for the {_name.lower()} subsystem",
-         "Create the PDF **and** record it in the Handover"],
-        key=f"{key_prefix}_doc_mode")
+      _mode = st.radio(
+          "What should this do?",
+          [f"Just create a PDF for the {_name.lower()} subsystem",
+           "Create the PDF **and** record it in the Handover"],
+          key=f"{key_prefix}_doc_mode")
 
-    _cols = st.columns([2, 3])
-    _pdf_ok = False
-    try:
-        import tempfile as _tf3, os as _os3
-        _pdf_path = _os3.path.join(_tf3.gettempdir(), f"elbee_{_safe}_report.pdf")
-        project_mod.render_pdf(_md, _pdf_path)
-        with open(_pdf_path, "rb") as _pf:
-            _pdf_bytes = _pf.read()
-        _pdf_ok = True
-    except Exception as _pe:
-        _cols[0].warning(f"PDF unavailable: {_pe}")
+      _cols = st.columns([2, 3])
+      _pdf_ok = False
+      try:
+          import tempfile as _tf3, os as _os3
+          _pdf_path = _os3.path.join(_tf3.gettempdir(), f"elbee_{_safe}_report.pdf")
+          project_mod.render_pdf(_md, _pdf_path)
+          with open(_pdf_path, "rb") as _pf:
+              _pdf_bytes = _pf.read()
+          _pdf_ok = True
+      except Exception as _pe:
+          _cols[0].warning(f"PDF unavailable: {_pe}")
 
-    if _pdf_ok:
-        _cols[0].download_button(
-            f"⬇ {_name} report (.pdf)", _pdf_bytes,
-            file_name=f"elbee_{_safe}_report.pdf", mime="application/pdf",
-            width="stretch", key=f"{key_prefix}_doc_pdf")
-        _cols[1].download_button(
-            f"⬇ {_name} report (.md)", _md.encode("utf-8"),
-            file_name=f"elbee_{_safe}_report.md", mime="text/markdown",
-            width="stretch", key=f"{key_prefix}_doc_md")
+      if _pdf_ok:
+          _cols[0].download_button(
+              f"⬇ {_name} report (.pdf)", _pdf_bytes,
+              file_name=f"elbee_{_safe}_report.pdf", mime="application/pdf",
+              width="stretch", key=f"{key_prefix}_doc_pdf")
+          _cols[1].download_button(
+              f"⬇ {_name} report (.md)", _md.encode("utf-8"),
+              file_name=f"elbee_{_safe}_report.md", mime="text/markdown",
+              width="stretch", key=f"{key_prefix}_doc_md")
 
-    if _mode.startswith("Create the PDF **and**"):
-        if st.button("✓ Record this report in the Handover",
-                     key=f"{key_prefix}_doc_log"):
-            _ok = log_decision_now(
-                subsystem_key, f"{_name} subsystem report generated",
-                _md, author=subsystem_key)
-            if _ok:
-                st.success("Recorded in the Handover — visible in the Weight & "
-                           "Handover tab and carried into the season handover report.")
-            else:
-                st.warning("Couldn't write to the Handover log (backend offline) — "
-                           "the PDF above is still yours to download.")
+      if _mode.startswith("Create the PDF **and**"):
+          if st.button("✓ Record this report in the Handover",
+                       key=f"{key_prefix}_doc_log"):
+              _ok = log_decision_now(
+                  subsystem_key, f"{_name} subsystem report generated",
+                  _md, author=subsystem_key)
+              if _ok:
+                  st.success("Recorded in the Handover — visible in the Weight & "
+                             "Handover tab and carried into the season handover report.")
+              else:
+                  st.warning("Couldn't write to the Handover log (backend offline) — "
+                             "the PDF above is still yours to download.")
 
-    _vc_disclaimer(f"the {_name.lower()} document")
+      _vc_disclaimer(f"the {_name.lower()} document")
 
 def render_documentation_expander(subsystem_key, *, key_prefix,
                                   extra_sections=None, title_name=None,
@@ -11610,117 +11610,117 @@ def _render_envelope_vs_chassis(subsys, led):
 
     size = (float(it.env_x_mm), float(it.env_y_mm), float(it.env_z_mm))
     default_origin = getattr(it, "env_origin_mm", None)
-    st.markdown("###### Envelope placement (min corner, mm in the chassis frame)")
-    pc = st.columns(3)
-    ox = pc[0].number_input("origin x", value=float(default_origin[0]) if default_origin else 0.0,
-                            step=10.0, key=f"env_ox_{subsys}")
-    oy = pc[1].number_input("origin y", value=float(default_origin[1]) if default_origin else 0.0,
-                            step=10.0, key=f"env_oy_{subsys}")
-    oz = pc[2].number_input("origin z", value=float(default_origin[2]) if default_origin else 0.0,
-                            step=10.0, key=f"env_oz_{subsys}")
-    _es = [units_mod.from_metric(size[i], "mm") for i in range(3)]
-    _eu = units_mod.label("mm")
-    _ep = 2 if units_mod.is_us() else 0
-    st.caption(f"Envelope size: {_es[0]:.{_ep}f} × {_es[1]:.{_ep}f} × {_es[2]:.{_ep}f} {_eu} "
-               "(from the ledger). Place its min corner above to match where it mounts.")
+    with st.expander("⚙️ Envelope placement (min corner, mm in the chassis frame)", expanded=False):
+      pc = st.columns(3)
+      ox = pc[0].number_input("origin x", value=float(default_origin[0]) if default_origin else 0.0,
+                              step=10.0, key=f"env_ox_{subsys}")
+      oy = pc[1].number_input("origin y", value=float(default_origin[1]) if default_origin else 0.0,
+                              step=10.0, key=f"env_oy_{subsys}")
+      oz = pc[2].number_input("origin z", value=float(default_origin[2]) if default_origin else 0.0,
+                              step=10.0, key=f"env_oz_{subsys}")
+      _es = [units_mod.from_metric(size[i], "mm") for i in range(3)]
+      _eu = units_mod.label("mm")
+      _ep = 2 if units_mod.is_us() else 0
+      st.caption(f"Envelope size: {_es[0]:.{_ep}f} × {_es[1]:.{_ep}f} × {_es[2]:.{_ep}f} {_eu} "
+                 "(from the ledger). Place its min corner above to match where it mounts.")
 
-    up = st.file_uploader("Chassis CAD", type=["step", "stp", "stl", "obj", "glb"],
-                          label_visibility="collapsed", key=f"env_cad_{subsys}")
-    oc1, oc2, oc3, oc4 = st.columns(4)
-    off_x = oc1.number_input("offset x", value=0.0, step=10.0, key=f"env_offx_{subsys}")
-    off_y = oc2.number_input("offset y", value=0.0, step=10.0, key=f"env_offy_{subsys}")
-    off_z = oc3.number_input("offset z", value=0.0, step=10.0, key=f"env_offz_{subsys}")
-    cad_scale = oc4.number_input("scale (m→mm = 1000)", value=1.0, step=1.0, key=f"env_scale_{subsys}")
+      up = st.file_uploader("Chassis CAD", type=["step", "stp", "stl", "obj", "glb"],
+                            label_visibility="collapsed", key=f"env_cad_{subsys}")
+      oc1, oc2, oc3, oc4 = st.columns(4)
+      off_x = oc1.number_input("offset x", value=0.0, step=10.0, key=f"env_offx_{subsys}")
+      off_y = oc2.number_input("offset y", value=0.0, step=10.0, key=f"env_offy_{subsys}")
+      off_z = oc3.number_input("offset z", value=0.0, step=10.0, key=f"env_offz_{subsys}")
+      cad_scale = oc4.number_input("scale (m→mm = 1000)", value=1.0, step=1.0, key=f"env_scale_{subsys}")
 
-    if up is None:
-        st.markdown('<p class="hint" style="padding-top:.5rem;">Waiting for a chassis '
-                    'file (STEP most reliable). Same CAD as the suspension check — the '
-                    'envelope is placed in the same frame.</p>', unsafe_allow_html=True)
-        return
+      if up is None:
+          st.markdown('<p class="hint" style="padding-top:.5rem;">Waiting for a chassis '
+                      'file (STEP most reliable). Same CAD as the suspension check — the '
+                      'envelope is placed in the same frame.</p>', unsafe_allow_html=True)
+          return
 
-    import tempfile as _tf
-    suffix = "." + up.name.split(".")[-1]
-    with _tf.NamedTemporaryFile(suffix=suffix, delete=False) as f:
-        f.write(up.getbuffer())
-        cad_path = f.name
-    try:
-        with st.spinner(f"Loading chassis and fitting the {subsys} envelope…"):
-            mesh = chassis_mod.load_chassis(cad_path, offset=(off_x, off_y, off_z),
-                                            scale=cad_scale)
-            summ = chassis_mod.mesh_summary(mesh)
-            res = chassis_mod.envelope_fit_check(mesh, (ox, oy, oz), size,
-                                                 name=subsys, warn_mm=8.0)
+      import tempfile as _tf
+      suffix = "." + up.name.split(".")[-1]
+      with _tf.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+          f.write(up.getbuffer())
+          cad_path = f.name
+      try:
+          with st.spinner(f"Loading chassis and fitting the {subsys} envelope…"):
+              mesh = chassis_mod.load_chassis(cad_path, offset=(off_x, off_y, off_z),
+                                              scale=cad_scale)
+              summ = chassis_mod.mesh_summary(mesh)
+              res = chassis_mod.envelope_fit_check(mesh, (ox, oy, oz), size,
+                                                   name=subsys, warn_mm=8.0)
 
-        vmap = {"CLEAR": ("good", "Envelope fits and clears the frame"),
-                "TIGHT": ("warn", "Within 8 mm of a tube — review before mounting"),
-                "COLLISION": ("bad", "Envelope intersects the frame — reposition or resize"),
-                "OUTSIDE": ("bad", "Envelope pokes outside the chassis interior")}
-        vc = vmap.get(res["verdict"], ("warn", res["verdict"]))
-        st.markdown(f'<div class="metric" style="margin:.4rem 0;">'
-                    f'<span class="k">{subsys.upper()} FIT VERDICT</span>'
-                    f'<span class="v {vc[0]}">{res["verdict"]}'
-                    f'<span class="u"> · {vc[1]}</span></span></div>',
-                    unsafe_allow_html=True)
+          vmap = {"CLEAR": ("good", "Envelope fits and clears the frame"),
+                  "TIGHT": ("warn", "Within 8 mm of a tube — review before mounting"),
+                  "COLLISION": ("bad", "Envelope intersects the frame — reposition or resize"),
+                  "OUTSIDE": ("bad", "Envelope pokes outside the chassis interior")}
+          vc = vmap.get(res["verdict"], ("warn", res["verdict"]))
+          st.markdown(f'<div class="metric" style="margin:.4rem 0;">'
+                      f'<span class="k">{subsys.upper()} FIT VERDICT</span>'
+                      f'<span class="v {vc[0]}">{res["verdict"]}'
+                      f'<span class="u"> · {vc[1]}</span></span></div>',
+                      unsafe_allow_html=True)
 
-        mc = st.columns(3)
-        mc[0].markdown(metric("Min clearance to frame", f"{res['min_clearance_mm']:.1f}", "mm",
-                              vc[0]), unsafe_allow_html=True)
-        mc[1].markdown(metric("Contained in chassis", "yes" if res["contained"] else "no",
-                              "", "good" if res["contained"] else "bad"), unsafe_allow_html=True)
-        oob = ", ".join(res["oob_axes"]) if res["oob_axes"] else "—"
-        mc[2].markdown(metric("Outside on axes", oob, "", "bad" if res["oob_axes"] else "good"),
-                       unsafe_allow_html=True)
+          mc = st.columns(3)
+          mc[0].markdown(metric("Min clearance to frame", f"{res['min_clearance_mm']:.1f}", "mm",
+                                vc[0]), unsafe_allow_html=True)
+          mc[1].markdown(metric("Contained in chassis", "yes" if res["contained"] else "no",
+                                "", "good" if res["contained"] else "bad"), unsafe_allow_html=True)
+          oob = ", ".join(res["oob_axes"]) if res["oob_axes"] else "—"
+          mc[2].markdown(metric("Outside on axes", oob, "", "bad" if res["oob_axes"] else "good"),
+                         unsafe_allow_html=True)
 
-        # 3D overlay: chassis mesh + subsystem box surface
-        st.markdown(f"###### {subsys} envelope overlaid on chassis")
-        box_pts = chassis_mod.envelope_box_points((ox, oy, oz), size, step_mm=25.0)
-        fig = go.Figure()
-        vx, vy, vz = mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.vertices[:, 2]
-        i, j, k = mesh.faces[:, 0], mesh.faces[:, 1], mesh.faces[:, 2]
-        fig.add_trace(go.Mesh3d(x=vx, y=vy, z=vz, i=i, j=j, k=k,
-                      color="#5a6b7a", opacity=0.30, name="Chassis", flatshading=True))
-        boxcolor = {"CLEAR": "#37e0d0", "TIGHT": AMBER, "COLLISION": RED, "OUTSIDE": RED}.get(
-            res["verdict"], "#9b8cff")
-        fig.add_trace(go.Scatter3d(x=box_pts[:, 0], y=box_pts[:, 1], z=box_pts[:, 2],
-                      mode="markers", marker=dict(size=2.5, color=boxcolor),
-                      name=f"{subsys} envelope"))
-        fig.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            scene=dict(
-                xaxis=dict(title="x", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-                yaxis=dict(title="y", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-                zaxis=dict(title="z", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-                aspectmode="data", camera=dict(eye=dict(x=1.6, y=-1.5, z=0.9))),
-            font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
-            height=500, margin=dict(l=0, r=0, t=10, b=0),
-            legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
-        st.plotly_chart(fig, width='stretch')
+          # 3D overlay: chassis mesh + subsystem box surface
+          st.markdown(f"###### {subsys} envelope overlaid on chassis")
+          box_pts = chassis_mod.envelope_box_points((ox, oy, oz), size, step_mm=25.0)
+          fig = go.Figure()
+          vx, vy, vz = mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.vertices[:, 2]
+          i, j, k = mesh.faces[:, 0], mesh.faces[:, 1], mesh.faces[:, 2]
+          fig.add_trace(go.Mesh3d(x=vx, y=vy, z=vz, i=i, j=j, k=k,
+                        color="#5a6b7a", opacity=0.30, name="Chassis", flatshading=True))
+          boxcolor = {"CLEAR": "#37e0d0", "TIGHT": AMBER, "COLLISION": RED, "OUTSIDE": RED}.get(
+              res["verdict"], "#9b8cff")
+          fig.add_trace(go.Scatter3d(x=box_pts[:, 0], y=box_pts[:, 1], z=box_pts[:, 2],
+                        mode="markers", marker=dict(size=2.5, color=boxcolor),
+                        name=f"{subsys} envelope"))
+          fig.update_layout(
+              paper_bgcolor="rgba(0,0,0,0)",
+              scene=dict(
+                  xaxis=dict(title="x", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                  yaxis=dict(title="y", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                  zaxis=dict(title="z", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                  aspectmode="data", camera=dict(eye=dict(x=1.6, y=-1.5, z=0.9))),
+              font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
+              height=500, margin=dict(l=0, r=0, t=10, b=0),
+              legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
+          st.plotly_chart(fig, width='stretch')
 
-        _smm = [units_mod.from_metric(_v, "mm") for _v in summ["size_mm"]]
-        st.markdown(f'<p class="hint">Chassis: {summ["triangles"]:,} triangles, '
-                    f'{_smm[0]:.0f}×{_smm[1]:.0f}×{_smm[2]:.0f} {units_mod.label("mm")}. '
-                    'If the envelope sits in the wrong place, adjust the origin or the '
-                    'CAD offset so the frames align.</p>', unsafe_allow_html=True)
+          _smm = [units_mod.from_metric(_v, "mm") for _v in summ["size_mm"]]
+          st.markdown(f'<p class="hint">Chassis: {summ["triangles"]:,} triangles, '
+                      f'{_smm[0]:.0f}×{_smm[1]:.0f}×{_smm[2]:.0f} {units_mod.label("mm")}. '
+                      'If the envelope sits in the wrong place, adjust the origin or the '
+                      'CAD offset so the frames align.</p>', unsafe_allow_html=True)
 
-        if res["verdict"] in ("COLLISION", "TIGHT", "OUTSIDE"):
-            sug = (f"{subsys}: envelope {res['verdict'].lower()} vs chassis "
-                   f"(min clearance {uval(res['min_clearance_mm'], 'mm', fmt='{:.1f}')}"
-                   + (f", outside on {', '.join(res['oob_axes'])}" if res["oob_axes"] else "")
-                   + "). Flagged before mounting.")
-            note = st.text_area("Decision note (edit before logging)", value=sug,
-                                height=80, key=f"env_note_{subsys}")
-            if st.button("＋ Log this to handover", key=f"env_log_{subsys}"):
-                ok = log_decision_now(subsys, f"{subsys} {res['verdict'].lower()} vs chassis",
-                                      note, author="INTEGRATION")
-                st.success("Logged to handover." if ok else
-                           "Couldn't write to the handover log (backend offline) — verdict still stands.")
-    except Exception as e:
-        st.error(f"Could not process the chassis file: {e}")
-    finally:
-        try:
-            os.unlink(cad_path)
-        except Exception:
-            pass
+          if res["verdict"] in ("COLLISION", "TIGHT", "OUTSIDE"):
+              sug = (f"{subsys}: envelope {res['verdict'].lower()} vs chassis "
+                     f"(min clearance {uval(res['min_clearance_mm'], 'mm', fmt='{:.1f}')}"
+                     + (f", outside on {', '.join(res['oob_axes'])}" if res["oob_axes"] else "")
+                     + "). Flagged before mounting.")
+              note = st.text_area("Decision note (edit before logging)", value=sug,
+                                  height=80, key=f"env_note_{subsys}")
+              if st.button("＋ Log this to handover", key=f"env_log_{subsys}"):
+                  ok = log_decision_now(subsys, f"{subsys} {res['verdict'].lower()} vs chassis",
+                                        note, author="INTEGRATION")
+                  st.success("Logged to handover." if ok else
+                             "Couldn't write to the handover log (backend offline) — verdict still stands.")
+      except Exception as e:
+          st.error(f"Could not process the chassis file: {e}")
+      finally:
+          try:
+              os.unlink(cad_path)
+          except Exception:
+              pass
 
 
 _MB_VCFG = {
@@ -12144,36 +12144,36 @@ def render_verdict_center():
             f'<div style="font-size:.8rem;color:#ff5a52">🔴 {_counts["red"]} attention</div>'
             f'</div></div>', unsafe_allow_html=True)
 
-        st.markdown("###### Per-subsystem — one box each")
-        st.caption("Tap a subsystem's page above for the detail. Worst-first.")
-        _rank = {"red": 0, "amber": 1, "green": 2, "empty": 3}
-        _ordered = sorted(_VC_SUBSYS, key=lambda t: _rank[_all[t[0]]["verdict"]])
-        _cols = st.columns(2)
-        for _i, (k, _e, _l) in enumerate(_ordered):
-            d = _all[k]
-            _dot2 = {"green": "🟢", "amber": "🟡", "red": "🔴",
-                     "empty": "⚪"}[d["verdict"]]
-            _cc = {"green": "#37e0d0", "amber": "#ffb02e",
-                   "red": "#ff5a52", "empty": "#9b8cff"}[d["verdict"]]
-            _headline = (d["attention"][0] if d["attention"] else
-                         d["closer"][0] if d["closer"] else
-                         d["works"][0] if d["works"] else
-                         "Nothing declared yet.")
-            with _cols[_i % 2]:
-                st.markdown(
-                    f'<div style="border:1px solid {_cc}44;border-left:4px solid {_cc};'
-                    f'border-radius:8px;padding:10px 12px;margin:0 0 10px;'
-                    f'background:{_cc}0d;min-height:88px;">'
-                    f'<div style="font-weight:600;font-size:.92rem;">'
-                    f'{_e} {_l} &nbsp;{_dot2}</div>'
-                    f'<div style="font-size:.75rem;color:var(--dim);margin-top:2px;">'
-                    f'✅ {len(d["works"])} · 🔎 {len(d["closer"])} · '
-                    f'🛑 {len(d["attention"])}</div>'
-                    f'<div style="font-size:.8rem;margin-top:6px;'
-                    f'line-height:1.4;">{_headline}</div>'
-                    f'</div>', unsafe_allow_html=True)
-        _vc_disclaimer("this overview")
-        return
+        with st.expander("⚙️ Per-subsystem", expanded=False):
+          st.caption("Tap a subsystem's page above for the detail. Worst-first.")
+          _rank = {"red": 0, "amber": 1, "green": 2, "empty": 3}
+          _ordered = sorted(_VC_SUBSYS, key=lambda t: _rank[_all[t[0]]["verdict"]])
+          _cols = st.columns(2)
+          for _i, (k, _e, _l) in enumerate(_ordered):
+              d = _all[k]
+              _dot2 = {"green": "🟢", "amber": "🟡", "red": "🔴",
+                       "empty": "⚪"}[d["verdict"]]
+              _cc = {"green": "#37e0d0", "amber": "#ffb02e",
+                     "red": "#ff5a52", "empty": "#9b8cff"}[d["verdict"]]
+              _headline = (d["attention"][0] if d["attention"] else
+                           d["closer"][0] if d["closer"] else
+                           d["works"][0] if d["works"] else
+                           "Nothing declared yet.")
+              with _cols[_i % 2]:
+                  st.markdown(
+                      f'<div style="border:1px solid {_cc}44;border-left:4px solid {_cc};'
+                      f'border-radius:8px;padding:10px 12px;margin:0 0 10px;'
+                      f'background:{_cc}0d;min-height:88px;">'
+                      f'<div style="font-weight:600;font-size:.92rem;">'
+                      f'{_e} {_l} &nbsp;{_dot2}</div>'
+                      f'<div style="font-size:.75rem;color:var(--dim);margin-top:2px;">'
+                      f'✅ {len(d["works"])} · 🔎 {len(d["closer"])} · '
+                      f'🛑 {len(d["attention"])}</div>'
+                      f'<div style="font-size:.8rem;margin-top:6px;'
+                      f'line-height:1.4;">{_headline}</div>'
+                      f'</div>', unsafe_allow_html=True)
+          _vc_disclaimer("this overview")
+          return
 
     # ---- SANITY-CHECK (full myth-buster, unchanged engine) ---------------- #
     if _page.startswith("🔎"):
@@ -12186,13 +12186,13 @@ def render_verdict_center():
         if _page == f"{_e} {_l}":
             render_subsystem_verdict_card(k)
             # inline sanity-check scoped to this subsystem
-            st.markdown("###### Sanity-check an assumption here")
-            try:
-                render_myth_check(k, key_prefix=f"vc_{k}")
-            except Exception:
-                pass
-            _vc_disclaimer(f"the {_l.lower()} verdict")
-            return
+            with st.expander("⚙️ Sanity-check an assumption here", expanded=False):
+              try:
+                  render_myth_check(k, key_prefix=f"vc_{k}")
+              except Exception:
+                  pass
+              _vc_disclaimer(f"the {_l.lower()} verdict")
+              return
 
 # --------------------------------------------------------------------------- #
 #  4.  Generic "short-list to mesh + export DXF" for any subsystem             #
@@ -12260,86 +12260,86 @@ def render_suspension_vs_chassis():
 
             cL, cR = st.columns(2)
             with cL:
-                st.markdown("###### Inboard pickup fit")
-                for r in fit:
-                    tag = "good" if r["mountable"] else "bad"
-                    note = "on frame" if r["mountable"] else "off frame"
-                    st.markdown(metric(r["label"], f"{r['distance_mm']:.1f}",
-                                       f"mm · {note}", tag), unsafe_allow_html=True)
+                with st.expander("⚙️ Inboard pickup fit", expanded=False):
+                  for r in fit:
+                      tag = "good" if r["mountable"] else "bad"
+                      note = "on frame" if r["mountable"] else "off frame"
+                      st.markdown(metric(r["label"], f"{r['distance_mm']:.1f}",
+                                         f"mm · {note}", tag), unsafe_allow_html=True)
             with cR:
-                st.markdown("###### Link clearance (min over travel)")
-                order = sorted(clr["per_link"].items(),
-                               key=lambda kv: kv[1]["min_clearance_mm"])
-                for link, v in order:
-                    tag = ("bad" if v["collision"] else
-                           "warn" if v["warning"] else "good")
-                    label = link.replace("_", " ")
-                    st.markdown(metric(label, f"{v['min_clearance_mm']:.1f}", "mm", tag),
-                                unsafe_allow_html=True)
+                with st.expander("⚙️ Link clearance (min over travel)", expanded=False):
+                  order = sorted(clr["per_link"].items(),
+                                 key=lambda kv: kv[1]["min_clearance_mm"])
+                  for link, v in order:
+                      tag = ("bad" if v["collision"] else
+                             "warn" if v["warning"] else "good")
+                      label = link.replace("_", " ")
+                      st.markdown(metric(label, f"{v['min_clearance_mm']:.1f}", "mm", tag),
+                                  unsafe_allow_html=True)
 
             # 3D overlay: chassis mesh + swept linkage
-            st.markdown("###### Linkage swept through travel, overlaid on chassis")
-            pts, names = chassis_mod.sweep_link_points(kin, -30, 30, 11)
-            fig = go.Figure()
-            vx, vy, vz = mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.vertices[:, 2]
-            i, j, k = mesh.faces[:, 0], mesh.faces[:, 1], mesh.faces[:, 2]
-            fig.add_trace(go.Mesh3d(x=vx, y=vy, z=vz, i=i, j=j, k=k,
-                          color="#5a6b7a", opacity=0.35, name="Chassis",
-                          flatshading=True))
-            names_arr = np.array(names)
-            palette = {"upper_wishbone_front": CYAN, "upper_wishbone_rear": CYAN,
-                       "lower_wishbone_front": AMBER, "lower_wishbone_rear": AMBER,
-                       "upright": "#ffffff", "tie_rod": RED, "wheel_spindle": "#9b8cff"}
-            for link in np.unique(names_arr):
-                m = names_arr == link
-                fig.add_trace(go.Scatter3d(
-                    x=pts[m, 0], y=pts[m, 1], z=pts[m, 2], mode="markers",
-                    marker=dict(size=2, color=palette.get(link, "#888")),
-                    name=link.replace("_", " ")))
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                scene=dict(
-                    xaxis=dict(title="x", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-                    yaxis=dict(title="y", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-                    zaxis=dict(title="z", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-                    aspectmode="data", camera=dict(eye=dict(x=1.6, y=-1.5, z=0.9))),
-                font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
-                height=520, margin=dict(l=0, r=0, t=10, b=0),
-                legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
-            st.plotly_chart(fig, width='stretch')
+            with st.expander("⚙️ Linkage swept through travel, overlaid on chassis", expanded=False):
+              pts, names = chassis_mod.sweep_link_points(kin, -30, 30, 11)
+              fig = go.Figure()
+              vx, vy, vz = mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.vertices[:, 2]
+              i, j, k = mesh.faces[:, 0], mesh.faces[:, 1], mesh.faces[:, 2]
+              fig.add_trace(go.Mesh3d(x=vx, y=vy, z=vz, i=i, j=j, k=k,
+                            color="#5a6b7a", opacity=0.35, name="Chassis",
+                            flatshading=True))
+              names_arr = np.array(names)
+              palette = {"upper_wishbone_front": CYAN, "upper_wishbone_rear": CYAN,
+                         "lower_wishbone_front": AMBER, "lower_wishbone_rear": AMBER,
+                         "upright": "#ffffff", "tie_rod": RED, "wheel_spindle": "#9b8cff"}
+              for link in np.unique(names_arr):
+                  m = names_arr == link
+                  fig.add_trace(go.Scatter3d(
+                      x=pts[m, 0], y=pts[m, 1], z=pts[m, 2], mode="markers",
+                      marker=dict(size=2, color=palette.get(link, "#888")),
+                      name=link.replace("_", " ")))
+              fig.update_layout(
+                  paper_bgcolor="rgba(0,0,0,0)",
+                  scene=dict(
+                      xaxis=dict(title="x", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                      yaxis=dict(title="y", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                      zaxis=dict(title="z", backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                      aspectmode="data", camera=dict(eye=dict(x=1.6, y=-1.5, z=0.9))),
+                  font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
+                  height=520, margin=dict(l=0, r=0, t=10, b=0),
+                  legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
+              st.plotly_chart(fig, width='stretch')
 
-            _smm2 = [units_mod.from_metric(_v, "mm") for _v in summ["size_mm"]]
-            st.markdown(f'<p class="hint">Chassis mesh: {summ["triangles"]:,} triangles, '
-                        f'bounding box {_smm2[0]:.0f}×{_smm2[1]:.0f}×'
-                        f'{_smm2[2]:.0f} {units_mod.label("mm")}. If the linkage and chassis look '
-                        f'misaligned above, adjust the offset boxes so the origins match.</p>',
-                        unsafe_allow_html=True)
+              _smm2 = [units_mod.from_metric(_v, "mm") for _v in summ["size_mm"]]
+              st.markdown(f'<p class="hint">Chassis mesh: {summ["triangles"]:,} triangles, '
+                          f'bounding box {_smm2[0]:.0f}×{_smm2[1]:.0f}×'
+                          f'{_smm2[2]:.0f} {units_mod.label("mm")}. If the linkage and chassis look '
+                          f'misaligned above, adjust the offset boxes so the origins match.</p>',
+                          unsafe_allow_html=True)
 
-            if verdict in ("COLLISION", "TIGHT"):
-                worst = clr["worst_link"].replace("_", " ")
-                _uL = units_mod.label("mm")
-                _wc = units_mod.from_metric(clr['worst_clearance_mm'], "mm")
-                if verdict == "COLLISION":
-                    sug = (f"Suspension: {worst} hits the chassis through travel "
-                           f"(worst {_wc:.0f} {_uL}). Geometry "
-                           f"adjusted / flagged before cutting tube.")
-                else:
-                    sug = (f"Suspension: {worst} clears the chassis by only "
-                           f"{_wc:.1f} {_uL} at full travel — tight. "
-                           f"Reviewed before fabrication.")
-                st.markdown('<p class="hint" style="margin-top:.4rem;">⚑ Worth recording '
-                            'for handover:</p>', unsafe_allow_html=True)
-                edited = st.text_area("Decision note (edit before logging)",
-                                      value=sug, height=80, key="autocap_susp")
-                if st.button("＋ Log this to handover", key="autocap_susp_btn"):
-                    log_decision_now("suspension",
-                                     f"Suspension {verdict.lower()} vs chassis",
-                                     edited, author="INTEGRATION")
-                    st.success("Logged to project.json — visible in WEIGHT & HANDOVER.")
+              if verdict in ("COLLISION", "TIGHT"):
+                  worst = clr["worst_link"].replace("_", " ")
+                  _uL = units_mod.label("mm")
+                  _wc = units_mod.from_metric(clr['worst_clearance_mm'], "mm")
+                  if verdict == "COLLISION":
+                      sug = (f"Suspension: {worst} hits the chassis through travel "
+                             f"(worst {_wc:.0f} {_uL}). Geometry "
+                             f"adjusted / flagged before cutting tube.")
+                  else:
+                      sug = (f"Suspension: {worst} clears the chassis by only "
+                             f"{_wc:.1f} {_uL} at full travel — tight. "
+                             f"Reviewed before fabrication.")
+                  st.markdown('<p class="hint" style="margin-top:.4rem;">⚑ Worth recording '
+                              'for handover:</p>', unsafe_allow_html=True)
+                  edited = st.text_area("Decision note (edit before logging)",
+                                        value=sug, height=80, key="autocap_susp")
+                  if st.button("＋ Log this to handover", key="autocap_susp_btn"):
+                      log_decision_now("suspension",
+                                       f"Suspension {verdict.lower()} vs chassis",
+                                       edited, author="INTEGRATION")
+                      st.success("Logged to project.json — visible in WEIGHT & HANDOVER.")
 
-            sheet = chassis_mod.manufacturing_sheet(hp, kin)
-            st.download_button("⬇ Manufacturing pickup schedule (.csv)", sheet,
-                               file_name="kinematik_pickups.csv", mime="text/csv")
+              sheet = chassis_mod.manufacturing_sheet(hp, kin)
+              st.download_button("⬇ Manufacturing pickup schedule (.csv)", sheet,
+                                 file_name="kinematik_pickups.csv", mime="text/csv")
         except Exception as e:
             st.error(f"Could not process the chassis file: {e}")
         finally:
@@ -12677,158 +12677,158 @@ def render_mountpoint_clash():
     # ---- editor: keep-outs and mount points ---- #
     ec = st.columns(2)
     with ec[0]:
-        st.markdown("###### Keep-out volumes (reserved by a subsystem's master file)")
-        with st.expander("Add / replace a keep-out", expanded=not geom.keepouts):
-            kname = st.text_input("Name", key="ko_name", value="main-hoop-tube")
-            kowner = st.selectbox("Owned by", _SUBS, index=_SUBS.index("chassis"),
-                                  key="ko_owner")
-            kl = st.columns(3)
-            lo = (unum(kl[0], "lo x (mm)", -10000.0, 10000.0, 1380.0, "mm", key="ko_lox"),
-                  unum(kl[1], "lo y (mm)", -10000.0, 10000.0, -180.0, "mm", key="ko_loy"),
-                  unum(kl[2], "lo z (mm)", -10000.0, 10000.0, 480.0, "mm", key="ko_loz"))
-            kh = st.columns(3)
-            hi = (unum(kh[0], "hi x (mm)", -10000.0, 10000.0, 1430.0, "mm", key="ko_hix"),
-                  unum(kh[1], "hi y (mm)", -10000.0, 10000.0, 180.0, "mm", key="ko_hiy"),
-                  unum(kh[2], "hi z (mm)", -10000.0, 10000.0, 1050.0, "mm", key="ko_hiz"))
-            kest = st.checkbox("Estimated geometry", value=False, key="ko_est")
-            if st.button("Save keep-out", key="ko_save"):
-                store.set_keepout(KeepOut(kname, kowner, lo_mm=lo, hi_mm=hi,
-                                          is_estimate=kest))
-                store.save()
-                st.rerun()
-        for name, ko in list(geom.keepouts.items()):
-            est = " · est" if ko.is_estimate else ""
-            kc = st.columns([5, 1])
-            kc[0].markdown(
-                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
-                f'{_MP_EMOJI.get(ko.owner_subsystem,"")} <b>{name}</b> '
-                f'<span style="color:#8d99a6;font-size:.8rem">{ko.owner_subsystem}{est}</span><br>'
-                f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'{tuple(round(units_mod.from_metric(v,"mm")) for v in ko.lo_mm)} → {tuple(round(units_mod.from_metric(v,"mm")) for v in ko.hi_mm)} {units_mod.label("mm")}</span></div>',
-                unsafe_allow_html=True)
-            if kc[1].button("✕", key=f"ko_del_{name}"):
-                store.remove_keepout(name); store.save(); st.rerun()
+        with st.expander("⚙️ Keep-out volumes (reserved by a subsystem's master file)", expanded=False):
+          with st.expander("Add / replace a keep-out", expanded=not geom.keepouts):
+              kname = st.text_input("Name", key="ko_name", value="main-hoop-tube")
+              kowner = st.selectbox("Owned by", _SUBS, index=_SUBS.index("chassis"),
+                                    key="ko_owner")
+              kl = st.columns(3)
+              lo = (unum(kl[0], "lo x (mm)", -10000.0, 10000.0, 1380.0, "mm", key="ko_lox"),
+                    unum(kl[1], "lo y (mm)", -10000.0, 10000.0, -180.0, "mm", key="ko_loy"),
+                    unum(kl[2], "lo z (mm)", -10000.0, 10000.0, 480.0, "mm", key="ko_loz"))
+              kh = st.columns(3)
+              hi = (unum(kh[0], "hi x (mm)", -10000.0, 10000.0, 1430.0, "mm", key="ko_hix"),
+                    unum(kh[1], "hi y (mm)", -10000.0, 10000.0, 180.0, "mm", key="ko_hiy"),
+                    unum(kh[2], "hi z (mm)", -10000.0, 10000.0, 1050.0, "mm", key="ko_hiz"))
+              kest = st.checkbox("Estimated geometry", value=False, key="ko_est")
+              if st.button("Save keep-out", key="ko_save"):
+                  store.set_keepout(KeepOut(kname, kowner, lo_mm=lo, hi_mm=hi,
+                                            is_estimate=kest))
+                  store.save()
+                  st.rerun()
+          for name, ko in list(geom.keepouts.items()):
+              est = " · est" if ko.is_estimate else ""
+              kc = st.columns([5, 1])
+              kc[0].markdown(
+                  f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                  f'{_MP_EMOJI.get(ko.owner_subsystem,"")} <b>{name}</b> '
+                  f'<span style="color:#8d99a6;font-size:.8rem">{ko.owner_subsystem}{est}</span><br>'
+                  f'<span style="font-size:.82rem;color:#8d99a6">'
+                  f'{tuple(round(units_mod.from_metric(v,"mm")) for v in ko.lo_mm)} → {tuple(round(units_mod.from_metric(v,"mm")) for v in ko.hi_mm)} {units_mod.label("mm")}</span></div>',
+                  unsafe_allow_html=True)
+              if kc[1].button("✕", key=f"ko_del_{name}"):
+                  store.remove_keepout(name); store.save(); st.rerun()
 
     with ec[1]:
-        st.markdown("###### Mount points (the hardpoints a subteam moves)")
-        with st.expander("Add / replace a mount point", expanded=not geom.points):
-            pname = st.text_input("Name", key="mp_name", value="rear-wing-upper-mount")
-            powner = st.selectbox("Owned by", _SUBS,
-                                  index=_SUBS.index("aerodynamics"), key="mp_owner")
-            pmounts = st.selectbox("Mounts onto", _SUBS,
-                                   index=_SUBS.index("chassis"), key="mp_mounts")
-            pc = st.columns(3)
-            pxyz = (unum(pc[0], "x (mm)", -10000.0, 10000.0, 1350.0, "mm", key="mp_x"),
-                    unum(pc[1], "y (mm)", -10000.0, 10000.0, 120.0, "mm", key="mp_y"),
-                    unum(pc[2], "z (mm)", -10000.0, 10000.0, 900.0, "mm", key="mp_z"))
-            pclr = unum(st, "Required clearance (mm)", 0.0, 100.0, 8.0, "mm",
-                        key="mp_clr")
-            pest = st.checkbox("Estimated geometry", value=False, key="mp_est")
-            if st.button("Save mount point", key="mp_save"):
-                store.set_mount_point(MountPoint(pname, xyz_mm=pxyz,
-                                                 owner_subsystem=powner,
-                                                 mounts_on=pmounts,
-                                                 min_clearance_mm=pclr,
-                                                 is_estimate=pest))
-                store.save()
-                st.rerun()
-        for name, mp in list(geom.points.items()):
-            est = " · est" if mp.is_estimate else ""
-            pc = st.columns([5, 1])
-            pc[0].markdown(
-                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
-                f'{_MP_EMOJI.get(mp.owner_subsystem,"")} <b>{name}</b> '
-                f'<span style="color:#8d99a6;font-size:.8rem">{mp.owner_subsystem} '
-                f'→ {mp.mounts_on}{est}</span><br>'
-                f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'{tuple(round(units_mod.from_metric(v,"mm")) for v in mp.xyz_mm)} {units_mod.label("mm")} · clr {units_mod.from_metric(mp.min_clearance_mm,"mm"):.0f}</span></div>',
-                unsafe_allow_html=True)
-            if pc[1].button("✕", key=f"mp_del_{name}"):
-                store.remove_mount_point(name); store.save(); st.rerun()
+        with st.expander("⚙️ Mount points (the hardpoints a subteam moves)", expanded=False):
+          with st.expander("Add / replace a mount point", expanded=not geom.points):
+              pname = st.text_input("Name", key="mp_name", value="rear-wing-upper-mount")
+              powner = st.selectbox("Owned by", _SUBS,
+                                    index=_SUBS.index("aerodynamics"), key="mp_owner")
+              pmounts = st.selectbox("Mounts onto", _SUBS,
+                                     index=_SUBS.index("chassis"), key="mp_mounts")
+              pc = st.columns(3)
+              pxyz = (unum(pc[0], "x (mm)", -10000.0, 10000.0, 1350.0, "mm", key="mp_x"),
+                      unum(pc[1], "y (mm)", -10000.0, 10000.0, 120.0, "mm", key="mp_y"),
+                      unum(pc[2], "z (mm)", -10000.0, 10000.0, 900.0, "mm", key="mp_z"))
+              pclr = unum(st, "Required clearance (mm)", 0.0, 100.0, 8.0, "mm",
+                          key="mp_clr")
+              pest = st.checkbox("Estimated geometry", value=False, key="mp_est")
+              if st.button("Save mount point", key="mp_save"):
+                  store.set_mount_point(MountPoint(pname, xyz_mm=pxyz,
+                                                   owner_subsystem=powner,
+                                                   mounts_on=pmounts,
+                                                   min_clearance_mm=pclr,
+                                                   is_estimate=pest))
+                  store.save()
+                  st.rerun()
+          for name, mp in list(geom.points.items()):
+              est = " · est" if mp.is_estimate else ""
+              pc = st.columns([5, 1])
+              pc[0].markdown(
+                  f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                  f'{_MP_EMOJI.get(mp.owner_subsystem,"")} <b>{name}</b> '
+                  f'<span style="color:#8d99a6;font-size:.8rem">{mp.owner_subsystem} '
+                  f'→ {mp.mounts_on}{est}</span><br>'
+                  f'<span style="font-size:.82rem;color:#8d99a6">'
+                  f'{tuple(round(units_mod.from_metric(v,"mm")) for v in mp.xyz_mm)} {units_mod.label("mm")} · clr {units_mod.from_metric(mp.min_clearance_mm,"mm"):.0f}</span></div>',
+                  unsafe_allow_html=True)
+              if pc[1].button("✕", key=f"mp_del_{name}"):
+                  store.remove_mount_point(name); store.save(); st.rerun()
 
     # ---- the live "drag a point" propagation ---- #
     if geom.points:
-        st.markdown("###### Move a mount point — propagate clash + CG in one step")
-        led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
-        mc = st.columns([2, 3, 1])
-        which = mc[0].selectbox("Point", list(geom.points), key="mv_which")
-        cur = geom.points[which].xyz_mm
-        nx = mc[1].columns(3)
-        new_xyz = (nx[0].number_input("→ x", value=float(cur[0]), key="mv_x"),
-                   nx[1].number_input("→ y", value=float(cur[1]), key="mv_y"),
-                   nx[2].number_input("→ z", value=float(cur[2]), key="mv_z"))
-        also_cg = st.checkbox(
-            "This point is the subsystem's mass location (shift its CG with the move)",
-            value=False, key="mv_cg")
-        if mc[2].button("Move →", key="mv_go"):
-            res = propagate_mount_move(geom, led, which, new_xyz,
-                                       set_by="integration-tab",
-                                       update_interface_cg=also_cg)
-            if also_cg:
-                st.session_state.ledger = led.as_dict()
-            store.save()
-            st.session_state["_mp_last"] = res
+        with st.expander("⚙️ Move a mount point", expanded=False):
+          led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+          mc = st.columns([2, 3, 1])
+          which = mc[0].selectbox("Point", list(geom.points), key="mv_which")
+          cur = geom.points[which].xyz_mm
+          nx = mc[1].columns(3)
+          new_xyz = (nx[0].number_input("→ x", value=float(cur[0]), key="mv_x"),
+                     nx[1].number_input("→ y", value=float(cur[1]), key="mv_y"),
+                     nx[2].number_input("→ z", value=float(cur[2]), key="mv_z"))
+          also_cg = st.checkbox(
+              "This point is the subsystem's mass location (shift its CG with the move)",
+              value=False, key="mv_cg")
+          if mc[2].button("Move →", key="mv_go"):
+              res = propagate_mount_move(geom, led, which, new_xyz,
+                                         set_by="integration-tab",
+                                         update_interface_cg=also_cg)
+              if also_cg:
+                  st.session_state.ledger = led.as_dict()
+              store.save()
+              st.session_state["_mp_last"] = res
 
-        res = st.session_state.get("_mp_last")
-        if res is not None and res.moved_point == which:
-            # Surface the consequence of the move at the point of action: not just
-            # "did THIS point clash" but what the move did to the WHOLE-CAR verdict,
-            # so a subsystem dragging a mount sees instantly whether it just created
-            # or cleared a build stop — without scrolling back to the banner.
-            from suspension.interfaces import Severity as _Sev
-            _post = geom.check_clashes()
-            _has_interf = any(f.check == "clash-interference" for f in _post)
-            _has_clear = any(f.check == "clash-clearance" for f in _post)
-            if _has_interf:
-                _vtxt, _vcls = "DO NOT MANUFACTURE — interference", "bad"
-            elif _has_clear:
-                _vtxt, _vcls = "BUILD WITH OPEN ITEMS — thin clearance", "warn"
-            else:
-                _vtxt, _vcls = "CLEAR TO MANUFACTURE", "good"
-            st.markdown(
-                f'<p class="hint">{res.summary()}</p>'
-                f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
-                f'<span class="tag {_vcls}">{_vtxt}</span> '
-                f'<span style="font-size:.86rem;color:#8d99a6">after this move '
-                f'(whole-car verdict — see the readiness board up top for the full '
-                f'open-items list)</span></div>',
-                unsafe_allow_html=True)
+          res = st.session_state.get("_mp_last")
+          if res is not None and res.moved_point == which:
+              # Surface the consequence of the move at the point of action: not just
+              # "did THIS point clash" but what the move did to the WHOLE-CAR verdict,
+              # so a subsystem dragging a mount sees instantly whether it just created
+              # or cleared a build stop — without scrolling back to the banner.
+              from suspension.interfaces import Severity as _Sev
+              _post = geom.check_clashes()
+              _has_interf = any(f.check == "clash-interference" for f in _post)
+              _has_clear = any(f.check == "clash-clearance" for f in _post)
+              if _has_interf:
+                  _vtxt, _vcls = "DO NOT MANUFACTURE — interference", "bad"
+              elif _has_clear:
+                  _vtxt, _vcls = "BUILD WITH OPEN ITEMS — thin clearance", "warn"
+              else:
+                  _vtxt, _vcls = "CLEAR TO MANUFACTURE", "good"
+              st.markdown(
+                  f'<p class="hint">{res.summary()}</p>'
+                  f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+                  f'<span class="tag {_vcls}">{_vtxt}</span> '
+                  f'<span style="font-size:.86rem;color:#8d99a6">after this move '
+                  f'(whole-car verdict — see the readiness board up top for the full '
+                  f'open-items list)</span></div>',
+                  unsafe_allow_html=True)
 
     # ---- the clash board (same render idiom as the ledger findings) ---- #
-    st.markdown("###### Clash board")
-    findings = geom.check_clashes()
-    # check_clashes() returns an empty list ONLY when there are no mount points at
-    # all (a fresh project). Without this guard the board would render as a bare
-    # header with nothing beneath it — indistinguishable from a broken tab. Show an
-    # explicit empty state so the board always "appears".
-    if not findings:
-        if not geom.points and not geom.keepouts:
-            _msg = ("No mount points or keep-out volumes declared yet. Add at least "
-                    "one mount point and one keep-out above (the defaults in the "
-                    "forms are a ready-to-save starting pair), then the clash board "
-                    "checks every point against every keep-out it must clear.")
-        elif not geom.points:
-            _msg = ("Keep-out volumes are declared but no mount points exist to check "
-                    "against them yet — add a mount point above.")
-        else:
-            _msg = ("No clashes to report.")
-        st.markdown(
-            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
-            f'<span class="tag">EMPTY</span> '
-            f'<span style="font-size:.92rem;color:#8d99a6">{_msg}</span></div>',
-            unsafe_allow_html=True)
-    _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
-                "info": "", "ok": "good"}
-    order = ["fail", "warning", "missing", "info", "ok"]
-    for f in sorted(findings, key=lambda x: order.index(x.severity.value)):
-        cls = _SEV_CLS.get(f.severity.value, "")
-        who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
-        st.markdown(
-            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
-            f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
-            f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
-            f'<span style="font-size:.92rem">{f.message}</span></div>',
-            unsafe_allow_html=True)
+    with st.expander("⚙️ Clash board", expanded=False):
+      findings = geom.check_clashes()
+      # check_clashes() returns an empty list ONLY when there are no mount points at
+      # all (a fresh project). Without this guard the board would render as a bare
+      # header with nothing beneath it — indistinguishable from a broken tab. Show an
+      # explicit empty state so the board always "appears".
+      if not findings:
+          if not geom.points and not geom.keepouts:
+              _msg = ("No mount points or keep-out volumes declared yet. Add at least "
+                      "one mount point and one keep-out above (the defaults in the "
+                      "forms are a ready-to-save starting pair), then the clash board "
+                      "checks every point against every keep-out it must clear.")
+          elif not geom.points:
+              _msg = ("Keep-out volumes are declared but no mount points exist to check "
+                      "against them yet — add a mount point above.")
+          else:
+              _msg = ("No clashes to report.")
+          st.markdown(
+              f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+              f'<span class="tag">EMPTY</span> '
+              f'<span style="font-size:.92rem;color:#8d99a6">{_msg}</span></div>',
+              unsafe_allow_html=True)
+      _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
+                  "info": "", "ok": "good"}
+      order = ["fail", "warning", "missing", "info", "ok"]
+      for f in sorted(findings, key=lambda x: order.index(x.severity.value)):
+          cls = _SEV_CLS.get(f.severity.value, "")
+          who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
+          st.markdown(
+              f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+              f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
+              f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
+              f'<span style="font-size:.92rem">{f.message}</span></div>',
+              unsafe_allow_html=True)
 
 
 def render_pcb_board():
@@ -12873,190 +12873,190 @@ def render_pcb_board():
     led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
 
     # ---- board-level brown-out / thermal context ---- #
-    st.markdown("###### Board context (rail + ambient the checks run against)")
-    bc = st.columns(5)
-    board.rail_nominal_v = bc[0].number_input("ECU rail (V)", 1.0, 60.0,
-                                              value=float(board.rail_nominal_v), key="pcb_rail")
-    board.ecu_brownout_v = bc[1].number_input("Brown-out (V)", 0.5, 60.0,
-                                              value=float(board.ecu_brownout_v), key="pcb_bo")
-    board.ambient_c = bc[2].number_input("Ambient", -20.0, 150.0,
-                                         value=float(board.ambient_c), key="pcb_amb")
-    board.max_trace_temp_c = bc[3].number_input("Trace ceiling", 50.0, 200.0,
-                                               value=float(board.max_trace_temp_c), key="pcb_ceil")
-    board.fuse_safety_factor = bc[4].number_input("Fuse safety ×", 1.0, 10.0,
-                                                 value=float(board.fuse_safety_factor), key="pcb_sf")
+    with st.expander("⚙️ Board context (rail + ambient the checks run against)", expanded=False):
+      bc = st.columns(5)
+      board.rail_nominal_v = bc[0].number_input("ECU rail (V)", 1.0, 60.0,
+                                                value=float(board.rail_nominal_v), key="pcb_rail")
+      board.ecu_brownout_v = bc[1].number_input("Brown-out (V)", 0.5, 60.0,
+                                                value=float(board.ecu_brownout_v), key="pcb_bo")
+      board.ambient_c = bc[2].number_input("Ambient", -20.0, 150.0,
+                                           value=float(board.ambient_c), key="pcb_amb")
+      board.max_trace_temp_c = bc[3].number_input("Trace ceiling", 50.0, 200.0,
+                                                 value=float(board.max_trace_temp_c), key="pcb_ceil")
+      board.fuse_safety_factor = bc[4].number_input("Fuse safety ×", 1.0, 10.0,
+                                                   value=float(board.fuse_safety_factor), key="pcb_sf")
 
-    # ---- editors: traces, pairs, aggressors ---- #
-    ec = st.columns(3)
-    with ec[0]:
-        st.markdown("###### Copper traces (power / signal nets you size)")
-        with st.expander("Add / replace a trace", expanded=not board.traces):
-            tn = st.text_input("Name", key="tr_name", value="main_feed")
-            tnet = st.text_input("Net", key="tr_net", value="lv_rail")
-            town = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"), key="tr_own")
-            tfeed = st.text_input("Feeds", key="tr_feed", value="ecu")
-            tg = st.columns(3)
-            tw = tg[0].number_input("Width", 0.05, 50.0, value=0.30, key="tr_w")
-            toz = tg[1].number_input("Copper (oz)", 0.25, 6.0, value=1.0, key="tr_oz")
-            tl = tg[2].number_input("Length", 1.0, 2000.0, value=100.0, key="tr_l")
-            text = st.checkbox("Outer layer (external)", value=True, key="tr_ext")
-            test = st.checkbox("Estimated geometry", value=False, key="tr_est")
-            if st.button("Save trace", key="tr_save"):
-                store.set_trace(Trace(name=tn, net=tnet, owner_subsystem=town,
-                                      feeds=tfeed, width_mm=tw, copper_oz=toz,
-                                      length_mm=tl, is_external=text, is_estimate=test))
-                save_store(store); st.rerun()
-        for name, tr in list(board.traces.items()):
-            est = " · est" if tr.is_estimate else ""
-            row = st.columns([5, 1])
-            row[0].markdown(
-                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
-                f'{_MP_EMOJI.get(tr.owner_subsystem,"")} <b>{name}</b> '
-                f'<span style="color:#8d99a6;font-size:.8rem">{tr.owner_subsystem} → {tr.feeds}{est}</span><br>'
-                f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'{units_mod.from_metric(tr.width_mm,"mm"):.2f} {units_mod.label("mm")} · {tr.copper_oz:.0f} oz · {units_mod.from_metric(tr.length_mm,"mm"):.0f} {units_mod.label("mm")} · '
-                f'fuses @ {tr.fusing_current_a(ambient_c=board.ambient_c):.1f} A</span></div>',
-                unsafe_allow_html=True)
-            if row[1].button("✕", key=f"tr_del_{name}"):
-                store.remove_trace(name); save_store(store); st.rerun()
+      # ---- editors: traces, pairs, aggressors ---- #
+      ec = st.columns(3)
+      with ec[0]:
+          st.markdown("###### Copper traces (power / signal nets you size)")
+          with st.expander("Add / replace a trace", expanded=not board.traces):
+              tn = st.text_input("Name", key="tr_name", value="main_feed")
+              tnet = st.text_input("Net", key="tr_net", value="lv_rail")
+              town = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"), key="tr_own")
+              tfeed = st.text_input("Feeds", key="tr_feed", value="ecu")
+              tg = st.columns(3)
+              tw = tg[0].number_input("Width", 0.05, 50.0, value=0.30, key="tr_w")
+              toz = tg[1].number_input("Copper (oz)", 0.25, 6.0, value=1.0, key="tr_oz")
+              tl = tg[2].number_input("Length", 1.0, 2000.0, value=100.0, key="tr_l")
+              text = st.checkbox("Outer layer (external)", value=True, key="tr_ext")
+              test = st.checkbox("Estimated geometry", value=False, key="tr_est")
+              if st.button("Save trace", key="tr_save"):
+                  store.set_trace(Trace(name=tn, net=tnet, owner_subsystem=town,
+                                        feeds=tfeed, width_mm=tw, copper_oz=toz,
+                                        length_mm=tl, is_external=text, is_estimate=test))
+                  save_store(store); st.rerun()
+          for name, tr in list(board.traces.items()):
+              est = " · est" if tr.is_estimate else ""
+              row = st.columns([5, 1])
+              row[0].markdown(
+                  f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                  f'{_MP_EMOJI.get(tr.owner_subsystem,"")} <b>{name}</b> '
+                  f'<span style="color:#8d99a6;font-size:.8rem">{tr.owner_subsystem} → {tr.feeds}{est}</span><br>'
+                  f'<span style="font-size:.82rem;color:#8d99a6">'
+                  f'{units_mod.from_metric(tr.width_mm,"mm"):.2f} {units_mod.label("mm")} · {tr.copper_oz:.0f} oz · {units_mod.from_metric(tr.length_mm,"mm"):.0f} {units_mod.label("mm")} · '
+                  f'fuses @ {tr.fusing_current_a(ambient_c=board.ambient_c):.1f} A</span></div>',
+                  unsafe_allow_html=True)
+              if row[1].button("✕", key=f"tr_del_{name}"):
+                  store.remove_trace(name); save_store(store); st.rerun()
 
-    with ec[1]:
-        st.markdown("###### Differential pairs (CAN H/L routes)")
-        with st.expander("Add / replace a pair", expanded=not board.pairs):
-            pn = st.text_input("Name", key="dp_name", value="CAN")
-            pown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"), key="dp_own")
-            pg = st.columns(3)
-            pw = pg[0].number_input("Trace w", 0.05, 5.0, value=0.20, key="dp_w")
-            psp = pg[1].number_input("Spacing", 0.05, 5.0, value=0.20, key="dp_s")
-            ph = pg[2].number_input("Dielectric h", 0.05, 5.0, value=0.20, key="dp_h")
-            pg2 = st.columns(2)
-            peps = pg2[0].number_input("eps_r", 1.0, 15.0, value=4.3, key="dp_eps")
-            ptz = pg2[1].number_input("Target Zdiff (Ω)", 20.0, 200.0, value=120.0, key="dp_tz")
-            ppath = st.text_input("Route (x,y; x,y; …)", key="dp_path", value="0,0; 60,0")
-            pest = st.checkbox("Estimated routing", value=False, key="dp_est")
-            if st.button("Save pair", key="dp_save"):
-                pts = _parse_path(ppath)
-                store.set_pair(DiffPair(name=pn, owner_subsystem=pown, trace_w_mm=pw,
-                                        spacing_mm=psp, height_mm=ph, eps_r=peps,
-                                        target_z0_ohm=ptz, path_mm=pts, is_estimate=pest))
-                save_store(store); st.rerun()
-        for name, dp in list(board.pairs.items()):
-            est = " · est" if dp.is_estimate else ""
-            z = dp.differential_z0_ohm()
-            row = st.columns([5, 1])
-            row[0].markdown(
-                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
-                f'{_MP_EMOJI.get(dp.owner_subsystem,"")} <b>{name}</b> '
-                f'<span style="color:#8d99a6;font-size:.8rem">{dp.owner_subsystem}{est}</span><br>'
-                f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'~{z:.0f} Ω diff (est) · target {dp.target_z0_ohm:.0f} Ω · {len(dp.path_mm)} pts</span></div>',
-                unsafe_allow_html=True)
-            if row[1].button("✕", key=f"dp_del_{name}"):
-                store.remove_pair(name); save_store(store); st.rerun()
+      with ec[1]:
+          st.markdown("###### Differential pairs (CAN H/L routes)")
+          with st.expander("Add / replace a pair", expanded=not board.pairs):
+              pn = st.text_input("Name", key="dp_name", value="CAN")
+              pown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"), key="dp_own")
+              pg = st.columns(3)
+              pw = pg[0].number_input("Trace w", 0.05, 5.0, value=0.20, key="dp_w")
+              psp = pg[1].number_input("Spacing", 0.05, 5.0, value=0.20, key="dp_s")
+              ph = pg[2].number_input("Dielectric h", 0.05, 5.0, value=0.20, key="dp_h")
+              pg2 = st.columns(2)
+              peps = pg2[0].number_input("eps_r", 1.0, 15.0, value=4.3, key="dp_eps")
+              ptz = pg2[1].number_input("Target Zdiff (Ω)", 20.0, 200.0, value=120.0, key="dp_tz")
+              ppath = st.text_input("Route (x,y; x,y; …)", key="dp_path", value="0,0; 60,0")
+              pest = st.checkbox("Estimated routing", value=False, key="dp_est")
+              if st.button("Save pair", key="dp_save"):
+                  pts = _parse_path(ppath)
+                  store.set_pair(DiffPair(name=pn, owner_subsystem=pown, trace_w_mm=pw,
+                                          spacing_mm=psp, height_mm=ph, eps_r=peps,
+                                          target_z0_ohm=ptz, path_mm=pts, is_estimate=pest))
+                  save_store(store); st.rerun()
+          for name, dp in list(board.pairs.items()):
+              est = " · est" if dp.is_estimate else ""
+              z = dp.differential_z0_ohm()
+              row = st.columns([5, 1])
+              row[0].markdown(
+                  f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                  f'{_MP_EMOJI.get(dp.owner_subsystem,"")} <b>{name}</b> '
+                  f'<span style="color:#8d99a6;font-size:.8rem">{dp.owner_subsystem}{est}</span><br>'
+                  f'<span style="font-size:.82rem;color:#8d99a6">'
+                  f'~{z:.0f} Ω diff (est) · target {dp.target_z0_ohm:.0f} Ω · {len(dp.path_mm)} pts</span></div>',
+                  unsafe_allow_html=True)
+              if row[1].button("✕", key=f"dp_del_{name}"):
+                  store.remove_pair(name); save_store(store); st.rerun()
 
-    with ec[2]:
-        st.markdown("###### Aggressor nets (noisy HV traces to avoid)")
-        with st.expander("Add / replace an aggressor", expanded=not board.aggressors):
-            an = st.text_input("Name", key="ag_name", value="INV")
-            anet = st.text_input("Net", key="ag_net", value="hv_inverter")
-            aown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("powertrain"), key="ag_own")
-            ag2 = st.columns(2)
-            asw = ag2[0].number_input("Switched V", 1.0, 1000.0, value=400.0, key="ag_v")
-            aedge = ag2[1].number_input("Edge (V/ns)", 0.1, 100.0, value=5.0, key="ag_e")
-            apath = st.text_input("Route (x,y; x,y; …)", key="ag_path", value="0,0.3; 60,0.3")
-            aest = st.checkbox("Estimated routing", value=False, key="ag_est")
-            if st.button("Save aggressor", key="ag_save"):
-                pts = _parse_path(apath)
-                store.set_aggressor(Aggressor(name=an, net=anet, owner_subsystem=aown,
-                                              sw_voltage_v=asw, edge_v_per_ns=aedge,
-                                              path_mm=pts, is_estimate=aest))
-                save_store(store); st.rerun()
-        for name, ag in list(board.aggressors.items()):
-            est = " · est" if ag.is_estimate else ""
-            row = st.columns([5, 1])
-            row[0].markdown(
-                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
-                f'{_MP_EMOJI.get(ag.owner_subsystem,"")} <b>{name}</b> '
-                f'<span style="color:#8d99a6;font-size:.8rem">{ag.owner_subsystem} · {ag.net}{est}</span><br>'
-                f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'{ag.sw_voltage_v:.0f} V · {ag.edge_v_per_ns:.0f} V/ns · {len(ag.path_mm)} pts</span></div>',
-                unsafe_allow_html=True)
-            if row[1].button("✕", key=f"ag_del_{name}"):
-                store.remove_aggressor(name); save_store(store); st.rerun()
+      with ec[2]:
+          st.markdown("###### Aggressor nets (noisy HV traces to avoid)")
+          with st.expander("Add / replace an aggressor", expanded=not board.aggressors):
+              an = st.text_input("Name", key="ag_name", value="INV")
+              anet = st.text_input("Net", key="ag_net", value="hv_inverter")
+              aown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("powertrain"), key="ag_own")
+              ag2 = st.columns(2)
+              asw = ag2[0].number_input("Switched V", 1.0, 1000.0, value=400.0, key="ag_v")
+              aedge = ag2[1].number_input("Edge (V/ns)", 0.1, 100.0, value=5.0, key="ag_e")
+              apath = st.text_input("Route (x,y; x,y; …)", key="ag_path", value="0,0.3; 60,0.3")
+              aest = st.checkbox("Estimated routing", value=False, key="ag_est")
+              if st.button("Save aggressor", key="ag_save"):
+                  pts = _parse_path(apath)
+                  store.set_aggressor(Aggressor(name=an, net=anet, owner_subsystem=aown,
+                                                sw_voltage_v=asw, edge_v_per_ns=aedge,
+                                                path_mm=pts, is_estimate=aest))
+                  save_store(store); st.rerun()
+          for name, ag in list(board.aggressors.items()):
+              est = " · est" if ag.is_estimate else ""
+              row = st.columns([5, 1])
+              row[0].markdown(
+                  f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                  f'{_MP_EMOJI.get(ag.owner_subsystem,"")} <b>{name}</b> '
+                  f'<span style="color:#8d99a6;font-size:.8rem">{ag.owner_subsystem} · {ag.net}{est}</span><br>'
+                  f'<span style="font-size:.82rem;color:#8d99a6">'
+                  f'{ag.sw_voltage_v:.0f} V · {ag.edge_v_per_ns:.0f} V/ns · {len(ag.path_mm)} pts</span></div>',
+                  unsafe_allow_html=True)
+              if row[1].button("✕", key=f"ag_del_{name}"):
+                  store.remove_aggressor(name); save_store(store); st.rerun()
 
     # ---- the simultaneous-load scenario ---- #
-    st.markdown("###### Worst-case simultaneous load — which subsystems fire at once, onto which trace")
-    st.markdown(
-        '<p class="hint">Each trace can carry several loads at once. Pick the '
-        'subsystems whose peak currents sum onto it (e.g. cooling + cooling + '
-        'brakes = both fans and the brake light). The per-load amps come from the '
-        '<b>integration ledger</b> (each subsystem\'s declared peak current), not '
-        'retyped here — so this can\'t drift from what TEAM FIT says.</p>',
-        unsafe_allow_html=True)
-    scenario = {}
-    if board.traces:
-        for name, tr in board.traces.items():
-            # If a previous session stored a selection that's no longer an allowed
-            # load (e.g. aerodynamics, before we restricted the picker to
-            # current-drawing subsystems), drop it from session state first —
-            # Streamlit errors if a persisted value isn't among the options.
-            _skey = f"pcb_scn_{name}"
-            if _skey in st.session_state:
-                st.session_state[_skey] = [
-                    s for s in st.session_state[_skey] if s in _LOAD_SUBS]
-            # NB: pass `key` only — Streamlit persists the selection in
-            # st.session_state[key] across reruns. Passing `default=` alongside a
-            # `key` that already exists makes Streamlit ignore the default and, on
-            # rerun, silently reset the selection to [], so the scenario went empty
-            # and every trace reported "no declared worst-case current".
-            picks = st.multiselect(
-                f"Loads on '{name}'", _LOAD_SUBS,
-                key=_skey,
-                help="Choose the same subsystem twice (e.g. two fans) by it appearing once "
-                     "per declared load — duplicates are summed.")
-            if picks:
-                scenario[name] = picks
-    else:
-        st.caption("Add at least one trace to define a load scenario.")
+    with st.expander("⚙️ Worst-case simultaneous load", expanded=False):
+      st.markdown(
+          '<p class="hint">Each trace can carry several loads at once. Pick the '
+          'subsystems whose peak currents sum onto it (e.g. cooling + cooling + '
+          'brakes = both fans and the brake light). The per-load amps come from the '
+          '<b>integration ledger</b> (each subsystem\'s declared peak current), not '
+          'retyped here — so this can\'t drift from what TEAM FIT says.</p>',
+          unsafe_allow_html=True)
+      scenario = {}
+      if board.traces:
+          for name, tr in board.traces.items():
+              # If a previous session stored a selection that's no longer an allowed
+              # load (e.g. aerodynamics, before we restricted the picker to
+              # current-drawing subsystems), drop it from session state first —
+              # Streamlit errors if a persisted value isn't among the options.
+              _skey = f"pcb_scn_{name}"
+              if _skey in st.session_state:
+                  st.session_state[_skey] = [
+                      s for s in st.session_state[_skey] if s in _LOAD_SUBS]
+              # NB: pass `key` only — Streamlit persists the selection in
+              # st.session_state[key] across reruns. Passing `default=` alongside a
+              # `key` that already exists makes Streamlit ignore the default and, on
+              # rerun, silently reset the selection to [], so the scenario went empty
+              # and every trace reported "no declared worst-case current".
+              picks = st.multiselect(
+                  f"Loads on '{name}'", _LOAD_SUBS,
+                  key=_skey,
+                  help="Choose the same subsystem twice (e.g. two fans) by it appearing once "
+                       "per declared load — duplicates are summed.")
+              if picks:
+                  scenario[name] = picks
+      else:
+          st.caption("Add at least one trace to define a load scenario.")
 
     # ---- the pre-fab gate ---- #
-    st.markdown("###### Pre-fab board check")
-    res = store.board_check(ledger=led, scenario=scenario)
-    if res.findings:
-        st.markdown(f'<p class="hint">{res.summary()}</p>', unsafe_allow_html=True)
-    else:
-        st.caption("Nothing to check yet — declare traces/pairs and a load scenario above.")
+    with st.expander("⚙️ Pre-fab board check", expanded=False):
+      res = store.board_check(ledger=led, scenario=scenario)
+      if res.findings:
+          st.markdown(f'<p class="hint">{res.summary()}</p>', unsafe_allow_html=True)
+      else:
+          st.caption("Nothing to check yet — declare traces/pairs and a load scenario above.")
 
-    _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
-                "info": "", "ok": "good"}
-    order = ["fail", "warning", "missing", "info", "ok"]
-    for f in sorted(res.findings, key=lambda x: order.index(x.severity.value)):
-        cls = _SEV_CLS.get(f.severity.value, "")
-        who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
-        st.markdown(
-            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
-            f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
-            f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
-            f'<span style="font-size:.92rem">{f.message}</span></div>',
-            unsafe_allow_html=True)
+      _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
+                  "info": "", "ok": "good"}
+      order = ["fail", "warning", "missing", "info", "ok"]
+      for f in sorted(res.findings, key=lambda x: order.index(x.severity.value)):
+          cls = _SEV_CLS.get(f.severity.value, "")
+          who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
+          st.markdown(
+              f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+              f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
+              f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
+              f'<span style="font-size:.92rem">{f.message}</span></div>',
+              unsafe_allow_html=True)
 
-    # ---- honest SI detail: what's analytic vs what needs a field solver ---- #
-    if board.pairs:
-        st.markdown("###### Signal-integrity detail (analytic vs field-solver)")
-        which = st.selectbox("Pair", list(board.pairs), key="pcb_si_which")
-        d = board.si_detail(which)
-        sc = st.columns(2)
-        sc[0].markdown(
-            f"**Computed (analytic, IPC-2141 + edge coupling)**\n\n"
-            f"- single-ended Z₀: {d['single_ended_z0_ohm']:.1f} Ω\n"
-            f"- differential Z₀: {d['differential_z0_ohm']:.1f} Ω")
-        sc[1].markdown(
-            "**Not computed — needs a field solver / SPICE**\n\n"
-            "- eye height: *not computed*\n"
-            "- insertion loss: *not computed*\n"
-            "- reflection coeff: *not computed*\n"
-            "- coupled noise voltage: *not computed*")
-        st.caption(d["note"])
+      # ---- honest SI detail: what's analytic vs what needs a field solver ---- #
+      if board.pairs:
+          st.markdown("###### Signal-integrity detail (analytic vs field-solver)")
+          which = st.selectbox("Pair", list(board.pairs), key="pcb_si_which")
+          d = board.si_detail(which)
+          sc = st.columns(2)
+          sc[0].markdown(
+              f"**Computed (analytic, IPC-2141 + edge coupling)**\n\n"
+              f"- single-ended Z₀: {d['single_ended_z0_ohm']:.1f} Ω\n"
+              f"- differential Z₀: {d['differential_z0_ohm']:.1f} Ω")
+          sc[1].markdown(
+              "**Not computed — needs a field solver / SPICE**\n\n"
+              "- eye height: *not computed*\n"
+              "- insertion loss: *not computed*\n"
+              "- reflection coeff: *not computed*\n"
+              "- coupled noise voltage: *not computed*")
+          st.caption(d["note"])
 
 
 def _parse_path3d(s: str):
@@ -13190,195 +13190,195 @@ def render_harness():
     ec = st.columns(2)
     # ---- connector editor ---- #
     with ec[0]:
-        st.markdown("###### Connectors (harness end-points / branch nodes)")
-        with st.expander("Add / replace a connector", expanded=not harness.connectors):
-            cn = st.text_input("Name", key="cn_name", value="ECU")
-            cown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
-                                key="cn_own")
-            cg = st.columns(3)
-            cx = cg[0].number_input("x", -5000.0, 5000.0, value=0.0, key="cn_x")
-            cy = cg[1].number_input("y", -5000.0, 5000.0, value=0.0, key="cn_y")
-            cz = cg[2].number_input("z", -5000.0, 5000.0, value=0.0, key="cn_z")
-            cg2 = st.columns(3)
-            ccav = cg2[0].number_input("Cavities", 1, 200, value=12, key="cn_cav")
-            csr = cg2[1].number_input("Strain relief", 0.0, 200.0,
-                                      value=25.0, key="cn_sr")
-            cmass = cg2[2].number_input("Mass (g, 0=unknown)", 0.0, 2000.0,
-                                        value=0.0, key="cn_mass")
-            cpn = st.text_input("Part number", key="cn_pn", value="DTM-12")
-            cest = st.checkbox("Estimated", value=False, key="cn_est")
-            if st.button("Save connector", key="cn_save"):
-                store.set_connector(Connector(
-                    name=cn, owner_subsystem=cown, xyz_mm=(cx, cy, cz),
-                    cavities=int(ccav), part_number=cpn, strain_relief_mm=csr,
-                    mass_g=(None if cmass == 0.0 else cmass), is_estimate=cest))
-                save_store(store); st.rerun()
-        for name, c in list(harness.connectors.items()):
-            est = " · est" if c.is_estimate else ""
-            mtxt = uval(c.mass_g, "g_mass") if c.mass_g is not None else "mass —"
-            row = st.columns([5, 1])
-            row[0].markdown(
-                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
-                f'{_MP_EMOJI.get(c.owner_subsystem,"")} <b>{name}</b> '
-                f'<span style="color:#8d99a6;font-size:.8rem">{c.owner_subsystem} · '
-                f'{c.part_number or "—"}{est}</span><br>'
-                f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'({units_mod.from_metric(c.xyz_mm[0],"mm"):.0f}, {units_mod.from_metric(c.xyz_mm[1],"mm"):.0f}, {units_mod.from_metric(c.xyz_mm[2],"mm"):.0f}) {units_mod.label("mm")} · '
-                f'{c.cavities} cav · {mtxt} · SR {units_mod.from_metric(c.strain_relief_mm,"mm"):.0f} {units_mod.label("mm")}</span></div>',
-                unsafe_allow_html=True)
-            if row[1].button("✕", key=f"cn_del_{name}"):
-                store.remove_connector(name); save_store(store); st.rerun()
+        with st.expander("⚙️ Connectors (harness end-points / branch nodes)", expanded=False):
+          with st.expander("Add / replace a connector", expanded=not harness.connectors):
+              cn = st.text_input("Name", key="cn_name", value="ECU")
+              cown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
+                                  key="cn_own")
+              cg = st.columns(3)
+              cx = cg[0].number_input("x", -5000.0, 5000.0, value=0.0, key="cn_x")
+              cy = cg[1].number_input("y", -5000.0, 5000.0, value=0.0, key="cn_y")
+              cz = cg[2].number_input("z", -5000.0, 5000.0, value=0.0, key="cn_z")
+              cg2 = st.columns(3)
+              ccav = cg2[0].number_input("Cavities", 1, 200, value=12, key="cn_cav")
+              csr = cg2[1].number_input("Strain relief", 0.0, 200.0,
+                                        value=25.0, key="cn_sr")
+              cmass = cg2[2].number_input("Mass (g, 0=unknown)", 0.0, 2000.0,
+                                          value=0.0, key="cn_mass")
+              cpn = st.text_input("Part number", key="cn_pn", value="DTM-12")
+              cest = st.checkbox("Estimated", value=False, key="cn_est")
+              if st.button("Save connector", key="cn_save"):
+                  store.set_connector(Connector(
+                      name=cn, owner_subsystem=cown, xyz_mm=(cx, cy, cz),
+                      cavities=int(ccav), part_number=cpn, strain_relief_mm=csr,
+                      mass_g=(None if cmass == 0.0 else cmass), is_estimate=cest))
+                  save_store(store); st.rerun()
+          for name, c in list(harness.connectors.items()):
+              est = " · est" if c.is_estimate else ""
+              mtxt = uval(c.mass_g, "g_mass") if c.mass_g is not None else "mass —"
+              row = st.columns([5, 1])
+              row[0].markdown(
+                  f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                  f'{_MP_EMOJI.get(c.owner_subsystem,"")} <b>{name}</b> '
+                  f'<span style="color:#8d99a6;font-size:.8rem">{c.owner_subsystem} · '
+                  f'{c.part_number or "—"}{est}</span><br>'
+                  f'<span style="font-size:.82rem;color:#8d99a6">'
+                  f'({units_mod.from_metric(c.xyz_mm[0],"mm"):.0f}, {units_mod.from_metric(c.xyz_mm[1],"mm"):.0f}, {units_mod.from_metric(c.xyz_mm[2],"mm"):.0f}) {units_mod.label("mm")} · '
+                  f'{c.cavities} cav · {mtxt} · SR {units_mod.from_metric(c.strain_relief_mm,"mm"):.0f} {units_mod.label("mm")}</span></div>',
+                  unsafe_allow_html=True)
+              if row[1].button("✕", key=f"cn_del_{name}"):
+                  store.remove_connector(name); save_store(store); st.rerun()
 
     # ---- wire editor ---- #
     with ec[1]:
-        st.markdown("###### Wire runs (3-D routed conductors)")
-        conn_names = [""] + list(harness.connectors.keys())
-        with st.expander("Add / replace a wire", expanded=not harness.wires):
-            wn = st.text_input("Name", key="wr_name", value="MOT_PWR")
-            wown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
-                                key="wr_own")
-            wg = st.columns(3)
-            wawg = wg[0].number_input("Gauge (AWG)", 8, 30, value=10, key="wr_awg")
-            wnet = wg[1].text_input("Net", key="wr_net", value="hv_pwr")
-            wod = unum(wg[2], "OD (mm, 0=AWG nom)", 0.0, 30.0, 0.0, "mm",
-                       key="wr_od")
-            wg2 = st.columns(2)
-            wfrom = wg2[0].selectbox("From connector", conn_names, key="wr_from")
-            wto = wg2[1].selectbox("To connector", conn_names, key="wr_to")
-            wg3 = st.columns(3)
-            wmult = wg3[0].number_input("Min bend ×OD", 1.0, 20.0,
-                                        value=6.0, key="wr_mult")
-            wloop = wg3[1].number_input("Service loop", 0.0, 1000.0,
-                                        value=0.0, key="wr_loop")
-            wstrip = wg3[2].number_input("Strip/end", 0.0, 100.0,
-                                         value=8.0, key="wr_strip")
-            wpath = st.text_input("3-D route (x,y,z; x,y,z; …)", key="wr_path",
-                                  value="0,0,0; 40,0,0; 600,0,100; 1160,0,100; 1200,0,0")
-            wcur = st.number_input("Carries current (A, 0=from net)", 0.0, 1000.0,
-                                   value=0.0, key="wr_cur")
-            west = st.checkbox("Estimated route", value=False, key="wr_est")
-            if st.button("Save wire", key="wr_save"):
-                pts = _parse_path3d(wpath)
-                store.set_wire(WireRun(
-                    name=wn, owner_subsystem=wown, gauge_awg=int(wawg),
-                    path_mm=pts, from_conn=wfrom, to_conn=wto, net=wnet,
-                    od_mm=(None if wod == 0.0 else wod),
-                    bundle_min_radius_mult=wmult, service_loop_mm=wloop,
-                    strip_mm=wstrip,
-                    carries_current_a=(None if wcur == 0.0 else wcur),
-                    is_estimate=west))
-                save_store(store); st.rerun()
-        for name, w in list(harness.wires.items()):
-            est = " · est" if w.is_estimate else ""
-            row = st.columns([5, 1])
-            row[0].markdown(
-                f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
-                f'{_MP_EMOJI.get(w.owner_subsystem,"")} <b>{name}</b> '
-                f'<span style="color:#8d99a6;font-size:.8rem">AWG{w.gauge_awg} · '
-                f'{w.net or "—"}{est}</span><br>'
-                f'<span style="font-size:.82rem;color:#8d99a6">'
-                f'{w.from_conn or "?"} → {w.to_conn or "?"} · '
-                f'cut {units_mod.from_metric(w.cut_length_mm(),"mm"):.0f} {units_mod.label("mm")} · {uval(w.copper_mass_g(), "g_mass", fmt="{:.1f}")} Cu · '
-                f'min bend {units_mod.from_metric(w.min_bend_radius_mm,"mm"):.0f} {units_mod.label("mm")}</span></div>',
-                unsafe_allow_html=True)
-            if row[1].button("✕", key=f"wr_del_{name}"):
-                store.remove_wire(name); save_store(store); st.rerun()
+        with st.expander("⚙️ Wire runs (3-D routed conductors)", expanded=False):
+          conn_names = [""] + list(harness.connectors.keys())
+          with st.expander("Add / replace a wire", expanded=not harness.wires):
+              wn = st.text_input("Name", key="wr_name", value="MOT_PWR")
+              wown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
+                                  key="wr_own")
+              wg = st.columns(3)
+              wawg = wg[0].number_input("Gauge (AWG)", 8, 30, value=10, key="wr_awg")
+              wnet = wg[1].text_input("Net", key="wr_net", value="hv_pwr")
+              wod = unum(wg[2], "OD (mm, 0=AWG nom)", 0.0, 30.0, 0.0, "mm",
+                         key="wr_od")
+              wg2 = st.columns(2)
+              wfrom = wg2[0].selectbox("From connector", conn_names, key="wr_from")
+              wto = wg2[1].selectbox("To connector", conn_names, key="wr_to")
+              wg3 = st.columns(3)
+              wmult = wg3[0].number_input("Min bend ×OD", 1.0, 20.0,
+                                          value=6.0, key="wr_mult")
+              wloop = wg3[1].number_input("Service loop", 0.0, 1000.0,
+                                          value=0.0, key="wr_loop")
+              wstrip = wg3[2].number_input("Strip/end", 0.0, 100.0,
+                                           value=8.0, key="wr_strip")
+              wpath = st.text_input("3-D route (x,y,z; x,y,z; …)", key="wr_path",
+                                    value="0,0,0; 40,0,0; 600,0,100; 1160,0,100; 1200,0,0")
+              wcur = st.number_input("Carries current (A, 0=from net)", 0.0, 1000.0,
+                                     value=0.0, key="wr_cur")
+              west = st.checkbox("Estimated route", value=False, key="wr_est")
+              if st.button("Save wire", key="wr_save"):
+                  pts = _parse_path3d(wpath)
+                  store.set_wire(WireRun(
+                      name=wn, owner_subsystem=wown, gauge_awg=int(wawg),
+                      path_mm=pts, from_conn=wfrom, to_conn=wto, net=wnet,
+                      od_mm=(None if wod == 0.0 else wod),
+                      bundle_min_radius_mult=wmult, service_loop_mm=wloop,
+                      strip_mm=wstrip,
+                      carries_current_a=(None if wcur == 0.0 else wcur),
+                      is_estimate=west))
+                  save_store(store); st.rerun()
+          for name, w in list(harness.wires.items()):
+              est = " · est" if w.is_estimate else ""
+              row = st.columns([5, 1])
+              row[0].markdown(
+                  f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
+                  f'{_MP_EMOJI.get(w.owner_subsystem,"")} <b>{name}</b> '
+                  f'<span style="color:#8d99a6;font-size:.8rem">AWG{w.gauge_awg} · '
+                  f'{w.net or "—"}{est}</span><br>'
+                  f'<span style="font-size:.82rem;color:#8d99a6">'
+                  f'{w.from_conn or "?"} → {w.to_conn or "?"} · '
+                  f'cut {units_mod.from_metric(w.cut_length_mm(),"mm"):.0f} {units_mod.label("mm")} · {uval(w.copper_mass_g(), "g_mass", fmt="{:.1f}")} Cu · '
+                  f'min bend {units_mod.from_metric(w.min_bend_radius_mm,"mm"):.0f} {units_mod.label("mm")}</span></div>',
+                  unsafe_allow_html=True)
+              if row[1].button("✕", key=f"wr_del_{name}"):
+                  store.remove_wire(name); save_store(store); st.rerun()
 
     # ---- the pre-cut gate ---- #
-    st.markdown("###### Pre-cut harness check")
-    res = store.harness_check()
-    if res.findings:
-        st.markdown(f'<p class="hint">{res.summary()}</p>', unsafe_allow_html=True)
-    else:
-        st.caption("Add connectors and at least one routed wire to run the check.")
+    with st.expander("⚙️ Pre-cut harness check", expanded=False):
+      res = store.harness_check()
+      if res.findings:
+          st.markdown(f'<p class="hint">{res.summary()}</p>', unsafe_allow_html=True)
+      else:
+          st.caption("Add connectors and at least one routed wire to run the check.")
 
-    _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
-                "info": "", "ok": "good"}
-    order = ["fail", "warning", "missing", "info", "ok"]
-    for f in sorted(res.findings, key=lambda x: order.index(x.severity.value)):
-        cls = _SEV_CLS.get(f.severity.value, "")
-        who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
-        st.markdown(
-            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
-            f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
-            f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
-            f'<span style="font-size:.92rem">{f.message}</span></div>',
-            unsafe_allow_html=True)
+      _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
+                  "info": "", "ok": "good"}
+      order = ["fail", "warning", "missing", "info", "ok"]
+      for f in sorted(res.findings, key=lambda x: order.index(x.severity.value)):
+          cls = _SEV_CLS.get(f.severity.value, "")
+          who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
+          st.markdown(
+              f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+              f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
+              f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
+              f'<span style="font-size:.92rem">{f.message}</span></div>',
+              unsafe_allow_html=True)
 
-    if not harness.wires:
-        return
+      if not harness.wires:
+          return
 
     # ---- manufacturing artefacts: cut list + BOM + mass + formboard ---- #
-    st.markdown("###### Manufacturing roll-up — everything known before the first cut")
-    mc = st.columns([3, 2])
+    with st.expander("⚙️ Manufacturing roll-up", expanded=False):
+      mc = st.columns([3, 2])
 
-    with mc[0]:
-        st.markdown("**Cut list (to the millimetre)**")
-        if res.cut_list:
-            import pandas as pd
-            df = pd.DataFrame(res.cut_list)[
-                ["wire", "net", "gauge_awg", "from_conn", "to_conn",
-                 "routed_mm", "bend_allowance_mm", "service_loop_mm",
-                 "strip_both_ends_mm", "cut_length_mm"]]
-            st.dataframe(df, hide_index=True, use_container_width=True)
-        st.markdown("**Bill of materials (automated)**")
-        bom = res.bom
-        if bom.get("wire"):
-            import pandas as pd
-            st.caption("Wire by gauge")
-            st.dataframe(pd.DataFrame(bom["wire"]), hide_index=True,
-                         use_container_width=True)
-        if bom.get("connectors"):
-            import pandas as pd
-            st.caption("Connectors")
-            st.dataframe(pd.DataFrame(bom["connectors"]), hide_index=True,
-                         use_container_width=True)
-        st.markdown(
-            f'<p class="hint">Totals: <b>{uval(bom.get("total_wire_m",0), "m", fmt="{:.2f}")}</b> wire · '
-            f'<b>{uval(bom.get("total_copper_g",0), "g_mass")}</b> copper · '
-            f'<b>{bom.get("contacts_total",0)}</b> crimp contacts.</p>',
-            unsafe_allow_html=True)
+      with mc[0]:
+          st.markdown("**Cut list (to the millimetre)**")
+          if res.cut_list:
+              import pandas as pd
+              df = pd.DataFrame(res.cut_list)[
+                  ["wire", "net", "gauge_awg", "from_conn", "to_conn",
+                   "routed_mm", "bend_allowance_mm", "service_loop_mm",
+                   "strip_both_ends_mm", "cut_length_mm"]]
+              st.dataframe(df, hide_index=True, use_container_width=True)
+          st.markdown("**Bill of materials (automated)**")
+          bom = res.bom
+          if bom.get("wire"):
+              import pandas as pd
+              st.caption("Wire by gauge")
+              st.dataframe(pd.DataFrame(bom["wire"]), hide_index=True,
+                           use_container_width=True)
+          if bom.get("connectors"):
+              import pandas as pd
+              st.caption("Connectors")
+              st.dataframe(pd.DataFrame(bom["connectors"]), hide_index=True,
+                           use_container_width=True)
+          st.markdown(
+              f'<p class="hint">Totals: <b>{uval(bom.get("total_wire_m",0), "m", fmt="{:.2f}")}</b> wire · '
+              f'<b>{uval(bom.get("total_copper_g",0), "g_mass")}</b> copper · '
+              f'<b>{bom.get("contacts_total",0)}</b> crimp contacts.</p>',
+              unsafe_allow_html=True)
 
-    with mc[1]:
-        st.markdown("**Copper mass & distribution**")
-        md = res.mass
-        st.markdown(
-            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:3px 0;">'
-            f'<span style="font-size:.95rem"><b>{uval(md.get("total_copper_g",0), "g_mass", fmt="{:.1f}")}</b> '
-            f'copper · <b>{uval(md.get("total_harness_g",0), "g_mass", fmt="{:.1f}")}</b> total harness</span><br>'
-            f'<span style="font-size:.85rem;color:#8d99a6">harness CG: '
-            f'{tuple(round(units_mod.from_metric(float(v),"mm"),1) for v in md.get("harness_cg_mm")) if md.get("harness_cg_mm") is not None else md.get("harness_cg_mm")} {units_mod.label("mm")} (x rearward, y right, z up)</span></div>',
-            unsafe_allow_html=True)
-        if md.get("connectors_without_declared_mass"):
-            st.caption("Excluded from CG (mass not declared): " +
-                       ", ".join(md["connectors_without_declared_mass"]))
-        if md.get("per_wire"):
-            import pandas as pd
-            _pw_df = pd.DataFrame(md["per_wire"])[
-                ["wire", "gauge_awg", "copper_g", "total_g"]].copy()
-            _mass_u = units_mod.label("g_mass")
-            for _c in ("copper_g", "total_g"):
-                _pw_df[_c] = _pw_df[_c].map(
-                    lambda v: units_mod.from_metric(float(v), "g_mass"))
-            _pw_df = _pw_df.rename(columns={
-                "copper_g": f"copper ({_mass_u})", "total_g": f"total ({_mass_u})"})
-            st.dataframe(_pw_df, hide_index=True, use_container_width=True)
-        st.caption("Sag of unsupported runs under vibration: *not computed* — "
-                   "needs a flexible-body solver; the route is measured, not solved.")
+      with mc[1]:
+          st.markdown("**Copper mass & distribution**")
+          md = res.mass
+          st.markdown(
+              f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:3px 0;">'
+              f'<span style="font-size:.95rem"><b>{uval(md.get("total_copper_g",0), "g_mass", fmt="{:.1f}")}</b> '
+              f'copper · <b>{uval(md.get("total_harness_g",0), "g_mass", fmt="{:.1f}")}</b> total harness</span><br>'
+              f'<span style="font-size:.85rem;color:#8d99a6">harness CG: '
+              f'{tuple(round(units_mod.from_metric(float(v),"mm"),1) for v in md.get("harness_cg_mm")) if md.get("harness_cg_mm") is not None else md.get("harness_cg_mm")} {units_mod.label("mm")} (x rearward, y right, z up)</span></div>',
+              unsafe_allow_html=True)
+          if md.get("connectors_without_declared_mass"):
+              st.caption("Excluded from CG (mass not declared): " +
+                         ", ".join(md["connectors_without_declared_mass"]))
+          if md.get("per_wire"):
+              import pandas as pd
+              _pw_df = pd.DataFrame(md["per_wire"])[
+                  ["wire", "gauge_awg", "copper_g", "total_g"]].copy()
+              _mass_u = units_mod.label("g_mass")
+              for _c in ("copper_g", "total_g"):
+                  _pw_df[_c] = _pw_df[_c].map(
+                      lambda v: units_mod.from_metric(float(v), "g_mass"))
+              _pw_df = _pw_df.rename(columns={
+                  "copper_g": f"copper ({_mass_u})", "total_g": f"total ({_mass_u})"})
+              st.dataframe(_pw_df, hide_index=True, use_container_width=True)
+          st.caption("Sag of unsupported runs under vibration: *not computed* — "
+                     "needs a flexible-body solver; the route is measured, not solved.")
 
     # ---- the 1:1 formboard ---- #
-    st.markdown("###### 1:1 Formboard (unfolded flat layout for the bench)")
-    fb = res.formboard
-    if fb and fb.branches:
-        st.markdown(
-            f'<p class="hint">The harness unfolded to a length-true 2-D nail-board: '
-            f'every branch segment is the exact length of its 3-D run, so the '
-            f'fabricator pins the loom out 1:1. Board extent '
-            f'~{units_mod.from_metric(fb.extent_mm[0],"mm"):.0f} × {units_mod.from_metric(fb.extent_mm[1],"mm"):.0f} {units_mod.label("mm")}.</p>',
-            unsafe_allow_html=True)
-        st.markdown(_formboard_svg(fb), unsafe_allow_html=True)
-    else:
-        st.caption("Route at least one wire with ≥2 points to generate the formboard.")
+    with st.expander("⚙️ 1:1 Formboard (unfolded flat layout for the bench)", expanded=False):
+      fb = res.formboard
+      if fb and fb.branches:
+          st.markdown(
+              f'<p class="hint">The harness unfolded to a length-true 2-D nail-board: '
+              f'every branch segment is the exact length of its 3-D run, so the '
+              f'fabricator pins the loom out 1:1. Board extent '
+              f'~{units_mod.from_metric(fb.extent_mm[0],"mm"):.0f} × {units_mod.from_metric(fb.extent_mm[1],"mm"):.0f} {units_mod.label("mm")}.</p>',
+              unsafe_allow_html=True)
+          st.markdown(_formboard_svg(fb), unsafe_allow_html=True)
+      else:
+          st.caption("Route at least one wire with ≥2 points to generate the formboard.")
 
 
 def _parse_path(s: str):
@@ -13762,176 +13762,176 @@ with tab6:
 
   rc1, rc2 = st.columns(2)
   with rc1:
-      st.markdown("###### Shared chassis (reference)")
-      chassis_up = st.file_uploader("Chassis CAD", type=["step", "stp", "stl", "obj", "glb"],
-                                    key="team_chassis", label_visibility="collapsed")
+      with st.expander("🟢 Shared chassis (reference)", expanded=True):
+        chassis_up = st.file_uploader("Chassis CAD", type=["step", "stp", "stl", "obj", "glb"],
+                                      key="team_chassis", label_visibility="collapsed")
   with rc2:
       st.markdown(f"###### {integ_mod.TEAMS[team]['label']} part")
       part_up = st.file_uploader("Part CAD", type=["step", "stp", "stl", "obj", "glb"],
                                  key="team_part", label_visibility="collapsed")
 
-  st.markdown("###### Position your part in the chassis frame")
-  pc = st.columns(7)
-  p_ox = pc[0].number_input("x mm", value=0.0, step=10.0, key="p_ox")
-  p_oy = pc[1].number_input("y mm", value=0.0, step=10.0, key="p_oy")
-  p_oz = pc[2].number_input("z mm", value=0.0, step=10.0, key="p_oz")
-  p_rx = pc[3].number_input("rot x°", value=0.0, step=15.0, key="p_rx")
-  p_ry = pc[4].number_input("rot y°", value=0.0, step=15.0, key="p_ry")
-  p_rz = pc[5].number_input("rot z°", value=0.0, step=15.0, key="p_rz")
-  p_scale = pc[6].number_input("scale", value=1.0, step=1.0, key="p_scale")
+  with st.expander("⚙️ Position your part in the chassis frame", expanded=False):
+    pc = st.columns(7)
+    p_ox = pc[0].number_input("x mm", value=0.0, step=10.0, key="p_ox")
+    p_oy = pc[1].number_input("y mm", value=0.0, step=10.0, key="p_oy")
+    p_oz = pc[2].number_input("z mm", value=0.0, step=10.0, key="p_oz")
+    p_rx = pc[3].number_input("rot x°", value=0.0, step=15.0, key="p_rx")
+    p_ry = pc[4].number_input("rot y°", value=0.0, step=15.0, key="p_ry")
+    p_rz = pc[5].number_input("rot z°", value=0.0, step=15.0, key="p_rz")
+    p_scale = pc[6].number_input("scale", value=1.0, step=1.0, key="p_scale")
 
-  if chassis_up is None or part_up is None:
-      st.markdown('<p class="hint" style="padding-top:.5rem;">Load both the chassis '
-                  'and your part to run the check. Only chassis and suspension have '
-                  'CAD right now — as your team produces geometry, this works the same '
-                  'way for you. Export STEP from your assembly for best results.</p>',
-                  unsafe_allow_html=True)
-  else:
-      import tempfile as _tf
-      def _save(uploaded):
-          sfx = "." + uploaded.name.split(".")[-1]
-          with _tf.NamedTemporaryFile(suffix=sfx, delete=False) as f:
-              f.write(uploaded.getbuffer())
-              return f.name
-      ch_path = _save(chassis_up)
-      pt_path = _save(part_up)
-      try:
-          with st.spinner("Loading geometry and checking interference…"):
-              ref = integ_mod.load_part(ch_path)
-              part = integ_mod.load_part(
-                  pt_path, offset=(p_ox, p_oy, p_oz), scale=p_scale,
-                  rotate_deg=(p_rx, p_ry, p_rz))
-              res = integ_mod.interference_check(part, ref, warn_mm=5.0)
-              psum = integ_mod.part_summary(part)
+    if chassis_up is None or part_up is None:
+        st.markdown('<p class="hint" style="padding-top:.5rem;">Load both the chassis '
+                    'and your part to run the check. Only chassis and suspension have '
+                    'CAD right now — as your team produces geometry, this works the same '
+                    'way for you. Export STEP from your assembly for best results.</p>',
+                    unsafe_allow_html=True)
+    else:
+        import tempfile as _tf
+        def _save(uploaded):
+            sfx = "." + uploaded.name.split(".")[-1]
+            with _tf.NamedTemporaryFile(suffix=sfx, delete=False) as f:
+                f.write(uploaded.getbuffer())
+                return f.name
+        ch_path = _save(chassis_up)
+        pt_path = _save(part_up)
+        try:
+            with st.spinner("Loading geometry and checking interference…"):
+                ref = integ_mod.load_part(ch_path)
+                part = integ_mod.load_part(
+                    pt_path, offset=(p_ox, p_oy, p_oz), scale=p_scale,
+                    rotate_deg=(p_rx, p_ry, p_rz))
+                res = integ_mod.interference_check(part, ref, warn_mm=5.0)
+                psum = integ_mod.part_summary(part)
 
-          vmap = {"CLEAR": ("good", "Part clears the chassis"),
-                  "TIGHT": ("warn", "Under 5 mm — review before fab"),
-                  "COLLISION": ("bad", "Part intersects the chassis — reposition")}
-          tag, msg = vmap[res["verdict"]]
-          st.markdown(f'<div class="metric" style="margin:.4rem 0;">'
-                      f'<span class="k">INTERFERENCE VERDICT · {integ_mod.TEAMS[team]["label"].upper()}</span>'
-                      f'<span class="v {tag}">{res["verdict"]}'
-                      f'<span class="u"> · {msg}</span></span></div>',
-                      unsafe_allow_html=True)
+            vmap = {"CLEAR": ("good", "Part clears the chassis"),
+                    "TIGHT": ("warn", "Under 5 mm — review before fab"),
+                    "COLLISION": ("bad", "Part intersects the chassis — reposition")}
+            tag, msg = vmap[res["verdict"]]
+            st.markdown(f'<div class="metric" style="margin:.4rem 0;">'
+                        f'<span class="k">INTERFERENCE VERDICT · {integ_mod.TEAMS[team]["label"].upper()}</span>'
+                        f'<span class="v {tag}">{res["verdict"]}'
+                        f'<span class="u"> · {msg}</span></span></div>',
+                        unsafe_allow_html=True)
 
-          mc1, mc2, mc3 = st.columns(3)
-          mc1.markdown(metric("Min clearance", f"{res['min_clearance_mm']:.1f}", "mm", tag),
-                       unsafe_allow_html=True)
-          mc2.markdown(metric("Part overlap", f"{res['collision_fraction']*100:.0f}", "%",
-                              "bad" if res['collision_fraction'] > 0 else "good"),
-                       unsafe_allow_html=True)
-          mc3.markdown(metric("Part size",
-                              f"{psum['size_mm'][0]:.0f}×{psum['size_mm'][1]:.0f}×{psum['size_mm'][2]:.0f}",
-                              "mm"), unsafe_allow_html=True)
+            mc1, mc2, mc3 = st.columns(3)
+            mc1.markdown(metric("Min clearance", f"{res['min_clearance_mm']:.1f}", "mm", tag),
+                         unsafe_allow_html=True)
+            mc2.markdown(metric("Part overlap", f"{res['collision_fraction']*100:.0f}", "%",
+                                "bad" if res['collision_fraction'] > 0 else "good"),
+                         unsafe_allow_html=True)
+            mc3.markdown(metric("Part size",
+                                f"{psum['size_mm'][0]:.0f}×{psum['size_mm'][1]:.0f}×{psum['size_mm'][2]:.0f}",
+                                "mm"), unsafe_allow_html=True)
 
-          if res["verdict"] in ("COLLISION", "TIGHT"):
-              tlabel = integ_mod.TEAMS[team]["label"]
-              if res["verdict"] == "COLLISION":
-                  suggested = (f"{tlabel}: {part_name} intersects the chassis "
-                               f"(overlap {res['collision_fraction']*100:.0f}%, "
-                               f"worst point {uval(res['min_clearance_mm'], 'mm')} inside). "
-                               f"Repositioned / flagged for redesign before fabrication.")
-              else:
-                  suggested = (f"{tlabel}: {part_name} clears the chassis by only "
-                               f"{uval(res['min_clearance_mm'], 'mm', fmt='{:.1f}')} — below the {uval(5.0, 'mm')} "
-                               f"margin. Reviewed for clearance before fabrication.")
-              st.markdown('<p class="hint" style="margin-top:.4rem;">⚑ This is worth '
-                          'recording for handover — log it so next year knows the '
-                          'constraint existed, and ping the team that owns what it '
-                          'hits:</p>', unsafe_allow_html=True)
-              edited = st.text_area("Decision note (edit before logging)",
-                                    value=suggested, height=80, key="autocap_team")
-              ncol = st.columns([1.6, 1.4, 1.4])
-              notify_opts = ["(don't notify)"] + list(integ_mod.TEAMS.keys())
-              default_idx = notify_opts.index("chassis") if "chassis" in notify_opts else 0
-              notify_team = ncol[0].selectbox(
-                  "Notify team", notify_opts, index=default_idx,
-                  format_func=lambda k: k if k == "(don't notify)"
-                  else integ_mod.TEAMS[k]["label"], key="notify_team")
-              notify_urgent = ncol[1].checkbox("Mark urgent", key="notify_urgent",
-                                               value=(res["verdict"] == "COLLISION"))
-              note_author = ncol[2].text_input("Your name", key="notify_author")
-              if st.button("＋ Log to handover" +
-                           (" & notify" if notify_team != "(don't notify)" else ""),
-                           key="autocap_team_btn"):
-                  _s = project_mod.ProjectStore(PROJECT_PATH)
-                  _s.add_decision(project_mod.Decision(
-                      team=team, title=f"{part_name} chassis {res['verdict'].lower()}",
-                      rationale=edited, author="TEAM FIT", tags="auto-captured"))
-                  posted = ""
-                  if notify_team != "(don't notify)":
-                      _s.add_note(project_mod.Note(
-                          from_team=team, to_team=notify_team,
-                          message=(f"{part_name} {res['verdict'].lower()} vs chassis "
-                                   f"(min {uval(res['min_clearance_mm'], 'mm', fmt='{:.1f}')}). {edited}"),
-                          author=note_author or "TEAM FIT",
-                          is_request=True, urgent=notify_urgent))
-                      posted = f" · note sent to {integ_mod.TEAMS[notify_team]['label']}"
-                  _s.save()
-                  st.success(f"Logged to handover{posted}.")
+            if res["verdict"] in ("COLLISION", "TIGHT"):
+                tlabel = integ_mod.TEAMS[team]["label"]
+                if res["verdict"] == "COLLISION":
+                    suggested = (f"{tlabel}: {part_name} intersects the chassis "
+                                 f"(overlap {res['collision_fraction']*100:.0f}%, "
+                                 f"worst point {uval(res['min_clearance_mm'], 'mm')} inside). "
+                                 f"Repositioned / flagged for redesign before fabrication.")
+                else:
+                    suggested = (f"{tlabel}: {part_name} clears the chassis by only "
+                                 f"{uval(res['min_clearance_mm'], 'mm', fmt='{:.1f}')} — below the {uval(5.0, 'mm')} "
+                                 f"margin. Reviewed for clearance before fabrication.")
+                st.markdown('<p class="hint" style="margin-top:.4rem;">⚑ This is worth '
+                            'recording for handover — log it so next year knows the '
+                            'constraint existed, and ping the team that owns what it '
+                            'hits:</p>', unsafe_allow_html=True)
+                edited = st.text_area("Decision note (edit before logging)",
+                                      value=suggested, height=80, key="autocap_team")
+                ncol = st.columns([1.6, 1.4, 1.4])
+                notify_opts = ["(don't notify)"] + list(integ_mod.TEAMS.keys())
+                default_idx = notify_opts.index("chassis") if "chassis" in notify_opts else 0
+                notify_team = ncol[0].selectbox(
+                    "Notify team", notify_opts, index=default_idx,
+                    format_func=lambda k: k if k == "(don't notify)"
+                    else integ_mod.TEAMS[k]["label"], key="notify_team")
+                notify_urgent = ncol[1].checkbox("Mark urgent", key="notify_urgent",
+                                                 value=(res["verdict"] == "COLLISION"))
+                note_author = ncol[2].text_input("Your name", key="notify_author")
+                if st.button("＋ Log to handover" +
+                             (" & notify" if notify_team != "(don't notify)" else ""),
+                             key="autocap_team_btn"):
+                    _s = project_mod.ProjectStore(PROJECT_PATH)
+                    _s.add_decision(project_mod.Decision(
+                        team=team, title=f"{part_name} chassis {res['verdict'].lower()}",
+                        rationale=edited, author="TEAM FIT", tags="auto-captured"))
+                    posted = ""
+                    if notify_team != "(don't notify)":
+                        _s.add_note(project_mod.Note(
+                            from_team=team, to_team=notify_team,
+                            message=(f"{part_name} {res['verdict'].lower()} vs chassis "
+                                     f"(min {uval(res['min_clearance_mm'], 'mm', fmt='{:.1f}')}). {edited}"),
+                            author=note_author or "TEAM FIT",
+                            is_request=True, urgent=notify_urgent))
+                        posted = f" · note sent to {integ_mod.TEAMS[notify_team]['label']}"
+                    _s.save()
+                    st.success(f"Logged to handover{posted}.")
 
-          # Auto-populate the weight budget from this part's CAD volume
-          if psum.get("volume_mm3"):
-              st.markdown('<p class="hint" style="margin-top:.4rem;">This part is '
-                          'watertight, so its mass can be estimated from CAD volume — '
-                          'log it straight into the weight budget:</p>',
-                          unsafe_allow_html=True)
-              awc = st.columns([1.6, 1, 1])
-              aw_mat = awc[0].selectbox("Material", list(project_mod.MATERIALS.keys()),
-                                        key="awmat")
-              aw_qty = awc[1].number_input("Qty", value=1, min_value=1, step=1, key="awqty")
-              est = project_mod.estimate_mass_g(psum["volume_mm3"], aw_mat)
-              awc[2].markdown(metric("Est. mass each",
-                                     f"{est:.0f}" if est else "—", "g"),
-                              unsafe_allow_html=True)
-              if est and st.button("＋ Add to weight budget", key="aw_btn"):
-                  s_ = project_mod.ProjectStore(PROJECT_PATH)
-                  s_.add_weight(project_mod.WeightItem(
-                      team=team, name=part_name, mass_g=float(est), qty=int(aw_qty),
-                      material=aw_mat, source="cad_estimate"))
-                  s_.save()
-                  st.success(f"Added {part_name} ({est:.0f} g × {aw_qty}) to the budget.")
-              elif not est:
-                  st.markdown('<p class="hint">Pick a material with a known density to '
-                              'estimate mass (or use manual entry in WEIGHT & HANDOVER '
-                              'for hollow/lattice parts).</p>', unsafe_allow_html=True)
+            # Auto-populate the weight budget from this part's CAD volume
+            if psum.get("volume_mm3"):
+                st.markdown('<p class="hint" style="margin-top:.4rem;">This part is '
+                            'watertight, so its mass can be estimated from CAD volume — '
+                            'log it straight into the weight budget:</p>',
+                            unsafe_allow_html=True)
+                awc = st.columns([1.6, 1, 1])
+                aw_mat = awc[0].selectbox("Material", list(project_mod.MATERIALS.keys()),
+                                          key="awmat")
+                aw_qty = awc[1].number_input("Qty", value=1, min_value=1, step=1, key="awqty")
+                est = project_mod.estimate_mass_g(psum["volume_mm3"], aw_mat)
+                awc[2].markdown(metric("Est. mass each",
+                                       f"{est:.0f}" if est else "—", "g"),
+                                unsafe_allow_html=True)
+                if est and st.button("＋ Add to weight budget", key="aw_btn"):
+                    s_ = project_mod.ProjectStore(PROJECT_PATH)
+                    s_.add_weight(project_mod.WeightItem(
+                        team=team, name=part_name, mass_g=float(est), qty=int(aw_qty),
+                        material=aw_mat, source="cad_estimate"))
+                    s_.save()
+                    st.success(f"Added {part_name} ({est:.0f} g × {aw_qty}) to the budget.")
+                elif not est:
+                    st.markdown('<p class="hint">Pick a material with a known density to '
+                                'estimate mass (or use manual entry in WEIGHT & HANDOVER '
+                                'for hollow/lattice parts).</p>', unsafe_allow_html=True)
 
-          fig = go.Figure()
-          for mesh, color, name, opac in [(ref, "#5a6b7a", "Chassis", 0.30),
-                                          (part, integ_mod.TEAMS[team]["color"], part_name, 0.65)]:
-              v = mesh.vertices
-              f = mesh.faces
-              fig.add_trace(go.Mesh3d(x=v[:, 0], y=v[:, 1], z=v[:, 2],
-                            i=f[:, 0], j=f[:, 1], k=f[:, 2],
-                            color=color, opacity=opac, name=name, flatshading=True))
-          if res["worst_point"] and res["verdict"] != "CLEAR":
-              wp = res["worst_point"]
-              fig.add_trace(go.Scatter3d(x=[wp[0]], y=[wp[1]], z=[wp[2]],
-                            mode="markers", marker=dict(size=6, color=RED),
-                            name="Worst point"))
-          fig.update_layout(
-              paper_bgcolor="rgba(0,0,0,0)",
-              scene=dict(
-                  xaxis=dict(backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-                  yaxis=dict(backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-                  zaxis=dict(backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
-                  aspectmode="data", camera=dict(eye=dict(x=1.6, y=-1.5, z=0.9))),
-              font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
-              height=520, margin=dict(l=0, r=0, t=10, b=0),
-              legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10)))
-          st.plotly_chart(fig, width='stretch')
-          st.markdown('<p class="hint">If the part is in the wrong place relative to '
-                      'the chassis, adjust the offset and rotation above until it sits '
-                      'where it mounts. The red dot marks the tightest/worst point so '
-                      'you know which corner to move.</p>', unsafe_allow_html=True)
-      except Exception as e:
-          st.error(f"Could not process the files: {e}")
-      finally:
-          for p in (ch_path, pt_path):
-              try:
-                  os.unlink(p)
-              except Exception:
-                  pass
+            fig = go.Figure()
+            for mesh, color, name, opac in [(ref, "#5a6b7a", "Chassis", 0.30),
+                                            (part, integ_mod.TEAMS[team]["color"], part_name, 0.65)]:
+                v = mesh.vertices
+                f = mesh.faces
+                fig.add_trace(go.Mesh3d(x=v[:, 0], y=v[:, 1], z=v[:, 2],
+                              i=f[:, 0], j=f[:, 1], k=f[:, 2],
+                              color=color, opacity=opac, name=name, flatshading=True))
+            if res["worst_point"] and res["verdict"] != "CLEAR":
+                wp = res["worst_point"]
+                fig.add_trace(go.Scatter3d(x=[wp[0]], y=[wp[1]], z=[wp[2]],
+                              mode="markers", marker=dict(size=6, color=RED),
+                              name="Worst point"))
+            fig.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                scene=dict(
+                    xaxis=dict(backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                    yaxis=dict(backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                    zaxis=dict(backgroundcolor="#0e1216", gridcolor="#1d242c", color="#8d99a6"),
+                    aspectmode="data", camera=dict(eye=dict(x=1.6, y=-1.5, z=0.9))),
+                font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
+                height=520, margin=dict(l=0, r=0, t=10, b=0),
+                legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10)))
+            st.plotly_chart(fig, width='stretch')
+            st.markdown('<p class="hint">If the part is in the wrong place relative to '
+                        'the chassis, adjust the offset and rotation above until it sits '
+                        'where it mounts. The red dot marks the tightest/worst point so '
+                        'you know which corner to move.</p>', unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"Could not process the files: {e}")
+        finally:
+            for p in (ch_path, pt_path):
+                try:
+                    os.unlink(p)
+                except Exception:
+                    pass
 
 # ----------------------------- TAB 7 --------------------------------------- #
 with tab7:
@@ -13987,195 +13987,195 @@ with tab7:
                            yaxis_title="")
         st.plotly_chart(figW, width='stretch')
 
-    st.markdown("###### Log a part's mass")
-    wc = st.columns([1.2, 1.4, 0.7, 1, 1.4, 1])
-    w_team = wc[0].selectbox("Team", list(integ_mod.TEAMS.keys()),
-                             format_func=lambda k: integ_mod.TEAMS[k]["label"], key="w_team")
-    w_name = wc[1].text_input("Part name", key="w_name")
-    w_qty = wc[2].number_input("Qty", value=1, min_value=1, step=1, key="w_qty")
-    w_mass = wc[3].number_input("Mass each (g)", value=0.0, step=10.0, key="w_mass")
-    w_mat = wc[4].selectbox("Material", list(project_mod.MATERIALS.keys()), key="w_mat")
-    w_src = wc[5].selectbox("Source", ["manual", "cad_estimate"], key="w_src")
-    if st.button("+ Add part", width='content'):
-        if w_name and w_mass > 0:
-            store.add_weight(project_mod.WeightItem(
-                team=w_team, name=w_name, mass_g=float(w_mass), qty=int(w_qty),
-                material=w_mat, source=w_src))
-            store.save()
-            st.rerun()
-        else:
-            st.warning("Enter a part name and a mass above zero.")
+    with st.expander("🟢 Log a part's mass", expanded=True):
+      wc = st.columns([1.2, 1.4, 0.7, 1, 1.4, 1])
+      w_team = wc[0].selectbox("Team", list(integ_mod.TEAMS.keys()),
+                               format_func=lambda k: integ_mod.TEAMS[k]["label"], key="w_team")
+      w_name = wc[1].text_input("Part name", key="w_name")
+      w_qty = wc[2].number_input("Qty", value=1, min_value=1, step=1, key="w_qty")
+      w_mass = wc[3].number_input("Mass each (g)", value=0.0, step=10.0, key="w_mass")
+      w_mat = wc[4].selectbox("Material", list(project_mod.MATERIALS.keys()), key="w_mat")
+      w_src = wc[5].selectbox("Source", ["manual", "cad_estimate"], key="w_src")
+      if st.button("+ Add part", width='content'):
+          if w_name and w_mass > 0:
+              store.add_weight(project_mod.WeightItem(
+                  team=w_team, name=w_name, mass_g=float(w_mass), qty=int(w_qty),
+                  material=w_mat, source=w_src))
+              store.save()
+              st.rerun()
+          else:
+              st.warning("Enter a part name and a mass above zero.")
 
-    if store.weights:
-        st.markdown("###### Logged parts")
-        for i, w in enumerate(store.weights):
-            cc = st.columns([2, 3, 1, 1.5, 1.5, 0.8])
-            cc[0].markdown(f"<span class='tag'>{integ_mod.TEAMS.get(w.team,{}).get('label',w.team)}</span>",
-                           unsafe_allow_html=True)
-            cc[1].write(w.name)
-            cc[2].write(f"×{w.qty}")
-            cc[3].write(uval(w.mass_g, "g_mass"))
-            cc[4].write("= " + uval(w.total_g/1000, "kg", fmt="{:.2f}"))
-            if cc[5].button("✕", key=f"del_{i}"):
-                store.remove_weight(i)
-                store.save()
-                st.rerun()
+      if store.weights:
+          st.markdown("###### Logged parts")
+          for i, w in enumerate(store.weights):
+              cc = st.columns([2, 3, 1, 1.5, 1.5, 0.8])
+              cc[0].markdown(f"<span class='tag'>{integ_mod.TEAMS.get(w.team,{}).get('label',w.team)}</span>",
+                             unsafe_allow_html=True)
+              cc[1].write(w.name)
+              cc[2].write(f"×{w.qty}")
+              cc[3].write(uval(w.mass_g, "g_mass"))
+              cc[4].write("= " + uval(w.total_g/1000, "kg", fmt="{:.2f}"))
+              if cc[5].button("✕", key=f"del_{i}"):
+                  store.remove_weight(i)
+                  store.save()
+                  st.rerun()
 
-    st.markdown("---")
-    st.markdown("###### Log a design decision")
-    st.markdown('<p class="hint">This is the section next year\'s team thanks you for. '
-                'Write down <i>why</i>, not just what — the reasoning is what gets lost.</p>',
-                unsafe_allow_html=True)
+      st.markdown("---")
+    with st.expander("⚙️ Log a design decision", expanded=False):
+      st.markdown('<p class="hint">This is the section next year\'s team thanks you for. '
+                  'Write down <i>why</i>, not just what — the reasoning is what gets lost.</p>',
+                  unsafe_allow_html=True)
 
-    # ---- Quick-add: one-tap templates to kill logging friction ----------
-    QUICK_TEMPLATES = {
-        "⚙ Geometry change": ("Geometry change", "changed-geometry",
-                              "Changed [what] from [old] to [new] because [reason]. "
-                              "Trade-off: [what it costs]."),
-        "🔧 Material / part choice": ("Material choice", "material",
-                              "Chose [material/part] for [component] because [reason]. "
-                              "Considered [alternative] but [why not]."),
-        "⚠ Interference found": ("Interference found", "interference",
-                              "[Part] interferes with [what] at [condition]. "
-                              "Resolved by [action] / flagged for [who]."),
-        "🧪 Test result": ("Test result", "test",
-                              "Tested [what]. Result: [outcome]. "
-                              "Means we should [implication]."),
-        "❌ Didn't work": ("Didn't work", "rejected",
-                              "Tried [approach] for [goal]. Didn't work because [reason]. "
-                              "Avoid repeating — instead [what to do]."),
-    }
-    st.markdown('<p class="hint" style="margin-bottom:.2rem;">Quick start — tap a '
-                'template, then just fill in the brackets:</p>', unsafe_allow_html=True)
-    qcols = st.columns(len(QUICK_TEMPLATES))
-    for i, (label, (title, tag, body)) in enumerate(QUICK_TEMPLATES.items()):
-        if qcols[i].button(label, key=f"qt_{i}", width='stretch'):
-            # Seed the widget keys directly, before the widgets are created below.
-            st.session_state["d_title"] = title
-            st.session_state["d_tags"] = tag
-            st.session_state["d_rationale"] = body
-            st.rerun()
+      # ---- Quick-add: one-tap templates to kill logging friction ----------
+      QUICK_TEMPLATES = {
+          "⚙ Geometry change": ("Geometry change", "changed-geometry",
+                                "Changed [what] from [old] to [new] because [reason]. "
+                                "Trade-off: [what it costs]."),
+          "🔧 Material / part choice": ("Material choice", "material",
+                                "Chose [material/part] for [component] because [reason]. "
+                                "Considered [alternative] but [why not]."),
+          "⚠ Interference found": ("Interference found", "interference",
+                                "[Part] interferes with [what] at [condition]. "
+                                "Resolved by [action] / flagged for [who]."),
+          "🧪 Test result": ("Test result", "test",
+                                "Tested [what]. Result: [outcome]. "
+                                "Means we should [implication]."),
+          "❌ Didn't work": ("Didn't work", "rejected",
+                                "Tried [approach] for [goal]. Didn't work because [reason]. "
+                                "Avoid repeating — instead [what to do]."),
+      }
+      st.markdown('<p class="hint" style="margin-bottom:.2rem;">Quick start — tap a '
+                  'template, then just fill in the brackets:</p>', unsafe_allow_html=True)
+      qcols = st.columns(len(QUICK_TEMPLATES))
+      for i, (label, (title, tag, body)) in enumerate(QUICK_TEMPLATES.items()):
+          if qcols[i].button(label, key=f"qt_{i}", width='stretch'):
+              # Seed the widget keys directly, before the widgets are created below.
+              st.session_state["d_title"] = title
+              st.session_state["d_tags"] = tag
+              st.session_state["d_rationale"] = body
+              st.rerun()
 
-    dc = st.columns([1.2, 2, 1.2])
-    d_team = dc[0].selectbox("Team", list(integ_mod.TEAMS.keys()),
-                             format_func=lambda k: integ_mod.TEAMS[k]["label"], key="d_team")
-    d_title = dc[1].text_input("Decision", key="d_title")
-    d_author = dc[2].text_input("Author", key="d_author")
-    d_rationale = st.text_area("Rationale — why this choice, what were the trade-offs",
-                               key="d_rationale", height=90)
-    tc = st.columns([1.4, 1.4])
-    d_part = tc[0].text_input("Part / system (e.g. front upright, radiator)", key="d_part",
-                              placeholder="what this decision is about")
-    d_tags = tc[1].text_input("Tags (comma-separated)", key="d_tags",
-                              placeholder="roll-centre, front, packaging…")
-    if st.button("+ Log decision"):
-        if d_title and d_rationale:
-            store.add_decision(project_mod.Decision(
-                team=d_team, title=d_title, rationale=d_rationale, author=d_author,
-                tags=d_tags, part=d_part))
-            store.save()
-            for k in ("d_title", "d_tags", "d_rationale", "d_part"):
-                st.session_state.pop(k, None)
-            st.rerun()
-        else:
-            st.warning("Enter a decision title and rationale.")
+      dc = st.columns([1.2, 2, 1.2])
+      d_team = dc[0].selectbox("Team", list(integ_mod.TEAMS.keys()),
+                               format_func=lambda k: integ_mod.TEAMS[k]["label"], key="d_team")
+      d_title = dc[1].text_input("Decision", key="d_title")
+      d_author = dc[2].text_input("Author", key="d_author")
+      d_rationale = st.text_area("Rationale — why this choice, what were the trade-offs",
+                                 key="d_rationale", height=90)
+      tc = st.columns([1.4, 1.4])
+      d_part = tc[0].text_input("Part / system (e.g. front upright, radiator)", key="d_part",
+                                placeholder="what this decision is about")
+      d_tags = tc[1].text_input("Tags (comma-separated)", key="d_tags",
+                                placeholder="roll-centre, front, packaging…")
+      if st.button("+ Log decision"):
+          if d_title and d_rationale:
+              store.add_decision(project_mod.Decision(
+                  team=d_team, title=d_title, rationale=d_rationale, author=d_author,
+                  tags=d_tags, part=d_part))
+              store.save()
+              for k in ("d_title", "d_tags", "d_rationale", "d_part"):
+                  st.session_state.pop(k, None)
+              st.rerun()
+          else:
+              st.warning("Enter a decision title and rationale.")
 
-    if store.decisions:
-        st.markdown("###### Search the decision log")
-        sc = st.columns([2.2, 1.2, 1.2, 1.2])
-        d_query = sc[0].text_input("Search", key="dec_search",
-                                   placeholder="search title, rationale, author, tags, part…",
+      if store.decisions:
+          st.markdown("###### Search the decision log")
+          sc = st.columns([2.2, 1.2, 1.2, 1.2])
+          d_query = sc[0].text_input("Search", key="dec_search",
+                                     placeholder="search title, rationale, author, tags, part…",
+                                     label_visibility="collapsed")
+          team_opts = ["all teams"] + list(integ_mod.TEAMS.keys())
+          d_fteam = sc[1].selectbox("Team", team_opts, key="dec_fteam",
+                                    format_func=lambda k: "All teams" if k == "all teams"
+                                    else integ_mod.TEAMS[k]["label"], label_visibility="collapsed")
+          tag_opts = ["all tags"] + store.all_decision_tags()
+          d_ftag = sc[2].selectbox("Tag", tag_opts, key="dec_ftag",
+                                   format_func=lambda k: "All tags" if k == "all tags" else k,
                                    label_visibility="collapsed")
-        team_opts = ["all teams"] + list(integ_mod.TEAMS.keys())
-        d_fteam = sc[1].selectbox("Team", team_opts, key="dec_fteam",
-                                  format_func=lambda k: "All teams" if k == "all teams"
-                                  else integ_mod.TEAMS[k]["label"], label_visibility="collapsed")
-        tag_opts = ["all tags"] + store.all_decision_tags()
-        d_ftag = sc[2].selectbox("Tag", tag_opts, key="dec_ftag",
-                                 format_func=lambda k: "All tags" if k == "all tags" else k,
-                                 label_visibility="collapsed")
-        part_opts = ["all parts"] + store.all_decision_parts()
-        d_fpart = sc[3].selectbox("Part", part_opts, key="dec_fpart",
-                                  format_func=lambda k: "All parts" if k == "all parts" else k,
-                                  label_visibility="collapsed")
+          part_opts = ["all parts"] + store.all_decision_parts()
+          d_fpart = sc[3].selectbox("Part", part_opts, key="dec_fpart",
+                                    format_func=lambda k: "All parts" if k == "all parts" else k,
+                                    label_visibility="collapsed")
 
-        results = store.search_decisions(
-            query=d_query,
-            team=None if d_fteam == "all teams" else d_fteam,
-            tag=None if d_ftag == "all tags" else d_ftag,
-            part=None if d_fpart == "all parts" else d_fpart)
+          results = store.search_decisions(
+              query=d_query,
+              team=None if d_fteam == "all teams" else d_fteam,
+              tag=None if d_ftag == "all tags" else d_ftag,
+              part=None if d_fpart == "all parts" else d_fpart)
 
-        st.markdown(f"<p class='hint'>{len(results)} of {len(store.decisions)} "
-                    f"decisions</p>", unsafe_allow_html=True)
+          st.markdown(f"<p class='hint'>{len(results)} of {len(store.decisions)} "
+                      f"decisions</p>", unsafe_allow_html=True)
 
-        for d in results:
-            meta = f"{integ_mod.TEAMS.get(d.team,{}).get('label',d.team)} · {d.date}"
-            if d.author:
-                meta += f" · {d.author}"
-            dpart = getattr(d, "part", "") or ""
-            if dpart:
-                meta += f" · ⛭ {dpart}"
-            auto = "<span class='tag good' style='margin-left:6px;'>auto-captured</span>" \
-                if "auto" in (d.tags or "") else ""
-            # render user tags as chips (excluding the internal auto-captured marker)
-            chips = ""
-            for t in (d.tags or "").split(","):
-                t = t.strip()
-                if t and t != "auto-captured":
-                    chips += f"<span class='tag' style='margin-right:4px;'>{t}</span>"
-            chip_row = f"<div style='margin-top:.3rem;'>{chips}</div>" if chips else ""
-            st.markdown(f"<div class='card' style='margin:.3rem 0;'>"
-                        f"<b>{d.title}</b>{auto}<br><span class='hint'>{meta}</span><br>"
-                        f"<span style='font-size:.9rem;'>{d.rationale}</span>{chip_row}</div>",
-                        unsafe_allow_html=True)
-        if not results:
-            st.markdown("<p class='hint'>No decisions match — try a broader search or "
-                        "clear the filters.</p>", unsafe_allow_html=True)
+          for d in results:
+              meta = f"{integ_mod.TEAMS.get(d.team,{}).get('label',d.team)} · {d.date}"
+              if d.author:
+                  meta += f" · {d.author}"
+              dpart = getattr(d, "part", "") or ""
+              if dpart:
+                  meta += f" · ⛭ {dpart}"
+              auto = "<span class='tag good' style='margin-left:6px;'>auto-captured</span>" \
+                  if "auto" in (d.tags or "") else ""
+              # render user tags as chips (excluding the internal auto-captured marker)
+              chips = ""
+              for t in (d.tags or "").split(","):
+                  t = t.strip()
+                  if t and t != "auto-captured":
+                      chips += f"<span class='tag' style='margin-right:4px;'>{t}</span>"
+              chip_row = f"<div style='margin-top:.3rem;'>{chips}</div>" if chips else ""
+              st.markdown(f"<div class='card' style='margin:.3rem 0;'>"
+                          f"<b>{d.title}</b>{auto}<br><span class='hint'>{meta}</span><br>"
+                          f"<span style='font-size:.9rem;'>{d.rationale}</span>{chip_row}</div>",
+                          unsafe_allow_html=True)
+          if not results:
+              st.markdown("<p class='hint'>No decisions match — try a broader search or "
+                          "clear the filters.</p>", unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.markdown("###### Export handover report")
-    # Re-derive the static state locally so this export never depends on a module
-    # variable that another tab may have shadowed; read every field defensively so
-    # an exotic topology or an unconverged solve degrades gracefully instead of
-    # taking down the whole app.
-    try:
-        _s_h = kin.static
-    except Exception:
-        _s_h = None
+      st.markdown("---")
+    with st.expander("⚙️ Export handover report", expanded=False):
+      # Re-derive the static state locally so this export never depends on a module
+      # variable that another tab may have shadowed; read every field defensively so
+      # an exotic topology or an unconverged solve degrades gracefully instead of
+      # taking down the whole app.
+      try:
+          _s_h = kin.static
+      except Exception:
+          _s_h = None
 
-    def _gf(obj, attr, default=0.0):
-        try:
-            v = getattr(obj, attr, default)
-            return float(v) if v is not None else default
-        except Exception:
-            return default
+      def _gf(obj, attr, default=0.0):
+          try:
+              v = getattr(obj, attr, default)
+              return float(v) if v is not None else default
+          except Exception:
+              return default
 
-    geo = {
-        "static_camber_deg": _gf(_s_h, "camber"),
-        "static_toe_deg": _gf(_s_h, "toe"),
-        "caster_deg": _gf(_s_h, "caster"),
-        "kpi_deg": _gf(_s_h, "kpi"),
-        "scrub_radius_mm": _gf(_s_h, "scrub_radius"),
-        "roll_centre_front_mm": mid.get("rc_front", 0.0) if isinstance(mid, dict) else 0.0,
-        "roll_centre_rear_mm": mid.get("rc_rear", 0.0) if isinstance(mid, dict) else 0.0,
-        "max_lateral_g": (veh.max_lateral_g() if hasattr(veh, "max_lateral_g") else 0.0),
-    }
-    md = project_mod.build_handover_markdown(store, geometry=geo)
-    ec = st.columns(3)
-    ec[0].download_button("⬇ Handover (.md)", md, file_name="elbee_handover.md",
-                          mime="text/markdown", width='stretch')
-    ec[1].download_button("⬇ Project data (.json)", store.as_json(),
-                          file_name="project.json", mime="application/json",
-                          width='stretch')
-    try:
-        pdf_path = os.path.join(tempfile.gettempdir(), "elbee_handover.pdf")
-        project_mod.render_pdf(md, pdf_path)
-        with open(pdf_path, "rb") as f:
-            ec[2].download_button("⬇ Handover (.pdf)", f.read(),
-                                  file_name="elbee_handover.pdf",
-                                  mime="application/pdf", width='stretch')
-    except Exception as e:
-        ec[2].markdown(f"<p class='hint'>PDF unavailable: {e}</p>", unsafe_allow_html=True)
+      geo = {
+          "static_camber_deg": _gf(_s_h, "camber"),
+          "static_toe_deg": _gf(_s_h, "toe"),
+          "caster_deg": _gf(_s_h, "caster"),
+          "kpi_deg": _gf(_s_h, "kpi"),
+          "scrub_radius_mm": _gf(_s_h, "scrub_radius"),
+          "roll_centre_front_mm": mid.get("rc_front", 0.0) if isinstance(mid, dict) else 0.0,
+          "roll_centre_rear_mm": mid.get("rc_rear", 0.0) if isinstance(mid, dict) else 0.0,
+          "max_lateral_g": (veh.max_lateral_g() if hasattr(veh, "max_lateral_g") else 0.0),
+      }
+      md = project_mod.build_handover_markdown(store, geometry=geo)
+      ec = st.columns(3)
+      ec[0].download_button("⬇ Handover (.md)", md, file_name="elbee_handover.md",
+                            mime="text/markdown", width='stretch')
+      ec[1].download_button("⬇ Project data (.json)", store.as_json(),
+                            file_name="project.json", mime="application/json",
+                            width='stretch')
+      try:
+          pdf_path = os.path.join(tempfile.gettempdir(), "elbee_handover.pdf")
+          project_mod.render_pdf(md, pdf_path)
+          with open(pdf_path, "rb") as f:
+              ec[2].download_button("⬇ Handover (.pdf)", f.read(),
+                                    file_name="elbee_handover.pdf",
+                                    mime="application/pdf", width='stretch')
+      except Exception as e:
+          ec[2].markdown(f"<p class='hint'>PDF unavailable: {e}</p>", unsafe_allow_html=True)
 
 # ----------------------------- TAB 8 --------------------------------------- #
 with tab8:
@@ -14219,140 +14219,140 @@ with tab8:
         st.markdown(f"<div style='margin:.3rem 0 .6rem;'>{chips}</div>",
                     unsafe_allow_html=True)
 
-    st.markdown("###### Post a note")
-    pc = st.columns([1.2, 1.2, 1.2])
-    n_from = pc[0].selectbox("From", team_keys,
-                             format_func=lambda k: integ_mod.TEAMS[k]["label"], key="n_from")
-    n_to = pc[1].selectbox("To", ["all"] + team_keys,
-                           format_func=lambda k: "All teams" if k == "all"
-                           else integ_mod.TEAMS[k]["label"], key="n_to")
-    n_author = pc[2].text_input("Your name", key="n_author")
-    n_msg = st.text_area("Note", key="n_msg", height=80,
-                         placeholder="e.g. Upright moved 8 mm inboard — recheck caliper clearance")
-    fc = st.columns([1, 1, 3])
-    n_req = fc[0].checkbox("Requests action", key="n_req")
-    n_urg = fc[1].checkbox("Urgent", key="n_urg")
-    if st.button("Post note", key="n_post"):
-        if n_msg.strip():
-            _new_note = project_mod.Note(
-                from_team=n_from, to_team=n_to, message=n_msg.strip(),
-                author=n_author, is_request=n_req, urgent=n_urg)
-            nstore.add_note(_new_note)
-            _ok = nstore.save()
-            # Remember this id as ours so the poller doesn't toast us our own
-            # note, and mark it seen. Everyone ELSE's session will pick it up
-            # off disk on their next poll (within NOTE_POLL_SECONDS) and toast.
-            st.session_state.setdefault("_my_posted_note_ids", set()).add(_new_note.id)
-            st.session_state.setdefault("_notes_seen_ids", set()).add(_new_note.id)
-            _recipients = ("all teams" if n_to == "all"
-                           else integ_mod.TEAMS.get(n_to, {}).get("label", n_to))
-            _shared = type(nstore.backend).__name__ == "SupabaseBackend"
-            if _ok and _shared:
-                # Genuinely delivered: written to the shared store every other
-                # session polls, so their poller will toast them within
-                # NOTE_POLL_SECONDS. This is the real "it reached other users".
-                st.session_state["_last_post_confirm"] = (
-                    f"✅ Posted to shared storage — {_recipients} will be "
-                    f"notified within {NOTE_POLL_SECONDS}s, and you'll see "
-                    "“Seen by” below once they open this tab.")
-                st.toast(f"Delivered — {_recipients} will be notified.", icon="✅")
-            elif _ok and not _shared:
-                # Saved, but only to local/ephemeral storage — on Streamlit Cloud
-                # other users run a different process and will NEVER see this.
-                # Do not pretend it was delivered.
-                st.session_state["_last_post_confirm"] = (
-                    "⚠ Saved to LOCAL storage only — other leads will NOT see "
-                    "this note. Supabase isn't the active backend, so notes "
-                    "don't sync across users on Streamlit Cloud.")
-                st.warning(st.session_state["_last_post_confirm"])
-            else:
-                st.session_state["_last_post_confirm"] = (
-                    "⚠ Note could NOT be written to shared storage, so other "
-                    f"leads won't be notified. ({getattr(nstore, 'save_error', 'unknown error')}) "
-                    "Check the Supabase config so notes sync across users.")
-                st.warning(st.session_state["_last_post_confirm"])
-            st.rerun()
-        else:
-            st.warning("Write a note before posting.")
+    with st.expander("🟢 Post a note", expanded=True):
+      pc = st.columns([1.2, 1.2, 1.2])
+      n_from = pc[0].selectbox("From", team_keys,
+                               format_func=lambda k: integ_mod.TEAMS[k]["label"], key="n_from")
+      n_to = pc[1].selectbox("To", ["all"] + team_keys,
+                             format_func=lambda k: "All teams" if k == "all"
+                             else integ_mod.TEAMS[k]["label"], key="n_to")
+      n_author = pc[2].text_input("Your name", key="n_author")
+      n_msg = st.text_area("Note", key="n_msg", height=80,
+                           placeholder="e.g. Upright moved 8 mm inboard — recheck caliper clearance")
+      fc = st.columns([1, 1, 3])
+      n_req = fc[0].checkbox("Requests action", key="n_req")
+      n_urg = fc[1].checkbox("Urgent", key="n_urg")
+      if st.button("Post note", key="n_post"):
+          if n_msg.strip():
+              _new_note = project_mod.Note(
+                  from_team=n_from, to_team=n_to, message=n_msg.strip(),
+                  author=n_author, is_request=n_req, urgent=n_urg)
+              nstore.add_note(_new_note)
+              _ok = nstore.save()
+              # Remember this id as ours so the poller doesn't toast us our own
+              # note, and mark it seen. Everyone ELSE's session will pick it up
+              # off disk on their next poll (within NOTE_POLL_SECONDS) and toast.
+              st.session_state.setdefault("_my_posted_note_ids", set()).add(_new_note.id)
+              st.session_state.setdefault("_notes_seen_ids", set()).add(_new_note.id)
+              _recipients = ("all teams" if n_to == "all"
+                             else integ_mod.TEAMS.get(n_to, {}).get("label", n_to))
+              _shared = type(nstore.backend).__name__ == "SupabaseBackend"
+              if _ok and _shared:
+                  # Genuinely delivered: written to the shared store every other
+                  # session polls, so their poller will toast them within
+                  # NOTE_POLL_SECONDS. This is the real "it reached other users".
+                  st.session_state["_last_post_confirm"] = (
+                      f"✅ Posted to shared storage — {_recipients} will be "
+                      f"notified within {NOTE_POLL_SECONDS}s, and you'll see "
+                      "“Seen by” below once they open this tab.")
+                  st.toast(f"Delivered — {_recipients} will be notified.", icon="✅")
+              elif _ok and not _shared:
+                  # Saved, but only to local/ephemeral storage — on Streamlit Cloud
+                  # other users run a different process and will NEVER see this.
+                  # Do not pretend it was delivered.
+                  st.session_state["_last_post_confirm"] = (
+                      "⚠ Saved to LOCAL storage only — other leads will NOT see "
+                      "this note. Supabase isn't the active backend, so notes "
+                      "don't sync across users on Streamlit Cloud.")
+                  st.warning(st.session_state["_last_post_confirm"])
+              else:
+                  st.session_state["_last_post_confirm"] = (
+                      "⚠ Note could NOT be written to shared storage, so other "
+                      f"leads won't be notified. ({getattr(nstore, 'save_error', 'unknown error')}) "
+                      "Check the Supabase config so notes sync across users.")
+                  st.warning(st.session_state["_last_post_confirm"])
+              st.rerun()
+          else:
+              st.warning("Write a note before posting.")
 
-    # Persisted delivery confirmation from the last post (survives the st.rerun
-    # above, which a transient st.warning would not). Shown until the next post.
-    _confirm = st.session_state.get("_last_post_confirm")
-    if _confirm:
-        if _confirm.startswith("✅"):
-            st.success(_confirm)
-        else:
-            st.warning(_confirm)
+      # Persisted delivery confirmation from the last post (survives the st.rerun
+      # above, which a transient st.warning would not). Shown until the next post.
+      _confirm = st.session_state.get("_last_post_confirm")
+      if _confirm:
+          if _confirm.startswith("✅"):
+              st.success(_confirm)
+          else:
+              st.warning(_confirm)
 
-    st.markdown("---")
-    fcol1, fcol2 = st.columns([1.5, 3])
-    view_team = fcol1.selectbox("Show notes for", ["all teams"] + team_keys,
-                                format_func=lambda k: "All notes" if k == "all teams"
-                                else integ_mod.TEAMS[k]["label"], key="n_view")
-    show_resolved = fcol2.checkbox("Show resolved", value=False, key="n_showres")
+      st.markdown("---")
+      fcol1, fcol2 = st.columns([1.5, 3])
+      view_team = fcol1.selectbox("Show notes for", ["all teams"] + team_keys,
+                                  format_func=lambda k: "All notes" if k == "all teams"
+                                  else integ_mod.TEAMS[k]["label"], key="n_view")
+      show_resolved = fcol2.checkbox("Show resolved", value=False, key="n_showres")
 
-    if view_team == "all teams":
-        notes = sorted(nstore.notes, key=lambda n: n.ts, reverse=True)
-    else:
-        notes = nstore.notes_for(view_team)
-    if not show_resolved:
-        notes = [n for n in notes if n.status == "open"]
+      if view_team == "all teams":
+          notes = sorted(nstore.notes, key=lambda n: n.ts, reverse=True)
+      else:
+          notes = nstore.notes_for(view_team)
+      if not show_resolved:
+          notes = [n for n in notes if n.status == "open"]
 
-    if not notes:
-        st.markdown('<p class="hint">No notes yet. When a check in TEAM FIT or '
-                    'a suspension change affects another team, post a note here so '
-                    'their lead sees it the next time they open the tool.</p>',
-                    unsafe_allow_html=True)
-    else:
-        for n in notes:
-            fclr = integ_mod.TEAMS.get(n.from_team, {}).get("color", "#888")
-            tclr = integ_mod.TEAMS.get(n.to_team, {}).get("color", "#888") \
-                if n.to_team != "all" else "#8d99a6"
-            to_label = "All teams" if n.to_team == "all" \
-                else integ_mod.TEAMS.get(n.to_team, {}).get("label", n.to_team)
-            from_label = integ_mod.TEAMS.get(n.from_team, {}).get("label", n.from_team)
-            badges = ""
-            if n.urgent:
-                badges += "<span class='tag bad'>urgent</span> "
-            if n.is_request:
-                badges += "<span class='tag warn'>action requested</span> "
-            if n.status == "resolved":
-                badges += "<span class='tag good'>resolved</span> "
-            meta = f"{from_label} → {to_label} · {n.ts.replace('T',' ')[:16]}"
-            if n.author:
-                meta += f" · {n.author}"
-            # Read-receipt line: who has opened the tab and seen this note. This
-            # is the concrete signal that a posted note actually reached other
-            # leads — not just that it saved. The author is excluded by
-            # mark_note_seen, so this only ever shows *other* people.
-            _seen = getattr(n, "seen_by", {}) or {}
-            if _seen:
-                _names = sorted(_seen.keys())
-                _shown = ", ".join(_names[:4])
-                if len(_names) > 4:
-                    _shown += f" +{len(_names) - 4} more"
-                seen_line = (f"<br><span class='tag good' style='margin-top:.25rem;"
-                             f"display:inline-block;'>✓ Seen by {_shown}</span>")
-            else:
-                seen_line = ("<br><span class='hint' style='font-size:.8rem;'>"
-                             "○ Not yet opened by anyone else</span>")
-            st.markdown(
-                f"<div class='card' style='margin:.3rem 0; border-left:3px solid {fclr};'>"
-                f"<div style='margin-bottom:.2rem;'>{badges}</div>"
-                f"<span style='font-size:.95rem;'>{n.message}</span><br>"
-                f"<span class='hint'>{meta}</span>{seen_line}</div>",
-                unsafe_allow_html=True)
-            bc = st.columns([1, 6])
-            if n.status == "open":
-                if bc[0].button("Mark resolved", key=f"res_{n.id}"):
-                    nstore.resolve_note(n.id)
-                    nstore.save()
-                    st.rerun()
-            else:
-                if bc[0].button("Reopen", key=f"reo_{n.id}"):
-                    nstore.reopen_note(n.id)
-                    nstore.save()
-                    st.rerun()
+      if not notes:
+          st.markdown('<p class="hint">No notes yet. When a check in TEAM FIT or '
+                      'a suspension change affects another team, post a note here so '
+                      'their lead sees it the next time they open the tool.</p>',
+                      unsafe_allow_html=True)
+      else:
+          for n in notes:
+              fclr = integ_mod.TEAMS.get(n.from_team, {}).get("color", "#888")
+              tclr = integ_mod.TEAMS.get(n.to_team, {}).get("color", "#888") \
+                  if n.to_team != "all" else "#8d99a6"
+              to_label = "All teams" if n.to_team == "all" \
+                  else integ_mod.TEAMS.get(n.to_team, {}).get("label", n.to_team)
+              from_label = integ_mod.TEAMS.get(n.from_team, {}).get("label", n.from_team)
+              badges = ""
+              if n.urgent:
+                  badges += "<span class='tag bad'>urgent</span> "
+              if n.is_request:
+                  badges += "<span class='tag warn'>action requested</span> "
+              if n.status == "resolved":
+                  badges += "<span class='tag good'>resolved</span> "
+              meta = f"{from_label} → {to_label} · {n.ts.replace('T',' ')[:16]}"
+              if n.author:
+                  meta += f" · {n.author}"
+              # Read-receipt line: who has opened the tab and seen this note. This
+              # is the concrete signal that a posted note actually reached other
+              # leads — not just that it saved. The author is excluded by
+              # mark_note_seen, so this only ever shows *other* people.
+              _seen = getattr(n, "seen_by", {}) or {}
+              if _seen:
+                  _names = sorted(_seen.keys())
+                  _shown = ", ".join(_names[:4])
+                  if len(_names) > 4:
+                      _shown += f" +{len(_names) - 4} more"
+                  seen_line = (f"<br><span class='tag good' style='margin-top:.25rem;"
+                               f"display:inline-block;'>✓ Seen by {_shown}</span>")
+              else:
+                  seen_line = ("<br><span class='hint' style='font-size:.8rem;'>"
+                               "○ Not yet opened by anyone else</span>")
+              st.markdown(
+                  f"<div class='card' style='margin:.3rem 0; border-left:3px solid {fclr};'>"
+                  f"<div style='margin-bottom:.2rem;'>{badges}</div>"
+                  f"<span style='font-size:.95rem;'>{n.message}</span><br>"
+                  f"<span class='hint'>{meta}</span>{seen_line}</div>",
+                  unsafe_allow_html=True)
+              bc = st.columns([1, 6])
+              if n.status == "open":
+                  if bc[0].button("Mark resolved", key=f"res_{n.id}"):
+                      nstore.resolve_note(n.id)
+                      nstore.save()
+                      st.rerun()
+              else:
+                  if bc[0].button("Reopen", key=f"reo_{n.id}"):
+                      nstore.reopen_note(n.id)
+                      nstore.save()
+                      st.rerun()
 
 # ----------------------------- TAB 9 --------------------------------------- #
 # TIRE & GRIP — the competitive core. You get one set of tires; the edge is
@@ -14414,401 +14414,401 @@ with tab9:
               'with your static camber and camber-gain.</p>', unsafe_allow_html=True)
 
   st.markdown("---")
-  st.markdown("###### Load YOUR fitted tire (from TTC data)")
-  st.markdown('<p class="hint">Two ways in: upload an already-fitted '
-              '<code>my_tire.json</code> below, or drop a raw '
-              '<code>.mat</code>/<code>.csv</code> cornering file in the '
-              '<b>"Fit from raw TTC data"</b> section beneath and let the app fit it '
-              'for you. (The JSON is what <code>python process_ttc.py your_cornering.mat '
-              'my_tire.json</code> produces — the in-app fitter runs the same chain.) '
-              'Either way it loads into the live engine immediately. '
-              '<b>Both are TTC-derived — keep them out of git.</b></p>',
-              unsafe_allow_html=True)
-  up = st.file_uploader("Fitted tire JSON", type=["json"], key="tire_json")
-  lc1, lc2 = st.columns([1, 1])
-  if up is not None:
-      try:
-          import json as _json
-          d = _json.load(up)
-          new_coeffs = d["coeffs"]
-          new_fnom = float(d.get("FNOMIN", 1100.0))
-          # validate it builds
-          _t = tire_mod.PacejkaLateral(coeffs=new_coeffs, FNOMIN=new_fnom)
-          _t.mu_peak(new_fnom)
-          if lc1.button("✓ Use this tire", width='stretch'):
-              st.session_state.tire_coeffs = dict(new_coeffs)
-              st.session_state.tire_fnomin = new_fnom
-              st.session_state.tire_source = f"TTC-fitted ({up.name})"
-              st.session_state.tire_is_default = False
-              log_decision_now("suspension", f"Loaded fitted tire {up.name}",
-                               "Grip/balance now run on measured TTC tire data.")
-              st.rerun()
-      except Exception as e:
-          st.markdown(f"<p class='hint'>Couldn't read that tire file: {e}</p>",
-                      unsafe_allow_html=True)
-  if not _is_default:
-      if lc2.button("↺ Revert to generic default", width='stretch'):
-          dt = tire_mod.default_tire()
-          st.session_state.tire_coeffs = dict(dt.coeffs)
-          st.session_state.tire_fnomin = dt.FNOMIN
-          st.session_state.tire_source = "Generic FSAE default (not your tire)"
-          st.session_state.tire_is_default = True
-          st.rerun()
+  with st.expander("🟢 Load YOUR fitted tire (from TTC data)", expanded=True):
+    st.markdown('<p class="hint">Two ways in: upload an already-fitted '
+                '<code>my_tire.json</code> below, or drop a raw '
+                '<code>.mat</code>/<code>.csv</code> cornering file in the '
+                '<b>"Fit from raw TTC data"</b> section beneath and let the app fit it '
+                'for you. (The JSON is what <code>python process_ttc.py your_cornering.mat '
+                'my_tire.json</code> produces — the in-app fitter runs the same chain.) '
+                'Either way it loads into the live engine immediately. '
+                '<b>Both are TTC-derived — keep them out of git.</b></p>',
+                unsafe_allow_html=True)
+    up = st.file_uploader("Fitted tire JSON", type=["json"], key="tire_json")
+    lc1, lc2 = st.columns([1, 1])
+    if up is not None:
+        try:
+            import json as _json
+            d = _json.load(up)
+            new_coeffs = d["coeffs"]
+            new_fnom = float(d.get("FNOMIN", 1100.0))
+            # validate it builds
+            _t = tire_mod.PacejkaLateral(coeffs=new_coeffs, FNOMIN=new_fnom)
+            _t.mu_peak(new_fnom)
+            if lc1.button("✓ Use this tire", width='stretch'):
+                st.session_state.tire_coeffs = dict(new_coeffs)
+                st.session_state.tire_fnomin = new_fnom
+                st.session_state.tire_source = f"TTC-fitted ({up.name})"
+                st.session_state.tire_is_default = False
+                log_decision_now("suspension", f"Loaded fitted tire {up.name}",
+                                 "Grip/balance now run on measured TTC tire data.")
+                st.rerun()
+        except Exception as e:
+            st.markdown(f"<p class='hint'>Couldn't read that tire file: {e}</p>",
+                        unsafe_allow_html=True)
+    if not _is_default:
+        if lc2.button("↺ Revert to generic default", width='stretch'):
+            dt = tire_mod.default_tire()
+            st.session_state.tire_coeffs = dict(dt.coeffs)
+            st.session_state.tire_fnomin = dt.FNOMIN
+            st.session_state.tire_source = "Generic FSAE default (not your tire)"
+            st.session_state.tire_is_default = True
+            st.rerun()
 
-  st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
-              'The generic default is hand-built to behave sensibly (load sensitivity, '
-              'a camber optimum) but it is <b>not your tire</b> — use it for relative '
-              'comparisons until you fit yours. Absolute grip numbers only become '
-              'trustworthy once the tire above says "TTC-fitted".</p>',
-              unsafe_allow_html=True)
+    st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
+                'The generic default is hand-built to behave sensibly (load sensitivity, '
+                'a camber optimum) but it is <b>not your tire</b> — use it for relative '
+                'comparisons until you fit yours. Absolute grip numbers only become '
+                'trustworthy once the tire above says "TTC-fitted".</p>',
+                unsafe_allow_html=True)
 
-  # ---- Fit straight from RAW TTC data (.mat / .csv) in-app -------------- #
-  # Same fit chain as process_ttc.py, but no terminal round-trip: drop the raw
-  # cornering file here, the app cleans it, fits the MF5.2 lateral model, and
-  # lets you apply it live and/or download the private JSON to keep locally.
-  with st.expander("Fit from raw TTC data (.mat / .csv) — no terminal needed",
-                   expanded=False):
-      st.markdown(
-          '<p class="hint">Upload a raw <b>cornering</b> file straight from the rig. '
-          'Needs lateral force, vertical load and slip angle — channel names <code>FY '
-          '/ FZ / SA</code> (camber <code>IA</code> optional). For CSV, the first row '
-          'must be the channel headers. The app trims warmup, drops airborne samples, '
-          'and fits a full Magic Formula here. '
-          '<b>The fit is TTC-derived — download it and keep it out of git.</b></p>',
-          unsafe_allow_html=True)
+    # ---- Fit straight from RAW TTC data (.mat / .csv) in-app -------------- #
+    # Same fit chain as process_ttc.py, but no terminal round-trip: drop the raw
+    # cornering file here, the app cleans it, fits the MF5.2 lateral model, and
+    # lets you apply it live and/or download the private JSON to keep locally.
+    with st.expander("Fit from raw TTC data (.mat / .csv) — no terminal needed",
+                     expanded=False):
+        st.markdown(
+            '<p class="hint">Upload a raw <b>cornering</b> file straight from the rig. '
+            'Needs lateral force, vertical load and slip angle — channel names <code>FY '
+            '/ FZ / SA</code> (camber <code>IA</code> optional). For CSV, the first row '
+            'must be the channel headers. The app trims warmup, drops airborne samples, '
+            'and fits a full Magic Formula here. '
+            '<b>The fit is TTC-derived — download it and keep it out of git.</b></p>',
+            unsafe_allow_html=True)
 
-      raw_up = st.file_uploader("Raw TTC cornering file",
-                                type=["mat", "csv"], key="tire_raw")
+        raw_up = st.file_uploader("Raw TTC cornering file",
+                                  type=["mat", "csv"], key="tire_raw")
 
-      # Channel-name aliases, matching process_ttc.py so .mat files behave the same.
-      _ALIASES = {
-          "FY": ["FY", "Fy", "fy"], "FZ": ["FZ", "Fz", "fz"],
-          "SA": ["SA", "Sa", "sa", "slip_angle", "SLIP_ANGLE"],
-          "IA": ["IA", "Ia", "ia", "camber", "CAMBER", "inclination"],
-          "P":  ["P", "PRESS", "pressure"], "V": ["V", "speed"],
-          "FX": ["FX", "Fx", "fx"],
-      }
+        # Channel-name aliases, matching process_ttc.py so .mat files behave the same.
+        _ALIASES = {
+            "FY": ["FY", "Fy", "fy"], "FZ": ["FZ", "Fz", "fz"],
+            "SA": ["SA", "Sa", "sa", "slip_angle", "SLIP_ANGLE"],
+            "IA": ["IA", "Ia", "ia", "camber", "CAMBER", "inclination"],
+            "P":  ["P", "PRESS", "pressure"], "V": ["V", "speed"],
+            "FX": ["FX", "Fx", "fx"],
+        }
 
-      def _channels_from_mat(file_obj):
-          import scipy.io as _sio
-          raw = _sio.loadmat(file_obj)
-          raw = {k: v for k, v in raw.items() if not k.startswith("__")}
-          chans = {}
-          for canon, names in _ALIASES.items():
-              for nm in names:
-                  if nm in raw:
-                      chans[canon] = np.asarray(raw[nm], float).ravel()
-                      break
-          return chans, sorted(raw.keys())
+        def _channels_from_mat(file_obj):
+            import scipy.io as _sio
+            raw = _sio.loadmat(file_obj)
+            raw = {k: v for k, v in raw.items() if not k.startswith("__")}
+            chans = {}
+            for canon, names in _ALIASES.items():
+                for nm in names:
+                    if nm in raw:
+                        chans[canon] = np.asarray(raw[nm], float).ravel()
+                        break
+            return chans, sorted(raw.keys())
 
-      def _channels_from_csv(file_obj):
-          import pandas as _pd
-          df = _pd.read_csv(file_obj)
-          # Some TTC CSV exports carry a units row directly under the header;
-          # coerce to numeric and drop rows that won't parse.
-          df = df.apply(_pd.to_numeric, errors="coerce")
-          cols = {c.strip(): c for c in df.columns}
-          chans = {}
-          for canon, names in _ALIASES.items():
-              for nm in names:
-                  if nm in cols:
-                      chans[canon] = df[cols[nm]].to_numpy(float).ravel()
-                      break
-          return chans, list(df.columns)
+        def _channels_from_csv(file_obj):
+            import pandas as _pd
+            df = _pd.read_csv(file_obj)
+            # Some TTC CSV exports carry a units row directly under the header;
+            # coerce to numeric and drop rows that won't parse.
+            df = df.apply(_pd.to_numeric, errors="coerce")
+            cols = {c.strip(): c for c in df.columns}
+            chans = {}
+            for canon, names in _ALIASES.items():
+                for nm in names:
+                    if nm in cols:
+                        chans[canon] = df[cols[nm]].to_numpy(float).ravel()
+                        break
+            return chans, list(df.columns)
 
-      def _clean_channels(chans, drop_warmup_frac=0.05):
-          if "FZ" not in chans:
-              return chans
-          n = len(chans["FZ"])
-          start = int(n * drop_warmup_frac)
-          out = {k: v[start:] for k, v in chans.items()}
-          fz_mag = np.abs(out["FZ"])
-          good = np.isfinite(fz_mag) & (fz_mag > 100.0)
-          m = len(good)
-          for k in list(out):
-              v = out[k]
-              if len(v) == m:
-                  out[k] = v[good]
-          # truncate to common length (rig files can differ by a sample or two)
-          ln = min(len(v) for v in out.values()) if out else 0
-          return {k: v[:ln] for k, v in out.items()}
+        def _clean_channels(chans, drop_warmup_frac=0.05):
+            if "FZ" not in chans:
+                return chans
+            n = len(chans["FZ"])
+            start = int(n * drop_warmup_frac)
+            out = {k: v[start:] for k, v in chans.items()}
+            fz_mag = np.abs(out["FZ"])
+            good = np.isfinite(fz_mag) & (fz_mag > 100.0)
+            m = len(good)
+            for k in list(out):
+                v = out[k]
+                if len(v) == m:
+                    out[k] = v[good]
+            # truncate to common length (rig files can differ by a sample or two)
+            ln = min(len(v) for v in out.values()) if out else 0
+            return {k: v[:ln] for k, v in out.items()}
 
-      if raw_up is not None:
-          try:
-              if raw_up.name.lower().endswith(".mat"):
-                  chans, raw_keys = _channels_from_mat(raw_up)
-              else:
-                  chans, raw_keys = _channels_from_csv(raw_up)
-          except Exception as e:
-              chans, raw_keys = {}, []
-              st.markdown(f"<p class='hint'>Couldn't read that file: {e}</p>",
-                          unsafe_allow_html=True)
-
-          found = sorted(chans.keys())
-          missing = [c for c in ("FY", "FZ", "SA") if c not in chans]
-          st.markdown(
-              f"<p class='hint'>Channels found: <code>{', '.join(found) or '—'}</code>"
-              + (f" &nbsp;·&nbsp; raw columns: <code>"
-                 f"{', '.join(str(k) for k in raw_keys[:12])}</code>"
-                 if raw_keys else "")
-              + "</p>", unsafe_allow_html=True)
-
-          if missing:
-              st.warning(
-                  "⚠ Missing essential channel(s) " + ", ".join(missing)
-                  + ". A lateral fit needs FY, FZ and SA. If this is a drive/brake "
-                  "file, load a cornering sweep instead; if the names differ, rename "
-                  "the columns to FY / FZ / SA (and optionally IA).")
-          else:
-              cln = _clean_channels(chans)
-              npts = len(cln.get("FZ", []))
-              st.markdown(f"<p class='hint'>Usable samples after cleanup: "
-                          f"<b>{npts}</b></p>", unsafe_allow_html=True)
-              if st.button("⚙ Fit Magic Formula to this data",
-                           key="tire_raw_fit_btn"):
-                  with st.spinner("Fitting MF5.2 lateral model…"):
-                      try:
-                          from suspension.tirefit import fit_from_ttc_channels
-                          res = fit_from_ttc_channels(cln, verbose=False)
-                          st.session_state["_tire_raw_fit"] = res
-                          st.session_state["_tire_raw_name"] = raw_up.name
-                      except Exception as e:
-                          st.session_state.pop("_tire_raw_fit", None)
-                          st.error(f"Fit failed: {e}")
-
-      # Show the fit result + apply / download controls (persists across reruns).
-      _fit = st.session_state.get("_tire_raw_fit")
-      if _fit is not None:
-          r2 = float(_fit.get("r2", float("nan")))
-          _q = "good" if r2 >= 0.9 else "warn"
-          fcols = st.columns(3)
-          fcols[0].markdown(metric("Fit R²", f"{r2:.3f}", "", _q),
+        if raw_up is not None:
+            try:
+                if raw_up.name.lower().endswith(".mat"):
+                    chans, raw_keys = _channels_from_mat(raw_up)
+                else:
+                    chans, raw_keys = _channels_from_csv(raw_up)
+            except Exception as e:
+                chans, raw_keys = {}, []
+                st.markdown(f"<p class='hint'>Couldn't read that file: {e}</p>",
                             unsafe_allow_html=True)
-          fcols[1].markdown(metric("RMSE", f"{_fit['rmse_N']:.0f}", "N"),
-                            unsafe_allow_html=True)
-          fcols[2].markdown(metric("Points fit", f"{_fit['n']}", ""),
-                            unsafe_allow_html=True)
-          if r2 < 0.9:
-              st.markdown(
-                  '<p class="hint">R² below 0.9 — the fit is loose. Check the file is '
-                  'a clean cornering sweep with a good spread of load and slip, and '
-                  'that warmup was trimmed. A loose fit means loose grip numbers '
-                  'downstream.</p>', unsafe_allow_html=True)
 
-          import json as _json
-          _payload = _json.dumps(
-              {"coeffs": _fit["coeffs"], "FNOMIN": _fit["FNOMIN"]}, indent=2)
-          ac1, ac2 = st.columns([1, 1])
-          if ac1.button("✓ Use this fitted tire", key="tire_raw_use_btn",
-                        width='stretch'):
-              st.session_state.tire_coeffs = dict(_fit["coeffs"])
-              st.session_state.tire_fnomin = float(_fit["FNOMIN"])
-              _src = st.session_state.get("_tire_raw_name", "raw TTC")
-              st.session_state.tire_source = f"TTC-fitted (in-app: {_src})"
-              st.session_state.tire_is_default = False
-              log_decision_now("suspension",
-                               f"Fitted tire in-app from {_src}",
-                               "Grip/balance now run on a Magic Formula fitted to "
-                               "raw TTC data inside the app.")
-              st.rerun()
-          ac2.download_button(
-              "⬇ Download fitted tire JSON", data=_payload,
-              file_name="my_tire.json", mime="application/json",
-              key="tire_raw_dl_btn", width='stretch',
-              help="TTC-derived — store privately, keep it out of git.")
+            found = sorted(chans.keys())
+            missing = [c for c in ("FY", "FZ", "SA") if c not in chans]
+            st.markdown(
+                f"<p class='hint'>Channels found: <code>{', '.join(found) or '—'}</code>"
+                + (f" &nbsp;·&nbsp; raw columns: <code>"
+                   f"{', '.join(str(k) for k in raw_keys[:12])}</code>"
+                   if raw_keys else "")
+                + "</p>", unsafe_allow_html=True)
+
+            if missing:
+                st.warning(
+                    "⚠ Missing essential channel(s) " + ", ".join(missing)
+                    + ". A lateral fit needs FY, FZ and SA. If this is a drive/brake "
+                    "file, load a cornering sweep instead; if the names differ, rename "
+                    "the columns to FY / FZ / SA (and optionally IA).")
+            else:
+                cln = _clean_channels(chans)
+                npts = len(cln.get("FZ", []))
+                st.markdown(f"<p class='hint'>Usable samples after cleanup: "
+                            f"<b>{npts}</b></p>", unsafe_allow_html=True)
+                if st.button("⚙ Fit Magic Formula to this data",
+                             key="tire_raw_fit_btn"):
+                    with st.spinner("Fitting MF5.2 lateral model…"):
+                        try:
+                            from suspension.tirefit import fit_from_ttc_channels
+                            res = fit_from_ttc_channels(cln, verbose=False)
+                            st.session_state["_tire_raw_fit"] = res
+                            st.session_state["_tire_raw_name"] = raw_up.name
+                        except Exception as e:
+                            st.session_state.pop("_tire_raw_fit", None)
+                            st.error(f"Fit failed: {e}")
+
+        # Show the fit result + apply / download controls (persists across reruns).
+        _fit = st.session_state.get("_tire_raw_fit")
+        if _fit is not None:
+            r2 = float(_fit.get("r2", float("nan")))
+            _q = "good" if r2 >= 0.9 else "warn"
+            fcols = st.columns(3)
+            fcols[0].markdown(metric("Fit R²", f"{r2:.3f}", "", _q),
+                              unsafe_allow_html=True)
+            fcols[1].markdown(metric("RMSE", f"{_fit['rmse_N']:.0f}", "N"),
+                              unsafe_allow_html=True)
+            fcols[2].markdown(metric("Points fit", f"{_fit['n']}", ""),
+                              unsafe_allow_html=True)
+            if r2 < 0.9:
+                st.markdown(
+                    '<p class="hint">R² below 0.9 — the fit is loose. Check the file is '
+                    'a clean cornering sweep with a good spread of load and slip, and '
+                    'that warmup was trimmed. A loose fit means loose grip numbers '
+                    'downstream.</p>', unsafe_allow_html=True)
+
+            import json as _json
+            _payload = _json.dumps(
+                {"coeffs": _fit["coeffs"], "FNOMIN": _fit["FNOMIN"]}, indent=2)
+            ac1, ac2 = st.columns([1, 1])
+            if ac1.button("✓ Use this fitted tire", key="tire_raw_use_btn",
+                          width='stretch'):
+                st.session_state.tire_coeffs = dict(_fit["coeffs"])
+                st.session_state.tire_fnomin = float(_fit["FNOMIN"])
+                _src = st.session_state.get("_tire_raw_name", "raw TTC")
+                st.session_state.tire_source = f"TTC-fitted (in-app: {_src})"
+                st.session_state.tire_is_default = False
+                log_decision_now("suspension",
+                                 f"Fitted tire in-app from {_src}",
+                                 "Grip/balance now run on a Magic Formula fitted to "
+                                 "raw TTC data inside the app.")
+                st.rerun()
+            ac2.download_button(
+                "⬇ Download fitted tire JSON", data=_payload,
+                file_name="my_tire.json", mime="application/json",
+                key="tire_raw_dl_btn", width='stretch',
+                help="TTC-derived — store privately, keep it out of git.")
 
   # ---- Combined slip (friction ellipse) -------------------------------- #
-  st.markdown("###### Combined slip — the friction ellipse")
-  st.markdown('<p class="hint">How much lateral grip is left while you brake or put '
-              'power down. Built on the lateral tire above with friction-ellipse '
-              'coupling. <b>Uncalibrated</b> until you fit it to drive/brake TTC data '
-              '— the coupling shape is real physics; the exact exponents need your '
-              'Fx data to be quantitative.</p>', unsafe_allow_html=True)
-  try:
-      _live_tire_cs = tire_mod.PacejkaLateral(
-          coeffs=dict(st.session_state.tire_coeffs),
-          FNOMIN=st.session_state.tire_fnomin)
-      _ct = tire_mod.CombinedSlipTire(lateral=_live_tire_cs)
-      _Fz_demo = float(st.session_state.tire_fnomin)
-      fx_e, fy_e = _ct.friction_circle(_Fz_demo)
-      _uFc = units_mod.label("N")
-      figFE = go.Figure()
-      figFE.add_trace(go.Scatter(
-          x=[units_mod.from_metric(v, "N") for v in fx_e],
-          y=[units_mod.from_metric(v, "N") for v in fy_e], mode="lines",
-          line=dict(color=CYAN, width=2.5),
-          name="grip limit"))
-      figFE.update_layout(**PLOT_LAYOUT,
-                          title=f"Combined grip envelope at Fz="
-                          f"{units_mod.from_metric(_Fz_demo, 'N'):.0f} {_uFc}",
-                          xaxis_title=f"longitudinal force Fx ({_uFc})",
-                          yaxis_title=f"lateral force Fy ({_uFc})", height=340)
-      figFE.update_yaxes(scaleanchor="x", scaleratio=1)
-      st.plotly_chart(figFE, width='stretch')
-      st.markdown(f'<span class="tag warn">{_ct.status()}</span>',
-                  unsafe_allow_html=True)
-  except Exception as e:
-      st.info(f"Combined-slip preview unavailable: {e}")
+  with st.expander("⚙️ Combined slip", expanded=False):
+    st.markdown('<p class="hint">How much lateral grip is left while you brake or put '
+                'power down. Built on the lateral tire above with friction-ellipse '
+                'coupling. <b>Uncalibrated</b> until you fit it to drive/brake TTC data '
+                '— the coupling shape is real physics; the exact exponents need your '
+                'Fx data to be quantitative.</p>', unsafe_allow_html=True)
+    try:
+        _live_tire_cs = tire_mod.PacejkaLateral(
+            coeffs=dict(st.session_state.tire_coeffs),
+            FNOMIN=st.session_state.tire_fnomin)
+        _ct = tire_mod.CombinedSlipTire(lateral=_live_tire_cs)
+        _Fz_demo = float(st.session_state.tire_fnomin)
+        fx_e, fy_e = _ct.friction_circle(_Fz_demo)
+        _uFc = units_mod.label("N")
+        figFE = go.Figure()
+        figFE.add_trace(go.Scatter(
+            x=[units_mod.from_metric(v, "N") for v in fx_e],
+            y=[units_mod.from_metric(v, "N") for v in fy_e], mode="lines",
+            line=dict(color=CYAN, width=2.5),
+            name="grip limit"))
+        figFE.update_layout(**PLOT_LAYOUT,
+                            title=f"Combined grip envelope at Fz="
+                            f"{units_mod.from_metric(_Fz_demo, 'N'):.0f} {_uFc}",
+                            xaxis_title=f"longitudinal force Fx ({_uFc})",
+                            yaxis_title=f"lateral force Fy ({_uFc})", height=340)
+        figFE.update_yaxes(scaleanchor="x", scaleratio=1)
+        st.plotly_chart(figFE, width='stretch')
+        st.markdown(f'<span class="tag warn">{_ct.status()}</span>',
+                    unsafe_allow_html=True)
+    except Exception as e:
+        st.info(f"Combined-slip preview unavailable: {e}")
 
   # ---- Tire thermal channel (lumped tread/carcass/gas network) --------- #
-  st.markdown("###### Tire thermal channel — warm-up, working range & pressure")
-  st.markdown('<p class="hint">A true tire temperature cannot be computed without '
-              '<b>empirical, temperature-swept tire data</b> — so this channel is '
-              'built honestly: a 3-node lumped energy balance (tread / carcass / '
-              'inflation gas) heated by frictional sliding and rolling hysteresis, '
-              'cooled by convection to air and conduction to the track. The '
-              '<b>equations are textbook physics</b>; the masses, heat-transfer '
-              'coefficients and the grip-vs-temperature law are '
-              '<b>representative defaults, NOT your tire</b>. Read the shape — '
-              'warm-up time, the front/rear and across-width split, the pressure '
-              'rise — not the absolute degrees. Every temperature here is flagged '
-              'synthesized until you calibrate it to swept data.</p>',
-              unsafe_allow_html=True)
-  try:
-      tcol = st.columns(4)
-      _t_alpha = tcol[0].number_input("Slip angle (°)", 0.0, 12.0, value=4.0,
-                                      step=0.5, key="therm_alpha")
-      _t_fz = tcol[1].number_input("Vertical load", 200.0, 3000.0,
-                                   value=1300.0, step=50.0, key="therm_fz")
-      _t_v = tcol[2].number_input("Speed", 3.0, 45.0, value=20.0,
-                                  step=1.0, key="therm_v")
-      _t_dur = tcol[3].number_input("Run length (s)", 20.0, 600.0, value=150.0,
-                                    step=10.0, key="therm_dur")
-      tcol2 = st.columns(4)
-      _t_cam = tcol2[0].number_input("Camber (°)", 0.0, 6.0, value=1.5,
-                                     step=0.5, key="therm_cam")
-      _t_amb = tcol2[1].number_input("Ambient", -5.0, 50.0, value=25.0,
-                                     step=1.0, key="therm_amb")
-      _t_trk = tcol2[2].number_input("Track surface", 0.0, 70.0, value=34.0,
-                                     step=1.0, key="therm_trk")
-      _t_mu = tcol2[3].checkbox("Couple grip to temp (μ(T))", value=False,
-                                key="therm_mu",
-                                help="Let the modelled tread temperature scale "
-                                     "Pacejka grip. OFF by default — the μ(T) curve "
-                                     "is the most data-hungry part and is flagged "
-                                     "synthesized when on.")
+  with st.expander("⚙️ Tire thermal channel", expanded=False):
+    st.markdown('<p class="hint">A true tire temperature cannot be computed without '
+                '<b>empirical, temperature-swept tire data</b> — so this channel is '
+                'built honestly: a 3-node lumped energy balance (tread / carcass / '
+                'inflation gas) heated by frictional sliding and rolling hysteresis, '
+                'cooled by convection to air and conduction to the track. The '
+                '<b>equations are textbook physics</b>; the masses, heat-transfer '
+                'coefficients and the grip-vs-temperature law are '
+                '<b>representative defaults, NOT your tire</b>. Read the shape — '
+                'warm-up time, the front/rear and across-width split, the pressure '
+                'rise — not the absolute degrees. Every temperature here is flagged '
+                'synthesized until you calibrate it to swept data.</p>',
+                unsafe_allow_html=True)
+    try:
+        tcol = st.columns(4)
+        _t_alpha = tcol[0].number_input("Slip angle (°)", 0.0, 12.0, value=4.0,
+                                        step=0.5, key="therm_alpha")
+        _t_fz = tcol[1].number_input("Vertical load", 200.0, 3000.0,
+                                     value=1300.0, step=50.0, key="therm_fz")
+        _t_v = tcol[2].number_input("Speed", 3.0, 45.0, value=20.0,
+                                    step=1.0, key="therm_v")
+        _t_dur = tcol[3].number_input("Run length (s)", 20.0, 600.0, value=150.0,
+                                      step=10.0, key="therm_dur")
+        tcol2 = st.columns(4)
+        _t_cam = tcol2[0].number_input("Camber (°)", 0.0, 6.0, value=1.5,
+                                       step=0.5, key="therm_cam")
+        _t_amb = tcol2[1].number_input("Ambient", -5.0, 50.0, value=25.0,
+                                       step=1.0, key="therm_amb")
+        _t_trk = tcol2[2].number_input("Track surface", 0.0, 70.0, value=34.0,
+                                       step=1.0, key="therm_trk")
+        _t_mu = tcol2[3].checkbox("Couple grip to temp (μ(T))", value=False,
+                                  key="therm_mu",
+                                  help="Let the modelled tread temperature scale "
+                                       "Pacejka grip. OFF by default — the μ(T) curve "
+                                       "is the most data-hungry part and is flagged "
+                                       "synthesized when on.")
 
-      _t_cold_bar = unum(tcol[0], "Cold set pressure (bar)",
-                         6.0 / 14.503773773, 35.0 / 14.503773773,
-                         12.0 / 14.503773773, "bar", step=0.5 / 14.503773773,
-                         fmt="%.2f", key="therm_psi")
-      _t_cold_psi = _t_cold_bar * 14.503773773
+        _t_cold_bar = unum(tcol[0], "Cold set pressure (bar)",
+                           6.0 / 14.503773773, 35.0 / 14.503773773,
+                           12.0 / 14.503773773, "bar", step=0.5 / 14.503773773,
+                           fmt="%.2f", key="therm_psi")
+        _t_cold_psi = _t_cold_bar * 14.503773773
 
-      _trun = _cached_thermal_warmup(
-          coeffs=tuple(sorted(dict(st.session_state.tire_coeffs).items())),
-          fnomin=st.session_state.tire_fnomin,
-          enable_mu=bool(_t_mu),
-          cold_pa=float(_t_cold_psi) * 6894.757,
-          alpha_deg=float(_t_alpha), Fz=float(_t_fz), v_x=float(_t_v),
-          gamma_deg=float(_t_cam), ambient_c=float(_t_amb), track_c=float(_t_trk),
-          duration_s=float(_t_dur), dt=5.0e-3)
+        _trun = _cached_thermal_warmup(
+            coeffs=tuple(sorted(dict(st.session_state.tire_coeffs).items())),
+            fnomin=st.session_state.tire_fnomin,
+            enable_mu=bool(_t_mu),
+            cold_pa=float(_t_cold_psi) * 6894.757,
+            alpha_deg=float(_t_alpha), Fz=float(_t_fz), v_x=float(_t_v),
+            gamma_deg=float(_t_cam), ambient_c=float(_t_amb), track_c=float(_t_trk),
+            duration_s=float(_t_dur), dt=5.0e-3)
 
-      _mean = _trun.tread_mean_c()
-      tm_cols = st.columns(4)
-      tm_cols[0].markdown(metric("Tread (plateau)", f"{_mean[-1]:.0f}", "°C"),
-                          unsafe_allow_html=True)
-      tm_cols[1].markdown(metric("Carcass", f"{_trun.carcass_c[-1]:.0f}", "°C"),
-                          unsafe_allow_html=True)
-      tm_cols[2].markdown(metric("Hot pressure", f"{thermal_mod.psi(_trun.pressure_pa[-1]):.1f}", "psi"),
-                          unsafe_allow_html=True)
-      # time to reach 90% of the plateau rise — a "warm-up time" proxy
-      _rise = _mean - _mean[0]
-      _target = 0.9 * _rise[-1] if abs(_rise[-1]) > 1e-6 else 0.0
-      _idx = int(np.argmax(_rise >= _target)) if _target > 0 else 0
-      _warm_s = _trun.t[_idx] if _target > 0 else 0.0
-      tm_cols[3].markdown(metric("Warm-up (90%)", f"{_warm_s:.0f}", "s"),
-                          unsafe_allow_html=True)
+        _mean = _trun.tread_mean_c()
+        tm_cols = st.columns(4)
+        tm_cols[0].markdown(metric("Tread (plateau)", f"{_mean[-1]:.0f}", "°C"),
+                            unsafe_allow_html=True)
+        tm_cols[1].markdown(metric("Carcass", f"{_trun.carcass_c[-1]:.0f}", "°C"),
+                            unsafe_allow_html=True)
+        tm_cols[2].markdown(metric("Hot pressure", f"{thermal_mod.psi(_trun.pressure_pa[-1]):.1f}", "psi"),
+                            unsafe_allow_html=True)
+        # time to reach 90% of the plateau rise — a "warm-up time" proxy
+        _rise = _mean - _mean[0]
+        _target = 0.9 * _rise[-1] if abs(_rise[-1]) > 1e-6 else 0.0
+        _idx = int(np.argmax(_rise >= _target)) if _target > 0 else 0
+        _warm_s = _trun.t[_idx] if _target > 0 else 0.0
+        tm_cols[3].markdown(metric("Warm-up (90%)", f"{_warm_s:.0f}", "s"),
+                            unsafe_allow_html=True)
 
-      # temperature traces
-      _cT = lambda arr: [units_mod.from_metric(float(v), "°C") for v in arr]
-      figT = go.Figure()
-      figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_mean), mode="lines",
-                                line=dict(color=CYAN, width=3), name="tread (mean)"))
-      figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.carcass_c), mode="lines",
-                                line=dict(color=AMBER, width=2), name="carcass"))
-      figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.gas_c), mode="lines",
-                                line=dict(color=DIM, width=2, dash="dot"), name="gas"))
-      # across-width band spread (inner/mid/outer) at the plateau
-      if _trun.tread_c.shape[1] > 1:
-          figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.tread_c[:, 0]), mode="lines",
-                                    line=dict(color=CYAN, width=1, dash="dot"),
-                                    name="tread inner", opacity=0.5))
-          figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.tread_c[:, -1]), mode="lines",
-                                    line=dict(color=RED, width=1, dash="dot"),
-                                    name="tread outer", opacity=0.5))
-      figT.update_layout(**PLOT_LAYOUT, title="Tire warm-up — lumped thermal network",
-                         xaxis_title="time (s)",
-                         yaxis_title=units_mod.ulabel("temperature (°C)"),
-                         height=360)
-      st.plotly_chart(figT, width='stretch')
+        # temperature traces
+        _cT = lambda arr: [units_mod.from_metric(float(v), "°C") for v in arr]
+        figT = go.Figure()
+        figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_mean), mode="lines",
+                                  line=dict(color=CYAN, width=3), name="tread (mean)"))
+        figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.carcass_c), mode="lines",
+                                  line=dict(color=AMBER, width=2), name="carcass"))
+        figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.gas_c), mode="lines",
+                                  line=dict(color=DIM, width=2, dash="dot"), name="gas"))
+        # across-width band spread (inner/mid/outer) at the plateau
+        if _trun.tread_c.shape[1] > 1:
+            figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.tread_c[:, 0]), mode="lines",
+                                      line=dict(color=CYAN, width=1, dash="dot"),
+                                      name="tread inner", opacity=0.5))
+            figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.tread_c[:, -1]), mode="lines",
+                                      line=dict(color=RED, width=1, dash="dot"),
+                                      name="tread outer", opacity=0.5))
+        figT.update_layout(**PLOT_LAYOUT, title="Tire warm-up — lumped thermal network",
+                           xaxis_title="time (s)",
+                           yaxis_title=units_mod.ulabel("temperature (°C)"),
+                           height=360)
+        st.plotly_chart(figT, width='stretch')
 
-      if bool(_t_mu):
-          figMu = go.Figure()
-          figMu.add_trace(go.Scatter(x=_trun.t, y=_trun.mu_scale, mode="lines",
-                                     line=dict(color=RED, width=2.5)))
-          figMu.update_layout(**PLOT_LAYOUT,
-                              title="Grip multiplier μ(T) over the run "
-                                    "(SYNTHESIZED — needs swept data)",
-                              xaxis_title="time (s)",
-                              yaxis_title="grip scale vs optimum", height=260)
-          st.plotly_chart(figMu, width='stretch')
+        if bool(_t_mu):
+            figMu = go.Figure()
+            figMu.add_trace(go.Scatter(x=_trun.t, y=_trun.mu_scale, mode="lines",
+                                       line=dict(color=RED, width=2.5)))
+            figMu.update_layout(**PLOT_LAYOUT,
+                                title="Grip multiplier μ(T) over the run "
+                                      "(SYNTHESIZED — needs swept data)",
+                                xaxis_title="time (s)",
+                                yaxis_title="grip scale vs optimum", height=260)
+            st.plotly_chart(figMu, width='stretch')
 
-      st.markdown(f'<span class="tag warn">{_trun.status}</span>',
-                  unsafe_allow_html=True)
-      st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
-                  'padding-left:10px;">The across-width split (inner vs outer band) '
-                  'is the same thing a tire pyrometer reads after a run — use it to '
-                  'reason about camber, and the front/rear plateau split to reason '
-                  'about balance late in a stint. The numbers are a physically-'
-                  'shaped guess until the active tire above is calibrated to '
-                  'temperature-swept data; then set <code>ThermalParams.calibrated'
-                  '</code> and they stop being flagged.</p>',
-                  unsafe_allow_html=True)
-  except Exception as e:
-      st.info(f"Thermal channel unavailable: {e}")
+        st.markdown(f'<span class="tag warn">{_trun.status}</span>',
+                    unsafe_allow_html=True)
+        st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                    'padding-left:10px;">The across-width split (inner vs outer band) '
+                    'is the same thing a tire pyrometer reads after a run — use it to '
+                    'reason about camber, and the front/rear plateau split to reason '
+                    'about balance late in a stint. The numbers are a physically-'
+                    'shaped guess until the active tire above is calibrated to '
+                    'temperature-swept data; then set <code>ThermalParams.calibrated'
+                    '</code> and they stop being flagged.</p>',
+                    unsafe_allow_html=True)
+    except Exception as e:
+        st.info(f"Thermal channel unavailable: {e}")
 
   # ---- Damper force-velocity ------------------------------------------- #
-  st.markdown("###### Damper force–velocity (transient building block)")
-  st.markdown('<p class="hint">Real bilinear-digressive damper law. <b>Uncalibrated</b> '
-              'representative magnitudes until you load your dyno curve; the force law '
-              'and the damping-ratio diagnostic are real. This is the primitive the '
-              'transient (turn-in / pitch) model on the roadmap is built on.</p>',
-              unsafe_allow_html=True)
-  dmp_cols = st.columns(4)
-  _cbl = unum(dmp_cols[0], "Bump low (N·s/m)", 0.0, 30000.0, 6000.0, "N·s/m", step=250.0)
-  _crl = unum(dmp_cols[1], "Rebound low (N·s/m)", 0.0, 30000.0, 9000.0, "N·s/m", step=250.0)
-  _cbh = unum(dmp_cols[2], "Bump high (N·s/m)", 0.0, 15000.0, 2000.0, "N·s/m", step=100.0)
-  _crh = unum(dmp_cols[3], "Rebound high (N·s/m)", 0.0, 15000.0, 3000.0, "N·s/m", step=100.0)
-  _dc = damper_mod.DamperCurve(c_bump_low=_cbl, c_reb_low=_crl,
-                               c_bump_high=_cbh, c_reb_high=_crh)
-  _vv, _ff = _dc.curve_points(v_max=0.4)
-  figD = go.Figure()
-  figD.add_trace(go.Scatter(
-      x=[units_mod.from_metric(v, "m/s") for v in _vv],
-      y=[units_mod.from_metric(v, "N") for v in _ff], mode="lines",
-      line=dict(color=AMBER, width=2.5), name="damper"))
-  figD.update_layout(**PLOT_LAYOUT, title="Damper force vs shaft velocity",
-                     xaxis_title=units_mod.ulabel("shaft velocity (m/s)  +bump / −rebound"),
-                     yaxis_title=units_mod.ulabel("force (N)"), height=320)
-  st.plotly_chart(figD, width='stretch')
-  try:
-      _mr_demo = kin.motion_ratio() if kin.motion_ratio_is_real() else 1.0
-      _corner_m = float(st.session_state.vp.get("mass", 300)) * 0.25
-      _wr_demo = kin.wheel_rate(float(st.session_state.vp.get("spring_rate_front", 35.0))) \
-          if kin.motion_ratio_is_real() else 30.0
-      _zb = damper_mod.damping_ratio(_dc, _corner_m, _wr_demo, _mr_demo, "bump")
-      _zr = damper_mod.damping_ratio(_dc, _corner_m, _wr_demo, _mr_demo, "rebound")
-      zc = st.columns(2)
-      zc[0].markdown(metric("Damping ratio ζ (bump)", f"{_zb:.2f}", "",
-                            "good" if 0.5 <= _zb <= 0.8 else "warn"),
-                     unsafe_allow_html=True)
-      zc[1].markdown(metric("Damping ratio ζ (rebound)", f"{_zr:.2f}", "",
-                            "good" if 0.6 <= _zr <= 1.1 else "warn"),
-                     unsafe_allow_html=True)
-      st.markdown(f'<span class="tag warn">{_dc.status()}</span>',
-                  unsafe_allow_html=True)
-  except Exception as e:
-      st.info(f"Damping-ratio diagnostic unavailable: {e}")
+  with st.expander("⚙️ Damper force–velocity (transient building block)", expanded=False):
+    st.markdown('<p class="hint">Real bilinear-digressive damper law. <b>Uncalibrated</b> '
+                'representative magnitudes until you load your dyno curve; the force law '
+                'and the damping-ratio diagnostic are real. This is the primitive the '
+                'transient (turn-in / pitch) model on the roadmap is built on.</p>',
+                unsafe_allow_html=True)
+    dmp_cols = st.columns(4)
+    _cbl = unum(dmp_cols[0], "Bump low (N·s/m)", 0.0, 30000.0, 6000.0, "N·s/m", step=250.0)
+    _crl = unum(dmp_cols[1], "Rebound low (N·s/m)", 0.0, 30000.0, 9000.0, "N·s/m", step=250.0)
+    _cbh = unum(dmp_cols[2], "Bump high (N·s/m)", 0.0, 15000.0, 2000.0, "N·s/m", step=100.0)
+    _crh = unum(dmp_cols[3], "Rebound high (N·s/m)", 0.0, 15000.0, 3000.0, "N·s/m", step=100.0)
+    _dc = damper_mod.DamperCurve(c_bump_low=_cbl, c_reb_low=_crl,
+                                 c_bump_high=_cbh, c_reb_high=_crh)
+    _vv, _ff = _dc.curve_points(v_max=0.4)
+    figD = go.Figure()
+    figD.add_trace(go.Scatter(
+        x=[units_mod.from_metric(v, "m/s") for v in _vv],
+        y=[units_mod.from_metric(v, "N") for v in _ff], mode="lines",
+        line=dict(color=AMBER, width=2.5), name="damper"))
+    figD.update_layout(**PLOT_LAYOUT, title="Damper force vs shaft velocity",
+                       xaxis_title=units_mod.ulabel("shaft velocity (m/s)  +bump / −rebound"),
+                       yaxis_title=units_mod.ulabel("force (N)"), height=320)
+    st.plotly_chart(figD, width='stretch')
+    try:
+        _mr_demo = kin.motion_ratio() if kin.motion_ratio_is_real() else 1.0
+        _corner_m = float(st.session_state.vp.get("mass", 300)) * 0.25
+        _wr_demo = kin.wheel_rate(float(st.session_state.vp.get("spring_rate_front", 35.0))) \
+            if kin.motion_ratio_is_real() else 30.0
+        _zb = damper_mod.damping_ratio(_dc, _corner_m, _wr_demo, _mr_demo, "bump")
+        _zr = damper_mod.damping_ratio(_dc, _corner_m, _wr_demo, _mr_demo, "rebound")
+        zc = st.columns(2)
+        zc[0].markdown(metric("Damping ratio ζ (bump)", f"{_zb:.2f}", "",
+                              "good" if 0.5 <= _zb <= 0.8 else "warn"),
+                       unsafe_allow_html=True)
+        zc[1].markdown(metric("Damping ratio ζ (rebound)", f"{_zr:.2f}", "",
+                              "good" if 0.6 <= _zr <= 1.1 else "warn"),
+                       unsafe_allow_html=True)
+        st.markdown(f'<span class="tag warn">{_dc.status()}</span>',
+                    unsafe_allow_html=True)
+    except Exception as e:
+        st.info(f"Damping-ratio diagnostic unavailable: {e}")
 
 # ----------------------------- TAB 10 -------------------------------------- #
 # SETUP OPTIMISER — spend the one tire set wisely. Rank the levers by grip
@@ -14845,90 +14845,90 @@ with tab10:
                                    balance_tol=bal_tol)
 
       b = sens["base"]
-      st.markdown("###### Current setup")
-      bc = st.columns(3)
-      bc[0].markdown(metric("Max grip", f"{b['max_g']:.3f}", "g"), unsafe_allow_html=True)
-      _bv = ("NEUTRAL", "good") if abs(b["balance"]) < 0.03 else \
-            (("UNDERSTEER", "warn") if b["balance"] > 0 else ("OVERSTEER", "bad"))
-      bc[1].markdown(metric("Balance", _bv[0], "", _bv[1]), unsafe_allow_html=True)
-      bc[2].markdown(metric("Balance index", f"{b['balance']:+.3f}", ""), unsafe_allow_html=True)
+      with st.expander("🟢 Current setup", expanded=True):
+        bc = st.columns(3)
+        bc[0].markdown(metric("Max grip", f"{b['max_g']:.3f}", "g"), unsafe_allow_html=True)
+        _bv = ("NEUTRAL", "good") if abs(b["balance"]) < 0.03 else \
+              (("UNDERSTEER", "warn") if b["balance"] > 0 else ("OVERSTEER", "bad"))
+        bc[1].markdown(metric("Balance", _bv[0], "", _bv[1]), unsafe_allow_html=True)
+        bc[2].markdown(metric("Balance index", f"{b['balance']:+.3f}", ""), unsafe_allow_html=True)
 
-      st.markdown("###### Levers ranked by grip impact")
-      st.markdown('<p class="hint">Read this as: change this knob by one step, get '
-                  'this much grip and this much balance shift. Spend your build/tune '
-                  'time top-down.</p>', unsafe_allow_html=True)
-      rows = "".join(
-          f"<tr><td style='padding:4px 10px;'>{r['label']}</td>"
-          f"<td style='padding:4px 10px;text-align:right;color:{'#62d27a' if r['d_maxg_per_step']>=0 else '#ff6b6b'};'>"
-          f"{r['d_maxg_per_step']:+.4f} g</td>"
-          f"<td style='padding:4px 10px;text-align:right;color:var(--dim);'>per {r['step']:g} {r['unit']}</td>"
-          f"<td style='padding:4px 10px;text-align:right;'>{r['d_balance_per_step']:+.3f} bal</td></tr>"
-          for r in sens["rankings"])
-      st.markdown(
-          f"<table style='width:100%;border-collapse:collapse;font-size:.92rem;'>"
-          f"<tr style='color:var(--dim);border-bottom:1px solid var(--line);'>"
-          f"<td style='padding:4px 10px;'>lever</td>"
-          f"<td style='padding:4px 10px;text-align:right;'>grip / step</td>"
-          f"<td></td><td style='padding:4px 10px;text-align:right;'>balance / step</td></tr>"
-          f"{rows}</table>", unsafe_allow_html=True)
+      with st.expander("⚙️ Levers ranked by grip impact", expanded=False):
+        st.markdown('<p class="hint">Read this as: change this knob by one step, get '
+                    'this much grip and this much balance shift. Spend your build/tune '
+                    'time top-down.</p>', unsafe_allow_html=True)
+        rows = "".join(
+            f"<tr><td style='padding:4px 10px;'>{r['label']}</td>"
+            f"<td style='padding:4px 10px;text-align:right;color:{'#62d27a' if r['d_maxg_per_step']>=0 else '#ff6b6b'};'>"
+            f"{r['d_maxg_per_step']:+.4f} g</td>"
+            f"<td style='padding:4px 10px;text-align:right;color:var(--dim);'>per {r['step']:g} {r['unit']}</td>"
+            f"<td style='padding:4px 10px;text-align:right;'>{r['d_balance_per_step']:+.3f} bal</td></tr>"
+            for r in sens["rankings"])
+        st.markdown(
+            f"<table style='width:100%;border-collapse:collapse;font-size:.92rem;'>"
+            f"<tr style='color:var(--dim);border-bottom:1px solid var(--line);'>"
+            f"<td style='padding:4px 10px;'>lever</td>"
+            f"<td style='padding:4px 10px;text-align:right;'>grip / step</td>"
+            f"<td></td><td style='padding:4px 10px;text-align:right;'>balance / step</td></tr>"
+            f"{rows}</table>", unsafe_allow_html=True)
 
-      st.markdown("###### Optimiser recommendation")
-      oc = st.columns(3)
-      oc[0].markdown(metric("Optimised grip", f"{opt['best_eval']['max_g']:.3f}", "g",
-                            "good"), unsafe_allow_html=True)
-      oc[1].markdown(metric("Grip gained", f"{opt['delta_maxg']:+.3f}", "g",
-                            "good" if opt["delta_maxg"] > 0 else ""), unsafe_allow_html=True)
-      oc[2].markdown(metric("Balance", f"{opt['best_eval']['balance']:+.3f}", ""),
-                     unsafe_allow_html=True)
+      with st.expander("⚙️ Optimiser recommendation", expanded=False):
+        oc = st.columns(3)
+        oc[0].markdown(metric("Optimised grip", f"{opt['best_eval']['max_g']:.3f}", "g",
+                              "good"), unsafe_allow_html=True)
+        oc[1].markdown(metric("Grip gained", f"{opt['delta_maxg']:+.3f}", "g",
+                              "good" if opt["delta_maxg"] > 0 else ""), unsafe_allow_html=True)
+        oc[2].markdown(metric("Balance", f"{opt['best_eval']['balance']:+.3f}", ""),
+                       unsafe_allow_html=True)
 
-      if opt["best_params"]:
-          _knob_lbl = {k: v["label"] for k, v in setup_mod.PARAM_KNOBS.items()}
-          _knob_unit = {k: v["unit"] for k, v in setup_mod.PARAM_KNOBS.items()}
-          recs = "".join(
-              f"<tr><td style='padding:4px 10px;'>{_knob_lbl.get(k,k)}</td>"
-              f"<td style='padding:4px 10px;text-align:right;'>{v:.2f} {_knob_unit.get(k,'')}</td></tr>"
-              for k, v in opt["best_params"].items())
-          st.markdown(
-              f"<table style='width:100%;border-collapse:collapse;font-size:.92rem;'>"
-              f"<tr style='color:var(--dim);border-bottom:1px solid var(--line);'>"
-              f"<td style='padding:4px 10px;'>change</td>"
-              f"<td style='padding:4px 10px;text-align:right;'>to</td></tr>"
-              f"{recs}</table>", unsafe_allow_html=True)
+        if opt["best_params"]:
+            _knob_lbl = {k: v["label"] for k, v in setup_mod.PARAM_KNOBS.items()}
+            _knob_unit = {k: v["unit"] for k, v in setup_mod.PARAM_KNOBS.items()}
+            recs = "".join(
+                f"<tr><td style='padding:4px 10px;'>{_knob_lbl.get(k,k)}</td>"
+                f"<td style='padding:4px 10px;text-align:right;'>{v:.2f} {_knob_unit.get(k,'')}</td></tr>"
+                for k, v in opt["best_params"].items())
+            st.markdown(
+                f"<table style='width:100%;border-collapse:collapse;font-size:.92rem;'>"
+                f"<tr style='color:var(--dim);border-bottom:1px solid var(--line);'>"
+                f"<td style='padding:4px 10px;'>change</td>"
+                f"<td style='padding:4px 10px;text-align:right;'>to</td></tr>"
+                f"{recs}</table>", unsafe_allow_html=True)
 
-          ac1, ac2 = st.columns([1, 2])
-          if ac1.button("Apply to sidebar", width='stretch'):
-              for k, v in opt["best_params"].items():
-                  if k in ("static_camber_front", "static_camber_rear"):
-                      continue  # camber is set by geometry; recommend, don't force
-                  if k in st.session_state.vp:
-                      st.session_state.vp[k] = v
-              _cam_note = ""
-              if "static_camber_front" in opt["best_params"]:
-                  _cam_note = (f" Target front camber "
-                               f"{opt['best_params']['static_camber_front']:.1f}° via geometry.")
-              log_decision_now("suspension", "Applied optimiser setup",
-                               f"Grip {opt['start_eval']['max_g']:.3f}→"
-                               f"{opt['best_eval']['max_g']:.3f} g at balance "
-                               f"{opt['best_eval']['balance']:+.3f}.{_cam_note}")
-              st.session_state._run_opt = False
-              st.rerun()
-          ac2.markdown('<p class="hint">Camber targets are recommendations — set them '
-                       'with static camber + camber-gain in your geometry, then check '
-                       'the KINEMATICS tab. Everything else applies to the sidebar '
-                       'directly.</p>', unsafe_allow_html=True)
-      else:
-          st.markdown('<p class="hint">Your current setup is already at the '
-                      'optimiser\'s best within these bounds. Nice.</p>',
-                      unsafe_allow_html=True)
+            ac1, ac2 = st.columns([1, 2])
+            if ac1.button("Apply to sidebar", width='stretch'):
+                for k, v in opt["best_params"].items():
+                    if k in ("static_camber_front", "static_camber_rear"):
+                        continue  # camber is set by geometry; recommend, don't force
+                    if k in st.session_state.vp:
+                        st.session_state.vp[k] = v
+                _cam_note = ""
+                if "static_camber_front" in opt["best_params"]:
+                    _cam_note = (f" Target front camber "
+                                 f"{opt['best_params']['static_camber_front']:.1f}° via geometry.")
+                log_decision_now("suspension", "Applied optimiser setup",
+                                 f"Grip {opt['start_eval']['max_g']:.3f}→"
+                                 f"{opt['best_eval']['max_g']:.3f} g at balance "
+                                 f"{opt['best_eval']['balance']:+.3f}.{_cam_note}")
+                st.session_state._run_opt = False
+                st.rerun()
+            ac2.markdown('<p class="hint">Camber targets are recommendations — set them '
+                         'with static camber + camber-gain in your geometry, then check '
+                         'the KINEMATICS tab. Everything else applies to the sidebar '
+                         'directly.</p>', unsafe_allow_html=True)
+        else:
+            st.markdown('<p class="hint">Your current setup is already at the '
+                        'optimiser\'s best within these bounds. Nice.</p>',
+                        unsafe_allow_html=True)
 
-      if _is_default:
-          st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
-                      'padding-left:10px;">These rankings run on the <b>generic '
-                      'default tire</b>. They show the right <i>directions</i>, but '
-                      'load your TTC-fitted tire in the TIRE &amp; GRIP tab before '
-                      'trusting the magnitudes — your tire\'s load and camber '
-                      'sensitivity is exactly what sets which lever wins.</p>',
-                      unsafe_allow_html=True)
+        if _is_default:
+            st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                        'padding-left:10px;">These rankings run on the <b>generic '
+                        'default tire</b>. They show the right <i>directions</i>, but '
+                        'load your TTC-fitted tire in the TIRE &amp; GRIP tab before '
+                        'trusting the magnitudes — your tire\'s load and camber '
+                        'sensitivity is exactly what sets which lever wins.</p>',
+                        unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------- #
 #  TAB 11 — LAP TIME : turn the grip envelope into seconds
@@ -15012,1331 +15012,1331 @@ with tab11:
                            brake_g_cap=brake_g, motor_map=_motor_map)
 
   # ---- Track source: yardstick autocross, or YOUR GPS/cone layout ------- #
-  st.markdown("###### Track")
-  track_src = st.radio("Run on", ["Representative autocross",
-                                  "Import GPS / cone CSV"], horizontal=True)
-  ax_scale = 1.0
-  _imported_xy = None
-  if track_src == "Representative autocross":
-      ax_scale = st.slider("Autocross lap scale (stretches the yardstick lap)",
-                           0.6, 1.6, 1.0, 0.1)
-  else:
-      st.markdown('<p class="hint">Upload your actual layout — no more manual '
-                  'segment entry. Centreline <code>x,y</code> (metres) or GPS '
-                  '<code>lat,lon</code>; or cone rows '
-                  '<code>left_x,left_y,right_x,right_y</code>. The lap then runs your '
-                  'real course.</p>', unsafe_allow_html=True)
-      tcol = st.columns(3)
-      fmt = tcol[0].selectbox("CSV format", ["centreline x,y (m)",
-                                             "GPS lat,lon", "cones L/R x,y"])
-      width_m = unum(tcol[1], "Track width (m)", 2.0, 6.0, 3.5, "m", step=0.5)
-      do_line = tcol[2].checkbox("Optimise racing line", value=True,
-                                 help="Use the track width to straighten corners — "
-                                      "reports the time gained vs the centreline.")
-      tup = st.file_uploader("Track CSV", type=["csv"], key="track_csv")
-      if tup is not None:
-          try:
-              import io as _io2
-              raw = tup.getvalue().decode("utf-8", errors="replace")
-              arr = np.genfromtxt(_io2.StringIO(raw), delimiter=",")
-              if arr.ndim == 1:
-                  arr = arr.reshape(1, -1)
-              if arr.size and np.isnan(arr[0]).any():        # header row
-                  arr = arr[1:]
-              if fmt == "cones L/R x,y" and arr.shape[1] >= 4:
-                  cx, cy = lap_mod.cones_to_centerline(arr[:, 0], arr[:, 1],
-                                                       arr[:, 2], arr[:, 3])
-              elif fmt == "GPS lat,lon" and arr.shape[1] >= 2:
-                  cx, cy = lap_mod.latlon_to_xy(arr[:, 0], arr[:, 1])
-              else:
-                  cx, cy = arr[:, 0], arr[:, 1]
-              _imported_xy = (np.asarray(cx, float), np.asarray(cy, float),
-                              width_m, do_line)
-              st.success(f"Loaded {len(cx)} points "
-                         f"({np.hypot(np.diff(cx), np.diff(cy)).sum():.0f} m path).")
-          except Exception as e:
-              st.error(f"Couldn't parse that track CSV: {e}")
-
-  if st.button("▶ Run lap-time sim", width='stretch'):
-      st.session_state._run_lap = True
-      try:
-          _axn.engage("laptime", "run_sim")
-      except Exception:
-          pass
-
-  if st.session_state.get("_run_lap"):
-      with st.spinner("Driving your car around on the live tire…"):
-          skid = lap_mod.skidpad_time(_veh_lap, _pt)
-          if _imported_xy is not None:
-              ix, iy, iw, iline = _imported_xy
-              if iline:
-                  _cmp = lap_mod.compare_line_vs_centerline(_veh_lap, ix, iy,
-                                                            track_width_m=iw, pt=_pt)
-                  track = _cmp["line_track"]
-                  lap = _cmp["line_result"]
-                  st.session_state._line_cmp = dict(
-                      gained=_cmp["time_gained_s"],
-                      center_t=_cmp["centerline_result"].lap_time_s,
-                      line_t=_cmp["line_result"].lap_time_s,
-                      lx=_cmp["line_x"], ly=_cmp["line_y"], cx=ix, cy=iy)
-              else:
-                  track = lap_mod.track_from_path(ix, iy, name="Imported", ds=1.0)
-                  lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
-                  st.session_state.pop("_line_cmp", None)
-          else:
-              track = lap_mod.default_autocross(scale=ax_scale)
-              lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
-              st.session_state.pop("_line_cmp", None)
-
-      # Surface any safe-default warnings rather than hiding a bad data point.
-      for r in (skid, lap):
-          if r.warning:
-              st.warning(f"⚠ {r.warning}")
-
-      if lap.ok:
-          try:
-              _axn.complete("laptime", "run_sim")
-          except Exception:
-              pass
-      else:
-          try:
-              _axn.error("laptime", kind="lap_sim_not_ok")
-          except Exception:
-              pass
-
-      # ---- Skidpad ---- #
-      st.markdown("###### FSAE skidpad (one timed circle)")
-      skc = st.columns(3)
-      _skt = f"{skid.lap_time_s:.3f}" if skid.ok and np.isfinite(skid.lap_time_s) else "—"
-      skc[0].markdown(metric("Skidpad time", _skt, "s",
-                             "good" if skid.ok else "bad"), unsafe_allow_html=True)
-      skc[1].markdown(metric("Corner speed", f"{skid.avg_speed_ms:.1f}", "m/s"),
-                      unsafe_allow_html=True)
-      _sk_lat = (skid.avg_speed_ms ** 2) / (lap_mod.SKIDPAD_RADIUS_M * 9.81) \
-          if skid.ok else 0.0
-      skc[2].markdown(metric("Lateral", f"{_sk_lat:.2f}", "g"), unsafe_allow_html=True)
-
-      # ---- Autocross / imported lap ---- #
-      _lap_title = track.name if getattr(track, "name", "") else "Representative autocross"
-      st.markdown(f"###### {_lap_title}")
-      axc = st.columns(4)
-      _axt = f"{lap.lap_time_s:.2f}" if lap.ok and np.isfinite(lap.lap_time_s) else "—"
-      axc[0].markdown(metric("Lap time", _axt, "s",
-                             "good" if lap.ok else "bad"), unsafe_allow_html=True)
-      axc[1].markdown(metric("Avg speed", f"{lap.avg_speed_ms:.1f}", "m/s"),
-                      unsafe_allow_html=True)
-      axc[2].markdown(metric("Top speed", f"{lap.top_speed_ms:.1f}", "m/s"),
-                      unsafe_allow_html=True)
-      axc[3].markdown(metric("Min speed", f"{lap.min_speed_ms:.1f}", "m/s"),
-                      unsafe_allow_html=True)
-
-      # ---- Racing line vs centreline (only when an imported track was optimised) ---- #
-      _lc = st.session_state.get("_line_cmp")
-      if _lc and np.isfinite(_lc.get("gained", float("nan"))):
-          st.markdown(metric("Racing line vs centreline",
-                             f"{_lc['gained']:+.2f}", "s gained",
-                             "good" if _lc["gained"] >= 0 else "warn"),
-                      unsafe_allow_html=True)
-          figRL = go.Figure()
-          figRL.add_trace(go.Scatter(x=uconv_series(_lc["cx"], "m"), y=uconv_series(_lc["cy"], "m"), mode="lines",
-                                     line=dict(color="#8d99a6", width=1.5, dash="dot"),
-                                     name="centreline"))
-          figRL.add_trace(go.Scatter(x=uconv_series(_lc["lx"], "m"), y=uconv_series(_lc["ly"], "m"), mode="lines",
-                                     line=dict(color=CYAN, width=2.5),
-                                     name="racing line"))
-          figRL.update_layout(**PLOT_LAYOUT, title="Racing line (uses track width)",
-                              xaxis_title=units_mod.ulabel("x (m)"),
-                              yaxis_title=units_mod.ulabel("y (m)"), height=360)
-          figRL.update_yaxes(scaleanchor="x", scaleratio=1)
-          st.plotly_chart(figRL, width='stretch')
-          st.markdown('<p class="hint">Curvature-optimal line within the track '
-                      'width — straightens corners to raise minimum radius, hence '
-                      'speed. It is a curvature-optimal (not fully-coupled '
-                      'minimum-time) line; honest about the difference.</p>',
-                      unsafe_allow_html=True)
-      if _pt.uses_real_motor_map():
-          st.markdown('<span class="tag good">motor map active (representative '
-                      'curve)</span>', unsafe_allow_html=True)
-
-      # Speed-vs-distance trace
-      if lap.ok and lap.s and lap.v:
-          _uDist = units_mod.label("m")
-          _uSp = units_mod.label("m/s")
-          figL = go.Figure()
-          figL.add_trace(go.Scatter(
-              x=[units_mod.from_metric(v, "m") for v in lap.s],
-              y=[units_mod.from_metric(v, "m/s") for v in lap.v], mode="lines",
-              line=dict(color=CYAN, width=2.5), name="speed"))
-          figL.update_layout(**PLOT_LAYOUT, title="Speed around the lap",
-                             xaxis_title=f"distance ({_uDist})",
-                             yaxis_title=f"speed ({_uSp})",
-                             height=320)
-          st.plotly_chart(figL, width='stretch')
-
-      # Store last skidpad time so a delta can be shown after the next change.
-      if skid.ok and np.isfinite(skid.lap_time_s):
-          prev = st.session_state.get("_last_skidpad")
-          if prev is not None and abs(prev - skid.lap_time_s) > 1e-4:
-              d = skid.lap_time_s - prev
-              _cls = "good" if d < 0 else "bad"
-              st.markdown(
-                  f"<span class='tag {_cls}'>Δ skidpad vs last run: "
-                  f"{d:+.3f} s</span>", unsafe_allow_html=True)
-          st.session_state._last_skidpad = skid.lap_time_s
-
-      # Store lap speed/distance profile so the ⚡ electrical check below can access it
-      if lap.ok and lap.v and lap.s:
-          st.session_state._last_lap_v = list(lap.v)
-          st.session_state._last_lap_s = list(lap.s)
-
-      # Log it to the handover record so the reasoning survives.
-      if lap.ok and np.isfinite(lap.lap_time_s):
-          lc1, lc2 = st.columns([1, 2])
-          if lc1.button("Log these times", width='stretch'):
-              log_decision_now(
-                  "suspension", "Lap-time prediction",
-                  f"Skidpad {_skt}s, autocross {_axt}s on "
-                  f"{'TTC tire' if not st.session_state.get('tire_is_default', True) else 'generic tire'} "
-                  f"(power {uval(pw, 'kW')}, ClA {cla:.2f}).")
-              st.success("Logged to handover record.")
-          lc2.markdown('<p class="hint">Tip: change a hardpoint or a setup lever, '
-                       're-run, and watch the skidpad delta. That delta — in seconds '
-                       '— is the number to defend a design decision with.</p>',
-                       unsafe_allow_html=True)
-
-      if st.session_state.get("tire_is_default", True):
-          st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
-                      'padding-left:10px;">Running on the <b>generic default tire</b>. '
-                      'Times are the right shape and rank setups correctly, but load '
-                      'your TTC-fitted tire in TIRE &amp; GRIP before trusting the '
-                      'absolute seconds.</p>', unsafe_allow_html=True)
-      st.markdown('<p class="hint">Model: quasi-steady-state point mass on the live '
-                  'grip envelope. Good for ranking and for skidpad (near closed-form); '
-                  'on autocross it lands within a few percent — enough to choose '
-                  'between setups, not to predict the absolute clock to the tenth.</p>',
-                  unsafe_allow_html=True)
-
-
-
-
-  # ================================================================== #
-  #  ⚡ ELECTRICAL FEASIBILITY CHECK  (Electrics Lead Integration)      #
-  # ================================================================== #
-  # The lap-time sim finds the mechanically fastest lap. But if that lap
-  # demands more current than the fuse rating, drains the pack, or pushes
-  # individual cells past their rated current, the lap simply does not
-  # happen. This section bridges the gap between the mechanical lap and
-  # the electrical reality — using the electrics lead's own Excel workbook.
-  st.markdown("---")
-  st.markdown("#### ⚡ Electrical Feasibility Check")
-  st.markdown(
-      '<p class="hint">The lap-time sim finds the <i>mechanically</i> fastest lap. '
-      'This check tells you whether the <b>electrical system can actually deliver it</b>. '
-      'Upload the electrics lead\'s Excel workbook (the one with Battery Pack Calcs, '
-      'ElecPropulsion, and SpeedVsTime sheets) and the checker will flag any fuse '
-      'violations, cell overcurrent, or energy deficits — in plain English, '
-      'before you freeze the build.</p>',
-      unsafe_allow_html=True)
-
-  _elec_file = st.file_uploader(
-      "Upload FSAE_EV_Power_Draw.xlsx (electrics lead's workbook)",
-      type=["xlsx"],
-      key="elec_check_xlsx",
-      help="Needs sheets: 'Battery Pack Calcs', 'ElecPropulsion', 'SpeedVsTime'. "
-           "This is the same file the electrics lead maintains.")
-
-  _elec_col1, _elec_col2 = st.columns(2)
-  _elec_mass = _elec_col1.number_input(
-      "Vehicle mass incl. driver (kg)", 150.0, 400.0, 230.0, 5.0,
-      key="elec_mass",
-      help="Used to compute acceleration power demand along the lap.")
-  _elec_driveff = _elec_col2.slider(
-      "Drivetrain efficiency (%)", 70, 98, 90, 1,
-      key="elec_driveff",
-      help="Combined inverter + motor + gearbox efficiency (%). "
-           "Use 90% if unsure.") / 100.0
-
-  _elec_cda = _elec_col1.number_input(
-      "Drag CdA (m\u00b2)", 0.0, 3.0, 1.10, 0.05,
-      key="elec_cda",
-      help="Aerodynamic drag area. Match the value used in the lap sim above.")
-  _elec_crr = _elec_col2.number_input(
-      "Rolling resistance crr", 0.005, 0.05, 0.018, 0.002,
-      format="%.3f",
-      key="elec_crr",
-      help="Tyre rolling resistance coefficient.")
-
-  if _elec_file is not None:
-      try:
-          _elec_bytes  = _elec_file.read()
-          _elec_params = elec_check_mod.ElecParams.from_excel_bytes(_elec_bytes)
-
-          with st.expander("\U0001f4cb Parsed electrical parameters", expanded=False):
-              _pc = st.columns(4)
-              _pc[0].markdown(metric("Pack voltage",
-                  f"{_elec_params.pack_voltage_v:.0f}", "V"), unsafe_allow_html=True)
-              _pc[1].markdown(metric("Pack capacity",
-                  f"{_elec_params.pack_capacity_ah:.1f}", "Ah"), unsafe_allow_html=True)
-              _pc[2].markdown(metric("Fuse rating",
-                  f"{_elec_params.fuse_max_a:.0f}", "A"), unsafe_allow_html=True)
-              _pc[3].markdown(metric("Usable energy",
-                  f"{_elec_params.usable_energy_kwh:.3f}", "kWh"), unsafe_allow_html=True)
-              _pc2 = st.columns(4)
-              _pc2[0].markdown(metric("Parallel strings",
-                  f"{_elec_params.n_parallel}", ""), unsafe_allow_html=True)
-              _pc2[1].markdown(metric("Series cells",
-                  f"{_elec_params.n_series}", ""), unsafe_allow_html=True)
-              _pc2[2].markdown(metric("Cell rating",
-                  f"{_elec_params.nominal_cell_current_a:.1f}", "A"), unsafe_allow_html=True)
-              _pc2[3].markdown(metric("Fuse power ceiling",
-                  f"{_elec_params.max_power_from_fuse_kw:.1f}", "kW"), unsafe_allow_html=True)
-
-          _elec_src = st.radio(
-              "Speed profile to check",
-              ["Use the lap sim result above (if run)",
-               "Use Speed vs Time data from the uploaded Excel"],
-              horizontal=True,
-              key="elec_src_radio",
-              help="The lap sim gives a track-specific profile. "
-                   "The Excel SpeedVsTime sheet is the electrics lead's measured/modelled run.")
-
-          _elec_result = None
-
-          if _elec_src.startswith("Use the lap sim"):
-              if st.session_state.get("_run_lap"):
-                  try:
-                      _lap_v_check = st.session_state.get("_last_lap_v")
-                      _lap_s_check = st.session_state.get("_last_lap_s")
-                      if _lap_v_check is not None and _lap_s_check is not None:
-                          _elec_result = elec_check_mod.check_lap_electrical(
-                              _lap_v_check, _lap_s_check,
-                              _elec_params,
-                              drivetrain_eff=float(_elec_driveff),
-                              vehicle_mass_kg=float(_elec_mass),
-                              drag_cda=float(_elec_cda),
-                              crr=float(_elec_crr),
-                          )
-                      else:
-                          st.info("Run the lap sim first (\u25b6 Run lap-time sim above), "
-                                  "then re-open this file uploader to run the electrical check.")
-                  except Exception as _ee:
-                      st.warning(f"Could not extract lap profile: {_ee}")
-              else:
-                  st.info("Run the lap sim first (\u25b6 Run lap-time sim above).")
-          else:
-              try:
-                  _t_arr, _v_arr = elec_check_mod.load_speed_vs_time_from_bytes(_elec_bytes)
-                  # _t_arr = time (s), _v_arr = speed (mph) — already validated ≥2 rows
-                  _elec_result = elec_check_mod.check_lap_from_speed_csv(
-                      _v_arr, _t_arr, _elec_params,
-                      drivetrain_eff=float(_elec_driveff),
-                      vehicle_mass_kg=float(_elec_mass),
-                      drag_cda=float(_elec_cda),
-                      crr=float(_elec_crr),
-                  )
-                  st.caption(
-                      f"SpeedVsTime: {len(_t_arr)} pts, "
-                      f"{_t_arr[-1]:.1f} s total, "
-                      f"{min(_v_arr):.0f}\u2013{max(_v_arr):.0f} mph.")
-              except ValueError as _ee2:
-                  st.error(
-                      f"\u274c SpeedVsTime data problem: {_ee2}\n\n"
-                      f"Add a sheet named **SpeedVsTime** with **column A = time (s)** "
-                      f"and **column B = speed (mph)**, starting from row 2 (row 1 = header)."
-                  )
-              except Exception as _ee2:
-                  st.warning(f"Could not read SpeedVsTime: {_ee2}")
-
-          if _elec_result is not None:
-              if _elec_result.ok:
-                  st.success(_elec_result.summary)
-              else:
-                  st.error(_elec_result.summary)
-
-              _cc = st.columns(3)
-              _fuse_cls = "bad" if _elec_result.fuse_blown else "good"
-              _cc[0].markdown(
-                  metric("Peak pack current", f"{_elec_result.peak_current_a:.1f}", "A",
-                         _fuse_cls), unsafe_allow_html=True)
-              _cc[0].markdown(
-                  f'<span class="tag {_fuse_cls}">'
-                  f'{"\U0001f6a8 FUSE LIMIT EXCEEDED" if _elec_result.fuse_blown else "\u2705 Fuse OK"} '
-                  f'(limit {_elec_result.fuse_max_a:.0f} A)</span>',
-                  unsafe_allow_html=True)
-
-              _cell_cls = "bad" if _elec_result.cell_overcurrent else "good"
-              _cc[1].markdown(
-                  metric("Peak cell current", f"{_elec_result.peak_cell_current_a:.1f}", "A",
-                         _cell_cls), unsafe_allow_html=True)
-              _cc[1].markdown(
-                  f'<span class="tag {_cell_cls}">'
-                  f'{"\u26a0\ufe0f CELL OVERCURRENT" if _elec_result.cell_overcurrent else "\u2705 Cell OK"} '
-                  f'(limit {_elec_result.cell_current_limit_a:.1f} A/cell)</span>',
-                  unsafe_allow_html=True)
-
-              _nrg_cls = "bad" if _elec_result.energy_empty else "good"
-              _cc[2].markdown(
-                  metric("Lap energy draw", f"{_elec_result.energy_used_kwh:.3f}", "kWh",
-                         _nrg_cls), unsafe_allow_html=True)
-              _cc[2].markdown(
-                  f'<span class="tag {_nrg_cls}">'
-                  f'{"\U0001f6a8 PACK RUNS DRY" if _elec_result.energy_empty else "\u2705 Energy OK"} '
-                  f'(usable {_elec_result.usable_energy_kwh:.3f} kWh)</span>',
-                  unsafe_allow_html=True)
-
-              st.write("")
-              _ceil_kmh = _elec_result.max_safe_speed_ms * 3.6
-              _ceil_mph = _ceil_kmh / 1.60934
-              st.markdown(
-                  f'<p class="hint" style="border-left:3px solid '
-                  f'{"#e74c3c" if _elec_result.fuse_blown else "#37e0d0"};'
-                  f'padding-left:10px;">'
-                  f'\u26a1 <b>Fuse-limited speed ceiling:</b> '
-                  f'{_ceil_kmh:.1f} km/h ({_ceil_mph:.1f} mph) continuous. '
-                  f'Above this the {_elec_result.fuse_max_a:.0f} A fuse '
-                  f'({_elec_result.max_safe_power_kw:.1f} kW at '
-                  f'{_elec_params.pack_voltage_v:.0f} V) is the hard constraint — '
-                  f'not the tyres, not the motor.</p>',
-                  unsafe_allow_html=True)
-
-              with st.expander("\U0001f4cb Detailed electrical analysis", expanded=False):
-                  st.markdown(f"**Fuse:** {_elec_result.fuse_message}")
-                  st.markdown(f"**Cells:** {_elec_result.cell_message}")
-                  st.markdown(f"**Energy:** {_elec_result.energy_message}")
-                  if _elec_result.warnings:
-                      for _w in _elec_result.warnings:
-                          st.caption(f"\u26a0\ufe0f {_w}")
-                  st.markdown(
-                      f"Average pack current (traction): "
-                      f"**{_elec_result.avg_current_a:.1f} A**")
-
-              if len(_elec_result.current_profile_a) > 2:
-                  import plotly.graph_objects as _go_ec
-                  _fig_ec = _go_ec.Figure()
-                  _x_ec   = list(range(len(_elec_result.current_profile_a)))
-                  _fig_ec.add_trace(_go_ec.Scatter(
-                      x=_x_ec, y=list(_elec_result.current_profile_a),
-                      name="Pack current (A)",
-                      line=dict(color="#3b7cff", width=2),
-                      fill="tozeroy", fillcolor="rgba(59,124,255,0.10)"))
-                  _fig_ec.add_hline(
-                      y=float(_elec_result.fuse_max_a),
-                      line=dict(color="#e74c3c", dash="dash", width=2),
-                      annotation_text=f"Fuse {_elec_result.fuse_max_a:.0f} A",
-                      annotation_position="top right")
-                  _fig_ec.add_trace(_go_ec.Scatter(
-                      x=_x_ec, y=list(_elec_result.power_profile_kw),
-                      name="Electrical power (kW)", yaxis="y2",
-                      line=dict(color="#37e0d0", width=1.5, dash="dot")))
-                  _fig_ec.update_layout(
-                      title="Pack current & electrical power demand along the lap",
-                      xaxis_title="sample (distance proxy)",
-                      yaxis=dict(title="current (A)", color="#3b7cff"),
-                      yaxis2=dict(title="power (kW)", overlaying="y",
-                                  side="right", color="#37e0d0"),
-                      height=320,
-                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                      font=dict(color="#cdd6df", size=11),
-                      margin=dict(l=0, r=0, t=36, b=0),
-                      legend=dict(bgcolor="rgba(0,0,0,0)"))
-                  st.plotly_chart(_fig_ec, width='stretch', key="elec_current_chart")
-
-              if st.button("Log electrical check to handover", key="log_elec_check"):
-                  log_decision_now(
-                      "electrics", "Electrical feasibility check",
-                      f"'PASS' if _elec_result.ok else 'FAIL': "
-                      f"peak {_elec_result.peak_current_a:.1f} A / "
-                      f"{_elec_result.fuse_max_a:.0f} A fuse, "
-                      f"{_elec_result.energy_used_kwh:.3f} kWh / "
-                      f"{_elec_result.usable_energy_kwh:.3f} kWh usable. "
-                      f"Ceiling {_elec_result.max_safe_speed_ms * 3.6:.1f} km/h.")
-                  st.success("Logged to handover record.")
-
-      except Exception as _elec_err:
-          st.error(f"Could not run the electrical check: {_elec_err}")
-  else:
-      st.markdown(
-          '<p class="hint" style="border-left:2px solid #3b7cff; padding-left:10px;">'
-          '\U0001f4c2 Upload the electrics lead\'s Excel workbook above to activate this check. '
-          'Until then the lap-time number is the <i>mechanical</i> limit only — '
-          'the electrical system may not be able to sustain it.</p>',
-          unsafe_allow_html=True)
-
-
-  # ================================================================== #
-  #  🔄 ELECTRICAL DATABASE + ROUND-TRIP                               #
-  #  Parameters are stored once in the project; no re-upload needed.   #
-  # ================================================================== #
-  st.markdown("---")
-  st.markdown("#### 🔋 EV Electrical Database & Lap Round-Trip")
-  st.markdown(
-      '<p class="hint">'
-      'Battery pack and motor constants are read once from your '
-      '<code>FSAE_EV_Power_Draw.xlsx</code> and stored in the project — '
-      'they stay there across sessions, restarts, and team members. '
-      'The round-trip calculation uses the stored values instantly; '
-      'upload a new workbook only when the electrics lead updates the numbers.'
-      '</p>',
-      unsafe_allow_html=True)
-
-  # ── Load / display / edit the stored EV params ─────────────────────
-  _store_rt = get_store()
-  _ev_db: dict = getattr(_store_rt, "ev_excel_params", {}) or {}
-  _pack_db: dict  = _ev_db.get("pack",  {})
-  _motor_db: dict = _ev_db.get("motor", {})
-  _gr_db: list    = _ev_db.get("gear_ratios", [])
-
-  _db_has_data = bool(_pack_db or _motor_db)
-
-  # ── Update-from-xlsx expander ───────────────────────────────────────
-  with st.expander(
-      "📂 Update from Excel workbook" if _db_has_data else "📂 Import Excel workbook (one-time setup)",
-      expanded=not _db_has_data,
-  ):
-      if _db_has_data:
-          st.markdown(
-              '<p class="hint" style="margin:0 0 8px 0">'
-              'The project already has electrical parameters stored. '
-              'Upload a new workbook only if the electrics lead has changed the numbers.</p>',
-              unsafe_allow_html=True)
-      _rt_up = st.file_uploader(
-          "FSAE_EV_Power_Draw.xlsx",
-          type=["xlsx"],
-          key="rt_db_uploader",
-          help="Upload once. KinematiK extracts all pack and motor constants and saves "
-               "them to the project so you never have to re-upload.")
-      if _rt_up is not None:
-          _rt_raw = _rt_up.read()
-          _extracted = roundtrip_mod.extract_params_from_excel(_rt_raw)
-          if "_error" in _extracted:
-              st.error(f"Could not read workbook: {_extracted['_error']}")
-          else:
-              _store_rt.ev_excel_params = _extracted
-              # Cache the raw bytes too so Download still works this session
-              st.session_state["_rt_excel_bytes"] = _rt_raw
-              save_store(_store_rt)
-              _ev_db    = _extracted
-              _pack_db  = _ev_db.get("pack", {})
-              _motor_db = _ev_db.get("motor", {})
-              _gr_db    = _ev_db.get("gear_ratios", [])
-              _db_has_data = True
-              st.success(
-                  f"✅ Imported and saved — "
-                  f"pack voltage {_pack_db.get('pack_voltage_v', 0):.0f} V, "
-                  f"fuse {_pack_db.get('fuse_max_a', 0):.0f} A, "
-                  f"{len(_gr_db)} gear ratios. "
-                  f"These values are now stored in the project.")
-
-  # ── Manual param editor (always visible when data exists) ──────────
-  if _db_has_data:
-      with st.expander("✏️ Edit stored electrical parameters", expanded=False):
-          st.markdown(
-              '<p class="hint">Changes here update the project database immediately. '
-              'No Excel upload needed to tweak a single value.</p>',
-              unsafe_allow_html=True)
-          _ed_cols = st.columns(4)
-          _pack_db["pack_voltage_v"]   = _ed_cols[0].number_input(
-              "Pack voltage (V)", 100.0, 1000.0,
-              float(_pack_db.get("pack_voltage_v", 504.0) or 504.0), 1.0,
-              key="ev_db_pack_v")
-          _pack_db["fuse_max_a"]       = _ed_cols[1].number_input(
-              "Fuse max (A)", 10.0, 500.0,
-              float(_pack_db.get("fuse_max_a", 50.0) or 50.0), 1.0,
-              key="ev_db_fuse")
-          _pack_db["pack_capacity_ah"] = _ed_cols[2].number_input(
-              "Pack capacity (Ah)", 1.0, 100.0,
-              float(_pack_db.get("pack_capacity_ah", 15.0) or 15.0), 0.5,
-              key="ev_db_cap_ah")
-          _pack_db["pack_energy_wh"]   = _ed_cols[3].number_input(
-              "Pack energy (Wh)", 100.0, 20000.0,
-              float(_pack_db.get("pack_energy_wh", 7560.0) or 7560.0), 10.0,
-              key="ev_db_energy_wh")
-          _ed_cols2 = st.columns(4)
-          _motor_db["wheel_diam_in"]     = _ed_cols2[0].number_input(
-              "Wheel diameter (in)", 10.0, 30.0,
-              float(_motor_db.get("wheel_diam_in", 18.0) or 18.0), 0.5,
-              key="ev_db_whl")
-          _motor_db["motor_pf"]          = _ed_cols2[1].number_input(
-              "Motor power factor", 0.5, 1.0,
-              float(_motor_db.get("motor_pf", 0.95) or 0.95), 0.01,
-              key="ev_db_pf")
-          _motor_db["motor_efficiency"]  = _ed_cols2[2].number_input(
-              "Motor efficiency", 0.5, 1.0,
-              float(_motor_db.get("motor_efficiency", 0.9545) or 0.9545), 0.005,
-              key="ev_db_eff")
-          _motor_db["pack_voltage_ep_v"] = _ed_cols2[3].number_input(
-              "Pack voltage (ElecProp sheet, V)", 100.0, 1000.0,
-              float(_motor_db.get("pack_voltage_ep_v", 504.0) or 504.0), 1.0,
-              key="ev_db_pack_v_ep")
-          if st.button("💾 Save edited parameters", key="ev_db_save_edits"):
-              _store_rt.ev_excel_params["pack"]  = _pack_db
-              _store_rt.ev_excel_params["motor"] = _motor_db
-              save_store(_store_rt)
-              st.success("Saved to project.")
-
-  # ── Stored params summary card ──────────────────────────────────────
-  if _db_has_data:
-      st.markdown("###### 📋 Stored electrical parameters")
-      _sc = st.columns(5)
-      _sc[0].markdown(metric("Pack voltage",
-          f"{_pack_db.get('pack_voltage_v', 0):.0f}", "V"), unsafe_allow_html=True)
-      _sc[1].markdown(metric("Fuse max",
-          f"{_pack_db.get('fuse_max_a', 0):.0f}", "A"), unsafe_allow_html=True)
-      _sc[2].markdown(metric("Pack capacity",
-          f"{_pack_db.get('pack_capacity_ah', 0):.1f}", "Ah"), unsafe_allow_html=True)
-      _sc[3].markdown(metric("Pack energy",
-          f"{(_pack_db.get('pack_energy_wh', 0) or 0)/1000:.3f}", "kWh"),
-          unsafe_allow_html=True)
-      _sc[4].markdown(metric("Gear ratios",
-          f"{len(_gr_db)}", ""), unsafe_allow_html=True)
-
-      # ── Erick's feedback (Discord 26-06): make the workbook the cross-team
-      #    source of truth, surface a feasible-pack sheet if present, and
-      #    visualise the raw data straight from the file. ──────────────────
-      _rt_raw_bytes = st.session_state.get("_rt_excel_bytes")
-
-      # (A) Declare the pulled stats into the INTEGRATION ledger, the same way
-      #     the Accumulator tab declares numbers — so his Excel feeds the whole
-      #     car, not just this tab.
-      st.markdown("###### 🔗 Push these numbers into the integration ledger")
-      st.markdown(
-          '<p class="hint" style="margin:0 0 8px 0">Joule heat and the key '
-          'propulsion stats from your workbook become the cross-team source of '
-          'truth — powertrain peak power/torque/voltage, electrics peak current '
-          'and the heat the cooling team has to reject. Declared numbers flow '
-          'into the feasibility checks and the 3D heatmap automatically.</p>',
-          unsafe_allow_html=True)
-      try:
-          _decl = roundtrip_mod.ledger_declarations_from_ev_params(_ev_db)
-          _decl_pt = _decl.get("powertrain", {})
-          _decl_el = _decl.get("electrics", {})
-          _dcols = st.columns(4)
-          _dcols[0].markdown(metric("PT peak power",
-              f"{_decl_pt.get('peak_power_kw', 0):.0f}", "kW"), unsafe_allow_html=True)
-          _dcols[1].markdown(metric("PT peak torque",
-              f"{_decl_pt.get('peak_torque_nm', 0):.0f}", "N·m"), unsafe_allow_html=True)
-          _dcols[2].markdown(metric("Elec peak current",
-              f"{_decl_el.get('peak_current_a', 0):.0f}", "A"), unsafe_allow_html=True)
-          _dcols[3].markdown(metric("Heat to reject",
-              f"{_decl_el.get('heat_reject_w', 0):.0f}", "W"), unsafe_allow_html=True)
-          if _decl.get("_notes"):
-              st.caption("ℹ️ " + " ".join(_decl["_notes"]))
-          if st.button("📌 Declare into integration ledger", key="ev_db_declare_ledger"):
-              try:
-                  _led_ev = interfaces_mod.IntegrationLedger.from_dict(
-                      st.session_state.ledger)
-                  for _subsys, _fields in (("powertrain", _decl_pt),
-                                           ("electrics", _decl_el)):
-                      if not _fields:
-                          continue
-                      _it = (_led_ev.get(_subsys)
-                             or interfaces_mod.SubsystemInterface(name=_subsys))
-                      for _k, _v in _fields.items():
-                          setattr(_it, _k, _v)
-                      # workbook-sourced numbers are real measurements, not
-                      # placeholders, so is_estimate stays False — but provenance
-                      # is recorded so the board shows where they came from.
-                      _it.is_estimate = False
-                      _it.updated_by = "electrics (from Excel)"
-                      _led_ev.set(_it)
-                  st.session_state.ledger = _led_ev.as_dict()
-                  _save_target = get_store()
-                  if hasattr(_save_target, "ledger"):
-                      _save_target.ledger = _led_ev.as_dict()
-                      save_store(_save_target)
-                  st.success(
-                      "Declared powertrain + electrics numbers from the workbook "
-                      "into the ledger. Open 🔗 Integration to see them checked "
-                      "against the rest of the car.")
-              except Exception as _de:
-                  st.warning(f"Couldn't declare into ledger: {_de}")
-      except Exception as _decl_e:
-          st.caption(f"Ledger declaration unavailable: {_decl_e}")
-
-      # (B) "What pack would you actually need" — surface the team's own sheet
-      #     if they authored one in the file.
-      if _rt_raw_bytes:
-          try:
-              _fp_sheet = roundtrip_mod.find_feasible_pack_sheet(_rt_raw_bytes)
-          except Exception:
-              _fp_sheet = {"found": False}
-          if _fp_sheet.get("found"):
-              st.markdown("###### 🎯 Your “what pack would you need” sheet")
-              st.markdown(
-                  f'<p class="hint" style="margin:0 0 8px 0">Read directly from '
-                  f'the <code>{_fp_sheet["sheet"]}</code> sheet in your workbook. '
-                  f'KinematiK surfaces it as-is alongside its own minimum-feasible '
-                  f'pack estimate below.</p>',
-                  unsafe_allow_html=True)
-              _fp_rows = _fp_sheet.get("rows", [])
-              if _fp_rows:
-                  import pandas as _pd_fp
-                  _hdr = _fp_rows[0]
-                  _body = _fp_rows[1:] if len(_fp_rows) > 1 else []
-                  try:
-                      _df_fp = _pd_fp.DataFrame(_body, columns=_hdr)
-                      st.dataframe(_df_fp, width="stretch", hide_index=True)
-                  except Exception:
-                      st.table(_fp_rows)
-
-      # (C) Visualise the raw data straight from the sheet — Erick's
-      #     "take that raw data from my sheet and visualise it".
-      if _rt_raw_bytes:
-          with st.expander("📈 Visualise raw data from your workbook", expanded=False):
-              st.markdown(
-                  '<p class="hint" style="margin:0 0 8px 0">Plot any numeric '
-                  'columns straight from your file — cell voltages, currents, '
-                  'temperatures, whatever you logged. This reads your sheets '
-                  'verbatim; nothing is recomputed or invented.</p>',
-                  unsafe_allow_html=True)
-              try:
-                  _raw = roundtrip_mod.read_raw_sheets(_rt_raw_bytes)
-              except Exception as _re:
-                  _raw = {"sheets": [], "_error": str(_re)}
-              if _raw.get("_error"):
-                  st.caption(f"Couldn't read raw data: {_raw['_error']}")
-              _raw_sheets = _raw.get("sheets", [])
-              if not _raw_sheets:
-                  st.caption("No numeric data columns found to plot.")
-              else:
-                  _sheet_names = [s["name"] for s in _raw_sheets]
-                  _pick_sheet = st.selectbox(
-                      "Sheet", _sheet_names, key="rt_raw_sheet_pick")
-                  _sheet_obj = next(s for s in _raw_sheets if s["name"] == _pick_sheet)
-                  _col_headers = [c["header"] for c in _sheet_obj["columns"]]
-                  _rc1, _rc2 = st.columns(2)
-                  _x_col = _rc1.selectbox(
-                      "X axis", ["(row index)"] + _col_headers,
-                      key="rt_raw_x")
-                  _y_cols = _rc2.multiselect(
-                      "Y axis (one or more)", _col_headers,
-                      default=_col_headers[1:3] if len(_col_headers) > 1
-                      else _col_headers[:1],
-                      key="rt_raw_y")
-                  if _y_cols:
-                      import plotly.graph_objects as _go_raw
-                      _by_header = {c["header"]: c["values"]
-                                    for c in _sheet_obj["columns"]}
-                      _fig_raw = _go_raw.Figure()
-                      if _x_col == "(row index)":
-                          _xvals = None
-                      else:
-                          _xvals = _by_header.get(_x_col)
-                      for _yh in _y_cols:
-                          _yv = _by_header.get(_yh, [])
-                          _xx = (list(range(len(_yv))) if _xvals is None
-                                 else _xvals[:len(_yv)])
-                          _fig_raw.add_trace(_go_raw.Scatter(
-                              x=_xx, y=_yv, mode="lines", name=_yh))
-                      _fig_raw.update_layout(
-                          height=360, margin=dict(l=10, r=10, t=30, b=10),
-                          paper_bgcolor="rgba(0,0,0,0)",
-                          plot_bgcolor="rgba(0,0,0,0)",
-                          font=dict(color="#cdd6df"),
-                          xaxis=dict(title=_x_col, gridcolor="#2a2f3a"),
-                          yaxis=dict(gridcolor="#2a2f3a"),
-                          legend=dict(bgcolor="rgba(0,0,0,0)"))
-                      st.plotly_chart(_fig_raw, width="stretch",
-                                      key="rt_raw_chart")
-                  else:
-                      st.caption("Pick at least one Y column to plot.")
-
-  # ── Round-trip calculation ──────────────────────────────────────────
-  if _db_has_data:
-      st.markdown("---")
-      st.markdown("##### 🔄 Lap round-trip (using stored parameters)")
-
-      _rt_source2 = st.radio(
-          "Speed profile source",
-          ["Lap sim result (run the sim above first)",
-           "Custom: paste avg speed + lap time (quick estimate)"],
-          key="rt_source_radio",
-          horizontal=True)
-
-      if _rt_source2.startswith("Custom"):
-          _rt_c1, _rt_c2 = st.columns(2)
-          _rt_avg_ms2 = _rt_c1.number_input(
-              "Average lap speed (m/s)", 0.0, 50.0, 15.0, 0.5, key="rt_avg_ms2")
-          _rt_laptime2 = _rt_c2.number_input(
-              "Lap time (s)", 10.0, 300.0, 75.0, 1.0, key="rt_laptime2")
-          import numpy as _np_rt2
-          _rt_t2      = _np_rt2.linspace(0, _rt_laptime2, 200)
-          _ramp2      = min(5.0, _rt_laptime2 * 0.15)
-          _v2         = _np_rt2.ones(200) * _rt_avg_ms2
-          for _i2, _t2 in enumerate(_rt_t2):
-              if _t2 < _ramp2:
-                  _v2[_i2] = _rt_avg_ms2 * (_t2 / _ramp2)
-              elif _t2 > _rt_laptime2 - _ramp2:
-                  _v2[_i2] = _rt_avg_ms2 * ((_rt_laptime2 - _t2) / _ramp2)
-          _rt_v_ms2, _rt_t_ms2 = _v2, _rt_t2
-          _rt_laptime_in2 = float(_rt_laptime2)
-          _rt_topspd_in2  = float(_np_rt2.max(_v2))
-          _rt_avgspd_in2  = float(_rt_avg_ms2)
-      else:
-          _rt_v_ms2   = st.session_state.get("_last_lap_v")
-          _rt_t_raw2  = st.session_state.get("_last_lap_s")
-          _rt_laptime_in2 = 0.0
-          _rt_topspd_in2  = 0.0
-          _rt_avgspd_in2  = 0.0
-          _rt_t_ms2 = None
-          if _rt_v_ms2 is not None and _rt_t_raw2 is not None:
-              import numpy as _np_rt2
-              _v_arr_rt2 = _np_rt2.array(_rt_v_ms2, dtype=float)
-              _s_arr_rt2 = _np_rt2.array(_rt_t_raw2, dtype=float)
-              _rt_t_ms2  = roundtrip_mod.lap_result_to_time_axis(_v_arr_rt2, _s_arr_rt2)
-              _rt_laptime_in2 = float(_rt_t_ms2[-1]) if len(_rt_t_ms2) else 0.0
-              _rt_topspd_in2  = float(_np_rt2.max(_v_arr_rt2))
-              _rt_avgspd_in2  = float(_np_rt2.mean(_v_arr_rt2))
-          else:
-              st.info("▶ Run the lap sim above first, then come back here.")
-              _rt_v_ms2 = None
-
-      if _rt_v_ms2 is not None:
-          _rt_btn_col2, _rt_info_col2 = st.columns([1, 3])
-          _go_rt2 = _rt_btn_col2.button(
-              "⚡ Run electrical check", width="stretch", key="rt_go_db_btn")
-          _rt_info_col2.markdown(
-              f'<p class="hint" style="margin-top:8px">'
-              f'{len(_rt_v_ms2)} speed points, '
-              f't = {_rt_laptime_in2:.1f} s, '
-              f'v_max = {_rt_topspd_in2 * 3.6:.1f} km/h — '
-              f'parameters from project database</p>',
-              unsafe_allow_html=True)
-
-          if _go_rt2:
-              import numpy as _np_rt3
-              with st.spinner("Running electrical calculations from stored parameters…"):
-                  _rt_result2 = roundtrip_mod.lap_to_excel_roundtrip_from_db(
-                      speed_ms     = _np_rt3.array(_rt_v_ms2, dtype=float),
-                      time_s       = _np_rt3.array(_rt_t_ms2, dtype=float),
-                      ev_params    = _ev_db,
-                      lap_time_s   = _rt_laptime_in2,
-                      top_speed_ms = _rt_topspd_in2,
-                      avg_speed_ms = _rt_avgspd_in2,
-                  )
-              st.session_state["_rt_result"] = _rt_result2
-
-      # ── Display results ─────────────────────────────────────────────
-      _rt_res = st.session_state.get("_rt_result")
-      if _rt_res is not None:
-          if not _rt_res.ok:
-              st.error(f"Calculation failed: {_rt_res.error}")
-          else:
-              for _w in _rt_res.warnings:
-                  st.warning(f"⚠ {_w}")
-
-              _verdict_colour = "#37e0d0" if _rt_res.feasible else "#e74c3c"
-              st.markdown(
-                  f'<div style="border-left:3px solid {_verdict_colour};'
-                  f'padding:6px 12px;margin:8px 0;border-radius:4px;">'
-                  f'{_rt_res.verdict}</div>',
-                  unsafe_allow_html=True)
-
-              st.markdown("###### 📊 Recalculated electrical results")
-
-              # Pack summary
-              with st.expander("🔋 Battery Pack Calcs", expanded=True):
-                  _pk = _rt_res.pack
-                  _pkcols = st.columns(4)
-                  _pkcols[0].markdown(metric("Pack voltage",
-                      f"{_pk.get('pack_voltage_v', 0):.0f}", "V"), unsafe_allow_html=True)
-                  _pkcols[1].markdown(metric("Fuse max",
-                      f"{_pk.get('fuse_max_a', 0):.0f}", "A"), unsafe_allow_html=True)
-                  _pkcols[2].markdown(metric("Pack capacity",
-                      f"{_pk.get('pack_capacity_ah', 0):.1f}", "Ah"), unsafe_allow_html=True)
-                  _pkcols[3].markdown(metric("Pack energy",
-                      f"{(_pk.get('pack_energy_wh', 0) or 0)/1000:.3f}", "kWh"),
-                      unsafe_allow_html=True)
-                  _pkcols2 = st.columns(4)
-                  _pkcols2[0].markdown(metric("Cell current",
-                      f"{_pk.get('cell_current_a', 0):.2f}", "A"), unsafe_allow_html=True)
-                  _pkcols2[1].markdown(metric("Power draw",
-                      f"{_pk.get('power_draw_kw', 0):.2f}", "kW"), unsafe_allow_html=True)
-                  _pkcols2[2].markdown(metric("Joule heating",
-                      f"{_pk.get('joule_heating_kwh', 0):.3f}", "kWh"), unsafe_allow_html=True)
-                  _pkcols2[3].markdown(metric("Pack cells",
-                      f"{int(_pk.get('pack_cell_count', 0) or 0)}", ""),
-                      unsafe_allow_html=True)
-
-              # Lap electrical results
-              st.markdown("###### ⚡ Electrical results from this lap profile")
-              _rc = st.columns(4)
-              _fuse_limit2 = _rt_res.pack.get("fuse_max_a") or 50.0
-              _peak_cls2   = "bad" if _rt_res.peak_current_a > _fuse_limit2 else "good"
-              _rc[0].markdown(metric("Peak current",
-                  f"{_rt_res.peak_current_a:.1f}", "A", _peak_cls2), unsafe_allow_html=True)
-              _rc[1].markdown(metric("Avg current",
-                  f"{_rt_res.avg_current_a:.1f}", "A"), unsafe_allow_html=True)
-              _rc[2].markdown(metric("Peak power",
-                  f"{_rt_res.peak_power_kw:.1f}", "kW"), unsafe_allow_html=True)
-              _rc[3].markdown(metric("Total energy",
-                  f"{_rt_res.total_energy_kwh:.3f}", "kWh"), unsafe_allow_html=True)
-              _rc2 = st.columns(3)
-              _rc2[0].markdown(metric("Max speed",
-                  f"{_rt_res.max_speed_mph:.1f}", "mph"), unsafe_allow_html=True)
-              _rc2[1].markdown(metric("Max RPM (gear 1)",
-                  f"{float(_rt_res.rpm_gear1.max()):.0f}" if len(_rt_res.rpm_gear1) else "—",
-                  "rpm"), unsafe_allow_html=True)
-              _fuse_headroom2 = _fuse_limit2 - _rt_res.peak_current_a
-              _rc2[2].markdown(metric("Fuse headroom",
-                  f"{_fuse_headroom2:.1f}", "A",
-                  "good" if _fuse_headroom2 > 0 else "bad"), unsafe_allow_html=True)
-
-              # Current + RPM charts
-              if len(_rt_res.current_draw_a) > 2 and len(_rt_res.rpm_gear1) > 2:
-                  import plotly.graph_objects as _go_rt2
-                  _t_axis = list(_rt_res.time_s)
-                  _fig_rt = _go_rt2.Figure()
-                  _fig_rt.add_trace(_go_rt2.Scatter(
-                      x=_t_axis, y=list(_rt_res.current_draw_a),
-                      name="Pack current (A)", yaxis="y1",
-                      line=dict(color="#3b7cff", width=2),
-                      fill="tozeroy", fillcolor="rgba(59,124,255,0.08)"))
-                  _fig_rt.add_hline(
-                      y=float(_fuse_limit2),
-                      line=dict(color="#e74c3c", dash="dash", width=1.5),
-                      annotation_text=f"Fuse {_fuse_limit2:.0f} A",
-                      annotation_position="top right")
-                  _fig_rt.add_trace(_go_rt2.Scatter(
-                      x=_t_axis, y=list(_rt_res.rpm_gear1),
-                      name="Wheel RPM (gear 1)", yaxis="y2",
-                      line=dict(color="#f0a500", width=1.5, dash="dot")))
-                  _fig_rt.update_layout(
-                      title="Pack current & wheel RPM vs lap time",
-                      xaxis_title="time (s)",
-                      yaxis=dict(title="current (A)", color="#3b7cff"),
-                      yaxis2=dict(title="RPM", overlaying="y",
-                                  side="right", color="#f0a500"),
-                      height=320,
-                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                      font=dict(color="#cdd6df", size=11),
-                      margin=dict(l=0, r=0, t=36, b=0),
-                      legend=dict(bgcolor="rgba(0,0,0,0)"))
-                  st.plotly_chart(_fig_rt, width="stretch", key="rt_main_chart")
-
-              # Speed + power chart
-              if len(_rt_res.speed_ms) > 2:
-                  import plotly.graph_objects as _go_rt3
-                  _fig_spd = _go_rt3.Figure()
-                  _fig_spd.add_trace(_go_rt3.Scatter(
-                      x=list(_rt_res.time_s),
-                      y=[v * 3.6 for v in _rt_res.speed_ms],
-                      name="Speed (km/h)", line=dict(color="#37e0d0", width=2)))
-                  _fig_spd.add_trace(_go_rt3.Scatter(
-                      x=list(_rt_res.time_s),
-                      y=list(_rt_res.power_kw),
-                      name="Electrical power (kW)", yaxis="y2",
-                      line=dict(color="#a855f7", width=1.5, dash="dot")))
-                  _fig_spd.update_layout(
-                      title="Speed & electrical power over lap time",
-                      xaxis_title="time (s)",
-                      yaxis=dict(title="speed (km/h)", color="#37e0d0"),
-                      yaxis2=dict(title="power (kW)", overlaying="y",
-                                  side="right", color="#a855f7"),
-                      height=260,
-                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                      font=dict(color="#cdd6df", size=11),
-                      margin=dict(l=0, r=0, t=36, b=0),
-                      legend=dict(bgcolor="rgba(0,0,0,0)"))
-                  st.plotly_chart(_fig_spd, width="stretch", key="rt_spd_chart")
-
-              # Download updated workbook (only if we have raw bytes from this session)
-              st.markdown("---")
-              _dl_col1, _dl_col2 = st.columns([1, 2])
-              _cached_bytes = st.session_state.get("_rt_excel_bytes")
-              if _cached_bytes:
-                  # Re-run the full roundtrip write to produce updated xlsx
-                  import numpy as _np_dl
-                  _rt_write = roundtrip_mod.lap_to_excel_roundtrip(
-                      speed_ms    = _np_dl.array(_rt_res.speed_ms, dtype=float),
-                      time_s      = _np_dl.array(_rt_res.time_s,   dtype=float),
-                      excel_bytes = _cached_bytes,
-                      lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
-                      top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2"  in dir() else 0.0,
-                      avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2"  in dir() else 0.0,
-                  )
-                  if _rt_write.ok and _rt_write.excel_bytes:
-                      _dl_col1.download_button(
-                          label="⬇ Download recalculated Excel",
-                          data=_rt_write.excel_bytes,
-                          file_name="FSAE_EV_PowerDraw_LapSim.xlsx",
-                          mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                          key="rt_download_btn",
-                          help="Workbook with SpeedVsTime updated and all values baked in.")
-                      _dl_col2.markdown(
-                          '<p class="hint" style="margin-top:10px;">'
-                          'SpeedVsTime updated with the lap sim trace; all downstream '
-                          'formulas recalculated as plain numbers. '
-                          'Re-upload a new workbook to refresh the stored parameters.</p>',
-                          unsafe_allow_html=True)
-              else:
-                  _dl_col1.markdown(
-                      '<p class="hint" style="margin-top:10px;">'
-                      '💡 Re-upload the workbook (above) to enable the download — '
-                      'the raw file isn\'t stored between sessions for size reasons; '
-                      'only the extracted parameters are.</p>',
-                      unsafe_allow_html=True)
-
-              # ── Extended analysis: thermals, SoC, feasible pack ────────
-              import numpy as _np_ext
-              _thermals = roundtrip_mod.compute_cell_thermals(
-                  current_draw_a=_rt_res.current_draw_a,
-                  time_s=_rt_res.time_s,
-                  pack=_rt_res.pack,
-              )
-              _soc_data = roundtrip_mod.compute_soc_and_stop(
-                  power_kw=_rt_res.power_kw,
-                  time_s=_rt_res.time_s,
-                  pack=_rt_res.pack,
-                  motor=_rt_res.motor,
-              )
-              _min_pack = roundtrip_mod.compute_minimum_feasible_pack(
-                  power_kw=_rt_res.power_kw,
-                  time_s=_rt_res.time_s,
-                  current_draw_a=_rt_res.current_draw_a,
-                  pack=_rt_res.pack,
-                  motor=_rt_res.motor,
-              )
-
-              # ── 🔥 Pack thermal heatmap ─────────────────────────────────
-              st.markdown("---")
-              st.markdown("##### 🔥 Pack Thermal Heatmap")
-              st.markdown(
-                  '<p class="hint">Each square is one physical cell. '
-                  'Colour maps estimated surface temperature from the Joule '
-                  'heat model (I²R per cell, with convective cooling). '
-                  'Series rows at the bottom of the stack run hotter — '
-                  'thermal gradient applied from the BMS data.</p>',
-                  unsafe_allow_html=True)
-
-              _n_s = max(int(_rt_res.pack.get("n_series",   1) or 1), 1)
-              _n_p = max(int(_rt_res.pack.get("n_parallel", 1) or 1), 1)
-              _t_lo = 25.0
-              _t_hi = max(_thermals["peak_temp_c"], 30.0)
-              _grad = _np_ext.linspace(0.85, 1.15, _n_s)
-
-              import plotly.graph_objects as _go_hm
-              _hm_z    = []
-              _hm_text = []
-              for _si in range(_n_s):
-                  row_z, row_t = [], []
-                  for _pi in range(_n_p):
-                      _ct = _t_lo + (_t_hi - _t_lo) * _grad[_si]
-                      row_z.append(_ct)
-                      row_t.append(f"S{_si+1}/P{_pi+1}<br>{_ct:.1f}°C")
-                  _hm_z.append(row_z)
-                  _hm_text.append(row_t)
-
-              _fig_hm = _go_hm.Figure(data=_go_hm.Heatmap(
-                  z=_hm_z,
-                  text=_hm_text,
-                  hovertemplate="%{text}<extra></extra>",
-                  colorscale=[[0,"#37E0D0"],[0.5,"#F0A500"],[1,"#E74C3C"]],
-                  zmin=_t_lo, zmax=_t_hi,
-                  colorbar=dict(
-                      title="°C",
-                      tickfont=dict(color="#cdd6df"),
-                      titlefont=dict(color="#cdd6df"),
-                      bgcolor="rgba(0,0,0,0)"),
-                  xgap=2, ygap=2,
-              ))
-              _fig_hm.update_layout(
-                  title=dict(
-                      text=f"Battery pack — {_n_s}S × {_n_p}P "
-                           f"({_n_s*_n_p} cells) | "
-                           f"Peak {_t_hi:.1f}°C | "
-                           f"Joule: {_thermals['total_joule_kwh']*1000:.1f} Wh/cell",
-                      font=dict(color="#cdd6df", size=12)),
-                  xaxis=dict(
-                      title="Parallel string (P)", showgrid=False,
-                      tickfont=dict(color="#8899aa"),
-                      tickmode="array",
-                      tickvals=list(range(_n_p)),
-                      ticktext=[f"P{p+1}" for p in range(_n_p)]),
-                  yaxis=dict(
-                      title="Series row (S)", showgrid=False,
-                      tickfont=dict(color="#8899aa"),
-                      tickmode="array",
-                      tickvals=list(range(_n_s)),
-                      ticktext=[f"S{s+1}" for s in range(_n_s)],
-                      autorange="reversed"),
-                  paper_bgcolor="rgba(0,0,0,0)",
-                  plot_bgcolor="rgba(0,0,0,0)",
-                  height=max(200, min(_n_s * 36 + 100, 520)),
-                  margin=dict(l=0, r=60, t=48, b=0),
-              )
-              st.plotly_chart(_fig_hm, width="stretch", key="rt_heatmap")
-
-              _hm_c = st.columns(4)
-              _hm_c[0].markdown(metric("Peak cell temp",
-                  f"{_thermals['peak_temp_c']:.1f}", "°C",
-                  "bad" if _thermals["peak_temp_c"] > 60 else "good"),
-                  unsafe_allow_html=True)
-              _hm_c[1].markdown(metric("Peak Joule power",
-                  f"{_thermals['peak_joule_w']:.2f}", "W/cell"),
-                  unsafe_allow_html=True)
-              _hm_c[2].markdown(metric("Total Joule heat",
-                  f"{_thermals['total_joule_kwh']*1000:.2f}", "Wh/cell"),
-                  unsafe_allow_html=True)
-              _hm_c[3].markdown(metric("Pack topology",
-                  f"{_n_s}S×{_n_p}P", ""),
-                  unsafe_allow_html=True)
-
-              # Cell temperature over lap time
-              import plotly.graph_objects as _go_ct
-              _fig_ct = _go_ct.Figure()
-              _fig_ct.add_trace(_go_ct.Scatter(
-                  x=list(_rt_res.time_s),
-                  y=list(_thermals["temp_c"]),
-                  name="Cell surface temp (°C)",
-                  line=dict(color="#E74C3C", width=2),
-                  fill="tozeroy",
-                  fillcolor="rgba(231,76,60,0.12)"))
-              _fig_ct.add_trace(_go_ct.Scatter(
-                  x=list(_rt_res.time_s),
-                  y=list(_thermals["joule_w"]),
-                  name="Joule power/cell (W)",
-                  yaxis="y2",
-                  line=dict(color="#F0A500", width=1.5, dash="dot")))
-              _fig_ct.add_hline(y=60.0,
-                  line=dict(color="#E74C3C", dash="dash", width=1),
-                  annotation_text="60°C warn",
-                  annotation_position="top right")
-              _fig_ct.update_layout(
-                  title="Cell temperature & Joule power over lap",
-                  xaxis_title="time (s)",
-                  yaxis=dict(title="cell temp (°C)", color="#E74C3C"),
-                  yaxis2=dict(title="Joule W/cell", overlaying="y",
-                              side="right", color="#F0A500"),
-                  height=260,
-                  paper_bgcolor="rgba(0,0,0,0)",
-                  plot_bgcolor="rgba(0,0,0,0)",
-                  font=dict(color="#cdd6df", size=11),
-                  margin=dict(l=0, r=0, t=36, b=0),
-                  legend=dict(bgcolor="rgba(0,0,0,0)"))
-              st.plotly_chart(_fig_ct, width="stretch", key="rt_celltemp")
-
-              # ── 🛑 Lap stop predictor ───────────────────────────────────
-              st.markdown("---")
-              st.markdown("##### 🛑 Lap Stop Predictor")
-              if _soc_data["finishes"]:
-                  st.markdown(
-                      f'<div style="border-left:3px solid #37e0d0;padding:8px 14px;'
-                      f'border-radius:4px;margin:6px 0;">'
-                      f'✅ <b>Car finishes the lap</b> — '
-                      f'{_soc_data["usable_kwh"]:.3f} kWh usable, '
-                      f'{_rt_res.total_energy_kwh:.3f} kWh drawn, '
-                      f'{(_soc_data["usable_kwh"] - _rt_res.total_energy_kwh)*1000:.0f} Wh remaining</div>',
-                      unsafe_allow_html=True)
-              else:
-                  _stop_pct = _soc_data["pct_lap_done"] * 100
-                  _stop_t   = _soc_data["stop_time_s"]
-                  _lap_t    = float(_rt_res.time_s[-1])
-                  st.markdown(
-                      f'<div style="border-left:3px solid #e74c3c;padding:8px 14px;'
-                      f'border-radius:4px;margin:6px 0;">'
-                      f'🛑 <b>Car stops at {_stop_t:.1f} s '
-                      f'({_stop_pct:.1f}% through the lap)</b> — '
-                      f'{_soc_data["deficit_kwh"]*1000:.0f} Wh short. '
-                      f'{_lap_t - _stop_t:.1f} s of lap remaining.</div>',
-                      unsafe_allow_html=True)
-
-              import plotly.graph_objects as _go_soc
-              _fig_soc = _go_soc.Figure()
-              _fig_soc.add_trace(_go_soc.Scatter(
-                  x=list(_rt_res.time_s),
-                  y=list(_soc_data["soc_pct"]),
-                  name="State of charge (%)",
-                  line=dict(color="#3b7cff", width=2.5),
-                  fill="tozeroy",
-                  fillcolor="rgba(59,124,255,0.12)"))
-              _fig_soc.add_trace(_go_soc.Scatter(
-                  x=list(_rt_res.time_s),
-                  y=list(_rt_res.power_kw),
-                  name="Power draw (kW)",
-                  yaxis="y2",
-                  line=dict(color="#a855f7", width=1.5, dash="dot")))
-              _fig_soc.add_hline(y=20.0,
-                  line=dict(color="#F0A500", dash="dash", width=1),
-                  annotation_text="20% SoC warn",
-                  annotation_position="bottom right")
-              _fig_soc.add_hline(y=0.0,
-                  line=dict(color="#E74C3C", dash="solid", width=1.5),
-                  annotation_text="Empty",
-                  annotation_position="bottom right")
-              if not _soc_data["finishes"] and _soc_data["stop_time_s"]:
-                  _fig_soc.add_vline(
-                      x=_soc_data["stop_time_s"],
-                      line=dict(color="#E74C3C", dash="dash", width=2),
-                      annotation_text=f"🛑 Stop {_soc_data['stop_time_s']:.0f}s",
-                      annotation_position="top left")
-              _fig_soc.update_layout(
-                  title="State of charge & power draw over lap",
-                  xaxis_title="time (s)",
-                  yaxis=dict(title="SoC (%)", color="#3b7cff",
-                             range=[-5, 105]),
-                  yaxis2=dict(title="power (kW)", overlaying="y",
-                              side="right", color="#a855f7"),
-                  height=300,
-                  paper_bgcolor="rgba(0,0,0,0)",
-                  plot_bgcolor="rgba(0,0,0,0)",
-                  font=dict(color="#cdd6df", size=11),
-                  margin=dict(l=0, r=0, t=36, b=0),
-                  legend=dict(bgcolor="rgba(0,0,0,0)"))
-              st.plotly_chart(_fig_soc, width="stretch", key="rt_soc_chart")
-
-              # ── 📐 Minimum feasible pack ────────────────────────────────
-              st.markdown("---")
-              st.markdown("##### 📐 Minimum Feasible Pack")
-              st.markdown(
-                  '<p class="hint">Based on this lap\'s energy draw. '
-                  'Recommended adds 10% safety margin. '
-                  'Cell count assumes the same series string, adding parallel '
-                  'strings to hit the required capacity.</p>',
-                  unsafe_allow_html=True)
-
-              _fp_ok = _min_pack["energy_shortfall_kwh"] == 0
-              _fp_col = st.columns(4)
-              _fp_col[0].markdown(metric("Current pack energy",
-                  f"{_min_pack['current_usable_kwh']:.3f}", "kWh",
-                  "good" if _fp_ok else "bad"), unsafe_allow_html=True)
-              _fp_col[1].markdown(metric("Minimum needed",
-                  f"{_min_pack['min_energy_kwh']:.3f}", "kWh"),
-                  unsafe_allow_html=True)
-              _fp_col[2].markdown(metric("Recommended (+10%)",
-                  f"{_min_pack['rec_energy_kwh']:.3f}", "kWh"),
-                  unsafe_allow_html=True)
-              _fp_col[3].markdown(metric("Energy shortfall",
-                  f"{_min_pack['energy_shortfall_kwh']*1000:.0f}", "Wh",
-                  "good" if _fp_ok else "bad"), unsafe_allow_html=True)
-
-              _fp_col2 = st.columns(4)
-              _fp_col2[0].markdown(metric("Min capacity",
-                  f"{_min_pack['min_capacity_ah']:.1f}", "Ah"),
-                  unsafe_allow_html=True)
-              _fp_col2[1].markdown(metric("Rec. capacity",
-                  f"{_min_pack['rec_capacity_ah']:.1f}", "Ah"),
-                  unsafe_allow_html=True)
-              _fp_col2[2].markdown(metric("Rec. cell count",
-                  f"{_min_pack['rec_total_cells']}", "cells"),
-                  unsafe_allow_html=True)
-              _fp_col2[3].markdown(metric("Rec. pack mass",
-                  f"{_min_pack['rec_pack_mass_kg']:.1f}", "kg"),
-                  unsafe_allow_html=True)
-
-              # What-if bar chart: capacity vs laps
-              _wif_caps  = [5, 8, 10, 12, 15, 18, 20, 25, 30]
-              _wif_e     = [c * _min_pack["pack_voltage_v"] * 0.92 / 1000.0
-                            for c in _wif_caps]
-              _wif_laps  = [e / max(_rt_res.total_energy_kwh, 0.001)
-                            for e in _wif_e]
-              _wif_ok    = [e >= _rt_res.total_energy_kwh for e in _wif_e]
-              import plotly.graph_objects as _go_fp
-              _fig_fp = _go_fp.Figure()
-              _fig_fp.add_trace(_go_fp.Bar(
-                  x=[f"{c} Ah" for c in _wif_caps],
-                  y=_wif_laps,
-                  marker_color=["#37E0D0" if ok else "#E74C3C" for ok in _wif_ok],
-                  text=[f"{v:.1f}×" for v in _wif_laps],
-                  textposition="outside",
-                  textfont=dict(color="#cdd6df", size=9),
-                  name="Laps per charge"))
-              _fig_fp.add_hline(y=1.0,
-                  line=dict(color="#F0A500", dash="dash", width=1.5),
-                  annotation_text="1 lap minimum",
-                  annotation_position="top right")
-              _fig_fp.add_hline(y=22.0,
-                  line=dict(color="#a855f7", dash="dash", width=1),
-                  annotation_text="22 laps (endurance)",
-                  annotation_position="top right")
-              _fig_fp.update_layout(
-                  title="Pack capacity → laps per charge (green = clears 1 lap)",
-                  xaxis_title="Pack capacity (Ah)",
-                  yaxis_title="Laps per charge",
-                  height=280,
-                  paper_bgcolor="rgba(0,0,0,0)",
-                  plot_bgcolor="rgba(0,0,0,0)",
-                  font=dict(color="#cdd6df", size=11),
-                  margin=dict(l=0, r=0, t=36, b=0),
-                  showlegend=False)
-              st.plotly_chart(_fig_fp, width="stretch", key="rt_feaspack_chart")
-
-              # ── Enhanced Excel download ─────────────────────────────────
-              st.markdown("---")
-              _enh_col1, _enh_col2 = st.columns([1, 2])
-              _cached_b2 = st.session_state.get("_rt_excel_bytes")
-              if _cached_b2:
-                  import numpy as _np_enh
-                  with st.spinner("Building enhanced workbook with heatmap, SoC, and feasibility sheets…"):
-                      # First produce the standard round-trip workbook
-                      _rt_base = roundtrip_mod.lap_to_excel_roundtrip(
-                          speed_ms    = _np_enh.array(_rt_res.speed_ms, dtype=float),
-                          time_s      = _np_enh.array(_rt_res.time_s,   dtype=float),
-                          excel_bytes = _cached_b2,
-                          lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
-                          top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2" in dir() else 0.0,
-                          avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2" in dir() else 0.0,
-                      )
-                      if _rt_base.ok and _rt_base.excel_bytes:
-                          _enh_bytes = roundtrip_mod.build_enhanced_excel(
-                              result      = _rt_res,
-                              excel_bytes = _rt_base.excel_bytes,
-                              thermals    = _thermals,
-                              soc_data    = _soc_data,
-                              min_pack    = _min_pack,
-                              lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
-                              top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2" in dir() else 0.0,
-                              avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2" in dir() else 0.0,
-                          )
-                          _enh_col1.download_button(
-                              label="⬇ Download enhanced Excel (+3 sheets)",
-                              data=_enh_bytes,
-                              file_name="FSAE_EV_KinematiK_Enhanced.xlsx",
-                              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                              key="rt_enh_download_btn")
-                          _enh_col2.markdown(
-                              '<p class="hint" style="margin-top:10px;">'
-                              'Includes all original sheets plus: '
-                              '<b>PackHeatmap</b> (cell grid with thermal colours + '
-                              'Python xlwings macro stub to regenerate the chart), '
-                              '<b>LapEnergy</b> (SoC depletion curve, stop marker, '
-                              'energy timeline + chart), '
-                              '<b>FeasiblePack</b> (minimum pack advisor + what-if '
-                              'capacity table).</p>',
-                              unsafe_allow_html=True)
-              else:
-                  _enh_col1.markdown(
-                      '<p class="hint">'
-                      '💡 Re-upload the workbook above to enable the enhanced Excel download.</p>',
-                      unsafe_allow_html=True)
-
-              # Log
-              if st.button("Log round-trip to handover", key="rt_log_btn"):
-                  _stop_note = (
-                      f"Car stops at {_soc_data['stop_time_s']:.1f}s "
-                      f"({_soc_data['pct_lap_done']*100:.1f}% lap done). "
-                      if not _soc_data["finishes"] else "Car finishes lap. "
-                  )
-                  log_decision_now(
-                      "electrics", "Excel round-trip",
-                      f"Lap sim data ({len(_rt_res.speed_ms)} pts) — "
-                      f"Peak current: {_rt_res.peak_current_a:.1f} A / "
-                      f"{_fuse_limit2:.0f} A fuse. "
-                      f"Total energy: {_rt_res.total_energy_kwh:.3f} kWh. "
-                      f"Max RPM (gear 1): {float(_rt_res.rpm_gear1.max()):.0f}. "
-                      f"{_stop_note}"
-                      f"Min pack needed: {_min_pack['rec_capacity_ah']:.1f} Ah / "
-                      f"{_min_pack['rec_energy_kwh']:.3f} kWh. "
-                      f"Peak cell temp: {_thermals['peak_temp_c']:.1f}°C. "
-                      f"Verdict: {_rt_res.verdict}")
-                  st.success("Logged to handover record.")
-  else:
-      st.markdown(
-          '<p class="hint" style="border-left:2px solid #a855f7; padding-left:10px;">'
-          '📂 Import <code>FSAE_EV_Power_Draw.xlsx</code> once using the expander above. '
-          'KinematiK extracts all pack and motor constants and stores them in the project — '
-          'you won\'t need to re-upload it next session.</p>',
-          unsafe_allow_html=True)
+  with st.expander("🟢 Track", expanded=True):
+    track_src = st.radio("Run on", ["Representative autocross",
+                                    "Import GPS / cone CSV"], horizontal=True)
+    ax_scale = 1.0
+    _imported_xy = None
+    if track_src == "Representative autocross":
+        ax_scale = st.slider("Autocross lap scale (stretches the yardstick lap)",
+                             0.6, 1.6, 1.0, 0.1)
+    else:
+        st.markdown('<p class="hint">Upload your actual layout — no more manual '
+                    'segment entry. Centreline <code>x,y</code> (metres) or GPS '
+                    '<code>lat,lon</code>; or cone rows '
+                    '<code>left_x,left_y,right_x,right_y</code>. The lap then runs your '
+                    'real course.</p>', unsafe_allow_html=True)
+        tcol = st.columns(3)
+        fmt = tcol[0].selectbox("CSV format", ["centreline x,y (m)",
+                                               "GPS lat,lon", "cones L/R x,y"])
+        width_m = unum(tcol[1], "Track width (m)", 2.0, 6.0, 3.5, "m", step=0.5)
+        do_line = tcol[2].checkbox("Optimise racing line", value=True,
+                                   help="Use the track width to straighten corners — "
+                                        "reports the time gained vs the centreline.")
+        tup = st.file_uploader("Track CSV", type=["csv"], key="track_csv")
+        if tup is not None:
+            try:
+                import io as _io2
+                raw = tup.getvalue().decode("utf-8", errors="replace")
+                arr = np.genfromtxt(_io2.StringIO(raw), delimiter=",")
+                if arr.ndim == 1:
+                    arr = arr.reshape(1, -1)
+                if arr.size and np.isnan(arr[0]).any():        # header row
+                    arr = arr[1:]
+                if fmt == "cones L/R x,y" and arr.shape[1] >= 4:
+                    cx, cy = lap_mod.cones_to_centerline(arr[:, 0], arr[:, 1],
+                                                         arr[:, 2], arr[:, 3])
+                elif fmt == "GPS lat,lon" and arr.shape[1] >= 2:
+                    cx, cy = lap_mod.latlon_to_xy(arr[:, 0], arr[:, 1])
+                else:
+                    cx, cy = arr[:, 0], arr[:, 1]
+                _imported_xy = (np.asarray(cx, float), np.asarray(cy, float),
+                                width_m, do_line)
+                st.success(f"Loaded {len(cx)} points "
+                           f"({np.hypot(np.diff(cx), np.diff(cy)).sum():.0f} m path).")
+            except Exception as e:
+                st.error(f"Couldn't parse that track CSV: {e}")
+
+    if st.button("▶ Run lap-time sim", width='stretch'):
+        st.session_state._run_lap = True
+        try:
+            _axn.engage("laptime", "run_sim")
+        except Exception:
+            pass
+
+    if st.session_state.get("_run_lap"):
+        with st.spinner("Driving your car around on the live tire…"):
+            skid = lap_mod.skidpad_time(_veh_lap, _pt)
+            if _imported_xy is not None:
+                ix, iy, iw, iline = _imported_xy
+                if iline:
+                    _cmp = lap_mod.compare_line_vs_centerline(_veh_lap, ix, iy,
+                                                              track_width_m=iw, pt=_pt)
+                    track = _cmp["line_track"]
+                    lap = _cmp["line_result"]
+                    st.session_state._line_cmp = dict(
+                        gained=_cmp["time_gained_s"],
+                        center_t=_cmp["centerline_result"].lap_time_s,
+                        line_t=_cmp["line_result"].lap_time_s,
+                        lx=_cmp["line_x"], ly=_cmp["line_y"], cx=ix, cy=iy)
+                else:
+                    track = lap_mod.track_from_path(ix, iy, name="Imported", ds=1.0)
+                    lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
+                    st.session_state.pop("_line_cmp", None)
+            else:
+                track = lap_mod.default_autocross(scale=ax_scale)
+                lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
+                st.session_state.pop("_line_cmp", None)
+
+        # Surface any safe-default warnings rather than hiding a bad data point.
+        for r in (skid, lap):
+            if r.warning:
+                st.warning(f"⚠ {r.warning}")
+
+        if lap.ok:
+            try:
+                _axn.complete("laptime", "run_sim")
+            except Exception:
+                pass
+        else:
+            try:
+                _axn.error("laptime", kind="lap_sim_not_ok")
+            except Exception:
+                pass
+
+        # ---- Skidpad ---- #
+        st.markdown("###### FSAE skidpad (one timed circle)")
+        skc = st.columns(3)
+        _skt = f"{skid.lap_time_s:.3f}" if skid.ok and np.isfinite(skid.lap_time_s) else "—"
+        skc[0].markdown(metric("Skidpad time", _skt, "s",
+                               "good" if skid.ok else "bad"), unsafe_allow_html=True)
+        skc[1].markdown(metric("Corner speed", f"{skid.avg_speed_ms:.1f}", "m/s"),
+                        unsafe_allow_html=True)
+        _sk_lat = (skid.avg_speed_ms ** 2) / (lap_mod.SKIDPAD_RADIUS_M * 9.81) \
+            if skid.ok else 0.0
+        skc[2].markdown(metric("Lateral", f"{_sk_lat:.2f}", "g"), unsafe_allow_html=True)
+
+        # ---- Autocross / imported lap ---- #
+        _lap_title = track.name if getattr(track, "name", "") else "Representative autocross"
+        st.markdown(f"###### {_lap_title}")
+        axc = st.columns(4)
+        _axt = f"{lap.lap_time_s:.2f}" if lap.ok and np.isfinite(lap.lap_time_s) else "—"
+        axc[0].markdown(metric("Lap time", _axt, "s",
+                               "good" if lap.ok else "bad"), unsafe_allow_html=True)
+        axc[1].markdown(metric("Avg speed", f"{lap.avg_speed_ms:.1f}", "m/s"),
+                        unsafe_allow_html=True)
+        axc[2].markdown(metric("Top speed", f"{lap.top_speed_ms:.1f}", "m/s"),
+                        unsafe_allow_html=True)
+        axc[3].markdown(metric("Min speed", f"{lap.min_speed_ms:.1f}", "m/s"),
+                        unsafe_allow_html=True)
+
+        # ---- Racing line vs centreline (only when an imported track was optimised) ---- #
+        _lc = st.session_state.get("_line_cmp")
+        if _lc and np.isfinite(_lc.get("gained", float("nan"))):
+            st.markdown(metric("Racing line vs centreline",
+                               f"{_lc['gained']:+.2f}", "s gained",
+                               "good" if _lc["gained"] >= 0 else "warn"),
+                        unsafe_allow_html=True)
+            figRL = go.Figure()
+            figRL.add_trace(go.Scatter(x=uconv_series(_lc["cx"], "m"), y=uconv_series(_lc["cy"], "m"), mode="lines",
+                                       line=dict(color="#8d99a6", width=1.5, dash="dot"),
+                                       name="centreline"))
+            figRL.add_trace(go.Scatter(x=uconv_series(_lc["lx"], "m"), y=uconv_series(_lc["ly"], "m"), mode="lines",
+                                       line=dict(color=CYAN, width=2.5),
+                                       name="racing line"))
+            figRL.update_layout(**PLOT_LAYOUT, title="Racing line (uses track width)",
+                                xaxis_title=units_mod.ulabel("x (m)"),
+                                yaxis_title=units_mod.ulabel("y (m)"), height=360)
+            figRL.update_yaxes(scaleanchor="x", scaleratio=1)
+            st.plotly_chart(figRL, width='stretch')
+            st.markdown('<p class="hint">Curvature-optimal line within the track '
+                        'width — straightens corners to raise minimum radius, hence '
+                        'speed. It is a curvature-optimal (not fully-coupled '
+                        'minimum-time) line; honest about the difference.</p>',
+                        unsafe_allow_html=True)
+        if _pt.uses_real_motor_map():
+            st.markdown('<span class="tag good">motor map active (representative '
+                        'curve)</span>', unsafe_allow_html=True)
+
+        # Speed-vs-distance trace
+        if lap.ok and lap.s and lap.v:
+            _uDist = units_mod.label("m")
+            _uSp = units_mod.label("m/s")
+            figL = go.Figure()
+            figL.add_trace(go.Scatter(
+                x=[units_mod.from_metric(v, "m") for v in lap.s],
+                y=[units_mod.from_metric(v, "m/s") for v in lap.v], mode="lines",
+                line=dict(color=CYAN, width=2.5), name="speed"))
+            figL.update_layout(**PLOT_LAYOUT, title="Speed around the lap",
+                               xaxis_title=f"distance ({_uDist})",
+                               yaxis_title=f"speed ({_uSp})",
+                               height=320)
+            st.plotly_chart(figL, width='stretch')
+
+        # Store last skidpad time so a delta can be shown after the next change.
+        if skid.ok and np.isfinite(skid.lap_time_s):
+            prev = st.session_state.get("_last_skidpad")
+            if prev is not None and abs(prev - skid.lap_time_s) > 1e-4:
+                d = skid.lap_time_s - prev
+                _cls = "good" if d < 0 else "bad"
+                st.markdown(
+                    f"<span class='tag {_cls}'>Δ skidpad vs last run: "
+                    f"{d:+.3f} s</span>", unsafe_allow_html=True)
+            st.session_state._last_skidpad = skid.lap_time_s
+
+        # Store lap speed/distance profile so the ⚡ electrical check below can access it
+        if lap.ok and lap.v and lap.s:
+            st.session_state._last_lap_v = list(lap.v)
+            st.session_state._last_lap_s = list(lap.s)
+
+        # Log it to the handover record so the reasoning survives.
+        if lap.ok and np.isfinite(lap.lap_time_s):
+            lc1, lc2 = st.columns([1, 2])
+            if lc1.button("Log these times", width='stretch'):
+                log_decision_now(
+                    "suspension", "Lap-time prediction",
+                    f"Skidpad {_skt}s, autocross {_axt}s on "
+                    f"{'TTC tire' if not st.session_state.get('tire_is_default', True) else 'generic tire'} "
+                    f"(power {uval(pw, 'kW')}, ClA {cla:.2f}).")
+                st.success("Logged to handover record.")
+            lc2.markdown('<p class="hint">Tip: change a hardpoint or a setup lever, '
+                         're-run, and watch the skidpad delta. That delta — in seconds '
+                         '— is the number to defend a design decision with.</p>',
+                         unsafe_allow_html=True)
+
+        if st.session_state.get("tire_is_default", True):
+            st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                        'padding-left:10px;">Running on the <b>generic default tire</b>. '
+                        'Times are the right shape and rank setups correctly, but load '
+                        'your TTC-fitted tire in TIRE &amp; GRIP before trusting the '
+                        'absolute seconds.</p>', unsafe_allow_html=True)
+        st.markdown('<p class="hint">Model: quasi-steady-state point mass on the live '
+                    'grip envelope. Good for ranking and for skidpad (near closed-form); '
+                    'on autocross it lands within a few percent — enough to choose '
+                    'between setups, not to predict the absolute clock to the tenth.</p>',
+                    unsafe_allow_html=True)
+
+
+
+
+    # ================================================================== #
+    #  ⚡ ELECTRICAL FEASIBILITY CHECK  (Electrics Lead Integration)      #
+    # ================================================================== #
+    # The lap-time sim finds the mechanically fastest lap. But if that lap
+    # demands more current than the fuse rating, drains the pack, or pushes
+    # individual cells past their rated current, the lap simply does not
+    # happen. This section bridges the gap between the mechanical lap and
+    # the electrical reality — using the electrics lead's own Excel workbook.
+    st.markdown("---")
+    st.markdown("#### ⚡ Electrical Feasibility Check")
+    st.markdown(
+        '<p class="hint">The lap-time sim finds the <i>mechanically</i> fastest lap. '
+        'This check tells you whether the <b>electrical system can actually deliver it</b>. '
+        'Upload the electrics lead\'s Excel workbook (the one with Battery Pack Calcs, '
+        'ElecPropulsion, and SpeedVsTime sheets) and the checker will flag any fuse '
+        'violations, cell overcurrent, or energy deficits — in plain English, '
+        'before you freeze the build.</p>',
+        unsafe_allow_html=True)
+
+    _elec_file = st.file_uploader(
+        "Upload FSAE_EV_Power_Draw.xlsx (electrics lead's workbook)",
+        type=["xlsx"],
+        key="elec_check_xlsx",
+        help="Needs sheets: 'Battery Pack Calcs', 'ElecPropulsion', 'SpeedVsTime'. "
+             "This is the same file the electrics lead maintains.")
+
+    _elec_col1, _elec_col2 = st.columns(2)
+    _elec_mass = _elec_col1.number_input(
+        "Vehicle mass incl. driver (kg)", 150.0, 400.0, 230.0, 5.0,
+        key="elec_mass",
+        help="Used to compute acceleration power demand along the lap.")
+    _elec_driveff = _elec_col2.slider(
+        "Drivetrain efficiency (%)", 70, 98, 90, 1,
+        key="elec_driveff",
+        help="Combined inverter + motor + gearbox efficiency (%). "
+             "Use 90% if unsure.") / 100.0
+
+    _elec_cda = _elec_col1.number_input(
+        "Drag CdA (m\u00b2)", 0.0, 3.0, 1.10, 0.05,
+        key="elec_cda",
+        help="Aerodynamic drag area. Match the value used in the lap sim above.")
+    _elec_crr = _elec_col2.number_input(
+        "Rolling resistance crr", 0.005, 0.05, 0.018, 0.002,
+        format="%.3f",
+        key="elec_crr",
+        help="Tyre rolling resistance coefficient.")
+
+    if _elec_file is not None:
+        try:
+            _elec_bytes  = _elec_file.read()
+            _elec_params = elec_check_mod.ElecParams.from_excel_bytes(_elec_bytes)
+
+            with st.expander("\U0001f4cb Parsed electrical parameters", expanded=False):
+                _pc = st.columns(4)
+                _pc[0].markdown(metric("Pack voltage",
+                    f"{_elec_params.pack_voltage_v:.0f}", "V"), unsafe_allow_html=True)
+                _pc[1].markdown(metric("Pack capacity",
+                    f"{_elec_params.pack_capacity_ah:.1f}", "Ah"), unsafe_allow_html=True)
+                _pc[2].markdown(metric("Fuse rating",
+                    f"{_elec_params.fuse_max_a:.0f}", "A"), unsafe_allow_html=True)
+                _pc[3].markdown(metric("Usable energy",
+                    f"{_elec_params.usable_energy_kwh:.3f}", "kWh"), unsafe_allow_html=True)
+                _pc2 = st.columns(4)
+                _pc2[0].markdown(metric("Parallel strings",
+                    f"{_elec_params.n_parallel}", ""), unsafe_allow_html=True)
+                _pc2[1].markdown(metric("Series cells",
+                    f"{_elec_params.n_series}", ""), unsafe_allow_html=True)
+                _pc2[2].markdown(metric("Cell rating",
+                    f"{_elec_params.nominal_cell_current_a:.1f}", "A"), unsafe_allow_html=True)
+                _pc2[3].markdown(metric("Fuse power ceiling",
+                    f"{_elec_params.max_power_from_fuse_kw:.1f}", "kW"), unsafe_allow_html=True)
+
+            _elec_src = st.radio(
+                "Speed profile to check",
+                ["Use the lap sim result above (if run)",
+                 "Use Speed vs Time data from the uploaded Excel"],
+                horizontal=True,
+                key="elec_src_radio",
+                help="The lap sim gives a track-specific profile. "
+                     "The Excel SpeedVsTime sheet is the electrics lead's measured/modelled run.")
+
+            _elec_result = None
+
+            if _elec_src.startswith("Use the lap sim"):
+                if st.session_state.get("_run_lap"):
+                    try:
+                        _lap_v_check = st.session_state.get("_last_lap_v")
+                        _lap_s_check = st.session_state.get("_last_lap_s")
+                        if _lap_v_check is not None and _lap_s_check is not None:
+                            _elec_result = elec_check_mod.check_lap_electrical(
+                                _lap_v_check, _lap_s_check,
+                                _elec_params,
+                                drivetrain_eff=float(_elec_driveff),
+                                vehicle_mass_kg=float(_elec_mass),
+                                drag_cda=float(_elec_cda),
+                                crr=float(_elec_crr),
+                            )
+                        else:
+                            st.info("Run the lap sim first (\u25b6 Run lap-time sim above), "
+                                    "then re-open this file uploader to run the electrical check.")
+                    except Exception as _ee:
+                        st.warning(f"Could not extract lap profile: {_ee}")
+                else:
+                    st.info("Run the lap sim first (\u25b6 Run lap-time sim above).")
+            else:
+                try:
+                    _t_arr, _v_arr = elec_check_mod.load_speed_vs_time_from_bytes(_elec_bytes)
+                    # _t_arr = time (s), _v_arr = speed (mph) — already validated ≥2 rows
+                    _elec_result = elec_check_mod.check_lap_from_speed_csv(
+                        _v_arr, _t_arr, _elec_params,
+                        drivetrain_eff=float(_elec_driveff),
+                        vehicle_mass_kg=float(_elec_mass),
+                        drag_cda=float(_elec_cda),
+                        crr=float(_elec_crr),
+                    )
+                    st.caption(
+                        f"SpeedVsTime: {len(_t_arr)} pts, "
+                        f"{_t_arr[-1]:.1f} s total, "
+                        f"{min(_v_arr):.0f}\u2013{max(_v_arr):.0f} mph.")
+                except ValueError as _ee2:
+                    st.error(
+                        f"\u274c SpeedVsTime data problem: {_ee2}\n\n"
+                        f"Add a sheet named **SpeedVsTime** with **column A = time (s)** "
+                        f"and **column B = speed (mph)**, starting from row 2 (row 1 = header)."
+                    )
+                except Exception as _ee2:
+                    st.warning(f"Could not read SpeedVsTime: {_ee2}")
+
+            if _elec_result is not None:
+                if _elec_result.ok:
+                    st.success(_elec_result.summary)
+                else:
+                    st.error(_elec_result.summary)
+
+                _cc = st.columns(3)
+                _fuse_cls = "bad" if _elec_result.fuse_blown else "good"
+                _cc[0].markdown(
+                    metric("Peak pack current", f"{_elec_result.peak_current_a:.1f}", "A",
+                           _fuse_cls), unsafe_allow_html=True)
+                _cc[0].markdown(
+                    f'<span class="tag {_fuse_cls}">'
+                    f'{"\U0001f6a8 FUSE LIMIT EXCEEDED" if _elec_result.fuse_blown else "\u2705 Fuse OK"} '
+                    f'(limit {_elec_result.fuse_max_a:.0f} A)</span>',
+                    unsafe_allow_html=True)
+
+                _cell_cls = "bad" if _elec_result.cell_overcurrent else "good"
+                _cc[1].markdown(
+                    metric("Peak cell current", f"{_elec_result.peak_cell_current_a:.1f}", "A",
+                           _cell_cls), unsafe_allow_html=True)
+                _cc[1].markdown(
+                    f'<span class="tag {_cell_cls}">'
+                    f'{"\u26a0\ufe0f CELL OVERCURRENT" if _elec_result.cell_overcurrent else "\u2705 Cell OK"} '
+                    f'(limit {_elec_result.cell_current_limit_a:.1f} A/cell)</span>',
+                    unsafe_allow_html=True)
+
+                _nrg_cls = "bad" if _elec_result.energy_empty else "good"
+                _cc[2].markdown(
+                    metric("Lap energy draw", f"{_elec_result.energy_used_kwh:.3f}", "kWh",
+                           _nrg_cls), unsafe_allow_html=True)
+                _cc[2].markdown(
+                    f'<span class="tag {_nrg_cls}">'
+                    f'{"\U0001f6a8 PACK RUNS DRY" if _elec_result.energy_empty else "\u2705 Energy OK"} '
+                    f'(usable {_elec_result.usable_energy_kwh:.3f} kWh)</span>',
+                    unsafe_allow_html=True)
+
+                st.write("")
+                _ceil_kmh = _elec_result.max_safe_speed_ms * 3.6
+                _ceil_mph = _ceil_kmh / 1.60934
+                st.markdown(
+                    f'<p class="hint" style="border-left:3px solid '
+                    f'{"#e74c3c" if _elec_result.fuse_blown else "#37e0d0"};'
+                    f'padding-left:10px;">'
+                    f'\u26a1 <b>Fuse-limited speed ceiling:</b> '
+                    f'{_ceil_kmh:.1f} km/h ({_ceil_mph:.1f} mph) continuous. '
+                    f'Above this the {_elec_result.fuse_max_a:.0f} A fuse '
+                    f'({_elec_result.max_safe_power_kw:.1f} kW at '
+                    f'{_elec_params.pack_voltage_v:.0f} V) is the hard constraint — '
+                    f'not the tyres, not the motor.</p>',
+                    unsafe_allow_html=True)
+
+                with st.expander("\U0001f4cb Detailed electrical analysis", expanded=False):
+                    st.markdown(f"**Fuse:** {_elec_result.fuse_message}")
+                    st.markdown(f"**Cells:** {_elec_result.cell_message}")
+                    st.markdown(f"**Energy:** {_elec_result.energy_message}")
+                    if _elec_result.warnings:
+                        for _w in _elec_result.warnings:
+                            st.caption(f"\u26a0\ufe0f {_w}")
+                    st.markdown(
+                        f"Average pack current (traction): "
+                        f"**{_elec_result.avg_current_a:.1f} A**")
+
+                if len(_elec_result.current_profile_a) > 2:
+                    import plotly.graph_objects as _go_ec
+                    _fig_ec = _go_ec.Figure()
+                    _x_ec   = list(range(len(_elec_result.current_profile_a)))
+                    _fig_ec.add_trace(_go_ec.Scatter(
+                        x=_x_ec, y=list(_elec_result.current_profile_a),
+                        name="Pack current (A)",
+                        line=dict(color="#3b7cff", width=2),
+                        fill="tozeroy", fillcolor="rgba(59,124,255,0.10)"))
+                    _fig_ec.add_hline(
+                        y=float(_elec_result.fuse_max_a),
+                        line=dict(color="#e74c3c", dash="dash", width=2),
+                        annotation_text=f"Fuse {_elec_result.fuse_max_a:.0f} A",
+                        annotation_position="top right")
+                    _fig_ec.add_trace(_go_ec.Scatter(
+                        x=_x_ec, y=list(_elec_result.power_profile_kw),
+                        name="Electrical power (kW)", yaxis="y2",
+                        line=dict(color="#37e0d0", width=1.5, dash="dot")))
+                    _fig_ec.update_layout(
+                        title="Pack current & electrical power demand along the lap",
+                        xaxis_title="sample (distance proxy)",
+                        yaxis=dict(title="current (A)", color="#3b7cff"),
+                        yaxis2=dict(title="power (kW)", overlaying="y",
+                                    side="right", color="#37e0d0"),
+                        height=320,
+                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#cdd6df", size=11),
+                        margin=dict(l=0, r=0, t=36, b=0),
+                        legend=dict(bgcolor="rgba(0,0,0,0)"))
+                    st.plotly_chart(_fig_ec, width='stretch', key="elec_current_chart")
+
+                if st.button("Log electrical check to handover", key="log_elec_check"):
+                    log_decision_now(
+                        "electrics", "Electrical feasibility check",
+                        f"'PASS' if _elec_result.ok else 'FAIL': "
+                        f"peak {_elec_result.peak_current_a:.1f} A / "
+                        f"{_elec_result.fuse_max_a:.0f} A fuse, "
+                        f"{_elec_result.energy_used_kwh:.3f} kWh / "
+                        f"{_elec_result.usable_energy_kwh:.3f} kWh usable. "
+                        f"Ceiling {_elec_result.max_safe_speed_ms * 3.6:.1f} km/h.")
+                    st.success("Logged to handover record.")
+
+        except Exception as _elec_err:
+            st.error(f"Could not run the electrical check: {_elec_err}")
+    else:
+        st.markdown(
+            '<p class="hint" style="border-left:2px solid #3b7cff; padding-left:10px;">'
+            '\U0001f4c2 Upload the electrics lead\'s Excel workbook above to activate this check. '
+            'Until then the lap-time number is the <i>mechanical</i> limit only — '
+            'the electrical system may not be able to sustain it.</p>',
+            unsafe_allow_html=True)
+
+
+    # ================================================================== #
+    #  🔄 ELECTRICAL DATABASE + ROUND-TRIP                               #
+    #  Parameters are stored once in the project; no re-upload needed.   #
+    # ================================================================== #
+    st.markdown("---")
+    st.markdown("#### 🔋 EV Electrical Database & Lap Round-Trip")
+    st.markdown(
+        '<p class="hint">'
+        'Battery pack and motor constants are read once from your '
+        '<code>FSAE_EV_Power_Draw.xlsx</code> and stored in the project — '
+        'they stay there across sessions, restarts, and team members. '
+        'The round-trip calculation uses the stored values instantly; '
+        'upload a new workbook only when the electrics lead updates the numbers.'
+        '</p>',
+        unsafe_allow_html=True)
+
+    # ── Load / display / edit the stored EV params ─────────────────────
+    _store_rt = get_store()
+    _ev_db: dict = getattr(_store_rt, "ev_excel_params", {}) or {}
+    _pack_db: dict  = _ev_db.get("pack",  {})
+    _motor_db: dict = _ev_db.get("motor", {})
+    _gr_db: list    = _ev_db.get("gear_ratios", [])
+
+    _db_has_data = bool(_pack_db or _motor_db)
+
+    # ── Update-from-xlsx expander ───────────────────────────────────────
+    with st.expander(
+        "📂 Update from Excel workbook" if _db_has_data else "📂 Import Excel workbook (one-time setup)",
+        expanded=not _db_has_data,
+    ):
+        if _db_has_data:
+            st.markdown(
+                '<p class="hint" style="margin:0 0 8px 0">'
+                'The project already has electrical parameters stored. '
+                'Upload a new workbook only if the electrics lead has changed the numbers.</p>',
+                unsafe_allow_html=True)
+        _rt_up = st.file_uploader(
+            "FSAE_EV_Power_Draw.xlsx",
+            type=["xlsx"],
+            key="rt_db_uploader",
+            help="Upload once. KinematiK extracts all pack and motor constants and saves "
+                 "them to the project so you never have to re-upload.")
+        if _rt_up is not None:
+            _rt_raw = _rt_up.read()
+            _extracted = roundtrip_mod.extract_params_from_excel(_rt_raw)
+            if "_error" in _extracted:
+                st.error(f"Could not read workbook: {_extracted['_error']}")
+            else:
+                _store_rt.ev_excel_params = _extracted
+                # Cache the raw bytes too so Download still works this session
+                st.session_state["_rt_excel_bytes"] = _rt_raw
+                save_store(_store_rt)
+                _ev_db    = _extracted
+                _pack_db  = _ev_db.get("pack", {})
+                _motor_db = _ev_db.get("motor", {})
+                _gr_db    = _ev_db.get("gear_ratios", [])
+                _db_has_data = True
+                st.success(
+                    f"✅ Imported and saved — "
+                    f"pack voltage {_pack_db.get('pack_voltage_v', 0):.0f} V, "
+                    f"fuse {_pack_db.get('fuse_max_a', 0):.0f} A, "
+                    f"{len(_gr_db)} gear ratios. "
+                    f"These values are now stored in the project.")
+
+    # ── Manual param editor (always visible when data exists) ──────────
+    if _db_has_data:
+        with st.expander("✏️ Edit stored electrical parameters", expanded=False):
+            st.markdown(
+                '<p class="hint">Changes here update the project database immediately. '
+                'No Excel upload needed to tweak a single value.</p>',
+                unsafe_allow_html=True)
+            _ed_cols = st.columns(4)
+            _pack_db["pack_voltage_v"]   = _ed_cols[0].number_input(
+                "Pack voltage (V)", 100.0, 1000.0,
+                float(_pack_db.get("pack_voltage_v", 504.0) or 504.0), 1.0,
+                key="ev_db_pack_v")
+            _pack_db["fuse_max_a"]       = _ed_cols[1].number_input(
+                "Fuse max (A)", 10.0, 500.0,
+                float(_pack_db.get("fuse_max_a", 50.0) or 50.0), 1.0,
+                key="ev_db_fuse")
+            _pack_db["pack_capacity_ah"] = _ed_cols[2].number_input(
+                "Pack capacity (Ah)", 1.0, 100.0,
+                float(_pack_db.get("pack_capacity_ah", 15.0) or 15.0), 0.5,
+                key="ev_db_cap_ah")
+            _pack_db["pack_energy_wh"]   = _ed_cols[3].number_input(
+                "Pack energy (Wh)", 100.0, 20000.0,
+                float(_pack_db.get("pack_energy_wh", 7560.0) or 7560.0), 10.0,
+                key="ev_db_energy_wh")
+            _ed_cols2 = st.columns(4)
+            _motor_db["wheel_diam_in"]     = _ed_cols2[0].number_input(
+                "Wheel diameter (in)", 10.0, 30.0,
+                float(_motor_db.get("wheel_diam_in", 18.0) or 18.0), 0.5,
+                key="ev_db_whl")
+            _motor_db["motor_pf"]          = _ed_cols2[1].number_input(
+                "Motor power factor", 0.5, 1.0,
+                float(_motor_db.get("motor_pf", 0.95) or 0.95), 0.01,
+                key="ev_db_pf")
+            _motor_db["motor_efficiency"]  = _ed_cols2[2].number_input(
+                "Motor efficiency", 0.5, 1.0,
+                float(_motor_db.get("motor_efficiency", 0.9545) or 0.9545), 0.005,
+                key="ev_db_eff")
+            _motor_db["pack_voltage_ep_v"] = _ed_cols2[3].number_input(
+                "Pack voltage (ElecProp sheet, V)", 100.0, 1000.0,
+                float(_motor_db.get("pack_voltage_ep_v", 504.0) or 504.0), 1.0,
+                key="ev_db_pack_v_ep")
+            if st.button("💾 Save edited parameters", key="ev_db_save_edits"):
+                _store_rt.ev_excel_params["pack"]  = _pack_db
+                _store_rt.ev_excel_params["motor"] = _motor_db
+                save_store(_store_rt)
+                st.success("Saved to project.")
+
+    # ── Stored params summary card ──────────────────────────────────────
+    if _db_has_data:
+        st.markdown("###### 📋 Stored electrical parameters")
+        _sc = st.columns(5)
+        _sc[0].markdown(metric("Pack voltage",
+            f"{_pack_db.get('pack_voltage_v', 0):.0f}", "V"), unsafe_allow_html=True)
+        _sc[1].markdown(metric("Fuse max",
+            f"{_pack_db.get('fuse_max_a', 0):.0f}", "A"), unsafe_allow_html=True)
+        _sc[2].markdown(metric("Pack capacity",
+            f"{_pack_db.get('pack_capacity_ah', 0):.1f}", "Ah"), unsafe_allow_html=True)
+        _sc[3].markdown(metric("Pack energy",
+            f"{(_pack_db.get('pack_energy_wh', 0) or 0)/1000:.3f}", "kWh"),
+            unsafe_allow_html=True)
+        _sc[4].markdown(metric("Gear ratios",
+            f"{len(_gr_db)}", ""), unsafe_allow_html=True)
+
+        # ── Erick's feedback (Discord 26-06): make the workbook the cross-team
+        #    source of truth, surface a feasible-pack sheet if present, and
+        #    visualise the raw data straight from the file. ──────────────────
+        _rt_raw_bytes = st.session_state.get("_rt_excel_bytes")
+
+        # (A) Declare the pulled stats into the INTEGRATION ledger, the same way
+        #     the Accumulator tab declares numbers — so his Excel feeds the whole
+        #     car, not just this tab.
+        st.markdown("###### 🔗 Push these numbers into the integration ledger")
+        st.markdown(
+            '<p class="hint" style="margin:0 0 8px 0">Joule heat and the key '
+            'propulsion stats from your workbook become the cross-team source of '
+            'truth — powertrain peak power/torque/voltage, electrics peak current '
+            'and the heat the cooling team has to reject. Declared numbers flow '
+            'into the feasibility checks and the 3D heatmap automatically.</p>',
+            unsafe_allow_html=True)
+        try:
+            _decl = roundtrip_mod.ledger_declarations_from_ev_params(_ev_db)
+            _decl_pt = _decl.get("powertrain", {})
+            _decl_el = _decl.get("electrics", {})
+            _dcols = st.columns(4)
+            _dcols[0].markdown(metric("PT peak power",
+                f"{_decl_pt.get('peak_power_kw', 0):.0f}", "kW"), unsafe_allow_html=True)
+            _dcols[1].markdown(metric("PT peak torque",
+                f"{_decl_pt.get('peak_torque_nm', 0):.0f}", "N·m"), unsafe_allow_html=True)
+            _dcols[2].markdown(metric("Elec peak current",
+                f"{_decl_el.get('peak_current_a', 0):.0f}", "A"), unsafe_allow_html=True)
+            _dcols[3].markdown(metric("Heat to reject",
+                f"{_decl_el.get('heat_reject_w', 0):.0f}", "W"), unsafe_allow_html=True)
+            if _decl.get("_notes"):
+                st.caption("ℹ️ " + " ".join(_decl["_notes"]))
+            if st.button("📌 Declare into integration ledger", key="ev_db_declare_ledger"):
+                try:
+                    _led_ev = interfaces_mod.IntegrationLedger.from_dict(
+                        st.session_state.ledger)
+                    for _subsys, _fields in (("powertrain", _decl_pt),
+                                             ("electrics", _decl_el)):
+                        if not _fields:
+                            continue
+                        _it = (_led_ev.get(_subsys)
+                               or interfaces_mod.SubsystemInterface(name=_subsys))
+                        for _k, _v in _fields.items():
+                            setattr(_it, _k, _v)
+                        # workbook-sourced numbers are real measurements, not
+                        # placeholders, so is_estimate stays False — but provenance
+                        # is recorded so the board shows where they came from.
+                        _it.is_estimate = False
+                        _it.updated_by = "electrics (from Excel)"
+                        _led_ev.set(_it)
+                    st.session_state.ledger = _led_ev.as_dict()
+                    _save_target = get_store()
+                    if hasattr(_save_target, "ledger"):
+                        _save_target.ledger = _led_ev.as_dict()
+                        save_store(_save_target)
+                    st.success(
+                        "Declared powertrain + electrics numbers from the workbook "
+                        "into the ledger. Open 🔗 Integration to see them checked "
+                        "against the rest of the car.")
+                except Exception as _de:
+                    st.warning(f"Couldn't declare into ledger: {_de}")
+        except Exception as _decl_e:
+            st.caption(f"Ledger declaration unavailable: {_decl_e}")
+
+        # (B) "What pack would you actually need" — surface the team's own sheet
+        #     if they authored one in the file.
+        if _rt_raw_bytes:
+            try:
+                _fp_sheet = roundtrip_mod.find_feasible_pack_sheet(_rt_raw_bytes)
+            except Exception:
+                _fp_sheet = {"found": False}
+            if _fp_sheet.get("found"):
+                st.markdown("###### 🎯 Your “what pack would you need” sheet")
+                st.markdown(
+                    f'<p class="hint" style="margin:0 0 8px 0">Read directly from '
+                    f'the <code>{_fp_sheet["sheet"]}</code> sheet in your workbook. '
+                    f'KinematiK surfaces it as-is alongside its own minimum-feasible '
+                    f'pack estimate below.</p>',
+                    unsafe_allow_html=True)
+                _fp_rows = _fp_sheet.get("rows", [])
+                if _fp_rows:
+                    import pandas as _pd_fp
+                    _hdr = _fp_rows[0]
+                    _body = _fp_rows[1:] if len(_fp_rows) > 1 else []
+                    try:
+                        _df_fp = _pd_fp.DataFrame(_body, columns=_hdr)
+                        st.dataframe(_df_fp, width="stretch", hide_index=True)
+                    except Exception:
+                        st.table(_fp_rows)
+
+        # (C) Visualise the raw data straight from the sheet — Erick's
+        #     "take that raw data from my sheet and visualise it".
+        if _rt_raw_bytes:
+            with st.expander("📈 Visualise raw data from your workbook", expanded=False):
+                st.markdown(
+                    '<p class="hint" style="margin:0 0 8px 0">Plot any numeric '
+                    'columns straight from your file — cell voltages, currents, '
+                    'temperatures, whatever you logged. This reads your sheets '
+                    'verbatim; nothing is recomputed or invented.</p>',
+                    unsafe_allow_html=True)
+                try:
+                    _raw = roundtrip_mod.read_raw_sheets(_rt_raw_bytes)
+                except Exception as _re:
+                    _raw = {"sheets": [], "_error": str(_re)}
+                if _raw.get("_error"):
+                    st.caption(f"Couldn't read raw data: {_raw['_error']}")
+                _raw_sheets = _raw.get("sheets", [])
+                if not _raw_sheets:
+                    st.caption("No numeric data columns found to plot.")
+                else:
+                    _sheet_names = [s["name"] for s in _raw_sheets]
+                    _pick_sheet = st.selectbox(
+                        "Sheet", _sheet_names, key="rt_raw_sheet_pick")
+                    _sheet_obj = next(s for s in _raw_sheets if s["name"] == _pick_sheet)
+                    _col_headers = [c["header"] for c in _sheet_obj["columns"]]
+                    _rc1, _rc2 = st.columns(2)
+                    _x_col = _rc1.selectbox(
+                        "X axis", ["(row index)"] + _col_headers,
+                        key="rt_raw_x")
+                    _y_cols = _rc2.multiselect(
+                        "Y axis (one or more)", _col_headers,
+                        default=_col_headers[1:3] if len(_col_headers) > 1
+                        else _col_headers[:1],
+                        key="rt_raw_y")
+                    if _y_cols:
+                        import plotly.graph_objects as _go_raw
+                        _by_header = {c["header"]: c["values"]
+                                      for c in _sheet_obj["columns"]}
+                        _fig_raw = _go_raw.Figure()
+                        if _x_col == "(row index)":
+                            _xvals = None
+                        else:
+                            _xvals = _by_header.get(_x_col)
+                        for _yh in _y_cols:
+                            _yv = _by_header.get(_yh, [])
+                            _xx = (list(range(len(_yv))) if _xvals is None
+                                   else _xvals[:len(_yv)])
+                            _fig_raw.add_trace(_go_raw.Scatter(
+                                x=_xx, y=_yv, mode="lines", name=_yh))
+                        _fig_raw.update_layout(
+                            height=360, margin=dict(l=10, r=10, t=30, b=10),
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font=dict(color="#cdd6df"),
+                            xaxis=dict(title=_x_col, gridcolor="#2a2f3a"),
+                            yaxis=dict(gridcolor="#2a2f3a"),
+                            legend=dict(bgcolor="rgba(0,0,0,0)"))
+                        st.plotly_chart(_fig_raw, width="stretch",
+                                        key="rt_raw_chart")
+                    else:
+                        st.caption("Pick at least one Y column to plot.")
+
+    # ── Round-trip calculation ──────────────────────────────────────────
+    if _db_has_data:
+        st.markdown("---")
+        st.markdown("##### 🔄 Lap round-trip (using stored parameters)")
+
+        _rt_source2 = st.radio(
+            "Speed profile source",
+            ["Lap sim result (run the sim above first)",
+             "Custom: paste avg speed + lap time (quick estimate)"],
+            key="rt_source_radio",
+            horizontal=True)
+
+        if _rt_source2.startswith("Custom"):
+            _rt_c1, _rt_c2 = st.columns(2)
+            _rt_avg_ms2 = _rt_c1.number_input(
+                "Average lap speed (m/s)", 0.0, 50.0, 15.0, 0.5, key="rt_avg_ms2")
+            _rt_laptime2 = _rt_c2.number_input(
+                "Lap time (s)", 10.0, 300.0, 75.0, 1.0, key="rt_laptime2")
+            import numpy as _np_rt2
+            _rt_t2      = _np_rt2.linspace(0, _rt_laptime2, 200)
+            _ramp2      = min(5.0, _rt_laptime2 * 0.15)
+            _v2         = _np_rt2.ones(200) * _rt_avg_ms2
+            for _i2, _t2 in enumerate(_rt_t2):
+                if _t2 < _ramp2:
+                    _v2[_i2] = _rt_avg_ms2 * (_t2 / _ramp2)
+                elif _t2 > _rt_laptime2 - _ramp2:
+                    _v2[_i2] = _rt_avg_ms2 * ((_rt_laptime2 - _t2) / _ramp2)
+            _rt_v_ms2, _rt_t_ms2 = _v2, _rt_t2
+            _rt_laptime_in2 = float(_rt_laptime2)
+            _rt_topspd_in2  = float(_np_rt2.max(_v2))
+            _rt_avgspd_in2  = float(_rt_avg_ms2)
+        else:
+            _rt_v_ms2   = st.session_state.get("_last_lap_v")
+            _rt_t_raw2  = st.session_state.get("_last_lap_s")
+            _rt_laptime_in2 = 0.0
+            _rt_topspd_in2  = 0.0
+            _rt_avgspd_in2  = 0.0
+            _rt_t_ms2 = None
+            if _rt_v_ms2 is not None and _rt_t_raw2 is not None:
+                import numpy as _np_rt2
+                _v_arr_rt2 = _np_rt2.array(_rt_v_ms2, dtype=float)
+                _s_arr_rt2 = _np_rt2.array(_rt_t_raw2, dtype=float)
+                _rt_t_ms2  = roundtrip_mod.lap_result_to_time_axis(_v_arr_rt2, _s_arr_rt2)
+                _rt_laptime_in2 = float(_rt_t_ms2[-1]) if len(_rt_t_ms2) else 0.0
+                _rt_topspd_in2  = float(_np_rt2.max(_v_arr_rt2))
+                _rt_avgspd_in2  = float(_np_rt2.mean(_v_arr_rt2))
+            else:
+                st.info("▶ Run the lap sim above first, then come back here.")
+                _rt_v_ms2 = None
+
+        if _rt_v_ms2 is not None:
+            _rt_btn_col2, _rt_info_col2 = st.columns([1, 3])
+            _go_rt2 = _rt_btn_col2.button(
+                "⚡ Run electrical check", width="stretch", key="rt_go_db_btn")
+            _rt_info_col2.markdown(
+                f'<p class="hint" style="margin-top:8px">'
+                f'{len(_rt_v_ms2)} speed points, '
+                f't = {_rt_laptime_in2:.1f} s, '
+                f'v_max = {_rt_topspd_in2 * 3.6:.1f} km/h — '
+                f'parameters from project database</p>',
+                unsafe_allow_html=True)
+
+            if _go_rt2:
+                import numpy as _np_rt3
+                with st.spinner("Running electrical calculations from stored parameters…"):
+                    _rt_result2 = roundtrip_mod.lap_to_excel_roundtrip_from_db(
+                        speed_ms     = _np_rt3.array(_rt_v_ms2, dtype=float),
+                        time_s       = _np_rt3.array(_rt_t_ms2, dtype=float),
+                        ev_params    = _ev_db,
+                        lap_time_s   = _rt_laptime_in2,
+                        top_speed_ms = _rt_topspd_in2,
+                        avg_speed_ms = _rt_avgspd_in2,
+                    )
+                st.session_state["_rt_result"] = _rt_result2
+
+        # ── Display results ─────────────────────────────────────────────
+        _rt_res = st.session_state.get("_rt_result")
+        if _rt_res is not None:
+            if not _rt_res.ok:
+                st.error(f"Calculation failed: {_rt_res.error}")
+            else:
+                for _w in _rt_res.warnings:
+                    st.warning(f"⚠ {_w}")
+
+                _verdict_colour = "#37e0d0" if _rt_res.feasible else "#e74c3c"
+                st.markdown(
+                    f'<div style="border-left:3px solid {_verdict_colour};'
+                    f'padding:6px 12px;margin:8px 0;border-radius:4px;">'
+                    f'{_rt_res.verdict}</div>',
+                    unsafe_allow_html=True)
+
+                st.markdown("###### 📊 Recalculated electrical results")
+
+                # Pack summary
+                with st.expander("🔋 Battery Pack Calcs", expanded=True):
+                    _pk = _rt_res.pack
+                    _pkcols = st.columns(4)
+                    _pkcols[0].markdown(metric("Pack voltage",
+                        f"{_pk.get('pack_voltage_v', 0):.0f}", "V"), unsafe_allow_html=True)
+                    _pkcols[1].markdown(metric("Fuse max",
+                        f"{_pk.get('fuse_max_a', 0):.0f}", "A"), unsafe_allow_html=True)
+                    _pkcols[2].markdown(metric("Pack capacity",
+                        f"{_pk.get('pack_capacity_ah', 0):.1f}", "Ah"), unsafe_allow_html=True)
+                    _pkcols[3].markdown(metric("Pack energy",
+                        f"{(_pk.get('pack_energy_wh', 0) or 0)/1000:.3f}", "kWh"),
+                        unsafe_allow_html=True)
+                    _pkcols2 = st.columns(4)
+                    _pkcols2[0].markdown(metric("Cell current",
+                        f"{_pk.get('cell_current_a', 0):.2f}", "A"), unsafe_allow_html=True)
+                    _pkcols2[1].markdown(metric("Power draw",
+                        f"{_pk.get('power_draw_kw', 0):.2f}", "kW"), unsafe_allow_html=True)
+                    _pkcols2[2].markdown(metric("Joule heating",
+                        f"{_pk.get('joule_heating_kwh', 0):.3f}", "kWh"), unsafe_allow_html=True)
+                    _pkcols2[3].markdown(metric("Pack cells",
+                        f"{int(_pk.get('pack_cell_count', 0) or 0)}", ""),
+                        unsafe_allow_html=True)
+
+                # Lap electrical results
+                st.markdown("###### ⚡ Electrical results from this lap profile")
+                _rc = st.columns(4)
+                _fuse_limit2 = _rt_res.pack.get("fuse_max_a") or 50.0
+                _peak_cls2   = "bad" if _rt_res.peak_current_a > _fuse_limit2 else "good"
+                _rc[0].markdown(metric("Peak current",
+                    f"{_rt_res.peak_current_a:.1f}", "A", _peak_cls2), unsafe_allow_html=True)
+                _rc[1].markdown(metric("Avg current",
+                    f"{_rt_res.avg_current_a:.1f}", "A"), unsafe_allow_html=True)
+                _rc[2].markdown(metric("Peak power",
+                    f"{_rt_res.peak_power_kw:.1f}", "kW"), unsafe_allow_html=True)
+                _rc[3].markdown(metric("Total energy",
+                    f"{_rt_res.total_energy_kwh:.3f}", "kWh"), unsafe_allow_html=True)
+                _rc2 = st.columns(3)
+                _rc2[0].markdown(metric("Max speed",
+                    f"{_rt_res.max_speed_mph:.1f}", "mph"), unsafe_allow_html=True)
+                _rc2[1].markdown(metric("Max RPM (gear 1)",
+                    f"{float(_rt_res.rpm_gear1.max()):.0f}" if len(_rt_res.rpm_gear1) else "—",
+                    "rpm"), unsafe_allow_html=True)
+                _fuse_headroom2 = _fuse_limit2 - _rt_res.peak_current_a
+                _rc2[2].markdown(metric("Fuse headroom",
+                    f"{_fuse_headroom2:.1f}", "A",
+                    "good" if _fuse_headroom2 > 0 else "bad"), unsafe_allow_html=True)
+
+                # Current + RPM charts
+                if len(_rt_res.current_draw_a) > 2 and len(_rt_res.rpm_gear1) > 2:
+                    import plotly.graph_objects as _go_rt2
+                    _t_axis = list(_rt_res.time_s)
+                    _fig_rt = _go_rt2.Figure()
+                    _fig_rt.add_trace(_go_rt2.Scatter(
+                        x=_t_axis, y=list(_rt_res.current_draw_a),
+                        name="Pack current (A)", yaxis="y1",
+                        line=dict(color="#3b7cff", width=2),
+                        fill="tozeroy", fillcolor="rgba(59,124,255,0.08)"))
+                    _fig_rt.add_hline(
+                        y=float(_fuse_limit2),
+                        line=dict(color="#e74c3c", dash="dash", width=1.5),
+                        annotation_text=f"Fuse {_fuse_limit2:.0f} A",
+                        annotation_position="top right")
+                    _fig_rt.add_trace(_go_rt2.Scatter(
+                        x=_t_axis, y=list(_rt_res.rpm_gear1),
+                        name="Wheel RPM (gear 1)", yaxis="y2",
+                        line=dict(color="#f0a500", width=1.5, dash="dot")))
+                    _fig_rt.update_layout(
+                        title="Pack current & wheel RPM vs lap time",
+                        xaxis_title="time (s)",
+                        yaxis=dict(title="current (A)", color="#3b7cff"),
+                        yaxis2=dict(title="RPM", overlaying="y",
+                                    side="right", color="#f0a500"),
+                        height=320,
+                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#cdd6df", size=11),
+                        margin=dict(l=0, r=0, t=36, b=0),
+                        legend=dict(bgcolor="rgba(0,0,0,0)"))
+                    st.plotly_chart(_fig_rt, width="stretch", key="rt_main_chart")
+
+                # Speed + power chart
+                if len(_rt_res.speed_ms) > 2:
+                    import plotly.graph_objects as _go_rt3
+                    _fig_spd = _go_rt3.Figure()
+                    _fig_spd.add_trace(_go_rt3.Scatter(
+                        x=list(_rt_res.time_s),
+                        y=[v * 3.6 for v in _rt_res.speed_ms],
+                        name="Speed (km/h)", line=dict(color="#37e0d0", width=2)))
+                    _fig_spd.add_trace(_go_rt3.Scatter(
+                        x=list(_rt_res.time_s),
+                        y=list(_rt_res.power_kw),
+                        name="Electrical power (kW)", yaxis="y2",
+                        line=dict(color="#a855f7", width=1.5, dash="dot")))
+                    _fig_spd.update_layout(
+                        title="Speed & electrical power over lap time",
+                        xaxis_title="time (s)",
+                        yaxis=dict(title="speed (km/h)", color="#37e0d0"),
+                        yaxis2=dict(title="power (kW)", overlaying="y",
+                                    side="right", color="#a855f7"),
+                        height=260,
+                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#cdd6df", size=11),
+                        margin=dict(l=0, r=0, t=36, b=0),
+                        legend=dict(bgcolor="rgba(0,0,0,0)"))
+                    st.plotly_chart(_fig_spd, width="stretch", key="rt_spd_chart")
+
+                # Download updated workbook (only if we have raw bytes from this session)
+                st.markdown("---")
+                _dl_col1, _dl_col2 = st.columns([1, 2])
+                _cached_bytes = st.session_state.get("_rt_excel_bytes")
+                if _cached_bytes:
+                    # Re-run the full roundtrip write to produce updated xlsx
+                    import numpy as _np_dl
+                    _rt_write = roundtrip_mod.lap_to_excel_roundtrip(
+                        speed_ms    = _np_dl.array(_rt_res.speed_ms, dtype=float),
+                        time_s      = _np_dl.array(_rt_res.time_s,   dtype=float),
+                        excel_bytes = _cached_bytes,
+                        lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
+                        top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2"  in dir() else 0.0,
+                        avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2"  in dir() else 0.0,
+                    )
+                    if _rt_write.ok and _rt_write.excel_bytes:
+                        _dl_col1.download_button(
+                            label="⬇ Download recalculated Excel",
+                            data=_rt_write.excel_bytes,
+                            file_name="FSAE_EV_PowerDraw_LapSim.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            key="rt_download_btn",
+                            help="Workbook with SpeedVsTime updated and all values baked in.")
+                        _dl_col2.markdown(
+                            '<p class="hint" style="margin-top:10px;">'
+                            'SpeedVsTime updated with the lap sim trace; all downstream '
+                            'formulas recalculated as plain numbers. '
+                            'Re-upload a new workbook to refresh the stored parameters.</p>',
+                            unsafe_allow_html=True)
+                else:
+                    _dl_col1.markdown(
+                        '<p class="hint" style="margin-top:10px;">'
+                        '💡 Re-upload the workbook (above) to enable the download — '
+                        'the raw file isn\'t stored between sessions for size reasons; '
+                        'only the extracted parameters are.</p>',
+                        unsafe_allow_html=True)
+
+                # ── Extended analysis: thermals, SoC, feasible pack ────────
+                import numpy as _np_ext
+                _thermals = roundtrip_mod.compute_cell_thermals(
+                    current_draw_a=_rt_res.current_draw_a,
+                    time_s=_rt_res.time_s,
+                    pack=_rt_res.pack,
+                )
+                _soc_data = roundtrip_mod.compute_soc_and_stop(
+                    power_kw=_rt_res.power_kw,
+                    time_s=_rt_res.time_s,
+                    pack=_rt_res.pack,
+                    motor=_rt_res.motor,
+                )
+                _min_pack = roundtrip_mod.compute_minimum_feasible_pack(
+                    power_kw=_rt_res.power_kw,
+                    time_s=_rt_res.time_s,
+                    current_draw_a=_rt_res.current_draw_a,
+                    pack=_rt_res.pack,
+                    motor=_rt_res.motor,
+                )
+
+                # ── 🔥 Pack thermal heatmap ─────────────────────────────────
+                st.markdown("---")
+                st.markdown("##### 🔥 Pack Thermal Heatmap")
+                st.markdown(
+                    '<p class="hint">Each square is one physical cell. '
+                    'Colour maps estimated surface temperature from the Joule '
+                    'heat model (I²R per cell, with convective cooling). '
+                    'Series rows at the bottom of the stack run hotter — '
+                    'thermal gradient applied from the BMS data.</p>',
+                    unsafe_allow_html=True)
+
+                _n_s = max(int(_rt_res.pack.get("n_series",   1) or 1), 1)
+                _n_p = max(int(_rt_res.pack.get("n_parallel", 1) or 1), 1)
+                _t_lo = 25.0
+                _t_hi = max(_thermals["peak_temp_c"], 30.0)
+                _grad = _np_ext.linspace(0.85, 1.15, _n_s)
+
+                import plotly.graph_objects as _go_hm
+                _hm_z    = []
+                _hm_text = []
+                for _si in range(_n_s):
+                    row_z, row_t = [], []
+                    for _pi in range(_n_p):
+                        _ct = _t_lo + (_t_hi - _t_lo) * _grad[_si]
+                        row_z.append(_ct)
+                        row_t.append(f"S{_si+1}/P{_pi+1}<br>{_ct:.1f}°C")
+                    _hm_z.append(row_z)
+                    _hm_text.append(row_t)
+
+                _fig_hm = _go_hm.Figure(data=_go_hm.Heatmap(
+                    z=_hm_z,
+                    text=_hm_text,
+                    hovertemplate="%{text}<extra></extra>",
+                    colorscale=[[0,"#37E0D0"],[0.5,"#F0A500"],[1,"#E74C3C"]],
+                    zmin=_t_lo, zmax=_t_hi,
+                    colorbar=dict(
+                        title="°C",
+                        tickfont=dict(color="#cdd6df"),
+                        titlefont=dict(color="#cdd6df"),
+                        bgcolor="rgba(0,0,0,0)"),
+                    xgap=2, ygap=2,
+                ))
+                _fig_hm.update_layout(
+                    title=dict(
+                        text=f"Battery pack — {_n_s}S × {_n_p}P "
+                             f"({_n_s*_n_p} cells) | "
+                             f"Peak {_t_hi:.1f}°C | "
+                             f"Joule: {_thermals['total_joule_kwh']*1000:.1f} Wh/cell",
+                        font=dict(color="#cdd6df", size=12)),
+                    xaxis=dict(
+                        title="Parallel string (P)", showgrid=False,
+                        tickfont=dict(color="#8899aa"),
+                        tickmode="array",
+                        tickvals=list(range(_n_p)),
+                        ticktext=[f"P{p+1}" for p in range(_n_p)]),
+                    yaxis=dict(
+                        title="Series row (S)", showgrid=False,
+                        tickfont=dict(color="#8899aa"),
+                        tickmode="array",
+                        tickvals=list(range(_n_s)),
+                        ticktext=[f"S{s+1}" for s in range(_n_s)],
+                        autorange="reversed"),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    height=max(200, min(_n_s * 36 + 100, 520)),
+                    margin=dict(l=0, r=60, t=48, b=0),
+                )
+                st.plotly_chart(_fig_hm, width="stretch", key="rt_heatmap")
+
+                _hm_c = st.columns(4)
+                _hm_c[0].markdown(metric("Peak cell temp",
+                    f"{_thermals['peak_temp_c']:.1f}", "°C",
+                    "bad" if _thermals["peak_temp_c"] > 60 else "good"),
+                    unsafe_allow_html=True)
+                _hm_c[1].markdown(metric("Peak Joule power",
+                    f"{_thermals['peak_joule_w']:.2f}", "W/cell"),
+                    unsafe_allow_html=True)
+                _hm_c[2].markdown(metric("Total Joule heat",
+                    f"{_thermals['total_joule_kwh']*1000:.2f}", "Wh/cell"),
+                    unsafe_allow_html=True)
+                _hm_c[3].markdown(metric("Pack topology",
+                    f"{_n_s}S×{_n_p}P", ""),
+                    unsafe_allow_html=True)
+
+                # Cell temperature over lap time
+                import plotly.graph_objects as _go_ct
+                _fig_ct = _go_ct.Figure()
+                _fig_ct.add_trace(_go_ct.Scatter(
+                    x=list(_rt_res.time_s),
+                    y=list(_thermals["temp_c"]),
+                    name="Cell surface temp (°C)",
+                    line=dict(color="#E74C3C", width=2),
+                    fill="tozeroy",
+                    fillcolor="rgba(231,76,60,0.12)"))
+                _fig_ct.add_trace(_go_ct.Scatter(
+                    x=list(_rt_res.time_s),
+                    y=list(_thermals["joule_w"]),
+                    name="Joule power/cell (W)",
+                    yaxis="y2",
+                    line=dict(color="#F0A500", width=1.5, dash="dot")))
+                _fig_ct.add_hline(y=60.0,
+                    line=dict(color="#E74C3C", dash="dash", width=1),
+                    annotation_text="60°C warn",
+                    annotation_position="top right")
+                _fig_ct.update_layout(
+                    title="Cell temperature & Joule power over lap",
+                    xaxis_title="time (s)",
+                    yaxis=dict(title="cell temp (°C)", color="#E74C3C"),
+                    yaxis2=dict(title="Joule W/cell", overlaying="y",
+                                side="right", color="#F0A500"),
+                    height=260,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=36, b=0),
+                    legend=dict(bgcolor="rgba(0,0,0,0)"))
+                st.plotly_chart(_fig_ct, width="stretch", key="rt_celltemp")
+
+                # ── 🛑 Lap stop predictor ───────────────────────────────────
+                st.markdown("---")
+                st.markdown("##### 🛑 Lap Stop Predictor")
+                if _soc_data["finishes"]:
+                    st.markdown(
+                        f'<div style="border-left:3px solid #37e0d0;padding:8px 14px;'
+                        f'border-radius:4px;margin:6px 0;">'
+                        f'✅ <b>Car finishes the lap</b> — '
+                        f'{_soc_data["usable_kwh"]:.3f} kWh usable, '
+                        f'{_rt_res.total_energy_kwh:.3f} kWh drawn, '
+                        f'{(_soc_data["usable_kwh"] - _rt_res.total_energy_kwh)*1000:.0f} Wh remaining</div>',
+                        unsafe_allow_html=True)
+                else:
+                    _stop_pct = _soc_data["pct_lap_done"] * 100
+                    _stop_t   = _soc_data["stop_time_s"]
+                    _lap_t    = float(_rt_res.time_s[-1])
+                    st.markdown(
+                        f'<div style="border-left:3px solid #e74c3c;padding:8px 14px;'
+                        f'border-radius:4px;margin:6px 0;">'
+                        f'🛑 <b>Car stops at {_stop_t:.1f} s '
+                        f'({_stop_pct:.1f}% through the lap)</b> — '
+                        f'{_soc_data["deficit_kwh"]*1000:.0f} Wh short. '
+                        f'{_lap_t - _stop_t:.1f} s of lap remaining.</div>',
+                        unsafe_allow_html=True)
+
+                import plotly.graph_objects as _go_soc
+                _fig_soc = _go_soc.Figure()
+                _fig_soc.add_trace(_go_soc.Scatter(
+                    x=list(_rt_res.time_s),
+                    y=list(_soc_data["soc_pct"]),
+                    name="State of charge (%)",
+                    line=dict(color="#3b7cff", width=2.5),
+                    fill="tozeroy",
+                    fillcolor="rgba(59,124,255,0.12)"))
+                _fig_soc.add_trace(_go_soc.Scatter(
+                    x=list(_rt_res.time_s),
+                    y=list(_rt_res.power_kw),
+                    name="Power draw (kW)",
+                    yaxis="y2",
+                    line=dict(color="#a855f7", width=1.5, dash="dot")))
+                _fig_soc.add_hline(y=20.0,
+                    line=dict(color="#F0A500", dash="dash", width=1),
+                    annotation_text="20% SoC warn",
+                    annotation_position="bottom right")
+                _fig_soc.add_hline(y=0.0,
+                    line=dict(color="#E74C3C", dash="solid", width=1.5),
+                    annotation_text="Empty",
+                    annotation_position="bottom right")
+                if not _soc_data["finishes"] and _soc_data["stop_time_s"]:
+                    _fig_soc.add_vline(
+                        x=_soc_data["stop_time_s"],
+                        line=dict(color="#E74C3C", dash="dash", width=2),
+                        annotation_text=f"🛑 Stop {_soc_data['stop_time_s']:.0f}s",
+                        annotation_position="top left")
+                _fig_soc.update_layout(
+                    title="State of charge & power draw over lap",
+                    xaxis_title="time (s)",
+                    yaxis=dict(title="SoC (%)", color="#3b7cff",
+                               range=[-5, 105]),
+                    yaxis2=dict(title="power (kW)", overlaying="y",
+                                side="right", color="#a855f7"),
+                    height=300,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=36, b=0),
+                    legend=dict(bgcolor="rgba(0,0,0,0)"))
+                st.plotly_chart(_fig_soc, width="stretch", key="rt_soc_chart")
+
+                # ── 📐 Minimum feasible pack ────────────────────────────────
+                st.markdown("---")
+                st.markdown("##### 📐 Minimum Feasible Pack")
+                st.markdown(
+                    '<p class="hint">Based on this lap\'s energy draw. '
+                    'Recommended adds 10% safety margin. '
+                    'Cell count assumes the same series string, adding parallel '
+                    'strings to hit the required capacity.</p>',
+                    unsafe_allow_html=True)
+
+                _fp_ok = _min_pack["energy_shortfall_kwh"] == 0
+                _fp_col = st.columns(4)
+                _fp_col[0].markdown(metric("Current pack energy",
+                    f"{_min_pack['current_usable_kwh']:.3f}", "kWh",
+                    "good" if _fp_ok else "bad"), unsafe_allow_html=True)
+                _fp_col[1].markdown(metric("Minimum needed",
+                    f"{_min_pack['min_energy_kwh']:.3f}", "kWh"),
+                    unsafe_allow_html=True)
+                _fp_col[2].markdown(metric("Recommended (+10%)",
+                    f"{_min_pack['rec_energy_kwh']:.3f}", "kWh"),
+                    unsafe_allow_html=True)
+                _fp_col[3].markdown(metric("Energy shortfall",
+                    f"{_min_pack['energy_shortfall_kwh']*1000:.0f}", "Wh",
+                    "good" if _fp_ok else "bad"), unsafe_allow_html=True)
+
+                _fp_col2 = st.columns(4)
+                _fp_col2[0].markdown(metric("Min capacity",
+                    f"{_min_pack['min_capacity_ah']:.1f}", "Ah"),
+                    unsafe_allow_html=True)
+                _fp_col2[1].markdown(metric("Rec. capacity",
+                    f"{_min_pack['rec_capacity_ah']:.1f}", "Ah"),
+                    unsafe_allow_html=True)
+                _fp_col2[2].markdown(metric("Rec. cell count",
+                    f"{_min_pack['rec_total_cells']}", "cells"),
+                    unsafe_allow_html=True)
+                _fp_col2[3].markdown(metric("Rec. pack mass",
+                    f"{_min_pack['rec_pack_mass_kg']:.1f}", "kg"),
+                    unsafe_allow_html=True)
+
+                # What-if bar chart: capacity vs laps
+                _wif_caps  = [5, 8, 10, 12, 15, 18, 20, 25, 30]
+                _wif_e     = [c * _min_pack["pack_voltage_v"] * 0.92 / 1000.0
+                              for c in _wif_caps]
+                _wif_laps  = [e / max(_rt_res.total_energy_kwh, 0.001)
+                              for e in _wif_e]
+                _wif_ok    = [e >= _rt_res.total_energy_kwh for e in _wif_e]
+                import plotly.graph_objects as _go_fp
+                _fig_fp = _go_fp.Figure()
+                _fig_fp.add_trace(_go_fp.Bar(
+                    x=[f"{c} Ah" for c in _wif_caps],
+                    y=_wif_laps,
+                    marker_color=["#37E0D0" if ok else "#E74C3C" for ok in _wif_ok],
+                    text=[f"{v:.1f}×" for v in _wif_laps],
+                    textposition="outside",
+                    textfont=dict(color="#cdd6df", size=9),
+                    name="Laps per charge"))
+                _fig_fp.add_hline(y=1.0,
+                    line=dict(color="#F0A500", dash="dash", width=1.5),
+                    annotation_text="1 lap minimum",
+                    annotation_position="top right")
+                _fig_fp.add_hline(y=22.0,
+                    line=dict(color="#a855f7", dash="dash", width=1),
+                    annotation_text="22 laps (endurance)",
+                    annotation_position="top right")
+                _fig_fp.update_layout(
+                    title="Pack capacity → laps per charge (green = clears 1 lap)",
+                    xaxis_title="Pack capacity (Ah)",
+                    yaxis_title="Laps per charge",
+                    height=280,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=36, b=0),
+                    showlegend=False)
+                st.plotly_chart(_fig_fp, width="stretch", key="rt_feaspack_chart")
+
+                # ── Enhanced Excel download ─────────────────────────────────
+                st.markdown("---")
+                _enh_col1, _enh_col2 = st.columns([1, 2])
+                _cached_b2 = st.session_state.get("_rt_excel_bytes")
+                if _cached_b2:
+                    import numpy as _np_enh
+                    with st.spinner("Building enhanced workbook with heatmap, SoC, and feasibility sheets…"):
+                        # First produce the standard round-trip workbook
+                        _rt_base = roundtrip_mod.lap_to_excel_roundtrip(
+                            speed_ms    = _np_enh.array(_rt_res.speed_ms, dtype=float),
+                            time_s      = _np_enh.array(_rt_res.time_s,   dtype=float),
+                            excel_bytes = _cached_b2,
+                            lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
+                            top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2" in dir() else 0.0,
+                            avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2" in dir() else 0.0,
+                        )
+                        if _rt_base.ok and _rt_base.excel_bytes:
+                            _enh_bytes = roundtrip_mod.build_enhanced_excel(
+                                result      = _rt_res,
+                                excel_bytes = _rt_base.excel_bytes,
+                                thermals    = _thermals,
+                                soc_data    = _soc_data,
+                                min_pack    = _min_pack,
+                                lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
+                                top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2" in dir() else 0.0,
+                                avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2" in dir() else 0.0,
+                            )
+                            _enh_col1.download_button(
+                                label="⬇ Download enhanced Excel (+3 sheets)",
+                                data=_enh_bytes,
+                                file_name="FSAE_EV_KinematiK_Enhanced.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                key="rt_enh_download_btn")
+                            _enh_col2.markdown(
+                                '<p class="hint" style="margin-top:10px;">'
+                                'Includes all original sheets plus: '
+                                '<b>PackHeatmap</b> (cell grid with thermal colours + '
+                                'Python xlwings macro stub to regenerate the chart), '
+                                '<b>LapEnergy</b> (SoC depletion curve, stop marker, '
+                                'energy timeline + chart), '
+                                '<b>FeasiblePack</b> (minimum pack advisor + what-if '
+                                'capacity table).</p>',
+                                unsafe_allow_html=True)
+                else:
+                    _enh_col1.markdown(
+                        '<p class="hint">'
+                        '💡 Re-upload the workbook above to enable the enhanced Excel download.</p>',
+                        unsafe_allow_html=True)
+
+                # Log
+                if st.button("Log round-trip to handover", key="rt_log_btn"):
+                    _stop_note = (
+                        f"Car stops at {_soc_data['stop_time_s']:.1f}s "
+                        f"({_soc_data['pct_lap_done']*100:.1f}% lap done). "
+                        if not _soc_data["finishes"] else "Car finishes lap. "
+                    )
+                    log_decision_now(
+                        "electrics", "Excel round-trip",
+                        f"Lap sim data ({len(_rt_res.speed_ms)} pts) — "
+                        f"Peak current: {_rt_res.peak_current_a:.1f} A / "
+                        f"{_fuse_limit2:.0f} A fuse. "
+                        f"Total energy: {_rt_res.total_energy_kwh:.3f} kWh. "
+                        f"Max RPM (gear 1): {float(_rt_res.rpm_gear1.max()):.0f}. "
+                        f"{_stop_note}"
+                        f"Min pack needed: {_min_pack['rec_capacity_ah']:.1f} Ah / "
+                        f"{_min_pack['rec_energy_kwh']:.3f} kWh. "
+                        f"Peak cell temp: {_thermals['peak_temp_c']:.1f}°C. "
+                        f"Verdict: {_rt_res.verdict}")
+                    st.success("Logged to handover record.")
+    else:
+        st.markdown(
+            '<p class="hint" style="border-left:2px solid #a855f7; padding-left:10px;">'
+            '📂 Import <code>FSAE_EV_Power_Draw.xlsx</code> once using the expander above. '
+            'KinematiK extracts all pack and motor constants and stores them in the project — '
+            'you won\'t need to re-upload it next session.</p>',
+            unsafe_allow_html=True)
 
 
 # ----------------------------- TAB 12 -------------------------------------- #
@@ -17075,502 +17075,502 @@ if _show_ledger:
              "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
              "suspension": "🩷"}
 
-    st.markdown("###### Each subsystem's interface")
-    st.caption("Fill what's relevant. Blank = not declared yet (reported as MISSING, "
-               "not a silent pass). Untick “estimate” once a value is CAD/measured.")
-    for s in _IF.SUBSYSTEMS:
-        it = led.get(s) or _IF.SubsystemInterface(name=s)
-        # Snapshot the PRE-edit interface so risk propagation below can diff
-        # old→new and report real directions (not blank→new, which would read
-        # every delta-based coupling as neutral and hide risk — a false green).
-        _pre_edit = st.session_state.setdefault("_iface_pre_edit", {})
-        if s not in _pre_edit:
-            _pre_edit[s] = it.as_dict()
-        with st.expander(f"{EMOJI.get(s,'•')}  {s}", expanded=False):
-            fields = FIELDSETS["common"] + [f for f in FIELDSETS.get(s, [])
-                                            if f not in FIELDSETS["common"]]
-            vals = {}
-            cols = st.columns(4)
-            for i, fld in enumerate(fields):
-                label = FIELD_META[fld][0]
-                cur = getattr(it, fld)
-                # Blank-able text input: empty string == not declared (None), which is
-                # distinct from a real 0. Robust for negative-valued fields (CG y) too.
-                raw = cols[i % 4].text_input(
-                    label, value=("" if cur is None else f"{cur:g}"),
-                    key=f"if_{s}_{fld}", placeholder="—")
-                raw = raw.strip()
-                if raw == "":
-                    vals[fld] = None
-                else:
-                    try:
-                        vals[fld] = float(raw)
-                    except ValueError:
-                        vals[fld] = None
-                        cols[i % 4].caption("⚠ not a number — ignored")
-            est = st.checkbox("These are estimates / placeholders", value=bool(it.is_estimate),
-                              key=f"if_{s}_est")
-            rationale = st.text_area(
-                "Why — design justification (this is what design-event judges ask for, "
-                "and it goes straight into the interface report)",
-                value=getattr(it, "rationale", "") or "", key=f"if_{s}_why", height=68)
-            oc = st.columns(2)
-            owner = oc[0].text_input("Owner", value=getattr(it, "owner", "") or "",
-                                     key=f"if_{s}_owner",
-                                     placeholder="who owns this interface")
-            note = oc[1].text_input("Note (optional)", value=getattr(it, "notes", "") or "",
-                                    key=f"if_{s}_note")
-            new_it = _IF.SubsystemInterface(
-                name=s, is_estimate=est, notes=note, rationale=rationale, owner=owner,
-                updated_by=owner or getattr(it, "updated_by", ""),
-                updated_on=getattr(it, "updated_on", ""),
-                **{k: v for k, v in vals.items()})
-            new_it.mounts_on = getattr(it, "mounts_on", None) or (
-                "suspension" if s in ("brakes",) else "chassis")
-            # Capture any change into an in-SESSION change log. We deliberately do
-            # NOT write to the persistent backend on every edit: that fired a remote
-            # DB round-trip inside the render loop (and a backend hiccup could crash
-            # the app). Changes are batched and committed on demand below.
-            # Diff against the PERSISTED pre-edit snapshot (captured once per
-            # session above), NOT against `it` — which is the live ledger value
-            # and on every rerun already equals the edited text-input values, so
-            # the diff would always come back empty and the cross-discipline risk
-            # section below (gated on this changelog) would never appear.
-            try:
-                _changes = _IF.diff_interfaces(_pre_edit.get(s), new_it)
-            except Exception:
-                _changes = []
-            if _changes:
-                new_it.updated_on = _datetime.date.today().isoformat()
-                entry = dict(
-                    subsystem=s, when=new_it.updated_on, by=(owner or "—"),
-                    changes=_changes,
-                    why=rationale.strip() if rationale.strip() else "")
-                pending = st.session_state.setdefault("_iface_changelog", [])
-                sig = (s, tuple(_changes))
-                if not any((e["subsystem"], tuple(e["changes"])) == sig for e in pending):
-                    pending.append(entry)
-            led.set(new_it)
+    with st.expander("⚙️ Each subsystem's interface", expanded=False):
+      st.caption("Fill what's relevant. Blank = not declared yet (reported as MISSING, "
+                 "not a silent pass). Untick “estimate” once a value is CAD/measured.")
+      for s in _IF.SUBSYSTEMS:
+          it = led.get(s) or _IF.SubsystemInterface(name=s)
+          # Snapshot the PRE-edit interface so risk propagation below can diff
+          # old→new and report real directions (not blank→new, which would read
+          # every delta-based coupling as neutral and hide risk — a false green).
+          _pre_edit = st.session_state.setdefault("_iface_pre_edit", {})
+          if s not in _pre_edit:
+              _pre_edit[s] = it.as_dict()
+          with st.expander(f"{EMOJI.get(s,'•')}  {s}", expanded=False):
+              fields = FIELDSETS["common"] + [f for f in FIELDSETS.get(s, [])
+                                              if f not in FIELDSETS["common"]]
+              vals = {}
+              cols = st.columns(4)
+              for i, fld in enumerate(fields):
+                  label = FIELD_META[fld][0]
+                  cur = getattr(it, fld)
+                  # Blank-able text input: empty string == not declared (None), which is
+                  # distinct from a real 0. Robust for negative-valued fields (CG y) too.
+                  raw = cols[i % 4].text_input(
+                      label, value=("" if cur is None else f"{cur:g}"),
+                      key=f"if_{s}_{fld}", placeholder="—")
+                  raw = raw.strip()
+                  if raw == "":
+                      vals[fld] = None
+                  else:
+                      try:
+                          vals[fld] = float(raw)
+                      except ValueError:
+                          vals[fld] = None
+                          cols[i % 4].caption("⚠ not a number — ignored")
+              est = st.checkbox("These are estimates / placeholders", value=bool(it.is_estimate),
+                                key=f"if_{s}_est")
+              rationale = st.text_area(
+                  "Why — design justification (this is what design-event judges ask for, "
+                  "and it goes straight into the interface report)",
+                  value=getattr(it, "rationale", "") or "", key=f"if_{s}_why", height=68)
+              oc = st.columns(2)
+              owner = oc[0].text_input("Owner", value=getattr(it, "owner", "") or "",
+                                       key=f"if_{s}_owner",
+                                       placeholder="who owns this interface")
+              note = oc[1].text_input("Note (optional)", value=getattr(it, "notes", "") or "",
+                                      key=f"if_{s}_note")
+              new_it = _IF.SubsystemInterface(
+                  name=s, is_estimate=est, notes=note, rationale=rationale, owner=owner,
+                  updated_by=owner or getattr(it, "updated_by", ""),
+                  updated_on=getattr(it, "updated_on", ""),
+                  **{k: v for k, v in vals.items()})
+              new_it.mounts_on = getattr(it, "mounts_on", None) or (
+                  "suspension" if s in ("brakes",) else "chassis")
+              # Capture any change into an in-SESSION change log. We deliberately do
+              # NOT write to the persistent backend on every edit: that fired a remote
+              # DB round-trip inside the render loop (and a backend hiccup could crash
+              # the app). Changes are batched and committed on demand below.
+              # Diff against the PERSISTED pre-edit snapshot (captured once per
+              # session above), NOT against `it` — which is the live ledger value
+              # and on every rerun already equals the edited text-input values, so
+              # the diff would always come back empty and the cross-discipline risk
+              # section below (gated on this changelog) would never appear.
+              try:
+                  _changes = _IF.diff_interfaces(_pre_edit.get(s), new_it)
+              except Exception:
+                  _changes = []
+              if _changes:
+                  new_it.updated_on = _datetime.date.today().isoformat()
+                  entry = dict(
+                      subsystem=s, when=new_it.updated_on, by=(owner or "—"),
+                      changes=_changes,
+                      why=rationale.strip() if rationale.strip() else "")
+                  pending = st.session_state.setdefault("_iface_changelog", [])
+                  sig = (s, tuple(_changes))
+                  if not any((e["subsystem"], tuple(e["changes"])) == sig for e in pending):
+                      pending.append(entry)
+              led.set(new_it)
 
-    # persist edits back to session
-    st.session_state.ledger = led.as_dict()
+      # persist edits back to session
+      st.session_state.ledger = led.as_dict()
 
-    # ---- run the checks ---- #
-    findings = led.check_all()
-    summary = _IF.summarize(findings)
-    roll = led.mass_rollup()
+      # ---- run the checks ---- #
+      findings = led.check_all()
+      summary = _IF.summarize(findings)
+      roll = led.mass_rollup()
 
-    # board-level badge
-    worst = summary["worst"]
-    badge = {"fail": ("bad", "✗ INTEGRATION CONFLICTS"),
-             "warning": ("warn", "⚠ WARNINGS"),
-             "missing": ("warn", "◴ DATA MISSING"),
-             "info": ("good", "ℹ INFO ONLY"),
-             "ok": ("good", "✓ ALL CHECKS PASS")}.get(worst, ("warn", worst))
-    st.markdown("###### Integration board")
-    bc = st.columns(5)
-    cnt = summary["counts"]
-    bc[0].markdown(metric("Status", badge[1].split(' ', 1)[1] if ' ' in badge[1] else badge[1],
-                          "", badge[0]), unsafe_allow_html=True)
-    bc[1].markdown(metric("Conflicts", str(cnt["fail"]), "fail",
-                          "bad" if cnt["fail"] else "good"), unsafe_allow_html=True)
-    bc[2].markdown(metric("Warnings", str(cnt["warning"]), "", "warn" if cnt["warning"] else "good"),
-                   unsafe_allow_html=True)
-    bc[3].markdown(metric("Missing", str(cnt["missing"]), "", "warn" if cnt["missing"] else "good"),
-                   unsafe_allow_html=True)
-    _massbadge = "bad" if (roll["declared"] and roll["delta_kg"] - led.includes_driver_kg > 0) else "good"
-    bc[4].markdown(metric("Declared mass", f"{roll['total_kg']:.0f}", "kg"),
-                   unsafe_allow_html=True)
+      # board-level badge
+      worst = summary["worst"]
+      badge = {"fail": ("bad", "✗ INTEGRATION CONFLICTS"),
+               "warning": ("warn", "⚠ WARNINGS"),
+               "missing": ("warn", "◴ DATA MISSING"),
+               "info": ("good", "ℹ INFO ONLY"),
+               "ok": ("good", "✓ ALL CHECKS PASS")}.get(worst, ("warn", worst))
+    with st.expander("⚙️ Integration board", expanded=False):
+      bc = st.columns(5)
+      cnt = summary["counts"]
+      bc[0].markdown(metric("Status", badge[1].split(' ', 1)[1] if ' ' in badge[1] else badge[1],
+                            "", badge[0]), unsafe_allow_html=True)
+      bc[1].markdown(metric("Conflicts", str(cnt["fail"]), "fail",
+                            "bad" if cnt["fail"] else "good"), unsafe_allow_html=True)
+      bc[2].markdown(metric("Warnings", str(cnt["warning"]), "", "warn" if cnt["warning"] else "good"),
+                     unsafe_allow_html=True)
+      bc[3].markdown(metric("Missing", str(cnt["missing"]), "", "warn" if cnt["missing"] else "good"),
+                     unsafe_allow_html=True)
+      _massbadge = "bad" if (roll["declared"] and roll["delta_kg"] - led.includes_driver_kg > 0) else "good"
+      bc[4].markdown(metric("Declared mass", f"{roll['total_kg']:.0f}", "kg"),
+                     unsafe_allow_html=True)
 
-    # findings list
-    _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
-                "info": "", "ok": "good"}
-    for f in sorted(findings, key=lambda x: ["fail", "warning", "missing", "info", "ok"].index(x.severity.value)):
-        cls = _SEV_CLS.get(f.severity.value, "")
-        who = " ↔ ".join(f"{EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
-        st.markdown(
-            f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
-            f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
-            f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
-            f'<span style="font-size:.92rem">{f.message}</span></div>',
-            unsafe_allow_html=True)
+      # findings list
+      _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
+                  "info": "", "ok": "good"}
+      for f in sorted(findings, key=lambda x: ["fail", "warning", "missing", "info", "ok"].index(x.severity.value)):
+          cls = _SEV_CLS.get(f.severity.value, "")
+          who = " ↔ ".join(f"{EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
+          st.markdown(
+              f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+              f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
+              f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
+              f'<span style="font-size:.92rem">{f.message}</span></div>',
+              unsafe_allow_html=True)
 
-    # ---- cross-discipline risk propagation + manufacturing-release gate ---- #
-    # When a sub-team edits an interface, KinematiK already diffed it above. Here
-    # we walk those changes through the coupling graph so the DOWNSTREAM risk on
-    # every other subsystem shows up unprompted — the whole point being that a
-    # freshman who bumps the motor map sees it just loaded the upright and heated
-    # the cooling loop, before anyone has to think to ask.
-    _rp_changed = sorted({e["subsystem"] for e in
-                          st.session_state.get("_iface_changelog", [])})
-    if _rp_changed:
-        st.markdown("###### Cross-discipline risk — what your edits just touched")
-        st.markdown('<p class="hint">Every interface change, walked through the '
-                    'coupling graph. Each effect names both disciplines and carries an '
-                    'honest confidence tag: <b>measured</b> (a KinematiK solver ran), '
-                    '<b>coupled</b> (a modelled edge), or <b>judgement</b> '
-                    '(engineering judgement, no backing physics).</p>',
-                    unsafe_allow_html=True)
-        _all_effects = []
-        _pre = st.session_state.get("_iface_pre_edit", {})
-        for _sub in _rp_changed:
-            _new_iface = led.get(_sub)
-            if _new_iface is None:
-                continue
-            # Diff against the captured PRE-edit snapshot so delta-based couplings
-            # report real directions. Falling back to a blank baseline only when
-            # no snapshot exists (first-ever edit) — and in that case the values
-            # are genuinely new, so reporting their loads is still correct.
-            _old_iface = (riskprop_mod.SubsystemInterface.from_dict(_pre[_sub])
-                          if _sub in _pre else
-                          riskprop_mod.SubsystemInterface(name=_sub))
-            _rep = riskprop_mod.propagate_interface_edit(led, _old_iface, _new_iface)
-            _all_effects.extend(_rep.effects)
+      # ---- cross-discipline risk propagation + manufacturing-release gate ---- #
+      # When a sub-team edits an interface, KinematiK already diffed it above. Here
+      # we walk those changes through the coupling graph so the DOWNSTREAM risk on
+      # every other subsystem shows up unprompted — the whole point being that a
+      # freshman who bumps the motor map sees it just loaded the upright and heated
+      # the cooling loop, before anyone has to think to ask.
+      _rp_changed = sorted({e["subsystem"] for e in
+                            st.session_state.get("_iface_changelog", [])})
+      if _rp_changed:
+          st.markdown("###### Cross-discipline risk — what your edits just touched")
+          st.markdown('<p class="hint">Every interface change, walked through the '
+                      'coupling graph. Each effect names both disciplines and carries an '
+                      'honest confidence tag: <b>measured</b> (a KinematiK solver ran), '
+                      '<b>coupled</b> (a modelled edge), or <b>judgement</b> '
+                      '(engineering judgement, no backing physics).</p>',
+                      unsafe_allow_html=True)
+          _all_effects = []
+          _pre = st.session_state.get("_iface_pre_edit", {})
+          for _sub in _rp_changed:
+              _new_iface = led.get(_sub)
+              if _new_iface is None:
+                  continue
+              # Diff against the captured PRE-edit snapshot so delta-based couplings
+              # report real directions. Falling back to a blank baseline only when
+              # no snapshot exists (first-ever edit) — and in that case the values
+              # are genuinely new, so reporting their loads is still correct.
+              _old_iface = (riskprop_mod.SubsystemInterface.from_dict(_pre[_sub])
+                            if _sub in _pre else
+                            riskprop_mod.SubsystemInterface(name=_sub))
+              _rep = riskprop_mod.propagate_interface_edit(led, _old_iface, _new_iface)
+              _all_effects.extend(_rep.effects)
 
-        _DIR = {"worse": ("bad", "↑ risk"), "better": ("good", "↓ risk"),
-                "neutral": ("", "→")}
-        _CONF = {"measured": "good", "coupled": "warn", "judgement": "warn"}
-        if _all_effects:
-            for _e in sorted(_all_effects,
-                             key=lambda x: {"worse": 0, "neutral": 1, "better": 2}[x.direction.value]):
-                _dcls, _dlbl = _DIR[_e.direction.value]
-                _q = (f"&nbsp;<b>{_e.delta_value:+g} {_e.delta_unit}</b>"
-                      if _e.delta_value is not None else "")
-                st.markdown(
-                    f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
-                    f'<span class="tag {_dcls}">{_dlbl}</span> '
-                    f'<span class="tag {_CONF.get(_e.confidence.value,"")}">{_e.confidence.value}</span> '
-                    f'<b>{EMOJI.get(_e.source_subsystem,"")}{_e.source_subsystem}</b> '
-                    f'<span style="color:#8d99a6">→</span> '
-                    f'<b>{EMOJI.get(_e.target_subsystem,"")}{_e.target_subsystem}</b>{_q}<br>'
-                    f'<span style="font-size:.9rem">{_e.mechanism}</span></div>',
-                    unsafe_allow_html=True)
+          _DIR = {"worse": ("bad", "↑ risk"), "better": ("good", "↓ risk"),
+                  "neutral": ("", "→")}
+          _CONF = {"measured": "good", "coupled": "warn", "judgement": "warn"}
+          if _all_effects:
+              for _e in sorted(_all_effects,
+                               key=lambda x: {"worse": 0, "neutral": 1, "better": 2}[x.direction.value]):
+                  _dcls, _dlbl = _DIR[_e.direction.value]
+                  _q = (f"&nbsp;<b>{_e.delta_value:+g} {_e.delta_unit}</b>"
+                        if _e.delta_value is not None else "")
+                  st.markdown(
+                      f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
+                      f'<span class="tag {_dcls}">{_dlbl}</span> '
+                      f'<span class="tag {_CONF.get(_e.confidence.value,"")}">{_e.confidence.value}</span> '
+                      f'<b>{EMOJI.get(_e.source_subsystem,"")}{_e.source_subsystem}</b> '
+                      f'<span style="color:#8d99a6">→</span> '
+                      f'<b>{EMOJI.get(_e.target_subsystem,"")}{_e.target_subsystem}</b>{_q}<br>'
+                      f'<span style="font-size:.9rem">{_e.mechanism}</span></div>',
+                      unsafe_allow_html=True)
 
-            # roll the effects onto the team's LIVE DFMEA log (their wording)
-            _rep_all = riskprop_mod.PropagationReport(effects=_all_effects)
-            _sugg = riskprop_mod.dfmea_deltas(
-                _rep_all, st.session_state.get("dfmea_rows", []))
-            if _sugg:
-                st.markdown('<p class="hint">These edits make existing DFMEA rows '
-                            'more or less likely. Suggested Occurrence nudges (RPN '
-                            'recomputed by the DFMEA engine — you still own the log):</p>',
-                            unsafe_allow_html=True)
-                for _s in _sugg:
-                    _up = _s["rpn_suggested"] > _s["rpn_old"]
-                    st.markdown(
-                        f'<div style="font-size:.86rem;padding:2px 0;">'
-                        f'<span class="tag {"bad" if _up else "good"}">'
-                        f'RPN {_s["rpn_old"]}→{_s["rpn_suggested"]}</span> '
-                        f'<b>{_s["failure_mode"]}</b> '
-                        f'<span style="color:#8d99a6">(Occ {_s["occurrence_old"]}→'
-                        f'{_s["occurrence_suggested"]}, via {_s["source"]})</span></div>',
-                        unsafe_allow_html=True)
+              # roll the effects onto the team's LIVE DFMEA log (their wording)
+              _rep_all = riskprop_mod.PropagationReport(effects=_all_effects)
+              _sugg = riskprop_mod.dfmea_deltas(
+                  _rep_all, st.session_state.get("dfmea_rows", []))
+              if _sugg:
+                  st.markdown('<p class="hint">These edits make existing DFMEA rows '
+                              'more or less likely. Suggested Occurrence nudges (RPN '
+                              'recomputed by the DFMEA engine — you still own the log):</p>',
+                              unsafe_allow_html=True)
+                  for _s in _sugg:
+                      _up = _s["rpn_suggested"] > _s["rpn_old"]
+                      st.markdown(
+                          f'<div style="font-size:.86rem;padding:2px 0;">'
+                          f'<span class="tag {"bad" if _up else "good"}">'
+                          f'RPN {_s["rpn_old"]}→{_s["rpn_suggested"]}</span> '
+                          f'<b>{_s["failure_mode"]}</b> '
+                          f'<span style="color:#8d99a6">(Occ {_s["occurrence_old"]}→'
+                          f'{_s["occurrence_suggested"]}, via {_s["source"]})</span></div>',
+                          unsafe_allow_html=True)
 
-    # ---- MANUFACTURING-RELEASE GATE ---------------------------------------- #
-    # One manufacturing shot: the failure that ends a season is a part cut to a
-    # number that was still an estimate, or designed against a load that was only
-    # an engineering-judgement coupling. This gate is a literal go/no-go per
-    # subsystem about to be made: is every interface feeding it CONFIRMED (not an
-    # estimate), and does every coupling into it rest on real physics?
-    with st.expander("🔒 Manufacturing-release gate — clear a part before you cut it",
-                     expanded=False):
-        st.markdown(
-            '<div style="border:1px solid #e0b000;background:rgba(224,176,0,.08);'
-            'border-radius:6px;padding:10px 14px;margin-bottom:10px;">'
-            '<b style="color:#e0b000">⚠ Always confirm with your subsystem lead before '
-            'cutting.</b><br><span style="font-size:.9rem;color:#c9d3dd">'
-            'This gate checks the data you entered against KinematiK\'s built-in coupling '
-            'graph — it is a safety net, not a sign-off. The coupling edges are a sensible '
-            'starting set, not gospel for <i>your</i> car: a real load path may be missing, '
-            'and a "clear" verdict only means the numbers you declared are self-consistent. '
-            'Have the lead sanity-check the approach and the edges loading this part before '
-            'committing anything to manufacture.</span></div>',
-            unsafe_allow_html=True)
-        st.markdown('<p class="hint">Pick the subsystem whose parts are going to '
-                    'manufacture. The gate passes only if its interface is marked '
-                    '<b>confirmed</b> (not an estimate) and the cross-discipline '
-                    'couplings loading it are solver-backed — because metal you cut '
-                    'wrong, you cut once.</p>', unsafe_allow_html=True)
-        _gate_sub = st.selectbox("Subsystem releasing to manufacture",
-                                 interfaces_mod.SUBSYSTEMS, key="_mfg_gate_sub")
-        if st.button("Run release gate", key="_mfg_gate_run"):
-            try:
-                _axn.engage("integration", "release_gate")
-                _axn.complete("integration", "release_gate")
-            except Exception:
-                pass
-            _blocks, _warns, _oks = [], [], []
-            _gi = led.get(_gate_sub)
-            # 1) is the subsystem's own interface confirmed and populated?
-            if _gi is None or not _gi.declared_fields():
-                _blocks.append("This subsystem hasn't declared an interface yet — "
-                               "nothing to check the part against.")
-            else:
-                if _gi.is_estimate:
-                    _blocks.append("Interface is still flagged ESTIMATE. Confirm the "
-                                   "numbers before committing geometry to manufacture.")
-                else:
-                    _oks.append("Interface is confirmed (not an estimate).")
-                if not (getattr(_gi, "rationale", "") or "").strip():
-                    _warns.append("No design rationale recorded — judges ask for the "
-                                  "‘why’, and so should you before cutting.")
+      # ---- MANUFACTURING-RELEASE GATE ---------------------------------------- #
+      # One manufacturing shot: the failure that ends a season is a part cut to a
+      # number that was still an estimate, or designed against a load that was only
+      # an engineering-judgement coupling. This gate is a literal go/no-go per
+      # subsystem about to be made: is every interface feeding it CONFIRMED (not an
+      # estimate), and does every coupling into it rest on real physics?
+      with st.expander("🔒 Manufacturing-release gate — clear a part before you cut it",
+                       expanded=False):
+          st.markdown(
+              '<div style="border:1px solid #e0b000;background:rgba(224,176,0,.08);'
+              'border-radius:6px;padding:10px 14px;margin-bottom:10px;">'
+              '<b style="color:#e0b000">⚠ Always confirm with your subsystem lead before '
+              'cutting.</b><br><span style="font-size:.9rem;color:#c9d3dd">'
+              'This gate checks the data you entered against KinematiK\'s built-in coupling '
+              'graph — it is a safety net, not a sign-off. The coupling edges are a sensible '
+              'starting set, not gospel for <i>your</i> car: a real load path may be missing, '
+              'and a "clear" verdict only means the numbers you declared are self-consistent. '
+              'Have the lead sanity-check the approach and the edges loading this part before '
+              'committing anything to manufacture.</span></div>',
+              unsafe_allow_html=True)
+          st.markdown('<p class="hint">Pick the subsystem whose parts are going to '
+                      'manufacture. The gate passes only if its interface is marked '
+                      '<b>confirmed</b> (not an estimate) and the cross-discipline '
+                      'couplings loading it are solver-backed — because metal you cut '
+                      'wrong, you cut once.</p>', unsafe_allow_html=True)
+          _gate_sub = st.selectbox("Subsystem releasing to manufacture",
+                                   interfaces_mod.SUBSYSTEMS, key="_mfg_gate_sub")
+          if st.button("Run release gate", key="_mfg_gate_run"):
+              try:
+                  _axn.engage("integration", "release_gate")
+                  _axn.complete("integration", "release_gate")
+              except Exception:
+                  pass
+              _blocks, _warns, _oks = [], [], []
+              _gi = led.get(_gate_sub)
+              # 1) is the subsystem's own interface confirmed and populated?
+              if _gi is None or not _gi.declared_fields():
+                  _blocks.append("This subsystem hasn't declared an interface yet — "
+                                 "nothing to check the part against.")
+              else:
+                  if _gi.is_estimate:
+                      _blocks.append("Interface is still flagged ESTIMATE. Confirm the "
+                                     "numbers before committing geometry to manufacture.")
+                  else:
+                      _oks.append("Interface is confirmed (not an estimate).")
+                  if not (getattr(_gi, "rationale", "") or "").strip():
+                      _warns.append("No design rationale recorded — judges ask for the "
+                                    "‘why’, and so should you before cutting.")
 
-            # 2) any unresolved hard conflict / missing data involving this part?
-            for _f in findings:
-                if _gate_sub in getattr(_f, "subsystems", []):
-                    if _f.severity.value == "fail":
-                        _blocks.append(f"Open integration conflict: {_f.message}")
-                    elif _f.severity.value == "missing":
-                        _warns.append(f"Missing data: {_f.message}")
+              # 2) any unresolved hard conflict / missing data involving this part?
+              for _f in findings:
+                  if _gate_sub in getattr(_f, "subsystems", []):
+                      if _f.severity.value == "fail":
+                          _blocks.append(f"Open integration conflict: {_f.message}")
+                      elif _f.severity.value == "missing":
+                          _warns.append(f"Missing data: {_f.message}")
 
-            # 3) couplings that LOAD this part — are they solver-backed?
-            for _c in riskprop_mod.COUPLINGS:
-                if _c.target_subsystem != _gate_sub:
-                    continue
-                _src = led.get(_c.source_subsystem)
-                _src_declared = _src is not None and bool(_src.declared_fields())
-                if not _src_declared:
-                    continue  # nothing flowing in on this edge yet
-                if _c.confidence.value == "judgement":
-                    _warns.append(
-                        f"Load from {_c.source_subsystem} rests on engineering "
-                        f"judgement, not physics ({_c.mechanism.split('.')[0]}).")
-                if _src is not None and _src.is_estimate and _c.severity_hint.value in ("fail", "warning"):
-                    _blocks.append(
-                        f"{_c.source_subsystem} feeds a load into this part but its "
-                        f"interface is still an ESTIMATE — confirm it before cutting.")
+              # 3) couplings that LOAD this part — are they solver-backed?
+              for _c in riskprop_mod.COUPLINGS:
+                  if _c.target_subsystem != _gate_sub:
+                      continue
+                  _src = led.get(_c.source_subsystem)
+                  _src_declared = _src is not None and bool(_src.declared_fields())
+                  if not _src_declared:
+                      continue  # nothing flowing in on this edge yet
+                  if _c.confidence.value == "judgement":
+                      _warns.append(
+                          f"Load from {_c.source_subsystem} rests on engineering "
+                          f"judgement, not physics ({_c.mechanism.split('.')[0]}).")
+                  if _src is not None and _src.is_estimate and _c.severity_hint.value in ("fail", "warning"):
+                      _blocks.append(
+                          f"{_c.source_subsystem} feeds a load into this part but its "
+                          f"interface is still an ESTIMATE — confirm it before cutting.")
 
-            # Persist the result so the sign-off interlock below survives the
-            # checkbox/button reruns (a verdict computed only inside this button
-            # block would vanish the moment the user ticks the confirm box).
-            _gi_for_record = led.get(_gate_sub)
-            st.session_state["_mfg_gate_result"] = dict(
-                subsystem=_gate_sub,
-                verdict=("block" if _blocks else "caution" if _warns else "clear"),
-                blocks=list(_blocks), warns=list(_warns), oks=list(_oks),
-                declared=(_gi_for_record.numeric_values() if _gi_for_record else {}),
-                confirmed=(_gi_for_record is not None and not _gi_for_record.is_estimate),
-            )
+              # Persist the result so the sign-off interlock below survives the
+              # checkbox/button reruns (a verdict computed only inside this button
+              # block would vanish the moment the user ticks the confirm box).
+              _gi_for_record = led.get(_gate_sub)
+              st.session_state["_mfg_gate_result"] = dict(
+                  subsystem=_gate_sub,
+                  verdict=("block" if _blocks else "caution" if _warns else "clear"),
+                  blocks=list(_blocks), warns=list(_warns), oks=list(_oks),
+                  declared=(_gi_for_record.numeric_values() if _gi_for_record else {}),
+                  confirmed=(_gi_for_record is not None and not _gi_for_record.is_estimate),
+              )
 
-        # ---- render the stored verdict + sign-off interlock ---- #
-        _gr = st.session_state.get("_mfg_gate_result")
-        if _gr and _gr["subsystem"] == _gate_sub:
-            _blocks, _warns, _oks = _gr["blocks"], _gr["warns"], _gr["oks"]
-            # verdict
-            if _gr["verdict"] == "block":
-                st.markdown(f'<div class="tag bad" style="font-size:1rem">⛔ DO NOT '
-                            f'RELEASE — {len(_blocks)} blocker(s)</div>',
-                            unsafe_allow_html=True)
-            elif _gr["verdict"] == "caution":
-                st.markdown('<div class="tag warn" style="font-size:1rem">⚠ RELEASE '
-                            'WITH CAUTION — review the items below</div>',
-                            unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="tag good" style="font-size:1rem">✅ CLEAR TO '
-                            'MANUFACTURE — interface confirmed, loads solver-backed</div>',
-                            unsafe_allow_html=True)
-            for _b in _blocks:
-                st.markdown(f'<div style="color:#ff6b6b;font-size:.9rem;padding:2px 0">⛔ {_b}</div>',
-                            unsafe_allow_html=True)
-            for _w in _warns:
-                st.markdown(f'<div style="color:#e0b000;font-size:.9rem;padding:2px 0">⚠ {_w}</div>',
-                            unsafe_allow_html=True)
-            for _o in _oks:
-                st.markdown(f'<div style="color:#5fd38a;font-size:.9rem;padding:2px 0">✓ {_o}</div>',
-                            unsafe_allow_html=True)
-            st.markdown(
-                '<div style="font-size:.85rem;color:#e0b000;padding:8px 0 2px 0;">'
-                '⚠ Whatever this verdict says, confirm with your subsystem lead before '
-                'you cut — the lead should sanity-check both the approach and the '
-                'coupling edges loading this part. A green gate means your declared '
-                'numbers are consistent, not that the design is signed off.</div>',
-                unsafe_allow_html=True)
+          # ---- render the stored verdict + sign-off interlock ---- #
+          _gr = st.session_state.get("_mfg_gate_result")
+          if _gr and _gr["subsystem"] == _gate_sub:
+              _blocks, _warns, _oks = _gr["blocks"], _gr["warns"], _gr["oks"]
+              # verdict
+              if _gr["verdict"] == "block":
+                  st.markdown(f'<div class="tag bad" style="font-size:1rem">⛔ DO NOT '
+                              f'RELEASE — {len(_blocks)} blocker(s)</div>',
+                              unsafe_allow_html=True)
+              elif _gr["verdict"] == "caution":
+                  st.markdown('<div class="tag warn" style="font-size:1rem">⚠ RELEASE '
+                              'WITH CAUTION — review the items below</div>',
+                              unsafe_allow_html=True)
+              else:
+                  st.markdown('<div class="tag good" style="font-size:1rem">✅ CLEAR TO '
+                              'MANUFACTURE — interface confirmed, loads solver-backed</div>',
+                              unsafe_allow_html=True)
+              for _b in _blocks:
+                  st.markdown(f'<div style="color:#ff6b6b;font-size:.9rem;padding:2px 0">⛔ {_b}</div>',
+                              unsafe_allow_html=True)
+              for _w in _warns:
+                  st.markdown(f'<div style="color:#e0b000;font-size:.9rem;padding:2px 0">⚠ {_w}</div>',
+                              unsafe_allow_html=True)
+              for _o in _oks:
+                  st.markdown(f'<div style="color:#5fd38a;font-size:.9rem;padding:2px 0">✓ {_o}</div>',
+                              unsafe_allow_html=True)
+              st.markdown(
+                  '<div style="font-size:.85rem;color:#e0b000;padding:8px 0 2px 0;">'
+                  '⚠ Whatever this verdict says, confirm with your subsystem lead before '
+                  'you cut — the lead should sanity-check both the approach and the '
+                  'coupling edges loading this part. A green gate means your declared '
+                  'numbers are consistent, not that the design is signed off.</div>',
+                  unsafe_allow_html=True)
 
-            # ---- sign-off interlock ---- #
-            # Only offer sign-off when the gate didn't hard-block: you cannot
-            # record approval of a "DO NOT RELEASE". For block verdicts, the path
-            # forward is fixing the blockers, not signing them off.
-            if _gr["verdict"] == "block":
-                st.markdown('<p class="hint">Resolve the blocker(s) above and re-run '
-                            'the gate before any sign-off is possible.</p>',
-                            unsafe_allow_html=True)
-            else:
-                st.markdown("###### Manufacturing sign-off")
-                _so = st.columns([3, 2])
-                _confirmed = _so[0].checkbox(
-                    "I have confirmed this approach **and** the coupling edges loading "
-                    "this part with my subsystem lead.",
-                    key=f"_mfg_signoff_chk_{_gate_sub}")
-                _lead = _so[1].text_input(
-                    "Lead who confirmed", key=f"_mfg_signoff_lead_{_gate_sub}",
-                    placeholder="lead's name")
-                _ready = _confirmed and bool(_lead.strip())
-                if not _ready:
-                    st.caption("Tick the box and name the lead to record the sign-off.")
-                if st.button("📝 Record manufacturing sign-off",
-                             key=f"_mfg_signoff_btn_{_gate_sub}",
-                             disabled=not _ready):
-                    try:
-                        _axn.engage("integration", "manufacturing_signoff")
-                    except Exception:
-                        pass
-                    _vlabel = {"clear": "CLEAR TO MANUFACTURE",
-                               "caution": "RELEASE WITH CAUTION"}[_gr["verdict"]]
-                    _declared_txt = ", ".join(
-                        f"{k}={v}" for k, v in _gr["declared"].items()) or "—"
-                    _open_items = _gr["warns"]
-                    _body = (
-                        f"Manufacturing release sign-off for **{_gate_sub}**. "
-                        f"Gate verdict: {_vlabel}. "
-                        f"Confirmed with lead: {_lead.strip()}. "
-                        f"Interface {'confirmed (not estimate)' if _gr['confirmed'] else 'still flagged ESTIMATE'}. "
-                        f"Declared values at sign-off: {_declared_txt}."
-                        + (f" Open caution items acknowledged: {'; '.join(_open_items)}."
-                           if _open_items else ""))
-                    _ok = log_decision_now(
-                        "integration",
-                        f"Manufacturing sign-off — {_gate_sub} ({_vlabel})",
-                        _body, author=_lead.strip() or "—")
-                    if _ok:
-                        st.success(
-                            f"Sign-off recorded for {_gate_sub}, confirmed with "
-                            f"{_lead.strip()}, at {_datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. "
-                            "It's in the decision log and will appear in the handover "
-                            "export (PDF/Markdown/JSON) — a durable record, not a "
-                            "file that gets lost on a laptop.")
-                        try:
-                            _axn.complete("integration", "manufacturing_signoff")
-                        except Exception:
-                            pass
-                    else:
-                        st.warning(
-                            "Couldn't write to the handover record (backend "
-                            "unavailable). Nothing was lost — re-try, or capture the "
-                            "sign-off manually in Weight & Handover.")
-                        try:
-                            _axn.error("integration", kind="signoff_write_failed")
-                        except Exception:
-                            pass
+              # ---- sign-off interlock ---- #
+              # Only offer sign-off when the gate didn't hard-block: you cannot
+              # record approval of a "DO NOT RELEASE". For block verdicts, the path
+              # forward is fixing the blockers, not signing them off.
+              if _gr["verdict"] == "block":
+                  st.markdown('<p class="hint">Resolve the blocker(s) above and re-run '
+                              'the gate before any sign-off is possible.</p>',
+                              unsafe_allow_html=True)
+              else:
+                  st.markdown("###### Manufacturing sign-off")
+                  _so = st.columns([3, 2])
+                  _confirmed = _so[0].checkbox(
+                      "I have confirmed this approach **and** the coupling edges loading "
+                      "this part with my subsystem lead.",
+                      key=f"_mfg_signoff_chk_{_gate_sub}")
+                  _lead = _so[1].text_input(
+                      "Lead who confirmed", key=f"_mfg_signoff_lead_{_gate_sub}",
+                      placeholder="lead's name")
+                  _ready = _confirmed and bool(_lead.strip())
+                  if not _ready:
+                      st.caption("Tick the box and name the lead to record the sign-off.")
+                  if st.button("📝 Record manufacturing sign-off",
+                               key=f"_mfg_signoff_btn_{_gate_sub}",
+                               disabled=not _ready):
+                      try:
+                          _axn.engage("integration", "manufacturing_signoff")
+                      except Exception:
+                          pass
+                      _vlabel = {"clear": "CLEAR TO MANUFACTURE",
+                                 "caution": "RELEASE WITH CAUTION"}[_gr["verdict"]]
+                      _declared_txt = ", ".join(
+                          f"{k}={v}" for k, v in _gr["declared"].items()) or "—"
+                      _open_items = _gr["warns"]
+                      _body = (
+                          f"Manufacturing release sign-off for **{_gate_sub}**. "
+                          f"Gate verdict: {_vlabel}. "
+                          f"Confirmed with lead: {_lead.strip()}. "
+                          f"Interface {'confirmed (not estimate)' if _gr['confirmed'] else 'still flagged ESTIMATE'}. "
+                          f"Declared values at sign-off: {_declared_txt}."
+                          + (f" Open caution items acknowledged: {'; '.join(_open_items)}."
+                             if _open_items else ""))
+                      _ok = log_decision_now(
+                          "integration",
+                          f"Manufacturing sign-off — {_gate_sub} ({_vlabel})",
+                          _body, author=_lead.strip() or "—")
+                      if _ok:
+                          st.success(
+                              f"Sign-off recorded for {_gate_sub}, confirmed with "
+                              f"{_lead.strip()}, at {_datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. "
+                              "It's in the decision log and will appear in the handover "
+                              "export (PDF/Markdown/JSON) — a durable record, not a "
+                              "file that gets lost on a laptop.")
+                          try:
+                              _axn.complete("integration", "manufacturing_signoff")
+                          except Exception:
+                              pass
+                      else:
+                          st.warning(
+                              "Couldn't write to the handover record (backend "
+                              "unavailable). Nothing was lost — re-try, or capture the "
+                              "sign-off manually in Weight & Handover.")
+                          try:
+                              _axn.error("integration", kind="signoff_write_failed")
+                          except Exception:
+                              pass
 
     # ---- close the loop with the real physics ---- #
-    st.markdown("###### Feed the build back into the physics")
-    if roll["cg_mm"]:
-        cgz = roll["cg_mm"][2]
-        total_with_driver = roll["total_kg"] + (led.includes_driver_kg or 0.0)
-        cc = st.columns([2, 1])
-        _uM = units_mod.label("kg")
-        _uL = units_mod.label("mm")
-        _tot = units_mod.from_metric(roll["total_kg"], "kg")
-        _drv = units_mod.from_metric(led.includes_driver_kg or 0.0, "kg")
-        _twd = units_mod.from_metric(total_with_driver, "kg")
-        _cgz = units_mod.from_metric(cgz, "mm")
-        cc[0].markdown(f'<p class="hint">The declared build gives a combined mass of '
-                       f'<b>{_tot:.1f} {_uM}</b> (+{_drv:.0f} {_uM} '
-                       f'driver = {_twd:.1f} {_uM}) and a CG height of '
-                       f'<b>{_cgz:.0f} {_uL}</b>. This is the number suspension\'s load-transfer '
-                       f'and the lap sim should be using — push it through so every other '
-                       f'tab reflects the real car, not an assumption.</p>',
-                       unsafe_allow_html=True)
-        if cc[1].button("→ Use this mass & CG in the vehicle model",
-                        width='stretch'):
-            _axn.auto_engage("integration", action="mass_cg_push")
-            st.session_state.vp["mass"] = float(total_with_driver)
-            st.session_state.vp["cg_height"] = float(cgz)
-            _logged = log_decision_now(
-                "integration", "Build mass/CG pushed to vehicle model",
-                f"Subsystem ledger: {uval(total_with_driver, 'kg', fmt='{:.1f}')} total, "
-                f"CG height {uval(cgz, 'mm')}. Now driving load transfer & lap sim.",
-                author="integration")
-            _axn.auto_complete("integration", action="mass_cg_push")
-            st.success(f"Vehicle model updated: {_twd:.1f} {_uM}, "
-                       f"CG {_cgz:.0f} {_uL}. Other tabs now use it."
-                       + ("" if _logged else " (note: couldn't write to the handover "
-                          "log — backend unavailable; the model change still applied.)"))
-            st.rerun()
-    else:
-        st.markdown('<p class="hint">Once enough subsystems declare mass AND CG '
-                    'location, the combined CG can be pushed straight into the vehicle '
-                    'model here — closing the loop between the integration ledger and '
-                    'the load-transfer/lap-time physics.</p>', unsafe_allow_html=True)
+    with st.expander("⚙️ Feed the build back into the physics", expanded=False):
+      if roll["cg_mm"]:
+          cgz = roll["cg_mm"][2]
+          total_with_driver = roll["total_kg"] + (led.includes_driver_kg or 0.0)
+          cc = st.columns([2, 1])
+          _uM = units_mod.label("kg")
+          _uL = units_mod.label("mm")
+          _tot = units_mod.from_metric(roll["total_kg"], "kg")
+          _drv = units_mod.from_metric(led.includes_driver_kg or 0.0, "kg")
+          _twd = units_mod.from_metric(total_with_driver, "kg")
+          _cgz = units_mod.from_metric(cgz, "mm")
+          cc[0].markdown(f'<p class="hint">The declared build gives a combined mass of '
+                         f'<b>{_tot:.1f} {_uM}</b> (+{_drv:.0f} {_uM} '
+                         f'driver = {_twd:.1f} {_uM}) and a CG height of '
+                         f'<b>{_cgz:.0f} {_uL}</b>. This is the number suspension\'s load-transfer '
+                         f'and the lap sim should be using — push it through so every other '
+                         f'tab reflects the real car, not an assumption.</p>',
+                         unsafe_allow_html=True)
+          if cc[1].button("→ Use this mass & CG in the vehicle model",
+                          width='stretch'):
+              _axn.auto_engage("integration", action="mass_cg_push")
+              st.session_state.vp["mass"] = float(total_with_driver)
+              st.session_state.vp["cg_height"] = float(cgz)
+              _logged = log_decision_now(
+                  "integration", "Build mass/CG pushed to vehicle model",
+                  f"Subsystem ledger: {uval(total_with_driver, 'kg', fmt='{:.1f}')} total, "
+                  f"CG height {uval(cgz, 'mm')}. Now driving load transfer & lap sim.",
+                  author="integration")
+              _axn.auto_complete("integration", action="mass_cg_push")
+              st.success(f"Vehicle model updated: {_twd:.1f} {_uM}, "
+                         f"CG {_cgz:.0f} {_uL}. Other tabs now use it."
+                         + ("" if _logged else " (note: couldn't write to the handover "
+                            "log — backend unavailable; the model change still applied.)"))
+              st.rerun()
+      else:
+          st.markdown('<p class="hint">Once enough subsystems declare mass AND CG '
+                      'location, the combined CG can be pushed straight into the vehicle '
+                      'model here — closing the loop between the integration ledger and '
+                      'the load-transfer/lap-time physics.</p>', unsafe_allow_html=True)
 
-    # ---- pending change log (batched, committed on demand) ---- #
-    _pending = st.session_state.get("_iface_changelog", [])
-    if _pending:
-        st.markdown("###### Pending change log")
-        st.markdown(f'<p class="hint">{len(_pending)} interface change(s) captured this '
-                    'session. They\'re held locally and written to the handover record '
-                    'only when you commit — so editing never depends on the backend '
-                    'being up.</p>', unsafe_allow_html=True)
-        for e in _pending[-8:]:
-            why = f" — <i>{e['why']}</i>" if e.get("why") else ""
-            st.markdown(f'<div style="font-size:.86rem;color:#c9d3dd;padding:2px 0;">'
-                        f'<b>{EMOJI.get(e["subsystem"],"")}{e["subsystem"]}</b> '
-                        f'<span style="color:#8d99a6">{e["when"]} · {e["by"]}</span>: '
-                        f'{"; ".join(e["changes"])}{why}</div>', unsafe_allow_html=True)
-        pcols = st.columns([1, 1, 2])
-        if pcols[0].button("✓ Commit to handover record", width='stretch'):
-            ok = 0
-            for e in _pending:
-                body = "; ".join(e["changes"]) + (f"  [why: {e['why']}]" if e["why"] else "")
-                if log_decision_now("integration", f"{e['subsystem']} interface updated",
-                                    body, author=e["by"]):
-                    ok += 1
-            if ok == len(_pending):
-                st.session_state["_iface_changelog"] = []
-                # Re-baseline: committed values are the new "old" for future edits.
-                st.session_state["_iface_pre_edit"] = {}
-                st.success(f"Committed {ok} change(s) to the handover record.")
-            else:
-                st.warning(f"Committed {ok} of {len(_pending)}. The handover backend "
-                           "rejected the rest (it may be misconfigured or offline) — "
-                           "your edits are safe; try again or export the report instead.")
-        if pcols[1].button("Discard pending", width='stretch'):
-            st.session_state["_iface_changelog"] = []
-            st.session_state["_iface_pre_edit"] = {}
-            st.rerun()
+      # ---- pending change log (batched, committed on demand) ---- #
+      _pending = st.session_state.get("_iface_changelog", [])
+      if _pending:
+          st.markdown("###### Pending change log")
+          st.markdown(f'<p class="hint">{len(_pending)} interface change(s) captured this '
+                      'session. They\'re held locally and written to the handover record '
+                      'only when you commit — so editing never depends on the backend '
+                      'being up.</p>', unsafe_allow_html=True)
+          for e in _pending[-8:]:
+              why = f" — <i>{e['why']}</i>" if e.get("why") else ""
+              st.markdown(f'<div style="font-size:.86rem;color:#c9d3dd;padding:2px 0;">'
+                          f'<b>{EMOJI.get(e["subsystem"],"")}{e["subsystem"]}</b> '
+                          f'<span style="color:#8d99a6">{e["when"]} · {e["by"]}</span>: '
+                          f'{"; ".join(e["changes"])}{why}</div>', unsafe_allow_html=True)
+          pcols = st.columns([1, 1, 2])
+          if pcols[0].button("✓ Commit to handover record", width='stretch'):
+              ok = 0
+              for e in _pending:
+                  body = "; ".join(e["changes"]) + (f"  [why: {e['why']}]" if e["why"] else "")
+                  if log_decision_now("integration", f"{e['subsystem']} interface updated",
+                                      body, author=e["by"]):
+                      ok += 1
+              if ok == len(_pending):
+                  st.session_state["_iface_changelog"] = []
+                  # Re-baseline: committed values are the new "old" for future edits.
+                  st.session_state["_iface_pre_edit"] = {}
+                  st.success(f"Committed {ok} change(s) to the handover record.")
+              else:
+                  st.warning(f"Committed {ok} of {len(_pending)}. The handover backend "
+                             "rejected the rest (it may be misconfigured or offline) — "
+                             "your edits are safe; try again or export the report instead.")
+          if pcols[1].button("Discard pending", width='stretch'):
+              st.session_state["_iface_changelog"] = []
+              st.session_state["_iface_pre_edit"] = {}
+              st.rerun()
 
-    # surface any backend logging errors quietly, without having crashed
-    if st.session_state.get("_log_errors"):
-        with st.expander(f"⚠ {len(st.session_state['_log_errors'])} handover-log "
-                         "write(s) failed this session", expanded=False):
-            st.caption("The handover/decision store couldn't be written. This is a "
-                       "backend/storage issue (e.g. Supabase credentials or table), "
-                       "not a problem with your design data — everything on screen is "
-                       "intact and the report export below still works.")
-            st.code("\n".join(st.session_state["_log_errors"][-5:]))
+      # surface any backend logging errors quietly, without having crashed
+      if st.session_state.get("_log_errors"):
+          with st.expander(f"⚠ {len(st.session_state['_log_errors'])} handover-log "
+                           "write(s) failed this session", expanded=False):
+              st.caption("The handover/decision store couldn't be written. This is a "
+                         "backend/storage issue (e.g. Supabase credentials or table), "
+                         "not a problem with your design data — everything on screen is "
+                         "intact and the report export below still works.")
+              st.code("\n".join(st.session_state["_log_errors"][-5:]))
 
     # ---- documentation export ---- #
-    st.markdown("###### Documentation export")
-    st.markdown('<p class="hint">The ledger doubles as living documentation. As each '
-                'team locks numbers and writes the <b>why</b>, it\'s captured with owner '
-                'and date; changes are batched into the pending log above and committed '
-                'to the handover record on demand. Export the whole interface contract, '
-                'rationale included, as a design-event-ready document — no write-up '
-                'scramble before the report deadline, and no dependency on the backend '
-                'being online.</p>',
-                unsafe_allow_html=True)
-    try:
-        _team = project_mod.ProjectStore(PROJECT_PATH).team_name or "FSAE Team"
-    except Exception:
-        _team = "FSAE Team"
-    _report_md = _IF.build_interface_markdown(led, team_name=_team)
-    ec = st.columns([1, 1, 2])
-    ec[0].download_button("📄 Download interface report (.md)", _report_md,
-                          file_name="interface_contract.md", mime="text/markdown",
-                          width='stretch')
-    with ec[1]:
-        if st.button("👁 Preview report", width='stretch'):
-            st.session_state._show_iface_report = not st.session_state.get("_show_iface_report", False)
-    if st.session_state.get("_show_iface_report"):
-        st.markdown(_report_md)
+    with st.expander("⚙️ Documentation export", expanded=False):
+      st.markdown('<p class="hint">The ledger doubles as living documentation. As each '
+                  'team locks numbers and writes the <b>why</b>, it\'s captured with owner '
+                  'and date; changes are batched into the pending log above and committed '
+                  'to the handover record on demand. Export the whole interface contract, '
+                  'rationale included, as a design-event-ready document — no write-up '
+                  'scramble before the report deadline, and no dependency on the backend '
+                  'being online.</p>',
+                  unsafe_allow_html=True)
+      try:
+          _team = project_mod.ProjectStore(PROJECT_PATH).team_name or "FSAE Team"
+      except Exception:
+          _team = "FSAE Team"
+      _report_md = _IF.build_interface_markdown(led, team_name=_team)
+      ec = st.columns([1, 1, 2])
+      ec[0].download_button("📄 Download interface report (.md)", _report_md,
+                            file_name="interface_contract.md", mime="text/markdown",
+                            width='stretch')
+      with ec[1]:
+          if st.button("👁 Preview report", width='stretch'):
+              st.session_state._show_iface_report = not st.session_state.get("_show_iface_report", False)
+      if st.session_state.get("_show_iface_report"):
+          st.markdown(_report_md)
 
-    st.markdown('<p class="hint" style="border-left:2px solid #2a3340;padding-left:10px;">'
-                'This is the edge OptimumK / ANSYS / SolidWorks don\'t give you: not '
-                'deeper single-domain physics, but a live, checkable contract <i>between</i> '
-                'domains — with mass and CG wired into the real vehicle model, every '
-                'placeholder number flagged, and the whole thing exportable as the '
-                'design justification judges ask for.</p>',
-                unsafe_allow_html=True)
+      st.markdown('<p class="hint" style="border-left:2px solid #2a3340;padding-left:10px;">'
+                  'This is the edge OptimumK / ANSYS / SolidWorks don\'t give you: not '
+                  'deeper single-domain physics, but a live, checkable contract <i>between</i> '
+                  'domains — with mass and CG wired into the real vehicle model, every '
+                  'placeholder number flagged, and the whole thing exportable as the '
+                  'design justification judges ask for.</p>',
+                  unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------- #
@@ -17812,104 +17812,104 @@ with tab_ggv:
       st.plotly_chart(figC, width='stretch')
 
       # ---- "What does changing X do?" sweep -------------------------- #
-      st.markdown("###### Design-input sweep — what reshapes the envelope?")
-      sw = st.columns([2, 2, 1, 1])
-      _param_opts = {
-          "CG height (mm)": ("cg_height", [250, 300, 350, 400]),
-          "Weight dist. front (frac)": ("weight_dist_front", [0.42, 0.46, 0.50, 0.54]),
-          "Front static camber (°)": ("static_camber_front", [0.0, -1.0, -2.0, -3.0]),
-          "Front roll stiffness (N·m/°)": ("roll_stiffness_front", [250, 350, 450, 550]),
-          "Downforce ClA (m²)": ("cl_a", [0.0, 1.5, 2.5, 3.5]),
-          "Peak power (W)": ("power_w", [40000, 60000, 80000, 100000]),
-      }
-      _param_label = sw[0].selectbox("Parameter", list(_param_opts.keys()),
-                                     key="ggv_sweep_param")
-      _metric_label = sw[1].selectbox(
-          "Metric", ["max lateral g", "max accel g", "max braking g"],
-          key="ggv_sweep_metric")
-      _sweep_v = sw[2].number_input("at speed", 5.0, 45.0, 20.0, 1.0,
-                                    key="ggv_sweep_v")
-      _metric_key = {"max lateral g": "max_lat_g", "max accel g": "max_accel_g",
-                     "max braking g": "max_brake_g"}[_metric_label]
-      if sw[3].button("Sweep", key="ggv_sweep_btn", width='stretch'):
-          st.session_state._ggv_run_sweep = True
-      if st.session_state.get("_ggv_run_sweep"):
-          _pname, _pvals = _param_opts[_param_label]
-          try:
-              _sres = ggv_mod.sweep_parameter(_veh_ggv, _gp, _pname, _pvals,
-                                              speed=_sweep_v, metric=_metric_key)
-              figS = go.Figure()
-              figS.add_trace(go.Scatter(x=_sres["values"], y=_sres["metric"],
-                                        mode="lines+markers",
-                                        line=dict(color=CYAN, width=2.5)))
-              figS.update_layout(**PLOT_LAYOUT,
-                                 title=f"{_metric_label} vs {_param_label} "
-                                       f"@ {uval(_sweep_v, 'm/s')}",
-                                 xaxis_title=_param_label, yaxis_title=_metric_label,
-                                 height=300)
-              st.plotly_chart(figS, width='stretch')
-              if _pname == "static_camber_front" and \
-                      len(set(round(x, 3) for x in _sres["metric"])) <= 1:
-                  st.markdown('<p class="hint">Camber looks flat because the '
-                              '<b>generic tire is nearly camber-insensitive</b> by '
-                              'design. Load your TTC-fitted tire (TIRE &amp; GRIP) — '
-                              'a real fit carries camber terms and this curve will '
-                              'respond.</p>', unsafe_allow_html=True)
-          except Exception as e:
-              st.error(f"Sweep failed: {e}")
+      with st.expander("🟢 Design-input sweep", expanded=True):
+        sw = st.columns([2, 2, 1, 1])
+        _param_opts = {
+            "CG height (mm)": ("cg_height", [250, 300, 350, 400]),
+            "Weight dist. front (frac)": ("weight_dist_front", [0.42, 0.46, 0.50, 0.54]),
+            "Front static camber (°)": ("static_camber_front", [0.0, -1.0, -2.0, -3.0]),
+            "Front roll stiffness (N·m/°)": ("roll_stiffness_front", [250, 350, 450, 550]),
+            "Downforce ClA (m²)": ("cl_a", [0.0, 1.5, 2.5, 3.5]),
+            "Peak power (W)": ("power_w", [40000, 60000, 80000, 100000]),
+        }
+        _param_label = sw[0].selectbox("Parameter", list(_param_opts.keys()),
+                                       key="ggv_sweep_param")
+        _metric_label = sw[1].selectbox(
+            "Metric", ["max lateral g", "max accel g", "max braking g"],
+            key="ggv_sweep_metric")
+        _sweep_v = sw[2].number_input("at speed", 5.0, 45.0, 20.0, 1.0,
+                                      key="ggv_sweep_v")
+        _metric_key = {"max lateral g": "max_lat_g", "max accel g": "max_accel_g",
+                       "max braking g": "max_brake_g"}[_metric_label]
+        if sw[3].button("Sweep", key="ggv_sweep_btn", width='stretch'):
+            st.session_state._ggv_run_sweep = True
+        if st.session_state.get("_ggv_run_sweep"):
+            _pname, _pvals = _param_opts[_param_label]
+            try:
+                _sres = ggv_mod.sweep_parameter(_veh_ggv, _gp, _pname, _pvals,
+                                                speed=_sweep_v, metric=_metric_key)
+                figS = go.Figure()
+                figS.add_trace(go.Scatter(x=_sres["values"], y=_sres["metric"],
+                                          mode="lines+markers",
+                                          line=dict(color=CYAN, width=2.5)))
+                figS.update_layout(**PLOT_LAYOUT,
+                                   title=f"{_metric_label} vs {_param_label} "
+                                         f"@ {uval(_sweep_v, 'm/s')}",
+                                   xaxis_title=_param_label, yaxis_title=_metric_label,
+                                   height=300)
+                st.plotly_chart(figS, width='stretch')
+                if _pname == "static_camber_front" and \
+                        len(set(round(x, 3) for x in _sres["metric"])) <= 1:
+                    st.markdown('<p class="hint">Camber looks flat because the '
+                                '<b>generic tire is nearly camber-insensitive</b> by '
+                                'design. Load your TTC-fitted tire (TIRE &amp; GRIP) — '
+                                'a real fit carries camber terms and this curve will '
+                                'respond.</p>', unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"Sweep failed: {e}")
 
-      # ---- Cross-check against the Lap Sim --------------------------- #
-      with st.expander("Cross-check: does the GGV agree with the Lap Sim?",
-                       expanded=False):
-          st.markdown('<p class="hint">Both the GGV and the Lap Sim run on the '
-                      'same load-transfer + Pacejka chain, so their axis limits '
-                      'should match. This button compares them directly — a '
-                      'divergence means one has drifted and is worth chasing.</p>',
-                      unsafe_allow_html=True)
-          if st.button("Run cross-check", key="ggv_validate_btn"):
-              try:
-                  _axn.engage("ggv", "cross_check")
-              except Exception:
-                  pass
-              try:
-                  _vres = ggv_mod.validate_against_laptime(_veh_ggv, _pt_ggv)
-                  _cls = "good" if _vres["ok"] else "warn"
-                  st.markdown(metric("Max difference vs Lap Sim",
-                                     f"{_vres['max_reldiff'] * 100:.2f}", "%", _cls),
-                              unsafe_allow_html=True)
-                  if _vres["ok"]:
-                      st.success("Agrees with the Lap Sim within tolerance.")
-                  else:
-                      st.warning(_vres.get("note", _vres["reason"]))
-                  # small comparison table
-                  import pandas as _pd
-                  _df = _pd.DataFrame({
-                      "speed m/s": [round(x, 1) for x in _vres["speeds"]],
-                      "lat GGV": [round(x, 3) for x in _vres["lat_ggv"]],
-                      "lat Lap": [round(x, 3) for x in _vres["lat_lap"]],
-                      "accel GGV": [round(x, 3) for x in _vres["accel_ggv"]],
-                      "accel Lap": [round(x, 3) for x in _vres["accel_lap"]],
-                      "brake GGV": [round(x, 3) for x in _vres["brake_ggv"]],
-                      "brake Lap": [round(x, 3) for x in _vres["brake_lap"]],
-                  })
-                  st.dataframe(_df, width='stretch', hide_index=True)
-                  try:
-                      _axn.complete("ggv", "cross_check")
-                  except Exception:
-                      pass
-              except Exception as e:
-                  st.error(f"Cross-check failed: {e}")
-                  try:
-                      _axn.error("ggv", e, kind="cross_check_failed")
-                  except Exception:
-                      pass
+        # ---- Cross-check against the Lap Sim --------------------------- #
+        with st.expander("Cross-check: does the GGV agree with the Lap Sim?",
+                         expanded=False):
+            st.markdown('<p class="hint">Both the GGV and the Lap Sim run on the '
+                        'same load-transfer + Pacejka chain, so their axis limits '
+                        'should match. This button compares them directly — a '
+                        'divergence means one has drifted and is worth chasing.</p>',
+                        unsafe_allow_html=True)
+            if st.button("Run cross-check", key="ggv_validate_btn"):
+                try:
+                    _axn.engage("ggv", "cross_check")
+                except Exception:
+                    pass
+                try:
+                    _vres = ggv_mod.validate_against_laptime(_veh_ggv, _pt_ggv)
+                    _cls = "good" if _vres["ok"] else "warn"
+                    st.markdown(metric("Max difference vs Lap Sim",
+                                       f"{_vres['max_reldiff'] * 100:.2f}", "%", _cls),
+                                unsafe_allow_html=True)
+                    if _vres["ok"]:
+                        st.success("Agrees with the Lap Sim within tolerance.")
+                    else:
+                        st.warning(_vres.get("note", _vres["reason"]))
+                    # small comparison table
+                    import pandas as _pd
+                    _df = _pd.DataFrame({
+                        "speed m/s": [round(x, 1) for x in _vres["speeds"]],
+                        "lat GGV": [round(x, 3) for x in _vres["lat_ggv"]],
+                        "lat Lap": [round(x, 3) for x in _vres["lat_lap"]],
+                        "accel GGV": [round(x, 3) for x in _vres["accel_ggv"]],
+                        "accel Lap": [round(x, 3) for x in _vres["accel_lap"]],
+                        "brake GGV": [round(x, 3) for x in _vres["brake_ggv"]],
+                        "brake Lap": [round(x, 3) for x in _vres["brake_lap"]],
+                    })
+                    st.dataframe(_df, width='stretch', hide_index=True)
+                    try:
+                        _axn.complete("ggv", "cross_check")
+                    except Exception:
+                        pass
+                except Exception as e:
+                    st.error(f"Cross-check failed: {e}")
+                    try:
+                        _axn.error("ggv", e, kind="cross_check_failed")
+                    except Exception:
+                        pass
 
-      if st.session_state.get("tire_is_default", True):
-          st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
-                      'padding-left:10px;">Running on the <b>generic default tire</b>. '
-                      'The envelope shape and the way it responds to setup changes are '
-                      'right; load your TTC-fitted tire in TIRE &amp; GRIP before '
-                      'quoting absolute g numbers.</p>', unsafe_allow_html=True)
+        if st.session_state.get("tire_is_default", True):
+            st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                        'padding-left:10px;">Running on the <b>generic default tire</b>. '
+                        'The envelope shape and the way it responds to setup changes are '
+                        'right; load your TTC-fitted tire in TIRE &amp; GRIP before '
+                        'quoting absolute g numbers.</p>', unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------- #
@@ -19623,24 +19623,24 @@ with tab_analytics:
 
     # per-feature hours-saved bar (the contribution breakdown)
     if hours_by_feat:
-        st.markdown("###### Where the savings come from")
-        _rows = [r for r in hours_by_feat if (r.get("hours_saved") or 0) > 0]
-        if _rows:
-            _fig = go.Figure(go.Bar(
-                x=[r["hours_saved"] for r in _rows],
-                y=[r.get("label") or r["feature"] for r in _rows],
-                orientation="h",
-                marker_color="#37e0d0",
-                text=[f"${r.get('dollars_saved', 0):,.0f}" for r in _rows],
-                textposition="auto"))
-            _fig.update_layout(
-                height=max(220, 38 * len(_rows)), margin=dict(l=10, r=10, t=10, b=10),
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#e7ecf1"), xaxis_title="hours saved")
-            st.plotly_chart(_fig, use_container_width=True)
-            st.caption("Each bar: completed workflows × (manual − in-tool) minutes, "
-                       "valued at the configured labour rate. Tune the baselines in "
-                       "the `feature_baselines` table to match your team's reality.")
+        with st.expander("🟢 Where the savings come from", expanded=True):
+          _rows = [r for r in hours_by_feat if (r.get("hours_saved") or 0) > 0]
+          if _rows:
+              _fig = go.Figure(go.Bar(
+                  x=[r["hours_saved"] for r in _rows],
+                  y=[r.get("label") or r["feature"] for r in _rows],
+                  orientation="h",
+                  marker_color="#37e0d0",
+                  text=[f"${r.get('dollars_saved', 0):,.0f}" for r in _rows],
+                  textposition="auto"))
+              _fig.update_layout(
+                  height=max(220, 38 * len(_rows)), margin=dict(l=10, r=10, t=10, b=10),
+                  paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                  font=dict(color="#e7ecf1"), xaxis_title="hours saved")
+              st.plotly_chart(_fig, use_container_width=True)
+              st.caption("Each bar: completed workflows × (manual − in-tool) minutes, "
+                         "valued at the configured labour rate. Tune the baselines in "
+                         "the `feature_baselines` table to match your team's reality.")
 
     st.markdown("---")
 
@@ -19768,16 +19768,16 @@ with tab_analytics:
 
     # foot-traffic time series
     if foot:
-        st.markdown("###### Foot traffic")
-        _fig = go.Figure()
-        _fig.add_trace(go.Scatter(
-            x=[r["day"] for r in foot], y=[r["sessions"] for r in foot],
-            mode="lines+markers", name="sessions", line=dict(color="#37e0d0")))
-        _fig.update_layout(
-            height=260, margin=dict(l=10, r=10, t=10, b=10),
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#e7ecf1"), legend=dict(orientation="h"))
-        st.plotly_chart(_fig, use_container_width=True)
+        with st.expander("⚙️ Foot traffic", expanded=False):
+          _fig = go.Figure()
+          _fig.add_trace(go.Scatter(
+              x=[r["day"] for r in foot], y=[r["sessions"] for r in foot],
+              mode="lines+markers", name="sessions", line=dict(color="#37e0d0")))
+          _fig.update_layout(
+              height=260, margin=dict(l=10, r=10, t=10, b=10),
+              paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+              font=dict(color="#e7ecf1"), legend=dict(orientation="h"))
+          st.plotly_chart(_fig, use_container_width=True)
 
 
     # feature use table
@@ -19786,118 +19786,118 @@ with tab_analytics:
     # feature that simply hasn't been opened yet still appears by name rather
     # than silently dropping out of the table.
     if _have_db:
-        st.markdown("###### Per-feature use")
-        st.caption(
-            "User, opens, engagement, and completion count for each feature. A "
-            "few tabs work differently, so the raw event log might not "
-            "immediately update the engagement and completion count for those "
-            "and instead under-capture, making the number lower than its true "
-            "value. Opens and unique users come straight from the live log and "
-            "are accurate throughout.")
-        _fu_by_id = {r.get("feature"): r for r in (feat_use or [])}
+        with st.expander("⚙️ Per-feature use", expanded=False):
+          st.caption(
+              "User, opens, engagement, and completion count for each feature. A "
+              "few tabs work differently, so the raw event log might not "
+              "immediately update the engagement and completion count for those "
+              "and instead under-capture, making the number lower than its true "
+              "value. Opens and unique users come straight from the live log and "
+              "are accurate throughout.")
+          _fu_by_id = {r.get("feature"): r for r in (feat_use or [])}
 
-        # Manually-recorded ground truth (opens / engagements / completions /
-        # unique users), keyed by feature id. Several tabs were instrumented
-        # after release or run differently (viewers/browsers), so the live event
-        # log under-captured their engagement/completion — the DB showed real
-        # opens+users but "—" for the funnel middle. These hand-audited numbers
-        # are the source of truth; we merge them in below, taking the MAX against
-        # the live DB per column so a fresher live count never regresses to an
-        # older manual snapshot (opens/users can only have grown since).
-        _fu_manual = {
-            "kinematics": (353, 340, 332, 318),
-            "model3d":    (236, 197, 108, 74),
-            "registry":   (75,  62,  34,  59),
-            "brakes":     (32,  15,  8,   20),
-            "laptime":    (28,  13,  5,   15),
-            "integration":(7,   4,   4,   6),
-            "dfmea":      (6,   2,   2,   4),
-            "ev":         (5,   5,   3,   2),
-            "accum":      (4,   4,   4,   4),
-            "ggv":        (4,   3,   3,   4),
-            "roll":       (3,   3,   3,   3),
-            "cost":       (3,   2,   2,   3),
-            "weight":     (2,   2,   2,   2),
-            "tire":       (2,   2,   2,   2),
-            "validation": (27,  15,  8,   20),
-            "aero":       (1,   1,   1,   1),
-            "pcb":        (1,   1,   1,   1),
-            "grip":       (2,   2,   2,   1),
-            "compliance": (2,   2,   2,   2),
-            "teamfit":    (3,   2,   2,   3),
-            "notes":      (3,   2,   2,   2),
-            "setup":      (4,   3,   3,   5),
-            "transient":  (1,   1,   1,   1),
-            "tractive":   (7,   5,   4,   3),
-        }
+          # Manually-recorded ground truth (opens / engagements / completions /
+          # unique users), keyed by feature id. Several tabs were instrumented
+          # after release or run differently (viewers/browsers), so the live event
+          # log under-captured their engagement/completion — the DB showed real
+          # opens+users but "—" for the funnel middle. These hand-audited numbers
+          # are the source of truth; we merge them in below, taking the MAX against
+          # the live DB per column so a fresher live count never regresses to an
+          # older manual snapshot (opens/users can only have grown since).
+          _fu_manual = {
+              "kinematics": (353, 340, 332, 318),
+              "model3d":    (236, 197, 108, 74),
+              "registry":   (75,  62,  34,  59),
+              "brakes":     (32,  15,  8,   20),
+              "laptime":    (28,  13,  5,   15),
+              "integration":(7,   4,   4,   6),
+              "dfmea":      (6,   2,   2,   4),
+              "ev":         (5,   5,   3,   2),
+              "accum":      (4,   4,   4,   4),
+              "ggv":        (4,   3,   3,   4),
+              "roll":       (3,   3,   3,   3),
+              "cost":       (3,   2,   2,   3),
+              "weight":     (2,   2,   2,   2),
+              "tire":       (2,   2,   2,   2),
+              "validation": (27,  15,  8,   20),
+              "aero":       (1,   1,   1,   1),
+              "pcb":        (1,   1,   1,   1),
+              "grip":       (2,   2,   2,   1),
+              "compliance": (2,   2,   2,   2),
+              "teamfit":    (3,   2,   2,   3),
+              "notes":      (3,   2,   2,   2),
+              "setup":      (4,   3,   3,   5),
+              "transient":  (1,   1,   1,   1),
+              "tractive":   (7,   5,   4,   3),
+          }
 
-        _fu_rows = []
-        for _fid, (_emj, _flabel) in _TAB_META.items():
-            if _fid == "analytics":
-                continue  # the analytics tab itself is not a tracked feature
-            _r = _fu_by_id.get(_fid, {})
-            _opens = _r.get("opens", 0) or 0
-            _eng = _r.get("engagements", 0) or 0
-            _comp = _r.get("completions", 0) or 0
-            _users = _r.get("unique_users", 0) or 0
+          _fu_rows = []
+          for _fid, (_emj, _flabel) in _TAB_META.items():
+              if _fid == "analytics":
+                  continue  # the analytics tab itself is not a tracked feature
+              _r = _fu_by_id.get(_fid, {})
+              _opens = _r.get("opens", 0) or 0
+              _eng = _r.get("engagements", 0) or 0
+              _comp = _r.get("completions", 0) or 0
+              _users = _r.get("unique_users", 0) or 0
 
-            # Fold in the hand-audited ground truth. Take the max per column so
-            # the corrected engagement/completion appear where the live log
-            # missed them, while any newer live activity still wins if it has
-            # since surpassed the recorded snapshot.
-            _m = _fu_manual.get(_fid)
-            if _m:
-                _mo, _me, _mc, _mu = _m
-                _opens = max(_opens, _mo)
-                _eng = max(_eng, _me)
-                _comp = max(_comp, _mc)
-                _users = max(_users, _mu)
+              # Fold in the hand-audited ground truth. Take the max per column so
+              # the corrected engagement/completion appear where the live log
+              # missed them, while any newer live activity still wins if it has
+              # since surpassed the recorded snapshot.
+              _m = _fu_manual.get(_fid)
+              if _m:
+                  _mo, _me, _mc, _mu = _m
+                  _opens = max(_opens, _mo)
+                  _eng = max(_eng, _me)
+                  _comp = max(_comp, _mc)
+                  _users = max(_users, _mu)
 
-            # Myth-buster is logged under its own feature id but lives inside the
-            # Validation workflow, so fold its usage into the Validation row —
-            # otherwise the Myth-buster checks (a real validation activity) are
-            # invisible here.
-            if _fid == "validation":
-                _mb = _fu_by_id.get("mythbuster", {})
-                _opens += _mb.get("opens", 0) or 0
-                _eng += _mb.get("engagements", 0) or 0
-                _comp += _mb.get("completions", 0) or 0
-                _users = max(_users, _mb.get("unique_users", 0) or 0)
+              # Myth-buster is logged under its own feature id but lives inside the
+              # Validation workflow, so fold its usage into the Validation row —
+              # otherwise the Myth-buster checks (a real validation activity) are
+              # invisible here.
+              if _fid == "validation":
+                  _mb = _fu_by_id.get("mythbuster", {})
+                  _opens += _mb.get("opens", 0) or 0
+                  _eng += _mb.get("engagements", 0) or 0
+                  _comp += _mb.get("completions", 0) or 0
+                  _users = max(_users, _mb.get("unique_users", 0) or 0)
 
-            # Make a "0" read meaningfully instead of looking broken:
-            #  • opened but no engagement logged  -> "—" (used, not fully tracked)
-            #  • never opened at all              -> "0" (genuinely untouched)
-            # This is the difference between "we didn't capture it" and
-            # "nobody used it", which is exactly what made the table feel wrong.
-            def _stage(v, opened):
-                if v > 0:
-                    return v
-                return "—" if opened else 0
+              # Make a "0" read meaningfully instead of looking broken:
+              #  • opened but no engagement logged  -> "—" (used, not fully tracked)
+              #  • never opened at all              -> "0" (genuinely untouched)
+              # This is the difference between "we didn't capture it" and
+              # "nobody used it", which is exactly what made the table feel wrong.
+              def _stage(v, opened):
+                  if v > 0:
+                      return v
+                  return "—" if opened else 0
 
-            _fu_corrected[_fid] = {
-                "opened": _opens,
-                "engaged": _eng,
-                "completed": _comp,
-                "users": _users,
-            }
+              _fu_corrected[_fid] = {
+                  "opened": _opens,
+                  "engaged": _eng,
+                  "completed": _comp,
+                  "users": _users,
+              }
 
-            _fu_rows.append({
-                "Feature": _flabel,
-                "Opens": _opens,
-                "Engagements": _stage(_eng, _opens > 0),
-                "Completions": _stage(_comp, _opens > 0),
-                "Unique users": _users,
-                "_sort": _opens,  # activity key, dropped before display
-            })
-        # Sort by real activity (opens) so thriving features lead and the quiet
-        # ones fall to the bottom — signal first, not alphabetical noise.
-        _fu_rows.sort(key=lambda r: r["_sort"], reverse=True)
-        for _row in _fu_rows:
-            _row.pop("_sort", None)
-        st.dataframe(_fu_rows, use_container_width=True, hide_index=True)
-        st.caption(
-            "“0” means the feature genuinely had no opens. Sorted by opens, "
-            "busiest first.")
+              _fu_rows.append({
+                  "Feature": _flabel,
+                  "Opens": _opens,
+                  "Engagements": _stage(_eng, _opens > 0),
+                  "Completions": _stage(_comp, _opens > 0),
+                  "Unique users": _users,
+                  "_sort": _opens,  # activity key, dropped before display
+              })
+          # Sort by real activity (opens) so thriving features lead and the quiet
+          # ones fall to the bottom — signal first, not alphabetical noise.
+          _fu_rows.sort(key=lambda r: r["_sort"], reverse=True)
+          for _row in _fu_rows:
+              _row.pop("_sort", None)
+          st.dataframe(_fu_rows, use_container_width=True, hide_index=True)
+          st.caption(
+              "“0” means the feature genuinely had no opens. Sorted by opens, "
+              "busiest first.")
 
     # individual use — grouped BY SUBSYSTEM so it reads as "who is on each
     # subteam and how active are they", not one undifferentiated list where
