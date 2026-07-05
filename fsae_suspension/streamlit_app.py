@@ -17,6 +17,7 @@ OptimumK / ADAMS budgets don't reach.
 Run:  streamlit run app.py
 """
 
+import gc
 import json
 import os
 import re
@@ -25,6 +26,9 @@ import tempfile
 import datetime as _datetime
 import numpy as np
 import streamlit as st
+
+# Force a clean up on initial page load
+gc.collect()
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -299,7 +303,7 @@ if not getattr(st, "_ax_spinner_patched", False):
 #  cache_data can key on them.
 # --------------------------------------------------------------------------- #
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=120, max_entries=5)
 def _cached_thermal_warmup(coeffs, fnomin, enable_mu, cold_pa,
                            alpha_deg, Fz, v_x, gamma_deg,
                            ambient_c, track_c, duration_s, dt):
@@ -4049,6 +4053,9 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
         "⬇ Download DXF", data=_dxf,
         file_name=f"kinematik_{_safe}_{_pick+1}.dxf",
         mime="application/dxf", key=f"{key_prefix}_gdxf_dl")
+    # Immediately free up the memory holding those DXF text blocks
+    del _dxf
+    gc.collect()
     _vc_disclaimer(f"the {_name.lower()} section")
 # === END spliced block ===
 
@@ -5717,6 +5724,9 @@ def _render_rotor_thermal(_bt, _mass, kin):
                     "Fusion 360, FreeCAD, or AutoCAD. Revolve the profile "
                     "around the centre-line to get the 3-D solid."
                 ))
+            # Immediately free up the memory holding those DXF text blocks
+            del _dxf_bytes
+            gc.collect()
             if _dxf_is_us:
                 _od_in  = units_mod.from_metric(_dxf_cand.diameter_mm, "mm")
                 _th_in  = units_mod.from_metric(_dxf_cand.thickness_mm, "mm")
@@ -20544,3 +20554,6 @@ st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · AGPL-3.0.
             '<i>Tip: on the hosted app, save your project before closing the tab — '
             'geometry tweaks aren\'t auto-saved the way the handover log is.</i></p>',
             unsafe_allow_html=True)
+
+# Place this at the very bottom of your streamlit_app.py script
+gc.collect()
