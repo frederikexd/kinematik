@@ -912,6 +912,31 @@ def save_store(store):
     return ok
 
 
+def _memo(cache_key, signature, compute_fn):
+    """Session-scoped memoization for expensive per-rerun computations.
+
+    Streamlit reruns the whole script — and every tab body — on any input change,
+    so a solve that only depends on a few values still fires on every unrelated
+    interaction. This caches `compute_fn()`'s result in session_state under
+    `cache_key` and only recomputes when `signature` changes. `signature` must be
+    a cheap, hashable summary of exactly the inputs the result depends on (e.g. a
+    tuple of repr()'d dicts + scalars). Never raises: on any failure it falls
+    back to computing directly, so it can only speed things up, never break them.
+    """
+    try:
+        _sk = f"_memo_sig_{cache_key}"
+        _vk = f"_memo_val_{cache_key}"
+        if (st.session_state.get(_sk) == signature
+                and _vk in st.session_state):
+            return st.session_state[_vk]
+        _val = compute_fn()
+        st.session_state[_sk] = signature
+        st.session_state[_vk] = _val
+        return _val
+    except Exception:
+        return compute_fn()
+
+
 def log_decision_now(team, title, rationale, author="auto"):
     """Append a decision to the persistent store from any tab.
 
@@ -1303,7 +1328,37 @@ try:
     # Steer-DOF linkages (e.g. truck steering) have a limited vertical-travel
     # envelope; sweep a narrower band so the studio stays usable.
     _span = 15 if _topo == "truck_steer_linkage" else 30
-    sweep = kin.sweep(-_span, _span, 41)
+
+    # ---- Memoize the 41-point sweep --------------------------------------- #
+    # The sweep runs 41 warm-started nonlinear solves and is by far the most
+    # expensive thing that runs on EVERY rerun — and Streamlit reruns the whole
+    # script on any input change, anywhere. But the sweep only depends on the
+    # geometry (topology + hardpoints) and the travel span; it does NOT depend on
+    # tire coeffs, vehicle mass, or any of the sliders on other tabs. So we key it
+    # on a cheap signature of exactly those geometry inputs and reuse the result
+    # across reruns whenever the geometry hasn't changed. The CornerState objects
+    # in the sweep are pure dataclasses (no back-reference to `kin`), so a cached
+    # sweep stays valid for an identically-configured `kin` rebuilt this run.
+    # This makes every feature feel faster because they all wait on this solve.
+    try:
+        _sweep_sig = (
+            _topo,
+            _span,
+            repr(hp_dict) if _topo == "double_wishbone" else None,
+            repr(_topo_coords) if _topo != "double_wishbone" else None,
+        )
+    except Exception:
+        _sweep_sig = None
+
+    if (_sweep_sig is not None
+            and st.session_state.get("_sweep_sig") == _sweep_sig
+            and st.session_state.get("_sweep_cache") is not None):
+        sweep = st.session_state["_sweep_cache"]
+    else:
+        sweep = kin.sweep(-_span, _span, 41)
+        if _sweep_sig is not None:
+            st.session_state["_sweep_sig"] = _sweep_sig
+            st.session_state["_sweep_cache"] = sweep
     solve_ok = all(s.converged for s in sweep)
     if not solve_ok and not kin.static.converged:
         st.error("Solver could not converge at the static ride height for this "
@@ -1471,10 +1526,27 @@ except Exception:
 s = kin.static
 mid = veh.lateral_load_transfer(1.2)[1]
 
-# headline metrics
+# headline metrics — derive the ±10 mm gains from the already-cached sweep
+# instead of firing two fresh nonlinear solves per metric on every rerun. The
+# sweep is a dense 41-point solve over ±_span mm, so we just read the nearest
+# points to ±10 mm (interpolating when 10 isn't an exact grid point). Falls back
+# to a live solve only if the sweep doesn't bracket ±10 mm.
+def _sweep_val_at(travel_mm, metric_fn):
+    try:
+        _pts = [(st_.travel, metric_fn(st_)) for st_ in sweep]
+        _pts.sort(key=lambda p: p[0])
+        _xs = [p[0] for p in _pts]
+        if _xs and _xs[0] <= travel_mm <= _xs[-1]:
+            import numpy as _np
+            return float(_np.interp(travel_mm,
+                                    _xs, [p[1] for p in _pts]))
+    except Exception:
+        pass
+    return metric_fn(kin.solve_at_travel(travel_mm))
+
 def gain(metric_fn):
-    a = metric_fn(kin.solve_at_travel(-10))
-    b = metric_fn(kin.solve_at_travel(10))
+    a = _sweep_val_at(-10.0, metric_fn)
+    b = _sweep_val_at(10.0, metric_fn)
     return (b - a) / 20.0  # per mm
 
 camber_gain = gain(lambda st_: st_.camber)
@@ -6324,11 +6396,9 @@ with tab2:
     render_process_library("suspension", key_prefix="roll_pl")
   except Exception:
     pass
-  rc_heights = []
-  for st_ in sweep:
-      kin._tmp = st_
-      rc_heights.append(veh.roll_center_height(kin, veh.p.track_front))
-  # roll-centre vs travel needs a per-state RC; approximate via IC migration
+  # NOTE: a per-state rc_heights loop used to run here (41 roll-centre solves on
+  # every rerun) but its result was never used — only rc_static below is. Dropped
+  # it; that's 41 fewer solves per interaction on this tab.
   rc_static = veh.roll_center_height(kin, veh.p.track_front)
 
   with st.expander("📊  Tire vertical load vs lateral g — roll centres · LLT",
@@ -6362,7 +6432,11 @@ with tab2:
 
   # Roll-centre migration through travel — the honest picture vs a static number.
   with st.expander("📈  Roll-centre height migration vs travel", expanded=False):
-    mt, mrc = veh.roll_center_migration(kin, veh.p.track_front, -30, 30, 21)
+    _rcm_sig = (st.session_state.get("_sweep_sig"),
+                round(float(veh.p.track_front), 3))
+    mt, mrc = _memo(
+        "roll_center_migration", _rcm_sig,
+        lambda: veh.roll_center_migration(kin, veh.p.track_front, -30, 30, 21))
     figM = go.Figure()
     figM.add_trace(go.Scatter(
         x=[units_mod.from_metric(v, "mm") for v in mt],
