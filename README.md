@@ -103,13 +103,19 @@ KinematiK does not replace simulation. It makes simulation more valuable by ensu
 
 ---
 
-## Pricing
+
+
+## Access
 
 **Free for students and FSAE / Formula Student teams. Always.**
 
-The student community is not the revenue model — it is the distribution model. Every FSAE graduate who used KinematiK and joins a professional team is a warm introduction to that team, not a lost customer.
+The student community is not the revenue model — it is the distribution model. Every FSAE graduate who used KinematiK and joins a professional team carries that workflow with them.
 
-Professional teams, consultancies, and enterprises: contact for pricing.
+**For professional teams, consultancies, and enterprises:**
+
+KinematiK is not yet commercially available. If your organisation is interested in the pre-simulation validation workflow — cross-subsystem integration, coupled risk propagation, geometry-to-CAD DXF export — this is an open letter of intent. Serious enquiries from professional motorsport and engineering organisations are noted and will be the first conversations when commercial availability opens.
+
+Nothing is for sale today. That is a deliberate decision, not an oversight.
 
 ---
 
