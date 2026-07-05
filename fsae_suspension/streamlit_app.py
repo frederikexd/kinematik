@@ -1317,7 +1317,7 @@ if solve_ok and not st.session_state.get("_ax_kin_solved_once"):
         pass
 
 st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
-            f'<span class="sub">{_TOPO_LABELS.get(_topo, _topo)} · agnostic engine · open source</span></div>',
+            f'<span class="sub">{_TOPO_LABELS.get(_topo, _topo)} · the hour before ANSYS, SolidWorks &amp; MATLAB · open source</span></div>',
             unsafe_allow_html=True)
 
 # =========================================================================== #
@@ -11319,6 +11319,11 @@ with tab_brake:
                                            "above — no AI, just the numbers.")
                     except Exception as _me:
                         st.warning(f"Couldn't run the myth-buster: {_me}")
+                    else:
+                        try:
+                            _mb_validation_disclaimer()
+                        except Exception:
+                            pass
 
             # ============================================================ #
             else:   # Brake pedal 2000 N
@@ -12391,21 +12396,25 @@ def render_verdict_center():
     # ---- SANITY-CHECK (full myth-buster, unchanged engine) ---------------- #
     if _page.startswith("🔎"):
         render_mythbuster()
-        _vc_disclaimer("the sanity-check")
+        # render_mythbuster() already ends with the tool-validation disclaimer
+        # (validate in ANSYS / SolidWorks / MATLAB), so no second footer here.
         return
 
     # ---- a single subsystem page ------------------------------------------ #
     for k, _e, _l in _VC_SUBSYS:
         if _page == f"{_e} {_l}":
             render_subsystem_verdict_card(k)
-            # inline sanity-check scoped to this subsystem
+            # inline sanity-check scoped to this subsystem. render_myth_check
+            # carries its own tool-validation disclaimer (validate in ANSYS /
+            # SolidWorks / MATLAB) once a check runs.
             with st.expander("⚙️ Sanity-check an assumption here", expanded=False):
               try:
                   render_myth_check(k, key_prefix=f"vc_{k}")
               except Exception:
                   pass
-              _vc_disclaimer(f"the {_l.lower()} verdict")
-              return
+            # footer for the subsystem verdict card as a whole.
+            _vc_disclaimer(f"the {_l.lower()} verdict")
+            return
 
 # --------------------------------------------------------------------------- #
 #  4.  Generic "short-list to mesh + export DXF" for any subsystem             #
