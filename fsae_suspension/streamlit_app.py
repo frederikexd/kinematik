@@ -2762,6 +2762,10 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
     to the physics/rule answer.
     """
     _ph = placeholder or "e.g. a common assumption you want to sanity-check"
+    try:
+        _mb_disclaimer_banner()
+    except Exception:
+        pass
     _c = st.columns([3, 1])
     _claim = _c[0].text_input(
         f"Sanity-check a {subsystem_key.replace('-', ' ')} assumption",
@@ -2821,10 +2825,6 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
                  "depends": "⚠️ It depends — worth a closer look",
                  "unknown": "Couldn't match that to a known check"}.get(_v, _v)
         _fn(f"**{_head}**\n\n{_saved['expl']}")
-        try:
-            _mb_validation_disclaimer(compact=True)
-        except Exception:
-            pass
 
 
 def render_provisional_note(is_example, verdict, detail=""):
@@ -11251,6 +11251,10 @@ with tab_brake:
                                                                st.info)
                                 _msev(_f.message)
 
+                try:
+                    _mb_disclaimer_banner()
+                except Exception:
+                    pass
                 _mbc = st.columns([3, 2])
                 _claim = _mbc[0].text_input(
                     "Sanity-check a throttle assumption",
@@ -11329,11 +11333,6 @@ with tab_brake:
                                            "above — no AI, just the numbers.")
                     except Exception as _me:
                         st.warning(f"Couldn't run the myth-buster: {_me}")
-                    else:
-                        try:
-                            _mb_validation_disclaimer(compact=True)
-                        except Exception:
-                            pass
 
             # ============================================================ #
             else:   # Brake pedal 2000 N
@@ -12094,6 +12093,11 @@ def render_mythbuster():
         'the verdict in the channel instead of re-running the argument.</p>',
         unsafe_allow_html=True)
 
+    try:
+        _mb_disclaimer_banner()
+    except Exception:
+        pass
+
     _labels = [l for l, _ in _MB_DISCIPLINES]
     _c1, _c2 = st.columns([2, 5])
     _pick = _c1.selectbox("Discipline", _labels, index=0,
@@ -12160,9 +12164,6 @@ def render_mythbuster():
     _last = st.session_state.get("mb_last_result_dict")
     if _last:
         _mb_render_card(_last_in, _MBDictResult(_last))
-        # Compact reminder right under the verdict, so the "validate in the real
-        # tools" note is alongside the outcome, not only in the page footer.
-        _mb_validation_disclaimer(compact=True)
 
     # Reference myths for the selected discipline, evaluated against live context.
     _ref_disc = _disc or None
@@ -12242,6 +12243,29 @@ def render_mythbuster():
     # Always-on validation disclaimer: the myth-buster is the fast first pass,
     # not the final word. Name the real tools so it's unambiguous.
     _mb_validation_disclaimer()
+
+
+def _mb_disclaimer_banner():
+    """A permanent, always-on banner shown ABOVE the myth-buster / sanity-check
+    input — rendered unconditionally on every run (never tied to a button
+    click), so the 'validate in the real tools' reminder is always visible.
+    """
+    st.markdown(
+        '<div style="border:1px solid rgba(255,176,46,.45);'
+        'background:rgba(255,176,46,.08);border-radius:10px;'
+        'padding:10px 14px;margin:0 0 12px;">'
+        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:.66rem;'
+        'letter-spacing:.12em;text-transform:uppercase;color:#ffb02e;'
+        'margin-bottom:3px;">⚠️ The hour before ANSYS, SolidWorks &amp; MATLAB</div>'
+        '<div style="font-size:.8rem;line-height:1.5;color:var(--text,#e7e7ea);">'
+        'This is a fast, deterministic <b>screening</b> tool — it catches bad '
+        'assumptions early and settles arguments, but it does <b>not</b> run '
+        'FEA, CFD or a full vehicle sim. Always validate anything you\'ll design, '
+        'cut, order or sign off in the real tools — <b>ANSYS/CFD</b> '
+        '(structural, thermal, flow), <b>SolidWorks</b> (geometry, fit, mass), '
+        '<b>MATLAB/Simulink</b> (lap-time, dynamics) — and confirm rule limits '
+        'against the current season\'s official rulebook.</div></div>',
+        unsafe_allow_html=True)
 
 
 def _mb_validation_disclaimer(compact: bool = False):
