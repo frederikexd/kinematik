@@ -1525,8 +1525,9 @@ Each subsystem draws from its own inputs — for example:
 1. Open **your subsystem's tab** and enter its real numbers (above). The
    **📐 Mesh & DXF** export reads them live.
 2. In that same tab, open the panel titled
-   **"📄 &lt;Subsystem&gt; — documentation, verdict & export"** and click the
-   **📐 Mesh & DXF** sub-tab.
+   **"📐 &lt;Subsystem&gt; — mesh & DXF export"** (it sits right below the
+   documentation panel, the same way the 🛑 Brakes tab carries its own rotor
+   export).
 3. If it says **"Waiting on numbers,"** it lists exactly which inputs are still
    missing — fill those in the tab and they tick off. Once they're all in, the
    short-list and DXF appear on their own.
@@ -4567,18 +4568,23 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
     """Collapsed 'Documentation & checks' panel for any subsystem.
 
     Reorganised so it isn't one overwhelming scroll: inside the expander the
-    work is split into three clearly-labelled sub-tabs —
-        📄 Document  ·  ✅ Verdict  ·  📐 Mesh & DXF
+    work is split into two clearly-labelled sub-tabs —
+        📄 Document  ·  ✅ Verdict
     The Document tab is the merged report + template library + sanity-check; the
-    Verdict tab is this subsystem's works / closer-look / attention box; the
-    Mesh & DXF tab offers the short-list-to-mesh + DXF export for this subsystem.
-    Any tab that already called this helper gets all three for free."""
+    Verdict tab is this subsystem's works / closer-look / attention box.
+
+    Mesh & DXF export is NO LONGER a sub-tab here. It is now a standalone,
+    per-tab feature — call `render_mesh_and_dxf_expander(...)` in each applicable
+    subsystem tab body, exactly like the Brakes tab surfaces its own rotor
+    short-list + DXF export inline. (`mesh_candidates` is retained on the
+    signature for backwards compatibility but is no longer consumed here; pass
+    it straight to `render_mesh_and_dxf_expander` instead.)"""
     _nm = title_name or _VC_LABEL.get(
         subsystem_key, subsystem_key.replace("-", " ").title())
-    with st.expander(f"📄  {_nm} — documentation, verdict & export",
+    with st.expander(f"📄  {_nm} — documentation & verdict",
                      expanded=False):
-        _dt_doc, _dt_verdict, _dt_mesh = st.tabs(
-            ["📄 Document", "✅ Verdict", "📐 Mesh & DXF"])
+        _dt_doc, _dt_verdict = st.tabs(
+            ["📄 Document", "✅ Verdict"])
 
         with _dt_doc:
             try:
@@ -4608,13 +4614,30 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
             except Exception as _ve:
                 st.caption(f"Verdict view unavailable: {_ve}")
 
-        with _dt_mesh:
-            try:
-                render_mesh_and_dxf(
-                    subsystem_key, key_prefix=f"{key_prefix}_mesh",
-                    candidates=mesh_candidates, title_name=_nm)
-            except Exception as _me:
-                st.caption(f"Mesh/DXF export unavailable: {_me}")
+
+def render_mesh_and_dxf_expander(subsystem_key, *, key_prefix,
+                                 candidates=None, title_name=None):
+    """Standalone per-tab Mesh & DXF export, mirroring the Brakes tab layout.
+
+    The Mesh & DXF export used to be buried as a third sub-tab inside every
+    subsystem's documentation panel. It is now its own collapsible feature that
+    each applicable subsystem tab drops into its body — the same shape the
+    Brakes tab already uses for its rotor short-list + DXF export. Same physics,
+    same single source of truth (`render_mesh_and_dxf` still does the work); only
+    the placement changes: a dedicated '📐 … — mesh & DXF export' expander that
+    reads the tab's live, member-entered numbers.
+
+    Call this once, near the bottom of a subsystem tab body, right beside its
+    `render_documentation_expander(...)` call."""
+    _nm = title_name or _VC_LABEL.get(
+        subsystem_key, subsystem_key.replace("-", " ").title())
+    with st.expander(f"📐  {_nm} — mesh & DXF export", expanded=False):
+        try:
+            render_mesh_and_dxf(
+                subsystem_key, key_prefix=f"{key_prefix}_mesh",
+                candidates=candidates, title_name=_nm)
+        except Exception as _me:
+            st.caption(f"Mesh/DXF export unavailable: {_me}")
 
 
 def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
@@ -5931,6 +5954,11 @@ with tab1:
   try:
     render_documentation_expander("suspension", key_prefix="susp_main",
                                   title_name="Suspension")
+  except Exception:
+    pass
+  try:
+    render_mesh_and_dxf_expander("suspension", key_prefix="susp_main",
+                                 title_name="Suspension")
   except Exception:
     pass
   # --- SUSPENSION HEADLINE CARDS ----------------------------------------- #
@@ -7680,6 +7708,11 @@ with tab_aero:
   except Exception:
     pass
   try:
+    render_mesh_and_dxf_expander("aerodynamics", key_prefix="aero",
+                                 title_name="Aerodynamics")
+  except Exception:
+    pass
+  try:
     _subsystem_cad_import("aerodynamics", key_prefix="aero")
     _RHO = 1.225  # kg/m³, sea-level ISA — same default as the aero coupling
     st.markdown(
@@ -8402,11 +8435,21 @@ with tab_ev:
   except Exception:
     pass
   try:
+    render_mesh_and_dxf_expander("powertrain", key_prefix="ev",
+                                 title_name="Powertrain")
+  except Exception:
+    pass
+  try:
     _subsystem_cad_import("powertrain", key_prefix="ev")
     _subsystem_cad_import("cooling", key_prefix="ev_cooling")
     try:
         render_documentation_expander("cooling", key_prefix="cooling",
                                       title_name="Cooling")
+    except Exception:
+        pass
+    try:
+        render_mesh_and_dxf_expander("cooling", key_prefix="cooling",
+                                     title_name="Cooling")
     except Exception:
         pass
     st.markdown(
@@ -8625,7 +8668,7 @@ with tab_ev:
         st.markdown("---")
         st.markdown("### 📐 Motor face — DXF export inputs")
         st.markdown(
-            '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> tab '
+            '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> panel '
             'draws your motor-mount flange from these three numbers. Fill them in '
             'here and the export unlocks automatically — no separate step.</p>',
             unsafe_allow_html=True)
@@ -8686,7 +8729,7 @@ with tab_ev:
                     st.success(
                         f"✓ Motor face locked in: ⌀{_mf_bore:g} mm bore, "
                         f"{_mf_pcd:g} mm PCD, {_mf_nbolts} bolts, "
-                        f"{_mf_tq:g} N·m — the Mesh & DXF tab will now draw "
+                        f"{_mf_tq:g} N·m — the Mesh & DXF panel will now draw "
                         "the flange.")
                 except Exception as _mf_err:
                     st.warning(f"Couldn't publish motor face geometry: {_mf_err}")
@@ -9207,7 +9250,7 @@ with tab_ev:
             st.markdown("---")
             st.markdown("#### 📐 Radiator core face — DXF export inputs")
             st.markdown(
-                '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> tab '
+                '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> panel '
                 'draws your radiator core face from these dimensions. Fill them in '
                 'once and the export unlocks automatically.</p>',
                 unsafe_allow_html=True)
@@ -9246,7 +9289,7 @@ with tab_ev:
                     })
                     st.success(
                         f"✓ Radiator core face locked in: {_rc_w:g} × {_rc_h:g} mm "
-                        f"({_rc_depth:g} mm deep) — the Mesh & DXF tab will now draw "
+                        f"({_rc_depth:g} mm deep) — the Mesh & DXF panel will now draw "
                         "the core face.")
                 except Exception as _rc_err:
                     st.warning(f"Couldn't publish radiator core geometry: {_rc_err}")
@@ -9514,6 +9557,11 @@ with tab_accum:
   try:
     render_documentation_expander("electrics", key_prefix="accum",
                                   title_name="Accumulator / Electrics")
+  except Exception:
+    pass
+  try:
+    render_mesh_and_dxf_expander("electrics", key_prefix="accum",
+                                 title_name="Accumulator / Electrics")
   except Exception:
     pass
   try:
@@ -13879,6 +13927,11 @@ with tab6:
                                   title_name="Chassis")
   except Exception:
     pass
+  try:
+    render_mesh_and_dxf_expander("chassis", key_prefix="chassis",
+                                 title_name="Chassis")
+  except Exception:
+    pass
 
   # ---- Node gusset — DXF export inputs -------------------------------- #
   # The Chassis Mesh & DXF tab draws a node gusset plate from these leg
@@ -13886,7 +13939,7 @@ with tab6:
   # chassis tab, not only via a 3D part.
   st.markdown("#### 📐 Node gusset — DXF export inputs")
   st.markdown(
-      '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> tab '
+      '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> panel '
       'draws a tube-node gusset plate from these two leg lengths. Fill them '
       'in here and the export unlocks automatically.</p>',
       unsafe_allow_html=True)
@@ -13919,7 +13972,7 @@ with tab6:
               })
               st.success(
                   f"✓ Gusset locked in: legs {_gu_a:g} × {_gu_b:g} mm — the "
-                  "Mesh & DXF tab will now draw the gusset plate.")
+                  "Mesh & DXF panel will now draw the gusset plate.")
           except Exception as _gu_err:
               st.warning(f"Couldn't publish gusset geometry: {_gu_err}")
       else:
@@ -18529,6 +18582,11 @@ with tab_pcb:
                                   title_name="Data Acquisition / PCB")
   except Exception:
     pass
+  try:
+    render_mesh_and_dxf_expander("data-acquisition", key_prefix="pcb",
+                                 title_name="Data Acquisition / PCB")
+  except Exception:
+    pass
   _subsystem_cad_import("data-acquisition", key_prefix="pcb")
 
   # ---- Board / sensor footprint — DXF export inputs ------------------- #
@@ -18537,7 +18595,7 @@ with tab_pcb:
   # geometry in the PCB tab, not only via a 3D part.
   st.markdown("#### 📐 Board / sensor footprint — DXF export inputs")
   st.markdown(
-      '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> tab '
+      '<p class="hint" style="margin:0 0 8px;">The <b>Mesh &amp; DXF</b> panel '
       'draws your PCB / sensor-bracket outline from these dimensions. Fill '
       'them in here and the export unlocks automatically.</p>',
       unsafe_allow_html=True)
@@ -18574,7 +18632,7 @@ with tab_pcb:
               })
               st.success(
                   f"✓ Board footprint locked in: {_bd_w:g} × {_bd_h:g} mm — the "
-                  "Mesh & DXF tab will now draw the bracket outline.")
+                  "Mesh & DXF panel will now draw the bracket outline.")
           except Exception as _bd_err:
               st.warning(f"Couldn't publish board geometry: {_bd_err}")
       else:
