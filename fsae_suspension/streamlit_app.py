@@ -2762,10 +2762,7 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
     to the physics/rule answer.
     """
     _ph = placeholder or "e.g. a common assumption you want to sanity-check"
-    try:
-        _mb_disclaimer_banner()
-    except Exception:
-        pass
+    _mb_disclaimer_banner()
     _c = st.columns([3, 1])
     _claim = _c[0].text_input(
         f"Sanity-check a {subsystem_key.replace('-', ' ')} assumption",
@@ -4467,8 +4464,8 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
           unsafe_allow_html=True)
       try:
           render_myth_check(subsystem_key, key_prefix=f"{key_prefix}_docmyth")
-      except Exception:
-          pass
+      except Exception as _mc_err:
+          st.error(f"sanity-check render error: {_mc_err}")
 
       # ------------------------------------------------------------------ #
       #  5 & 6. Build markdown, preview, and export                          #
@@ -12249,23 +12246,18 @@ def _mb_disclaimer_banner():
     """A permanent, always-on banner shown ABOVE the myth-buster / sanity-check
     input — rendered unconditionally on every run (never tied to a button
     click), so the 'validate in the real tools' reminder is always visible.
+
+    Uses st.warning (a native Streamlit component) rather than raw HTML so it
+    cannot be hidden by page CSS or stripped by the markdown sanitiser.
     """
-    st.markdown(
-        '<div style="border:1px solid rgba(255,176,46,.45);'
-        'background:rgba(255,176,46,.08);border-radius:10px;'
-        'padding:10px 14px;margin:0 0 12px;">'
-        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:.66rem;'
-        'letter-spacing:.12em;text-transform:uppercase;color:#ffb02e;'
-        'margin-bottom:3px;">⚠️ The hour before ANSYS, SolidWorks &amp; MATLAB</div>'
-        '<div style="font-size:.8rem;line-height:1.5;color:var(--text,#e7e7ea);">'
-        'This is a fast, deterministic <b>screening</b> tool — it catches bad '
-        'assumptions early and settles arguments, but it does <b>not</b> run '
-        'FEA, CFD or a full vehicle sim. Always validate anything you\'ll design, '
-        'cut, order or sign off in the real tools — <b>ANSYS/CFD</b> '
-        '(structural, thermal, flow), <b>SolidWorks</b> (geometry, fit, mass), '
-        '<b>MATLAB/Simulink</b> (lap-time, dynamics) — and confirm rule limits '
-        'against the current season\'s official rulebook.</div></div>',
-        unsafe_allow_html=True)
+    st.warning(
+        "⚠️ **The hour before ANSYS, SolidWorks & MATLAB.** This is a fast, "
+        "deterministic **screening** tool — it does **not** run FEA, CFD or a "
+        "full vehicle sim. Always validate anything you'll design, cut, order "
+        "or sign off in the real tools — **ANSYS/CFD** (structural, thermal, "
+        "flow), **SolidWorks** (geometry, fit, mass), **MATLAB/Simulink** "
+        "(lap-time, dynamics) — and confirm rule limits against the current "
+        "season's official rulebook.")
 
 
 def _mb_validation_disclaimer(compact: bool = False):
