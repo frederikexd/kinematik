@@ -412,16 +412,39 @@ def _context_for(rule: Rule, context: Any) -> Any:
 
 def _unknown_message(claim: ParsedClaim, engine: "MythEngine",
                      declined: list[str]) -> str:
+    """The honest 'couldn't check that' message — never a dead end.
+
+    Even when neither a registered rule nor the general reasoner can answer, we
+    don't leave the user with a shrug: we say plainly that this is outside what
+    the tool models and point them at where to actually look it up. The source
+    block is chosen deterministically from the claim text (the same static
+    registry the reasoned answers use), so an off-topic claim still gets a
+    sensible next step rather than nothing.
+    """
     disc = ", ".join(engine.disciplines()) or "none registered yet"
     base = (
-        "No registered rule could check that claim. The myth-buster only "
-        "answers assumptions it can test against the live models, so it won't "
-        "guess. "
+        "No registered rule could check that claim, and it doesn't map onto a "
+        "relationship in the built-in physics / engineering / FSAE knowledge "
+        "base either. The myth-buster only answers assumptions it can test "
+        "against a model or an encoded relationship, so it won't guess. "
     )
     if declined:
         base += ("Some rules recognised keywords but decided the claim wasn't "
                  "theirs. ")
     base += f"Disciplines with rules right now: {disc}."
+    # Recommend where to look. If the claim mentions nothing vehicle-related,
+    # be honest that it's off this tool's turf rather than pointing at a car
+    # textbook for a non-car question.
+    try:
+        from . import myth_sources as _src
+        from . import myth_reasoner as _reason
+        lower = getattr(claim, "lower", "") or ""
+        _relevant = _reason._is_domain_relevant(lower)
+        block = _src.source_block(lower, domain_relevant=_relevant)
+        if block:
+            base += block
+    except Exception:
+        pass
     return base
 
 
@@ -459,8 +482,14 @@ def check(text: str, context: Any = None) -> MythResult:
     Registered rules run first (exact arithmetic against the live models). If
     none match, a deterministic general-knowledge reasoner assesses the claim
     against a broad physics/engineering/FSAE knowledge base so the user always
-    gets a substantive answer instead of a bare 'no rule matched'. The reasoner
-    is still pure Python — no AI, no network — and never claims more certainty
+    gets a substantive answer instead of a bare 'no rule matched'. That reasoner
+    also handles free-text cross-subsystem claims — "more power doesn't affect
+    suspension", "does aero change the brakes" — from an encoded coupling graph,
+    naming the physical path. And whenever it can't settle a claim exactly, it
+    appends a "where to check / read more" block recommending the tools, texts
+    and rulebook an engineer would use. Even a genuinely off-topic claim comes
+    back as an honest UNKNOWN that still points somewhere sensible. The whole
+    fallback is pure Python — no AI, no network — and never claims more certainty
     than it has (unmatched-but-plausible claims come back as DEPENDS)."""
     _ensure_rulesets_loaded()
     result = DEFAULT_ENGINE.check(text, context)

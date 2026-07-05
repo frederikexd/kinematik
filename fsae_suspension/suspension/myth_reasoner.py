@@ -277,6 +277,145 @@ def _balance(c):
         discipline="suspension")
 
 
+@_topic("vd.more_camber_more_grip",
+        [["camber", "negative camber", "more camber"],
+         ["grip", "traction", "faster", "better", "more"]],
+        discipline="suspension", priority=50)
+def _camber(c):
+    return _v(
+        "depends",
+        "More negative camber is not monotonically more grip. Static camber "
+        "exists to keep the tyre near-upright under roll and camber gain, so "
+        "the outside tyre — the one doing the cornering work — sits flat on its "
+        "contact patch at peak load. Too little and the tyre rolls onto its "
+        "outer shoulder mid-corner; too much and you lose straight-line braking "
+        "and traction grip and overheat the inner shoulder. The optimum is the "
+        "value that maximises the tyre's lateral force at YOUR roll angle and "
+        "camber curve — read it off the tyre model and the camber-vs-roll plot "
+        "in the Kinematics tab, don't just add degrees.",
+        discipline="suspension")
+
+
+@_topic("vd.toe",
+        [["toe", "toe-in", "toe out", "toe-out", "toe in"],
+         ["grip", "turn", "turn-in", "entry", "stable", "faster", "better",
+          "help", "response"]],
+        discipline="suspension", priority=50)
+def _toe(c):
+    lower = getattr(c, "lower", "")
+    out = ("toe out" in lower or "toe-out" in lower)
+    specifics = (
+        "Toe-out at the front sharpens turn-in and helps the car rotate into a "
+        "corner, at the cost of straight-line stability and a little tyre scrub "
+        "(drag and wear). Toe-in does the opposite — more stable, lazier entry. "
+        if out else
+        "Front toe trades entry response against straight-line stability: "
+        "toe-out sharpens turn-in but adds nervousness and scrub, toe-in calms "
+        "the car but dulls entry. ")
+    return _v(
+        "depends",
+        specifics +
+        "So 'toe X helps' is only true for the behaviour you're chasing and in "
+        "small amounts — a few tenths of a degree is a big change, and every "
+        "bit of static toe is scrub drag and heat on the straights. Set it to "
+        "the entry/stability balance the driver wants, then check tyre "
+        "temperatures across the tread to confirm you haven't overdone it.",
+        discipline="suspension")
+
+
+@_topic("vd.rake_ride_height",
+        [["rake", "ride height", "ride-height", "lower the car", "lowering",
+          "raise the rear", "nose down"],
+         ["faster", "better", "more", "downforce", "grip", "max", "maximum",
+          "as low as", "always"]],
+        discipline="aerodynamics", priority=48)
+def _rake_ride_height(c):
+    lower = getattr(c, "lower", "")
+    # "brakes" contains the substring "rake"; if the ONLY trigger for this topic
+    # was that false hit (no real rake/ride-height wording, and the claim is
+    # about brakes), decline so it doesn't answer a brakes claim about aero rake.
+    _real_rake = re.search(r"\brake\b", lower) is not None
+    _height_words = any(w in lower for w in (
+        "ride height", "ride-height", "lower the car", "lowering",
+        "raise the rear", "nose down"))
+    if not _real_rake and not _height_words:
+        return None
+    return _v(
+        "depends",
+        "Ride height and rake are strong aero knobs but not 'lower/more is "
+        "always better' ones. Lowering the car and adding rake (nose down) "
+        "usually grows underbody/diffuser downforce and drops the CG — both "
+        "good — but only until the floor stalls, bottoms out, or the platform "
+        "gets so stiff or pitch-sensitive that mechanical grip and driver "
+        "confidence suffer. The best height is the lowest you can run WITHOUT "
+        "the floor grounding under braking/bumps or the aero balance snapping "
+        "with pitch. Sweep it against the actual track and suspension travel; "
+        "'maximum rake' or 'as low as possible' as an absolute is the myth.",
+        discipline="aerodynamics")
+
+
+@_topic("vd.tyre_pressure",
+        [["tyre pressure", "tire pressure", "psi", "bar", "hot pressure",
+          "cold pressure", "inflation"],
+         ["grip", "faster", "better", "more", "higher", "lower", "traction"]],
+        discipline="suspension", priority=52)
+def _tyre_pressure(c):
+    return _v(
+        "depends",
+        "Tyre grip vs pressure is a curve with a peak, not a slope — there is "
+        "an optimal HOT pressure and both sides of it lose grip. Too low and "
+        "the carcass flexes, the tyre overheats and the contact patch "
+        "distorts; too high and the patch shrinks and the centre overheats and "
+        "goes greasy. 'More/less psi is better' only holds until you cross the "
+        "peak. Find it empirically: adjust cold pressures so the tyre reaches "
+        "its target hot pressure and even temperatures across the tread, and "
+        "read grip off the tyre model at that pressure rather than assuming a "
+        "direction.",
+        discipline="suspension")
+
+
+@_topic("vd.damper_stiffness",
+        [["damper", "dampers", "shock", "shocks", "rebound", "compression",
+          "bump damping"],
+         ["stiffer", "softer", "harder", "more", "less", "faster", "better",
+          "grip", "comfort"]],
+        discipline="suspension", priority=46)
+def _dampers(c):
+    return _v(
+        "depends",
+        "Dampers control the RATE of load change, not steady-state load, so "
+        "'stiffer/softer dampers = faster' misframes them. Too soft and the "
+        "platform floats and transient response goes vague; too stiff and the "
+        "tyre skates over bumps and kerbs, losing mechanical grip and upsetting "
+        "the contact patch. Unlike springs, damping should be tuned to control "
+        "body motions and keep the tyre planted over the actual track surface — "
+        "low-speed damping for platform/handling, high-speed for bump "
+        "absorption. It's a tuning optimum set by track roughness and the "
+        "motions you're controlling, not a stiffness axis where more is better.",
+        discipline="suspension")
+
+
+@_topic("aero.front_wing_size",
+        [["front wing", "rear wing", "wing", "splitter", "diffuser",
+          "undertray"],
+         ["big", "bigger", "biggest", "max", "maximum", "as big", "large",
+          "larger", "more", "always"]],
+        discipline="aerodynamics", priority=44)
+def _wing_size(c):
+    return _v(
+        "depends",
+        "A bigger wing/aero device is not automatically better. More area or "
+        "angle grows downforce but also drag (which scales with velocity "
+        "squared) and shifts aero BALANCE — a huge front wing that out-loads "
+        "the rear gives you snap oversteer, and a device only helps if the car "
+        "can actually use the load and the flow stays attached (past a point "
+        "the element stalls and you gain drag for nothing). Size aero to the "
+        "downforce your tyres can exploit AND to front/rear balance AND to the "
+        "drag you can afford on your track — check it on the Lap Time tab. "
+        "'As big as possible' is the classic aero myth.",
+        discipline="aerodynamics")
+
+
 # ===========================================================================
 #  BRAKES
 # ===========================================================================
@@ -348,19 +487,64 @@ def _power_limit(c):
                                     "power limit", "power cap", "kw limit",
                                     "80 kw", "80kw", "draw")):
         return None
-    over = ""
-    if kw is not None and kw > 80:
-        over = (f" Your figure of {kw:g} kW is above the historical 80 kW cap, "
-                "so as stated it would be non-compliant.")
-    elif kw is not None and kw <= 80:
-        over = f" Your figure of {kw:g} kW is within the historical 80 kW cap."
-    return _v(
-        "true",
+
+    CAP = 80.0  # kW — historical FSAE Electric accumulator draw cap.
+    base = (
         "FSAE Electric has long capped the power drawn from the accumulator at "
         "80 kW, enforced by the energy meter — you cannot legally exceed it "
-        "regardless of what the motor could deliver." + over + " Treat this as "
-        "the stable limit, but confirm the exact figure and enforcement in the "
-        "current season's rulebook before relying on it.",
+        "regardless of what the motor could deliver.")
+    tail = (" Treat this as the stable limit, but confirm the exact figure and "
+            "enforcement in the current season's rulebook before relying on it.")
+
+    # The verdict has to track the NUMBER the user stated. A stated draw ABOVE
+    # the cap is a myth ("we can run 90 kW") — the rule forbids it — not a
+    # 'true' with a soft caveat. This is exactly the number-vs-rule mistake the
+    # myth-buster exists to catch, so it must not read green.
+    if kw is not None:
+        # Is the claim asserting the car can DRAW/RUN this number, vs merely
+        # quoting the cap itself ("the cap is 80 kW")? Assertive verbs make an
+        # over-cap figure a compliance myth.
+        asserts_draw = any(w in lower for w in (
+            "run", "draw", "pull", "make", "produce", "deliver", "push",
+            "put out", "use", "we can", "can run", "up to", "peak", "at "))
+        # If the user explicitly says they LIMIT/CLAMP the draw, or calls the
+        # number a rating (motor/inverter), they already understand the cap —
+        # that's the rating-vs-actual-draw case (depends), not a myth.
+        knows_limit = any(w in lower for w in (
+            "limit", "limited", "clamp", "cap the", "capped", "rated",
+            "rating", "electronically", "software limit"))
+        if kw > CAP + 0.5:
+            if asserts_draw and not knows_limit:
+                return _v(
+                    "myth",
+                    base + f" Your figure of {kw:g} kW is ABOVE the 80 kW cap, so "
+                    f"a car actually drawing {kw:g} kW from the accumulator would "
+                    "be non-compliant — the energy meter would flag it and you'd "
+                    "be black-flagged or fail scrutineering. The motor may be "
+                    "rated higher, but the legal, usable ceiling at the "
+                    f"accumulator is 80 kW, which is {kw - CAP:g} kW below your "
+                    "number." + tail,
+                    discipline="powertrain", fsae_rule=True)
+            return _v(
+                "depends",
+                base + f" You've quoted {kw:g} kW, which is above that 80 kW cap. "
+                "If that's a motor/inverter rating it can be fine as long as the "
+                "power actually pulled from the accumulator is electronically "
+                f"limited to 80 kW; if it's the real pack draw, {kw:g} kW is "
+                "non-compliant." + tail,
+                discipline="powertrain", fsae_rule=True)
+        # At or under the cap: the stated number is legal.
+        margin = CAP - kw
+        within = (f" Your figure of {kw:g} kW is within the 80 kW cap"
+                  + (f" (a {margin:g} kW margin)." if margin > 0 else
+                     " — right at the limit, so watch transient overshoot."))
+        return _v(
+            "true", base + within + tail,
+            discipline="powertrain", fsae_rule=True)
+
+    # No number stated — just confirm the rule exists, verdict 'true' as before.
+    return _v(
+        "true", base + tail,
         discipline="powertrain", fsae_rule=True)
 
 
@@ -518,6 +702,55 @@ def _is_domain_relevant(lower: str) -> bool:
     return any(term in lower for term in _DOMAIN_TERMS)
 
 
+# Words/shapes that mark a sentence as ASSERTING something (a claim to check)
+# rather than ASKING something (a bare query). The catch-all only fires on the
+# former, so "what is base speed?" stays UNKNOWN like the original checker.
+_ASSERTION_MARKERS = (
+    # comparatives / relationals
+    "better", "worse", "faster", "slower", "stronger", "stiffer", "lighter",
+    "heavier", "more", "less", "increase", "decrease", "improve", "reduce",
+    "bigger", "smaller", "higher", "lower", "always", "never", "best", "worst",
+    # copulas / equivalences
+    " is ", " are ", " means ", " equals ", "=", " gives ", " makes ", " leads ",
+    "results in", "causes", " so ", " because ", "the same as", "identical",
+    # coupling verbs (belt-and-braces; coupling reasoner already caught most)
+    "affect", "affects", "impact", "impacts", "changes", "influences",
+    "matters", "no effect", "doesn't", "does not", "won't", "will not",
+    "depends", "proportional", "double", "twice", "half",
+)
+
+# Bare interrogatives that, with no assertion marker, mean the user is ASKING,
+# not claiming. We keep these as UNKNOWN (a question isn't an assumption).
+_QUESTION_STARTS = ("what ", "how ", "why ", "when ", "where ", "which ",
+                    "who ", "is there", "are there", "can we", "should we",
+                    "do we", "does ")
+
+
+def _looks_like_assertion(lower: str, claim=None) -> bool:
+    """True if the claim asserts something checkable, not just asks a question.
+
+    Deterministic. A stated number (from the parsed claim) counts as an
+    assertion; so does any comparative/relational/copula marker. A sentence that
+    only opens with an interrogative and carries no assertion marker is treated
+    as a question and left to UNKNOWN, matching the original checker's behaviour.
+    """
+    text = (lower or "").strip()
+    if not text:
+        return False
+    has_number = bool(getattr(claim, "all_numbers", None))
+    # A stated number is a strong assertion signal even inside a question-ish
+    # sentence ("is 90 kW ok?" is really a claim to check), so honour it first.
+    if has_number:
+        return True
+    # An interrogative with NO number is a question, not an assumption — even
+    # though "what IS base speed" contains the copula " is ". Check shape first.
+    if text.endswith("?") or text.startswith(_QUESTION_STARTS):
+        return False
+    # Otherwise, an assertion marker (comparative, copula, coupling verb) means
+    # the sentence claims something checkable.
+    return any(m in lower for m in _ASSERTION_MARKERS)
+
+
 @_topic("gen.absolute_claim",
         [["always", "never", "guarantee", "impossible", "definitely",
           "no matter", "in all cases", "every time"]],
@@ -566,17 +799,70 @@ _FSAE_NOTE = (" \u26a0\ufe0f This touches an FSAE rules point. Encoded limits ar
               "relying on it.")
 
 
+def _attach_sources(out: "ReasonedVerdict", lower: str, *,
+                    domain_relevant: bool = True) -> "ReasonedVerdict":
+    """Append the 'where to check / read more' block to a verdict's explanation.
+
+    Deterministic and idempotent: the block is only added once, and the sources
+    are chosen from the static registry by the claim text + the verdict's own
+    discipline. This is what turns "I can't fully settle this" into "…and here
+    is where an engineer would go to settle it", which is the behaviour the
+    tool promises whenever it can't give a hard answer from a live model.
+    """
+    try:
+        from . import myth_sources as _src
+    except Exception:
+        return out
+    if getattr(out, "_sourced", False):
+        return out
+    block = _src.source_block(
+        lower, discipline=(out.discipline or None),
+        domain_relevant=domain_relevant)
+    if block:
+        out.explanation = out.explanation + block
+    # Mark so a second pass (e.g. the engine re-wrapping) doesn't double-append.
+    try:
+        object.__setattr__(out, "_sourced", True)
+    except Exception:
+        pass
+    return out
+
+
 def assess(claim, *, discipline: Optional[str] = None) -> Optional[ReasonedVerdict]:
     """Reason about a claim the registered rules couldn't match.
 
-    Deterministic: routes on encoded topic keywords, most-specific first, and
-    returns the first topic that produces a verdict. Returns None only if even
-    the generic responders find nothing (e.g. an empty or number-only claim).
+    Order of reasoning (all deterministic, all pure Python):
+      1. **Cross-subsystem coupling** — "does A affect B / A doesn't affect B"
+         claims are answered from the encoded coupling graph, naming the
+         physical path. This is the biggest gap the generic responder left.
+      2. **Encoded topics** — the hand-curated physics/FSAE relationships,
+         most-specific first (optionally narrowed to the picked discipline).
+      3. **Domain-relevant catch-all** — if the claim clearly concerns the car
+         but matches no topic, return a substantive "name the quantities and
+         here's where to check" DEPENDS rather than a bare miss.
+
+    Every returned verdict carries a "where to check / read more" source block,
+    so the user is never left without a next step. Returns ``None`` only for a
+    claim that is neither an affects-claim nor domain-relevant (e.g. an empty,
+    number-only, or plainly off-topic sentence) — the caller then shows the
+    honest UNKNOWN, which itself recommends where to look.
     """
     lower = getattr(claim, "lower", "") or ""
     if not lower.strip():
         return None
 
+    # --- 1. cross-subsystem coupling ("does A affect B?") ----------------- #
+    try:
+        from . import myth_coupling as _cpl
+        cv = _cpl.assess_coupling(lower)
+    except Exception:
+        cv = None
+    if cv is not None:
+        out = _v(cv.verdict, cv.explanation, discipline=cv.discipline,
+                 provenance="Cross-subsystem coupling model (no live model).")
+        return _attach_sources(out, lower)
+
+    # --- 2. encoded topics ----------------------------------------------- #
     # If a discipline was explicitly picked, prefer topics from it, then fall
     # back to the rest — so "Brakes" narrows before the generic responders.
     ordered = sorted(_TOPICS, key=lambda t: t.priority, reverse=True)
@@ -595,11 +881,46 @@ def assess(claim, *, discipline: Optional[str] = None) -> Optional[ReasonedVerdi
             continue
         if out.fsae_rule and _FSAE_NOTE.strip() not in out.explanation:
             out.explanation = out.explanation + _FSAE_NOTE
-        return out
+        return _attach_sources(out, lower)
 
+    # --- 3. domain-relevant catch-all ------------------------------------ #
+    # The claim mentions the car but no topic owns it. Rather than a bare miss,
+    # give the honest "I can't settle this in the abstract, here's what to do"
+    # answer WITH sources — the experience the tool promises.
+    #
+    # BUT only for something shaped like an ASSERTION. A bare question ("what is
+    # base speed?", "how do dampers work?") isn't an assumption to bust, and the
+    # original checker returned UNKNOWN for those — so we don't manufacture a
+    # DEPENDS for them. An assertion is signalled by a comparative/relational
+    # word, an "is/are/means/=" copula, an absolute, or a stated number.
+    if _is_domain_relevant(lower) and _looks_like_assertion(lower, claim):
+        out = _v(
+            "depends",
+            "This is a reasonable engineering question, but it isn't one this "
+            "screening tool can settle from the abstract wording alone — the "
+            "answer turns on the specific quantities and the operating point "
+            "(track, speed, load, temperature). Pin those down and it becomes "
+            "checkable against a hand calculation or the live models below. "
+            "If it touches a rules limit, confirm against the current season's "
+            "rulebook.",
+            discipline=discipline or "",
+            provenance="General engineering knowledge base (no live model).")
+        return _attach_sources(out, lower)
+
+    # Genuinely off-topic: decline. The caller's UNKNOWN message still points
+    # the user somewhere sensible.
     return None
 
 
 def topic_count() -> int:
     """Number of encoded relationships — surfaced in tests/diagnostics."""
     return len(_TOPICS)
+
+
+def coupling_edge_count() -> int:
+    """Number of encoded cross-subsystem coupling edges (diagnostics/tests)."""
+    try:
+        from . import myth_coupling as _cpl
+        return _cpl.edge_count()
+    except Exception:
+        return 0
