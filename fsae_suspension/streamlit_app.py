@@ -6085,21 +6085,10 @@ with tab1:
   # --- SUSPENSION HEADLINE CARDS ----------------------------------------- #
   # Relocated from the global header so each subteam's numbers live inside its
   # own tab. Computations (s, kin, camber_gain, _mr, _ad, _as, …) happen
-  # earlier in the script — this is display only.
-  _kc = st.columns(6)
-  _kitems = [
-      ("Static camber", f"{s.camber:+.2f}", "°", ""),
-      ("Camber gain", f"{camber_gain*10:+.2f}", "°/10mm",
-       "good" if camber_gain < 0 else "warn"),
-      ("Bump steer", f"{bump_steer*10:+.3f}", "°/10mm",
-       "good" if abs(bump_steer*10) < 0.1 else "warn"),
-      ("Caster", f"{s.caster:+.1f}", "°", ""),
-      ("KPI", f"{s.kpi:+.1f}", "°", ""),
-      ("Scrub radius", f"{s.scrub_radius:+.0f}", "mm",
-       "good" if abs(s.scrub_radius) < 25 else "warn"),
-  ]
-  for _c, (_k, _v, _u, _cls) in zip(_kc, _kitems):
-      _c.markdown(metric(_k, _v, _u, _cls), unsafe_allow_html=True)
+  # earlier in the script. The card ROWS are now rendered inside the "Kinematic
+  # sweeps" expander below (so the headline numbers and the plots they describe
+  # collapse together); here we only keep the non-display logic — the activity
+  # log and the linkage-close warning.
   try:
       record_activity(
           "suspension", "calculation",
@@ -6108,39 +6097,55 @@ with tab1:
           f"caster {s.caster:+.1f}°, scrub {s.scrub_radius:+.0f} mm")
   except Exception:
       pass
-  if not solve_ok:
-      st.markdown('<span class="tag bad">⚠ linkage does not close over full '
-                  'travel — check wishbone lengths</span>',
-                  unsafe_allow_html=True)
-
-  _kc2 = st.columns(6)
-  _kitems2 = [
-      ("Motion ratio", f"{_mr:.3f}" if np.isfinite(_mr) else "—",
-       "spring/wheel", "good" if _mr_real else "warn"),
-      ("MR source", "rocker" if _mr_real else "proxy", "",
-       "good" if _mr_real else "warn"),
-      ("Wheel rate", f"{_wr:.1f}" if np.isfinite(_wr) else "—",
-       f"N/mm @{_spring_demo:.0f}", ""),
-      ("Anti-dive", f"{_ad:+.0f}" if np.isfinite(_ad) else "—", "%",
-       "good" if (np.isfinite(_ad) and 0 <= _ad <= 50) else "warn"),
-      ("Anti-squat", f"{_as:+.0f}" if np.isfinite(_as) else "—", "%",
-       "good" if (np.isfinite(_as) and 0 <= _as <= 60) else "warn"),
-      ("SVA length", f"{kin.side_view_swing_arm_length():.0f}"
-       if np.isfinite(kin.side_view_swing_arm_length()) else "∞", "mm", ""),
-  ]
-  for _c, (_k, _v, _u, _cls) in zip(_kc2, _kitems2):
-      _c.markdown(metric(_k, _v, _u, _cls), unsafe_allow_html=True)
-  if not _mr_real:
-      st.markdown('<span class="tag warn">motion ratio is a direct-acting '
-                  'proxy — enable “Pushrod-actuated” in the sidebar and enter '
-                  'your rocker geometry for real spring→wheel rates</span>',
-                  unsafe_allow_html=True)
-  st.write("")
 
   _subsystem_cad_import("suspension", key_prefix="susp")
 
   with st.expander("📈  Kinematic sweeps vs wheel travel — camber · bump steer · "
                    "scrub · caster", expanded=False):
+    # Headline metric cards — the computed numbers these sweeps describe.
+    _kc = st.columns(6)
+    _kitems = [
+        ("Static camber", f"{s.camber:+.2f}", "°", ""),
+        ("Camber gain", f"{camber_gain*10:+.2f}", "°/10mm",
+         "good" if camber_gain < 0 else "warn"),
+        ("Bump steer", f"{bump_steer*10:+.3f}", "°/10mm",
+         "good" if abs(bump_steer*10) < 0.1 else "warn"),
+        ("Caster", f"{s.caster:+.1f}", "°", ""),
+        ("KPI", f"{s.kpi:+.1f}", "°", ""),
+        ("Scrub radius", f"{s.scrub_radius:+.0f}", "mm",
+         "good" if abs(s.scrub_radius) < 25 else "warn"),
+    ]
+    for _c, (_k, _v, _u, _cls) in zip(_kc, _kitems):
+        _c.markdown(metric(_k, _v, _u, _cls), unsafe_allow_html=True)
+    if not solve_ok:
+        st.markdown('<span class="tag bad">⚠ linkage does not close over full '
+                    'travel — check wishbone lengths</span>',
+                    unsafe_allow_html=True)
+
+    _kc2 = st.columns(6)
+    _kitems2 = [
+        ("Motion ratio", f"{_mr:.3f}" if np.isfinite(_mr) else "—",
+         "spring/wheel", "good" if _mr_real else "warn"),
+        ("MR source", "rocker" if _mr_real else "proxy", "",
+         "good" if _mr_real else "warn"),
+        ("Wheel rate", f"{_wr:.1f}" if np.isfinite(_wr) else "—",
+         f"N/mm @{_spring_demo:.0f}", ""),
+        ("Anti-dive", f"{_ad:+.0f}" if np.isfinite(_ad) else "—", "%",
+         "good" if (np.isfinite(_ad) and 0 <= _ad <= 50) else "warn"),
+        ("Anti-squat", f"{_as:+.0f}" if np.isfinite(_as) else "—", "%",
+         "good" if (np.isfinite(_as) and 0 <= _as <= 60) else "warn"),
+        ("SVA length", f"{kin.side_view_swing_arm_length():.0f}"
+         if np.isfinite(kin.side_view_swing_arm_length()) else "∞", "mm", ""),
+    ]
+    for _c, (_k, _v, _u, _cls) in zip(_kc2, _kitems2):
+        _c.markdown(metric(_k, _v, _u, _cls), unsafe_allow_html=True)
+    if not _mr_real:
+        st.markdown('<span class="tag warn">motion ratio is a direct-acting '
+                    'proxy — enable “Pushrod-actuated” in the sidebar and enter '
+                    'your rocker geometry for real spring→wheel rates</span>',
+                    unsafe_allow_html=True)
+    st.write("")
+
     c1, c2 = st.columns(2)
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=travels_u, y=[st_.camber for st_ in sweep],
