@@ -8629,6 +8629,15 @@ with tab_ev:
             'draws your motor-mount flange from these three numbers. Fill them in '
             'here and the export unlocks automatically — no separate step.</p>',
             unsafe_allow_html=True)
+        # Local default for peak torque — the shared _def_peak_tq is defined
+        # later (inside the _pt_tabs block), so read the same store directly
+        # here to stay self-contained and avoid a forward reference.
+        try:
+            _mf_store = getattr(get_store(), "ev_excel_params", {}) or {}
+            _mf_motor = _mf_store.get("motor", {}) if isinstance(_mf_store, dict) else {}
+            _mf_def_tq = float(_mf_motor.get("motor_peak_torque_nm", 230.0) or 230.0)
+        except Exception:
+            _mf_def_tq = 230.0
         with st.expander("📐 Enter motor face dimensions", expanded=True):
             _mf_cols = st.columns(4)
             _mf_bore = _mf_cols[0].number_input(
@@ -8654,7 +8663,7 @@ with tab_ev:
             _mf_tq = _mf_cols[3].number_input(
                 "Peak torque (N·m)",
                 min_value=1.0, max_value=2000.0,
-                value=float(st.session_state.get("_mf_peak_tq", _def_peak_tq)),
+                value=float(st.session_state.get("_mf_peak_tq", _mf_def_tq)),
                 step=5.0, key="mf_peak_tq",
                 help="Motor peak torque used to size the flange wall thickness. "
                      "Matches the value on your motor datasheet.")
