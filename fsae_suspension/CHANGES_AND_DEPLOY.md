@@ -41,6 +41,26 @@ and the per-tab tab_open analytics gating was generalised from the old "More
 tools wrapper" to "category tab open AND sub-tab open". `_TAB_CATEGORIES` maps
 every id to a category with a safety net so nothing can vanish.
 
+**Pick-first gate.** Nothing below the role picker renders until the member
+makes a deliberate choice: the category strip, sub-tabs and all 25 tab bodies
+are held behind `st.stop()` until they pick a subteam, choose "Just looking —
+show me the shared tabs", or turn on "All tabs". So a member lands on the
+picker + 3D car, not on a wall of tabs. A `kk_entered` flag records the choice;
+existing sessions that already have a real role saved open straight through
+(no forced re-pick).
+
+**Strict role filtering.** Once a subteam is picked, the member sees ONLY that
+subteam's applicable tabs plus the general/shared spine (integration, analytics,
+validation, registry, notes, weight, 3D model) — non-applicable tabs are no
+longer shown in the nav at all (previously they floated to the back; now
+they're out). `_ROLE_TABS` was widened first so strict filtering doesn't strand
+anyone: cooling now includes the EV tab (where radiator sizing/CAD lives),
+brakes includes lap time + GGV + tyre (to see brake balance on track), aero
+includes lap/GGV/transient/setup, etc. Non-applicable tab BODIES still execute
+(shared page state depends on them) inside a collapsed "⋯ Other tools" expander,
+so nothing breaks and they stay reachable if genuinely needed — but the member's
+category nav shows only what's theirs. "All tabs" power mode still shows all 25.
+
 
 Goal: the myth-buster / verdict area was one long scroll — a member didn't
 realise how much was there. It's now organised into pages and boxes, with no

@@ -48,17 +48,17 @@ One environment. Every subsystem. The entire car.
 
 | Subsystem | What KinematiK does |
 |---|---|
-| **Suspension / Dynamics** | 3D constraint solver, camber gain, bump steer, roll centre migration, load transfer, grip balance, compliance, setup optimiser, GGV, transient |
-| **Aerodynamics** | Downforce & ground effect, wing/diffuser sizing, aero map, virtual wind tunnel |
-| **EV Powertrain** | Motor architecture comparison, energy budget, regen, lap time, torque vectoring |
-| **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model, electrical feasibility gate |
-| **Brakes** | Bias & lock-up, hydraulic sizing, bolt & bracket FoS, rotor thermal, fade test, rotor optimiser, DXF export |
-| **Chassis / Frame** | 3D model, team fit, weight & CG ledger, handover export |
-| **Cooling** | Thermal sizing, heatmap, cross-subsystem heat propagation |
-| **Electronics** | PCB copper survival, signal integrity, HV/LV checks |
-| **Data Acquisition** | Integration with car-level electrical budget |
+| **Suspension / Dynamics** | 3D constraint solver, camber gain, bump steer, roll centre migration, load transfer, grip balance, compliance, setup optimiser, GGV, transient, upright mount-plate DXF |
+| **Aerodynamics** | Downforce & ground effect, wing/diffuser sizing, aero map, virtual wind tunnel, wing-section (airfoil) DXF |
+| **EV Powertrain** | Motor architecture comparison, energy budget, regen, lap time, torque vectoring, motor-flange DXF |
+| **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model, electrical feasibility gate, segment-box DXF |
+| **Brakes** | Bias & lock-up, hydraulic sizing, bolt & bracket FoS, rotor thermal, fade test, rotor optimiser + rotor DXF export, caliper-bracket DXF |
+| **Chassis / Frame** | 3D model, team fit, weight & CG ledger, handover export, node-gusset DXF |
+| **Cooling** | Thermal sizing, heatmap, cross-subsystem heat propagation, radiator-core DXF |
+| **Electronics** | PCB copper survival, signal integrity, HV/LV checks, sensor/PCB-bracket DXF |
+| **Data Acquisition** | Integration with car-level electrical budget, DAQ-bracket DXF |
 | **Cost & BOM** | FSAE Cost event, auto-seeded from Integration ledger, CSV export |
-| **Integration** | Cross-subsystem ledger, coupling graph, risk propagation, manufacturing-release gate |
+| **Integration** | Cross-subsystem ledger, coupling graph, risk propagation, manufacturing-release gate, **Verdict Center** (per-subsystem works / look-closer / attention) |
 | **DFMEA** | Live failure mode analysis, pre-seeded rows, RPN recompute, action tracker |
 | **Registry** | Component source of truth, version history, sign-off, CAD provenance parsing |
 
@@ -76,9 +76,23 @@ When any subsystem saves an interface edit, KinematiK walks the change through a
 
 ## Three moves to start
 
+0. **Pick your subteam.** Nothing opens until you choose who you are. Once you
+   pick, you see only your subteam's tabs plus the shared spine (Integration,
+   Validation, Analytics, Registry, Notes, 3D Model), grouped into five simple
+   categories (Testing, Design, Checks, Docs, Data) — never all 25 at once.
 1. **Declare your interface.** In **Integration**, fill what your subteam owns (mass, CG, torque, heat, current, downforce) and untick *estimate* once a number is real. Everything downstream uses it.
 2. **Watch it ripple.** KinematiK walks your change through the coupling graph and flags which other subsystems' risk just moved.
 3. **Clear the cut.** Before a part goes to manufacture, run the **manufacturing-release gate** — a literal go/no-go that blocks any part still resting on an estimate or an unconfirmed load.
+
+### Get a build-ready DXF (no CAD needed to start)
+
+Every subsystem exports the real 2-D section it takes into CAD — a wing airfoil,
+a mount/flange plate with bolt holes, a radiator core face — built from *your*
+computed numbers. In your subsystem tab, open the **"… — documentation, verdict
+& export"** panel, click the **📐 Mesh & DXF** sub-tab, pick a section, and
+download. In SolidWorks: **File ▸ Open ▸ DXF ▸ import as 2D sketch**, extrude,
+then mesh in ANSYS. Units are embedded and every profile is checked to import as
+one clean closed contour.
 
 ---
 

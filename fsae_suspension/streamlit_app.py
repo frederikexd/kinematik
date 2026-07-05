@@ -7964,408 +7964,404 @@ with tab_aero:
             'coefficient is never silently read as a full-car number.</p>',
             unsafe_allow_html=True)
 
-        # ── 1. Geometry ──────────────────────────────────────────────────── #
-        st.markdown("##### 1 · Scale decision")
-        _sc_cols = st.columns([1, 1, 1, 1])
-        _sc_ratio = _sc_cols[0].number_input(
-            "Scale ratio (model/full)", 0.10, 1.0, value=0.4, step=0.05,
-            help="0.4 = 40% = 1:2.5 model.  Full-size dimensions are recovered as "
-                 "scaled ÷ ratio — the two can never drift apart.")
-        _sc_chord = _sc_cols[1].number_input(
-            "Scaled chord (mm)", 50.0, 2000.0, value=500.0, step=10.0,
-            help="Streamwise reference length OF THE MODEL.  Sets the Reynolds number.")
-        _sc_height = _sc_cols[2].number_input(
-            "Scaled height (mm)", 0.0, 1000.0, value=260.0, step=5.0,
-            help="Spanwise height of the scaled article (optional — used for blockage "
-                 "and frontal area, not similitude).")
-        _sc_width = _sc_cols[3].number_input(
-            "Scaled width (mm)", 0.0, 1000.0, value=250.0, step=5.0,
-            help="Depth / width of the scaled article.")
+        with st.expander("1 · Scale decision", expanded=False):
+            # ── 1. Geometry ──────────────────────────────────────────────────── #
+            _sc_cols = st.columns([1, 1, 1, 1])
+            _sc_ratio = _sc_cols[0].number_input(
+                "Scale ratio (model/full)", 0.10, 1.0, value=0.4, step=0.05,
+                help="0.4 = 40% = 1:2.5 model.  Full-size dimensions are recovered as "
+                     "scaled ÷ ratio — the two can never drift apart.")
+            _sc_chord = _sc_cols[1].number_input(
+                "Scaled chord (mm)", 50.0, 2000.0, value=500.0, step=10.0,
+                help="Streamwise reference length OF THE MODEL.  Sets the Reynolds number.")
+            _sc_height = _sc_cols[2].number_input(
+                "Scaled height (mm)", 0.0, 1000.0, value=260.0, step=5.0,
+                help="Spanwise height of the scaled article (optional — used for blockage "
+                     "and frontal area, not similitude).")
+            _sc_width = _sc_cols[3].number_input(
+                "Scaled width (mm)", 0.0, 1000.0, value=250.0, step=5.0,
+                help="Depth / width of the scaled article.")
 
-        try:
-            _spec = ScaleSpec(
-                ratio=_sc_ratio,
-                scaled_chord_mm=_sc_chord,
-                scaled_height_mm=_sc_height if _sc_height > 0 else None,
-                scaled_width_mm=_sc_width if _sc_width > 0 else None,
-            )
-            _sm_cols = st.columns(3)
-            _sm_cols[0].info(f"**Scale:** {_spec.label()}")
-            _sm_cols[1].info(f"**Full-size chord:** {_spec.full_chord_mm:.0f} mm")
-            if _spec.full_height_mm is not None and _spec.full_width_mm is not None:
-                _sm_cols[2].info(
-                    f"**Full-size envelope:** {_spec.full_height_mm:.0f} × "
-                    f"{_spec.full_width_mm:.0f} mm (H × W)")
-            # Publish the REAL full-size wing chord for the DXF exporter: the
-            # airfoil section a member extrudes to span, at two typical FSAE
-            # thicknesses to mesh both.
             try:
-                publish_export_geometry("aerodynamics", {
-                    "chord_mm": float(_spec.full_chord_mm),
-                    "thickness_fracs": [0.12, 0.16],
-                    "source": f"scale model {_spec.label()}",
-                })
-            except Exception:
-                pass
-        except ValueError as _sve:
-            st.error(f"Scale spec error: {_sve}")
-            _spec = None
+                _spec = ScaleSpec(
+                    ratio=_sc_ratio,
+                    scaled_chord_mm=_sc_chord,
+                    scaled_height_mm=_sc_height if _sc_height > 0 else None,
+                    scaled_width_mm=_sc_width if _sc_width > 0 else None,
+                )
+                _sm_cols = st.columns(3)
+                _sm_cols[0].info(f"**Scale:** {_spec.label()}")
+                _sm_cols[1].info(f"**Full-size chord:** {_spec.full_chord_mm:.0f} mm")
+                if _spec.full_height_mm is not None and _spec.full_width_mm is not None:
+                    _sm_cols[2].info(
+                        f"**Full-size envelope:** {_spec.full_height_mm:.0f} × "
+                        f"{_spec.full_width_mm:.0f} mm (H × W)")
+                # Publish the REAL full-size wing chord for the DXF exporter: the
+                # airfoil section a member extrudes to span, at two typical FSAE
+                # thicknesses to mesh both.
+                try:
+                    publish_export_geometry("aerodynamics", {
+                        "chord_mm": float(_spec.full_chord_mm),
+                        "thickness_fracs": [0.12, 0.16],
+                        "source": f"scale model {_spec.label()}",
+                    })
+                except Exception:
+                    pass
+            except ValueError as _sve:
+                st.error(f"Scale spec error: {_sve}")
+                _spec = None
 
         if _spec is not None:
-            st.divider()
 
-            # ── 2. Similitude ─────────────────────────────────────────────── #
-            st.markdown("##### 2 · Reynolds similitude")
-            _sim_cols = st.columns([1, 1, 1])
-            _full_speed_kmh = _sim_cols[0].number_input(
-                "Full-size race speed (km/h)", 10.0, 200.0, value=60.0, step=5.0,
-                help="The on-track speed you want the scaled run to reproduce. "
-                     "FSAE corners are 40–70 km/h; endurance straight ~100+.")
-            _tunnel_max_kmh = _sim_cols[1].number_input(
-                "Tunnel max speed (km/h)", 10.0, 300.0, value=160.0, step=5.0,
-                help="Your tunnel's ceiling. A 40%-scale model at 60 km/h full-size "
-                     "needs 150 km/h to match Reynolds — check the tunnel can reach it.")
-            _temp_c = _sim_cols[2].number_input(
-                "Air temperature (°C)", -10.0, 50.0, value=15.0, step=1.0,
-                help="Shop / tunnel temperature. Kinematic viscosity varies ~5% over "
-                     "a typical seasonal range — worth getting right.")
+            with st.expander("2 · Reynolds similitude", expanded=False):
+                # ── 2. Similitude ─────────────────────────────────────────────── #
+                _sim_cols = st.columns([1, 1, 1])
+                _full_speed_kmh = _sim_cols[0].number_input(
+                    "Full-size race speed (km/h)", 10.0, 200.0, value=60.0, step=5.0,
+                    help="The on-track speed you want the scaled run to reproduce. "
+                         "FSAE corners are 40–70 km/h; endurance straight ~100+.")
+                _tunnel_max_kmh = _sim_cols[1].number_input(
+                    "Tunnel max speed (km/h)", 10.0, 300.0, value=160.0, step=5.0,
+                    help="Your tunnel's ceiling. A 40%-scale model at 60 km/h full-size "
+                         "needs 150 km/h to match Reynolds — check the tunnel can reach it.")
+                _temp_c = _sim_cols[2].number_input(
+                    "Air temperature (°C)", -10.0, 50.0, value=15.0, step=1.0,
+                    help="Shop / tunnel temperature. Kinematic viscosity varies ~5% over "
+                         "a typical seasonal range — worth getting right.")
 
-            _sim = SimilitudePlan.match_reynolds(
-                _spec,
-                full_speed_ms=_full_speed_kmh / 3.6,
-                tunnel_max_speed_ms=_tunnel_max_kmh / 3.6,
-                temp_c=_temp_c,
-            )
-            _sim_metric_cols = st.columns(4)
-            _sim_metric_cols[0].metric(
-                "Full-size Re", f"{_sim.full_reynolds:.2e}",
-                help="Reynolds number the full-size part sees at race speed.")
-            _sim_metric_cols[1].metric(
-                "Matched tunnel speed",
-                f"{_sim.matched_speed_ms * 3.6:.0f} km/h",
-                help="Speed the tunnel must reach to give the model the same Re.")
-            _sim_metric_cols[2].metric(
-                "Achieved Re", f"{_sim.achieved_reynolds:.2e}",
-                delta=f"{(_sim.reynolds_match_ratio - 1.0) * 100:+.0f}% vs full-size",
-                delta_color="normal" if _sim.reachable else "inverse",
-                help="Re the model will actually see at the tunnel's achievable speed.")
-            _sim_metric_cols[3].metric(
-                "Re match", f"{_sim.reynolds_match_ratio * 100:.0f}%",
-                help="1.0 = perfect similitude; below ~80% the coefficient may not "
-                     "transfer reliably.")
-            if _sim.reachable and not _sim.warnings:
-                st.success(f"✅ {_sim.verdict}")
-            elif _sim.reachable:
-                st.warning(f"⚠️ {_sim.verdict}")
-            else:
-                st.error(f"❌ {_sim.verdict}")
+                _sim = SimilitudePlan.match_reynolds(
+                    _spec,
+                    full_speed_ms=_full_speed_kmh / 3.6,
+                    tunnel_max_speed_ms=_tunnel_max_kmh / 3.6,
+                    temp_c=_temp_c,
+                )
+                _sim_metric_cols = st.columns(4)
+                _sim_metric_cols[0].metric(
+                    "Full-size Re", f"{_sim.full_reynolds:.2e}",
+                    help="Reynolds number the full-size part sees at race speed.")
+                _sim_metric_cols[1].metric(
+                    "Matched tunnel speed",
+                    f"{_sim.matched_speed_ms * 3.6:.0f} km/h",
+                    help="Speed the tunnel must reach to give the model the same Re.")
+                _sim_metric_cols[2].metric(
+                    "Achieved Re", f"{_sim.achieved_reynolds:.2e}",
+                    delta=f"{(_sim.reynolds_match_ratio - 1.0) * 100:+.0f}% vs full-size",
+                    delta_color="normal" if _sim.reachable else "inverse",
+                    help="Re the model will actually see at the tunnel's achievable speed.")
+                _sim_metric_cols[3].metric(
+                    "Re match", f"{_sim.reynolds_match_ratio * 100:.0f}%",
+                    help="1.0 = perfect similitude; below ~80% the coefficient may not "
+                         "transfer reliably.")
+                if _sim.reachable and not _sim.warnings:
+                    st.success(f"✅ {_sim.verdict}")
+                elif _sim.reachable:
+                    st.warning(f"⚠️ {_sim.verdict}")
+                else:
+                    st.error(f"❌ {_sim.verdict}")
 
-            st.divider()
 
-            # ── 3. Build tolerance ────────────────────────────────────────── #
-            st.markdown("##### 3 · Build tolerance budget")
-            st.markdown(
-                '<p class="hint">Enter the <em>as-built</em> deviations from the CAD '
-                'for your scaled part. Leave a field at 0 to omit that source. '
-                'An <b>unmeasured build has unknown, not zero, uncertainty</b> — the '
-                'report says so explicitly.</p>',
-                unsafe_allow_html=True)
-            _tol_cols = st.columns([1, 1, 1, 1])
-            _dev_chord = _tol_cols[0].number_input(
-                "Chord deviation (mm)", 0.0, 50.0, value=0.0, step=0.5,
-                help="Streamwise chord built long or short of nominal. "
-                     "~1:1 fractional error on C_l reference.")
-            _dev_camber = _tol_cols[1].number_input(
-                "Camber / LE deviation (mm)", 0.0, 20.0, value=0.0, step=0.5,
-                help="Leading-edge or camber-line off the CAD — the big one on a "
-                     "moldless / 3-D-printed part. ~3× chord-fraction onto C_l.")
-            _dev_span = _tol_cols[2].number_input(
-                "Span deviation (mm)", 0.0, 50.0, value=0.0, step=0.5,
-                help="Span (height) built off-nominal. ~1:1 onto C_l via planform area.")
-            _dev_wave = _tol_cols[3].number_input(
-                "Surface waviness (mm)", 0.0, 5.0, value=0.0, step=0.1,
-                help="Print-layer steps / weave print-through. Trips the boundary layer "
-                     "and loads heavily onto C_d (~2.5×), little onto C_l.")
-
-            _budget = ToleranceBudget(_spec)
-            if _dev_chord > 0:
-                _budget.add_chord_deviation_mm(_dev_chord)
-            if _dev_camber > 0:
-                _budget.add_camber_deviation_mm(_dev_camber)
-            if _dev_span > 0 and _sc_height > 0:
-                _budget.add_span_deviation_mm(_dev_span, _sc_height)
-            if _dev_wave > 0:
-                _budget.add_surface_waviness_mm(_dev_wave)
-            _tol_report = _budget.report()
-
-            _tol_m = st.columns(2)
-            _tol_m[0].metric(
-                "C_L uncertainty (build)",
-                f"±{_tol_report.cl_uncertainty_frac * 100:.1f}%",
-                help="RSS of all entered deviation sources on the lift coefficient.")
-            _tol_m[1].metric(
-                "C_D uncertainty (build)",
-                f"±{_tol_report.cd_uncertainty_frac * 100:.1f}%",
-                help="RSS of all entered deviation sources on the drag coefficient.")
-            with st.expander("Tolerance breakdown", expanded=False):
-                st.code(_tol_report.summary, language=None)
-
-            st.divider()
-
-            # ── 4. Mount alignment ────────────────────────────────────────── #
-            st.markdown("##### 4 · Mount alignment (the Dzus-weld lesson)")
-            st.markdown(
-                '<p class="hint">Mounting tabs can move during welding — '
-                '<b>do not drill or finalise Dzus holes before welding is complete.</b> '
-                'Enter the as-built incidence error and any fore/aft shift; they fold '
-                'into the same uncertainty band as the build tolerance above.</p>',
-                unsafe_allow_html=True)
-            _mnt_cols = st.columns(2)
-            _mnt_inc = _mnt_cols[0].number_input(
-                "Incidence error (°)", 0.0, 10.0, value=0.0, step=0.25,
-                help="As-built pitch / angle-of-attack of the element vs the CAD. "
-                     "Even 1° shifts C_l measurably on a high-load FSAE element.")
-            _mnt_pos = _mnt_cols[1].number_input(
-                "Fore/aft position error (mm)", 0.0, 50.0, value=0.0, step=1.0,
-                help="How far the element sits forward/aft of its design station.")
-            _mount = MountAlignment(
-                incidence_error_deg=_mnt_inc,
-                position_error_mm=_mnt_pos,
-            )
-            st.info(_mount.status())
-
-            st.divider()
-
-            # ── 5. Combined plan & provenance ─────────────────────────────── #
-            st.markdown("##### 5 · Scaled run plan & provenance")
-            _plan = ScaledRunPlan(similitude=_sim, tolerance=_budget, mount=_mount)
-            _plan_cols = st.columns(3)
-            _plan_cols[0].metric(
-                "Run speed",
-                f"{_sim.achievable_speed_ms * 3.6:.0f} km/h",
-                help="Tunnel speed to use for this scaled run.")
-            _plan_cols[1].metric(
-                "Model Re", f"{_plan.tunnel_reynolds():.2e}",
-                help="Reynolds number the model will see — carry this into TunnelProvenance.")
-            _plan_cols[2].metric(
-                "Combined C_L uncertainty",
-                f"±{_plan.combined_cl_uncertainty_frac() * 100:.1f}%",
-                help="Build tolerance and mount error combined in quadrature. A CFD "
-                     "correlation that lands inside this band has confirmed nothing the "
-                     "build didn't already allow.")
-            with st.expander("Full run-plan report", expanded=True):
-                st.code(_plan.report(), language=None)
-
-            st.divider()
-
-            # ── 6. Tunnel provenance & physical aero map ──────────────────── #
-            st.markdown("##### 6 · Record wind tunnel results → Physical Aero Map")
-            st.markdown(
-                '<p class="hint">After the wind tunnel run, log your measured coefficients '
-                'here. The run-plan settings above (scale, Reynolds, uncertainty) are '
-                'automatically carried into every measurement as <b>provenance</b> — '
-                'no copy-pasting needed. The resulting Physical Aero Map feeds straight '
-                'into the lap sim.</p>',
-                unsafe_allow_html=True)
-
-            # Facility inputs — the few fields the plan doesn't already know
-            _prov_cols = st.columns([2, 1, 1])
-            _prov_facility = _prov_cols[0].text_input(
-                "Tunnel facility name", value="in-house tunnel",
-                key="sm_prov_facility",
-                help="Name of the wind tunnel used for this run (appears in all "
-                     "downstream provenance labels).")
-            _prov_ground = _prov_cols[1].selectbox(
-                "Tunnel floor type",
-                ["moving-belt", "fixed-floor", "suction-fixed"],
-                key="sm_prov_ground",
-                help="Moving belt is the only ground-effect-true state. "
-                     "Fixed floor underpredicts underbody downforce — flagged in provenance.")
-            _prov_blk = _prov_cols[2].checkbox(
-                "Blockage-corrected", value=True, key="sm_prov_blk",
-                help="Were the coefficients corrected for solid + wake blockage? "
-                     "Uncorrected coefficients are inflated by the test-section walls.")
-
-            _GS_SM = {"moving-belt": wt_mod.GroundState.MOVING_BELT,
-                      "fixed-floor": wt_mod.GroundState.FIXED_FLOOR,
-                      "suction-fixed": wt_mod.GroundState.SUCTION_FIXED}
-
-            # Build TunnelProvenance from the plan (no manual copy required)
-            _sm_prov = wt_mod.TunnelProvenance(
-                facility=_prov_facility or "tunnel",
-                ground_state=_GS_SM[_prov_ground],
-                model_scale=_plan.model_scale(),
-                blockage_corrected=bool(_prov_blk),
-                reynolds=_plan.tunnel_reynolds(),
-                reference_area_m2=float(_aero_area),
-                reference_length_m=float(_sc_chord) / 1000.0,
-                notes=_plan.provenance(),
-            )
-            st.info(f"**Provenance status:** {_sm_prov.status()}")
-
-            # Wheelbase for ride-height → attitude conversion
-            _prov_wb_cols = st.columns([1, 1, 2])
-            _sm_wb = _prov_wb_cols[0].number_input(
-                "Wheelbase (mm)", 1000.0, 2000.0, value=1550.0, step=10.0,
-                key="sm_prov_wb",
-                help="Distance between front and rear ride-height reference planes.")
-            _sm_ref_len = _prov_wb_cols[1].number_input(
-                "Reference length (mm)", 100.0, 2000.0,
-                value=float(_sc_chord), step=10.0,
-                key="sm_prov_reflen",
-                help="Streamwise reference length for coefficient normalisation — "
-                     "defaults to the scaled chord above.")
-
-            # Measured points: upload CSV or enter manually
-            st.markdown("**Add measured points**")
-            _input_mode = st.radio(
-                "How do you want to enter results?",
-                ["Upload CSV", "Enter manually"],
-                horizontal=True, key="sm_input_mode")
-
-            _phys_map = wt_mod.PhysicalAeroMap(
-                _sm_prov,
-                reference_area_m2=float(_aero_area),
-                reference_length_m=float(_sm_ref_len) / 1000.0,
-                wheelbase_mm=float(_sm_wb),
-            )
-
-            if _input_mode == "Upload CSV":
+            with st.expander("3 · Build tolerance budget", expanded=False):
+                # ── 3. Build tolerance ────────────────────────────────────────── #
                 st.markdown(
-                    '<p class="hint">One row per ride-height point. '
-                    'Required columns: <code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code>. '
-                    'Optional: <code>aero_balance_front</code>. '
-                    'Sign convention: <b>c_lift negative = downforce</b>.</p>',
+                    '<p class="hint">Enter the <em>as-built</em> deviations from the CAD '
+                    'for your scaled part. Leave a field at 0 to omit that source. '
+                    'An <b>unmeasured build has unknown, not zero, uncertainty</b> — the '
+                    'report says so explicitly.</p>',
                     unsafe_allow_html=True)
-                _sm_csv = st.file_uploader(
-                    "Physical aero-map CSV", type=["csv"], key="sm_phys_csv")
-                if _sm_csv is not None:
-                    try:
-                        import csv as _csv2, io as _io3
-                        _raw2 = _sm_csv.getvalue().decode("utf-8", errors="replace")
-                        _rdr2 = _csv2.DictReader(_io3.StringIO(_raw2))
-                        _n_rows2 = 0
-                        for _row2 in _rdr2:
-                            def _f2(k, d=None):
-                                v = (_row2.get(k) or "").strip()
-                                return float(v) if v not in ("", None) else d
-                            _bal2 = _f2("aero_balance_front", None)
-                            _rh2 = wt_mod.RideHeights(
-                                front_mm=_f2("front_mm", 30.0),
-                                rear_mm=_f2("rear_mm", 30.0),
-                                speed_ms=_f2("speed_ms", 20.0),
-                                wheelbase_mm=float(_sm_wb))
-                            _phys_map.add_measurement(
-                                _rh2,
-                                c_lift=_f2("c_lift"),
-                                c_drag=_f2("c_drag"),
-                                aero_balance_front=_bal2)
-                            _n_rows2 += 1
-                        st.success(
-                            f"✅ Loaded {len(_phys_map)} measurement(s) from {_n_rows2} row(s).")
-                    except Exception as _e_csv:
-                        st.error(f"Couldn't parse CSV: {_e_csv}")
+                _tol_cols = st.columns([1, 1, 1, 1])
+                _dev_chord = _tol_cols[0].number_input(
+                    "Chord deviation (mm)", 0.0, 50.0, value=0.0, step=0.5,
+                    help="Streamwise chord built long or short of nominal. "
+                         "~1:1 fractional error on C_l reference.")
+                _dev_camber = _tol_cols[1].number_input(
+                    "Camber / LE deviation (mm)", 0.0, 20.0, value=0.0, step=0.5,
+                    help="Leading-edge or camber-line off the CAD — the big one on a "
+                         "moldless / 3-D-printed part. ~3× chord-fraction onto C_l.")
+                _dev_span = _tol_cols[2].number_input(
+                    "Span deviation (mm)", 0.0, 50.0, value=0.0, step=0.5,
+                    help="Span (height) built off-nominal. ~1:1 onto C_l via planform area.")
+                _dev_wave = _tol_cols[3].number_input(
+                    "Surface waviness (mm)", 0.0, 5.0, value=0.0, step=0.1,
+                    help="Print-layer steps / weave print-through. Trips the boundary layer "
+                         "and loads heavily onto C_d (~2.5×), little onto C_l.")
 
-            else:  # Manual entry
+                _budget = ToleranceBudget(_spec)
+                if _dev_chord > 0:
+                    _budget.add_chord_deviation_mm(_dev_chord)
+                if _dev_camber > 0:
+                    _budget.add_camber_deviation_mm(_dev_camber)
+                if _dev_span > 0 and _sc_height > 0:
+                    _budget.add_span_deviation_mm(_dev_span, _sc_height)
+                if _dev_wave > 0:
+                    _budget.add_surface_waviness_mm(_dev_wave)
+                _tol_report = _budget.report()
+
+                _tol_m = st.columns(2)
+                _tol_m[0].metric(
+                    "C_L uncertainty (build)",
+                    f"±{_tol_report.cl_uncertainty_frac * 100:.1f}%",
+                    help="RSS of all entered deviation sources on the lift coefficient.")
+                _tol_m[1].metric(
+                    "C_D uncertainty (build)",
+                    f"±{_tol_report.cd_uncertainty_frac * 100:.1f}%",
+                    help="RSS of all entered deviation sources on the drag coefficient.")
+                with st.expander("Tolerance breakdown", expanded=False):
+                    st.code(_tol_report.summary, language=None)
+
+
+            with st.expander("4 · Mount alignment (the Dzus-weld lesson)", expanded=False):
+                # ── 4. Mount alignment ────────────────────────────────────────── #
                 st.markdown(
-                    '<p class="hint">Enter one measurement point at a time. '
-                    'Sign convention: <b>c_lift negative = downforce</b>.</p>',
+                    '<p class="hint">Mounting tabs can move during welding — '
+                    '<b>do not drill or finalise Dzus holes before welding is complete.</b> '
+                    'Enter the as-built incidence error and any fore/aft shift; they fold '
+                    'into the same uncertainty band as the build tolerance above.</p>',
                     unsafe_allow_html=True)
-                _man_cols = st.columns([1, 1, 1, 1, 1, 1])
-                _man_front = _man_cols[0].number_input(
-                    "Front RH (mm)", 10.0, 150.0, value=30.0, step=2.5,
-                    key="sm_man_front")
-                _man_rear = _man_cols[1].number_input(
-                    "Rear RH (mm)", 10.0, 150.0, value=30.0, step=2.5,
-                    key="sm_man_rear")
-                _man_speed = _man_cols[2].number_input(
-                    "Speed (m/s)", 5.0, 100.0,
-                    value=float(round(_sim.achievable_speed_ms, 1)),
-                    step=1.0, key="sm_man_speed",
-                    help="Defaults to the planned tunnel speed from section 2.")
-                _man_cl = _man_cols[3].number_input(
-                    "C_lift (−ve = downforce)", -5.0, 5.0, value=-1.0, step=0.05,
-                    key="sm_man_cl")
-                _man_cd = _man_cols[4].number_input(
-                    "C_drag", 0.0, 5.0, value=0.3, step=0.01,
-                    key="sm_man_cd")
-                _man_bal = _man_cols[5].number_input(
-                    "Aero balance (0–1, opt.)", 0.0, 1.0, value=0.45, step=0.01,
-                    key="sm_man_bal",
-                    help="Front aero balance fraction. Leave at 0 to omit.")
+                _mnt_cols = st.columns(2)
+                _mnt_inc = _mnt_cols[0].number_input(
+                    "Incidence error (°)", 0.0, 10.0, value=0.0, step=0.25,
+                    help="As-built pitch / angle-of-attack of the element vs the CAD. "
+                         "Even 1° shifts C_l measurably on a high-load FSAE element.")
+                _mnt_pos = _mnt_cols[1].number_input(
+                    "Fore/aft position error (mm)", 0.0, 50.0, value=0.0, step=1.0,
+                    help="How far the element sits forward/aft of its design station.")
+                _mount = MountAlignment(
+                    incidence_error_deg=_mnt_inc,
+                    position_error_mm=_mnt_pos,
+                )
+                st.info(_mount.status())
 
-                if st.button("➕ Add this point", key="sm_man_add"):
-                    _rh_man = wt_mod.RideHeights(
-                        front_mm=float(_man_front),
-                        rear_mm=float(_man_rear),
-                        speed_ms=float(_man_speed),
-                        wheelbase_mm=float(_sm_wb))
-                    _bal_val = float(_man_bal) if _man_bal > 0 else None
-                    if "sm_manual_points" not in st.session_state:
-                        st.session_state["sm_manual_points"] = []
-                    st.session_state["sm_manual_points"].append({
-                        "front_mm": float(_man_front),
-                        "rear_mm": float(_man_rear),
-                        "speed_ms": float(_man_speed),
-                        "c_lift": float(_man_cl),
-                        "c_drag": float(_man_cd),
-                        "aero_balance_front": _bal_val,
-                    })
-                    st.rerun()
 
-                # Replay stored manual points into the map
-                for _mp in st.session_state.get("sm_manual_points", []):
-                    _rh_mp = wt_mod.RideHeights(
-                        front_mm=_mp["front_mm"], rear_mm=_mp["rear_mm"],
-                        speed_ms=_mp["speed_ms"], wheelbase_mm=float(_sm_wb))
-                    _phys_map.add_measurement(
-                        _rh_mp, c_lift=_mp["c_lift"], c_drag=_mp["c_drag"],
-                        aero_balance_front=_mp["aero_balance_front"])
+            with st.expander("5 · Scaled run plan & provenance", expanded=False):
+                # ── 5. Combined plan & provenance ─────────────────────────────── #
+                _plan = ScaledRunPlan(similitude=_sim, tolerance=_budget, mount=_mount)
+                _plan_cols = st.columns(3)
+                _plan_cols[0].metric(
+                    "Run speed",
+                    f"{_sim.achievable_speed_ms * 3.6:.0f} km/h",
+                    help="Tunnel speed to use for this scaled run.")
+                _plan_cols[1].metric(
+                    "Model Re", f"{_plan.tunnel_reynolds():.2e}",
+                    help="Reynolds number the model will see — carry this into TunnelProvenance.")
+                _plan_cols[2].metric(
+                    "Combined C_L uncertainty",
+                    f"±{_plan.combined_cl_uncertainty_frac() * 100:.1f}%",
+                    help="Build tolerance and mount error combined in quadrature. A CFD "
+                         "correlation that lands inside this band has confirmed nothing the "
+                         "build didn't already allow.")
+                with st.expander("Full run-plan report", expanded=True):
+                    st.code(_plan.report(), language=None)
 
-                if st.session_state.get("sm_manual_points"):
-                    _pts_display = [
-                        {k: (f"{v:.3f}" if isinstance(v, float) and v is not None else v)
-                         for k, v in p.items()}
-                        for p in st.session_state["sm_manual_points"]]
-                    st.dataframe(_pts_display, use_container_width=True)
-                    if st.button("🗑 Clear all manual points", key="sm_man_clear"):
-                        st.session_state["sm_manual_points"] = []
+
+            with st.expander("6 · Record wind tunnel results → Physical Aero Map", expanded=False):
+                # ── 6. Tunnel provenance & physical aero map ──────────────────── #
+                st.markdown(
+                    '<p class="hint">After the wind tunnel run, log your measured coefficients '
+                    'here. The run-plan settings above (scale, Reynolds, uncertainty) are '
+                    'automatically carried into every measurement as <b>provenance</b> — '
+                    'no copy-pasting needed. The resulting Physical Aero Map feeds straight '
+                    'into the lap sim.</p>',
+                    unsafe_allow_html=True)
+
+                # Facility inputs — the few fields the plan doesn't already know
+                _prov_cols = st.columns([2, 1, 1])
+                _prov_facility = _prov_cols[0].text_input(
+                    "Tunnel facility name", value="in-house tunnel",
+                    key="sm_prov_facility",
+                    help="Name of the wind tunnel used for this run (appears in all "
+                         "downstream provenance labels).")
+                _prov_ground = _prov_cols[1].selectbox(
+                    "Tunnel floor type",
+                    ["moving-belt", "fixed-floor", "suction-fixed"],
+                    key="sm_prov_ground",
+                    help="Moving belt is the only ground-effect-true state. "
+                         "Fixed floor underpredicts underbody downforce — flagged in provenance.")
+                _prov_blk = _prov_cols[2].checkbox(
+                    "Blockage-corrected", value=True, key="sm_prov_blk",
+                    help="Were the coefficients corrected for solid + wake blockage? "
+                         "Uncorrected coefficients are inflated by the test-section walls.")
+
+                _GS_SM = {"moving-belt": wt_mod.GroundState.MOVING_BELT,
+                          "fixed-floor": wt_mod.GroundState.FIXED_FLOOR,
+                          "suction-fixed": wt_mod.GroundState.SUCTION_FIXED}
+
+                # Build TunnelProvenance from the plan (no manual copy required)
+                _sm_prov = wt_mod.TunnelProvenance(
+                    facility=_prov_facility or "tunnel",
+                    ground_state=_GS_SM[_prov_ground],
+                    model_scale=_plan.model_scale(),
+                    blockage_corrected=bool(_prov_blk),
+                    reynolds=_plan.tunnel_reynolds(),
+                    reference_area_m2=float(_aero_area),
+                    reference_length_m=float(_sc_chord) / 1000.0,
+                    notes=_plan.provenance(),
+                )
+                st.info(f"**Provenance status:** {_sm_prov.status()}")
+
+                # Wheelbase for ride-height → attitude conversion
+                _prov_wb_cols = st.columns([1, 1, 2])
+                _sm_wb = _prov_wb_cols[0].number_input(
+                    "Wheelbase (mm)", 1000.0, 2000.0, value=1550.0, step=10.0,
+                    key="sm_prov_wb",
+                    help="Distance between front and rear ride-height reference planes.")
+                _sm_ref_len = _prov_wb_cols[1].number_input(
+                    "Reference length (mm)", 100.0, 2000.0,
+                    value=float(_sc_chord), step=10.0,
+                    key="sm_prov_reflen",
+                    help="Streamwise reference length for coefficient normalisation — "
+                         "defaults to the scaled chord above.")
+
+                # Measured points: upload CSV or enter manually
+                st.markdown("**Add measured points**")
+                _input_mode = st.radio(
+                    "How do you want to enter results?",
+                    ["Upload CSV", "Enter manually"],
+                    horizontal=True, key="sm_input_mode")
+
+                _phys_map = wt_mod.PhysicalAeroMap(
+                    _sm_prov,
+                    reference_area_m2=float(_aero_area),
+                    reference_length_m=float(_sm_ref_len) / 1000.0,
+                    wheelbase_mm=float(_sm_wb),
+                )
+
+                if _input_mode == "Upload CSV":
+                    st.markdown(
+                        '<p class="hint">One row per ride-height point. '
+                        'Required columns: <code>front_mm, rear_mm, speed_ms, c_lift, c_drag</code>. '
+                        'Optional: <code>aero_balance_front</code>. '
+                        'Sign convention: <b>c_lift negative = downforce</b>.</p>',
+                        unsafe_allow_html=True)
+                    _sm_csv = st.file_uploader(
+                        "Physical aero-map CSV", type=["csv"], key="sm_phys_csv")
+                    if _sm_csv is not None:
+                        try:
+                            import csv as _csv2, io as _io3
+                            _raw2 = _sm_csv.getvalue().decode("utf-8", errors="replace")
+                            _rdr2 = _csv2.DictReader(_io3.StringIO(_raw2))
+                            _n_rows2 = 0
+                            for _row2 in _rdr2:
+                                def _f2(k, d=None):
+                                    v = (_row2.get(k) or "").strip()
+                                    return float(v) if v not in ("", None) else d
+                                _bal2 = _f2("aero_balance_front", None)
+                                _rh2 = wt_mod.RideHeights(
+                                    front_mm=_f2("front_mm", 30.0),
+                                    rear_mm=_f2("rear_mm", 30.0),
+                                    speed_ms=_f2("speed_ms", 20.0),
+                                    wheelbase_mm=float(_sm_wb))
+                                _phys_map.add_measurement(
+                                    _rh2,
+                                    c_lift=_f2("c_lift"),
+                                    c_drag=_f2("c_drag"),
+                                    aero_balance_front=_bal2)
+                                _n_rows2 += 1
+                            st.success(
+                                f"✅ Loaded {len(_phys_map)} measurement(s) from {_n_rows2} row(s).")
+                        except Exception as _e_csv:
+                            st.error(f"Couldn't parse CSV: {_e_csv}")
+
+                else:  # Manual entry
+                    st.markdown(
+                        '<p class="hint">Enter one measurement point at a time. '
+                        'Sign convention: <b>c_lift negative = downforce</b>.</p>',
+                        unsafe_allow_html=True)
+                    _man_cols = st.columns([1, 1, 1, 1, 1, 1])
+                    _man_front = _man_cols[0].number_input(
+                        "Front RH (mm)", 10.0, 150.0, value=30.0, step=2.5,
+                        key="sm_man_front")
+                    _man_rear = _man_cols[1].number_input(
+                        "Rear RH (mm)", 10.0, 150.0, value=30.0, step=2.5,
+                        key="sm_man_rear")
+                    _man_speed = _man_cols[2].number_input(
+                        "Speed (m/s)", 5.0, 100.0,
+                        value=float(round(_sim.achievable_speed_ms, 1)),
+                        step=1.0, key="sm_man_speed",
+                        help="Defaults to the planned tunnel speed from section 2.")
+                    _man_cl = _man_cols[3].number_input(
+                        "C_lift (−ve = downforce)", -5.0, 5.0, value=-1.0, step=0.05,
+                        key="sm_man_cl")
+                    _man_cd = _man_cols[4].number_input(
+                        "C_drag", 0.0, 5.0, value=0.3, step=0.01,
+                        key="sm_man_cd")
+                    _man_bal = _man_cols[5].number_input(
+                        "Aero balance (0–1, opt.)", 0.0, 1.0, value=0.45, step=0.01,
+                        key="sm_man_bal",
+                        help="Front aero balance fraction. Leave at 0 to omit.")
+
+                    if st.button("➕ Add this point", key="sm_man_add"):
+                        _rh_man = wt_mod.RideHeights(
+                            front_mm=float(_man_front),
+                            rear_mm=float(_man_rear),
+                            speed_ms=float(_man_speed),
+                            wheelbase_mm=float(_sm_wb))
+                        _bal_val = float(_man_bal) if _man_bal > 0 else None
+                        if "sm_manual_points" not in st.session_state:
+                            st.session_state["sm_manual_points"] = []
+                        st.session_state["sm_manual_points"].append({
+                            "front_mm": float(_man_front),
+                            "rear_mm": float(_man_rear),
+                            "speed_ms": float(_man_speed),
+                            "c_lift": float(_man_cl),
+                            "c_drag": float(_man_cd),
+                            "aero_balance_front": _bal_val,
+                        })
                         st.rerun()
 
-            # Show summary of whatever map we have
-            if len(_phys_map) > 0:
-                st.success(
-                    f"**Physical Aero Map ready** — {len(_phys_map)} point(s) · "
-                    f"scale {_plan.model_scale():.0%} · Re={_plan.tunnel_reynolds():.2e} · "
-                    f"combined C_L uncertainty ±{_plan.combined_cl_uncertainty_frac()*100:.1f}%")
+                    # Replay stored manual points into the map
+                    for _mp in st.session_state.get("sm_manual_points", []):
+                        _rh_mp = wt_mod.RideHeights(
+                            front_mm=_mp["front_mm"], rear_mm=_mp["rear_mm"],
+                            speed_ms=_mp["speed_ms"], wheelbase_mm=float(_sm_wb))
+                        _phys_map.add_measurement(
+                            _rh_mp, c_lift=_mp["c_lift"], c_drag=_mp["c_drag"],
+                            aero_balance_front=_mp["aero_balance_front"])
 
-                # Summary table of measured points
-                with st.expander("Measured points", expanded=True):
-                    _rows = []
-                    for _pt in _phys_map.measured_points():
-                        from suspension.aero.windtunnel import attitude_to_ride_heights
-                        _rh_out = attitude_to_ride_heights(_pt.attitude, float(_sm_wb))
-                        _rows.append({
-                            "Front (mm)": f"{_rh_out.front_mm:.1f}",
-                            "Rear (mm)": f"{_rh_out.rear_mm:.1f}",
-                            "Speed (m/s)": f"{_rh_out.speed_ms:.1f}",
-                            "C_lift": f"{_pt.c_lift:.4f}",
-                            "C_drag": f"{_pt.c_drag:.4f}",
-                            "Aero bal.": (
-                                f"{_pt.aero_balance_front:.3f}"
-                                if _pt.aero_balance_front is not None else "—"),
-                        })
-                    st.dataframe(_rows, use_container_width=True)
+                    if st.session_state.get("sm_manual_points"):
+                        _pts_display = [
+                            {k: (f"{v:.3f}" if isinstance(v, float) and v is not None else v)
+                             for k, v in p.items()}
+                            for p in st.session_state["sm_manual_points"]]
+                        st.dataframe(_pts_display, use_container_width=True)
+                        if st.button("🗑 Clear all manual points", key="sm_man_clear"):
+                            st.session_state["sm_manual_points"] = []
+                            st.rerun()
 
-                # Store in session state so other tabs (e.g. Validation) can use it
-                st.session_state["sm_physical_aero_map"] = _phys_map
-                st.markdown(
-                    '<p class="hint">This Physical Aero Map is now available in the '
-                    '<b>Validation → Wind tunnel (CFD calibration)</b> tab for '
-                    'correlation against your CFD runs.</p>',
-                    unsafe_allow_html=True)
-            else:
-                st.info("Add measured points above to build the Physical Aero Map.")
+                # Show summary of whatever map we have
+                if len(_phys_map) > 0:
+                    st.success(
+                        f"**Physical Aero Map ready** — {len(_phys_map)} point(s) · "
+                        f"scale {_plan.model_scale():.0%} · Re={_plan.tunnel_reynolds():.2e} · "
+                        f"combined C_L uncertainty ±{_plan.combined_cl_uncertainty_frac()*100:.1f}%")
+
+                    # Summary table of measured points
+                    with st.expander("Measured points", expanded=True):
+                        _rows = []
+                        for _pt in _phys_map.measured_points():
+                            from suspension.aero.windtunnel import attitude_to_ride_heights
+                            _rh_out = attitude_to_ride_heights(_pt.attitude, float(_sm_wb))
+                            _rows.append({
+                                "Front (mm)": f"{_rh_out.front_mm:.1f}",
+                                "Rear (mm)": f"{_rh_out.rear_mm:.1f}",
+                                "Speed (m/s)": f"{_rh_out.speed_ms:.1f}",
+                                "C_lift": f"{_pt.c_lift:.4f}",
+                                "C_drag": f"{_pt.c_drag:.4f}",
+                                "Aero bal.": (
+                                    f"{_pt.aero_balance_front:.3f}"
+                                    if _pt.aero_balance_front is not None else "—"),
+                            })
+                        st.dataframe(_rows, use_container_width=True)
+
+                    # Store in session state so other tabs (e.g. Validation) can use it
+                    st.session_state["sm_physical_aero_map"] = _phys_map
+                    st.markdown(
+                        '<p class="hint">This Physical Aero Map is now available in the '
+                        '<b>Validation → Wind tunnel (CFD calibration)</b> tab for '
+                        'correlation against your CFD runs.</p>',
+                        unsafe_allow_html=True)
+                else:
+                    st.info("Add measured points above to build the Physical Aero Map.")
+
 
     with st.expander("How honest is this? (provenance)", expanded=False):
         _prov = _aero_model.provenance()
@@ -13412,6 +13408,8 @@ with tab5c:
             "for arbitrary topologies is not yet wired into this tab. Switch "
             "to the double-wishbone model to use the flex analysis.")
   else:
+   with st.expander("🧬 Model setup — load case, link stiffness, joints & FEA body",
+                    expanded=False):
     st.markdown('<p class="hint">The rigid model treats every link as infinitely '
                 'stiff. Real control arms, pushrods and tie rods stretch under load, '
                 'and the chassis tabs flex too — at 1.5 g that shows up as '
@@ -13558,34 +13556,35 @@ with tab5c:
         except Exception as e:
             st.error(f"Could not read flex body: {e}")
 
-    # ---- build the compliant corner and solve --------------------------- #
-    try:
-        comp_kin = kin if comp_axle == "front" else kin   # same geometry both axles here
-        stiff = {}
-        for m in ("UF", "UR", "LF", "LR"):
-            stiff[m] = MemberStiffness(material=comp_mat, od_mm=comp_od,
-                                       wall_mm=comp_wall, k_tab=comp_ktab,
-                                       joint_in=joint_in_ui, joint_out=joint_out_ui)
-        stiff["TR"] = MemberStiffness(material=comp_mat, od_mm=comp_od,
-                                      wall_mm=comp_wall,
-                                      joint_in=tie_in_ui, joint_out=tie_out_ui)
-        # overlay any FEA-backed members (keeping their joints)
-        for m, (n_out, n_in) in flex_map.items():
-            ji = tie_in_ui if m == "TR" else joint_in_ui
-            jo = tie_out_ui if m == "TR" else joint_out_ui
-            stiff[m] = MemberStiffness(flex_body=flex_body, node_out=n_out,
-                                       node_in=n_in, joint_in=ji, joint_out=jo,
-                                       k_tab=comp_ktab
-                                       if (comp_use_tab and m != "TR") else None)
-        corner = CompliantCorner(comp_kin.hp, stiff)
-        load = corner_wheel_load(veh, comp_axle, comp_g, outer=True,
-                                 long_g=comp_long)
-        res = corner.solve(load)
-    except Exception as e:
-        st.error(f"Compliance solve failed: {e}")
-        res = None
+   # ---- build the compliant corner and solve --------------------------- #
+   try:
+       comp_kin = kin if comp_axle == "front" else kin   # same geometry both axles here
+       stiff = {}
+       for m in ("UF", "UR", "LF", "LR"):
+           stiff[m] = MemberStiffness(material=comp_mat, od_mm=comp_od,
+                                      wall_mm=comp_wall, k_tab=comp_ktab,
+                                      joint_in=joint_in_ui, joint_out=joint_out_ui)
+       stiff["TR"] = MemberStiffness(material=comp_mat, od_mm=comp_od,
+                                     wall_mm=comp_wall,
+                                     joint_in=tie_in_ui, joint_out=tie_out_ui)
+       # overlay any FEA-backed members (keeping their joints)
+       for m, (n_out, n_in) in flex_map.items():
+           ji = tie_in_ui if m == "TR" else joint_in_ui
+           jo = tie_out_ui if m == "TR" else joint_out_ui
+           stiff[m] = MemberStiffness(flex_body=flex_body, node_out=n_out,
+                                      node_in=n_in, joint_in=ji, joint_out=jo,
+                                      k_tab=comp_ktab
+                                      if (comp_use_tab and m != "TR") else None)
+       corner = CompliantCorner(comp_kin.hp, stiff)
+       load = corner_wheel_load(veh, comp_axle, comp_g, outer=True,
+                                long_g=comp_long)
+       res = corner.solve(load)
+   except Exception as e:
+       st.error(f"Compliance solve failed: {e}")
+       res = None
 
-    if res is not None:
+   if res is not None:
+    with st.expander("📊 Results — compliance metrics & member axial force / deflection", expanded=False):
         st.markdown(f'<p class="hint" style="margin-top:14px;"><b>Compliance at '
                     f'{comp_g:.1f} g — {comp_axle} outer wheel.</b> '
                     f'Contact-patch load: Fz {load.Fz:.0f} N, Fy {load.Fy:.0f} N.'
@@ -13688,6 +13687,8 @@ with tab5c:
             except Exception:
                 pass
 
+
+    with st.expander("📈 Compliance steer / camber vs lateral g", expanded=False):
         # compliance steer vs lateral g sweep
         gs_c = np.linspace(0.2, max(2.0, comp_g), 18)
         toes, cams = [], []
@@ -14363,7 +14364,7 @@ with tab9:
     render_process_library("suspension", key_prefix="tire_pl")
   except Exception:
     pass
-  st.markdown('<p class="hint">You can only afford <b>one set of tires</b>. The way '
+  st.markdown('<p class="hint"><b>Maximize the use of your tires</b>. The way '
               'you beat a team that can test rubber all year is to make every '
               'geometry and setup call against <b>your actual tire</b> before you '
               'commit it. This tab is where your tire lives — load a TTC-fitted '
@@ -14938,6 +14939,11 @@ with tab11:
     render_process_library("powertrain", key_prefix="laptime_pl")
   except Exception:
     pass
+  st.markdown(
+      '<div class="brand"><span class="mark">Track testing</span>'
+      '<span class="sub">Lap time · electrical feasibility · EV round-trip</span></div>',
+      unsafe_allow_html=True)
+  st.markdown("#### 🏁 Lap Time Sim")
   st.markdown('<p class="hint">Grip is a means; <b>lap time is the score.</b> This '
               'tab runs your <i>live</i> geometry, setup and tire around the FSAE '
               'skidpad and a representative autocross, so every change you make '
@@ -15012,223 +15018,221 @@ with tab11:
                            brake_g_cap=brake_g, motor_map=_motor_map)
 
   # ---- Track source: yardstick autocross, or YOUR GPS/cone layout ------- #
-  with st.expander("🟢 Track", expanded=True):
-    track_src = st.radio("Run on", ["Representative autocross",
-                                    "Import GPS / cone CSV"], horizontal=True)
-    ax_scale = 1.0
-    _imported_xy = None
-    if track_src == "Representative autocross":
-        ax_scale = st.slider("Autocross lap scale (stretches the yardstick lap)",
-                             0.6, 1.6, 1.0, 0.1)
-    else:
-        st.markdown('<p class="hint">Upload your actual layout — no more manual '
-                    'segment entry. Centreline <code>x,y</code> (metres) or GPS '
-                    '<code>lat,lon</code>; or cone rows '
-                    '<code>left_x,left_y,right_x,right_y</code>. The lap then runs your '
-                    'real course.</p>', unsafe_allow_html=True)
-        tcol = st.columns(3)
-        fmt = tcol[0].selectbox("CSV format", ["centreline x,y (m)",
-                                               "GPS lat,lon", "cones L/R x,y"])
-        width_m = unum(tcol[1], "Track width (m)", 2.0, 6.0, 3.5, "m", step=0.5)
-        do_line = tcol[2].checkbox("Optimise racing line", value=True,
-                                   help="Use the track width to straighten corners — "
-                                        "reports the time gained vs the centreline.")
-        tup = st.file_uploader("Track CSV", type=["csv"], key="track_csv")
-        if tup is not None:
-            try:
-                import io as _io2
-                raw = tup.getvalue().decode("utf-8", errors="replace")
-                arr = np.genfromtxt(_io2.StringIO(raw), delimiter=",")
-                if arr.ndim == 1:
-                    arr = arr.reshape(1, -1)
-                if arr.size and np.isnan(arr[0]).any():        # header row
-                    arr = arr[1:]
-                if fmt == "cones L/R x,y" and arr.shape[1] >= 4:
-                    cx, cy = lap_mod.cones_to_centerline(arr[:, 0], arr[:, 1],
-                                                         arr[:, 2], arr[:, 3])
-                elif fmt == "GPS lat,lon" and arr.shape[1] >= 2:
-                    cx, cy = lap_mod.latlon_to_xy(arr[:, 0], arr[:, 1])
-                else:
-                    cx, cy = arr[:, 0], arr[:, 1]
-                _imported_xy = (np.asarray(cx, float), np.asarray(cy, float),
-                                width_m, do_line)
-                st.success(f"Loaded {len(cx)} points "
-                           f"({np.hypot(np.diff(cx), np.diff(cy)).sum():.0f} m path).")
-            except Exception as e:
-                st.error(f"Couldn't parse that track CSV: {e}")
+  track_src = st.radio("Run on", ["Representative autocross",
+                                  "Import GPS / cone CSV"], horizontal=True)
+  ax_scale = 1.0
+  _imported_xy = None
+  if track_src == "Representative autocross":
+      ax_scale = st.slider("Autocross lap scale (stretches the yardstick lap)",
+                           0.6, 1.6, 1.0, 0.1)
+  else:
+      st.markdown('<p class="hint">Upload your actual layout — no more manual '
+                  'segment entry. Centreline <code>x,y</code> (metres) or GPS '
+                  '<code>lat,lon</code>; or cone rows '
+                  '<code>left_x,left_y,right_x,right_y</code>. The lap then runs your '
+                  'real course.</p>', unsafe_allow_html=True)
+      tcol = st.columns(3)
+      fmt = tcol[0].selectbox("CSV format", ["centreline x,y (m)",
+                                             "GPS lat,lon", "cones L/R x,y"])
+      width_m = unum(tcol[1], "Track width (m)", 2.0, 6.0, 3.5, "m", step=0.5)
+      do_line = tcol[2].checkbox("Optimise racing line", value=True,
+                                 help="Use the track width to straighten corners — "
+                                      "reports the time gained vs the centreline.")
+      tup = st.file_uploader("Track CSV", type=["csv"], key="track_csv")
+      if tup is not None:
+          try:
+              import io as _io2
+              raw = tup.getvalue().decode("utf-8", errors="replace")
+              arr = np.genfromtxt(_io2.StringIO(raw), delimiter=",")
+              if arr.ndim == 1:
+                  arr = arr.reshape(1, -1)
+              if arr.size and np.isnan(arr[0]).any():        # header row
+                  arr = arr[1:]
+              if fmt == "cones L/R x,y" and arr.shape[1] >= 4:
+                  cx, cy = lap_mod.cones_to_centerline(arr[:, 0], arr[:, 1],
+                                                       arr[:, 2], arr[:, 3])
+              elif fmt == "GPS lat,lon" and arr.shape[1] >= 2:
+                  cx, cy = lap_mod.latlon_to_xy(arr[:, 0], arr[:, 1])
+              else:
+                  cx, cy = arr[:, 0], arr[:, 1]
+              _imported_xy = (np.asarray(cx, float), np.asarray(cy, float),
+                              width_m, do_line)
+              st.success(f"Loaded {len(cx)} points "
+                         f"({np.hypot(np.diff(cx), np.diff(cy)).sum():.0f} m path).")
+          except Exception as e:
+              st.error(f"Couldn't parse that track CSV: {e}")
 
-    if st.button("▶ Run lap-time sim", width='stretch'):
-        st.session_state._run_lap = True
-        try:
-            _axn.engage("laptime", "run_sim")
-        except Exception:
-            pass
+  if st.button("▶ Run lap-time sim", width='stretch'):
+      st.session_state._run_lap = True
+      try:
+          _axn.engage("laptime", "run_sim")
+      except Exception:
+          pass
 
-    if st.session_state.get("_run_lap"):
-        with st.spinner("Driving your car around on the live tire…"):
-            skid = lap_mod.skidpad_time(_veh_lap, _pt)
-            if _imported_xy is not None:
-                ix, iy, iw, iline = _imported_xy
-                if iline:
-                    _cmp = lap_mod.compare_line_vs_centerline(_veh_lap, ix, iy,
-                                                              track_width_m=iw, pt=_pt)
-                    track = _cmp["line_track"]
-                    lap = _cmp["line_result"]
-                    st.session_state._line_cmp = dict(
-                        gained=_cmp["time_gained_s"],
-                        center_t=_cmp["centerline_result"].lap_time_s,
-                        line_t=_cmp["line_result"].lap_time_s,
-                        lx=_cmp["line_x"], ly=_cmp["line_y"], cx=ix, cy=iy)
-                else:
-                    track = lap_mod.track_from_path(ix, iy, name="Imported", ds=1.0)
-                    lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
-                    st.session_state.pop("_line_cmp", None)
-            else:
-                track = lap_mod.default_autocross(scale=ax_scale)
-                lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
-                st.session_state.pop("_line_cmp", None)
+  if st.session_state.get("_run_lap"):
+      with st.spinner("Driving your car around on the live tire…"):
+          skid = lap_mod.skidpad_time(_veh_lap, _pt)
+          if _imported_xy is not None:
+              ix, iy, iw, iline = _imported_xy
+              if iline:
+                  _cmp = lap_mod.compare_line_vs_centerline(_veh_lap, ix, iy,
+                                                            track_width_m=iw, pt=_pt)
+                  track = _cmp["line_track"]
+                  lap = _cmp["line_result"]
+                  st.session_state._line_cmp = dict(
+                      gained=_cmp["time_gained_s"],
+                      center_t=_cmp["centerline_result"].lap_time_s,
+                      line_t=_cmp["line_result"].lap_time_s,
+                      lx=_cmp["line_x"], ly=_cmp["line_y"], cx=ix, cy=iy)
+              else:
+                  track = lap_mod.track_from_path(ix, iy, name="Imported", ds=1.0)
+                  lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
+                  st.session_state.pop("_line_cmp", None)
+          else:
+              track = lap_mod.default_autocross(scale=ax_scale)
+              lap = lap_mod.simulate_lap(_veh_lap, track, _pt)
+              st.session_state.pop("_line_cmp", None)
 
-        # Surface any safe-default warnings rather than hiding a bad data point.
-        for r in (skid, lap):
-            if r.warning:
-                st.warning(f"⚠ {r.warning}")
+      # Surface any safe-default warnings rather than hiding a bad data point.
+      for r in (skid, lap):
+          if r.warning:
+              st.warning(f"⚠ {r.warning}")
 
-        if lap.ok:
-            try:
-                _axn.complete("laptime", "run_sim")
-            except Exception:
-                pass
-        else:
-            try:
-                _axn.error("laptime", kind="lap_sim_not_ok")
-            except Exception:
-                pass
+      if lap.ok:
+          try:
+              _axn.complete("laptime", "run_sim")
+          except Exception:
+              pass
+      else:
+          try:
+              _axn.error("laptime", kind="lap_sim_not_ok")
+          except Exception:
+              pass
 
-        # ---- Skidpad ---- #
-        st.markdown("###### FSAE skidpad (one timed circle)")
-        skc = st.columns(3)
-        _skt = f"{skid.lap_time_s:.3f}" if skid.ok and np.isfinite(skid.lap_time_s) else "—"
-        skc[0].markdown(metric("Skidpad time", _skt, "s",
-                               "good" if skid.ok else "bad"), unsafe_allow_html=True)
-        skc[1].markdown(metric("Corner speed", f"{skid.avg_speed_ms:.1f}", "m/s"),
-                        unsafe_allow_html=True)
-        _sk_lat = (skid.avg_speed_ms ** 2) / (lap_mod.SKIDPAD_RADIUS_M * 9.81) \
-            if skid.ok else 0.0
-        skc[2].markdown(metric("Lateral", f"{_sk_lat:.2f}", "g"), unsafe_allow_html=True)
+      # ---- Skidpad ---- #
+      st.markdown("###### FSAE skidpad (one timed circle)")
+      skc = st.columns(3)
+      _skt = f"{skid.lap_time_s:.3f}" if skid.ok and np.isfinite(skid.lap_time_s) else "—"
+      skc[0].markdown(metric("Skidpad time", _skt, "s",
+                             "good" if skid.ok else "bad"), unsafe_allow_html=True)
+      skc[1].markdown(metric("Corner speed", f"{skid.avg_speed_ms:.1f}", "m/s"),
+                      unsafe_allow_html=True)
+      _sk_lat = (skid.avg_speed_ms ** 2) / (lap_mod.SKIDPAD_RADIUS_M * 9.81) \
+          if skid.ok else 0.0
+      skc[2].markdown(metric("Lateral", f"{_sk_lat:.2f}", "g"), unsafe_allow_html=True)
 
-        # ---- Autocross / imported lap ---- #
-        _lap_title = track.name if getattr(track, "name", "") else "Representative autocross"
-        st.markdown(f"###### {_lap_title}")
-        axc = st.columns(4)
-        _axt = f"{lap.lap_time_s:.2f}" if lap.ok and np.isfinite(lap.lap_time_s) else "—"
-        axc[0].markdown(metric("Lap time", _axt, "s",
-                               "good" if lap.ok else "bad"), unsafe_allow_html=True)
-        axc[1].markdown(metric("Avg speed", f"{lap.avg_speed_ms:.1f}", "m/s"),
-                        unsafe_allow_html=True)
-        axc[2].markdown(metric("Top speed", f"{lap.top_speed_ms:.1f}", "m/s"),
-                        unsafe_allow_html=True)
-        axc[3].markdown(metric("Min speed", f"{lap.min_speed_ms:.1f}", "m/s"),
-                        unsafe_allow_html=True)
+      # ---- Autocross / imported lap ---- #
+      _lap_title = track.name if getattr(track, "name", "") else "Representative autocross"
+      st.markdown(f"###### {_lap_title}")
+      axc = st.columns(4)
+      _axt = f"{lap.lap_time_s:.2f}" if lap.ok and np.isfinite(lap.lap_time_s) else "—"
+      axc[0].markdown(metric("Lap time", _axt, "s",
+                             "good" if lap.ok else "bad"), unsafe_allow_html=True)
+      axc[1].markdown(metric("Avg speed", f"{lap.avg_speed_ms:.1f}", "m/s"),
+                      unsafe_allow_html=True)
+      axc[2].markdown(metric("Top speed", f"{lap.top_speed_ms:.1f}", "m/s"),
+                      unsafe_allow_html=True)
+      axc[3].markdown(metric("Min speed", f"{lap.min_speed_ms:.1f}", "m/s"),
+                      unsafe_allow_html=True)
 
-        # ---- Racing line vs centreline (only when an imported track was optimised) ---- #
-        _lc = st.session_state.get("_line_cmp")
-        if _lc and np.isfinite(_lc.get("gained", float("nan"))):
-            st.markdown(metric("Racing line vs centreline",
-                               f"{_lc['gained']:+.2f}", "s gained",
-                               "good" if _lc["gained"] >= 0 else "warn"),
-                        unsafe_allow_html=True)
-            figRL = go.Figure()
-            figRL.add_trace(go.Scatter(x=uconv_series(_lc["cx"], "m"), y=uconv_series(_lc["cy"], "m"), mode="lines",
-                                       line=dict(color="#8d99a6", width=1.5, dash="dot"),
-                                       name="centreline"))
-            figRL.add_trace(go.Scatter(x=uconv_series(_lc["lx"], "m"), y=uconv_series(_lc["ly"], "m"), mode="lines",
-                                       line=dict(color=CYAN, width=2.5),
-                                       name="racing line"))
-            figRL.update_layout(**PLOT_LAYOUT, title="Racing line (uses track width)",
-                                xaxis_title=units_mod.ulabel("x (m)"),
-                                yaxis_title=units_mod.ulabel("y (m)"), height=360)
-            figRL.update_yaxes(scaleanchor="x", scaleratio=1)
-            st.plotly_chart(figRL, width='stretch')
-            st.markdown('<p class="hint">Curvature-optimal line within the track '
-                        'width — straightens corners to raise minimum radius, hence '
-                        'speed. It is a curvature-optimal (not fully-coupled '
-                        'minimum-time) line; honest about the difference.</p>',
-                        unsafe_allow_html=True)
-        if _pt.uses_real_motor_map():
-            st.markdown('<span class="tag good">motor map active (representative '
-                        'curve)</span>', unsafe_allow_html=True)
+      # ---- Racing line vs centreline (only when an imported track was optimised) ---- #
+      _lc = st.session_state.get("_line_cmp")
+      if _lc and np.isfinite(_lc.get("gained", float("nan"))):
+          st.markdown(metric("Racing line vs centreline",
+                             f"{_lc['gained']:+.2f}", "s gained",
+                             "good" if _lc["gained"] >= 0 else "warn"),
+                      unsafe_allow_html=True)
+          figRL = go.Figure()
+          figRL.add_trace(go.Scatter(x=uconv_series(_lc["cx"], "m"), y=uconv_series(_lc["cy"], "m"), mode="lines",
+                                     line=dict(color="#8d99a6", width=1.5, dash="dot"),
+                                     name="centreline"))
+          figRL.add_trace(go.Scatter(x=uconv_series(_lc["lx"], "m"), y=uconv_series(_lc["ly"], "m"), mode="lines",
+                                     line=dict(color=CYAN, width=2.5),
+                                     name="racing line"))
+          figRL.update_layout(**PLOT_LAYOUT, title="Racing line (uses track width)",
+                              xaxis_title=units_mod.ulabel("x (m)"),
+                              yaxis_title=units_mod.ulabel("y (m)"), height=360)
+          figRL.update_yaxes(scaleanchor="x", scaleratio=1)
+          st.plotly_chart(figRL, width='stretch')
+          st.markdown('<p class="hint">Curvature-optimal line within the track '
+                      'width — straightens corners to raise minimum radius, hence '
+                      'speed. It is a curvature-optimal (not fully-coupled '
+                      'minimum-time) line; honest about the difference.</p>',
+                      unsafe_allow_html=True)
+      if _pt.uses_real_motor_map():
+          st.markdown('<span class="tag good">motor map active (representative '
+                      'curve)</span>', unsafe_allow_html=True)
 
-        # Speed-vs-distance trace
-        if lap.ok and lap.s and lap.v:
-            _uDist = units_mod.label("m")
-            _uSp = units_mod.label("m/s")
-            figL = go.Figure()
-            figL.add_trace(go.Scatter(
-                x=[units_mod.from_metric(v, "m") for v in lap.s],
-                y=[units_mod.from_metric(v, "m/s") for v in lap.v], mode="lines",
-                line=dict(color=CYAN, width=2.5), name="speed"))
-            figL.update_layout(**PLOT_LAYOUT, title="Speed around the lap",
-                               xaxis_title=f"distance ({_uDist})",
-                               yaxis_title=f"speed ({_uSp})",
-                               height=320)
-            st.plotly_chart(figL, width='stretch')
+      # Speed-vs-distance trace
+      if lap.ok and lap.s and lap.v:
+          _uDist = units_mod.label("m")
+          _uSp = units_mod.label("m/s")
+          figL = go.Figure()
+          figL.add_trace(go.Scatter(
+              x=[units_mod.from_metric(v, "m") for v in lap.s],
+              y=[units_mod.from_metric(v, "m/s") for v in lap.v], mode="lines",
+              line=dict(color=CYAN, width=2.5), name="speed"))
+          figL.update_layout(**PLOT_LAYOUT, title="Speed around the lap",
+                             xaxis_title=f"distance ({_uDist})",
+                             yaxis_title=f"speed ({_uSp})",
+                             height=320)
+          st.plotly_chart(figL, width='stretch')
 
-        # Store last skidpad time so a delta can be shown after the next change.
-        if skid.ok and np.isfinite(skid.lap_time_s):
-            prev = st.session_state.get("_last_skidpad")
-            if prev is not None and abs(prev - skid.lap_time_s) > 1e-4:
-                d = skid.lap_time_s - prev
-                _cls = "good" if d < 0 else "bad"
-                st.markdown(
-                    f"<span class='tag {_cls}'>Δ skidpad vs last run: "
-                    f"{d:+.3f} s</span>", unsafe_allow_html=True)
-            st.session_state._last_skidpad = skid.lap_time_s
+      # Store last skidpad time so a delta can be shown after the next change.
+      if skid.ok and np.isfinite(skid.lap_time_s):
+          prev = st.session_state.get("_last_skidpad")
+          if prev is not None and abs(prev - skid.lap_time_s) > 1e-4:
+              d = skid.lap_time_s - prev
+              _cls = "good" if d < 0 else "bad"
+              st.markdown(
+                  f"<span class='tag {_cls}'>Δ skidpad vs last run: "
+                  f"{d:+.3f} s</span>", unsafe_allow_html=True)
+          st.session_state._last_skidpad = skid.lap_time_s
 
-        # Store lap speed/distance profile so the ⚡ electrical check below can access it
-        if lap.ok and lap.v and lap.s:
-            st.session_state._last_lap_v = list(lap.v)
-            st.session_state._last_lap_s = list(lap.s)
+      # Store lap speed/distance profile so the ⚡ electrical check below can access it
+      if lap.ok and lap.v and lap.s:
+          st.session_state._last_lap_v = list(lap.v)
+          st.session_state._last_lap_s = list(lap.s)
 
-        # Log it to the handover record so the reasoning survives.
-        if lap.ok and np.isfinite(lap.lap_time_s):
-            lc1, lc2 = st.columns([1, 2])
-            if lc1.button("Log these times", width='stretch'):
-                log_decision_now(
-                    "suspension", "Lap-time prediction",
-                    f"Skidpad {_skt}s, autocross {_axt}s on "
-                    f"{'TTC tire' if not st.session_state.get('tire_is_default', True) else 'generic tire'} "
-                    f"(power {uval(pw, 'kW')}, ClA {cla:.2f}).")
-                st.success("Logged to handover record.")
-            lc2.markdown('<p class="hint">Tip: change a hardpoint or a setup lever, '
-                         're-run, and watch the skidpad delta. That delta — in seconds '
-                         '— is the number to defend a design decision with.</p>',
-                         unsafe_allow_html=True)
+      # Log it to the handover record so the reasoning survives.
+      if lap.ok and np.isfinite(lap.lap_time_s):
+          lc1, lc2 = st.columns([1, 2])
+          if lc1.button("Log these times", width='stretch'):
+              log_decision_now(
+                  "suspension", "Lap-time prediction",
+                  f"Skidpad {_skt}s, autocross {_axt}s on "
+                  f"{'TTC tire' if not st.session_state.get('tire_is_default', True) else 'generic tire'} "
+                  f"(power {uval(pw, 'kW')}, ClA {cla:.2f}).")
+              st.success("Logged to handover record.")
+          lc2.markdown('<p class="hint">Tip: change a hardpoint or a setup lever, '
+                       're-run, and watch the skidpad delta. That delta — in seconds '
+                       '— is the number to defend a design decision with.</p>',
+                       unsafe_allow_html=True)
 
-        if st.session_state.get("tire_is_default", True):
-            st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
-                        'padding-left:10px;">Running on the <b>generic default tire</b>. '
-                        'Times are the right shape and rank setups correctly, but load '
-                        'your TTC-fitted tire in TIRE &amp; GRIP before trusting the '
-                        'absolute seconds.</p>', unsafe_allow_html=True)
-        st.markdown('<p class="hint">Model: quasi-steady-state point mass on the live '
-                    'grip envelope. Good for ranking and for skidpad (near closed-form); '
-                    'on autocross it lands within a few percent — enough to choose '
-                    'between setups, not to predict the absolute clock to the tenth.</p>',
-                    unsafe_allow_html=True)
-
+      if st.session_state.get("tire_is_default", True):
+          st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                      'padding-left:10px;">Running on the <b>generic default tire</b>. '
+                      'Times are the right shape and rank setups correctly, but load '
+                      'your TTC-fitted tire in TIRE &amp; GRIP before trusting the '
+                      'absolute seconds.</p>', unsafe_allow_html=True)
+      st.markdown('<p class="hint">Model: quasi-steady-state point mass on the live '
+                  'grip envelope. Good for ranking and for skidpad (near closed-form); '
+                  'on autocross it lands within a few percent — enough to choose '
+                  'between setups, not to predict the absolute clock to the tenth.</p>',
+                  unsafe_allow_html=True)
 
 
 
-    # ================================================================== #
-    #  ⚡ ELECTRICAL FEASIBILITY CHECK  (Electrics Lead Integration)      #
-    # ================================================================== #
-    # The lap-time sim finds the mechanically fastest lap. But if that lap
-    # demands more current than the fuse rating, drains the pack, or pushes
-    # individual cells past their rated current, the lap simply does not
-    # happen. This section bridges the gap between the mechanical lap and
-    # the electrical reality — using the electrics lead's own Excel workbook.
-    st.markdown("---")
-    st.markdown("#### ⚡ Electrical Feasibility Check")
+
+  # ================================================================== #
+  #  ⚡ ELECTRICAL FEASIBILITY CHECK  (Electrics Lead Integration)      #
+  # ================================================================== #
+  # The lap-time sim finds the mechanically fastest lap. But if that lap
+  # demands more current than the fuse rating, drains the pack, or pushes
+  # individual cells past their rated current, the lap simply does not
+  # happen. This section bridges the gap between the mechanical lap and
+  # the electrical reality — using the electrics lead's own Excel workbook.
+  with st.expander("⚡ Electrical Feasibility Check", expanded=False):
     st.markdown(
         '<p class="hint">The lap-time sim finds the <i>mechanically</i> fastest lap. '
         'This check tells you whether the <b>electrical system can actually deliver it</b>. '
@@ -15271,25 +15275,24 @@ with tab11:
             _elec_bytes  = _elec_file.read()
             _elec_params = elec_check_mod.ElecParams.from_excel_bytes(_elec_bytes)
 
-            with st.expander("\U0001f4cb Parsed electrical parameters", expanded=False):
-                _pc = st.columns(4)
-                _pc[0].markdown(metric("Pack voltage",
-                    f"{_elec_params.pack_voltage_v:.0f}", "V"), unsafe_allow_html=True)
-                _pc[1].markdown(metric("Pack capacity",
-                    f"{_elec_params.pack_capacity_ah:.1f}", "Ah"), unsafe_allow_html=True)
-                _pc[2].markdown(metric("Fuse rating",
-                    f"{_elec_params.fuse_max_a:.0f}", "A"), unsafe_allow_html=True)
-                _pc[3].markdown(metric("Usable energy",
-                    f"{_elec_params.usable_energy_kwh:.3f}", "kWh"), unsafe_allow_html=True)
-                _pc2 = st.columns(4)
-                _pc2[0].markdown(metric("Parallel strings",
-                    f"{_elec_params.n_parallel}", ""), unsafe_allow_html=True)
-                _pc2[1].markdown(metric("Series cells",
-                    f"{_elec_params.n_series}", ""), unsafe_allow_html=True)
-                _pc2[2].markdown(metric("Cell rating",
-                    f"{_elec_params.nominal_cell_current_a:.1f}", "A"), unsafe_allow_html=True)
-                _pc2[3].markdown(metric("Fuse power ceiling",
-                    f"{_elec_params.max_power_from_fuse_kw:.1f}", "kW"), unsafe_allow_html=True)
+            _pc = st.columns(4)
+            _pc[0].markdown(metric("Pack voltage",
+                f"{_elec_params.pack_voltage_v:.0f}", "V"), unsafe_allow_html=True)
+            _pc[1].markdown(metric("Pack capacity",
+                f"{_elec_params.pack_capacity_ah:.1f}", "Ah"), unsafe_allow_html=True)
+            _pc[2].markdown(metric("Fuse rating",
+                f"{_elec_params.fuse_max_a:.0f}", "A"), unsafe_allow_html=True)
+            _pc[3].markdown(metric("Usable energy",
+                f"{_elec_params.usable_energy_kwh:.3f}", "kWh"), unsafe_allow_html=True)
+            _pc2 = st.columns(4)
+            _pc2[0].markdown(metric("Parallel strings",
+                f"{_elec_params.n_parallel}", ""), unsafe_allow_html=True)
+            _pc2[1].markdown(metric("Series cells",
+                f"{_elec_params.n_series}", ""), unsafe_allow_html=True)
+            _pc2[2].markdown(metric("Cell rating",
+                f"{_elec_params.nominal_cell_current_a:.1f}", "A"), unsafe_allow_html=True)
+            _pc2[3].markdown(metric("Fuse power ceiling",
+                f"{_elec_params.max_power_from_fuse_kw:.1f}", "kW"), unsafe_allow_html=True)
 
             _elec_src = st.radio(
                 "Speed profile to check",
@@ -15399,16 +15402,15 @@ with tab11:
                     f'not the tyres, not the motor.</p>',
                     unsafe_allow_html=True)
 
-                with st.expander("\U0001f4cb Detailed electrical analysis", expanded=False):
-                    st.markdown(f"**Fuse:** {_elec_result.fuse_message}")
-                    st.markdown(f"**Cells:** {_elec_result.cell_message}")
-                    st.markdown(f"**Energy:** {_elec_result.energy_message}")
-                    if _elec_result.warnings:
-                        for _w in _elec_result.warnings:
-                            st.caption(f"\u26a0\ufe0f {_w}")
-                    st.markdown(
-                        f"Average pack current (traction): "
-                        f"**{_elec_result.avg_current_a:.1f} A**")
+                st.markdown(f"**Fuse:** {_elec_result.fuse_message}")
+                st.markdown(f"**Cells:** {_elec_result.cell_message}")
+                st.markdown(f"**Energy:** {_elec_result.energy_message}")
+                if _elec_result.warnings:
+                    for _w in _elec_result.warnings:
+                        st.caption(f"\u26a0\ufe0f {_w}")
+                st.markdown(
+                    f"Average pack current (traction): "
+                    f"**{_elec_result.avg_current_a:.1f} A**")
 
                 if len(_elec_result.current_profile_a) > 2:
                     import plotly.graph_objects as _go_ec
@@ -15467,8 +15469,7 @@ with tab11:
     #  🔄 ELECTRICAL DATABASE + ROUND-TRIP                               #
     #  Parameters are stored once in the project; no re-upload needed.   #
     # ================================================================== #
-    st.markdown("---")
-    st.markdown("#### 🔋 EV Electrical Database & Lap Round-Trip")
+  with st.expander("🔋 EV Electrical Database & Lap Round-Trip", expanded=False):
     st.markdown(
         '<p class="hint">'
         'Battery pack and motor constants are read once from your '
@@ -15489,90 +15490,85 @@ with tab11:
     _db_has_data = bool(_pack_db or _motor_db)
 
     # ── Update-from-xlsx expander ───────────────────────────────────────
-    with st.expander(
-        "📂 Update from Excel workbook" if _db_has_data else "📂 Import Excel workbook (one-time setup)",
-        expanded=not _db_has_data,
-    ):
-        if _db_has_data:
-            st.markdown(
-                '<p class="hint" style="margin:0 0 8px 0">'
-                'The project already has electrical parameters stored. '
-                'Upload a new workbook only if the electrics lead has changed the numbers.</p>',
-                unsafe_allow_html=True)
-        _rt_up = st.file_uploader(
-            "FSAE_EV_Power_Draw.xlsx",
-            type=["xlsx"],
-            key="rt_db_uploader",
-            help="Upload once. KinematiK extracts all pack and motor constants and saves "
-                 "them to the project so you never have to re-upload.")
-        if _rt_up is not None:
-            _rt_raw = _rt_up.read()
-            _extracted = roundtrip_mod.extract_params_from_excel(_rt_raw)
-            if "_error" in _extracted:
-                st.error(f"Could not read workbook: {_extracted['_error']}")
-            else:
-                _store_rt.ev_excel_params = _extracted
-                # Cache the raw bytes too so Download still works this session
-                st.session_state["_rt_excel_bytes"] = _rt_raw
-                save_store(_store_rt)
-                _ev_db    = _extracted
-                _pack_db  = _ev_db.get("pack", {})
-                _motor_db = _ev_db.get("motor", {})
-                _gr_db    = _ev_db.get("gear_ratios", [])
-                _db_has_data = True
-                st.success(
-                    f"✅ Imported and saved — "
-                    f"pack voltage {_pack_db.get('pack_voltage_v', 0):.0f} V, "
-                    f"fuse {_pack_db.get('fuse_max_a', 0):.0f} A, "
-                    f"{len(_gr_db)} gear ratios. "
-                    f"These values are now stored in the project.")
+    if _db_has_data:
+        st.markdown(
+            '<p class="hint" style="margin:0 0 8px 0">'
+            'The project already has electrical parameters stored. '
+            'Upload a new workbook only if the electrics lead has changed the numbers.</p>',
+            unsafe_allow_html=True)
+    _rt_up = st.file_uploader(
+        "FSAE_EV_Power_Draw.xlsx",
+        type=["xlsx"],
+        key="rt_db_uploader",
+        help="Upload once. KinematiK extracts all pack and motor constants and saves "
+             "them to the project so you never have to re-upload.")
+    if _rt_up is not None:
+        _rt_raw = _rt_up.read()
+        _extracted = roundtrip_mod.extract_params_from_excel(_rt_raw)
+        if "_error" in _extracted:
+            st.error(f"Could not read workbook: {_extracted['_error']}")
+        else:
+            _store_rt.ev_excel_params = _extracted
+            # Cache the raw bytes too so Download still works this session
+            st.session_state["_rt_excel_bytes"] = _rt_raw
+            save_store(_store_rt)
+            _ev_db    = _extracted
+            _pack_db  = _ev_db.get("pack", {})
+            _motor_db = _ev_db.get("motor", {})
+            _gr_db    = _ev_db.get("gear_ratios", [])
+            _db_has_data = True
+            st.success(
+                f"✅ Imported and saved — "
+                f"pack voltage {_pack_db.get('pack_voltage_v', 0):.0f} V, "
+                f"fuse {_pack_db.get('fuse_max_a', 0):.0f} A, "
+                f"{len(_gr_db)} gear ratios. "
+                f"These values are now stored in the project.")
 
     # ── Manual param editor (always visible when data exists) ──────────
     if _db_has_data:
-        with st.expander("✏️ Edit stored electrical parameters", expanded=False):
-            st.markdown(
-                '<p class="hint">Changes here update the project database immediately. '
-                'No Excel upload needed to tweak a single value.</p>',
-                unsafe_allow_html=True)
-            _ed_cols = st.columns(4)
-            _pack_db["pack_voltage_v"]   = _ed_cols[0].number_input(
-                "Pack voltage (V)", 100.0, 1000.0,
-                float(_pack_db.get("pack_voltage_v", 504.0) or 504.0), 1.0,
-                key="ev_db_pack_v")
-            _pack_db["fuse_max_a"]       = _ed_cols[1].number_input(
-                "Fuse max (A)", 10.0, 500.0,
-                float(_pack_db.get("fuse_max_a", 50.0) or 50.0), 1.0,
-                key="ev_db_fuse")
-            _pack_db["pack_capacity_ah"] = _ed_cols[2].number_input(
-                "Pack capacity (Ah)", 1.0, 100.0,
-                float(_pack_db.get("pack_capacity_ah", 15.0) or 15.0), 0.5,
-                key="ev_db_cap_ah")
-            _pack_db["pack_energy_wh"]   = _ed_cols[3].number_input(
-                "Pack energy (Wh)", 100.0, 20000.0,
-                float(_pack_db.get("pack_energy_wh", 7560.0) or 7560.0), 10.0,
-                key="ev_db_energy_wh")
-            _ed_cols2 = st.columns(4)
-            _motor_db["wheel_diam_in"]     = _ed_cols2[0].number_input(
-                "Wheel diameter (in)", 10.0, 30.0,
-                float(_motor_db.get("wheel_diam_in", 18.0) or 18.0), 0.5,
-                key="ev_db_whl")
-            _motor_db["motor_pf"]          = _ed_cols2[1].number_input(
-                "Motor power factor", 0.5, 1.0,
-                float(_motor_db.get("motor_pf", 0.95) or 0.95), 0.01,
-                key="ev_db_pf")
-            _motor_db["motor_efficiency"]  = _ed_cols2[2].number_input(
-                "Motor efficiency", 0.5, 1.0,
-                float(_motor_db.get("motor_efficiency", 0.9545) or 0.9545), 0.005,
-                key="ev_db_eff")
-            _motor_db["pack_voltage_ep_v"] = _ed_cols2[3].number_input(
-                "Pack voltage (ElecProp sheet, V)", 100.0, 1000.0,
-                float(_motor_db.get("pack_voltage_ep_v", 504.0) or 504.0), 1.0,
-                key="ev_db_pack_v_ep")
-            if st.button("💾 Save edited parameters", key="ev_db_save_edits"):
-                _store_rt.ev_excel_params["pack"]  = _pack_db
-                _store_rt.ev_excel_params["motor"] = _motor_db
-                save_store(_store_rt)
-                st.success("Saved to project.")
+        st.markdown(
+            '<p class="hint">Changes here update the project database immediately. '
+            'No Excel upload needed to tweak a single value.</p>',
+            unsafe_allow_html=True)
+        _ed_cols = st.columns(4)
+        _pack_db["pack_voltage_v"]   = _ed_cols[0].number_input(
+            "Pack voltage (V)", 100.0, 1000.0,
+            float(_pack_db.get("pack_voltage_v", 504.0) or 504.0), 1.0,
+            key="ev_db_pack_v")
+        _pack_db["fuse_max_a"]       = _ed_cols[1].number_input(
+            "Fuse max (A)", 10.0, 500.0,
+            float(_pack_db.get("fuse_max_a", 50.0) or 50.0), 1.0,
+            key="ev_db_fuse")
+        _pack_db["pack_capacity_ah"] = _ed_cols[2].number_input(
+            "Pack capacity (Ah)", 1.0, 100.0,
+            float(_pack_db.get("pack_capacity_ah", 15.0) or 15.0), 0.5,
+            key="ev_db_cap_ah")
+        _pack_db["pack_energy_wh"]   = _ed_cols[3].number_input(
+            "Pack energy (Wh)", 100.0, 20000.0,
+            float(_pack_db.get("pack_energy_wh", 7560.0) or 7560.0), 10.0,
+            key="ev_db_energy_wh")
+        _ed_cols2 = st.columns(4)
+        _motor_db["wheel_diam_in"]     = _ed_cols2[0].number_input(
+            "Wheel diameter (in)", 10.0, 30.0,
+            float(_motor_db.get("wheel_diam_in", 18.0) or 18.0), 0.5,
+            key="ev_db_whl")
+        _motor_db["motor_pf"]          = _ed_cols2[1].number_input(
+            "Motor power factor", 0.5, 1.0,
+            float(_motor_db.get("motor_pf", 0.95) or 0.95), 0.01,
+            key="ev_db_pf")
+        _motor_db["motor_efficiency"]  = _ed_cols2[2].number_input(
+            "Motor efficiency", 0.5, 1.0,
+            float(_motor_db.get("motor_efficiency", 0.9545) or 0.9545), 0.005,
+            key="ev_db_eff")
+        _motor_db["pack_voltage_ep_v"] = _ed_cols2[3].number_input(
+            "Pack voltage (ElecProp sheet, V)", 100.0, 1000.0,
+            float(_motor_db.get("pack_voltage_ep_v", 504.0) or 504.0), 1.0,
+            key="ev_db_pack_v_ep")
+        if st.button("💾 Save edited parameters", key="ev_db_save_edits"):
+            _store_rt.ev_excel_params["pack"]  = _pack_db
+            _store_rt.ev_excel_params["motor"] = _motor_db
+            save_store(_store_rt)
+            st.success("Saved to project.")
 
     # ── Stored params summary card ──────────────────────────────────────
     if _db_has_data:
@@ -15682,64 +15678,63 @@ with tab11:
         # (C) Visualise the raw data straight from the sheet — Erick's
         #     "take that raw data from my sheet and visualise it".
         if _rt_raw_bytes:
-            with st.expander("📈 Visualise raw data from your workbook", expanded=False):
-                st.markdown(
-                    '<p class="hint" style="margin:0 0 8px 0">Plot any numeric '
-                    'columns straight from your file — cell voltages, currents, '
-                    'temperatures, whatever you logged. This reads your sheets '
-                    'verbatim; nothing is recomputed or invented.</p>',
-                    unsafe_allow_html=True)
-                try:
-                    _raw = roundtrip_mod.read_raw_sheets(_rt_raw_bytes)
-                except Exception as _re:
-                    _raw = {"sheets": [], "_error": str(_re)}
-                if _raw.get("_error"):
-                    st.caption(f"Couldn't read raw data: {_raw['_error']}")
-                _raw_sheets = _raw.get("sheets", [])
-                if not _raw_sheets:
-                    st.caption("No numeric data columns found to plot.")
-                else:
-                    _sheet_names = [s["name"] for s in _raw_sheets]
-                    _pick_sheet = st.selectbox(
-                        "Sheet", _sheet_names, key="rt_raw_sheet_pick")
-                    _sheet_obj = next(s for s in _raw_sheets if s["name"] == _pick_sheet)
-                    _col_headers = [c["header"] for c in _sheet_obj["columns"]]
-                    _rc1, _rc2 = st.columns(2)
-                    _x_col = _rc1.selectbox(
-                        "X axis", ["(row index)"] + _col_headers,
-                        key="rt_raw_x")
-                    _y_cols = _rc2.multiselect(
-                        "Y axis (one or more)", _col_headers,
-                        default=_col_headers[1:3] if len(_col_headers) > 1
-                        else _col_headers[:1],
-                        key="rt_raw_y")
-                    if _y_cols:
-                        import plotly.graph_objects as _go_raw
-                        _by_header = {c["header"]: c["values"]
-                                      for c in _sheet_obj["columns"]}
-                        _fig_raw = _go_raw.Figure()
-                        if _x_col == "(row index)":
-                            _xvals = None
-                        else:
-                            _xvals = _by_header.get(_x_col)
-                        for _yh in _y_cols:
-                            _yv = _by_header.get(_yh, [])
-                            _xx = (list(range(len(_yv))) if _xvals is None
-                                   else _xvals[:len(_yv)])
-                            _fig_raw.add_trace(_go_raw.Scatter(
-                                x=_xx, y=_yv, mode="lines", name=_yh))
-                        _fig_raw.update_layout(
-                            height=360, margin=dict(l=10, r=10, t=30, b=10),
-                            paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            font=dict(color="#cdd6df"),
-                            xaxis=dict(title=_x_col, gridcolor="#2a2f3a"),
-                            yaxis=dict(gridcolor="#2a2f3a"),
-                            legend=dict(bgcolor="rgba(0,0,0,0)"))
-                        st.plotly_chart(_fig_raw, width="stretch",
-                                        key="rt_raw_chart")
+            st.markdown(
+                '<p class="hint" style="margin:0 0 8px 0">Plot any numeric '
+                'columns straight from your file — cell voltages, currents, '
+                'temperatures, whatever you logged. This reads your sheets '
+                'verbatim; nothing is recomputed or invented.</p>',
+                unsafe_allow_html=True)
+            try:
+                _raw = roundtrip_mod.read_raw_sheets(_rt_raw_bytes)
+            except Exception as _re:
+                _raw = {"sheets": [], "_error": str(_re)}
+            if _raw.get("_error"):
+                st.caption(f"Couldn't read raw data: {_raw['_error']}")
+            _raw_sheets = _raw.get("sheets", [])
+            if not _raw_sheets:
+                st.caption("No numeric data columns found to plot.")
+            else:
+                _sheet_names = [s["name"] for s in _raw_sheets]
+                _pick_sheet = st.selectbox(
+                    "Sheet", _sheet_names, key="rt_raw_sheet_pick")
+                _sheet_obj = next(s for s in _raw_sheets if s["name"] == _pick_sheet)
+                _col_headers = [c["header"] for c in _sheet_obj["columns"]]
+                _rc1, _rc2 = st.columns(2)
+                _x_col = _rc1.selectbox(
+                    "X axis", ["(row index)"] + _col_headers,
+                    key="rt_raw_x")
+                _y_cols = _rc2.multiselect(
+                    "Y axis (one or more)", _col_headers,
+                    default=_col_headers[1:3] if len(_col_headers) > 1
+                    else _col_headers[:1],
+                    key="rt_raw_y")
+                if _y_cols:
+                    import plotly.graph_objects as _go_raw
+                    _by_header = {c["header"]: c["values"]
+                                  for c in _sheet_obj["columns"]}
+                    _fig_raw = _go_raw.Figure()
+                    if _x_col == "(row index)":
+                        _xvals = None
                     else:
-                        st.caption("Pick at least one Y column to plot.")
+                        _xvals = _by_header.get(_x_col)
+                    for _yh in _y_cols:
+                        _yv = _by_header.get(_yh, [])
+                        _xx = (list(range(len(_yv))) if _xvals is None
+                               else _xvals[:len(_yv)])
+                        _fig_raw.add_trace(_go_raw.Scatter(
+                            x=_xx, y=_yv, mode="lines", name=_yh))
+                    _fig_raw.update_layout(
+                        height=360, margin=dict(l=10, r=10, t=30, b=10),
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#cdd6df"),
+                        xaxis=dict(title=_x_col, gridcolor="#2a2f3a"),
+                        yaxis=dict(gridcolor="#2a2f3a"),
+                        legend=dict(bgcolor="rgba(0,0,0,0)"))
+                    st.plotly_chart(_fig_raw, width="stretch",
+                                    key="rt_raw_chart")
+                else:
+                    st.caption("Pick at least one Y column to plot.")
 
     # ── Round-trip calculation ──────────────────────────────────────────
     if _db_has_data:
@@ -15835,28 +15830,27 @@ with tab11:
                 st.markdown("###### 📊 Recalculated electrical results")
 
                 # Pack summary
-                with st.expander("🔋 Battery Pack Calcs", expanded=True):
-                    _pk = _rt_res.pack
-                    _pkcols = st.columns(4)
-                    _pkcols[0].markdown(metric("Pack voltage",
-                        f"{_pk.get('pack_voltage_v', 0):.0f}", "V"), unsafe_allow_html=True)
-                    _pkcols[1].markdown(metric("Fuse max",
-                        f"{_pk.get('fuse_max_a', 0):.0f}", "A"), unsafe_allow_html=True)
-                    _pkcols[2].markdown(metric("Pack capacity",
-                        f"{_pk.get('pack_capacity_ah', 0):.1f}", "Ah"), unsafe_allow_html=True)
-                    _pkcols[3].markdown(metric("Pack energy",
-                        f"{(_pk.get('pack_energy_wh', 0) or 0)/1000:.3f}", "kWh"),
-                        unsafe_allow_html=True)
-                    _pkcols2 = st.columns(4)
-                    _pkcols2[0].markdown(metric("Cell current",
-                        f"{_pk.get('cell_current_a', 0):.2f}", "A"), unsafe_allow_html=True)
-                    _pkcols2[1].markdown(metric("Power draw",
-                        f"{_pk.get('power_draw_kw', 0):.2f}", "kW"), unsafe_allow_html=True)
-                    _pkcols2[2].markdown(metric("Joule heating",
-                        f"{_pk.get('joule_heating_kwh', 0):.3f}", "kWh"), unsafe_allow_html=True)
-                    _pkcols2[3].markdown(metric("Pack cells",
-                        f"{int(_pk.get('pack_cell_count', 0) or 0)}", ""),
-                        unsafe_allow_html=True)
+                _pk = _rt_res.pack
+                _pkcols = st.columns(4)
+                _pkcols[0].markdown(metric("Pack voltage",
+                    f"{_pk.get('pack_voltage_v', 0):.0f}", "V"), unsafe_allow_html=True)
+                _pkcols[1].markdown(metric("Fuse max",
+                    f"{_pk.get('fuse_max_a', 0):.0f}", "A"), unsafe_allow_html=True)
+                _pkcols[2].markdown(metric("Pack capacity",
+                    f"{_pk.get('pack_capacity_ah', 0):.1f}", "Ah"), unsafe_allow_html=True)
+                _pkcols[3].markdown(metric("Pack energy",
+                    f"{(_pk.get('pack_energy_wh', 0) or 0)/1000:.3f}", "kWh"),
+                    unsafe_allow_html=True)
+                _pkcols2 = st.columns(4)
+                _pkcols2[0].markdown(metric("Cell current",
+                    f"{_pk.get('cell_current_a', 0):.2f}", "A"), unsafe_allow_html=True)
+                _pkcols2[1].markdown(metric("Power draw",
+                    f"{_pk.get('power_draw_kw', 0):.2f}", "kW"), unsafe_allow_html=True)
+                _pkcols2[2].markdown(metric("Joule heating",
+                    f"{_pk.get('joule_heating_kwh', 0):.3f}", "kWh"), unsafe_allow_html=True)
+                _pkcols2[3].markdown(metric("Pack cells",
+                    f"{int(_pk.get('pack_cell_count', 0) or 0)}", ""),
+                    unsafe_allow_html=True)
 
                 # Lap electrical results
                 st.markdown("###### ⚡ Electrical results from this lap profile")
@@ -16333,7 +16327,7 @@ with tab11:
     else:
         st.markdown(
             '<p class="hint" style="border-left:2px solid #a855f7; padding-left:10px;">'
-            '📂 Import <code>FSAE_EV_Power_Draw.xlsx</code> once using the expander above. '
+            '📂 Import <code>FSAE_EV_Power_Draw.xlsx</code> once using the uploader above. '
             'KinematiK extracts all pack and motor constants and stores them in the project — '
             'you won\'t need to re-upload it next session.</p>',
             unsafe_allow_html=True)
@@ -17785,31 +17779,32 @@ with tab_ggv:
               unsafe_allow_html=True)
 
       # ---- Capability vs speed --------------------------------------- #
-      _uSp = units_mod.label("m/s")
-      _spd_u = [units_mod.from_metric(v, "m/s") for v in _res.speeds]
-      figC = go.Figure()
-      figC.add_trace(go.Scatter(x=_spd_u, y=_res.max_lat_g, mode="lines+markers",
-                                line=dict(color=CYAN, width=2.5), name="max lateral g"))
-      figC.add_trace(go.Scatter(x=_spd_u, y=_res.max_accel_g, mode="lines+markers",
-                                line=dict(color=AMBER, width=2.5), name="max accel g"))
-      figC.add_trace(go.Scatter(x=_spd_u, y=_res.max_brake_g, mode="lines+markers",
-                                line=dict(color=RED, width=2.5), name="max braking g"))
-      figC.update_layout(**PLOT_LAYOUT, title="Capability vs speed",
-                         xaxis_title=f"speed ({_uSp})", yaxis_title="g", height=320)
-      # Flag the speeds where lateral g is a wheel-lift artifact so the curve
-      # isn't read as honest grip there.
-      if _lift_pts:
-          _lift_v = {round(v, 1) for _, v in _lift_pts}
-          _mx = [s for s in _res.speeds if round(float(s), 1) in _lift_v]
-          _my = [g for s, g in zip(_res.speeds, _res.max_lat_g)
-                 if round(float(s), 1) in _lift_v]
-          if _mx:
-              figC.add_trace(go.Scatter(
-                  x=_mx, y=_my, mode="markers",
-                  marker=dict(color=AMBER, size=11, symbol="circle-open",
-                              line=dict(width=2)),
-                  name="lateral g = wheel-lift artifact"))
-      st.plotly_chart(figC, width='stretch')
+      with st.expander("Capability vs speed", expanded=False):
+        _uSp = units_mod.label("m/s")
+        _spd_u = [units_mod.from_metric(v, "m/s") for v in _res.speeds]
+        figC = go.Figure()
+        figC.add_trace(go.Scatter(x=_spd_u, y=_res.max_lat_g, mode="lines+markers",
+                                  line=dict(color=CYAN, width=2.5), name="max lateral g"))
+        figC.add_trace(go.Scatter(x=_spd_u, y=_res.max_accel_g, mode="lines+markers",
+                                  line=dict(color=AMBER, width=2.5), name="max accel g"))
+        figC.add_trace(go.Scatter(x=_spd_u, y=_res.max_brake_g, mode="lines+markers",
+                                  line=dict(color=RED, width=2.5), name="max braking g"))
+        figC.update_layout(**PLOT_LAYOUT, title="Capability vs speed",
+                           xaxis_title=f"speed ({_uSp})", yaxis_title="g", height=320)
+        # Flag the speeds where lateral g is a wheel-lift artifact so the curve
+        # isn't read as honest grip there.
+        if _lift_pts:
+            _lift_v = {round(v, 1) for _, v in _lift_pts}
+            _mx = [s for s in _res.speeds if round(float(s), 1) in _lift_v]
+            _my = [g for s, g in zip(_res.speeds, _res.max_lat_g)
+                   if round(float(s), 1) in _lift_v]
+            if _mx:
+                figC.add_trace(go.Scatter(
+                    x=_mx, y=_my, mode="markers",
+                    marker=dict(color=AMBER, size=11, symbol="circle-open",
+                                line=dict(width=2)),
+                    name="lateral g = wheel-lift artifact"))
+        st.plotly_chart(figC, width='stretch')
 
       # ---- "What does changing X do?" sweep -------------------------- #
       with st.expander("🟢 Design-input sweep", expanded=True):
@@ -18511,31 +18506,75 @@ with tab_tractive:
 
   # ---- PCM COOLING BUFFER (slides 3 & 7) ------------------------------- #
   with _t_pcm:
-      st.markdown("**The 'liquid wax' buffer — how long it holds the cells, and "
-                  "how much you need.** Latent heat flattens the corner-exit "
-                  "spikes; this tells you when the wax runs out and the fan has "
-                  "to take over.")
-      _wc = st.columns(4)
-      _series = _wc[0].number_input("Series (s)", 1, 400, 140, key="pcm_s")
-      _par = _wc[1].number_input("Parallel (p)", 1, 50, 3, key="pcm_p")
-      _mass_g = _wc[2].number_input("Wax per cell (g)", 0.0, 500.0, 15.0,
-                                    key="pcm_g")
-      _ambient = _wc[3].number_input("Inlet air (°C)", 0.0, 60.0, 35.0,
-                                     key="pcm_amb")
-      _wc2 = st.columns(4)
-      _tmelt = _wc2[0].number_input("Wax melt temp (°C)", 20.0, 90.0, 45.0,
-                                    key="pcm_tm")
-      _lheat = _wc2[1].number_input("Latent heat (J/g)", 50.0, 400.0, 200.0,
-                                    key="pcm_l")
-      _stint = _wc2[2].number_input("Endurance stint (s)", 60.0, 3000.0, 1500.0,
-                                    key="pcm_stint")
-      _peakA = _wc2[3].number_input("Pack current peak (A)", 10.0, 800.0, 300.0,
-                                    key="pcm_a")
+      # ------------------------------------------------------------------ #
+      #  Intro card — one sentence of context, not a wall of text            #
+      # ------------------------------------------------------------------ #
+      st.markdown("""
+<div class="wt-intro">
+  <div class="ic">🧊</div>
+  <div>
+    <p><b>Wax melts at nearly constant temperature, absorbing the corner-exit heat spike.</b>
+    This tool tells you when it runs out — and how much you need to last the stint.</p>
+    <p>Adjust the sliders below; results update live. The <b>Wax Hold Timeline</b> shows
+    exactly when the wax exhausts and the fan must take over.</p>
+  </div>
+</div>""", unsafe_allow_html=True)
 
+      # ------------------------------------------------------------------ #
+      #  Input groups — two collapsible sections for clarity                 #
+      # ------------------------------------------------------------------ #
+      _pcm_left, _pcm_right = st.columns([3, 2], gap="large")
+
+      with _pcm_left:
+          st.markdown("#### 🔋 Pack configuration")
+          _pg1 = st.columns(2)
+          _series = _pg1[0].number_input(
+              "Series cells (s)", 1, 400, 140, key="pcm_s",
+              help="Number of cells in series — sets nominal pack voltage. "
+                   "Default 140s matches a typical FSAE EV accumulator.")
+          _par = _pg1[1].number_input(
+              "Parallel cells (p)", 1, 50, 3, key="pcm_p",
+              help="Cells in parallel per series group. "
+                   "140s × 3p = 420 cells total.")
+          _pg2 = st.columns(2)
+          _peakA = _pg2[0].number_input(
+              "Peak current (A)", 10.0, 800.0, 300.0, key="pcm_a",
+              help="Peak discharge current of the pack at full throttle out of "
+                   "a corner. Drives the heat generation rate in the model.")
+          _ambient = _pg2[1].number_input(
+              "Inlet air temp (°C)", 0.0, 60.0, 35.0, key="pcm_amb",
+              help="Temperature of cooling air entering the pack. "
+                   "35 °C is a warm competition-day estimate.")
+          _stint = st.slider(
+              "Endurance stint duration (s)", 60, 3000, 1500, step=30,
+              key="pcm_stint",
+              help="Target hold time — the wax should last at least this long. "
+                   "A standard FSAE Endurance run is ~1 500 s (~25 min).")
+
+          st.markdown("#### 🕯️ Wax (PCM) properties")
+          _wp1 = st.columns(2)
+          _mass_g = _wp1[0].number_input(
+              "Wax per cell (g)", 0.0, 500.0, 15.0, step=1.0, key="pcm_g",
+              help="Mass of PCM surrounding each cell in the nylon holder. "
+                   "The key design variable — more wax = longer hold time.")
+          _tmelt = _wp1[1].number_input(
+              "Wax melt temperature (°C)", 20.0, 90.0, 45.0, key="pcm_tm",
+              help="The temperature at which the wax transitions from solid to "
+                   "liquid and absorbs latent heat. Choose a wax that melts "
+                   "just below the cell's warning temperature.")
+          _lheat = st.slider(
+              "Latent heat (J/g)", 50, 400, 200, step=5, key="pcm_l",
+              help="Energy absorbed per gram during the melt — the bigger this "
+                   "number, the more heat the wax can absorb. Typical paraffin "
+                   "wax: 180–230 J/g. Enter your datasheet value here.")
+
+      # ------------------------------------------------------------------ #
+      #  Live compute                                                         #
+      # ------------------------------------------------------------------ #
       _ncells = int(_series) * int(_par)
-      # square-ish packaging grid for the n cells
       _rows = max(int(round(_ncells ** 0.5)), 1)
       _cols = max(int(round(_ncells / _rows)), 1)
+
       try:
           _cell = pack_mod.default_cell_params()
           _layout = pack_mod.PackLayout(rows=_rows, cols=_cols,
@@ -18550,36 +18589,238 @@ with tab_tractive:
           _alloc = pcm_mod.PCMAllocation(material=_mat, mass_per_cell_g=_mass_g,
                                          set_by="cooling")
           _pr = pcm_mod.evaluate_pcm_buffer(_res, _layout, _alloc)
+          _sz = pcm_mod.size_pcm_for_hold(_res, _layout, _mat, hold_time_s=_stint)
 
-          _mm = st.columns(4)
-          _mm[0].metric("Cells (grid)", f"{_layout.n_cells}")
-          _hold = ("holds full stint" if _pr.hold_time_s is None
-                   else f"{_pr.hold_time_s:.0f} s")
-          _mm[1].metric("Wax hold time", _hold)
-          _mm[2].metric("Pack wax mass", f"{_pr.total_pcm_mass_kg:.1f} kg")
-          _mm[3].metric("Pack wax volume", f"{_pr.total_pcm_volume_cc:.0f} cc")
+          # -------------------------------------------------------------- #
+          #  Right column: headline status card + key metrics                #
+          # -------------------------------------------------------------- #
+          with _pcm_right:
+              # Status pill
+              _hold_s = _pr.hold_time_s
+              _hold_ok = (_hold_s is None) or (_hold_s >= _stint)
+              _status_color = "var(--cyan)" if _hold_ok else "var(--amber)"
+              _status_border = "#1f4d49" if _hold_ok else "#5a4317"
+              _status_icon = "✅" if _hold_ok else "⚠️"
+              if _hold_s is None:
+                  _hold_label = "Holds full stint"
+                  _hold_sub = f"Wax never fully melts over {_stint} s"
+              else:
+                  _hold_label = f"{_hold_s:.0f} s hold"
+                  _short = _stint - _hold_s
+                  _hold_sub = (f"Lasts full {_stint} s ✓" if _hold_ok
+                               else f"{_short:.0f} s short of the {_stint} s stint")
 
+              st.markdown(f"""
+<div style="border:1px solid {_status_border}; border-left:4px solid {_status_color};
+     border-radius:14px; background:var(--panel2); padding:1rem 1.1rem; margin:.3rem 0 .8rem;">
+  <div style="font-family:'JetBrains Mono'; font-size:.68rem; letter-spacing:.1em;
+       text-transform:uppercase; color:var(--dim); margin-bottom:.3rem;">Wax hold status</div>
+  <div style="font-size:1.6rem; font-weight:800; color:{_status_color};
+       font-family:'Archivo'; line-height:1;">{_status_icon} {_hold_label}</div>
+  <div style="font-size:.83rem; color:var(--dim); margin-top:.35rem;">{_hold_sub}</div>
+</div>""", unsafe_allow_html=True)
+
+              # Key metrics grid
+              st.markdown(f"""
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-bottom:.7rem;">
+  <div class="metric">
+    <div class="k">Total cells</div>
+    <div class="v">{_layout.n_cells}</div>
+  </div>
+  <div class="metric">
+    <div class="k">Wax mass (pack)</div>
+    <div class="v">{_pr.total_pcm_mass_kg:.2f} <span class="u">kg</span></div>
+  </div>
+  <div class="metric">
+    <div class="k">Wax volume (pack)</div>
+    <div class="v">{_pr.total_pcm_volume_cc:.0f} <span class="u">cc</span></div>
+  </div>
+  <div class="metric">
+    <div class="k">Latent buffer/cell</div>
+    <div class="v">{_alloc.latent_buffer_j_per_cell():.0f} <span class="u">J</span></div>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+              # Progress bar: hold time vs stint
+              if _hold_s is not None:
+                  _pct = min(_hold_s / max(_stint, 1), 1.0) * 100
+                  _bar_color = "#37e0d0" if _hold_ok else "#ffb02e"
+                  st.markdown(f"""
+<div style="margin:.2rem 0 .8rem;">
+  <div style="font-family:'JetBrains Mono'; font-size:.68rem; letter-spacing:.08em;
+       text-transform:uppercase; color:var(--dim); margin-bottom:.4rem;">
+    Hold time vs stint ({_pct:.0f}%)
+  </div>
+  <div style="background:var(--panel); border:1px solid var(--line);
+       border-radius:6px; height:10px; overflow:hidden;">
+    <div style="width:{_pct:.1f}%; height:100%; background:{_bar_color};
+         border-radius:6px; transition:width .4s ease;"></div>
+  </div>
+  <div style="display:flex; justify-content:space-between;
+       font-family:'JetBrains Mono'; font-size:.68rem; color:var(--dim); margin-top:.3rem;">
+    <span>0 s</span><span style="color:{_bar_color};">{_hold_s:.0f} s melt-out</span>
+    <span>{_stint} s target</span>
+  </div>
+</div>""", unsafe_allow_html=True)
+              else:
+                  st.markdown(f"""
+<div style="margin:.2rem 0 .8rem;">
+  <div style="font-family:'JetBrains Mono'; font-size:.68rem; letter-spacing:.08em;
+       text-transform:uppercase; color:var(--dim); margin-bottom:.4rem;">
+    Hold time vs stint (100%)
+  </div>
+  <div style="background:var(--panel); border:1px solid var(--line);
+       border-radius:6px; height:10px; overflow:hidden;">
+    <div style="width:100%; height:100%; background:#37e0d0; border-radius:6px;"></div>
+  </div>
+  <div style="display:flex; justify-content:space-between;
+       font-family:'JetBrains Mono'; font-size:.68rem; color:var(--dim); margin-top:.3rem;">
+    <span>0 s</span><span style="color:#37e0d0;">Full stint ✓</span>
+    <span>{_stint} s target</span>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+              # Inverse sizing callout
+              if _sz.get("ok"):
+                  _inv_mass = _sz["pcm_mass_per_cell_g"]
+                  _inv_pkg  = _sz["pack_pcm_mass_kg"]
+                  _inv_vol  = _sz["pack_pcm_volume_cc"]
+                  _impractical = _inv_pkg > 10
+                  _inv_color = "var(--amber)" if _impractical else "var(--cyan)"
+                  _inv_border = "#5a4317" if _impractical else "#1f4d49"
+                  _inv_note = (
+                      "⚠ Impractical on latent heat alone — size for the burst, "
+                      "not the stint. The fan handles the steady load."
+                      if _impractical else
+                      "This is the wax needed so the plateau lasts the whole stint.")
+                  st.markdown(f"""
+<div style="border:1px solid {_inv_border}; border-left:3px solid {_inv_color};
+     border-radius:12px; background:var(--panel2); padding:.8rem .9rem; margin-top:.2rem;">
+  <div style="font-family:'JetBrains Mono'; font-size:.66rem; letter-spacing:.09em;
+       text-transform:uppercase; color:var(--dim); margin-bottom:.5rem;">
+    Inverse sizing — wax needed for full stint
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.4rem; margin-bottom:.5rem;">
+    <div><div style="font-size:.68rem; color:var(--dim);">Per cell</div>
+         <div style="font-family:'JetBrains Mono'; font-weight:600; font-size:1.0rem;
+              color:{_inv_color};">{_inv_mass:.0f} g</div></div>
+    <div><div style="font-size:.68rem; color:var(--dim);">Pack mass</div>
+         <div style="font-family:'JetBrains Mono'; font-weight:600; font-size:1.0rem;
+              color:{_inv_color};">{_inv_pkg:.1f} kg</div></div>
+    <div><div style="font-size:.68rem; color:var(--dim);">Pack volume</div>
+         <div style="font-family:'JetBrains Mono'; font-weight:600; font-size:1.0rem;
+              color:{_inv_color};">{_inv_vol:.0f} cc</div></div>
+  </div>
+  <div style="font-size:.78rem; color:var(--dim); line-height:1.45;">{_inv_note}</div>
+</div>""", unsafe_allow_html=True)
+
+          # -------------------------------------------------------------- #
+          #  Wax hold timeline chart (full width, below the two columns)    #
+          # -------------------------------------------------------------- #
+          st.markdown("#### 📈 Wax hold timeline")
+
+          # Build the timeline: heat absorbed vs buffer capacity over simulated time
+          try:
+              import plotly.graph_objects as _go2
+              _T_hist = np.asarray(_res.temp_history_c, float)
+              _t_sim  = np.asarray(_res.time_s, float)
+              _hot_i  = int(_res.hottest_cell_index)
+              _T_hot  = _T_hist[:, _hot_i]
+
+              _onset = _tmelt - 2.0   # half of default melt_window_c=4
+              _C_cell = max(_cell.mass_kg * _cell.cp, 1e-9)
+              _dT = np.diff(_T_hot)
+              _T_mid = 0.5 * (_T_hot[1:] + _T_hot[:-1])
+              _q_step = _C_cell * np.clip(_dT, 0, None) * (_T_mid >= _onset)
+              _cum_q  = np.concatenate([[0.0], np.cumsum(_q_step)])
+              _buf_j  = _alloc.latent_buffer_j_per_cell()
+
+              _fig_pcm = _go2.Figure()
+
+              # Cell temperature trace
+              _fig_pcm.add_trace(_go2.Scatter(
+                  x=_t_sim, y=_T_hot, name="Hottest cell (°C)",
+                  mode="lines", line=dict(color="#37e0d0", width=2),
+                  yaxis="y1"))
+
+              # Cumulative heat absorbed vs buffer
+              _fig_pcm.add_trace(_go2.Scatter(
+                  x=_t_sim, y=_cum_q, name="Heat absorbed (J)",
+                  mode="lines", line=dict(color="#ffb02e", width=2, dash="dot"),
+                  yaxis="y2"))
+
+              # Buffer capacity line
+              _fig_pcm.add_hline(
+                  y=_buf_j, yref="y2",
+                  line=dict(color="#ff5a52", width=1.5, dash="dash"),
+                  annotation_text=f"Wax capacity ({_buf_j:.0f} J)",
+                  annotation_position="top right",
+                  annotation_font=dict(color="#ff5a52", size=11))
+
+              # Melt temperature line
+              _fig_pcm.add_hline(
+                  y=_tmelt, yref="y1",
+                  line=dict(color="#ffb02e", width=1, dash="dot"),
+                  annotation_text=f"Melt temp ({_tmelt:.0f}°C)",
+                  annotation_position="top left",
+                  annotation_font=dict(color="#ffb02e", size=11))
+
+              # Melt-out vertical marker
+              if _pr.hold_time_s is not None:
+                  _first_onset_i = int(np.argmax(_T_hot >= _onset)) if np.any(_T_hot >= _onset) else 0
+                  _meltout_t = _t_sim[_first_onset_i] + _pr.hold_time_s
+                  _meltout_t = min(_meltout_t, float(_t_sim[-1]))
+                  _fig_pcm.add_vline(
+                      x=_meltout_t, line=dict(color="#ff5a52", width=2, dash="dash"),
+                      annotation_text=f"Wax exhausted at {_pr.hold_time_s:.0f}s",
+                      annotation_position="top left",
+                      annotation_font=dict(color="#ff5a52", size=11))
+
+              # Stint target line
+              _fig_pcm.add_vline(
+                  x=float(min(_stint, float(_t_sim[-1]))),
+                  line=dict(color="#37e0d0" if _hold_ok else "#8d99a6",
+                            width=1.5, dash="longdash"),
+                  annotation_text=f"Stint target ({_stint}s)",
+                  annotation_position="top right",
+                  annotation_font=dict(color="#37e0d0" if _hold_ok else "#8d99a6",
+                                       size=11))
+
+              _fig_pcm.update_layout(
+                  height=320, margin=dict(l=10, r=10, t=30, b=10),
+                  paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#13171c",
+                  font=dict(family="JetBrains Mono", size=11, color="#8d99a6"),
+                  xaxis=dict(title="Time (s)", gridcolor="#1d242c",
+                             zerolinecolor="#262d36"),
+                  yaxis=dict(title="Cell temp (°C)", gridcolor="#1d242c",
+                             zerolinecolor="#262d36", titlefont=dict(color="#37e0d0"),
+                             tickfont=dict(color="#37e0d0")),
+                  yaxis2=dict(title="Heat absorbed (J)", overlaying="y", side="right",
+                              gridcolor="rgba(0,0,0,0)",
+                              titlefont=dict(color="#ffb02e"),
+                              tickfont=dict(color="#ffb02e")),
+                  legend=dict(orientation="h", y=1.12, bgcolor="rgba(0,0,0,0)",
+                              font=dict(size=11)),
+                  showlegend=True)
+              st.plotly_chart(_fig_pcm, use_container_width=True)
+
+          except Exception as _chart_err:
+              st.caption(f"Chart unavailable: {_chart_err}")
+
+          # -------------------------------------------------------------- #
+          #  Findings + calibration note                                     #
+          # -------------------------------------------------------------- #
           _render_findings(pcm_mod.check_pcm(_pr, endurance_time_s=_stint))
 
-          st.divider()
-          st.markdown("**Inverse sizing** — wax needed to hold the full stint:")
-          _sz = pcm_mod.size_pcm_for_hold(_res, _layout, _mat, hold_time_s=_stint)
-          if _sz.get("ok"):
-              _sc = st.columns(3)
-              _sc[0].metric("Per cell", f"{_sz['pcm_mass_per_cell_g']:.0f} g")
-              _sc[1].metric("Pack mass", f"{_sz['pack_pcm_mass_kg']:.1f} kg")
-              _sc[2].metric("Pack volume", f"{_sz['pack_pcm_volume_cc']:.0f} cc")
-              if _sz["pack_pcm_mass_kg"] > 10:
-                  st.caption("⚠ That much wax to hold the *whole* stint on "
-                             "latent heat alone is impractical — the honest read "
-                             "is: PCM buffers the spikes, the fan carries the "
-                             "steady load. Size the wax for the burst, not the "
-                             "stint.")
           if _pr.synthesized:
-              st.caption("⚠ Synthesized: energy balances are exact, but cell and "
-                         "wax properties are representative (uncalibrated). Use "
-                         "for ranking layouts and finding where the wax runs out; "
-                         "confirm absolute °C in Ansys.")
+              st.markdown("""
+<div class="wt-note">
+  <b>⚠ Synthesized result — treat as directional, not absolute.</b>
+  Energy balances are exact, but cell and wax properties use representative defaults
+  (uncalibrated). Use this to rank layouts and spot where the wax runs out; confirm
+  absolute temperatures in Ansys before committing to a wax mass.
+</div>""", unsafe_allow_html=True)
+
       except Exception as _e:
           st.error(f"PCM model couldn't run: {_e}")
 
@@ -19410,8 +19651,7 @@ with tab_analytics:
         'not vibes. The headline is <b>hours saved → dollars</b>: completed '
         'workflows × (manual time − in-tool time) × labour rate.</p>'
         '<p class="hint">Anonymous by default (a per-session id). A member name '
-        'is recorded only if someone enters one below. Set '
-        '<code>KINEMATIK_ANALYTICS=off</code> in secrets to disable entirely.</p>'
+        'is recorded only if someone enters one below.</p>'
         '</div></div>', unsafe_allow_html=True)
 
     _live = False
@@ -19653,8 +19893,7 @@ with tab_analytics:
                   font=dict(color="#e7ecf1"), xaxis_title="hours saved")
               st.plotly_chart(_fig, use_container_width=True)
               st.caption("Each bar: completed workflows × (manual − in-tool) minutes, "
-                         "valued at the configured labour rate. Tune the baselines in "
-                         "the `feature_baselines` table to match your team's reality.")
+                         "valued at the configured labour rate.")
 
     st.markdown("---")
 
