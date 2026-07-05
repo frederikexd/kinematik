@@ -425,57 +425,114 @@ hr{ border-color:var(--line);}
 [data-testid="stMetricValue"]{ font-family:'JetBrains Mono'!important;}
 
 /* --- Export empty-state ("waiting on numbers", not a dead end) --------- */
-.es-card{ border:1px solid var(--line); border-left:3px solid var(--amber);
-      background:linear-gradient(180deg,var(--panel2),var(--panel));
-      border-radius:12px; padding:.95rem 1.05rem; margin:.3rem 0 .5rem; }
-.es-head{ display:flex; flex-direction:column; gap:.35rem; margin-bottom:.7rem; }
-.es-badge{ align-self:flex-start; font-family:'JetBrains Mono'; font-weight:700;
-      font-size:.66rem; letter-spacing:.08em; text-transform:uppercase;
-      color:var(--amber); border:1px solid #5a4317; border-radius:6px;
-      padding:.15rem .5rem; }
-.es-lead{ color:var(--ink); font-size:.88rem; line-height:1.5; }
-.es-where{ color:var(--dim); font-size:.83rem; margin:.2rem 0 .55rem; }
-.es-where b{ color:var(--ink); }
-.es-step{ display:flex; gap:.6rem; align-items:baseline; margin:.3rem 0; }
-.es-step .es-n{ font-family:'JetBrains Mono'; font-weight:700; font-size:.7rem;
-      color:var(--bg); background:var(--amber); border-radius:6px;
-      padding:.1rem .42rem; flex:0 0 auto; }
-.es-step .es-t{ font-size:.86rem; line-height:1.45; color:var(--ink); }
-.es-check-h{ font-family:'JetBrains Mono'; font-size:.68rem; letter-spacing:.09em;
-      text-transform:uppercase; color:var(--dim); margin:.75rem 0 .35rem;
-      padding-top:.6rem; border-top:1px solid var(--line); }
+.es-card{ border:1px solid var(--line); border-left:4px solid var(--amber);
+      background:linear-gradient(135deg,#1a1f26 0%,var(--panel) 100%);
+      border-radius:14px; padding:1.1rem 1.2rem; margin:.4rem 0 .7rem;
+      box-shadow:0 2px 12px rgba(0,0,0,.3); }
+.es-head{ display:flex; flex-direction:column; gap:.45rem; margin-bottom:.85rem; }
+.es-title-row{ display:flex; align-items:center; gap:.7rem; }
+.es-icon{ font-size:1.25rem; flex:0 0 auto; }
+.es-badge{ font-family:'JetBrains Mono'; font-weight:700;
+      font-size:.68rem; letter-spacing:.1em; text-transform:uppercase;
+      color:var(--amber); border:1px solid #5a4317; border-radius:20px;
+      padding:.2rem .7rem; background:#1a130033; }
+.es-lead{ color:var(--ink); font-size:.9rem; line-height:1.6;
+      padding:.5rem .6rem; background:#ffffff08; border-radius:8px;
+      border-left:2px solid var(--amber); }
+.es-where-box{ background:#ffffff06; border:1px solid var(--line);
+      border-radius:10px; padding:.65rem .8rem; margin:.4rem 0 .7rem; }
+.es-where-label{ font-family:'JetBrains Mono'; font-size:.64rem;
+      letter-spacing:.12em; text-transform:uppercase; color:var(--dim);
+      margin-bottom:.3rem; }
+.es-where-val{ color:var(--cyan); font-size:.9rem; font-weight:600; }
+.es-steps-label{ font-family:'JetBrains Mono'; font-size:.64rem;
+      letter-spacing:.12em; text-transform:uppercase; color:var(--dim);
+      margin:.6rem 0 .35rem; }
+.es-step{ display:flex; gap:.65rem; align-items:flex-start; margin:.45rem 0;
+      padding:.4rem .5rem; border-radius:8px; background:#ffffff05; }
+.es-step .es-n{ font-family:'JetBrains Mono'; font-weight:700; font-size:.72rem;
+      color:var(--bg); background:var(--amber); border-radius:50%;
+      width:1.35rem; height:1.35rem; display:flex; align-items:center;
+      justify-content:center; flex:0 0 auto; margin-top:.05rem; }
+.es-step .es-t{ font-size:.88rem; line-height:1.5; color:var(--ink); }
+.es-check-h{ font-family:'JetBrains Mono'; font-size:.65rem; letter-spacing:.1em;
+      text-transform:uppercase; color:var(--dim); margin:.85rem 0 .4rem;
+      padding-top:.7rem; border-top:1px solid var(--line);
+      display:flex; align-items:center; gap:.5rem; }
+.es-check-h::before{ content:''; flex:1; height:1px; background:var(--line); display:none; }
+.es-progress-bar{ height:4px; background:var(--line); border-radius:4px;
+      margin:.2rem 0 .8rem; overflow:hidden; }
+.es-progress-fill{ height:100%; background:linear-gradient(90deg,var(--amber),var(--cyan));
+      border-radius:4px; transition:width .3s ease; }
 .es-check{ list-style:none; padding:0; margin:0; display:flex;
-      flex-direction:column; gap:.28rem; }
-.es-check li{ display:flex; gap:.5rem; align-items:center; font-size:.84rem;
-      font-family:'JetBrains Mono'; }
-.es-check .es-mark{ flex:0 0 auto; width:1rem; text-align:center; }
-.es-check li.es-todo{ color:var(--dim); }
-.es-check li.es-todo .es-mark{ color:var(--amber); }
-.es-check li.es-done{ color:var(--ink); }
-.es-check li.es-done .es-mark{ color:var(--cyan); }
-.es-foot{ color:var(--dim); font-size:.78rem; line-height:1.5;
-      margin-top:.75rem; padding-top:.6rem; border-top:1px solid var(--line); }
+      flex-direction:column; gap:.32rem; }
+.es-check li{ display:flex; gap:.55rem; align-items:center; font-size:.86rem;
+      padding:.3rem .45rem; border-radius:7px; transition:background .15s; }
+.es-check li.es-todo{ color:var(--dim); background:#ffffff04; }
+.es-check li.es-todo:hover{ background:#ffffff08; }
+.es-check li.es-done{ color:var(--ink); background:#37e0d011; }
+.es-check .es-mark{ flex:0 0 auto; width:1.1rem; height:1.1rem;
+      display:flex; align-items:center; justify-content:center;
+      border-radius:50%; font-size:.7rem; font-weight:700; }
+.es-check li.es-todo .es-mark{ background:#5a431755; color:var(--amber);
+      border:1px solid #5a4317; }
+.es-check li.es-done .es-mark{ background:#1f4d4955; color:var(--cyan);
+      border:1px solid #1f4d49; }
+.es-check .es-field{ font-family:'JetBrains Mono'; font-size:.78rem;
+      color:var(--dim); margin-left:auto; padding:.1rem .4rem;
+      border:1px solid var(--line); border-radius:4px; }
+.es-check li.es-done .es-field{ color:var(--cyan); border-color:#1f4d49; }
+.es-foot{ color:var(--dim); font-size:.8rem; line-height:1.55;
+      margin-top:.8rem; padding:.6rem .7rem;
+      background:#37e0d008; border-radius:8px;
+      border:1px solid #1f4d4955; }
+.es-foot b{ color:var(--cyan); }
+
+/* --- DXF expander title ready/waiting badge --------------------------- */
+.stExpander summary span{ white-space:pre; }
+
+/* --- DXF section picker hint ------------------------------------------ */
+.dxf-hint{ font-size:.78rem; color:var(--dim); line-height:1.5;
+      padding:.4rem .6rem; border-radius:8px;
+      background:#ffffff06; border:1px solid var(--line);
+      margin:.35rem 0 .6rem; }
+.dxf-hint code{ font-size:.75rem; color:var(--cyan); }
+.dxf-ready-banner{ display:flex; align-items:center; gap:.7rem;
+      border:1px solid #1f4d49; border-left:4px solid var(--cyan);
+      border-radius:12px; padding:.65rem .9rem; margin:.2rem 0 .85rem;
+      background:#37e0d010; font-size:.88rem; }
+.dxf-ready-banner b{ color:var(--cyan); }
 
 /* --- Mesh & DXF "how to use it" flow strip (input->calc->mesh->export) - */
-.flow-strip{ display:flex; align-items:stretch; flex-wrap:wrap; gap:.35rem;
-      border:1px solid var(--line); border-radius:12px; padding:.7rem .8rem;
-      background:linear-gradient(180deg,var(--panel2),var(--panel));
-      margin:.1rem 0 .85rem; }
-.flow-step{ flex:1 1 130px; display:flex; flex-direction:column; gap:.28rem;
-      padding:.15rem .25rem; }
-.flow-badge{ display:inline-flex; align-items:center; gap:.4rem;
-      font-family:'JetBrains Mono'; font-weight:700; font-size:.66rem;
-      letter-spacing:.06em; text-transform:uppercase; color:var(--cyan); }
-.flow-badge .flow-n{ color:var(--bg); background:var(--cyan); border-radius:6px;
-      padding:.05rem .38rem; font-size:.66rem; }
-.flow-here{ font-family:'Archivo'; font-weight:700; font-size:.86rem;
-      color:var(--ink); }
-.flow-sub{ font-size:.74rem; line-height:1.4; color:var(--dim); }
-.flow-arrow{ align-self:center; color:var(--amber); font-size:1rem;
-      font-family:'JetBrains Mono'; padding:0 .1rem; }
-@media (max-width:640px){ .flow-arrow{ display:none; }
-      .flow-step{ flex:1 1 100%; border-bottom:1px solid var(--line);
-      padding-bottom:.45rem; } .flow-step:last-child{ border-bottom:none; } }
+.flow-strip{ display:grid; grid-template-columns:repeat(4,1fr);
+      gap:0; border:1px solid var(--line); border-radius:14px;
+      overflow:hidden; margin:.15rem 0 1rem;
+      background:var(--panel); }
+.flow-step{ display:flex; flex-direction:column; gap:.3rem;
+      padding:.75rem .85rem; position:relative;
+      border-right:1px solid var(--line); }
+.flow-step:last-child{ border-right:none; }
+.flow-step::before{ content:''; position:absolute; top:0; left:0; right:0;
+      height:2px; background:var(--line); }
+.flow-step:first-child::before{ background:linear-gradient(90deg,var(--amber),var(--cyan)); }
+.flow-step:nth-child(2)::before{ background:linear-gradient(90deg,var(--cyan) 0%,var(--cyan) 50%,var(--line) 100%); opacity:.5; }
+.flow-step:nth-child(3)::before,.flow-step:last-child::before{ background:var(--line); }
+.flow-badge{ display:inline-flex; align-items:center; gap:.45rem;
+      font-family:'JetBrains Mono'; font-weight:700; font-size:.63rem;
+      letter-spacing:.08em; text-transform:uppercase; color:var(--cyan);
+      margin-bottom:.1rem; }
+.flow-badge .flow-n{ color:var(--bg); background:var(--cyan); border-radius:50%;
+      width:1.15rem; height:1.15rem; display:flex; align-items:center;
+      justify-content:center; font-size:.63rem; flex:0 0 auto; }
+.flow-here{ font-family:'Archivo'; font-weight:700; font-size:.88rem;
+      color:var(--ink); line-height:1.3; }
+.flow-sub{ font-size:.75rem; line-height:1.45; color:var(--dim); }
+.flow-arrow{ display:none; }
+.flow-active .flow-badge{ color:var(--amber); }
+.flow-active .flow-badge .flow-n{ background:var(--amber); }
+.flow-active::before{ background:var(--amber)!important; opacity:1!important; }
+@media (max-width:640px){ .flow-strip{ grid-template-columns:1fr 1fr; }
+      .flow-step{ border-bottom:1px solid var(--line); } }
 
 /* --- In-tab hardpoint summary (brings the sidebar's numbers into the tab) */
 .hp-card{ border:1px solid var(--line); border-left:3px solid var(--cyan);
@@ -2301,7 +2358,17 @@ _cats_nonempty = [(ck, cem, clab) for ck, cem, clab, _ in _TAB_CATEGORIES
                   if _cat_ordered(ck)]
 
 _cat_labels = [f"{cem}  {clab}" for ck, cem, clab in _cats_nonempty]
-_cat_tabs = st.tabs(_cat_labels, on_change="rerun", key="_cat_tabs_nav")
+# Build a fingerprint of the current visible tab structure so that the
+# st.tabs widget keys change whenever the role selection changes the set
+# or order of tabs.  Without this, Streamlit reuses the persisted tab-index
+# from the previous role (e.g. index=2 for the first subsystem's category
+# strip is silently reapplied to the second subsystem's strip, which may
+# have fewer categories — causing the wrong category, or only the first
+# category's tabs, to appear).  A role-keyed widget name forces Streamlit
+# to treat it as a brand-new widget with a fresh default index=0.
+_roles_fingerprint = "_".join(sorted(_roles))
+_cat_tabs = st.tabs(_cat_labels, on_change="rerun",
+                    key=f"_cat_tabs_nav_{_roles_fingerprint}")
 
 _cat_container = {}   # category_key -> its outer tab container (for .open gating)
 for _ci, (_ck, _cem, _clab) in enumerate(_cats_nonempty):
@@ -2314,7 +2381,7 @@ for _ci, (_ck, _cem, _clab) in enumerate(_cats_nonempty):
         else:
             _sub_labels = [_tab_label(i) for i in _sub_ids]
             _sub = st.tabs(_sub_labels, on_change="rerun",
-                           key=f"_subtabs_{_ck}")
+                           key=f"_subtabs_{_ck}_{_roles_fingerprint}")
             for _si, _sid in enumerate(_sub_ids):
                 _id_to_container[_sid] = _sub[_si]
 
@@ -2329,7 +2396,7 @@ if _hidden_ids:
                    "only if you need it. Pick that subteam in the selector to "
                    "bring its tools up front properly.")
         _hidden_sub = st.tabs([_tab_label(i) for i in _hidden_ids],
-                              on_change="rerun", key="_hidden_tabs_nav")
+                              on_change="rerun", key=f"_hidden_tabs_nav_{_roles_fingerprint}")
         for _hi, _hid in enumerate(_hidden_ids):
             _id_to_container[_hid] = _hidden_sub[_hi]
 
@@ -4114,32 +4181,55 @@ def _render_export_empty_state(subsystem_key, name):
 
     _check_html = ""
     if needs:
+        _n_done_chk = sum(1 for _, dk in needs if _have(dk))
+        _n_total_chk = len(needs)
+        _pct_chk = int(100 * _n_done_chk / _n_total_chk) if _n_total_chk else 0
         _rows = ""
         for label, dkey in needs:
             done = _have(dkey)
             _mark = "✓" if done else "○"
             _cls = "es-done" if done else "es-todo"
+            _field_tag = f'<span class="es-field">{dkey}</span>'
             _rows += (f'<li class="{_cls}"><span class="es-mark">{_mark}</span>'
-                      f'{label}</li>')
+                      f'<span style="flex:1">{label}</span>{_field_tag}</li>')
         _check_html = (
-            '<div class="es-check-h">What the export needs</div>'
+            f'<div class="es-check-h">Inputs needed &nbsp;'
+            f'<span style="color:var(--cyan);font-size:.8rem;">'
+            f'{_n_done_chk}/{_n_total_chk}</span></div>'
+            f'<div class="es-progress-bar">'
+            f'<div class="es-progress-fill" style="width:{_pct_chk}%"></div></div>'
             f'<ul class="es-check">{_rows}</ul>')
+
+    # Count done vs total for progress bar
+    _n_done = sum(1 for _, dk in needs if _have(dk))
+    _n_total = len(needs)
+    _pct = int(100 * _n_done / _n_total) if _n_total else 0
+    _all_done = _n_done == _n_total and _n_total > 0
 
     st.markdown(
         f'''
 <div class="es-card">
   <div class="es-head">
-    <span class="es-badge">Waiting on numbers</span>
-    <span class="es-lead">The DXF is built from the real numbers <b>you</b> enter
-      in your tab &mdash; the app draws the section from them, it never guesses.
-      So an empty export isn&rsquo;t an error; it just means those inputs
-      aren&rsquo;t filled in yet.</span>
+    <div class="es-title-row">
+      <span class="es-icon">📐</span>
+      <span class="es-badge">{"Ready to export" if _all_done else "Waiting on your numbers"}</span>
+    </div>
+    <span class="es-lead"><b>How it works:</b> You enter real numbers in your
+      tab &mdash; the app turns them into the exact 2-D section and DXF.
+      It never guesses. No numbers in &rarr; no section out. An empty panel
+      isn&rsquo;t broken &mdash; it just means the inputs below aren&rsquo;t
+      filled in yet.</span>
   </div>
-  <div class="es-where">Enter them in <b>{where}</b>:</div>
+  <div class="es-where-box">
+    <div class="es-where-label">Where to enter the numbers</div>
+    <div class="es-where-val">&#8594; {where}</div>
+  </div>
+  <div class="es-steps-label">Steps</div>
   {_step_html}
   {_check_html}
-  <div class="es-foot">Fill the inputs above and they tick off here. Once
-    they&rsquo;re all in, the short-list and DXF appear on their own.</div>
+  <div class="es-foot"><b>Once all inputs are ticked,</b> the section short-list
+    and &#8659; Download DXF button appear here automatically &mdash;
+    no page refresh needed.</div>
 </div>
 ''',
         unsafe_allow_html=True)
@@ -4169,16 +4259,29 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
         except Exception:
             candidates = []
 
-    st.markdown(f"###### 📐 Short-list to mesh &amp; export — {_name}")
-
-    if subsystem_key == "brakes":
-        st.caption("The full rotor short-list (mass-vs-temp Pareto) and its "
-                   "half-section DXF live in the 🛑 Brakes tab optimiser. Below "
-                   "is the caliper-mount bracket section, once the tab has it.")
-
+    # Ready banner — shown instead of the heading when geometry is live
     if not candidates:
+        st.markdown(f"###### 📐 {_name} — mesh & DXF export")
+        if subsystem_key == "brakes":
+            st.caption("The full rotor short-list and half-section DXF live in the "
+                       "🛑 Brakes tab optimiser. The caliper-mount bracket "
+                       "appears here once the tab has run.")
         _render_export_empty_state(subsystem_key, _name)
         return
+
+    # Geometry is ready — show a compact ready-state banner
+    st.markdown(
+        f'''<div style="border:1px solid #1f4d49;border-left:4px solid var(--cyan);"
+             "border-radius:12px;padding:.7rem 1rem;margin:.2rem 0 .9rem;"
+             "background:#37e0d010;display:flex;align-items:center;gap:.7rem;">"
+             "<span style=\"font-size:1.2rem;\">✅</span>"
+             "<span><b style=\"color:var(--cyan);\">Geometry ready</b>"
+             " &mdash; your numbers are in. Pick a section below and download the DXF.</span></div>''',
+        unsafe_allow_html=True)
+
+    if subsystem_key == "brakes":
+        st.caption("The full rotor short-list and half-section DXF live in the "
+                   "🛑 Brakes tab optimiser. Below is the caliper-mount bracket.")
 
     # --- the short-list table (what's worth meshing) ----------------------- #
     _rows = []
@@ -4187,18 +4290,21 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
         _r.update({k: v for k, v in (c.get("meta") or {}).items()
                    if v is not None})
         _rows.append(_r)
-    st.markdown("**Short-list to mesh** — each row is a real section from your "
-                "computed numbers; confirm in Ansys / your FEA:")
+    st.caption("**Sections to mesh** — drawn from your real inputs. "
+               "Confirm geometry in ANSYS / your FEA before committing:")
     st.dataframe(_rows, width="stretch", hide_index=True)
 
     # --- DXF export per short-listed geometry ------------------------------ #
-    st.markdown("**Export to CAD (DXF)** — imports into SolidWorks as one closed "
-                "sketch; extrude/revolve, then mesh in ANSYS:")
+    st.markdown("---")
+    st.caption("**Export to CAD** — imports into SolidWorks as one closed sketch;"
+               " extrude/revolve, then mesh in ANSYS:")
     _labels = {i: c.get("label", f"section {i+1}")
                for i, c in enumerate(candidates)}
-    _pick = st.selectbox("Section to export", options=list(_labels.keys()),
+    _pick = st.selectbox("Choose section to export", options=list(_labels.keys()),
                          format_func=lambda i: _labels[i],
-                         key=f"{key_prefix}_gdxf_pick")
+                         key=f"{key_prefix}_gdxf_pick",
+                         help="Each option is a real 2-D profile from your tab's "
+                              "numbers — pick the one you want to take into CAD.")
     _cand = candidates[_pick]
     _notes = list(_cand.get("notes", [])) or [
         f"{k}: {v}" for k, v in (_cand.get("meta") or {}).items() if v is not None]
@@ -4206,12 +4312,15 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
     # SolidWorks-import guard: warn on any self-intersecting closed profile.
     _clean, _warns = _validate_candidate_geometry(_cand)
     if not _clean:
-        st.warning("⚠️ This section may not import as a clean closed contour "
-                   "(" + "; ".join(_warns) + "). Check it in SolidWorks before "
-                   "extruding.")
+        st.warning("⚠️ This profile may not import cleanly — "
+                   + "; ".join(_warns) +
+                   ". Inspect in SolidWorks before extruding.")
     else:
-        st.caption("✓ Profile checked: single closed contour, holes as separate "
-                   "loops, units embedded — imports ready to extrude.")
+        st.markdown(
+            '<span style="color:var(--cyan);font-size:.82rem;">'
+            '✓ Profile is a single closed contour — holes as separate loops, '
+            'units embedded. Ready to open in SolidWorks.</span>',
+            unsafe_allow_html=True)
 
     _dxf_kwargs = _cand.get("dxf_kwargs")
     if _dxf_kwargs:
@@ -4222,10 +4331,20 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
                                   _cand.get("profile_mm", [(0, 0)]),
                                   notes=_notes)
     _safe = subsystem_key.replace("-", "_")
-    st.download_button(
+    _fname = f"kinematik_{_safe}_{_pick+1}.dxf"
+    _dl_cols = st.columns([2, 1])
+    _dl_cols[0].download_button(
         "⬇ Download DXF", data=_dxf,
-        file_name=f"kinematik_{_safe}_{_pick+1}.dxf",
-        mime="application/dxf", key=f"{key_prefix}_gdxf_dl")
+        file_name=_fname,
+        mime="application/dxf",
+        use_container_width=True,
+        key=f"{key_prefix}_gdxf_dl")
+    _dl_cols[1].markdown(
+        f'<div style="font-size:.75rem;color:var(--dim);padding:.5rem 0;line-height:1.5;">'
+        f'<b style="color:var(--ink);">{_fname}</b><br>'
+        f'R12 DXF &mdash; open in SolidWorks via<br>'
+        f'<code>File &rsaquo; Open &rsaquo; set type to DXF</code></div>',
+        unsafe_allow_html=True)
     # Immediately free up the memory holding those DXF text blocks. The del is
     # the actual win; the collection is throttled so it doesn't stall every
     # rerun (st.tabs runs this tab's code on every interaction).
@@ -4905,35 +5024,35 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
 
 
 def _render_mesh_dxf_flow_strip(where_label):
-    """A one-glance 'how to use this' strip: input -> calculate -> mesh -> export.
+    """4-stage grid strip showing the Input → Calculate → Mesh → Export workflow.
 
-    Sits at the top of every Mesh & DXF expander so a member immediately sees the
-    four stages and, crucially, WHERE each one happens — the inputs live in their
-    own tab, the section/short-list is computed here, and the DXF drops out at the
-    end. `where_label` names the tab whose numbers feed this export."""
+    The Input tile is highlighted (active) and shows the specific tab name.
+    Rendered as a 4-column CSS grid — each tile is a card with a step number,
+    location, and one-line description. where_label names the tab whose numbers
+    feed this export.
+    """
     _steps = [
         ("Input", where_label,
-         "Enter your real numbers in the tab &mdash; the section is drawn "
-         "from them, never guessed."),
-        ("Calculate", "same tab, automatically",
-         "Run the tab&rsquo;s tool; it computes the section and a "
-         "short-list of what&rsquo;s worth meshing."),
-        ("Mesh", "here &amp; in your FEA",
-         "Pick a short-listed section below, then mesh the survivors in "
-         "Ansys / your FEA."),
-        ("Export", "⬇ Download DXF, here",
-         "One closed sketch &rarr; SolidWorks: import, extrude/revolve, "
-         "then mesh."),
+         "Enter your numbers here — the section is drawn from them.",
+         True),
+        ("Calculate", "auto, when tab runs",
+         "The tool publishes the geometry — no extra action needed.",
+         False),
+        ("Mesh", "here, in this panel",
+         "Pick a section from the short-list below.",
+         False),
+        ("Export", "⬇ Download DXF",
+         "One closed sketch → SolidWorks → extrude → ANSYS.",
+         False),
     ]
     _cells = []
-    for i, (title, here, sub) in enumerate(_steps):
+    for i, (title, here, sub, active) in enumerate(_steps):
+        _cls = "flow-step flow-active" if active else "flow-step"
         _cells.append(
-            f'<div class="flow-step">'
-            f'<span class="flow-badge"><span class="flow-n">{i+1}</span>{title}</span>'
-            f'<span class="flow-here">{here}</span>'
+            f'<div class="{_cls}">' +
+            f'<span class="flow-badge"><span class="flow-n">{i+1}</span>{title}</span>' +
+            f'<span class="flow-here">{here}</span>' +
             f'<span class="flow-sub">{sub}</span></div>')
-        if i < len(_steps) - 1:
-            _cells.append('<span class="flow-arrow">&rarr;</span>')
     st.markdown('<div class="flow-strip">' + "".join(_cells) + '</div>',
                 unsafe_allow_html=True)
 
@@ -4954,7 +5073,17 @@ def render_mesh_and_dxf_expander(subsystem_key, *, key_prefix,
     `render_documentation_expander(...)` call."""
     _nm = title_name or _VC_LABEL.get(
         subsystem_key, subsystem_key.replace("-", " ").title())
-    with st.expander(f"📐  {_nm} — mesh & DXF export", expanded=False):
+    # Show ✓ or ○ in the expander title so the user knows at a glance
+    # whether geometry is ready before they open it.
+    try:
+        _exp_geom = get_export_geometry(subsystem_key)
+        _exp_cands = candidates or _subsystem_profile_candidates(subsystem_key)
+    except Exception:
+        _exp_geom, _exp_cands = None, []
+    _exp_ready = bool(_exp_cands)
+    _exp_status = "✓ ready" if _exp_ready else "○ needs numbers"
+    _exp_label = f"📐  {_nm} — mesh & DXF export &nbsp; [{_exp_status}]"
+    with st.expander(_exp_label, expanded=False):
         _hint = _EXPORT_SOURCE_HINT.get(subsystem_key) or {}
         _where = _hint.get("where", f"the {_nm} tab")
         _render_mesh_dxf_flow_strip(_where)
