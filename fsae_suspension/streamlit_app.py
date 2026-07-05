@@ -16030,7 +16030,7 @@ with tab11:
                     colorbar=dict(
                         title="°C",
                         tickfont=dict(color="#cdd6df"),
-                        titlefont=dict(color="#cdd6df"),
+                        title_font=dict(color="#cdd6df"),
                         bgcolor="rgba(0,0,0,0)"),
                     xgap=2, ygap=2,
                 ))
@@ -18793,11 +18793,11 @@ with tab_tractive:
                   xaxis=dict(title="Time (s)", gridcolor="#1d242c",
                              zerolinecolor="#262d36"),
                   yaxis=dict(title="Cell temp (°C)", gridcolor="#1d242c",
-                             zerolinecolor="#262d36", titlefont=dict(color="#37e0d0"),
+                             zerolinecolor="#262d36", title_font=dict(color="#37e0d0"),
                              tickfont=dict(color="#37e0d0")),
                   yaxis2=dict(title="Heat absorbed (J)", overlaying="y", side="right",
                               gridcolor="rgba(0,0,0,0)",
-                              titlefont=dict(color="#ffb02e"),
+                              title_font=dict(color="#ffb02e"),
                               tickfont=dict(color="#ffb02e")),
                   legend=dict(orientation="h", y=1.12, bgcolor="rgba(0,0,0,0)",
                               font=dict(size=11)),
