@@ -2750,6 +2750,28 @@ def _proclib_render_cards(res, *, show_subsystem):
             unsafe_allow_html=True)
 
 
+def _mb_disclaimer_banner():
+    """A permanent, always-on banner shown ABOVE the myth-buster / sanity-check
+    input — rendered unconditionally on every run (never tied to a button
+    click), so the 'validate in the real tools' reminder is always visible.
+
+    Defined here, ABOVE the render functions that call it, because Streamlit
+    executes this file top-to-bottom every run and the sanity-check surfaces are
+    invoked before the interpreter would reach a later definition.
+
+    Uses st.warning (a native Streamlit component) rather than raw HTML so it
+    cannot be hidden by page CSS or stripped by the markdown sanitiser.
+    """
+    st.warning(
+        "⚠️ **The hour before ANSYS, SolidWorks & MATLAB.** This is a fast, "
+        "deterministic **screening** tool — it does **not** run FEA, CFD or a "
+        "full vehicle sim. Always validate anything you'll design, cut, order "
+        "or sign off in the real tools — **ANSYS/CFD** (structural, thermal, "
+        "flow), **SolidWorks** (geometry, fit, mass), **MATLAB/Simulink** "
+        "(lap-time, dynamics) — and confirm rule limits against the current "
+        "season's official rulebook.")
+
+
 def render_myth_check(subsystem_key, *, key_prefix, context=None,
                       placeholder=None):
     """Generic inline 'sanity-check a claim' box, wired to the deterministic
@@ -12240,24 +12262,6 @@ def render_mythbuster():
     # Always-on validation disclaimer: the myth-buster is the fast first pass,
     # not the final word. Name the real tools so it's unambiguous.
     _mb_validation_disclaimer()
-
-
-def _mb_disclaimer_banner():
-    """A permanent, always-on banner shown ABOVE the myth-buster / sanity-check
-    input — rendered unconditionally on every run (never tied to a button
-    click), so the 'validate in the real tools' reminder is always visible.
-
-    Uses st.warning (a native Streamlit component) rather than raw HTML so it
-    cannot be hidden by page CSS or stripped by the markdown sanitiser.
-    """
-    st.warning(
-        "⚠️ **The hour before ANSYS, SolidWorks & MATLAB.** This is a fast, "
-        "deterministic **screening** tool — it does **not** run FEA, CFD or a "
-        "full vehicle sim. Always validate anything you'll design, cut, order "
-        "or sign off in the real tools — **ANSYS/CFD** (structural, thermal, "
-        "flow), **SolidWorks** (geometry, fit, mass), **MATLAB/Simulink** "
-        "(lap-time, dynamics) — and confirm rule limits against the current "
-        "season's official rulebook.")
 
 
 def _mb_validation_disclaimer(compact: bool = False):
