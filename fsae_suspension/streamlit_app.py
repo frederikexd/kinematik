@@ -2807,6 +2807,12 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
                                   _v, str(_v))
             record_activity(subsystem_key, "myth",
                             f"\u201c{_claim.strip()}\u201d \u2192 {_verdict_label}")
+            # Same honest reminder as the full myth-buster view: screening pass,
+            # validate in the real tools.
+            try:
+                _mb_validation_disclaimer()
+            except Exception:
+                pass
         except Exception as _me:
             st.warning(f"Couldn't run the myth-buster: {_me}")
 
@@ -12214,6 +12220,37 @@ def render_mythbuster():
                         st.error(f"Couldn't save the rule: {_r.get('error')}")
         except Exception as _myth_e:
             st.caption(f"Authoring unavailable right now: {_myth_e}")
+
+    # Always-on validation disclaimer: the myth-buster is the fast first pass,
+    # not the final word. Name the real tools so it's unambiguous.
+    _mb_validation_disclaimer()
+
+
+def _mb_validation_disclaimer():
+    """The 'validate in the real tools' footer for the Myth-Buster.
+
+    Kept in one place so every myth-buster surface (the full view and the
+    inline per-subsystem checks) carries the same honest reminder: this is a
+    deterministic screening pass, the hour BEFORE you open the analysis
+    packages — not a replacement for them.
+    """
+    st.markdown(
+        '<hr style="border:none;border-top:1px solid rgba(128,128,128,.18);'
+        'margin:14px 0 8px;">', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="hint" style="font-size:.72rem;line-height:1.55;'
+        'color:var(--dim);margin:0;">'
+        '⚠️ <b>This is the hour before ANSYS, SolidWorks and MATLAB — not a '
+        'replacement for them.</b> The myth-buster is a fast, deterministic '
+        'sanity check against declared numbers and encoded physics/FSAE rules: '
+        'it catches bad assumptions early and settles arguments, but it does '
+        'not run FEA, CFD or a full vehicle sim. Always validate anything you\'re '
+        'about to design, cut, order or sign off in the real tools — '
+        '<b>ANSYS / CFD</b> for structural &amp; thermal &amp; flow, '
+        '<b>SolidWorks</b> for geometry, fit and mass properties, '
+        '<b>MATLAB / Simulink</b> for lap-time and dynamics — and confirm rule '
+        'limits against the current season\'s official rulebook.</p>',
+        unsafe_allow_html=True)
 
 
 def _mb_reference_claim_for(_mb, result):
