@@ -1599,7 +1599,6 @@ left. Want every tab described? It's in the project README.
 _TAB_META = {
     "kinematics":  ("📐", "Kinematics"),
     "roll":        ("🎚️", "Roll & Load Transfer"),
-    "grip":        ("🪀", "Grip Balance"),
     "model3d":     ("🏎️", "3D Model"),
     "aero":        ("🌬️", "Aerodynamics"),
     "ev":          ("⚡", "EV Powertrain"),
@@ -1612,9 +1611,7 @@ _TAB_META = {
     "notes":       ("📝", "Lead Notes"),
     "tire":        ("🛞", "Tire & Grip"),
     "setup":       ("🎛️", "Setup Optimiser"),
-    "laptime":     ("⏱️", "Lap Time"),
-    "ggv":         ("🟢", "GGV Diagram"),
-    "transient":   ("〰️", "Transient"),
+    "laptime":     ("🏁", "Track Testing"),
     "validation":  ("✔️", "Validation"),
     "integration": ("🔗", "Integration"),
     "registry":    ("🗂️", "Registry"),
@@ -1640,8 +1637,8 @@ _FULL_ORDER = list(_TAB_META.keys())
 # ========================================================================== #
 _TAB_CATEGORIES = [
     ("testing",  "🧪", "Testing & Simulation",
-     ["kinematics", "roll", "grip", "tire", "aero", "ev", "laptime",
-      "ggv", "transient", "setup"]),
+     ["kinematics", "roll", "tire", "aero", "ev", "laptime",
+      "setup"]),
     ("design",   "🛠️", "Design & Sizing",
      ["brakes", "accum", "pcb", "compliance", "teamfit", "model3d"]),
     ("checks",   "✅", "Checks & Integration",
@@ -1675,18 +1672,19 @@ _SHARED_IDS = ["model3d", "integration", "registry", "notes", "weight", "validat
 # needs the EV tab, where radiator sizing/CAD lives; brakes wants lap time & GGV
 # to see how brake balance plays out on track).
 _ROLE_TABS = {
-    "suspension": ["kinematics", "roll", "grip", "compliance", "tire",
-                   "setup", "ggv", "transient", "laptime"],
-    "aero":       ["aero", "laptime", "ggv", "transient", "setup"],
-    "powertrain": ["ev", "laptime", "ggv", "transient", "setup", "dfmea"],
+    "suspension": ["kinematics", "roll", "compliance", "tire",
+                   "setup", "laptime"],
+    "aero":       ["aero", "laptime", "setup"],
+    "powertrain": ["ev", "laptime", "setup", "dfmea"],
     "electrics":  ["accum", "ev", "laptime", "pcb", "tractive", "dfmea"],
     # cooling's radiator sizing / CAD import lives in the EV tab; it also owns
     # the DFMEA + tractive (precharge/PCM) surfaces.
     "cooling":    ["ev", "dfmea", "tractive"],
     # data-acquisition lives in the Electronics/PCB tab.
     "dataacq":    ["pcb", "dfmea"],
-    # brakes wants lap time + GGV to see brake balance on track, plus tyre grip.
-    "brakes":     ["brakes", "tire", "laptime", "ggv"],
+    # brakes wants Track Testing (lap time + GGV) to see brake balance on track,
+    # plus tyre grip.
+    "brakes":     ["brakes", "tire", "laptime"],
     "chassis":    ["teamfit", "compliance"],
     "cost":       ["cost"],
     "everyone":   [],   # just the shared spine
@@ -6000,7 +5998,8 @@ def _render_mount_bolt_check(key_prefix, *, default_ext_n=2000.0,
 
 tab1        = _id_to_container["kinematics"]
 tab2        = _id_to_container["roll"]
-tab3        = _id_to_container["grip"]
+# Grip Balance is no longer a standalone tab — it is rendered as a collapsible
+# window inside the Tire & Grip tab (see render_grip_balance / tab9).
 tab4        = _id_to_container["model3d"]
 tab_aero    = _id_to_container["aero"]
 tab_ev      = _id_to_container["ev"]
@@ -6013,9 +6012,10 @@ tab7        = _id_to_container["weight"]
 tab8        = _id_to_container["notes"]
 tab9        = _id_to_container["tire"]
 tab10       = _id_to_container["setup"]
-tab11       = _id_to_container["laptime"]
-tab_ggv     = _id_to_container["ggv"]
-tab_tr      = _id_to_container["transient"]
+# "laptime" is now the merged TRACK TESTING tab (lap time + GGV + transient, each
+# in its own collapsible window under one shared Powertrain & aero window). GGV
+# and Transient are no longer standalone tabs.
+tab_track   = _id_to_container["laptime"]
 tab12       = _id_to_container["validation"]
 tab13       = _id_to_container["integration"]
 tab_registry = _id_to_container["registry"]
@@ -6200,73 +6200,81 @@ with tab2:
   # roll-centre vs travel needs a per-state RC; approximate via IC migration
   rc_static = veh.roll_center_height(kin, veh.p.track_front)
 
-  c1, c2 = st.columns([1.3, 1])
-  # load transfer vs lateral g
-  gs = np.linspace(0, 1.8, 30)
-  fl, fr, rl, rr = [], [], [], []
-  for g in gs:
-      ld, _ = veh.lateral_load_transfer(g)
-      fl.append(ld.fl); fr.append(ld.fr); rl.append(ld.rl); rr.append(ld.rr)
-  figL = go.Figure()
-  _cv = lambda arr: [units_mod.from_metric(v, "N") for v in arr]
-  figL.add_trace(go.Scatter(x=gs, y=_cv(fr), name="Front outer", line=dict(color=CYAN, width=3)))
-  figL.add_trace(go.Scatter(x=gs, y=_cv(fl), name="Front inner", line=dict(color=CYAN, width=1.5, dash="dot")))
-  figL.add_trace(go.Scatter(x=gs, y=_cv(rr), name="Rear outer", line=dict(color=AMBER, width=3)))
-  figL.add_trace(go.Scatter(x=gs, y=_cv(rl), name="Rear inner", line=dict(color=AMBER, width=1.5, dash="dot")))
-  figL.update_layout(**PLOT_LAYOUT, title="Tire vertical load vs lateral g",
-                     xaxis_title="lateral acceleration (g)",
-                     yaxis_title=units_mod.ulabel("vertical load (N)"),
-                     height=380)
-  c1.plotly_chart(figL, width='stretch')
+  with st.expander("📊  Tire vertical load vs lateral g — roll centres · LLT",
+                   expanded=False):
+    c1, c2 = st.columns([1.3, 1])
+    # load transfer vs lateral g
+    gs = np.linspace(0, 1.8, 30)
+    fl, fr, rl, rr = [], [], [], []
+    for g in gs:
+        ld, _ = veh.lateral_load_transfer(g)
+        fl.append(ld.fl); fr.append(ld.fr); rl.append(ld.rl); rr.append(ld.rr)
+    figL = go.Figure()
+    _cv = lambda arr: [units_mod.from_metric(v, "N") for v in arr]
+    figL.add_trace(go.Scatter(x=gs, y=_cv(fr), name="Front outer", line=dict(color=CYAN, width=3)))
+    figL.add_trace(go.Scatter(x=gs, y=_cv(fl), name="Front inner", line=dict(color=CYAN, width=1.5, dash="dot")))
+    figL.add_trace(go.Scatter(x=gs, y=_cv(rr), name="Rear outer", line=dict(color=AMBER, width=3)))
+    figL.add_trace(go.Scatter(x=gs, y=_cv(rl), name="Rear inner", line=dict(color=AMBER, width=1.5, dash="dot")))
+    figL.update_layout(**PLOT_LAYOUT, title="Tire vertical load vs lateral g",
+                       xaxis_title="lateral acceleration (g)",
+                       yaxis_title=units_mod.ulabel("vertical load (N)"),
+                       height=380)
+    c1.plotly_chart(figL, width='stretch')
 
-  info = veh.lateral_load_transfer(1.2)[1]
-  c2.markdown(metric("Roll-centre F", f"{info['rc_front']:.0f}", "mm"), unsafe_allow_html=True)
-  c2.markdown(metric("Roll-centre R", f"{info['rc_rear']:.0f}", "mm"), unsafe_allow_html=True)
-  c2.markdown(metric("Body roll @1.2g", f"{info['roll_angle']:.2f}", "°",
-                     "good" if info['roll_angle'] < 2.5 else "warn"), unsafe_allow_html=True)
-  c2.markdown(metric("Front LLT @1.2g", f"{info['ltd_front']:.0f}", "N"), unsafe_allow_html=True)
-  c2.markdown(metric("Rear LLT @1.2g", f"{info['ltd_rear']:.0f}", "N"), unsafe_allow_html=True)
+    info = veh.lateral_load_transfer(1.2)[1]
+    c2.markdown(metric("Roll-centre F", f"{info['rc_front']:.0f}", "mm"), unsafe_allow_html=True)
+    c2.markdown(metric("Roll-centre R", f"{info['rc_rear']:.0f}", "mm"), unsafe_allow_html=True)
+    c2.markdown(metric("Body roll @1.2g", f"{info['roll_angle']:.2f}", "°",
+                       "good" if info['roll_angle'] < 2.5 else "warn"), unsafe_allow_html=True)
+    c2.markdown(metric("Front LLT @1.2g", f"{info['ltd_front']:.0f}", "N"), unsafe_allow_html=True)
+    c2.markdown(metric("Rear LLT @1.2g", f"{info['ltd_rear']:.0f}", "N"), unsafe_allow_html=True)
 
   # Roll-centre migration through travel — the honest picture vs a static number.
-  mt, mrc = veh.roll_center_migration(kin, veh.p.track_front, -30, 30, 21)
-  figM = go.Figure()
-  figM.add_trace(go.Scatter(
-      x=[units_mod.from_metric(v, "mm") for v in mt],
-      y=[units_mod.from_metric(v, "mm") for v in mrc], mode="lines",
-      line=dict(color="#9b8cff", width=3)))
-  figM.update_layout(**PLOT_LAYOUT, title="Roll-centre height migration vs travel",
-                     xaxis_title=units_mod.ulabel("travel (mm, + bump)"),
-                     yaxis_title=units_mod.ulabel("RC height (mm)"),
-                     height=300)
-  st.plotly_chart(figM, width='stretch')
-  _rc_swing = max(mrc) - min(mrc) if all(np.isfinite(mrc)) else float("nan")
-  _uL = units_mod.label("mm")
-  _rc_swing_d = units_mod.from_metric_delta(_rc_swing, "mm")
-  _travel_d = units_mod.from_metric_delta(30, "mm")
-  st.markdown(f'<p class="hint">Across ±{_travel_d:.0f} {_uL} of travel the front '
-              f'roll centre moves {_rc_swing_d:.0f} {_uL}. Large RC migration means '
-              f'the load-transfer balance shifts as the car heaves and rolls — a '
-              f'flatter curve is generally more predictable. The load-transfer numbers '
-              f'above use the static RC; this plot shows how much that assumption '
-              f'drifts under travel.</p>', unsafe_allow_html=True)
+  with st.expander("📈  Roll-centre height migration vs travel", expanded=False):
+    mt, mrc = veh.roll_center_migration(kin, veh.p.track_front, -30, 30, 21)
+    figM = go.Figure()
+    figM.add_trace(go.Scatter(
+        x=[units_mod.from_metric(v, "mm") for v in mt],
+        y=[units_mod.from_metric(v, "mm") for v in mrc], mode="lines",
+        line=dict(color="#9b8cff", width=3)))
+    figM.update_layout(**PLOT_LAYOUT, title="Roll-centre height migration vs travel",
+                       xaxis_title=units_mod.ulabel("travel (mm, + bump)"),
+                       yaxis_title=units_mod.ulabel("RC height (mm)"),
+                       height=300)
+    st.plotly_chart(figM, width='stretch')
+    _rc_swing = max(mrc) - min(mrc) if all(np.isfinite(mrc)) else float("nan")
+    _uL = units_mod.label("mm")
+    _rc_swing_d = units_mod.from_metric_delta(_rc_swing, "mm")
+    _travel_d = units_mod.from_metric_delta(30, "mm")
+    st.markdown(f'<p class="hint">Across ±{_travel_d:.0f} {_uL} of travel the front '
+                f'roll centre moves {_rc_swing_d:.0f} {_uL}. Large RC migration means '
+                f'the load-transfer balance shifts as the car heaves and rolls — a '
+                f'flatter curve is generally more predictable. The load-transfer numbers '
+                f'above use the static RC; this plot shows how much that assumption '
+                f'drifts under travel.</p>', unsafe_allow_html=True)
 
-  _rc_static_d = units_mod.from_metric(rc_static, "mm")
-  _rc_lo = units_mod.from_metric(20, "mm")
-  _rc_hi = units_mod.from_metric(60, "mm")
-  st.markdown(f'<p class="hint">Roll centre sits {_rc_static_d:.0f} {_uL} above ground at '
-              f'the front. A higher RC reduces body roll but adds jacking and lateral '
-              f'scrub; most FSAE cars keep it {_rc_lo:.0f}–{_rc_hi:.0f} {_uL}. The '
-              f'geometric/elastic split of load transfer is what you tune with bar '
-              f'stiffness and RC height to set the balance.</p>', unsafe_allow_html=True)
-  st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
-              '<b>Steady-state model.</b> These numbers assume sustained cornering at '
-              'the given lateral g — they capture the car loaded and balanced mid-corner, '
-              'but not transient load: turn-in, trail-braking, kerb strikes, or damper '
-              'behaviour. Use it for balance and geometry tuning, not for transient '
-              'response.</p>', unsafe_allow_html=True)
+    _rc_static_d = units_mod.from_metric(rc_static, "mm")
+    _rc_lo = units_mod.from_metric(20, "mm")
+    _rc_hi = units_mod.from_metric(60, "mm")
+    st.markdown(f'<p class="hint">Roll centre sits {_rc_static_d:.0f} {_uL} above ground at '
+                f'the front. A higher RC reduces body roll but adds jacking and lateral '
+                f'scrub; most FSAE cars keep it {_rc_lo:.0f}–{_rc_hi:.0f} {_uL}. The '
+                f'geometric/elastic split of load transfer is what you tune with bar '
+                f'stiffness and RC height to set the balance.</p>', unsafe_allow_html=True)
+    st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
+                '<b>Steady-state model.</b> These numbers assume sustained cornering at '
+                'the given lateral g — they capture the car loaded and balanced mid-corner, '
+                'but not transient load: turn-in, trail-braking, kerb strikes, or damper '
+                'behaviour. Use it for balance and geometry tuning, not for transient '
+                'response.</p>', unsafe_allow_html=True)
 
-# ----------------------------- TAB 3 --------------------------------------- #
-with tab3:
+# ------------------ GRIP BALANCE (now nested in Tire & Grip) --------------- #
+# Grip Balance used to be its own top-level tab (tab3). It has been merged into
+# the Tire & Grip tab as a collapsible window, since the balance numbers are only
+# as trustworthy as the tire they run on — keeping them beside the tire model
+# makes that dependency obvious. The body is unchanged; it's just wrapped in a
+# function so the Tire & Grip tab can drop it into an expander.
+def render_grip_balance():
   try:
     render_process_library("suspension", key_prefix="grip_pl")
   except Exception:
@@ -6293,7 +6301,7 @@ with tab3:
       st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
                   'padding-left:10px;">Grip is running on the <b>Pacejka MF5.2</b> '
                   'model with the <b>generic default tire</b>. Good for comparing '
-                  'setups; load your TTC-fitted tire in the TIRE &amp; GRIP tab for '
+                  'setups; load your TTC-fitted tire above for '
                   'absolute numbers you can trust.</p>', unsafe_allow_html=True)
 
   gs = np.linspace(0.3, max(max_g + 0.2, 1.0), 30)
@@ -6321,7 +6329,7 @@ with tab3:
               'comparing setups and predicting limit balance, but not transient '
               'response (turn-in, trail-braking, kerbs, dampers). The grip number is '
               'only as trustworthy as the tire it runs on — fit yours from TTC data '
-              'in the TIRE &amp; GRIP tab.</p>',
+              'above.</p>',
               unsafe_allow_html=True)
 
 # ----------------------------- TAB 4 (merged 3D MODEL) --------------------- #
@@ -14831,6 +14839,12 @@ with tab9:
               'this curve is free grip you set with geometry, not money — target it '
               'with your static camber and camber-gain.</p>', unsafe_allow_html=True)
 
+  # Grip Balance — merged in from its old standalone tab. It reads the live tire
+  # loaded on this tab, so the balance/limit-grip numbers move with your rubber.
+  with st.expander("🪀 Grip balance — limit grip & understeer/oversteer",
+                   expanded=False):
+    render_grip_balance()
+
   st.markdown("---")
   with st.expander("🟢 Load YOUR fitted tire (from TTC data)", expanded=True):
     st.markdown('<p class="hint">Two ways in: upload an already-fitted '
@@ -15349,17 +15363,17 @@ with tab10:
                         unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------- #
-#  TAB 11 — LAP TIME : turn the grip envelope into seconds
 # --------------------------------------------------------------------------- #
-with tab11:
+#  TRACK TESTING — LAP TIME section (was tab11). Now a function rendered inside
+#  a collapsible window on the merged Track Testing tab. The Powertrain & aero
+#  controls have been hoisted OUT to a single shared window at the top of Track
+#  Testing; the built Powertrain object (_pt) and motor map are passed in.
+# --------------------------------------------------------------------------- #
+def render_laptime(_pt):
   try:
     render_process_library("powertrain", key_prefix="laptime_pl")
   except Exception:
     pass
-  st.markdown(
-      '<div class="brand"><span class="mark">Track testing</span>'
-      '<span class="sub">Lap time · electrical feasibility · EV round-trip</span></div>',
-      unsafe_allow_html=True)
   st.markdown("#### 🏁 Lap Time Sim")
   st.markdown('<p class="hint">Grip is a means; <b>lap time is the score.</b> This '
               'tab runs your <i>live</i> geometry, setup and tire around the FSAE '
@@ -15389,50 +15403,8 @@ with tab11:
                            if k in VehicleParams.__dataclass_fields__}),
           front_kin=kin, rear_kin=kin, tire=_live_tire_lap)
 
-  # ---- Powertrain / aero inputs (all defaulted; safe to ignore) -------- #
-  with st.expander("Powertrain & aero (defaults are sensible FSAE-EV values)",
-                   expanded=False):
-      pc = st.columns(4)
-      pw = pc[0].number_input("Peak power", 10.0, 200.0,
-                              value=80.0, step=5.0)
-      tract = pc[1].number_input("Traction cap", 500.0, 6000.0,
-                                 value=2600.0, step=100.0)
-      cda = pc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=1.10, step=0.05)
-      cla = pc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=2.60, step=0.1)
-      pc2 = st.columns(4)
-      drive = pc2[0].selectbox("Drive", ["rwd", "awd"], index=0)
-      brake_g = pc2[1].number_input("Brake cap (g)", 0.5, 3.0, value=1.8, step=0.1)
-      crr = pc2[2].number_input("Rolling res. crr", 0.005, 0.05,
-                                value=0.018, step=0.002, format="%.3f")
-      eff = pc2[3].number_input("Drivetrain eff.", 0.5, 1.0, value=0.90, step=0.01)
-
-      st.markdown("**Motor map** — replace the flat power cap with a real "
-                  "torque/speed curve. The flat cap is the cruder model; the map "
-                  "is strictly better when you have the numbers.")
-      use_map = st.checkbox("Use a motor torque/speed map", value=False,
-                            help="Enter your motor's peak torque, peak power and "
-                                 "redline (from the datasheet). Builds a "
-                                 "representative torque-plateau + constant-power "
-                                 "curve — clearly flagged as representative, not a "
-                                 "measured dyno pull.")
-      _motor_map = None
-      if use_map:
-          mpc = st.columns(3)
-          mt = unum(mpc[0], "Peak torque (N·m)", 20.0, 600.0, 230.0, "N·m", step=10.0)
-          mp = unum(mpc[1], "Peak power (kW)", 10.0, 200.0, 80.0, "kW", step=5.0)
-          mr_in = mpc[2].number_input("Redline (rpm)", 3000.0, 20000.0, value=6000.0, step=500.0)
-          mpc2 = st.columns(2)
-          fd = mpc2[0].number_input("Final drive ratio", 1.0, 10.0, value=3.5, step=0.1)
-          wr_ = unum(mpc2[1], "Loaded wheel radius (m)", 0.15, 0.30, 0.20, "m",
-                     step=0.005, fmt="%.3f")
-          _motor_map = lap_mod.MotorMap.from_peak(mt, mp, mr_in, final_drive=fd,
-                                                  wheel_radius_m=wr_)
-          st.caption(f"Motor map source: {_motor_map.source} (from datasheet peaks; "
-                     "for a measured curve construct MotorMap(rpm, torque_nm) in code).")
-
-  _pt = lap_mod.Powertrain(power_kw=pw, max_tractive_n=tract, drivetrain_eff=eff,
-                           cda=cda, cla=cla, crr=crr, drive=drive,
-                           brake_g_cap=brake_g, motor_map=_motor_map)
+  # ---- Powertrain / aero come from the shared Track Testing window (_pt is
+  #      passed in). No local block here anymore.
 
   # ---- Track source: yardstick autocross, or YOUR GPS/cone layout ------- #
   track_src = st.radio("Run on", ["Representative autocross",
@@ -15619,7 +15591,7 @@ with tab11:
                   "suspension", "Lap-time prediction",
                   f"Skidpad {_skt}s, autocross {_axt}s on "
                   f"{'TTC tire' if not st.session_state.get('tire_is_default', True) else 'generic tire'} "
-                  f"(power {uval(pw, 'kW')}, ClA {cla:.2f}).")
+                  f"(power {uval(_pt.power_kw, 'kW')}, ClA {_pt.cla:.2f}).")
               st.success("Logged to handover record.")
           lc2.markdown('<p class="hint">Tip: change a hardpoint or a setup lever, '
                        're-run, and watch the skidpad delta. That delta — in seconds '
@@ -17989,7 +17961,7 @@ if _show_ledger:
 # --------------------------------------------------------------------------- #
 #  GGV DIAGRAM TAB — combined acceleration envelope vs speed
 # --------------------------------------------------------------------------- #
-with tab_ggv:
+def render_ggv(_gp, _pt_ggv, g_pw, g_tract, g_eff, g_cda, g_cla, g_crr, g_drive, g_brake):
   try:
     render_process_library("suspension", key_prefix="ggv_pl")
   except Exception:
@@ -18008,62 +17980,9 @@ with tab_ggv:
   # Reuse the live dynamics object the rest of the app already solved.
   _veh_ggv = veh
 
-  # ---- Powertrain / aero (same defaults as the Lap Sim tab) ------------ #
-  with st.expander("Powertrain & aero (defaults are sensible FSAE-EV values)",
-                   expanded=False):
-      gc = st.columns(4)
-      g_pw = gc[0].number_input("Peak power", 10.0, 200.0, value=80.0,
-                                step=5.0, key="ggv_pw")
-      g_tract = gc[1].number_input("Traction cap", 500.0, 6000.0,
-                                   value=2600.0, step=100.0, key="ggv_tract")
-      g_cda = gc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=1.10,
-                                 step=0.05, key="ggv_cda")
-      g_cla = gc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=2.60,
-                                 step=0.1, key="ggv_cla")
-      gc2 = st.columns(4)
-      g_drive = gc2[0].selectbox("Drive", ["rwd", "awd"], index=0, key="ggv_drive")
-      g_brake = gc2[1].number_input("Brake cap (g)", 0.5, 3.0, value=1.8,
-                                    step=0.1, key="ggv_brake")
-      g_crr = gc2[2].number_input("Rolling res. crr", 0.005, 0.05, value=0.018,
-                                  step=0.002, format="%.3f", key="ggv_crr")
-      g_eff = gc2[3].number_input("Drivetrain eff.", 0.5, 1.0, value=0.90,
-                                  step=0.01, key="ggv_eff")
-
-      st.markdown("**Combined-slip coupling** — how lateral and longitudinal "
-                  "grip trade against each other (corner entry/exit). The "
-                  "symmetric friction circle is the honest default; calibrate the "
-                  "exponents and the longitudinal/lateral mu ratio once you have "
-                  "drive/brake TTC data.")
-      use_comb = st.checkbox("Use a combined-slip tire (friction ellipse)",
-                             value=False, key="ggv_usecomb")
-      _comb_tire = None
-      if use_comb:
-          cc = st.columns(3)
-          mxr = cc[0].number_input("μx / μy ratio", 0.8, 1.4, value=1.05,
-                                   step=0.05, key="ggv_mxr",
-                                   help="Peak longitudinal grip / peak lateral "
-                                        "grip. >1 is typical (tires put down more "
-                                        "Fx than Fy).")
-          kx = cc[1].number_input("ellipse exp. kx", 1.5, 3.0, value=2.0,
-                                  step=0.1, key="ggv_kx")
-          ky = cc[2].number_input("ellipse exp. ky", 1.5, 3.0, value=2.0,
-                                  step=0.1, key="ggv_ky")
-          is_cal = st.checkbox("These exponents are fitted to my Fx TTC data",
-                               value=False, key="ggv_iscal")
-          _comb_tire = tire_mod.CombinedSlipTire(
-              lateral=tire_mod.PacejkaLateral(
-                  coeffs=dict(st.session_state.tire_coeffs),
-                  FNOMIN=st.session_state.tire_fnomin),
-              mu_x_ratio=mxr, ell_kx=kx, ell_ky=ky, is_calibrated=is_cal)
-          st.caption("Status: " + _comb_tire.status())
-
-  # Build the lap-sim Powertrain, then derive GGVParams from it so the GGV and
-  # the Lap Sim tab share one source of truth.
-  _pt_ggv = lap_mod.Powertrain(power_kw=g_pw, max_tractive_n=g_tract,
-                               drivetrain_eff=g_eff, cda=g_cda, cla=g_cla,
-                               crr=g_crr, drive=g_drive, brake_g_cap=g_brake,
-                               combined_tire=_comb_tire)
-  _gp = ggv_mod.GGVParams.from_powertrain(_pt_ggv)
+  # Powertrain/aero + combined-slip come from the shared Track Testing window;
+  # the derived GGVParams (_gp) and the raw values (for the memo signature) are
+  # passed in.
 
   # ---- Build the envelope --------------------------------------------- #
   _vmax_ui = st.slider("Top speed to chart", 20.0, 45.0, 38.0, 1.0,
@@ -18325,9 +18244,10 @@ with tab_ggv:
 
 
 # --------------------------------------------------------------------------- #
-#  TRANSIENT TAB — explicit high-frequency time-step DAE solver
+#  TRACK TESTING — TRANSIENT section (was tab_tr). Rendered inside a collapsible
+#  window on the merged Track Testing tab.
 # --------------------------------------------------------------------------- #
-with tab_tr:
+def render_transient():
   try:
     render_process_library("suspension", key_prefix="transient_pl")
   except Exception:
@@ -18588,6 +18508,136 @@ with tab_tr:
           'and a closed-loop racing line are out of scope — flagged, not faked. '
           'Use QSS (LAP TIME) for the lap-time number; use this for the unsteady '
           'behaviour behind it.</p>', unsafe_allow_html=True)
+
+
+# --------------------------------------------------------------------------- #
+#  TRACK TESTING TAB (merged) — one shared Powertrain & aero window at the top,
+#  then Lap Time, GGV and Transient each in their own collapsible window.
+# --------------------------------------------------------------------------- #
+with tab_track:
+  st.markdown(
+      '<div class="brand"><span class="mark">Track testing</span>'
+      '<span class="sub">Lap time · GGV envelope · transient · EV round-trip</span>'
+      '</div>', unsafe_allow_html=True)
+
+  # ---- SHARED Powertrain & aero — feeds BOTH the Lap Time and GGV sims ---- #
+  with st.expander("⚙️ Powertrain & aero (shared — feeds lap time & GGV; "
+                   "defaults are sensible FSAE-EV values)", expanded=False):
+      pc = st.columns(4)
+      pw = pc[0].number_input("Peak power", 10.0, 200.0, value=80.0, step=5.0,
+                              key="tt_pw")
+      tract = pc[1].number_input("Traction cap", 500.0, 6000.0, value=2600.0,
+                                 step=100.0, key="tt_tract")
+      cda = pc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=1.10, step=0.05,
+                               key="tt_cda")
+      cla = pc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=2.60,
+                               step=0.1, key="tt_cla")
+      pc2 = st.columns(4)
+      drive = pc2[0].selectbox("Drive", ["rwd", "awd"], index=0, key="tt_drive")
+      brake_g = pc2[1].number_input("Brake cap (g)", 0.5, 3.0, value=1.8,
+                                    step=0.1, key="tt_brake")
+      crr = pc2[2].number_input("Rolling res. crr", 0.005, 0.05, value=0.018,
+                                step=0.002, format="%.3f", key="tt_crr")
+      eff = pc2[3].number_input("Drivetrain eff.", 0.5, 1.0, value=0.90,
+                                step=0.01, key="tt_eff")
+
+      # --- Motor map (used by the Lap Time sim) --------------------------- #
+      st.markdown("**Motor map** (lap time) — replace the flat power cap with a "
+                  "real torque/speed curve. The flat cap is the cruder model; the "
+                  "map is strictly better when you have the numbers.")
+      use_map = st.checkbox("Use a motor torque/speed map", value=False,
+                            key="tt_usemap",
+                            help="Enter your motor's peak torque, peak power and "
+                                 "redline (from the datasheet). Builds a "
+                                 "representative torque-plateau + constant-power "
+                                 "curve — clearly flagged as representative, not a "
+                                 "measured dyno pull.")
+      _motor_map = None
+      if use_map:
+          mpc = st.columns(3)
+          mt = unum(mpc[0], "Peak torque (N·m)", 20.0, 600.0, 230.0, "N·m",
+                    step=10.0)
+          mp = unum(mpc[1], "Peak power (kW)", 10.0, 200.0, 80.0, "kW", step=5.0)
+          mr_in = mpc[2].number_input("Redline (rpm)", 3000.0, 20000.0,
+                                      value=6000.0, step=500.0, key="tt_redline")
+          mpc2 = st.columns(2)
+          fd = mpc2[0].number_input("Final drive ratio", 1.0, 10.0, value=3.5,
+                                    step=0.1, key="tt_fd")
+          wr_ = unum(mpc2[1], "Loaded wheel radius (m)", 0.15, 0.30, 0.20, "m",
+                     step=0.005, fmt="%.3f")
+          _motor_map = lap_mod.MotorMap.from_peak(mt, mp, mr_in, final_drive=fd,
+                                                  wheel_radius_m=wr_)
+          st.caption(f"Motor map source: {_motor_map.source} (from datasheet "
+                     "peaks; for a measured curve construct MotorMap(rpm, "
+                     "torque_nm) in code).")
+
+      # --- Combined-slip tire (used by the GGV envelope) ------------------ #
+      st.markdown("**Combined-slip coupling** (GGV) — how lateral and "
+                  "longitudinal grip trade against each other (corner "
+                  "entry/exit). The symmetric friction circle is the honest "
+                  "default; calibrate the exponents and the longitudinal/lateral "
+                  "mu ratio once you have drive/brake TTC data.")
+      use_comb = st.checkbox("Use a combined-slip tire (friction ellipse)",
+                             value=False, key="tt_usecomb")
+      _comb_tire = None
+      if use_comb:
+          cc = st.columns(3)
+          mxr = cc[0].number_input("μx / μy ratio", 0.8, 1.4, value=1.05,
+                                   step=0.05, key="tt_mxr",
+                                   help="Peak longitudinal grip / peak lateral "
+                                        "grip. >1 is typical (tires put down more "
+                                        "Fx than Fy).")
+          kx = cc[1].number_input("ellipse exp. kx", 1.5, 3.0, value=2.0,
+                                  step=0.1, key="tt_kx")
+          ky = cc[2].number_input("ellipse exp. ky", 1.5, 3.0, value=2.0,
+                                  step=0.1, key="tt_ky")
+          is_cal = st.checkbox("These exponents are fitted to my Fx TTC data",
+                               value=False, key="tt_iscal")
+          _comb_tire = tire_mod.CombinedSlipTire(
+              lateral=tire_mod.PacejkaLateral(
+                  coeffs=dict(st.session_state.tire_coeffs),
+                  FNOMIN=st.session_state.tire_fnomin),
+              mu_x_ratio=mxr, ell_kx=kx, ell_ky=ky, is_calibrated=is_cal)
+          st.caption("Status: " + _comb_tire.status())
+
+  # Build the two powertrain objects both sims need from the shared inputs:
+  #   _pt      → Lap Time sim   (carries the optional motor map)
+  #   _gp      → GGV envelope   (via a Powertrain carrying the combined-slip tire)
+  _pt = lap_mod.Powertrain(power_kw=pw, max_tractive_n=tract, drivetrain_eff=eff,
+                           cda=cda, cla=cla, crr=crr, drive=drive,
+                           brake_g_cap=brake_g, motor_map=_motor_map)
+  _pt_ggv = lap_mod.Powertrain(power_kw=pw, max_tractive_n=tract,
+                               drivetrain_eff=eff, cda=cda, cla=cla, crr=crr,
+                               drive=drive, brake_g_cap=brake_g,
+                               combined_tire=_comb_tire)
+  _gp = ggv_mod.GGVParams.from_powertrain(_pt_ggv)
+
+  # Each section below contains its OWN inner expanders (electrical check, GGV
+  # sweeps, solver warnings…), and Streamlit forbids an expander inside an
+  # expander. So instead of wrapping each section in st.expander (which would
+  # error), we give the tab a section switch: pick a section and it renders on
+  # its own, one at a time — the same "one window open" behaviour, nesting-safe.
+  _tt_section = st.radio(
+      "Section", ["🏁 Lap time", "🟢 GGV diagram", "〰️ Transient"],
+      horizontal=True, key="tt_section",
+      help="Powertrain & aero above is shared across Lap time and GGV. Pick a "
+           "section to open it; the others stay collapsed.")
+
+  if _tt_section.startswith("🏁"):
+      try:
+          render_laptime(_pt)
+      except Exception as _lt_e:
+          st.error(f"Lap time section unavailable: {_lt_e}")
+  elif _tt_section.startswith("🟢"):
+      try:
+          render_ggv(_gp, _pt_ggv, pw, tract, eff, cda, cla, crr, drive, brake_g)
+      except Exception as _ggv_e:
+          st.error(f"GGV section unavailable: {_ggv_e}")
+  else:
+      try:
+          render_transient()
+      except Exception as _tr_e:
+          st.error(f"Transient section unavailable: {_tr_e}")
 
 
 # --------------------------------------------------------------------------- #
