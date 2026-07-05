@@ -2989,6 +2989,73 @@ def _activity_sections(subsystem):
     return sections
 
 
+def _logged_record_sections(subsystem_key):
+    """Pull everything the user has LOGGED for this subsystem into report sections.
+
+    This is what makes the documentation near-complete on its own: every decision
+    logged to the Handover (via log_decision_now / any tab's "Log this…" button)
+    and every Lead Note addressed to or from this subsystem is folded straight
+    into the report. The member then only tweaks wording before exporting the PDF,
+    instead of re-typing what they already recorded elsewhere.
+
+    Returns a list of (heading, [markdown lines]); [] if nothing is logged, so an
+    empty subsystem simply omits these sections. Never raises — a reporting
+    convenience must not break the documentation tab.
+    """
+    sections = []
+    try:
+        _store = get_store()
+    except Exception:
+        return sections
+
+    # --- Handover decisions logged for this subsystem ---------------------- #
+    try:
+        _decs = _store.search_decisions(team=subsystem_key)
+    except Exception:
+        _decs = []
+    # Don't echo the "…subsystem report generated" rows a previous export wrote —
+    # that would nest the whole report inside itself on the next generation.
+    _decs = [d for d in _decs
+             if "subsystem report generated" not in (d.title or "").lower()]
+    if _decs:
+        lines = []
+        for d in _decs:
+            _date = f"  ·  {d.date}" if getattr(d, "date", "") else ""
+            _part = f" [{d.part}]" if getattr(d, "part", "") else ""
+            _who = f" — _{d.author}_" if getattr(d, "author", "") \
+                and d.author not in ("auto", subsystem_key) else ""
+            lines.append(f"- **{d.title}**{_part}: {d.rationale}{_who}{_date}")
+        sections.append(("Decisions logged to Handover", lines))
+
+    # --- Lead notes to/from this subsystem --------------------------------- #
+    try:
+        _notes = [n for n in _store.notes
+                  if n.to_team == subsystem_key or n.from_team == subsystem_key]
+        _notes = sorted(_notes, key=lambda n: getattr(n, "ts", ""), reverse=True)
+    except Exception:
+        _notes = []
+    if _notes:
+        lines = []
+        for n in _notes:
+            _dir = ("→ " + integ_mod.TEAMS.get(n.to_team, {}).get(
+                        "label", n.to_team)
+                    if n.from_team == subsystem_key
+                    else "from " + integ_mod.TEAMS.get(n.from_team, {}).get(
+                        "label", n.from_team))
+            _flags = []
+            if getattr(n, "is_request", False):
+                _flags.append("request")
+            if getattr(n, "urgent", False):
+                _flags.append("urgent")
+            _status = getattr(n, "status", "open")
+            _flags.append(_status)
+            _flagstr = f" _({', '.join(_flags)})_" if _flags else ""
+            lines.append(f"- {_dir}: {n.message}{_flagstr}")
+        sections.append(("Cross-team notes (Lead Notes)", lines))
+
+    return sections
+
+
 def render_subsystem_documentation(subsystem_key, *, key_prefix,
                                    extra_sections=None, title_name=None):
     """Generic per-subsystem Documentation view: PDF report + optional handover log.
@@ -4334,7 +4401,8 @@ _TMPL_BY_ID = {t[0]: t for t in _DOC_TEMPLATES}
 # those call sites and silently drop every tab to the simple fallback report.
 
 
-def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
+def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
+                                extra_sections=None):
     """Merged documentation hub.
 
     Strict render order:
@@ -4344,6 +4412,10 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
       4. Sanity-check          — myth-buster; result auto-appended to report
       5. Report preview        — collapsed expander with the merged markdown
       6. Export                — PDF + Markdown download, optional Handover log
+
+    `extra_sections` (optional) is a list of (heading, [lines]) folded into the
+    report alongside the auto-aggregated content — used e.g. by Brakes to carry
+    its throttle-return single-fault redundancy summary.
     """
     _name = title_name or _VC_LABEL.get(
         subsystem_key, subsystem_key.replace("-", " ").title())
@@ -4355,8 +4427,11 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
     st.markdown(
         f'<p class="hint" style="margin:0 0 10px;">'
         f'Build the <b>{_name}</b> document without starting from a blank page. '
-        f'Choose sections from the library, edit them inline, sanity-check any '
-        f'assumptions, then export the merged report as PDF or Markdown.</p>',
+        f'Everything you&rsquo;ve logged anywhere — declared numbers, calculations '
+        f'run, decisions logged to the Handover, and cross-team Lead Notes — is '
+        f'pulled in <b>automatically</b>. Choose any extra template sections, tweak '
+        f'the wording inline, sanity-check assumptions, then export the merged '
+        f'report as PDF or Markdown.</p>',
         unsafe_allow_html=True)
 
     # ------------------------------------------------------------------ #
@@ -4541,8 +4616,12 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None):
     with st.expander("⚙️ 📄 Report", expanded=False):
 
       # Build the merged markdown here so the export buttons always reflect
-      # the current editors + activity — no double-appending of activity.
-      _all_extra = _edited_sections + _activity_sections(subsystem_key)
+      # the current editors + activity + everything logged this season — no
+      # double-appending of activity.
+      _all_extra = (_edited_sections
+                    + list(extra_sections or [])
+                    + _activity_sections(subsystem_key)
+                    + _logged_record_sections(subsystem_key))
 
       def _build_md():
           import datetime as _dt
@@ -4645,29 +4724,31 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
     """Collapsed 'Documentation & checks' panel for any subsystem.
 
     Reorganised so it isn't one overwhelming scroll: inside the expander the
-    work is split into two clearly-labelled sub-tabs —
-        📄 Document  ·  ✅ Verdict
-    The Document tab is the merged report + template library + sanity-check; the
-    Verdict tab is this subsystem's works / closer-look / attention box.
+    work is split into three clearly-labelled sub-tabs —
+        📄 Document  ·  ✅ Verdict  ·  📐 Mesh & DXF
+    The Document tab is the merged report + template library + sanity-check (and
+    it now auto-aggregates everything logged for this subsystem — declared
+    numbers, session activity, Handover decisions and Lead Notes — so the export
+    is near-complete before any editing); the Verdict tab is this subsystem's
+    works / closer-look / attention box; the Mesh & DXF tab is the section
+    short-list + DXF export.
 
-    Mesh & DXF export is NO LONGER a sub-tab here. It is now a standalone,
-    per-tab feature — call `render_mesh_and_dxf_expander(...)` in each applicable
-    subsystem tab body, exactly like the Brakes tab surfaces its own rotor
-    short-list + DXF export inline. (`mesh_candidates` is retained on the
-    signature for backwards compatibility but is no longer consumed here; pass
-    it straight to `render_mesh_and_dxf_expander` instead.)"""
+    `mesh_candidates` (optional) is forwarded to the Mesh & DXF sub-tab — e.g.
+    the Brakes rotor Pareto short-list. The standalone
+    `render_mesh_and_dxf_expander(...)` is kept for any tab that still wants the
+    export inline, but subsystem tabs should prefer this unified panel."""
     _nm = title_name or _VC_LABEL.get(
         subsystem_key, subsystem_key.replace("-", " ").title())
     with st.expander(f"📄  {_nm} — documentation & verdict",
                      expanded=False):
-        _dt_doc, _dt_verdict = st.tabs(
-            ["📄 Document", "✅ Verdict"])
+        _dt_doc, _dt_verdict, _dt_mesh = st.tabs(
+            ["📄 Document", "✅ Verdict", "📐 Mesh & DXF"])
 
         with _dt_doc:
             try:
                 render_documentation_center(
                     subsystem_key, key_prefix=f"{key_prefix}_dc",
-                    title_name=_nm)
+                    title_name=_nm, extra_sections=extra_sections)
             except Exception as _dc_err:
                 # Graceful fallback to the original simple report. We surface a
                 # short note (instead of silently swallowing) so a member — or
@@ -4690,6 +4771,21 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
                 _vc_disclaimer(f"the {_nm.lower()} verdict")
             except Exception as _ve:
                 st.caption(f"Verdict view unavailable: {_ve}")
+
+        with _dt_mesh:
+            # Mesh & DXF export lives here as its own sub-tab (Document · Verdict
+            # · Mesh & DXF), so every subsystem's documentation panel carries the
+            # same three surfaces. render_mesh_and_dxf does the work; the flow
+            # strip explains input → calculate → mesh → export at a glance.
+            try:
+                _hint = _EXPORT_SOURCE_HINT.get(subsystem_key) or {}
+                _where = _hint.get("where", f"the {_nm} tab")
+                _render_mesh_dxf_flow_strip(_where)
+                render_mesh_and_dxf(
+                    subsystem_key, key_prefix=f"{key_prefix}_mesh",
+                    candidates=mesh_candidates, title_name=_nm)
+            except Exception as _me:
+                st.caption(f"Mesh/DXF export unavailable: {_me}")
 
 
 def _render_mesh_dxf_flow_strip(where_label):
@@ -6075,11 +6171,6 @@ with tab1:
   try:
     render_documentation_expander("suspension", key_prefix="susp_main",
                                   title_name="Suspension")
-  except Exception:
-    pass
-  try:
-    render_mesh_and_dxf_expander("suspension", key_prefix="susp_main",
-                                 title_name="Suspension")
   except Exception:
     pass
   # --- SUSPENSION HEADLINE CARDS ----------------------------------------- #
@@ -7843,11 +7934,7 @@ with tab_aero:
                                   title_name="Aerodynamics")
   except Exception:
     pass
-  try:
-    render_mesh_and_dxf_expander("aerodynamics", key_prefix="aero",
-                                 title_name="Aerodynamics")
-  except Exception:
-    pass
+
   try:
     _subsystem_cad_import("aerodynamics", key_prefix="aero")
     _RHO = 1.225  # kg/m³, sea-level ISA — same default as the aero coupling
@@ -8571,21 +8658,11 @@ with tab_ev:
   except Exception:
     pass
   try:
-    render_mesh_and_dxf_expander("powertrain", key_prefix="ev",
-                                 title_name="Powertrain")
-  except Exception:
-    pass
-  try:
     _subsystem_cad_import("powertrain", key_prefix="ev")
     _subsystem_cad_import("cooling", key_prefix="ev_cooling")
     try:
         render_documentation_expander("cooling", key_prefix="cooling",
                                       title_name="Cooling")
-    except Exception:
-        pass
-    try:
-        render_mesh_and_dxf_expander("cooling", key_prefix="cooling",
-                                     title_name="Cooling")
     except Exception:
         pass
     st.markdown(
@@ -9695,11 +9772,7 @@ with tab_accum:
                                   title_name="Accumulator / Electrics")
   except Exception:
     pass
-  try:
-    render_mesh_and_dxf_expander("electrics", key_prefix="accum",
-                                 title_name="Accumulator / Electrics")
-  except Exception:
-    pass
+
   try:
     _subsystem_cad_import("electrics", key_prefix="accum")
     st.markdown(
@@ -11709,7 +11782,7 @@ with tab_brake:
                           f"{'closes' if _c.closes else 'HANGS OPEN'}")
             _bx.append(("Throttle return springs — single-fault redundancy", _l))
 
-        render_subsystem_documentation("brakes", key_prefix="brake",
+        render_documentation_expander("brakes", key_prefix="brake",
                                        extra_sections=_bx, title_name="Brakes")
 
 
@@ -14119,11 +14192,6 @@ with tab6:
   try:
     render_documentation_expander("chassis", key_prefix="chassis",
                                   title_name="Chassis")
-  except Exception:
-    pass
-  try:
-    render_mesh_and_dxf_expander("chassis", key_prefix="chassis",
-                                 title_name="Chassis")
   except Exception:
     pass
 
@@ -17323,15 +17391,6 @@ with tab12:
                     'Steps 2 and 3 appear once it loads.</div>',
                     unsafe_allow_html=True)
 
-        st.markdown('<p class="hint">Tolerances are explicit and editable: track/lap '
-                    'correlation in <code>suspension/correlation.py</code> '
-                    '(DEFAULT_TOL), and CFD-vs-tunnel calibration in '
-                    '<code>suspension/aero/windtunnel.py</code> (DEFAULT_TUNNEL_TOL). '
-                    'They reflect what each comparison can credibly achieve — skidpad '
-                    'tightest, a noisy GPS trace loosest, and a well-run k-omega SST '
-                    'solve a few percent on C_l/C_d. Tighten them and watch the verdict '
-                    'move; that transparency is the point.</p>', unsafe_allow_html=True)
-
 
 # ----------------------------- TAB 13 (merged INTEGRATION) ----------------- #
 # INTEGRATION — suspension↔chassis CAD fit + the interface ledger across the
@@ -18816,11 +18875,6 @@ with tab_pcb:
   try:
     render_documentation_expander("data-acquisition", key_prefix="pcb",
                                   title_name="Data Acquisition / PCB")
-  except Exception:
-    pass
-  try:
-    render_mesh_and_dxf_expander("data-acquisition", key_prefix="pcb",
-                                 title_name="Data Acquisition / PCB")
   except Exception:
     pass
   _subsystem_cad_import("data-acquisition", key_prefix="pcb")
