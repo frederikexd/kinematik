@@ -333,14 +333,16 @@ where t_start is not null;
 create or replace view v_adoption_funnel as
 select
     feature,
-    count(*) filter (where event_type = 'tab_open')          as opened,
-    count(*) filter (where event_type = 'feature_engage')    as engaged,
-    count(*) filter (where event_type = 'workflow_complete') as completed,
-    round(100.0 * count(*) filter (where event_type = 'feature_engage')
-          / nullif(count(*) filter (where event_type = 'tab_open'), 0), 1)
+    count(distinct session_id) filter (where event_type = 'tab_open')          as opened,
+    count(distinct session_id) filter (where event_type = 'feature_engage')    as engaged,
+    count(distinct session_id) filter (where event_type = 'workflow_complete') as completed,
+    round(100.0
+          * count(distinct session_id) filter (where event_type = 'feature_engage')
+          / nullif(count(distinct session_id) filter (where event_type = 'tab_open'), 0), 1)
                                                               as open_to_engage_pct,
-    round(100.0 * count(*) filter (where event_type = 'workflow_complete')
-          / nullif(count(*) filter (where event_type = 'feature_engage'), 0), 1)
+    round(100.0
+          * count(distinct session_id) filter (where event_type = 'workflow_complete')
+          / nullif(count(distinct session_id) filter (where event_type = 'feature_engage'), 0), 1)
                                                               as engage_to_complete_pct
 from analytics_events
 where feature is not null
