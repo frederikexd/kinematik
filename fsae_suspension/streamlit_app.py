@@ -19385,6 +19385,19 @@ def _ax_metric(col, label, value, sub="", color="var(--ink)"):
 
 
 with tab_analytics:
+    # Operator debug panels (instrumentation + visitor-identity diagnostics) are
+    # hidden from normal users. They render only when the app is opened with the
+    # URL parameter ?debug=1 (also accepts debug=true/on/yes). This keeps the
+    # tracking-health tools available to whoever runs the deployment without
+    # cluttering the page for everyone else.
+    try:
+        _ax_dbg_val = st.query_params.get("debug", "")
+        if isinstance(_ax_dbg_val, (list, tuple)):
+            _ax_dbg_val = _ax_dbg_val[0] if _ax_dbg_val else ""
+        _ax_debug_on = str(_ax_dbg_val).lower() in ("1", "true", "on", "yes")
+    except Exception:
+        _ax_debug_on = False
+
     st.markdown(
         '<div class="brand"><span class="mark">Analytics</span>'
         '<span class="sub">Usage · reliability · ROI</span></div>',
@@ -19539,47 +19552,48 @@ with tab_analytics:
             elif _last7 > 0:
                 _trend_txt = "new this week"
 
-
-
     # --- live instrumentation diagnostic (why a feature may read 0) -------- #
-    with st.expander("🔧 Instrumentation diagnostic (live)"):
-        _cur_active = st.session_state.get("_ax_last_active_tab")
-        st.caption(
-            f"Active tab this run: **{_cur_active or '(none set)'}**. "
-            "Open a feature tab, change a number and run it, then come back "
-            "here — the flags below flip to ✓ when engagement/completion were "
-            "recorded for that feature this session.")
-        # write-health: are events actually reaching Supabase?
-        _wh_fn = getattr(_axn, "write_health", None)
-        if callable(_wh_fn):
-            _wh = _wh_fn() or {}
-            _ok = _wh.get("ok")
-            _status = ("✓ writing to Supabase" if _ok
-                       else ("⚠️ buffering locally (DB unreachable)"
-                             if _ok is False else "— no write attempted yet"))
+    # Operator-only: shown when opened with ?debug=1.
+    if _ax_debug_on:
+        with st.expander("🔧 Instrumentation diagnostic (live)"):
+            _cur_active = st.session_state.get("_ax_last_active_tab")
             st.caption(
-                f"Event sink: {_status} · sent={_wh.get('sent', 0)} · "
-                f"buffered={_wh.get('buffered', 0)}"
-                + (f" · last error: {_wh.get('error')}" if _wh.get("error") else ""))
-        # per-feature session flags set by auto_engage/auto_complete
-        _diag_rows = []
-        for _fid, (_emj, _flabel) in _TAB_META.items():
-            if _fid == "analytics":
-                continue
-            _eng = _axn.has_engaged(_fid) if hasattr(_axn, "has_engaged") else False
-            _comp = _axn.has_completed(_fid) if hasattr(_axn, "has_completed") else False
-            _opn = _axn.has_opened(_fid) if hasattr(_axn, "has_opened") else False
-            if _opn or _eng or _comp:
-                _diag_rows.append({
-                    "Feature": _flabel,
-                    "Opened (this session)": "✓" if _opn else "—",
-                    "Engaged (this session)": "✓" if _eng else "—",
-                    "Completed (this session)": "✓" if _comp else "—",
-                })
-        if _diag_rows:
-            st.dataframe(_diag_rows, use_container_width=True, hide_index=True)
-        else:
-            st.caption("No features touched yet this session.")
+                f"Active tab this run: **{_cur_active or '(none set)'}**. "
+                "Open a feature tab, change a number and run it, then come back "
+                "here — the flags below flip to ✓ when engagement/completion were "
+                "recorded for that feature this session.")
+            # write-health: are events actually reaching Supabase?
+            _wh_fn = getattr(_axn, "write_health", None)
+            if callable(_wh_fn):
+                _wh = _wh_fn() or {}
+                _ok = _wh.get("ok")
+                _status = ("✓ writing to Supabase" if _ok
+                           else ("⚠️ buffering locally (DB unreachable)"
+                                 if _ok is False else "— no write attempted yet"))
+                st.caption(
+                    f"Event sink: {_status} · sent={_wh.get('sent', 0)} · "
+                    f"buffered={_wh.get('buffered', 0)}"
+                    + (f" · last error: {_wh.get('error')}" if _wh.get("error") else ""))
+            # per-feature session flags set by auto_engage/auto_complete
+            _diag_rows = []
+            for _fid, (_emj, _flabel) in _TAB_META.items():
+                if _fid == "analytics":
+                    continue
+                _eng = _axn.has_engaged(_fid) if hasattr(_axn, "has_engaged") else False
+                _comp = _axn.has_completed(_fid) if hasattr(_axn, "has_completed") else False
+                _opn = _axn.has_opened(_fid) if hasattr(_axn, "has_opened") else False
+                if _opn or _eng or _comp:
+                    _diag_rows.append({
+                        "Feature": _flabel,
+                        "Opened (this session)": "✓" if _opn else "—",
+                        "Engaged (this session)": "✓" if _eng else "—",
+                        "Completed (this session)": "✓" if _comp else "—",
+                    })
+            if _diag_rows:
+                st.dataframe(_diag_rows, use_container_width=True, hide_index=True)
+            else:
+                st.caption("No features touched yet this session.")
+
     if roi:
         r0 = roi[0]
         _h = r0.get("total_hours_saved") or 0
@@ -19718,53 +19732,54 @@ with tab_analytics:
 
     # Visitor-identity diagnostic — surfaces WHICH durable-id path is actually
     # resolving in THIS deployment, so a stuck returning-user count is
-    # observable rather than a mystery. (Cookie is best; fingerprint works only
-    # if the host exposes a real client IP — some proxies/load balancers return
-    # None, in which case retention falls back to per-session ids and returning
-    # counts won't grow.)
-    with st.expander("🔍 Visitor-identity diagnostic (why returning counts may be stuck)"):
-        try:
-            _diag_ip = None
+    # observable rather than a mystery. Operator-only: shown when opened with
+    # ?debug=1. (Cookie is best; fingerprint works only if the host exposes a
+    # real client IP — some proxies/load balancers return None, in which case
+    # retention falls back to per-session ids and returning counts won't grow.)
+    if _ax_debug_on:
+        with st.expander("🔍 Visitor-identity diagnostic (why returning counts may be stuck)"):
             try:
-                _diag_ip = st.context.ip_address
-            except Exception:
                 _diag_ip = None
-            _diag_cookie = None
-            try:
-                _cm_d = st.session_state.get("_ax_cookie_mgr")
-                if _cm_d is not None:
-                    _diag_cookie = _cm_d.get("kinematik_vid")
-            except Exception:
+                try:
+                    _diag_ip = st.context.ip_address
+                except Exception:
+                    _diag_ip = None
                 _diag_cookie = None
-            _resolved = st.session_state.get("_ax_resolved_vid_kind", "unknown")
-            _durable = _resolved.startswith("cookie") or _resolved == "ip+ua fingerprint"
-            st.markdown(
-                f"- **Durable cookie readable:** "
-                f"{'✅ yes' if _diag_cookie else '⏳ not yet (set this visit; readable next visit)'}\n"
-                f"- **Server sees a client IP (fingerprint fallback):** "
-                f"{'✅ yes' if _diag_ip else '❌ no — IP fingerprint unavailable on this host'}\n"
-                f"- **This visit resolved id via:** `{_resolved}`")
-            if _resolved == "per-session (NOT durable)":
-                st.warning(
-                    "This visit fell all the way back to a per-session id, which "
-                    "is NOT durable — every reopen will look like a new user and "
-                    "returning counts won't grow. That means both the cookie AND "
-                    "the IP fingerprint failed on this host. Most reliable fix: "
-                    "ask users to enter their name (top of any tab); named "
-                    "identity is fully durable and bypasses browser storage "
-                    "entirely.")
-            elif _resolved == "cookie (just set)":
-                st.info(
-                    "A durable cookie was just set this visit. It can't be read "
-                    "back until the NEXT visit — that's expected. If returning "
-                    "counts climb after people reopen the app, the cookie is "
-                    "persisting correctly.")
-            elif _durable:
-                st.success(
-                    "Durable identity is resolving — returning users should be "
-                    "tracked correctly from here.")
-        except Exception:
-            st.caption("Diagnostic unavailable.")
+                try:
+                    _cm_d = st.session_state.get("_ax_cookie_mgr")
+                    if _cm_d is not None:
+                        _diag_cookie = _cm_d.get("kinematik_vid")
+                except Exception:
+                    _diag_cookie = None
+                _resolved = st.session_state.get("_ax_resolved_vid_kind", "unknown")
+                _durable = _resolved.startswith("cookie") or _resolved == "ip+ua fingerprint"
+                st.markdown(
+                    f"- **Durable cookie readable:** "
+                    f"{'✅ yes' if _diag_cookie else '⏳ not yet (set this visit; readable next visit)'}\n"
+                    f"- **Server sees a client IP (fingerprint fallback):** "
+                    f"{'✅ yes' if _diag_ip else '❌ no — IP fingerprint unavailable on this host'}\n"
+                    f"- **This visit resolved id via:** `{_resolved}`")
+                if _resolved == "per-session (NOT durable)":
+                    st.warning(
+                        "This visit fell all the way back to a per-session id, which "
+                        "is NOT durable — every reopen will look like a new user and "
+                        "returning counts won't grow. That means both the cookie AND "
+                        "the IP fingerprint failed on this host. Most reliable fix: "
+                        "ask users to enter their name (top of any tab); named "
+                        "identity is fully durable and bypasses browser storage "
+                        "entirely.")
+                elif _resolved == "cookie (just set)":
+                    st.info(
+                        "A durable cookie was just set this visit. It can't be read "
+                        "back until the NEXT visit — that's expected. If returning "
+                        "counts climb after people reopen the app, the cookie is "
+                        "persisting correctly.")
+                elif _durable:
+                    st.success(
+                        "Durable identity is resolving — returning users should be "
+                        "tracked correctly from here.")
+            except Exception:
+                st.caption("Diagnostic unavailable.")
 
     # foot-traffic time series
     if foot:
