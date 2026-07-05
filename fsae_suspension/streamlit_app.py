@@ -456,6 +456,27 @@ hr{ border-color:var(--line);}
 .es-foot{ color:var(--dim); font-size:.78rem; line-height:1.5;
       margin-top:.75rem; padding-top:.6rem; border-top:1px solid var(--line); }
 
+/* --- Mesh & DXF "how to use it" flow strip (input->calc->mesh->export) - */
+.flow-strip{ display:flex; align-items:stretch; flex-wrap:wrap; gap:.35rem;
+      border:1px solid var(--line); border-radius:12px; padding:.7rem .8rem;
+      background:linear-gradient(180deg,var(--panel2),var(--panel));
+      margin:.1rem 0 .85rem; }
+.flow-step{ flex:1 1 130px; display:flex; flex-direction:column; gap:.28rem;
+      padding:.15rem .25rem; }
+.flow-badge{ display:inline-flex; align-items:center; gap:.4rem;
+      font-family:'JetBrains Mono'; font-weight:700; font-size:.66rem;
+      letter-spacing:.06em; text-transform:uppercase; color:var(--cyan); }
+.flow-badge .flow-n{ color:var(--bg); background:var(--cyan); border-radius:6px;
+      padding:.05rem .38rem; font-size:.66rem; }
+.flow-here{ font-family:'Archivo'; font-weight:700; font-size:.86rem;
+      color:var(--ink); }
+.flow-sub{ font-size:.74rem; line-height:1.4; color:var(--dim); }
+.flow-arrow{ align-self:center; color:var(--amber); font-size:1rem;
+      font-family:'JetBrains Mono'; padding:0 .1rem; }
+@media (max-width:640px){ .flow-arrow{ display:none; }
+      .flow-step{ flex:1 1 100%; border-bottom:1px solid var(--line);
+      padding-bottom:.45rem; } .flow-step:last-child{ border-bottom:none; } }
+
 /* --- In-tab hardpoint summary (brings the sidebar's numbers into the tab) */
 .hp-card{ border:1px solid var(--line); border-left:3px solid var(--cyan);
       background:linear-gradient(180deg,var(--panel2),var(--panel));
@@ -4673,6 +4694,40 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
                 st.caption(f"Verdict view unavailable: {_ve}")
 
 
+def _render_mesh_dxf_flow_strip(where_label):
+    """A one-glance 'how to use this' strip: input -> calculate -> mesh -> export.
+
+    Sits at the top of every Mesh & DXF expander so a member immediately sees the
+    four stages and, crucially, WHERE each one happens — the inputs live in their
+    own tab, the section/short-list is computed here, and the DXF drops out at the
+    end. `where_label` names the tab whose numbers feed this export."""
+    _steps = [
+        ("Input", where_label,
+         "Enter your real numbers in the tab &mdash; the section is drawn "
+         "from them, never guessed."),
+        ("Calculate", "same tab, automatically",
+         "Run the tab&rsquo;s tool; it computes the section and a "
+         "short-list of what&rsquo;s worth meshing."),
+        ("Mesh", "here &amp; in your FEA",
+         "Pick a short-listed section below, then mesh the survivors in "
+         "Ansys / your FEA."),
+        ("Export", "⬇ Download DXF, here",
+         "One closed sketch &rarr; SolidWorks: import, extrude/revolve, "
+         "then mesh."),
+    ]
+    _cells = []
+    for i, (title, here, sub) in enumerate(_steps):
+        _cells.append(
+            f'<div class="flow-step">'
+            f'<span class="flow-badge"><span class="flow-n">{i+1}</span>{title}</span>'
+            f'<span class="flow-here">{here}</span>'
+            f'<span class="flow-sub">{sub}</span></div>')
+        if i < len(_steps) - 1:
+            _cells.append('<span class="flow-arrow">&rarr;</span>')
+    st.markdown('<div class="flow-strip">' + "".join(_cells) + '</div>',
+                unsafe_allow_html=True)
+
+
 def render_mesh_and_dxf_expander(subsystem_key, *, key_prefix,
                                  candidates=None, title_name=None):
     """Standalone per-tab Mesh & DXF export, mirroring the Brakes tab layout.
@@ -4690,6 +4745,9 @@ def render_mesh_and_dxf_expander(subsystem_key, *, key_prefix,
     _nm = title_name or _VC_LABEL.get(
         subsystem_key, subsystem_key.replace("-", " ").title())
     with st.expander(f"📐  {_nm} — mesh & DXF export", expanded=False):
+        _hint = _EXPORT_SOURCE_HINT.get(subsystem_key) or {}
+        _where = _hint.get("where", f"the {_nm} tab")
+        _render_mesh_dxf_flow_strip(_where)
         try:
             render_mesh_and_dxf(
                 subsystem_key, key_prefix=f"{key_prefix}_mesh",
@@ -6081,46 +6139,48 @@ with tab1:
 
   _subsystem_cad_import("suspension", key_prefix="susp")
 
-  c1, c2 = st.columns(2)
-  fig = go.Figure()
-  fig.add_trace(go.Scatter(x=travels_u, y=[st_.camber for st_ in sweep],
-                mode="lines", line=dict(color=CYAN, width=3), name="Camber"))
-  fig.update_layout(**PLOT_LAYOUT, title="Camber vs wheel travel",
-                    xaxis_title=f"travel ({_U_TRAVEL}, + bump)",
-                    yaxis_title="camber (°)", height=340)
-  c1.plotly_chart(fig, width='stretch')
+  with st.expander("📈  Kinematic sweeps vs wheel travel — camber · bump steer · "
+                   "scrub · caster", expanded=False):
+    c1, c2 = st.columns(2)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=travels_u, y=[st_.camber for st_ in sweep],
+                  mode="lines", line=dict(color=CYAN, width=3), name="Camber"))
+    fig.update_layout(**PLOT_LAYOUT, title="Camber vs wheel travel",
+                      xaxis_title=f"travel ({_U_TRAVEL}, + bump)",
+                      yaxis_title="camber (°)", height=340)
+    c1.plotly_chart(fig, width='stretch')
 
-  fig2 = go.Figure()
-  fig2.add_trace(go.Scatter(x=travels_u, y=[st_.toe for st_ in sweep],
-                 mode="lines", line=dict(color=AMBER, width=3), name="Toe"))
-  fig2.update_layout(**PLOT_LAYOUT, title="Bump steer (toe vs travel)",
-                     xaxis_title=f"travel ({_U_TRAVEL}, + bump)",
-                     yaxis_title="toe (°, + out)", height=340)
-  c2.plotly_chart(fig2, width='stretch')
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(x=travels_u, y=[st_.toe for st_ in sweep],
+                   mode="lines", line=dict(color=AMBER, width=3), name="Toe"))
+    fig2.update_layout(**PLOT_LAYOUT, title="Bump steer (toe vs travel)",
+                       xaxis_title=f"travel ({_U_TRAVEL}, + bump)",
+                       yaxis_title="toe (°, + out)", height=340)
+    c2.plotly_chart(fig2, width='stretch')
 
-  c3, c4 = st.columns(2)
-  fig3 = go.Figure()
-  fig3.add_trace(go.Scatter(
-      x=travels_u,
-      y=[units_mod.from_metric(st_.scrub_radius, "mm") for st_ in sweep],
-      mode="lines", line=dict(color="#9b8cff", width=3)))
-  fig3.update_layout(**PLOT_LAYOUT, title="Scrub radius vs travel",
-                     xaxis_title=f"travel ({_U_TRAVEL})",
-                     yaxis_title=f"scrub ({_U_TRAVEL})", height=320)
-  c3.plotly_chart(fig3, width='stretch')
+    c3, c4 = st.columns(2)
+    fig3 = go.Figure()
+    fig3.add_trace(go.Scatter(
+        x=travels_u,
+        y=[units_mod.from_metric(st_.scrub_radius, "mm") for st_ in sweep],
+        mode="lines", line=dict(color="#9b8cff", width=3)))
+    fig3.update_layout(**PLOT_LAYOUT, title="Scrub radius vs travel",
+                       xaxis_title=f"travel ({_U_TRAVEL})",
+                       yaxis_title=f"scrub ({_U_TRAVEL})", height=320)
+    c3.plotly_chart(fig3, width='stretch')
 
-  fig4 = go.Figure()
-  fig4.add_trace(go.Scatter(x=travels_u, y=[st_.caster for st_ in sweep],
-                 mode="lines", line=dict(color="#62d27a", width=3)))
-  fig4.update_layout(**PLOT_LAYOUT, title="Caster vs travel",
-                     xaxis_title=f"travel ({_U_TRAVEL})",
-                     yaxis_title="caster (°)", height=320)
-  c4.plotly_chart(fig4, width='stretch')
+    fig4 = go.Figure()
+    fig4.add_trace(go.Scatter(x=travels_u, y=[st_.caster for st_ in sweep],
+                   mode="lines", line=dict(color="#62d27a", width=3)))
+    fig4.update_layout(**PLOT_LAYOUT, title="Caster vs travel",
+                       xaxis_title=f"travel ({_U_TRAVEL})",
+                       yaxis_title="caster (°)", height=320)
+    c4.plotly_chart(fig4, width='stretch')
 
-  st.markdown('<p class="hint">Camber gain should be negative in bump so the '
-              'outside wheel keeps its contact patch flat as the car rolls. Aim to '
-              'keep bump steer under ~0.1°/10 mm — non-zero toe change with travel '
-              'steers the car over bumps and under load.</p>', unsafe_allow_html=True)
+    st.markdown('<p class="hint">Camber gain should be negative in bump so the '
+                'outside wheel keeps its contact patch flat as the car rolls. Aim to '
+                'keep bump steer under ~0.1°/10 mm — non-zero toe change with travel '
+                'steers the car over bumps and under load.</p>', unsafe_allow_html=True)
 
 # ----------------------------- TAB 2 --------------------------------------- #
 with tab2:
