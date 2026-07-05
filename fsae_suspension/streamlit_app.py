@@ -18206,6 +18206,11 @@ with tab_tr:
           'and a closed-loop racing line are out of scope — flagged, not faked. '
           'Use QSS (LAP TIME) for the lap-time number; use this for the unsteady '
           'behaviour behind it.</p>', unsafe_allow_html=True)
+  try:
+      render_documentation_expander("suspension", key_prefix="transient_doc",
+                                    title_name="Suspension / Transient")
+  except Exception:
+      pass
 
 
 # --------------------------------------------------------------------------- #
@@ -18374,11 +18379,6 @@ with sc3:
                 st.rerun()
         except Exception as e:
             st.error(f"Couldn't read that project file: {e}")
-  try:
-      render_documentation_expander("suspension", key_prefix="transient_doc",
-                                    title_name="Suspension / Transient")
-  except Exception:
-      pass
 
 # ----------------------------- TAB PCB (ELECTRONICS) ----------------------- #
 with tab_pcb:
