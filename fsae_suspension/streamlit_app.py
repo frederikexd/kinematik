@@ -2770,6 +2770,7 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
     _go = _c[1].button("Bust it →", key=f"{key_prefix}_myth_go",
                        help="Check this claim against the deterministic myth-buster "
                             "(and your live numbers where available). No AI.")
+    _state_key = f"{key_prefix}_myth_result"
     if _go and _claim.strip():
         try:
             from suspension import mythbuster as _mb
@@ -2793,13 +2794,6 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
             _res = _mb.check(_claim, context=_ctx)
             _vraw = getattr(_res, "verdict", "unknown")
             _v = getattr(_vraw, "value", _vraw)
-            _fn = {"myth": st.error, "true": st.success,
-                   "depends": st.warning}.get(_v, st.info)
-            _head = {"myth": "❌ Not true for your setup",
-                     "true": "✅ True — checks out",
-                     "depends": "⚠️ It depends — worth a closer look",
-                     "unknown": "Couldn't match that to a known check"}.get(_v, _v)
-            _fn(f"**{_head}**\n\n{_res.explanation}")
             # Capture what was sanity-checked so the Documentation report can
             # list the assumptions this member busted in this subsystem.
             _verdict_label = {"myth": "MYTH (false)", "true": "TRUE",
@@ -2807,14 +2801,30 @@ def render_myth_check(subsystem_key, *, key_prefix, context=None,
                                   _v, str(_v))
             record_activity(subsystem_key, "myth",
                             f"\u201c{_claim.strip()}\u201d \u2192 {_verdict_label}")
-            # Compact reminder attached directly under the verdict, so the
-            # "validate in the real tools" note travels with the outcome.
-            try:
-                _mb_validation_disclaimer(compact=True)
-            except Exception:
-                pass
+            # Persist so the verdict (and its disclaimer) survive Streamlit
+            # reruns instead of vanishing the moment the page re-renders.
+            st.session_state[_state_key] = {"v": _v, "expl": _res.explanation}
         except Exception as _me:
+            st.session_state.pop(_state_key, None)
             st.warning(f"Couldn't run the myth-buster: {_me}")
+
+    # Render the persisted verdict every run, with the validation disclaimer
+    # attached directly beneath it so the "validate in the real tools" note is
+    # always alongside the outcome.
+    _saved = st.session_state.get(_state_key)
+    if _saved:
+        _v = _saved["v"]
+        _fn = {"myth": st.error, "true": st.success,
+               "depends": st.warning}.get(_v, st.info)
+        _head = {"myth": "❌ Not true for your setup",
+                 "true": "✅ True — checks out",
+                 "depends": "⚠️ It depends — worth a closer look",
+                 "unknown": "Couldn't match that to a known check"}.get(_v, _v)
+        _fn(f"**{_head}**\n\n{_saved['expl']}")
+        try:
+            _mb_validation_disclaimer(compact=True)
+        except Exception:
+            pass
 
 
 def render_provisional_note(is_example, verdict, detail=""):
