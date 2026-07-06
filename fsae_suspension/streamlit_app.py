@@ -3863,18 +3863,25 @@ def _subsystem_profile_candidates(subsystem_key):
             return []
         outer = _rect(w, h)
         inner = _rect(w - 2*wall, h - 2*wall, wall, wall)
+        _src = G.get("source", "accumulator tab")
+        _cfg = G.get("config", "")
         cands.append({
-            "label": f"Accumulator segment — {w:g}×{h:g} mm box",
+            "label": f"Accumulator segment box (ONE segment) — {w:g}×{h:g} mm",
             "meta": {"Outer W (mm)": round(w, 1), "Outer H (mm)": round(h, 1),
-                     "Wall (mm)": wall, "Cells": G.get("n_cells"),
-                     "Config": G.get("config"),
-                     "Source": G.get("source", "accumulator tab")},
+                     "Wall (mm)": wall, "Cells (whole pack)": G.get("n_cells"),
+                     "Config": _cfg,
+                     "Source": _src},
             "dxf_kwargs": {"polylines": [
                 {"pts": outer, "closed": True},
                 {"pts": inner, "closed": True}]},
-            "notes": [f"Segment box {w:g}x{h:g} mm, {wall:g} mm wall "
-                      f"({G.get('config','')} — {G.get('source','accumulator tab')})",
-                      "Extrude to segment length"],
+            "notes": [f"ONE segment box, {w:g}x{h:g} mm outer, {wall:g} mm wall "
+                      f"({_cfg} — {_src}). This is a single <120 V segment, "
+                      f"NOT the whole pack.",
+                      f"Two closed loops: outer wall + inner cavity. The "
+                      f"{w:g}x{h:g} mm size comes from the real cell grid; the "
+                      f"{wall:g} mm wall and the 20 mm cell pitch are STARTING "
+                      f"assumptions — set the true wall and cell holder in CAD.",
+                      "Extrude to the segment length, then repeat per segment"],
         })
 
     elif subsystem_key == "cooling":
@@ -4061,9 +4068,18 @@ _EXPORT_SOURCE_HINT = {
     },
     "electrics": {
         "where": "the Accumulator tab",
-        "steps": ["Run the segmentation so the segment box is sized."],
-        "needs": [("Segment width (mm)", "w_mm"),
-                  ("Segment height (mm)", "h_mm")],
+        "steps": ["<b>There&rsquo;s no export button.</b> The segment-box section "
+                  "appears here on its own once the pack is sized &mdash; if this "
+                  "panel is empty, set the pack numbers below first.",
+                  "In the <b>Accumulator tab</b>, set your <b>series</b> and "
+                  "<b>parallel</b> cell counts. The app splits the pack into "
+                  "isolatable <b>&lt;120 V segments</b> and lays the cells out "
+                  "as a grid &mdash; that grid is the box cross-section you "
+                  "export.",
+                  "The box you get is <b>one segment&rsquo;s</b> cross-section, "
+                  "not the whole pack. Extrude it to the segment length in CAD."],
+        "needs": [("Segment width (mm)", "seg_w_mm"),
+                  ("Segment height (mm)", "seg_h_mm")],
     },
     "cooling": {
         "where": "the Cooling tab",
@@ -4959,6 +4975,24 @@ def _render_mesh_dxf_flow_strip(where_label, subsystem_key=None):
             ("Export", "⬇ Download DXF, here",
              "One closed sketch &rarr; SolidWorks: import, size the plate around "
              "the real PCD, then extrude."),
+        ]
+    elif subsystem_key == "electrics":
+        _steps = [
+            ("Input", where_label,
+             "Set your <b>series</b> and <b>parallel</b> cell counts in the "
+             "Accumulator tab. There&rsquo;s no export button &mdash; sizing the "
+             "pack is the input."),
+            ("Calculate", "automatic, no tool to run",
+             "The app splits the pack into isolatable <b>&lt;120 V segments</b>, "
+             "lays one segment&rsquo;s cells out as a grid, and wraps it in a "
+             "housing wall &mdash; that grid is the box cross-section, published "
+             "the instant the pack is sized."),
+            ("Mesh", "here &amp; in your FEA",
+             "The segment-box section (outer wall + inner cavity) appears below "
+             "on its own. Pick it, then mesh in Ansys / your FEA."),
+            ("Export", "⬇ Download DXF, here",
+             "One closed sketch of <b>one segment</b> &rarr; SolidWorks: import, "
+             "extrude to the segment length, then mesh."),
         ]
     else:
         _steps = [
