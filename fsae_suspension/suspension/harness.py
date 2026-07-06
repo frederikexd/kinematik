@@ -402,25 +402,79 @@ def _point_aabb_signed_dist_mm(p: np.ndarray, lo: np.ndarray, hi: np.ndarray) ->
     return -inside
 
 
-def _polyline_aabb_clearance_mm(path: np.ndarray, lo: np.ndarray, hi: np.ndarray,
-                                step_mm: float = 5.0) -> float:
+def _signed_dist_batch(pts: np.ndarray, lo: np.ndarray, hi: np.ndarray) -> np.ndarray:
+    """Vectorised signed point→AABB distance for an (N,3) array of points.
+    >0 outside, <0 inside (negative penetration depth), 0 on the surface."""
+    d_out = np.maximum(np.maximum(lo - pts, pts - hi), 0.0)
+    outside = np.linalg.norm(d_out, axis=1)
+    inside = np.min(np.minimum(pts - lo, hi - pts), axis=1)
+    return np.where(outside > 0.0, outside, -np.maximum(inside, 0.0))
+
+
+def _polyline_aabb_clearance_detail(path: np.ndarray, lo: np.ndarray,
+                                    hi: np.ndarray):
     """
-    Minimum signed clearance between a routed polyline and an axis-aligned keep-out
-    box. Walks each segment in fine sub-steps (default 5 mm) and takes the worst
-    (most negative / smallest) signed distance — a screening clearance, exact at
-    the sample points. Negative => the wire passes through the box.
+    Minimum signed clearance between a routed polyline and an axis-aligned
+    keep-out box, plus WHERE on the route it occurs.
+
+    The signed distance to a convex set is a convex function, so along each
+    straight segment d(t) is convex in t — its minimum is found *exactly* (to
+    machine precision) by golden-section search, run vectorised across every
+    segment at once. This replaces the old 5 mm point-sampling walk: it is both
+    exact (no sample-spacing error — a wire that just grazes a corner between
+    two samples can no longer slip through) and orders of magnitude faster
+    (a few dozen fully-vectorised numpy evaluations instead of a Python loop
+    per 5 mm of route).
+
+    Returns (worst_signed_mm, worst_point_xyz or None). Negative => the wire
+    passes through the box; the point is the deepest penetration / closest
+    approach on the centreline.
     """
     if path.shape[0] < 2:
-        return float("inf")
-    worst = float("inf")
-    for i in range(path.shape[0] - 1):
-        p0, p1 = path[i], path[i + 1]
-        L = float(np.linalg.norm(p1 - p0))
-        n = max(2, int(L / step_mm) + 1)
-        for k in range(n + 1):
-            q = p0 + (p1 - p0) * (k / n)
-            worst = min(worst, _point_aabb_signed_dist_mm(q, lo, hi))
-    return worst
+        return float("inf"), None
+    P0 = path[:-1].astype(float)                 # (M,3) segment starts
+    D = path[1:].astype(float) - P0              # (M,3) segment vectors
+    M = P0.shape[0]
+    invphi = (np.sqrt(5.0) - 1.0) / 2.0          # 0.618...
+    a = np.zeros(M)
+    b = np.ones(M)
+    c = b - invphi * (b - a)
+    d = a + invphi * (b - a)
+    fc = _signed_dist_batch(P0 + D * c[:, None], lo, hi)
+    fd = _signed_dist_batch(P0 + D * d[:, None], lo, hi)
+    # 72 golden steps shrink the bracket by 0.618^72 ≈ 8e-16 of the segment.
+    for _ in range(72):
+        take_left = fc < fd            # True: min lies in [a, d]
+        fc_old, fd_old = fc, fd
+        b = np.where(take_left, d, b)
+        a = np.where(take_left, a, c)
+        c_next = np.where(take_left, b - invphi * (b - a), d)
+        d_next = np.where(take_left, c, a + invphi * (b - a))
+        probe = np.where(take_left, c_next, d_next)
+        f_probe = _signed_dist_batch(P0 + D * probe[:, None], lo, hi)
+        fc = np.where(take_left, f_probe, fd_old)
+        fd = np.where(take_left, fc_old, f_probe)
+        c, d = c_next, d_next
+    t = (a + b) / 2.0
+    pts = P0 + D * t[:, None]
+    vals = _signed_dist_batch(pts, lo, hi)
+    # segment endpoints are candidates too (convex min can sit at t=0/1;
+    # golden converges there as well, but include the exact vertices for free)
+    vend = _signed_dist_batch(path.astype(float), lo, hi)
+    i_seg = int(np.argmin(vals))
+    i_end = int(np.argmin(vend))
+    if vend[i_end] < vals[i_seg]:
+        return float(vend[i_end]), path[i_end].astype(float)
+    return float(vals[i_seg]), pts[i_seg]
+
+
+def _polyline_aabb_clearance_mm(path: np.ndarray, lo: np.ndarray, hi: np.ndarray,
+                                step_mm: float = 5.0) -> float:
+    """Minimum signed clearance polyline→AABB (kept for API compatibility;
+    `step_mm` is ignored — the answer is now exact, not sampled).
+    Negative => the wire passes through the box."""
+    gap, _ = _polyline_aabb_clearance_detail(path, lo, hi)
+    return gap
 
 
 # --------------------------------------------------------------------------- #
@@ -430,7 +484,12 @@ def _polyline_aabb_clearance_mm(path: np.ndarray, lo: np.ndarray, hi: np.ndarray
 class FormboardBranch:
     """One conductor as it appears on the flat nail-board: an ordered list of 2-D
     (x,y) points whose *segment lengths exactly equal the 3-D route's* segment
-    lengths, so the board is a true 1:1 manufacturing layout."""
+    lengths, so the board is a true 1:1 manufacturing layout.
+
+    `corner_radii_mm` is the formed bend radius the 3-D route implies at each
+    internal vertex (same order as the drawn points), and `min_bend_radius_mm`
+    the wire's allowed minimum — so the drawing can flag, on the board itself,
+    exactly which nail position holds a bend the conductor cannot take."""
     wire: str
     net: str
     gauge_awg: int
@@ -438,6 +497,9 @@ class FormboardBranch:
     cut_length_mm: float
     from_conn: str = ""
     to_conn: str = ""
+    corner_radii_mm: list = field(default_factory=list)   # per internal vertex
+    min_bend_radius_mm: float = 0.0
+    reversed: bool = False          # drawn to→from instead of from→to
 
     def as_dict(self):
         return asdict(self)
@@ -447,32 +509,56 @@ class FormboardBranch:
 class Formboard:
     """
     The whole harness unfolded flat. `branches` are the per-wire 2-D polylines,
-    `nodes` are the connector positions on the board, and `extent_mm` is the
+    `nodes` are the connector positions on the board (each connector appears
+    exactly ONCE), `ties` mark where a second length-true branch terminating at
+    an already-placed connector necessarily ends elsewhere on the board (drawn
+    as a dashed 'same plug' link — honest, not warped), and `extent_mm` is the
     bounding box of the drawing (the physical board size the shop needs).
     """
     branches: list = field(default_factory=list)
     nodes: dict = field(default_factory=dict)       # connector -> (x,y)
     extent_mm: tuple = (0.0, 0.0)
+    ties: list = field(default_factory=list)        # [{connector, a_xy, b_xy}]
 
     def as_dict(self):
         return dict(branches=[b.as_dict() for b in self.branches],
                     nodes={k: list(v) for k, v in self.nodes.items()},
-                    extent_mm=list(self.extent_mm))
+                    extent_mm=list(self.extent_mm),
+                    ties=[dict(connector=t["connector"],
+                               a_xy=list(t["a_xy"]), b_xy=list(t["b_xy"]))
+                          for t in self.ties])
+
+
+def _ang_diff(a: float, b: float) -> float:
+    """Smallest absolute difference between two angles (radians)."""
+    d = (a - b) % (2.0 * np.pi)
+    return min(d, 2.0 * np.pi - d)
 
 
 def _unfold_branch_2d(path3d: np.ndarray, origin2d: np.ndarray,
-                      heading_deg: float) -> np.ndarray:
+                      heading_deg: float,
+                      target_heading_deg: Optional[float] = None) -> np.ndarray:
     """
     Unfold a 3-D centreline into a flat 2-D polyline that PRESERVES every segment
-    length exactly. We lay the branch out along a heading, turning at each vertex
-    by the *same interior angle* the 3-D route turns through — so the flat path is
-    an isometric (length-true) unrolling of the loom, which is exactly what a
-    formboard is: the bends are real, only the out-of-plane component is removed.
+    length exactly. The branch launches along `heading_deg` and turns at each
+    vertex by the *same interior angle* the 3-D route turns through — an
+    isometric (length-true) unrolling: the bends are real, only the out-of-plane
+    component is removed.
+
+    Only the *sign* of each flat turn is free (the 3-D route fixes the
+    magnitude). The old implementation blindly alternated the sign, which made
+    real routes zig-zag, curl back over themselves and cross other branches —
+    the 'drawing doesn't go right' failure. Here each turn's sign is chosen to
+    STEER the running heading toward `target_heading_deg` (default: the launch
+    heading), so the branch flows outward in its own lane while every segment
+    length and every bend angle stay exactly true.
     """
     seg = segment_lengths_mm(path3d)
     if seg.shape[0] == 0:
         return origin2d.reshape(1, 2)
     turns = turn_angles_deg(path3d)        # interior deflection at each vertex
+    target = np.radians(heading_deg if target_heading_deg is None
+                        else target_heading_deg)
     pts = [origin2d.copy()]
     heading = np.radians(heading_deg)
     cur = origin2d.copy()
@@ -481,10 +567,10 @@ def _unfold_branch_2d(path3d: np.ndarray, origin2d: np.ndarray,
         cur = cur + d * L
         pts.append(cur.copy())
         if i < turns.shape[0]:
-            # alternate the turn direction so the unrolled branch fans out
-            # instead of curling back on itself
-            sign = 1.0 if (i % 2 == 0) else -1.0
-            heading += sign * np.radians(turns[i])
+            t = np.radians(turns[i])
+            plus, minus = heading + t, heading - t
+            heading = plus if _ang_diff(plus, target) <= _ang_diff(minus, target) \
+                else minus
     return np.asarray(pts)
 
 
@@ -596,6 +682,48 @@ class HarnessLedger:
                                     required_mm=req, estimate=est)))
         return out
 
+    # ---- route anchoring: does the polyline actually reach its plugs? ---- #
+    def check_anchoring(self, tol_mm: float = 1.0) -> list:
+        """
+        Every derived number — cut length, formboard, clearance — is measured off
+        the declared polyline. If the polyline doesn't actually start/end at the
+        connector face it claims to plug into, all of those numbers are measured
+        off the wrong geometry (the classic 'wire floats 80 mm off the ECU in the
+        3-D view' symptom). Flag any terminated end whose route endpoint sits more
+        than `tol_mm` from its connector's declared position.
+        """
+        out: list = []
+        for w in self.wires.values():
+            path = w.as_polyline()
+            if path.shape[0] < 2:
+                continue
+            est = w.is_estimate
+            tag = " (estimated route)" if est else ""
+            for end_label, conn_name, pt in ((w.from_conn, w.from_conn, path[0]),
+                                             (w.to_conn, w.to_conn, path[-1])):
+                conn = self.connectors.get(conn_name)
+                if conn is None:
+                    continue
+                gap = float(np.linalg.norm(pt - conn.as_array()))
+                if gap > tol_mm:
+                    out.append(Finding(
+                        "harness-anchor", Severity.WARN,
+                        f"Wire '{w.name}' claims to terminate at connector "
+                        f"'{conn_name}' but its route endpoint sits {gap:.0f} mm "
+                        f"away from the connector face — the cut length, "
+                        f"formboard and clearance are being measured off a route "
+                        f"that never reaches the plug. Snap the endpoint to the "
+                        f"connector{tag}.",
+                        subsystems=sorted({w.owner_subsystem,
+                                           conn.owner_subsystem}),
+                        detail=dict(wire=w.name, connector=conn_name,
+                                    offset_mm=round(gap, 1),
+                                    endpoint_mm=[round(float(v), 1) for v in pt],
+                                    connector_mm=[round(float(v), 1)
+                                                  for v in conn.as_array()],
+                                    estimate=est)))
+        return out
+
     # ---- 3-D clearance vs keep-outs -------------------------------------- #
     def check_clearance(self, keepouts: Optional[list] = None) -> list:
         """
@@ -632,7 +760,8 @@ class HarnessLedger:
                 # inflate the box by half the wire OD: the centreline must clear by
                 # the conductor's own radius before its surface touches.
                 pad = w.outside_diameter_mm / 2.0
-                gap = _polyline_aabb_clearance_mm(path, lo - pad, hi + pad)
+                gap, at = _polyline_aabb_clearance_detail(path, lo - pad, hi + pad)
+                at_mm = None if at is None else [round(float(v), 1) for v in at]
                 ko_owner = getattr(ko, "owner_subsystem", "?")
                 pair = sorted({w.owner_subsystem, ko_owner})
                 if gap <= self.clearance_fail_mm:
@@ -643,7 +772,8 @@ class HarnessLedger:
                         f"wire surface) — the loom fouls it. Re-route{tag}.",
                         subsystems=pair,
                         detail=dict(wire=w.name, keepout=ko.name,
-                                    penetration_mm=float(-gap), estimate=est)))
+                                    penetration_mm=float(-gap), at_mm=at_mm,
+                                    estimate=est)))
                 elif gap < self.clearance_warn_mm:
                     out.append(Finding(
                         "harness-clearance", Severity.WARN,
@@ -652,7 +782,8 @@ class HarnessLedger:
                         f"tight against reserved space{tag}.",
                         subsystems=pair,
                         detail=dict(wire=w.name, keepout=ko.name,
-                                    gap_mm=float(gap), estimate=est)))
+                                    gap_mm=float(gap), at_mm=at_mm,
+                                    estimate=est)))
         if not any(f.severity in (Severity.FAIL, Severity.WARN) for f in out) and out:
             out.append(Finding(
                 "harness-clearance", Severity.OK,
@@ -794,32 +925,119 @@ class HarnessLedger:
     # ---- formboard (1:1 unfolded) ---------------------------------------- #
     def formboard(self) -> Formboard:
         """
-        Build the 1:1 flat formboard: each wire unrolled to a length-true 2-D
-        polyline, fanned out from a common origin by branch index so the drawing
-        reads. Connector nodes are placed at each branch's flat endpoints. The
-        returned extent is the physical board size.
+        Build the 1:1 flat formboard as a topology-aware tree layout:
+
+          * the harness connector graph is traversed from each component's hub
+            connector outward, so every connector appears at exactly ONE board
+            position (previously a shared plug was silently drawn wherever the
+            last branch happened to end);
+          * each branch is unrolled length-true from its start connector's board
+            position, launched into its own angular lane and STEERED (turn signs
+            chosen toward the lane) instead of blindly zig-zagged, so branches
+            flow outward and stop curling back over each other;
+          * a second length-true branch that terminates at an already-placed
+            connector gets an explicit dashed `tie` (same plug, drawn honestly
+            where its true length puts it — never warped to fit);
+          * disconnected sub-harnesses are tiled side by side.
+
+        Segment lengths and bend magnitudes remain exactly those of the 3-D
+        route — the 1:1 manufacturing guarantee is unchanged. The returned
+        extent is the physical board size.
         """
-        branches = []
-        nodes: dict = {}
-        all_pts = []
-        n = max(1, len(self.wires))
-        for idx, w in enumerate(sorted(self.wires.values(), key=lambda x: x.name)):
+        routed = [w for w in sorted(self.wires.values(), key=lambda x: x.name)
+                  if w.as_polyline().shape[0] >= 2]
+        branches: list = []
+        ties: list = []
+        all_pts: list = []
+        placed: dict = {}        # node key -> np.array([x, y]) on the board
+        node_head: dict = {}     # node key -> outgoing base heading (deg)
+        fan_count: dict = {}     # node key -> how many branches already launched
+        # symmetric fan: successive branches from the same node take these
+        # offsets (deg) around the node's base heading, so siblings get lanes
+        # instead of piling onto one line
+        _FAN = [0.0, 38.0, -38.0, 76.0, -76.0, 114.0, -114.0, 152.0, -152.0]
+
+        # degree of each named connector, to root each component at its hub
+        deg: dict = {}
+        for w in routed:
+            for cn in (w.from_conn, w.to_conn):
+                if cn:
+                    deg[cn] = deg.get(cn, 0) + 1
+
+        remaining = list(routed)
+        while remaining:
+            # grow the tree: prefer a wire touching an already-placed connector
+            idx = next((i for i, w in enumerate(remaining)
+                        if (w.from_conn and w.from_conn in placed)
+                        or (w.to_conn and w.to_conn in placed)), None)
+            if idx is None:
+                # new disconnected component: seed it at the hub connector of
+                # its own wires (highest degree endpoint), tiled to the right
+                # of everything drawn so far so components never overlap
+                w0 = remaining[0]
+                cands = [c for c in (w0.from_conn, w0.to_conn) if c]
+                seed = (max(cands, key=lambda c: deg.get(c, 0))
+                        if cands else f"\u00b7{w0.name}")
+                ox = (float(np.vstack(all_pts)[:, 0].max()) + 300.0
+                      if all_pts else 0.0)
+                placed[seed] = np.array([ox, 0.0])
+                node_head[seed] = 0.0
+                idx = 0
+                w = remaining.pop(0)
+                start_key = seed
+                rev = bool(w.to_conn and w.to_conn == seed
+                           and w.from_conn != seed)
+            else:
+                w = remaining.pop(idx)
+                if w.from_conn and w.from_conn in placed:
+                    start_key, rev = w.from_conn, False
+                else:
+                    start_key, rev = w.to_conn, True
+
             path = w.as_polyline()
-            if path.shape[0] < 2:
-                continue
-            # fan branches out over a 120° spread so they don't overlap on the board
-            heading = -60.0 + 120.0 * (idx / max(1, n - 1) if n > 1 else 0.5)
-            flat = _unfold_branch_2d(path, np.zeros(2), heading)
+            if rev:
+                path = path[::-1]
+            other = (w.from_conn if rev else w.to_conn) or ""
+
+            k = fan_count.get(start_key, 0)
+            fan_count[start_key] = k + 1
+            heading = node_head.get(start_key, 0.0) + _FAN[k % len(_FAN)]
+            flat = _unfold_branch_2d(path, placed[start_key], heading)
+
+            radii = vertex_bend_radius_mm(path)
             branches.append(FormboardBranch(
                 wire=w.name, net=w.net, gauge_awg=w.gauge_awg,
                 points_mm=[tuple(round(float(v), 1) for v in p) for p in flat],
                 cut_length_mm=round(w.cut_length_mm(), 1),
-                from_conn=w.from_conn, to_conn=w.to_conn))
+                from_conn=w.from_conn, to_conn=w.to_conn,
+                corner_radii_mm=[(None if not np.isfinite(r)
+                                  else round(float(r), 1)) for r in radii],
+                min_bend_radius_mm=round(w.min_bend_radius_mm, 1),
+                reversed=rev))
             all_pts.append(flat)
-            if w.from_conn:
-                nodes[w.from_conn] = tuple(float(v) for v in flat[0])
-            if w.to_conn:
-                nodes[w.to_conn] = tuple(float(v) for v in flat[-1])
+
+            end = flat[-1]
+            if other:
+                if other in placed:
+                    # a second length-true branch reaching this plug cannot be
+                    # bent to land on it — record the honest 'same connector'
+                    # tie instead of silently overwriting the node position
+                    if float(np.linalg.norm(end - placed[other])) > 0.5:
+                        ties.append(dict(connector=other,
+                                         a_xy=tuple(float(v) for v in end),
+                                         b_xy=tuple(float(v)
+                                                    for v in placed[other])))
+                else:
+                    placed[other] = end.copy()
+                    # children of this node continue outward along the arrival
+                    # direction of the branch that placed it
+                    tail = flat[-1] - flat[-2] if flat.shape[0] >= 2 \
+                        else np.array([1.0, 0.0])
+                    node_head[other] = float(np.degrees(
+                        np.arctan2(tail[1], tail[0])))
+
+        nodes = {k: tuple(float(v) for v in p) for k, p in placed.items()
+                 if not k.startswith("\u00b7")}
         if all_pts:
             stacked = np.vstack(all_pts)
             mn = stacked.min(axis=0)
@@ -827,13 +1045,19 @@ class HarnessLedger:
             extent = tuple(float(v) for v in (mx - mn))
             # shift everything positive so the board origin is the corner
             for b in branches:
-                b.points_mm = [tuple(round(float(p[i] - mn[i]), 1) for i in range(2))
-                               for p in b.points_mm]
+                b.points_mm = [tuple(round(float(p[i] - mn[i]), 1)
+                                     for i in range(2)) for p in b.points_mm]
             nodes = {k: tuple(round(float(v[i] - mn[i]), 1) for i in range(2))
                      for k, v in nodes.items()}
+            ties = [dict(connector=t["connector"],
+                         a_xy=tuple(round(float(t["a_xy"][i] - mn[i]), 1)
+                                    for i in range(2)),
+                         b_xy=tuple(round(float(t["b_xy"][i] - mn[i]), 1)
+                                    for i in range(2))) for t in ties]
         else:
             extent = (0.0, 0.0)
-        return Formboard(branches=branches, nodes=nodes, extent_mm=extent)
+        return Formboard(branches=branches, nodes=nodes, extent_mm=extent,
+                         ties=ties)
 
     # ---- persistence ----------------------------------------------------- #
     def as_dict(self):
@@ -900,6 +1124,7 @@ def check_harness(harness: HarnessLedger,
     """
     findings = []
     findings += harness.check_bends()
+    findings += harness.check_anchoring()
     findings += harness.check_clearance(keepouts=keepouts)
     return HarnessCheckResult(
         findings=findings,
