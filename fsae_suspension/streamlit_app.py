@@ -3815,15 +3815,21 @@ def _subsystem_profile_candidates(subsystem_key):
         plate = pcd + 3 * hole
         outline = [(-plate/2, -plate/2), (plate/2, -plate/2),
                    (plate/2, plate/2), (-plate/2, plate/2)]
+        _src = G.get("source", "hardpoints")
         cands.append({
-            "label": f"Mount plate — {n} bolts on {pcd:g} mm PCD",
+            "label": f"Upright mount plate blank — {n} bolts on {pcd:g} mm PCD",
             "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
-                     "Hole ⌀ (mm)": hole, "Peak load (N)": G.get("load_n"),
-                     "Source": G.get("source", "hardpoints")},
+                     "Hole ⌀ (mm)": hole, "Plate size (mm)": round(plate, 1),
+                     "Peak load (N)": G.get("load_n"),
+                     "Source": _src},
             "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
                            "circles": _bolt_circle(pcd, n, hole)},
-            "notes": [f"{n}-bolt mount plate, {pcd:g} mm PCD "
-                      f"(from {G.get('source','hardpoints')})",
+            "notes": [f"{n}-bolt upright mount plate blank, {pcd:g} mm PCD "
+                      f"(from {_src})",
+                      f"PCD {pcd:g} mm is the measured ball-joint span — this "
+                      f"is REAL. The square {plate:g} mm outline and {hole:g} mm "
+                      f"holes are STARTING placeholders: resize the plate and "
+                      f"set the true bolt ⌀ in CAD.",
                       "Set plate thickness from FEA on the peak load"],
         })
 
@@ -4030,7 +4036,11 @@ _EXPORT_SOURCE_HINT = {
     },
     "suspension": {
         "where": "the sidebar &rarr; Suspension geometry (hardpoint editor)",
-        "steps": ["Open the <b>hardpoint editor</b> in the left sidebar and set "
+        "steps": ["<b>There&rsquo;s no button to press.</b> The mount-plate "
+                  "section appears on its own the moment the ball joints exist "
+                  "&mdash; if this panel is empty, the points below just "
+                  "aren&rsquo;t set yet.",
+                  "Open the <b>hardpoint editor</b> in the left sidebar and set "
                   "your <b>upper</b> and <b>lower outer ball joints</b>. The "
                   "app measures the span between them &mdash; that becomes the "
                   "upright mount PCD.",
@@ -4883,7 +4893,7 @@ def _render_mesh_section(subsystem_key, *, key_prefix, mesh_candidates=None,
     try:
         _hint = _EXPORT_SOURCE_HINT.get(subsystem_key) or {}
         _where = _hint.get("where", f"the {_nm} tab")
-        _render_mesh_dxf_flow_strip(_where)
+        _render_mesh_dxf_flow_strip(_where, subsystem_key=subsystem_key)
         render_mesh_and_dxf(
             subsystem_key, key_prefix=f"{key_prefix}_mesh",
             candidates=mesh_candidates, title_name=_nm)
@@ -4918,27 +4928,53 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
                 mesh_candidates=mesh_candidates, title_name=_nm)
 
 
-def _render_mesh_dxf_flow_strip(where_label):
+def _render_mesh_dxf_flow_strip(where_label, subsystem_key=None):
     """A one-glance 'how to use this' strip: input -> calculate -> mesh -> export.
 
     Sits at the top of every Mesh & DXF expander so a member immediately sees the
     four stages and, crucially, WHERE each one happens — the inputs live in their
     own tab, the section/short-list is computed here, and the DXF drops out at the
-    end. `where_label` names the tab whose numbers feed this export."""
-    _steps = [
-        ("Input", where_label,
-         "Enter your real numbers in the tab &mdash; the section is drawn "
-         "from them, never guessed."),
-        ("Calculate", "same tab, automatically",
-         "Run the tab&rsquo;s tool; it computes the section and a "
-         "short-list of what&rsquo;s worth meshing."),
-        ("Mesh", "here &amp; in your FEA",
-         "Pick a short-listed section below, then mesh the survivors in "
-         "Ansys / your FEA."),
-        ("Export", "⬇ Download DXF, here",
-         "One closed sketch &rarr; SolidWorks: import, extrude/revolve, "
-         "then mesh."),
-    ]
+    end. `where_label` names the tab whose numbers feed this export.
+
+    Suspension is the exception the wording has to respect: it has no tab tool to
+    'run'. Its section is published PASSIVELY from the sidebar hardpoint editor —
+    the moment the upper and lower ball joints exist, the app measures their span
+    and the mount-plate section appears. Telling a suspension user to 'run the
+    tab's tool' sends them hunting for a button that isn't there, which is the
+    single biggest source of 'the suspension export doesn't work' confusion. So
+    for suspension we describe what actually happens instead."""
+    if subsystem_key == "suspension":
+        _steps = [
+            ("Input", where_label,
+             "Set your <b>upper</b> and <b>lower outer ball joints</b> in the "
+             "left sidebar. There&rsquo;s no button to press &mdash; having the "
+             "points is the input."),
+            ("Calculate", "automatic, no tool to run",
+             "The app measures the <b>span</b> between the two ball joints and "
+             "uses it as the upright mount <b>PCD</b>; a tie-rod outer adds a "
+             "3rd bolt. This happens the instant the points exist."),
+            ("Mesh", "here &amp; in your FEA",
+             "The mount-plate section appears below on its own. Pick it, then "
+             "mesh in Ansys / your FEA."),
+            ("Export", "⬇ Download DXF, here",
+             "One closed sketch &rarr; SolidWorks: import, size the plate around "
+             "the real PCD, then extrude."),
+        ]
+    else:
+        _steps = [
+            ("Input", where_label,
+             "Enter your real numbers in the tab &mdash; the section is drawn "
+             "from them, never guessed."),
+            ("Calculate", "same tab, automatically",
+             "Run the tab&rsquo;s tool; it computes the section and a "
+             "short-list of what&rsquo;s worth meshing."),
+            ("Mesh", "here &amp; in your FEA",
+             "Pick a short-listed section below, then mesh the survivors in "
+             "Ansys / your FEA."),
+            ("Export", "⬇ Download DXF, here",
+             "One closed sketch &rarr; SolidWorks: import, extrude/revolve, "
+             "then mesh."),
+        ]
     _cells = []
     for i, (title, here, sub) in enumerate(_steps):
         _cells.append(
@@ -4971,7 +5007,7 @@ def render_mesh_and_dxf_expander(subsystem_key, *, key_prefix,
     with st.expander(f"📐  {_nm} — mesh & DXF export", expanded=False):
         _hint = _EXPORT_SOURCE_HINT.get(subsystem_key) or {}
         _where = _hint.get("where", f"the {_nm} tab")
-        _render_mesh_dxf_flow_strip(_where)
+        _render_mesh_dxf_flow_strip(_where, subsystem_key=subsystem_key)
         try:
             render_mesh_and_dxf(
                 subsystem_key, key_prefix=f"{key_prefix}_mesh",
