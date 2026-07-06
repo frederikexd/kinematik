@@ -2,6 +2,29 @@
 
 Build: `0.12-analytics-hardened`
 
+## Latest round — 🩺 PCB Doctor (Electronics tab)
+
+The board-check panel screens *declared* traces; the new PCB Doctor screens the
+board the team already *routed*. Drop a real `.kicad_pcb` (KiCad 5–9) into the
+Electronics tab and it parses every segment/via/footprint/pour with a native,
+span-preserving s-expression reader, assigns each net its current from the
+integration ledger (every guess labelled and editable), and runs the physics
+DRC never sees: IPC-2221 heating at the per-net bottleneck, Onderdonk fusing,
+via-barrel ampacity, true IR-drop → brown-out by nodal analysis of the routed
+copper mesh, copper opens, IPC-2221-B4 HV clearance, diff-pair skew, HV→pair
+coupling on real geometry, and component-level derating (caps on hot copper,
+under-rated fuses, connector pins). Every finding names the component/net,
+explains why it fails on the car despite passing simulation, and carries the
+numeric fix. One click re-traces the existing board: only under-sized
+`(width …)` tokens are rewritten (byte-identical otherwise, reopens in KiCad
+with routing intact), the patched geometry is re-diagnosed for a before/after
+FAIL count, and both the patched file and a hand-off fix report download.
+Diff-pair members are never auto-widened (width sets impedance) — prescribed
+instead. A 📏 Trace Prescriber answers "how wide, which layer, how many vias?"
+with no board file at all. New module `suspension/pcb_doctor.py` (numpy-only,
+same honesty rules: field-solver quantities reported *not computed*); tests in
+`tests/test_pcb_doctor.py`; usage in `PCB_DOCTOR_USAGE.md`.
+
 ## Latest round — feature-menu drill-down (Tab ▸ Sub-tab ▸ Feature)
 
 The feature-collection tabs used a horizontal "View" radio that landed the

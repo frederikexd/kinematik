@@ -55,7 +55,7 @@ One environment. Every subsystem. The entire car.
 | **Brakes** | Bias & lock-up, hydraulic sizing, bolt & bracket FoS, rotor thermal, fade test, rotor optimiser + rotor DXF export, caliper-bracket DXF |
 | **Chassis / Frame** | 3D model, team fit, weight & CG ledger, handover export, node-gusset DXF |
 | **Cooling** | Thermal sizing, heatmap, cross-subsystem heat propagation, radiator-core DXF |
-| **Electronics** | PCB copper survival, signal integrity, HV/LV checks, sensor/PCB-bracket DXF |
+| **Electronics** | PCB copper survival, signal integrity, HV/LV checks, **PCB Doctor** (import a real `.kicad_pcb`, diagnose real-life failures with the guilty component named, one-click re-trace of under-sized copper, multi-layer Trace Prescriber), sensor/PCB-bracket DXF |
 | **Data Acquisition** | Integration with car-level electrical budget, DAQ-bracket DXF |
 | **Cost & BOM** | FSAE Cost event, auto-seeded from Integration ledger, CSV export |
 | **Integration** | Cross-subsystem ledger, coupling graph, risk propagation, manufacturing-release gate, **Verdict Center** (per-subsystem works / look-closer / attention) |

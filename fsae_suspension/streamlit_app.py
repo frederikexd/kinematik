@@ -13956,6 +13956,286 @@ def render_pcb_board():
           st.caption(d["note"])
 
 
+def render_pcb_doctor():
+    """
+    PCB Doctor — drop the *real* .kicad_pcb in, get the real-life failure list
+    (with the guilty component named and the numeric fix attached), then let it
+    re-trace the under-sized copper in place and hand back a patched board file
+    that reopens in KiCad with the routing intact. Also carries the multi-layer
+    Trace Prescriber for boards that don't exist yet.
+    """
+    from suspension import pcb_doctor as pdr_mod
+
+    st.markdown("---")
+    st.markdown("### 🩺 PCB Doctor — import the real board, fix the traces on it")
+    st.markdown(
+        '<p class="hint">The panel above checks the traces you <i>declare</i>. '
+        'This one checks the board you already <i>routed</i>: drop the '
+        '<b>.kicad_pcb</b> straight in and the Doctor reads every copper '
+        'segment, via, footprint and pour, assigns each net its current from '
+        'the <b>integration ledger</b> (every guess labelled and editable), and '
+        'runs the physics DRC never sees — IPC-2221 heating at the bottleneck '
+        'segment, Onderdonk fusing, the <b>via that chokes a wide trace</b>, '
+        'true IR-drop → ECU brown-out by <b>nodal analysis of the actual routed '
+        'copper mesh</b>, copper opens the rats-nest missed, IPC-2221 B4 '
+        '<b>HV clearance</b>, differential-pair skew, HV nets coupling into '
+        'signal pairs, and <b>component-level derating</b> (the electrolytic on '
+        'hot copper, the fuse rated under its own net). Every finding says why '
+        'the board fails <i>on the car</i> even though it simulated fine, names '
+        'the component, and carries the exact numeric fix — then one click '
+        '<b>re-traces the existing board</b>: only the under-sized '
+        '<code>(width …)</code> tokens are rewritten, byte-for-byte otherwise, '
+        'so the patched file reopens in KiCad with everything intact. Analytic '
+        'screening on the file you drop in — not a field solver, not a DRC '
+        'replacement; anything needing one is reported as <i>not computed</i>, '
+        'never invented.</p>',
+        unsafe_allow_html=True)
+
+    store = get_store()
+    board_ctx = store._ensure_board()
+    led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+
+    # ---------------- load: drag a file or one-click demo -------------------- #
+    lc = st.columns([3, 1])
+    up = lc[0].file_uploader("Drop a KiCad board file (.kicad_pcb)",
+                             type=["kicad_pcb"], key="pdr_up",
+                             help="KiCad 5–9. The file is only read in this "
+                                  "session; nothing is uploaded anywhere.")
+    if lc[1].button("Load demo board", key="pdr_demo",
+                    help="A small ECU board with three planted real-life "
+                         "failures — see the whole loop in one click."):
+        st.session_state["pdr_text"] = pdr_mod.demo_kicad_pcb()
+        st.session_state["pdr_name"] = "demo_ecu_board.kicad_pcb"
+        st.session_state.pop("pdr_assign", None)
+    if up is not None:
+        raw = up.getvalue().decode("utf-8", errors="replace")
+        if raw != st.session_state.get("pdr_text"):
+            st.session_state["pdr_text"] = raw
+            st.session_state["pdr_name"] = up.name
+            st.session_state.pop("pdr_assign", None)
+
+    text = st.session_state.get("pdr_text")
+    if not text:
+        # the Prescriber works with no board at all — never gate it on a file
+        _render_trace_prescriber(pdr_mod, board_ctx)
+        return
+
+    # ---------------- parse (memoised on the text) --------------------------- #
+    cache_key = (st.session_state.get("pdr_name"), len(text), hash(text))
+    if st.session_state.get("pdr_parse_key") != cache_key:
+        try:
+            st.session_state["pdr_board"] = pdr_mod.parse_kicad_pcb(text)
+            st.session_state["pdr_parse_key"] = cache_key
+        except ValueError as err:
+            st.error(f"Couldn't read that as a KiCad board: {err}")
+            return
+    pboard = st.session_state["pdr_board"]
+
+    st.caption(
+        f"**{st.session_state.get('pdr_name','board')}** — "
+        f"{len(pboard.segments)} trace segments · {len(pboard.vias)} vias · "
+        f"{len(pboard.footprints)} components · "
+        f"{len(pboard.routed_net_ids())} routed nets · "
+        f"{len(pboard.copper_layers)} copper layers "
+        f"({', '.join(pboard.copper_layers)}) · "
+        f"{pboard.board_thickness_mm:g} mm thick")
+
+    # ---------------- per-net current/voltage assignments --------------------- #
+    if "pdr_assign" not in st.session_state:
+        st.session_state["pdr_assign"] = pdr_mod.auto_assign_net_currents(
+            pboard, ledger=led)
+    assign = st.session_state["pdr_assign"]
+
+    with st.expander("⚡ Net currents & voltages (auto-filled from the ledger — "
+                     "the whole diagnosis runs on these)", expanded=False):
+        st.markdown(
+            '<p class="hint">Name-matched nets take the owning subsystem\'s '
+            '<b>declared peak current</b> from the integration ledger; signal '
+            'nets default to 50 mA, everything else to 1 A — every guess says '
+            'so in <i>source</i>. Edit any number: the diagnosis, the fixes and '
+            'the patched file all follow it.</p>', unsafe_allow_html=True)
+        import pandas as _pd
+        nids = sorted(assign)
+        df = _pd.DataFrame([{"net": assign[n]["net"],
+                             "current_a": float(assign[n]["current_a"]),
+                             "voltage_v": float(assign[n]["voltage_v"]),
+                             "source": assign[n]["source"]} for n in nids])
+        edited = st.data_editor(
+            df, key="pdr_assign_ed", hide_index=True, width='stretch',
+            disabled=["net", "source"],
+            column_config={
+                "current_a": st.column_config.NumberColumn(
+                    "current (A)", min_value=0.0, max_value=500.0, step=0.1),
+                "voltage_v": st.column_config.NumberColumn(
+                    "voltage (V)", min_value=0.0, max_value=1000.0, step=1.0)})
+        for i, n in enumerate(nids):
+            try:
+                assign[n]["current_a"] = float(edited.iloc[i]["current_a"])
+                assign[n]["voltage_v"] = float(edited.iloc[i]["voltage_v"])
+            except (KeyError, ValueError, IndexError):
+                pass
+
+    # ---------------- the diagnosis (runs live, no button) --------------------- #
+    copper_oz = st.number_input(
+        "Finished copper weight (oz)", 0.25, 6.0,
+        value=float(st.session_state.get("pdr_oz", 1.0)), step=0.25, key="pdr_oz",
+        help="From your fab's stackup. The rail, brown-out, ambient, ceiling and "
+             "fuse-safety numbers come from ⚙️ Board context above — one source "
+             "of truth for both panels.")
+    pboard.copper_oz = float(copper_oz)
+    with st.spinner("Diagnosing the routed copper…"):
+        rep = pdr_mod.diagnose(
+            pboard, assign,
+            rail_v=float(board_ctx.rail_nominal_v),
+            brownout_v=float(board_ctx.ecu_brownout_v),
+            ambient_c=float(board_ctx.ambient_c),
+            max_temp_c=float(board_ctx.max_trace_temp_c),
+            fuse_sf=float(board_ctx.fuse_safety_factor))
+
+    counts = rep.counts()
+    st.markdown(f'<p class="hint"><b>{rep.summary()}</b></p>',
+                unsafe_allow_html=True)
+
+    _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
+                "info": "", "ok": "good"}
+    order = ["fail", "warning", "missing", "info", "ok"]
+    with st.expander(
+            f"🩺 Diagnosis — {counts['fail']} FAIL · {counts['warning']} WARN "
+            f"({len(rep.findings)} findings)", expanded=counts["fail"] > 0):
+        for f in sorted(rep.findings, key=lambda x: order.index(x.severity.value)):
+            cls = _SEV_CLS.get(f.severity.value, "")
+            st.markdown(
+                f'<div style="border-left:3px solid var(--line);'
+                f'padding:6px 12px;margin:4px 0;">'
+                f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
+                f'<b>{f.check}</b><br>'
+                f'<span style="font-size:.92rem">{f.message}</span></div>',
+                unsafe_allow_html=True)
+
+    # ---------------- board viewer — failing copper glows red ------------------ #
+    with st.expander("🗺️ Board viewer (copper by layer — segments the fix will "
+                     "widen glow red)", expanded=False):
+        show = st.multiselect("Layers", pboard.copper_layers,
+                              default=pboard.copper_layers, key="pdr_layers")
+        st.markdown(pdr_mod.board_svg(pboard, report=rep,
+                                      show_layers=show or None),
+                    unsafe_allow_html=True)
+
+    # ---------------- re-trace the existing board ------------------------------ #
+    auto_n = sum(1 for fx in rep.fixes if fx.auto)
+    manual_n = len(rep.fixes) - auto_n
+    with st.expander(f"🔧 Re-trace this board — {auto_n} width fix(es) ready, "
+                     f"{manual_n} prescription(s) need a human", expanded=auto_n > 0):
+        if rep.fixes:
+            for fx in rep.fixes:
+                tag = ("<span class='tag good'>AUTO</span>" if fx.auto
+                       else "<span class='tag warn'>MANUAL</span>")
+                note = f" — {fx.note}" if fx.note else ""
+                st.markdown(
+                    f'<div style="border-left:3px solid var(--line);'
+                    f'padding:4px 10px;margin:3px 0;font-size:.9rem">{tag} '
+                    f'<b>{fx.net}</b> ({fx.layer}) '
+                    f'{fx.old_width_mm:g} → <b>{fx.new_width_mm:g} mm</b>'
+                    f'{note}</div>', unsafe_allow_html=True)
+        else:
+            st.caption("No under-sized copper at the assigned currents — "
+                       "nothing to rewrite.")
+        if auto_n:
+            patched, applied = pdr_mod.apply_fixes(pboard, rep.fixes)
+            try:
+                board2 = pdr_mod.parse_kicad_pcb(patched)
+                board2.copper_oz = pboard.copper_oz
+                rep2 = pdr_mod.diagnose(
+                    board2, assign,
+                    rail_v=float(board_ctx.rail_nominal_v),
+                    brownout_v=float(board_ctx.ecu_brownout_v),
+                    ambient_c=float(board_ctx.ambient_c),
+                    max_temp_c=float(board_ctx.max_trace_temp_c),
+                    fuse_sf=float(board_ctx.fuse_safety_factor))
+                c2 = rep2.counts()
+                st.markdown(
+                    f'<p class="hint">Patched board re-diagnosed: '
+                    f'<b>{counts["fail"]} → {c2["fail"]} FAIL</b>, '
+                    f'{counts["warning"]} → {c2["warning"]} WARN. Only the '
+                    f'width tokens changed — nets, routing and everything else '
+                    f'are byte-identical. Re-run KiCad DRC on it: a widened '
+                    f'trace can newly crowd an LV neighbour.</p>',
+                    unsafe_allow_html=True)
+            except ValueError:
+                st.warning("Patched file failed to re-parse — not offered for "
+                           "download. Please report this board.")
+                patched = None
+            if patched:
+                base = (st.session_state.get("pdr_name", "board.kicad_pcb")
+                        .replace(".kicad_pcb", ""))
+                dl = st.columns(2)
+                dl[0].download_button(
+                    f"⬇ Patched board ({auto_n} traces re-sized)",
+                    data=patched, file_name=f"{base}_doctored.kicad_pcb",
+                    mime="text/plain", key="pdr_dl_board")
+                dl[1].download_button(
+                    "⬇ Fix report (hand-off .md)",
+                    data=pdr_mod.fix_report_md(pboard, rep, applied, assign),
+                    file_name=f"{base}_fix_report.md",
+                    mime="text/markdown", key="pdr_dl_report")
+        elif rep.fixes:
+            st.download_button(
+                "⬇ Prescription report (.md)",
+                data=pdr_mod.fix_report_md(pboard, rep, [], assign),
+                file_name="pcb_doctor_prescriptions.md",
+                mime="text/markdown", key="pdr_dl_rx")
+
+    _render_trace_prescriber(pdr_mod, board_ctx)
+
+
+def _render_trace_prescriber(pdr_mod, board_ctx):
+    """The multi-layer routing answer sheet: how wide, on which layer, at what
+    copper weight, and how many vias per layer change — for one current."""
+    with st.expander("📏 Trace Prescriber — \"how wide, which layer, how many "
+                     "vias?\" (no board file needed)", expanded=False):
+        st.markdown(
+            '<p class="hint">The three questions that actually confuse people '
+            'routing a multi-layer board, answered as one table: the minimum '
+            'IPC-2221 width for your current at each copper weight, <b>outer vs '
+            'inner</b> (buried copper cools ~half as well, so inner layers need '
+            'roughly twice the width), and how many vias every layer change '
+            'needs so the barrel — not the trace — doesn\'t become the '
+            'fuse.</p>', unsafe_allow_html=True)
+        pc = st.columns(4)
+        cur = pc[0].number_input("Current (A)", 0.05, 500.0, value=8.0,
+                                 step=0.5, key="pdr_rx_i")
+        dT = pc[1].number_input("Allowed rise (°C)", 5.0, 100.0, value=20.0,
+                                step=5.0, key="pdr_rx_dt",
+                                help="10 °C is conservative, 20 °C typical, "
+                                     "45 °C aggressive (hot underhood board).")
+        ln = pc[2].number_input("Run length (mm)", 5.0, 2000.0, value=120.0,
+                                step=5.0, key="pdr_rx_len")
+        drill = pc[3].number_input("Via drill (mm)", 0.15, 1.2, value=0.3,
+                                   step=0.05, key="pdr_rx_drill")
+        p = pdr_mod.prescribe_trace(
+            cur, dT_c=dT, length_mm=ln,
+            rail_v=float(board_ctx.rail_nominal_v), via_drill_mm=drill)
+        rows = "".join(
+            f"<tr><td>{r['copper_oz']:g} oz</td><td>{r['layer_class']}</td>"
+            f"<td><b>{r['width_mm']:.2f} mm</b></td>"
+            f"<td>{r['ir_drop_v']*1000:.0f} mV</td>"
+            f"<td>{r['dissipation_w']:.2f} W</td></tr>"
+            for r in p["rows"])
+        st.markdown(
+            f'<table style="width:100%;font-size:.9rem"><tr>'
+            f'<th align="left">copper</th><th align="left">layer</th>'
+            f'<th align="left">min width</th>'
+            f'<th align="left">IR drop @ {ln:g} mm</th>'
+            f'<th align="left">heat</th></tr>{rows}</table>',
+            unsafe_allow_html=True)
+        st.markdown(f'<p class="hint">🔩 <b>Layer changes:</b> {p["via_note"]}. '
+                    f'The IR-drop column is the copper alone — connectors and '
+                    f'harness add their own on top of the '
+                    f'{board_ctx.rail_nominal_v:g} V rail\'s '
+                    f'{board_ctx.rail_nominal_v - board_ctx.ecu_brownout_v:.2g} V '
+                    f'brown-out margin.</p>', unsafe_allow_html=True)
+
+
 def _parse_path3d(s: str):
     """Parse 'x,y,z; x,y,z; …' into a list of (x,y,z) float tuples. Tolerant of
     stray whitespace, trailing separators, and 2-D points (z defaults to 0)."""
@@ -19415,6 +19695,7 @@ with tab_pcb:
           st.info("Enter board width and height above to unlock the data-acq DXF export.")
 
   render_pcb_board()
+  render_pcb_doctor()
   render_harness()
 
 
