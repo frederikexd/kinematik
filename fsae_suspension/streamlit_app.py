@@ -319,6 +319,25 @@ def _cached_thermal_warmup(coeffs, fnomin, enable_mu, cold_pa,
         track_c=float(track_c), duration_s=float(duration_s), dt=float(dt))
 
 
+# A .kicad_pcb can be multi-MB, and parsing it into the segment/via/footprint
+# mesh is the expensive part. Keying the parse on the *text itself* means the
+# whole process shares one parsed board per unique file: if three people open
+# the same board (or one person triggers ten reruns) it is parsed once and the
+# rest are cache hits. cache_data returns a copy each call, so no session ever
+# mutates another's board. max_entries bounds the RAM this can hold and evicts
+# LRU; ttl lets stale boards fall out. The hard size guard below keeps a single
+# pathological upload from being parsed at all. Text is the cache key (hashable),
+# so this is a module-level function, never a closure over a widget.
+_PCB_MAX_BYTES = 24 * 1024 * 1024      # 24 MB — larger than any real FSAE board
+
+@st.cache_data(show_spinner=False, ttl=600, max_entries=6)
+def _cached_parse_kicad(text: str):
+    """Parse once per unique board text, shared across sessions. Returns the
+    PcbBoard, or raises ValueError (surfaced to the user) on a bad file."""
+    from suspension import pcb_doctor as _pdr
+    return _pdr.parse_kicad_pcb(text)
+
+
 st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
                    initial_sidebar_state="expanded")
@@ -14008,11 +14027,21 @@ def render_pcb_doctor():
         st.session_state["pdr_name"] = "demo_ecu_board.kicad_pcb"
         st.session_state.pop("pdr_assign", None)
     if up is not None:
-        raw = up.getvalue().decode("utf-8", errors="replace")
-        if raw != st.session_state.get("pdr_text"):
-            st.session_state["pdr_text"] = raw
-            st.session_state["pdr_name"] = up.name
-            st.session_state.pop("pdr_assign", None)
+        raw_bytes = up.getvalue()
+        # Guard before decode/parse so one giant upload can't spike RAM for
+        # everyone. Checked on bytes, i.e. what actually arrived off the wire.
+        if len(raw_bytes) > _PCB_MAX_BYTES:
+            st.error(
+                f"That file is {len(raw_bytes) / 1e6:.1f} MB — over the "
+                f"{_PCB_MAX_BYTES // (1024 * 1024)} MB Doctor limit. Real FSAE "
+                "boards are well under this; if yours is genuinely this large, "
+                "export just the copper layers or split the board.")
+        else:
+            raw = raw_bytes.decode("utf-8", errors="replace")
+            if raw != st.session_state.get("pdr_text"):
+                st.session_state["pdr_text"] = raw
+                st.session_state["pdr_name"] = up.name
+                st.session_state.pop("pdr_assign", None)
 
     text = st.session_state.get("pdr_text")
     if not text:
@@ -14020,16 +14049,15 @@ def render_pcb_doctor():
         _render_trace_prescriber(pdr_mod, board_ctx)
         return
 
-    # ---------------- parse (memoised on the text) --------------------------- #
-    cache_key = (st.session_state.get("pdr_name"), len(text), hash(text))
-    if st.session_state.get("pdr_parse_key") != cache_key:
-        try:
-            st.session_state["pdr_board"] = pdr_mod.parse_kicad_pcb(text)
-            st.session_state["pdr_parse_key"] = cache_key
-        except ValueError as err:
-            st.error(f"Couldn't read that as a KiCad board: {err}")
-            return
-    pboard = st.session_state["pdr_board"]
+    # ---------------- parse (process-wide cache, keyed on the text) ---------- #
+    # Shared across sessions: the same board opened by several people is parsed
+    # once. The cache copies its return, so the board this session then patches
+    # in "Re-trace" is its own object, never the shared cached instance.
+    try:
+        pboard = _cached_parse_kicad(text)
+    except ValueError as err:
+        st.error(f"Couldn't read that as a KiCad board: {err}")
+        return
 
     st.caption(
         f"**{st.session_state.get('pdr_name','board')}** — "
