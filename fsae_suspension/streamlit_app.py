@@ -1450,11 +1450,16 @@ def _render_status_dashboard(_slot=None):
     # ---- 2. Per-subsystem verdicts (each subsystem's declared numbers) ---- #
     # These read the live ledger/activity, independent of the Registry, so the
     # board is useful from the very first declared number even before any part
-    # is formally registered.
-    try:
-        _vc_all = {k: _vc_collect(k) for k, _e, _l in _VC_SUBSYS}
-    except Exception:
-        _vc_all = {}
+    # is formally registered. On the landing page (before the user picks a
+    # subteam) the app st.stop()s before _vc_collect is defined, so we guard on
+    # its presence and fall back to a Registry-only board there.
+    _vc_ready = ("_vc_collect" in globals() and "_VC_SUBSYS" in globals())
+    _vc_all = {}
+    if _vc_ready:
+        try:
+            _vc_all = {k: _vc_collect(k) for k, _e, _l in _VC_SUBSYS}
+        except Exception:
+            _vc_all = {}
     _vc_counts = {"green": 0, "amber": 0, "red": 0, "empty": 0}
     for _d in _vc_all.values():
         _vc_counts[_d["verdict"]] = _vc_counts.get(_d["verdict"], 0) + 1
@@ -1513,7 +1518,12 @@ def _render_status_dashboard(_slot=None):
         st.caption("From each subsystem's declared numbers. Full detail + a "
                    "sanity-check live in ✅ Checks & Integration ▸ Verdict "
                    "Center.")
-        if _vc_all:
+        if not _vc_ready:
+            st.markdown(
+                '<p class="hint">Pick your subteam above to open the app — the '
+                'per-subsystem ✅/🔎/🛑 verdicts light up here once you do.</p>',
+                unsafe_allow_html=True)
+        elif _vc_all:
             _vrank = {"red": 0, "amber": 1, "green": 2, "empty": 3}
             _ordered = sorted(_VC_SUBSYS,
                               key=lambda t: _vrank[_vc_all[t[0]]["verdict"]])
@@ -2309,6 +2319,15 @@ if not _has_picked:
         'categories so you\'re never facing every tab at once. You can change '
         'this any time, or choose <b>Just looking</b> to browse the shared '
         'tabs.</p></div>', unsafe_allow_html=True)
+    # Fill the Design-status board into its reserved top-of-page slot before we
+    # stop for the landing page. _vc_collect isn't defined this early, so the
+    # board self-degrades to the Registry rollup here; on the full tabbed pages
+    # it's filled again below with the subsystem verdicts included.
+    try:
+        if _STATUS_DASHBOARD_SLOT is not None:
+            _render_status_dashboard(_STATUS_DASHBOARD_SLOT)
+    except Exception:
+        pass
     st.stop()
 
 # --- Decide which ids are primary (own strip) vs folded into "More". ------- #
