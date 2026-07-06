@@ -14283,307 +14283,830 @@ def _parse_path3d(s: str):
     return pts
 
 
-def _formboard_svg(fb, width_px: int = 720, height_px: int = 360) -> str:
-    """Render a Formboard as an inline 1:1-proportioned SVG nail-board drawing.
-    Branches are drawn as polylines (length-true), connector nodes as labelled
-    pads. The drawing is scaled to fit the panel but the proportions are the true
-    flat layout — the shape a fabricator pins the loom out on."""
+# ---- harness UI: colours, caching, 3-D view, formboard, editors ---------- #
+_HN_SEV_COLOR = {"fail": "#e05252", "warning": "#d9a441", "missing": "#8d99a6",
+                 "ok": "#5cb85c"}
+_HN_SUB_COLOR = {"aerodynamics": "#d9a441", "brakes": "#e1683c",
+                 "chassis": "#b18ad6", "cooling": "#48b8b8",
+                 "data-acquisition": "#5cb85c", "electrics": "#4aa3df",
+                 "powertrain": "#e05252", "suspension": "#d76a8a",
+                 "ecu": "#8d99a6"}
+
+
+def _harness_check_cached(store):
+    """Run store.harness_check() only when the harness or the keep-outs actually
+    changed. The check itself is cheap now (exact vectorised clearance), but on
+    a Streamlit rerun *nothing* should be recomputed for free — this makes every
+    slider drag / text keystroke in the section cost ~zero."""
+    import hashlib
+    harness = store._ensure_harness()
+    geom = getattr(store, "geometry", None)
+    keepouts = list(getattr(geom, "keepouts", {}).values()) if geom else []
+    payload = json.dumps(
+        [harness.as_dict(),
+         [(k.name, getattr(k, "owner_subsystem", ""),
+           list(k.lo_mm), list(k.hi_mm)) for k in keepouts]],
+        sort_keys=True, default=str)
+    h = hashlib.md5(payload.encode()).hexdigest()
+    cached = st.session_state.get("_hn_check_cache")
+    if cached is not None and cached[0] == h:
+        return cached[1], keepouts
+    res = store.harness_check()
+    st.session_state["_hn_check_cache"] = (h, res)
+    return res, keepouts
+
+
+def _harness_wire_severity(res) -> dict:
+    """wire name -> worst finding severity ('fail' | 'warning' | None)."""
+    rank = {"fail": 2, "warning": 1}
+    out: dict = {}
+    for f in res.findings:
+        wname = (f.detail or {}).get("wire")
+        sev = f.severity.value
+        if wname and sev in rank:
+            if rank[sev] > rank.get(out.get(wname, ""), 0):
+                out[wname] = sev
+    return out
+
+
+def _hn_box_mesh(lo, hi, color, name, opacity=0.18):
+    """A keep-out AABB as a translucent plotly Mesh3d."""
+    x = [lo[0], hi[0], hi[0], lo[0], lo[0], hi[0], hi[0], lo[0]]
+    y = [lo[1], lo[1], hi[1], hi[1], lo[1], lo[1], hi[1], hi[1]]
+    z = [lo[2], lo[2], lo[2], lo[2], hi[2], hi[2], hi[2], hi[2]]
+    tris = [(0, 1, 2), (0, 2, 3), (4, 6, 5), (4, 7, 6),
+            (0, 1, 5), (0, 5, 4), (1, 2, 6), (1, 6, 5),
+            (2, 3, 7), (2, 7, 6), (3, 0, 4), (3, 4, 7)]
+    i, j, k = zip(*tris)
+    return go.Mesh3d(x=x, y=y, z=z, i=i, j=j, k=k, color=color,
+                     opacity=opacity, name=name, hovertext=name,
+                     hoverinfo="text", showlegend=False, flatshading=True)
+
+
+def _harness_fig3d(harness, res, keepouts, *, color_by="status",
+                   selected=None, show_keepouts=True, show_vertices=True,
+                   show_labels=True):
+    """The loom, live in car coordinates: every routed conductor, every
+    connector, every reserved keep-out volume, and a marker pinned on each
+    violation exactly where it happens (tightest bend, deepest keep-out
+    penetration, un-anchored endpoint)."""
+    from suspension.harness import vertex_bend_radius_mm
+    fig = go.Figure()
+    wire_sev = _harness_wire_severity(res)
+
+    # keep-outs, tinted red when some wire actually fouls them
+    violated = {(f.detail or {}).get("keepout") for f in res.findings
+                if f.check == "harness-clearance"
+                and f.severity.value in ("fail", "warning")}
+    if show_keepouts:
+        for ko in keepouts:
+            bad = ko.name in violated
+            fig.add_trace(_hn_box_mesh(
+                np.asarray(ko.lo_mm, float), np.asarray(ko.hi_mm, float),
+                "#e05252" if bad else "#8d99a6",
+                f"keep-out '{ko.name}' ({getattr(ko, 'owner_subsystem', '?')})",
+                opacity=0.22 if bad else 0.12))
+
+    # wires
+    for w in sorted(harness.wires.values(), key=lambda x: x.name):
+        path = w.as_polyline()
+        if path.shape[0] < 2:
+            continue
+        sev = wire_sev.get(w.name)
+        if color_by == "subsystem":
+            col = _HN_SUB_COLOR.get(w.owner_subsystem, "#4aa3df")
+        else:
+            col = _HN_SEV_COLOR.get(sev, "#5cb85c" if not w.is_estimate
+                                    else "#7d8c99")
+        is_sel = (selected == w.name)
+        hover = (f"<b>{w.name}</b> · AWG{w.gauge_awg} · {w.net or '—'}"
+                 f"<br>{w.from_conn or '?'} → {w.to_conn or '?'}"
+                 f"<br>cut {w.cut_length_mm():.0f} mm · "
+                 f"min bend {w.min_bend_radius_mm:.0f} mm · "
+                 f"{w.copper_mass_g():.1f} g Cu"
+                 + (f"<br><b>{sev.upper()}</b>" if sev else "")
+                 + (" · estimated route" if w.is_estimate else ""))
+        fig.add_trace(go.Scatter3d(
+            x=path[:, 0], y=path[:, 1], z=path[:, 2],
+            mode="lines+markers" if show_vertices else "lines",
+            line=dict(color=col,
+                      width=float(np.clip(2.0 + w.outside_diameter_mm * 1.4,
+                                          3.0, 11.0)) + (4.0 if is_sel else 0.0)),
+            marker=dict(size=3.5 if is_sel else 2.5, color=col),
+            name=w.name + (" ✏️" if is_sel else ""),
+            hovertext=hover, hoverinfo="text",
+            legendgroup=w.name))
+        # tightest-bend markers where the route violates the wire's bend limit
+        radii = vertex_bend_radius_mm(path)
+        if radii.size:
+            r_ok = w.min_bend_radius_mm
+            for vi, r in enumerate(radii):
+                if not np.isfinite(r) or r >= 1.5 * r_ok:
+                    continue
+                p = path[vi + 1]
+                bad = r < r_ok
+                fig.add_trace(go.Scatter3d(
+                    x=[p[0]], y=[p[1]], z=[p[2]], mode="markers",
+                    marker=dict(size=7, symbol="x",
+                                color="#e05252" if bad else "#d9a441"),
+                    hovertext=(f"{w.name}: formed radius {r:.0f} mm "
+                               f"{'<' if bad else '≈'} min {r_ok:.0f} mm"),
+                    hoverinfo="text", showlegend=False, legendgroup=w.name))
+
+    # clearance / anchoring violation pins from the findings themselves
+    for f in res.findings:
+        d = f.detail or {}
+        if f.check == "harness-clearance" and d.get("at_mm") \
+                and f.severity.value in ("fail", "warning"):
+            p = d["at_mm"]
+            fig.add_trace(go.Scatter3d(
+                x=[p[0]], y=[p[1]], z=[p[2]], mode="markers",
+                marker=dict(size=8, symbol="diamond-open",
+                            color=_HN_SEV_COLOR[f.severity.value],
+                            line=dict(width=3)),
+                hovertext=f.message, hoverinfo="text", showlegend=False))
+        elif f.check == "harness-anchor" and d.get("endpoint_mm"):
+            p, c = d["endpoint_mm"], d.get("connector_mm")
+            fig.add_trace(go.Scatter3d(
+                x=[p[0]], y=[p[1]], z=[p[2]], mode="markers",
+                marker=dict(size=7, symbol="circle-open", color="#d9a441",
+                            line=dict(width=3)),
+                hovertext=f.message, hoverinfo="text", showlegend=False))
+            if c:
+                fig.add_trace(go.Scatter3d(
+                    x=[p[0], c[0]], y=[p[1], c[1]], z=[p[2], c[2]],
+                    mode="lines", line=dict(color="#d9a441", width=2,
+                                            dash="dot"),
+                    hoverinfo="skip", showlegend=False))
+
+    # connectors
+    if harness.connectors:
+        cs = sorted(harness.connectors.values(), key=lambda c: c.name)
+        fig.add_trace(go.Scatter3d(
+            x=[c.xyz_mm[0] for c in cs], y=[c.xyz_mm[1] for c in cs],
+            z=[c.xyz_mm[2] for c in cs],
+            mode="markers+text" if show_labels else "markers",
+            text=[c.name for c in cs], textposition="top center",
+            textfont=dict(size=11, color="#e8edf2"),
+            marker=dict(size=6, symbol="diamond",
+                        color=[_HN_SUB_COLOR.get(c.owner_subsystem, "#e8edf2")
+                               for c in cs],
+                        line=dict(color="#e8edf2", width=1)),
+            hovertext=[f"<b>{c.name}</b> · {c.owner_subsystem}"
+                       f"<br>{c.part_number or '—'} · {c.cavities} cav · "
+                       f"SR {c.strain_relief_mm:.0f} mm" for c in cs],
+            hoverinfo="text", name="connectors", showlegend=False))
+
+    ax = dict(showbackground=False, gridcolor="#2a333c", zerolinecolor="#2a333c",
+              color="#8d99a6")
+    fig.update_layout(
+        scene=dict(xaxis=dict(title="x mm (rearward)", **ax),
+                   yaxis=dict(title="y mm (right)", **ax),
+                   zaxis=dict(title="z mm (up)", **ax),
+                   aspectmode="data",
+                   camera=dict(eye=dict(x=1.6, y=-1.6, z=0.9))),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=0, r=0, t=10, b=0), height=540,
+        legend=dict(font=dict(size=10), bgcolor="rgba(0,0,0,0)",
+                    orientation="h", yanchor="bottom", y=1.0),
+        uirevision="harness3d")   # keep the camera through fragment reruns
+    return fig
+
+
+def _formboard_svg(fb, wires=None, width_px: int = 860, height_px: int = 430,
+                   true_scale: bool = False) -> str:
+    """Render a Formboard as an SVG nail-board drawing.
+
+    Screen mode fits the panel (proportions true). `true_scale=True` emits the
+    SVG with physical mm dimensions so it PRINTS 1:1 — the fabricator tapes the
+    sheets to the bench and pins the loom straight onto it. Corners that bend
+    tighter than the conductor's minimum radius are ringed on the drawing at the
+    exact nail position; dashed grey links tie the branches that terminate at an
+    already-placed connector back to its single node."""
     ext_w, ext_h = fb.extent_mm
-    ext_w = max(ext_w, 1.0); ext_h = max(ext_h, 1.0)
-    pad = 28
-    sx = (width_px - 2 * pad) / ext_w
-    sy = (height_px - 2 * pad) / ext_h
-    s = min(sx, sy)  # uniform scale -> proportions preserved (true 1:1 shape)
+    ext_w = max(ext_w, 1.0)
+    ext_h = max(ext_h, 1.0)
+    if true_scale:
+        pad = 30.0                       # mm of quiet border
+        W, H = ext_w + 2 * pad, ext_h + 2 * pad
+        head = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W:.1f}mm" '
+                f'height="{H:.1f}mm" viewBox="0 0 {W:.1f} {H:.1f}" '
+                f'style="background:#ffffff;">')
+        s = 1.0
+        ink, sub, bg_line = "#111820", "#5a6672", "#c9d2da"
+        fs, lw = 4.0, 0.9
+    else:
+        pad = 30.0
+        sx = (width_px - 2 * pad) / ext_w
+        sy = (height_px - 2 * pad) / ext_h
+        s = min(sx, sy)                  # uniform: proportions preserved
+        W, H = width_px, height_px
+        head = (f'<svg viewBox="0 0 {W} {H}" '
+                f'style="width:100%;height:auto;background:#0e1419;'
+                f'border:1px solid var(--line);border-radius:8px;">')
+        ink, sub, bg_line = "#e8edf2", "#8d99a6", "#1a222b"
+        fs, lw = 10.0, 2.4
 
     def tx(p):
-        return pad + p[0] * s, pad + (ext_h - p[1]) * s  # flip y for screen
+        return pad + p[0] * s, pad + (ext_h - p[1]) * s   # flip y for screen
+
+    parts = [head]
+    # 100 mm grid so lengths read off the board directly
+    gx = 0.0
+    while gx <= ext_w + 1e-6:
+        x0, _ = tx((gx, 0))
+        parts.append(f'<line x1="{x0:.1f}" y1="{pad:.1f}" x2="{x0:.1f}" '
+                     f'y2="{pad + ext_h * s:.1f}" stroke="{bg_line}" '
+                     f'stroke-width="{lw * 0.3:.2f}"/>')
+        gx += 100.0
+    gy = 0.0
+    while gy <= ext_h + 1e-6:
+        _, y0 = tx((0, gy))
+        parts.append(f'<line x1="{pad:.1f}" y1="{y0:.1f}" '
+                     f'x2="{pad + ext_w * s:.1f}" y2="{y0:.1f}" '
+                     f'stroke="{bg_line}" stroke-width="{lw * 0.3:.2f}"/>')
+        gy += 100.0
+    # scale bar (redundant in true-scale mode but harmless)
+    bar = 100.0 * s
+    parts.append(f'<line x1="{pad:.1f}" y1="{H - pad * 0.4:.1f}" '
+                 f'x2="{pad + bar:.1f}" y2="{H - pad * 0.4:.1f}" '
+                 f'stroke="{sub}" stroke-width="{lw:.1f}"/>'
+                 f'<text x="{pad:.1f}" y="{H - pad * 0.4 - fs * 0.5:.1f}" '
+                 f'fill="{sub}" font-size="{fs:.1f}">100 mm'
+                 f'{" — prints 1:1" if true_scale else ""}</text>')
+
+    # same-connector ties first (under the branches)
+    for t in getattr(fb, "ties", []) or []:
+        (ax_, ay_), (bx_, by_) = tx(t["a_xy"]), tx(t["b_xy"])
+        parts.append(f'<line x1="{ax_:.1f}" y1="{ay_:.1f}" x2="{bx_:.1f}" '
+                     f'y2="{by_:.1f}" stroke="{sub}" '
+                     f'stroke-width="{lw * 0.45:.2f}" '
+                     f'stroke-dasharray="{lw * 2:.1f},{lw * 2:.1f}"/>')
+        mx, my = (ax_ + bx_) / 2, (ay_ + by_) / 2
+        parts.append(f'<text x="{mx:.1f}" y="{my - fs * 0.4:.1f}" fill="{sub}" '
+                     f'font-size="{fs * 0.85:.1f}" font-style="italic">'
+                     f'= {t["connector"]}</text>')
 
     palette = ["#4aa3df", "#e1683c", "#5cb85c", "#b18ad6", "#d9a441",
                "#48b8b8", "#d76a8a", "#7d8c99"]
-    parts = [f'<svg viewBox="0 0 {width_px} {height_px}" '
-             f'style="width:100%;height:auto;background:#0e1419;'
-             f'border:1px solid var(--line);border-radius:8px;">']
-    # scale bar (100 mm)
-    bar = 100.0 * s
-    parts.append(f'<line x1="{pad}" y1="{height_px-12}" x2="{pad+bar}" '
-                 f'y2="{height_px-12}" stroke="#8d99a6" stroke-width="2"/>'
-                 f'<text x="{pad}" y="{height_px-16}" fill="#8d99a6" '
-                 f'font-size="10">100 mm</text>')
+    if true_scale:
+        palette = ["#1665a7", "#b34a1f", "#2e7d32", "#6a3fa0", "#9c7414",
+                   "#0f7c7c", "#a83a5e", "#4c5a66"]
     for i, b in enumerate(fb.branches):
         col = palette[i % len(palette)]
         pts = " ".join(f"{tx(p)[0]:.1f},{tx(p)[1]:.1f}" for p in b.points_mm)
         parts.append(f'<polyline points="{pts}" fill="none" stroke="{col}" '
-                     f'stroke-width="2.4" stroke-linejoin="round" '
+                     f'stroke-width="{lw:.1f}" stroke-linejoin="round" '
                      f'stroke-linecap="round" opacity="0.92"/>')
-        # label at midpoint
+        # ring the corners that bend tighter than the conductor allows
+        radii = getattr(b, "corner_radii_mm", None) or []
+        r_ok = getattr(b, "min_bend_radius_mm", 0.0) or 0.0
+        for vi, r in enumerate(radii):
+            if r is None or vi + 1 >= len(b.points_mm):
+                continue
+            if r_ok > 0 and r < 1.5 * r_ok:
+                cx_, cy_ = tx(b.points_mm[vi + 1])
+                bad = r < r_ok
+                parts.append(
+                    f'<circle cx="{cx_:.1f}" cy="{cy_:.1f}" r="{fs * 0.55:.1f}" '
+                    f'fill="none" stroke="{"#e05252" if bad else "#d9a441"}" '
+                    f'stroke-width="{lw * 0.7:.2f}"/>')
         if b.points_mm:
             mid = b.points_mm[len(b.points_mm) // 2]
             mx, my = tx(mid)
-            parts.append(f'<text x="{mx+4:.1f}" y="{my-4:.1f}" fill="{col}" '
-                         f'font-size="10" font-weight="600">{b.wire} '
-                         f'(AWG{b.gauge_awg})</text>')
+            parts.append(f'<text x="{mx + fs * 0.4:.1f}" y="{my - fs * 0.4:.1f}" '
+                         f'fill="{col}" font-size="{fs:.1f}" font-weight="600">'
+                         f'{b.wire} · AWG{b.gauge_awg} · cut '
+                         f'{b.cut_length_mm:g} mm</text>')
     for name, (x, y) in fb.nodes.items():
         nx, ny = tx((x, y))
-        parts.append(f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="5" fill="#e8edf2" '
-                     f'stroke="#0e1419" stroke-width="1.5"/>'
-                     f'<text x="{nx+7:.1f}" y="{ny+3:.1f}" fill="#e8edf2" '
-                     f'font-size="10" font-weight="700">{name}</text>')
+        parts.append(f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="{fs * 0.5:.1f}" '
+                     f'fill="{ink}" stroke="{sub}" '
+                     f'stroke-width="{lw * 0.6:.2f}"/>'
+                     f'<text x="{nx + fs * 0.7:.1f}" y="{ny + fs * 0.3:.1f}" '
+                     f'fill="{ink}" font-size="{fs:.1f}" font-weight="700">'
+                     f'{name}</text>')
     parts.append("</svg>")
     return "".join(parts)
 
 
-def render_harness():
-    """
-    The 3-D wiring harness, live: route every conductor through the same car
-    coordinates the suspension geometry uses, catch a bend tighter than the wire
-    can take, a connector with no strain relief, and a loom that fouls a reserved
-    keep-out — then, before a single wire is cut, read off the exact cut length to
-    the millimetre, the 1:1 formboard, the automated BOM, and the exact copper
-    mass and where it sits on the car.
-    """
+def _hn_seed_demo(store):
+    """Onboarding: one click drops a small but real example loom in, so the 3-D
+    view, checks and formboard all show something meaningful immediately."""
     from suspension.harness import Connector, WireRun
+    for c in (Connector("ECU", "electrics", xyz_mm=(0, 0, 250), cavities=24,
+                        part_number="DTM-24", strain_relief_mm=25.0,
+                        mass_g=32.0, is_estimate=False),
+              Connector("MOT", "powertrain", xyz_mm=(1500, 0, 220),
+                        cavities=8, part_number="HDP-8", strain_relief_mm=40.0,
+                        mass_g=85.0, is_estimate=False),
+              Connector("DASH", "data-acquisition", xyz_mm=(-350, 0, 480),
+                        cavities=12, part_number="DTM-12",
+                        strain_relief_mm=25.0, mass_g=18.0),
+              Connector("BSPD", "electrics", xyz_mm=(700, 280, 180),
+                        cavities=6, part_number="DT-6", strain_relief_mm=25.0,
+                        mass_g=12.0)):
+        store.set_connector(c)
+    for w in (WireRun("MOT_PWR", "powertrain", gauge_awg=10, net="hv_pwr",
+                      from_conn="ECU", to_conn="MOT", service_loop_mm=60.0,
+                      path_mm=[(0, 0, 250), (120, 0, 250), (700, 0, 240),
+                               (1350, 0, 225), (1500, 0, 220)],
+                      carries_current_a=45.0, is_estimate=False),
+              WireRun("DASH_CAN", "data-acquisition", gauge_awg=22, net="can1",
+                      from_conn="ECU", to_conn="DASH",
+                      path_mm=[(0, 0, 250), (-60, 0, 280), (-200, 0, 400),
+                               (-350, 0, 480)]),
+              WireRun("BSPD_SIG", "electrics", gauge_awg=22, net="bspd",
+                      from_conn="ECU", to_conn="BSPD",
+                      path_mm=[(0, 0, 250), (40, 30, 245), (400, 200, 200),
+                               (700, 280, 180)]),
+              WireRun("MOT_TEMP", "electrics", gauge_awg=24, net="ntc_mot",
+                      from_conn="BSPD", to_conn="MOT",
+                      path_mm=[(700, 280, 180), (1050, 160, 200),
+                               (1500, 0, 220)])):
+        store.set_wire(w)
 
-    _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜", "cooling": "🩵",
-                 "data-acquisition": "💚", "electrics": "💙", "powertrain": "❤️",
-                 "suspension": "🩷", "ecu": "🖥️"}
+
+def _hn_rerun():
+    """Rerun just the harness fragment when possible (snappy), falling back to
+    a full-app rerun when the fragment is executing inside a full run (where
+    scope="fragment" is not permitted)."""
+    try:
+        _hn_rerun()
+    except Exception:
+        st.rerun()
+
+
+def render_harness():
+    """The 3-D wiring harness section (runs as a fragment so interacting with
+    it never reruns the rest of the app)."""
+    _render_harness_fragment()
+
+
+@st.fragment
+def _render_harness_fragment():
+    from suspension.harness import Connector, WireRun
+    import pandas as pd
+
+    # deferred widget resets (a widget key cannot be written after the widget
+    # instantiated in the same run, so deletions queue the reset for here)
+    if st.session_state.pop("_hn_wire_reset", False):
+        st.session_state.pop("hn_wire_sel", None)
+    if st.session_state.pop("_hn_conn_reset", False):
+        st.session_state.pop("hn_conn_sel", None)
+
+    _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜",
+                 "cooling": "🩵", "data-acquisition": "💚", "electrics": "💙",
+                 "powertrain": "❤️", "suspension": "🩷", "ecu": "🖥️"}
     _SUBS = ["aerodynamics", "brakes", "chassis", "cooling",
              "data-acquisition", "electrics", "powertrain", "suspension"]
 
     st.markdown("---")
     st.markdown("### 🧵 Harness — the physical loom in 3-D car space")
     st.markdown(
-        '<p class="hint">The board above is the copper <i>on the PCB</i>. This is '
-        'the copper <i>between the boxes</i> — the loom you lay into the chassis. '
-        'Route each conductor as a 3-D polyline through the <b>same car '
-        'coordinates</b> the suspension mount-points and keep-outs live in, so a '
-        'wire that would foul a wishbone or the accumulator box shows up as a '
-        'clearance FAIL on the same board a mount clash does. It catches the two '
-        'things that actually scrap a loom on the bench — a <b>bend tighter than '
-        'the wire can take</b> (kinks the conductor) and a connector entry with no '
-        '<b>strain-relief</b> straight length — then derives, <i>before you cut a '
-        'single wire</i>: the exact <b>cut length</b> to the millimetre, a 1:1 '
-        '<b>formboard</b>, the automated <b>BOM</b>, and the exact <b>copper mass '
-        'and its distribution</b>. It measures the route you declare; it is not a '
-        'cable-flex solver, so unsupported sag under vibration is reported as '
-        '<i>not computed</i> rather than invented.</p>',
+        '<p class="hint">The board above is the copper <i>on the PCB</i>; this '
+        'is the copper <i>between the boxes</i>. Route each conductor through '
+        'the <b>same car coordinates</b> the mount-points and keep-outs live '
+        'in, watch it live in 3-D, and read off — before a single wire is cut '
+        '— the exact cut length, the 1:1 printable formboard, the automated '
+        'BOM, and the copper mass and where it sits. It measures the route you '
+        'declare; it is not a cable-flex solver, so unsupported sag under '
+        'vibration is reported as <i>not computed</i> rather than invented.</p>',
         unsafe_allow_html=True)
 
     store = get_store()
     harness = store._ensure_harness()
-    geom = getattr(store, "geometry", None)
-    keepouts = list(getattr(geom, "keepouts", {}).values()) if geom else []
+    res, keepouts = _harness_check_cached(store)
 
-    hc = st.columns(3)
-    harness.ambient_c = hc[0].number_input("Ambient", -20.0, 150.0,
-                                           value=float(harness.ambient_c), key="hn_amb")
-    harness.clearance_warn_mm = hc[1].number_input(
-        "Clearance WARN", 0.0, 100.0,
-        value=float(harness.clearance_warn_mm), key="hn_cw")
-    harness.clearance_fail_mm = hc[2].number_input(
-        "Clearance FAIL", 0.0, 50.0,
-        value=float(harness.clearance_fail_mm), key="hn_cf")
+    # ---- always-visible status strip ---- #
+    n_fail = sum(1 for f in res.findings if f.severity.value == "fail")
+    n_warn = sum(1 for f in res.findings if f.severity.value == "warning")
+    bom = res.bom or {}
+    md = res.mass or {}
+    worst_cls = "bad" if n_fail else ("warn" if n_warn else "good")
+    worst_txt = "FAIL" if n_fail else ("WARN" if n_warn else "OK")
+    chip_row = st.columns([5, 1])
+    chip_row[0].markdown(
+        f'<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;'
+        f'margin:2px 0 6px 0;">'
+        f'<span class="tag {worst_cls}">{worst_txt}</span>'
+        f'<span style="font-size:.85rem;color:#8d99a6">{n_fail} fail · '
+        f'{n_warn} warn</span>'
+        f'<span style="font-size:.85rem;color:#8d99a6">'
+        f'{len(harness.wires)} wires · {len(harness.connectors)} connectors'
+        f'</span>'
+        f'<span style="font-size:.85rem;color:#8d99a6">'
+        f'<b>{uval(bom.get("total_wire_m", 0), "m", fmt="{:.2f}")}</b> wire · '
+        f'<b>{uval(md.get("total_copper_g", 0), "g_mass", fmt="{:.0f}")}</b> '
+        f'copper</span></div>', unsafe_allow_html=True)
+    with chip_row[1].popover("⚙ limits"):
+        _amb0 = float(harness.ambient_c)
+        _cw0 = float(harness.clearance_warn_mm)
+        _cf0 = float(harness.clearance_fail_mm)
+        harness.ambient_c = st.number_input(
+            "Ambient (°C)", -20.0, 150.0, value=_amb0, key="hn_amb")
+        harness.clearance_warn_mm = st.number_input(
+            "Clearance WARN (mm)", 0.0, 100.0, value=_cw0, key="hn_cw")
+        harness.clearance_fail_mm = st.number_input(
+            "Clearance FAIL (mm)", 0.0, 50.0, value=_cf0, key="hn_cf")
+        if (harness.ambient_c, harness.clearance_warn_mm,
+                harness.clearance_fail_mm) != (_amb0, _cw0, _cf0):
+            save_store(store)
+            _hn_rerun()
+
+    if not harness.wires and not harness.connectors:
+        qc = st.columns([3, 2])
+        qc[0].info("Nothing routed yet. Add connectors and wires in the "
+                   "**Edit loom** tab — or drop in the example loom to see "
+                   "the whole workflow at once.")
+        if qc[1].button("🚀 Seed an example loom", key="hn_seed"):
+            _hn_seed_demo(store)
+            save_store(store)
+            _hn_rerun()
 
     if keepouts:
-        st.caption(f"Routing against {len(keepouts)} keep-out volume(s) from the "
-                   f"geometry ledger: " +
-                   ", ".join(f"{_MP_EMOJI.get(getattr(k,'owner_subsystem','?'),'')}"
+        st.caption(f"Routing against {len(keepouts)} keep-out volume(s) from "
+                   f"the geometry ledger: " +
+                   ", ".join(f"{_MP_EMOJI.get(getattr(k, 'owner_subsystem', '?'), '')}"
                              f"{k.name}" for k in keepouts))
     else:
-        st.caption("No keep-out volumes declared yet — add them in the geometry / "
-                   "mount-point tab to clearance-check the loom against reserved space.")
+        st.caption("No keep-out volumes declared yet — add them in the "
+                   "geometry / mount-point tab to clearance-check the loom "
+                   "against reserved space.")
 
-    ec = st.columns(2)
-    # ---- connector editor ---- #
-    with ec[0]:
-        with st.expander("⚙️ Connectors (harness end-points / branch nodes)", expanded=False):
-          with st.expander("Add / replace a connector", expanded=not harness.connectors):
-              cn = st.text_input("Name", key="cn_name", value="ECU")
-              cown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
-                                  key="cn_own")
-              cg = st.columns(3)
-              cx = cg[0].number_input("x", -5000.0, 5000.0, value=0.0, key="cn_x")
-              cy = cg[1].number_input("y", -5000.0, 5000.0, value=0.0, key="cn_y")
-              cz = cg[2].number_input("z", -5000.0, 5000.0, value=0.0, key="cn_z")
-              cg2 = st.columns(3)
-              ccav = cg2[0].number_input("Cavities", 1, 200, value=12, key="cn_cav")
-              csr = cg2[1].number_input("Strain relief", 0.0, 200.0,
-                                        value=25.0, key="cn_sr")
-              cmass = cg2[2].number_input("Mass (g, 0=unknown)", 0.0, 2000.0,
-                                          value=0.0, key="cn_mass")
-              cpn = st.text_input("Part number", key="cn_pn", value="DTM-12")
-              cest = st.checkbox("Estimated", value=False, key="cn_est")
-              if st.button("Save connector", key="cn_save"):
-                  store.set_connector(Connector(
-                      name=cn, owner_subsystem=cown, xyz_mm=(cx, cy, cz),
-                      cavities=int(ccav), part_number=cpn, strain_relief_mm=csr,
-                      mass_g=(None if cmass == 0.0 else cmass), is_estimate=cest))
-                  save_store(store); st.rerun()
-          for name, c in list(harness.connectors.items()):
-              est = " · est" if c.is_estimate else ""
-              mtxt = uval(c.mass_g, "g_mass") if c.mass_g is not None else "mass —"
-              row = st.columns([5, 1])
-              row[0].markdown(
-                  f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
-                  f'{_MP_EMOJI.get(c.owner_subsystem,"")} <b>{name}</b> '
-                  f'<span style="color:#8d99a6;font-size:.8rem">{c.owner_subsystem} · '
-                  f'{c.part_number or "—"}{est}</span><br>'
-                  f'<span style="font-size:.82rem;color:#8d99a6">'
-                  f'({units_mod.from_metric(c.xyz_mm[0],"mm"):.0f}, {units_mod.from_metric(c.xyz_mm[1],"mm"):.0f}, {units_mod.from_metric(c.xyz_mm[2],"mm"):.0f}) {units_mod.label("mm")} · '
-                  f'{c.cavities} cav · {mtxt} · SR {units_mod.from_metric(c.strain_relief_mm,"mm"):.0f} {units_mod.label("mm")}</span></div>',
-                  unsafe_allow_html=True)
-              if row[1].button("✕", key=f"cn_del_{name}"):
-                  store.remove_connector(name); save_store(store); st.rerun()
+    tab3d, tab_edit, tab_chk, tab_mfg, tab_fb = st.tabs(
+        ["🧭 3-D loom", "✏️ Edit loom", "✅ Pre-cut check",
+         "🏭 Manufacturing", "📐 Formboard"])
 
-    # ---- wire editor ---- #
-    with ec[1]:
-        with st.expander("⚙️ Wire runs (3-D routed conductors)", expanded=False):
-          conn_names = [""] + list(harness.connectors.keys())
-          with st.expander("Add / replace a wire", expanded=not harness.wires):
-              wn = st.text_input("Name", key="wr_name", value="MOT_PWR")
-              wown = st.selectbox("Owned by", _SUBS, index=_SUBS.index("electrics"),
-                                  key="wr_own")
-              wg = st.columns(3)
-              wawg = wg[0].number_input("Gauge (AWG)", 8, 30, value=10, key="wr_awg")
-              wnet = wg[1].text_input("Net", key="wr_net", value="hv_pwr")
-              wod = unum(wg[2], "OD (mm, 0=AWG nom)", 0.0, 30.0, 0.0, "mm",
-                         key="wr_od")
-              wg2 = st.columns(2)
-              wfrom = wg2[0].selectbox("From connector", conn_names, key="wr_from")
-              wto = wg2[1].selectbox("To connector", conn_names, key="wr_to")
-              wg3 = st.columns(3)
-              wmult = wg3[0].number_input("Min bend ×OD", 1.0, 20.0,
-                                          value=6.0, key="wr_mult")
-              wloop = wg3[1].number_input("Service loop", 0.0, 1000.0,
-                                          value=0.0, key="wr_loop")
-              wstrip = wg3[2].number_input("Strip/end", 0.0, 100.0,
-                                           value=8.0, key="wr_strip")
-              wpath = st.text_input("3-D route (x,y,z; x,y,z; …)", key="wr_path",
-                                    value="0,0,0; 40,0,0; 600,0,100; 1160,0,100; 1200,0,0")
-              wcur = st.number_input("Carries current (A, 0=from net)", 0.0, 1000.0,
-                                     value=0.0, key="wr_cur")
-              west = st.checkbox("Estimated route", value=False, key="wr_est")
-              if st.button("Save wire", key="wr_save"):
-                  pts = _parse_path3d(wpath)
-                  store.set_wire(WireRun(
-                      name=wn, owner_subsystem=wown, gauge_awg=int(wawg),
-                      path_mm=pts, from_conn=wfrom, to_conn=wto, net=wnet,
-                      od_mm=(None if wod == 0.0 else wod),
-                      bundle_min_radius_mult=wmult, service_loop_mm=wloop,
-                      strip_mm=wstrip,
-                      carries_current_a=(None if wcur == 0.0 else wcur),
-                      is_estimate=west))
-                  save_store(store); st.rerun()
-          for name, w in list(harness.wires.items()):
-              est = " · est" if w.is_estimate else ""
-              row = st.columns([5, 1])
-              row[0].markdown(
-                  f'<div style="border-left:3px solid var(--line);padding:4px 10px;margin:3px 0;">'
-                  f'{_MP_EMOJI.get(w.owner_subsystem,"")} <b>{name}</b> '
-                  f'<span style="color:#8d99a6;font-size:.8rem">AWG{w.gauge_awg} · '
-                  f'{w.net or "—"}{est}</span><br>'
-                  f'<span style="font-size:.82rem;color:#8d99a6">'
-                  f'{w.from_conn or "?"} → {w.to_conn or "?"} · '
-                  f'cut {units_mod.from_metric(w.cut_length_mm(),"mm"):.0f} {units_mod.label("mm")} · {uval(w.copper_mass_g(), "g_mass", fmt="{:.1f}")} Cu · '
-                  f'min bend {units_mod.from_metric(w.min_bend_radius_mm,"mm"):.0f} {units_mod.label("mm")}</span></div>',
-                  unsafe_allow_html=True)
-              if row[1].button("✕", key=f"wr_del_{name}"):
-                  store.remove_wire(name); save_store(store); st.rerun()
+    # ------------------------------ 3-D view ------------------------------ #
+    with tab3d:
+        if not harness.wires and not harness.connectors:
+            st.caption("The 3-D view appears once something is routed.")
+        else:
+            oc = st.columns([1.6, 1, 1, 1])
+            color_by = oc[0].radio("Colour by", ["status", "subsystem"],
+                                   horizontal=True, key="hn3d_color",
+                                   label_visibility="collapsed")
+            show_ko = oc[1].toggle("Keep-outs", value=True, key="hn3d_ko")
+            show_pts = oc[2].toggle("Route points", value=True, key="hn3d_pts")
+            show_lab = oc[3].toggle("Labels", value=True, key="hn3d_lab")
+            sel_wire = st.session_state.get("hn_wire_sel")
+            fig = _harness_fig3d(
+                harness, res, keepouts, color_by=color_by,
+                selected=(sel_wire if sel_wire in harness.wires else None),
+                show_keepouts=show_ko, show_vertices=show_pts,
+                show_labels=show_lab)
+            st.plotly_chart(fig, width="stretch", key="hn3d_plot",
+                            config=dict(displaylogo=False))
+            st.caption("✕ = bend tighter than the wire can take · ◇ = closest "
+                       "approach / penetration of a keep-out · dotted ○ = route "
+                       "endpoint floating off its connector. The wire being "
+                       "edited is drawn heavier.")
 
-    # ---- the pre-cut gate ---- #
-    with st.expander("⚙️ Pre-cut harness check", expanded=False):
-      res = store.harness_check()
-      if res.findings:
-          st.markdown(f'<p class="hint">{res.summary()}</p>', unsafe_allow_html=True)
-      else:
-          st.caption("Add connectors and at least one routed wire to run the check.")
+    # ------------------------------ editors ------------------------------- #
+    with tab_edit:
+        ec = st.columns(2)
 
-      _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
-                  "info": "", "ok": "good"}
-      order = ["fail", "warning", "missing", "info", "ok"]
-      for f in sorted(res.findings, key=lambda x: order.index(x.severity.value)):
-          cls = _SEV_CLS.get(f.severity.value, "")
-          who = " ↔ ".join(f"{_MP_EMOJI.get(x,'')}{x}" for x in f.subsystems) if f.subsystems else ""
-          st.markdown(
-              f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:4px 0;">'
-              f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
-              f'<b>{f.check}</b> &nbsp;<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
-              f'<span style="font-size:.92rem">{f.message}</span></div>',
-              unsafe_allow_html=True)
+        # ---- connector editor ---- #
+        with ec[0]:
+            st.markdown("**Connectors** *(end-points / branch nodes)*")
+            conn_sel = st.selectbox(
+                "Connector", ["➕ New connector"] + list(harness.connectors),
+                key="hn_conn_sel")
+            if st.session_state.get("_hn_conn_loaded") != conn_sel:
+                st.session_state["_hn_conn_loaded"] = conn_sel
+                c0 = harness.connectors.get(conn_sel)
+                st.session_state["cn_name"] = c0.name if c0 else "ECU"
+                st.session_state["cn_own"] = (
+                    c0.owner_subsystem if c0 and c0.owner_subsystem in _SUBS
+                    else "electrics")
+                st.session_state["cn_x"] = float(c0.xyz_mm[0]) if c0 else 0.0
+                st.session_state["cn_y"] = float(c0.xyz_mm[1]) if c0 else 0.0
+                st.session_state["cn_z"] = float(c0.xyz_mm[2]) if c0 else 0.0
+                st.session_state["cn_cav"] = int(c0.cavities) if c0 else 12
+                st.session_state["cn_sr"] = float(c0.strain_relief_mm) if c0 else 25.0
+                st.session_state["cn_mass"] = float(c0.mass_g or 0.0) if c0 else 0.0
+                st.session_state["cn_pn"] = c0.part_number if c0 else "DTM-12"
+                st.session_state["cn_est"] = bool(c0.is_estimate) if c0 else False
+            cn = st.text_input("Name", key="cn_name")
+            cown = st.selectbox("Owned by", _SUBS, key="cn_own")
+            cg = st.columns(3)
+            cx = cg[0].number_input("x (mm)", -5000.0, 5000.0, key="cn_x")
+            cy = cg[1].number_input("y (mm)", -5000.0, 5000.0, key="cn_y")
+            cz = cg[2].number_input("z (mm)", -5000.0, 5000.0, key="cn_z")
+            cg2 = st.columns(3)
+            ccav = cg2[0].number_input("Cavities", 1, 200, key="cn_cav")
+            csr = cg2[1].number_input("Strain relief (mm)", 0.0, 200.0,
+                                      key="cn_sr")
+            cmass = cg2[2].number_input("Mass (g, 0=unknown)", 0.0, 2000.0,
+                                        key="cn_mass")
+            cpn = st.text_input("Part number", key="cn_pn")
+            cest = st.checkbox("Estimated", key="cn_est")
+            fb_cols = st.columns(2)
+            do_save_c = fb_cols[0].button("💾 Save connector", key="cn_save",
+                                          type="primary")
+            do_del_c = fb_cols[1].button(
+                "✕ Delete", key="cn_delete",
+                disabled=conn_sel not in harness.connectors)
+            if do_save_c and cn.strip():
+                store.set_connector(Connector(
+                    name=cn.strip(), owner_subsystem=cown, xyz_mm=(cx, cy, cz),
+                    cavities=int(ccav), part_number=cpn, strain_relief_mm=csr,
+                    mass_g=(None if cmass == 0.0 else cmass), is_estimate=cest))
+                save_store(store)
+                st.session_state["_hn_conn_loaded"] = None
+                _hn_rerun()
+            if do_del_c and conn_sel in harness.connectors:
+                store.remove_connector(conn_sel)
+                save_store(store)
+                st.session_state["_hn_conn_loaded"] = None
+                st.session_state["_hn_conn_reset"] = True
+                _hn_rerun()
+            for name, c in list(harness.connectors.items()):
+                est = " · est" if c.is_estimate else ""
+                mtxt = uval(c.mass_g, "g_mass") if c.mass_g is not None else "mass —"
+                st.markdown(
+                    f'<div style="border-left:3px solid var(--line);'
+                    f'padding:4px 10px;margin:3px 0;">'
+                    f'{_MP_EMOJI.get(c.owner_subsystem, "")} <b>{name}</b> '
+                    f'<span style="color:#8d99a6;font-size:.8rem">'
+                    f'{c.owner_subsystem} · {c.part_number or "—"}{est}</span><br>'
+                    f'<span style="font-size:.82rem;color:#8d99a6">'
+                    f'({units_mod.from_metric(c.xyz_mm[0], "mm"):.0f}, '
+                    f'{units_mod.from_metric(c.xyz_mm[1], "mm"):.0f}, '
+                    f'{units_mod.from_metric(c.xyz_mm[2], "mm"):.0f}) '
+                    f'{units_mod.label("mm")} · {c.cavities} cav · {mtxt} · '
+                    f'SR {units_mod.from_metric(c.strain_relief_mm, "mm"):.0f} '
+                    f'{units_mod.label("mm")}</span></div>',
+                    unsafe_allow_html=True)
 
+        # ---- wire editor ---- #
+        with ec[1]:
+            st.markdown("**Wire runs** *(3-D routed conductors)*")
+            conn_names = [""] + list(harness.connectors.keys())
+            wire_sel = st.selectbox(
+                "Wire", ["➕ New wire"] + list(harness.wires),
+                key="hn_wire_sel")
+            if st.session_state.get("_hn_wire_loaded") != wire_sel:
+                st.session_state["_hn_wire_loaded"] = wire_sel
+                st.session_state["_hn_path_nonce"] = \
+                    st.session_state.get("_hn_path_nonce", 0) + 1
+                w0 = harness.wires.get(wire_sel)
+                st.session_state["wr_name"] = w0.name if w0 else "MOT_PWR"
+                st.session_state["wr_own"] = (
+                    w0.owner_subsystem if w0 and w0.owner_subsystem in _SUBS
+                    else "electrics")
+                st.session_state["wr_awg"] = int(w0.gauge_awg) if w0 else 10
+                st.session_state["wr_net"] = w0.net if w0 else "hv_pwr"
+                st.session_state["wr_od"] = float(w0.od_mm or 0.0) if w0 else 0.0
+                st.session_state["wr_from"] = (
+                    w0.from_conn if w0 and w0.from_conn in conn_names else "")
+                st.session_state["wr_to"] = (
+                    w0.to_conn if w0 and w0.to_conn in conn_names else "")
+                st.session_state["wr_mult"] = \
+                    float(w0.bundle_min_radius_mult) if w0 else 6.0
+                st.session_state["wr_loop"] = float(w0.service_loop_mm) if w0 else 0.0
+                st.session_state["wr_strip"] = float(w0.strip_mm) if w0 else 8.0
+                st.session_state["wr_cur"] = \
+                    float(w0.carries_current_a or 0.0) if w0 else 0.0
+                st.session_state["wr_est"] = bool(w0.is_estimate) if w0 else False
+                st.session_state["_hn_path_pts"] = (
+                    [list(map(float, p)) for p in w0.path_mm] if w0 and w0.path_mm
+                    else [[0.0, 0.0, 0.0], [200.0, 0.0, 0.0],
+                          [600.0, 0.0, 100.0], [1200.0, 0.0, 100.0]])
+
+            wn = st.text_input("Name", key="wr_name")
+            wown = st.selectbox("Owned by", _SUBS, key="wr_own")
+            wg = st.columns(3)
+            wawg = wg[0].number_input("Gauge (AWG)", 8, 30, key="wr_awg")
+            wnet = wg[1].text_input("Net", key="wr_net")
+            wod = wg[2].number_input("OD (mm, 0=AWG nom)", 0.0, 30.0,
+                                     key="wr_od")
+            wg2 = st.columns(2)
+            wfrom = wg2[0].selectbox("From connector", conn_names, key="wr_from")
+            wto = wg2[1].selectbox("To connector", conn_names, key="wr_to")
+            wg3 = st.columns(3)
+            wmult = wg3[0].number_input("Min bend ×OD", 1.0, 20.0, key="wr_mult")
+            wloop = wg3[1].number_input("Service loop (mm)", 0.0, 1000.0,
+                                        key="wr_loop")
+            wstrip = wg3[2].number_input("Strip/end (mm)", 0.0, 100.0,
+                                         key="wr_strip")
+            wg4 = st.columns(2)
+            wcur = wg4[0].number_input("Carries current (A, 0=from net)",
+                                       0.0, 1000.0, key="wr_cur")
+            west = wg4[1].checkbox("Estimated route", key="wr_est")
+
+            st.caption("3-D route (car coordinates, mm) — add / delete / edit "
+                       "points directly:")
+            nonce = st.session_state.get("_hn_path_nonce", 0)
+            pdf = pd.DataFrame(
+                st.session_state.get("_hn_path_pts") or [[0.0, 0.0, 0.0]],
+                columns=["x", "y", "z"])
+            edited = st.data_editor(
+                pdf, num_rows="dynamic", width="stretch",
+                key=f"wr_pts_{wire_sel}_{nonce}",
+                column_config={c: st.column_config.NumberColumn(
+                    c, format="%.1f") for c in ("x", "y", "z")})
+
+            def _pts_from_editor(df):
+                out = []
+                for row in df.itertuples(index=False):
+                    try:
+                        if any(pd.isna(v) for v in row):
+                            continue
+                        out.append((float(row.x), float(row.y), float(row.z)))
+                    except (TypeError, ValueError):
+                        continue
+                return out
+
+            with st.expander("Paste a route instead (x,y,z; x,y,z; …)"):
+                wpath_txt = st.text_input("Route string", key="wr_path_txt",
+                                          value="")
+                if st.button("↪ Import into the table", key="wr_path_import"):
+                    pts = _parse_path3d(wpath_txt)
+                    if pts:
+                        st.session_state["_hn_path_pts"] = [list(p) for p in pts]
+                        st.session_state["_hn_path_nonce"] = nonce + 1
+                        _hn_rerun()
+
+            bc = st.columns(3)
+            if bc[0].button("💾 Save wire", key="wr_save", type="primary"):
+                pts = _pts_from_editor(edited)
+                store.set_wire(WireRun(
+                    name=wn.strip(), owner_subsystem=wown, gauge_awg=int(wawg),
+                    path_mm=pts, from_conn=wfrom, to_conn=wto, net=wnet,
+                    od_mm=(None if wod == 0.0 else wod),
+                    bundle_min_radius_mult=wmult, service_loop_mm=wloop,
+                    strip_mm=wstrip,
+                    carries_current_a=(None if wcur == 0.0 else wcur),
+                    is_estimate=west))
+                save_store(store)
+                st.session_state["_hn_wire_loaded"] = None
+                _hn_rerun()
+            if bc[1].button("🧲 Snap ends to connectors", key="wr_snap",
+                            help="Move the first route point onto the 'from' "
+                                 "connector and the last onto the 'to' "
+                                 "connector, so the cut length is measured "
+                                 "plug-to-plug."):
+                pts = [list(p) for p in _pts_from_editor(edited)]
+                cf = harness.connectors.get(wfrom)
+                ct = harness.connectors.get(wto)
+                if pts and cf is not None:
+                    pts[0] = [float(v) for v in cf.xyz_mm]
+                if pts and ct is not None:
+                    pts[-1] = [float(v) for v in ct.xyz_mm]
+                st.session_state["_hn_path_pts"] = pts
+                st.session_state["_hn_path_nonce"] = nonce + 1
+                _hn_rerun()
+            if bc[2].button("✕ Delete wire", key="wr_del",
+                            disabled=wire_sel not in harness.wires):
+                store.remove_wire(wire_sel)
+                save_store(store)
+                st.session_state["_hn_wire_loaded"] = None
+                st.session_state["_hn_wire_reset"] = True
+                _hn_rerun()
+
+            for name, w in list(harness.wires.items()):
+                est = " · est" if w.is_estimate else ""
+                st.markdown(
+                    f'<div style="border-left:3px solid var(--line);'
+                    f'padding:4px 10px;margin:3px 0;">'
+                    f'{_MP_EMOJI.get(w.owner_subsystem, "")} <b>{name}</b> '
+                    f'<span style="color:#8d99a6;font-size:.8rem">'
+                    f'AWG{w.gauge_awg} · {w.net or "—"}{est}</span><br>'
+                    f'<span style="font-size:.82rem;color:#8d99a6">'
+                    f'{w.from_conn or "?"} → {w.to_conn or "?"} · '
+                    f'cut {units_mod.from_metric(w.cut_length_mm(), "mm"):.0f} '
+                    f'{units_mod.label("mm")} · '
+                    f'{uval(w.copper_mass_g(), "g_mass", fmt="{:.1f}")} Cu · '
+                    f'min bend '
+                    f'{units_mod.from_metric(w.min_bend_radius_mm, "mm"):.0f} '
+                    f'{units_mod.label("mm")}</span></div>',
+                    unsafe_allow_html=True)
+
+    # --------------------------- the pre-cut gate -------------------------- #
+    with tab_chk:
+        if res.findings:
+            st.markdown(f'<p class="hint">{res.summary()}</p>',
+                        unsafe_allow_html=True)
+        else:
+            st.caption("Add connectors and at least one routed wire to run "
+                       "the check.")
+        _SEV_CLS = {"fail": "bad", "warning": "warn", "missing": "warn",
+                    "info": "", "ok": "good"}
+        order = ["fail", "warning", "missing", "info", "ok"]
+        for f in sorted(res.findings,
+                        key=lambda x: order.index(x.severity.value)):
+            cls = _SEV_CLS.get(f.severity.value, "")
+            who = " ↔ ".join(f"{_MP_EMOJI.get(x, '')}{x}"
+                             for x in f.subsystems) if f.subsystems else ""
+            st.markdown(
+                f'<div style="border-left:3px solid var(--line);'
+                f'padding:6px 12px;margin:4px 0;">'
+                f'<span class="tag {cls}">{f.severity.value.upper()}</span> '
+                f'<b>{f.check}</b> &nbsp;'
+                f'<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
+                f'<span style="font-size:.92rem">{f.message}</span></div>',
+                unsafe_allow_html=True)
+
+    # ---------- manufacturing artefacts: cut list + BOM + mass ------------- #
+    with tab_mfg:
       if not harness.wires:
-          return
-
-    # ---- manufacturing artefacts: cut list + BOM + mass + formboard ---- #
-    with st.expander("⚙️ Manufacturing roll-up", expanded=False):
-      mc = st.columns([3, 2])
-
-      with mc[0]:
-          st.markdown("**Cut list (to the millimetre)**")
-          if res.cut_list:
-              import pandas as pd
-              df = pd.DataFrame(res.cut_list)[
-                  ["wire", "net", "gauge_awg", "from_conn", "to_conn",
-                   "routed_mm", "bend_allowance_mm", "service_loop_mm",
-                   "strip_both_ends_mm", "cut_length_mm"]]
-              st.dataframe(df, hide_index=True, use_container_width=True)
-          st.markdown("**Bill of materials (automated)**")
-          bom = res.bom
-          if bom.get("wire"):
-              import pandas as pd
-              st.caption("Wire by gauge")
-              st.dataframe(pd.DataFrame(bom["wire"]), hide_index=True,
-                           use_container_width=True)
-          if bom.get("connectors"):
-              import pandas as pd
-              st.caption("Connectors")
-              st.dataframe(pd.DataFrame(bom["connectors"]), hide_index=True,
-                           use_container_width=True)
-          st.markdown(
-              f'<p class="hint">Totals: <b>{uval(bom.get("total_wire_m",0), "m", fmt="{:.2f}")}</b> wire · '
-              f'<b>{uval(bom.get("total_copper_g",0), "g_mass")}</b> copper · '
-              f'<b>{bom.get("contacts_total",0)}</b> crimp contacts.</p>',
-              unsafe_allow_html=True)
-
-      with mc[1]:
-          st.markdown("**Copper mass & distribution**")
-          md = res.mass
-          st.markdown(
-              f'<div style="border-left:3px solid var(--line);padding:6px 12px;margin:3px 0;">'
-              f'<span style="font-size:.95rem"><b>{uval(md.get("total_copper_g",0), "g_mass", fmt="{:.1f}")}</b> '
-              f'copper · <b>{uval(md.get("total_harness_g",0), "g_mass", fmt="{:.1f}")}</b> total harness</span><br>'
-              f'<span style="font-size:.85rem;color:#8d99a6">harness CG: '
-              f'{tuple(round(units_mod.from_metric(float(v),"mm"),1) for v in md.get("harness_cg_mm")) if md.get("harness_cg_mm") is not None else md.get("harness_cg_mm")} {units_mod.label("mm")} (x rearward, y right, z up)</span></div>',
-              unsafe_allow_html=True)
-          if md.get("connectors_without_declared_mass"):
-              st.caption("Excluded from CG (mass not declared): " +
-                         ", ".join(md["connectors_without_declared_mass"]))
-          if md.get("per_wire"):
-              import pandas as pd
-              _pw_df = pd.DataFrame(md["per_wire"])[
-                  ["wire", "gauge_awg", "copper_g", "total_g"]].copy()
-              _mass_u = units_mod.label("g_mass")
-              for _c in ("copper_g", "total_g"):
-                  _pw_df[_c] = _pw_df[_c].map(
-                      lambda v: units_mod.from_metric(float(v), "g_mass"))
-              _pw_df = _pw_df.rename(columns={
-                  "copper_g": f"copper ({_mass_u})", "total_g": f"total ({_mass_u})"})
-              st.dataframe(_pw_df, hide_index=True, use_container_width=True)
-          st.caption("Sag of unsupported runs under vibration: *not computed* — "
-                     "needs a flexible-body solver; the route is measured, not solved.")
-
-    # ---- the 1:1 formboard ---- #
-    with st.expander("⚙️ 1:1 Formboard (unfolded flat layout for the bench)", expanded=False):
-      fb = res.formboard
-      if fb and fb.branches:
-          st.markdown(
-              f'<p class="hint">The harness unfolded to a length-true 2-D nail-board: '
-              f'every branch segment is the exact length of its 3-D run, so the '
-              f'fabricator pins the loom out 1:1. Board extent '
-              f'~{units_mod.from_metric(fb.extent_mm[0],"mm"):.0f} × {units_mod.from_metric(fb.extent_mm[1],"mm"):.0f} {units_mod.label("mm")}.</p>',
-              unsafe_allow_html=True)
-          st.markdown(_formboard_svg(fb), unsafe_allow_html=True)
+        st.caption("Route at least one wire to roll up the cut list, BOM and "
+                   "mass.")
       else:
-          st.caption("Route at least one wire with ≥2 points to generate the formboard.")
+        mc = st.columns([3, 2])
+        with mc[0]:
+            st.markdown("**Cut list (to the millimetre)**")
+            if res.cut_list:
+                df = pd.DataFrame(res.cut_list)[
+                    ["wire", "net", "gauge_awg", "from_conn", "to_conn",
+                     "routed_mm", "bend_allowance_mm", "service_loop_mm",
+                     "strip_both_ends_mm", "cut_length_mm"]]
+                st.dataframe(df, hide_index=True, width="stretch")
+                st.download_button(
+                    "⬇ Cut list (CSV)", df.to_csv(index=False),
+                    "harness_cut_list.csv", "text/csv", key="hn_dl_cut")
+            st.markdown("**Bill of materials (automated)**")
+            if bom.get("wire"):
+                st.caption("Wire by gauge")
+                _wdf = pd.DataFrame(bom["wire"])
+                st.dataframe(_wdf, hide_index=True, width="stretch")
+            if bom.get("connectors"):
+                st.caption("Connectors")
+                _cdf = pd.DataFrame(bom["connectors"])
+                st.dataframe(_cdf, hide_index=True, width="stretch")
+            if bom.get("wire") or bom.get("connectors"):
+                _bom_csv = ""
+                if bom.get("wire"):
+                    _bom_csv += "# wire by gauge\n" + \
+                        pd.DataFrame(bom["wire"]).to_csv(index=False)
+                if bom.get("connectors"):
+                    _bom_csv += "# connectors\n" + \
+                        pd.DataFrame(bom["connectors"]).to_csv(index=False)
+                st.download_button("⬇ BOM (CSV)", _bom_csv, "harness_bom.csv",
+                                   "text/csv", key="hn_dl_bom")
+            st.markdown(
+                f'<p class="hint">Totals: '
+                f'<b>{uval(bom.get("total_wire_m", 0), "m", fmt="{:.2f}")}</b> '
+                f'wire · <b>{uval(bom.get("total_copper_g", 0), "g_mass")}</b> '
+                f'copper · <b>{bom.get("contacts_total", 0)}</b> crimp '
+                f'contacts.</p>', unsafe_allow_html=True)
+        with mc[1]:
+            st.markdown("**Copper mass & distribution**")
+            st.markdown(
+                f'<div style="border-left:3px solid var(--line);'
+                f'padding:6px 12px;margin:3px 0;">'
+                f'<span style="font-size:.95rem">'
+                f'<b>{uval(md.get("total_copper_g", 0), "g_mass", fmt="{:.1f}")}</b> '
+                f'copper · '
+                f'<b>{uval(md.get("total_harness_g", 0), "g_mass", fmt="{:.1f}")}</b> '
+                f'total harness</span><br>'
+                f'<span style="font-size:.85rem;color:#8d99a6">harness CG: '
+                f'{tuple(round(units_mod.from_metric(float(v), "mm"), 1) for v in md.get("harness_cg_mm")) if md.get("harness_cg_mm") is not None else md.get("harness_cg_mm")} '
+                f'{units_mod.label("mm")} (x rearward, y right, z up)</span></div>',
+                unsafe_allow_html=True)
+            if md.get("connectors_without_declared_mass"):
+                st.caption("Excluded from CG (mass not declared): " +
+                           ", ".join(md["connectors_without_declared_mass"]))
+            if md.get("per_wire"):
+                _pw_df = pd.DataFrame(md["per_wire"])[
+                    ["wire", "gauge_awg", "copper_g", "total_g"]].copy()
+                _mass_u = units_mod.label("g_mass")
+                for _c in ("copper_g", "total_g"):
+                    _pw_df[_c] = _pw_df[_c].map(
+                        lambda v: units_mod.from_metric(float(v), "g_mass"))
+                _pw_df = _pw_df.rename(columns={
+                    "copper_g": f"copper ({_mass_u})",
+                    "total_g": f"total ({_mass_u})"})
+                st.dataframe(_pw_df, hide_index=True, width="stretch")
+            st.caption("Sag of unsupported runs under vibration: *not "
+                       "computed* — needs a flexible-body solver; the route "
+                       "is measured, not solved.")
+
+    # --------------------------- the 1:1 formboard ------------------------- #
+    with tab_fb:
+        fb = res.formboard
+        if fb and fb.branches:
+            st.markdown(
+                f'<p class="hint">The harness unfolded to a length-true 2-D '
+                f'nail-board: every connector appears once, every branch '
+                f'segment is the exact length of its 3-D run, corners that '
+                f'bend tighter than the conductor allows are ringed at their '
+                f'nail position, and dashed links mark a second branch '
+                f'terminating at an already-placed plug. Board extent '
+                f'~{units_mod.from_metric(fb.extent_mm[0], "mm"):.0f} × '
+                f'{units_mod.from_metric(fb.extent_mm[1], "mm"):.0f} '
+                f'{units_mod.label("mm")}.</p>', unsafe_allow_html=True)
+            st.markdown(_formboard_svg(fb), unsafe_allow_html=True)
+            st.download_button(
+                "⬇ 1:1 SVG — prints true scale for the bench",
+                _formboard_svg(fb, true_scale=True),
+                "harness_formboard_1to1.svg", "image/svg+xml",
+                key="hn_dl_fb")
+        else:
+            st.caption("Route at least one wire with ≥2 points to generate "
+                       "the formboard.")
 
 
 def _parse_path(s: str):
