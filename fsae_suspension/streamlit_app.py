@@ -3843,14 +3843,20 @@ def _subsystem_profile_candidates(subsystem_key):
         w = pcd + 4 * hole
         h = w * 0.7
         outline = _rect(w, h, -w/2, -h/2)
+        _src = G.get("source", "brakes tab")
         cands.append({
-            "label": f"Caliper bracket — {n}-bolt, {pcd:g} mm PCD",
+            "label": f"Caliper mount bracket blank — {n}-bolt, {pcd:g} mm PCD",
             "meta": {"Bolt count": n, "PCD (mm)": round(pcd, 1),
+                     "Hole ⌀ (mm)": hole, "Blank size (mm)": round(w, 1),
                      "Brake torque/corner (N·m)": G.get("brake_torque_nm"),
-                     "Source": G.get("source", "brakes tab")},
+                     "Source": _src},
             "dxf_kwargs": {"polylines": [{"pts": outline, "closed": True}],
                            "circles": _bolt_circle(pcd, n, hole)},
-            "notes": ["Caliper mount bracket blank",
+            "notes": [f"{n}-bolt caliper mount bracket blank, {pcd:g} mm PCD "
+                      f"(from {_src}). The PCD and bolt holes are REAL.",
+                      f"The {w:g}x{h:g} mm rectangular outline is a STARTER "
+                      f"blank — reshape it to your upright/caliper clearance in "
+                      f"CAD, and set thickness from the brake-torque reaction.",
                       "Rotor half-section export lives in the Brakes optimiser"],
         })
 
@@ -3890,17 +3896,21 @@ def _subsystem_profile_candidates(subsystem_key):
         h = G.get("core_h_mm")
         if not (w and h):
             return []
+        _src = G.get("source", "cooling tab")
+        _depth = G.get("core_depth_mm")
+        _depth_txt = (f"{_depth:g} mm" if _depth else "the part length")
         cands.append({
             "label": f"Radiator core face — {w:g}×{h:g} mm",
             "meta": {"Face W (mm)": round(w, 1), "Face H (mm)": round(h, 1),
-                     "Core depth (mm)": G.get("core_depth_mm"),
+                     "Core depth (mm)": _depth,
                      "Airflow req (m³/s)": G.get("airflow_cms"),
                      "Heat reject (W)": G.get("heat_reject_w"),
-                     "Source": G.get("source", "cooling tab")},
+                     "Source": _src},
             "dxf_kwargs": {"polylines": [{"pts": _rect(w, h), "closed": True}]},
-            "notes": [f"Core face {w:g}x{h:g} mm (from {G.get('source','cooling tab')})",
-                      f"Extrude by core depth "
-                      f"{('= %g mm' % G['core_depth_mm']) if G.get('core_depth_mm') else ''}"],
+            "notes": [f"Radiator CORE FACE {w:g}x{h:g} mm (from {_src}) — the "
+                      f"front face the air passes through, not the whole rad.",
+                      f"Extrude this face by the core depth ({_depth_txt}) to "
+                      f"get the core solid; add tanks/fittings in CAD."],
         })
 
     elif subsystem_key == "chassis":
@@ -3910,17 +3920,26 @@ def _subsystem_profile_candidates(subsystem_key):
         if not (a and b):
             return []
         tri = [(0, 0), (a, 0), (0, b)]
-        holes = G.get("holes") or [{"c": (a*0.28, b*0.18), "r": 5.0},
-                                   {"c": (a*0.14, b*0.5), "r": 5.0}]
+        _default_holes = [{"c": (a*0.28, b*0.18), "r": 5.0},
+                          {"c": (a*0.14, b*0.5), "r": 5.0}]
+        holes = G.get("holes") or _default_holes
+        _src = G.get("source", "chassis tab")
+        _holes_placeholder = not G.get("holes")
+        _notes = [f"Node GUSSET PLATE, right triangle {a:g}x{b:g} mm legs "
+                  f"(from {_src}) — the bracket where chassis tubes meet at a "
+                  f"node.",
+                  "Cut from plate; set thickness from the joint load"]
+        if _holes_placeholder:
+            _notes.insert(1, "The two bolt holes are STARTER positions — move "
+                             "them to your real fastener pattern in CAD.")
         cands.append({
-            "label": f"Node gusset — {a:g}×{b:g} mm",
+            "label": f"Node gusset plate — {a:g}×{b:g} mm legs",
             "meta": {"Leg A (mm)": round(a, 1), "Leg B (mm)": round(b, 1),
                      "Peak load (N)": G.get("load_n"),
-                     "Source": G.get("source", "chassis tab")},
+                     "Source": _src},
             "dxf_kwargs": {"polylines": [{"pts": tri, "closed": True}],
                            "circles": holes},
-            "notes": [f"Node gusset {a:g}x{b:g} mm (from {G.get('source','chassis tab')})",
-                      "Cut from plate; set thickness from the joint load"],
+            "notes": _notes,
         })
 
     elif subsystem_key == "data-acquisition":
@@ -4060,11 +4079,16 @@ _EXPORT_SOURCE_HINT = {
                   ("Mount bolt count", "n_bolts")],
     },
     "brakes": {
-        "where": "the Brakes tab optimiser",
-        "steps": ["Enter the caliper mount and brake torque, then run the "
-                  "optimiser."],
+        "where": "the Brakes tab &rarr; caliper-mount bolt check",
+        "steps": ["This is the <b>caliper-mount bracket</b> blank. (The rotor "
+                  "half-section has its own export in the Brakes optimiser.)",
+                  "In the Brakes tab, open the <b>caliper-mount bolt check</b> "
+                  "and set <b>bolts per caliper</b> and the <b>mount bolt "
+                  "PCD</b>. The bracket appears here the moment both are set.",
+                  "Brake torque is pulled from the bias view automatically and "
+                  "carried onto the section for reference."],
         "needs": [("Mount bolt PCD (mm)", "pcd_mm"),
-                  ("Brake torque (N·m)", "peak_torque_nm")],
+                  ("Mount bolt count", "n_bolts")],
     },
     "electrics": {
         "where": "the Accumulator tab",
@@ -4082,14 +4106,31 @@ _EXPORT_SOURCE_HINT = {
                   ("Segment height (mm)", "seg_h_mm")],
     },
     "cooling": {
-        "where": "the Cooling tab",
-        "steps": ["Size the radiator so its core face is published."],
+        "where": "the Cooling tab (add your radiator as a 3D part)",
+        "steps": ["<b>There&rsquo;s no export button.</b> The core-face section "
+                  "appears here on its own once the radiator part has a size "
+                  "&mdash; if this panel is empty, the part below just "
+                  "isn&rsquo;t sized yet.",
+                  "Add your <b>radiator as a 3D part</b> and type its real "
+                  "<b>width &amp; height in mm</b>. That front face becomes the "
+                  "radiator <b>core face</b> you export.",
+                  "Type the part&rsquo;s <b>length</b> too &mdash; it becomes "
+                  "the core depth you extrude the face by in CAD."],
         "needs": [("Core width (mm)", "core_w_mm"),
                   ("Core height (mm)", "core_h_mm")],
     },
     "chassis": {
-        "where": "the Chassis / Team Fit tab",
-        "steps": ["Define the tube node so the gusset legs are known."],
+        "where": "the Chassis / Team Fit tab (gusset leg inputs)",
+        "steps": ["The section here is a <b>node gusset plate</b> &mdash; the "
+                  "triangular bracket where chassis tubes meet. If this panel is "
+                  "empty, its two legs just aren&rsquo;t set yet.",
+                  "In the <b>Chassis tab</b>, set the two <b>gusset leg "
+                  "lengths</b> &mdash; the two edges that meet at the node. The "
+                  "app draws the right-triangle plate to them and adds starter "
+                  "bolt holes.",
+                  "No leg inputs handy? You can instead add the node as a "
+                  "<b>3D part</b> and type its size &mdash; the same export "
+                  "reads either path."],
         "needs": [("Gusset leg A (mm)", "leg_a_mm"),
                   ("Gusset leg B (mm)", "leg_b_mm")],
     },
@@ -4993,6 +5034,40 @@ def _render_mesh_dxf_flow_strip(where_label, subsystem_key=None):
             ("Export", "⬇ Download DXF, here",
              "One closed sketch of <b>one segment</b> &rarr; SolidWorks: import, "
              "extrude to the segment length, then mesh."),
+        ]
+    elif subsystem_key == "cooling":
+        _steps = [
+            ("Input", where_label,
+             "Add your <b>radiator as a 3D part</b> and type its real <b>width "
+             "&amp; height in mm</b>. There&rsquo;s no export button &mdash; the "
+             "part&rsquo;s size is the input."),
+            ("Calculate", "automatic, no tool to run",
+             "The app takes the part&rsquo;s <b>front face</b> (width × height) "
+             "as the radiator <b>core face</b> the moment the dimensions exist; "
+             "the part&rsquo;s length becomes the core depth to extrude by."),
+            ("Mesh", "here &amp; in your FEA",
+             "The core-face rectangle appears below on its own. Pick it, then "
+             "mesh in Ansys / your FEA."),
+            ("Export", "⬇ Download DXF, here",
+             "One closed sketch of the core face &rarr; SolidWorks: import, "
+             "extrude by the core depth, then mesh."),
+        ]
+    elif subsystem_key == "chassis":
+        _steps = [
+            ("Input", where_label,
+             "Set the two <b>gusset leg lengths</b> in the Chassis tab &mdash; "
+             "or add the node as a <b>3D part</b> and type its size. Either "
+             "path feeds the same export."),
+            ("Calculate", "on tab input / part entry",
+             "The app draws a right-triangle <b>gusset plate</b> to those two "
+             "legs and drops in starter bolt holes. It publishes the moment the "
+             "legs are set."),
+            ("Mesh", "here &amp; in your FEA",
+             "The gusset-plate section appears below on its own. Pick it, then "
+             "mesh in Ansys / your FEA."),
+            ("Export", "⬇ Download DXF, here",
+             "One closed sketch &rarr; SolidWorks: import, set plate thickness "
+             "from the joint load, then extrude."),
         ]
     else:
         _steps = [
@@ -10602,6 +10677,38 @@ with tab_brake:
                                              help="Bolts sharing the caliper "
                                                   "reaction.")
             _T_corner = _Tf_corner if _axle_pick.startswith("Front") else _Tr_corner
+
+            # Publish the REAL caliper-mount bracket section for the DXF exporter.
+            # Everything here is a live brakes number: bolt count and bolt ⌀ from
+            # the joint inputs, torque from the bias view. The one dimension the
+            # exporter still needs — the mount bolt-circle diameter — has no other
+            # home in the app, so we ask for it here (seeded to a typical radial-
+            # mount span) rather than invent it. Without a PCD the export honestly
+            # stays gated, exactly like the other subsystems.
+            _cal_pcd = st.columns([1, 2])[0].number_input(
+                "Caliper mount bolt PCD (mm)", 20.0, 200.0,
+                value=float(st.session_state.get("brake_cal_pcd", 82.0)),
+                step=1.0, key="brake_cal_pcd",
+                help="Centre-to-centre span of the caliper mounting bolts (the "
+                     "bolt-circle the bracket is drilled to). Measure it off your "
+                     "caliper — a typical FSAE radial mount is ~80–90 mm. This "
+                     "sizes the exported bracket blank in the Mesh & DXF panel.")
+            try:
+                _cal_bolt_d = float(_b_dia)
+            except Exception:
+                _cal_bolt_d = 8.0
+            if _n_mount and _cal_pcd:
+                try:
+                    publish_export_geometry("brakes", {
+                        "n_bolts": int(_n_mount),
+                        "pcd_mm": round(float(_cal_pcd), 1),
+                        "hole_d_mm": round(float(_cal_bolt_d), 1),
+                        "brake_torque_nm": round(float(_T_corner), 1),
+                        "source": f"brakes tab — caliper mount "
+                                  f"({_axle_pick.lower()})",
+                    })
+                except Exception:
+                    pass
             _F_react = _T_corner / max(_reff_m, 1e-3)        # tangential N at rotor
             _F_perbolt_seed = _F_react / max(_n_mount, 1)
             _seed_lbl = (f"Seed from braking: {uval(_T_corner, 'N·m')} corner torque "
