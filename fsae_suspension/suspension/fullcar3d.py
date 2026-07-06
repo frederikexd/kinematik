@@ -177,6 +177,15 @@ def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
     The three are applied roll -> pitch -> yaw, after the CAD-up-axis remap.
     """
     V = np.asarray(verts, float).reshape(-1, 3) * float(scale)
+    # Defensive recentre: placement translates the part's CENTRE to `centre`, so
+    # the incoming verts must be centred on their own bbox. load_part_mesh does
+    # this, but a payload from elsewhere (older cache, hand-built) might not — in
+    # which case the part would land offset by its bbox centre. Recentring here
+    # makes "place by centre" hold no matter the source, which is what keeps an
+    # imported CAD body aligned with the dummy slot it replaces.
+    if len(V):
+        _bb = (V.min(axis=0) + V.max(axis=0)) / 2.0
+        V = V - _bb
     if axis_map == "y_up":
         V = np.column_stack([V[:, 0], -V[:, 2], V[:, 1]])
     elif axis_map == "x_up":
