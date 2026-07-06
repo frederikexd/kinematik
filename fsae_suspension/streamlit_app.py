@@ -1417,110 +1417,189 @@ st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
 #  moment a lead sees this, "which Drive file is current and is it OK?" is     #
 #  already answered — so the Drive folder stops being the source of truth.     #
 # =========================================================================== #
-def _render_status_dashboard():
+def _render_status_dashboard(_slot=None):
+    # Render into the reserved top-of-page slot when given one, so the board
+    # appears at the top even though it's filled after _vc_collect is defined.
+    _target = _slot if _slot is not None else st
     from suspension import status_dashboard as _sd
     from suspension import registry as _reg_mod
 
     _STATUS_COLORS = {"green": "var(--cyan)", "amber": "var(--amber)",
                       "red": "var(--red)"}
     _STATUS_DOT = {"green": "🟢", "amber": "🟡", "red": "🔴"}
+    _VC_COL = {"green": "#37e0d0", "amber": "#ffb02e",
+               "red": "#ff5a52", "empty": "#9b8cff"}
+    _VC_DOT = {"green": "🟢", "amber": "🟡", "red": "🔴", "empty": "⚪"}
 
+    # ---- 1. Registry rollup (registered parts + their rules) -------------- #
+    rows, statuses, car = [], [], None
     try:
         reg = _reg_mod.Registry(os.path.join(os.getcwd(), "registry.json"))
+        rows = reg.summary_rows()
+        statuses = [_sd.status_for_component(r, r.get("rules", [])) for r in rows]
+        _extra = []
+        _myth = st.session_state.get("mb_last_result_dict")
+        if _myth and _myth.get("verdict") == "myth":
+            _extra.append({"status": "red",
+                           "message": "A checked assumption came back FALSE — "
+                                      "see Integration ▸ Myth-Buster"})
+        car = _sd.roll_up(statuses, _extra)
     except Exception:
-        return  # registry not available; skip the banner silently
+        car = None  # registry not available; verdicts still render below
 
-    rows = reg.summary_rows()
-    statuses = [_sd.status_for_component(r, r.get("rules", [])) for r in rows]
+    # ---- 2. Per-subsystem verdicts (each subsystem's declared numbers) ---- #
+    # These read the live ledger/activity, independent of the Registry, so the
+    # board is useful from the very first declared number even before any part
+    # is formally registered.
+    try:
+        _vc_all = {k: _vc_collect(k) for k, _e, _l in _VC_SUBSYS}
+    except Exception:
+        _vc_all = {}
+    _vc_counts = {"green": 0, "amber": 0, "red": 0, "empty": 0}
+    for _d in _vc_all.values():
+        _vc_counts[_d["verdict"]] = _vc_counts.get(_d["verdict"], 0) + 1
 
-    # Cross-system flags: a failing myth recorded this session pushes the board.
-    _extra = []
-    _myth = st.session_state.get("mb_last_result_dict")
-    if _myth and _myth.get("verdict") == "myth":
-        _extra.append({"status": "red",
-                       "message": "A checked assumption came back FALSE — "
-                                  "see Integration ▸ Myth-Buster"})
-    car = _sd.roll_up(statuses, _extra)
+    # ---- 3. Combined car-level verdict ----------------------------------- #
+    # Worst wins across BOTH sources: a red registered part or a red subsystem
+    # verdict both mean "not ready". Registry greens count toward "ready to cut"
+    # because those are the parts with a signed-off rule, which is the real bar.
+    _reg_overall = car.overall if car else None
+    _vc_worst = ("red" if _vc_counts["red"] else
+                 "amber" if _vc_counts["amber"] else
+                 "green" if _vc_counts["green"] else "empty")
+    _rank = {"red": 0, "amber": 1, "green": 2, "empty": 3, None: 4}
+    _overall = min([s for s in (_reg_overall, _vc_worst) if s is not None],
+                   key=lambda s: _rank.get(s, 4), default="empty")
 
-    # ---- the headline banner (always visible) ---------------------------- #
-    _c = _STATUS_COLORS.get(car.overall, "var(--dim)")
-    _dot = _STATUS_DOT.get(car.overall, "○")
-    _ready = car.counts.get("green", 0)
-    _total = len(statuses)
-    st.markdown(
+    _reg_total = len(statuses)
+    _reg_ready = car.counts.get("green", 0) if car else 0
+    _declared_subsys = sum(1 for d in _vc_all.values() if d["verdict"] != "empty")
+
+    _c = _VC_COL.get(_overall, "var(--dim)")
+    _dot = _VC_DOT.get(_overall, "○")
+    _headline = {
+        "green": "On track — nothing needs attention right now",
+        "amber": "Usable, but some things need a closer look",
+        "red": "Something needs attention before you commit",
+        "empty": "Declare a subsystem's numbers or register a part to light "
+                 "this up",
+    }[_overall]
+
+    _target.markdown(
         f'<div class="card" style="border-left:4px solid {_c};'
         f'display:flex;align-items:center;gap:1rem;margin:.2rem 0 .4rem;">'
         f'<div style="font-size:1.6rem;line-height:1">{_dot}</div>'
         f'<div style="flex:1">'
         f'<div style="font-family:\'JetBrains Mono\';font-size:.7rem;'
         f'letter-spacing:.14em;text-transform:uppercase;color:var(--dim)">'
-        f'Design status</div>'
+        f'Design status &amp; verdict</div>'
         f'<div style="font-weight:600;font-size:1.05rem;color:{_c}">'
-        f'{car.headline}</div></div>'
+        f'{_headline}</div></div>'
         f'<div style="text-align:right;font-family:\'JetBrains Mono\'">'
         f'<div style="font-size:1.45rem;font-weight:600;color:{_c}">'
-        f'{_ready}/{_total}</div>'
-        f'<div style="font-size:.7rem;color:var(--dim)">ready to cut</div>'
+        f'{_reg_ready}/{_reg_total}</div>'
+        f'<div style="font-size:.7rem;color:var(--dim)">parts ready to cut</div>'
         f'</div></div>', unsafe_allow_html=True)
 
-    # ---- per-component chips + drill-down -------------------------------- #
-    with st.expander(
-            f"Design status — {car.counts.get('red',0)} red · "
-            f"{car.counts.get('amber',0)} amber · {car.counts.get('green',0)} green",
-            expanded=(car.overall == "red")):
+    # ---- 4. The one drill-down: subsystem verdicts + registered parts ---- #
+    _summary = (f"Design status &amp; verdict — "
+                f"🔴 {_vc_counts['red']} · 🟡 {_vc_counts['amber']} · "
+                f"🟢 {_vc_counts['green']} subsystems"
+                f"  ·  {_reg_ready}/{_reg_total} parts signed off")
+    with _target.expander(_summary, expanded=(_overall == "red")):
 
+        # -- 4a. Per-subsystem verdict cards (worst-first) ----------------- #
+        st.markdown("###### Subsystem verdicts")
+        st.caption("From each subsystem's declared numbers. Full detail + a "
+                   "sanity-check live in ✅ Checks & Integration ▸ Verdict "
+                   "Center.")
+        if _vc_all:
+            _vrank = {"red": 0, "amber": 1, "green": 2, "empty": 3}
+            _ordered = sorted(_VC_SUBSYS,
+                              key=lambda t: _vrank[_vc_all[t[0]]["verdict"]])
+            _cols = st.columns(2)
+            for _i, (k, _e, _l) in enumerate(_ordered):
+                d = _vc_all[k]
+                _cc = _VC_COL[d["verdict"]]
+                _d2 = _VC_DOT[d["verdict"]]
+                _line = (d["attention"][0] if d["attention"] else
+                         d["closer"][0] if d["closer"] else
+                         d["works"][0] if d["works"] else
+                         "Nothing declared yet.")
+                with _cols[_i % 2]:
+                    st.markdown(
+                        f'<div style="border:1px solid {_cc}44;'
+                        f'border-left:4px solid {_cc};border-radius:8px;'
+                        f'padding:10px 12px;margin:0 0 10px;background:{_cc}0d;'
+                        f'min-height:92px;">'
+                        f'<div style="font-weight:600;font-size:.92rem;">'
+                        f'{_e} {_l} &nbsp;{_d2}</div>'
+                        f'<div style="font-size:.75rem;color:var(--dim);'
+                        f'margin-top:2px;">✅ {len(d["works"])} · '
+                        f'🔎 {len(d["closer"])} · 🛑 {len(d["attention"])}</div>'
+                        f'<div style="font-size:.8rem;margin-top:6px;'
+                        f'line-height:1.4;">{_line}</div>'
+                        f'</div>', unsafe_allow_html=True)
+
+        # -- 4b. Registered parts (the Registry rollup) -------------------- #
+        st.markdown(
+            '<hr style="border:none;border-top:1px solid var(--line);'
+            'margin:.4rem 0 .6rem;">', unsafe_allow_html=True)
+        st.markdown("###### Registered parts")
         if not statuses:
             st.markdown(
-                '<p class="hint">No components registered yet. Add the parts '
-                'everyone keeps re-sharing in the <b>🗂️ Registry</b> tab, give '
-                'each a few key numbers (Weight, Offset, Clash distance) and a '
-                'rule, and the whole car\'s readiness shows up here — replacing '
-                'the Drive folder with one honest red/green board.</p>',
-                unsafe_allow_html=True)
-            return
-
-        # sort worst-first so problems are at the top
-        _order = {"red": 0, "amber": 1, "green": 2}
-        for cs in sorted(statuses, key=lambda s: _order.get(s.status, 3)):
-            _cc = _STATUS_COLORS.get(cs.status, "var(--dim)")
-            _cd = _STATUS_DOT.get(cs.status, "○")
-            _cols = st.columns([3, 4])
-            with _cols[0]:
+                '<p class="hint">No parts registered yet. The subsystem '
+                'verdicts above already work from your declared numbers — to '
+                'also get a per-part red/green board, add the parts everyone '
+                'keeps re-sharing in the <b>🗂️ Registry</b> tab, give each a '
+                'few key numbers (Weight, Offset, Clash distance) and a rule.'
+                '</p>', unsafe_allow_html=True)
+        else:
+            _order = {"red": 0, "amber": 1, "green": 2}
+            for cs in sorted(statuses, key=lambda s: _order.get(s.status, 3)):
+                _cc = _STATUS_COLORS.get(cs.status, "var(--dim)")
+                _cd = _STATUS_DOT.get(cs.status, "○")
+                _cols = st.columns([3, 4])
+                with _cols[0]:
+                    st.markdown(
+                        f'{_cd} **{cs.name}** '
+                        f'<span class="tag">{cs.subteam}</span>',
+                        unsafe_allow_html=True)
+                with _cols[1]:
+                    st.markdown(
+                        f'<span style="color:{_cc};font-size:.85rem">'
+                        f'{cs.headline}</span>', unsafe_allow_html=True)
+                if cs.rule_results:
+                    _chips = []
+                    for rr in cs.rule_results:
+                        _rc = {"green": "good", "amber": "warn",
+                               "red": "bad"}.get(rr.status, "tag")
+                        _chips.append(
+                            f'<span class="tag {_rc}">{rr.label}: '
+                            f'{rr.message}</span>')
+                    st.markdown(" ".join(_chips), unsafe_allow_html=True)
+                if not cs.has_file:
+                    st.markdown(
+                        '<span class="hint">↳ register the file/link in the '
+                        'Registry tab</span>', unsafe_allow_html=True)
                 st.markdown(
-                    f'{_cd} **{cs.name}** '
-                    f'<span class="tag">{cs.subteam}</span>',
-                    unsafe_allow_html=True)
-            with _cols[1]:
-                st.markdown(
-                    f'<span style="color:{_cc};font-size:.85rem">{cs.headline}</span>',
-                    unsafe_allow_html=True)
-            # show each rule result as a mini chip
-            if cs.rule_results:
-                _chips = []
-                for rr in cs.rule_results:
-                    _rc = {"green": "good", "amber": "warn", "red": "bad"}.get(
-                        rr.status, "tag")
-                    _chips.append(
-                        f'<span class="tag {_rc}">{rr.label}: {rr.message}</span>')
-                st.markdown(" ".join(_chips), unsafe_allow_html=True)
-            if not cs.has_file:
-                st.markdown(
-                    '<span class="hint">↳ register the file/link in the Registry tab</span>',
-                    unsafe_allow_html=True)
-            st.markdown(
-                '<hr style="border:none;border-top:1px solid var(--line);'
-                'margin:.3rem 0;">', unsafe_allow_html=True)
-
-        st.caption("Red = needs attention (file missing, a rule failed, a clash "
-                   "too tight, a failing myth). Green = file registered, signed "
-                   "off, every declared number within its rule. Set the numbers "
-                   "and rules per part in the 🗂️ Registry tab.")
+                    '<hr style="border:none;border-top:1px solid var(--line);'
+                    'margin:.3rem 0;">', unsafe_allow_html=True)
+            st.caption("Red = needs attention (file missing, a rule failed, a "
+                       "clash too tight, a failing myth). Green = file "
+                       "registered, signed off, every declared number within "
+                       "its rule. Set the numbers and rules per part in the "
+                       "🗂️ Registry tab.")
 
 
 try:
-    _render_status_dashboard()
+    # The merged Design-status & verdict board renders at the TOP of the page,
+    # but it needs `_vc_collect` / `_VC_SUBSYS`, which are defined further down.
+    # Streamlit runs top-to-bottom, so we reserve the slot here and fill it once
+    # those exist (see `_fill_status_dashboard()` after _vc_collect is defined).
+    _STATUS_DASHBOARD_SLOT = st.container()
 except Exception:
-    pass  # the dashboard is a convenience banner; never let it break the page
+    _STATUS_DASHBOARD_SLOT = None
 
 
 s = kin.static
@@ -3518,6 +3597,16 @@ def render_subsystem_verdict_card(subsys_key):
             "No hard problems detected. ✔")
 
 
+# Now that _vc_collect / _VC_SUBSYS exist, fill the Design-status & verdict
+# board into the slot reserved at the top of the page. Guarded: the board is a
+# convenience header and must never break the page.
+try:
+    if _STATUS_DASHBOARD_SLOT is not None:
+        _render_status_dashboard(_STATUS_DASHBOARD_SLOT)
+except Exception:
+    pass
+
+
 # --------------------------------------------------------------------------- #
 #  Per-subsystem PROFILE LIBRARY                                               #
 #  Each builder returns a candidate dict:                                      #
@@ -4902,41 +4991,39 @@ def get_doc_sections(subsystem_key):
 
 def _render_doc_and_verdict(subsystem_key, *, key_prefix, extra_sections=None,
                             title_name=None):
-    """Render the Document (report) and Verdict surfaces for one subsystem.
+    """Render the Document (report) surface for one subsystem.
 
-    Shared by the new Documentation tab and the legacy per-subsystem panel, so
-    the two never drift. Two inner sub-tabs: 📄 Document · ✅ Verdict."""
+    The per-subsystem VERDICT now lives on the main page (the Design-status
+    board), combined with the Registry rollup — there is one honest whole-car
+    board instead of a verdict buried per subsystem here. So this renders the
+    document only; a small pointer sends anyone looking for the verdict to the
+    top of the app."""
     _nm = title_name or _VC_LABEL.get(
         subsystem_key, subsystem_key.replace("-", " ").title())
-    _dt_doc, _dt_verdict = st.tabs(["📄 Document", "✅ Verdict"])
 
-    with _dt_doc:
+    try:
+        render_documentation_center(
+            subsystem_key, key_prefix=f"{key_prefix}_dc",
+            title_name=_nm, extra_sections=extra_sections)
+    except Exception as _dc_err:
+        # Graceful fallback to the original simple report. We surface a
+        # short note (instead of silently swallowing) so a member — or
+        # whoever is deploying — can see the merged Template + Sanity-check
+        # hub failed to load and why, rather than wondering where the
+        # template library went.
+        st.caption(f"Showing the simple report — the merged template "
+                   f"library couldn’t load here ({type(_dc_err).__name__}).")
+        render_subsystem_documentation(
+            subsystem_key, key_prefix=key_prefix,
+            extra_sections=extra_sections, title_name=title_name)
         try:
-            render_documentation_center(
-                subsystem_key, key_prefix=f"{key_prefix}_dc",
-                title_name=_nm, extra_sections=extra_sections)
-        except Exception as _dc_err:
-            # Graceful fallback to the original simple report. We surface a
-            # short note (instead of silently swallowing) so a member — or
-            # whoever is deploying — can see the merged Template + Sanity-check
-            # hub failed to load and why, rather than wondering where the
-            # template library went.
-            st.caption(f"Showing the simple report — the merged template "
-                       f"library couldn’t load here ({type(_dc_err).__name__}).")
-            render_subsystem_documentation(
-                subsystem_key, key_prefix=key_prefix,
-                extra_sections=extra_sections, title_name=title_name)
-            try:
-                render_myth_check(subsystem_key, key_prefix=key_prefix)
-            except Exception:
-                pass
+            render_myth_check(subsystem_key, key_prefix=key_prefix)
+        except Exception:
+            pass
 
-    with _dt_verdict:
-        try:
-            render_subsystem_verdict_card(subsystem_key)
-            _vc_disclaimer(f"the {_nm.lower()} verdict")
-        except Exception as _ve:
-            st.caption(f"Verdict view unavailable: {_ve}")
+    st.caption("Looking for this subsystem's ✅/🔎/🛑 verdict? It now lives on "
+               "the **Design status** board at the top of the app, next to the "
+               "whole-car readiness rollup.")
 
 
 def _render_mesh_section(subsystem_key, *, key_prefix, mesh_candidates=None,
@@ -4964,17 +5051,17 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
     """Legacy collapsed 'Documentation & checks' panel for any subsystem.
 
     Documentation now lives in its own top-level DOCUMENTATION tab (a subsystem
-    picker with 📄 Document & Verdict and 📐 Mesh & DXF sub-tabs), so this panel
+    picker with 📄 Document and 📐 Mesh & DXF sub-tabs), so this panel
     is no longer dropped into each subsystem tab. It is kept as a thin wrapper —
     delegating to the same `_render_doc_and_verdict` / `_render_mesh_section`
     helpers the Documentation tab uses — so any remaining caller still works and
     the two surfaces can never drift."""
     _nm = title_name or _VC_LABEL.get(
         subsystem_key, subsystem_key.replace("-", " ").title())
-    with st.expander(f"📄  {_nm} — documentation & verdict",
+    with st.expander(f"📄  {_nm} — documentation & export",
                      expanded=False):
         _doc_verdict, _mesh = st.tabs(
-            ["📄 Document & Verdict", "📐 Mesh & DXF"])
+            ["📄 Document", "📐 Mesh & DXF"])
         with _doc_verdict:
             _render_doc_and_verdict(
                 subsystem_key, key_prefix=key_prefix,
@@ -15135,7 +15222,7 @@ with tab8:
 #  DOCUMENTATION TAB — every subsystem's documentation in one place.
 #
 #  Moved here out of each subsystem tab. Pick a subsystem, then work in two
-#  sub-tabs: 📄 Document & Verdict (the auto-aggregated report + verdict card)
+#  sub-tabs: 📄 Document (the auto-aggregated report; the verdict now lives on the main page)
 #  and 📐 Mesh & DXF export. The report pulls in everything logged for that
 #  subsystem automatically (declared numbers, session activity, Handover
 #  decisions, Lead Notes, plus anything a subsystem tab published), so the PDF
@@ -15163,7 +15250,7 @@ with tab_docs:
   _doc_prefix = "docs_" + _doc_key.replace("-", "_")
 
   _dv_tab, _mesh_tab = st.tabs(
-      ["📄 Document & Verdict", "📐 Mesh & DXF export"])
+      ["📄 Document", "📐 Mesh & DXF export"])
   with _dv_tab:
       _render_doc_and_verdict(
           _doc_key, key_prefix=_doc_prefix,
