@@ -7336,6 +7336,67 @@ with tab_car:
                 _anchor = (fullcar_mod.part_anchor(_vp_cad, _cad_pick[2], ledger=_led_cad)
                            if _is_part else None)
 
+                # The generic anchor above is a rough per-subsystem GUESS. The
+                # real dummy a member sees is drawn at its true position (e.g. the
+                # monocoque spans ~2 m and sits nowhere near the guess), which is
+                # exactly why a snapped CAD part landed "aligned" yet visibly off.
+                # Prefer the REAL union box of the actual drawn bodies this
+                # subsystem owns — measured from the last render into
+                # car3d_part_boxes — so Snap and the alignment read-out track what
+                # is actually on screen. Fall back to the guess only when the
+                # measured boxes aren't available yet (first render).
+                if _is_part:
+                    try:
+                        _dns_a = _cad_pick[3] or []
+                        _pbx_a = st.session_state.get("car3d_part_boxes", {}) or {}
+                        # If the real boxes haven't been measured yet (first
+                        # render, before the Model tab has drawn the car), build
+                        # one figure now and measure the bodies we need, caching
+                        # per-body so this stays cheap on reruns. This makes the
+                        # FIRST snap land correctly rather than on the guess.
+                        _need = [d for d in _dns_a if d not in _pbx_a]
+                        if _need:
+                            _fpc = st.session_state.get("_dummy_footprints", {})
+                            _missing = [d for d in _need if d not in _fpc]
+                            if _missing:
+                                _fig_a = fullcar_mod.build_full_car_figure(
+                                    vp=_vp_cad, ledger=_led_cad)
+                                for _d in _missing:
+                                    _fpc[_d] = fullcar_mod.dummy_body_footprint(
+                                        _fig_a, _d)
+                                st.session_state["_dummy_footprints"] = _fpc
+                            # merge measured footprints into a boxes-like view
+                            for _d in _need:
+                                _fp = _fpc.get(_d)
+                                if _fp:
+                                    _pbx_a = dict(_pbx_a)
+                                    _pbx_a[_d] = dict(
+                                        centre=[_fp["x_mm"], _fp["y_mm"],
+                                                _fp["z_mm"]],
+                                        size=[_fp["l_mm"], _fp["w_mm"],
+                                              _fp["h_mm"]])
+                        _los_a, _his_a = [], []
+                        for _dn in _dns_a:
+                            _b = _pbx_a.get(_dn)
+                            if _b:
+                                _bc = _b["centre"]; _bs = _b["size"]
+                                _los_a.append([_bc[i] - _bs[i] / 2 for i in range(3)])
+                                _his_a.append([_bc[i] + _bs[i] / 2 for i in range(3)])
+                        if _los_a:
+                            _lo_a = [min(p[i] for p in _los_a) for i in range(3)]
+                            _hi_a = [max(p[i] for p in _his_a) for i in range(3)]
+                            _anchor = {
+                                "x_mm": (_lo_a[0] + _hi_a[0]) / 2.0,
+                                "y_mm": (_lo_a[1] + _hi_a[1]) / 2.0,
+                                "z_mm": (_lo_a[2] + _hi_a[2]) / 2.0,
+                                "l_mm": _hi_a[0] - _lo_a[0],
+                                "w_mm": _hi_a[1] - _lo_a[1],
+                                "h_mm": _hi_a[2] - _lo_a[2],
+                                "shape": (_anchor or {}).get("shape", "box"),
+                            }
+                    except Exception:
+                        pass  # keep the guessed anchor on any trouble
+
                 # Initialise the position/scale widget keys ONCE, and flush any
                 # pending writes from the Snap / Fit-scale / pick-changed actions
                 # BEFORE the widgets are created (Streamlit forbids assigning to a
