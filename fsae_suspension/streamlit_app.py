@@ -14632,7 +14632,7 @@ def _hn_rerun():
     a full-app rerun when the fragment is executing inside a full run (where
     scope="fragment" is not permitted)."""
     try:
-        _hn_rerun()
+        st.rerun(scope="fragment")
     except Exception:
         st.rerun()
 
@@ -14716,9 +14716,9 @@ def _render_harness_fragment():
 
     if not harness.wires and not harness.connectors:
         qc = st.columns([3, 2])
-        qc[0].info("Nothing routed yet. Add connectors and wires in the "
-                   "**Edit loom** tab — or drop in the example loom to see "
-                   "the whole workflow at once.")
+        qc[0].info("Nothing routed yet. Open the **✏️ Edit loom** tab to add "
+                   "connectors (ECU, motor controller, sensors…) and wire runs "
+                   "— or seed the example loom to see the whole workflow at once.")
         if qc[1].button("🚀 Seed an example loom", key="hn_seed"):
             _hn_seed_demo(store)
             save_store(store)
@@ -14844,6 +14844,13 @@ def _render_harness_fragment():
         with ec[1]:
             st.markdown("**Wire runs** *(3-D routed conductors)*")
             conn_names = [""] + list(harness.connectors.keys())
+
+            # Allow clicking a wire in the list below to load it into the editor.
+            _load_req = st.session_state.pop("_hn_load_wire", None)
+            if _load_req is not None and _load_req in harness.wires:
+                st.session_state["hn_wire_sel"] = _load_req
+                st.session_state["_hn_wire_loaded"] = None   # force reload
+
             wire_sel = st.selectbox(
                 "Wire", ["➕ New wire"] + list(harness.wires),
                 key="hn_wire_sel")
@@ -14870,10 +14877,27 @@ def _render_harness_fragment():
                 st.session_state["wr_cur"] = \
                     float(w0.carries_current_a or 0.0) if w0 else 0.0
                 st.session_state["wr_est"] = bool(w0.is_estimate) if w0 else False
-                st.session_state["_hn_path_pts"] = (
-                    [list(map(float, p)) for p in w0.path_mm] if w0 and w0.path_mm
-                    else [[0.0, 0.0, 0.0], [200.0, 0.0, 0.0],
-                          [600.0, 0.0, 100.0], [1200.0, 0.0, 100.0]])
+                if w0 and w0.path_mm:
+                    st.session_state["_hn_path_pts"] = \
+                        [list(map(float, p)) for p in w0.path_mm]
+                else:
+                    # For a new wire: seed a straight line between the two
+                    # declared connectors when both are known, so the route
+                    # starts at realistic coordinates and the cut-length
+                    # preview is immediately meaningful.
+                    _cf0 = harness.connectors.get(
+                        st.session_state.get("wr_from", ""))
+                    _ct0 = harness.connectors.get(
+                        st.session_state.get("wr_to", ""))
+                    if _cf0 is not None and _ct0 is not None:
+                        _pa = [float(v) for v in _cf0.xyz_mm]
+                        _pb = [float(v) for v in _ct0.xyz_mm]
+                        _mid = [(a + b) / 2 for a, b in zip(_pa, _pb)]
+                        st.session_state["_hn_path_pts"] = [_pa, _mid, _pb]
+                    else:
+                        st.session_state["_hn_path_pts"] = [
+                            [0.0, 0.0, 0.0], [200.0, 0.0, 0.0],
+                            [600.0, 0.0, 100.0], [1200.0, 0.0, 100.0]]
 
             wn = st.text_input("Name", key="wr_name")
             wown = st.selectbox("Owned by", _SUBS, key="wr_own")
@@ -14885,6 +14909,26 @@ def _render_harness_fragment():
             wg2 = st.columns(2)
             wfrom = wg2[0].selectbox("From connector", conn_names, key="wr_from")
             wto = wg2[1].selectbox("To connector", conn_names, key="wr_to")
+
+            # When both connectors are chosen on a NEW wire but the path is
+            # still the placeholder, auto-update to a connector-to-connector
+            # straight line so the user sees real coordinates immediately.
+            _cur_pts = st.session_state.get("_hn_path_pts") or []
+            _is_new = (wire_sel == "➕ New wire")
+            _from_c = harness.connectors.get(wfrom)
+            _to_c = harness.connectors.get(wto)
+            if (_is_new and _from_c and _to_c and len(_cur_pts) in (0, 2, 3, 4)
+                    and not any(
+                        # Detect if path already ends at these connectors.
+                        (abs(_cur_pts[0][i] - _from_c.xyz_mm[i]) < 1.0
+                         for i in range(3)) if _cur_pts else [])):
+                _pa = [float(v) for v in _from_c.xyz_mm]
+                _pb = [float(v) for v in _to_c.xyz_mm]
+                _mid = [(a + b) / 2 for a, b in zip(_pa, _pb)]
+                st.session_state["_hn_path_pts"] = [_pa, _mid, _pb]
+                st.session_state["_hn_path_nonce"] = \
+                    st.session_state.get("_hn_path_nonce", 0) + 1
+
             wg3 = st.columns(3)
             wmult = wg3[0].number_input("Min bend ×OD", 1.0, 20.0, key="wr_mult")
             wloop = wg3[1].number_input("Service loop (mm)", 0.0, 1000.0,
@@ -14896,9 +14940,25 @@ def _render_harness_fragment():
                                        0.0, 1000.0, key="wr_cur")
             west = wg4[1].checkbox("Estimated route", key="wr_est")
 
-            st.caption("3-D route (car coordinates, mm) — add / delete / edit "
-                       "points directly:")
+            # ---- paste-route shortcut (always visible, primary input) ---- #
+            _paste_cols = st.columns([3, 1])
+            wpath_txt = _paste_cols[0].text_input(
+                "Paste route — x,y,z; x,y,z; …  (from CAD or spreadsheet)",
+                key="wr_path_txt", value="",
+                placeholder="0,0,250; 300,0,250; 1500,0,220")
             nonce = st.session_state.get("_hn_path_nonce", 0)
+            if _paste_cols[1].button("↪ Load", key="wr_path_import",
+                                     help="Parse the pasted coordinates and "
+                                          "replace the table below"):
+                pts = _parse_path3d(wpath_txt)
+                if pts:
+                    st.session_state["_hn_path_pts"] = [list(p) for p in pts]
+                    st.session_state["_hn_path_nonce"] = nonce + 1
+                    _hn_rerun()
+                else:
+                    st.warning("Couldn't parse any points — use x,y,z; x,y,z format.")
+
+            st.caption("3-D route (car coordinates, mm) — edit or add rows directly:")
             pdf = pd.DataFrame(
                 st.session_state.get("_hn_path_pts") or [[0.0, 0.0, 0.0]],
                 columns=["x", "y", "z"])
@@ -14919,15 +14979,39 @@ def _render_harness_fragment():
                         continue
                 return out
 
-            with st.expander("Paste a route instead (x,y,z; x,y,z; …)"):
-                wpath_txt = st.text_input("Route string", key="wr_path_txt",
-                                          value="")
-                if st.button("↪ Import into the table", key="wr_path_import"):
-                    pts = _parse_path3d(wpath_txt)
-                    if pts:
-                        st.session_state["_hn_path_pts"] = [list(p) for p in pts]
-                        st.session_state["_hn_path_nonce"] = nonce + 1
-                        _hn_rerun()
+            # ---- live preview: cut length + bend status before Save ---- #
+            _prev_pts = _pts_from_editor(edited)
+            if len(_prev_pts) >= 2:
+                from suspension.harness import (
+                    WireRun as _WR_prev, polyline_length_mm as _pl_prev,
+                    vertex_bend_radius_mm as _vbr_prev)
+                import numpy as _np_prev
+                _pw = _WR_prev("_preview", wown, gauge_awg=int(wawg),
+                               path_mm=_prev_pts,
+                               od_mm=(None if wod == 0.0 else wod),
+                               bundle_min_radius_mult=wmult,
+                               service_loop_mm=wloop, strip_mm=wstrip)
+                _cut_prev = _pw.cut_length_mm()
+                _mbr_prev = _pw.min_bend_radius_mm
+                _radii_prev = _vbr_prev(_pw.as_polyline())
+                _worst_r = float(_np_prev.min(_radii_prev)) \
+                    if _radii_prev.size else float("inf")
+                _bend_ok = (_worst_r >= _mbr_prev)
+                _bend_col = "🟢" if _bend_ok else "🔴"
+                _bend_txt = (f"OK (tightest {_worst_r:.0f} mm ≥ {_mbr_prev:.0f} mm min)"
+                             if _bend_ok
+                             else f"KINK — {_worst_r:.0f} mm < {_mbr_prev:.0f} mm min")
+                _cu_prev = _pw.copper_mass_g()
+                st.markdown(
+                    f'<div style="border-left:3px solid #25506b;padding:5px 10px;'
+                    f'margin:4px 0;border-radius:4px;background:rgba(37,80,107,.12);">'
+                    f'<span style="font-size:.85rem;color:#8d99a6">Preview · '
+                    f'{len(_prev_pts)} pts · '
+                    f'<b>{units_mod.from_metric(_cut_prev, "mm"):.0f} '
+                    f'{units_mod.label("mm")}</b> cut · '
+                    f'{uval(_cu_prev, "g_mass", fmt="{:.1f}")} Cu · '
+                    f'{_bend_col} bend {_bend_txt}</span></div>',
+                    unsafe_allow_html=True)
 
             bc = st.columns(3)
             if bc[0].button("💾 Save wire", key="wr_save", type="primary"):
@@ -14966,12 +15050,27 @@ def _render_harness_fragment():
                 st.session_state["_hn_wire_reset"] = True
                 _hn_rerun()
 
+            # ---- wire list: click-to-edit buttons ---- #
+            if harness.wires:
+                st.markdown(
+                    '<p style="font-size:.8rem;color:#8d99a6;margin:8px 0 2px 0;">'
+                    'Wires — click to load into editor above</p>',
+                    unsafe_allow_html=True)
             for name, w in list(harness.wires.items()):
                 est = " · est" if w.is_estimate else ""
-                st.markdown(
+                sev = (_harness_wire_severity(res) or {}).get(name)
+                _sev_dot = ("🔴 " if sev == "fail"
+                            else "🟡 " if sev == "warning" else "")
+                _wl_cols = st.columns([1, 5])
+                if _wl_cols[0].button("✏️", key=f"hn_load_{name}",
+                                      help=f"Load '{name}' into the editor"):
+                    st.session_state["_hn_load_wire"] = name
+                    _hn_rerun()
+                _wl_cols[1].markdown(
                     f'<div style="border-left:3px solid var(--line);'
                     f'padding:4px 10px;margin:3px 0;">'
-                    f'{_MP_EMOJI.get(w.owner_subsystem, "")} <b>{name}</b> '
+                    f'{_sev_dot}{_MP_EMOJI.get(w.owner_subsystem, "")} '
+                    f'<b>{name}</b> '
                     f'<span style="color:#8d99a6;font-size:.8rem">'
                     f'AWG{w.gauge_awg} · {w.net or "—"}{est}</span><br>'
                     f'<span style="font-size:.82rem;color:#8d99a6">'
