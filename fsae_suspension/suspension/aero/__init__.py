@@ -86,6 +86,25 @@ Scaled-model planning (upstream of any tunnel/CFD run — the make-it-before-you
         plan = ScaledRunPlan(sim, tol, mnt)
         print(plan.report())                    # run speed + total coefficient uncertainty + provenance
         # feed plan.tunnel_reynolds()/plan.model_scale()/plan.provenance() into TunnelProvenance(...)
+
+Plug & layup build planning (the shop-floor half of the scaled programme):
+    Before the tunnel there is a Saturday of foam, glue and resin, and it has its own
+    failure modes: a stack that comes up short, a printer that silently rescales the
+    cutting templates, a supplies order guessed the night before, a two-stage layup
+    whose cures do not fit the day, and the two part-scrapping mistakes (layup before
+    the release barrier; sanding through the coating into structural carbon).
+    `plug_builder.py` computes all of it from the same loft:
+        from suspension.aero import (NoseconeBody, FoamSheet, SlicePlan, LayupRecipe,
+                                     MaterialsEstimate, default_build_day,
+                                     BuildDaySchedule, PreflightGate, PlugBuildPlan)
+        body  = NoseconeBody(length_mm=520, base_width_mm=250, base_height_mm=260)
+        plan  = SlicePlan.plan(body, FoamSheet(thickness_mm=25.4))   # layers + stack-up tolerance
+        bom   = MaterialsEstimate.compute(body, plan, LayupRecipe(), FoamSheet(), crew_size=6)
+        sched = BuildDaySchedule.plan(default_build_day(plan, LayupRecipe()))
+        print(sched.verdict)                    # does "one build day" survive the cures?
+        # plan.tolerance.feed(ToleranceBudget(spec), 260) -> stack error joins the
+        # SAME coefficient band the tunnel correlation reads. Templates via
+        # layer_template_svg(layer) — 1:1 mm with a printed 100 mm scale-check bar.
 """
 
 from .cfd import (
@@ -139,6 +158,12 @@ from .scale_model import (
     MountAlignment, ScaledRunPlan, reynolds, air_kinematic_viscosity,
     DEFAULT_AIR_DENSITY, DEFAULT_AIR_KINEMATIC_VISCOSITY, LOW_RE_BUBBLE_THRESHOLD,
 )
+from .plug_builder import (
+    NoseconeBody, FoamSheet, FoamLayer, StackTolerance, SlicePlan,
+    layer_template_svg, LayupRecipe, BOMLine, MaterialsEstimate,
+    BuildStep, default_build_day, ScheduledStep, BuildDaySchedule,
+    GateItem, PreflightGate, PlugBuildPlan,
+)
 
 __all__ = [
     "Attitude", "RunMatrix", "CaseSpec", "CoeffResult", "CFDProvenance",
@@ -176,4 +201,8 @@ __all__ = [
     "MountAlignment", "ScaledRunPlan", "reynolds", "air_kinematic_viscosity",
     "DEFAULT_AIR_DENSITY", "DEFAULT_AIR_KINEMATIC_VISCOSITY",
     "LOW_RE_BUBBLE_THRESHOLD",
+    "NoseconeBody", "FoamSheet", "FoamLayer", "StackTolerance", "SlicePlan",
+    "layer_template_svg", "LayupRecipe", "BOMLine", "MaterialsEstimate",
+    "BuildStep", "default_build_day", "ScheduledStep", "BuildDaySchedule",
+    "GateItem", "PreflightGate", "PlugBuildPlan",
 ]
