@@ -69,6 +69,7 @@ from suspension import tire_thermal as thermal_mod
 from suspension import units as units_mod
 from suspension import bracket_fos as bracket_mod
 from suspension import bolted_joint as bolt_mod
+from suspension import tubeframe as tf_mod
 from suspension import tractive_system as tract_mod
 from suspension import pcm_cooling as pcm_mod
 from suspension import dfmea as dfmea_mod
@@ -15495,6 +15496,426 @@ with tab6:
     render_process_library("chassis", key_prefix="teamfit_pl")
   except Exception:
     pass
+
+  # ==================== 🧱 FRAME PLANNER (tubeframe.py) ==================== #
+  # Three expanders = the three 06/29 pain points: triangulation/load-path
+  # legality, Size-C sourcing trade, and the four subteams' attachment briefs.
+  st.markdown("#### 🧱 Frame Planner — triangulation · tube sourcing · attachments")
+  st.markdown(
+      '<p class="hint" style="margin:0 0 8px;">The 06/29 chassis meeting, '
+      'computed: audit the frame graph for the <b>2027-illegal</b> '
+      'untriangulated bays and load-path interruptions, run the '
+      '<b>Size C → Size B</b> sourcing trade with real Δmass/Δcost, and size '
+      'every subteam\'s <b>panel &amp; attachment</b> brief (seat &amp; '
+      'harness, floor, firewall, aero panels). ' +
+      _html.escape(tf_mod.RULES_DISCLAIMER) + '</p>', unsafe_allow_html=True)
+
+  def _tf_frame():
+      d = st.session_state.get("tf_frame")
+      return tf_mod.FrameGraph.from_dict(d) if d else None
+
+  def _tf_save(g):
+      st.session_state["tf_frame"] = g.as_dict()
+
+  _tf_verdict_cls = {"works": "good", "look closer": "warn", "attention": "bad"}
+
+  # ---- 1 · triangulation & load-path audit + 3D wireframe --------------- #
+  with st.expander("🔺 Triangulation & load-path audit — 3D frame view",
+                   expanded=False):
+      _lc = st.columns([1.2, 1.4, 1.4])
+      if _lc[0].button("Load demo frame (slide-4 defects)", key="tf_demo"):
+          _tf_save(tf_mod.demo_frame())
+          try:
+              _axn.engage("teamfit", "frame_planner")
+          except Exception:
+              pass
+          _do_rerun()
+      _nod_up = _lc[1].file_uploader("Nodes CSV — id,x,y,z,label",
+                                     type=["csv", "txt"], key="tf_nodes_csv")
+      _tub_up = _lc[2].file_uploader("Tubes CSV — name,a,b,class,size",
+                                     type=["csv", "txt"], key="tf_tubes_csv")
+      if _nod_up is not None and _tub_up is not None:
+          if st.button("Build frame from CSVs", key="tf_build_csv"):
+              try:
+                  _tf_save(tf_mod.FrameGraph.from_csv(
+                      _nod_up.getvalue().decode("utf-8"),
+                      _tub_up.getvalue().decode("utf-8")))
+                  _do_rerun()
+              except Exception as _tfe:
+                  st.error(f"Couldn't parse frame CSVs: {_tfe}")
+
+      _g = _tf_frame()
+      if _g is None:
+          st.info("Load the demo frame (it reproduces the meeting's exact "
+                  "defects) or upload your node/tube CSVs. Per-side frames "
+                  "audit cleanly — model one side at a time.")
+      else:
+          _quads = _g.untriangulated_quads()
+          _lands = _g.midspan_landings()
+          _tris = _g.triangulated_nodes()
+
+          # -- classify edges once; draw one None-separated trace per class -- #
+          _bad_edges = set()
+          for _q in _quads:
+              _ring = _q["bay_nodes"] + [_q["bay_nodes"][0]]
+              _bad_edges |= {frozenset((_ring[i], _ring[i + 1]))
+                             for i in range(4)}
+          _host_names = {_f["host_tube"] for _f in _lands}
+
+          def _seg_xyz(pairs):
+              xs, ys, zs = [], [], []
+              for _a, _b in pairs:
+                  pa, pb = _g.p(_a), _g.p(_b)
+                  xs += [pa[0], pb[0], None]
+                  ys += [pa[1], pb[1], None]
+                  zs += [pa[2], pb[2], None]
+              return xs, ys, zs
+
+          _cls_pairs = {"ok": [], "quad": [], "host": []}
+          for _t in _g.tubes:
+              _k = ("host" if _t.name in _host_names else
+                    "quad" if frozenset((_t.a, _t.b)) in _bad_edges else "ok")
+              _cls_pairs[_k].append((_t.a, _t.b))
+          _diag_pairs = [tuple(_q["suggested_diagonal"]) for _q in _quads]
+
+          _figf = go.Figure()
+          for _k, _col, _w, _lbl, _dash in [
+                  ("ok",   "#5a8a7a", 4, "Tubes (OK)", "solid"),
+                  ("quad", RED,       7, "Untriangulated bay ⚠", "solid"),
+                  ("host", AMBER,     6, "Interrupted mid-span ⚠", "solid")]:
+              if _cls_pairs[_k]:
+                  xs, ys, zs = _seg_xyz(_cls_pairs[_k])
+                  _figf.add_trace(go.Scatter3d(
+                      x=xs, y=ys, z=zs, mode="lines", name=_lbl,
+                      line=dict(color=_col, width=_w, dash=_dash),
+                      hoverinfo="skip"))
+          if _diag_pairs:
+              xs, ys, zs = _seg_xyz(_diag_pairs)
+              _figf.add_trace(go.Scatter3d(
+                  x=xs, y=ys, z=zs, mode="lines",
+                  name="Suggested diagonal (add this)",
+                  line=dict(color=RED, width=4, dash="dash"),
+                  hoverinfo="skip"))
+
+          _nids = list(_g.nodes)
+          _npts = np.array([_g.p(n) for n in _nids])
+          _ncol = [RED if n not in _tris else CYAN for n in _nids]
+          _figf.add_trace(go.Scatter3d(
+              x=_npts[:, 0], y=_npts[:, 1], z=_npts[:, 2],
+              mode="markers+text", name="Nodes",
+              marker=dict(size=5, color=_ncol),
+              text=_nids, textposition="top center",
+              textfont=dict(size=10, color="#cdd6df"),
+              hovertext=[f"{n} — {_g.nodes[n].label or '(unlabelled)'}"
+                         + ("" if n in _tris else " · NOT triangulated")
+                         for n in _nids],
+              hoverinfo="text"))
+          _figf.update_layout(
+              paper_bgcolor="rgba(0,0,0,0)",
+              font=dict(family="JetBrains Mono, monospace",
+                        color="#cdd6df", size=11),
+              margin=dict(l=0, r=0, t=30, b=0), height=520,
+              legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10)),
+              scene=dict(aspectmode="data",
+                         xaxis=dict(title="x (mm)", gridcolor="#1d242c",
+                                    backgroundcolor="rgba(0,0,0,0)"),
+                         yaxis=dict(title="y (mm)", gridcolor="#1d242c",
+                                    backgroundcolor="rgba(0,0,0,0)"),
+                         zaxis=dict(title="z (mm)", gridcolor="#1d242c",
+                                    backgroundcolor="rgba(0,0,0,0)")))
+          st.plotly_chart(_figf, width="stretch")
+
+          _mc = st.columns(3)
+          _mc[0].markdown(metric("Untriangulated bays", str(len(_quads)), "",
+                                 "bad" if _quads else "good"),
+                          unsafe_allow_html=True)
+          _mc[1].markdown(metric("Mid-span landings", str(len(_lands)), "",
+                                 "bad" if _lands else "good"),
+                          unsafe_allow_html=True)
+          _mc[2].markdown(metric("Nodes off any triangle",
+                                 str(len(_g.nodes) - len(
+                                     set(_nids) & _tris)), "",
+                                 "bad" if len(set(_nids) - _tris) else "good"),
+                          unsafe_allow_html=True)
+
+          if _quads:
+              st.markdown("###### Open bays — each with its fix")
+              st.dataframe([{
+                  "Bay": " – ".join(_q["bay_nodes"]),
+                  "Add diagonal": " → ".join(_q["suggested_diagonal"]),
+                  "Length (mm)": _q["diagonal_length_mm"],
+                  "Size": _q["diagonal_size"],
+                  "Mass (kg)": _q["diagonal_mass_kg"],
+                  "Cost ($)": _q["diagonal_cost_usd"],
+              } for _q in _quads], width="stretch", hide_index=True)
+          if _lands:
+              st.dataframe([{
+                  "Node": _f["end_node"], "Lands on": _f["host_tube"],
+                  "Along host": f'{_f["host_fraction"]:.0%}',
+                  "Arriving tubes": ", ".join(_f["tubes"]),
+              } for _f in _lands], width="stretch", hide_index=True)
+
+          # -- the meeting's exact question: node → node path audit -------- #
+          st.markdown("###### Load-path audit (slide 4: main hoop support → "
+                      "lower side impact node)")
+          _fmt = lambda n: f"{n} — {_g.nodes[n].label}" if _g.nodes[n].label else n
+          def _default_idx(needle, fallback):
+              for _i, _n in enumerate(_nids):
+                  if needle in _g.nodes[_n].label.lower():
+                      return _i
+              return fallback
+          _pc = st.columns([1.5, 1.5, 1])
+          _from = _pc[0].selectbox("From node", _nids, format_func=_fmt,
+                                   index=_default_idx("main hoop support", 0),
+                                   key="tf_path_from")
+          _to = _pc[1].selectbox("To node", _nids, format_func=_fmt,
+                                 index=_default_idx("lower side impact",
+                                                    len(_nids) - 1),
+                                 key="tf_path_to")
+          if _pc[2].button("Audit path", key="tf_path_run") and _from != _to:
+              _aud = _g.load_path_audit(_from, _to)
+              try:
+                  _axn.complete("teamfit", "frame_planner")
+              except Exception:
+                  pass
+              st.markdown(metric("Path verdict", _aud["verdict"], "",
+                                 _tf_verdict_cls[_aud["verdict"]]),
+                          unsafe_allow_html=True)
+              st.markdown(f'<p class="hint">{_html.escape(_aud["summary"])}</p>',
+                          unsafe_allow_html=True)
+              for _w in _aud["weak_nodes"]:
+                  _fix = _w["fix"]
+                  _fixtxt = (f'add diagonal {" → ".join(_fix["suggested_diagonal"])} '
+                             f'({_fix["diagonal_length_mm"]:.0f} mm, size '
+                             f'{_fix["diagonal_size"]}, '
+                             f'{_fix["diagonal_mass_kg"]:.2f} kg, '
+                             f'${_fix["diagonal_cost_usd"]:.2f})'
+                             if "suggested_diagonal" in _fix else _fix["note"])
+                  st.markdown(f'<p class="hint">⚠ <b>{_html.escape(_w["node"])}'
+                              f'</b> ({_html.escape(_w["label"] or "unlabelled")}): '
+                              f'{_html.escape(_w["why"])} — fix: '
+                              f'{_html.escape(_fixtxt)}.</p>',
+                              unsafe_allow_html=True)
+              for _it in _aud["interrupted_tubes"]:
+                  st.markdown(f'<p class="hint">⚠ <b>{_html.escape(_it["tube"])}'
+                              f'</b>: {_html.escape(_it["why"])}.</p>',
+                              unsafe_allow_html=True)
+
+  # ---- 2 · tube sourcing trade study ------------------------------------ #
+  with st.expander("🧮 Tube sizing & sourcing trade study (Size C → Size B?)",
+                   expanded=False):
+      _g = _tf_frame()
+      if _g is None:
+          st.info("Load or build a frame in the audit panel above — the BOM "
+                  "and the consolidation trade run off the same frame graph.")
+      else:
+          _keys = sorted(_g.size_table)
+          _cc = st.columns(len(_keys))
+          _changed = False
+          for _i, _k in enumerate(_keys):
+              _sp = _g.size_table[_k]
+              _new = _cc[_i].number_input(
+                  f"Size {_k} ({_sp.od_mm:g}×{_sp.wall_mm:g}) $/ft",
+                  min_value=0.0, max_value=200.0,
+                  value=float(_sp.cost_per_ft_usd), step=0.25,
+                  key=f"tf_cost_{_k}",
+                  help=(_sp.sourcing_risk or "Judgement price — overwrite "
+                        "with the Motivo / CSULA-supplier quote."))
+              if abs(_new - _sp.cost_per_ft_usd) > 1e-9:
+                  _sp.cost_per_ft_usd = _new
+                  _sp.cost_is_estimate = False
+                  _changed = True
+          if _changed:
+              _tf_save(_g)
+
+          _bom = _g.bom_by_spec()
+          st.dataframe([{
+              "Size": _r["size"],
+              "OD×wall": f'{_r["od_mm"]:g}×{_r["wall_mm"]:g}',
+              "Tubes": _r["n_tubes"],
+              "Length (ft)": round(_r["length_ft"], 1),
+              "Mass (kg)": round(_r["mass_kg"], 2),
+              "Cost ($)": round(_r["cost_usd"], 2),
+              "$/ft": _r["cost_per_ft_usd"],
+              "Sourcing": _r["sourcing_risk"] or "—",
+              "Price": "estimate" if _r["cost_is_estimate"] else "quoted",
+          } for _r in _bom["by_spec"]], width="stretch", hide_index=True)
+          _tc = st.columns(3)
+          _tc[0].markdown(metric("Frame tube mass",
+                                 f'{_bom["total"]["mass_kg"]:.2f}', "kg"),
+                          unsafe_allow_html=True)
+          _tc[1].markdown(metric("Frame tube cost",
+                                 f'{_bom["total"]["cost_usd"]:.0f}', "$"),
+                          unsafe_allow_html=True)
+          _tc[2].markdown(metric("Tube count",
+                                 str(_bom["total"]["n_tubes"]), ""),
+                          unsafe_allow_html=True)
+
+          st.markdown("###### Consolidation what-if")
+          _sc = st.columns([1, 1, 1.2])
+          _f_key = _sc[0].selectbox("Re-spec every…", _keys,
+                                    index=_keys.index("C") if "C" in _keys else 0,
+                                    key="tf_cons_from")
+          _t_key = _sc[1].selectbox("…into", _keys,
+                                    index=_keys.index("B") if "B" in _keys else 0,
+                                    key="tf_cons_to")
+          if _f_key != _t_key:
+              _trade = _g.consolidate_spec(_f_key, _t_key)
+              _dm, _dc = _trade["delta_mass_kg"], _trade["delta_cost_usd"]
+              _sc[2].markdown(metric(
+                  f"{_f_key} → {_t_key} over {_trade['n_tubes']} tubes",
+                  f"{_dm:+.2f} kg · {_dc:+.0f} $", "",
+                  "warn" if _dm > 0 else "good"), unsafe_allow_html=True)
+              if _trade["rules_violations"]:
+                  st.error(f"{len(_trade['rules_violations'])} tube(s) would "
+                           "fall BELOW their member class minimum — this "
+                           "direction is not legal:")
+                  st.dataframe(_trade["rules_violations"], width="stretch",
+                               hide_index=True)
+              else:
+                  st.markdown(f'<p class="hint">{_html.escape(_trade["note"])}'
+                              '</p>', unsafe_allow_html=True)
+                  if st.button(f"Apply: re-spec all Size {_f_key} tubes to "
+                               f"{_t_key}", key="tf_cons_apply"):
+                      _g.apply_consolidation(_f_key, _t_key)
+                      _tf_save(_g)
+                      _do_rerun()
+
+          st.markdown("###### Alternative-tubing equivalency screen")
+          _ec = st.columns([1, 1, 1.6, 1])
+          _e_od = _ec[0].number_input("OD (mm)", 10.0, 60.0, 28.0, 0.1,
+                                      key="tf_eq_od")
+          _e_wl = _ec[1].number_input("Wall (mm)", 0.5, 5.0, 1.6, 0.05,
+                                      key="tf_eq_wall")
+          _e_cls = _ec[2].selectbox(
+              "Member class", list(tf_mod.MEMBER_CLASS_MIN_SIZE),
+              index=list(tf_mod.MEMBER_CLASS_MIN_SIZE).index("side_impact"),
+              format_func=lambda k: tf_mod.MEMBER_CLASS_LABELS[k],
+              key="tf_eq_cls")
+          _eq = tf_mod.equivalency_check(
+              tf_mod.TubeSpec("cand", _e_od, _e_wl), _e_cls, _g.size_table)
+          _ec[3].markdown(metric("Screens", "pass" if _eq["passes"] else "FAIL",
+                                 "", "good" if _eq["passes"] else "bad"),
+                          unsafe_allow_html=True)
+          st.markdown(
+              f'<p class="hint">vs class baseline: EI ratio '
+              f'<b>{_eq["EI_ratio"]:.2f}</b>, bending-strength ratio '
+              f'<b>{_eq["bending_strength_ratio"]:.2f}</b> (both must be ≥ 1), '
+              f'wall floor {_eq["wall_floor_mm"]:g} mm '
+              f'({"ok" if _eq["wall_ok"] else "VIOLATED"}), mass '
+              f'{_eq["mass_per_m_delta_kg"]:+.3f} kg/m. Pre-validation screen '
+              f'— the rulebook text decides.</p>', unsafe_allow_html=True)
+
+  # ---- 3 · panels & attachments (the four subteam briefs) ---------------- #
+  with st.expander("🔩 Panel & attachment planner — seat & harness · floor · "
+                   "firewall · aero panels", expanded=False):
+      _KINDS = [("aero", "Aero panel / bodywork"), ("floor", "Chassis floor"),
+                ("firewall", "Firewall"), ("seat", "Seat panel")]
+      _pk = st.radio("Panel", [k for k, _ in _KINDS],
+                     format_func=dict(_KINDS).get, horizontal=True,
+                     key="tf_panel_kind")
+      _pc1 = st.columns(4)
+      _p_w = _pc1[0].number_input("Width (mm)", 50.0, 3000.0, 900.0, 10.0,
+                                  key="tf_p_w")
+      _p_h = _pc1[1].number_input("Height (mm)", 50.0, 3000.0, 450.0, 10.0,
+                                  key="tf_p_h")
+      _p_t = _pc1[2].number_input("Thickness (mm)", 0.3, 15.0, 2.0, 0.1,
+                                  key="tf_p_t")
+      _p_mat = _pc1[3].selectbox("Material", list(tf_mod.PANEL_MATERIALS),
+                                 key="tf_p_mat")
+      _pc2 = st.columns(4)
+      _p_pitch = _pc2[0].number_input("Fastener pitch (mm)", 20.0, 1000.0,
+                                      150.0, 5.0, key="tf_p_pitch")
+      _p_v = _pc2[1].number_input("Top speed (km/h)", 0.0, 200.0, 110.0, 5.0,
+                                  key="tf_p_v",
+                                  help="Sets the aero pressure via q = ½ρv²·Cp "
+                                       "(Cp 1.2, conservative worst patch).")
+      _p_press = _pc2[2].number_input("…or pressure override (kPa)", 0.0, 50.0,
+                                      0.0, 0.1, key="tf_p_press",
+                                      help="0 = use the speed-derived q.")
+      _p_g = _pc2[3].number_input("Inertial g (vibration)", 0.0, 20.0, 3.0,
+                                  0.5, key="tf_p_g",
+                                  help="Screening judgement figure, not a "
+                                       "rulebook load.")
+      _plan = tf_mod.plan_panel_attachment(
+          _pk, _p_w, _p_h, _p_t, _p_mat, _p_pitch,
+          pressure_kPa=(_p_press if _p_press > 0 else None),
+          speed_kph=_p_v if _p_press <= 0 else None, g_load=_p_g)
+      _pm = st.columns(4)
+      _pm[0].markdown(metric("Fasteners", str(_plan.n_fasteners), ""),
+                      unsafe_allow_html=True)
+      _pm[1].markdown(metric("Load / fastener",
+                             f"{_plan.load_per_fastener_N:.0f}", "N"),
+                      unsafe_allow_html=True)
+      _pm[2].markdown(metric("Deflection between",
+                             f"{_plan.deflection_mm:.2f}", "mm",
+                             "good" if _plan.deflection_mm
+                             <= _plan.deflection_limit_mm else "bad"),
+                      unsafe_allow_html=True)
+      _pm[3].markdown(metric("Max stable pitch",
+                             f"{_plan.max_pitch_mm:.0f}" if
+                             np.isfinite(_plan.max_pitch_mm) else "∞", "mm",
+                             _tf_verdict_cls[_plan.verdict]),
+                      unsafe_allow_html=True)
+      st.markdown(f'<p class="hint">{_html.escape(_plan.notes)} Pressure used: '
+                  f'{_plan.pressure_kPa:.2f} kPa; panel mass '
+                  f'{_plan.panel_mass_kg:.2f} kg. <b>Max stable pitch</b> is '
+                  'aero\'s "how close together do the mounting points need to '
+                  'be" answered in millimetres.</p>', unsafe_allow_html=True)
+      st.dataframe([{
+          "Fastener": _o["name"],
+          "Quick-release": "yes" if _o["quick_release"] else "no",
+          "Capacity (N)": _o["capacity_N"],
+          "FoS": _o["fos"],
+          "Screens": "✓" if _o["ok"] else "✗",
+          "Note": _o["note"],
+      } for _o in _plan.options], width="stretch", hide_index=True)
+      st.markdown('<p class="hint">Capacities are typical published figures '
+                  '(judgement) — confirm against the vendor datasheet before '
+                  'manufacture.</p>', unsafe_allow_html=True)
+
+      st.markdown("###### Seat & harness — attachment loads")
+      _hc = st.columns(4)
+      _h_m = _hc[0].number_input("Driver + gear (kg)", 40.0, 150.0, 77.0, 1.0,
+                                 key="tf_h_m")
+      _h_g = _hc[1].number_input("Frontal decel (g)", 5.0, 40.0, 20.0, 1.0,
+                                 key="tf_h_g",
+                                 help="Screening judgement figure — the "
+                                      "rulebook sites and proves the mounts.")
+      _h_sa = _hc[2].number_input("Shoulder belt angle (°)", 0.0, 45.0, 10.0,
+                                  1.0, key="tf_h_sa")
+      _h_la = _hc[3].number_input("Lap belt angle (°)", 30.0, 80.0, 55.0, 1.0,
+                                  key="tf_h_la")
+      _har = tf_mod.harness_attachment_loads(
+          driver_mass_kg=_h_m, decel_g=_h_g,
+          shoulder_angle_deg=_h_sa, lap_angle_deg=_h_la)
+      st.dataframe([{
+          "Attachment": _p["point"], "Count": _p["n"],
+          "Belt tension (N)": round(_p["belt_tension_N"]),
+          "Mounts to": _p["mounts_to"],
+      } for _p in _har["points"]], width="stretch", hide_index=True)
+      st.markdown('<p class="hint">Drop each tension into the Brakes tab\'s '
+                  '<b>Bolt &amp; bracket FoS</b> screen as the bracket load '
+                  'P (tension, not shear) to size the tab and weld. '
+                  + _html.escape(_har["note"]) + '</p>',
+                  unsafe_allow_html=True)
+
+      _sc2 = st.columns(4)
+      _s_m = _sc2[0].number_input("Seat mass (kg)", 1.0, 20.0, 4.0, 0.5,
+                                  key="tf_s_m")
+      _s_n = _sc2[1].number_input("Seat mounts", 2, 8, 4, 1, key="tf_s_n")
+      _s_f = _sc2[2].selectbox("Seat fastener",
+                               [o["name"] for o in tf_mod.FASTENER_OPTIONS],
+                               index=3, key="tf_s_f")
+      _seat = tf_mod.seat_mount_check(_s_m, _h_m, n_mounts=int(_s_n),
+                                      fastener=_s_f)
+      _sc2[3].markdown(metric("Removable-seat verdict", _seat["verdict"], "",
+                              _tf_verdict_cls[_seat["verdict"]]),
+                       unsafe_allow_html=True)
+      st.markdown(f'<p class="hint">{_seat["load_per_mount_N"]:.0f} N per '
+                  f'mount at {_seat["resultant_g"]:.1f} g resultant. '
+                  + _html.escape(_seat["note"]) + '</p>',
+                  unsafe_allow_html=True)
 
   # ---- Node gusset — DXF export inputs -------------------------------- #
   # The Chassis Mesh & DXF tab draws a node gusset plate from these leg
