@@ -2,6 +2,34 @@
 
 Build: `0.12-analytics-hardened`
 
+## Latest round — 🧱 Frame Planner (Chassis / Team Fit tab)
+
+The 06/29 chassis meeting, computed. New module `suspension/tubeframe.py`
+models the space frame as a node/tube graph and answers the deck's three pain
+points: (1) **triangulation / load-path audit** — open bays (near-planar
+4-cycles with no diagonal), mid-span T-bone landings on straight members
+(hoop hosts exempt: continuous bent tube), and the verbatim slide-4 question
+"is there a continuously-triangulated load path from the main hoop support
+node to the lower side impact node?", every failure carrying its concrete fix
+(the missing diagonal with length / spec / mass / cost); (2) **Size-C sourcing
+trade** — per-spec BOM (length, mass, cost, sourcing risk, quoted-vs-estimate
+price), the one-click "re-spec every Size C into Size B" what-if with per-tube
+Δmass/Δcost and rules-minimum enforcement, plus an alternative-tubing
+equivalency screen (E·I and bending strength must not decrease, absolute wall
+floors respected); (3) **panel & attachment planner** — per-fastener load,
+strip deflection between fasteners, the maximum stable fastener pitch (aero's
+"how close together" answered in mm), quick-release fastener family screening,
+harness per-point loads shaped for the bolt & bracket FoS screen, and the
+removable-seat mount verdict. UI lives at the top of the chassis Team Fit tab
+behind three expanders; the 3D wireframe renders the whole frame as three
+None-separated Scatter3d line traces + one node trace (constant trace count,
+no per-tube traces, so no rendering lag), untriangulated bays vivid red,
+interrupted members amber, suggested diagonals dashed red, weak nodes red.
+Demo frame reproduces slide 4's exact defects out of the box. Rules tables
+labelled with their transcription year; fastener capacities and g-cases
+labelled judgement. Tests in `tests/test_tubeframe.py` (16); usage in
+`FRAME_PLANNER_USAGE.md`; demo `demo_frame_planner.py`.
+
 ## Latest round — 🩺 PCB Doctor (Electronics tab)
 
 The board-check panel screens *declared* traces; the new PCB Doctor screens the
