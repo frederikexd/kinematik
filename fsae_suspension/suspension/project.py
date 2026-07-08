@@ -109,44 +109,6 @@ class Note:
             self.seen_by = {}
 
 
-@dataclass
-class CADFile:
-    """
-    One entry in the Team CAD library — a shared SolidWorks/STEP/STL/DXF/PNG
-    file (or a link to a big assembly that's too large to embed).
-
-    The point is the thing every team loses: "where is everyone else's CAD?"
-    A senior's SLDASM lives on their laptop and vanishes at graduation. Here a
-    file is published once, tagged by subsystem and uploader, and everyone can
-    browse/filter/download it from the shared project store — so next year finds
-    the geometry, not a dead Google-Drive link.
-
-    Storage: small files are embedded as base64 in `data_b64` (kept under a size
-    cap so the whole project document stays sane); large assemblies are shared
-    as a `link` instead. Exactly one of the two is expected to be set.
-    """
-    name: str                       # original filename, e.g. "front_upright.SLDPRT"
-    subsystem: str = "general"      # tag: suspension, chassis, aero, ev, SES, ...
-    uploader: str = ""              # who published it
-    kind: str = "file"              # "file" (embedded) | "link" (external URL)
-    data_b64: str = ""              # base64 payload when kind == "file"
-    link: str = ""                  # URL when kind == "link"
-    size_bytes: int = 0
-    note: str = ""
-    ts: str = ""
-    id: str = ""
-
-    def __post_init__(self):
-        if not self.ts:
-            self.ts = _dt.datetime.now().isoformat(timespec="seconds")
-        if not self.id:
-            self.id = _dt.datetime.now().strftime("%Y%m%d%H%M%S%f")
-
-    @property
-    def ext(self) -> str:
-        return os.path.splitext(self.name)[1].lower().lstrip(".")
-
-
 # --------------------------------------------------------------------------- #
 #  Storage backends — where the project memory actually lives
 # --------------------------------------------------------------------------- #
@@ -162,6 +124,15 @@ class JSONFileBackend:
             with open(self.path) as f:
                 return json.load(f)
         return {}
+
+    def read_version(self):
+        """Cheap change-probe for polling: the file's mtime as a string, without
+        parsing the JSON. Lets a poll skip the full read when nothing changed.
+        Returns None if the file doesn't exist yet. Never raises."""
+        try:
+            return str(os.path.getmtime(self.path))
+        except OSError:
+            return None
 
     def write(self, payload: dict):
         with open(self.path, "w") as f:
@@ -194,6 +165,25 @@ class SupabaseBackend:
                 .select("data").eq("id", self.project_id).execute())
         rows = resp.data or []
         return rows[0]["data"] if rows else {}
+
+    def read_version(self):
+        """Cheap change-probe for polling: pull ONLY the `updated` timestamp out
+        of the JSON row instead of the whole project blob. On Postgres this is a
+        tiny scalar select (`data->>'updated'`) rather than transferring the full
+        document every poll. Returns None on any error so the caller falls back to
+        a full read rather than assuming 'no change'."""
+        try:
+            resp = (self.client.table(self.TABLE)
+                    .select("data->>updated")
+                    .eq("id", self.project_id).execute())
+            rows = resp.data or []
+            if not rows:
+                return None
+            # PostgREST returns the aliased column; be tolerant of its key name.
+            row = rows[0]
+            return row.get("updated") or next(iter(row.values()), None)
+        except Exception:
+            return None
 
     def write(self, payload: dict):
         self.client.table(self.TABLE).upsert(
@@ -281,7 +271,6 @@ class ProjectStore:
         self.weights: list[WeightItem] = []
         self.decisions: list[Decision] = []
         self.notes: list[Note] = []
-        self.cad_files: list[CADFile] = []
         # Geometric mount-point / keep-out ledger (lazy import to avoid a hard
         # numpy dependency for callers that only touch weights/decisions/notes).
         # Defensive: never let an optional import failure leave the store without
@@ -329,7 +318,6 @@ class ProjectStore:
             "weights": [asdict(w) for w in self.weights],
             "decisions": [asdict(x) for x in self.decisions],
             "notes": [asdict(n) for n in self.notes],
-            "cad_files": [asdict(c) for c in self.cad_files],
             "geometry": self.geometry.as_dict() if self.geometry else {},
             "board": self.board.as_dict() if self.board else {},
             "harness": self.harness.as_dict() if getattr(self, "harness", None) else {},
@@ -346,7 +334,6 @@ class ProjectStore:
         self.weights = [WeightItem(**w) for w in d.get("weights", [])]
         self.decisions = [Decision(**x) for x in d.get("decisions", [])]
         self.notes = [Note(**n) for n in d.get("notes", [])]
-        self.cad_files = [CADFile(**c) for c in d.get("cad_files", [])]
         geom = d.get("geometry")
         if geom:
             from .mountpoints import GeometryLedger
@@ -388,6 +375,21 @@ class ProjectStore:
             self.save_error = f"Could not write project data: {e}"
             return False
 
+    def read_version(self):
+        """Cheap 'has anything changed?' probe for the notification poller.
+
+        Delegates to the backend's lightweight version read (file mtime for the
+        JSON backend, a scalar `updated` select for Supabase). If the backend
+        doesn't implement one, returns None, which callers treat as 'unknown —
+        do a full read to be safe'. Never raises."""
+        rv = getattr(self.backend, "read_version", None)
+        if callable(rv):
+            try:
+                return rv()
+            except Exception:
+                return None
+        return None
+
     def as_json(self) -> str:
         return json.dumps({
             "team_name": self.team_name, "season": self.season,
@@ -395,7 +397,6 @@ class ProjectStore:
             "weights": [asdict(w) for w in self.weights],
             "decisions": [asdict(x) for x in self.decisions],
             "notes": [asdict(n) for n in self.notes],
-            "cad_files": [asdict(c) for c in self.cad_files],
             "geometry": self.geometry.as_dict() if getattr(self, "geometry", None) else {},
             "board": self.board.as_dict() if getattr(self, "board", None) else {},
             "harness": self.harness.as_dict() if getattr(self, "harness", None) else {},
@@ -452,31 +453,6 @@ class ProjectStore:
 
     def add_note(self, note: Note):
         self.notes.append(note)
-
-    # ----------------------- CAD library ------------------------------- #
-    def add_cad_file(self, cad: CADFile):
-        """Publish a file to the shared Team CAD library."""
-        self.cad_files.append(cad)
-
-    def remove_cad_file(self, file_id: str) -> bool:
-        """Remove a library entry by id. Returns True if one was removed."""
-        n0 = len(self.cad_files)
-        self.cad_files = [c for c in self.cad_files if c.id != file_id]
-        return len(self.cad_files) != n0
-
-    def cad_files_for(self, subsystem: str | None = None) -> list[CADFile]:
-        """Library entries, newest-first, optionally filtered by subsystem tag
-        (case-insensitive). subsystem=None returns everything."""
-        out = self.cad_files
-        if subsystem:
-            s = subsystem.strip().lower()
-            out = [c for c in out if (c.subsystem or "").lower() == s]
-        return sorted(out, key=lambda c: c.ts, reverse=True)
-
-    def cad_subsystems(self) -> list[str]:
-        """Unique, sorted subsystem tags present in the library."""
-        return sorted({(c.subsystem or "general").strip()
-                       for c in self.cad_files if (c.subsystem or "").strip()})
 
     def resolve_note(self, note_id: str):
         for n in self.notes:
