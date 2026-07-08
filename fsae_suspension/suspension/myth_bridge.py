@@ -136,6 +136,14 @@ def _bridge_check(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
     ev = _ENGINE.check(claim.text)
     if ev.confidence < _CONFIDENCE_FLOOR or ev.manual_review:
         return None
+    if ev.confidence_tier == "fallback":
+        # "General physics law, no specific edge" — a plausibility guess, not a
+        # checked relationship. Decline so the claim falls through to the
+        # general/coupling reasoner, which answers from the encoded coupling
+        # graph, names the physical path, and appends the "Where to check"
+        # sources block. Surfacing the weak guess here would preempt that
+        # stronger, sourced answer (and broke the myth-general contract tests).
+        return None
 
     verdict = _VERDICT_MAP.get(ev.verdict, Verdict.UNKNOWN)
     # surface the confidence + computed value in provenance, which the current UI
