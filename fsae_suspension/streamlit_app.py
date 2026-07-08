@@ -22846,7 +22846,7 @@ with tab_analytics:
         _h = r0.get("total_hours_saved") or 0
         _rate = 65.0
         _d = _h * _rate
-        _val = r0.get("total_value_usd") or _d
+        _val = _d
         m1, m2, m3 = st.columns(3)
         _ax_metric(m1, "Hours saved", f"{_h:,.0f}", "across all workflows",
                    "var(--cyan)")
