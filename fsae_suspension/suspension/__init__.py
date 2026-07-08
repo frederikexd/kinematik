@@ -409,6 +409,9 @@ _FROM = {
     "size_meets_minimum":   ("tubeframe", "size_meets_minimum"),
     # ---------- adapter ----------
     "GenericKinematics":    ("adapter", "GenericKinematics"),
+    # ---------- generic (topology-agnostic) compliance ----------
+    "solve_generic_compliance": ("generic_compliance", "solve_generic_compliance"),
+    "GenericComplianceResult":  ("generic_compliance", "GenericComplianceResult"),
 }
 
 # ---------------------------------------------------------------------------
@@ -484,7 +487,9 @@ __all__ = [
     "wheel_load_from_corner", "MEMBERS",
     "MemberStiffness", "CompliantResult", "CompliantCorner", "corner_wheel_load",
     "JointCompliance",
-    "flex", "loadpath", "compliance", "joints",
+    # generic (topology-agnostic) compliance
+    "solve_generic_compliance", "GenericComplianceResult",
+    "flex", "loadpath", "compliance", "joints", "generic_compliance",
     # transient DAE solver
     "TransientSolver", "TransientParams", "TransientResult", "SettlingResult",
     "DriverInput", "RoadInput",
