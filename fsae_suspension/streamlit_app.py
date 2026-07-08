@@ -16879,7 +16879,7 @@ with tab6:
   st.markdown('<p class="hint">Any Elbee subteam: load the shared chassis once as '
               'the reference, then load your part (caliper, radiator, battery box, '
               'wing mount, ECU tray — anything). You get the same collision / tight / '
-              'clear verdict suspension gets. <b>We can\'t out-spend USC, so we '
+              'clear verdict suspension gets. <b>If you can\'t out-spend another team, '
               'out-integrate them</b> — catch the interference here before the first '
               'cut, because rework is the tax for not integrating in CAD.</p>',
               unsafe_allow_html=True)
