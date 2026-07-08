@@ -276,20 +276,9 @@ def require_workspace(st) -> Optional[WorkspaceContext]:
     When Supabase IS configured but the user isn't signed in / hasn't picked a
     workspace, this renders the sign-in or picker UI and calls st.stop() so the
     rest of the app never renders another tenant's (or no tenant's) data.
+
+    NOTE: login screen is currently disabled — always runs in local single-user
+    mode regardless of Supabase configuration.
     """
-    auth = _get_auth(st)
-    if auth is None:
-        # No cloud backend configured — legacy local mode, no gate.
-        return None
-
-    session = _restore_session(st, auth)
-    if session is None:
-        _render_sign_in(st, auth)
-        st.stop()
-
-    ctx = _render_workspace_picker(st, auth, session)
-    if ctx is None:
-        st.stop()
-
-    st.session_state[_SS_CTX] = ctx
-    return ctx
+    # Login screen disabled: skip the gate and run in local single-user mode.
+    return None
