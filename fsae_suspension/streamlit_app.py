@@ -181,6 +181,11 @@ for _sym in ("SuspensionKinematics", "Hardpoints", "VehicleDynamics",
              "load_flex_body", "corner_wheel_load", "WheelLoad",
              "GenericKinematics", "list_templates"):
     globals()[_sym] = _LazySymbol("suspension", _sym)
+# Import solve_generic_compliance directly from its submodule to avoid
+# the suspension package __getattr__ chain failing under Streamlit hot-reload
+# when sys.modules has a stale suspension module state.
+solve_generic_compliance = _LazySymbol("suspension.generic_compliance",
+                                       "solve_generic_compliance")
 topo_example = _LazySymbol("suspension", "example")
 for _sym in ("ScaleSpec", "SimilitudePlan", "ToleranceBudget",
              "MountAlignment", "ScaledRunPlan"):
@@ -1062,6 +1067,54 @@ def get_store():
     return cached
 
 
+# --------------------------------------------------------------------------- #
+#  Store-agnostic CAD-library accessors.
+#
+#  The Team CAD library reads the shared store via cad_files_for()/cad_subsystems().
+#  Those methods live on ProjectStore — but on a deployment where project.py is an
+#  older revision than this app file, the method may be ABSENT, and calling it at
+#  module render time raises a redacted AttributeError that takes the whole page
+#  down (this exact crash: `_cad_store.cad_files_for(None)`). These helpers make
+#  the render path independent of the store's method surface: they read the raw
+#  `cad_files` list defensively and do the filtering/sorting here, so the CAD
+#  library degrades to "empty" rather than crashing when the store is stale or
+#  half-built. Behaviour matches ProjectStore.cad_files_for / .cad_subsystems.
+# --------------------------------------------------------------------------- #
+def _store_cad_files(store, subsystem=None):
+    """Library entries newest-first, optionally filtered by subsystem tag
+    (case-insensitive). Works whether or not the store defines cad_files_for.
+    Never raises."""
+    # Prefer the store's own method when it exists and works (keeps a single
+    # source of truth on stores that have it); fall back to reading the list.
+    meth = getattr(store, "cad_files_for", None)
+    if callable(meth):
+        try:
+            return meth(subsystem)
+        except Exception:
+            pass
+    files = list(getattr(store, "cad_files", None) or [])
+    if subsystem:
+        s = str(subsystem).strip().lower()
+        files = [c for c in files if (getattr(c, "subsystem", "") or "").lower() == s]
+    return sorted(files, key=lambda c: getattr(c, "ts", ""), reverse=True)
+
+
+def _store_cad_subsystems(store):
+    """Unique, sorted subsystem tags in the library. Never raises."""
+    meth = getattr(store, "cad_subsystems", None)
+    if callable(meth):
+        try:
+            return meth()
+        except Exception:
+            pass
+    tags = set()
+    for c in (getattr(store, "cad_files", None) or []):
+        t = (getattr(c, "subsystem", "") or "").strip()
+        if t:
+            tags.add(t)
+    return sorted(tags)
+
+
 def save_store(store):
     """Persist the store and surface a failure instead of swallowing it. Returns
     True on success. On an ephemeral host the in-memory store (cached in
@@ -1160,12 +1213,29 @@ def log_decision_now(team, title, rationale, author="auto"):
 #  and bumps an unread badge on the LEAD NOTES tab. So one lead posting a note
 #  notifies everyone else who has the platform open.
 # --------------------------------------------------------------------------- #
-NOTE_POLL_SECONDS = 10
+# Poll cadence for cross-lead note delivery. Kept low (2s) because the common
+# case is now a CHEAP probe: each tick first asks the backend only "what version
+# are you at?" (file mtime locally, a scalar `updated` select on Supabase) and
+# does the expensive full project read ONLY when that version actually moved.
+NOTE_POLL_SECONDS = 2
+
+
+def _peek_notes_version():
+    """Cheap probe: the shared store's current version tag, without loading the
+    whole project. None means 'couldn't tell' -> caller should do a full read
+    rather than assume nothing changed. Never raises. Tenant-aware via _make_store."""
+    try:
+        return _make_store().read_version()
+    except Exception:
+        return None
 
 
 def _load_notes_from_disk():
     """Read notes straight from the shared backend, bypassing the per-session
-    cached store, so we see what *other* sessions have written. Never raises."""
+    cached store, so we see what *other* sessions have written. Never raises.
+
+    EXPENSIVE path (full store construction); poll_note_notifications gates it
+    behind the cheap version probe so it only runs when something changed."""
     try:
         fresh = _make_store()
         return list(fresh.notes)
@@ -1199,7 +1269,19 @@ def poll_note_notifications():
     run we seed the baseline silently (so a brand-new visitor isn't flooded with
     toasts for the whole history). After that, any unseen note that wasn't
     authored in this session triggers a toast and increments the unread badge.
+
+    Cheap-poll optimisation: before the expensive full read, ask the backend only
+    for its version tag. If it matches last tick's, nothing changed -> skip. We
+    fall through to a full read whenever the probe is None (backend can't tell) or
+    the version moved, so we can never MISS a note by trusting a stale probe.
     """
+    _ver = _peek_notes_version()
+    _last_ver = st.session_state.get("_notes_version")
+    _baseline_done = st.session_state.get("_notes_seen_ids") is not None
+    if (_ver is not None and _baseline_done and _ver == _last_ver):
+        return
+    st.session_state["_notes_version"] = _ver
+
     notes = _load_notes_from_disk()
     seen = st.session_state.get("_notes_seen_ids")
     my_session = st.session_state.get("_my_posted_note_ids", set())
@@ -1289,16 +1371,28 @@ with st.sidebar:
         "from_links": "Experimental / free-form",
     }
     _topo_keys = list(_TOPO_LABELS.keys())
+    # Bind the selectbox straight to session_state via `key` and let Streamlit own
+    # the value. The previous pattern (index= read from session_state + a manual
+    # `st.session_state.topology = topo_choice` write, with no key) lagged a run
+    # behind: the widget's own remembered value and the manually-written value
+    # fought each other, so the picked topology never reached the solver or the
+    # 3D model on the run you clicked. Seed the default once, then read the key.
+    # A loaded project stages its topology here (it can't write the widget key
+    # after the widget exists). Apply it before the selectbox is built.
+    _pending_topo = st.session_state.pop("_pending_topology", None)
+    if _pending_topo in _topo_keys:
+        st.session_state.topology = _pending_topo
+    if st.session_state.get("topology") not in _topo_keys:
+        st.session_state.topology = "double_wishbone"
     topo_choice = st.selectbox(
         "Suspension topology",
         _topo_keys,
         format_func=lambda k: _TOPO_LABELS.get(k, k),
-        index=_topo_keys.index(st.session_state.get("topology", "double_wishbone")),
+        key="topology",
         help="Double-wishbone exposes the full live hardpoint editor. Every other "
              "architecture is solved by the architecture-agnostic multibody engine "
              "from a representative parameter set and feeds the same vehicle-level "
              "balance analysis.")
-    st.session_state.topology = topo_choice
     if topo_choice != "double_wishbone":
         st.caption("Agnostic engine · this topology drives the same RC / anti-dive / "
                    "balance pipeline as the wishbone path.")
@@ -1857,10 +1951,9 @@ with st.expander("👋 New here? Your 30-second tour",
    shared tabs.
 2. **You only see your tools.** After you pick, the tabs are grouped into a few
    simple **categories** — 🧪 Testing & Simulation, 🛠️ Design & Sizing,
-   ✅ Checks & Integration, 🔮 Oracle Engine, 📄 Documentation, 📊 Data & Cost.
-   Open a category, then a tab inside it. You see **only your subteam's tabs plus
-   the shared ones** (Integration, Validation, Analytics, Registry, Notes, 3D
-   Model) — not all 30.
+   ✅ Checks & Integration, 📄 Documentation, 📊 Data & Cost. Open a category,
+   then a tab inside it. You see **only your subteam's tabs plus the shared ones**
+   (Integration, Validation, Analytics, Registry, Notes, 3D Model) — not all 25.
 3. **Declare your numbers once** in **✅ Checks & Integration ▸ 🔗 Integration** —
    mass, CG, envelope, heat, power, downforce. They flow into the 3D model, lap
    sim, cost BOM and every cross-team check automatically. You never type the
@@ -1918,27 +2011,6 @@ is checked so it imports as one clean closed contour — no manual geometry entr
 
 ---
 
-### 🔮 The Oracle Engine (five unified pillars)
-
-A new **🔮 Oracle Engine** category pulls five end-to-end tools into one place —
-they take the same session hardpoints and rulebooks the rest of the studio uses:
-
-- **🧠 Inverse Design** — hand it a 2-D track path and it searches for the
-  hardpoint geometry that minimises predicted lap time (penalising tyre slip and
-  roll-centre migration), then hands the optimised coordinates back to Kinematics.
-- **📡 Digital Twin** — a live track-to-cloud WebSocket receiver (IMU / strain /
-  linear-pot) that keeps a real-time vehicle-state vector and returns per-corner
-  damper-click recommendations; the tab includes an offline replay.
-- **🕸️ Spatial Co-Author** — multiple sub-teams push geometry into the same space;
-  a 3-D R-tree finds &lt;2 mm conflicts and auto-morphs the wiring spline clear.
-- **🏭 DFM & BOM** — upload a machined-part mesh; it checks CNC tool accessibility
-  from the face normals, matches material stock, and upserts the global BOM table.
-- **🚦 Compliance Gate** — the save gate: a state save is only allowed if the car
-  passes every rule (scalar, formula, *and* cockpit/template geometry); a
-  violation rejects the save and returns the exact failure delta.
-
----
-
 Suspension topology and the live hardpoint editor live in the **sidebar** on the
 left. Want every tab described? It's in the project README.
     """)
@@ -1985,17 +2057,6 @@ _TAB_META = {
     "pcb":         ("🔌", "Electronics (PCB)"),
     "tractive":    ("⚡", "Tractive Safety"),
     "dfmea":       ("🧯", "DFMEA"),
-    "apdl_gen":    ("🔩", "APDL Auto-Gen"),
-    "clash_det":   ("⚠️", "Clearance & Clash"),
-    "ik_solver":   ("🎯", "IK Target Solver"),
-    "reg_parser":  ("📋", "Compliance Parser"),
-    "diff_engine": ("🧾", "Config Diff Engine"),
-    # --- Oracle Engine (5 unified pillars) ------------------------------- #
-    "oracle_inverse": ("🧠", "Inverse Design"),
-    "oracle_twin":    ("📡", "Digital Twin"),
-    "oracle_spatial": ("🕸️", "Spatial Co-Author"),
-    "oracle_dfm":     ("🏭", "DFM & BOM"),
-    "oracle_gate":    ("🚦", "Compliance Gate"),
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
@@ -2019,13 +2080,7 @@ _TAB_CATEGORIES = [
     ("design",   "🛠️", "Design & Sizing",
      ["brakes", "accum", "pcb", "compliance", "teamfit", "model3d"]),
     ("checks",   "✅", "Checks & Integration",
-     ["integration", "validation", "dfmea", "tractive",
-      "clash_det", "reg_parser"]),
-    ("simulation", "🔬", "Simulation Pillars",
-     ["apdl_gen", "ik_solver", "diff_engine"]),
-    ("oracle", "🔮", "Oracle Engine",
-     ["oracle_inverse", "oracle_twin", "oracle_spatial",
-      "oracle_dfm", "oracle_gate"]),
+     ["integration", "validation", "dfmea", "tractive"]),
     ("docs",     "📄", "Documentation",
      ["docs", "notes", "weight"]),
     ("data",     "📊", "Data & Cost",
@@ -2056,24 +2111,19 @@ _SHARED_IDS = ["model3d", "integration", "registry", "docs", "notes", "weight", 
 # to see how brake balance plays out on track).
 _ROLE_TABS = {
     "suspension": ["kinematics", "roll", "compliance", "tire",
-                   "setup", "laptime", "ik_solver",
-                   "oracle_inverse", "oracle_twin", "oracle_spatial",
-                   "oracle_gate"],
-    "aero":       ["aero", "laptime", "setup", "apdl_gen"],
-    "powertrain": ["ev", "laptime", "setup", "dfmea", "clash_det",
-                   "oracle_dfm"],
-    "electrics":  ["accum", "ev", "laptime", "pcb", "tractive", "dfmea",
-                   "clash_det"],
+                   "setup", "laptime"],
+    "aero":       ["aero", "laptime", "setup"],
+    "powertrain": ["ev", "laptime", "setup", "dfmea"],
+    "electrics":  ["accum", "ev", "laptime", "pcb", "tractive", "dfmea"],
     # cooling's radiator sizing / CAD import lives in the EV tab; it also owns
     # the DFMEA + tractive (precharge/PCM) surfaces.
-    "cooling":    ["ev", "dfmea", "tractive", "clash_det", "reg_parser"],
+    "cooling":    ["ev", "dfmea", "tractive"],
     # data-acquisition lives in the Electronics/PCB tab.
-    "dataacq":    ["pcb", "dfmea", "diff_engine"],
+    "dataacq":    ["pcb", "dfmea"],
     # brakes wants Track Testing (lap time + GGV) to see brake balance on track,
     # plus tyre grip.
-    "brakes":     ["brakes", "tire", "laptime", "reg_parser"],
-    "chassis":    ["teamfit", "compliance", "apdl_gen",
-                   "oracle_spatial", "oracle_dfm", "oracle_gate"],
+    "brakes":     ["brakes", "tire", "laptime"],
+    "chassis":    ["teamfit", "compliance"],
     "cost":       ["cost"],
     "everyone":   [],   # just the shared spine
 }
@@ -5457,27 +5507,57 @@ def render_mesh_and_dxf_expander(subsystem_key, *, key_prefix,
             st.caption(f"Mesh/DXF export unavailable: {_me}")
 
 
-def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
-    """Bring the sidebar hardpoint editor's live numbers INTO the suspension tab.
+# Per-topology definition of the upright/carrier mount points — the outboard
+# joints where the links meet the upright. These are the points the mount-plate
+# export cares about: the PCD is the span across them and the bolt count is how
+# many there are. The wishbone path stays on the editable `hp` dict; every other
+# architecture reads its live points from the solved mechanism (kin.named_points),
+# so the panel now tracks the selected topology instead of always showing
+# wishbone ball-joints. Each entry: (point-name-in-mechanism, human label,
+# is_optional). The first two non-optional points define the PCD span.
+_UPRIGHT_MOUNTS = {
+    "macpherson_strut": [("lo", "Lower ball joint", False),
+                         ("sl", "Strut lower mount", False),
+                         ("tro", "Tie-rod outer", True)],
+    "multilink": [("out0", "Lower-fore link end", False),
+                  ("out2", "Upper-camber link end", False),
+                  ("out4", "Toe-link end", True)],
+    "trailing_arm": [("hub", "Arm-to-hub joint", False),
+                     ("wc", "Wheel centre", False)],
+    "semi_trailing_arm": [("hub", "Arm-to-hub joint", False),
+                          ("wc", "Wheel centre", False)],
+    "solid_axle": [("lout0", "Lower link end", False),
+                   ("lout2", "Upper link end", False),
+                   ("lat", "Lateral-device end", True)],
+    "twist_beam": [("hubL", "Trailing-arm hub", False),
+                   ("beamL", "Beam attach", False)],
+    "truck_steer_linkage": [("sp", "Spindle joint", False),
+                            ("sa", "Steering-arm joint", False),
+                            ("tri", "Tie-rod inner", True)],
+    "from_links": [("upper_outer", "Upper outer", False),
+                   ("lower_outer", "Lower outer", False),
+                   ("tie_rod_outer", "Tie-rod outer", True)],
+}
 
-    Suspension is the one subsystem whose export inputs (the ball-joint
-    hardpoints) live in the left sidebar, not in the tab body — which is exactly
+
+def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
+    """Bring the live hardpoint numbers INTO the suspension tab, for ANY topology.
+
+    Suspension is the one subsystem whose export inputs (the outboard mount
+    joints) live in the left sidebar, not in the tab body — which is exactly
     what confused members hunting for 'where the numbers come from'. This panel
-    closes that gap: it shows the actual upper/lower/tie-rod points and the PCD +
-    bolt count they derive (the very numbers the DXF export reads), flags any
-    that are missing or the wrong topology, and points plainly to the sidebar
-    editor. It reads state only — the sidebar remains the single place you edit —
-    so there's one source of truth, mirrored where people look first."""
-    hp = st.session_state.get("hp", {}) or {}
+    closes that gap: it shows the actual upright-mount points and the PCD + bolt
+    count they derive (the very numbers the DXF export reads), and points plainly
+    to the sidebar editor. On a double-wishbone it reads the editable `hp` dict;
+    on every other architecture it reads the solved mechanism's live points so
+    the tiles, PCD and bolt count follow the selected topology. It reads state
+    only — the sidebar remains the single place you edit — so there's one source
+    of truth, mirrored where people look first."""
     topo = st.session_state.get("topology", "double_wishbone")
     is_wb = (topo == "double_wishbone")
 
-    _pts = [("upper_outer", "Upper ball joint"),
-            ("lower_outer", "Lower ball joint"),
-            ("tie_rod_outer", "Tie-rod outer")]
-
     def _fmt(v):
-        if not v or len(v) < 3:
+        if v is None or len(v) < 3:
             return None
         try:
             xs = [units_mod.from_metric(float(c), "mm") for c in v[:3]]
@@ -5486,36 +5566,76 @@ def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
         fmt = "%.1f" if _U_LEN == "in" else "%.0f"
         return "(" + ", ".join(fmt % c for c in xs) + f") {_U_LEN}"
 
-    # Build the point tiles + track which of the two PCD-defining joints exist.
+    # Resolve the mount-point spec + a coordinate lookup for the active topology.
+    if is_wb:
+        _spec = [("upper_outer", "Upper ball joint", False),
+                 ("lower_outer", "Lower ball joint", False),
+                 ("tie_rod_outer", "Tie-rod outer", True)]
+        _hp = st.session_state.get("hp", {}) or {}
+        def _coord(name):
+            return _hp.get(name)
+        _src_txt = "SIDEBAR ▸ HARDPOINT EDITOR"
+    else:
+        _spec = _UPRIGHT_MOUNTS.get(topo)
+        _named = {}
+        try:
+            _kin = globals().get("kin")
+            if _kin is not None and hasattr(_kin, "named_points"):
+                _named = {n: [float(c) for c in np.asarray(p, float).ravel()]
+                          for n, p in _kin.named_points().items()}
+        except Exception:
+            _named = {}
+        def _coord(name):
+            return _named.get(name)
+        _src_txt = f"SIDEBAR ▸ {_TOPO_LABELS.get(topo, topo).upper()}"
+
+    _title_arch = ("from your hardpoints" if is_wb
+                   else _TOPO_LABELS.get(topo, topo))
+
+    # If we have no spec (unknown topology) or no live points, degrade gracefully.
+    if not _spec:
+        st.markdown(
+            f'''
+<div class="hp-card">
+  <div class="hp-top">
+    <span class="hp-ttl">📐 Upright mount — {_title_arch}</span>
+    <span class="hp-src">{_src_txt} · {_U_LEN}</span>
+  </div>
+  <div class="hp-note">This architecture exports from a representative mount
+  set. Edit its geometry in the left sidebar under <b>Suspension geometry
+  (hardpoint editor)</b>.</div>
+</div>
+''',
+            unsafe_allow_html=True)
+        return
+
+    # Build the point tiles + collect the two PCD-defining (non-optional) joints.
     _tiles = ""
-    _have_uo = _have_lo = False
-    for key, label in _pts:
-        disp = _fmt(hp.get(key))
-        if key == "upper_outer":
-            _have_uo = disp is not None
-        if key == "lower_outer":
-            _have_lo = disp is not None
+    _pcd_pts = []
+    for name, label, optional in _spec:
+        v = _coord(name)
+        disp = _fmt(v)
         if disp is None:
-            _optional = (key == "tie_rod_outer")
-            _txt = "not set" + (" (optional)" if _optional else "")
+            _txt = "not set" + (" (optional)" if optional else "")
             _tiles += (f'<div class="hp-pt miss"><div class="l">{label}</div>'
                        f'<div class="v">{_txt}</div></div>')
         else:
             _tiles += (f'<div class="hp-pt"><div class="l">{label}</div>'
                        f'<div class="v">{disp}</div></div>')
+            if not optional and len(_pcd_pts) < 2:
+                _pcd_pts.append(v)
 
-    # Derived numbers the export actually reads (span → PCD, tie-rod → 3rd bolt).
+    # Derived numbers the export reads: span across the two primary mount joints
+    # → PCD; total present mount points → bolt count.
     _pcd = None
-    _uo, _lo = hp.get("upper_outer"), hp.get("lower_outer")
-    if _have_uo and _have_lo:
+    if len(_pcd_pts) == 2:
         try:
-            _span = ((_uo[0]-_lo[0])**2 + (_uo[1]-_lo[1])**2
-                     + (_uo[2]-_lo[2])**2) ** 0.5
+            a, b = _pcd_pts[0], _pcd_pts[1]
+            _span = ((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2) ** 0.5
             _pcd = units_mod.from_metric(float(_span), "mm")
         except Exception:
             _pcd = None
-    _tro = hp.get("tie_rod_outer")
-    _nb = 3 if (_tro and len(_tro) >= 3) else 2
+    _nb = sum(1 for name, _lbl, _opt in _spec if _coord(name) is not None)
 
     _pcd_fmt = "%.1f" if _U_LEN == "in" else "%.0f"
     _pcd_txt = (f'{_pcd_fmt % _pcd} {_U_LEN}' if _pcd is not None else "—")
@@ -5530,17 +5650,17 @@ def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
         f'</div>')
 
     # Status note: name the exact next action, in the sidebar, where it happens.
-    if not is_wb:
-        _note = ('<div class="hp-note">The full ball-joint editor shows on a '
-                 '<b>double-wishbone</b> topology. Open the left sidebar and set '
-                 '<b>Suspension topology → Double wishbone</b> to edit these '
-                 'points. Other topologies still export from a representative '
-                 'set.</div>')
-    elif _pcd is None:
-        _note = ('<div class="hp-note">Set the <b>upper</b> and <b>lower ball '
-                 'joints</b> to define the mount PCD. Edit them in the left '
-                 'sidebar under <b>Suspension geometry (hardpoint editor) → '
-                 'Pickup coordinates</b>.</div>')
+    if _pcd is None:
+        if is_wb:
+            _note = ('<div class="hp-note">Set the <b>upper</b> and <b>lower ball '
+                     'joints</b> to define the mount PCD. Edit them in the left '
+                     'sidebar under <b>Suspension geometry (hardpoint editor) → '
+                     'Pickup coordinates</b>.</div>')
+        else:
+            _note = ('<div class="hp-note">Move the outboard mount points in the '
+                     'left sidebar under <b>Suspension geometry (hardpoint '
+                     'editor)</b> to define the mount PCD for this '
+                     'architecture.</div>')
     else:
         _note = ('<div class="hp-note"><span class="hp-here">✓ feeding the '
                  'export</span> &nbsp;These are the numbers the Mesh &amp; DXF '
@@ -5552,8 +5672,8 @@ def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
         f'''
 <div class="hp-card">
   <div class="hp-top">
-    <span class="hp-ttl">📐 Upright mount — from your hardpoints</span>
-    <span class="hp-src">SIDEBAR ▸ HARDPOINT EDITOR · {_U_LEN}</span>
+    <span class="hp-ttl">📐 Upright mount — {_title_arch}</span>
+    <span class="hp-src">{_src_txt} · {_U_LEN}</span>
   </div>
   <div class="hp-grid">{_tiles}</div>
   {_derived}
@@ -6727,16 +6847,6 @@ tab_analytics = _id_to_container["analytics"]
 tab_pcb     = _id_to_container["pcb"]
 tab_tractive = _id_to_container["tractive"]
 tab_dfmea    = _id_to_container["dfmea"]
-tab_apdlgen  = _id_to_container["apdl_gen"]
-tab_clashdet = _id_to_container["clash_det"]
-tab_iksolver = _id_to_container["ik_solver"]
-tab_regparser = _id_to_container["reg_parser"]
-tab_diffeng  = _id_to_container["diff_engine"]
-tab_orc_inverse = _id_to_container["oracle_inverse"]
-tab_orc_twin    = _id_to_container["oracle_twin"]
-tab_orc_spatial = _id_to_container["oracle_spatial"]
-tab_orc_dfm     = _id_to_container["oracle_dfm"]
-tab_orc_gate    = _id_to_container["oracle_gate"]
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
@@ -8671,14 +8781,14 @@ with tab_car:
                 st.error(f"Couldn't publish: {_ce}")
 
         st.markdown("##### Library")
-        _all_files = _cad_store.cad_files_for(None)
+        _all_files = _store_cad_files(_cad_store, None)
         if not _all_files:
             st.info("Nothing shared yet. Be the first to publish a file above.")
         else:
-            _subs = ["(all)"] + _cad_store.cad_subsystems()
+            _subs = ["(all)"] + _store_cad_subsystems(_cad_store)
             _filt = st.selectbox("Filter by subsystem", _subs, key="cad_lib_filter")
             _shown = (_all_files if _filt == "(all)"
-                      else _cad_store.cad_files_for(_filt))
+                      else _store_cad_files(_cad_store, _filt))
             st.caption(f"{len(_shown)} of {len(_all_files)} file(s)")
             for _cf in _shown:
                 _row = st.columns([3.2, 1.4, 1.3, 1.1, 0.9])
@@ -9101,7 +9211,7 @@ with tab_car:
                     st.code(_deck, language="text")
 
             st.markdown("**Suspension CAD feed** (library, filtered to suspension):")
-            _susp_files = _cad_store.cad_files_for("suspension")
+            _susp_files = _store_cad_files(_cad_store, "suspension")
             if not _susp_files:
                 st.caption("No suspension CAD shared yet — publish the CSV/deck "
                            "above, or drop a wishbone STEP in the Team CAD library.")
@@ -15908,12 +16018,138 @@ with tab5c:
   except Exception:
     pass
   if _topo != "double_wishbone":
-    st.info("The flex / compliance solver models axial deflection of the "
-            "double-wishbone member set (upper & lower arms + tie rod). For "
-            "the selected topology, the architecture-agnostic engine reports "
-            "its own member set on the 3D MODEL tab; per-link compliance "
-            "for arbitrary topologies is not yet wired into this tab. Switch "
-            "to the double-wishbone model to use the flex analysis.")
+    # ---- Topology-agnostic compliance (re-iterated) --------------------- #
+    # The wishbone path below runs the full iterative CompliantCorner. Every
+    # other architecture is solved here by the architecture-agnostic engine,
+    # which now runs the SAME re-iterated load↔geometry coupling: it takes the
+    # SAME load case + link-stiffness inputs, resolves member axial forces by
+    # virtual work through the real constraint solver, deflects each link with
+    # per-member materials and non-linear joint compliance, re-solves the
+    # mechanism at the deflected pose and iterates to convergence — then reports
+    # compliance camber/toe + member force/deflection.
+    st.caption(f"Architecture-agnostic flex analysis · {_TOPO_LABELS.get(_topo, _topo)}. "
+               "Member forces by virtual work through the real constraint solver, "
+               "with per-member materials and joint compliance; the load↔geometry "
+               "coupling is re-iterated to convergence — the same re-iterated solver "
+               "the double-wishbone model uses.")
+    with st.expander("🧬 Model setup — load case & link stiffness", expanded=False):
+        gcL, gcR = st.columns([1, 1])
+        with gcL:
+            st.markdown('<p class="hint" style="margin-bottom:4px;"><b>Load case</b>'
+                        '</p>', unsafe_allow_html=True)
+            g_comp_g = st.slider("Lateral acceleration (g)", 0.5, 2.5, 1.5, 0.1,
+                                 key="gcomp_g")
+            g_comp_axle = st.selectbox("Axle", ["front", "rear"], key="gcomp_axle")
+            g_comp_long = st.slider("Longitudinal g (braking +, traction −)",
+                                    -1.5, 1.5, 0.0, 0.1, key="gcomp_long")
+        with gcR:
+            st.markdown('<p class="hint" style="margin-bottom:4px;"><b>Link stiffness'
+                        '</b> (applied to every link in this architecture)</p>',
+                        unsafe_allow_html=True)
+            g_comp_mat = st.selectbox("Tube material", list(MATERIALS.keys()),
+                                      key="gcomp_mat")
+            g_comp_od = st.number_input("Tube OD", 8.0, 40.0, 19.05, 0.05,
+                                        key="gcomp_od")
+            g_comp_wall = st.number_input("Tube wall", 0.4, 4.0, 0.9, 0.05,
+                                          key="gcomp_wall")
+            try:
+                record_activity("chassis", "material",
+                                f"Link tube material: {g_comp_mat} "
+                                f"(OD {g_comp_od:g} mm, wall {g_comp_wall:g} mm)")
+            except Exception:
+                pass
+
+    try:
+        _gms = MemberStiffness(material=g_comp_mat, od_mm=g_comp_od,
+                               wall_mm=g_comp_wall)
+
+        def _g_stiffness_for(label, a, b):
+            return _gms
+
+        g_load = corner_wheel_load(veh, g_comp_axle, g_comp_g, outer=True,
+                                   long_g=g_comp_long)
+        g_res = solve_generic_compliance(kin, g_load, _g_stiffness_for)
+    except Exception as e:
+        st.error(f"Compliance solve failed for this topology: {e}")
+        g_res = None
+
+    if g_res is not None:
+        st.markdown(f'<p class="hint" style="margin-top:10px;"><b>Compliance at '
+                    f'{g_comp_g:.1f} g — {g_comp_axle} outer wheel.</b> '
+                    f'Contact-patch load: Fz {g_load.Fz:.0f} N, Fy {g_load.Fy:.0f} N.'
+                    f'</p>', unsafe_allow_html=True)
+        gm1, gm2, gm3, gm4 = st.columns(4)
+        _gt = g_res.compliance_toe
+        _gc = g_res.compliance_camber
+        _gt_cls = "good" if abs(_gt) < 0.15 else ("warn" if abs(_gt) < 0.4 else "bad")
+        _gc_cls = "good" if abs(_gc) < 0.2 else ("warn" if abs(_gc) < 0.5 else "bad")
+        gm1.markdown(metric("Compliance toe", f"{_gt:+.3f}", "°", _gt_cls),
+                     unsafe_allow_html=True)
+        gm2.markdown(metric("Compliance camber", f"{_gc:+.3f}", "°", _gc_cls),
+                     unsafe_allow_html=True)
+        gm3.markdown(metric("Patch lateral shift",
+                            f"{g_res.contact_patch_lateral_shift_mm:+.2f}", "mm"),
+                     unsafe_allow_html=True)
+        _g_wc = getattr(g_res, "well_conditioned", g_res.converged)
+        gm4.markdown(metric("Confidence",
+                            "ok" if _g_wc else "low",
+                            f"{g_res.iterations} iter" if _g_wc else "near-singular",
+                            "good" if _g_wc else "warn"),
+                     unsafe_allow_html=True)
+
+        if not _g_wc:
+            st.caption("Low confidence: at least one member carries load through a "
+                       "non-axial mode this axial model doesn't capture (e.g. "
+                       "a twist-beam's torsion beam). Those members are excluded from "
+                       "the compliance sum; treat the numbers as indicative.")
+        elif not g_res.converged:
+            st.caption(f"The load↔geometry loop did not fully settle in "
+                       f"{g_res.iterations} iterations (deflections are sub-mm, so "
+                       "the result is still useful — treat the last digit with care).")
+
+        try:
+            record_activity(
+                "chassis", "calculation",
+                f"Corner compliance ({_TOPO_LABELS.get(_topo, _topo)}): "
+                f"toe {_gt:+.3f}°, camber {_gc:+.3f}°, "
+                f"patch shift {g_res.contact_patch_lateral_shift_mm:+.2f} mm")
+        except Exception:
+            pass
+
+        # member force / deflection bar chart
+        _guF = units_mod.label("N")
+        _guL = units_mod.label("mm")
+        _gmembers = list(g_res.member_forces.keys())
+        if _gmembers:
+            _gforces = [units_mod.from_metric(g_res.member_forces[m], "N")
+                        for m in _gmembers]
+            _gdefls = [units_mod.from_metric(g_res.member_deflection.get(m, 0.0), "mm")
+                       for m in _gmembers]
+            gfigF = make_subplots(specs=[[{"secondary_y": True}]])
+            gfigF.add_trace(go.Bar(x=_gmembers, y=_gforces,
+                                   name=f"Axial force ({_guF})",
+                                   marker_color=CYAN, opacity=0.85),
+                            secondary_y=False)
+            gfigF.add_trace(go.Scatter(x=_gmembers, y=_gdefls,
+                                       name=f"Deflection ({_guL})", mode="markers",
+                                       marker=dict(color=AMBER, size=11)),
+                            secondary_y=True)
+            gfigF.update_layout(**PLOT_LAYOUT,
+                                title="Member axial force & deflection",
+                                height=340, barmode="group")
+            gfigF.update_yaxes(
+                title_text=units_mod.ulabel("axial force (N, + tension)"),
+                secondary_y=False)
+            gfigF.update_yaxes(
+                title_text=units_mod.ulabel("deflection (mm, + stretch)"),
+                secondary_y=True)
+            st.plotly_chart(gfigF, width='stretch')
+
+        st.caption("Members are this architecture's own links (from the topology "
+                   "template). Edit their geometry in the sidebar hardpoint editor; "
+                   "the same tube material/OD/wall above sets every link's axial "
+                   "stiffness. Per-member materials and joint compliance are "
+                   "available on the double-wishbone model.")
   else:
    with st.expander("🧬 Model setup — load case, link stiffness, joints & FEA body",
                     expanded=False):
@@ -16255,10 +16491,9 @@ with tab6:
   # legality, Size-C sourcing trade, and the four subteams' attachment briefs.
   st.markdown("#### 🧱 Frame Planner — triangulation · tube sourcing · attachments")
   st.markdown(
-      '<p class="hint" style="margin:0 0 8px;">The 06/29 chassis meeting, '
-      'computed: audit the frame graph for the <b>2027-illegal</b> '
-      'untriangulated bays and load-path interruptions, run the '
-      '<b>Size C → Size B</b> sourcing trade with real Δmass/Δcost, and size '
+      '<p class="hint" style="margin:0 0 8px;">The chassis details computed: '
+      'audit the frame graph for untriangulated bays and load-path interruptions, '
+      'run the Size comparison sourcing trade with real Δmass/Δcost, and size '
       'every subteam\'s <b>panel &amp; attachment</b> brief (seat &amp; '
       'harness, floor, firewall, aero panels). ' +
       _html.escape(tf_mod.RULES_DISCLAIMER) + '</p>', unsafe_allow_html=True)
@@ -16721,7 +16956,7 @@ with tab6:
   st.markdown('<p class="hint">Any Elbee subteam: load the shared chassis once as '
               'the reference, then load your part (caliper, radiator, battery box, '
               'wing mount, ECU tray — anything). You get the same collision / tight / '
-              'clear verdict suspension gets. <b>We can\'t out-spend USC, so we '
+              'clear verdict suspension gets. <b>If you can\'t out-spend another team, '
               'out-integrate them</b> — catch the interference here before the first '
               'cut, because rework is the tax for not integrating in CAD.</p>',
               unsafe_allow_html=True)
@@ -17157,6 +17392,9 @@ with tab8:
     # and treat everything currently on disk as seen.
     st.session_state["_notes_unread"] = 0
     st.session_state["_notes_seen_ids"] = {n.id for n in nstore.notes}
+    # Full authoritative read here; adopt its version so the poller doesn't
+    # immediately repeat the expensive read on its next tick.
+    st.session_state["_notes_version"] = nstore.read_version()
 
     # Record a READ RECEIPT for this viewer so the people who posted notes can
     # see their note actually reached someone. The viewer label is the lead's
@@ -17216,6 +17454,10 @@ with tab8:
               # off disk on their next poll (within NOTE_POLL_SECONDS) and toast.
               st.session_state.setdefault("_my_posted_note_ids", set()).add(_new_note.id)
               st.session_state.setdefault("_notes_seen_ids", set()).add(_new_note.id)
+              # We just wrote; adopt the new store version as our high-water mark
+              # so THIS session's poller short-circuits instead of re-reading a
+              # note we already know about. Other sessions still see the change.
+              st.session_state["_notes_version"] = nstore.read_version()
               _recipients = ("all teams" if n_to == "all"
                              else integ_mod.TEAMS.get(n_to, {}).get("label", n_to))
               _shared = type(nstore.backend).__name__ in ("SupabaseBackend", "WorkspaceScopedSupabaseBackend")
@@ -17319,11 +17561,13 @@ with tab8:
                   if bc[0].button("Mark resolved", key=f"res_{n.id}"):
                       nstore.resolve_note(n.id)
                       nstore.save()
+                      st.session_state["_notes_version"] = nstore.read_version()
                       st.rerun()
               else:
                   if bc[0].button("Reopen", key=f"reo_{n.id}"):
                       nstore.reopen_note(n.id)
                       nstore.save()
+                      st.session_state["_notes_version"] = nstore.read_version()
                       st.rerun()
 
 
@@ -21363,7 +21607,11 @@ with sc3:
             if "topo_hardpoints" in data and isinstance(data["topo_hardpoints"], dict):
                 st.session_state.topo_hp = data["topo_hardpoints"]
             if "topology" in data:
-                st.session_state.topology = data["topology"]
+                # `topology` is now bound to the sidebar selectbox via key=, and
+                # this handler runs AFTER that widget is created this run, so we
+                # can't assign it directly. Stage it and apply it before the
+                # widget on the forced rerun below.
+                st.session_state["_pending_topology"] = data["topology"]
             if "vehicle" in data:
                 st.session_state.vp = data["vehicle"]
             if data.get("ledger"):
@@ -21381,8 +21629,7 @@ with sc3:
                         st.session_state[_pk] = _pv
             st.success("Project loaded — geometry, vehicle, handover, and "
                        "pedal-box/throttle inputs restored.")
-            if st.button("Apply loaded project"):
-                st.rerun()
+            st.rerun()
         except Exception as e:
             st.error(f"Couldn't read that project file: {e}")
 
@@ -22683,9 +22930,9 @@ with tab_analytics:
     if roi:
         r0 = roi[0]
         _h = r0.get("total_hours_saved") or 0
-        _d = r0.get("total_dollars_saved") or 0
-        _rate = r0.get("labour_rate_usd_hr") or 0
-        _val = r0.get("total_value_usd") or _d
+        _rate = 65.0
+        _d = _h * _rate
+        _val = _d
         m1, m2, m3 = st.columns(3)
         _ax_metric(m1, "Hours saved", f"{_h:,.0f}", "across all workflows",
                    "var(--cyan)")
@@ -22709,11 +22956,11 @@ with tab_analytics:
                 _completes[e["feature"]] = _completes.get(e["feature"], 0) + 1
         _h = sum(n * (_baselines.get(f, (0, 0))[0] - _baselines.get(f, (0, 0))[1]) / 60.0
                  for f, n in _completes.items())
-        _d = _h * 30.0
+        _d = _h * 65.0
         m1, m2, m3 = st.columns(3)
         _ax_metric(m1, "Hours saved", f"{_h:,.1f}", "from local buffer (demo)",
                    "var(--cyan)")
-        _ax_metric(m2, "Dollars saved", f"${_d:,.0f}", "at $30/hr (default)",
+        _ax_metric(m2, "Dollars saved", f"${_d:,.0f}", "at $65/hr (default)",
                    "var(--amber)")
         _ax_metric(m3, "Workflows logged", f"{sum(_completes.values())}",
                    "completed locally", "var(--dim)")
@@ -22731,7 +22978,7 @@ with tab_analytics:
                   y=[r.get("label") or r["feature"] for r in _rows],
                   orientation="h",
                   marker_color="#37e0d0",
-                  text=[f"${r.get('dollars_saved', 0):,.0f}" for r in _rows],
+                  text=[f"${(r.get('hours_saved') or 0) * 65:,.0f}" for r in _rows],
                   textposition="auto"))
               _fig.update_layout(
                   height=max(220, 38 * len(_rows)), margin=dict(l=10, r=10, t=10, b=10),
@@ -23257,960 +23504,6 @@ st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · AGPL-3.0.
             '<i>Tip: on the hosted app, save your project before closing the tab — '
             'geometry tweaks aren\'t auto-saved the way the handover log is.</i></p>',
             unsafe_allow_html=True)
-
-
-# ========================================================================== #
-#  FRICTIONLESS PILLARS — five features wired to the live session model.
-#  Each pillar imports its module lazily (inside the tab body) so the app
-#  shell still paints instantly and a rerun only pays for the pillar touched.
-# ========================================================================== #
-
-# --- helpers shared by the pillar tabs ------------------------------------- #
-def _pillar_hp_xyz(hp_dict):
-    """Coerce the live session hardpoints into {name: (x,y,z) floats}, mm,
-    dropping non-vector / None / rocker-absent entries. Matches the (x,y,z)
-    convention every pillar module expects."""
-    import numpy as _np
-    out = {}
-    for _k, _v in (hp_dict or {}).items():
-        if _v is None:
-            continue
-        try:
-            _a = _np.asarray(_v, dtype=float).ravel()
-        except Exception:
-            continue
-        if _a.size == 3 and _np.all(_np.isfinite(_a)):
-            out[_k] = (float(_a[0]), float(_a[1]), float(_a[2]))
-    return out
-
-
-def _pillar_members_from_hp(hp):
-    """Wishbone/tie-rod/pushrod connectivity for whatever hardpoints exist —
-    used as the APDL member list and the IK linkage when the project doesn't
-    carry an explicit members list."""
-    _candidates = [
-        ("upper_front_inner", "upper_outer"),
-        ("upper_rear_inner", "upper_outer"),
-        ("lower_front_inner", "lower_outer"),
-        ("lower_rear_inner", "lower_outer"),
-        ("tie_rod_inner", "tie_rod_outer"),
-        ("upper_outer", "wheel_center"),
-        ("lower_outer", "wheel_center"),
-        ("wheel_center", "contact_patch"),
-        ("pushrod_outer", "rocker_pushrod"),
-        ("rocker_pushrod", "rocker_pivot"),
-        ("rocker_spring", "spring_inner"),
-    ]
-    return [(a, b) for a, b in _candidates if a in hp and b in hp]
-
-
-# --------------------------- PILLAR 1: APDL AUTO-GEN ----------------------- #
-with tab_apdlgen:
-    st.markdown('<p class="hint">Take the <b>peak loads</b> the kinematics sweep '
-                'saw at each hardpoint and turn them straight into a runnable '
-                '<b>ANSYS APDL structural deck</b> — forces, hardpoints and '
-                'material constants mapped automatically. This is the input '
-                'sanity step <i>before</i> you spend an ANSYS seat: the deck is a '
-                'starting point, always confirm the run in ANSYS proper.</p>',
-                unsafe_allow_html=True)
-
-    _hp_live = _pillar_hp_xyz(st.session_state.get("hp", {}))
-    if not _hp_live:
-        st.info("No hardpoints in the session yet — set geometry on the "
-                "suspension tabs first.")
-    else:
-        from suspension.apdl_autogen import generate_apdl, DEFAULT_MATERIALS
-
-        _members = st.session_state.get("pillar_members") \
-            or _pillar_members_from_hp(_hp_live)
-
-        _ac = st.columns([1.2, 1, 1])
-        _mat_key = _ac[0].selectbox("Material", list(DEFAULT_MATERIALS.keys()),
-                                    key="apdl_mat")
-        _od = _ac[1].number_input("Tube OD (mm)", 5.0, 60.0, 25.4, 0.1,
-                                  key="apdl_od")
-        _wall = _ac[2].number_input("Wall (mm)", 0.3, 6.0, 1.6, 0.1,
-                                    key="apdl_wall")
-
-        # Peak loads: prefer a real per-hardpoint loads history if the vehicle
-        # model has one; otherwise let the engineer type a single peak vector
-        # onto the most-loaded outboard point so the deck is never empty.
-        _sess = {"hardpoints": _hp_live, "members": _members,
-                 "material_overrides": {}}
-        _lh = st.session_state.get("loads_history")
-        _pk = st.session_state.get("peak_loads")
-        if _pk:
-            _sess["peak_loads"] = _pk
-        elif _lh:
-            _sess["loads_history"] = _lh
-        else:
-            st.caption("No solved load history in the session — enter a peak "
-                       "load vector to apply at a chosen hardpoint.")
-            _lc = st.columns([1.4, 1, 1, 1])
-            _tgt = _lc[0].selectbox("Apply at", sorted(_hp_live),
-                                    index=min(range(len(_hp_live)),
-                                              key=lambda i: 0),
-                                    key="apdl_tgt")
-            _fx = _lc[1].number_input("Fx (N)", value=0.0, key="apdl_fx")
-            _fy = _lc[2].number_input("Fy (N)", value=0.0, key="apdl_fy")
-            _fz = _lc[3].number_input("Fz (N)", value=2500.0, key="apdl_fz")
-            _sess["peak_loads"] = {_tgt: (_fx, _fy, _fz)}
-
-        try:
-            _deck = generate_apdl(_sess, material=_mat_key,
-                                  tube_od_mm=float(_od), tube_wall_mm=float(_wall))
-            st.download_button("Download APDL deck (.inp)", data=_deck,
-                               file_name="kinematik_peak.inp", key="apdl_dl")
-            with st.expander("Preview the APDL deck", expanded=True):
-                st.code(_deck, language="text")
-            st.caption(f"{len(_hp_live)} keypoints · {len(_members)} members. "
-                       "Chassis-side points (chassis_/frame_/inboard_ prefixes) "
-                       "are fully fixed; peak loads applied at loaded nodes.")
-        except Exception as _e:
-            st.error(f"Couldn't build the APDL deck: {_e}")
-
-
-# --------------------- PILLAR 2: CLEARANCE & CLASH ------------------------- #
-with tab_clashdet:
-    st.markdown('<p class="hint">Sweep the <b>moving linkage points</b> through '
-                'their travel and, at every step, check the minimum distance to '
-                'the static <b>chassis / harness keep-outs</b>. Anything that '
-                'breaches the safety threshold is flagged with the exact travel '
-                'step and component ID — the clash the chassis engineer would '
-                'otherwise only catch at assembly.</p>', unsafe_allow_html=True)
-
-    import numpy as _np
-    from suspension.clearance_clash import detect_clearance_breaches
-
-    _store = get_store()
-    _geom = getattr(_store, "geometry", None)
-    _thr = st.slider("Safety threshold (mm)", 1.0, 50.0, 10.0, 0.5,
-                     key="clash_thr")
-
-    # Static bounding volumes: the declared keep-outs from the mount-point layer.
-    _boxes, _box_ids = [], []
-    if _geom is not None and getattr(_geom, "keepouts", None):
-        for _kn, _ko in _geom.keepouts.items():
-            _boxes.append([list(map(float, _ko.lo_mm)),
-                           list(map(float, _ko.hi_mm))])
-            _box_ids.append(_kn)
-
-    if not _boxes:
-        st.info("No keep-out volumes declared yet — add them under Integration "
-                "→ Mount-point clash, then this sweep checks the moving "
-                "linkage against them.")
-    else:
-        # Moving points: outboard suspension hardpoints, swept over the same
-        # travel range the kinematics tab solved (uses the live sweep states so
-        # the trajectory is the real solved motion, not a guess).
-        _mv_names = [n for n in ("upper_outer", "lower_outer", "tie_rod_outer",
-                                 "wheel_center", "contact_patch", "pushrod_outer")
-                     if n in _pillar_hp_xyz(st.session_state.get("hp", {}))]
-        try:
-            _T = len(sweep)
-            _P = len(_mv_names)
-            _traj = _np.zeros((_T, _P, 3), dtype=float)
-            _ts = _np.array([float(_s.travel) for _s in sweep])
-            for _pi, _pn in enumerate(_mv_names):
-                for _ti, _s in enumerate(sweep):
-                    _val = getattr(_s, _pn, None)
-                    if _val is None:
-                        _val = _pillar_hp_xyz(st.session_state["hp"]).get(_pn)
-                    _traj[_ti, _pi, :] = _np.asarray(_val, float).ravel()[:3]
-
-            _res = detect_clearance_breaches(
-                _traj, _mv_names,
-                _np.asarray(_boxes, dtype=float), _box_ids,
-                timestamps=_ts, threshold_mm=float(_thr))
-
-            _mc = _res["global_min_clearance_mm"]
-            _cc = st.columns(3)
-            _cc[0].markdown(metric("Min clearance", f"{_mc:.1f}", "mm"),
-                            unsafe_allow_html=True)
-            _cc[1].markdown(metric("Breaches", f"{len(_res['breaches'])}", ""),
-                            unsafe_allow_html=True)
-            _cc[2].markdown(metric("Threshold", f"{_thr:.0f}", "mm"),
-                            unsafe_allow_html=True)
-
-            if _res["breaches"]:
-                st.error(f"{len(_res['breaches'])} clearance breach(es) over the "
-                         "travel sweep — closest first:")
-                _rows = ""
-                for _b in _res["breaches"][:40]:
-                    _rows += (f"<tr><td style='padding:4px 10px'>{_b['moving_id']}</td>"
-                              f"<td style='padding:4px 10px'>{_b['static_id']}</td>"
-                              f"<td style='padding:4px 10px;text-align:right'>"
-                              f"{_b['clearance_mm']:.1f}</td>"
-                              f"<td style='padding:4px 10px;text-align:right'>"
-                              f"{_b['timestamp']:+.1f}</td></tr>")
-                st.markdown(
-                    "<table style='width:100%;border-collapse:collapse;font-size:.9rem'>"
-                    "<tr style='color:#8d99a6;font-size:.8rem'>"
-                    "<td style='padding:4px 10px'>moving point</td>"
-                    "<td style='padding:4px 10px'>keep-out</td>"
-                    "<td style='padding:4px 10px;text-align:right'>clearance (mm)</td>"
-                    "<td style='padding:4px 10px;text-align:right'>travel (mm)</td></tr>"
-                    f"{_rows}</table>", unsafe_allow_html=True)
-            else:
-                st.success("No breaches — every moving point stays clear of every "
-                           "declared keep-out across the full travel sweep.")
-        except Exception as _e:
-            st.error(f"Couldn't run the clearance sweep: {_e}")
-
-
-# --------------------- PILLAR 3: CONFIG DIFF ENGINE ------------------------ #
-with tab_diffeng:
-    st.markdown('<p class="hint">Every hardpoint edit is a <b>configuration '
-                'change</b> worth a paper trail. This mirrors the Postgres/'
-                'Supabase audit trigger: snapshot the current geometry, and the '
-                'engine reports the exact <b>coordinate deltas</b> — what moved, '
-                'by how much, and in which direction — between the last snapshot '
-                'and now.</p>', unsafe_allow_html=True)
-
-    import numpy as _np
-    _cur = _pillar_hp_xyz(st.session_state.get("hp", {}))
-    _prev = st.session_state.get("_diff_snapshot")
-
-    _dc = st.columns([1, 1, 2])
-    if _dc[0].button("📸 Snapshot current geometry", key="diff_snap"):
-        st.session_state["_diff_snapshot"] = dict(_cur)
-        st.session_state.setdefault("_diff_history", [])
-        st.success("Snapshot taken — edit hardpoints, then compare.")
-        _do_rerun()
-    if _dc[1].button("Clear snapshot", key="diff_clear"):
-        st.session_state.pop("_diff_snapshot", None)
-        _do_rerun()
-
-    st.caption("The SQL migration (project_versions_diff.sql) ships the same "
-               "diff as a trigger for a persistent Supabase audit log; this tab "
-               "is its in-session preview.")
-
-    if not _prev:
-        st.info("No snapshot yet — take one above, change some hardpoints, then "
-                "the coordinate deltas appear here.")
-    else:
-        _added = [n for n in _cur if n not in _prev]
-        _removed = [n for n in _prev if n not in _cur]
-        _moved = []
-        for _n in sorted(set(_cur) & set(_prev)):
-            _o = _np.asarray(_prev[_n], float)
-            _p = _np.asarray(_cur[_n], float)
-            _d = _p - _o
-            if _np.any(_np.abs(_d) > 1e-9):
-                _moved.append((_n, _o, _p, _d, float(_np.linalg.norm(_d))))
-        _moved.sort(key=lambda r: -r[4])
-
-        if not _moved and not _added and not _removed:
-            st.success("No change since the snapshot — geometry is identical.")
-        else:
-            if _moved:
-                st.markdown("**Moved hardpoints** (largest displacement first):")
-                _rows = ""
-                for _n, _o, _p, _d, _dist in _moved:
-                    _rows += (f"<tr><td style='padding:4px 10px'>{_n}</td>"
-                              f"<td style='padding:4px 10px;text-align:right'>{_d[0]:+.2f}</td>"
-                              f"<td style='padding:4px 10px;text-align:right'>{_d[1]:+.2f}</td>"
-                              f"<td style='padding:4px 10px;text-align:right'>{_d[2]:+.2f}</td>"
-                              f"<td style='padding:4px 10px;text-align:right'>"
-                              f"<b>{_dist:.2f}</b></td></tr>")
-                st.markdown(
-                    "<table style='width:100%;border-collapse:collapse;font-size:.9rem'>"
-                    "<tr style='color:#8d99a6;font-size:.8rem'>"
-                    "<td style='padding:4px 10px'>hardpoint</td>"
-                    "<td style='padding:4px 10px;text-align:right'>Δx (mm)</td>"
-                    "<td style='padding:4px 10px;text-align:right'>Δy (mm)</td>"
-                    "<td style='padding:4px 10px;text-align:right'>Δz (mm)</td>"
-                    "<td style='padding:4px 10px;text-align:right'>|Δ| (mm)</td></tr>"
-                    f"{_rows}</table>", unsafe_allow_html=True)
-            if _added:
-                st.markdown(f"**Added:** {', '.join(_added)}")
-            if _removed:
-                st.markdown(f"**Removed:** {', '.join(_removed)}")
-
-
-# --------------------- PILLAR 4: IK TARGET SOLVER ------------------------- #
-with tab_iksolver:
-    st.markdown('<p class="hint">Point the solver at a <b>target</b> — a camber-'
-                'gain band and a roll-centre migration limit — and it nudges the '
-                'chosen hardpoints, inside a physical envelope, until the '
-                'kinematic curves land in the band. It hands back the optimal '
-                'coordinates; you still confirm them on the Kinematics tab.</p>',
-                unsafe_allow_html=True)
-
-    import numpy as _np
-    _hp_live = _pillar_hp_xyz(st.session_state.get("hp", {}))
-    if not _hp_live:
-        st.info("No hardpoints in the session yet — set geometry first.")
-    else:
-        from suspension.ik_target_solver import solve_hardpoints
-        from suspension.kinematics import Hardpoints, SuspensionKinematics
-
-        _free = st.multiselect(
-            "Hardpoints the solver may move",
-            sorted(_hp_live),
-            default=[n for n in ("upper_front_inner", "upper_rear_inner")
-                     if n in _hp_live],
-            key="ik_free")
-
-        _gc = st.columns([1, 1, 1, 1])
-        _g_lo = _gc[0].number_input("Camber gain lo (deg/mm)", value=-0.030,
-                                    format="%.3f", key="ik_glo")
-        _g_hi = _gc[1].number_input("Camber gain hi (deg/mm)", value=-0.015,
-                                    format="%.3f", key="ik_ghi")
-        _rc_max = _gc[2].number_input("Max RC migration (mm)", value=25.0,
-                                      key="ik_rcmax")
-        _box = _gc[3].number_input("Move box ± (mm)", value=15.0, key="ik_box")
-
-        # sweep_fn: rebuild Hardpoints from the trial geometry, solve the corner,
-        # and expose the curves the solver scores against. This is the real
-        # kinematics core, so the optimum is expressed in the tool's own physics.
-        _base_hp_dict = dict(st.session_state.get("hp", {}))
-
-        def _sweep_fn(hp_trial):
-            _merged = dict(_base_hp_dict)
-            for _k, _v in hp_trial.items():
-                _merged[_k] = _np.asarray(_v, float)
-            _kin = SuspensionKinematics(Hardpoints.from_dict(_merged))
-            _sw = _kin.sweep(-25.0, 25.0, 21)
-            return {
-                "travel_mm": _np.array([_s.travel for _s in _sw]),
-                "camber_deg": _np.array([_s.camber for _s in _sw]),
-                "roll_center_z_mm": _np.array(
-                    [(_s.roll_center_height
-                      if _np.isfinite(_s.roll_center_height)
-                      else _s.instant_center[1]) for _s in _sw]),
-            }
-
-        if st.button("🎯 Solve for target", key="ik_go", disabled=not _free):
-            with st.spinner("Optimising hardpoints (SLSQP)…"):
-                try:
-                    _base = {k: _np.asarray(v, float) for k, v in _hp_live.items()}
-                    _out = solve_hardpoints(
-                        _base, list(_free), _sweep_fn,
-                        camber_gain_target=(float(_g_lo), float(_g_hi)),
-                        rc_migration_max_mm=float(_rc_max),
-                        move_box_mm=float(_box), maxiter=120)
-                    st.session_state["_ik_result"] = _out
-                except Exception as _e:
-                    st.error(f"Solver failed: {_e}")
-
-        _out = st.session_state.get("_ik_result")
-        if _out:
-            _ok = _out["success"]
-            _ach = _out["achieved"]
-            _mc = st.columns(3)
-            _mc[0].markdown(metric("Camber gain",
-                                   f"{_ach['camber_gain_deg_per_mm']:+.3f}",
-                                   "deg/mm"), unsafe_allow_html=True)
-            _mc[1].markdown(metric("RC migration",
-                                   f"{_ach['rc_migration_mm']:.1f}", "mm"),
-                            unsafe_allow_html=True)
-            _mc[2].markdown(metric("RC static",
-                                   f"{_ach['rc_static_mm']:.1f}", "mm"),
-                            unsafe_allow_html=True)
-            st.caption(("✔ converged · " if _ok else "⚠ did not fully converge · ")
-                       + _out["message"])
-
-            st.markdown("**Recommended hardpoint moves:**")
-            _rows = ""
-            for _n, _mv in _out["moved"].items():
-                _d = _mv["delta"]
-                _rows += (f"<tr><td style='padding:4px 10px'>{_n}</td>"
-                          f"<td style='padding:4px 10px;text-align:right'>{_d[0]:+.2f}</td>"
-                          f"<td style='padding:4px 10px;text-align:right'>{_d[1]:+.2f}</td>"
-                          f"<td style='padding:4px 10px;text-align:right'>{_d[2]:+.2f}</td></tr>")
-            st.markdown(
-                "<table style='width:100%;border-collapse:collapse;font-size:.9rem'>"
-                "<tr style='color:#8d99a6;font-size:.8rem'>"
-                "<td style='padding:4px 10px'>hardpoint</td>"
-                "<td style='padding:4px 10px;text-align:right'>Δx (mm)</td>"
-                "<td style='padding:4px 10px;text-align:right'>Δy (mm)</td>"
-                "<td style='padding:4px 10px;text-align:right'>Δz (mm)</td></tr>"
-                f"{_rows}</table>", unsafe_allow_html=True)
-
-            if st.button("Apply solved geometry to the session", key="ik_apply"):
-                _hp_state = dict(st.session_state.get("hp", {}))
-                for _n, _mv in _out["moved"].items():
-                    _hp_state[_n] = list(map(float, _mv["new"]))
-                st.session_state["hp"] = _hp_state
-                st.session_state.pop("_sweep_cache", None)
-                st.success("Applied — check the Kinematics tab to confirm.")
-                _do_rerun()
-
-
-# --------------------- PILLAR 5: COMPLIANCE PARSER ------------------------ #
-with tab_regparser:
-    st.markdown('<p class="hint">Check the current chassis structural metrics '
-                'against a <b>rules schema</b> of geometric-formula regulations. '
-                'It returns a pass/fail flag, the flagged failures, and the '
-                '<b>minimal delta</b> that would bring each one back into spec — '
-                'so a rule you fail comes with the number to fix it.</p>',
-                unsafe_allow_html=True)
-
-    import json as _json
-    from suspension.reg_compliance_parser import check_compliance
-
-    # Live structural metrics, drawn from session state with FSAE-typical
-    # fallbacks so the parser has something concrete to check.
-    _metrics = {
-        "main_hoop_od_mm": float(st.session_state.get("comp_od", 25.4)),
-        "tube_od_mm": float(st.session_state.get("comp_od", 25.4)),
-        "tube_wall_mm": float(st.session_state.get("comp_wall", 2.4)),
-    }
-    # Pull any solved roll-centre static height for a rc_static_mm rule.
-    try:
-        _rc0 = sweep[len(sweep) // 2].roll_center_height
-        if _rc0 == _rc0:  # not NaN
-            _metrics["rc_static_mm"] = float(_rc0)
-    except Exception:
-        pass
-
-    _default_rules = {
-        "ruleset": "FSAE-2026 (structural geometry, sample)",
-        "rules": [
-            {"id": "F.5.7.1", "description": "Main hoop tube minimum OD",
-             "metric": "main_hoop_od_mm", "op": ">=", "limit": 25.0,
-             "unit": "mm", "severity": "fail"},
-            {"id": "F.5.7.2", "description": "Main hoop minimum wall thickness",
-             "metric": "tube_wall_mm", "op": ">=", "limit": 2.4,
-             "unit": "mm", "severity": "fail"},
-            {"id": "F.5.8", "description": "Tube OD×wall area proxy",
-             "formula": "tube_od_mm * tube_wall_mm", "op": ">=", "limit": 55.0,
-             "unit": "mm2", "severity": "warn"},
-        ],
-    }
-    _txt = st.text_area("Rules schema (JSON)", value=_json.dumps(
-        _default_rules, indent=2), height=240, key="reg_rules")
-
-    st.caption("Current metrics: " + ", ".join(
-        f"{_k}={_v:g}" for _k, _v in _metrics.items()))
-
-    try:
-        _rules = _json.loads(_txt)
-        _res = check_compliance(_metrics, _rules)
-
-        if _res["compliant"]:
-            st.success(f"✔ COMPLIANT — {_res['passed']}/{_res['checked']} rules "
-                       f"passed ({_res['ruleset']}).")
-        else:
-            st.error(f"✘ NON-COMPLIANT — {_res['passed']}/{_res['checked']} rules "
-                     f"passed ({_res['ruleset']}).")
-
-        for _f in _res["failures"]:
-            _rec = _f.get("recommended_adjustment") or {}
-            _adj = (f" → {_rec['direction']} by {_rec['delta']:.2f} "
-                    f"{_f.get('unit','')} (target {_rec['target']:g})"
-                    if _rec else "")
-            st.markdown(
-                f'<div style="border-left:3px solid var(--amber);padding:4px 10px;'
-                f'margin:3px 0"><b>{_f["id"]}</b> · {_f["description"]}<br>'
-                f'<span style="font-size:.85rem;color:#8d99a6">'
-                f'{_f["metric_or_formula"]} = {_f["value"]:g} '
-                f'(needs {_f["op"]} {_f["limit"]}){_adj}</span></div>',
-                unsafe_allow_html=True)
-        for _w in _res["warnings"]:
-            st.warning(f"{_w['id']} · {_w['description']}: {_w['metric_or_formula']} "
-                       f"= {_w['value']:g} (wants {_w['op']} {_w['limit']})")
-        for _er in _res["errors"]:
-            st.caption(f"⚠ rule {_er['id']} skipped: {_er['error']}")
-    except Exception as _e:
-        st.error(f"Couldn't parse / evaluate the rules schema: {_e}")
-
-
-# ========================================================================== #
-#  ORACLE ENGINE — five unified pillars                                       #
-#  Each pillar imports its module lazily inside the tab body, so nothing in    #
-#  oracle.* is evaluated unless the user actually opens that pillar.           #
-# ========================================================================== #
-
-# ---------------------- PILLAR 1: NEURAL INVERSE DESIGN ------------------- #
-with tab_orc_inverse:
-    st.markdown('<p class="hint">Feed the optimiser a <b>2D track path</b> '
-                '(lat/long or projected x/y) and it searches for the suspension '
-                '<b>hardpoint geometry</b> that minimises predicted lap time — '
-                'penalising excess tyre slip angle and roll-centre migration. It '
-                'hands back optimal 3D coordinates; confirm them on Kinematics.</p>',
-                unsafe_allow_html=True)
-
-    import numpy as _np
-    import json as _json
-    from oracle.inverse_design import (
-        HardpointDesign, VehicleParams, optimize_hardpoints)
-
-    _hp_live = _pillar_hp_xyz(st.session_state.get("hp", {}))
-    _need = HardpointDesign.KEYS
-    _have = [k for k in _need if k in _hp_live]
-
-    st.caption("Seed hardpoints required: " + ", ".join(_need))
-    if len(_have) < len(_need):
-        _missing = [k for k in _need if k not in _hp_live]
-        st.info("Seed geometry is missing these points, so a representative FSAE "
-                "corner is used instead: " + ", ".join(_missing))
-
-    _default_path = (
-        "# closed track centreline — projected local x/y in metres\n"
-        + _json.dumps([[round(120.0 * _np.cos(t) + 15.0 * _np.cos(3 * t), 2),
-                        round(70.0 * _np.sin(t), 2)]
-                       for t in _np.linspace(0, 2 * _np.pi, 60)]))
-    _pc = st.columns([2, 1])
-    _path_txt = _pc[0].text_area("Track path (JSON array of [x, y])",
-                                 value=_default_path, height=150, key="orc_path")
-    _coords = _pc[1].radio("Coordinate mode", ["local_m", "latlon"],
-                           key="orc_coords",
-                           help="local_m = already-projected metres; "
-                                "latlon = degrees lat/long")
-    _bound = _pc[1].number_input("Move box ± (mm)", 5.0, 40.0, 15.0, 1.0,
-                                 key="orc_bound")
-    _iters = _pc[1].slider("Search iterations", 4, 40, 10, key="orc_iters")
-
-    _vpc = st.columns(4)
-    _mass = _vpc[0].number_input("Mass (kg)", 120.0, 400.0,
-                                 float(st.session_state.get("vp", {}).get(
-                                     "mass", 230.0)), key="orc_mass")
-    _mu = _vpc[1].number_input("Tyre μ", 0.8, 2.2, 1.55, 0.05, key="orc_mu")
-    _track = _vpc[2].number_input("Track (mm)", 900.0, 1500.0,
-                                  float(st.session_state.get("vp", {}).get(
-                                      "track_front", 1200.0)), key="orc_track")
-    _rct = _vpc[3].number_input("RC target (mm)", 0.0, 120.0, 45.0,
-                                key="orc_rct")
-
-    if st.button("🧠 Optimise hardpoints for lap time", key="orc_go"):
-        try:
-            _raw = "\n".join(l for l in _path_txt.splitlines()
-                             if not l.strip().startswith("#"))
-            _path = _np.asarray(_json.loads(_raw), float)
-            def _seed(name, fallback):
-                v = _hp_live.get(name)
-                return _np.asarray(v, float) if v is not None \
-                    else _np.asarray(fallback, float)
-            _seed_design = HardpointDesign(
-                upper_front_inner=_seed("upper_front_inner", [-150., 250., 300.]),
-                upper_rear_inner=_seed("upper_rear_inner", [150., 250., 300.]),
-                lower_front_inner=_seed("lower_front_inner", [-160., 230., 130.]),
-                lower_rear_inner=_seed("lower_rear_inner", [160., 230., 130.]),
-                upper_outer=_seed("upper_outer", [0., 560., 320.]),
-                lower_outer=_seed("lower_outer", [0., 590., 140.]),
-                tie_rod_inner=_seed("tie_rod_inner", [60., 240., 200.]),
-                tie_rod_outer=_seed("tie_rod_outer", [60., 570., 210.]))
-            _vp = VehicleParams(mass_kg=float(_mass), mu=float(_mu),
-                                track_mm=float(_track), rc_target_mm=float(_rct))
-            with st.spinner("Global search (differential evolution)…"):
-                _res = optimize_hardpoints(
-                    _path, _seed_design, bound_mm=float(_bound), vp=_vp,
-                    maxiter=int(_iters), coords=_coords)
-            st.session_state["_orc_inverse_result"] = _res
-        except Exception as _e:
-            st.error(f"Optimisation failed: {_e}")
-
-    _res = st.session_state.get("_orc_inverse_result")
-    if _res:
-        _mc = st.columns(4)
-        _impr = _res["baseline_cost"] - _res["cost"]
-        _mc[0].markdown(metric("Optimised cost", f"{_res['cost']:.2f}", "s-eq"),
-                        unsafe_allow_html=True)
-        _mc[1].markdown(metric("Baseline cost", f"{_res['baseline_cost']:.2f}",
-                               "s-eq"), unsafe_allow_html=True)
-        _mc[2].markdown(metric("Improvement", f"{_impr:+.2f}", "s-eq"),
-                        unsafe_allow_html=True)
-        _mc[3].markdown(metric("RC static", f"{_res['roll_center_static_mm']:.1f}",
-                               "mm"), unsafe_allow_html=True)
-        st.caption(("✔ converged · " if _res["converged"] else "⚠ stopped early · ")
-                   + f"{_res['iterations']} iterations · "
-                   f"RC migration {_res['roll_center_migration_mm']:.1f} mm")
-
-        st.markdown("**Optimised hardpoint coordinates (mm):**")
-        _rows = ""
-        for _n, _xyz in _res["hardpoints"].items():
-            _rows += (f"<tr><td style='padding:4px 10px'>{_n}</td>"
-                      f"<td style='padding:4px 10px;text-align:right'>{_xyz[0]:+.2f}</td>"
-                      f"<td style='padding:4px 10px;text-align:right'>{_xyz[1]:+.2f}</td>"
-                      f"<td style='padding:4px 10px;text-align:right'>{_xyz[2]:+.2f}</td></tr>")
-        st.markdown(
-            "<table style='width:100%;border-collapse:collapse;font-size:.9rem'>"
-            "<tr style='color:#8d99a6;font-size:.8rem'>"
-            "<td style='padding:4px 10px'>hardpoint</td>"
-            "<td style='padding:4px 10px;text-align:right'>x (mm)</td>"
-            "<td style='padding:4px 10px;text-align:right'>y (mm)</td>"
-            "<td style='padding:4px 10px;text-align:right'>z (mm)</td></tr>"
-            f"{_rows}</table>", unsafe_allow_html=True)
-
-        if st.button("Apply optimised geometry to the session", key="orc_apply"):
-            _hp_state = dict(st.session_state.get("hp", {}))
-            for _n, _xyz in _res["hardpoints"].items():
-                _hp_state[_n] = list(map(float, _xyz))
-            st.session_state["hp"] = _hp_state
-            st.session_state.pop("_sweep_cache", None)
-            st.success("Applied — check the Kinematics tab to confirm.")
-            _do_rerun()
-
-
-# ---------------------- PILLAR 2: LIVE DIGITAL TWIN ----------------------- #
-with tab_orc_twin:
-    st.markdown('<p class="hint">A live <b>track-to-cloud</b> receiver: stream '
-                'IMU / strain-gauge / linear-pot packets over a WebSocket, and it '
-                'keeps a global vehicle-state vector updated in real time '
-                '(&lt;10 ms per packet) and returns <b>damper-click</b> '
-                'adjustments per corner. Below is an offline replay so you can '
-                'see the state and recommendation logic without hardware.</p>',
-                unsafe_allow_html=True)
-
-    import numpy as _np
-    from oracle.digital_twin import DigitalTwin, CORNERS
-
-    st.code("# run the live server (separate process):\n"
-            "python -m oracle.digital_twin   # ws://0.0.0.0:8765\n"
-            "#   /ingest  — hardware/bench pushes IMU|STRAIN|LINPOT packets\n"
-            "#   /dash    — dashboards subscribe to state + damper reco stream",
-            language="bash")
-
-    _sc = st.columns(4)
-    _n_pkts = _sc[0].slider("Replay packets/corner", 64, 1024, 256, key="orc_tw_n")
-    _bias = _sc[1].slider("Compression bias (mm/s)", -60.0, 60.0, 20.0,
-                          key="orc_tw_bias",
-                          help="Positive = compression faster than rebound "
-                               "(damper should stiffen bump).")
-    _knee = _sc[2].number_input("Damper knee (mm/s)", 10.0, 120.0, 50.0,
-                                key="orc_tw_knee")
-    _seed = _sc[3].number_input("RNG seed", 0, 9999, 7, key="orc_tw_seed")
-
-    if st.button("📡 Replay telemetry & recommend clicks", key="orc_tw_go"):
-        _rng = _np.random.default_rng(int(_seed))
-        _tw = DigitalTwin()
-        _t = 0
-        for _i in range(int(_n_pkts)):
-            for _c in range(4):
-                _v = float(_bias + 45.0 * _rng.standard_normal())
-                _tw.ingest(("{\"type\":\"linpot\",\"corner\":%d,"
-                            "\"travel_mm\":%.3f,\"vel_mm_s\":%.3f}"
-                            % (_c, 8.0 * _rng.standard_normal(), _v)))
-                _t += 1
-            _tw.ingest("{\"type\":\"imu\",\"corner\":0,"
-                       "\"accel\":[0.2,%.2f,9.81],\"gyro\":[%.3f,%.3f,0.05]}"
-                       % (14.0 * _rng.random(), 0.3 * _rng.standard_normal(),
-                          0.2 * _rng.standard_normal()))
-        st.session_state["_orc_twin"] = {
-            "state": _tw.state.snapshot(),
-            "reco": _tw.recommend_damper_clicks(knee_mm_s=float(_knee))}
-
-    _out = st.session_state.get("_orc_twin")
-    if _out:
-        _st = _out["state"]
-        _mc = st.columns(4)
-        _mc[0].markdown(metric("Packets", f"{_st['packet_count']}", ""),
-                        unsafe_allow_html=True)
-        _mc[1].markdown(metric("Last latency", f"{_st['update_latency_ms']:.3f}",
-                               "ms"), unsafe_allow_html=True)
-        _mc[2].markdown(metric("Roll rate", f"{_st['roll_rate']:+.3f}", "rad/s"),
-                        unsafe_allow_html=True)
-        _mc[3].markdown(metric("Pitch rate", f"{_st['pitch_rate']:+.3f}", "rad/s"),
-                        unsafe_allow_html=True)
-        _lat_ok = _st["update_latency_ms"] < 10.0
-        st.caption(("✔ " if _lat_ok else "⚠ ")
-                   + f"per-packet update {'within' if _lat_ok else 'over'} the "
-                   "10 ms real-time budget.")
-
-        st.markdown("**Recommended damper adjustments (clicks, + = stiffer):**")
-        _rows = ""
-        for _c in CORNERS:
-            _r = _out["reco"]["recommendations"][_c]
-            _rows += (f"<tr><td style='padding:4px 10px'>{_c}</td>"
-                      f"<td style='padding:4px 10px;text-align:right'>{_r['bump_clicks']:+d}</td>"
-                      f"<td style='padding:4px 10px;text-align:right'>{_r['rebound_clicks']:+d}</td>"
-                      f"<td style='padding:4px 10px;text-align:right'>"
-                      f"{_r.get('low_speed_duty', 0):.2f}</td>"
-                      f"<td style='padding:4px 10px;text-align:right'>{_r['confidence']:.2f}</td></tr>")
-        st.markdown(
-            "<table style='width:100%;border-collapse:collapse;font-size:.9rem'>"
-            "<tr style='color:#8d99a6;font-size:.8rem'>"
-            "<td style='padding:4px 10px'>corner</td>"
-            "<td style='padding:4px 10px;text-align:right'>bump</td>"
-            "<td style='padding:4px 10px;text-align:right'>rebound</td>"
-            "<td style='padding:4px 10px;text-align:right'>LS duty</td>"
-            "<td style='padding:4px 10px;text-align:right'>confidence</td></tr>"
-            f"{_rows}</table>", unsafe_allow_html=True)
-
-
-# ---------------------- PILLAR 3: SPATIAL CO-AUTHORING -------------------- #
-with tab_orc_spatial:
-    st.markdown('<p class="hint">Multiple sub-teams push geometry into the same '
-                'space at once — chassis bounding boxes, wiring-harness splines, '
-                'control-arm sweeps. A 3D R-tree finds proximity conflicts, and '
-                'when a wire routes closer than <b>2 mm</b> to a rigid body the '
-                'engine automatically <b>morphs the spline</b> clear. Below is a '
-                'worked chassis-vs-harness conflict.</p>',
-                unsafe_allow_html=True)
-
-    import json as _json
-    from oracle.spatial_coauthor import (
-        SpatialCoAuthor, GeomEntity, PROXIMITY_THRESHOLD_MM)
-
-    _dc = st.columns(2)
-    _box_txt = _dc[0].text_area(
-        "Chassis node (AABB, mm)",
-        value=_json.dumps({"min": [0, 0, 0], "max": [100, 100, 100]}),
-        height=90, key="orc_sp_box")
-    _spl_txt = _dc[1].text_area(
-        "Wiring harness (spline control points, mm)",
-        value=_json.dumps({"control_points": [[-50, 50, 50], [30, 50, 50],
-                                              [120, 50, 50], [200, 50, 50]],
-                           "radius_mm": 4}),
-        height=90, key="orc_sp_spl")
-    _thr = st.number_input("Proximity threshold (mm)", 0.5, 20.0,
-                           float(PROXIMITY_THRESHOLD_MM), 0.5, key="orc_sp_thr")
-
-    if st.button("🕸️ Apply multi-tenant updates & resolve", key="orc_sp_go"):
-        try:
-            _eng = SpatialCoAuthor(threshold_mm=float(_thr))
-            _box = GeomEntity("chassis_node", "chassis", "aabb",
-                              _json.loads(_box_txt))
-            _spl = GeomEntity("harness_A", "electrical", "spline",
-                              _json.loads(_spl_txt))
-            _out = _eng.apply_updates([_box, _spl])
-            _spline_after = _eng._entities["harness_A"].payload["control_points"]
-            st.session_state["_orc_spatial"] = {
-                "out": _out, "spline_after": _spline_after,
-                "spline_before": _json.loads(_spl_txt)["control_points"]}
-        except Exception as _e:
-            st.error(f"Co-authoring update failed: {_e}")
-
-    _sp = st.session_state.get("_orc_spatial")
-    if _sp:
-        _out = _sp["out"]
-        if _out["clean"]:
-            st.success("✔ Clean — no unresolved proximity conflicts remain.")
-        else:
-            st.warning(f"⚠ {len(_out['unresolved'])} unresolved conflict(s) after "
-                       "morphing (rigid-vs-rigid can't be auto-routed).")
-        for _m in _out["morphed"]:
-            st.markdown(
-                f'<div style="border-left:3px solid var(--accent);padding:4px 10px;'
-                f'margin:3px 0"><b>{_m["entity"]}</b> ({_m["tenant"]}) morphed clear '
-                f'of <b>{_m["against"]}</b> — was {_m["was_mm"]:.2f} mm '
-                f'(v{_m["version"]}).</div>', unsafe_allow_html=True)
-        _bc = st.columns(2)
-        _bc[0].caption("Spline before:")
-        _bc[0].code(_json.dumps(_sp["spline_before"], indent=1), language="json")
-        _bc[1].caption("Spline after morph:")
-        _bc[1].code(_json.dumps([[round(v, 2) for v in p]
-                                 for p in _sp["spline_after"]], indent=1),
-                    language="json")
-
-
-# ---------------------- PILLAR 4: DFM & BOM ------------------------------- #
-with tab_orc_dfm:
-    st.markdown('<p class="hint">Ingest a machined-component <b>mesh</b>, analyse '
-                'it for CNC tool accessibility from the face normals, cross-'
-                'reference a local <b>material inventory</b> for stock, and upsert '
-                'the result into the global <b>Bill of Materials</b>. Upload an '
-                'STL/OBJ/PLY, or run the built-in demo bracket.</p>',
-                unsafe_allow_html=True)
-
-    import json as _json
-    import os as _os
-    import tempfile as _tempfile
-    import sqlite3 as _sqlite3
-
-    _pc = st.columns([1.3, 1, 1])
-    _part_id = _pc[0].text_input("Part ID", value="BRK-001", key="orc_dfm_pid")
-    _material = _pc[1].text_input("Material", value="AL6061-T6",
-                                  key="orc_dfm_mat")
-    _qty = _pc[2].number_input("Qty", 1, 500, 2, key="orc_dfm_qty")
-
-    _mesh_up = st.file_uploader("Component mesh (STL / OBJ / PLY)",
-                               type=["stl", "obj", "ply"], key="orc_dfm_mesh")
-    _mat_txt = st.text_area(
-        "Material inventory (JSON)",
-        value=_json.dumps({"inventory": [
-            {"sku": "AL6061-100x60x30", "material": "AL6061-T6",
-             "dims_mm": [100, 60, 30], "qty": 4, "location": "shelf B2"},
-            {"sku": "AL7075-50x50x50", "material": "AL7075-T6",
-             "dims_mm": [50, 50, 50], "qty": 2, "location": "shelf B3"}]},
-            indent=2), height=170, key="orc_dfm_inv")
-
-    if st.button("🏭 Analyse & update BOM", key="orc_dfm_go"):
-        try:
-            from oracle.dfm_analyzer import analyze_part
-            _wd = _tempfile.mkdtemp(prefix="orc_dfm_")
-            if _mesh_up is not None:
-                _ext = _os.path.splitext(_mesh_up.name)[1] or ".stl"
-                _mp = _os.path.join(_wd, "part" + _ext)
-                with open(_mp, "wb") as _fh:
-                    _fh.write(_mesh_up.getbuffer())
-            else:
-                import trimesh as _trimesh
-                _mp = _os.path.join(_wd, "demo_bracket.stl")
-                _trimesh.creation.box(extents=[80, 40, 20]).export(_mp)
-                st.caption("No mesh uploaded — analysing the built-in demo "
-                           "bracket (80×40×20 mm).")
-            _mdb = _os.path.join(_wd, "materials.json")
-            with open(_mdb, "w") as _fh:
-                _fh.write(_mat_txt)
-            _bdb = st.session_state.get("_orc_bom_db") \
-                or _os.path.join(_wd, "bom.sqlite")
-            st.session_state["_orc_bom_db"] = _bdb
-            _rep = analyze_part(_mp, _part_id, _material, _mdb, _bdb,
-                                qty=int(_qty))
-            st.session_state["_orc_dfm_report"] = _rep.to_dict()
-        except Exception as _e:
-            st.error(f"DFM analysis failed: {_e}")
-
-    _rep = st.session_state.get("_orc_dfm_report")
-    if _rep:
-        _mc = st.columns(4)
-        _mc[0].markdown(metric("3-axis reach",
-                               f"{100 * _rep['accessibility_3axis']:.1f}", "%"),
-                        unsafe_allow_html=True)
-        _mc[1].markdown(metric("5-axis reach",
-                               f"{100 * _rep['accessibility_5axis']:.1f}", "%"),
-                        unsafe_allow_html=True)
-        _mc[2].markdown(metric("Min wall", f"{_rep['min_wall_mm']:.2f}", "mm"),
-                        unsafe_allow_html=True)
-        _mc[3].markdown(metric("Volume", f"{_rep['volume_cm3']:.1f}", "cm³"),
-                        unsafe_allow_html=True)
-        _ok3 = _rep["manufacturable_3axis"]
-        _ok5 = _rep["manufacturable_5axis"]
-        _stock = _rep["material_available"]
-        if (_ok3 or _ok5) and _stock:
-            st.success(f"✔ Manufacturable "
-                       f"({'3-axis' if _ok3 else '5-axis'}) · stock available.")
-        else:
-            st.error("✘ Blocked — "
-                     + ("no suitable stock in inventory" if not _stock
-                        else "not reachable within accessibility limits") + ".")
-        for _iss in _rep["issues"]:
-            st.warning(_iss)
-        if _rep["stock_matches"]:
-            st.caption("Matching stock: " + ", ".join(
-                f"{_m['sku']} (×{_m['qty']}, {_m['location']})"
-                for _m in _rep["stock_matches"]))
-
-        _bdb = st.session_state.get("_orc_bom_db")
-        if _bdb and _os.path.exists(_bdb):
-            _con = _sqlite3.connect(_bdb)
-            try:
-                _bom = _con.execute(
-                    "SELECT part_id, subsystem, material, qty, volume_cm3, "
-                    "dfm_status, updated_at FROM bom ORDER BY updated_at DESC"
-                ).fetchall()
-            finally:
-                _con.close()
-            st.markdown("**Global BOM (live table):**")
-            _rows = ""
-            for _r in _bom:
-                _col = ("var(--good)" if _r[5] == "ok" else "var(--amber)")
-                _rows += (f"<tr><td style='padding:4px 10px'>{_r[0]}</td>"
-                          f"<td style='padding:4px 10px'>{_r[1]}</td>"
-                          f"<td style='padding:4px 10px'>{_r[2]}</td>"
-                          f"<td style='padding:4px 10px;text-align:right'>{_r[3]}</td>"
-                          f"<td style='padding:4px 10px;text-align:right'>{_r[4]:.1f}</td>"
-                          f"<td style='padding:4px 10px;color:{_col}'>{_r[5]}</td></tr>")
-            st.markdown(
-                "<table style='width:100%;border-collapse:collapse;font-size:.9rem'>"
-                "<tr style='color:#8d99a6;font-size:.8rem'>"
-                "<td style='padding:4px 10px'>part</td>"
-                "<td style='padding:4px 10px'>subsystem</td>"
-                "<td style='padding:4px 10px'>material</td>"
-                "<td style='padding:4px 10px;text-align:right'>qty</td>"
-                "<td style='padding:4px 10px;text-align:right'>vol cm³</td>"
-                "<td style='padding:4px 10px'>status</td></tr>"
-                f"{_rows}</table>", unsafe_allow_html=True)
-
-
-# ---------------------- PILLAR 5: COMPLIANCE GATE ------------------------- #
-with tab_orc_gate:
-    st.markdown('<p class="hint">The <b>save gate</b>: a state save is only '
-                'allowed if the car passes every rule in a dynamic JSON rulebook '
-                '— scalar/formula limits <i>and</i> geometric templates (cockpit '
-                'opening, tube wall). A violation <b>rejects the save</b> and '
-                'returns the exact failure delta for each broken rule.</p>',
-                unsafe_allow_html=True)
-
-    import json as _json
-    import os as _os
-    import tempfile as _tempfile
-    from oracle.compliance_gate import (
-        evaluate_ruleset, gated_save, ComplianceGateError)
-
-    _default_rules = {
-        "ruleset": "FSAE-2026 (Oracle gate, sample)",
-        "rules": [
-            {"id": "F.5.7.2", "description": "Main hoop minimum wall thickness",
-             "metric": "main_hoop_wall_mm", "op": ">=", "limit": 2.0,
-             "unit": "mm", "severity": "fail"},
-            {"id": "F.5.8", "description": "Tube OD×wall area proxy",
-             "formula": "tube_od_mm * tube_wall_mm", "op": ">=", "limit": 55.0,
-             "unit": "mm2", "severity": "warn"},
-            {"id": "T.1.1", "description": "Cockpit opening template must fit",
-             "check": "template_fit", "boundary": "cockpit_opening_xy",
-             "template_xy": [[0, 0], [300, 0], [300, 450], [0, 450]],
-             "severity": "fail"}],
-    }
-    _default_state = {
-        "metrics": {"main_hoop_wall_mm": float(st.session_state.get(
-                        "comp_wall", 1.6)),
-                    "tube_od_mm": float(st.session_state.get("comp_od", 25.4)),
-                    "tube_wall_mm": float(st.session_state.get("comp_wall", 1.6))},
-        "geometry": {"cockpit_opening_xy": [[-10, -10], [350, -10],
-                                            [350, 500], [-10, 500]]},
-    }
-    _gc = st.columns(2)
-    _rules_txt = _gc[0].text_area("Rulebook (JSON)",
-                                  value=_json.dumps(_default_rules, indent=2),
-                                  height=300, key="orc_gate_rules")
-    _state_txt = _gc[1].text_area("Car state to save (JSON)",
-                                  value=_json.dumps(_default_state, indent=2),
-                                  height=300, key="orc_gate_state")
-
-    if st.button("🚦 Request state save (gated)", key="orc_gate_go"):
-        try:
-            _rules = _json.loads(_rules_txt)
-            _state = _json.loads(_state_txt)
-            _wd = _tempfile.mkdtemp(prefix="orc_gate_")
-            _rbp = _os.path.join(_wd, "rulebook.json")
-            with open(_rbp, "w") as _fh:
-                _fh.write(_json.dumps(_rules))
-            _outp = _os.path.join(_wd, "saved_state.json")
-            try:
-                _rep = gated_save(_state, _rbp, _outp)
-                st.session_state["_orc_gate"] = {
-                    "accepted": True, "report": _rep,
-                    "saved": _os.path.exists(_outp)}
-            except ComplianceGateError as _cge:
-                st.session_state["_orc_gate"] = {
-                    "accepted": False, "report": _cge.report,
-                    "saved": _os.path.exists(_outp)}
-        except Exception as _e:
-            st.error(f"Couldn't evaluate the gate: {_e}")
-
-    _g = st.session_state.get("_orc_gate")
-    if _g:
-        _rep = _g["report"]
-        if _g["accepted"]:
-            st.success(f"✔ SAVE ACCEPTED — compliant against {_rep['ruleset']}. "
-                       f"{len(_rep['passed'])} rule(s) passed.")
-            st.caption("State written to disk." if _g["saved"]
-                       else "State evaluated compliant.")
-        else:
-            st.error(f"✘ SAVE REJECTED — {len(_rep['violations'])} violation(s) "
-                     f"against {_rep['ruleset']}. Nothing was written "
-                     f"(file present: {_g['saved']}).")
-        for _v in _rep["violations"]:
-            _fd = _v["failure_delta"]
-            _adj = (f" → {_fd['direction']} by {_fd['delta']:g} "
-                    f"(target {_fd.get('target', '?')})"
-                    if "delta" in _fd else f" → {_fd}")
-            st.markdown(
-                f'<div style="border-left:3px solid var(--bad,#e0554e);'
-                f'padding:4px 10px;margin:3px 0"><b>{_v["rule_id"]}</b> · '
-                f'{_v["description"]}<br><span style="font-size:.85rem;'
-                f'color:#8d99a6">{_v["metric"]} = {_v["measured"]:g} '
-                f'({_v["op"]} {_v["limit"]}){_adj}</span></div>',
-                unsafe_allow_html=True)
-        for _w in _rep.get("warnings", []):
-            st.warning(f"{_w['rule_id']} · {_w['description']}: "
-                       f"{_w['metric']} = {_w['measured']:g} "
-                       f"(wants {_w['op']} {_w['limit']})")
-
 
 # --- End-of-run memory hygiene (bottom of the script) --------------------- #
 # Bound the one unbounded-growth structure (the activity log) and run a
