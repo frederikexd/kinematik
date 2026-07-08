@@ -33,4 +33,5 @@ fast_simplification>=0.1   # faster CAD-part decimation for the 3D model (option
                            # falls back to built-in vertex clustering if absent)
 rtree>=1.0         # chassis/part collision queries via trimesh.proximity
 reportlab>=4.0     # PDF design-handover export         (project.py: render_pdf)
-supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseStore)
+supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseStore;
+                   #  workspace.py: tenant-scoped backend — run workspace_isolation.sql)

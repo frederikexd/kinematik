@@ -23,63 +23,170 @@ import os
 import re
 import html as _html
 import tempfile
+import importlib
 import datetime as _datetime
-import numpy as np
 import streamlit as st
 
-# Force a clean up on initial page load (mem_utils.memory_guard runs below,
-# once Streamlit and the helper are both imported, to shed cache if RSS is high)
-gc.collect()
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+# First Streamlit command — the page frame (title, layout, sidebar chrome) is
+# on screen before ANY engineering package is evaluated.
+st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
+                   page_icon="◢", layout="wide",
+                   initial_sidebar_state="expanded")
 
-from suspension import (
-    SuspensionKinematics, Hardpoints,
-    VehicleDynamics, VehicleParams,
-    MATERIALS, MemberStiffness, CompliantCorner,
-    load_flex_body, corner_wheel_load, WheelLoad,
-    GenericKinematics, list_templates, example as topo_example,
+gc.collect()
+
+# --------------------------------------------------------------------------- #
+#  Lazy import layer.
+#
+#  Every heavyweight dependency (numpy, plotly, and the ~35 suspension.*
+#  subsystem modules) is bound to a proxy that performs the real import on
+#  FIRST attribute access, then delegates forever after via sys.modules — a
+#  single extra __getattr__ hop, no re-import. Nothing below this block pays
+#  an import cost at script-parse time, so the UI shell paints instantly and a
+#  rerun only loads the modules the touched code path actually exercises.
+#  Every existing call site (`tf_mod.FrameGraph`, `go.Scatter3d`,
+#  `VehicleParams(**kw)`, `MATERIALS.keys()`…) keeps its exact spelling.
+# --------------------------------------------------------------------------- #
+class _LazyModule:
+    """Import-on-first-touch stand-in for `import name as alias`."""
+    __slots__ = ("_name", "_mod", "_post")
+
+    def __init__(self, name, post=None):
+        object.__setattr__(self, "_name", name)
+        object.__setattr__(self, "_mod", None)
+        object.__setattr__(self, "_post", post)
+
+    def _load(self):
+        mod = object.__getattribute__(self, "_mod")
+        if mod is None:
+            mod = importlib.import_module(object.__getattribute__(self, "_name"))
+            object.__setattr__(self, "_mod", mod)
+            post = object.__getattribute__(self, "_post")
+            if post is not None:
+                object.__setattr__(self, "_post", None)  # run exactly once
+                try:
+                    post(mod)
+                except Exception:
+                    pass
+        return mod
+
+    def __getattr__(self, item):
+        return getattr(self._load(), item)
+
+    def __repr__(self):
+        return f"<lazy module {object.__getattribute__(self, '_name')!r}>"
+
+
+class _LazySymbol:
+    """Import-on-first-touch stand-in for `from module import name`.
+    Forwards call / attribute / item / containment / iteration, which covers
+    every usage pattern of these symbols in this file (class construction,
+    classmethod access, dict .keys()/[]/in)."""
+    __slots__ = ("_modname", "_attr", "_obj")
+
+    def __init__(self, modname, attr):
+        object.__setattr__(self, "_modname", modname)
+        object.__setattr__(self, "_attr", attr)
+        object.__setattr__(self, "_obj", None)
+
+    def _load(self):
+        obj = object.__getattribute__(self, "_obj")
+        if obj is None:
+            mod = importlib.import_module(object.__getattribute__(self, "_modname"))
+            obj = getattr(mod, object.__getattribute__(self, "_attr"))
+            object.__setattr__(self, "_obj", obj)
+        return obj
+
+    def __call__(self, *a, **kw):      return self._load()(*a, **kw)
+    def __getattr__(self, item):       return getattr(self._load(), item)
+    def __getitem__(self, key):        return self._load()[key]
+    def __contains__(self, key):       return key in self._load()
+    def __iter__(self):                return iter(self._load())
+    def __len__(self):                 return len(self._load())
+    def __repr__(self):
+        return f"<lazy symbol {object.__getattribute__(self, '_modname')}.{object.__getattribute__(self, '_attr')}>"
+
+
+np = _LazyModule("numpy")
+go = _LazyModule("plotly.graph_objects")
+make_subplots = _LazySymbol("plotly.subplots", "make_subplots")
+
+
+def _purge_stale_proclib(proclib):
+    """Delete stale persisted process-library files once per process so they
+    are regenerated from the current seed data. Runs as a post-import hook the
+    first time the process-library module is actually touched — never at page
+    load."""
+    for _stale in (proclib.default_xlsx_path(), proclib.default_csv_path()):
+        try:
+            if os.path.exists(_stale):
+                os.remove(_stale)
+        except Exception:
+            pass
+
+
+_SUSP_MODULES = dict(
+    topo_mod="topologies",          fullcar_mod="fullcar3d",
+    compliance_mod="compliance",    flex_mod="flex",
+    chassis_mod="chassis",          integ_mod="integration",
+    project_mod="project",          tire_mod="tiremodel",
+    setup_mod="setup",              lap_mod="laptime",
+    corr_mod="correlation",         ev_mod="ev_powertrain",
+    lapsim_mod="lapsim",            elec_check_mod="ev_electrical_check",
+    roundtrip_mod="ev_excel_roundtrip", pack_mod="pack_thermal",
+    damper_mod="damper",            interfaces_mod="interfaces",
+    transient_mod="transient",      ggv_mod="ggv",
+    thermal_mod="tire_thermal",     units_mod="units",
+    bracket_mod="bracket_fos",      bolt_mod="bolted_joint",
+    tf_mod="tubeframe",             tract_mod="tractive_system",
+    pcm_mod="pcm_cooling",          dfmea_mod="dfmea",
+    riskprop_mod="risk_propagation", pti_mod="pt_integration",
+    registry_mod="registry",        ingest_mod="cad_ingest",
+    _axn="analytics",
+    _mem="mem_utils",               # RAM hygiene: keep under the 1 GB cloud limit
 )
-from suspension import topologies as topo_mod
-from suspension import fullcar3d as fullcar_mod
-from suspension import compliance as compliance_mod
-from suspension import flex as flex_mod
-from suspension import chassis as chassis_mod
-from suspension import integration as integ_mod
-from suspension import project as project_mod
-from suspension import tiremodel as tire_mod
-from suspension import setup as setup_mod
-from suspension import laptime as lap_mod
-from suspension import correlation as corr_mod
-from suspension.aero import windtunnel as wt_mod
-from suspension.aero import ReferenceAeroModel as _AeroRefModel, Attitude as _AeroAttitude
-from suspension.aero import (
-    ScaleSpec, SimilitudePlan, ToleranceBudget, MountAlignment, ScaledRunPlan,
-)
-from suspension import ev_powertrain as ev_mod
-from suspension import lapsim as lapsim_mod
-from suspension import ev_electrical_check as elec_check_mod
-from suspension import ev_excel_roundtrip as roundtrip_mod
-from suspension import pack_thermal as pack_mod
-from suspension import damper as damper_mod
-from suspension import interfaces as interfaces_mod
-from suspension import transient as transient_mod
-from suspension import ggv as ggv_mod
-from suspension import tire_thermal as thermal_mod
-from suspension import units as units_mod
-from suspension import bracket_fos as bracket_mod
-from suspension import bolted_joint as bolt_mod
-from suspension import tubeframe as tf_mod
-from suspension import tractive_system as tract_mod
-from suspension import pcm_cooling as pcm_mod
-from suspension import dfmea as dfmea_mod
-from suspension import risk_propagation as riskprop_mod
-from suspension import process_library as proclib_mod
-from suspension import pt_integration as pti_mod
-from suspension import registry as registry_mod
-from suspension import cad_ingest as ingest_mod
-from suspension import analytics as _axn
-from suspension import mem_utils as _mem   # RAM hygiene: keep under the 1 GB cloud limit
+globals().update({alias: _LazyModule(f"suspension.{sub}")
+                  for alias, sub in _SUSP_MODULES.items()})
+proclib_mod = _LazyModule("suspension.process_library", post=_purge_stale_proclib)
+wt_mod = _LazyModule("suspension.aero.windtunnel")
+
+# powertrain package — lazy-loaded just like every suspension submodule.
+# `import powertrain` is inert; powertrain.engine (and all its re-exports)
+# load only when the Powertrain Drive & Thermal tab is actually rendered.
+pt_engine_mod = _LazyModule("powertrain.engine")
+# Convenience lazy symbols for the most-called engine API:
+MotorCurve         = _LazySymbol("powertrain.engine", "MotorCurve")
+DrivetrainParams   = _LazySymbol("powertrain.engine", "DrivetrainParams")
+DrivetrainResult   = _LazySymbol("powertrain.engine", "DrivetrainResult")
+GearSweepResult    = _LazySymbol("powertrain.engine", "GearSweepResult")
+simulate_launch    = _LazySymbol("powertrain.engine", "simulate_launch")
+optimize_gear_ratio = _LazySymbol("powertrain.engine", "optimize_gear_ratio")
+CoolantProps       = _LazySymbol("powertrain.engine", "CoolantProps")
+CoolingNetwork     = _LazySymbol("powertrain.engine", "CoolingNetwork")
+PipeSegment        = _LazySymbol("powertrain.engine", "PipeSegment")
+YBranch            = _LazySymbol("powertrain.engine", "YBranch")
+STANDARD_Y_BRANCHES = _LazySymbol("powertrain.engine", "STANDARD_Y_BRANCHES")
+PumpCurve          = _LazySymbol("powertrain.engine", "PumpCurve")
+Radiator           = _LazySymbol("powertrain.engine", "Radiator")
+JunctionAudit      = _LazySymbol("powertrain.engine", "JunctionAudit")
+ThermalResult      = _LazySymbol("powertrain.engine", "ThermalResult")
+simulate_lap_thermal = _LazySymbol("powertrain.engine", "simulate_lap_thermal")
+total_mass_from_ledger = _LazySymbol("powertrain.engine", "total_mass_from_ledger")
+publish_to_ledger  = _LazySymbol("powertrain.engine", "publish_to_ledger")
+
+# `from suspension import X` / `from suspension.aero import Y` equivalents.
+for _sym in ("SuspensionKinematics", "Hardpoints", "VehicleDynamics",
+             "VehicleParams", "MATERIALS", "MemberStiffness", "CompliantCorner",
+             "load_flex_body", "corner_wheel_load", "WheelLoad",
+             "GenericKinematics", "list_templates"):
+    globals()[_sym] = _LazySymbol("suspension", _sym)
+topo_example = _LazySymbol("suspension", "example")
+for _sym in ("ScaleSpec", "SimilitudePlan", "ToleranceBudget",
+             "MountAlignment", "ScaledRunPlan"):
+    globals()[_sym] = _LazySymbol("suspension.aero", _sym)
+_AeroRefModel = _LazySymbol("suspension.aero", "ReferenceAeroModel")
+_AeroAttitude = _LazySymbol("suspension.aero", "Attitude")
+del _sym
 
 
 # --------------------------------------------------------------------------- #
@@ -339,28 +446,25 @@ def _cached_parse_kicad(text: str):
     return _pdr.parse_kicad_pcb(text)
 
 
-st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
-                   page_icon="◢", layout="wide",
-                   initial_sidebar_state="expanded")
+# Frame Planner: the triangulation / load-path audit walks every bay of the
+# frame graph on every rerun (st.tabs executes the tab body regardless of which
+# tab is visible). The audit depends ONLY on the frame dict, so key it on the
+# canonical JSON of that dict: geometry edits recompute, every other widget
+# interaction anywhere in the app is a cache hit and re-renders UI only.
+@st.cache_data(show_spinner=False, ttl=600, max_entries=8)
+def _cached_frame_audit(frame_json: str):
+    _g = tf_mod.FrameGraph.from_dict(json.loads(frame_json))
+    return {"quads": _g.untriangulated_quads(),
+            "landings": _g.midspan_landings(),
+            "tris": _g.triangulated_nodes()}
+
 
 # RAM watchdog: below the soft limit this is one cheap file read; as the session
 # approaches the 1 GB Community-Cloud ceiling it sheds Streamlit's data cache
 # (recomputable results only) so a viewer never hits the "over its resource
-# limits" page. Runs once per rerun, near the top.
+# limits" page. Runs once per rerun, near the top. (First touch of `_mem`
+# imports only suspension.mem_utils via the lazy layer — not the whole stack.)
 _mem.memory_guard()
-
-# Delete stale persisted process-library files on first run of this session
-# so they are regenerated from the current seed data, removing any old / broken
-# links written by a previous version of the app.
-if "proclib_stale_purged" not in st.session_state:
-    import os as _os
-    for _stale in (proclib_mod.default_xlsx_path(), proclib_mod.default_csv_path()):
-        try:
-            if _os.path.exists(_stale):
-                _os.remove(_stale)
-        except Exception:
-            pass
-    st.session_state.proclib_stale_purged = True
 
 # --------------------------------------------------------------------------- #
 #  Aesthetic: technical instrument panel. Dark carbon, amber/cyan telemetry,
@@ -559,6 +663,12 @@ hr{ border-color:var(--line);}
 .stFileUploader > div{ background:var(--panel2)!important; border-color:var(--line)!important; }
 </style>
 """, unsafe_allow_html=True)
+
+# Shell paints here — header on screen before state init, imports, or the
+# kinematics solve run. (Moved up from below the solve block; single source.)
+st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
+            '<span class="sub">the hour before ANSYS, SolidWorks &amp; MATLAB · open source</span></div>',
+            unsafe_allow_html=True)
 
 PLOT_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#0e1216",
@@ -1424,9 +1534,7 @@ if solve_ok and not st.session_state.get("_ax_kin_solved_once"):
     except Exception:
         pass
 
-st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
-            '<span class="sub">the hour before ANSYS, SolidWorks &amp; MATLAB · open source</span></div>',
-            unsafe_allow_html=True)
+# (brand header renders at the top of the script, immediately after the CSS)
 
 # =========================================================================== #
 #  ◢ STATUS DASHBOARD — front-page "is the car ready?" at a glance            #
@@ -15550,9 +15658,12 @@ with tab6:
                   "defects) or upload your node/tube CSVs. Per-side frames "
                   "audit cleanly — model one side at a time.")
       else:
-          _quads = _g.untriangulated_quads()
-          _lands = _g.midspan_landings()
-          _tris = _g.triangulated_nodes()
+          # Cached across reruns on the frame geometry itself — widget churn
+          # elsewhere in the app never re-walks the graph.
+          _audit = _cached_frame_audit(
+              json.dumps(st.session_state["tf_frame"], sort_keys=True))
+          _quads, _lands, _tris = (_audit["quads"], _audit["landings"],
+                                   _audit["tris"])
 
           # -- classify edges once; draw one None-separated trace per class -- #
           _bad_edges = set()
