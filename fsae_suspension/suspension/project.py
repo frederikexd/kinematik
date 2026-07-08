@@ -163,6 +163,15 @@ class JSONFileBackend:
                 return json.load(f)
         return {}
 
+    def read_version(self):
+        """Cheap change-probe for polling: the file's mtime as a string, without
+        parsing the JSON. Lets a poll skip the full read when nothing changed.
+        Returns None if the file doesn't exist yet. Never raises."""
+        try:
+            return str(os.path.getmtime(self.path))
+        except OSError:
+            return None
+
     def write(self, payload: dict):
         with open(self.path, "w") as f:
             json.dump(payload, f, indent=2)
@@ -194,6 +203,24 @@ class SupabaseBackend:
                 .select("data").eq("id", self.project_id).execute())
         rows = resp.data or []
         return rows[0]["data"] if rows else {}
+
+    def read_version(self):
+        """Cheap change-probe for polling: pull ONLY the `updated` timestamp out
+        of the JSON row instead of the whole project blob. On Postgres this is a
+        tiny scalar select (`data->>'updated'`) rather than transferring the full
+        document every poll. Returns None on any error so the caller falls back to
+        a full read rather than assuming 'no change'."""
+        try:
+            resp = (self.client.table(self.TABLE)
+                    .select("data->>updated")
+                    .eq("id", self.project_id).execute())
+            rows = resp.data or []
+            if not rows:
+                return None
+            row = rows[0]
+            return row.get("updated") or next(iter(row.values()), None)
+        except Exception:
+            return None
 
     def write(self, payload: dict):
         self.client.table(self.TABLE).upsert(
@@ -268,10 +295,11 @@ class ProjectStore:
     # Class-level defaults: guarantee these attributes resolve even if __init__
     # is interrupted partway (a lazy optional-import failure, an exception in
     # load(), or a half-built instance returned from a cache). The render path
-    # reads store.geometry / store.board unconditionally, so a missing attribute
-    # turns into a redacted AttributeError on the deployed app.
+    # reads store.geometry / store.board / store.cad_files unconditionally, so a
+    # missing attribute turns into a redacted AttributeError on the deployed app.
     geometry = None
     board = None
+    cad_files: list = []
 
     def __init__(self, path: str = DEFAULT_PROJECT, backend=None):
         self.path = path
@@ -388,6 +416,21 @@ class ProjectStore:
             self.save_error = f"Could not write project data: {e}"
             return False
 
+    def read_version(self):
+        """Cheap 'has anything changed?' probe for the notification poller.
+
+        Delegates to the backend's lightweight version read (file mtime for the
+        JSON backend, a scalar `updated` select for Supabase). If the backend
+        doesn't implement one, returns None, which callers treat as 'unknown —
+        do a full read to be safe'. Never raises."""
+        rv = getattr(self.backend, "read_version", None)
+        if callable(rv):
+            try:
+                return rv()
+            except Exception:
+                return None
+        return None
+
     def as_json(self) -> str:
         return json.dumps({
             "team_name": self.team_name, "season": self.season,
@@ -466,8 +509,10 @@ class ProjectStore:
 
     def cad_files_for(self, subsystem: str | None = None) -> list[CADFile]:
         """Library entries, newest-first, optionally filtered by subsystem tag
-        (case-insensitive). subsystem=None returns everything."""
-        out = self.cad_files
+        (case-insensitive). subsystem=None returns everything. Defensive: tolerate
+        a store whose cad_files was never initialised (interrupted __init__, old
+        cached instance) so the render path can't crash with an AttributeError."""
+        out = getattr(self, "cad_files", None) or []
         if subsystem:
             s = subsystem.strip().lower()
             out = [c for c in out if (c.subsystem or "").lower() == s]
@@ -476,7 +521,8 @@ class ProjectStore:
     def cad_subsystems(self) -> list[str]:
         """Unique, sorted subsystem tags present in the library."""
         return sorted({(c.subsystem or "general").strip()
-                       for c in self.cad_files if (c.subsystem or "").strip()})
+                       for c in (getattr(self, "cad_files", None) or [])
+                       if (c.subsystem or "").strip()})
 
     def resolve_note(self, note_id: str):
         for n in self.notes:
