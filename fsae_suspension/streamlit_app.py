@@ -1289,16 +1289,28 @@ with st.sidebar:
         "from_links": "Experimental / free-form",
     }
     _topo_keys = list(_TOPO_LABELS.keys())
+    # Bind the selectbox straight to session_state via `key` and let Streamlit own
+    # the value. The previous pattern (index= read from session_state + a manual
+    # `st.session_state.topology = topo_choice` write, with no key) lagged a run
+    # behind: the widget's own remembered value and the manually-written value
+    # fought each other, so the picked topology never reached the solver or the
+    # 3D model on the run you clicked. Seed the default once, then read the key.
+    # A loaded project stages its topology here (it can't write the widget key
+    # after the widget exists). Apply it before the selectbox is built.
+    _pending_topo = st.session_state.pop("_pending_topology", None)
+    if _pending_topo in _topo_keys:
+        st.session_state.topology = _pending_topo
+    if st.session_state.get("topology") not in _topo_keys:
+        st.session_state.topology = "double_wishbone"
     topo_choice = st.selectbox(
         "Suspension topology",
         _topo_keys,
         format_func=lambda k: _TOPO_LABELS.get(k, k),
-        index=_topo_keys.index(st.session_state.get("topology", "double_wishbone")),
+        key="topology",
         help="Double-wishbone exposes the full live hardpoint editor. Every other "
              "architecture is solved by the architecture-agnostic multibody engine "
              "from a representative parameter set and feeds the same vehicle-level "
              "balance analysis.")
-    st.session_state.topology = topo_choice
     if topo_choice != "double_wishbone":
         st.caption("Agnostic engine · this topology drives the same RC / anti-dive / "
                    "balance pipeline as the wishbone path.")
@@ -16201,10 +16213,10 @@ with tab6:
   # legality, Size-C sourcing trade, and the four subteams' attachment briefs.
   st.markdown("#### 🧱 Frame Planner — triangulation · tube sourcing · attachments")
   st.markdown(
-      '<p class="hint" style="margin:0 0 8px;">The chassis meeting'
-      'computed: audit the frame graph for the'
+      '<p class="hint" style="margin:0 0 8px;">The 06/29 chassis meeting, '
+      'computed: audit the frame graph for the <b>2027-illegal</b> '
       'untriangulated bays and load-path interruptions, run the '
-      'sourcing trade with real Δmass/Δcost, and size '
+      '<b>Size C → Size B</b> sourcing trade with real Δmass/Δcost, and size '
       'every subteam\'s <b>panel &amp; attachment</b> brief (seat &amp; '
       'harness, floor, firewall, aero panels). ' +
       _html.escape(tf_mod.RULES_DISCLAIMER) + '</p>', unsafe_allow_html=True)
@@ -21309,7 +21321,11 @@ with sc3:
             if "topo_hardpoints" in data and isinstance(data["topo_hardpoints"], dict):
                 st.session_state.topo_hp = data["topo_hardpoints"]
             if "topology" in data:
-                st.session_state.topology = data["topology"]
+                # `topology` is now bound to the sidebar selectbox via key=, and
+                # this handler runs AFTER that widget is created this run, so we
+                # can't assign it directly. Stage it and apply it before the
+                # widget on the forced rerun below.
+                st.session_state["_pending_topology"] = data["topology"]
             if "vehicle" in data:
                 st.session_state.vp = data["vehicle"]
             if data.get("ledger"):
@@ -21327,8 +21343,7 @@ with sc3:
                         st.session_state[_pk] = _pv
             st.success("Project loaded — geometry, vehicle, handover, and "
                        "pedal-box/throttle inputs restored.")
-            if st.button("Apply loaded project"):
-                st.rerun()
+            st.rerun()
         except Exception as e:
             st.error(f"Couldn't read that project file: {e}")
 
