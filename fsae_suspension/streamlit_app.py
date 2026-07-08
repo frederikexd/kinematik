@@ -142,6 +142,7 @@ _SUSP_MODULES = dict(
     pcm_mod="pcm_cooling",          dfmea_mod="dfmea",
     riskprop_mod="risk_propagation", pti_mod="pt_integration",
     registry_mod="registry",        ingest_mod="cad_ingest",
+    cadshare_mod="cad_share",
     _axn="analytics",
     _mem="mem_utils",               # RAM hygiene: keep under the 1 GB cloud limit
 )
@@ -1004,6 +1005,36 @@ def mechanism_with_overrides(topo_key, coords):
 PROJECT_PATH = os.path.join(os.getcwd(), "project.json")
 
 
+def _active_workspace_ctx():
+    """The WorkspaceContext set by the sign-in gate (auth_ui.require_workspace),
+    or None when Supabase isn't configured (legacy local single-user mode).
+    Reads from session_state so every store constructor — cached or ad-hoc —
+    sees the same tenant binding for this session."""
+    return st.session_state.get("_kx_workspace_ctx")
+
+
+def _make_store():
+    """Single construction point for the project store. Tenant-aware:
+
+      * Workspace context present (user signed in, workspace chosen)
+            -> a store whose ENTIRE persistence surface is scoped to that
+               workspace: writes are stamped workspace_id, reads filter by it,
+               and Supabase RLS re-enforces membership on the server. This is
+               the Option-B tenant wall; the anon key alone can no longer read
+               or write project rows.
+      * No context (Supabase not configured)
+            -> the legacy local JSON store, unchanged, for laptops and tests.
+
+    Every call site goes through here so no path can accidentally fall back to
+    the old anon-key ProjectStore(PROJECT_PATH) once tenancy is active.
+    """
+    ctx = _active_workspace_ctx()
+    if ctx is not None:
+        from suspension.workspace import workspace_store
+        return workspace_store(ctx, root=os.getcwd())
+    return project_mod.ProjectStore(PROJECT_PATH)
+
+
 def get_store():
     """Return the project store, cached in session_state for the life of the
     session.
@@ -1016,12 +1047,19 @@ def get_store():
     session_state means edits persist for the session regardless of whether the
     backend write succeeded; `save()` still runs for cross-session persistence
     where the backend allows it.
+
+    The cache is keyed by the active workspace id, so switching workspaces in the
+    picker rebuilds the store against the new tenant rather than serving the
+    previous tenant's cached data.
     """
-    store = st.session_state.get("_project_store")
-    if store is None:
-        store = project_mod.ProjectStore(PROJECT_PATH)
-        st.session_state["_project_store"] = store
-    return store
+    ctx = _active_workspace_ctx()
+    ws_key = ctx.workspace_id if ctx is not None else "__local__"
+    cached = st.session_state.get("_project_store")
+    if cached is None or st.session_state.get("_project_store_ws") != ws_key:
+        cached = _make_store()
+        st.session_state["_project_store"] = cached
+        st.session_state["_project_store_ws"] = ws_key
+    return cached
 
 
 def save_store(store):
@@ -1040,6 +1078,22 @@ def save_store(store):
             f"('kinematik_project'), its columns (id text, data jsonb), and the "
             f"key's row-level-security policy.")
     return ok
+
+
+# --------------------------------------------------------------------------- #
+#  Tenant sign-in gate (Option B: workspace isolation).
+#
+#  If Supabase is configured, require a signed-in user and a chosen workspace
+#  BEFORE any project data renders; the resulting WorkspaceContext is stashed in
+#  session_state and every store built by _make_store()/get_store() is scoped to
+#  it (writes stamped workspace_id, reads filtered, RLS enforced server-side).
+#
+#  If Supabase is NOT configured, require_workspace() returns None and the app
+#  runs exactly as before in local single-user mode — no gate, no regression.
+# --------------------------------------------------------------------------- #
+from suspension import auth_ui as _auth_ui   # light import: stdlib + lazy supabase
+
+_workspace_ctx = _auth_ui.require_workspace(st)
 
 
 def _memo(cache_key, signature, compute_fn):
@@ -1113,7 +1167,7 @@ def _load_notes_from_disk():
     """Read notes straight from the shared backend, bypassing the per-session
     cached store, so we see what *other* sessions have written. Never raises."""
     try:
-        fresh = project_mod.ProjectStore(PROJECT_PATH)
+        fresh = _make_store()
         return list(fresh.notes)
     except Exception:
         return []
@@ -8476,6 +8530,347 @@ with tab_car:
                 f"{_hm['label'].lower()} sits within the car's budget.")
     except Exception as _eh:
         st.error(f"Could not build the heatmap view: {_eh}")
+
+
+# =========================================================================== #
+#  CHASSIS DOCS & SHARED CAD  —  three panels at the foot of the 3D Model tab. #
+#    1. 🗄️ Team CAD library     — publish/browse/download shared CAD & docs.   #
+#    2. 📸 SES location pack      — HV/LV positions -> ortho views + coord CSV.  #
+#    3. 🧮 Suspension -> Ansys     — hardpoints CSV + BEAM188 APDL torsion deck. #
+#  Files persist through the existing project store (get_store()), so they      #
+#  survive restarts on Supabase and locally via project.json.                   #
+# =========================================================================== #
+with tab_car:
+    import base64 as _b64
+    st.markdown("---")
+    st.markdown("### 🗃️ CHASSIS DOCS & SHARED CAD")
+    st.caption("Everyone's CAD in one place, the SES location pack, and a "
+               "ready-to-run ANSYS torsion deck — all from the shared 3D model.")
+
+    _cad_store = get_store()
+
+    # ----------------------------------------------------------------- #
+    #  1 · Team CAD library
+    # ----------------------------------------------------------------- #
+    with st.expander("🗄️ Team CAD library — a place to find everyone else's "
+                     "SolidWorks files", expanded=False):
+        st.caption("Publish STEP / SLDPRT / SLDASM / STL / DXF / PNG etc. "
+                   f"(up to {cadshare_mod.CAD_EMBED_LIMIT_BYTES // (1024*1024)} MB "
+                   "embedded, or share a link for big assemblies). Everyone can "
+                   "browse, filter, and download.")
+
+        _SUBSYS_TAGS = ["general", "suspension", "chassis", "aero", "ev",
+                        "accumulator", "electronics", "SES", "powertrain",
+                        "brakes", "bodywork"]
+
+        _pub = st.columns([2.2, 1.3, 1.5])
+        _up = _pub[0].file_uploader(
+            "File to publish",
+            type=["step", "stp", "sldprt", "sldasm", "stl", "dxf", "dwg",
+                  "igs", "iges", "png", "jpg", "jpeg", "pdf", "x_t", "x_b",
+                  "f3d", "3mf", "obj"],
+            key="cad_pub_file")
+        _pub_sub = _pub[1].selectbox("Subsystem", _SUBSYS_TAGS, key="cad_pub_sub")
+        _pub_who = _pub[2].text_input("Your name", key="cad_pub_who")
+        _pub_note = st.text_input("Note (optional)", key="cad_pub_note",
+                                  placeholder="e.g. rev C, matches drawing 204-A")
+
+        _big_link = st.text_input(
+            "…or share a LINK to a big assembly (GrabCAD / Drive / OneDrive)",
+            key="cad_pub_link",
+            placeholder="https://…  (use this when the file is over the size cap)")
+
+        if st.button("Publish to library", type="primary", key="cad_pub_btn"):
+            try:
+                if _up is not None:
+                    _bytes = _up.getvalue()
+                    if not cadshare_mod.within_embed_limit(len(_bytes)):
+                        st.error(
+                            f"{_up.name} is {cadshare_mod.human_size(len(_bytes))} — "
+                            f"over the {cadshare_mod.CAD_EMBED_LIMIT_BYTES//(1024*1024)} MB "
+                            "embed cap. Share it as a link instead (paste a URL above "
+                            "and publish without a file).")
+                    else:
+                        _cad_store.add_cad_file(project_mod.CADFile(
+                            name=_up.name, subsystem=_pub_sub,
+                            uploader=_pub_who.strip(), kind="file",
+                            data_b64=_b64.b64encode(_bytes).decode("ascii"),
+                            size_bytes=len(_bytes), note=_pub_note.strip()))
+                        save_store(_cad_store)
+                        st.success(f"Published {_up.name} "
+                                   f"({cadshare_mod.human_size(len(_bytes))}).")
+                        _do_rerun()
+                elif _big_link.strip():
+                    _nm = _big_link.strip().rstrip("/").split("/")[-1] or "assembly link"
+                    _cad_store.add_cad_file(project_mod.CADFile(
+                        name=_nm, subsystem=_pub_sub, uploader=_pub_who.strip(),
+                        kind="link", link=_big_link.strip(), size_bytes=0,
+                        note=_pub_note.strip()))
+                    save_store(_cad_store)
+                    st.success("Shared the link in the library.")
+                    _do_rerun()
+                else:
+                    st.warning("Choose a file or paste a link first.")
+            except Exception as _ce:
+                st.error(f"Couldn't publish: {_ce}")
+
+        st.markdown("##### Library")
+        _all_files = _cad_store.cad_files_for(None)
+        if not _all_files:
+            st.info("Nothing shared yet. Be the first to publish a file above.")
+        else:
+            _subs = ["(all)"] + _cad_store.cad_subsystems()
+            _filt = st.selectbox("Filter by subsystem", _subs, key="cad_lib_filter")
+            _shown = (_all_files if _filt == "(all)"
+                      else _cad_store.cad_files_for(_filt))
+            st.caption(f"{len(_shown)} of {len(_all_files)} file(s)")
+            for _cf in _shown:
+                _row = st.columns([3.2, 1.4, 1.3, 1.1, 0.9])
+                _meta = f"`{_cf.subsystem}`"
+                if _cf.uploader:
+                    _meta += f" · {_cf.uploader}"
+                if _cf.note:
+                    _meta += f" · _{_cf.note}_"
+                _row[0].markdown(f"**{_cf.name}**  \n{_meta}")
+                _row[1].caption(_cf.ts.replace("T", " "))
+                if _cf.kind == "link":
+                    _row[2].markdown(f"[open link]({_cf.link})")
+                else:
+                    _row[2].caption(cadshare_mod.human_size(_cf.size_bytes))
+                    try:
+                        _row[3].download_button(
+                            "Download", data=_b64.b64decode(_cf.data_b64),
+                            file_name=_cf.name, key=f"cad_dl_{_cf.id}")
+                    except Exception:
+                        _row[3].caption("—")
+                if _row[4].button("Remove", key=f"cad_rm_{_cf.id}"):
+                    _cad_store.remove_cad_file(_cf.id)
+                    save_store(_cad_store)
+                    _do_rerun()
+
+    # ----------------------------------------------------------------- #
+    #  2 · SES location pack
+    # ----------------------------------------------------------------- #
+    with st.expander("📸 SES location pack — HV & LV positions, ortho views, "
+                     "coordinate table", expanded=False):
+        st.caption("SES wants CAD pictures of where components sit — HV "
+                   "accumulator and LV battery most of all. Enter their box "
+                   "centres; every part already placed on the 3D model is "
+                   "included automatically. Download each view as PNG (camera "
+                   "icon) and the coordinate table as CSV.")
+
+        _hvc = st.columns(3)
+        _hv_x = _hvc[0].number_input("HV accumulator x (mm)", value=-150.0,
+                                     step=5.0, key="ses_hv_x")
+        _hv_y = _hvc[1].number_input("HV accumulator y (mm)", value=0.0,
+                                     step=5.0, key="ses_hv_y")
+        _hv_z = _hvc[2].number_input("HV accumulator z (mm)", value=180.0,
+                                     step=5.0, key="ses_hv_z")
+        _lvc = st.columns(3)
+        _lv_x = _lvc[0].number_input("LV battery x (mm)", value=200.0,
+                                     step=5.0, key="ses_lv_x")
+        _lv_y = _lvc[1].number_input("LV battery y (mm)", value=150.0,
+                                     step=5.0, key="ses_lv_y")
+        _lv_z = _lvc[2].number_input("LV battery z (mm)", value=120.0,
+                                     step=5.0, key="ses_lv_z")
+
+        # Parts already placed on the shared 3D model (subsystem centroids).
+        _placed = {}
+        try:
+            _hp_cur = st.session_state.get("hp", {}) or {}
+            _vp_fields_s = set(VehicleParams.__dataclass_fields__.keys())
+            _vp_kwargs_s = {k: v for k, v in st.session_state.vp.items()
+                            if k in _vp_fields_s}
+            _vp_s = VehicleParams(**_vp_kwargs_s)
+            _led_s = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+            _figS = fullcar_mod.build_full_car_figure(vp=_vp_s, ledger=_led_s)
+            if hasattr(fullcar_mod, "subsys_centroids"):
+                _placed = fullcar_mod.subsys_centroids(_figS) or {}
+        except Exception:
+            _placed = {}
+
+        _rows = cadshare_mod.ses_location_rows(
+            hv=(_hv_x, _hv_y, _hv_z), lv=(_lv_x, _lv_y, _lv_z), placed=_placed)
+
+        if not _rows:
+            st.info("Enter HV/LV positions above to build the pack.")
+        else:
+            # Three dimensioned orthographic views: side (x-z), top (x-y),
+            # front (y-z). Each is its own plotly figure with a camera icon
+            # (Streamlit's built-in download-as-PNG on the modebar).
+            def _ortho(_ax_h, _ax_v, _h_lab, _v_lab, _title):
+                _fig = go.Figure()
+                for _r in _rows:
+                    _hx = getattr(_r, _ax_h)
+                    _vy = getattr(_r, _ax_v)
+                    _col = {"HV": "#e23b3b", "LV": "#f0a500"}.get(_r.category, "#39b7cd")
+                    _sz = 16 if _r.category in ("HV", "LV") else 9
+                    _fig.add_trace(go.Scatter(
+                        x=[_hx], y=[_vy], mode="markers+text",
+                        marker=dict(size=_sz, color=_col,
+                                    line=dict(width=1, color="#111")),
+                        text=[_r.name], textposition="top center",
+                        textfont=dict(size=10), name=_r.name, showlegend=False))
+                _fig.update_layout(
+                    title=_title, height=360,
+                    xaxis_title=_h_lab, yaxis_title=_v_lab,
+                    yaxis=dict(scaleanchor="x", scaleratio=1),
+                    margin=dict(l=10, r=10, t=40, b=10),
+                    template="plotly_dark")
+                return _fig
+
+            _v1, _v2, _v3 = st.columns(3)
+            with _v1:
+                st.plotly_chart(_ortho("x_mm", "z_mm", "x — rear (mm)",
+                                       "z — up (mm)", "Side view (x–z)"),
+                                use_container_width=True, key="ses_side")
+            with _v2:
+                st.plotly_chart(_ortho("x_mm", "y_mm", "x — rear (mm)",
+                                       "y — right (mm)", "Top view (x–y)"),
+                                use_container_width=True, key="ses_top")
+            with _v3:
+                st.plotly_chart(_ortho("y_mm", "z_mm", "y — right (mm)",
+                                       "z — up (mm)", "Front view (y–z)"),
+                                use_container_width=True, key="ses_front")
+
+            st.caption("Use each plot's camera icon to save the view as PNG.")
+
+            _ses_csv = cadshare_mod.ses_location_csv(_rows)
+            st.dataframe(
+                [{"component": _r.name, "category": _r.category,
+                  "x_mm": round(_r.x_mm, 1), "y_mm": round(_r.y_mm, 1),
+                  "z_mm": round(_r.z_mm, 1)} for _r in _rows],
+                hide_index=True, use_container_width=True)
+
+            _sc = st.columns(2)
+            _sc[0].download_button("Download coordinate table (CSV)",
+                                   data=_ses_csv, file_name="ses_locations.csv",
+                                   key="ses_csv_dl")
+            if _sc[1].button("Publish CSV to library (tagged SES)",
+                             key="ses_csv_pub"):
+                _cad_store.add_cad_file(project_mod.CADFile(
+                    name="ses_locations.csv", subsystem="SES",
+                    uploader="", kind="file",
+                    data_b64=_b64.b64encode(_ses_csv.encode()).decode("ascii"),
+                    size_bytes=len(_ses_csv), note="component location table"))
+                save_store(_cad_store)
+                st.success("Published to the CAD library under SES.")
+                _do_rerun()
+
+            st.caption("Tip: screenshots you upload to the library can be "
+                       "SES-tagged too, so the whole pack collects in one place.")
+
+    # ----------------------------------------------------------------- #
+    #  3 · Suspension → Ansys export
+    # ----------------------------------------------------------------- #
+    with st.expander("🧮 Suspension → Ansys export — hardpoints CSV + BEAM188 "
+                     "APDL torsion deck", expanded=False):
+        st.caption("Live hardpoints CSV plus a generated APDL .inp deck "
+                   "(BEAM188 line bodies, tube section & material from the "
+                   "Compliance tab, frame tubes auto-included if a Frame "
+                   "Planner frame is loaded).")
+
+        _hp_now = st.session_state.get("hp", {}) or {}
+        if not _hp_now:
+            st.info("No hardpoints in the session yet — set geometry on the "
+                    "suspension tabs first.")
+        else:
+            # Section + material from the Compliance tab (fallback to the FSAE
+            # default 3/4\" 4130, 0.9 mm if that tab hasn't been visited).
+            _mat_name = st.session_state.get("comp_mat", "Steel 4130")
+            _od_mm = float(st.session_state.get("comp_od", 19.05))
+            _wall_mm = float(st.session_state.get("comp_wall", 0.9))
+            _mat = MATERIALS.get(_mat_name)
+            _E_pa = (float(_mat.E) * 1e6) if _mat else 205e9   # MPa -> Pa
+            _rho = float(getattr(_mat, "rho", 7850.0)) if _mat else 7850.0
+
+            _section = cadshare_mod.BeamSection(od_m=_od_mm * 1e-3,
+                                                wall_m=_wall_mm * 1e-3)
+            _material = cadshare_mod.BeamMaterial(
+                name=_mat_name, E_pa=_E_pa, rho_kg_m3=_rho)
+
+            # Frame Planner frame, if one is loaded (shared session state).
+            _frame_obj = None
+            _fd = st.session_state.get("tf_frame")
+            if _fd:
+                try:
+                    _frame_obj = tf_mod.FrameGraph.from_dict(_fd)
+                except Exception:
+                    _frame_obj = None
+
+            _counts = cadshare_mod.apdl_counts(_hp_now, frame=_frame_obj)
+            _msg = (f"Section: {_mat_name}, OD {_od_mm:g} mm × {_wall_mm:g} mm "
+                    f"wall. Will generate **{_counts['links']} suspension links**")
+            if _counts["frame_tubes"]:
+                _msg += f" + **{_counts['frame_tubes']} frame tubes**"
+            else:
+                _msg += " (no frame loaded — load one in Frame Planner to include it)"
+            _msg += f", {_counts['keypoints']} keypoints."
+            st.markdown(_msg)
+
+            _hp_csv = cadshare_mod.hardpoints_csv(_hp_now)
+            try:
+                _deck = cadshare_mod.build_apdl_deck(
+                    _hp_now, _section, _material, frame=_frame_obj,
+                    title=f"KinematiK torsional stiffness — {_cad_store.team_name}")
+            except Exception as _ae:
+                _deck = None
+                st.error(f"Couldn't build the APDL deck: {_ae}")
+
+            _ec = st.columns(2)
+            _ec[0].download_button("Download hardpoints CSV", data=_hp_csv,
+                                   file_name="hardpoints.csv", key="ans_hp_dl")
+            if _deck is not None:
+                _ec[1].download_button("Download APDL deck (.inp)", data=_deck,
+                                       file_name="torsional_stiffness.inp",
+                                       key="ans_inp_dl")
+
+            _pc = st.columns(2)
+            if _pc[0].button("Publish hardpoints CSV to library (suspension)",
+                             key="ans_hp_pub"):
+                _cad_store.add_cad_file(project_mod.CADFile(
+                    name="hardpoints.csv", subsystem="suspension", kind="file",
+                    data_b64=_b64.b64encode(_hp_csv.encode()).decode("ascii"),
+                    size_bytes=len(_hp_csv), note="live hardpoints export"))
+                save_store(_cad_store)
+                st.success("Published hardpoints.csv under suspension.")
+                _do_rerun()
+            if _deck is not None and _pc[1].button(
+                    "Publish APDL deck to library (suspension)", key="ans_inp_pub"):
+                _cad_store.add_cad_file(project_mod.CADFile(
+                    name="torsional_stiffness.inp", subsystem="suspension",
+                    kind="file",
+                    data_b64=_b64.b64encode(_deck.encode()).decode("ascii"),
+                    size_bytes=len(_deck), note="BEAM188 torsion deck"))
+                save_store(_cad_store)
+                st.success("Published torsional_stiffness.inp under suspension.")
+                _do_rerun()
+
+            if _deck is not None:
+                with st.expander("Preview the APDL deck", expanded=False):
+                    st.code(_deck, language="text")
+
+            st.markdown("**Suspension CAD feed** (library, filtered to suspension):")
+            _susp_files = _cad_store.cad_files_for("suspension")
+            if not _susp_files:
+                st.caption("No suspension CAD shared yet — publish the CSV/deck "
+                           "above, or drop a wishbone STEP in the Team CAD library.")
+            else:
+                for _sf in _susp_files:
+                    _sr = st.columns([3.5, 1.4, 1.1])
+                    _sr[0].markdown(f"**{_sf.name}**"
+                                    + (f" · _{_sf.note}_" if _sf.note else ""))
+                    if _sf.kind == "link":
+                        _sr[1].markdown(f"[open link]({_sf.link})")
+                    else:
+                        _sr[1].caption(cadshare_mod.human_size(_sf.size_bytes))
+                        try:
+                            _sr[2].download_button(
+                                "Download", data=_b64.b64decode(_sf.data_b64),
+                                file_name=_sf.name, key=f"ans_feed_dl_{_sf.id}")
+                        except Exception:
+                            _sr[2].caption("—")
+
 
 # =========================================================================== #
 #  AERODYNAMICS  —  surfaces the in-house aero stack as a frictionless tool.   #
@@ -16181,7 +16576,7 @@ with tab6:
                 if st.button("＋ Log to handover" +
                              (" & notify" if notify_team != "(don't notify)" else ""),
                              key="autocap_team_btn"):
-                    _s = project_mod.ProjectStore(PROJECT_PATH)
+                    _s = _make_store()
                     _s.add_decision(project_mod.Decision(
                         team=team, title=f"{part_name} chassis {res['verdict'].lower()}",
                         rationale=edited, author="TEAM FIT", tags="auto-captured"))
@@ -16212,7 +16607,7 @@ with tab6:
                                        f"{est:.0f}" if est else "—", "g"),
                                 unsafe_allow_html=True)
                 if est and st.button("＋ Add to weight budget", key="aw_btn"):
-                    s_ = project_mod.ProjectStore(PROJECT_PATH)
+                    s_ = _make_store()
                     s_.add_weight(project_mod.WeightItem(
                         team=team, name=part_name, mass_g=float(est), qty=int(aw_qty),
                         material=aw_mat, source="cad_estimate"))
@@ -16272,7 +16667,7 @@ with tab7:
         st.error(f"⚠ {store.load_error}")
 
     # Tell the user whether their data is persisting or session-only.
-    _is_persistent = type(store.backend).__name__ == "SupabaseBackend"
+    _is_persistent = type(store.backend).__name__ in ("SupabaseBackend", "WorkspaceScopedSupabaseBackend")
     if _is_persistent:
         st.markdown('<span class="tag good">● persistent storage — data survives '
                     'restarts</span>', unsafe_allow_html=True)
@@ -16506,7 +16901,7 @@ with tab7:
 
 # ----------------------------- TAB 8 --------------------------------------- #
 with tab8:
-    nstore = project_mod.ProjectStore(PROJECT_PATH)
+    nstore = _make_store()
 
     # The lead is looking at the notes — clear the unread badge for this session
     # and treat everything currently on disk as seen.
@@ -16573,7 +16968,7 @@ with tab8:
               st.session_state.setdefault("_notes_seen_ids", set()).add(_new_note.id)
               _recipients = ("all teams" if n_to == "all"
                              else integ_mod.TEAMS.get(n_to, {}).get("label", n_to))
-              _shared = type(nstore.backend).__name__ == "SupabaseBackend"
+              _shared = type(nstore.backend).__name__ in ("SupabaseBackend", "WorkspaceScopedSupabaseBackend")
               if _ok and _shared:
                   # Genuinely delivered: written to the shared store every other
                   # session polls, so their poller will toast them within
@@ -19867,7 +20262,7 @@ if _show_ledger:
                   'being online.</p>',
                   unsafe_allow_html=True)
       try:
-          _team = project_mod.ProjectStore(PROJECT_PATH).team_name or "FSAE Team"
+          _team = _make_store().team_name or "FSAE Team"
       except Exception:
           _team = "FSAE Team"
       _report_md = _IF.build_interface_markdown(led, team_name=_team)
