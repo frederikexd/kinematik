@@ -22892,7 +22892,7 @@ with tab_analytics:
                   y=[r.get("label") or r["feature"] for r in _rows],
                   orientation="h",
                   marker_color="#37e0d0",
-                  text=[f"${r.get('dollars_saved', 0):,.0f}" for r in _rows],
+                  text=[f"${(r.get('hours_saved') or 0) * 65:,.0f}" for r in _rows],
                   textposition="auto"))
               _fig.update_layout(
                   height=max(220, 38 * len(_rows)), margin=dict(l=10, r=10, t=10, b=10),
