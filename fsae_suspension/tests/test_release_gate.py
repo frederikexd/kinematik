@@ -9,28 +9,20 @@ IFF contract: the clipboard PDF exists exactly when the gate is green.
 Run: python tests/test_release_gate.py"""
 
 import copy
+import importlib
 import os
 import sys
 import tempfile
-import types
-import importlib.util
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 
 def _load(name):
-    pkg = sys.modules.setdefault("suspension", types.ModuleType("suspension"))
-    if not hasattr(pkg, "__path__"):
-        pkg.__path__ = [os.path.join(_ROOT, "suspension")]
-    full = f"suspension.{name}"
-    if full in sys.modules:
-        return sys.modules[full]
-    spec = importlib.util.spec_from_file_location(
-        full, os.path.join(_ROOT, "suspension", f"{name}.py"))
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[full] = mod
-    spec.loader.exec_module(mod)
-    return mod
+    # Import through the real (lazy) package so pytest and standalone runs see
+    # the same module objects — no stub `suspension` in sys.modules.
+    return importlib.import_module(f"suspension.{name}")
 
 
 BJ = _load("bolted_joint")
@@ -171,4 +163,16 @@ with tempfile.TemporaryDirectory() as td:
           and not os.path.exists(os.path.join(td, "c3.pdf")))
 
 print(f"\n{len(_PASS)} passed, {len(_FAIL)} failed")
-sys.exit(1 if _FAIL else 0)
+
+
+# --- pytest bridge: expose every module-level check as a test case ---------- #
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("name", _PASS + _FAIL)
+def test_check(name):
+    assert name not in _FAIL, f"check failed: {name}"
+
+
+if __name__ == "__main__":
+    sys.exit(1 if _FAIL else 0)

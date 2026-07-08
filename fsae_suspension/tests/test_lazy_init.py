@@ -31,6 +31,12 @@ HEAVY_OPTIONAL = [
     "cascadio", "fast_simplification", "rtree",
 ]
 
+# Repo root, injected into each subprocess's sys.path so the child can import
+# `suspension` regardless of what the parent's working directory happens to be.
+import os
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 def test_import_suspension_is_free_of_heavy_optional_deps():
     """`import suspension` must succeed with the heavy optional deps blocked.
@@ -40,6 +46,7 @@ def test_import_suspension_is_free_of_heavy_optional_deps():
     """
     code = (
         "import sys, importlib.abc\n"
+        f"sys.path.insert(0, {_ROOT!r})\n"
         f"HEAVY={HEAVY_OPTIONAL!r}\n"
         "class B(importlib.abc.MetaPathFinder):\n"
         "    def find_spec(self, name, path=None, target=None):\n"
@@ -67,6 +74,7 @@ def test_heavy_feature_is_deferred_not_eager():
     import is deferred rather than paid at package load."""
     code = (
         "import sys, importlib.abc\n"
+        f"sys.path.insert(0, {_ROOT!r})\n"
         "class B(importlib.abc.MetaPathFinder):\n"
         "    def find_spec(self, name, path=None, target=None):\n"
         "        if name.split('.')[0]=='plotly':\n"

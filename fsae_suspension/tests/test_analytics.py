@@ -13,6 +13,18 @@ import importlib
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _restore_cwd_after_test():
+    """_fresh_module chdir's into the per-test tmp dir; put cwd back afterwards
+    so later tests (and their subprocesses) don't inherit a deleted temp dir."""
+    cwd = os.getcwd()
+    yield
+    os.chdir(cwd)
+
+
 def _fresh_module(tmp_cwd, monkeypatch=None):
     """Import a clean copy of analytics with cwd pointed at a temp dir so the
     local buffer is isolated per test."""

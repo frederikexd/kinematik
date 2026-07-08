@@ -27,24 +27,19 @@ other engine tests.
 Run:  python tests/test_dfmea.py
 """
 
+import importlib
 import os
 import sys
-import types
-import importlib.util
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 
 def _load():
-    pkg = types.ModuleType("suspension")
-    pkg.__path__ = [os.path.join(_ROOT, "suspension")]
-    sys.modules.setdefault("suspension", pkg)
-    path = os.path.join(_ROOT, "suspension", "dfmea.py")
-    spec = importlib.util.spec_from_file_location("suspension.dfmea", path)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["suspension.dfmea"] = mod
-    spec.loader.exec_module(mod)
-    return mod
+    # Import through the real (lazy) package so pytest and standalone runs see
+    # the same module objects — no stub `suspension` in sys.modules.
+    return importlib.import_module("suspension.dfmea")
 
 
 DF = _load()
@@ -126,6 +121,18 @@ check("tracker is risk-sorted (Critical/High first)",
 
 
 print(f"\n{len(_PASS)} passed, {len(_FAIL)} failed")
-if _FAIL:
-    print("FAILED:", _FAIL)
-    sys.exit(1)
+
+
+# --- pytest bridge: expose every module-level check as a test case ---------- #
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("name", _PASS + _FAIL)
+def test_check(name):
+    assert name not in _FAIL, f"check failed: {name}"
+
+
+if __name__ == "__main__":
+    if _FAIL:
+        print("FAILED:", _FAIL)
+        sys.exit(1)

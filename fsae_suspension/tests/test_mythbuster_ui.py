@@ -32,7 +32,7 @@ APP = os.path.join(os.path.dirname(os.path.dirname(__file__)), "streamlit_app.py
 _WANT = {
     "render_mythbuster", "_mb_build_context", "_mb_render_card",
     "_MBDictResult", "_mb_reference_claim_for", "_mb_verdict_value",
-    "_MB_VCFG", "_MB_DISCIPLINES",
+    "_MB_VCFG", "_MB_DISCIPLINES", "_mb_validation_disclaimer",
 }
 
 
@@ -133,8 +133,13 @@ def test_ui_helpers_present_in_app():
 
 
 def test_integration_tab_dispatches_to_mythbuster():
-    """The Integration view radio must include the Myth-buster option and call
-    render_mythbuster — guard against the dispatch being removed."""
+    """The myth-buster must stay reachable from the Integration surface.
+
+    The dedicated "Myth-buster" radio option was folded into the Verdict
+    Center (sanity-check page), so the guard is now: the app still labels the
+    Myth-buster somewhere in the Integration wiring AND still calls
+    render_mythbuster() — i.e. the dispatch was refactored, not removed."""
     src = open(APP).read()
-    assert '"Myth-buster"' in src, "Myth-buster option missing from Integration view"
+    assert ("Myth-buster" in src or "Myth-Buster" in src), \
+        "Myth-buster surface missing from the app"
     assert "render_mythbuster()" in src, "render_mythbuster() not dispatched"
