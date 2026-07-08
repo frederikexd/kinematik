@@ -2057,6 +2057,7 @@ _TAB_META = {
     "pcb":         ("🔌", "Electronics (PCB)"),
     "tractive":    ("⚡", "Tractive Safety"),
     "dfmea":       ("🧯", "DFMEA"),
+    "chassisdocs": ("🗃️", "[LEADS ONLY] chassis docs & CAD docs"),
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
@@ -2078,7 +2079,7 @@ _TAB_CATEGORIES = [
      ["kinematics", "roll", "tire", "aero", "ev", "laptime",
       "setup"]),
     ("design",   "🛠️", "Design & Sizing",
-     ["brakes", "accum", "pcb", "compliance", "teamfit", "model3d"]),
+     ["brakes", "accum", "pcb", "compliance", "teamfit", "chassisdocs", "model3d"]),
     ("checks",   "✅", "Checks & Integration",
      ["integration", "validation", "dfmea", "tractive"]),
     ("docs",     "📄", "Documentation",
@@ -2123,7 +2124,7 @@ _ROLE_TABS = {
     # brakes wants Track Testing (lap time + GGV) to see brake balance on track,
     # plus tyre grip.
     "brakes":     ["brakes", "tire", "laptime"],
-    "chassis":    ["teamfit", "compliance"],
+    "chassis":    ["teamfit", "compliance", "chassisdocs"],
     "cost":       ["cost"],
     "everyone":   [],   # just the shared spine
 }
@@ -6847,6 +6848,7 @@ tab_analytics = _id_to_container["analytics"]
 tab_pcb     = _id_to_container["pcb"]
 tab_tractive = _id_to_container["tractive"]
 tab_dfmea    = _id_to_container["dfmea"]
+tab_chassisdocs = _id_to_container["chassisdocs"]
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
@@ -8392,16 +8394,16 @@ with tab_car:
 
 
 # =========================================================================== #
-#  CHASSIS DOCS & SHARED CAD  —  three panels at the foot of the 3D Model tab. #
+#  CHASSIS DOCS & SHARED CAD  —  its own tab under 🛠️ Design & Sizing, scoped  #
+#  to the chassis / frame role (plus power-user "All tabs" view).               #
 #    1. 🗄️ Team CAD library     — publish/browse/download shared CAD & docs.   #
 #    2. 📸 SES location pack      — HV/LV positions -> ortho views + coord CSV.  #
 #    3. 🧮 Suspension -> Ansys     — hardpoints CSV + BEAM188 APDL torsion deck. #
 #  Files persist through the existing project store (get_store()), so they      #
 #  survive restarts on Supabase and locally via project.json.                   #
 # =========================================================================== #
-with tab_car:
+with tab_chassisdocs:
     import base64 as _b64
-    st.markdown("---")
     st.markdown("### 🗃️ CHASSIS DOCS & SHARED CAD")
     st.warning("⚠️ **LEADS ONLY** — To preserve stability, access restricted to LEADS ONLY",
                icon="🔒")
