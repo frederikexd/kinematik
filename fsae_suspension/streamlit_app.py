@@ -5425,27 +5425,57 @@ def render_mesh_and_dxf_expander(subsystem_key, *, key_prefix,
             st.caption(f"Mesh/DXF export unavailable: {_me}")
 
 
-def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
-    """Bring the sidebar hardpoint editor's live numbers INTO the suspension tab.
+# Per-topology definition of the upright/carrier mount points — the outboard
+# joints where the links meet the upright. These are the points the mount-plate
+# export cares about: the PCD is the span across them and the bolt count is how
+# many there are. The wishbone path stays on the editable `hp` dict; every other
+# architecture reads its live points from the solved mechanism (kin.named_points),
+# so the panel now tracks the selected topology instead of always showing
+# wishbone ball-joints. Each entry: (point-name-in-mechanism, human label,
+# is_optional). The first two non-optional points define the PCD span.
+_UPRIGHT_MOUNTS = {
+    "macpherson_strut": [("lo", "Lower ball joint", False),
+                         ("sl", "Strut lower mount", False),
+                         ("tro", "Tie-rod outer", True)],
+    "multilink": [("out0", "Lower-fore link end", False),
+                  ("out2", "Upper-camber link end", False),
+                  ("out4", "Toe-link end", True)],
+    "trailing_arm": [("hub", "Arm-to-hub joint", False),
+                     ("wc", "Wheel centre", False)],
+    "semi_trailing_arm": [("hub", "Arm-to-hub joint", False),
+                          ("wc", "Wheel centre", False)],
+    "solid_axle": [("lout0", "Lower link end", False),
+                   ("lout2", "Upper link end", False),
+                   ("lat", "Lateral-device end", True)],
+    "twist_beam": [("hubL", "Trailing-arm hub", False),
+                   ("beamL", "Beam attach", False)],
+    "truck_steer_linkage": [("sp", "Spindle joint", False),
+                            ("sa", "Steering-arm joint", False),
+                            ("tri", "Tie-rod inner", True)],
+    "from_links": [("upper_outer", "Upper outer", False),
+                   ("lower_outer", "Lower outer", False),
+                   ("tie_rod_outer", "Tie-rod outer", True)],
+}
 
-    Suspension is the one subsystem whose export inputs (the ball-joint
-    hardpoints) live in the left sidebar, not in the tab body — which is exactly
+
+def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
+    """Bring the live hardpoint numbers INTO the suspension tab, for ANY topology.
+
+    Suspension is the one subsystem whose export inputs (the outboard mount
+    joints) live in the left sidebar, not in the tab body — which is exactly
     what confused members hunting for 'where the numbers come from'. This panel
-    closes that gap: it shows the actual upper/lower/tie-rod points and the PCD +
-    bolt count they derive (the very numbers the DXF export reads), flags any
-    that are missing or the wrong topology, and points plainly to the sidebar
-    editor. It reads state only — the sidebar remains the single place you edit —
-    so there's one source of truth, mirrored where people look first."""
-    hp = st.session_state.get("hp", {}) or {}
+    closes that gap: it shows the actual upright-mount points and the PCD + bolt
+    count they derive (the very numbers the DXF export reads), and points plainly
+    to the sidebar editor. On a double-wishbone it reads the editable `hp` dict;
+    on every other architecture it reads the solved mechanism's live points so
+    the tiles, PCD and bolt count follow the selected topology. It reads state
+    only — the sidebar remains the single place you edit — so there's one source
+    of truth, mirrored where people look first."""
     topo = st.session_state.get("topology", "double_wishbone")
     is_wb = (topo == "double_wishbone")
 
-    _pts = [("upper_outer", "Upper ball joint"),
-            ("lower_outer", "Lower ball joint"),
-            ("tie_rod_outer", "Tie-rod outer")]
-
     def _fmt(v):
-        if not v or len(v) < 3:
+        if v is None or len(v) < 3:
             return None
         try:
             xs = [units_mod.from_metric(float(c), "mm") for c in v[:3]]
@@ -5454,36 +5484,76 @@ def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
         fmt = "%.1f" if _U_LEN == "in" else "%.0f"
         return "(" + ", ".join(fmt % c for c in xs) + f") {_U_LEN}"
 
-    # Build the point tiles + track which of the two PCD-defining joints exist.
+    # Resolve the mount-point spec + a coordinate lookup for the active topology.
+    if is_wb:
+        _spec = [("upper_outer", "Upper ball joint", False),
+                 ("lower_outer", "Lower ball joint", False),
+                 ("tie_rod_outer", "Tie-rod outer", True)]
+        _hp = st.session_state.get("hp", {}) or {}
+        def _coord(name):
+            return _hp.get(name)
+        _src_txt = "SIDEBAR ▸ HARDPOINT EDITOR"
+    else:
+        _spec = _UPRIGHT_MOUNTS.get(topo)
+        _named = {}
+        try:
+            _kin = globals().get("kin")
+            if _kin is not None and hasattr(_kin, "named_points"):
+                _named = {n: [float(c) for c in np.asarray(p, float).ravel()]
+                          for n, p in _kin.named_points().items()}
+        except Exception:
+            _named = {}
+        def _coord(name):
+            return _named.get(name)
+        _src_txt = f"SIDEBAR ▸ {_TOPO_LABELS.get(topo, topo).upper()}"
+
+    _title_arch = ("from your hardpoints" if is_wb
+                   else _TOPO_LABELS.get(topo, topo))
+
+    # If we have no spec (unknown topology) or no live points, degrade gracefully.
+    if not _spec:
+        st.markdown(
+            f'''
+<div class="hp-card">
+  <div class="hp-top">
+    <span class="hp-ttl">📐 Upright mount — {_title_arch}</span>
+    <span class="hp-src">{_src_txt} · {_U_LEN}</span>
+  </div>
+  <div class="hp-note">This architecture exports from a representative mount
+  set. Edit its geometry in the left sidebar under <b>Suspension geometry
+  (hardpoint editor)</b>.</div>
+</div>
+''',
+            unsafe_allow_html=True)
+        return
+
+    # Build the point tiles + collect the two PCD-defining (non-optional) joints.
     _tiles = ""
-    _have_uo = _have_lo = False
-    for key, label in _pts:
-        disp = _fmt(hp.get(key))
-        if key == "upper_outer":
-            _have_uo = disp is not None
-        if key == "lower_outer":
-            _have_lo = disp is not None
+    _pcd_pts = []
+    for name, label, optional in _spec:
+        v = _coord(name)
+        disp = _fmt(v)
         if disp is None:
-            _optional = (key == "tie_rod_outer")
-            _txt = "not set" + (" (optional)" if _optional else "")
+            _txt = "not set" + (" (optional)" if optional else "")
             _tiles += (f'<div class="hp-pt miss"><div class="l">{label}</div>'
                        f'<div class="v">{_txt}</div></div>')
         else:
             _tiles += (f'<div class="hp-pt"><div class="l">{label}</div>'
                        f'<div class="v">{disp}</div></div>')
+            if not optional and len(_pcd_pts) < 2:
+                _pcd_pts.append(v)
 
-    # Derived numbers the export actually reads (span → PCD, tie-rod → 3rd bolt).
+    # Derived numbers the export reads: span across the two primary mount joints
+    # → PCD; total present mount points → bolt count.
     _pcd = None
-    _uo, _lo = hp.get("upper_outer"), hp.get("lower_outer")
-    if _have_uo and _have_lo:
+    if len(_pcd_pts) == 2:
         try:
-            _span = ((_uo[0]-_lo[0])**2 + (_uo[1]-_lo[1])**2
-                     + (_uo[2]-_lo[2])**2) ** 0.5
+            a, b = _pcd_pts[0], _pcd_pts[1]
+            _span = ((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2) ** 0.5
             _pcd = units_mod.from_metric(float(_span), "mm")
         except Exception:
             _pcd = None
-    _tro = hp.get("tie_rod_outer")
-    _nb = 3 if (_tro and len(_tro) >= 3) else 2
+    _nb = sum(1 for name, _lbl, _opt in _spec if _coord(name) is not None)
 
     _pcd_fmt = "%.1f" if _U_LEN == "in" else "%.0f"
     _pcd_txt = (f'{_pcd_fmt % _pcd} {_U_LEN}' if _pcd is not None else "—")
@@ -5498,17 +5568,17 @@ def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
         f'</div>')
 
     # Status note: name the exact next action, in the sidebar, where it happens.
-    if not is_wb:
-        _note = ('<div class="hp-note">The full ball-joint editor shows on a '
-                 '<b>double-wishbone</b> topology. Open the left sidebar and set '
-                 '<b>Suspension topology → Double wishbone</b> to edit these '
-                 'points. Other topologies still export from a representative '
-                 'set.</div>')
-    elif _pcd is None:
-        _note = ('<div class="hp-note">Set the <b>upper</b> and <b>lower ball '
-                 'joints</b> to define the mount PCD. Edit them in the left '
-                 'sidebar under <b>Suspension geometry (hardpoint editor) → '
-                 'Pickup coordinates</b>.</div>')
+    if _pcd is None:
+        if is_wb:
+            _note = ('<div class="hp-note">Set the <b>upper</b> and <b>lower ball '
+                     'joints</b> to define the mount PCD. Edit them in the left '
+                     'sidebar under <b>Suspension geometry (hardpoint editor) → '
+                     'Pickup coordinates</b>.</div>')
+        else:
+            _note = ('<div class="hp-note">Move the outboard mount points in the '
+                     'left sidebar under <b>Suspension geometry (hardpoint '
+                     'editor)</b> to define the mount PCD for this '
+                     'architecture.</div>')
     else:
         _note = ('<div class="hp-note"><span class="hp-here">✓ feeding the '
                  'export</span> &nbsp;These are the numbers the Mesh &amp; DXF '
@@ -5520,8 +5590,8 @@ def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
         f'''
 <div class="hp-card">
   <div class="hp-top">
-    <span class="hp-ttl">📐 Upright mount — from your hardpoints</span>
-    <span class="hp-src">SIDEBAR ▸ HARDPOINT EDITOR · {_U_LEN}</span>
+    <span class="hp-ttl">📐 Upright mount — {_title_arch}</span>
+    <span class="hp-src">{_src_txt} · {_U_LEN}</span>
   </div>
   <div class="hp-grid">{_tiles}</div>
   {_derived}
