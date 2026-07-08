@@ -22844,8 +22844,8 @@ with tab_analytics:
     if roi:
         r0 = roi[0]
         _h = r0.get("total_hours_saved") or 0
-        _d = r0.get("total_dollars_saved") or 0
-        _rate = r0.get("labour_rate_usd_hr") or 0
+        _rate = 65.0
+        _d = _h * _rate
         _val = r0.get("total_value_usd") or _d
         m1, m2, m3 = st.columns(3)
         _ax_metric(m1, "Hours saved", f"{_h:,.0f}", "across all workflows",
