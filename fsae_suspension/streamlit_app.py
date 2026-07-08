@@ -16201,10 +16201,10 @@ with tab6:
   # legality, Size-C sourcing trade, and the four subteams' attachment briefs.
   st.markdown("#### 🧱 Frame Planner — triangulation · tube sourcing · attachments")
   st.markdown(
-      '<p class="hint" style="margin:0 0 8px;">The 06/29 chassis meeting, '
-      'computed: audit the frame graph for the <b>2027-illegal</b> '
+      '<p class="hint" style="margin:0 0 8px;">The chassis meeting'
+      'computed: audit the frame graph for the'
       'untriangulated bays and load-path interruptions, run the '
-      '<b>Size C → Size B</b> sourcing trade with real Δmass/Δcost, and size '
+      'sourcing trade with real Δmass/Δcost, and size '
       'every subteam\'s <b>panel &amp; attachment</b> brief (seat &amp; '
       'harness, floor, firewall, aero panels). ' +
       _html.escape(tf_mod.RULES_DISCLAIMER) + '</p>', unsafe_allow_html=True)
