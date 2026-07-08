@@ -8694,31 +8694,176 @@ with tab_car:
         _rows = cadshare_mod.ses_location_rows(
             hv=(_hv_x, _hv_y, _hv_z), lv=(_lv_x, _lv_y, _lv_z), placed=_placed)
 
+        # Apply any coordinate overrides the user edited in the table below.
+        # Done here — before the plots — so everything stays in sync.
+        _ses_ov_pre = st.session_state.get("ses_overrides", {})
+        if _ses_ov_pre and _rows:
+            class _OvRow:
+                __slots__ = ("name", "category", "x_mm", "y_mm", "z_mm")
+                def __init__(self, _r, _ov):
+                    self.name     = _r.name
+                    self.category = _r.category
+                    self.x_mm     = float(_ov.get("x_mm", _r.x_mm))
+                    self.y_mm     = float(_ov.get("y_mm", _r.y_mm))
+                    self.z_mm     = float(_ov.get("z_mm", _r.z_mm))
+            _rows = [_OvRow(_r, _ses_ov_pre.get(_r.name, {})) for _r in _rows]
+
         if not _rows:
             st.info("Enter HV/LV positions above to build the pack.")
         else:
             # Three dimensioned orthographic views: side (x-z), top (x-y),
             # front (y-z). Each is its own plotly figure with a camera icon
             # (Streamlit's built-in download-as-PNG on the modebar).
+            import math as _math
+
+            _CAT_COLORS = {"HV": "#ff4b4b", "LV": "#f5a623"}
+            _OTHER_COLOR = "#4cc9f0"
+
+            def _label_offset(_hx, _vy, _cx, _cy, _is_key):
+                """Return (dx, dy, textanchor_x, textanchor_y) for a label
+                placed radially outward from the point-cloud centroid.
+                Key components get a longer leader line."""
+                _dx = _hx - _cx
+                _dy = _vy - _cy
+                _dist = _math.hypot(_dx, _dy) or 1.0
+                _reach = 90 if _is_key else 65
+                _nx = _dx / _dist
+                _ny = _dy / _dist
+                # Anchor text on the far side of the leader tip
+                _ax = "left" if _nx >= 0 else "right"
+                _ay = "top" if _ny <= 0 else "bottom"
+                return _nx * _reach, _ny * _reach, _ax, _ay
+
             def _ortho(_ax_h, _ax_v, _h_lab, _v_lab, _title):
                 _fig = go.Figure()
-                for _r in _rows:
+
+                # Sort so HV/LV render on top (added last)
+                _sorted_rows = sorted(
+                    _rows,
+                    key=lambda _r: 0 if _r.category not in ("HV", "LV") else 1)
+
+                # Point-cloud centroid for outward label placement
+                _xs = [getattr(_r, _ax_h) for _r in _sorted_rows]
+                _ys = [getattr(_r, _ax_v) for _r in _sorted_rows]
+                _cx = sum(_xs) / len(_xs) if _xs else 0.0
+                _cy = sum(_ys) / len(_ys) if _ys else 0.0
+
+                # --- grouped marker traces (one per category, for a clean legend) ---
+                _groups = {}
+                for _r in _sorted_rows:
+                    _groups.setdefault(_r.category, []).append(_r)
+
+                _cat_order = sorted(
+                    _groups.keys(),
+                    key=lambda c: 0 if c == "HV" else 1 if c == "LV" else 2)
+
+                _cat_labels = {"HV": "HV accumulator", "LV": "LV battery"}
+
+                for _cat in _cat_order:
+                    _grp = _groups[_cat]
+                    _is_key = _cat in ("HV", "LV")
+                    _col = _CAT_COLORS.get(_cat, _OTHER_COLOR)
+                    _sz = 18 if _is_key else 10
+                    _gxs = [getattr(_r, _ax_h) for _r in _grp]
+                    _gys = [getattr(_r, _ax_v) for _r in _grp]
+                    _htexts = [
+                        (f"<b>{_r.name}</b><br>"
+                         f"x = {_r.x_mm:.0f} mm<br>"
+                         f"y = {_r.y_mm:.0f} mm<br>"
+                         f"z = {_r.z_mm:.0f} mm")
+                        for _r in _grp]
+                    _fig.add_trace(go.Scatter(
+                        x=_gxs, y=_gys,
+                        mode="markers",
+                        marker=dict(
+                            size=_sz, color=_col,
+                            line=dict(width=1.5 if _is_key else 1.0,
+                                      color="rgba(255,255,255,0.35)"),
+                            symbol="circle",
+                            opacity=1.0 if _is_key else 0.85,
+                        ),
+                        name=_cat_labels.get(_cat, "other subsystems"),
+                        legendgroup=_cat,
+                        hovertemplate="%{customdata}<extra></extra>",
+                        customdata=_htexts,
+                        showlegend=True,
+                    ))
+
+                # --- leader lines + floating labels (annotations) ---
+                for _r in _sorted_rows:
                     _hx = getattr(_r, _ax_h)
                     _vy = getattr(_r, _ax_v)
-                    _col = {"HV": "#e23b3b", "LV": "#f0a500"}.get(_r.category, "#39b7cd")
-                    _sz = 16 if _r.category in ("HV", "LV") else 9
-                    _fig.add_trace(go.Scatter(
-                        x=[_hx], y=[_vy], mode="markers+text",
-                        marker=dict(size=_sz, color=_col,
-                                    line=dict(width=1, color="#111")),
-                        text=[_r.name], textposition="top center",
-                        textfont=dict(size=10), name=_r.name, showlegend=False))
+                    _is_key = _r.category in ("HV", "LV")
+                    _col = _CAT_COLORS.get(_r.category, _OTHER_COLOR)
+                    _dx, _dy, _tax, _tay = _label_offset(_hx, _vy, _cx, _cy, _is_key)
+                    _fig.add_annotation(
+                        x=_hx, y=_vy,
+                        ax=_hx + _dx, ay=_vy + _dy,
+                        axref="x", ayref="y",
+                        xref="x", yref="y",
+                        text=f"<b>{_r.name}</b>" if _is_key else _r.name,
+                        showarrow=True,
+                        arrowhead=0,
+                        arrowwidth=1.0 if _is_key else 0.7,
+                        arrowcolor=_col if _is_key else "rgba(180,210,230,0.45)",
+                        font=dict(
+                            size=11 if _is_key else 9.5,
+                            color="#ffffff" if _is_key else "#b0c8dc",
+                            family="monospace" if _is_key else "sans-serif",
+                        ),
+                        align="left",
+                        xanchor=_tax,
+                        yanchor=_tay,
+                        bgcolor="rgba(18,22,32,0.72)" if _is_key else "rgba(18,22,32,0.55)",
+                        borderpad=3,
+                    )
+
+                # Zero-reference crosshairs
+                _fig.add_hline(y=0, line_width=1,
+                               line_dash="dot", line_color="rgba(255,255,255,0.18)")
+                _fig.add_vline(x=0, line_width=1,
+                               line_dash="dot", line_color="rgba(255,255,255,0.18)")
+
                 _fig.update_layout(
-                    title=_title, height=360,
-                    xaxis_title=_h_lab, yaxis_title=_v_lab,
-                    yaxis=dict(scaleanchor="x", scaleratio=1),
-                    margin=dict(l=10, r=10, t=40, b=10),
-                    template="plotly_dark")
+                    title=dict(text=_title,
+                               font=dict(size=13, color="#e0e8f0", family="monospace"),
+                               x=0.5, xanchor="center"),
+                    height=440,
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom", y=1.02,
+                        xanchor="left", x=0,
+                        font=dict(size=10, color="#c8d8e8"),
+                        bgcolor="rgba(0,0,0,0)",
+                        itemsizing="constant",
+                    ),
+                    xaxis=dict(
+                        title=dict(text=_h_lab,
+                                   font=dict(size=11, color="#7a9bb8")),
+                        gridcolor="rgba(255,255,255,0.06)",
+                        zerolinecolor="rgba(255,255,255,0.22)",
+                        tickfont=dict(size=9, color="#6a8ba8"),
+                        tickformat=".0f",
+                    ),
+                    yaxis=dict(
+                        title=dict(text=_v_lab,
+                                   font=dict(size=11, color="#7a9bb8")),
+                        scaleanchor="x", scaleratio=1,
+                        gridcolor="rgba(255,255,255,0.06)",
+                        zerolinecolor="rgba(255,255,255,0.22)",
+                        tickfont=dict(size=9, color="#6a8ba8"),
+                        tickformat=".0f",
+                    ),
+                    margin=dict(l=14, r=14, t=56, b=14),
+                    template="plotly_dark",
+                    paper_bgcolor="rgba(14,17,24,1)",
+                    plot_bgcolor="rgba(20,24,34,1)",
+                    hoverlabel=dict(
+                        bgcolor="#1a1f2e",
+                        font_size=12,
+                        font_family="monospace",
+                        bordercolor="rgba(255,255,255,0.18)"),
+                )
                 return _fig
 
             _v1, _v2, _v3 = st.columns(3)
@@ -8735,14 +8880,63 @@ with tab_car:
                                        "z — up (mm)", "Front view (y–z)"),
                                 use_container_width=True, key="ses_front")
 
-            st.caption("Use each plot's camera icon to save the view as PNG.")
+            st.caption("Use each plot's camera icon to save the view as PNG. "
+                       "Hover any dot for exact coordinates.")
+
+            # --- editable coordinate table -----------------------------------
+            # Edits to x/y/z are stored in session_state["ses_overrides"]
+            # (dict: component name -> {x_mm, y_mm, z_mm}) and are applied
+            # to _rows BEFORE the plots render (see the override block above),
+            # so plots, CSV, and this table are always in sync.
+            import pandas as _pd_ses
+
+            _overrides = st.session_state.setdefault("ses_overrides", {})
+
+            # _rows already has overrides baked in — just show current values.
+            _tbl_df = _pd_ses.DataFrame([
+                {"component": _r.name, "category": _r.category,
+                 "x_mm": round(_r.x_mm, 1),
+                 "y_mm": round(_r.y_mm, 1),
+                 "z_mm": round(_r.z_mm, 1)}
+                for _r in _rows])
+
+            st.caption("Edit any x / y / z cell — changes update the plots "
+                       "and CSV on the next interaction.")
+
+            _edited_tbl = st.data_editor(
+                _tbl_df,
+                hide_index=True,
+                use_container_width=True,
+                key="ses_coord_editor",
+                column_config={
+                    "component": st.column_config.TextColumn(
+                        "component", disabled=True),
+                    "category": st.column_config.TextColumn(
+                        "category", disabled=True),
+                    "x_mm": st.column_config.NumberColumn(
+                        "x_mm (rear +)", format="%.1f", step=1.0),
+                    "y_mm": st.column_config.NumberColumn(
+                        "y_mm (right +)", format="%.1f", step=1.0),
+                    "z_mm": st.column_config.NumberColumn(
+                        "z_mm (up +)", format="%.1f", step=1.0),
+                },
+            )
+
+            # Persist edits into session_state so the next rerun picks them up
+            for _, _erow in _edited_tbl.iterrows():
+                _overrides[_erow["component"]] = {
+                    "x_mm": float(_erow["x_mm"]),
+                    "y_mm": float(_erow["y_mm"]),
+                    "z_mm": float(_erow["z_mm"]),
+                }
+            st.session_state["ses_overrides"] = _overrides
 
             _ses_csv = cadshare_mod.ses_location_csv(_rows)
-            st.dataframe(
-                [{"component": _r.name, "category": _r.category,
-                  "x_mm": round(_r.x_mm, 1), "y_mm": round(_r.y_mm, 1),
-                  "z_mm": round(_r.z_mm, 1)} for _r in _rows],
-                hide_index=True, use_container_width=True)
+
+            _rc = st.columns([1, 1, 1])
+            if _rc[0].button("↺ Reset coordinate edits", key="ses_reset_edits"):
+                st.session_state["ses_overrides"] = {}
+                _do_rerun()
 
             _sc = st.columns(2)
             _sc[0].download_button("Download coordinate table (CSV)",
