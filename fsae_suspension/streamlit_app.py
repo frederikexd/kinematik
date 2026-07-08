@@ -22870,11 +22870,11 @@ with tab_analytics:
                 _completes[e["feature"]] = _completes.get(e["feature"], 0) + 1
         _h = sum(n * (_baselines.get(f, (0, 0))[0] - _baselines.get(f, (0, 0))[1]) / 60.0
                  for f, n in _completes.items())
-        _d = _h * 30.0
+        _d = _h * 65.0
         m1, m2, m3 = st.columns(3)
         _ax_metric(m1, "Hours saved", f"{_h:,.1f}", "from local buffer (demo)",
                    "var(--cyan)")
-        _ax_metric(m2, "Dollars saved", f"${_d:,.0f}", "at $30/hr (default)",
+        _ax_metric(m2, "Dollars saved", f"${_d:,.0f}", "at $65/hr (default)",
                    "var(--amber)")
         _ax_metric(m3, "Workflows logged", f"{sum(_completes.values())}",
                    "completed locally", "var(--dim)")
