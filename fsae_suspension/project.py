@@ -1,3 +1,9 @@
+# ============================================================================
+#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
+#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+#  Open source. Original author: Frederik Thio, creator of KinematiK.
+# ============================================================================
+
 """
 Project memory: weight budget, decision log, and handover report.
 
@@ -87,12 +93,58 @@ class Note:
     status: str = "open"         # "open" | "resolved"
     ts: str = ""
     id: str = ""
+    # Read receipts: who has opened the Lead Notes tab and seen this note.
+    # Keyed by a viewer label (the lead's name, or a session id if unnamed) ->
+    # ISO timestamp of first view. Lets the *poster* see "Seen by ..." so they
+    # know the note actually reached other leads, not just that it saved.
+    seen_by: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.ts:
             self.ts = _dt.datetime.now().isoformat(timespec="seconds")
         if not self.id:
             self.id = _dt.datetime.now().strftime("%Y%m%d%H%M%S%f")
+        # Tolerate older rows persisted before seen_by existed / wrong types.
+        if not isinstance(self.seen_by, dict):
+            self.seen_by = {}
+
+
+@dataclass
+class CADFile:
+    """
+    One entry in the Team CAD library — a shared SolidWorks/STEP/STL/DXF/PNG
+    file (or a link to a big assembly that's too large to embed).
+
+    The point is the thing every team loses: "where is everyone else's CAD?"
+    A senior's SLDASM lives on their laptop and vanishes at graduation. Here a
+    file is published once, tagged by subsystem and uploader, and everyone can
+    browse/filter/download it from the shared project store — so next year finds
+    the geometry, not a dead Google-Drive link.
+
+    Storage: small files are embedded as base64 in `data_b64` (kept under a size
+    cap so the whole project document stays sane); large assemblies are shared
+    as a `link` instead. Exactly one of the two is expected to be set.
+    """
+    name: str                       # original filename, e.g. "front_upright.SLDPRT"
+    subsystem: str = "general"      # tag: suspension, chassis, aero, ev, SES, ...
+    uploader: str = ""              # who published it
+    kind: str = "file"              # "file" (embedded) | "link" (external URL)
+    data_b64: str = ""              # base64 payload when kind == "file"
+    link: str = ""                  # URL when kind == "link"
+    size_bytes: int = 0
+    note: str = ""
+    ts: str = ""
+    id: str = ""
+
+    def __post_init__(self):
+        if not self.ts:
+            self.ts = _dt.datetime.now().isoformat(timespec="seconds")
+        if not self.id:
+            self.id = _dt.datetime.now().strftime("%Y%m%d%H%M%S%f")
+
+    @property
+    def ext(self) -> str:
+        return os.path.splitext(self.name)[1].lower().lstrip(".")
 
 
 # --------------------------------------------------------------------------- #
@@ -110,6 +162,15 @@ class JSONFileBackend:
             with open(self.path) as f:
                 return json.load(f)
         return {}
+
+    def read_version(self):
+        """Cheap change-probe for polling: the file's mtime as a string, without
+        parsing the JSON. Lets a poll skip the full read when nothing changed.
+        Returns None if the file doesn't exist yet. Never raises."""
+        try:
+            return str(os.path.getmtime(self.path))
+        except OSError:
+            return None
 
     def write(self, payload: dict):
         with open(self.path, "w") as f:
@@ -143,15 +204,55 @@ class SupabaseBackend:
         rows = resp.data or []
         return rows[0]["data"] if rows else {}
 
+    def read_version(self):
+        """Cheap change-probe for polling: pull ONLY the `updated` timestamp out
+        of the JSON row instead of the whole project blob. On Postgres this is a
+        tiny scalar select (`data->>'updated'`) rather than transferring the full
+        document every poll. Returns None on any error so the caller falls back to
+        a full read rather than assuming 'no change'."""
+        try:
+            resp = (self.client.table(self.TABLE)
+                    .select("data->>updated")
+                    .eq("id", self.project_id).execute())
+            rows = resp.data or []
+            if not rows:
+                return None
+            row = rows[0]
+            return row.get("updated") or next(iter(row.values()), None)
+        except Exception:
+            return None
+
     def write(self, payload: dict):
         self.client.table(self.TABLE).upsert(
             {"id": self.project_id, "data": payload}).execute()
 
 
+def _read_credential(name: str):
+    """Resolve a credential from either real environment variables or Streamlit
+    Cloud secrets. Streamlit secrets (the TOML box in Settings) populate
+    `st.secrets`, NOT `os.environ`, so an env-only lookup misses them and the app
+    silently falls back to ephemeral local storage. Check both. Importing
+    streamlit here (not at module top) keeps this module usable in plain
+    scripts/tests with no Streamlit installed."""
+    val = os.environ.get(name)
+    if val:
+        return val
+    try:
+        import streamlit as st
+        # st.secrets behaves like a dict; .get avoids raising if the key is absent.
+        secret = st.secrets.get(name)
+        if secret:
+            return str(secret)
+    except Exception:
+        pass
+    return None
+
+
 def _auto_backend(path: str):
     """
-    Choose a backend automatically: Supabase if its credentials are present in the
-    environment (the deployed app), otherwise a local JSON file (laptop/tests).
+    Choose a backend automatically: Supabase if its credentials are present (in
+    the environment or in Streamlit Cloud secrets), otherwise a local JSON file
+    (laptop/tests).
 
     If Supabase credentials ARE set but initialisation fails, we do NOT silently
     fall back — that would drop the team's data into ephemeral storage without
@@ -159,8 +260,8 @@ def _auto_backend(path: str):
     only then fall back. Absence of credentials is the normal local case and is
     silent.
     """
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
+    url = _read_credential("SUPABASE_URL")
+    key = _read_credential("SUPABASE_KEY")
     if url and key:
         try:
             return SupabaseBackend(url, key)
@@ -170,8 +271,8 @@ def _auto_backend(path: str):
             fb = JSONFileBackend(path)
             fb.degraded_reason = (
                 "Supabase credentials are set but the connection failed "
-                f"({type(e).__name__}). Falling back to local storage — data will "
-                "NOT persist across restarts until this is fixed.")
+                f"({type(e).__name__}: {e}). Falling back to local storage — data "
+                "will NOT persist across restarts until this is fixed.")
             return fb
     return JSONFileBackend(path)
 
@@ -191,6 +292,15 @@ class ProjectStore:
     it calls .load() and .save() the same way regardless of backend.
     """
 
+    # Class-level defaults: guarantee these attributes resolve even if __init__
+    # is interrupted partway (a lazy optional-import failure, an exception in
+    # load(), or a half-built instance returned from a cache). The render path
+    # reads store.geometry / store.board / store.cad_files unconditionally, so a
+    # missing attribute turns into a redacted AttributeError on the deployed app.
+    geometry = None
+    board = None
+    cad_files: list = []
+
     def __init__(self, path: str = DEFAULT_PROJECT, backend=None):
         self.path = path
         self.team_name = "Elbee Racing"
@@ -199,7 +309,42 @@ class ProjectStore:
         self.weights: list[WeightItem] = []
         self.decisions: list[Decision] = []
         self.notes: list[Note] = []
+        self.cad_files: list[CADFile] = []
+        # Geometric mount-point / keep-out ledger (lazy import to avoid a hard
+        # numpy dependency for callers that only touch weights/decisions/notes).
+        # Defensive: never let an optional import failure leave the store without
+        # the attribute (render_mountpoint_clash reads store.geometry
+        # unconditionally — a bare import here turns a missing dep into an
+        # AttributeError at `geom = store.geometry`).
+        try:
+            from .mountpoints import GeometryLedger
+            self.geometry = GeometryLedger()
+        except Exception:
+            self.geometry = None
+        # Electronics / PCB ledger (traces, differential pairs, aggressor nets) —
+        # the copper-survival + signal-integrity board. Same lazy-import rationale.
+        # Defensive: never let an optional import failure leave the store without
+        # the attribute (the render path reads store.board unconditionally).
+        try:
+            from .electronics import BoardLedger
+            self.board = BoardLedger()
+        except Exception:
+            self.board = None
+        # Harness ledger (3-D routed wire runs + connectors) — the physical loom
+        # in car space: bend radius, strain relief, clearance, and the
+        # manufacturing roll-ups (cut length, formboard, BOM, copper mass). Same
+        # lazy-import + defensive-default rationale as the board above.
+        try:
+            from .harness import HarnessLedger
+            self.harness = HarnessLedger()
+        except Exception:
+            self.harness = None
         self.load_error = None
+        self.save_error = None
+        # EV electrical database: pack + motor params extracted from the
+        # electrics lead's Excel workbook. Persisted here so teams don't
+        # have to re-upload the xlsx every session — configure once, use always.
+        self.ev_excel_params: dict = {}
         # Pick a backend: explicit > auto-detected Supabase > local JSON file.
         self.backend = backend or _auto_backend(path)
         self.load()
@@ -212,6 +357,11 @@ class ProjectStore:
             "weights": [asdict(w) for w in self.weights],
             "decisions": [asdict(x) for x in self.decisions],
             "notes": [asdict(n) for n in self.notes],
+            "cad_files": [asdict(c) for c in self.cad_files],
+            "geometry": self.geometry.as_dict() if self.geometry else {},
+            "board": self.board.as_dict() if self.board else {},
+            "harness": self.harness.as_dict() if getattr(self, "harness", None) else {},
+            "ev_excel_params": getattr(self, "ev_excel_params", {}),
             "updated": _dt.datetime.now().isoformat(timespec="seconds"),
         }
 
@@ -224,6 +374,22 @@ class ProjectStore:
         self.weights = [WeightItem(**w) for w in d.get("weights", [])]
         self.decisions = [Decision(**x) for x in d.get("decisions", [])]
         self.notes = [Note(**n) for n in d.get("notes", [])]
+        self.cad_files = [CADFile(**c) for c in d.get("cad_files", [])]
+        geom = d.get("geometry")
+        if geom:
+            from .mountpoints import GeometryLedger
+            self.geometry = GeometryLedger.from_dict(geom)
+        board = d.get("board")
+        if board:
+            from .electronics import BoardLedger
+            self.board = BoardLedger.from_dict(board)
+        harness = d.get("harness")
+        if harness:
+            from .harness import HarnessLedger
+            self.harness = HarnessLedger.from_dict(harness)
+        ev_p = d.get("ev_excel_params")
+        if ev_p and isinstance(ev_p, dict):
+            self.ev_excel_params = ev_p
 
     # ----------------------------- io ---------------------------------- #
     def load(self):
@@ -238,7 +404,32 @@ class ProjectStore:
         self._apply(d)
 
     def save(self):
-        self.backend.write(self._payload())
+        """Persist the project. Fail-safe: a storage backend error (e.g. a remote
+        Supabase/Postgres misconfiguration) is recorded on `self.save_error` and
+        returns False rather than raising, so a save side-effect can never crash the
+        caller. Returns True on success."""
+        try:
+            self.backend.write(self._payload())
+            self.save_error = None
+            return True
+        except Exception as e:
+            self.save_error = f"Could not write project data: {e}"
+            return False
+
+    def read_version(self):
+        """Cheap 'has anything changed?' probe for the notification poller.
+
+        Delegates to the backend's lightweight version read (file mtime for the
+        JSON backend, a scalar `updated` select for Supabase). If the backend
+        doesn't implement one, returns None, which callers treat as 'unknown —
+        do a full read to be safe'. Never raises."""
+        rv = getattr(self.backend, "read_version", None)
+        if callable(rv):
+            try:
+                return rv()
+            except Exception:
+                return None
+        return None
 
     def as_json(self) -> str:
         return json.dumps({
@@ -247,6 +438,10 @@ class ProjectStore:
             "weights": [asdict(w) for w in self.weights],
             "decisions": [asdict(x) for x in self.decisions],
             "notes": [asdict(n) for n in self.notes],
+            "cad_files": [asdict(c) for c in self.cad_files],
+            "geometry": self.geometry.as_dict() if getattr(self, "geometry", None) else {},
+            "board": self.board.as_dict() if getattr(self, "board", None) else {},
+            "harness": self.harness.as_dict() if getattr(self, "harness", None) else {},
         }, indent=2)
 
     # -------------------------- mutations ------------------------------ #
@@ -301,6 +496,34 @@ class ProjectStore:
     def add_note(self, note: Note):
         self.notes.append(note)
 
+    # ----------------------- CAD library ------------------------------- #
+    def add_cad_file(self, cad: CADFile):
+        """Publish a file to the shared Team CAD library."""
+        self.cad_files.append(cad)
+
+    def remove_cad_file(self, file_id: str) -> bool:
+        """Remove a library entry by id. Returns True if one was removed."""
+        n0 = len(self.cad_files)
+        self.cad_files = [c for c in self.cad_files if c.id != file_id]
+        return len(self.cad_files) != n0
+
+    def cad_files_for(self, subsystem: str | None = None) -> list[CADFile]:
+        """Library entries, newest-first, optionally filtered by subsystem tag
+        (case-insensitive). subsystem=None returns everything. Defensive: tolerate
+        a store whose cad_files was never initialised (interrupted __init__, old
+        cached instance) so the render path can't crash with an AttributeError."""
+        out = getattr(self, "cad_files", None) or []
+        if subsystem:
+            s = subsystem.strip().lower()
+            out = [c for c in out if (c.subsystem or "").lower() == s]
+        return sorted(out, key=lambda c: c.ts, reverse=True)
+
+    def cad_subsystems(self) -> list[str]:
+        """Unique, sorted subsystem tags present in the library."""
+        return sorted({(c.subsystem or "general").strip()
+                       for c in (getattr(self, "cad_files", None) or [])
+                       if (c.subsystem or "").strip()})
+
     def resolve_note(self, note_id: str):
         for n in self.notes:
             if n.id == note_id:
@@ -310,6 +533,26 @@ class ProjectStore:
         for n in self.notes:
             if n.id == note_id:
                 n.status = "open"
+
+    def mark_note_seen(self, viewer: str, exclude_author: bool = True) -> bool:
+        """Record that `viewer` has now seen the notes addressed to them.
+
+        Stamps every note this viewer can see (i.e. not ones they authored, when
+        exclude_author is set) with a first-seen timestamp. Returns True if any
+        note was newly stamped, so the caller knows whether a save is worthwhile.
+        A viewer is a stable label — the lead's typed name, or a session id when
+        they haven't given one.
+        """
+        if not viewer:
+            return False
+        changed = False
+        for n in self.notes:
+            if exclude_author and n.author and n.author == viewer:
+                continue
+            if viewer not in n.seen_by:
+                n.seen_by[viewer] = _dt.datetime.now().isoformat(timespec="seconds")
+                changed = True
+        return changed
 
     def notes_for(self, team: str, include_all=True):
         """Notes addressed to a team (and 'all' broadcasts), newest first."""
@@ -323,6 +566,109 @@ class ProjectStore:
     def remove_weight(self, idx: int):
         if 0 <= idx < len(self.weights):
             self.weights.pop(idx)
+
+    # --------------------- geometry mutations -------------------------- #
+    def set_mount_point(self, mp):
+        """Add or replace a mount point in the geometry ledger."""
+        self.geometry.set_point(mp)
+
+    def set_keepout(self, ko):
+        """Add or replace a keep-out volume in the geometry ledger."""
+        self.geometry.set_keepout(ko)
+
+    def remove_mount_point(self, name: str):
+        self.geometry.points.pop(name, None)
+
+    def remove_keepout(self, name: str):
+        self.geometry.keepouts.pop(name, None)
+
+    def move_mount(self, ledger, name: str, xyz_mm, set_by: str = "",
+                   update_interface_cg: bool = False):
+        """
+        Move a mount point and propagate: re-run the clearance clash and re-roll the
+        CG through the supplied IntegrationLedger, in one call. Returns the
+        PropagationResult. Does NOT auto-save — the caller decides when to persist.
+        """
+        from .mountpoints import propagate_mount_move
+        return propagate_mount_move(
+            self.geometry, ledger, name, xyz_mm, set_by=set_by,
+            update_interface_cg=update_interface_cg)
+
+    def clash_findings(self):
+        """Current clash/clearance findings for the stored geometry."""
+        return self.geometry.check_clashes()
+
+    # ---------------------- electronics / PCB board -------------------- #
+    def _ensure_board(self):
+        """Lazily create the board ledger if an old payload or import gap left it
+        unset, so callers can always rely on store.board being present."""
+        if getattr(self, "board", None) is None:
+            from .electronics import BoardLedger
+            self.board = BoardLedger()
+        return self.board
+
+    def set_trace(self, tr):
+        """Add or replace a copper trace in the board ledger."""
+        self._ensure_board().set_trace(tr)
+
+    def set_pair(self, dp):
+        """Add or replace a differential pair in the board ledger."""
+        self._ensure_board().set_pair(dp)
+
+    def set_aggressor(self, ag):
+        """Add or replace an aggressor (noisy) net in the board ledger."""
+        self._ensure_board().set_aggressor(ag)
+
+    def remove_trace(self, name: str):
+        self._ensure_board().traces.pop(name, None)
+
+    def remove_pair(self, name: str):
+        self._ensure_board().pairs.pop(name, None)
+
+    def remove_aggressor(self, name: str):
+        self._ensure_board().aggressors.pop(name, None)
+
+    def board_check(self, ledger=None, scenario=None):
+        """Run the full pre-fab board gate (copper survival + signal integrity).
+        Returns a BoardCheckResult; does NOT auto-save."""
+        from .electronics import check_board
+        return check_board(self._ensure_board(), ledger=ledger, scenario=scenario)
+
+    # ---------------------- harness / 3-D loom ------------------------- #
+    def _ensure_harness(self):
+        """Lazily create the harness ledger if an old payload or import gap left
+        it unset, so callers can always rely on store.harness being present."""
+        if getattr(self, "harness", None) is None:
+            from .harness import HarnessLedger
+            self.harness = HarnessLedger()
+        return self.harness
+
+    def set_wire(self, w):
+        """Add or replace a routed wire run in the harness ledger."""
+        self._ensure_harness().set_wire(w)
+
+    def set_connector(self, c):
+        """Add or replace a connector in the harness ledger."""
+        self._ensure_harness().set_connector(c)
+
+    def remove_wire(self, name: str):
+        self._ensure_harness().remove_wire(name)
+
+    def remove_connector(self, name: str):
+        self._ensure_harness().remove_connector(name)
+
+    def harness_check(self):
+        """Run the full pre-cut harness gate (bend radius + strain relief +
+        3-D clearance) and roll up cut list / BOM / mass / formboard. The
+        keep-outs come from this project's own geometry ledger, so the loom is
+        checked against the very volumes the mount-points clash against. Returns
+        a HarnessCheckResult; does NOT auto-save."""
+        from .harness import check_harness
+        keepouts = []
+        geom = getattr(self, "geometry", None)
+        if geom is not None:
+            keepouts = list(getattr(geom, "keepouts", {}).values())
+        return check_harness(self._ensure_harness(), keepouts=keepouts)
 
     # --------------------------- queries ------------------------------- #
     def total_mass_kg(self) -> float:
