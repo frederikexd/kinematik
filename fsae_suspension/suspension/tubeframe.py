@@ -89,8 +89,7 @@ MIN_WALL_OTHER_MM = 1.2
 RULES_YEAR_TRANSCRIBED = "FSAE 2024-25 (F.3.2 baseline classes)"
 RULES_DISCLAIMER = (
     "Size classes transcribed from the {yr} rulebook. Verify against the "
-    "rulebook year you compete under — the 06/29 meeting itself flags 2027 "
-    "changes.".format(yr=RULES_YEAR_TRANSCRIBED))
+    "rulebook year you compete under.".format(yr=RULES_YEAR_TRANSCRIBED))
 
 
 # --------------------------------------------------------------------------- #
