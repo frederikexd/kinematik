@@ -8544,6 +8544,8 @@ with tab_car:
     import base64 as _b64
     st.markdown("---")
     st.markdown("### 🗃️ CHASSIS DOCS & SHARED CAD")
+    st.warning("⚠️ **LEADS ONLY** — To preserve stability, access restricted to LEADS ONLY",
+               icon="🔒")
     st.caption("Everyone's CAD in one place, the SES location pack, and a "
                "ready-to-run ANSYS torsion deck — all from the shared 3D model.")
 
