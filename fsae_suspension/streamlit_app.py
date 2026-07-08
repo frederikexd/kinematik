@@ -179,7 +179,8 @@ publish_to_ledger  = _LazySymbol("powertrain.engine", "publish_to_ledger")
 for _sym in ("SuspensionKinematics", "Hardpoints", "VehicleDynamics",
              "VehicleParams", "MATERIALS", "MemberStiffness", "CompliantCorner",
              "load_flex_body", "corner_wheel_load", "WheelLoad",
-             "GenericKinematics", "list_templates"):
+             "GenericKinematics", "list_templates",
+             "solve_generic_compliance"):
     globals()[_sym] = _LazySymbol("suspension", _sym)
 topo_example = _LazySymbol("suspension", "example")
 for _sym in ("ScaleSpec", "SimilitudePlan", "ToleranceBudget",
@@ -15936,12 +15937,138 @@ with tab5c:
   except Exception:
     pass
   if _topo != "double_wishbone":
-    st.info("The flex / compliance solver models axial deflection of the "
-            "double-wishbone member set (upper & lower arms + tie rod). For "
-            "the selected topology, the architecture-agnostic engine reports "
-            "its own member set on the 3D MODEL tab; per-link compliance "
-            "for arbitrary topologies is not yet wired into this tab. Switch "
-            "to the double-wishbone model to use the flex analysis.")
+    # ---- Topology-agnostic compliance (re-iterated) --------------------- #
+    # The wishbone path below runs the full iterative CompliantCorner. Every
+    # other architecture is solved here by the architecture-agnostic engine,
+    # which now runs the SAME re-iterated load↔geometry coupling: it takes the
+    # SAME load case + link-stiffness inputs, resolves member axial forces by
+    # virtual work through the real constraint solver, deflects each link with
+    # per-member materials and non-linear joint compliance, re-solves the
+    # mechanism at the deflected pose and iterates to convergence — then reports
+    # compliance camber/toe + member force/deflection.
+    st.caption(f"Architecture-agnostic flex analysis · {_TOPO_LABELS.get(_topo, _topo)}. "
+               "Member forces by virtual work through the real constraint solver, "
+               "with per-member materials and joint compliance; the load↔geometry "
+               "coupling is re-iterated to convergence — the same re-iterated solver "
+               "the double-wishbone model uses.")
+    with st.expander("🧬 Model setup — load case & link stiffness", expanded=False):
+        gcL, gcR = st.columns([1, 1])
+        with gcL:
+            st.markdown('<p class="hint" style="margin-bottom:4px;"><b>Load case</b>'
+                        '</p>', unsafe_allow_html=True)
+            g_comp_g = st.slider("Lateral acceleration (g)", 0.5, 2.5, 1.5, 0.1,
+                                 key="gcomp_g")
+            g_comp_axle = st.selectbox("Axle", ["front", "rear"], key="gcomp_axle")
+            g_comp_long = st.slider("Longitudinal g (braking +, traction −)",
+                                    -1.5, 1.5, 0.0, 0.1, key="gcomp_long")
+        with gcR:
+            st.markdown('<p class="hint" style="margin-bottom:4px;"><b>Link stiffness'
+                        '</b> (applied to every link in this architecture)</p>',
+                        unsafe_allow_html=True)
+            g_comp_mat = st.selectbox("Tube material", list(MATERIALS.keys()),
+                                      key="gcomp_mat")
+            g_comp_od = st.number_input("Tube OD", 8.0, 40.0, 19.05, 0.05,
+                                        key="gcomp_od")
+            g_comp_wall = st.number_input("Tube wall", 0.4, 4.0, 0.9, 0.05,
+                                          key="gcomp_wall")
+            try:
+                record_activity("chassis", "material",
+                                f"Link tube material: {g_comp_mat} "
+                                f"(OD {g_comp_od:g} mm, wall {g_comp_wall:g} mm)")
+            except Exception:
+                pass
+
+    try:
+        _gms = MemberStiffness(material=g_comp_mat, od_mm=g_comp_od,
+                               wall_mm=g_comp_wall)
+
+        def _g_stiffness_for(label, a, b):
+            return _gms
+
+        g_load = corner_wheel_load(veh, g_comp_axle, g_comp_g, outer=True,
+                                   long_g=g_comp_long)
+        g_res = solve_generic_compliance(kin, g_load, _g_stiffness_for)
+    except Exception as e:
+        st.error(f"Compliance solve failed for this topology: {e}")
+        g_res = None
+
+    if g_res is not None:
+        st.markdown(f'<p class="hint" style="margin-top:10px;"><b>Compliance at '
+                    f'{g_comp_g:.1f} g — {g_comp_axle} outer wheel.</b> '
+                    f'Contact-patch load: Fz {g_load.Fz:.0f} N, Fy {g_load.Fy:.0f} N.'
+                    f'</p>', unsafe_allow_html=True)
+        gm1, gm2, gm3, gm4 = st.columns(4)
+        _gt = g_res.compliance_toe
+        _gc = g_res.compliance_camber
+        _gt_cls = "good" if abs(_gt) < 0.15 else ("warn" if abs(_gt) < 0.4 else "bad")
+        _gc_cls = "good" if abs(_gc) < 0.2 else ("warn" if abs(_gc) < 0.5 else "bad")
+        gm1.markdown(metric("Compliance toe", f"{_gt:+.3f}", "°", _gt_cls),
+                     unsafe_allow_html=True)
+        gm2.markdown(metric("Compliance camber", f"{_gc:+.3f}", "°", _gc_cls),
+                     unsafe_allow_html=True)
+        gm3.markdown(metric("Patch lateral shift",
+                            f"{g_res.contact_patch_lateral_shift_mm:+.2f}", "mm"),
+                     unsafe_allow_html=True)
+        _g_wc = getattr(g_res, "well_conditioned", g_res.converged)
+        gm4.markdown(metric("Confidence",
+                            "ok" if _g_wc else "low",
+                            f"{g_res.iterations} iter" if _g_wc else "near-singular",
+                            "good" if _g_wc else "warn"),
+                     unsafe_allow_html=True)
+
+        if not _g_wc:
+            st.caption("Low confidence: at least one member carries load through a "
+                       "non-axial mode this axial model doesn't capture (e.g. "
+                       "a twist-beam's torsion beam). Those members are excluded from "
+                       "the compliance sum; treat the numbers as indicative.")
+        elif not g_res.converged:
+            st.caption(f"The load↔geometry loop did not fully settle in "
+                       f"{g_res.iterations} iterations (deflections are sub-mm, so "
+                       "the result is still useful — treat the last digit with care).")
+
+        try:
+            record_activity(
+                "chassis", "calculation",
+                f"Corner compliance ({_TOPO_LABELS.get(_topo, _topo)}): "
+                f"toe {_gt:+.3f}°, camber {_gc:+.3f}°, "
+                f"patch shift {g_res.contact_patch_lateral_shift_mm:+.2f} mm")
+        except Exception:
+            pass
+
+        # member force / deflection bar chart
+        _guF = units_mod.label("N")
+        _guL = units_mod.label("mm")
+        _gmembers = list(g_res.member_forces.keys())
+        if _gmembers:
+            _gforces = [units_mod.from_metric(g_res.member_forces[m], "N")
+                        for m in _gmembers]
+            _gdefls = [units_mod.from_metric(g_res.member_deflection.get(m, 0.0), "mm")
+                       for m in _gmembers]
+            gfigF = make_subplots(specs=[[{"secondary_y": True}]])
+            gfigF.add_trace(go.Bar(x=_gmembers, y=_gforces,
+                                   name=f"Axial force ({_guF})",
+                                   marker_color=CYAN, opacity=0.85),
+                            secondary_y=False)
+            gfigF.add_trace(go.Scatter(x=_gmembers, y=_gdefls,
+                                       name=f"Deflection ({_guL})", mode="markers",
+                                       marker=dict(color=AMBER, size=11)),
+                            secondary_y=True)
+            gfigF.update_layout(**PLOT_LAYOUT,
+                                title="Member axial force & deflection",
+                                height=340, barmode="group")
+            gfigF.update_yaxes(
+                title_text=units_mod.ulabel("axial force (N, + tension)"),
+                secondary_y=False)
+            gfigF.update_yaxes(
+                title_text=units_mod.ulabel("deflection (mm, + stretch)"),
+                secondary_y=True)
+            st.plotly_chart(gfigF, width='stretch')
+
+        st.caption("Members are this architecture's own links (from the topology "
+                   "template). Edit their geometry in the sidebar hardpoint editor; "
+                   "the same tube material/OD/wall above sets every link's axial "
+                   "stiffness. Per-member materials and joint compliance are "
+                   "available on the double-wishbone model.")
   else:
    with st.expander("🧬 Model setup — load case, link stiffness, joints & FEA body",
                     expanded=False):
