@@ -179,9 +179,13 @@ publish_to_ledger  = _LazySymbol("powertrain.engine", "publish_to_ledger")
 for _sym in ("SuspensionKinematics", "Hardpoints", "VehicleDynamics",
              "VehicleParams", "MATERIALS", "MemberStiffness", "CompliantCorner",
              "load_flex_body", "corner_wheel_load", "WheelLoad",
-             "GenericKinematics", "list_templates",
-             "solve_generic_compliance"):
+             "GenericKinematics", "list_templates"):
     globals()[_sym] = _LazySymbol("suspension", _sym)
+# Import solve_generic_compliance directly from its submodule to avoid
+# the suspension package __getattr__ chain failing under Streamlit hot-reload
+# when sys.modules has a stale suspension module state.
+solve_generic_compliance = _LazySymbol("suspension.generic_compliance",
+                                       "solve_generic_compliance")
 topo_example = _LazySymbol("suspension", "example")
 for _sym in ("ScaleSpec", "SimilitudePlan", "ToleranceBudget",
              "MountAlignment", "ScaledRunPlan"):
