@@ -512,11 +512,15 @@ body, p, span, div, label{ font-family:'Archivo',sans-serif; }
 .good{ color:var(--cyan); border-color:#1f4d49;}
 .warn{ color:var(--amber); border-color:#5a4317;}
 .bad{ color:var(--red); border-color:#5a2422;}
-.stTabs [data-baseweb="tab-list"]{ gap:2px; flex-wrap:wrap; overflow:visible; }
+.stTabs [data-baseweb="tab-list"]{ display:flex; flex-wrap:wrap; gap:6px; overflow:visible;
+      border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:2px; }
 .stTabs [data-baseweb="tab"]{ background:var(--panel); border:1px solid var(--line);
-      border-bottom:none; border-radius:10px 10px 0 0; color:var(--dim); font-family:'JetBrains Mono'; font-size:.8rem;
-      flex:0 0 auto; white-space:nowrap; }
-.stTabs [aria-selected="true"]{ color:var(--ink); background:var(--panel2); border-color:#34507c;}
+      border-radius:8px; color:var(--dim); font-family:'JetBrains Mono'; font-size:.78rem;
+      flex:0 0 auto; white-space:nowrap; height:auto; min-height:0;
+      padding:6px 12px; line-height:1.1; }
+.stTabs [data-baseweb="tab"]:hover{ border-color:#34507c; color:var(--ink); }
+.stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"]{ display:none; }
+.stTabs [aria-selected="true"]{ color:var(--ink); background:var(--panel2); border-color:#34507c; font-weight:600;}
 .hint{ color:var(--dim); font-size:.82rem; }
 
 /* --- Wind-tunnel module helpers --------------------------------------- */
