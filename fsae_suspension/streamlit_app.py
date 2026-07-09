@@ -512,9 +512,10 @@ body, p, span, div, label{ font-family:'Archivo',sans-serif; }
 .good{ color:var(--cyan); border-color:#1f4d49;}
 .warn{ color:var(--amber); border-color:#5a4317;}
 .bad{ color:var(--red); border-color:#5a2422;}
-.stTabs [data-baseweb="tab-list"]{ gap:2px; }
+.stTabs [data-baseweb="tab-list"]{ gap:2px; flex-wrap:wrap; overflow:visible; }
 .stTabs [data-baseweb="tab"]{ background:var(--panel); border:1px solid var(--line);
-      border-bottom:none; border-radius:10px 10px 0 0; color:var(--dim); font-family:'JetBrains Mono'; font-size:.8rem;}
+      border-bottom:none; border-radius:10px 10px 0 0; color:var(--dim); font-family:'JetBrains Mono'; font-size:.8rem;
+      flex:0 0 auto; white-space:nowrap; }
 .stTabs [aria-selected="true"]{ color:var(--ink); background:var(--panel2); border-color:#34507c;}
 .hint{ color:var(--dim); font-size:.82rem; }
 
@@ -2057,7 +2058,6 @@ _TAB_META = {
     "pcb":         ("🔌", "Electronics (PCB)"),
     "tractive":    ("⚡", "Tractive Safety"),
     "dfmea":       ("🧯", "DFMEA"),
-    "chassisdocs": ("🗃️", "[LEADS ONLY] chassis docs & CAD docs"),
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
@@ -2079,7 +2079,7 @@ _TAB_CATEGORIES = [
      ["kinematics", "roll", "tire", "aero", "ev", "laptime",
       "setup"]),
     ("design",   "🛠️", "Design & Sizing",
-     ["brakes", "accum", "pcb", "compliance", "teamfit", "chassisdocs", "model3d"]),
+     ["brakes", "accum", "pcb", "compliance", "teamfit", "model3d"]),
     ("checks",   "✅", "Checks & Integration",
      ["integration", "validation", "dfmea", "tractive"]),
     ("docs",     "📄", "Documentation",
@@ -2124,7 +2124,7 @@ _ROLE_TABS = {
     # brakes wants Track Testing (lap time + GGV) to see brake balance on track,
     # plus tyre grip.
     "brakes":     ["brakes", "tire", "laptime"],
-    "chassis":    ["teamfit", "compliance", "chassisdocs"],
+    "chassis":    ["teamfit", "compliance"],
     "cost":       ["cost"],
     "everyone":   [],   # just the shared spine
 }
@@ -6848,7 +6848,6 @@ tab_analytics = _id_to_container["analytics"]
 tab_pcb     = _id_to_container["pcb"]
 tab_tractive = _id_to_container["tractive"]
 tab_dfmea    = _id_to_container["dfmea"]
-tab_chassisdocs = _id_to_container["chassisdocs"]
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
@@ -8394,16 +8393,16 @@ with tab_car:
 
 
 # =========================================================================== #
-#  CHASSIS DOCS & SHARED CAD  —  its own tab under 🛠️ Design & Sizing, scoped  #
-#  to the chassis / frame role (plus power-user "All tabs" view).               #
+#  CHASSIS DOCS & SHARED CAD  —  three panels at the foot of the 3D Model tab. #
 #    1. 🗄️ Team CAD library     — publish/browse/download shared CAD & docs.   #
 #    2. 📸 SES location pack      — HV/LV positions -> ortho views + coord CSV.  #
 #    3. 🧮 Suspension -> Ansys     — hardpoints CSV + BEAM188 APDL torsion deck. #
 #  Files persist through the existing project store (get_store()), so they      #
 #  survive restarts on Supabase and locally via project.json.                   #
 # =========================================================================== #
-with tab_chassisdocs:
+with tab_car:
     import base64 as _b64
+    st.markdown("---")
     st.markdown("### 🗃️ CHASSIS DOCS & SHARED CAD")
     st.warning("⚠️ **LEADS ONLY** — To preserve stability, access restricted to LEADS ONLY",
                icon="🔒")
@@ -10021,6 +10020,7 @@ with tab_ev:
         _def_peak_tq = float(_motor_store.get("motor_peak_torque_nm", 230.0) or 230.0)
         _def_peak_pw = float(_motor_store.get("motor_peak_power_kw", float(_power_kw)) or _power_kw)
         _def_redline = float(_motor_store.get("motor_max_rpm", 6000.0) or 6000.0)
+        _def_redline = min(max(_def_redline, 3000.0), 30000.0)
         _def_hv_v = float(_pack_store.get("pack_voltage_v", 400.0) or 400.0)
         _def_wheel_r = float(_motor_store.get("wheel_diam_in", 18.0) or 18.0) * 0.0254 / 2.0
         if not (0.15 <= _def_wheel_r <= 0.30):
@@ -10049,7 +10049,7 @@ with tab_ev:
                           _def_peak_tq, "N·m", step=5.0, key="pti_me_tq")
             _me_pw = unum(mcol[1], "Peak power (kW)", 10.0, 200.0,
                           _def_peak_pw, "kW", step=5.0, key="pti_me_pw")
-            _me_rl = mcol[2].number_input("Redline (rpm)", 3000.0, 20000.0,
+            _me_rl = mcol[2].number_input("Redline (rpm)", 3000.0, 30000.0,
                                           value=_def_redline, step=500.0, key="pti_me_rl")
             _me_cont = mcol[3].slider("Continuous power (% of peak)", 30, 100, 70, 5,
                                       key="pti_me_cont",
@@ -10274,7 +10274,7 @@ with tab_ev:
                           _def_peak_tq, "N·m", step=5.0, key="pti_gm_tq")
             _gm_pw = unum(gcol[1], "Motor peak power (kW)", 10.0, 200.0,
                           _def_peak_pw, "kW", step=5.0, key="pti_gm_pw")
-            _gm_rl = gcol[2].number_input("Redline (rpm)", 3000.0, 20000.0,
+            _gm_rl = gcol[2].number_input("Redline (rpm)", 3000.0, 30000.0,
                                           value=_def_redline, step=500.0,
                                           key="pti_gm_rl")
             _gm_wr = unum(gcol[3], "Loaded wheel radius (m)", 0.15, 0.30,
@@ -18946,9 +18946,8 @@ def render_laptime(_pt):
                     colorscale=[[0,"#37E0D0"],[0.5,"#F0A500"],[1,"#E74C3C"]],
                     zmin=_t_lo, zmax=_t_hi,
                     colorbar=dict(
-                        title="°C",
+                        title=dict(text="°C", font=dict(color="#cdd6df")),
                         tickfont=dict(color="#cdd6df"),
-                        titlefont=dict(color="#cdd6df"),
                         bgcolor="rgba(0,0,0,0)"),
                     xgap=2, ygap=2,
                 ))
@@ -21078,7 +21077,7 @@ with tab_track:
           mt = unum(mpc[0], "Peak torque (N·m)", 20.0, 600.0, 230.0, "N·m",
                     step=10.0)
           mp = unum(mpc[1], "Peak power (kW)", 10.0, 200.0, 80.0, "kW", step=5.0)
-          mr_in = mpc[2].number_input("Redline (rpm)", 3000.0, 20000.0,
+          mr_in = mpc[2].number_input("Redline (rpm)", 3000.0, 30000.0,
                                       value=6000.0, step=500.0, key="tt_redline")
           mpc2 = st.columns(2)
           fd = mpc2[0].number_input("Final drive ratio", 1.0, 10.0, value=3.5,
