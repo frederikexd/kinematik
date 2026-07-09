@@ -843,6 +843,16 @@ def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
         extra["format"] = fmt
     if key is not None:
         extra["key"] = key
+    # Safety net: a stored/default value outside [lo,hi] makes Streamlit's
+    # number_input raise ("value N is greater than max_value M"). Clamp the
+    # displayed value into range so an out-of-range stored number can never
+    # crash the widget; downstream range/rules checks flag it separately.
+    d_val = min(max(d_val, d_lo), d_hi)
+    if key is not None and key in st.session_state:
+        try:
+            st.session_state[key] = min(max(float(st.session_state[key]), d_lo), d_hi)
+        except (TypeError, ValueError):
+            pass
     result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
     metric_result = units_mod.to_metric(float(result), unit)
     if key is not None:
@@ -10575,9 +10585,12 @@ with tab_ev:
                                "N·m", step=10.0, key="pti_pub_outtq",
                                help="Peak torque after the gear reduction — what the "
                                     "driveline must survive. From the gear panel.")
-            _pub_pw = unum(pcol[2], "Peak power (kW)", 10.0, 80.0,
+            _pub_pw = unum(pcol[2], "Peak power (kW)", 10.0, 200.0,
                            float(st.session_state.get("_pti_peak_pw", _def_peak_pw)),
-                           "kW", step=5.0, key="pti_pub_pw")
+                           "kW", step=5.0, key="pti_pub_pw",
+                           help="Motor's declared peak. May exceed the FSAE 80 kW "
+                                "tractive cap — the car must electronically limit to "
+                                "80 kW, which the envelope and rules checks enforce.")
             _pub_hv = unum(pcol[3], "HV voltage (V)", 60.0, 600.0,
                            float(st.session_state.get("_pti_hv_v", _def_hv_v)),
                            "V", step=4.0, key="pti_pub_hv")
