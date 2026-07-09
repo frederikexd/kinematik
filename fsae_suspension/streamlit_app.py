@@ -512,15 +512,28 @@ body, p, span, div, label{ font-family:'Archivo',sans-serif; }
 .good{ color:var(--cyan); border-color:#1f4d49;}
 .warn{ color:var(--amber); border-color:#5a4317;}
 .bad{ color:var(--red); border-color:#5a2422;}
-.stTabs [data-baseweb="tab-list"]{ display:flex; flex-wrap:wrap; gap:6px; overflow:visible;
+/* Streamlit >=1.5x puts tabs on a horizontal scroll rail (role="tablist"
+   with overflow-x:auto) plus chevron buttons; that rail is what "overflows".
+   Force every layer to wrap and drop the scroll, then style each tab as a
+   self-contained pill. Verified against the Streamlit 1.59 DOM. */
+[data-testid="stTabs"] > div,
+[data-testid="stTabs"] [role="tablist"],
+[data-testid="stTabs"] [data-baseweb="tab-list"]{
+      display:flex!important; flex-wrap:wrap!important;
+      overflow:visible!important; overflow-x:visible!important;
+      width:auto!important; gap:6px;
       border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:2px; }
-.stTabs [data-baseweb="tab"]{ background:var(--panel); border:1px solid var(--line);
+[data-testid="stTabsScrollLeft"], [data-testid="stTabsScrollRight"]{ display:none!important; }
+[data-testid="stTabs"] [role="tab"],
+[data-testid="stTab"]{
+      background:var(--panel); border:1px solid var(--line);
       border-radius:8px; color:var(--dim); font-family:'JetBrains Mono'; font-size:.78rem;
-      flex:0 0 auto; white-space:nowrap; height:auto; min-height:0;
-      padding:6px 12px; line-height:1.1; }
-.stTabs [data-baseweb="tab"]:hover{ border-color:#34507c; color:var(--ink); }
-.stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"]{ display:none; }
-.stTabs [aria-selected="true"]{ color:var(--ink); background:var(--panel2); border-color:#34507c; font-weight:600;}
+      flex:0 0 auto!important; white-space:nowrap; height:auto!important; min-height:0!important;
+      padding:6px 12px!important; line-height:1.1; margin:0!important; }
+[data-testid="stTabs"] [role="tab"]:hover{ border-color:#34507c; color:var(--ink); }
+[data-testid="stTabs"] [data-baseweb="tab-highlight"],
+[data-testid="stTabs"] [data-baseweb="tab-border"]{ display:none!important; }
+[data-testid="stTabs"] [role="tab"][aria-selected="true"]{ color:var(--ink); background:var(--panel2); border-color:#34507c; font-weight:600;}
 .hint{ color:var(--dim); font-size:.82rem; }
 
 /* --- Wind-tunnel module helpers --------------------------------------- */
