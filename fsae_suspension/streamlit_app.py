@@ -8606,14 +8606,17 @@ with tab_car:
             _CAT_COLORS = {"HV": "#ff4b4b", "LV": "#f5a623"}
             _OTHER_COLOR = "#4cc9f0"
 
-            def _label_offset(_hx, _vy, _cx, _cy, _is_key):
+            def _label_offset(_hx, _vy, _cx, _cy, _is_key, _spread=200.0):
                 """Return (dx, dy, textanchor_x, textanchor_y) for a label
                 placed radially outward from the point-cloud centroid.
-                Key components get a longer leader line."""
+                Key components get a longer leader line.
+                _spread: typical data range (mm) used to scale leader length."""
                 _dx = _hx - _cx
                 _dy = _vy - _cy
                 _dist = _math.hypot(_dx, _dy) or 1.0
-                _reach = 90 if _is_key else 65
+                # Scale reach to ~25-35% of the data spread so labels are
+                # visible regardless of how tightly the components cluster.
+                _reach = max(30.0, _spread * (0.35 if _is_key else 0.25))
                 _nx = _dx / _dist
                 _ny = _dy / _dist
                 # Anchor text on the far side of the leader tip
@@ -8634,6 +8637,25 @@ with tab_car:
                 _ys = [getattr(_r, _ax_v) for _r in _sorted_rows]
                 _cx = sum(_xs) / len(_xs) if _xs else 0.0
                 _cy = sum(_ys) / len(_ys) if _ys else 0.0
+
+                # Compute spread for scaling leader-line reach
+                _x_span = (max(_xs) - min(_xs)) if len(_xs) > 1 else 0.0
+                _y_span = (max(_ys) - min(_ys)) if len(_ys) > 1 else 0.0
+                _spread = max(_x_span, _y_span, 100.0)  # at least 100 mm
+
+                # Compute tight padded axis ranges so components fill the view.
+                # Padding = leader-line reach + a small visual margin.
+                _pad_h = _spread * 0.45
+                _pad_v = _spread * 0.45
+                _x_min = min(_xs) - _pad_h
+                _x_max = max(_xs) + _pad_h
+                _y_min = min(_ys) - _pad_v
+                _y_max = max(_ys) + _pad_v
+                # Always include the origin crosshair
+                _x_min = min(_x_min, -_spread * 0.15)
+                _x_max = max(_x_max,  _spread * 0.15)
+                _y_min = min(_y_min, -_spread * 0.15)
+                _y_max = max(_y_max,  _spread * 0.15)
 
                 # --- grouped marker traces (one per category, for a clean legend) ---
                 _groups = {}
@@ -8682,7 +8704,7 @@ with tab_car:
                     _vy = getattr(_r, _ax_v)
                     _is_key = _r.category in ("HV", "LV")
                     _col = _CAT_COLORS.get(_r.category, _OTHER_COLOR)
-                    _dx, _dy, _tax, _tay = _label_offset(_hx, _vy, _cx, _cy, _is_key)
+                    _dx, _dy, _tax, _tay = _label_offset(_hx, _vy, _cx, _cy, _is_key, _spread)
                     _fig.add_annotation(
                         x=_hx, y=_vy,
                         ax=_hx + _dx, ay=_vy + _dy,
@@ -8727,6 +8749,7 @@ with tab_car:
                     xaxis=dict(
                         title=dict(text=_h_lab,
                                    font=dict(size=11, color="#7a9bb8")),
+                        range=[_x_min, _x_max],
                         gridcolor="rgba(255,255,255,0.06)",
                         zerolinecolor="rgba(255,255,255,0.22)",
                         tickfont=dict(size=9, color="#6a8ba8"),
@@ -8735,7 +8758,7 @@ with tab_car:
                     yaxis=dict(
                         title=dict(text=_v_lab,
                                    font=dict(size=11, color="#7a9bb8")),
-                        scaleanchor="x", scaleratio=1,
+                        range=[_y_min, _y_max],
                         gridcolor="rgba(255,255,255,0.06)",
                         zerolinecolor="rgba(255,255,255,0.22)",
                         tickfont=dict(size=9, color="#6a8ba8"),
