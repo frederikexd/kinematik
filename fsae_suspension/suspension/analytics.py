@@ -544,8 +544,15 @@ def auto_replay_once() -> int:
     when Supabase is reachable — so buffered events recover without anyone
     having to click a button (the manual-only path meant the buffer was usually
     wiped by an ephemeral-host restart before it was ever replayed). Returns the
-    number replayed (0 if nothing to do / already done this session)."""
+    number replayed (0 if nothing to do / already done this session).
+
+    Honours the kill-switch: with telemetry disabled (KINEMATIK_ANALYTICS=off)
+    this is a no-op, so a disabled deploy never flushes a stale local buffer back
+    into Supabase (which would otherwise spike writes/egress on the deploy that
+    turned analytics off)."""
     try:
+        if not _sget("enabled", True):
+            return 0
         if _sget("_replayed_once"):
             return 0
         _sset("_replayed_once", True)
@@ -568,7 +575,16 @@ def fetch_view(view_name: str) -> list[dict]:
     _VIEW_ERRORS so the dashboard can tell a broken/missing view (e.g. mid-
     migration, when a view is dropped but not yet recreated) apart from a view
     that's simply empty — otherwise both render as blank and look like data
-    loss. Use view_error(view_name) to check."""
+    loss. Use view_error(view_name) to check.
+
+    Honours the kill-switch: when telemetry is disabled (KINEMATIK_ANALYTICS=off)
+    this returns [] WITHOUT touching Supabase, so the dashboard's per-rerun view
+    pulls generate zero egress. Without this guard, fetch_view kept reading from
+    the DB on every Streamlit rerun even with analytics turned off — the read
+    side ignored the flag that only ever gated the write side."""
+    if not _sget("enabled", True):
+        _VIEW_ERRORS[view_name] = None  # disabled, not an error
+        return []
     client = _SINK._get_client()
     if client is None:
         _VIEW_ERRORS[view_name] = None  # not an error, just not configured
