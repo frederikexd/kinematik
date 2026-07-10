@@ -22554,12 +22554,21 @@ with tab_analytics:
     roi = _axn.fetch_view("v_roi_summary")
     hours_by_feat = _axn.fetch_view("v_hours_saved_by_feature")
     foot = _axn.fetch_view("v_foot_traffic_daily")
-    feat_use = _axn.fetch_view("v_feature_use")
-    funnel = _axn.fetch_view("v_adoption_funnel")
+    # Per-feature use and the adoption funnel are scoped to the trailing 7 days.
+    # Prefer a 7-day-windowed view if the database provides one; fall back to the
+    # all-time view so the tables still render on older schemas.
+    feat_use = (_axn.fetch_view("v_feature_use_7d")
+                or _axn.fetch_view("v_feature_use"))
+    funnel = (_axn.fetch_view("v_adoption_funnel_7d")
+              or _axn.fetch_view("v_adoption_funnel"))
     errors = _axn.fetch_view("v_error_rate")
     latency = _axn.fetch_view("v_latency_by_feature")
     retention = _axn.fetch_view("v_retention")
-    ttfr = _axn.fetch_view("v_time_to_first_result")
+    # Time-to-first-result, measured over the trailing 7 days only. Prefer a
+    # 7-day-windowed view if the database provides one; fall back to the
+    # all-time view so the tile still renders on older schemas.
+    ttfr = (_axn.fetch_view("v_time_to_first_result_7d")
+            or _axn.fetch_view("v_time_to_first_result"))
     comparison = _axn.fetch_view("v_comparison_to_alternatives")
     individuals = _axn.fetch_view("v_individual_use")
 
@@ -22783,10 +22792,30 @@ with tab_analytics:
         tf = ttfr[0]
         _v = tf.get("avg_minutes_to_first_result")
         _ttfr_str = f"{float(_v) * 60:.0f} sec" if _v else "—"
-        _ax_metric(u3, "Time-to-first-result", _ttfr_str, "new-member onboarding",
+        _ax_metric(u3, "Time-to-first-result", _ttfr_str,
+                   "new-member onboarding · last 7 days",
                    "var(--amber)")
     if foot:
-        _ax_metric(u4, "Active days", f"{len(foot)}", "with recorded traffic")
+        # Report activity as days-active-per-week, not a raw total. Count the
+        # distinct days that saw traffic, divide by how many whole-or-partial
+        # weeks the record spans, and clamp to the 0–7 range. This reads as a
+        # weekly cadence ("~4 days/week") that stays comparable no matter how
+        # long the app has been collecting data.
+        _days = sorted({str(d.get("day")) for d in foot if d.get("day")})
+        _n_active = len(_days)
+        _weeks = 1.0
+        if len(_days) >= 2:
+            try:
+                _d0 = _datetime.date.fromisoformat(_days[0][:10])
+                _d1 = _datetime.date.fromisoformat(_days[-1][:10])
+                _span_days = (_d1 - _d0).days + 1
+                _weeks = max(_span_days / 7.0, 1.0)
+            except Exception:
+                _weeks = max(_n_active / 7.0, 1.0)
+        _per_week = min(_n_active / _weeks, 7.0)
+        _ax_metric(u4, "Active days / week", f"{_per_week:.1f}",
+                   f"{_n_active} active days total")
+
 
 
 
@@ -22882,7 +22911,7 @@ with tab_analytics:
     # feature that simply hasn't been opened yet still appears by name rather
     # than silently dropping out of the table.
     if _have_db:
-        with st.expander("⚙️ Per-feature use", expanded=False):
+        with st.expander("⚙️ Per-feature use · last 7 days", expanded=False):
           st.caption(
               "User, opens, engagement, and completion count for each feature. A "
               "few tabs work differently, so the raw event log might not "
@@ -23091,7 +23120,7 @@ with tab_analytics:
     # ====================================================================== #
     fcol, ecol = st.columns(2)
     with fcol:
-        st.markdown("#### Adoption funnel")
+        st.markdown("#### Adoption funnel · last 7 days")
         st.caption(
             "Open → engage → complete for each feature, using the same "
             "corrected counts as the Per-feature use table above. Percentages "
