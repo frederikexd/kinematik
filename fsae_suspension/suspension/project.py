@@ -177,6 +177,18 @@ class JSONFileBackend:
             json.dump(payload, f, indent=2)
 
 
+# Process-global cache for the full project blob, shared across every browser
+# session on this Streamlit server. Maps project_id -> ((project_id, version),
+# blob). Keyed on the `updated` version so a change by any editor invalidates it
+# for everyone: read() compares the current version (from the cheap probe) to the
+# cached key and only re-transfers the full document when they differ. This is
+# what stops the ~MB blob being re-pulled from Supabase on every rerun. Not
+# @st.cache_data because this module must stay importable in plain scripts/tests
+# with no Streamlit runtime; a plain dict gives the same hit/miss behaviour
+# without a hard Streamlit dependency.
+_project_blob_cache: dict = {}
+
+
 class SupabaseBackend:
     """
     Persists the whole project as a single JSON row in a Supabase (Postgres) table,
@@ -199,10 +211,49 @@ class SupabaseBackend:
         self.project_id = project_id
 
     def read(self) -> dict:
+        """Return the whole project blob, using a version-keyed cache so the full
+        ~MB document is only transferred over the network when it has actually
+        changed.
+
+        Egress note: this document was previously re-fetched in full on every
+        Streamlit rerun (each rerun re-runs the script top-to-bottom, and the
+        project load sits near the top). On a free-tier plan that repeated
+        full-blob transfer is the dominant egress cost. Here we first do the
+        cheap scalar version probe (`read_version()`, which transfers only the
+        `updated` timestamp), and only pull the full `data` column when the
+        version has moved since we last cached it. When nothing changed — the
+        common case, since most reruns are a user nudging a slider, not another
+        editor saving — we serve the cached blob and transfer only the tiny
+        timestamp. Multi-editor correctness is preserved: a write bumps
+        `updated`, which changes the cache key, so the next read re-fetches once.
+
+        The cache is process-global (module-level `_project_blob_cache`), so it's
+        shared across every browser session on the same Streamlit server, not
+        per-session — one editor's save invalidates it for everyone."""
+        version = self.read_version()
+        cache_key = (self.project_id, version)
+
+        # Cache hit: same project + same version we already hold. version is None
+        # only when the probe failed or the row is missing — in that case skip the
+        # cache and fall through to an authoritative full read rather than trust a
+        # possibly-stale entry.
+        if version is not None:
+            cached = _project_blob_cache.get(self.project_id)
+            if cached is not None and cached[0] == cache_key:
+                return cached[1]
+
+        # Cache miss (first load, or the version moved): pull the full blob once.
         resp = (self.client.table(self.TABLE)
                 .select("data").eq("id", self.project_id).execute())
         rows = resp.data or []
-        return rows[0]["data"] if rows else {}
+        blob = rows[0]["data"] if rows else {}
+
+        # Only cache when we have a real version to key on. With version None we
+        # can't safely detect the next change, so we don't cache — every such read
+        # stays a full authoritative read.
+        if version is not None:
+            _project_blob_cache[self.project_id] = (cache_key, blob)
+        return blob
 
     def read_version(self):
         """Cheap change-probe for polling: pull ONLY the `updated` timestamp out
@@ -225,6 +276,21 @@ class SupabaseBackend:
     def write(self, payload: dict):
         self.client.table(self.TABLE).upsert(
             {"id": self.project_id, "data": payload}).execute()
+        # Refresh the cache with what we just wrote, keyed on the payload's own
+        # `updated` stamp, so the very next read() on THIS server serves the new
+        # blob from memory instead of re-fetching the row we just sent. Other
+        # servers/sessions still pick the change up via their own version probe.
+        try:
+            new_version = payload.get("updated")
+            if new_version is not None:
+                _project_blob_cache[self.project_id] = (
+                    (self.project_id, new_version), payload)
+            else:
+                # No version to key on — safest to drop any stale cache entry so
+                # the next read does an authoritative full fetch.
+                _project_blob_cache.pop(self.project_id, None)
+        except Exception:
+            _project_blob_cache.pop(self.project_id, None)
 
 
 def _read_credential(name: str):
