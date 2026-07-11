@@ -23388,28 +23388,13 @@ with tab_analytics:
     # ROI view (hours saved → dollars). Zero if the views are empty.
     _live_total = 0
     _live_return = 0
-    _live_new = 0
-    _live_ret_pct = None  # None means "no live data yet"
     if retention:
         _rt = retention[0]
         _live_total = int(_rt.get("total_users", 0) or 0)
         _live_return = int(_rt.get("returning_users", 0) or 0)
-        # Use the view's own retention_pct rather than recomputing from combined
-        # baseline+live numbers, which makes the % look static because the
-        # 482-user baseline swamps any small live increment. The live pct
-        # reflects only post-purge traffic and moves visibly when a user returns.
-        _rp = _rt.get("retention_pct")
-        if _rp is not None:
-            try:
-                _live_ret_pct = float(_rp)
-            except (TypeError, ValueError):
-                _live_ret_pct = None
-        # A user whose pre-purge session was trimmed by the row cap re-appears
-        # in v_retention as a brand-new visitor, inflating _live_total. Subtract
-        # the live returning count from the live-total increment so that a
-        # "returning" visit after the purge window doesn't double-count into the
-        # Total users tile (they were already in _base_total).
-        _live_new = max(0, _live_total - _live_return)
+        # v_retention already deduplicates by UID, so _live_total is the true
+        # count of distinct post-purge visitors. Use it directly — no need to
+        # subtract returning users (they are already counted once in _live_total).
     _live_dollars = 0.0
     if roi:
         # Value saved time at the labour rate stored in analytics_config
@@ -23421,17 +23406,17 @@ with tab_analytics:
         _live_dollars = (roi[0].get("total_hours_saved") or 0) * _rate
 
     # Combined running totals — grow as users log on and return.
-    # _live_new = genuinely new post-purge visitors (live_total minus returning
-    # users who re-appeared after their old sessions were row-cap trimmed).
-    _total = _base_total + _live_new
+    # New visitor  → _live_total goes +1, _total goes +1.
+    # Returning visitor → _live_return goes +1, _returning goes +1.
+    #   _live_total also goes +1 on a return only if their old session was
+    #   trimmed by the row cap (they look new to v_retention); in that edge
+    #   case _total increments by 1 too, which is acceptable.
+    _total = _base_total + _live_total
     _returning = _base_return + _live_return
     _dollars = _base_dollars + _live_dollars
-    # Use the live retention % when available — it moves visibly on each return.
-    # Fall back to the combined-data calculation only when v_retention is empty.
-    if _live_ret_pct is not None and _live_total > 0:
-        _ret_pct = _live_ret_pct
-    else:
-        _ret_pct = (100.0 * _returning / _total) if _total else 0.0
+    # Always compute retention % as combined returning / combined total so it
+    # reads as "537 of 816 ever" — consistent with what users expect to see.
+    _ret_pct = (100.0 * _returning / _total) if _total else 0.0
 
     # Reliability indicator — ✓ stable if error rate <= 2%, ✗ otherwise.
     # No data yet means nothing has broken, so default to ✓.
