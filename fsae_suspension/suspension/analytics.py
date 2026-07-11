@@ -47,6 +47,7 @@ import json
 import time
 import queue
 import atexit
+import random
 import threading
 import datetime as _dt
 import contextlib
@@ -74,6 +75,56 @@ _EVENT_TYPES = {
     "render", "data_pull", "export", "error", "feature_released",
     "first_result",
 }
+
+# --------------------------------------------------------------------------- #
+#  Event sampling — write ONLY what the minimal analytics tab actually reads    #
+# --------------------------------------------------------------------------- #
+#  The lean Analytics tab computes everything from three views:
+#      v_roi_summary   → needs 'workflow_complete' events
+#      v_retention     → needs any event carrying a session/visitor identity;
+#                        'session_start' is the reliable one-per-visit anchor
+#      v_error_rate    → needs 'error' events (and the success flag on completes)
+#
+#  So only THREE event types produce rows any kept view reads: session_start,
+#  workflow_complete, error. Every other event type (tab_open, feature_engage,
+#  render, data_pull, export, feature_released, first_result) would write rows
+#  that nothing queries — pure storage cost. We drop those entirely (rate 0.0)
+#  to keep the table as small as possible, which is the explicit goal here.
+#
+#  To bring a metric back later, re-enable its event type here AND re-create the
+#  view it feeds (analytics_schema.sql / analytics_hardening.sql). 1.0 = keep
+#  all, 0.0 = drop all, anything between = Bernoulli sample at that rate.
+_SAMPLE_RATES: dict = {
+    # kept — the only events the minimal tab's three views consume
+    "session_start":     1.0,
+    "workflow_complete": 1.0,
+    "error":             1.0,
+    # dropped — no minimal-tab view reads these, so writing them is wasted space
+    "tab_open":          0.0,
+    "feature_engage":    0.0,
+    "render":            0.0,
+    "data_pull":         0.0,
+    "export":            0.0,
+    "feature_released":  0.0,
+    "first_result":      0.0,
+}
+
+
+def _keep_event(event_type: str) -> bool:
+    """Return True if this event should be recorded, applying per-type sampling.
+
+    In the minimal configuration only session_start, workflow_complete and error
+    are written (rate 1.0); every other event type is dropped (rate 0.0) because
+    no view in the lean Analytics tab reads it, so storing it is pure cost. An
+    unknown event type defaults to 1.0 (kept) so new instrumentation isn't
+    silently lost — set an explicit rate above to change that. Sampling is
+    independent per call (Bernoulli)."""
+    rate = _SAMPLE_RATES.get(event_type, 1.0)
+    if rate >= 1.0:
+        return True
+    if rate <= 0.0:
+        return False
+    return random.random() < rate
 
 
 # --------------------------------------------------------------------------- #
@@ -335,6 +386,11 @@ def _emit(event_type: str, *, feature: Optional[str] = None,
     if not _sget("enabled", True):
         return
     if event_type not in _EVENT_TYPES:
+        return
+    # Sampling gate: drop a fraction of high-frequency latency pings before they
+    # ever hit the queue, keeping DB size and egress sustainable on the free tier
+    # without affecting any metric-critical event (those default to 100%).
+    if not _keep_event(event_type):
         return
     try:
         sid = _resolve_session_id()
