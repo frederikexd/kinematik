@@ -23326,22 +23326,17 @@ with tab_analytics:
     retention = _fetch_view("v_retention")
     errors = _fetch_view("v_error_rate")
 
-    # ====================================================================== #
-    #  MINIMAL ANALYTICS — only the essentials, computed from 3 views.        #
-    #  Kept deliberately lean: ROI headline, user/retention, reliability.     #
-    #  No per-feature tables, funnels, latency charts, individual-user lists, #
-    #  vs-alternatives pricing, or debug panels — those pulled extra views    #
-    #  and rows we don't need. This section reads only roi / retention /      #
-    #  errors, already fetched above.                                         #
-    # ====================================================================== #
-
-    # ---- Historical baseline (pre-purge figures, preserved) --------------- #
-    # The original events were truncated to fix the 500MB overage, so the live
-    # tiles below rebuild from that date forward. These validated pre-purge
-    # totals were captured before the wipe and are stored in analytics_baseline
-    # (see analytics_baseline.sql). Shown here as a fixed, clearly-labelled
-    # reference so the headline numbers stay citable for the pitch. Reads one
-    # tiny row; if the table isn't present yet, this block silently skips.
+    # ---- Headline tiles ---------------------------------------------------- #
+    # The numbers combine a frozen historical baseline (analytics_baseline) with
+    # the LIVE retention view (v_retention), so the tiles grow in real time:
+    #   • Total users  = baseline total + live distinct visitors since the reset.
+    #     A brand-new visitor logging on emits a session_start with a fresh
+    #     visitor_id, which v_retention counts as a new user → this ticks up.
+    #   • Returning     = baseline returning + live users with 2+ sessions.
+    #     When a known visitor_id logs on a SECOND time, v_retention moves them
+    #     from one_time into returning_users → the returning count ticks up.
+    #   • Dollars saved = baseline dollars + live ROI (hours saved × rate).
+    # The baseline is the starting point; live activity accumulates on top of it.
     _baseline = None
     try:
         _bl = _fetch_view("analytics_baseline")
@@ -23350,66 +23345,54 @@ with tab_analytics:
     except Exception:
         _baseline = None
 
-    if _baseline:
-        _as_of = _baseline.get("as_of", "")
-        st.markdown(
-            f'<div class="tag" style="opacity:.85">◧ Historical baseline '
-            f'(validated, as of {_as_of}) — live tiles below rebuild from '
-            f'this date forward</div>', unsafe_allow_html=True)
-        _b1, _b2, _b3 = st.columns(3)
-        _bt = int(_baseline.get("total_users_ever", 0) or 0)
-        _br = int(_baseline.get("returning_users", 0) or 0)
-        _bp = float(_baseline.get("retention_pct", 0) or 0)
-        _bd = float(_baseline.get("dollars_saved", 0) or 0)
-        _ax_metric(_b1, "Total users (baseline)", f"{_bt}", "ever, pre-purge")
-        _ax_metric(_b2, "Returning (baseline)", f"{_bp:.0f}%",
-                   f"{_br} of {_bt}", "var(--cyan)")
-        _ax_metric(_b3, "Dollars saved (baseline)", f"${_bd:,.0f}",
-                   "validated pre-purge", "var(--amber)")
-        st.markdown("---")
+    # Baseline starting figures (0 if no baseline row present).
+    _base_total = int((_baseline or {}).get("total_users_ever", 0) or 0)
+    _base_return = int((_baseline or {}).get("returning_users", 0) or 0)
+    _base_dollars = float((_baseline or {}).get("dollars_saved", 0) or 0)
 
-    # ROI headline — hours saved -> dollars (the number that matters most).
-    if roi:
-        _r0 = roi[0]
-        _hours = _r0.get("total_hours_saved") or 0
-        _rate = 65.0
-        _dollars = _hours * _rate
-        _m1, _m2 = st.columns(2)
-        _ax_metric(_m1, "Hours saved", f"{_hours:,.0f}",
-                   "across all workflows", "var(--cyan)")
-        _ax_metric(_m2, "Dollars saved", f"${_dollars:,.0f}",
-                   f"at ${_rate:.0f}/hr labour", "var(--amber)")
-    else:
-        st.caption("No ROI data yet — this fills in as workflows are completed.")
-
-    st.markdown("---")
-
-    # Users & retention — total people ever + returning share.
+    # Live figures from v_retention (distinct visitors since the reset) and the
+    # ROI view (hours saved → dollars). Zero if the views are empty.
+    _live_total = 0
+    _live_return = 0
     if retention:
         _rt = retention[0]
-        _total = int(_rt.get("total_users", 0) or 0)
-        _returning = int(_rt.get("returning_users", 0) or 0)
-        _ret_pct = (100.0 * _returning / _total) if _total else 0.0
-        _u1, _u2 = st.columns(2)
-        _ax_metric(_u1, "Total users", f"{_total}", "ever")
-        _ax_metric(_u2, "Returning", f"{_ret_pct:.0f}%",
-                   f"{_returning} came back", "var(--cyan)")
-    else:
-        st.caption("No retention data yet.")
+        _live_total = int(_rt.get("total_users", 0) or 0)
+        _live_return = int(_rt.get("returning_users", 0) or 0)
+    _live_dollars = 0.0
+    if roi:
+        # Value saved time at the labour rate stored in analytics_config
+        # (exposed by the view as labour_rate_usd_hr). Falls back to $65/hr if
+        # the view doesn't carry it. Reading the rate from the data instead of
+        # hardcoding keeps the tile consistent with the database's own dollar
+        # figure — change the rate once in analytics_config and both follow.
+        _rate = float(roi[0].get("labour_rate_usd_hr") or 65.0)
+        _live_dollars = (roi[0].get("total_hours_saved") or 0) * _rate
 
-    st.markdown("---")
+    # Combined running totals — grow as users log on and return.
+    _total = _base_total + _live_total
+    _returning = _base_return + _live_return
+    _dollars = _base_dollars + _live_dollars
+    _ret_pct = (100.0 * _returning / _total) if _total else 0.0
 
-    # Reliability — overall error rate across recorded runs.
+    # Reliability indicator — ✓ stable if error rate <= 2%, ✗ otherwise.
+    # No data yet means nothing has broken, so default to ✓.
+    _reliable = True
     if errors:
         _tot_runs = sum((e.get("total", 0) or 0) for e in errors)
         _tot_errs = sum((e.get("errors", 0) or 0) for e in errors)
         _err_pct = (100.0 * _tot_errs / _tot_runs) if _tot_runs else 0.0
-        _e1, = st.columns(1)
-        _ax_metric(_e1, "Error rate", f"{_err_pct:.1f}%",
-                   f"{_tot_errs} of {_tot_runs} runs",
-                   "var(--amber)" if _err_pct > 2 else "var(--cyan)")
-    else:
-        st.caption("No reliability data yet.")
+        _reliable = _err_pct <= 2.0
+
+    _c1, _c2, _c3, _c4 = st.columns(4)
+    _ax_metric(_c1, "Total users", f"{_total}", "ever")
+    _ax_metric(_c2, "Returning", f"{_ret_pct:.0f}%",
+               f"{_returning} of {_total}", "var(--cyan)")
+    _ax_metric(_c3, "Dollars saved", f"${_dollars:,.0f}",
+               "across all workflows", "var(--amber)")
+    _ax_metric(_c4, "Reliability",
+               "✓" if _reliable else "✗",
+               "stable" if _reliable else "errors detected",
+               "var(--cyan)" if _reliable else "var(--amber)")
 
 
 
