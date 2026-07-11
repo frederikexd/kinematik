@@ -2383,6 +2383,23 @@ with _pctl:
             else None
         )
 
+        # --- 0. durable localStorage id (most reliable on Streamlit Cloud) --- #
+        # Cookies and IP fingerprinting both fail for most anonymous users on
+        # this deployment (see suspension/visitor_id.py), so a returning user
+        # was getting a fresh per-session id each visit and under-counting
+        # returning_users. localStorage survives across visits reliably. When it
+        # resolves, it wins outright and we skip the cookie/fingerprint tiers.
+        if not _vid:
+            try:
+                from suspension.visitor_id import get_durable_visitor_id as _gdv
+                _ls_vid = _gdv(st)
+                if _ls_vid:
+                    _vid = _ls_vid
+                    st.session_state["_ax_resolved_vid"] = _vid
+                    st.session_state["_ax_resolved_vid_kind"] = "localStorage (durable)"
+            except Exception:
+                pass
+
         # --- 1. durable cookie via CookieManager ---------------------------- #
         # extra-streamlit-components reads/writes cookies on the PARENT document
         # correctly even inside Streamlit Cloud's sandboxed component iframe —
@@ -2471,16 +2488,33 @@ with _pctl:
         # is_new_member is best-effort: true only on the very first run of THIS
         # browser session (a fresh visit). Cross-visit "new vs returning" is
         # derived properly in SQL from visitor_id, not from this flag.
-        _axn.init(member=st.session_state.get("_ax_member"),
-                  subteam=_ax_subteam,
-                  is_new_member=not st.session_state.get("_ax_returning", False))
-        st.session_state["_ax_returning"] = True
-        # Auto-recover any events buffered locally during a past DB outage,
-        # once per session, without needing a manual button click.
-        try:
-            _axn.auto_replay_once()
-        except Exception:
-            pass
+
+        # Defer session_start until we have a DURABLE id, so the event that
+        # anchors this visit carries the localStorage id (stable across visits)
+        # rather than a per-session fallback. localStorage resolves one render
+        # later (the JS reloads with ?kvid=...), so on the very first render we
+        # hold off and let the rerun carry the durable id. We wait at most a
+        # couple of renders, then proceed anyway so a browser that blocks
+        # localStorage still gets tracked (just not cross-visit).
+        _kind = st.session_state.get("_ax_resolved_vid_kind", "")
+        _durable = _kind in ("localStorage (durable)", "cookie (durable)",
+                             "ip+ua fingerprint") or bool(
+                             st.session_state.get("_ax_member"))
+        _waits = st.session_state.get("_ax_id_waits", 0)
+        if (not _durable) and _waits < 2:
+            # Give the durable id a chance to resolve on the next render.
+            st.session_state["_ax_id_waits"] = _waits + 1
+        elif not st.session_state.get("_ax_returning", False):
+            _axn.init(member=st.session_state.get("_ax_member"),
+                      subteam=_ax_subteam,
+                      is_new_member=not st.session_state.get("_ax_returning", False))
+            st.session_state["_ax_returning"] = True
+            # Auto-recover any events buffered locally during a past DB outage,
+            # once per session, without needing a manual button click.
+            try:
+                _axn.auto_replay_once()
+            except Exception:
+                pass
     except Exception:
         pass
 
