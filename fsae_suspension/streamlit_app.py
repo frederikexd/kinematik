@@ -23388,10 +23388,28 @@ with tab_analytics:
     # ROI view (hours saved → dollars). Zero if the views are empty.
     _live_total = 0
     _live_return = 0
+    _live_new = 0
+    _live_ret_pct = None  # None means "no live data yet"
     if retention:
         _rt = retention[0]
         _live_total = int(_rt.get("total_users", 0) or 0)
         _live_return = int(_rt.get("returning_users", 0) or 0)
+        # Use the view's own retention_pct rather than recomputing from combined
+        # baseline+live numbers, which makes the % look static because the
+        # 482-user baseline swamps any small live increment. The live pct
+        # reflects only post-purge traffic and moves visibly when a user returns.
+        _rp = _rt.get("retention_pct")
+        if _rp is not None:
+            try:
+                _live_ret_pct = float(_rp)
+            except (TypeError, ValueError):
+                _live_ret_pct = None
+        # A user whose pre-purge session was trimmed by the row cap re-appears
+        # in v_retention as a brand-new visitor, inflating _live_total. Subtract
+        # the live returning count from the live-total increment so that a
+        # "returning" visit after the purge window doesn't double-count into the
+        # Total users tile (they were already in _base_total).
+        _live_new = max(0, _live_total - _live_return)
     _live_dollars = 0.0
     if roi:
         # Value saved time at the labour rate stored in analytics_config
@@ -23403,24 +23421,40 @@ with tab_analytics:
         _live_dollars = (roi[0].get("total_hours_saved") or 0) * _rate
 
     # Combined running totals — grow as users log on and return.
-    _total = _base_total + _live_total
+    # _live_new = genuinely new post-purge visitors (live_total minus returning
+    # users who re-appeared after their old sessions were row-cap trimmed).
+    _total = _base_total + _live_new
     _returning = _base_return + _live_return
     _dollars = _base_dollars + _live_dollars
-    _ret_pct = (100.0 * _returning / _total) if _total else 0.0
+    # Use the live retention % when available — it moves visibly on each return.
+    # Fall back to the combined-data calculation only when v_retention is empty.
+    if _live_ret_pct is not None and _live_total > 0:
+        _ret_pct = _live_ret_pct
+    else:
+        _ret_pct = (100.0 * _returning / _total) if _total else 0.0
 
     # Reliability indicator — ✓ stable if error rate <= 2%, ✗ otherwise.
     # No data yet means nothing has broken, so default to ✓.
     _reliable = True
     if errors:
-        _tot_runs = sum((e.get("total", 0) or 0) for e in errors)
-        _tot_errs = sum((e.get("errors", 0) or 0) for e in errors)
+        # v_error_rate exposes "attempts" and "failures" (not "total"/"errors")
+        _tot_runs = sum((e.get("attempts", 0) or 0) for e in errors)
+        _tot_errs = sum((e.get("failures", 0) or 0) for e in errors)
         _err_pct = (100.0 * _tot_errs / _tot_runs) if _tot_runs else 0.0
         _reliable = _err_pct <= 2.0
 
     _c1, _c2, _c3, _c4 = st.columns(4)
     _ax_metric(_c1, "Total users", f"{_total}", "ever")
+    # Returning tile: show live-only returning count in the subtitle so the
+    # number visibly ticks up when a user comes back, rather than being swamped
+    # by the 482-user frozen baseline.
+    _ret_subtitle = (
+        f"{_live_return} new since reset"
+        if _live_total > 0
+        else f"{_returning} of {_total}"
+    )
     _ax_metric(_c2, "Returning", f"{_ret_pct:.0f}%",
-               f"{_returning} of {_total}", "var(--cyan)")
+               _ret_subtitle, "var(--cyan)")
     _ax_metric(_c3, "Dollars saved", f"${_dollars:,.0f}",
                "across all workflows", "var(--amber)")
     _ax_metric(_c4, "Reliability",
