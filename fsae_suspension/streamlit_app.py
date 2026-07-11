@@ -23445,14 +23445,16 @@ with tab_analytics:
 
     _c1, _c2, _c3, _c4 = st.columns(4)
     _ax_metric(_c1, "Total users", f"{_total}", "ever")
-    # Returning tile: show live-only returning count in the subtitle so the
-    # number visibly ticks up when a user comes back, rather than being swamped
-    # by the 482-user frozen baseline.
-    _ret_subtitle = (
-        f"{_live_return} new since reset"
-        if _live_total > 0
-        else f"{_returning} of {_total}"
-    )
+    # Subtitle shows the combined baseline+live returning count so it matches
+    # the number users last saw (e.g. 534), ticking up as new returners appear.
+    # When live data is available, append the post-purge increment in parens
+    # so it's clear the number is growing.
+    if _live_total > 0 and _live_return > 0:
+        _ret_subtitle = f"{_returning} of {_total} (+{_live_return} since reset)"
+    elif _live_total > 0:
+        _ret_subtitle = f"{_returning} of {_total}"
+    else:
+        _ret_subtitle = f"{_returning} of {_total}"
     _ax_metric(_c2, "Returning", f"{_ret_pct:.0f}%",
                _ret_subtitle, "var(--cyan)")
     _ax_metric(_c3, "Dollars saved", f"${_dollars:,.0f}",
