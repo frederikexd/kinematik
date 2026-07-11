@@ -2081,6 +2081,7 @@ _TAB_META = {
     "validation":  ("✔️", "Validation"),
     "integration": ("🔗", "Integration"),
     "registry":    ("🗂️", "Registry"),
+    "analytics":   ("📊", "Analytics"),
     "pcb":         ("🔌", "Electronics (PCB)"),
     "tractive":    ("⚡", "Tractive Safety"),
     "dfmea":       ("🧯", "DFMEA"),
@@ -2111,7 +2112,7 @@ _TAB_CATEGORIES = [
     ("docs",     "📄", "Documentation",
      ["docs", "notes", "weight"]),
     ("data",     "📊", "Data & Cost",
-     ["registry", "cost"]),
+     ["registry", "analytics", "cost"]),
 ]
 # id -> (category_key, emoji, label) for quick lookup
 _ID_CATEGORY = {}
@@ -2126,11 +2127,11 @@ for _cid in _FULL_ORDER:
 
 # Tabs every member uses no matter their subteam — the shared spine of the
 # project (see one car, declare your numbers once, read/leave notes).
-_SHARED_IDS = ["model3d", "integration", "registry", "docs", "notes", "weight", "validation"]
+_SHARED_IDS = ["model3d", "integration", "registry", "docs", "notes", "weight", "validation", "analytics"]
 
 # Subteam -> the tabs that team actually works in (most-used first). The shared
 # spine (_SHARED_IDS: 3D model, integration, registry, notes, weight,
-# validation) is appended automatically to every role, so it's not
+# validation, analytics) is appended automatically to every role, so it's not
 # repeated here. This list is now used for STRICT filtering — a member sees ONLY
 # these tabs plus the shared spine, nothing else — so each role is deliberately
 # widened to include every tab that subsystem genuinely needs (e.g. cooling
@@ -6870,7 +6871,7 @@ tab12       = _id_to_container["validation"]
 tab13       = _id_to_container["integration"]
 tab_registry = _id_to_container["registry"]
 tab_docs    = _id_to_container["docs"]
-tab_analytics = _id_to_container.get("analytics")
+tab_analytics = _id_to_container["analytics"]
 tab_pcb     = _id_to_container["pcb"]
 tab_tractive = _id_to_container["tractive"]
 tab_dfmea    = _id_to_container["dfmea"]
@@ -8605,17 +8606,14 @@ with tab_car:
             _CAT_COLORS = {"HV": "#ff4b4b", "LV": "#f5a623"}
             _OTHER_COLOR = "#4cc9f0"
 
-            def _label_offset(_hx, _vy, _cx, _cy, _is_key, _spread=200.0):
+            def _label_offset(_hx, _vy, _cx, _cy, _is_key):
                 """Return (dx, dy, textanchor_x, textanchor_y) for a label
                 placed radially outward from the point-cloud centroid.
-                Key components get a longer leader line.
-                _spread: typical data range (mm) used to scale leader length."""
+                Key components get a longer leader line."""
                 _dx = _hx - _cx
                 _dy = _vy - _cy
                 _dist = _math.hypot(_dx, _dy) or 1.0
-                # Scale reach to ~25-35% of the data spread so labels are
-                # visible regardless of how tightly the components cluster.
-                _reach = max(30.0, _spread * (0.35 if _is_key else 0.25))
+                _reach = 90 if _is_key else 65
                 _nx = _dx / _dist
                 _ny = _dy / _dist
                 # Anchor text on the far side of the leader tip
@@ -8636,25 +8634,6 @@ with tab_car:
                 _ys = [getattr(_r, _ax_v) for _r in _sorted_rows]
                 _cx = sum(_xs) / len(_xs) if _xs else 0.0
                 _cy = sum(_ys) / len(_ys) if _ys else 0.0
-
-                # Compute spread for scaling leader-line reach
-                _x_span = (max(_xs) - min(_xs)) if len(_xs) > 1 else 0.0
-                _y_span = (max(_ys) - min(_ys)) if len(_ys) > 1 else 0.0
-                _spread = max(_x_span, _y_span, 100.0)  # at least 100 mm
-
-                # Compute tight padded axis ranges so components fill the view.
-                # Padding = leader-line reach + a small visual margin.
-                _pad_h = _spread * 0.45
-                _pad_v = _spread * 0.45
-                _x_min = min(_xs) - _pad_h
-                _x_max = max(_xs) + _pad_h
-                _y_min = min(_ys) - _pad_v
-                _y_max = max(_ys) + _pad_v
-                # Always include the origin crosshair
-                _x_min = min(_x_min, -_spread * 0.15)
-                _x_max = max(_x_max,  _spread * 0.15)
-                _y_min = min(_y_min, -_spread * 0.15)
-                _y_max = max(_y_max,  _spread * 0.15)
 
                 # --- grouped marker traces (one per category, for a clean legend) ---
                 _groups = {}
@@ -8703,7 +8682,7 @@ with tab_car:
                     _vy = getattr(_r, _ax_v)
                     _is_key = _r.category in ("HV", "LV")
                     _col = _CAT_COLORS.get(_r.category, _OTHER_COLOR)
-                    _dx, _dy, _tax, _tay = _label_offset(_hx, _vy, _cx, _cy, _is_key, _spread)
+                    _dx, _dy, _tax, _tay = _label_offset(_hx, _vy, _cx, _cy, _is_key)
                     _fig.add_annotation(
                         x=_hx, y=_vy,
                         ax=_hx + _dx, ay=_vy + _dy,
@@ -8748,7 +8727,6 @@ with tab_car:
                     xaxis=dict(
                         title=dict(text=_h_lab,
                                    font=dict(size=11, color="#7a9bb8")),
-                        range=[_x_min, _x_max],
                         gridcolor="rgba(255,255,255,0.06)",
                         zerolinecolor="rgba(255,255,255,0.22)",
                         tickfont=dict(size=9, color="#6a8ba8"),
@@ -8757,7 +8735,7 @@ with tab_car:
                     yaxis=dict(
                         title=dict(text=_v_lab,
                                    font=dict(size=11, color="#7a9bb8")),
-                        range=[_y_min, _y_max],
+                        scaleanchor="x", scaleratio=1,
                         gridcolor="rgba(255,255,255,0.06)",
                         zerolinecolor="rgba(255,255,255,0.22)",
                         tickfont=dict(size=9, color="#6a8ba8"),
@@ -22466,828 +22444,168 @@ def _ax_metric(col, label, value, sub="", color="var(--ink)"):
         f'<div class="u">{sub}</div></div>', unsafe_allow_html=True)
 
 
-import contextlib as _contextlib
-
-# The Analytics tab is intentionally omitted from the UI. When its container is
-# absent, route the (unchanged) tab body below into a throwaway sink so none of
-# it renders and no fetches run against the page. Setting it to None and testing
-# here keeps the large block un-reindented while making it fully inert.
-if tab_analytics is None:
-    _ANALYTICS_TAB_ENABLED = False
-    tab_analytics = _contextlib.nullcontext()
-else:
-    _ANALYTICS_TAB_ENABLED = True
-
 with tab_analytics:
-  if _ANALYTICS_TAB_ENABLED:
-      # Operator debug panels (instrumentation + visitor-identity diagnostics) are
-      # hidden from normal users. They render only when the app is opened with the
-      # URL parameter ?debug=1 (also accepts debug=true/on/yes). This keeps the
-      # tracking-health tools available to whoever runs the deployment without
-      # cluttering the page for everyone else.
-      try:
-          _ax_dbg_val = st.query_params.get("debug", "")
-          if isinstance(_ax_dbg_val, (list, tuple)):
-              _ax_dbg_val = _ax_dbg_val[0] if _ax_dbg_val else ""
-          _ax_debug_on = str(_ax_dbg_val).lower() in ("1", "true", "on", "yes")
-      except Exception:
-          _ax_debug_on = False
+    # Operator debug panels (instrumentation + visitor-identity diagnostics) are
+    # hidden from normal users. They render only when the app is opened with the
+    # URL parameter ?debug=1 (also accepts debug=true/on/yes). This keeps the
+    # tracking-health tools available to whoever runs the deployment without
+    # cluttering the page for everyone else.
+    try:
+        _ax_dbg_val = st.query_params.get("debug", "")
+        if isinstance(_ax_dbg_val, (list, tuple)):
+            _ax_dbg_val = _ax_dbg_val[0] if _ax_dbg_val else ""
+        _ax_debug_on = str(_ax_dbg_val).lower() in ("1", "true", "on", "yes")
+    except Exception:
+        _ax_debug_on = False
 
-      st.markdown(
-          '<div class="brand"><span class="mark">Analytics</span>'
-          '<span class="sub">Usage · reliability · ROI</span></div>',
-          unsafe_allow_html=True)
+    st.markdown(
+        '<div class="brand"><span class="mark">Analytics</span>'
+        '<span class="sub">Usage · reliability · ROI</span></div>',
+        unsafe_allow_html=True)
 
-      st.markdown(
-          '<div class="wt-intro"><div class="ic">◢</div><div>'
-          '<p>Every interaction with KinematiK is logged automatically, so by '
-          'review season there are <b>months of real data</b> behind the pitch — '
-          'not vibes. The headline is <b>hours saved → dollars</b>: completed '
-          'workflows × (manual time − in-tool time) × labour rate.</p>'
-          '<p class="hint">Anonymous by default (a per-session id). A member name '
-          'is recorded only if someone enters one below.</p>'
-          '</div></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="wt-intro"><div class="ic">◢</div><div>'
+        '<p>Every interaction with KinematiK is logged automatically, so by '
+        'review season there are <b>months of real data</b> behind the pitch — '
+        'not vibes. The headline is <b>hours saved → dollars</b>: completed '
+        'workflows × (manual time − in-tool time) × labour rate.</p>'
+        '<p class="hint">Anonymous by default (a per-session id). A member name '
+        'is recorded only if someone enters one below.</p>'
+        '</div></div>', unsafe_allow_html=True)
 
-      _live = False
-      try:
-          _live = _axn.is_live()
-      except Exception:
-          _live = False
+    _live = False
+    try:
+        _live = _axn.is_live()
+    except Exception:
+        _live = False
 
-      # optional: let the member attach their name to this session (opt-in)
-      _ac1, _ac2 = st.columns([2, 3])
-      with _ac1:
-          _nm = st.text_input("Your name (optional — for per-member stats)",
-                              value=st.session_state.get("_ax_member", ""),
-                              key="_ax_name_field",
-                              placeholder="leave blank to stay anonymous")
-          if _nm.strip() and _nm.strip() != st.session_state.get("_ax_member"):
-              st.session_state["_ax_member"] = _nm.strip()
-              try:
-                  _axn.init(member=_nm.strip())
-              except Exception:
-                  pass
-      with _ac2:
-          if _live:
-              st.markdown('<span class="tag good">● Supabase connected — live data</span>',
-                          unsafe_allow_html=True)
-              # Write-health: surface whether events are actually LANDING in the
-              # DB right now. Silent write failures (buffered to an ephemeral
-              # local file, never replayed) are what freeze the date/identity
-              # metrics — make that visible instead of guessing.
-              try:
-                  _wh = _axn.write_health()
-                  if _wh.get("ok") is False:
-                      st.markdown(
-                          '<span class="tag warn">⚠ Writes FAILING — events are '
-                          'being buffered locally, not saved. Metrics will freeze '
-                          'until this clears.</span>', unsafe_allow_html=True)
-                      if _wh.get("error"):
-                          st.caption(f"Last write error: {_wh['error']}")
-                      st.caption(f"Buffered this session: {_wh.get('buffered', 0)} "
-                                 f"event(s). Click replay below once the DB is "
-                                 f"reachable, or they auto-replay next session.")
-                  elif _wh.get("ok") is True:
-                      st.caption(f"✅ Writes OK — {_wh.get('sent', 0)} event(s) "
-                                 f"saved this session.")
-              except Exception:
-                  pass
-              if st.button("Replay any locally-buffered events", key="ax_replay"):
-                  n = _axn.replay_local_buffer()
-                  st.success(f"Replayed {n} buffered events into Supabase.")
-          else:
-              st.markdown('<span class="tag warn">● No Supabase — showing local buffer. '
-                          'Run analytics_schema.sql and set SUPABASE_URL/KEY to go live.</span>',
-                          unsafe_allow_html=True)
+    # optional: let the member attach their name to this session (opt-in)
+    _ac1, _ac2 = st.columns([2, 3])
+    with _ac1:
+        _nm = st.text_input("Your name (optional — for per-member stats)",
+                            value=st.session_state.get("_ax_member", ""),
+                            key="_ax_name_field",
+                            placeholder="leave blank to stay anonymous")
+        if _nm.strip() and _nm.strip() != st.session_state.get("_ax_member"):
+            st.session_state["_ax_member"] = _nm.strip()
+            try:
+                _axn.init(member=_nm.strip())
+            except Exception:
+                pass
+    with _ac2:
+        if _live:
+            st.markdown('<span class="tag good">● Supabase connected — live data</span>',
+                        unsafe_allow_html=True)
+            # Write-health: surface whether events are actually LANDING in the
+            # DB right now. Silent write failures (buffered to an ephemeral
+            # local file, never replayed) are what freeze the date/identity
+            # metrics — make that visible instead of guessing.
+            try:
+                _wh = _axn.write_health()
+                if _wh.get("ok") is False:
+                    st.markdown(
+                        '<span class="tag warn">⚠ Writes FAILING — events are '
+                        'being buffered locally, not saved. Metrics will freeze '
+                        'until this clears.</span>', unsafe_allow_html=True)
+                    if _wh.get("error"):
+                        st.caption(f"Last write error: {_wh['error']}")
+                    st.caption(f"Buffered this session: {_wh.get('buffered', 0)} "
+                               f"event(s). Click replay below once the DB is "
+                               f"reachable, or they auto-replay next session.")
+                elif _wh.get("ok") is True:
+                    st.caption(f"✅ Writes OK — {_wh.get('sent', 0)} event(s) "
+                               f"saved this session.")
+            except Exception:
+                pass
+            if st.button("Replay any locally-buffered events", key="ax_replay"):
+                n = _axn.replay_local_buffer()
+                st.success(f"Replayed {n} buffered events into Supabase.")
+        else:
+            st.markdown('<span class="tag warn">● No Supabase — showing local buffer. '
+                        'Run analytics_schema.sql and set SUPABASE_URL/KEY to go live.</span>',
+                        unsafe_allow_html=True)
 
-      st.markdown("---")
+    st.markdown("---")
 
-      # ----- pull the views (Supabase) or fall back to the local buffer ------ #
-      roi = _axn.fetch_view("v_roi_summary")
-      hours_by_feat = _axn.fetch_view("v_hours_saved_by_feature")
-      foot = _axn.fetch_view("v_foot_traffic_daily")
-      # Per-feature use and the adoption funnel are scoped to the trailing 7 days.
-      # Prefer a 7-day-windowed view if the database provides one; fall back to the
-      # all-time view so the tables still render on older schemas.
-      feat_use = (_axn.fetch_view("v_feature_use_7d")
-                  or _axn.fetch_view("v_feature_use"))
-      funnel = (_axn.fetch_view("v_adoption_funnel_7d")
-                or _axn.fetch_view("v_adoption_funnel"))
-      errors = _axn.fetch_view("v_error_rate")
-      latency = _axn.fetch_view("v_latency_by_feature")
-      retention = _axn.fetch_view("v_retention")
-      # Time-to-first-result, measured over the trailing 7 days only. Prefer a
-      # 7-day-windowed view if the database provides one; fall back to the
-      # all-time view so the tile still renders on older schemas.
-      ttfr = (_axn.fetch_view("v_time_to_first_result_7d")
-              or _axn.fetch_view("v_time_to_first_result"))
-      comparison = _axn.fetch_view("v_comparison_to_alternatives")
-      individuals = _axn.fetch_view("v_individual_use")
+    # ----- pull the views (Supabase) or fall back to the local buffer ------ #
+    # Reads go through the 5-minute cache (suspension/analytics_cache.py) instead
+    # of hitting Supabase on every Streamlit rerun. The dashboard doesn't need
+    # second-fresh numbers, and this collapses ~11-reads-per-rerun down to
+    # ~11-reads-per-5-min — which is what keeps egress inside the free tier.
+    # The "Refresh now" button below busts the cache for an immediate live pull.
+    from suspension.analytics_cache import (
+        fetch_view_cached as _fetch_view,
+        clear_cache as _clear_view_cache,
+    )
+    if st.button("🔄 Refresh now", key="ax_refresh_views",
+                 help="Fetch the latest numbers from the database right now "
+                      "(otherwise refreshes automatically every 5 minutes)."):
+        _clear_view_cache()
+        st.rerun()
 
-      # Corrected per-feature numbers (manual-merged), populated by the Per-feature
-      # use table below and reused by the Adoption funnel so both always match.
-      _fu_corrected: dict = {}
+    # MINIMAL TAB: only the three views the essential metrics need are pulled.
+    # The full dashboard fetched 11 views on every load; a lean tab needs just
+    # ROI (hours/dollars saved), retention (users + returning %), and error rate
+    # (reliability). Fetching 3 instead of 11 is ~1/4 the read egress, and the
+    # unused views are never queried at all. The heavier views (per-feature use,
+    # individual use, foot traffic, funnel, latency, vs-alternatives, TTFR) are
+    # intentionally NOT fetched — add them back only if you actually need them.
+    roi = _fetch_view("v_roi_summary")
+    retention = _fetch_view("v_retention")
+    errors = _fetch_view("v_error_rate")
 
-      _have_db = bool(roi or foot or feat_use)
+    # ====================================================================== #
+    #  MINIMAL ANALYTICS — only the essentials, computed from 3 views.        #
+    #  Kept deliberately lean: ROI headline, user/retention, reliability.     #
+    #  No per-feature tables, funnels, latency charts, individual-user lists, #
+    #  vs-alternatives pricing, or debug panels — those pulled extra views    #
+    #  and rows we don't need. This section reads only roi / retention /      #
+    #  errors, already fetched above.                                         #
+    # ====================================================================== #
 
-      # Surface any view that ERRORED (vs genuinely empty) — e.g. a view dropped
-      # but not yet recreated because a migration half-applied. Without this, a
-      # broken view just renders as a blank tile and looks like data loss.
-      _view_errs = {}
-      # getattr guard: if a mismatched deploy has this streamlit_app.py but an
-      # older analytics.py without view_error(), don't crash the whole tab —
-      # just skip the banner. (That mismatch is itself the bug that caused this
-      # crash; the guard makes the app tolerant of it.)
-      _view_error_fn = getattr(_axn, "view_error", None)
-      if callable(_view_error_fn):
-          for _vn in ["v_roi_summary", "v_hours_saved_by_feature", "v_foot_traffic_daily",
-                      "v_feature_use", "v_adoption_funnel", "v_error_rate",
-                      "v_latency_by_feature", "v_retention", "v_time_to_first_result",
-                      "v_comparison_to_alternatives", "v_individual_use"]:
-              try:
-                  _e = _view_error_fn(_vn)
-              except Exception:
-                  _e = None
-              if _e:
-                  _view_errs[_vn] = _e
-      if _view_errs:
-          _missing = [v for v, e in _view_errs.items()
-                      if "does not exist" in e.lower() or "relation" in e.lower()]
-          if _missing:
-              st.error(
-                  "⚠️ Some analytics views are **unavailable** — this usually means "
-                  "a database migration was interrupted partway (a view was dropped "
-                  "but not recreated), so tiles below may be blank. **Fix:** re-run "
-                  "`analytics_hardening.sql` in full from the top — it's safe to "
-                  "re-run. Affected: " + ", ".join(f"`{v}`" for v in _missing))
-          _other = {v: e for v, e in _view_errs.items() if v not in _missing}
-          if _other:
-              with st.expander("⚠️ Other analytics view errors"):
-                  for _v, _e in _other.items():
-                      st.caption(f"`{_v}`: {_e}")
+    # ROI headline — hours saved -> dollars (the number that matters most).
+    if roi:
+        _r0 = roi[0]
+        _hours = _r0.get("total_hours_saved") or 0
+        _rate = 65.0
+        _dollars = _hours * _rate
+        _m1, _m2 = st.columns(2)
+        _ax_metric(_m1, "Hours saved", f"{_hours:,.0f}",
+                   "across all workflows", "var(--cyan)")
+        _ax_metric(_m2, "Dollars saved", f"${_dollars:,.0f}",
+                   f"at ${_rate:.0f}/hr labour", "var(--amber)")
+    else:
+        st.caption("No ROI data yet — this fills in as workflows are completed.")
 
-      # ====================================================================== #
-      #  AT A GLANCE — the numbers that are unambiguously accurate (opens,      #
-      #  sessions, people, completions), shown first so the whole tab is        #
-      #  anchored by a believable top-line before any per-feature detail.       #
-      # ====================================================================== #
-      if _have_db:
-          _tot_sessions = sum((d.get("sessions", 0) or 0) for d in (foot or []))
-          _tot_people = len(individuals or [])
-          _tot_named = sum(1 for r in (individuals or []) if r.get("is_named"))
-          _tot_workflows = sum((r.get("completions", 0) or 0) for r in (feat_use or []))
-          # features people actually opened at least once (real, from accurate opens)
-          _feats_in_use = sum(1 for r in (feat_use or [])
-                              if (r.get("opens", 0) or 0) > 0
-                              and r.get("feature") != "analytics")
+    st.markdown("---")
 
-          # 7-day vs previous-7-day session trend (a true, instrumentation-proof
-          # signal since it's built from sessions/opens, not engagement).
-          _trend_txt = ""
-          if foot and len(foot) >= 2:
-              _rows = sorted(foot, key=lambda d: str(d.get("day")))
-              _last7 = sum((d.get("sessions", 0) or 0) for d in _rows[-7:])
-              _prev7 = sum((d.get("sessions", 0) or 0) for d in _rows[-14:-7])
-              if _prev7 > 0:
-                  _delta = 100.0 * (_last7 - _prev7) / _prev7
-                  _arrow = "▲" if _delta >= 0 else "▼"
-                  _trend_txt = f"{_arrow} {abs(_delta):.0f}% vs prior 7 days"
-              elif _last7 > 0:
-                  _trend_txt = "new this week"
+    # Users & retention — total people ever + returning share.
+    if retention:
+        _rt = retention[0]
+        _total = int(_rt.get("total_users", 0) or 0)
+        _returning = int(_rt.get("returning_users", 0) or 0)
+        _ret_pct = (100.0 * _returning / _total) if _total else 0.0
+        _u1, _u2 = st.columns(2)
+        _ax_metric(_u1, "Total users", f"{_total}", "ever")
+        _ax_metric(_u2, "Returning", f"{_ret_pct:.0f}%",
+                   f"{_returning} came back", "var(--cyan)")
+    else:
+        st.caption("No retention data yet.")
 
-      # --- live instrumentation diagnostic (why a feature may read 0) -------- #
-      # Operator-only: shown when opened with ?debug=1.
-      if _ax_debug_on:
-          with st.expander("🔧 Instrumentation diagnostic (live)"):
-              _cur_active = st.session_state.get("_ax_last_active_tab")
-              st.caption(
-                  f"Active tab this run: **{_cur_active or '(none set)'}**. "
-                  "Open a feature tab, change a number and run it, then come back "
-                  "here — the flags below flip to ✓ when engagement/completion were "
-                  "recorded for that feature this session.")
-              # write-health: are events actually reaching Supabase?
-              _wh_fn = getattr(_axn, "write_health", None)
-              if callable(_wh_fn):
-                  _wh = _wh_fn() or {}
-                  _ok = _wh.get("ok")
-                  _status = ("✓ writing to Supabase" if _ok
-                             else ("⚠️ buffering locally (DB unreachable)"
-                                   if _ok is False else "— no write attempted yet"))
-                  st.caption(
-                      f"Event sink: {_status} · sent={_wh.get('sent', 0)} · "
-                      f"buffered={_wh.get('buffered', 0)}"
-                      + (f" · last error: {_wh.get('error')}" if _wh.get("error") else ""))
-              # per-feature session flags set by auto_engage/auto_complete
-              _diag_rows = []
-              for _fid, (_emj, _flabel) in _TAB_META.items():
-                  if _fid == "analytics":
-                      continue
-                  _eng = _axn.has_engaged(_fid) if hasattr(_axn, "has_engaged") else False
-                  _comp = _axn.has_completed(_fid) if hasattr(_axn, "has_completed") else False
-                  _opn = _axn.has_opened(_fid) if hasattr(_axn, "has_opened") else False
-                  if _opn or _eng or _comp:
-                      _diag_rows.append({
-                          "Feature": _flabel,
-                          "Opened (this session)": "✓" if _opn else "—",
-                          "Engaged (this session)": "✓" if _eng else "—",
-                          "Completed (this session)": "✓" if _comp else "—",
-                      })
-              if _diag_rows:
-                  st.dataframe(_diag_rows, use_container_width=True, hide_index=True)
-              else:
-                  st.caption("No features touched yet this session.")
+    st.markdown("---")
 
-      if roi:
-          r0 = roi[0]
-          _h = r0.get("total_hours_saved") or 0
-          _rate = 65.0
-          _d = _h * _rate
-          _val = _d
-          m1, m2, m3 = st.columns(3)
-          _ax_metric(m1, "Hours saved", f"{_h:,.0f}", "across all workflows",
-                     "var(--cyan)")
-          _ax_metric(m2, "Dollars saved", f"${_d:,.0f}", f"at ${_rate:.0f}/hr labour",
-                     "var(--amber)")
-          _ax_metric(m3, "Total value", f"${_val:,.0f}",
-                     "incl. avoided licence spend", "var(--cyan)")
-      else:
-          # compute the headline from local buffer + bundled baselines so the page
-          # is never empty in a demo / pre-Supabase state.
-          _evs = _ax_local_events()
-          _baselines = {
-              "kinematics": (180, 5), "laptime": (240, 8), "ggv": (120, 3),
-              "brakes": (150, 10), "registry": (25, 1), "integration": (90, 5),
-              "dfmea": (120, 15), "cost": (180, 20), "accum": (150, 10),
-              "mythbuster": (20, 1),
-          }
-          _completes = {}
-          for e in _evs:
-              if e.get("event_type") == "workflow_complete" and e.get("feature"):
-                  _completes[e["feature"]] = _completes.get(e["feature"], 0) + 1
-          _h = sum(n * (_baselines.get(f, (0, 0))[0] - _baselines.get(f, (0, 0))[1]) / 60.0
-                   for f, n in _completes.items())
-          _d = _h * 65.0
-          m1, m2, m3 = st.columns(3)
-          _ax_metric(m1, "Hours saved", f"{_h:,.1f}", "from local buffer (demo)",
-                     "var(--cyan)")
-          _ax_metric(m2, "Dollars saved", f"${_d:,.0f}", "at $65/hr (default)",
-                     "var(--amber)")
-          _ax_metric(m3, "Workflows logged", f"{sum(_completes.values())}",
-                     "completed locally", "var(--dim)")
-          if not _evs:
-              st.caption("No events yet. As the team uses KinematiK, this fills in "
-                         "automatically — wire Supabase to persist across sessions.")
+    # Reliability — overall error rate across recorded runs.
+    if errors:
+        _tot_runs = sum((e.get("total", 0) or 0) for e in errors)
+        _tot_errs = sum((e.get("errors", 0) or 0) for e in errors)
+        _err_pct = (100.0 * _tot_errs / _tot_runs) if _tot_runs else 0.0
+        _e1, = st.columns(1)
+        _ax_metric(_e1, "Error rate", f"{_err_pct:.1f}%",
+                   f"{_tot_errs} of {_tot_runs} runs",
+                   "var(--amber)" if _err_pct > 2 else "var(--cyan)")
+    else:
+        st.caption("No reliability data yet.")
 
-      # per-feature hours-saved bar (the contribution breakdown)
-      if hours_by_feat:
-          with st.expander("🟢 Where the savings come from", expanded=True):
-            _rows = [r for r in hours_by_feat if (r.get("hours_saved") or 0) > 0]
-            if _rows:
-                _fig = go.Figure(go.Bar(
-                    x=[r["hours_saved"] for r in _rows],
-                    y=[r.get("label") or r["feature"] for r in _rows],
-                    orientation="h",
-                    marker_color="#37e0d0",
-                    text=[f"${(r.get('hours_saved') or 0) * 65:,.0f}" for r in _rows],
-                    textposition="auto"))
-                _fig.update_layout(
-                    height=max(220, 38 * len(_rows)), margin=dict(l=10, r=10, t=10, b=10),
-                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#e7ecf1"), xaxis_title="hours saved")
-                st.plotly_chart(_fig, use_container_width=True)
-                st.caption("Each bar: completed workflows × (manual − in-tool) minutes, "
-                           "valued at the configured labour rate.")
-
-      st.markdown("---")
-
-      # ====================================================================== #
-      #  USAGE — foot traffic, feature use, individuals                        #
-      # ====================================================================== #
-      st.markdown("#### Usage")
-      # Deployment verification stamp: if the build version below isn't the latest,
-      # the new code isn't actually deployed (push to the branch Streamlit Cloud
-      # watches, or reboot the app to reinstall requirements). The runtime version
-      # confirms whether requirements `streamlit>=1.50` actually took effect — the
-      # visitor-identity fix needs st.context (1.42+) and tab .open (1.50+); on an
-      # older runtime it silently falls back and returning counts stay frozen.
-      try:
-          st.caption(
-              f"build `{_axn.APP_VERSION}` · streamlit runtime `{st.__version__}`"
-              + ("  ⚠️ runtime <1.50 — identity tracking degraded, update requirements & reboot"
-                 if tuple(int(x) for x in st.__version__.split('.')[:2]) < (1, 50)
-                 else "  ✅ runtime OK for identity tracking"))
-      except Exception:
-          pass
-      u1, u2, u3, u4 = st.columns(4)
-      # "Total users ever" reconciles with the Individual-use tab, which lists one
-      # row per distinct PERSON (v_individual_use). v_retention.total_users is a
-      # distinct-SESSION count, which disagreed with the person list (493 sessions
-      # vs 503 people). Use the person count in both places so the headline and
-      # the Individual tab always agree.
-      _total_people = len(individuals or [])
-      if retention:
-          rt = retention[0]
-          _total_ever = _total_people or int(rt.get("total_users", 0) or 0)
-          # Derive the returning percentage from the SAME numerator/denominator the
-          # "Return vs total users" tile uses (returning people ÷ total people), so
-          # the two tiles never disagree. Previously this tile showed the view's
-          # own retention_pct — computed against a distinct-SESSION denominator —
-          # while the ratio tile below divided by the distinct-PERSON count, so they
-          # rounded to different numbers (e.g. 48% vs 246/520 = 47%).
-          _returning = int(rt.get("returning_users", 0) or 0)
-          _ret_pct = (100.0 * _returning / _total_ever) if _total_ever else 0.0
-          _ax_metric(u1, "Total users", f"{_total_ever}", "ever")
-          _ax_metric(u2, "Returning", f"{_ret_pct:.0f}%",
-                     f"{_returning} came back",
-                     "var(--cyan)")
-      if ttfr:
-          tf = ttfr[0]
-          _v = tf.get("avg_minutes_to_first_result")
-          _ttfr_str = f"{float(_v) * 60:.0f} sec" if _v else "—"
-          _ax_metric(u3, "Time-to-first-result", _ttfr_str,
-                     "new-member onboarding · last 7 days",
-                     "var(--amber)")
-      if foot:
-          # Report activity as days-active-per-week, not a raw total. Count the
-          # distinct days that saw traffic, divide by how many whole-or-partial
-          # weeks the record spans, and clamp to the 0–7 range. This reads as a
-          # weekly cadence ("~4 days/week") that stays comparable no matter how
-          # long the app has been collecting data.
-          _days = sorted({str(d.get("day")) for d in foot if d.get("day")})
-          _n_active = len(_days)
-          _weeks = 1.0
-          if len(_days) >= 2:
-              try:
-                  _d0 = _datetime.date.fromisoformat(_days[0][:10])
-                  _d1 = _datetime.date.fromisoformat(_days[-1][:10])
-                  _span_days = (_d1 - _d0).days + 1
-                  _weeks = max(_span_days / 7.0, 1.0)
-              except Exception:
-                  _weeks = max(_n_active / 7.0, 1.0)
-          _per_week = min(_n_active / _weeks, 7.0)
-          _ax_metric(u4, "Active days / week", f"{_per_week:.1f}",
-                     f"{_n_active} active days total")
-
-
-
-
-      # Return vs total users tile
-      if retention:
-          _rt2 = retention[0]
-          # Reuse the exact same total (_total_ever) and returning count (_returning)
-          # the "Returning" tile above uses, so the ratio and its percentage always
-          # match that tile. Fall back to recomputing from _rt2 only if the headline
-          # block above didn't run (e.g. retention present but columns skipped).
-          try:
-              _tot2 = _total_ever
-              _ret2 = _returning
-          except NameError:
-              _tot2 = (len(individuals or [])) or int(_rt2.get("total_users", 0) or 0)
-              _ret2 = int(_rt2.get("returning_users", 0) or 0)
-          r1, = st.columns(1)
-          _ax_metric(
-              r1, "Return vs total users",
-              f"{_ret2}/{_tot2}",
-              f"{(100*_ret2/_tot2):.0f}% of all visitors ever"
-              if _tot2 else "no visitors yet",
-              "var(--cyan)")
-
-      # Visitor-identity diagnostic — surfaces WHICH durable-id path is actually
-      # resolving in THIS deployment, so a stuck returning-user count is
-      # observable rather than a mystery. Operator-only: shown when opened with
-      # ?debug=1. (Cookie is best; fingerprint works only if the host exposes a
-      # real client IP — some proxies/load balancers return None, in which case
-      # retention falls back to per-session ids and returning counts won't grow.)
-      if _ax_debug_on:
-          with st.expander("🔍 Visitor-identity diagnostic (why returning counts may be stuck)"):
-              try:
-                  _diag_ip = None
-                  try:
-                      _diag_ip = st.context.ip_address
-                  except Exception:
-                      _diag_ip = None
-                  _diag_cookie = None
-                  try:
-                      _cm_d = st.session_state.get("_ax_cookie_mgr")
-                      if _cm_d is not None:
-                          _diag_cookie = _cm_d.get("kinematik_vid")
-                  except Exception:
-                      _diag_cookie = None
-                  _resolved = st.session_state.get("_ax_resolved_vid_kind", "unknown")
-                  _durable = _resolved.startswith("cookie") or _resolved == "ip+ua fingerprint"
-                  st.markdown(
-                      f"- **Durable cookie readable:** "
-                      f"{'✅ yes' if _diag_cookie else '⏳ not yet (set this visit; readable next visit)'}\n"
-                      f"- **Server sees a client IP (fingerprint fallback):** "
-                      f"{'✅ yes' if _diag_ip else '❌ no — IP fingerprint unavailable on this host'}\n"
-                      f"- **This visit resolved id via:** `{_resolved}`")
-                  if _resolved == "per-session (NOT durable)":
-                      st.warning(
-                          "This visit fell all the way back to a per-session id, which "
-                          "is NOT durable — every reopen will look like a new user and "
-                          "returning counts won't grow. That means both the cookie AND "
-                          "the IP fingerprint failed on this host. Most reliable fix: "
-                          "ask users to enter their name (top of any tab); named "
-                          "identity is fully durable and bypasses browser storage "
-                          "entirely.")
-                  elif _resolved == "cookie (just set)":
-                      st.info(
-                          "A durable cookie was just set this visit. It can't be read "
-                          "back until the NEXT visit — that's expected. If returning "
-                          "counts climb after people reopen the app, the cookie is "
-                          "persisting correctly.")
-                  elif _durable:
-                      st.success(
-                          "Durable identity is resolving — returning users should be "
-                          "tracked correctly from here.")
-              except Exception:
-                  st.caption("Diagnostic unavailable.")
-
-      # foot-traffic time series
-      if foot:
-          with st.expander("⚙️ Foot traffic", expanded=False):
-            _fig = go.Figure()
-            _fig.add_trace(go.Scatter(
-                x=[r["day"] for r in foot], y=[r["sessions"] for r in foot],
-                mode="lines+markers", name="sessions", line=dict(color="#37e0d0")))
-            _fig.update_layout(
-                height=260, margin=dict(l=10, r=10, t=10, b=10),
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#e7ecf1"), legend=dict(orientation="h"))
-            st.plotly_chart(_fig, use_container_width=True)
-
-
-      # feature use table
-      # Always list EVERY KinematiK feature by its exact name (from _TAB_META),
-      # merging in logged stats where present and showing zeros otherwise, so a
-      # feature that simply hasn't been opened yet still appears by name rather
-      # than silently dropping out of the table.
-      if _have_db:
-          with st.expander("⚙️ Per-feature use · last 7 days", expanded=False):
-            st.caption(
-                "User, opens, engagement, and completion count for each feature. A "
-                "few tabs work differently, so the raw event log might not "
-                "immediately update the engagement and completion count for those "
-                "and instead under-capture, making the number lower than its true "
-                "value. Opens and unique users come straight from the live log and "
-                "are accurate throughout.")
-            _fu_by_id = {r.get("feature"): r for r in (feat_use or [])}
-
-            # Manually-recorded ground truth (opens / engagements / completions /
-            # unique users), keyed by feature id. Several tabs were instrumented
-            # after release or run differently (viewers/browsers), so the live event
-            # log under-captured their engagement/completion — the DB showed real
-            # opens+users but "—" for the funnel middle. These hand-audited numbers
-            # are the source of truth; we merge them in below, taking the MAX against
-            # the live DB per column so a fresher live count never regresses to an
-            # older manual snapshot (opens/users can only have grown since).
-            _fu_manual = {
-                "kinematics": (353, 340, 332, 318),
-                "model3d":    (236, 197, 108, 74),
-                "registry":   (75,  62,  34,  59),
-                "brakes":     (32,  15,  8,   20),
-                "laptime":    (28,  13,  5,   15),
-                "integration":(7,   4,   4,   6),
-                "dfmea":      (6,   2,   2,   4),
-                "ev":         (5,   5,   3,   2),
-                "accum":      (4,   4,   4,   4),
-                "ggv":        (4,   3,   3,   4),
-                "roll":       (3,   3,   3,   3),
-                "cost":       (3,   2,   2,   3),
-                "weight":     (2,   2,   2,   2),
-                "tire":       (2,   2,   2,   2),
-                "validation": (27,  15,  8,   20),
-                "aero":       (1,   1,   1,   1),
-                "pcb":        (1,   1,   1,   1),
-                "grip":       (2,   2,   2,   1),
-                "compliance": (2,   2,   2,   2),
-                "teamfit":    (3,   2,   2,   3),
-                "notes":      (3,   2,   2,   2),
-                "setup":      (4,   3,   3,   5),
-                "transient":  (1,   1,   1,   1),
-                "tractive":   (7,   5,   4,   3),
-            }
-
-            _fu_rows = []
-            for _fid, (_emj, _flabel) in _TAB_META.items():
-                if _fid == "analytics":
-                    continue  # the analytics tab itself is not a tracked feature
-                _r = _fu_by_id.get(_fid, {})
-                _opens = _r.get("opens", 0) or 0
-                _eng = _r.get("engagements", 0) or 0
-                _comp = _r.get("completions", 0) or 0
-                _users = _r.get("unique_users", 0) or 0
-
-                # Fold in the hand-audited ground truth. Take the max per column so
-                # the corrected engagement/completion appear where the live log
-                # missed them, while any newer live activity still wins if it has
-                # since surpassed the recorded snapshot.
-                _m = _fu_manual.get(_fid)
-                if _m:
-                    _mo, _me, _mc, _mu = _m
-                    _opens = max(_opens, _mo)
-                    _eng = max(_eng, _me)
-                    _comp = max(_comp, _mc)
-                    _users = max(_users, _mu)
-
-                # Myth-buster is logged under its own feature id but lives inside the
-                # Validation workflow, so fold its usage into the Validation row —
-                # otherwise the Myth-buster checks (a real validation activity) are
-                # invisible here.
-                if _fid == "validation":
-                    _mb = _fu_by_id.get("mythbuster", {})
-                    _opens += _mb.get("opens", 0) or 0
-                    _eng += _mb.get("engagements", 0) or 0
-                    _comp += _mb.get("completions", 0) or 0
-                    _users = max(_users, _mb.get("unique_users", 0) or 0)
-
-                # Make a "0" read meaningfully instead of looking broken:
-                #  • opened but no engagement logged  -> "—" (used, not fully tracked)
-                #  • never opened at all              -> "0" (genuinely untouched)
-                # This is the difference between "we didn't capture it" and
-                # "nobody used it", which is exactly what made the table feel wrong.
-                def _stage(v, opened):
-                    if v > 0:
-                        return v
-                    return "—" if opened else 0
-
-                _fu_corrected[_fid] = {
-                    "opened": _opens,
-                    "engaged": _eng,
-                    "completed": _comp,
-                    "users": _users,
-                }
-
-                _fu_rows.append({
-                    "Feature": _flabel,
-                    "Opens": _opens,
-                    "Engagements": _stage(_eng, _opens > 0),
-                    "Completions": _stage(_comp, _opens > 0),
-                    "Unique users": _users,
-                    "_sort": _opens,  # activity key, dropped before display
-                })
-            # Sort by real activity (opens) so thriving features lead and the quiet
-            # ones fall to the bottom — signal first, not alphabetical noise.
-            _fu_rows.sort(key=lambda r: r["_sort"], reverse=True)
-            for _row in _fu_rows:
-                _row.pop("_sort", None)
-            st.dataframe(_fu_rows, use_container_width=True, hide_index=True)
-            st.caption(
-                "“0” means the feature genuinely had no opens. Sorted by opens, "
-                "busiest first.")
-
-      # individual use — grouped BY SUBSYSTEM so it reads as "who is on each
-      # subteam and how active are they", not one undifferentiated list where
-      # subteam is just a column people have to eyeball.
-      if individuals:
-          with st.expander("Individual use (by subsystem)"):
-              _n_named = sum(1 for r in individuals if r.get("is_named"))
-              _n_anon = len(individuals) - _n_named
-              _n_total = len(individuals)
-              if _n_anon:
-                  st.caption(
-                      f"**{_n_total} "
-                      f"{'user' if _n_total == 1 else 'users'}.** "
-                      "Some haven't typed a name above — each of those is one "
-                      "distinct browser, tracked consistently across their "
-                      "visits, not one row per visit. Ask the team to enter "
-                      "their name here for accurate per-member credit.")
-
-              # Bucket every person under their (most-recent, non-unknown)
-              # subteam. Anyone whose subteam never resolved lands in a single
-              # "No subteam picked" group shown last, rather than being sprinkled
-              # through the table as blanks.
-              #
-              # Normalize legacy/variant spellings to the canonical role key so a
-              # subsystem never splits into two groups: older events stored
-              # "accumulator"/"electronics"/"electrical" before those merged into
-              # "electrics", and mixed casing/spacing can slip in from imports.
-              _SUBTEAM_ALIAS = {
-                  "accumulator": "electrics", "electronics": "electrics",
-                  "electrical": "electrics", "electric": "electrics",
-                  "data-acquisition": "dataacq", "data_acquisition": "dataacq",
-                  "data acquisition": "dataacq",
-                  "aerodynamics": "aero",
-                  "drivetrain": "powertrain", "powertrain / drivetrain": "powertrain",
-                  "frame": "chassis", "chassis / frame": "chassis",
-                  "business": "cost", "cost / business": "cost",
-                  "dynamics": "suspension", "vehicle dynamics": "suspension",
-                  "vehicle-dynamics": "suspension", "vehicledynamics": "suspension",
-                  "suspension / dynamics": "suspension",
-              }
-
-              def _canon_subteam(_raw):
-                  _s = (str(_raw).strip().lower() if _raw is not None else "")
-                  if _s in ("", "unknown", "none", "everyone", "all"):
-                      return "unknown"
-                  return _SUBTEAM_ALIAS.get(_s, _s)
-
-              _by_team: dict = {}
-              for _r in individuals:
-                  _key = _canon_subteam(_r.get("subteam"))
-                  _by_team.setdefault(_key, []).append(_r)
-
-              def _team_activity(_rows):
-                  # order subsystems by total activity so the busiest teams lead.
-                  return sum((_x.get("feature_uses", 0) or 0) for _x in _rows)
-
-              # Real subteams first (most active on top), the unknown bucket last.
-              _ordered_keys = sorted(
-                  (k for k in _by_team if k != "unknown"),
-                  key=lambda k: _team_activity(_by_team[k]), reverse=True)
-              if "unknown" in _by_team:
-                  _ordered_keys.append("unknown")
-
-              for _key in _ordered_keys:
-                  _rows = _by_team[_key]
-                  if _key == "unknown":
-                      _label = "❔ No subteam picked"
-                  else:
-                      _label = _ROLE_LABELS.get(_key, _key.title())
-                  _members = len(_rows)
-                  _uses = _team_activity(_rows)
-                  _wf = sum((_x.get("workflows_completed", 0) or 0) for _x in _rows)
-                  st.markdown(
-                      f"**{_label}** — {_members} "
-                      f"{'person' if _members == 1 else 'people'} · "
-                      f"{_uses} feature uses · {_wf} workflows")
-                  st.dataframe(
-                      [{"Identity": (r["who"] if r.get("is_named")
-                                    else f"🕶️ anonymous ({r['who'][-8:]})"),
-                        "Sessions": r.get("sessions", 0),
-                        "Feature uses": (
-                            (r.get("feature_uses", 0) or 0)
-                            + (r.get("distinct_features_used", 0) or 0)),
-                        "Workflows": r.get("workflows_completed", 0)}
-                       for r in sorted(
-                           _rows,
-                           key=lambda x: (x.get("feature_uses", 0) or 0),
-                           reverse=True)],
-                      use_container_width=True, hide_index=True)
-
-      st.markdown("---")
-
-      # ====================================================================== #
-      #  FUNNEL + RELIABILITY + LATENCY                                        #
-      # ====================================================================== #
-      fcol, ecol = st.columns(2)
-      with fcol:
-          st.markdown("#### Adoption funnel · last 7 days")
-          st.caption(
-              "Open → engage → complete for each feature, using the same "
-              "corrected counts as the Per-feature use table above. Percentages "
-              "show engage as a share of opens and complete as a share of engage. "
-              "A few tabs work differently, so the raw event log can under-capture "
-              "engagement/completion; those are corrected here too.")
-          if funnel or _fu_corrected:
-              # Reflect exactly the same features AND the same numbers as the
-              # Per-feature use tab. Prefer the corrected (manual-merged) values
-              # stashed by that table; fall back to the raw funnel view only for
-              # any feature it didn't cover. ids not in _TAB_META (e.g. the
-              # 'mythbuster' sub-workflow) are not shown, matching the table.
-              _fn_by_id = {r.get("feature"): r for r in (funnel or [])}
-              _fn_items = [(_fid, _emj, _flabel)
-                           for _fid, (_emj, _flabel) in _TAB_META.items()
-                           if _fid != "analytics"]
-
-              def _fn_vals(_fid):
-                  # corrected values win; Validation already has Myth-buster folded
-                  # in, so do NOT re-add it here.
-                  _cv = _fu_corrected.get(_fid)
-                  if _cv is not None:
-                      return (_cv.get("opened", 0) or 0,
-                              _cv.get("engaged", 0) or 0,
-                              _cv.get("completed", 0) or 0)
-                  _r = _fn_by_id.get(_fid, {})
-                  _o = _r.get("opened", 0) or 0
-                  _e = _r.get("engaged", 0) or 0
-                  _c = _r.get("completed", 0) or 0
-                  if _fid == "validation":
-                      _mb = _fn_by_id.get("mythbuster", {})
-                      _o += _mb.get("opened", 0) or 0
-                      _e += _mb.get("engaged", 0) or 0
-                      _c += _mb.get("completed", 0) or 0
-                  return (_o, _e, _c)
-
-              # Order by real activity (opens), busiest first — same as the table.
-              _fn_items.sort(key=lambda t: _fn_vals(t[0])[0], reverse=True)
-              for _fid, _emj, _flabel in _fn_items:
-                  _o, _e, _c = _fn_vals(_fid)
-                  # "—" where a feature was opened but engagement wasn't captured,
-                  # so a real 0 doesn't look like the funnel is broken.
-                  _e_txt = str(_e) if _e > 0 else ("—" if _o > 0 else "0")
-                  _c_txt = str(_c) if _c > 0 else ("—" if _o > 0 else "0")
-                  # Conversion rates: engage as a share of opens, complete as a
-                  # share of engage. Only shown when the denominator is > 0 and the
-                  # numerator was actually captured, so we never print a rate off a
-                  # missing ("—") stage.
-                  _e_pct = (f" ({100 * _e / _o:.0f}% of opens)"
-                            if _o > 0 and _e > 0 else "")
-                  _c_pct = (f" ({100 * _c / _e:.0f}% of engage)"
-                            if _e > 0 and _c > 0 else "")
-                  st.markdown(
-                      f'**{_flabel}** '
-                      f'<span class="hint">open {_o} → engage {_e_txt}{_e_pct} → '
-                      f'complete {_c_txt}{_c_pct}</span>',
-                      unsafe_allow_html=True)
-          else:
-              st.caption("Funnel fills in as tabs are opened and workflows complete.")
-
-      with ecol:
-          st.markdown("#### Reliability (error rate)")
-          if errors:
-              _bad = [r for r in errors if (r.get("error_rate_pct") or 0) > 0]
-              if _bad:
-                  for r in _bad[:8]:
-                      _rate = r.get("error_rate_pct", 0) or 0
-                      _cls = "bad" if _rate > 5 else "warn"
-                      st.markdown(
-                          f'<span class="tag {_cls}">{r["feature"]} · {_rate:.1f}%</span> '
-                          f'<span class="hint">{r.get("failures", 0)} of '
-                          f'{r.get("attempts", 0)} ops</span>',
-                          unsafe_allow_html=True)
-              else:
-                  st.markdown('<span class="tag good">No errors recorded — 100% clean</span>',
-                              unsafe_allow_html=True)
-          else:
-              st.caption("Error rate per feature appears here once ops are logged.")
-
-      if latency:
-          st.markdown("#### Render & pull latency")
-          st.dataframe(
-              [{"Feature": r["feature"], "Type": r["event_type"],
-                "n": r.get("n", 0), "avg ms": r.get("avg_ms"),
-                "p50 ms": r.get("p50_ms"), "p95 ms": r.get("p95_ms"),
-                "max ms": r.get("max_ms")} for r in latency],
-              use_container_width=True, hide_index=True)
-
-      # ====================================================================== #
-      #  COMPARISON TO ALTERNATIVES                                            #
-      # ====================================================================== #
-      if comparison:
-          st.markdown("---")
-          st.markdown("#### vs. the alternatives")
-          _cost_audience = st.radio(
-              "Show licence cost as",
-              ["What our team pays", "Typical university/academic tier",
-               "What a company would pay (commercial)"],
-              horizontal=True, key="ax_cost_audience",
-              help="The right cost number depends on who's reading this. Some "
-                   "tools are free or discounted for FSAE student teams via "
-                   "vendor sponsorship; some are accessed through a university "
-                   "site licence that's real but not on the team's own budget "
-                   "line; a company evaluating KinematiK would face full "
-                   "commercial pricing instead. Pick the lens that matches "
-                   "your audience.")
-          _mode = ("commercial" if _cost_audience.startswith("What a company")
-                   else "academic" if _cost_audience.startswith("Typical university")
-                   else "team")
-
-          def _cost_cell(r):
-              if _mode == "commercial":
-                  return r.get("commercial_annual_cost_usd")
-              if _mode == "academic":
-                  lo, hi = r.get("academic_low_annual_cost_usd"), r.get("academic_high_annual_cost_usd")
-                  if lo is None and hi is None:
-                      return None
-                  if lo == hi or hi is None:
-                      return lo
-                  return f"{lo:,.0f}–{hi:,.0f}"
-              return r.get("alternative_annual_cost_usd", 0)
-
-          _cost_label = {"commercial": "Commercial $/yr",
-                         "academic": "Academic $/yr (range)",
-                         "team": "Their licence $/yr"}[_mode]
-          st.dataframe(
-              [{"Replaces": r["alternative"],
-                "Features": r.get("features_replacing", 0),
-                "Manual (min)": r.get("avg_manual_minutes"),
-                "In KinematiK (min)": r.get("avg_in_tool_minutes"),
-                "Saved each (min)": r.get("avg_minutes_saved_each"),
-                "% faster": f'{r.get("pct_faster", 0):.0f}%',
-                _cost_label: _cost_cell(r),
-                "Confidence": ("✓ measured" if r.get("all_measured")
-                              else f'estimate ({r.get("n_measured", 0)}/'
-                                   f'{r.get("n_baselines", 0)} measured)')}
-               for r in comparison],
-              use_container_width=True, hide_index=True)
-          if _mode == "commercial":
-              st.caption("Commercial pricing is sourced to the low end of each "
-                         "vendor's published range (entry tier, single seat) — "
-                         "treat as a floor, not a quote.")
-          elif _mode == "academic":
-              st.caption("Sourced public reference range for a typical "
-                         "university research/academic licence (see "
-                         "`feature_baselines.notes` for citations) — NOT "
-                         "necessarily this team's own confirmed contract "
-                         "figure, since university deals are individually "
-                         "negotiated and usually not public.")
-          else:
-              st.caption("This is what THIS team pays out of pocket — some "
-                         "tools are free via FSAE sponsorship, others are a "
-                         "real cost paid by the university rather than the "
-                         "team's own budget (see the academic-tier view for "
-                         "a sense of that scale).")
 
 
 st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · AGPL-3.0. '
