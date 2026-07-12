@@ -59,7 +59,7 @@ COLORS = dict(
     push="#9b8cff", rocker="#5ad17a", spring="#ff9f43",
     wheel="#6f7d8c", tire="#15181c", tire_edge="#3a434c", rim="#23282e",
     # Matte-black tub with a hint of the photo's red/yellow livery accent.
-    monocoque="#1d2024", nose="#23262b", livery="#d63a2f",
+    monocoque="#1d2024", frame_tube="#9aa3ad", nose="#23262b", livery="#d63a2f",
     frame="#0d1013", hoop="#0d1013", helmet="#e9edf1", helmet_band="#d63a2f",
     halo="#10141a",
     wing="#202428", wing_edge="#3a414a", endplate="#16191d",
@@ -786,7 +786,7 @@ def build_full_car_figure(
     drawn part without changing the underlying engineering numbers. It is a
     dict keyed by the part's display name (exactly the `name=` each body is
     drawn with, e.g. "Front wing", "Sidepod (cooling)", "Motor + inverter",
-    "Accumulator", "Monocoque", "Tire", "Brake disc", "Roll hoop", "Driver",
+    "Accumulator", "Spaceframe", "Tire", "Brake disc", "Roll hoop", "Driver",
     "Data logger", "Radiator core"). Each value is a dict with any of:
 
         dx, dy, dz : float   # translate the whole part, in mm (SAE axes)
@@ -1245,47 +1245,80 @@ def build_full_car_figure(
         except Exception:
             _def_target = None
 
-    # ---- 2) chassis: FSAE monocoque + nosecone + roll hoops + driver ---- #
-    #  Reshaped to read as a real Formula Student car (cf. the reference photo):
-    #  a low, slim survival cell that tapers to a pointed nosecone at the front,
-    #  an open cockpit, a curved MAIN roll hoop behind the driver's head and a
-    #  smaller FRONT hoop ahead of the dash, plus the driver's helmet showing in
-    #  the cockpit — not an F1 halo.
+    # ---- 2) chassis: FSAE steel SPACEFRAME + roll hoops + driver -------- #
+    #  Tube frame in place of the old lofted monocoque shell: front bulkhead,
+    #  front hoop, cockpit bay, rear box, with bottom/top rails and
+    #  side-impact diagonals — reads instantly as a welded FSAE spaceframe.
+    #  Spans the SAME envelope the shell did (nose tip -> tail, same width and
+    #  deck heights), so slot fitting, part boxes and `define_car` scaling all
+    #  keep working unchanged.
     if show_bodywork:
         ch_it = _iface(ledger, "chassis")
         tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
-        # Sit the tub low like an FSAE car: floor near the ground, deck low.
+        # Sit the frame low like an FSAE car: floor near the ground, deck low.
         tub_bot = max(z_lo * 0.5, tire_r * 0.14)
         tub_top = tub_bot + _clamp(tire_r * 0.95, 180, 360)
-        cz = (tub_top + tub_bot) / 2
         hzz = (tub_top - tub_bot) / 2
-        prof = _ellipse_ring(24)
-
-        # Lofted survival cell: pointed nose tip -> footwell -> cockpit bay ->
-        # tapered tail. Stations run front (tip) to rear.
         nose_tip_x = x_front + tire_r * 1.9
         tail_x = x_rear + tire_r * 0.15
-        xs = np.linspace(nose_tip_x, tail_x, 9)
-        #             tip   nose  foot  dash  cockpit cock  belly tail   end
-        widths  = np.array([0.05, 0.22, 0.55, 0.88, 1.00, 0.98, 0.86, 0.66, 0.5])
-        heights = np.array([0.10, 0.30, 0.62, 0.85, 0.92, 0.92, 0.85, 0.74, 0.6])
-        zoff    = np.array([0.55, 0.42, 0.18, 0.04, 0.00, 0.00, 0.02, 0.06, 0.1]) * hzz
-        scales = [(tub_w / 2 * w, hzz * h, 0.0, cz + dz)
-                  for w, h, dz in zip(widths, heights, zoff)]
-        mv, mi, mj, mk = _prism_xsection(prof, xs, scales)
-        hv = "Monocoque / survival cell"
+
+        # Frame stations, front to rear: (x, half-width, z_bottom, z_top).
+        _stn = [
+            # front bulkhead — small, raised off the floor line
+            (nose_tip_x, tub_w * 0.22,
+             tub_bot + hzz * 0.50, tub_bot + hzz * 1.30),
+            # front hoop (dash) — full width, taller than the deck
+            (x_front - wb * 0.05, tub_w * 0.48, tub_bot, tub_top + hzz * 0.55),
+            # main-hoop station (cockpit rear) — the curved hoop itself is the
+            # separate "Roll hoop" body drawn elsewhere
+            (x_front - wb * 0.34, tub_w * 0.50, tub_bot, tub_top),
+            # rear bulkhead / rear box
+            (tail_x, tub_w * 0.36, tub_bot, tub_bot + hzz * 1.60),
+        ]
+        _rt = _clamp(tub_w * 0.045, 8.0, 14.0)     # tube radius (~25 mm OD)
+
+        _fv, _fi, _fj, _fk = [], [], [], []
+        _off = 0
+
+        def _frame_tube(p, q):
+            nonlocal _off
+            v, i, j, k = _tube(np.asarray(p, float), np.asarray(q, float),
+                               _rt, n=10)
+            _fv.append(v)
+            _fi.extend((np.asarray(i) + _off).tolist())
+            _fj.extend((np.asarray(j) + _off).tolist())
+            _fk.extend((np.asarray(k) + _off).tolist())
+            _off += len(v)
+
+        for _s in (-1.0, 1.0):                       # left / right side
+            for _a, _b in zip(_stn[:-1], _stn[1:]):
+                # bottom rail, top rail, and the bay's side-impact diagonal
+                _frame_tube((_a[0], _s * _a[1], _a[2]),
+                            (_b[0], _s * _b[1], _b[2]))
+                _frame_tube((_a[0], _s * _a[1], _a[3]),
+                            (_b[0], _s * _b[1], _b[3]))
+                _frame_tube((_a[0], _s * _a[1], _a[2]),
+                            (_b[0], _s * _b[1], _b[3]))
+            for _p in _stn:                          # station verticals
+                _frame_tube((_p[0], _s * _p[1], _p[2]),
+                            (_p[0], _s * _p[1], _p[3]))
+        for _p in _stn:                              # station cross members
+            _frame_tube((_p[0], -_p[1], _p[2]), (_p[0], +_p[1], _p[2]))
+            _frame_tube((_p[0], -_p[1], _p[3]), (_p[0], +_p[1], _p[3]))
+        # floor cross bracing in the two big bays (cockpit + rear)
+        for _a, _b in ((_stn[1], _stn[2]), (_stn[2], _stn[3])):
+            _frame_tube((_a[0], -_a[1], _a[2]), (_b[0], +_b[1], _b[2]))
+            _frame_tube((_a[0], +_a[1], _a[2]), (_b[0], -_b[1], _b[2]))
+
+        hv = "Spaceframe / welded tube frame"
         if _g(ch_it, "mass_kg"):
             hv += " · %.1f kg" % _g(ch_it, "mass_kg")
-        mesh(mv, mi, mj, mk, COLORS["monocoque"], "Monocoque", "chassis",
-             base_op=0.92, hover=hv)
+        mesh(np.vstack(_fv), np.array(_fi), np.array(_fj), np.array(_fk),
+             COLORS["frame_tube"], "Spaceframe", "chassis",
+             base_op=0.96, hover=hv)
 
-        # A thin livery flash down the flank (the photo's red/yellow stripe).
-        fv, fi, fj, fk = _prism_xsection(
-            _ellipse_ring(24),
-            np.linspace(nose_tip_x - tire_r * 0.3, tail_x, 6),
-            [(tub_w / 2 * w * 1.005, hzz * h * 0.16, 0.0, cz + dz)
-             for w, h, dz in zip(widths[2:8], heights[2:8], zoff[2:8])])
-        mesh(fv, fi, fj, fk, COLORS["livery"], "Monocoque", "chassis", 0.9)
+        # Mid-frame deck height, reused by the roll hoops / driver below.
+        cz = (tub_top + tub_bot) / 2
 
         # Cockpit opening reference + driver: a helmet sphere sitting in the bay.
         cockpit_x = x_front - wb * 0.16
@@ -2251,7 +2284,7 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
 # CG, etc. — so the user always sees their part in the context of a full car.
 SUBSYSTEM_CATALOG = [
     # key            display name        draw-names this subsystem owns
-    ("chassis",      "Chassis",          ["Monocoque", "Roll hoop", "Driver"]),
+    ("chassis",      "Chassis",          ["Spaceframe", "Roll hoop", "Driver"]),
     ("aerodynamics", "Aerodynamics",     ["Front wing", "Rear wing"]),
     ("cooling",      "Cooling",          ["Sidepod (cooling)", "Radiator core"]),
     ("powertrain",   "Powertrain",       ["Motor + inverter"]),
@@ -2269,7 +2302,7 @@ SUBSYS_DISPLAY = {k: d for k, d, _dn in SUBSYSTEM_CATALOG}
 PART_CATALOG = [
     ("front_wing",      "Front wing",          "aerodynamics", False),
     ("rear_wing",       "Rear wing",           "aerodynamics", False),
-    ("monocoque",       "Monocoque",           "chassis",      False),
+    ("monocoque",       "Spaceframe",          "chassis",      False),
     ("roll_hoop",       "Roll hoop",           "chassis",      False),
     ("driver",          "Driver",              "chassis",      False),
     ("sidepod",         "Sidepod (cooling)",   "cooling",      False),
