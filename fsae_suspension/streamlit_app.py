@@ -3651,6 +3651,21 @@ def _cad_fill_scale(part_lwh, envelope_lwh):
 # ========================================================================== #
 
 _LIB_MESH_EXTS = {"step", "stp", "stl", "obj", "glb"}
+_LIB_SLD_EXTS = {"sldprt", "sldasm"}   # SolidWorks native — geometry is locked
+
+_SLD_ADVICE = ("SolidWorks native files keep their geometry locked — no "
+               "browser can mesh them. In SolidWorks: **File ▸ Save As ▸ "
+               "STEP (.step)** (10 seconds), publish that, and the real "
+               "shape replaces the stand-in.")
+
+
+def _lib_ext(cf):
+    return (getattr(cf, "name", "") or "").rsplit(".", 1)[-1].lower()
+
+
+def _lib_is_sld(cf):
+    return (getattr(cf, "kind", "file") == "file"
+            and _lib_ext(cf) in _LIB_SLD_EXTS)
 
 # Library subsystem tag -> part slot. Tags with several plausible slots fall
 # through to the filename guess below.
@@ -3713,6 +3728,42 @@ def _lib_inject_cad(cf):
     Returns (ok, message). Skips silently-never: every failure explains itself
     so publishing to the library can never be blocked by the preview.
     """
+    # SolidWorks native file: geometry can't be extracted, but the user still
+    # deserves to SEE their part on the car. Place a clearly-marked amber
+    # provisional stand-in in its slot (hover names their file), except the
+    # chassis — the dummy monocoque already IS the chassis stand-in, so an
+    # amber box there would only make the car read worse.
+    if _lib_is_sld(cf):
+        if cf.id in _lib_injected_ids():
+            return True, f"**{cf.name}** is already on the 3D model."
+        _slot = _lib_slot_for(cf)
+        for _q in st.session_state.get("car3d_custom_parts", []):
+            if (_q.get("from_library") and not _q.get("provisional")
+                    and _q.get("lib_slot") == _slot):
+                return True, (f"Real CAD already occupies the **{_slot}** "
+                              f"slot; **{cf.name}** stays library-only. "
+                              + _SLD_ADVICE)
+        if _slot == "Chassis":
+            return True, (f"**{cf.name}** is in the library; the dummy "
+                          f"monocoque stands in for it on the 3D model. "
+                          + _SLD_ADVICE)
+        try:
+            _centre, _env, _subsys, _dummy = _cad_slot_target(_slot)
+            if "car3d_custom_parts" not in st.session_state:
+                st.session_state.car3d_custom_parts = []
+            st.session_state.car3d_custom_parts.append(dict(
+                name=cf.name.rsplit(".", 1)[0] + " (SLDPRT)",
+                subsys=_subsys, shape="box", provisional=True,
+                replaces_drawnames=([_dummy] if _dummy else []),
+                lib_id=cf.id, from_library=True, lib_slot=_slot,
+                x_mm=float(_centre[0]), y_mm=float(_centre[1]),
+                z_mm=float(_centre[2]),
+                l_mm=float(_env[0]), w_mm=float(_env[1]), h_mm=float(_env[2])))
+            st.session_state.pop("_dummy_footprints", None)
+            return True, (f"**{cf.name}** placed as an amber PROVISIONAL "
+                          f"stand-in in the **{_slot}** slot. " + _SLD_ADVICE)
+        except Exception as _se:
+            return False, f"Couldn't place a stand-in for **{cf.name}** ({_se})."
     if not _lib_parseable(cf):
         return False, (f"**{cf.name}** can't be meshed here — export STEP "
                        "(File ▸ Save As ▸ STEP in SolidWorks) to see it on "
@@ -3733,6 +3784,21 @@ def _lib_inject_cad(cf):
             except Exception:
                 pass
         _slot = _lib_slot_for(cf)
+        # Upgrade path: a real mesh arriving in a slot evicts any provisional
+        # SolidWorks stand-in holding that slot (e.g. the .sldprt published
+        # earlier), so the amber box gives way to the real geometry.
+        try:
+            _kept, _skipset = [], st.session_state.setdefault(
+                "cad_lib_sync_skip", set())
+            for _q in st.session_state.get("car3d_custom_parts", []):
+                if (_q.get("from_library") and _q.get("provisional")
+                        and _q.get("lib_slot") == _slot):
+                    _skipset.add(_q.get("lib_id"))   # don't re-seat on resync
+                else:
+                    _kept.append(_q)
+            st.session_state.car3d_custom_parts = _kept
+        except Exception:
+            pass
         _centre, _env, _subsys, _dummy = _cad_slot_target(_slot)
         _sz = [float(v) for v in _payload["size_mm"]]
         _is_chassis = (_slot == "Chassis")
@@ -3747,7 +3813,7 @@ def _lib_inject_cad(cf):
             yaw_deg=0.0, mesh_scale=float(_scale),
             define_car=_is_chassis,
             replaces_drawnames=([_dummy] if _dummy else []),
-            lib_id=cf.id, from_library=True,
+            lib_id=cf.id, from_library=True, lib_slot=_slot,
             x_mm=float(_centre[0]), y_mm=float(_centre[1]),
             z_mm=float(_centre[2]),
             l_mm=_sz[0] * _scale, w_mm=_sz[1] * _scale, h_mm=_sz[2] * _scale))
@@ -3803,7 +3869,8 @@ def _lib_autosync(cad_store):
     # Inject everything meshable that isn't on the car yet.
     _on = _lib_injected_ids()
     for _f in _files:
-        if (_f.id in _on) or (_f.id in _skip) or not _lib_parseable(_f):
+        if (_f.id in _on) or (_f.id in _skip) \
+                or not (_lib_parseable(_f) or _lib_is_sld(_f)):
             continue
         try:
             _ok, _ = _lib_inject_cad(_f)
@@ -10357,6 +10424,9 @@ with tab_car:
                         (st.success if _ok1 else st.warning)(_msg1)
                         if _ok1:
                             _do_rerun()
+                elif _lib_is_sld(_cf):
+                    _row[4].caption("SLDPRT/SLDASM — export STEP "
+                                    "(File ▸ Save As) for the real shape")
                 elif _cf.kind != "link":
                     _row[4].caption("STEP to view in 3D")
                 if _row[5].button("Remove", key=f"cad_rm_{_cf.id}"):
