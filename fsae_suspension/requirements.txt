@@ -35,3 +35,13 @@ rtree>=1.0         # chassis/part collision queries via trimesh.proximity
 reportlab>=4.0     # PDF design-handover export         (project.py: render_pdf)
 supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseStore;
                    #  workspace.py: tenant-scoped backend — run workspace_isolation.sql)
+
+# --- optional: voice-memo transcription (Documentation ▸ Document ▸ 🎙️) ---
+# The voice-memo dock works WITHOUT any of these — memos attach as audio and
+# are listed in the report with an optional typed summary. Installing ONE of
+# the engines below turns on automatic speech-to-text (probed lazily at
+# runtime, in this order). Uncomment your pick:
+# faster-whisper>=1.0   # best accuracy; CPU int8, no ffmpeg-python needed
+# openai-whisper>=20231117
+# vosk>=0.3.45          # light, fully offline once the small model is cached
+# SpeechRecognition>=3.10  # WAV/AIFF/FLAC via pocketsphinx or Google Web API
