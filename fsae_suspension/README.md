@@ -76,10 +76,21 @@ When any subsystem saves an interface edit, KinematiK walks the change through a
 
 ## Three moves to start
 
-0. **Pick your subteam.** Nothing opens until you choose who you are. Once you
-   pick, you see only your subteam's tabs plus the shared spine (Integration,
-   Validation, Analytics, Registry, Notes, 3D Model), grouped into five simple
-   categories (Testing, Design, Checks, Docs, Data) — never all 25 at once.
+0. **Answer the mission briefing.** The landing screen asks four one-tap
+   questions — *what subteam(s) are you on? what are you using KinematiK for?
+   what's the goal? are you a visual thinker?* — and compiles a personal plan:
+   exactly which tools to open, in what order, why you need each one, and why to
+   do it here first so ANSYS / MATLAB / OptimumK only ever **validate** your
+   design instead of debugging your inputs. Every question has a sensible
+   default, so a complete beginner can tap through in seconds, and everything is
+   skippable. Visual thinkers (and anyone brand new) get a live, physically
+   accurate concept graph or 3D render under each recommended tool; newcomers
+   also get a plain-English line per tool. Answering also picks your subteam, so
+   you then see only your tabs plus the shared spine (Integration, Validation,
+   Analytics, Registry, Notes, 3D Model), grouped into five simple categories
+   (Testing, Design, Checks, Docs, Data) — never all 25 at once. Skipped or
+   dismissed the briefing? A one-tap **🧭 Get my mission briefing** button brings
+   it back any time.
 1. **Declare your interface.** In **Integration**, fill what your subteam owns (mass, CG, torque, heat, current, downforce) and untick *estimate* once a number is real. Everything downstream uses it.
 2. **Watch it ripple.** KinematiK walks your change through the coupling graph and flags which other subsystems' risk just moved.
 3. **Clear the cut.** Before a part goes to manufacture, run the **manufacturing-release gate** — a literal go/no-go that blocks any part still resting on an estimate or an unconfirmed load.
@@ -158,6 +169,17 @@ For the per-feature funnel fix only, run `fix_feature_funnel.sql` standalone.
 ---
 
 ## What changed in this build (`0.22.0-unified`)
+
+**Team CAD library ⇄ 3D model — quick-assembly preview**
+- The shared CAD library and the full-car 3D model are now one system. Publishing a meshable file (STEP/STL/OBJ/GLB) also places it on the 3D model: it is meshed, snapped into its subsystem's slot (the exact footprint its dummy placeholder occupies, filename + subsystem tag decide the slot), scaled true-shape to fill that envelope, and the dummy it replaces is hidden.
+- Every slot whose CAD hasn't been uploaded keeps its dummy, so the car always reads as a whole — a SolidWorks-style quick assembly that completes itself as the library fills. A chassis upload uses the renderer's `define_car` mode, re-proportioning the entire car around the real tub.
+- Library controls: "🧩 Assemble library on the 3D model" places every un-placed meshable file at once; each row gets "→ 3D model" / "On car ✓ (remove)"; removing a file from the library also takes its part off the car (the dummy returns). Non-meshable formats (SLDPRT/DXF/…) show a "STEP to view in 3D" hint. Preview only — it feeds no calculation.
+
+**Mission briefing — frictionless onboarding for any experience level**
+- New four-question landing questionnaire (subteam / purpose / goal / visual thinker) compiles a personal, ordered toolkit: what to open, why you need it, and why to do it here before ANSYS / MATLAB / OptimumK. All defaults pre-filled and every step skippable, so a first-timer enters in seconds.
+- New `suspension/brief_visuals.py`: one concept visual per tool (23 total), built from physically correct, representative FSAE relations — camber gain vs FVSA, ΔW = m·a·h/t load transfer, Pacejka tyre curve, ½ρv²·CL·A downforce, I²Rt/mc pack heating, RC precharge, IPC-2221 trace heating, a spinnable 3D wireframe car, and more. Every caption states the values are illustrative, not the user's car.
+- "Brand new to engineering" mode adds a jargon-free plain-English line per tool. Numbers-only mode renders text without visuals.
+- Pure Python, zero network calls, fully guarded (a visual can never block the text). Figures are released immediately after render plus a post-panel GC sweep; the entire briefing adds ~2 MB peak RSS.
 
 **`v_retention` — complete rewrite (two-phase identity resolution)**
 - Previous version grouped by `visitor_id` per row before aggregation. A user whose cookie resolved mid-session produced two different uid values and counted as two people, inflating `total_users` by 2 on every reopen.
