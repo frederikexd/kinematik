@@ -141,6 +141,7 @@ _SUSP_MODULES = dict(
     tf_mod="tubeframe",             tract_mod="tractive_system",
     pcm_mod="pcm_cooling",          dfmea_mod="dfmea",
     riskprop_mod="risk_propagation", pti_mod="pt_integration",
+    fitfc_mod="fit_forecast",
     registry_mod="registry",        ingest_mod="cad_ingest",
     cadshare_mod="cad_share",
     _axn="analytics",
@@ -3818,7 +3819,9 @@ def _lib_inject_cad(cf):
             z_mm=float(_centre[2]),
             l_mm=_sz[0] * _scale, w_mm=_sz[1] * _scale, h_mm=_sz[2] * _scale))
         st.session_state.pop("_dummy_footprints", None)
-        _where = ("the whole car now assembles around it"
+        _where = ("the whole car now assembles around it — if it reads "
+                  "backwards or lies on its side, fix it with the ↻ 180° / "
+                  "up-axis controls under “On the car now” on the 3D tab"
                   if _is_chassis else
                   f"snapped into the **{_slot}** slot"
                   + (f", its dummy “{_dummy}” hidden" if _dummy else ""))
@@ -3941,6 +3944,112 @@ def _lib_snap_overrides(base_overrides):
         return _ov
     except Exception:
         return base_overrides
+
+
+def _fitfc_geom_fingerprint():
+    """Cheap, stable fingerprint of everything the background car assembly
+    depends on (vehicle params, ledger, topology + hardpoints, part overrides,
+    library parts, tire width). Mesh vertex arrays are folded to their sizes —
+    hashing megabytes of CAD every run would defeat the point of the cache.
+    Returns None if anything refuses to serialise; None simply means rebuild."""
+    import hashlib as _hl
+    try:
+        def _lite(parts):
+            out = []
+            for p in parts or []:
+                q = {k: v for k, v in p.items() if k != "mesh"}
+                m = p.get("mesh")
+                if m is not None:
+                    try:
+                        q["_mesh_n"] = (len(m.get("x") or []),
+                                        len(m.get("i") or []))
+                    except Exception:
+                        q["_mesh_n"] = "?"
+                out.append(q)
+            return out
+        blob = json.dumps(dict(
+            vp=st.session_state.get("vp"),
+            ledger=st.session_state.get("ledger"),
+            topology=st.session_state.get("topology", "double_wishbone"),
+            hp=st.session_state.get("hp"),
+            preset=globals().get("preset"),
+            topo_coords=repr(globals().get("_topo_coords")),
+            tire_w=st.session_state.get("car3d_tirew", 180.0),
+            overrides=st.session_state.get("car3d_overrides", {}),
+            parts=_lite(st.session_state.get("car3d_custom_parts")),
+        ), sort_keys=True, default=str)
+        return _hl.sha1(blob.encode()).hexdigest()
+    except Exception:
+        return None
+
+
+def _fitfc_car_boxes():
+    """Assemble the full car HEADLESSLY and return (instance_boxes, merged_boxes).
+
+    This is what lets the Fit forecast run accurate clearance / interference
+    checks without anyone ever opening the 3D Model tab: it calls the SAME
+    ``build_full_car_figure`` the 3D view uses, fed from the same live session
+    state (vehicle params, integration ledger, chosen topology, part
+    overrides, published library parts, dummy suppressions), then throws the
+    figure away and keeps only the drawn boxes. Every layer is forced ON
+    regardless of the 3D view's visibility toggles — a visually hidden sidepod
+    still occupies real space, so the forecast must reason about it. The
+    ground plane is skipped (cosmetic, registers no box anyway) and results
+    are memoised on a fingerprint of the inputs so back-to-back forecast runs
+    on an unchanged car cost one dict lookup, not a rebuild.
+
+    Side effect, deliberate: a successful build refreshes the shared
+    ``car3d_part_boxes`` / ``car3d_part_instances`` caches, so the CAD snap
+    tools and alignment read-outs downstream see the same fresh geometry."""
+    _fp = _fitfc_geom_fingerprint()
+    _cache = st.session_state.get("_fitfc_geom_cache")
+    if _fp and _cache and _cache.get("fp") == _fp:
+        return _cache["inst"], _cache["merged"]
+    try:
+        _lib_autosync(get_store())     # model mirrors the CAD library first
+    except Exception:
+        pass
+    _vpf = set(VehicleParams.__dataclass_fields__.keys())
+    _vp = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
+                           if k in _vpf})
+    _led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+    _topo = st.session_state.get("topology", "double_wishbone")
+    if _topo == "double_wishbone":
+        _kw = dict(hp_front=Hardpoints.from_dict(st.session_state.hp))
+    else:
+        # `kin` is the live topology-aware kinematics the whole app runs on.
+        _kw = dict(corner_front=globals().get("kin"))
+    _sup, _sup_p = set(), set()
+    for _p in st.session_state.get("car3d_custom_parts", []):
+        if _p.get("replaces_subsys"):
+            _sup.add(_p["replaces_subsys"])
+        for _dn in (_p.get("replaces_drawnames") or []):
+            _sup_p.add(_dn)
+        if _p.get("replaces_drawname"):
+            _sup_p.add(_p["replaces_drawname"])
+        if _p.get("replaces_dummy"):
+            _sup_p.add(_p["replaces_dummy"])
+    _fig = fullcar_mod.build_full_car_figure(
+        vp=_vp, ledger=_led,
+        show_tires=True, show_brakes=True, show_aero=True, show_cooling=True,
+        show_powertrain=True, show_electrics=True, show_bodywork=True,
+        show_floor=False,
+        tire_width_mm=float(st.session_state.get("car3d_tirew", 180.0)
+                            or 180.0),
+        part_overrides=_lib_snap_overrides(
+            dict(st.session_state.get("car3d_overrides", {}) or {})),
+        custom_parts=st.session_state.get("car3d_custom_parts", []),
+        suppress_subsystems=_sup, suppress_parts=_sup_p, **_kw)
+    _inst = dict(getattr(_fig, "_part_instance_boxes", {}) or {})
+    _merged = dict(getattr(_fig, "_part_boxes", {}) or {})
+    if _merged:
+        st.session_state.car3d_part_boxes = dict(_merged)
+    if _inst:
+        st.session_state.car3d_part_instances = dict(_inst)
+    if _fp:
+        st.session_state["_fitfc_geom_cache"] = dict(fp=_fp, inst=_inst,
+                                                     merged=_merged)
+    return _inst, _merged
 
 
 def _subsystem_cad_import(subsys_key, *, key_prefix, title=None):
@@ -8872,6 +8981,20 @@ def _add_aero_mount_overlay(fig, *, selected_el=None, n_selected=None):
     _pbx = getattr(fig, "_part_boxes", None) or {}
     _mono = _pbx.get("Spaceframe") or _pbx.get("Monocoque")
     if not _mono:
+        # The dummy chassis body wasn't drawn this render (Bodywork layer off,
+        # typical once real chassis CAD replaces it). Anchor to the user's own
+        # chassis part instead — its drawn box is in _part_boxes under the
+        # part's name (provisional stand-ins draw with an “(awaiting CAD)”
+        # suffix, so try both spellings).
+        for _cp in st.session_state.get("car3d_custom_parts", []):
+            if not (_cp.get("define_car") or _cp.get("lib_slot") == "Chassis"
+                    or _cp.get("subsys") == "chassis"):
+                continue
+            _nm = str(_cp.get("name") or "")
+            _mono = _pbx.get(_nm) or _pbx.get(_nm + " (awaiting CAD)")
+            if _mono:
+                break
+    if not _mono:
         return 0
     _mc = np.array(_mono["centre"], float)
     _ms = np.array(_mono["size"], float)
@@ -9019,10 +9142,18 @@ with tab_car:
         _show_pt = lc[2].checkbox("Powertrain", True, key="car3d_pt")
         _show_el = lc[2].checkbox("Electrics", True, key="car3d_el")
         _show_body = lc[3].checkbox("Bodywork (spaceframe + hoops)", True, key="car3d_body")
+        # “⚓ Show these mount points on the 3D car” (Aerodynamics tab) raises
+        # car3d_aeromounts_req. A keyed checkbox IGNORES its value= argument
+        # once the widget owns its session state, so the request must be written
+        # INTO the widget's own key BEFORE the checkbox is instantiated — the
+        # only way a button on another tab can switch it on after first render.
+        st.session_state.setdefault(
+            "car3d_aeromounts",
+            bool(st.session_state.get("car3d_aeromounts_on", False)))
+        if st.session_state.pop("car3d_aeromounts_req", False):
+            st.session_state["car3d_aeromounts"] = True
         _show_mounts = lc[3].checkbox(
             "⚓ Aero mount points",
-            bool(st.session_state.pop("car3d_aeromounts_req", False))
-            or bool(st.session_state.get("car3d_aeromounts_on", False)),
             key="car3d_aeromounts",
             help="Show where each aero element attaches to the chassis — the "
                  "mount points and their load paths into primary structure. "
@@ -9554,6 +9685,48 @@ with tab_car:
                 if _lc[1].button("Remove", key=f"car3d_cp_rm_{_ci}"):
                     st.session_state.car3d_custom_parts.pop(_ci)
                     st.rerun()
+                # Orientation + nudge for imported CAD meshes. The library
+                # autosync places CAD with yaw 0 / z-up; when a frame comes in
+                # BACKWARDS or lying on its side, these fix it without
+                # re-exporting. Mutations land in session_state before the
+                # figure builds (the car draws into _car_slot after this
+                # section), so they take effect on the same run. Keys use the
+                # library id where present so state survives list reordering.
+                if _is_mesh:
+                    _pk = str(_cpd.get("lib_id") or f"idx{_ci}")
+                    _oc = st.columns([1.1, 1.1, 1.8, 1.3, 1.3, 1.3])
+                    if _oc[0].button("↻ 180°", key=f"car3d_cp_flip_{_pk}",
+                                     help="Spin this CAD half a turn about z — "
+                                          "the fix when an imported frame "
+                                          "reads backwards on the car."):
+                        _cpd["yaw_deg"] = (float(_cpd.get("yaw_deg", 0.0)
+                                                 or 0.0) + 180.0) % 360.0
+                    if _oc[1].button("↻ +90°", key=f"car3d_cp_yaw90_{_pk}",
+                                     help="Rotate 90° about z (vertical)."):
+                        _cpd["yaw_deg"] = (float(_cpd.get("yaw_deg", 0.0)
+                                                 or 0.0) + 90.0) % 360.0
+                    _AXES = ["z_up", "y_up", "x_up"]
+                    _ax_now = _cpd.get("axis_map", "z_up")
+                    _ax_new = _oc[2].selectbox(
+                        "Up axis", _AXES,
+                        index=_AXES.index(_ax_now if _ax_now in _AXES
+                                          else "z_up"),
+                        key=f"car3d_cp_ax_{_pk}",
+                        help="If the part lies on its side, the CAD was "
+                             "exported with a different up axis — switch it "
+                             "here (SolidWorks exports are often y-up).")
+                    if _ax_new != _ax_now:
+                        _cpd["axis_map"] = _ax_new
+                    for _col, _dk, _dlbl, _dhelp in (
+                            (_oc[3], "dx_mm", "Δx mm", "Nudge fore(+)/aft(−)"),
+                            (_oc[4], "dy_mm", "Δy mm", "Nudge right(+)/left(−)"),
+                            (_oc[5], "dz_mm", "Δz mm", "Nudge up(+)/down(−)")):
+                        _dv = _col.number_input(
+                            _dlbl, min_value=-2000.0, max_value=2000.0,
+                            value=float(_cpd.get(_dk, 0.0) or 0.0), step=10.0,
+                            key=f"car3d_cp_{_dk}_{_pk}", help=_dhelp)
+                        if _dv != float(_cpd.get(_dk, 0.0) or 0.0):
+                            _cpd[_dk] = float(_dv)
 
     # ===================================================================== #
     #  WAITING ON A PART?  —  unblock the missing-CAD handoff.               #
@@ -10023,6 +10196,14 @@ with tab_car:
               st.session_state.car3d_part_boxes = dict(_fig_car._part_boxes)
           except Exception:
               pass
+          # Per-instance boxes (one per copy of a multi-corner body) feed the
+          # CAD library's Fit forecast, so clearance / interference reasons
+          # about a single tire, not a ring spanning the whole car.
+          try:
+              st.session_state.car3d_part_instances = dict(
+                  _fig_car._part_instance_boxes)
+          except Exception:
+              pass
 
           # ---- Aero mount-point overlay (from the Mounting designer) ------ #
           # Anchored to the REAL drawn part boxes, so the anchors track wing
@@ -10041,6 +10222,11 @@ with tab_car:
                           "dotted lines are the load path into primary structure "
                           "(front bulkhead, main hoop, lower rails). Size them in "
                           "Aerodynamics → Mounting & bonding designer.")
+                  else:
+                      st.caption(
+                          "⚓ Mount points need a chassis body to anchor to — "
+                          "turn the “Bodywork (spaceframe + hoops)” layer on, "
+                          "or put a chassis CAD on the car, and they'll appear.")
               except Exception:
                   pass
 
@@ -10443,6 +10629,221 @@ with tab_car:
                     _cad_store.remove_cad_file(_cf.id)
                     save_store(_cad_store)
                     _do_rerun()
+
+    # ----------------------------------------------------------------- #
+    #  1b · Fit forecast — will this CAD assemble, before anyone opens
+    #       SolidWorks? The fast alternative to the 3D preview: pick a
+    #       library file and get (a) a 0–100 "assembles-as-is" realism
+    #       score with the deductions itemised, (b) the concrete messages
+    #       SolidWorks will produce (Interference Detection hits, surface-
+    #       body imports, mirrored parts, clearance flags) predicted from
+    #       the mesh + this car's live slot envelopes — the car is
+    #       assembled headlessly in the background on every run, so the
+    #       checks never depend on the 3D tab having been opened — and (c) a
+    #       performance overview under a chosen load case — mass, whole-car
+    #       CG shift, per-mount fastener utilisation, lap-time feel, and a
+    #       subsystem capacity proxy. Mesh-level forecast, not a mate
+    #       solver: provenance is printed on every number.
+    # ----------------------------------------------------------------- #
+    with st.expander("🔮 Fit forecast — will this CAD assemble in SolidWorks?",
+                     expanded=False):
+        st.markdown(
+            '<p class="hint" style="margin:0 0 6px;">The quick <b>what-if</b> '
+            'for a library part: instead of eyeballing the 3D preview, this '
+            'reads the geometry itself, assembles the whole car in the '
+            'background, and predicts what the SolidWorks '
+            'master assembly will say — fit realism, interference against '
+            'every body on the car, mirrored-'
+            'part risk — plus how it will behave under a design load case. '
+            'Millimetre-level mesh forecast in milliseconds; the real mate '
+            'solve and FEA stay the sign-off.</p>', unsafe_allow_html=True)
+
+        _fc_files = [f for f in _store_cad_files(_cad_store, None)
+                     if _lib_parseable(f)]
+        if not _fc_files:
+            st.info("No meshable CAD in the library yet — publish a STEP / "
+                    "STL / OBJ / GLB above and the forecast runs on it here.")
+        else:
+            _fc_by = {f"{f.name}  ·  {f.subsystem}": f for f in _fc_files}
+            _fc_c = st.columns([2.6, 1.6, 1.5, 1.0])
+            _fc_pick = _fc_c[0].selectbox("Library file", list(_fc_by.keys()),
+                                          key="fitfc_file")
+            _fc_mat = _fc_c[1].selectbox(
+                "Material (mass)", list(fitfc_mod.MATERIAL_DENSITY.keys()),
+                index=1, key="fitfc_mat")
+            _fc_case = _fc_c[2].selectbox(
+                "Load case", list(fitfc_mod.LOAD_CASES.keys()), key="fitfc_case")
+            _fc_nm = int(_fc_c[3].number_input("Mounts", 1, 16, 4, 1,
+                                               key="fitfc_mounts"))
+            _fc_run = st.button("Run fit forecast", type="primary",
+                                key="fitfc_run")
+
+            if _fc_run:
+                _cfp = _fc_by[_fc_pick]
+                try:
+                    # mesh payload — session cache so re-running with a new
+                    # load case / material doesn't re-tessellate the STEP.
+                    _mc = st.session_state.setdefault("fitfc_mesh_cache", {})
+                    _pay = _mc.get(_cfp.id)
+                    if _pay is None:
+                        import tempfile as _tf, os as _os
+                        _sfx = "." + _cfp.name.rsplit(".", 1)[-1].lower()
+                        with _tf.NamedTemporaryFile(delete=False,
+                                                    suffix=_sfx) as _f:
+                            _f.write(_b64.b64decode(_cfp.data_b64))
+                            _pth = _f.name
+                        try:
+                            with st.spinner("Reading the geometry…"):
+                                _pay = chassis_mod.load_part_mesh(
+                                    _pth, max_faces=6000)
+                        finally:
+                            try:
+                                _os.unlink(_pth)
+                            except Exception:
+                                pass
+                        if len(_mc) >= 4:          # cap the RAM this holds
+                            _mc.pop(next(iter(_mc)))
+                        _mc[_cfp.id] = _pay
+
+                    # this car's slot for the part + neighbours. The car is
+                    # assembled HEADLESSLY right here (same builder as the 3D
+                    # view, figure discarded, boxes kept), so the forecast
+                    # always reasons on fresh, accurate geometry — no visit
+                    # to the 3D tab required. Per-instance boxes are strongly
+                    # preferred: they give one box per COPY of a body (each
+                    # tire separately) and let a plate-like dummy (the 8 mm
+                    # radiator core) resolve to its CONTAINER's interior — the
+                    # space a real part must actually fit. Merged boxes are
+                    # the fallback; a failed background build falls back to
+                    # the caches from any prior render rather than silently
+                    # dropping the clearance checks.
+                    _slot = _lib_slot_for(_cfp)
+                    _ctr, _env, _ssub, _dummy = _cad_slot_target(_slot)
+                    with st.spinner("Assembling the car in the background…"):
+                        try:
+                            _inst, _mrg = _fitfc_car_boxes()
+                        except Exception:
+                            _inst, _mrg = {}, {}
+                    if not _inst:
+                        _inst = dict(st.session_state
+                                     .get("car3d_part_instances") or {})
+                    if not _mrg:
+                        _mrg = dict(st.session_state
+                                    .get("car3d_part_boxes") or {})
+                    _rslot = fitfc_mod.resolve_slot(
+                        _dummy, _inst, fallback_env=_env, fallback_centre=_ctr)
+                    _env2, _ctr2 = _rslot["env"], _rslot["centre"]
+                    _nbx = _inst or _mrg
+                    _skip = {_dummy or "", _rslot.get("container") or "",
+                             _cfp.name.rsplit(".", 1)[0],
+                             _cfp.name.rsplit(".", 1)[0] + " (awaiting CAD)"}
+                    _base_kg = 220.0
+                    try:
+                        _base_kg = float(interfaces_mod.IntegrationLedger
+                                         .from_dict(st.session_state.ledger)
+                                         .mass_rollup().get("total_kg", 0)
+                                         or 220.0)
+                    except Exception:
+                        pass
+                    st.session_state["fitfc_result"] = dict(
+                        file=_cfp.name, slot=_slot, had_nbx=bool(_nbx),
+                        container=_rslot.get("container"),
+                        res=fitfc_mod.full_forecast(
+                            _pay, _env2, _ctr2, _nbx, exclude=tuple(_skip),
+                            material=_fc_mat, load_case=_fc_case,
+                            n_mounts=_fc_nm, base_mass_kg=_base_kg,
+                            subsys=_ssub))
+                except Exception as _fe:
+                    st.session_state.pop("fitfc_result", None)
+                    st.error(f"Couldn't forecast {_cfp.name} ({_fe}). STEP is "
+                             "the most reliable SolidWorks export.")
+
+            _fr = st.session_state.get("fitfc_result")
+            if _fr and _fr.get("file") == _fc_pick.split("  ·  ")[0]:
+                _R = _fr["res"]
+                _rs, _fit, _msh = _R["realism"], _R["fit"], _R["mesh"]
+                _pf = _R["performance"]
+                _scol = ("#5ad17a" if _rs["score"] >= 85 else
+                         "#ffd166" if _rs["score"] >= 65 else "#ff5a52")
+                st.markdown(
+                    f'<div style="border:1px solid var(--line);border-left:5px '
+                    f'solid {_scol};border-radius:12px;padding:10px 14px;'
+                    f'margin:6px 0;"><span style="font-family:JetBrains Mono;'
+                    f'font-size:1.6rem;font-weight:600;color:{_scol};">'
+                    f'{_rs["score"]:.0f}<span style="font-size:.9rem;"> / 100'
+                    f'</span></span> &nbsp;<b>{_rs["grade"]}</b>'
+                    f'<span class="hint"> — {_fr["slot"]} slot, placed size '
+                    f'{_fit["placed_mm"][0]:.0f}×{_fit["placed_mm"][1]:.0f}×'
+                    f'{_fit["placed_mm"][2]:.0f} mm in a '
+                    f'{_fit["slot_mm"][0]:.0f}×{_fit["slot_mm"][1]:.0f}×'
+                    f'{_fit["slot_mm"][2]:.0f} mm space '
+                    f'({_fit["fill"]*100:.0f}% fill, best orientation)</span>'
+                    '</div>', unsafe_allow_html=True)
+                if _rs["deductions"]:
+                    st.markdown('<p class="hint" style="margin:2px 0;">' +
+                                " &nbsp;·&nbsp; ".join(
+                                    f"−{p} {r}" for p, r in _rs["deductions"])
+                                + '</p>', unsafe_allow_html=True)
+
+                st.markdown("**What SolidWorks will say:**")
+                for _m in _R["solidworks"]:
+                    _mc2 = {"stop": "#ff5a52", "warn": "#ffd166",
+                            "ok": "#5ad17a"}[_m["severity"]]
+                    _ic = {"stop": "⛔", "warn": "⚠️", "ok": "✅"}[_m["severity"]]
+                    st.markdown(
+                        f'<div style="border:1px solid var(--line);'
+                        f'border-left:4px solid {_mc2};border-radius:8px;'
+                        f'padding:6px 10px;margin:3px 0;font-size:.88rem;">'
+                        f'{_ic} {_m["text"]}</div>', unsafe_allow_html=True)
+                if not _fr.get("had_nbx"):
+                    # Should essentially never happen: the forecast assembles
+                    # the car itself in the background. Only reachable if that
+                    # build failed AND no prior geometry was cached.
+                    st.caption("Clearance / interference checks were skipped "
+                               "this run — the background car assembly failed "
+                               "and no cached geometry was available. Re-run "
+                               "the forecast to try again.")
+                else:
+                    _bits = []
+                    if _fr.get("container"):
+                        _bits.append(f"space taken as the {_fr['container']} "
+                                     "interior (the dummy is a thin stand-in)")
+                    if _fit.get("contained_in"):
+                        _bits.append("nested inside "
+                                     + ", ".join(_fit["contained_in"])
+                                     + " — by design")
+                    if _fit.get("tightest_neighbors"):
+                        _bits.append("closest neighbours: " + ", ".join(
+                            f"{n} ({g:.0f} mm)" for n, g in
+                            _fit["tightest_neighbors"][:4]))
+                    if _bits:
+                        st.caption("  ·  ".join(_bits) + ".")
+
+                st.markdown(f"**Under {_pf['load_case']}:**")
+                _pm = st.columns(4)
+                _pm[0].metric("Part mass", f"{_pf['mass_kg']:.2f} kg",
+                              help=_pf["mass_note"])
+                _dc = _pf["cg_shift_mm"]
+                _pm[1].metric("Car CG shift",
+                              f"{_dc[0]:+.1f}/{_dc[1]:+.1f}/{_dc[2]:+.1f} mm",
+                              help="x/y/z shift of the whole-car CG when this "
+                                   "mass lands at its slot centre.")
+                _pm[2].metric("Per-mount load",
+                              f"{_pf['per_mount_n']:.0f} N",
+                              help=f"{_pf['inertial_force_n']:.0f} N inertial "
+                                   f"over {_pf['n_mounts']} mounts.")
+                _pm[3].metric("Lap-time feel", f"+{_pf['lap_delta_s']:.2f} s",
+                              help=_pf["lap_note"])
+                _ut = float(_pf["fastener_util"])
+                st.progress(min(1.0, _ut),
+                            text=f"Fastener utilisation {_ut*100:.0f}% — "
+                                 + _pf["fastener_note"]
+                                 + ("  ·  OVER — add mounts or step up the "
+                                    "bolt" if _ut > 1.0 else ""))
+                if _pf.get("capacity_proxy"):
+                    _cx = _pf["capacity_proxy"]
+                    st.caption(f"**{_cx['label']}:** {_cx['value']} — "
+                               f"{_cx['note']}.")
 
     # ----------------------------------------------------------------- #
     #  2 · SES location pack
