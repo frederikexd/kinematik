@@ -898,6 +898,9 @@ def build_full_car_figure(
     # EXACTLY the box its placeholder occupied. Exposed on the returned figure as
     # `_part_boxes` for the Streamlit CAD "fit to area" tool.
     _part_boxes: dict = {}
+    # Per-call boxes under each draw-name, clustered into per-INSTANCE boxes
+    # after the build — see fig._part_instance_boxes below.
+    _part_pieces: dict = {}
 
     def _ov_for(name):
         o = _ov.get(name) if name else None
@@ -1070,6 +1073,13 @@ def build_full_car_figure(
                     _pb[1] = np.maximum(_pb[1], _hi)
                 else:
                     _part_boxes[name] = [_lo.copy(), _hi.copy()]
+                # Also keep the PER-CALL box: a body drawn once per corner /
+                # side (4 tires, 2 radiators) merges into one misleading
+                # car-spanning box above; the pieces are clustered into true
+                # per-INSTANCE boxes after the build (fig._part_instance_boxes)
+                # so fit / clearance tools can reason about one instance.
+                _part_pieces.setdefault(name, []).append(
+                    (_lo.copy(), _hi.copy()))
             except Exception:
                 pass
         if _is_hidden(name):
@@ -1673,6 +1683,12 @@ def build_full_car_figure(
             if cp.get("define_car") and has_mesh and _def_target is not None:
                 _msc = float(_def_target["scale"])
                 _mcx, _mcy, _mcz = _def_target["centre"]
+            # User nudge offsets apply ON TOP of any auto placement — including
+            # the define_car auto-centre above, which otherwise ignores x/y/z —
+            # so an imported chassis can still be slid into alignment by hand.
+            _mcx += float(cp.get("dx_mm", 0.0) or 0.0)
+            _mcy += float(cp.get("dy_mm", 0.0) or 0.0)
+            _mcz += float(cp.get("dz_mm", 0.0) or 0.0)
             if has_mesh:
                 # Draw the ACTUAL imported geometry, oriented + placed on the car.
                 faces = np.asarray(mesh_payload["faces"], int)
@@ -1824,6 +1840,51 @@ def build_full_car_figure(
     except Exception:
         try:
             object.__setattr__(fig, "_part_boxes", {})
+        except Exception:
+            pass
+    # Per-INSTANCE boxes: cluster each name's per-call boxes by overlap (10 mm
+    # slack), so a body drawn once per corner/side yields one box PER COPY —
+    # "Tire" gives four wheel-sized boxes instead of one ring spanning the car.
+    # This is what makes mesh-level fit / clearance forecasting honest: the
+    # merged _part_boxes above stays for envelope fitting (its documented job),
+    # instance boxes are for anything that reasons about a single body.
+    def _cluster_instances(pieces, tol=10.0):
+        n = len(pieces)
+        parent = list(range(n))
+
+        def find(a):
+            while parent[a] != a:
+                parent[a] = parent[parent[a]]
+                a = parent[a]
+            return a
+
+        for a in range(n):
+            la, ha = pieces[a]
+            for b in range(a + 1, n):
+                lb, hb = pieces[b]
+                if ((la - tol <= hb) & (lb - tol <= ha)).all():
+                    ra, rb = find(a), find(b)
+                    if ra != rb:
+                        parent[rb] = ra
+        groups: dict = {}
+        for i in range(n):
+            groups.setdefault(find(i), []).append(i)
+        out = []
+        for idxs in groups.values():
+            lo = np.min([pieces[i][0] for i in idxs], axis=0)
+            hi = np.max([pieces[i][1] for i in idxs], axis=0)
+            out.append(dict(
+                centre=[float((lo[k] + hi[k]) / 2.0) for k in range(3)],
+                size=[float(hi[k] - lo[k]) for k in range(3)]))
+        return out
+
+    try:
+        object.__setattr__(fig, "_part_instance_boxes", {
+            nm: _cluster_instances(pieces)
+            for nm, pieces in _part_pieces.items() if pieces})
+    except Exception:
+        try:
+            object.__setattr__(fig, "_part_instance_boxes", {})
         except Exception:
             pass
     return fig
