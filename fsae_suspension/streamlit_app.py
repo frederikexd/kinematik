@@ -2214,6 +2214,7 @@ _show_all = bool(st.session_state.get("kk_show_all", False))
 # a member isn't dropped into a wall of tabs before saying who they are.
 _has_picked = bool(st.session_state.get("kk_entered", False)) or _show_all \
     or ("kk_roles" in st.session_state
+        and not st.session_state.get("kk_brief_pending", False)
         and _normalize_roles(st.session_state.get("kk_roles")) not in ([], ["everyone"]))
 
 # --- Role picker: pick subteam(s) from a dropdown and watch the parts that --
@@ -2271,6 +2272,605 @@ _ROLE_COLOR = {
     "cost":        "#8d99a6",  # no channel · neutral grey
 }
 
+# ========================================================================== #
+#  MISSION BRIEFING — the landing questionnaire
+#
+#  Three questions, three taps:
+#    1. What subsystem(s) are you on?   (the existing picker — question 1)
+#    2. What are you using KinematiK for?
+#    3. What's the goal?
+#
+#  The answers compile into a personal briefing: exactly which tools to open,
+#  in what order, why each one, and why to do it HERE first instead of opening
+#  MATLAB / ANSYS / ADAMS cold — so those tools are only ever used to VALIDATE
+#  a near-final design, never to hunt for an error that was in the inputs.
+#  Pure rule-based mapping, zero network calls, always skippable.
+# ========================================================================== #
+
+# Per-tool briefing copy. Keys are _TAB_META ids; values are 3-tuples:
+#   (what you'll do there,
+#    why you need it — the outcome it buys you,
+#    why here instead of MATLAB / ANSYS / ADAMS / OptimumK / CFD).
+# Pure static Python — the whole briefing engine is rule-based lookups.
+_BRIEF_TOOLS = {
+    "kinematics": (
+        "Drag hardpoints live and watch camber gain, bump steer, caster, KPI "
+        "and scrub re-solve instantly for any topology.",
+        "Geometry decides how the car behaves before any spring or damper can "
+        "help — get camber gain or bump steer wrong and no setup will save it. "
+        "These are the highest-leverage decisions on the whole vehicle.",
+        "ADAMS or a MATLAB script gives you one answer per run and hides sign "
+        "errors in the setup. Here every edit re-solves in milliseconds, so you "
+        "sweep hundreds of geometries and hand ADAMS one finalist — not use it "
+        "to discover your pickup point was mistyped."),
+    "roll": (
+        "Roll-centre migration, lateral load transfer and grip balance, coupled "
+        "to the actual geometry you just edited.",
+        "Balance is what the driver actually feels. You need this to know "
+        "whether your geometry makes a car that understeers, oversteers or "
+        "rotates on demand — before it's welded.",
+        "In a spreadsheet these live disconnected from the hardpoints, so they "
+        "silently go stale. Here they update WITH the geometry — the classic "
+        "'sim was fine, inputs were wrong' failure can't happen."),
+    "compliance": (
+        "Per-member loads and stiffness — see which arm or pushrod deflects "
+        "before anything is meshed.",
+        "A member that flexes quietly deletes the camber curve you designed. "
+        "You need this to guarantee the geometry you chose is the geometry the "
+        "tyre actually sees under load.",
+        "ANSYS will happily FEA a bad concept for hours. This flags WHICH member "
+        "is the problem in seconds, so your FEA run confirms the fix instead of "
+        "searching for it."),
+    "tire": (
+        "Grip model and TTC data — the tyre forces every other number depends on.",
+        "Every force on the car goes through four contact patches; if the tyre "
+        "model is wrong, everything downstream is fiction. You need this to "
+        "make every other number trustworthy.",
+        "Feeding a lap sim un-sanity-checked tyre data is the #1 source of "
+        "garbage-in. Check it here once; everything downstream inherits it."),
+    "setup": (
+        "Optimise springs, ARBs and balance against your real geometry and tyres.",
+        "Turns a legal geometry into a fast car. You need this to arrive at "
+        "competition with a credible starting setup instead of burning test "
+        "days finding one.",
+        "A MATLAB setup sweep needs you to re-derive the whole model first. Here "
+        "the model already exists — you just turn the knobs."),
+    "laptime": (
+        "GGV envelope, lap simulation and track-test overlays to see decisions "
+        "as lap time.",
+        "Lap time is the only score that matters. You need this to rank every "
+        "design choice in seconds-per-lap instead of arguing in the abstract.",
+        "Instead of maintaining a separate MATLAB lap sim with hand-copied "
+        "parameters, this reads the same numbers every subsystem already "
+        "declared — no transcription errors between models."),
+    "aero": (
+        "Size wings and diffuser, build the aero map, run the virtual wind "
+        "tunnel for directionally-correct loads.",
+        "Aero load is free grip — if it points the right way. You need this to "
+        "hit downforce targets and keep the balance shift under control before "
+        "committing to moulds.",
+        "A CFD case costs hours of meshing per shape. Shortlist here in seconds, "
+        "then spend CFD time validating two candidates instead of exploring "
+        "twenty."),
+    "ev": (
+        "Compare motor architectures, build the energy budget, size cooling, "
+        "and see regen and mass flow through to lap time.",
+        "The powertrain choice fixes the car's mass, heat and energy story for "
+        "the season. You need this to pick an architecture that finishes "
+        "endurance, not just launches hard.",
+        "These trade studies die in disconnected spreadsheets. Here a motor swap "
+        "updates weight, cooling load and lap time together — MATLAB then only "
+        "verifies the winner."),
+    "accum": (
+        "Cell sizing, pack topology, thermal model, and FSAE-EV rules checks "
+        "built in.",
+        "The pack is the heaviest, most rules-scrutinised part on an EV. You "
+        "need this to size one that's legal, cool enough and light enough on "
+        "the first try — packs are brutal to redesign.",
+        "Rules compliance isn't in ANSYS. Size a pack that already passes the "
+        "rules gates, then simulate THAT — not a pack you'll redesign after "
+        "scrutineering reads the rulebook to you."),
+    "brakes": (
+        "Bias and lock-up order, hydraulic sizing, bolt/bracket FoS, rotor "
+        "thermal and fade.",
+        "Brakes are both a scrutineering gate and a driver-confidence item. You "
+        "need this to guarantee lock-up order, pedal effort and rotors that "
+        "survive the brake test and endurance.",
+        "A rotor thermal FEA is only as good as the heat input. This computes "
+        "that input from YOUR car's mass, speed and bias — so ANSYS validates a "
+        "rotor that's already in the right family."),
+    "pcb": (
+        "Copper survival, signal integrity, HV/LV checks — import a real "
+        ".kicad_pcb and get the guilty component named.",
+        "One undersized trace can end the car's competition. You need this to "
+        "catch board-killers before fabrication, when the fix is still free.",
+        "SPICE won't tell you a trace is undersized for stall current. This "
+        "catches board-killers pre-fab, so the respin budget goes to features, "
+        "not fixes."),
+    "tractive": (
+        "EV tractive-system safety gates: precharge, isolation, the checks "
+        "scrutineers actually run.",
+        "Fail an EV safety check and you don't run — full stop. You need this "
+        "to walk into electrical tech inspection already knowing you pass.",
+        "No commercial simulator encodes the FSAE EV rules. Pass the gates here "
+        "before you build the loom."),
+    "dfmea": (
+        "Structured failure modes with cross-subsystem risk propagation.",
+        "Cars rarely fail where you're looking. You need this to find the "
+        "failure that crosses subsystem lines before it finds you at "
+        "competition.",
+        "Failure analysis in a spreadsheet can't see other subsystems. Here a "
+        "cooling failure propagates its risk into powertrain automatically."),
+    "teamfit": (
+        "Frame planning, driver/component fit, triangulation and load-path "
+        "audit with per-defect fixes.",
+        "A frame with a missing triangle or a driver who can't egress is a "
+        "redesign, not a tweak. You need this to lock a sound, legal, buildable "
+        "structure before cutting tubes.",
+        "ANSYS tells you a frame's stiffness; it doesn't tell you the frame is "
+        "missing a triangle or the driver doesn't fit. Fix topology here, THEN "
+        "mesh it."),
+    "model3d": (
+        "The whole car in 3D — your parts in the context of everyone else's.",
+        "Your part lives on someone else's car. You need this to spot clashes "
+        "and interfaces early, when moving a bracket is a click, not a "
+        "re-machine.",
+        "CAD shows geometry; this shows ownership and interfaces, so you see "
+        "what your change touches before it becomes someone else's problem."),
+    "integration": (
+        "The single source of truth: declare your numbers once; when another "
+        "subteam changes one you depend on, you see it.",
+        "Most season-killing errors are two subteams holding different versions "
+        "of the same number. You need this so your inputs are the team's "
+        "inputs, always.",
+        "This is the whole disease MATLAB/ANSYS can't cure — inputs scattered "
+        "across personal spreadsheets. One connected ledger means the number "
+        "you simulate is the number the team agreed on."),
+    "validation": (
+        "The formal handover: what's locked, what still needs a full sim, and "
+        "the checklist for the ANSYS/ADAMS/MATLAB run.",
+        "This is what makes 'only validate in the big tools' real. You need "
+        "this to leave with a locked design and a defined test matrix for the "
+        "expensive software.",
+        "This is the bridge tab — it exists precisely so the expensive tools "
+        "are used to CONFIRM, with a defined test matrix, not to explore."),
+    "cost": (
+        "FSAE Cost event BOM, auto-seeded from the Integration ledger, CSV "
+        "export ready.",
+        "Cost is a scored event AND a design constraint. You need this to know "
+        "the price of a decision when you make it, not at the deadline.",
+        "Cost isn't a simulation problem — but a cost surprise forces redesign. "
+        "Seeing $ per decision here prevents the late-season panic."),
+    "weight": (
+        "Weight & CG ledger and the handover export.",
+        "Mass is the one parameter every subsystem fights over. You need this "
+        "so the CG and weight everyone designs to is the one the car actually "
+        "has.",
+        "Mass properties feed every sim. One agreed ledger beats five competing "
+        "estimates in five spreadsheets."),
+    "docs": (
+        "Design-report-ready documentation generated from the work you already "
+        "did.",
+        "Design judging is won on evidence. You need this to show your "
+        "reasoning, not just your results.",
+        "Judges don't read your MATLAB scripts. They read this."),
+    "registry": (
+        "The team-wide registry of declared parameters and their status.",
+        "You need this so every number you rely on has a source and a status — "
+        "no more designing on rumours.",
+        "Your sim inputs, with provenance — so 'where did this number come "
+        "from?' has an answer."),
+    "notes": (
+        "Lead notes — decisions and rationale, kept next to the numbers.",
+        "You need this so the reasoning behind decisions survives graduation, "
+        "handover and long meetings.",
+        "The 'why' behind a value is what dies between meetings. Not here."),
+    "analytics": (
+        "Usage and progress analytics for the team.",
+        "You need this to see where the team's effort is going and what's "
+        "stalled — before the schedule does.",
+        "Know where the team's design effort is actually going."),
+}
+
+# Plain-English gloss per tool — shown when the member says they're brand new
+# to engineering, so every recommendation is understandable with zero jargon.
+_BRIEF_SIMPLE = {
+    "kinematics": "This is where you shape how the wheels tilt and steer as "
+                  "the car bounces and leans — the skeleton of handling.",
+    "roll": "This shows how hard the car leans in corners and which tyres get "
+            "squashed — that decides whether the front or the back slides "
+            "first.",
+    "compliance": "Metal parts bend a tiny bit under load. This checks that "
+                  "the bending is small enough that the wheels stay pointed "
+                  "where you designed them to point.",
+    "tire": "Tyres are the only things touching the road. This is where you "
+            "learn how much grip they really give — every other number is "
+            "built on it.",
+    "setup": "Springs and anti-roll bars are the adjustment knobs of the car. "
+             "This finds good starting positions for those knobs.",
+    "laptime": "This turns any design choice into the answer that matters: "
+               "does it make a lap faster or slower, and by how much?",
+    "aero": "Wings push the car down onto the road so the tyres grip harder. "
+            "This is where you pick how big the wings are and where the push "
+            "goes.",
+    "ev": "This is where you choose the electric motor and check the battery "
+          "energy will actually last a whole race.",
+    "accum": "The battery pack is the heaviest, most rule-checked part of an "
+             "electric car. This helps you build one that is legal, safe and "
+             "doesn't overheat.",
+    "brakes": "This makes sure the car can stop hard without the rear wheels "
+              "locking first (which spins the car) and without the discs "
+              "overheating.",
+    "pcb": "Circuit boards carry the car's electricity. This checks the "
+           "copper paths are thick enough not to burn out.",
+    "tractive": "Electric race cars must pass strict safety checks before "
+                "they may drive. This runs those checks in advance.",
+    "dfmea": "A structured way to ask 'what could break, how bad would it "
+             "be, and what do we do about it?' — before it breaks.",
+    "teamfit": "This checks the frame is built from triangles (so it can't "
+               "flop sideways) and that the driver and parts actually fit "
+               "inside it.",
+    "model3d": "A spinnable 3D picture of the whole car, with your parts "
+               "highlighted, so you can see what you own and what it touches.",
+    "integration": "One shared list of the team's agreed numbers. When "
+                   "someone changes a number you rely on, you see it "
+                   "immediately.",
+    "validation": "The final checklist before the expensive software: what's "
+                  "decided, what's locked, and exactly what still needs the "
+                  "big simulation to confirm.",
+    "cost": "Competitions score you on cost too. This builds the price list "
+            "of the car and shows what each decision costs.",
+    "weight": "One agreed list of how heavy everything is and where it sits — "
+              "because a heavy car in the wrong places is a slow car.",
+    "docs": "This turns the work you already did into the written report the "
+            "judges actually read and score.",
+    "registry": "A catalogue of every important number with where it came "
+                "from — so nobody designs on a rumour.",
+    "notes": "A place to write down WHY decisions were made, next to the "
+             "numbers, so the reasons aren't forgotten in two weeks.",
+    "analytics": "Shows where the team is spending its effort, so slow spots "
+                 "are visible before deadlines find them.",
+}
+
+# Question 2 — what are you using KinematiK for? key -> (label, extra tab ids,
+# one tailored sentence woven into the briefing).
+_BRIEF_PURPOSES = [
+    ("design",  "🛠️ Design something new",
+     [],
+     "You're designing from scratch — iterate freely here where a change costs "
+     "seconds, and only commit finalists to the heavy tools."),
+    ("sanity",  "🔢 Check my numbers before a big sim",
+     ["integration", "validation"],
+     "You're pre-validating — this is exactly what KinematiK is for. Cross-check "
+     "the inputs here so the sim confirms instead of debugs."),
+    ("trade",   "⚖️ Compare options / trade study",
+     [],
+     "You're trading options — sweep them all here in minutes, rank them, and "
+     "take only the podium into MATLAB/ANSYS."),
+    ("track",   "🏁 Setup & track performance",
+     ["laptime"],
+     "You're chasing lap time — every decision here reports back as seconds on "
+     "track, using the numbers the whole team already agreed on."),
+    ("review",  "📋 Design review / cost event prep",
+     ["docs", "cost", "weight"],
+     "You're preparing to present — pull the documentation, cost and weight "
+     "story straight from the same ledger the design came from."),
+    ("learn",   "🎓 Learn how the car works",
+     ["model3d"],
+     "You're learning — poke any number and watch the consequences ripple. No "
+     "licence, no meshing, no penalty for being wrong."),
+]
+_BRIEF_PURPOSE_MAP = {k: (lab, ids, line) for k, lab, ids, line in _BRIEF_PURPOSES}
+
+# Question 3 — the goal, offered per selected subteam. role -> list of
+# (goal_key, pill label, tab ids that achieve it).
+_ROLE_GOALS = {
+    "suspension": [
+        ("susp_geo",   "Nail the geometry (camber gain, bump steer, roll centres)",
+         ["kinematics", "roll"]),
+        ("susp_flex",  "Make sure nothing flexes (member loads & stiffness)",
+         ["compliance"]),
+        ("susp_setup", "Find the setup (springs, ARBs, balance)",
+         ["setup", "tire", "laptime"]),
+    ],
+    "aero": [
+        ("aero_size", "Size wings & diffuser for target downforce/drag",
+         ["aero"]),
+        ("aero_map",  "Aero map & balance across the envelope",
+         ["aero", "laptime"]),
+        ("aero_pre",  "Shortlist shapes before CFD / wind-tunnel time",
+         ["aero", "validation"]),
+    ],
+    "powertrain": [
+        ("pt_arch",   "Pick the motor / drivetrain architecture",
+         ["ev"]),
+        ("pt_energy", "Energy budget, regen & lap time",
+         ["ev", "laptime"]),
+        ("pt_rel",    "Reliability — failure modes & cooling load",
+         ["ev", "dfmea"]),
+    ],
+    "electrics": [
+        ("el_pack",  "Size the accumulator (cells, topology, rules)",
+         ["accum", "tractive"]),
+        ("el_pcb",   "Design or debug PCBs & wiring",
+         ["pcb"]),
+        ("el_safe",  "Pass the EV safety & rules gates",
+         ["tractive", "dfmea"]),
+    ],
+    "cooling": [
+        ("co_size", "Size radiators & flow for worst-case heat",
+         ["ev"]),
+        ("co_prop", "See heat & risk propagate across subsystems",
+         ["ev", "dfmea"]),
+    ],
+    "dataacq": [
+        ("dq_spec", "Spec sensors, logging & brackets",
+         ["pcb"]),
+        ("dq_int",  "Tie DAQ into the car electrical budget",
+         ["pcb", "dfmea"]),
+    ],
+    "brakes": [
+        ("br_bias", "Get bias & lock-up order right",
+         ["brakes", "tire"]),
+        ("br_therm", "Rotor thermal, fade & rotor design",
+         ["brakes"]),
+        ("br_hw",   "Hydraulics, bolts & bracket factors of safety",
+         ["brakes"]),
+    ],
+    "chassis": [
+        ("ch_frame", "Plan the frame (nodes, tubes, triangulation)",
+         ["teamfit", "compliance"]),
+        ("ch_fit",   "Driver & component fit",
+         ["teamfit"]),
+        ("ch_stiff", "Stiffness & load paths",
+         ["compliance"]),
+    ],
+    "cost": [
+        ("cs_bom",    "Build the FSAE Cost event BOM",
+         ["cost"]),
+        ("cs_ledger", "Weight & cost ledger across the team",
+         ["cost", "weight"]),
+    ],
+    "everyone": [
+        ("ev_all", "See the whole car and how the numbers connect",
+         ["model3d", "integration"]),
+    ],
+}
+
+_CAT_LABEL = {ck: f"{cem} {clab}" for ck, cem, clab, _ in _TAB_CATEGORIES}
+
+
+def _brief_goal_options(roles):
+    """(key, label, tab_ids) goal options for the selected subteam blend."""
+    _opts, _seen = [], set()
+    for _r in (roles or ["everyone"]):
+        for _g in _ROLE_GOALS.get(_r, []):
+            if _g[0] not in _seen:
+                _seen.add(_g[0])
+                _opts.append(_g)
+    if not _opts:
+        _opts = list(_ROLE_GOALS["everyone"])
+    return _opts
+
+
+def _build_briefing(roles, purpose_key, goal_keys, freetext, style="visual"):
+    """Compile the questionnaire answers into the briefing payload."""
+    _opts = {k: (lab, ids) for k, lab, ids in _brief_goal_options(roles)}
+    _goal_keys = [k for k in (goal_keys or []) if k in _opts] or list(_opts)[:1]
+    _tabs = []
+    for _k in _goal_keys:
+        for _t in _opts[_k][1]:
+            if _t not in _tabs:
+                _tabs.append(_t)
+    for _t in _BRIEF_PURPOSE_MAP.get(purpose_key, ("", [], ""))[1]:
+        if _t not in _tabs:
+            _tabs.append(_t)
+    # Handover pair always closes the plan; keep it out of the core list.
+    _core = [t for t in _FULL_ORDER
+             if t in _tabs and t not in ("integration", "validation")]
+    return {
+        "roles": list(roles or ["everyone"]),
+        "purpose": purpose_key,
+        "goals": [(_k, _opts[_k][0]) for _k in _goal_keys],
+        "freetext": (freetext or "").strip(),
+        "style": style,
+        "core_tabs": _core,
+    }
+
+
+def _render_brief_questionnaire(roles):
+    """Questions 2 & 3 of the landing questionnaire (Q1 = the picker above)."""
+    st.markdown(
+        '<div style="max-width:860px;margin:1.2rem auto 0;">'
+        '<div style="font-size:1.05rem;font-weight:600;">'
+        '🧭 Two quick taps and KinematiK builds your toolkit</div>'
+        '<p class="hint" style="line-height:1.5;margin-top:.2rem;">'
+        'You\'ll get exactly which tools to open, in what order, why each one — '
+        'and why doing it here first means ANSYS / MATLAB / ADAMS only ever '
+        '<b>validate</b> your design instead of debugging your inputs. '
+        'Or skip straight in.</p></div>', unsafe_allow_html=True)
+
+    _pu_labels = [lab for _k, lab, _ids, _l in _BRIEF_PURPOSES]
+    _go_opts = _brief_goal_options(roles)
+    _go_labels = [lab for _k, lab, _ids in _go_opts]
+
+    _pills = getattr(st, "pills", None)
+    st.markdown("**2 · What are you using KinematiK for?**")
+    if _pills:
+        _pu_sel = st.pills("purpose", _pu_labels, selection_mode="single",
+                           default=_pu_labels[0], key="kk_brief_purpose",
+                           label_visibility="collapsed")
+    else:
+        _pu_sel = st.radio("purpose", _pu_labels, horizontal=True,
+                           key="kk_brief_purpose", label_visibility="collapsed")
+    st.markdown("**3 · What's the goal?** *(pick as many as apply)*")
+    # If the member changes subteams mid-questionnaire the goal options change;
+    # drop any previously-picked labels that no longer exist so the widget
+    # never sees an out-of-options value.
+    _go_kw = {"key": "kk_brief_goals", "label_visibility": "collapsed"}
+    if "kk_brief_goals" in st.session_state:
+        _prev = st.session_state["kk_brief_goals"]
+        _prev = _prev if isinstance(_prev, list) else [_prev]
+        st.session_state["kk_brief_goals"] = [v for v in _prev
+                                              if v in _go_labels]
+    else:
+        _go_kw["default"] = _go_labels[:1]
+    if _pills:
+        _go_sel = st.pills("goal", _go_labels, selection_mode="multi", **_go_kw)
+    else:
+        _go_sel = st.multiselect("goal", _go_labels, **_go_kw)
+    _ft = st.text_input("Anything specific? (optional)",
+                        key="kk_brief_freetext",
+                        placeholder="e.g. our rear bump steer is a mess / "
+                                    "pack overheats in endurance …")
+
+    # Q4 — are you a visual thinker? Drives whether the briefing renders a
+    # live concept visual (graph / 3D) under every recommended tool, and
+    # whether plain-English glosses are added for newcomers.
+    _STYLE_OPTS = [
+        ("visual",  "👁️ Yes — show me graphs & 3D"),
+        ("numbers", "🔢 No — just give me the numbers"),
+        ("new",     "🌱 I'm brand new — visuals + plain English"),
+    ]
+    _st_labels = [lab for _k, lab in _STYLE_OPTS]
+    st.markdown("**4 · Are you a visual thinker?**")
+    if _pills:
+        _st_sel = st.pills("style", _st_labels, selection_mode="single",
+                           default=_st_labels[0], key="kk_brief_style",
+                           label_visibility="collapsed")
+    else:
+        _st_sel = st.radio("style", _st_labels, horizontal=True,
+                           key="kk_brief_style", label_visibility="collapsed")
+
+    _b1, _b2 = st.columns([1.6, 1.0])
+    if _b1.button("⚡ Build my toolkit & enter", type="primary",
+                  use_container_width=True):
+        _pu_key = next((k for k, lab, _i, _l in _BRIEF_PURPOSES
+                        if lab == _pu_sel), _BRIEF_PURPOSES[0][0])
+        _sel = _go_sel if isinstance(_go_sel, list) else [_go_sel]
+        _go_keys = [k for k, lab, _i in _go_opts if lab in (_sel or [])]
+        _st_key = next((k for k, lab in _STYLE_OPTS if lab == _st_sel),
+                       "visual")
+        st.session_state["kk_briefing"] = _build_briefing(
+            roles, _pu_key, _go_keys, _ft, style=_st_key)
+        st.session_state["kk_briefing_open"] = True
+        st.session_state["kk_entered"] = True
+        st.session_state["kk_brief_pending"] = False
+        st.rerun()
+    if _b2.button("Skip — take me straight in", use_container_width=True):
+        st.session_state["kk_entered"] = True
+        st.session_state["kk_brief_pending"] = False
+        st.rerun()
+
+
+def _render_briefing_panel():
+    """Post-entry: the compiled briefing, pinned above the tabs, dismissible."""
+    _bf = st.session_state.get("kk_briefing")
+    if not _bf:
+        # Skipped or dismissed — keep a one-tap way back, tucked in a corner.
+        _bc = st.columns([1.0, 3.2])[0]
+        if _bc.button("🧭 Get my mission briefing",
+                      help="Answer three one-tap questions and get a personal "
+                           "plan: which tools, in what order, and why."):
+            st.session_state["kk_brief_pending"] = True
+            st.session_state["kk_entered"] = False
+            st.rerun()
+        return
+    _open = bool(st.session_state.pop("kk_briefing_open", False))
+    with st.expander("🧭 Your mission briefing — what to use, in what order, "
+                     "and why", expanded=_open):
+        _pu = _BRIEF_PURPOSE_MAP.get(_bf.get("purpose"))
+        _names = " + ".join(_ROLE_LABELS.get(r, r).split(" / ")[0]
+                            for r in _bf.get("roles", []))
+        st.markdown(f"**{_names}** · " + (_pu[0] if _pu else ""))
+        if _pu:
+            st.markdown(_pu[2])
+        if _bf.get("freetext"):
+            st.caption(f"Your words: “{_bf['freetext']}” — keep that in mind as "
+                       "you work through the plan below; the Validation tab is "
+                       "where you'll pin it down as a formal check.")
+        st.markdown("**Goals:** " + " · ".join(
+            f"*{lab}*" for _k, lab in _bf.get("goals", [])))
+        _style = _bf.get("style", "visual")
+        if _style == "new":
+            st.info("🌱 **New here? Perfect.** Every tool below comes with a "
+                    "plain-English line and a live picture of the physics. "
+                    "Nothing you click in KinematiK can break anything — "
+                    "every value has a sensible default, so play freely.")
+        st.divider()
+
+        def _brief_tool_block(_n, _tid):
+            """One recommended tool: what / plain English / why / vs / visual."""
+            _em, _lab = _TAB_META[_tid]
+            _need, _why, _vs = _BRIEF_TOOLS[_tid]
+            _cat = _CAT_LABEL.get(_ID_CATEGORY.get(_tid, ""), "")
+            _parts = [f"**{_n}. {_em} {_lab}**  ·  find it under **{_cat}**",
+                      _need]
+            if _style == "new" and _tid in _BRIEF_SIMPLE:
+                _parts.append(f"🌱 *In plain English:* {_BRIEF_SIMPLE[_tid]}")
+            _parts.append(f"**Why you need it:** {_why}")
+            _parts.append(
+                f"> **Why here, not MATLAB/ANSYS/OptimumK etc.:** {_vs}")
+            st.markdown("\n\n".join(_parts))
+            if _style in ("visual", "new"):
+                # Live concept visual — real physics, representative values.
+                # Lazy import + full guard: a visual can never block the text.
+                try:
+                    from suspension.brief_visuals import concept_figure
+                    _fig, _cap = concept_figure(_tid)
+                    if _fig is not None:
+                        st.plotly_chart(
+                            _fig, width="stretch",
+                            key=f"brief_fig_{_tid}",
+                            config={"displaylogo": False,
+                                    "displayModeBar": False})
+                        # RAM hygiene: Streamlit has serialized the figure;
+                        # drop the Python-side object immediately so 23
+                        # figures never coexist with the tab bodies below.
+                        try:
+                            _mem.release_figure(_fig)
+                        except Exception:
+                            pass
+                        _fig = None
+                        if _cap:
+                            st.caption(_cap)
+                except Exception:
+                    pass
+
+        for _i, _tid in enumerate(_bf.get("core_tabs", []), start=1):
+            if _tid not in _TAB_META or _tid not in _BRIEF_TOOLS:
+                continue
+            _brief_tool_block(_i, _tid)
+        # The handover pair always closes the plan.
+        _n0 = len(_bf.get("core_tabs", []))
+        for _j, _tid in enumerate(("integration", "validation"), start=_n0 + 1):
+            _brief_tool_block(_j, _tid)
+        st.divider()
+        st.markdown(
+            "**The point of all this:** the most expensive error class isn't a "
+            "bad simulation — it's a wrong input reaching a good simulator. "
+            "Iterate here (a change costs seconds, not a meshing afternoon), "
+            "let Integration keep every subteam's numbers consistent, run the "
+            "Validation handover — and then open ANSYS / ADAMS / MATLAB "
+            "**once**, to confirm a design you already trust. "
+            "⚠️ Always validate with the full-fidelity tools before "
+            "manufacturing; KinematiK gets you to the right question, they "
+            "give you the right answer.")
+        _c1, _c2 = st.columns(2)
+        if _c1.button("🔁 Retake the questionnaire", use_container_width=True):
+            st.session_state["kk_brief_pending"] = True
+            st.session_state["kk_entered"] = False
+            st.rerun()
+        if _c2.button("✕ Dismiss briefing", use_container_width=True):
+            st.session_state.pop("kk_briefing", None)
+            st.rerun()
+    # One sweep after the panel: reclaim figure arrays before tab bodies run.
+    try:
+        _mem.maybe_collect(force=True)
+    except Exception:
+        pass
+
+
 _team_keys = [k for k in _BLENDABLE if k != "everyone"]
 _default = [r for r in _roles if r in _team_keys]
 
@@ -2295,7 +2895,14 @@ with _pctl:
     _picked_norm = _normalize_roles(_picked)
     if not _show_all and _picked_norm != _roles:
         st.session_state.kk_roles = _picked_norm
-        st.session_state.kk_entered = True   # a real choice was made
+        if _has_picked:
+            st.session_state.kk_entered = True   # a real choice was made
+        else:
+            # LANDING FLOW: don't drop straight into the tabs. Picking a
+            # subteam is question 1 of the mission briefing — reveal the two
+            # remaining one-tap questions below (always skippable) so the
+            # member enters with a personal "use this, here's why" plan.
+            st.session_state.kk_brief_pending = True
         _roles = _picked_norm
         st.rerun()
 
@@ -2524,6 +3131,7 @@ with _pctl:
                       "21-tab view."):
         st.session_state.kk_show_all = not _show_all
         st.session_state.kk_entered = True
+        st.session_state.kk_brief_pending = False
         st.rerun()
 
     # Explicit "just browsing" entry so an EMPTY subteam pick is a deliberate
@@ -2536,6 +3144,7 @@ with _pctl:
                           "subteam any time to pull your own tools up front."):
             st.session_state.kk_roles = ["everyone"]
             st.session_state.kk_entered = True
+            st.session_state.kk_brief_pending = False
             st.rerun()
 
 with _pcar:
@@ -2648,15 +3257,29 @@ with _pcar:
 #  stop here with a prompt until they pick.
 # ========================================================================== #
 if not _has_picked:
-    st.markdown(
-        '<div style="max-width:640px;margin:1.4rem auto 0;text-align:center;">'
-        '<div style="font-size:1.05rem;font-weight:600;margin-bottom:.3rem;">'
-        '👆 Pick your subteam to begin</div>'
-        '<p class="hint" style="line-height:1.5;">Choose the subteam(s) you own '
-        'above and only <b>your</b> tools open up — grouped into a few simple '
-        'categories so you\'re never facing every tab at once. You can change '
-        'this any time, or choose <b>Just looking</b> to browse the shared '
-        'tabs.</p></div>', unsafe_allow_html=True)
+    _brief_roles = [r for r in _roles if r != "everyone"]
+    if _brief_roles and st.session_state.get("kk_brief_pending"):
+        # Question 1 (subteam) is answered — reveal questions 2 & 3 and the
+        # build/skip buttons. This is the mission-briefing questionnaire.
+        try:
+            _render_brief_questionnaire(_brief_roles)
+        except Exception:
+            # The questionnaire must never trap a member on the landing page.
+            st.session_state["kk_entered"] = True
+            st.session_state["kk_brief_pending"] = False
+            st.rerun()
+    else:
+        st.markdown(
+            '<div style="max-width:640px;margin:1.4rem auto 0;text-align:center;">'
+            '<div style="font-size:1.05rem;font-weight:600;margin-bottom:.3rem;">'
+            '👆 Pick your subteam to begin</div>'
+            '<p class="hint" style="line-height:1.5;">Choose the subteam(s) you '
+            'own above, then answer two one-tap questions — what you\'re here '
+            'for and what the goal is — and KinematiK hands you a personal plan: '
+            'which tools, in what order, and why, so ANSYS/MATLAB only ever '
+            '<b>validate</b> your work. You can change this any time, or choose '
+            '<b>Just looking</b> to browse the shared tabs.</p></div>',
+            unsafe_allow_html=True)
     # Fill the Design-status board into its reserved top-of-page slot before we
     # stop for the landing page. _vc_collect isn't defined this early, so the
     # board self-degrades to the Registry rollup here; on the full tabbed pages
@@ -2667,6 +3290,13 @@ if not _has_picked:
     except Exception:
         pass
     st.stop()
+
+# --- Mission briefing panel: the compiled questionnaire answer, pinned ------ #
+#     above the category strip until dismissed. Never allowed to block the app.
+try:
+    _render_briefing_panel()
+except Exception:
+    pass
 
 # --- Decide which ids are primary (own strip) vs folded into "More". ------- #
 if _show_all:
@@ -7921,6 +8551,121 @@ with tab4:
              "car by heat, electrical draw, or mass so you can see at a glance "
              "where the load concentrates and what's over budget.")
 
+# --------------------------------------------------------------------------- #
+#  Aero mount-point overlay for the full-car view. Companion to the AERO tab's
+#  "Mounting & bonding designer": lights up WHERE each aero element attaches to
+#  the chassis, anchored to the ACTUAL drawn geometry (the figure's _part_boxes),
+#  so it stays put when the user resizes the wings or the wheelbase changes.
+#  Markers are tagged customdata="aerodynamics" so clicking one zooms to the
+#  aero package like clicking any other body. Load-path lines run from each
+#  mount to the primary-structure target (front bulkhead, main hoop / rear
+#  bulkhead, lower rails) — a visual restatement of the tab's rule of thumb:
+#  aero mounts to the CHASSIS, never the bodywork.
+def _add_aero_mount_overlay(fig, *, selected_el=None, n_selected=None):
+    _pbx = getattr(fig, "_part_boxes", None) or {}
+    _mono = _pbx.get("Monocoque")
+    if not _mono:
+        return 0
+    _mc = np.array(_mono["centre"], float)
+    _ms = np.array(_mono["size"], float)
+    _x_front_bh = _mc[0] + _ms[0] / 2.0      # front bulkhead face
+    _x_rear_bh = _mc[0] - _ms[0] / 2.0       # rear bulkhead face
+    _z_rail = _mc[2] - _ms[2] / 2.0          # lower-rail height
+    _hoop = _pbx.get("Roll hoop")
+
+    _DEF_N = {"Front wing": 4, "Rear wing": 4,
+              "Undertray / floor + diffuser": 8,
+              "Sidepods / bodywork panels": 6}
+
+    def _npts(el):
+        if selected_el == el and n_selected:
+            return max(2, int(n_selected))
+        return _DEF_N[el]
+
+    _sets = []   # (element, pts Nx3, path target per point or None, note)
+    _fw = _pbx.get("Front wing")
+    if _fw:
+        c, s = np.array(_fw["centre"], float), np.array(_fw["size"], float)
+        n = _npts("Front wing")
+        ys = np.linspace(-0.35, 0.35, n) * s[1]
+        pts = np.column_stack([np.full(n, c[0] - s[0] / 2.0), ys,
+                               np.full(n, c[2] + s[2] * 0.25)])
+        tgt = np.column_stack([np.full(n, _x_front_bh), ys * 0.5,
+                               np.full(n, _mc[2])])
+        _sets.append(("Front wing", pts, tgt,
+                      "bracket / swan-neck to FRONT BULKHEAD"))
+    _rw = _pbx.get("Rear wing")
+    if _rw:
+        c, s = np.array(_rw["centre"], float), np.array(_rw["size"], float)
+        n = _npts("Rear wing")
+        ys = np.linspace(-0.30, 0.30, n) * s[1]
+        pts = np.column_stack([np.full(n, c[0]), ys,
+                               np.full(n, c[2] - s[2] / 2.0)])
+        # target: main hoop top if drawn, else rear bulkhead top
+        if _hoop:
+            hc = np.array(_hoop["centre"], float)
+            hs = np.array(_hoop["size"], float)
+            tz, tx = hc[2] + hs[2] / 2.0, hc[0] - hs[0] * 0.3
+        else:
+            tz, tx = _mc[2] + _ms[2] / 2.0, _x_rear_bh
+        tgt = np.column_stack([np.full(n, tx), ys * 0.6, np.full(n, tz)])
+        _sets.append(("Rear wing", pts, tgt,
+                      "upright / swan-neck to MAIN HOOP + rear bulkhead"))
+    # Undertray rails: the floor bolts to the chassis lower rails themselves —
+    # mounts alternate left/right along the monocoque bottom edge, no path line.
+    n = _npts("Undertray / floor + diffuser")
+    xs = np.linspace(_mc[0] - 0.45 * _ms[0], _mc[0] + 0.45 * _ms[0], n)
+    ys = np.where(np.arange(n) % 2 == 0, 1.0, -1.0) * (_ms[1] / 2.0) * 0.95
+    pts = np.column_stack([xs, ys, np.full(n, _z_rail)])
+    _sets.append(("Undertray / floor + diffuser", pts, None,
+                  "rubber-isolated tab on LOWER RAIL"))
+    _sp = _pbx.get("Sidepod (cooling)")
+    if _sp:
+        c, s = np.array(_sp["centre"], float), np.array(_sp["size"], float)
+        n = _npts("Sidepods / bodywork panels")
+        half = max(2, n // 2)
+        xs = np.tile(np.linspace(c[0] - 0.35 * s[0], c[0] + 0.35 * s[0], half), 2)[:n]
+        ys = np.concatenate([np.full(half, s[1] / 2.0 * 0.9),
+                             np.full(half, -s[1] / 2.0 * 0.9)])[:n]
+        pts = np.column_stack([xs, ys, np.full(n, c[2] + s[2] / 2.0)])
+        tgt = np.column_stack([xs, np.sign(ys) * (_ms[1] / 2.0),
+                               np.full(n, _mc[2])])
+        _sets.append(("Sidepods / bodywork panels", pts, tgt,
+                      "DZUS / quarter-turn to chassis tab"))
+
+    _total = 0
+    for _el, _p, _t, _note in _sets:
+        _is_sel = (selected_el == _el)
+        _n = len(_p)
+        fig.add_trace(go.Scatter3d(
+            x=_p[:, 0], y=_p[:, 1], z=_p[:, 2], mode="markers",
+            name=f"⚓ {_el} mounts",
+            marker=dict(size=(9 if _is_sel else 6),
+                        color="#ffd93b",
+                        opacity=(1.0 if _is_sel else 0.55),
+                        symbol="diamond",
+                        line=dict(color="#ffffff",
+                                  width=(2 if _is_sel else 0))),
+            customdata=[["aerodynamics", _el, ""]] * _n,
+            hovertemplate=(f"<b>{_el}</b> — mount %{{pointNumber}}"
+                           f" of {_n}<br>{_note}<extra></extra>"),
+            showlegend=True))
+        if _t is not None:
+            lx, ly, lz = [], [], []
+            for _i in range(_n):
+                lx += [_p[_i, 0], _t[_i, 0], None]
+                ly += [_p[_i, 1], _t[_i, 1], None]
+                lz += [_p[_i, 2], _t[_i, 2], None]
+            fig.add_trace(go.Scatter3d(
+                x=lx, y=ly, z=lz, mode="lines",
+                line=dict(color="#ffd93b", width=(5 if _is_sel else 2),
+                          dash="dot"),
+                opacity=(0.9 if _is_sel else 0.35),
+                hoverinfo="skip", showlegend=False))
+        _total += _n
+    return _total
+
+
 # --------------------------- FULL CAR 3D ----------------------------------- #
 # A LIVE Formula car assembled from every subsystem's current declaration. The
 # figure is rebuilt from session state on every rerun, so the instant any tab
@@ -7967,6 +8712,11 @@ with tab_car:
         _show_pt = lc[2].checkbox("Powertrain", True, key="car3d_pt")
         _show_el = lc[2].checkbox("Electrics", True, key="car3d_el")
         _show_body = lc[3].checkbox("Bodywork (monocoque/halo)", True, key="car3d_body")
+        _show_mounts = lc[3].checkbox(
+            "⚓ Aero mount points", False, key="car3d_aeromounts",
+            help="Show where each aero element attaches to the chassis — the "
+                 "mount points and their load paths into primary structure. "
+                 "Companion to Aerodynamics → Mounting & bonding designer.")
 
     # The car renders HERE, directly under the controls. Streamlit fills a
     # container in the order it was CREATED, not called, so we reserve this slot
@@ -8956,6 +9706,26 @@ with tab_car:
           except Exception:
               pass
 
+          # ---- Aero mount-point overlay (from the Mounting designer) ------ #
+          # Anchored to the REAL drawn part boxes, so the anchors track wing
+          # resizes and wheelbase changes. The element currently selected in
+          # Aerodynamics → Mounting & bonding designer is emphasised, and its
+          # mount COUNT there drives how many markers appear on that element.
+          if _show_mounts:
+              try:
+                  _n_shown = _add_aero_mount_overlay(
+                      _fig_car,
+                      selected_el=st.session_state.get("aero_mnt_el"),
+                      n_selected=st.session_state.get("aero_mnt_n"))
+                  if _n_shown:
+                      st.caption(
+                          f"⚓ {_n_shown} aero mount points shown — gold diamonds; "
+                          "dotted lines are the load path into primary structure "
+                          "(front bulkhead, main hoop, lower rails). Size them in "
+                          "Aerodynamics → Mounting & bonding designer.")
+              except Exception:
+                  pass
+
           # ---- Assembly Completion Index (Master Assembly engine) --------- #
           # Volume-weighted share of the car's boundary volume occupied by
           # true CAD vs dummy placeholders, κ-discounted by fit confidence.
@@ -9775,7 +10545,7 @@ with tab_aero:
     _view = feature_menu("aerodynamics",
         ["Downforce & ground effect", "Wing & diffuser sizing",
          "Aero map (attitude sweep)", "Scale model planning",
-         "Plug & layup build planner"],
+         "Plug & layup build planner", "Mounting & bonding designer"],
         title="Aerodynamics tools",
         descriptions={
             "Downforce & ground effect": "Downforce, drag, L/D at attitude",
@@ -9783,7 +10553,9 @@ with tab_aero:
             "Aero map (attitude sweep)": "Ride/yaw attitude sweep map",
             "Scale model planning": "Wind-tunnel scale + full-size chord (DXF source)",
             "Plug & layup build planner":
-                "Foam slice templates + BOM + cure-aware build-day schedule"})
+                "Foam slice templates + BOM + cure-aware build-day schedule",
+            "Mounting & bonding designer":
+                "Where & how to attach aero to the car — loads, brackets, bonds"})
 
     # Live headline numbers at the chosen attitude — shared across the tools.
     # Only rendered once a tool is picked, so the menu stays clean.
@@ -10432,6 +11204,370 @@ with tab_aero:
                 pass
         except Exception as _e_pb:
             st.error(f"Plug & layup planner failed: {_e_pb}")
+
+    # ---------------------------------------------------------------- VIEW 6 #
+    # Mounting & bonding designer — answers the question every aero subteam hits
+    # late in the year ("where — and HOW — do we actually attach this to the
+    # car?") without anyone having to trawl past-project archives or forums.
+    # Three layers, each one step more quantitative:
+    #   1) Playbook — per element, the conventional FSAE answer (mount to the
+    #      CHASSIS, not the bodywork), the usual hardware, and the why.
+    #   2) Mount-load calculator — takes the live aero model's forces at a
+    #      design speed, adds a gust/transient factor and a safety factor,
+    #      spreads them over the element's mount points, and compares against
+    #      the rulebook push-test so the bracket is sized by the governing
+    #      load instead of a guess.
+    #   3) Attachment sizer — bolts, bonded pads and rivnuts/inserts checked
+    #      against that per-mount load, with the classic failure modes called
+    #      out (the bolt is almost never the weak link; the insert/laminate is).
+    # It ends with a copy-paste status summary so "give the team an update"
+    # takes one click, not an evening of research.
+    elif _view == "Mounting & bonding designer":
+        st.markdown(
+            '<p class="hint">Where — and how — the aero package <b>attaches to the '
+            'car</b>. The short answer every experienced FSAE team converges on: '
+            'mount every load-bearing aero device to the <b>chassis (primary '
+            'structure)</b>, never to bodywork. Bodywork panels flex, so a wing '
+            'hung off them loses angle-of-attack at speed, flutters, and fails the '
+            'rules push-test; the chassis gives a stiff, known load path straight '
+            'into the structure the suspension already reacts against. Below: the '
+            'per-element playbook, the actual loads your mounts must carry, and '
+            'sized hardware to carry them.</p>', unsafe_allow_html=True)
+
+        # ---------------- 1) the playbook: what teams conventionally do ---- #
+        _MOUNT_PLAYBOOK = {
+            "Front wing": dict(
+                icon="🛫", share=0.30, mounts=4,
+                to="Chassis — front bulkhead / nose structure",
+                never="The nose-cone skin alone — it's non-structural, flexes, "
+                      "and pulls fasteners through under load",
+                hw="Two machined-Al brackets or swan-necks off the front bulkhead, "
+                   "plus quick-release pins (or DZUS) so the nose still comes off "
+                   "fast at tech inspection without unbolting the wing",
+                why="Downforce goes straight into primary structure; wing pitch "
+                    "stays fixed under load, which keeps the front axle's share of "
+                    "downforce (aero balance) where you designed it."),
+            "Rear wing": dict(
+                icon="🪽", share=0.40, mounts=4,
+                to="Chassis — main hoop and/or rear bulkhead uprights",
+                never="Engine cover or bodywork panels, and never into the "
+                      "impact-attenuator crush zone",
+                hw="Twin CNC'd Al uprights or swan-neck plates clamped/tabbed to "
+                   "the main hoop; a bolt-hole pattern or jack-screw for "
+                   "angle-of-attack changes between events",
+                why="Largest single aero load on the car on a tall moment arm — it "
+                    "needs the stiffest structure available. A stiff mount is what "
+                    "keeps the aero map honest: no flutter, no AoA washout at the "
+                    "end of the straight."),
+            "Undertray / floor + diffuser": dict(
+                icon="🛹", share=0.25, mounts=8,
+                to="Chassis — lower frame rails on ≥6 spread-out tabs, "
+                   "rubber-isolated",
+                never="Hanging off the sidepods or off suspension members",
+                hw="Bolted tabs with rubber grommets (or quarter-turns for "
+                   "service); pin the front edge, slot the rear holes so the "
+                   "panel can move thermally and in kerb strikes",
+                why="The load is distributed suction plus point kerb strikes — "
+                    "many small mounts beat two big ones, and rubber isolation "
+                    "stops kerb hits cracking the laminate around a hard bolt."),
+            "Sidepods / bodywork panels": dict(
+                icon="🧩", share=0.05, mounts=6,
+                to="Chassis tabs + adjacent panels (non-structural)",
+                never="As a load path for wing or floor forces",
+                hw="DZUS / quarter-turn fasteners or bonded studs; foam tape "
+                   "along free edges to stop buzzing",
+                why="They carry mostly their own inertia and small pressure "
+                    "loads — fast removal for radiator/accumulator access "
+                    "matters more than stiffness here."),
+        }
+        _pb_cols = st.columns(2)
+        for _pi, (_pel, _pd) in enumerate(_MOUNT_PLAYBOOK.items()):
+            _pb_cols[_pi % 2].markdown(
+                f'<div style="background:#141c24;border:1px solid #2a3743;'
+                f'border-left:3px solid #ffd93b;border-radius:10px;'
+                f'padding:.7rem .95rem;margin:.3rem 0;">'
+                f'<div style="font-weight:700;color:#e7ecf1;font-size:.92rem;'
+                f'margin-bottom:.3rem;">{_pd["icon"]} {_pel}</div>'
+                f'<p style="margin:.15rem 0;font-size:.8rem;line-height:1.55;'
+                f'color:#c4cdd6;"><b style="color:#5ad17a;">Mount to:</b> '
+                f'{_pd["to"]}</p>'
+                f'<p style="margin:.15rem 0;font-size:.8rem;line-height:1.55;'
+                f'color:#c4cdd6;"><b style="color:#ff6b6b;">Never:</b> '
+                f'{_pd["never"]}</p>'
+                f'<p style="margin:.15rem 0;font-size:.8rem;line-height:1.55;'
+                f'color:#c4cdd6;"><b style="color:#37e0d0;">Typical hardware:</b> '
+                f'{_pd["hw"]}</p>'
+                f'<p style="margin:.15rem 0 0;font-size:.78rem;line-height:1.5;'
+                f'color:#a8b4bf;">{_pd["why"]}</p></div>',
+                unsafe_allow_html=True)
+        st.caption(
+            "Rules note: aero devices must survive the scrutineering push-test — "
+            "classically 200 N spread over ≥ 225 cm² with ≤ 10 mm deflection, and "
+            "a 50 N point load in any direction with ≤ 25 mm deflection. Numbers "
+            "move year to year: verify against the current-year FSAE/FS rulebook "
+            "(T.7 / Aerodynamic Devices) before freezing the design.")
+
+        # ---------------- front-end stack-up (nose vs IA) ------------------ #
+        # The recurring nose question ("does the nose cone go in front of the
+        # impact attenuator — the little honeycomb thing?") answered once, with
+        # a picture, so it never has to be asked in the channel again.
+        with st.expander(
+                "🥅 Front-end stack-up — nose cone vs impact attenuator "
+                "(what goes where)", expanded=False):
+            st.markdown(
+                '<p class="hint">Front-to-back order of the nose: '
+                '<b>nose-cone skin</b> (outermost, non-structural bodywork) → '
+                '<b>impact attenuator</b> (the honeycomb/foam crush block, '
+                'mounted forward of the bulkhead) → <b>anti-intrusion plate</b> '
+                '→ <b>front bulkhead</b> (primary structure). So yes — from the '
+                'outside the nose cone is the front-most thing, and the '
+                'honeycomb IA lives <i>inside</i> it. The nose is a cover, not '
+                'a structure: it carries no wing load, and <b>nothing may be '
+                'mounted to the IA</b> — it must be free to crush. The front '
+                'wing\u2019s brackets route <b>around</b> the IA to the '
+                'bulkhead.</p>', unsafe_allow_html=True)
+
+            _fe = go.Figure()
+            # chassis / monocoque stub
+            _fe.add_shape(type="rect", x0=-560, x1=0, y0=120, y1=430,
+                          fillcolor="#22303c", line=dict(color="#3a4a58"))
+            # front bulkhead
+            _fe.add_shape(type="rect", x0=0, x1=26, y0=100, y1=445,
+                          fillcolor="#8fa3b5", line=dict(color="#c7d3de"))
+            # anti-intrusion plate
+            _fe.add_shape(type="rect", x0=26, x1=34, y0=108, y1=437,
+                          fillcolor="#ff9f43", line=dict(color="#ffbd7a"))
+            # impact attenuator (honeycomb block)
+            _fe.add_shape(type="rect", x0=34, x1=234, y0=165, y1=360,
+                          fillcolor="rgba(255,217,59,.28)",
+                          line=dict(color="#ffd93b", width=2))
+            for _hx in range(58, 234, 24):   # honeycomb hint lines
+                _fe.add_shape(type="line", x0=_hx, x1=_hx, y0=165, y1=360,
+                              line=dict(color="rgba(255,217,59,.45)", width=1))
+            # nose-cone skin (curved cover over the IA)
+            _t = np.linspace(0, 1, 40)
+            _nx = 0 + _t * 330
+            _nz_top = 445 - 205 * _t ** 1.6
+            _nz_bot = 100 + 140 * _t ** 1.6
+            _fe.add_trace(go.Scatter(
+                x=np.concatenate([_nx, _nx[::-1]]),
+                y=np.concatenate([_nz_top, _nz_bot[::-1]]),
+                mode="lines", line=dict(color="#37e0d0", width=4),
+                name="Nose-cone skin", hoverinfo="name"))
+            # front wing + bracket routing AROUND the IA
+            _fe.add_shape(type="rect", x0=140, x1=430, y0=55, y1=92,
+                          fillcolor="#b48cff", line=dict(color="#d3bcff"))
+            _fe.add_trace(go.Scatter(
+                x=[240, 60, 18], y=[92, 148, 260], mode="lines",
+                line=dict(color="#5ad17a", width=4),
+                name="Wing bracket → bulkhead", hoverinfo="name"))
+            # ground
+            _fe.add_shape(type="line", x0=-560, x1=470, y0=0, y1=0,
+                          line=dict(color="#3a4a58", width=2, dash="dot"))
+            _ANN = [
+                (340, 300, "① Nose-cone skin<br>(bodywork — a cover)", "#37e0d0"),
+                (134, 395, "② Impact attenuator<br>(honeycomb — must crush free,"
+                           "<br>mount NOTHING to it)", "#ffd93b"),
+                (30, 470, "③ Anti-intrusion plate", "#ff9f43"),
+                (-90, 470, "④ Front bulkhead<br>(primary structure)", "#c7d3de"),
+                (330, 30, "Front wing — brackets route<br>AROUND the IA to ④",
+                 "#b48cff"),
+            ]
+            for _ax, _ay, _txt, _ac in _ANN:
+                _fe.add_annotation(x=_ax, y=_ay, text=_txt, showarrow=False,
+                                   font=dict(color=_ac, size=11))
+            _fe.update_layout(
+                title="Nose stack-up, side view (forward →)",
+                height=380, showlegend=False,
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#cdd6df", size=11),
+                margin=dict(l=0, r=0, t=36, b=0),
+                xaxis=dict(visible=False, range=[-600, 520]),
+                yaxis=dict(visible=False, range=[-30, 510],
+                           scaleanchor="x", scaleratio=1))
+            st.plotly_chart(_fe, width='stretch', key="aero_mnt_nose")
+            st.markdown(
+                '<p class="hint" style="font-size:.78rem;">Rules anchors '
+                '(classic values — verify the current rulebook): the IA is at '
+                'least <b>200 mm long × 200 mm wide × 100 mm high</b>, mounted '
+                'forward of the bulkhead on an anti-intrusion plate (~1.5 mm '
+                'steel or 4 mm aluminium), and must absorb ~<b>7350 J</b> with '
+                'average deceleration ≤ 20 g and peak ≤ 40 g. Consequences for '
+                'aero: leave <b>crush clearance</b> between the IA face and the '
+                'nose skin (the nose must not stop the IA crushing), keep the '
+                'nose <b>quick-release</b> so scrutineers can see the IA and '
+                'wing brackets, and never react wing loads through the nose '
+                'skin or the IA — bulkhead only.</p>',
+                unsafe_allow_html=True)
+
+        # ---------------- 2) mount-load calculator ------------------------- #
+        st.markdown("##### What your mounts actually have to carry")
+        _mlc = st.columns(4)
+        _uSpd = units_mod.label("km/h")
+        _m_v = _mlc[0].number_input(
+            f"Design speed ({_uSpd})", 40.0, 140.0, value=max(_aero_v, 100.0),
+            step=5.0, key="aero_mnt_v",
+            help="Size the mounts at the fastest thing the car does — the "
+                 "endurance straight — not the average corner.")
+        _m_gust = _mlc[1].slider(
+            "Gust / transient factor", 1.0, 2.5, 1.5, 0.1, key="aero_mnt_gust",
+            help="Real cars see gusts, wake hits, kerb strikes and pitch "
+                 "transients above the steady CFD number. 1.5 is a common "
+                 "student-team choice.")
+        _m_fos = _mlc[2].slider(
+            "Safety factor on hardware", 1.0, 4.0, 2.0, 0.25, key="aero_mnt_fos",
+            help="Applied on top of the gust factor when sizing the fastener/"
+                 "bond. Bonded joints usually get more than bolted ones.")
+        _m_el = _mlc[3].selectbox(
+            "Element to size", list(_MOUNT_PLAYBOOK.keys()), key="aero_mnt_el")
+        _m_pd = _MOUNT_PLAYBOOK[_m_el]
+        _m_n = st.slider(
+            "Mount points on this element", 2, 12, int(_m_pd["mounts"]), 1,
+            key="aero_mnt_n",
+            help="Discrete attachment points sharing the load. Assumed evenly "
+                 "shared — a real bracket layout won't be perfectly even, which "
+                 "is part of what the safety factor covers.")
+
+        _m_df, _m_dr, *_ = _aero_forces(_aero_ride, _aero_yaw, _m_v / 3.6,
+                                        _aero_area)
+        _m_share = float(_m_pd["share"])
+        _el_down = _m_df * _m_share * _m_gust          # N, design vertical
+        _el_drag = _m_dr * _m_share * _m_gust          # N, design longitudinal
+        _per_v = _el_down / _m_n
+        _per_d = _el_drag / _m_n
+        _per_res = float(np.hypot(_per_v, _per_d))
+        # rulebook push-test, spread over the same mounts (200 N distributed)
+        _per_rule = 200.0 / _m_n
+        _per_gov = max(_per_res, _per_rule)
+        _gov_src = ("aero load @ speed" if _per_res >= _per_rule
+                    else "rules push-test")
+
+        _mm = st.columns(4)
+        umetric(_mm[0], f"{_m_el} carries", _el_down, "N",
+                delta=f"{_m_share*100:.0f}% of car × gust {_m_gust:g}",
+                help="Design vertical load on the whole element at the design "
+                     "speed, including the gust factor.")
+        umetric(_mm[1], "Per-mount resultant", _per_res, "N",
+                help="Vertical + drag combined at one attachment point, "
+                     "evenly shared.")
+        umetric(_mm[2], "Rules test per mount", _per_rule, "N",
+                help="The 200 N scrutineering push spread over the same points.")
+        umetric(_mm[3], "Governing design load", _per_gov * _m_fos, "N",
+                delta=f"{_gov_src} × FOS {_m_fos:g}",
+                help="What each fastener/bond must carry: the larger of the "
+                     "aero load and the rules test, times your safety factor.")
+
+        # ---------------- 3) attachment method sizer ----------------------- #
+        st.markdown("##### Will the hardware carry it?")
+        _need = _per_gov * _m_fos  # N per mount, incl. FOS
+        # Reference single-shear capacities, grade 8.8, through the thread
+        # (0.6 × 800 MPa on the tensile stress area) — deliberately simple.
+        _BOLT_CAP = {"M5": 6800.0, "M6": 9650.0, "M8": 17600.0}
+        # Reference pull-out/bearing of the *soft side* — the actual weak links.
+        _WEAK_CAP = {
+            "Rivnut (Al, in 1.5 mm tube wall)": 900.0,
+            "Rivnut (steel, in 1.5 mm tube wall)": 1800.0,
+            "Potted insert in sandwich panel": 1500.0,
+            "Quick-release pin (8 mm, double shear)": 12000.0,
+        }
+        _hc = st.columns([1.1, 1])
+        with _hc[0]:
+            _rows = []
+            for _bn, _bc in _BOLT_CAP.items():
+                _rows.append((f"{_bn} bolt, single shear (8.8)", _bc))
+            _rows += list(_WEAK_CAP.items())
+            for _hn, _hcapn in _rows:
+                _ut = (_need / _hcapn) if _hcapn else 9.9
+                _ok = _ut <= 1.0
+                _col = "#5ad17a" if _ut <= 0.5 else ("#ffd93b" if _ok
+                                                     else "#ff6b6b")
+                _lbl = ("OK" if _ut <= 0.5 else
+                        ("marginal" if _ok else "undersized"))
+                st.markdown(
+                    f'<div style="display:flex;justify-content:space-between;'
+                    f'align-items:center;background:#10171e;border:1px solid '
+                    f'#242f3a;border-radius:8px;padding:.4rem .7rem;'
+                    f'margin:.18rem 0;">'
+                    f'<span style="font-size:.8rem;color:#c4cdd6;">{_hn}</span>'
+                    f'<span style="font-family:monospace;font-size:.76rem;'
+                    f'color:{_col};">{_ut*100:.0f}% used · {_lbl}</span></div>',
+                    unsafe_allow_html=True)
+            st.caption(
+                "Reference capacities for orientation, not certification — the "
+                "bolt is almost never the weak link. What fails on student cars "
+                "is the rivnut spinning/pulling out of a thin tube wall, the "
+                "laminate crushing in bearing around an un-bushed hole, or an "
+                "insert tearing out of a sandwich core. Size THOSE, pot inserts "
+                "properly, and put large washers or bonded doublers behind "
+                "composite panels.")
+        with _hc[1]:
+            st.markdown("**Bonded joint instead of (or with) bolts?**")
+            _adh = st.number_input(
+                "Adhesive design allowable (MPa)", 0.2, 5.0, 1.5, 0.1,
+                key="aero_mnt_adh",
+                help="Datasheet lap-shear for structural epoxies/methacrylates "
+                     "is 10–25 MPa, but peel sensitivity, surface prep, "
+                     "temperature and fatigue knock the usable design value "
+                     "down to ~1–2 MPa. Never design a bond to the datasheet "
+                     "number.")
+            _area_mm2 = _need / _adh   # N / (N/mm²) = mm²
+            _side = float(np.sqrt(_area_mm2))
+            st.metric("Bond area needed per mount", f"{_area_mm2:,.0f} mm²",
+                      delta=f"≈ {_side:.0f} × {_side:.0f} mm pad")
+            st.markdown(
+                '<p class="hint" style="font-size:.78rem;">Bond design rules of '
+                'thumb: load the adhesive in <b>shear, never peel</b>; abrade + '
+                'solvent-wipe both faces; control the bond-line to ~0.2–0.5 mm; '
+                'and back every bonded aero mount up with a mechanical fastener '
+                'or safety wire — scrutineers (and physics) like redundancy.</p>',
+                unsafe_allow_html=True)
+
+        # ---------------- copy-paste status update ------------------------- #
+        with st.expander("📋 Copy-paste update for the team channel",
+                         expanded=False):
+            _upd = (
+                f"Aero mounting plan — {_m_el}\n"
+                f"• Mounts to: {_m_pd['to']}\n"
+                f"• Hardware: {_m_pd['hw']}\n"
+                f"• Design load: {_el_down:.0f} N downforce on the element at "
+                f"{_m_v:.0f} km/h (incl. ×{_m_gust:g} gust), shared over "
+                f"{_m_n} mounts → {_per_res:.0f} N per mount "
+                f"({_per_gov*_m_fos:.0f} N with FOS {_m_fos:g}).\n"
+                f"• Governing case: {_gov_src}.\n"
+                f"• Rules check: 200 N / ≥225 cm² push ≤10 mm and 50 N point "
+                f"≤25 mm deflection (verify current rulebook).\n"
+                + ("• Nose stack-up: nose-cone skin (cover) over the honeycomb "
+                   "impact attenuator → anti-intrusion plate → front bulkhead. "
+                   "Wing brackets route around the IA to the bulkhead; nothing "
+                   "mounts to the IA and the nose carries no wing load.\n"
+                   if _m_el == "Front wing" else "")
+                + f"Source: KinematiK → Aerodynamics → Mounting & bonding designer.")
+            st.code(_upd, language=None)
+            st.caption("Paste this in the channel — it's the update, the "
+                       "numbers, and where they came from, in one block.")
+
+        # ---------------- see it on the car -------------------------------- #
+        if st.button("⚓ Show these mount points on the 3D car",
+                     key="aero_mnt_show3d",
+                     help="Turns on the mount-point layer in the 3D MODEL tab: "
+                          "gold diamonds at each attachment, dotted load-path "
+                          "lines into the chassis. The element and mount count "
+                          "you chose here are emphasised there."):
+            st.session_state["car3d_aeromounts"] = True
+            st.success(
+                f"Mount overlay is ON. Open the **🏎️ 3D Model** tab — "
+                f"{_m_el} is highlighted with your {_m_n} mount points; the "
+                "dotted lines show the load path into the chassis. Toggle it "
+                "any time under Layers → “⚓ Aero mount points”.")
+
+        try:
+            record_activity(
+                "aerodynamics", "calculation",
+                f"Sized {_m_el} mounting: {_per_res:.0f} N/mount at "
+                f"{_m_v:.0f} km/h over {_m_n} mounts (gov: {_gov_src}, "
+                f"FOS {_m_fos:g})")
+        except Exception:
+            pass
 
     with st.expander("How honest is this? (provenance)", expanded=False):
         _prov = _aero_model.provenance()
@@ -15709,7 +16845,7 @@ def _hn_box_mesh(lo, hi, color, name, opacity=0.18):
 
 def _harness_fig3d(harness, res, keepouts, *, color_by="status",
                    selected=None, show_keepouts=True, show_vertices=True,
-                   show_labels=True):
+                   show_labels=True, show_sag=False):
     """The loom, live in car coordinates: every routed conductor, every
     connector, every reserved keep-out volume, and a marker pinned on each
     violation exactly where it happens (tightest bend, deepest keep-out
@@ -15760,6 +16896,31 @@ def _harness_fig3d(harness, res, keepouts, *, color_by="status",
             name=w.name + (" ✏️" if is_sel else ""),
             hovertext=hover, hoverinfo="text",
             legendgroup=w.name))
+        # supports: the clamp points holding the wire to the car
+        sup = [i for i in (w.clamp_idx or []) if 0 < int(i) < path.shape[0] - 1]
+        if sup:
+            sp = path[[int(i) for i in sup]]
+            fig.add_trace(go.Scatter3d(
+                x=sp[:, 0], y=sp[:, 1], z=sp[:, 2], mode="markers",
+                marker=dict(size=5, symbol="square", color="#e8edf2",
+                            line=dict(color=col, width=2)),
+                hovertext=[f"{w.name}: clamp / tie (support)"] * sp.shape[0],
+                hoverinfo="text", showlegend=False, legendgroup=w.name))
+        # draped shape: upper-bound sag at the declared vibration level
+        if show_sag:
+            from suspension.harness import sagged_polyline_mm
+            drp = sagged_polyline_mm(
+                w, vib_g=harness.vib_g,
+                band_hz=(harness.excitation_lo_hz, harness.excitation_hi_hz))
+            if drp is not None and drp.shape[0] >= 2:
+                fig.add_trace(go.Scatter3d(
+                    x=drp[:, 0], y=drp[:, 1], z=drp[:, 2], mode="lines",
+                    line=dict(color=col, width=3, dash="dash"),
+                    opacity=0.55,
+                    hovertext=(f"{w.name}: drooped shape at "
+                               f"{harness.vib_g:g} g (upper stiffness "
+                               f"bound)"),
+                    hoverinfo="text", showlegend=False, legendgroup=w.name))
         # tightest-bend markers where the route violates the wire's bend limit
         radii = vertex_bend_radius_mm(path)
         if radii.size:
@@ -15780,7 +16941,8 @@ def _harness_fig3d(harness, res, keepouts, *, color_by="status",
     # clearance / anchoring violation pins from the findings themselves
     for f in res.findings:
         d = f.detail or {}
-        if f.check == "harness-clearance" and d.get("at_mm") \
+        if f.check in ("harness-clearance", "harness-sag-clearance") \
+                and d.get("at_mm") \
                 and f.severity.value in ("fail", "warning"):
             p = d["at_mm"]
             fig.add_trace(go.Scatter3d(
@@ -15975,11 +17137,12 @@ def _hn_seed_demo(store):
                       from_conn="ECU", to_conn="MOT", service_loop_mm=60.0,
                       path_mm=[(0, 0, 250), (120, 0, 250), (700, 0, 240),
                                (1350, 0, 225), (1500, 0, 220)],
+                      clamp_idx=[1, 2, 3],
                       carries_current_a=45.0, is_estimate=False),
               WireRun("DASH_CAN", "data-acquisition", gauge_awg=22, net="can1",
                       from_conn="ECU", to_conn="DASH",
                       path_mm=[(0, 0, 250), (-60, 0, 280), (-200, 0, 400),
-                               (-350, 0, 480)]),
+                               (-350, 0, 480)], clamp_idx=[2]),
               WireRun("BSPD_SIG", "electrics", gauge_awg=22, net="bspd",
                       from_conn="ECU", to_conn="BSPD",
                       path_mm=[(0, 0, 250), (40, 30, 245), (400, 200, 200),
@@ -15996,7 +17159,7 @@ def _hn_rerun():
     a full-app rerun when the fragment is executing inside a full run (where
     scope="fragment" is not permitted)."""
     try:
-        _hn_rerun()
+        st.rerun(scope="fragment")
     except Exception:
         st.rerun()
 
@@ -16018,6 +17181,8 @@ def _render_harness_fragment():
         st.session_state.pop("hn_wire_sel", None)
     if st.session_state.pop("_hn_conn_reset", False):
         st.session_state.pop("hn_conn_sel", None)
+    for _k, _v in (st.session_state.pop("_hn_apply_preset", None) or {}).items():
+        st.session_state[_k] = _v
 
     _MP_EMOJI = {"aerodynamics": "💛", "brakes": "🧡", "chassis": "💜",
                  "cooling": "🩵", "data-acquisition": "💚", "electrics": "💙",
@@ -16034,9 +17199,37 @@ def _render_harness_fragment():
         'in, watch it live in 3-D, and read off — before a single wire is cut '
         '— the exact cut length, the 1:1 printable formboard, the automated '
         'BOM, and the copper mass and where it sits. It measures the route you '
-        'declare; it is not a cable-flex solver, so unsupported sag under '
-        'vibration is reported as <i>not computed</i> rather than invented.</p>',
+        'declare — <b>and</b> flex-solves it: every unsupported stretch '
+        'between clamp points is sagged under its own weight and the declared '
+        'vibration level (honest low–high stiffness bounds, stranding '
+        'assumption stated), its resonant frequency is screened against the '
+        'excitation band, and the <i>drooped</i> shape is re-checked against '
+        'the same keep-outs the taut route cleared.</p>',
         unsafe_allow_html=True)
+
+    with st.expander("🙋 New here? How this works in 3 steps (no engineering "
+                     "background needed)", expanded=False):
+        st.markdown(
+            "**1 — Place the boxes.**  A *connector* is just \"a plug on a "
+            "box\" — the ECU, a sensor, the dash. Give it a name and where it "
+            "sits in the car (x = toward the back, y = to the right, z = up, "
+            "all in millimetres — measure from the front axle if unsure). "
+            "Don't know a number? Guess and tick *Estimated*; every result "
+            "will honestly say it came from a guess.\n\n"
+            "**2 — Draw the wires.**  Pick which plug a wire starts and ends "
+            "at, pick a *wire type preset* (thick power wire, thin sensor "
+            "wire…), and press **✨ Auto-route** — the app lays a clean "
+            "straight route for you. Drag the numbers in the little table to "
+            "steer it around things. Tick **clamp** on a point wherever a "
+            "cable tie or clip will hold the wire to the car.\n\n"
+            "**3 — Read the answers.**  The coloured banner tells you if "
+            "you're ready to cut wire. **Pre-cut check** lists anything wrong "
+            "in plain sentences. **Flex & sag** shows how far each "
+            "unsupported stretch will droop and shake — with a one-click "
+            "*add a support* fix. **Manufacturing** gives cut lengths, the "
+            "shopping list (BOM) and the weight; **Formboard** prints a 1:1 "
+            "template to build the loom on. Nothing here needs re-typing — "
+            "it's all derived from the route you drew.")
 
     store = get_store()
     harness = store._ensure_harness()
@@ -16049,11 +17242,17 @@ def _render_harness_fragment():
     md = res.mass or {}
     worst_cls = "bad" if n_fail else ("warn" if n_warn else "good")
     worst_txt = "FAIL" if n_fail else ("WARN" if n_warn else "OK")
+    plain_txt = (f"🔴 {n_fail} blocker{'s' if n_fail != 1 else ''} to fix "
+                 f"before cutting wire" if n_fail else
+                 (f"🟡 cuttable, but {n_warn} thing{'s' if n_warn != 1 else ''} "
+                  f"worth fixing" if n_warn else
+                  ("✅ ready to cut wire" if harness.wires else "")))
     chip_row = st.columns([5, 1])
     chip_row[0].markdown(
         f'<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;'
         f'margin:2px 0 6px 0;">'
         f'<span class="tag {worst_cls}">{worst_txt}</span>'
+        f'<span style="font-size:.85rem;color:#e8edf2">{plain_txt}</span>'
         f'<span style="font-size:.85rem;color:#8d99a6">{n_fail} fail · '
         f'{n_warn} warn</span>'
         f'<span style="font-size:.85rem;color:#8d99a6">'
@@ -16067,14 +17266,42 @@ def _render_harness_fragment():
         _amb0 = float(harness.ambient_c)
         _cw0 = float(harness.clearance_warn_mm)
         _cf0 = float(harness.clearance_fail_mm)
+        _v0 = (float(harness.vib_g), float(harness.excitation_lo_hz),
+               float(harness.excitation_hi_hz), float(harness.max_span_mm),
+               float(harness.max_sag_mm))
         harness.ambient_c = st.number_input(
             "Ambient (°C)", -20.0, 150.0, value=_amb0, key="hn_amb")
         harness.clearance_warn_mm = st.number_input(
             "Clearance WARN (mm)", 0.0, 100.0, value=_cw0, key="hn_cw")
         harness.clearance_fail_mm = st.number_input(
             "Clearance FAIL (mm)", 0.0, 50.0, value=_cf0, key="hn_cf")
+        st.markdown("**Vibration / flex screen**")
+        harness.vib_g = st.number_input(
+            "Vibration level (g)", 0.5, 30.0, value=_v0[0], step=0.5,
+            key="hn_vg", help="How hard the car shakes the loom, as a "
+            "multiple of gravity. 3 g is a sane chassis-mounted default; "
+            "engine-mounted runs see 10 g+.")
+        _b = st.columns(2)
+        harness.excitation_lo_hz = _b[0].number_input(
+            "Shake band from (Hz)", 1.0, 2000.0, value=_v0[1], key="hn_bl",
+            help="The frequency range the car actually excites (road input + "
+            "engine orders). A span whose natural frequency lands inside it "
+            "can resonate.")
+        harness.excitation_hi_hz = _b[1].number_input(
+            "to (Hz)", 5.0, 5000.0, value=_v0[2], key="hn_bh")
+        harness.max_span_mm = st.number_input(
+            "Max unsupported span (mm)", 50.0, 2000.0, value=_v0[3],
+            key="hn_ms", help="Longest run allowed between two supports "
+            "(cable ties / clips). 300 mm is common loom practice.")
+        harness.max_sag_mm = st.number_input(
+            "Max allowed sag (mm)", 1.0, 200.0, value=_v0[4], key="hn_sag",
+            help="How far a span may droop at the vibration level before "
+            "it's flagged.")
         if (harness.ambient_c, harness.clearance_warn_mm,
-                harness.clearance_fail_mm) != (_amb0, _cw0, _cf0):
+                harness.clearance_fail_mm) != (_amb0, _cw0, _cf0) or \
+                (harness.vib_g, harness.excitation_lo_hz,
+                 harness.excitation_hi_hz, harness.max_span_mm,
+                 harness.max_sag_mm) != _v0:
             save_store(store)
             _hn_rerun()
 
@@ -16098,8 +17325,8 @@ def _render_harness_fragment():
                    "geometry / mount-point tab to clearance-check the loom "
                    "against reserved space.")
 
-    tab3d, tab_edit, tab_chk, tab_mfg, tab_fb = st.tabs(
-        ["🧭 3-D loom", "✏️ Edit loom", "✅ Pre-cut check",
+    tab3d, tab_edit, tab_chk, tab_flex, tab_mfg, tab_fb = st.tabs(
+        ["🧭 3-D loom", "✏️ Edit loom", "✅ Pre-cut check", "🪢 Flex & sag",
          "🏭 Manufacturing", "📐 Formboard"])
 
     # ------------------------------ 3-D view ------------------------------ #
@@ -16107,25 +17334,31 @@ def _render_harness_fragment():
         if not harness.wires and not harness.connectors:
             st.caption("The 3-D view appears once something is routed.")
         else:
-            oc = st.columns([1.6, 1, 1, 1])
+            oc = st.columns([1.6, 1, 1, 1, 1])
             color_by = oc[0].radio("Colour by", ["status", "subsystem"],
                                    horizontal=True, key="hn3d_color",
                                    label_visibility="collapsed")
             show_ko = oc[1].toggle("Keep-outs", value=True, key="hn3d_ko")
             show_pts = oc[2].toggle("Route points", value=True, key="hn3d_pts")
             show_lab = oc[3].toggle("Labels", value=True, key="hn3d_lab")
+            show_sag = oc[4].toggle(
+                "Sagged shape", value=False, key="hn3d_sag",
+                help=f"Dashed: how far each unsupported stretch droops at "
+                     f"{harness.vib_g:g} g (upper stiffness bound). Squares "
+                     f"mark the clamps holding the wire.")
             sel_wire = st.session_state.get("hn_wire_sel")
             fig = _harness_fig3d(
                 harness, res, keepouts, color_by=color_by,
                 selected=(sel_wire if sel_wire in harness.wires else None),
                 show_keepouts=show_ko, show_vertices=show_pts,
-                show_labels=show_lab)
+                show_labels=show_lab, show_sag=show_sag)
             st.plotly_chart(fig, width="stretch", key="hn3d_plot",
                             config=dict(displaylogo=False))
             st.caption("✕ = bend tighter than the wire can take · ◇ = closest "
                        "approach / penetration of a keep-out · dotted ○ = route "
-                       "endpoint floating off its connector. The wire being "
-                       "edited is drawn heavier.")
+                       "endpoint floating off its connector · ▢ = clamp/tie "
+                       "support · dashed line = drooped shape under vibration. "
+                       "The wire being edited is drawn heavier.")
 
     # ------------------------------ editors ------------------------------- #
     with tab_edit:
@@ -16155,13 +17388,23 @@ def _render_harness_fragment():
             cn = st.text_input("Name", key="cn_name")
             cown = st.selectbox("Owned by", _SUBS, key="cn_own")
             cg = st.columns(3)
-            cx = cg[0].number_input("x (mm)", -5000.0, 5000.0, key="cn_x")
-            cy = cg[1].number_input("y (mm)", -5000.0, 5000.0, key="cn_y")
-            cz = cg[2].number_input("z (mm)", -5000.0, 5000.0, key="cn_z")
+            cx = cg[0].number_input("x (mm)", -5000.0, 5000.0, key="cn_x",
+                                    help="Toward the back of the car.")
+            cy = cg[1].number_input("y (mm)", -5000.0, 5000.0, key="cn_y",
+                                    help="To the driver's right.")
+            cz = cg[2].number_input("z (mm)", -5000.0, 5000.0, key="cn_z",
+                                    help="Up from the ground/reference.")
             cg2 = st.columns(3)
-            ccav = cg2[0].number_input("Cavities", 1, 200, key="cn_cav")
+            ccav = cg2[0].number_input("Cavities", 1, 200, key="cn_cav",
+                                       help="How many pin slots the plug has "
+                                            "(counts crimp contacts in the "
+                                            "BOM).")
             csr = cg2[1].number_input("Strain relief (mm)", 0.0, 200.0,
-                                      key="cn_sr")
+                                      key="cn_sr",
+                                      help="Wire must leave this plug "
+                                           "STRAIGHT for this long before "
+                                           "its first bend, or it fatigues "
+                                           "at the crimp. 25 mm is typical.")
             cmass = cg2[2].number_input("Mass (g, 0=unknown)", 0.0, 2000.0,
                                         key="cn_mass")
             cpn = st.text_input("Part number", key="cn_pn")
@@ -16238,11 +17481,40 @@ def _render_harness_fragment():
                     [list(map(float, p)) for p in w0.path_mm] if w0 and w0.path_mm
                     else [[0.0, 0.0, 0.0], [200.0, 0.0, 0.0],
                           [600.0, 0.0, 100.0], [1200.0, 0.0, 100.0]])
+                _n_pts = len(st.session_state["_hn_path_pts"])
+                _ci = set(int(i) for i in ((w0.clamp_idx if w0 else None) or []))
+                st.session_state["_hn_path_clamp"] = [
+                    i in _ci for i in range(_n_pts)]
 
             wn = st.text_input("Name", key="wr_name")
             wown = st.selectbox("Owned by", _SUBS, key="wr_own")
+            _WIRE_PRESETS = {
+                "⚡ Power feed — thick (AWG 10)":
+                    dict(wr_awg=10, wr_mult=6.0, wr_strip=10.0, wr_net="power"),
+                "🔋 Power branch (AWG 16)":
+                    dict(wr_awg=16, wr_mult=6.0, wr_strip=8.0, wr_net="power"),
+                "🕸 CAN / data pair (AWG 22 — gentle bends)":
+                    dict(wr_awg=22, wr_mult=8.0, wr_strip=6.0, wr_net="can"),
+                "🌡 Sensor signal — thin (AWG 24)":
+                    dict(wr_awg=24, wr_mult=6.0, wr_strip=6.0, wr_net="sensor"),
+                "🛰 Shielded / coax (AWG 22 — stiff, 10× bends)":
+                    dict(wr_awg=22, wr_mult=10.0, wr_strip=8.0, wr_net="shielded"),
+            }
+            _pr = st.columns([3, 1])
+            _pick = _pr[0].selectbox(
+                "Wire type preset (optional — fills the numbers below)",
+                list(_WIRE_PRESETS), key="wr_preset",
+                help="Not sure what gauge or bend limit to use? Pick the "
+                     "closest description and hit Apply — you can still edit "
+                     "everything afterwards.")
+            if _pr[1].button("Apply", key="wr_preset_go"):
+                st.session_state["_hn_apply_preset"] = _WIRE_PRESETS[_pick]
+                _hn_rerun()
             wg = st.columns(3)
-            wawg = wg[0].number_input("Gauge (AWG)", 8, 30, key="wr_awg")
+            wawg = wg[0].number_input("Gauge (AWG)", 8, 30, key="wr_awg",
+                                      help="Wire thickness. SMALLER number = "
+                                           "THICKER wire. 10 ≈ jumper-cable "
+                                           "core, 22 ≈ headphone wire.")
             wnet = wg[1].text_input("Net", key="wr_net")
             wod = wg[2].number_input("OD (mm, 0=AWG nom)", 0.0, 30.0,
                                      key="wr_od")
@@ -16261,27 +17533,43 @@ def _render_harness_fragment():
             west = wg4[1].checkbox("Estimated route", key="wr_est")
 
             st.caption("3-D route (car coordinates, mm) — add / delete / edit "
-                       "points directly:")
+                       "points directly. Tick **clamp** wherever a cable tie / "
+                       "clip will hold the wire to the car; the flex solver "
+                       "sags every stretch between supports:")
             nonce = st.session_state.get("_hn_path_nonce", 0)
+            _rows = st.session_state.get("_hn_path_pts") or [[0.0, 0.0, 0.0]]
+            _cl = list(st.session_state.get("_hn_path_clamp") or [])
+            _cl = (_cl + [False] * len(_rows))[:len(_rows)]
             pdf = pd.DataFrame(
-                st.session_state.get("_hn_path_pts") or [[0.0, 0.0, 0.0]],
-                columns=["x", "y", "z"])
+                [[*map(float, p), bool(c)] for p, c in zip(_rows, _cl)],
+                columns=["x", "y", "z", "clamp"])
             edited = st.data_editor(
                 pdf, num_rows="dynamic", width="stretch",
                 key=f"wr_pts_{wire_sel}_{nonce}",
-                column_config={c: st.column_config.NumberColumn(
-                    c, format="%.1f") for c in ("x", "y", "z")})
+                column_config={
+                    **{c: st.column_config.NumberColumn(c, format="%.1f")
+                       for c in ("x", "y", "z")},
+                    "clamp": st.column_config.CheckboxColumn(
+                        "clamp", default=False,
+                        help="Tie / clip fixing the wire to the car here. The "
+                             "two ends are always held by their connectors.")})
 
             def _pts_from_editor(df):
-                out = []
+                pts, clamps = [], []
                 for row in df.itertuples(index=False):
                     try:
-                        if any(pd.isna(v) for v in row):
+                        if any(pd.isna(v) for v in (row.x, row.y, row.z)):
                             continue
-                        out.append((float(row.x), float(row.y), float(row.z)))
+                        pts.append((float(row.x), float(row.y), float(row.z)))
+                        c = getattr(row, "clamp", False)
+                        clamps.append(bool(c) and not pd.isna(c))
                     except (TypeError, ValueError):
                         continue
-                return out
+                return pts, clamps
+
+            def _clamp_idx(pts, clamps):
+                return [i for i, c in enumerate(clamps)
+                        if c and 0 < i < len(pts) - 1]
 
             with st.expander("Paste a route instead (x,y,z; x,y,z; …)"):
                 wpath_txt = st.text_input("Route string", key="wr_path_txt",
@@ -16290,12 +17578,13 @@ def _render_harness_fragment():
                     pts = _parse_path3d(wpath_txt)
                     if pts:
                         st.session_state["_hn_path_pts"] = [list(p) for p in pts]
+                        st.session_state["_hn_path_clamp"] = [False] * len(pts)
                         st.session_state["_hn_path_nonce"] = nonce + 1
                         _hn_rerun()
 
-            bc = st.columns(3)
+            bc = st.columns(4)
             if bc[0].button("💾 Save wire", key="wr_save", type="primary"):
-                pts = _pts_from_editor(edited)
+                pts, clamps = _pts_from_editor(edited)
                 store.set_wire(WireRun(
                     name=wn.strip(), owner_subsystem=wown, gauge_awg=int(wawg),
                     path_mm=pts, from_conn=wfrom, to_conn=wto, net=wnet,
@@ -16303,16 +17592,50 @@ def _render_harness_fragment():
                     bundle_min_radius_mult=wmult, service_loop_mm=wloop,
                     strip_mm=wstrip,
                     carries_current_a=(None if wcur == 0.0 else wcur),
+                    clamp_idx=_clamp_idx(pts, clamps),
                     is_estimate=west))
                 save_store(store)
                 st.session_state["_hn_wire_loaded"] = None
                 _hn_rerun()
-            if bc[1].button("🧲 Snap ends to connectors", key="wr_snap",
+            if bc[1].button("✨ Auto-route", key="wr_auto",
+                            help="No coordinates needed: lays a clean route "
+                                 "from the 'from' plug to the 'to' plug — a "
+                                 "straight lead out of each connector (long "
+                                 "enough for its strain relief) and a clamped "
+                                 "midpoint you can then drag around things."):
+                cf = harness.connectors.get(wfrom)
+                ct = harness.connectors.get(wto)
+                if cf is None or ct is None:
+                    st.warning("Pick both a 'from' and a 'to' connector "
+                               "first — auto-route draws between them.")
+                else:
+                    p0 = np.asarray(cf.xyz_mm, float)
+                    p3 = np.asarray(ct.xyz_mm, float)
+                    d = float(np.linalg.norm(p3 - p0))
+                    if d < 1.0:
+                        st.warning("Those two connectors sit on top of each "
+                                   "other — move one first.")
+                    else:
+                        u = (p3 - p0) / d
+                        ld0 = max(float(cf.strain_relief_mm), 25.0)
+                        ld1 = max(float(ct.strain_relief_mm), 25.0)
+                        if ld0 + ld1 > 0.6 * d:
+                            ld0 = ld1 = 0.3 * d
+                        pts = [p0, p0 + u * ld0, (p0 + p3) / 2.0,
+                               p3 - u * ld1, p3]
+                        st.session_state["_hn_path_pts"] = \
+                            [[float(v) for v in p] for p in pts]
+                        st.session_state["_hn_path_clamp"] = \
+                            [False, False, True, False, False]
+                        st.session_state["_hn_path_nonce"] = nonce + 1
+                        _hn_rerun()
+            if bc[2].button("🧲 Snap ends to connectors", key="wr_snap",
                             help="Move the first route point onto the 'from' "
                                  "connector and the last onto the 'to' "
                                  "connector, so the cut length is measured "
                                  "plug-to-plug."):
-                pts = [list(p) for p in _pts_from_editor(edited)]
+                pts, clamps = _pts_from_editor(edited)
+                pts = [list(p) for p in pts]
                 cf = harness.connectors.get(wfrom)
                 ct = harness.connectors.get(wto)
                 if pts and cf is not None:
@@ -16320,9 +17643,10 @@ def _render_harness_fragment():
                 if pts and ct is not None:
                     pts[-1] = [float(v) for v in ct.xyz_mm]
                 st.session_state["_hn_path_pts"] = pts
+                st.session_state["_hn_path_clamp"] = clamps
                 st.session_state["_hn_path_nonce"] = nonce + 1
                 _hn_rerun()
-            if bc[2].button("✕ Delete wire", key="wr_del",
+            if bc[3].button("✕ Delete wire", key="wr_del",
                             disabled=wire_sel not in harness.wires):
                 store.remove_wire(wire_sel)
                 save_store(store)
@@ -16345,7 +17669,9 @@ def _render_harness_fragment():
                     f'{uval(w.copper_mass_g(), "g_mass", fmt="{:.1f}")} Cu · '
                     f'min bend '
                     f'{units_mod.from_metric(w.min_bend_radius_mm, "mm"):.0f} '
-                    f'{units_mod.label("mm")}</span></div>',
+                    f'{units_mod.label("mm")} · '
+                    f'{len([i for i in (w.clamp_idx or []) if 0 < int(i) < max(len(w.path_mm) - 1, 1)]) or "no"}'
+                    f' clamp(s)</span></div>',
                     unsafe_allow_html=True)
 
     # --------------------------- the pre-cut gate -------------------------- #
@@ -16372,6 +17698,132 @@ def _render_harness_fragment():
                 f'<span style="color:#8d99a6;font-size:.8rem">{who}</span><br>'
                 f'<span style="font-size:.92rem">{f.message}</span></div>',
                 unsafe_allow_html=True)
+
+    # --------------------- cable flex: sag & resonance --------------------- #
+    with tab_flex:
+        spans = list(res.flex or [])
+        if not harness.wires:
+            st.caption("Route at least one wire to solve its sag.")
+        elif not spans:
+            st.caption("No solvable spans yet — each wire needs a route with "
+                       "at least 2 points.")
+        else:
+            st.markdown(
+                f'<p class="hint">Every stretch of wire between two supports '
+                f'(the connectors at the ends + every point you ticked '
+                f'<b>clamp</b>) is solved as a clamped-clamped elastic beam '
+                f'under its own exactly-known weight. Because a stranded '
+                f'wire\'s stiffness genuinely depends on how freely its '
+                f'strands slip, every answer is an honest <b>low–high '
+                f'range</b>: the two ends of the range are the physically '
+                f'real limits (fused-solid ↔ {19}-strand free-slip). '
+                f'Screened at <b>{harness.vib_g:g} g</b> against the '
+                f'<b>{harness.excitation_lo_hz:.0f}–'
+                f'{harness.excitation_hi_hz:.0f} Hz</b> excitation band '
+                f'(change both under ⚙ limits). Slack a route carries hangs '
+                f'geometrically no matter how stiff the wire is — the solver '
+                f'adds it in. The drooped shape is also re-checked against '
+                f'every keep-out the taut route cleared.</p>',
+                unsafe_allow_html=True)
+
+            def _span_issues(sf):
+                iss = []
+                if sf.chord_mm > harness.max_span_mm:
+                    iss.append("too long unsupported")
+                if sf.sag_total_hi_mm > harness.max_sag_mm:
+                    iss.append("sags past limit")
+                if sf.resonant:
+                    iss.append("can resonate")
+                if sf.chord_mm > 0 and sf.slack_mm / sf.chord_mm > 0.02:
+                    iss.append("loose slack (whips)")
+                return iss
+
+            rows = []
+            for sf in spans:
+                iss = _span_issues(sf)
+                _cap = sf.chord_mm / 4.0            # same "hangs limp" scale
+                _lo1 = min(sf.sag_slack_mm + sf.sag_beam_1g_lo_mm, _cap)
+                _hi1 = min(sf.sag_slack_mm + sf.sag_beam_1g_hi_mm, _cap)
+                rows.append(dict(
+                    wire=sf.wire, span=sf.span + 1,
+                    free_span_mm=sf.chord_mm, slack_mm=sf.slack_mm,
+                    sag_1g_mm=f"{_lo1:.1f}–{_hi1:.1f}",
+                    sag_at_vib_mm=f"{sf.sag_total_lo_mm:g}–"
+                                  f"{sf.sag_total_hi_mm:g}"
+                                  + ("" if sf.beam_valid else " ⚠ limp"),
+                    f1_hz=f"{sf.f1_lo_hz:g}–{sf.f1_hi_hz:g}",
+                    resonant=("🔔 yes" if sf.resonant else "no"),
+                    verdict=("✅ fine" if not iss else "🟡 " + ", ".join(iss)),
+                ))
+            _fx_df = pd.DataFrame(rows).rename(columns={
+                "free_span_mm": "free span (mm)", "slack_mm": "slack (mm)",
+                "sag_1g_mm": "sag @1 g (mm)",
+                "sag_at_vib_mm": f"sag @{harness.vib_g:g} g (mm)",
+                "f1_hz": "f₁ (Hz)"})
+            st.dataframe(_fx_df, hide_index=True, width="stretch")
+            st.caption("⚠ limp = drooped beyond small-deflection validity — "
+                       "the high number is a stated upper bound, not a "
+                       "solution. 🔔 = the span's natural frequency lands "
+                       "inside the band the car actually shakes in, so "
+                       "vibration can pump it up (assumed amplification "
+                       "Q = 15, stated, not measured).")
+
+            bad = [sf for sf in spans if _span_issues(sf)]
+            if bad:
+                st.markdown("**Fix it in one click** — adding a support "
+                            "(cable tie / P-clip) at the middle of a span "
+                            "halves it, which cuts sag ~16× and roughly "
+                            "quadruples its natural frequency:")
+                fx = st.columns([3, 2])
+                _lbl = {f"{sf.wire} · span {sf.span + 1} "
+                        f"({sf.chord_mm:.0f} mm)": sf for sf in bad}
+                pick = fx[0].selectbox("Span to support", list(_lbl),
+                                       key="hn_fx_pick",
+                                       label_visibility="collapsed")
+                if fx[1].button("➕ Add a support at midspan",
+                                key="hn_fx_add", type="primary"):
+                    sf = _lbl[pick]
+                    w = harness.wires.get(sf.wire)
+                    if w is not None:
+                        path = w.as_polyline()
+                        sub = path[sf.i0:sf.i1 + 1]
+                        seg = np.linalg.norm(np.diff(sub, axis=0), axis=1)
+                        half = float(np.sum(seg)) / 2.0
+                        acc, j, t = 0.0, 0, 0.5
+                        for k, L in enumerate(seg):
+                            if acc + L >= half:
+                                j, t = k, ((half - acc) / L if L > 0 else 0.5)
+                                break
+                            acc += L
+                        gi = sf.i0 + j          # global segment start index
+                        newp = (sub[j] * (1 - t) + sub[j + 1] * t)
+                        pts = [list(map(float, p)) for p in w.path_mm]
+                        pts.insert(gi + 1, [float(v) for v in newp])
+                        old = set(int(i) for i in (w.clamp_idx or []))
+                        w.clamp_idx = sorted(
+                            {i if i <= gi else i + 1 for i in old} | {gi + 1})
+                        w.path_mm = [tuple(p) for p in pts]
+                        store.set_wire(w)
+                        save_store(store)
+                        st.session_state["_hn_wire_loaded"] = None
+                        _hn_rerun()
+            with st.expander("What exactly is being solved (and what isn't)"):
+                st.markdown(
+                    "* **Sag** — each free span is a clamped-clamped "
+                    "Euler-Bernoulli beam: δ = qL⁴/384EI, with q from the "
+                    "wire's exact copper + jacket mass and EI at both "
+                    "stranding bounds. Slack (route longer than the straight "
+                    "line) hangs as an inextensible cable, δ ≈ "
+                    "c·√(3·slack/8c), regardless of stiffness.\n"
+                    "* **Vibration** — the declared g-level is applied "
+                    "quasi-statically; **f₁** is the span's first "
+                    "clamped-clamped mode. A span whose f₁ range overlaps the "
+                    "excitation band gets a resonance warning with a "
+                    "screening amplitude at an assumed Q of 15.\n"
+                    "* **Not solved** (and never faked): large-deflection "
+                    "drape past sag ≈ span/8 (reported as a capped upper "
+                    "bound and flagged *limp*), and true modal dynamics of "
+                    "the whole assembled loom with bundle interaction.")
 
     # ---------- manufacturing artefacts: cut list + BOM + mass ------------- #
     with tab_mfg:
@@ -16444,9 +17896,9 @@ def _render_harness_fragment():
                     "copper_g": f"copper ({_mass_u})",
                     "total_g": f"total ({_mass_u})"})
                 st.dataframe(_pw_df, hide_index=True, width="stretch")
-            st.caption("Sag of unsupported runs under vibration: *not "
-                       "computed* — needs a flexible-body solver; the route "
-                       "is measured, not solved.")
+            st.caption("Sag of unsupported runs under vibration is solved in "
+                       "the **🪢 Flex & sag** tab — bounded, per span, with "
+                       "the drooped shape re-checked against the keep-outs.")
 
     # --------------------------- the 1:1 formboard ------------------------- #
     with tab_fb:
