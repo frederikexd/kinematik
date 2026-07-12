@@ -75,6 +75,45 @@ COLORS = dict(
 # --------------------------------------------------------------------------- #
 #  Mesh primitives
 # --------------------------------------------------------------------------- #
+def _units_axis_cfg(title_txt, lo_mm, hi_mm):
+    """Scene-axis dict whose tick labels follow the active unit system.
+
+    Doctrine matches units.py: the geometry stays in mm forever — only the
+    PRESENTATION converts. Tick positions are chosen at round numbers in the
+    display unit (mm or in) and placed at their mm-equivalent coordinates, so
+    toggling Imperial relabels the axes without touching a single vertex.
+    Falls back to plain mm labels if units.py is unavailable or the extent
+    is degenerate (empty scene).
+    """
+    base = dict(backgroundcolor="#0e1216", gridcolor="#1d242c",
+                color="#8d99a6")
+    factor, lbl = 1.0, "mm"
+    try:
+        from . import units as _units
+        lbl = _units.label("mm")                    # 'mm' or 'in'
+        if lbl == "in":
+            factor = 25.4                           # mm per display unit
+    except Exception:
+        pass
+    base["title"] = f"{title_txt} [{lbl}]"
+    try:
+        lo, hi = float(lo_mm), float(hi_mm)
+        if np.isfinite(lo) and np.isfinite(hi) and hi > lo:
+            span = (hi - lo) / factor               # extent in display units
+            # nice step targeting ~6 ticks: 1/2/5 × 10^k in the display unit
+            raw = span / 6.0
+            mag = 10.0 ** np.floor(np.log10(max(raw, 1e-9)))
+            step = min((s for s in (1 * mag, 2 * mag, 5 * mag, 10 * mag)
+                        if s >= raw), default=mag)
+            t0 = np.floor(lo / factor / step) * step
+            vals = np.arange(t0, hi / factor + step, step)
+            base["tickvals"] = [float(v) * factor for v in vals]  # mm coords
+            base["ticktext"] = [f"{v:g}" for v in vals]           # unit labels
+    except Exception:
+        pass                                        # title-only fallback
+    return base
+
+
 def _bbox_wire(lo, hi):
     """12 edges of the axis-aligned box [lo,hi] as polyline x/y/z lists (with
     None breaks between segments) for a single Scatter3d trace."""
@@ -1686,6 +1725,19 @@ def build_full_car_figure(
             center=dict(x=float(c_norm[0]), y=float(c_norm[1]), z=float(c_norm[2])),
             eye=dict(x=float(eye[0]), y=float(eye[1]), z=float(eye[2])))
 
+    # Global scene extents (mm) over every accrued vertex — feeds the units-
+    # aware axis tick generator so ticks land on round mm OR round inches.
+    _ext_lo = np.array([np.nan] * 3)
+    _ext_hi = np.array([np.nan] * 3)
+    try:
+        _all = [np.asarray(_p, float).reshape(-1, 3)
+                for _p in subsys_pts.values() if _p]
+        if _all:
+            _all = np.vstack(_all)
+            _ext_lo, _ext_hi = _all.min(axis=0), _all.max(axis=0)
+    except Exception:
+        pass
+
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         # Make rotating the car the primary mouse gesture: left-drag orbits the
@@ -1698,12 +1750,11 @@ def build_full_car_figure(
         # (and the user's own rotation) don't snap the view back.
         uirevision=camera_revision,
         scene=dict(
-            xaxis=dict(title="x (rear ←→ front)", backgroundcolor="#0e1216",
-                       gridcolor="#1d242c", color="#8d99a6"),
-            yaxis=dict(title="y (right)", backgroundcolor="#0e1216",
-                       gridcolor="#1d242c", color="#8d99a6"),
-            zaxis=dict(title="z (up)", backgroundcolor="#0e1216",
-                       gridcolor="#1d242c", color="#8d99a6"),
+            # Axis labels + tick text follow the active unit system (metric /
+            # US) via _units_axis_cfg; geometry and tick POSITIONS stay in mm.
+            xaxis=_units_axis_cfg("x (rear ←→ front)", _ext_lo[0], _ext_hi[0]),
+            yaxis=_units_axis_cfg("y (right)", _ext_lo[1], _ext_hi[1]),
+            zaxis=_units_axis_cfg("z (up)", _ext_lo[2], _ext_hi[2]),
             aspectmode="data", camera=scene_camera,
             dragmode="turntable"),
         font=dict(family="JetBrains Mono", color="#cdd6df", size=10),

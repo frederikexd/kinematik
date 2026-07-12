@@ -98,6 +98,12 @@ class Note:
     # ISO timestamp of first view. Lets the *poster* see "Seen by ..." so they
     # know the note actually reached other leads, not just that it saved.
     seen_by: dict = field(default_factory=dict)
+    # Voice-memo backup: when a note was spoken instead of typed, the ORIGINAL
+    # recording rides along with the note (base64 audio + metadata: name, ext,
+    # mime, dur, when). The transcript in `message` is what leads read; the
+    # audio is the source of truth if the transcription was off. Kept small by
+    # a size cap at the capture side; empty dict when the note was typed.
+    voice_memo: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.ts:
@@ -107,6 +113,9 @@ class Note:
         # Tolerate older rows persisted before seen_by existed / wrong types.
         if not isinstance(self.seen_by, dict):
             self.seen_by = {}
+        # Same tolerance for rows persisted before voice_memo existed.
+        if not isinstance(self.voice_memo, dict):
+            self.voice_memo = {}
 
 
 @dataclass

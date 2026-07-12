@@ -39,12 +39,22 @@ the chassis the afternoon before they cut a single wire:
            gram before fab.
 
 Same honesty rules the rest of KinematiK keeps:
-  * This is NOT a CAD kernel and NOT a wire-flex FEA. The route is the polyline
-    the electrical team declares (or imports from the CAD centreline); we measure
-    it, we do not solve cable dynamics. Anything that truly needs a flexible-body
-    solver — the real sag of an unsupported run under vibration, the true
-    minimum-energy drape — is returned as `None` with a stated reason, never an
-    invented number.
+  * This is NOT a CAD kernel and NOT a full flexible-body FEA. The route is the
+    polyline the electrical team declares (or imports from the CAD centreline).
+    On top of measuring it, a *bounded* cable-flex solver now runs on every
+    unsupported span between clamp points: each span is solved as a
+    clamped-clamped Euler-Bernoulli beam under its own exactly-known weight,
+    with the bending stiffness bracketed between the two physically real limits
+    of a stranded conductor (all strands slipping freely vs. fused solid) — so
+    static sag, sag under a vibration g-level, and the span's first natural
+    frequency are each reported as an honest LOW–HIGH range with the assumption
+    stated, never as a single invented number. Slack a route carries (arc length
+    beyond the chord) is converted to its geometric hang, resonance is flagged
+    when the frequency range overlaps the declared excitation band, and the
+    *sagged* shape is re-run through the same keep-out clearance check — so "it
+    clears taut but fouls when it droops" is caught before a wire is cut. What
+    is still out of scope (and says so): large-deflection drape beyond the
+    small-sag validity limit and true modal dynamics of the assembled loom.
   * Cross-section / strand data is real (AWG copper areas, insulation build), so
     resistance, voltage drop and *mass* are exact, not guessed. Where a wire
     re-uses a board net that `electronics.py` already sized, the gauge carries the
@@ -78,6 +88,15 @@ CU_DENSITY_KG_M3 = 8960.0      # density of copper
 # thin builds FSAE looms use); used only for the jacket-mass contribution, which
 # is reported separately from the authoritative copper mass.
 INSUL_DENSITY_KG_M3 = 1400.0
+
+# ---- cable-flex solver constants (assumptions stated, bounds reported) ---- #
+E_CU_PA = 117e9          # Young's modulus of copper (annealed, 110–120 GPa)
+E_INSUL_PA = 0.3e9       # jacket modulus (PVC/TXL class; small contributor)
+STRANDS_ASSUMED = 19     # typical hook-up construction; sets the LOW stiffness
+#                          bound (strands slipping freely -> EI_solid / N)
+FLEX_DAMPING_Q = 15.0    # assumed resonant amplification of a clamped harness
+#                          span (ζ ≈ 3 %) — screening value, stated in findings
+GRAVITY_M_S2 = 9.80665
 
 # Standard solid-copper cross-section per AWG (mm^2). These are the *conductor*
 # areas the IPC / NEC tables list; stranded wire of the same AWG matches to <1 %.
@@ -258,6 +277,12 @@ class WireRun:
                         the electrical team pins it here; None = read from the net
                         elsewhere / not declared (an ampacity finding is then
                         MISSING, never invented).
+        clamp_idx     : indices of route VERTICES where the wire is physically
+                        fixed to the car (a cable tie, a P-clip, an adel clamp).
+                        The two endpoints are always supports (the connectors
+                        hold the wire); everything between two consecutive
+                        supports is an UNSUPPORTED SPAN the flex solver sags.
+                        None / [] = only the endpoints hold it.
     """
     name: str
     owner_subsystem: str
@@ -271,6 +296,7 @@ class WireRun:
     service_loop_mm: float = 0.0
     strip_mm: float = 8.0
     carries_current_a: Optional[float] = None
+    clamp_idx: Optional[list] = None
     is_estimate: bool = True
     set_by: str = ""
     notes: str = ""
@@ -362,6 +388,56 @@ class WireRun:
     def mass_g(self) -> float:
         """Total conductor mass = copper + insulation."""
         return self.copper_mass_g() + self.insulation_mass_g()
+
+    # ---- flex-solver inputs (all derived from real cross-section data) ---- #
+    def support_indices(self) -> list:
+        """Sorted vertex indices where the wire is held: both endpoints (the
+        connectors / terminations always hold it) plus every declared clamp
+        index that is a valid interior vertex."""
+        path = self.as_polyline()
+        n = path.shape[0]
+        if n < 2:
+            return []
+        idx = {0, n - 1}
+        for i in (self.clamp_idx or []):
+            try:
+                i = int(i)
+            except (TypeError, ValueError):
+                continue
+            if 0 < i < n - 1:
+                idx.add(i)
+        return sorted(idx)
+
+    def mass_per_m_kg(self) -> float:
+        """Exact linear mass density (kg/m): copper cross-section × copper
+        density + jacket annulus × jacket density. Same areas the mass roll-up
+        uses, so the flex solver and the BOM weigh the same wire."""
+        a_cu = awg_area_mm2(self.gauge_awg) * 1e-6
+        od = self.outside_diameter_mm * 1e-3
+        a_ins = max(np.pi * (od / 2.0) ** 2 - a_cu, 0.0)
+        return CU_DENSITY_KG_M3 * a_cu + INSUL_DENSITY_KG_M3 * a_ins
+
+    def ei_bounds_nm2(self) -> tuple:
+        """(EI_low, EI_high) in N·m² — the two physically real limits of a
+        stranded conductor's bending stiffness:
+
+          * HIGH: the strands act as one solid rod (fused / heavily bundled):
+                  EI = E_cu · I(solid circle of the conductor area) + jacket.
+          * LOW : every strand slips freely and bends about its own axis:
+                  EI = E_cu · I_solid / N_strands + jacket
+                  (N assumed = 19, the common hook-up construction; stated).
+
+        The truth for a real taped/loomed wire lies between the two, so every
+        sag / frequency this module reports is a range, not a guess."""
+        a_cu = awg_area_mm2(self.gauge_awg) * 1e-6          # m^2
+        i_solid = a_cu * a_cu / (4.0 * np.pi)               # m^4 (solid circle)
+        d_cu = 2.0 * np.sqrt(a_cu / np.pi)                  # m
+        od = self.outside_diameter_mm * 1e-3
+        i_ins = max(np.pi / 64.0 * (od ** 4 - d_cu ** 4), 0.0)
+        ei_jacket = E_INSUL_PA * i_ins
+        ei_hi = E_CU_PA * i_solid + ei_jacket
+        ei_lo = E_CU_PA * i_solid / float(STRANDS_ASSUMED) + ei_jacket
+        return ei_lo, ei_hi
 
     def centroid_mm(self) -> Optional[np.ndarray]:
         """Length-weighted centroid of the taut route in car coordinates — the
@@ -475,6 +551,190 @@ def _polyline_aabb_clearance_mm(path: np.ndarray, lo: np.ndarray, hi: np.ndarray
     Negative => the wire passes through the box."""
     gap, _ = _polyline_aabb_clearance_detail(path, lo, hi)
     return gap
+
+
+# --------------------------------------------------------------------------- #
+#  Cable-flex solver — sag / resonance of every unsupported span
+# --------------------------------------------------------------------------- #
+@dataclass
+class SpanFlex:
+    """One unsupported span of one wire, solved.
+
+    Geometry:
+        i0, i1        : route vertex indices of the two supports bounding it
+        chord_mm      : straight-line distance between the supports (the free
+                        span the beam model bends over)
+        arc_mm        : routed arc length between the supports
+        slack_mm      : arc − chord (extra wire the span carries)
+
+    Static hang (1 g, wire's own exactly-known weight):
+        sag_slack_mm  : geometric hang the SLACK alone produces (parabolic
+                        approximation of an inextensible cable: the stiffness
+                        cannot pull slack straight, so this floor is real
+                        whatever EI is)
+        sag_beam_1g_lo/hi_mm : elastic mid-span deflection of the taut
+                        clamped-clamped beam, at the HIGH / LOW stiffness bound
+                        respectively (lo sag ↔ stiff solid, hi sag ↔ slipping
+                        strands)
+
+    Under the declared vibration level (quasi-static n·g screening):
+        sag_total_lo/hi_mm : slack hang + n × elastic sag, both bounds
+
+    Dynamics:
+        f1_lo/hi_hz   : first natural frequency of the span (clamped-clamped),
+                        at the LOW / HIGH stiffness bound
+        resonant      : True when [f1_lo, f1_hi] overlaps the declared
+                        excitation band — the span *can* be driven at resonance
+        dyn_sag_mm    : screening resonant amplitude Q·n·sag_beam_1g (upper
+                        stiffness-uncertainty bound, Q assumed & stated);
+                        None when not resonant
+
+    Validity:
+        beam_valid    : False when the predicted sag exceeds chord/8 — beyond
+                        small-deflection beam theory; the number is then a
+                        stated upper bound ("hangs limp"), not a solution.
+        mid_xyz_mm    : mid-arc point of the span in car coordinates (where the
+                        3-D view pins the sag marker)
+    """
+    wire: str
+    span: int
+    i0: int
+    i1: int
+    chord_mm: float
+    arc_mm: float
+    slack_mm: float
+    sag_slack_mm: float
+    sag_beam_1g_lo_mm: float
+    sag_beam_1g_hi_mm: float
+    sag_total_lo_mm: float
+    sag_total_hi_mm: float
+    f1_lo_hz: Optional[float]
+    f1_hi_hz: Optional[float]
+    resonant: bool
+    dyn_sag_mm: Optional[float]
+    beam_valid: bool
+    mid_xyz_mm: list
+
+    def as_dict(self):
+        return asdict(self)
+
+
+def _span_mid_point(sub: np.ndarray) -> np.ndarray:
+    """Point at half the arc length along a sub-polyline."""
+    seg = segment_lengths_mm(sub)
+    total = float(np.sum(seg))
+    if total <= 0:
+        return sub[0].astype(float)
+    target = total / 2.0
+    acc = 0.0
+    for i, L in enumerate(seg):
+        if acc + L >= target:
+            t = (target - acc) / L if L > 0 else 0.0
+            return (sub[i] * (1 - t) + sub[i + 1] * t).astype(float)
+        acc += L
+    return sub[-1].astype(float)
+
+
+def wire_span_flex(w: "WireRun", vib_g: float = 3.0,
+                   band_hz: tuple = (20.0, 200.0)) -> list:
+    """Solve every unsupported span of one wire. Returns [SpanFlex, ...].
+
+    Model, per span between two consecutive supports:
+      * slack hang: an inextensible parabolic cable of arc length s over chord
+        c hangs  δ ≈ c·√(3(s−c)/(8c))  — pure geometry, stiffness-independent;
+      * elastic sag: clamped-clamped uniform beam, δ = q·L⁴/(384·EI), with
+        q = μ·g from the wire's exact linear mass and EI at BOTH stranding
+        bounds (see WireRun.ei_bounds_nm2);
+      * first natural frequency: f₁ = (λ₁²/2πL²)·√(EI/μ), λ₁² = 22.373
+        (clamped-clamped first mode), again at both bounds;
+      * vibration screening: quasi-static sag at n·g, plus — when the f₁ range
+        overlaps the excitation band — the resonant amplitude Q·n·δ with the
+        assumed amplification Q stated in the finding.
+    """
+    out: list = []
+    path = w.as_polyline()
+    sup = w.support_indices()
+    if len(sup) < 2:
+        return out
+    mu = w.mass_per_m_kg()                       # kg/m
+    q = mu * GRAVITY_M_S2                        # N/m at 1 g
+    ei_lo, ei_hi = w.ei_bounds_nm2()             # N·m²
+    lam2 = 22.373                                # clamped-clamped λ₁²
+    for k, (i0, i1) in enumerate(zip(sup[:-1], sup[1:])):
+        sub = path[i0:i1 + 1].astype(float)
+        arc = polyline_length_mm(sub)
+        chord = float(np.linalg.norm(sub[-1] - sub[0]))
+        if chord < 1e-6:
+            continue
+        slack = max(arc - chord, 0.0)
+        e_rel = slack / chord
+        sag_slack = chord * float(np.sqrt(3.0 * e_rel / 8.0)) if e_rel > 1e-9 \
+            else 0.0
+        L = chord * 1e-3                          # m — free span
+        # elastic sag at 1 g: LOW sag with the STIFF bound, HIGH with the soft
+        sag_lo = q * L ** 4 / (384.0 * ei_hi) * 1e3      # mm
+        sag_hi = q * L ** 4 / (384.0 * ei_lo) * 1e3
+        f1_hi = lam2 / (2.0 * np.pi * L ** 2) * float(np.sqrt(ei_hi / mu))
+        f1_lo = lam2 / (2.0 * np.pi * L ** 2) * float(np.sqrt(ei_lo / mu))
+        tot_lo = sag_slack + vib_g * sag_lo
+        tot_hi = sag_slack + vib_g * sag_hi
+        # beyond ~chord/8 the linear beam answer is only an upper bound
+        valid = tot_hi <= chord / 8.0
+        if not valid:
+            tot_hi = min(tot_hi, chord / 4.0)     # cap the reported bound at the
+            tot_lo = min(tot_lo, tot_hi)          # physical "hangs limp" scale
+        lo_b, hi_b = float(band_hz[0]), float(band_hz[1])
+        resonant = (f1_lo <= hi_b) and (f1_hi >= lo_b)
+        dyn = None
+        if resonant:
+            dyn = float(min(FLEX_DAMPING_Q * vib_g * sag_hi, chord / 4.0))
+        out.append(SpanFlex(
+            wire=w.name, span=k, i0=int(i0), i1=int(i1),
+            chord_mm=round(chord, 1), arc_mm=round(arc, 1),
+            slack_mm=round(slack, 1),
+            sag_slack_mm=round(sag_slack, 2),
+            sag_beam_1g_lo_mm=round(sag_lo, 2),
+            sag_beam_1g_hi_mm=round(sag_hi, 2),
+            sag_total_lo_mm=round(tot_lo, 1), sag_total_hi_mm=round(tot_hi, 1),
+            f1_lo_hz=round(f1_lo, 1), f1_hi_hz=round(f1_hi, 1),
+            resonant=bool(resonant),
+            dyn_sag_mm=(None if dyn is None else round(dyn, 1)),
+            beam_valid=bool(valid),
+            mid_xyz_mm=[round(float(v), 1) for v in _span_mid_point(sub)]))
+    return out
+
+
+def sagged_polyline_mm(w: "WireRun", vib_g: float = 3.0,
+                       band_hz: tuple = (20.0, 200.0)) -> Optional[np.ndarray]:
+    """The wire's route DRAPED: every unsupported span's points displaced down
+    (−z) by the upper-bound sag at the declared vibration level, following the
+    clamped-clamped shape 16·(s(1−s))² ·δ_max along the span's normalized arc
+    position s (zero slope at the clamps, δ_max at midspan). Supports stay
+    pinned. Single-segment spans gain a mid-arc sample so the droop is visible
+    and checkable. Returns None when the wire has no route."""
+    path = w.as_polyline()
+    if path.shape[0] < 2:
+        return None
+    spans = wire_span_flex(w, vib_g=vib_g, band_hz=band_hz)
+    if not spans:
+        return path.astype(float)
+    sup = w.support_indices()
+    sag_by_i0 = {sf.i0: sf.sag_total_hi_mm for sf in spans}
+    out_pts: list = [path[0].astype(float)]
+    for i0, i1 in zip(sup[:-1], sup[1:]):
+        sub = path[i0:i1 + 1].astype(float)
+        if sub.shape[0] == 2:                       # give the span a belly
+            sub = np.vstack([sub[0], (sub[0] + sub[1]) / 2.0, sub[1]])
+        seg = segment_lengths_mm(sub)
+        total = float(np.sum(seg))
+        s_pos = np.concatenate([[0.0], np.cumsum(seg)]) / max(total, 1e-9)
+        d_max = sag_by_i0.get(i0, 0.0)
+        for j in range(1, sub.shape[0]):
+            p = sub[j].copy()
+            s = float(s_pos[j])
+            p[2] -= d_max * 16.0 * (s * (1.0 - s)) ** 2   # peaks at δ_max, s=.5
+            out_pts.append(p)
+    return np.asarray(out_pts)
 
 
 # --------------------------------------------------------------------------- #
@@ -593,6 +853,12 @@ class HarnessLedger:
     ambient_c: float = 40.0
     clearance_warn_mm: float = 10.0                    # gap that triggers WARN
     clearance_fail_mm: float = 0.0                     # gap that triggers FAIL (touch/through)
+    # ---- flex-solver environment (screening levels; every value editable) --
+    vib_g: float = 3.0                 # quasi-static vertical vibration level
+    excitation_lo_hz: float = 20.0     # excitation band the car actually shakes
+    excitation_hi_hz: float = 200.0    #   in (engine orders + road input)
+    max_span_mm: float = 300.0         # longest run allowed between supports
+    max_sag_mm: float = 10.0           # sag (at vib_g) that earns a WARN
 
     # ---- mutators -------------------------------------------------------- #
     def set_connector(self, c: Connector):
@@ -789,6 +1055,129 @@ class HarnessLedger:
                 "harness-clearance", Severity.OK,
                 "Every routed wire clears all reserved keep-out volumes with "
                 "margin.", subsystems=["electrics"]))
+        return out
+
+    # ---- cable flex: sag / resonance of every unsupported span ----------- #
+    def flex_spans(self) -> list:
+        """Every unsupported span of every routed wire, solved (SpanFlex)."""
+        band = (self.excitation_lo_hz, self.excitation_hi_hz)
+        out: list = []
+        for w in sorted(self.wires.values(), key=lambda x: x.name):
+            out += wire_span_flex(w, vib_g=self.vib_g, band_hz=band)
+        return out
+
+    def check_flex(self, keepouts: Optional[list] = None) -> list:
+        """The cable-flex gate. For every unsupported span between supports
+        (connector ends + declared clamp points):
+
+          * span longer than `max_span_mm`  -> WARN (add a tie / clip),
+          * sag at `vib_g` beyond `max_sag_mm` -> WARN, with the honest
+            LOW–HIGH range and the stranding assumption stated,
+          * span whose f₁ range overlaps the excitation band -> WARN
+            (resonance risk, screening resonant amplitude given),
+          * >2 % slack in a span -> WARN (unrestrained slack whips),
+          * and the DRAPED shape (upper-bound sag) re-run through the same
+            keep-out clearance the taut route passed: a wire that only fouls
+            reserved space when it droops is a FAIL naming both owners.
+        """
+        out: list = []
+        band = (self.excitation_lo_hz, self.excitation_hi_hz)
+        any_span = False
+        for w in self.wires.values():
+            path = w.as_polyline()
+            if path.shape[0] < 2:
+                continue
+            est = w.is_estimate
+            tag = " (estimated route)" if est else ""
+            spans = wire_span_flex(w, vib_g=self.vib_g, band_hz=band)
+            any_span = any_span or bool(spans)
+            for sf in spans:
+                where = (f"span {sf.span + 1} (vertices {sf.i0}→{sf.i1}, "
+                         f"{sf.chord_mm:.0f} mm free)")
+                base_detail = {k: v for k, v in sf.as_dict().items()
+                               if k != "mid_xyz_mm"}
+                base_detail.update(at_mm=sf.mid_xyz_mm, estimate=est)
+                if sf.chord_mm > self.max_span_mm:
+                    out.append(Finding(
+                        "harness-flex-span", Severity.WARN,
+                        f"Wire '{w.name}' runs {sf.chord_mm:.0f} mm unsupported on "
+                        f"{where} — longer than the {self.max_span_mm:.0f} mm "
+                        f"support rule. Add a cable tie / P-clip along the "
+                        f"run{tag}.",
+                        subsystems=[w.owner_subsystem], detail=base_detail))
+                if sf.sag_total_hi_mm > self.max_sag_mm:
+                    validity = ("" if sf.beam_valid else
+                                " — beyond small-deflection validity: the span "
+                                "hangs limp and the number is a stated upper "
+                                "bound, not a solution")
+                    out.append(Finding(
+                        "harness-flex-sag", Severity.WARN,
+                        f"Wire '{w.name}' sags {sf.sag_total_lo_mm:.0f}–"
+                        f"{sf.sag_total_hi_mm:.0f} mm at {self.vib_g:g} g on "
+                        f"{where} (limit {self.max_sag_mm:.0f} mm; range spans "
+                        f"the solid↔{STRANDS_ASSUMED}-strand-slipping stiffness "
+                        f"bounds{validity}). Support the midspan{tag}.",
+                        subsystems=[w.owner_subsystem], detail=base_detail))
+                if sf.resonant:
+                    out.append(Finding(
+                        "harness-flex-resonance", Severity.WARN,
+                        f"Wire '{w.name}' {where} has a first natural frequency "
+                        f"of {sf.f1_lo_hz:.0f}–{sf.f1_hi_hz:.0f} Hz — inside the "
+                        f"{self.excitation_lo_hz:.0f}–{self.excitation_hi_hz:.0f} Hz "
+                        f"excitation band; it can be driven at resonance "
+                        f"(screening amplitude ≈ {sf.dyn_sag_mm:.0f} mm with the "
+                        f"assumed Q={FLEX_DAMPING_Q:g}). Shorten the span with a "
+                        f"clamp to push f₁ above the band{tag}.",
+                        subsystems=[w.owner_subsystem], detail=base_detail))
+                if sf.chord_mm > 0 and sf.slack_mm / sf.chord_mm > 0.02:
+                    out.append(Finding(
+                        "harness-flex-slack", Severity.WARN,
+                        f"Wire '{w.name}' carries {sf.slack_mm:.0f} mm of slack "
+                        f"in {where} ({100 * sf.slack_mm / sf.chord_mm:.0f} % of "
+                        f"the span) — unrestrained slack whips under vibration "
+                        f"and already hangs {sf.sag_slack_mm:.0f} mm on geometry "
+                        f"alone. Tie the slack down or route it out{tag}.",
+                        subsystems=[w.owner_subsystem], detail=base_detail))
+            # ---- draped shape vs the same keep-outs the taut route passed --
+            if keepouts and spans:
+                draped = sagged_polyline_mm(w, vib_g=self.vib_g, band_hz=band)
+                if draped is not None and draped.shape[0] >= 2:
+                    pad = w.outside_diameter_mm / 2.0
+                    for ko in keepouts:
+                        lo = np.asarray(ko.lo_mm, float) - pad
+                        hi = np.asarray(ko.hi_mm, float) + pad
+                        g_taut, _ = _polyline_aabb_clearance_detail(
+                            path.astype(float), lo, hi)
+                        g_sag, at = _polyline_aabb_clearance_detail(
+                            draped, lo, hi)
+                        if g_sag <= self.clearance_fail_mm \
+                                and g_taut > self.clearance_fail_mm:
+                            ko_owner = getattr(ko, "owner_subsystem", "?")
+                            out.append(Finding(
+                                "harness-sag-clearance", Severity.FAIL,
+                                f"Wire '{w.name}' clears {ko_owner}'s "
+                                f"'{ko.name}' when drawn taut but FOULS it once "
+                                f"it sags at {self.vib_g:g} g (upper-bound "
+                                f"drape penetrates {-g_sag:.0f} mm past the "
+                                f"wire surface). Add a support before the "
+                                f"span{tag}.",
+                                subsystems=sorted({w.owner_subsystem,
+                                                   ko_owner}),
+                                detail=dict(wire=w.name, keepout=ko.name,
+                                            penetration_mm=float(-g_sag),
+                                            at_mm=(None if at is None else
+                                                   [round(float(v), 1)
+                                                    for v in at]),
+                                            estimate=est)))
+        if any_span and not out:
+            out.append(Finding(
+                "harness-flex", Severity.OK,
+                f"Every unsupported span passes the flex screen at "
+                f"{self.vib_g:g} g: sag within {self.max_sag_mm:.0f} mm, spans "
+                f"within {self.max_span_mm:.0f} mm, no span resonant in the "
+                f"{self.excitation_lo_hz:.0f}–{self.excitation_hi_hz:.0f} Hz "
+                f"band, and the draped shapes clear every keep-out.",
+                subsystems=["electrics"]))
         return out
 
     # ---- cut length to the millimetre ------------------------------------ #
@@ -1067,6 +1456,11 @@ class HarnessLedger:
             ambient_c=self.ambient_c,
             clearance_warn_mm=self.clearance_warn_mm,
             clearance_fail_mm=self.clearance_fail_mm,
+            vib_g=self.vib_g,
+            excitation_lo_hz=self.excitation_lo_hz,
+            excitation_hi_hz=self.excitation_hi_hz,
+            max_span_mm=self.max_span_mm,
+            max_sag_mm=self.max_sag_mm,
         )
 
     @staticmethod
@@ -1077,7 +1471,9 @@ class HarnessLedger:
             hl.set_connector(Connector.from_dict(v))
         for k, v in (d.get("wires") or {}).items():
             hl.set_wire(WireRun.from_dict(v))
-        for sk in ("ambient_c", "clearance_warn_mm", "clearance_fail_mm"):
+        for sk in ("ambient_c", "clearance_warn_mm", "clearance_fail_mm",
+                   "vib_g", "excitation_lo_hz", "excitation_hi_hz",
+                   "max_span_mm", "max_sag_mm"):
             if d.get(sk) is not None:
                 setattr(hl, sk, d[sk])
         return hl
@@ -1094,6 +1490,7 @@ class HarnessCheckResult:
     bom: dict = field(default_factory=dict)
     mass: dict = field(default_factory=dict)
     formboard: Optional[Formboard] = None
+    flex: list = field(default_factory=list)     # [SpanFlex, ...] every span
 
     def has_hard_fail(self) -> bool:
         return any(f.severity == Severity.FAIL for f in self.findings)
@@ -1126,10 +1523,12 @@ def check_harness(harness: HarnessLedger,
     findings += harness.check_bends()
     findings += harness.check_anchoring()
     findings += harness.check_clearance(keepouts=keepouts)
+    findings += harness.check_flex(keepouts=keepouts)
     return HarnessCheckResult(
         findings=findings,
         cut_list=harness.cut_list(),
         bom=harness.bom(),
         mass=harness.mass_distribution(),
         formboard=harness.formboard(),
+        flex=harness.flex_spans(),
     )

@@ -259,6 +259,18 @@ class _Session:
 
 _SESS = _Session()   # process-level fallback only (non-Streamlit contexts)
 
+# Process-level set of session_ids that have ALREADY emitted `session_start`.
+# Streamlit's first load runs the script twice (and the localStorage ?kvid=
+# reload adds another pass), which can slip past the per-session_state `started`
+# flag and log the same visit twice — inflating the user count. session_id is
+# minted once per browser session and survives reruns AND the ?kvid= reload, so
+# guarding the emit on it here makes session_start idempotent per real visit no
+# matter how many times the script re-executes within this server process. The
+# set is shared across all sessions in the process, so a genuinely new visitor
+# (new session_id) is unaffected and still logs exactly once.
+_STARTED_SESSIONS: set = set()
+_STARTED_LOCK = threading.Lock()
+
 
 def _store():
     """Return the per-session store: st.session_state when running inside a real
@@ -343,6 +355,18 @@ def init(member: Optional[str] = None, subteam: str = "unknown",
             vid_kind = (s.get("_ax_resolved_vid_kind") or "") if s is not None else ""
             if vid_kind == "cookie (resolving\u2026)":
                 return  # defer to next rerun — visitor_id not yet stable
+            # Authoritative one-per-visit guard: dedup on the stable session_id in
+            # a process-level set. This survives Streamlit's double first-run and
+            # the ?kvid= localStorage reload, both of which can otherwise get past
+            # the session_state `started` flag and emit session_start twice —
+            # double-counting the user. Claim the session_id atomically; only the
+            # first claimant emits.
+            sid = _resolve_session_id()
+            with _STARTED_LOCK:
+                if sid in _STARTED_SESSIONS:
+                    _sset("started", True)
+                    return
+                _STARTED_SESSIONS.add(sid)
             _sset("started", True)
             _emit("session_start", feature=None, is_new_member=is_new_member)
     except Exception:

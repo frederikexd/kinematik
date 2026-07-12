@@ -95,6 +95,7 @@ _SUBMODULES = (
     "dfmea",
     "ev_electrical_check",
     "ev_excel_roundtrip",
+    "master_assembly",    # Master Assembly compilation engine (dummy/CAD blend)
 )
 
 # ---------------------------------------------------------------------------
