@@ -2641,6 +2641,801 @@ _ROLE_GOALS = {
 _CAT_LABEL = {ck: f"{cem} {clab}" for ck, cem, clab, _ in _TAB_CATEGORIES}
 
 
+# ========================================================================== #
+#  GOAL-AWARE FEATURE COPY
+#
+#  For every (goal_key, tool_id) pair, a list of feature-level strings that
+#  explain every meaningful capability of that tool as it applies to THIS
+#  specific goal.  Each string is one complete sentence written directly to
+#  the user ("You can …" / "This lets you …").
+#
+#  Rules for this table:
+#   - Cover EVERY feature of the tool that is relevant to the goal.
+#     If the tool has 8 features and 6 are useful for this goal, write 6.
+#   - Be concrete and specific — name the exact control, output, or workflow.
+#   - Never write a feature that doesn't exist in the tool.
+#   - Pure Python dict — no network calls, no imports.
+# ========================================================================== #
+_BRIEF_GOAL_FEATURES = {
+
+    # ------------------------------------------------------------------ #
+    #  SUSPENSION GOALS
+    # ------------------------------------------------------------------ #
+    ("susp_geo", "kinematics"): [
+        "Drag any hardpoint in 3D and watch camber gain, caster, KPI, toe, "
+        "scrub radius and mechanical trail re-solve instantly — every change is "
+        "live, not a re-run.",
+        "Sweep bump travel across the full range and plot the camber-gain curve "
+        "continuously; the curve updates as you drag so you can chase a target "
+        "gradient in seconds.",
+        "Bump-steer angle is computed for every topology and shown as a signed "
+        "degree value with direction — you can zero it out interactively before "
+        "it ever reaches the car.",
+        "Switch topology (double wishbone, MacPherson, multi-link, trailing arm, "
+        "solid axle, twist-beam) without re-entering hardpoints — compare how "
+        "the same pickup arrangement behaves across architectures.",
+        "Anti-dive and anti-squat percentages update live with the geometry, so "
+        "you can hit a pitch-control target without separate calculation.",
+        "The upright mount-plate DXF export writes your steering-axis geometry "
+        "directly into a 2D sketch — when the hardpoints are locked, the DXF is "
+        "build-ready.",
+        "Instant Levenberg–Marquardt solver means you can stress-test "
+        "manufacturing tolerance bands by nudging hardpoints ±2 mm and reading "
+        "off the sensitivity of every kinematic output.",
+    ],
+    ("susp_geo", "roll"): [
+        "Roll-centre height and lateral migration across the full bump/roll range "
+        "are plotted live against the geometry you just set — not a separate "
+        "calculation, the same hardpoints.",
+        "Lateral load transfer is broken into geometric (jacking) and elastic "
+        "(spring) components so you can see whether your roll centre is helping "
+        "or hurting grip balance.",
+        "Front/rear roll-centre coupling shows grip balance tendency — "
+        "understeer or oversteer gradient — continuously updated as you drag "
+        "hardpoints in Kinematics.",
+        "The coupled view means you can't set a roll centre that conflicts with "
+        "the hardpoints you already locked; both views share the same state.",
+        "Lateral load transfer distribution between axles is shown as a "
+        "percentage split so you can target a specific front/rear grip bias "
+        "before picking springs.",
+    ],
+
+    ("susp_flex", "compliance"): [
+        "Per-member axial load is solved quasi-statically for every arm, "
+        "pushrod, pullrod and tie rod in your topology under the braking, "
+        "cornering and bump load cases you specify.",
+        "Member deflection under load is computed from cross-section and "
+        "material you enter — if a pushrod deflects 1.2 mm at peak cornering, "
+        "you see it here before it silently deletes your camber curve.",
+        "The effective stiffness of the whole suspension corner under lateral "
+        "load is compared against your target camber compliance budget — pass or "
+        "flag, at a glance.",
+        "You can input tube OD, wall thickness and material (steel, aluminium, "
+        "titanium, CFRP) for every member; the tool computes both stress and "
+        "deflection from the same geometry.",
+        "Factor of safety is reported per member under each load case, so you "
+        "know which arm is the constraint before sending anything to ANSYS.",
+        "The compliance table exports cleanly so you can paste the member loads "
+        "directly into ANSYS Mechanical as boundary conditions — no re-derivation "
+        "in the solver.",
+    ],
+
+    ("susp_setup", "setup"): [
+        "Spring rate sweep: vary front and rear spring rates across a defined "
+        "range and plot ride frequency, roll stiffness and pitch stiffness — "
+        "find the window that keeps all three in target.",
+        "Anti-roll bar stiffness is tuned in isolation from springs, so you can "
+        "set roll stiffness without disturbing ride frequency — the classic "
+        "FSAE separation.",
+        "Balance solver: given your tyre Pacejka data and geometry, the "
+        "optimiser finds the spring/ARB split that minimises understeer gradient "
+        "at a target lateral acceleration.",
+        "Ride-height sensitivity tells you how much wheel rate changes across the "
+        "expected ride-height range — important for FSAE cars that run "
+        "aggressively stiff on smooth surfaces.",
+        "Bump-stop engagement preview: the tool shows when bump stops engage "
+        "relative to the designed travel, so you can decide whether to soften "
+        "the spring or move the stop.",
+        "All setup outputs feed directly into the Track Testing (laptime) tab so "
+        "you can see the balance change as seconds on a simulated autocross "
+        "before turning a wrench.",
+    ],
+    ("susp_setup", "tire"): [
+        "Load the TTC Pacejka MF52 coefficients for your tyre set and validate "
+        "the fit interactively — plot Fy vs slip angle and Fx vs slip ratio at "
+        "every vertical load the car actually sees.",
+        "Sanity-check normalised tyre sensitivity (dFy/dFz) against published "
+        "FSAE benchmarks before it feeds any other calculation — garbage in "
+        "prevention at source.",
+        "Peak slip angle and peak lateral force are read directly from your "
+        "fitted curves, not assumed — so the lap sim and setup optimiser are "
+        "both working from the same real numbers.",
+        "Combined slip (Fx+Fy) is shown as a friction ellipse overlay so you can "
+        "see how much traction capacity is left when braking in a corner — "
+        "critical for bias tuning.",
+        "Temperature sensitivity flag: if your tyre data shows a strong "
+        "temperature gradient in Cy, the tool tags it so you know to account for "
+        "warm-up in your setup.",
+    ],
+    ("susp_setup", "laptime"): [
+        "GGV envelope is built from your tyre, mass, CG and aero numbers — "
+        "every change to setup propagates here so you see grip potential in g's "
+        "before committing.",
+        "Autocross and endurance track layouts can be loaded so a spring rate "
+        "change returns a lap-time delta in seconds on YOUR event's layout, not "
+        "a generic circuit.",
+        "Track-test overlay plots simulated vs measured channel data side by "
+        "side — you can isolate whether a lap-time regression is from a setup "
+        "change or a driver change.",
+        "Traction circle utilisation is plotted lap-segment by lap-segment, "
+        "showing where the car is leaving grip on the table and what setup "
+        "change would close the gap.",
+        "Mass and CG sensitivity is run automatically — the tool tells you how "
+        "many lap-time tenths a 1 kg ballast shift buys at your specific track.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  AERO GOALS
+    # ------------------------------------------------------------------ #
+    ("aero_size", "aero"): [
+        "Wing sizing: enter span, chord and section profile; the tool computes "
+        "Cl, Cd and downforce at your target speed from a validated panel-method "
+        "solver — directionally correct in seconds.",
+        "Diffuser geometry (length, angle, width) is sized against ground-effect "
+        "theory with a blockage correction for the undertray — you get a "
+        "predicted Cl_floor contribution before any CFD.",
+        "Drag budget: frontal area and Cd are estimated from your geometry inputs "
+        "and broken down by component (front wing, rear wing, undertray, body) "
+        "so you can see where drag is being spent.",
+        "Downforce vs drag trade slider: adjust wing angle of attack across the "
+        "full stall range and watch Cl/Cd ratio update — find the efficiency "
+        "peak for your lap-type (autocross vs endurance).",
+        "The aero panel exports a wing-section DXF built from your computed "
+        "chord and camber — ready to import directly into SolidWorks as a 2D "
+        "sketch and extrude into a solid.",
+        "Aero influence on ride height is shown as a downforce-vs-ride-height "
+        "curve: you can read off how stiff your heave spring needs to be to "
+        "maintain a target ride height at speed.",
+        "Virtual wind-tunnel mode assembles the full-car aero model and runs a "
+        "panel-method sweep of yaw angles from −10° to +10°, returning Cl, Cd "
+        "and Cm at each — no meshing required.",
+    ],
+    ("aero_map", "aero"): [
+        "Full aero map: Cl, Cd and pitching moment are computed at a grid of "
+        "speeds (15–35 m/s) and ride heights (10–60 mm), giving you the "
+        "complete operating envelope of the car.",
+        "Balance shift across the speed range is computed from front/rear "
+        "downforce distribution at each map point — you can see whether your "
+        "wing balance is speed-stable or diverges.",
+        "Yaw sweep (−10° to +10° at 5° steps) is run at your peak-cornering "
+        "speed and plotted as Cl and Cm vs yaw — you can read off directional "
+        "stability margin.",
+        "Pitching moment coefficient is shown as a function of ride height so "
+        "you know whether the car is aerodynamically stable in heave or has a "
+        "snap-stall risk.",
+        "The aero map exports as a CSV table so you can import it directly into "
+        "any lap sim (including the integrated Track Testing tab) as a "
+        "speed-dependent downforce model.",
+        "Sensitivity runs (one variable at a time: ride height, angle, span) "
+        "are one click each — you can build a tolerance band around the map "
+        "without re-running the full grid manually.",
+    ],
+    ("aero_map", "laptime"): [
+        "The aero map feeds directly into the GGV builder so every speed-"
+        "dependent downforce point is used, not a single fixed aero coefficient.",
+        "Balance shift with speed is reflected in the lap sim's cornering model "
+        "— a car that understeers at high speed shows it in the simulated "
+        "corner-exit times.",
+        "Lap-time sensitivity to aero level: the tool sweeps Cl from 0 to your "
+        "target and plots lap time vs downforce — you can find the diminishing-"
+        "returns point specific to your track.",
+    ],
+    ("aero_pre", "aero"): [
+        "Shape shortlist: run the panel-method solver on multiple configurations "
+        "(different end-plate geometries, gurney heights, diffuser angles) in "
+        "minutes and rank them by Cl/Cd.",
+        "Each configuration's geometry is logged so you can track which variant "
+        "produced which number — no more 'which spreadsheet had the good result?'",
+        "The virtual wind tunnel gives you a directional pressure distribution "
+        "along the wing surface — enough to see separation risk before committing "
+        "to CFD meshing.",
+        "PIV post-processing module can ingest wind-tunnel PIV images and "
+        "overlay velocity vectors on the geometry — so real-tunnel data and "
+        "model predictions are in the same environment.",
+    ],
+    ("aero_pre", "validation"): [
+        "The Validation tab produces a formal handover checklist that records "
+        "which aero numbers are from panel-method estimates vs CFD vs tunnel — "
+        "so the confidence level is explicit when the design is locked.",
+        "Locked vs estimate tags mean your CFD run starts from a design that is "
+        "already within ±15% of target, not from a blank slate.",
+        "The manufacturing-release gate blocks any aero surface that still "
+        "carries an unconfirmed load estimate — so nothing goes to the mould "
+        "room without a sign-off.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  POWERTRAIN GOALS
+    # ------------------------------------------------------------------ #
+    ("pt_arch", "ev"): [
+        "Motor architecture comparison table: single rear, dual rear, AWD, and "
+        "torque-vectoring configurations are compared on peak power, peak torque, "
+        "drivetrain mass, and efficiency at your lap-average operating point.",
+        "Reduction ratio optimiser: for a chosen motor's torque-speed curve, the "
+        "tool finds the gear ratio that maximises average wheel force over the "
+        "expected speed range of your event.",
+        "Motor-flange DXF: once an architecture is chosen, the motor interface "
+        "DXF (bolt circle, register diameter, shaft spline) is generated from "
+        "the motor's datasheet inputs — ready for the half-shaft designer.",
+        "Drivetrain mass breakdown is fed into the Integration ledger so CG and "
+        "lap-time projections update the moment an architecture is picked.",
+        "Torque-vectoring mode shows yaw moment authority at each wheel load "
+        "condition — you can see whether the vectoring gain justifies the "
+        "complexity before committing to the hardware.",
+        "Efficiency map: motor + inverter losses are plotted across the torque-"
+        "speed plane so you can see where your operating points land relative to "
+        "the efficiency peak — critical for endurance energy budgets.",
+    ],
+    ("pt_energy", "ev"): [
+        "Energy budget: enter pack capacity, motor efficiency map and regen "
+        "strategy; the tool integrates energy use over a simulated endurance lap "
+        "count and tells you whether the pack finishes.",
+        "Regen recovery is modelled lap-segment by lap-segment using the GGV "
+        "deceleration profile — you see actual recovered energy, not a blanket "
+        "percentage assumption.",
+        "Pack SoC over the endurance race is plotted with thermal margin overlaid "
+        "— you can see whether thermal runaway risk closes in before the energy "
+        "does.",
+        "Motor flange DXF is parameterised so an architecture change (single→dual "
+        "motor) regenerates the interface geometry automatically.",
+        "The energy model is connected to the Integration ledger's mass and aero "
+        "numbers — a 3 kg ballast addition automatically reduces endurance range.",
+    ],
+    ("pt_energy", "laptime"): [
+        "Lap time is computed at full-power, balanced-regen, and max-regen "
+        "strategies so you can see the lap-time cost of saving energy before "
+        "deciding on regen aggressiveness.",
+        "Energy delta per lap is plotted against lap number so you can see "
+        "exactly which lap the pack goes critical under each strategy.",
+        "GGV envelope is built with your real motor torque-speed curve as the "
+        "traction limit, not a peak-power assumption — so the sim reflects "
+        "realistic torque limiting at speed.",
+    ],
+    ("pt_rel", "ev"): [
+        "Thermal model: motor winding temperature rise under continuous full-"
+        "power and endurance duty cycles is estimated from thermal resistance "
+        "inputs — you see whether cooling is marginal before the car is built.",
+        "Cooling load output is expressed as kW of heat rejection required at "
+        "each operating point — this feeds the cooling sizing tab directly.",
+        "DFMEA pre-seed: the EV tab generates a set of pre-seeded failure mode "
+        "rows (inverter over-temperature, motor demagnetisation, half-shaft "
+        "failure) that import into the DFMEA with severity and occurrence "
+        "pre-filled from the operating data.",
+    ],
+    ("pt_rel", "dfmea"): [
+        "Every failure mode has an RPN (Risk Priority Number = severity × "
+        "occurrence × detection) that updates live as you change mitigation "
+        "actions.",
+        "Cross-subsystem propagation: a powertrain failure (e.g. inverter "
+        "over-temperature) automatically propagates a risk flag to cooling and "
+        "electronics without you manually hunting the coupling.",
+        "Action tracker records who owns each mitigation, what the target RPN is, "
+        "and what the current status is — so DFMEA is a live document, not a "
+        "one-shot review.",
+        "Pre-seeded rows cover the FSAE scrutineering checklist's failure "
+        "categories so you're not starting from a blank template.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  ELECTRICS GOALS
+    # ------------------------------------------------------------------ #
+    ("el_pack", "accum"): [
+        "Cell sizing: enter cell chemistry (NMC, LFP, NCA), nominal voltage, "
+        "capacity, mass and DCIR; the tool computes series/parallel count to hit "
+        "your target pack voltage and capacity with the minimum mass.",
+        "Pack topology builder: choose series string count and parallel branches; "
+        "the tool checks segment voltage against the FSAE-EV rules maximum "
+        "(600 V DC) and flags any violation immediately.",
+        "FSAE-EV rules gates (AIR current rating, segment voltage, insulation "
+        "resistance, accumulator mass) are checked inline — not in a separate "
+        "document — so every design iteration is rules-compliant.",
+        "Thermal model: cell temperature rise under peak discharge and endurance "
+        "duty is estimated from DCIR and thermal resistance; the tool flags when "
+        "a cell exceeds its maximum operating temperature.",
+        "Segment-box DXF: the mechanical envelope of each segment is drawn from "
+        "the cell count and physical cell dimensions, ready to import into the "
+        "chassis layout in SolidWorks.",
+        "Pack mass and CG are pushed to the Integration ledger automatically "
+        "when you lock a configuration, so the whole-car mass and handling "
+        "balance update without a separate entry.",
+        "Electrical feasibility gate checks that the BMS cell count, segment "
+        "fusing and contactors are all specified before the pack is marked "
+        "as design-complete.",
+    ],
+    ("el_pack", "tractive"): [
+        "Precharge circuit check: the tool computes the RC time constant from "
+        "your contactor, precharge resistor and inverter capacitance and verifies "
+        "the precharge completes within the rules-specified time.",
+        "Isolation resistance gate: a simulated insulation resistance check "
+        "confirms the IMD would clear at your specified HV bus voltage — "
+        "catching wiring topology errors before the first power-on.",
+        "AIR sequencing is validated against the FSAE-EV required order of "
+        "operations so the scrutineering 'press the button' test has a known-"
+        "good outcome before the car is wired.",
+        "HV interlock loop continuity is checked across your declared connector "
+        "map — any open segment is flagged with the connector reference.",
+        "Tractive system activation sequence is stepped through in the UI so "
+        "every team member can rehearse the correct sequence before tech "
+        "inspection.",
+    ],
+
+    ("el_pcb", "pcb"): [
+        "Copper survival check: import a real `.kicad_pcb` and the tool "
+        "identifies every trace, flags those undersized for their declared "
+        "current per IPC-2221A, and names the guilty net.",
+        "Trace prescriber: undersized traces are re-routed to the minimum "
+        "passing width in one click — the fix is suggested with the IPC formula "
+        "shown, not just flagged.",
+        "Stall current check: motor stall current is back-propagated through "
+        "the motor controller to the battery connector trace — the peak event "
+        "that is most likely to destroy a board is checked, not just steady "
+        "state.",
+        "Signal integrity: differential pair length matching, via stub length "
+        "and trace impedance are checked for CAN and high-speed data lines.",
+        "HV/LV creepage and clearance are verified against the rules-specified "
+        "minimum for your max bus voltage — every HV-to-LV crossing is "
+        "individually flagged.",
+        "DAQ-bracket DXF: the PCB outline and mounting hole pattern are exported "
+        "as a DXF so the bracket designer works from the real board footprint, "
+        "not a sketch.",
+        "Multi-layer support: the trace checker runs on all copper layers "
+        "simultaneously; inner-layer thermal via arrays are included in the "
+        "current capacity calculation.",
+    ],
+
+    ("el_safe", "tractive"): [
+        "Full EV safety sequence simulation: the tool steps through the FSAE-EV "
+        "electrical tech inspection checklist — AIR state, IMD test, BSPD, "
+        "TSAL — and shows pass/fail at each gate.",
+        "BSPD (Brake System Plausibility Device) logic is verified against the "
+        "rules: brake pressure above threshold AND motor current above threshold "
+        "simultaneously must cut power — the logic is checked, not assumed.",
+        "TSAL (Tractive System Active Light) wiring is traced from source to "
+        "indicator; any gap in the declared loom map is flagged.",
+        "GLV (Grounded Low Voltage) system continuity and the shutdown circuit "
+        "are checked as a complete loop — open nodes are named.",
+        "The inspection report exports as a signed PDF record so the scrutineer "
+        "sees your pre-check evidence, not just your claims.",
+    ],
+    ("el_safe", "dfmea"): [
+        "DFMEA pre-seeds the EV electrical failure modes (IMD failure, AIR "
+        "weld, insulation fault, BSPD misfire) with FSAE-relevant severity "
+        "scores.",
+        "Mitigation actions are tracked per failure mode with owner, status and "
+        "target RPN — so the team walks into scrutineering with a closed action "
+        "list, not open items.",
+        "Cross-subsystem risk: an insulation fault in the accumulator "
+        "automatically propagates a risk flag to the tractive system and cooling "
+        "loop, because the tool knows the coupling.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  COOLING GOALS
+    # ------------------------------------------------------------------ #
+    ("co_size", "ev"): [
+        "Worst-case heat load: motor copper losses + iron losses + inverter "
+        "switching losses are summed at the peak-power operating point and "
+        "expressed as kW of required heat rejection.",
+        "Radiator core sizing: enter face area, core depth and fin density; the "
+        "tool computes heat rejection capacity at your design airspeed and "
+        "coolant flow rate, checking whether it meets the worst-case load.",
+        "Coolant flow rate and pump sizing: required volumetric flow is computed "
+        "from target temperature rise; the tool flags if your declared pump "
+        "curve can deliver it.",
+        "Radiator-core DXF: the core face geometry (width, height, inlet/outlet "
+        "nipple positions) exports as a 2D DXF from your computed dimensions "
+        "— ready for the sidepod designer.",
+        "PCM (Phase Change Material) buffer sizing: if your system uses a PCM "
+        "thermal buffer, the tool estimates the required PCM mass to absorb the "
+        "peak heat pulse during a standing start.",
+        "Thermal margin at the cell: motor/inverter heat is back-propagated to "
+        "the coolant loop temperature, and from there to the pack cold plate "
+        "— you see cell temperature in the worst-case lap.",
+    ],
+    ("co_prop", "ev"): [
+        "Heat propagation graph: changing the motor's peak power immediately "
+        "recomputes the heat load across the entire cooling loop — radiator, "
+        "pump, hoses, cold plate — in one step.",
+        "Coupling graph tags every heat source (motor, inverter, pack) with its "
+        "confidence level (measured / coupled / judgement) so you know which "
+        "number is an estimate before sending it to a thermal FEA.",
+    ],
+    ("co_prop", "dfmea"): [
+        "Cooling failure propagation: a failure in the cooling loop (pump "
+        "failure, hose burst, radiator blockage) is propagated to motor and "
+        "pack overtemperature, with the time-to-shutdown estimated from thermal "
+        "mass.",
+        "RPN for cooling failures is seeded from the real thermal margin numbers "
+        "— a tight margin raises occurrence score automatically.",
+        "Cross-subsystem risk: a cooling degradation flag ripples to the "
+        "powertrain and electrics subsystems, so the DFMEA is consistent "
+        "without manual entry.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  DATA ACQUISITION GOALS
+    # ------------------------------------------------------------------ #
+    ("dq_spec", "pcb"): [
+        "Sensor budget: list every sensor (wheel speed, steering angle, "
+        "suspension pot, IMU, thermocouple) with its supply voltage, current "
+        "draw and connector type; the tool computes the GLV load and flags if "
+        "your power supply is undersized.",
+        "Wiring harness connector map: every sensor signal is routed through the "
+        "declared connector matrix; the tool checks pin count and signal type "
+        "(analog/CAN/SPI) against your logger's input specification.",
+        "DAQ-bracket DXF: the PCB mounting hole pattern and board envelope are "
+        "exported as a DXF for every logging board you declare, so the bracket "
+        "designer works from the real footprint.",
+        "CAN bus load calculation: the message rate and data length of every "
+        "declared CAN node is summed; the tool flags if bus utilisation exceeds "
+        "a safe limit for your baud rate.",
+    ],
+    ("dq_int", "pcb"): [
+        "Electrical budget integration: DAQ current draw is added to the GLV "
+        "load ledger so the total LV supply requirement is always up to date.",
+        "Trace check for the logging board: any under-sized power trace on the "
+        "DAQ PCB is flagged against the peak combined sensor current.",
+    ],
+    ("dq_int", "dfmea"): [
+        "DAQ failure modes (logger power loss, CAN bus fault, sensor open "
+        "circuit) are pre-seeded into the DFMEA with appropriate severity — "
+        "a DAQ failure during endurance affects scoring, not safety, and "
+        "the tool models that distinction.",
+        "Cross-subsystem coupling: a CAN bus fault that also controls a motor "
+        "controller is automatically flagged as higher severity than a "
+        "pure-telemetry failure.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  BRAKES GOALS
+    # ------------------------------------------------------------------ #
+    ("br_bias", "brakes"): [
+        "Bias bar position is swept from full-front to full-rear and lock-up "
+        "order (front-first vs rear-first) is shown as a function of deceleration "
+        "level — you can read off the safe range before driving.",
+        "Hydraulic line pressure at each caliper is computed from your master "
+        "cylinder bore, pedal ratio and bias bar position — the numbers the "
+        "driver will feel are explicit.",
+        "Front/rear caliper sizing: given a target bias and caliper piston area "
+        "ratio, the tool solves for the master cylinder bore that achieves it "
+        "at a reasonable pedal effort.",
+        "FSAE brake test simulation: the tool steps through the FSAE one-pedal "
+        "stop requirement at 40 km/h and confirms all four wheels lock before "
+        "the car travels the maximum permitted distance.",
+        "Bias sensitivity: a ±5% bias shift shows the lock-up order change — "
+        "so you know the sensitivity before declaring the production bar "
+        "position.",
+    ],
+    ("br_bias", "tire"): [
+        "Lock-up threshold at each axle is computed from the tyre Pacejka data "
+        "— not a friction coefficient assumption — so the bias calc uses real "
+        "grip, not a guess.",
+        "Combined Fx/Fy limit during brake-in-corner is shown on the friction "
+        "ellipse so you can see how much lateral grip is left at your declared "
+        "brake bias.",
+        "Tyre load sensitivity: as the tyre lifts load under braking, the "
+        "friction ellipse shrinks; the tool accounts for this in the bias calc "
+        "so the front doesn't lock at light loads.",
+    ],
+
+    ("br_therm", "brakes"): [
+        "Rotor temperature rise per stop is computed from kinetic energy, rotor "
+        "mass, material heat capacity and convective cooling — you see peak "
+        "temperature before anything is on the car.",
+        "Fade threshold: the computed peak temperature is compared against the "
+        "pad friction material's fade onset temperature — a margin of less than "
+        "50 °C is flagged.",
+        "Endurance thermal budget: rotor temperature is integrated over the "
+        "full endurance lap count to show cumulative thermal load and whether "
+        "the rotor returns to ambient between laps.",
+        "Rotor optimiser: for a target peak temperature and braking torque, the "
+        "tool sweeps rotor OD, thickness and vent geometry and returns the "
+        "lightest design that stays below the fade threshold.",
+        "Rotor DXF: the optimised rotor geometry (OD, ID, vent slot pattern, "
+        "bolt circle) is exported as a build-ready DXF.",
+        "Caliper-bracket DXF: the caliper mounting face and bolt positions are "
+        "drawn from your caliper selection and rotor OD — so the bracket is "
+        "dimensioned from real hardware, not a sketch.",
+    ],
+
+    ("br_hw", "brakes"): [
+        "Bolt factor of safety: for every fastener in the caliper mount, the "
+        "tool computes the shear load from peak braking torque and compares it "
+        "against the allowable for the fastener grade you specify.",
+        "Bracket stress: the caliper bracket is modelled as a cantilever; peak "
+        "stress is computed from caliper weight, braking torque arm and section "
+        "modulus — FoS is reported against yield.",
+        "Hydraulic line sizing: hose ID is checked against the volume displaced "
+        "per stroke so the pedal travel stays within the driver's comfortable "
+        "range.",
+        "Pedal box geometry: pedal ratio, pushrod angle and master cylinder "
+        "position are checked for mechanical advantage and geometry-induced "
+        "bias shift through the travel.",
+        "Caliper-bracket DXF export includes the fastener hole pattern to "
+        "tolerance so the bracket can go straight to waterjet.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  CHASSIS GOALS
+    # ------------------------------------------------------------------ #
+    ("ch_frame", "teamfit"): [
+        "Frame Planner node/tube graph: add nodes and tubes interactively; the "
+        "tool checks every sub-frame for missing triangulation and names the "
+        "specific node pairs that are unstable.",
+        "Per-defect fixes: for each triangulation failure, the tool suggests "
+        "one or more alternative tube placements with their effect on tube count "
+        "and mass.",
+        "3D wireframe preview: the frame updates in 3D as you add nodes, so you "
+        "can see the structure take shape alongside the triangulation audit.",
+        "Panel attachment planner: seat, harness, floor, firewall and aero panel "
+        "mounting points are declared on the node map; the tool checks each "
+        "panel has a legal three-point minimum attachment.",
+        "Load-path audit: the tool traces how vertical, lateral and longitudinal "
+        "loads travel through the declared tube network and highlights tubes "
+        "carrying no load (candidates for removal) and tubes carrying "
+        "disproportionate load (candidates for upsizing).",
+        "Size C→B sourcing trade: for tubes near the FoS limit, the tool "
+        "queries the alternative-tubing equivalency screen and shows which "
+        "larger-size tube satisfies the FSAE SES without a full FEA resubmission.",
+    ],
+    ("ch_frame", "compliance"): [
+        "Torsional stiffness estimate: the Frame Planner exports an APDL deck "
+        "for your frame topology that runs in ANSYS as a torsion test — you "
+        "get a stiffness number from YOUR geometry, not a textbook estimate.",
+        "Member load paths are cross-referenced between the Frame Planner and "
+        "Compliance so the most-loaded tubes in the frame planner are the same "
+        "ones checked for FoS in compliance.",
+        "Over-constrained nodes (too many tubes meeting at a point without "
+        "gussets) are flagged before the ANSYS mesh is built.",
+    ],
+    ("ch_fit", "teamfit"): [
+        "Driver fit check: enter the driver's seated height, shoulder width and "
+        "reach; the tool overlays the driver envelope on the frame wireframe and "
+        "flags clearance conflicts with tubes, pedals and the roll hoop.",
+        "Egress simulation: the tool checks whether the driver can exit the car "
+        "within the FSAE-required 5 seconds by checking head, shoulder and hip "
+        "clearance to the roll hoop and side impact tubes.",
+        "Component fit: declare the engine/motor, accumulator, differential and "
+        "cooling radiator as 3D bounding boxes; the Frame Planner shows where "
+        "they sit relative to the frame nodes and flags any intersection.",
+        "Harness attachment check: the required six-point harness anchor nodes "
+        "are located on the frame; the tool verifies the belt angles are within "
+        "the FSAE-specified limits.",
+        "Node-gusset DXF: every gusseted node exports a 2D DXF of the gusset "
+        "plate geometry sized for the tube angles at that node.",
+    ],
+    ("ch_stiff", "compliance"): [
+        "Effective corner stiffness: the whole-car torsion is distributed to "
+        "suspension corner loads; the compliance tool shows how much of the "
+        "chassis torsion budget is consumed by each arm.",
+        "Sensitivity to member removal: removing a tube from the load path "
+        "immediately shows the stiffness loss in the compliance model — "
+        "so mass-removal decisions are made with known stiffness consequences.",
+        "FoS per member under the FSAE design load cases (1.5 g corner, 3 g "
+        "bump) is reported for every declared structural member.",
+        "Cross-section optimiser: for a target FoS and minimum stiffness, the "
+        "tool suggests the lightest tube size from a standard FSAE material set.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  COST GOALS
+    # ------------------------------------------------------------------ #
+    ("cs_bom", "cost"): [
+        "FSAE Cost event BOM format: line items are auto-seeded from the "
+        "Integration ledger's declared components — you fill in the "
+        "cost-event-specific fields (process, material class, fastener grade) "
+        "rather than re-entering the whole part list.",
+        "FSAE Cost tables are pre-loaded so unit costs are pulled from the "
+        "official tables automatically; deviations (custom parts, purchased "
+        "assemblies) are flagged for manual entry.",
+        "CSV export matches the FSAE Cost event submission format exactly — "
+        "no reformatting required.",
+        "Cost event penalties (missing line items, incorrect assembly level) "
+        "are checked before export so the submission is clean.",
+    ],
+    ("cs_ledger", "cost"): [
+        "Running cost total updates every time a new component is declared in "
+        "Integration — the team sees the car's price tag in real time as "
+        "design decisions are made.",
+        "Cost sensitivity: changing a material (aluminium to steel, billet to "
+        "tube) immediately updates the line-item cost so trade-offs are priced "
+        "at the moment of decision.",
+        "Subsystem cost breakdown chart shows where the budget is going — "
+        "suspension vs aero vs powertrain — so the team can make informed "
+        "budget reallocation decisions.",
+    ],
+    ("cs_ledger", "weight"): [
+        "Weight ledger: every component declared in Integration carries a mass; "
+        "the ledger aggregates subsystem masses, CG contributions and a running "
+        "whole-car total.",
+        "CG sensitivity: moving a component's declared position updates the "
+        "whole-car CG immediately — so packaging decisions are made with "
+        "handling consequences visible.",
+        "Weight & CG handover export: the ledger exports in the FSAE weigh-in "
+        "format with subsystem subtotals and the car's measured CG — ready for "
+        "the technical inspection table.",
+        "Competing mass estimates are visible side by side — if suspension says "
+        "the uprights are 1.2 kg and the BOM says 1.8 kg, the discrepancy "
+        "is flagged before either number reaches a sim.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  EVERYONE / CROSS-TEAM GOALS
+    # ------------------------------------------------------------------ #
+    ("ev_all", "model3d"): [
+        "Whole-car 3D model: every subsystem's declared geometry (suspension "
+        "arms, accumulator, aero surfaces, engine/motor, radiator, frame) is "
+        "assembled into a single spinnable 3D view — your part in everyone "
+        "else's context.",
+        "CAD library integration: uploading a STEP/STL/OBJ to the shared CAD "
+        "library automatically places it on the 3D model in its slot — the "
+        "dummy placeholder is replaced and the car reads as a complete "
+        "assembly.",
+        "Fit Forecast: before uploading a CAD file, the tool checks it against "
+        "the slot envelope (will it physically fit?), flags interference with "
+        "neighbours, and gives a 0–100 assembly-readiness score.",
+        "Clash detection: overlapping bounding boxes are highlighted in the 3D "
+        "view with the names of both parts — so packaging conflicts are visible "
+        "when moving a bracket is a click, not a re-machine.",
+        "Subsystem ownership colouring: each subteam's parts are coloured "
+        "distinctly so you can see at a glance who owns what and where the "
+        "interfaces are.",
+        "DXF-to-3D pipeline: every subsystem's DXF export (wing airfoil, rotor, "
+        "motor flange, segment box) feeds back into the 3D model so the 2D "
+        "design sections are always reflected in the 3D context.",
+    ],
+    ("ev_all", "integration"): [
+        "Cross-subsystem ledger: every subteam declares its interface numbers "
+        "(mass, CG, torque, heat, current, downforce) in one place — no more "
+        "eight competing spreadsheets with different versions of the same "
+        "number.",
+        "Estimate vs confirmed: every number carries a status flag; a number "
+        "still marked *estimate* is shown distinctly so every downstream user "
+        "knows the confidence level.",
+        "Coupling graph: when any interface number changes, KinematiK walks the "
+        "physical coupling graph and flags which other subsystems are affected "
+        "— a motor torque increase is automatically reflected in the upright "
+        "load and the cooling requirement.",
+        "Verdict Center: each subsystem's integration status is summarised as "
+        "works / look-closer / attention — the team lead can see the whole "
+        "car's readiness on one screen.",
+        "Registry provenance: every declared number links back to its source "
+        "(test data, supplier spec, KinematiK calculation) so 'where did this "
+        "come from?' always has an answer.",
+        "Manufacturing-release gate: a formal go/no-go that blocks any part "
+        "whose loads are still estimates — so nothing goes to manufacture "
+        "resting on unconfirmed inputs.",
+    ],
+}
+
+# ========================================================================== #
+#  FREETEXT NOTE → PER-TOOL CONTEXTUAL HOOK
+#
+#  Light keyword matching on the user's optional note to inject one sentence
+#  of contextual advice into the relevant tool block.  Kept deliberately
+#  simple (no NLP) — a few clear keywords cover the cases that actually
+#  appear in the FSAE context.  Returns a short string or "" when no hook
+#  fires for that tool.
+# ========================================================================== #
+_FREETEXT_KEYWORDS: list[tuple[list[str], str, str]] = [
+    # (keywords, tool_id_or_"any", advice sentence)
+    # --- suspension-specific ---
+    (["bump steer", "bumpsteer", "toe change"],
+     "kinematics",
+     "Your note mentions bump steer — that is one of the most sensitive outputs "
+     "in this tool: the signed bump-steer angle is shown for every mm of bump "
+     "travel and can be zeroed interactively by moving the outer tie-rod "
+     "pickup."),
+    (["camber", "camber gain", "camber curve"],
+     "kinematics",
+     "Your note mentions camber — the continuous camber-gain curve updates live "
+     "as you drag hardpoints, so you can chase a gradient target in real time "
+     "without re-running anything."),
+    (["roll centre", "roll center", "rc migration", "jacking"],
+     "roll",
+     "Your note mentions roll centres — the migration plot shows the RC path "
+     "through the full bump range, and the lateral load transfer split "
+     "between jacking and spring forces is broken out separately."),
+    (["flex", "flex", "deflect", "stiff", "member load"],
+     "compliance",
+     "Your note mentions flex or stiffness — start with the Compliance tab "
+     "before ANSYS: it will identify which specific member is the stiffness "
+     "constraint so your FEA run confirms the fix, not hunts for the problem."),
+    # --- aero ---
+    (["cfd", "wind tunnel", "tunnel", "shortlist"],
+     "aero",
+     "Your note mentions CFD or tunnel time — use the panel-method solver here "
+     "to rank configurations first; that way you commit CFD time to two or "
+     "three finalists instead of a blank exploration."),
+    (["drag", "cd", "efficiency", "cl/cd"],
+     "aero",
+     "Your note mentions drag or efficiency — the Cl/Cd ratio is plotted "
+     "continuously as you adjust angle and chord, so you can find the "
+     "efficiency peak before committing to a mould."),
+    # --- brakes ---
+    (["lock", "lock up", "lock-up", "bias", "rear lock"],
+     "brakes",
+     "Your note mentions lock-up — the bias sweep shows lock-up order as a "
+     "function of deceleration level; you can read off the safe bias range "
+     "for your tyre data before the car runs."),
+    (["overheat", "rotor", "thermal", "fade", "temperature"],
+     "brakes",
+     "Your note mentions rotor heat or fade — the rotor thermal model "
+     "integrates temperature over a full endurance lap count, so you can see "
+     "cumulative heat exposure, not just peak stop temperature."),
+    (["overhe", "heat", "cooling", "radiator", "thermal"],
+     "ev",
+     "Your note mentions heat or cooling — the worst-case heat load is summed "
+     "from motor, inverter and pack losses and expressed as a single kW "
+     "rejection target, which the cooling sizing module then works against."),
+    # --- EV / electrics ---
+    (["energy", "endurance", "range", "pack", "battery"],
+     "ev",
+     "Your note mentions energy or endurance range — the energy model "
+     "integrates regen recovery lap by lap from the actual GGV deceleration "
+     "profile, so regen benefit is computed from your real car geometry, "
+     "not a blanket percentage."),
+    (["scrut", "scrutineer", "inspection", "rules", "fsae-ev", "safety"],
+     "tractive",
+     "Your note mentions scrutineering or rules gates — the tractive safety "
+     "tab steps through the exact FSAE-EV electrical inspection checklist "
+     "so you can rehearse it before the scrutineers see the car."),
+    (["pcb", "board", "trace", "wiring", "harness", "burn"],
+     "pcb",
+     "Your note mentions PCB or wiring — the PCB Doctor imports a real "
+     ".kicad_pcb and names the guilty trace and net, not just the symptom; "
+     "one-click re-trace replaces undersized copper immediately."),
+    # --- chassis ---
+    (["triangl", "triangle", "frame", "node", "tube"],
+     "teamfit",
+     "Your note mentions the frame or triangulation — Frame Planner names the "
+     "specific node pairs that are missing triangulation and suggests "
+     "alternative tube placements, so no sub-frame ever leaves with a "
+     "mechanism."),
+    (["egress", "driver fit", "driver", "seat", "cockpit"],
+     "teamfit",
+     "Your note mentions driver fit or egress — the tool overlays the driver "
+     "envelope on the wireframe and checks the 5-second egress requirement "
+     "against clearances to the roll hoop and side tubes."),
+    # --- integration / general ---
+    (["number", "mismatch", "spreadsheet", "version", "wrong input", "stale"],
+     "integration",
+     "Your note mentions stale or mismatched numbers — the Integration ledger "
+     "keeps one version of every interface value and tags any number still "
+     "marked *estimate* so every downstream user knows the confidence level."),
+    (["lap time", "laptime", "lap delta", "faster", "seconds"],
+     "laptime",
+     "Your note mentions lap time — every design change here returns a delta "
+     "in seconds on the track layout you load, so you are always ranking "
+     "decisions by the score that matters."),
+]
+
+
+def _freetext_hook(freetext: str, tool_id: str) -> str:
+    """Return one contextual sentence if the freetext note matches a keyword
+    for this tool_id, else empty string.  Case-insensitive; first match wins.
+    Pure Python, zero imports beyond builtins."""
+    if not freetext:
+        return ""
+    ft_lower = freetext.lower()
+    for keywords, tid, advice in _FREETEXT_KEYWORDS:
+        if tid not in (tool_id, "any"):
+            continue
+        if any(kw in ft_lower for kw in keywords):
+            return advice
+    return ""
+
+
 def _brief_goal_options(roles):
     """(key, label, tab_ids) goal options for the selected subteam blend."""
     _opts, _seen = [], set()
@@ -2673,6 +3468,7 @@ def _build_briefing(roles, purpose_key, goal_keys, freetext, style="visual"):
         "roles": list(roles or ["everyone"]),
         "purpose": purpose_key,
         "goals": [(_k, _opts[_k][0]) for _k in _goal_keys],
+        "active_goal_keys": _goal_keys,          # NEW — carried for feature lookup
         "freetext": (freetext or "").strip(),
         "style": style,
         "core_tabs": _core,
@@ -2800,21 +3596,57 @@ def _render_briefing_panel():
                     "every value has a sensible default, so play freely.")
         st.divider()
 
+        # Collect all active goal keys once, outside the inner function.
+        _active_goals = _bf.get("active_goal_keys", [])
+        _freetext = _bf.get("freetext", "")
+
         def _brief_tool_block(_n, _tid):
-            """One recommended tool: what / plain English / why / vs / visual."""
+            """One recommended tool: header / what / plain-English / why / vs /
+            goal-specific features / freetext hook / visual."""
             _em, _lab = _TAB_META[_tid]
             _need, _why, _vs = _BRIEF_TOOLS[_tid]
             _cat = _CAT_LABEL.get(_ID_CATEGORY.get(_tid, ""), "")
+
+            # --- header + what-you-do-here ---
             _parts = [f"**{_n}. {_em} {_lab}**  ·  find it under **{_cat}**",
                       _need]
+
+            # --- plain-English gloss for newcomers ---
             if _style == "new" and _tid in _BRIEF_SIMPLE:
                 _parts.append(f"🌱 *In plain English:* {_BRIEF_SIMPLE[_tid]}")
+
+            # --- strategic why + vs ---
             _parts.append(f"**Why you need it:** {_why}")
             _parts.append(
                 f"> **Why here, not MATLAB/ANSYS/OptimumK etc.:** {_vs}")
+
+            # --- goal-specific feature deep-dive ---
+            # Collect every feature bullet that applies to any active goal for
+            # this tool, de-duplicating across multiple goals.
+            _feat_seen: set[str] = set()
+            _feat_lines: list[str] = []
+            for _gk in _active_goals:
+                for _feat in _BRIEF_GOAL_FEATURES.get((_gk, _tid), []):
+                    if _feat not in _feat_seen:
+                        _feat_seen.add(_feat)
+                        _feat_lines.append(_feat)
+
+            if _feat_lines:
+                _parts.append(
+                    "**What this tool does for your goal — feature by feature:**")
+                # Render as a tight bullet list inline in the markdown block.
+                _parts.append(
+                    "\n".join(f"- {_f}" for _f in _feat_lines))
+
+            # --- freetext contextual hook ---
+            _hook = _freetext_hook(_freetext, _tid)
+            if _hook:
+                _parts.append(f"💬 *Your note:* {_hook}")
+
             st.markdown("\n\n".join(_parts))
+
+            # --- live concept visual (visual / new modes) ---
             if _style in ("visual", "new"):
-                # Live concept visual — real physics, representative values.
                 # Lazy import + full guard: a visual can never block the text.
                 try:
                     from suspension.brief_visuals import concept_figure
