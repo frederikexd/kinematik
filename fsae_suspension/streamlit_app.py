@@ -3542,7 +3542,7 @@ _CAD_PART_SLOTS = {
     # label shown in dropdown : (subsystem key, dummy body display-name or None)
     # Chassis is first so it's the default selection — a dummy-backed slot, so
     # the "Replace the dummy" checkbox is live immediately instead of greyed out.
-    "Chassis":                  ("chassis",           "Monocoque"),
+    "Chassis":                  ("chassis",           "Spaceframe"),
     "Front wing":               ("aerodynamics",      "Front wing"),
     "Rear wing":                ("aerodynamics",      "Rear wing"),
     "Sidepod / bodywork":       ("cooling",           "Sidepod (cooling)"),
@@ -3745,7 +3745,7 @@ def _lib_inject_cad(cf):
                               + _SLD_ADVICE)
         if _slot == "Chassis":
             return True, (f"**{cf.name}** is in the library; the dummy "
-                          f"monocoque stands in for it on the 3D model. "
+                          f"spaceframe stands in for it on the 3D model. "
                           + _SLD_ADVICE)
         try:
             _centre, _env, _subsys, _dummy = _cad_slot_target(_slot)
@@ -8870,7 +8870,7 @@ with tab4:
 #  aero mounts to the CHASSIS, never the bodywork.
 def _add_aero_mount_overlay(fig, *, selected_el=None, n_selected=None):
     _pbx = getattr(fig, "_part_boxes", None) or {}
-    _mono = _pbx.get("Monocoque")
+    _mono = _pbx.get("Spaceframe") or _pbx.get("Monocoque")
     if not _mono:
         return 0
     _mc = np.array(_mono["centre"], float)
@@ -9018,12 +9018,16 @@ with tab_car:
         _show_cool = lc[1].checkbox("Cooling (sidepods)", True, key="car3d_cool")
         _show_pt = lc[2].checkbox("Powertrain", True, key="car3d_pt")
         _show_el = lc[2].checkbox("Electrics", True, key="car3d_el")
-        _show_body = lc[3].checkbox("Bodywork (monocoque/halo)", True, key="car3d_body")
+        _show_body = lc[3].checkbox("Bodywork (spaceframe + hoops)", True, key="car3d_body")
         _show_mounts = lc[3].checkbox(
-            "⚓ Aero mount points", False, key="car3d_aeromounts",
+            "⚓ Aero mount points",
+            bool(st.session_state.pop("car3d_aeromounts_req", False))
+            or bool(st.session_state.get("car3d_aeromounts_on", False)),
+            key="car3d_aeromounts",
             help="Show where each aero element attaches to the chassis — the "
                  "mount points and their load paths into primary structure. "
                  "Companion to Aerodynamics → Mounting & bonding designer.")
+        st.session_state["car3d_aeromounts_on"] = bool(_show_mounts)
 
     # The car renders HERE, directly under the controls. Streamlit fills a
     # container in the order it was CREATED, not called, so we reserve this slot
@@ -9821,6 +9825,7 @@ with tab_car:
         "Radiator core":     "cooling",
         "Motor + inverter":  "powertrain",
         "Accumulator":       "electrics",
+        "Spaceframe":        "chassis",
         "Monocoque":         "chassis",
         "Roll hoop":         "chassis",
         "Driver":            "chassis",
@@ -10320,7 +10325,7 @@ with tab_car:
                             uploader=_pub_who.strip(), kind="file",
                             data_b64=_b64.b64encode(_bytes).decode("ascii"),
                             size_bytes=len(_bytes), note=_pub_note.strip()))
-                        save_store(_cad_store)
+                        _persisted = save_store(_cad_store)
                         # Library ⇄ 3D model bridge: place it on the car too.
                         _msg3d = ""
                         try:
@@ -10329,9 +10334,13 @@ with tab_car:
                             _msg3d = "  \n" + _msg3d
                         except Exception:
                             pass
+                        _tail = ("" if _persisted else
+                                 "  \n_In the library for everyone this session; "
+                                 "the cross-session save is degraded (see the "
+                                 "warning above) but your file is not lost._")
                         st.success(f"Published {_up.name} "
                                    f"({cadshare_mod.human_size(len(_bytes))})."
-                                   + _msg3d)
+                                   + _msg3d + _tail)
                         _do_rerun()
                 elif _big_link.strip():
                     _nm = _big_link.strip().rstrip("/").split("/")[-1] or "assembly link"
@@ -10434,62 +10443,6 @@ with tab_car:
                     _cad_store.remove_cad_file(_cf.id)
                     save_store(_cad_store)
                     _do_rerun()
-
-    # ----------------------------------------------------------------- #
-    #  1b · Quick assembly preview — the "could-be" car, right here
-    #
-    #  The moment a part is published it's already on the car (autosync);
-    #  this shows that car WITHOUT leaving the library: every uploaded CAD
-    #  part rendered real-shape in its slot, dummy placeholders filling in
-    #  everything not yet uploaded — a live preview of the formula car this
-    #  library currently describes.
-    # ----------------------------------------------------------------- #
-    with st.expander("🧩 Quick assembly preview — your CAD + dummy parts = "
-                     "the could-be car", expanded=False):
-        try:
-            _qa_parts = st.session_state.get("car3d_custom_parts", []) or []
-            _qa_lib = [p for p in _qa_parts if p.get("from_library")]
-            st.caption(
-                f"**{len(_qa_lib)}** part(s) from the library are on the car "
-                "(real shape, seated in their slots); every other body is a "
-                "dummy placeholder that stays until its CAD is uploaded. "
-                "Purely a preview — feeds no calculation.")
-            _qa_sup, _qa_sup_names = set(), set()
-            for _p in _qa_parts:
-                if _p.get("replaces_subsys"):
-                    _qa_sup.add(_p["replaces_subsys"])
-                for _dn in (_p.get("replaces_drawnames") or []):
-                    _qa_sup_names.add(_dn)
-            try:
-                _vp_qa = VehicleParams(**{
-                    k: v for k, v in st.session_state.vp.items()
-                    if k in set(VehicleParams.__dataclass_fields__.keys())})
-            except Exception:
-                _vp_qa = VehicleParams()
-            try:
-                _led_qa = interfaces_mod.IntegrationLedger.from_dict(
-                    st.session_state.ledger)
-            except Exception:
-                _led_qa = None
-            _fig_qa = fullcar_mod.build_full_car_figure(
-                vp=_vp_qa, ledger=_led_qa,
-                part_overrides=_lib_snap_overrides(
-                    dict(st.session_state.get("car3d_overrides", {}) or {})),
-                custom_parts=_qa_parts,
-                suppress_subsystems=_qa_sup, suppress_parts=_qa_sup_names,
-                height=520)
-            st.plotly_chart(_fig_qa, width="stretch", key="cad_lib_qa_fig",
-                            config={"displaylogo": False})
-            try:
-                _mem.release_figure(_fig_qa)
-            except Exception:
-                pass
-            _fig_qa = None
-            st.caption("Full controls (spotlight, click-to-zoom, part editor) "
-                       "live in the **3D Model** tab — this is the same car.")
-        except Exception as _qe:
-            st.info(f"Preview unavailable right now ({_qe}) — the parts are "
-                    "still placed; see the 3D Model tab.")
 
     # ----------------------------------------------------------------- #
     #  2 · SES location pack
@@ -11985,7 +11938,8 @@ with tab_aero:
                           "gold diamonds at each attachment, dotted load-path "
                           "lines into the chassis. The element and mount count "
                           "you chose here are emphasised there."):
-            st.session_state["car3d_aeromounts"] = True
+            st.session_state["car3d_aeromounts_req"] = True
+            st.session_state["car3d_aeromounts_on"] = True
             st.success(
                 f"Mount overlay is ON. Open the **🏎️ 3D Model** tab — "
                 f"{_m_el} is highlighted with your {_m_n} mount points; the "
