@@ -2106,6 +2106,13 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
     return rows
 
 
+# Backward/forward-compatible alias. Some callers (older/newer streamlit_app
+# builds) reference ``override_influence_summary``; it is identical to
+# ``influence_summary`` — the influence read-out already reflects any active
+# part overrides via the ledger it is handed.
+override_influence_summary = influence_summary
+
+
 def custom_part_fit(vp, part: dict) -> dict:
     """Plain-language fit check of a user-dropped part against the car envelope.
 
