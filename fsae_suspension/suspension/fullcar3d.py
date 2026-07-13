@@ -2354,3 +2354,27 @@ def dummy_body_footprint(fig, name: str) -> dict | None:
         h_mm=float(zs_hi - zs_lo),
         x_mm=float((xs_lo + xs_hi) / 2.0), y_mm=float((ys_lo + ys_hi) / 2.0),
         z_mm=float((zs_lo + zs_hi) / 2.0))
+
+
+# ---------------------------------------------------------------------------
+# Compatibility shim (PEP 562 module __getattr__).
+#
+# Some deployed builds of the Streamlit app call names on this module that were
+# renamed or never existed here — most notably ``override_influence_summary``.
+# Rather than let that surface as "module 'suspension.fullcar3d' has no
+# attribute ...' and blow up the whole full-car view, we resolve unknown names
+# gracefully:
+#   * anything ending in ``influence_summary`` -> the real influence_summary
+#   * any ``override_<name>`` whose <name> exists here -> that existing object
+# Genuinely unknown names still raise AttributeError as normal.
+# ---------------------------------------------------------------------------
+def __getattr__(name):
+    if name.endswith("influence_summary"):
+        return influence_summary
+    if name.startswith("override_"):
+        _base = name[len("override_"):]
+        _obj = globals().get(_base)
+        if _obj is not None:
+            return _obj
+    raise AttributeError(
+        f"module {__name__!r} has no attribute {name!r}")
