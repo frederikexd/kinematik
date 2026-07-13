@@ -1081,119 +1081,128 @@ def build_full_car_figure(
     inner_y_f = tf / 2.0 - tire_width_mm - 40
     inner_y_r = tr / 2.0 - tire_width_mm - 40
 
-    # ---- 2) chassis: FSAE monocoque + nosecone + roll hoops + driver ---- #
-    #  Reshaped to read as a real Formula Student car (cf. the reference photo):
-    #  a low, slim survival cell that tapers to a pointed nosecone at the front,
-    #  an open cockpit, a curved MAIN roll hoop behind the driver's head and a
-    #  smaller FRONT hoop ahead of the dash, plus the driver's helmet showing in
-    #  the cockpit — not an F1 halo.
+    # ---- 2) chassis: FSAE spaceframe tube network + roll hoops + driver --- #
+    #  A triangulated steel tube chassis scaled from the car's geometry.
+    #  No monocoque shell — every member is an explicit cylinder so the frame
+    #  reads as a welded spaceframe.  All tubes share the name "Spaceframe" so
+    #  part_overrides, suppress_parts, and _part_boxes all work correctly.
+    #
+    #  Key structural members (FSAE Rule T.2 inspired):
+    #    Floor rails        — main longerons, low left & right
+    #    Upper rails        — deck-level longerons, left & right
+    #    Front bulkhead     — T.2.2 impact-attenuator mounting face
+    #    Front hoop base    — T.2.3 front roll hoop lower frame
+    #    Main hoop base     — T.2.1 main roll hoop lower frame
+    #    Rear bulkhead      — powertrain / diff mounting face
+    #    Firewall bulkhead  — driver compartment aft face
+    #    Side impact tubes  — T.2.6 side impact zone (mid-height)
+    #    Diagonal bracing   — X-braces in floor + upper deck bays
+    #    Nose cone tubes    — tapered nose fore of the front bulkhead
+    #    Upright pillars    — vertical corner posts at each bulkhead
     if show_bodywork:
         ch_it = _iface(ledger, "chassis")
         tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
-        # Sit the tub low like an FSAE car: floor near the ground, deck low.
         tub_bot = max(z_lo * 0.5, tire_r * 0.14)
         tub_top = tub_bot + _clamp(tire_r * 0.95, 180, 360)
         cz = (tub_top + tub_bot) / 2
         hzz = (tub_top - tub_bot) / 2
-        prof = _ellipse_ring(24)
 
-        # Lofted survival cell: pointed nose tip -> footwell -> cockpit bay ->
-        # tapered tail. Stations run front (tip) to rear.
-        nose_tip_x = x_front + tire_r * 1.9
-        tail_x = x_rear + tire_r * 0.15
-        xs = np.linspace(nose_tip_x, tail_x, 9)
-        #             tip   nose  foot  dash  cockpit cock  belly tail   end
-        widths  = np.array([0.05, 0.22, 0.55, 0.88, 1.00, 0.98, 0.86, 0.66, 0.5])
-        heights = np.array([0.10, 0.30, 0.62, 0.85, 0.92, 0.92, 0.85, 0.74, 0.6])
-        zoff    = np.array([0.55, 0.42, 0.18, 0.04, 0.00, 0.00, 0.02, 0.06, 0.1]) * hzz
-        scales = [(tub_w / 2 * w, hzz * h, 0.0, cz + dz)
-                  for w, h, dz in zip(widths, heights, zoff)]
-        mv, mi, mj, mk = _prism_xsection(prof, xs, scales)
-        hv = "Monocoque / survival cell"
-        if _g(ch_it, "mass_kg"):
-            hv += " · %.1f kg" % _g(ch_it, "mass_kg")
-        mesh(mv, mi, mj, mk, COLORS["monocoque"], "Monocoque", "chassis",
-             base_op=0.92, hover=hv)
+        # Tube radius: ~2.2 % of half-height, clipped to FSAE ERB range 12–22 mm.
+        _sf_r = _clamp(hzz * 0.022, 12.0, 22.0)
 
-        # A thin livery flash down the flank (the photo's red/yellow stripe).
-        fv, fi, fj, fk = _prism_xsection(
-            _ellipse_ring(24),
-            np.linspace(nose_tip_x - tire_r * 0.3, tail_x, 6),
-            [(tub_w / 2 * w * 1.005, hzz * h * 0.16, 0.0, cz + dz)
-             for w, h, dz in zip(widths[2:8], heights[2:8], zoff[2:8])])
-        mesh(fv, fi, fj, fk, COLORS["livery"], "Monocoque", "chassis", 0.9)
+        _sf_drawn = [False]   # mutable flag: legend entry on first tube only
 
-        # ---- Spaceframe tube network: FSAE-style steel tube chassis -------- #
-        #  Drawn using the same dimensional variables (tub_w, tub_bot, tub_top,
-        #  nose_tip_x, tail_x, x_front, x_rear, tire_r) so the frame sits
-        #  precisely inside the monocoque envelope.  Every tube is registered
-        #  under the name "Spaceframe" / group "spaceframe_tube" so:
-        #    • It appears in the legend once, labelled "Spaceframe"
-        #    • part_overrides["Spaceframe"] moves / rescales the whole frame
-        #    • _suppress_parts{"Spaceframe"} hides it when a real CAD replaces it
-        #    • _part_boxes["Spaceframe"] gives the mount-overlay its anchor
-        #
-        #  Tube radius is ~2 % of the tub half-height (FSAE ERB typical wall
-        #  size, scaled to the car), so it reads as slender steel, not a block.
-        _sf_r = max(6.0, hzz * 0.022)
-
-        def _sf_tube(p0, p1, *, first=False):
-            """Add one spaceframe tube; legend entry only on the first call."""
-            _nm = corner_name("Spaceframe") if first else None
-            tv, ti, tj, tk = _tube(p0, p1, _sf_r, n=8)
+        def _sf_tube(p0, p1, r=None):
+            """Render one spaceframe tube; first call adds the legend entry."""
+            _rv = r if r is not None else _sf_r
+            tv, ti, tj, tk = _tube(p0, p1, _rv, n=10)
+            _nm = "Spaceframe" if not _sf_drawn[0] else None
+            if not _sf_drawn[0]:
+                _sf_drawn[0] = True
+            _hv = "Spaceframe" if _nm else None
+            if _g(ch_it, "mass_kg") and _nm:
+                _hv = "Spaceframe · %.1f kg" % _g(ch_it, "mass_kg")
             mesh(tv, ti, tj, tk, COLORS["frame"], "Spaceframe", "chassis",
-                 base_op=0.88, corner=None)
+                 base_op=0.90, hover=_hv)
 
-        _y_half = tub_w * 0.5   # left/right rail y-coord
+        # ---- Key x-stations (SAE: +x is forward) ---------------------------
+        _y      = tub_w * 0.5          # half-width at main rails
+        _y_nose = tub_w * 0.28         # half-width at front bulkhead (tapered)
+        _rail_z = tub_bot + hzz * 0.08 # floor rail z
+        _deck_z = tub_bot + hzz * 1.05 # upper rail z
+        _side_z = tub_bot + hzz * 0.52 # side-impact tube z (mid-height)
 
-        # Longitudinal floor rails (left & right): from tail to front bulkhead
-        _rail_z = tub_bot + hzz * 0.05
-        _f_bulk = x_front - wb * 0.05   # approximate front bulkhead x
-        _r_bulk = x_rear  + tire_r * 0.15   # approximate rear bulkhead x
+        _x_fb   = x_front - wb * 0.04  # front bulkhead
+        _x_fh   = x_front - wb * 0.18  # front hoop pillars
+        _x_fw   = x_front - wb * 0.40  # firewall / mid-bay bulkhead
+        _x_mh   = x_front - wb * 0.55  # main hoop base
+        _x_rb   = x_rear  + tire_r * 0.18  # rear bulkhead
 
+        # Nose tip (impact attenuator tip)
+        _x_nose = x_front + tire_r * 1.6
+        _nose_z = tub_bot + hzz * 0.55  # nose cone apex z
+
+        # ---- Nose cone: four tubes converging to a tip ---------------------
         for _sgn in (-1, 1):
-            _sf_tube([_r_bulk, _sgn * _y_half, _rail_z],
-                     [_f_bulk, _sgn * _y_half, _rail_z],
-                     first=(_sgn == -1))
+            _sf_tube([_x_fb,  _sgn * _y_nose, _rail_z], [_x_nose, 0.0, _nose_z])
+            _sf_tube([_x_fb,  _sgn * _y_nose, _deck_z + hzz * 0.1],
+                     [_x_nose, 0.0, _nose_z])
+        # cross brace across front bulkhead face
+        _sf_tube([_x_fb, -_y_nose, _rail_z], [_x_fb,  _y_nose, _rail_z])
+        _sf_tube([_x_fb, -_y_nose, _deck_z + hzz * 0.1],
+                 [_x_fb,  _y_nose, _deck_z + hzz * 0.1])
+        _sf_tube([_x_fb, -_y_nose, _rail_z], [_x_fb, -_y_nose, _deck_z + hzz * 0.1])
+        _sf_tube([_x_fb,  _y_nose, _rail_z], [_x_fb,  _y_nose, _deck_z + hzz * 0.1])
 
-        # Upper side rails (left & right): front to rear at cockpit-deck height
-        _deck_z = tub_bot + hzz * 1.1
+        # ---- Floor rails (main longerons) ----------------------------------
         for _sgn in (-1, 1):
-            _sf_tube([_r_bulk, _sgn * _y_half * 0.9, _deck_z],
-                     [_f_bulk, _sgn * _y_half * 0.9, _deck_z])
+            _sf_tube([_x_rb, _sgn * _y, _rail_z], [_x_fb, _sgn * _y_nose, _rail_z])
 
-        # Front bulkhead: four corners of the nose bay
-        for (_y0, _z0), (_y1, _z1) in [
-            (( _y_half,  _rail_z), ( _y_half,  _deck_z)),
-            ((-_y_half,  _rail_z), (-_y_half,  _deck_z)),
-            (( _y_half,  _deck_z), (-_y_half,  _deck_z)),
-            (( _y_half,  _rail_z), (-_y_half,  _rail_z)),
+        # ---- Upper rails ---------------------------------------------------
+        for _sgn in (-1, 1):
+            _sf_tube([_x_rb, _sgn * _y * 0.9, _deck_z],
+                     [_x_fb, _sgn * _y_nose,   _deck_z + hzz * 0.1])
+
+        # ---- Side-impact tubes (T.2.6) at mid-height -----------------------
+        for _sgn in (-1, 1):
+            _sf_tube([_x_rb, _sgn * _y, _side_z], [_x_fb, _sgn * _y_nose, _side_z])
+
+        # ---- Upright pillars at every bulkhead station ---------------------
+        for _x_stn, _yw in [(_x_fb,  _y_nose), (_x_fh, _y),
+                             (_x_fw,  _y),      (_x_mh, _y), (_x_rb, _y)]:
+            for _sgn in (-1, 1):
+                # floor to upper rail
+                _sf_tube([_x_stn, _sgn * _yw, _rail_z],
+                         [_x_stn, _sgn * _yw, _deck_z])
+                # floor to side-impact
+                _sf_tube([_x_stn, _sgn * _yw, _rail_z],
+                         [_x_stn, _sgn * _yw, _side_z])
+
+        # ---- Transverse ties at each station (floor + deck) ----------------
+        for _x_stn, _yw in [(_x_fh, _y), (_x_fw, _y), (_x_mh, _y), (_x_rb, _y)]:
+            _sf_tube([_x_stn, -_yw, _rail_z], [_x_stn,  _yw, _rail_z])
+            _sf_tube([_x_stn, -_yw, _deck_z], [_x_stn,  _yw, _deck_z])
+            _sf_tube([_x_stn, -_yw, _side_z], [_x_stn,  _yw, _side_z])
+
+        # ---- Diagonal X-braces in the floor plane (each bay) ---------------
+        for _bx0, _bx1, _yw0, _yw1 in [
+            (_x_fb, _x_fh, _y_nose, _y),
+            (_x_fh, _x_fw, _y,      _y),
+            (_x_fw, _x_mh, _y,      _y),
+            (_x_mh, _x_rb, _y,      _y),
         ]:
-            _sf_tube([_f_bulk, _y0, _z0], [_f_bulk, _y1, _z1])
+            _sf_tube([_bx0,  _yw0, _rail_z], [_bx1, -_yw1, _rail_z])
+            _sf_tube([_bx0, -_yw0, _rail_z], [_bx1,  _yw1, _rail_z])
 
-        # Rear bulkhead: same pattern at the tail
-        for (_y0, _z0), (_y1, _z1) in [
-            (( _y_half,  _rail_z), ( _y_half,  _deck_z)),
-            ((-_y_half,  _rail_z), (-_y_half,  _deck_z)),
-            (( _y_half,  _deck_z), (-_y_half,  _deck_z)),
-            (( _y_half,  _rail_z), (-_y_half,  _rail_z)),
-        ]:
-            _sf_tube([_r_bulk, _y0, _z0], [_r_bulk, _y1, _z1])
+        # ---- Diagonal X-braces in the upper deck plane ---------------------
+        for _bx0, _bx1 in [(_x_fh, _x_fw), (_x_fw, _x_mh), (_x_mh, _x_rb)]:
+            _sf_tube([_bx0,  _y, _deck_z], [_bx1, -_y, _deck_z])
+            _sf_tube([_bx0, -_y, _deck_z], [_bx1,  _y, _deck_z])
 
-        # Mid-bay bulkhead at the firewall (approx behind the cockpit)
-        _fw_x = x_front - wb * 0.40
-        for (_y0, _z0), (_y1, _z1) in [
-            (( _y_half,  _rail_z), ( _y_half,  _deck_z)),
-            ((-_y_half,  _rail_z), (-_y_half,  _deck_z)),
-            (( _y_half,  _deck_z), (-_y_half,  _deck_z)),
-            (( _y_half,  _rail_z), (-_y_half,  _rail_z)),
-        ]:
-            _sf_tube([_fw_x, _y0, _z0], [_fw_x, _y1, _z1])
-
-        # Diagonal bracing (X-braces) in the floor plane at front and rear bays
-        for _bx0, _bx1 in [(_f_bulk, _fw_x), (_fw_x, _r_bulk)]:
-            _sf_tube([_bx0,  _y_half, _rail_z], [_bx1, -_y_half, _rail_z])
-            _sf_tube([_bx0, -_y_half, _rail_z], [_bx1,  _y_half, _rail_z])
+        # ---- Diagonal side bracing (floor rail to upper rail, each bay) ----
+        for _bx0, _bx1 in [(_x_fh, _x_fw), (_x_fw, _x_mh), (_x_mh, _x_rb)]:
+            for _sgn in (-1, 1):
+                _sf_tube([_bx0, _sgn * _y, _rail_z], [_bx1, _sgn * _y, _deck_z])
 
         # Cockpit opening reference + driver: a helmet sphere sitting in the bay.
         cockpit_x = x_front - wb * 0.16
