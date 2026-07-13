@@ -260,14 +260,18 @@ class _Session:
 _SESS = _Session()   # process-level fallback only (non-Streamlit contexts)
 
 # Process-level set of session_ids that have ALREADY emitted `session_start`.
-# Streamlit's first load runs the script twice (and the localStorage ?kvid=
-# reload adds another pass), which can slip past the per-session_state `started`
-# flag and log the same visit twice — inflating the user count. session_id is
-# minted once per browser session and survives reruns AND the ?kvid= reload, so
-# guarding the emit on it here makes session_start idempotent per real visit no
-# matter how many times the script re-executes within this server process. The
-# set is shared across all sessions in the process, so a genuinely new visitor
-# (new session_id) is unaffected and still logs exactly once.
+# Streamlit can execute the script more than once for a single fresh session
+# (an immediate widget/component-driven rerun on load), which can slip past the
+# per-session_state `started` flag and log the same visit twice — inflating the
+# user count. session_id is minted once per browser session and survives
+# reruns, so guarding the emit on it here makes session_start idempotent per
+# real visit no matter how many times the script re-executes within this server
+# process. The set is shared across all sessions in the process, so a genuinely
+# new visitor (new session_id) is unaffected and still logs exactly once.
+# (Historical note: the old localStorage ?kvid= + location.reload() identity
+# scheme created a genuinely SECOND session per visit with a different
+# session_id AND visitor_id — which this guard could not dedup. That scheme is
+# gone; see suspension/visitor_id.py.)
 _STARTED_SESSIONS: set = set()
 _STARTED_LOCK = threading.Lock()
 
@@ -341,26 +345,18 @@ def init(member: Optional[str] = None, subteam: str = "unknown",
             _sset("member", member.strip() or None)
         if subteam:
             _sset("subteam", subteam)
-        # emit session_start once per browser session — but NOT until the
-        # visitor_id is stable. On the very first Streamlit render the
-        # CookieManager hasn't populated yet, so _ax_resolved_vid_kind is
-        # "cookie (resolving…)". Emitting here would tag the event with a
-        # throwaway seed id that differs from the durable cookie id resolved
-        # on render 2, making the user appear as a brand-new visitor on every
-        # reopen and freezing returning_users at 0. We defer by one rerun:
-        # init() is called again on every rerun (it's idempotent), so the
-        # emit fires on render 2 when the id is locked in.
+        # emit session_start once per browser session. The visitor_id is
+        # resolved SYNCHRONOUSLY on render 1 (suspension/visitor_id.py reads
+        # the request cookie / ip+ua fingerprint server-side), so there is no
+        # longer any "wait for the id" deferral here — the first emit always
+        # carries a durable id.
         if not _sget("started"):
-            s = _store()
-            vid_kind = (s.get("_ax_resolved_vid_kind") or "") if s is not None else ""
-            if vid_kind == "cookie (resolving\u2026)":
-                return  # defer to next rerun — visitor_id not yet stable
             # Authoritative one-per-visit guard: dedup on the stable session_id in
-            # a process-level set. This survives Streamlit's double first-run and
-            # the ?kvid= localStorage reload, both of which can otherwise get past
-            # the session_state `started` flag and emit session_start twice —
-            # double-counting the user. Claim the session_id atomically; only the
-            # first claimant emits.
+            # a process-level set. Streamlit can execute the script more than once
+            # for a single fresh session (e.g. an immediate widget-driven rerun on
+            # load), which could slip past the session_state `started` flag and
+            # emit session_start twice — double-counting the visit. Claim the
+            # session_id atomically; only the first claimant emits.
             sid = _resolve_session_id()
             with _STARTED_LOCK:
                 if sid in _STARTED_SESSIONS:
