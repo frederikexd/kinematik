@@ -97,15 +97,37 @@ def test_heavy_feature_is_deferred_not_eager():
 
 def test_all_names_resolve():
     """Every name in __all__ must resolve through __getattr__ (no dangling
-    re-exports)."""
+    re-exports).
+
+    A missing THIRD-PARTY dependency is not a dangling re-export: the lazy
+    __getattr__ found and dispatched the name correctly, and the ImportError
+    is the documented contract for optional features on machines without the
+    extra (see requirements.txt — the app boots without plotly/trimesh etc.,
+    each just unlocks its feature). So a ModuleNotFoundError whose missing
+    module lives OUTSIDE the suspension package is collected separately and
+    turns the test into a SKIP (environment gap, honestly reported), while
+    anything else — AttributeError, or an import failure originating inside
+    the package — still fails hard, because that IS a broken re-export.
+    """
+    import pytest
     import suspension
     unresolved = []
+    missing_deps = set()
     for name in suspension.__all__:
         try:
             getattr(suspension, name)
+        except ModuleNotFoundError as exc:
+            _missing = (exc.name or "").split(".")[0]
+            if _missing and _missing != "suspension":
+                missing_deps.add(_missing)       # env gap, not a wiring bug
+            else:
+                unresolved.append((name, type(exc).__name__, str(exc)[:80]))
         except Exception as exc:  # noqa: BLE001 - we want the name + reason
             unresolved.append((name, type(exc).__name__, str(exc)[:80]))
     assert not unresolved, f"Unresolvable public names: {unresolved}"
+    if missing_deps:
+        pytest.skip("lazy wiring OK; third-party deps not installed here: "
+                    + ", ".join(sorted(missing_deps)))
 
 
 def test_all_and_resolution_table_in_sync():

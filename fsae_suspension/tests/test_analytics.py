@@ -57,11 +57,14 @@ def test_events_buffer_locally_without_supabase(tmp_path):
     path = os.path.join(str(tmp_path), "analytics_buffer.jsonl")
     rows = _drain(ax, path)
     types = {r["event_type"] for r in rows}
+    # Minimal-analytics mode (see _SAMPLE_RATES): only session_start,
+    # workflow_complete and error are written; tab_open / feature_engage /
+    # first_result are dropped at source because no kept view reads them.
     assert "session_start" in types
-    assert "tab_open" in types
-    assert "feature_engage" in types
     assert "workflow_complete" in types
-    assert "first_result" in types          # complete() triggers first_result
+    assert "tab_open" not in types           # dropped by design (rate 0.0)
+    assert "feature_engage" not in types     # dropped by design (rate 0.0)
+    assert "first_result" not in types       # dropped by design (rate 0.0)
     assert all(r["member"] == "Tester" for r in rows)
 
 
@@ -81,8 +84,9 @@ def test_timed_records_latency_and_errors(tmp_path):
     rows = _drain(ax, path)
     renders = [r for r in rows if r["event_type"] == "render"]
     errors = [r for r in rows if r["event_type"] == "error"]
-    assert any(r["feature"] == "kinematics" and r["duration_ms"] >= 0
-               for r in renders)
+    # Minimal-analytics mode: latency 'render' pings are dropped at source
+    # (rate 0.0); the error-on-raise path is metric-critical and always kept.
+    assert renders == []
     assert any(r["feature"] == "laptime" and r["error_kind"] == "ValueError"
                for r in errors)
 
@@ -95,7 +99,10 @@ def test_first_result_is_idempotent(tmp_path):
     ax.first_result()
     path = os.path.join(str(tmp_path), "analytics_buffer.jsonl")
     rows = _drain(ax, path)
-    assert sum(1 for r in rows if r["event_type"] == "first_result") == 1
+    # Minimal-analytics mode drops first_result at source (rate 0.0) — the
+    # idempotence contract is now simply "never more than one", i.e. zero.
+    assert sum(1 for r in rows if r["event_type"] == "first_result") <= 1
+    assert sum(1 for r in rows if r["event_type"] == "first_result") == 0
 
 
 def test_stable_session_id(tmp_path):
@@ -201,10 +208,16 @@ def test_session_start_not_duplicated_within_one_visit(tmp_path):
 
 def test_visitor_id_recorded(tmp_path):
     ax = _fresh_module(tmp_path)
-    ax.init(subteam="aero")
+    # visitor_id must land on a KEPT event type. In minimal-analytics mode
+    # tab_open is dropped at source, so assert on workflow_complete instead —
+    # and set the id BEFORE init() so the session_start anchor carries it too,
+    # mirroring the app (the id resolves synchronously before init fires).
     ax.set_visitor_id("browser-abc-123")
-    ax.tab_open("kinematics")
+    ax.init(subteam="aero")
+    ax.complete("kinematics", "solve")
     path = os.path.join(str(tmp_path), "analytics_buffer.jsonl")
     rows = _drain(ax, path)
-    tab = [r for r in rows if r["event_type"] == "tab_open"][0]
-    assert tab["visitor_id"] == "browser-abc-123"
+    start = [r for r in rows if r["event_type"] == "session_start"][0]
+    done = [r for r in rows if r["event_type"] == "workflow_complete"][0]
+    assert start["visitor_id"] == "browser-abc-123"
+    assert done["visitor_id"] == "browser-abc-123"
