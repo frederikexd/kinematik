@@ -350,7 +350,7 @@ def _agnostic_color(label, registry):
 # Map a subsystem name to the COLORS key whose hue best represents it, so a
 # user-dropped custom part reads as "belonging to" that sub-team at a glance.
 _SUBSYS_COLOR_KEY = {
-    "aerodynamics": "wing", "brakes": "brake", "chassis": "monocoque",
+    "aerodynamics": "wing", "brakes": "brake", "chassis": "frame",
     "cooling": "radiator", "electrics": "batt_edge", "powertrain": "motor",
     "suspension": "point", "data-acquisition": "logger",
 }
