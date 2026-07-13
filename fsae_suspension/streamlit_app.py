@@ -4775,35 +4775,10 @@ def _cad_fill_scale(part_lwh, envelope_lwh):
 
 
 # ========================================================================== #
-#  Team CAD library ⇄ 3D model bridge — "quick assembly" preview
-#
-#  Publishing a parseable CAD file to the shared library also places it on the
-#  full-car 3D model: the file is meshed, snapped into its subsystem's slot
-#  (the exact footprint its dummy placeholder occupies), scaled true-shape to
-#  fill that envelope, and the dummy it replaces is hidden. Every slot whose
-#  CAD hasn't been uploaded yet keeps its dummy, so the car always reads as a
-#  whole — like a SolidWorks quick assembly, but as a live preview that
-#  completes itself as the library fills up. A chassis upload uses the
-#  renderer's `define_car` mode, so the entire car is proportioned around the
-#  real tub. Pure preview: nothing here feeds any calculation.
+#  CAD library — fit forecast helpers (slot mapping for geometry checks)
 # ========================================================================== #
 
 _LIB_MESH_EXTS = {"step", "stp", "stl", "obj", "glb"}
-_LIB_SLD_EXTS = {"sldprt", "sldasm"}   # SolidWorks native — geometry is locked
-
-_SLD_ADVICE = ("SolidWorks native files keep their geometry locked — no "
-               "browser can mesh them. In SolidWorks: **File ▸ Save As ▸ "
-               "STEP (.step)** (10 seconds), publish that, and the real "
-               "shape replaces the stand-in.")
-
-
-def _lib_ext(cf):
-    return (getattr(cf, "name", "") or "").rsplit(".", 1)[-1].lower()
-
-
-def _lib_is_sld(cf):
-    return (getattr(cf, "kind", "file") == "file"
-            and _lib_ext(cf) in _LIB_SLD_EXTS)
 
 # Library subsystem tag -> part slot. Tags with several plausible slots fall
 # through to the filename guess below.
@@ -4847,240 +4822,10 @@ def _lib_slot_for(cf):
                              "Custom / unassigned")
 
 
-def _lib_injected_ids():
-    """{library file id -> index} of parts already placed from the library."""
-    return {p.get("lib_id"): i
-            for i, p in enumerate(st.session_state.get("car3d_custom_parts", []))
-            if p.get("lib_id")}
-
-
 def _lib_parseable(cf):
     return (getattr(cf, "kind", "file") == "file"
             and (getattr(cf, "name", "") or "").rsplit(".", 1)[-1].lower()
             in _LIB_MESH_EXTS)
-
-
-def _lib_inject_cad(cf):
-    """Mesh a library file and snap it into its slot on the 3D model.
-
-    Returns (ok, message). Skips silently-never: every failure explains itself
-    so publishing to the library can never be blocked by the preview.
-    """
-    # SolidWorks native file: geometry can't be extracted, but the user still
-    # deserves to SEE their part on the car. Place a clearly-marked amber
-    # provisional stand-in in its slot (hover names their file), except the
-    # chassis — the dummy monocoque already IS the chassis stand-in, so an
-    # amber box there would only make the car read worse.
-    if _lib_is_sld(cf):
-        if cf.id in _lib_injected_ids():
-            return True, f"**{cf.name}** is already on the 3D model."
-        _slot = _lib_slot_for(cf)
-        for _q in st.session_state.get("car3d_custom_parts", []):
-            if (_q.get("from_library") and not _q.get("provisional")
-                    and _q.get("lib_slot") == _slot):
-                return True, (f"Real CAD already occupies the **{_slot}** "
-                              f"slot; **{cf.name}** stays library-only. "
-                              + _SLD_ADVICE)
-        if _slot == "Chassis":
-            return True, (f"**{cf.name}** is in the library; the dummy "
-                          f"spaceframe stands in for it on the 3D model. "
-                          + _SLD_ADVICE)
-        try:
-            _centre, _env, _subsys, _dummy = _cad_slot_target(_slot)
-            if "car3d_custom_parts" not in st.session_state:
-                st.session_state.car3d_custom_parts = []
-            st.session_state.car3d_custom_parts.append(dict(
-                name=cf.name.rsplit(".", 1)[0] + " (SLDPRT)",
-                subsys=_subsys, shape="box", provisional=True,
-                replaces_drawnames=([_dummy] if _dummy else []),
-                lib_id=cf.id, from_library=True, lib_slot=_slot,
-                x_mm=float(_centre[0]), y_mm=float(_centre[1]),
-                z_mm=float(_centre[2]),
-                l_mm=float(_env[0]), w_mm=float(_env[1]), h_mm=float(_env[2])))
-            st.session_state.pop("_dummy_footprints", None)
-            return True, (f"**{cf.name}** placed as an amber PROVISIONAL "
-                          f"stand-in in the **{_slot}** slot. " + _SLD_ADVICE)
-        except Exception as _se:
-            return False, f"Couldn't place a stand-in for **{cf.name}** ({_se})."
-    if not _lib_parseable(cf):
-        return False, (f"**{cf.name}** can't be meshed here — export STEP "
-                       "(File ▸ Save As ▸ STEP in SolidWorks) to see it on "
-                       "the car.")
-    if cf.id in _lib_injected_ids():
-        return True, f"**{cf.name}** is already on the 3D model."
-    try:
-        import base64 as _b64i, tempfile as _tf, os as _os
-        _sfx = "." + cf.name.rsplit(".", 1)[-1].lower()
-        with _tf.NamedTemporaryFile(delete=False, suffix=_sfx) as _f:
-            _f.write(_b64i.b64decode(cf.data_b64))
-            _path = _f.name
-        try:
-            _payload = chassis_mod.load_part_mesh(_path, max_faces=4000)
-        finally:
-            try:
-                _os.unlink(_path)
-            except Exception:
-                pass
-        _slot = _lib_slot_for(cf)
-        # Upgrade path: a real mesh arriving in a slot evicts any provisional
-        # SolidWorks stand-in holding that slot (e.g. the .sldprt published
-        # earlier), so the amber box gives way to the real geometry.
-        try:
-            _kept, _skipset = [], st.session_state.setdefault(
-                "cad_lib_sync_skip", set())
-            for _q in st.session_state.get("car3d_custom_parts", []):
-                if (_q.get("from_library") and _q.get("provisional")
-                        and _q.get("lib_slot") == _slot):
-                    _skipset.add(_q.get("lib_id"))   # don't re-seat on resync
-                else:
-                    _kept.append(_q)
-            st.session_state.car3d_custom_parts = _kept
-        except Exception:
-            pass
-        _centre, _env, _subsys, _dummy = _cad_slot_target(_slot)
-        _sz = [float(v) for v in _payload["size_mm"]]
-        _is_chassis = (_slot == "Chassis")
-        # True-shape fill of the slot envelope; the renderer's define_car mode
-        # handles the chassis itself (whole car proportioned around the tub).
-        _scale = 1.0 if _is_chassis else _cad_fill_scale(_sz, _env)
-        if "car3d_custom_parts" not in st.session_state:
-            st.session_state.car3d_custom_parts = []
-        st.session_state.car3d_custom_parts.append(dict(
-            name=cf.name.rsplit(".", 1)[0], subsys=_subsys,
-            shape="mesh", mesh=_payload, axis_map="z_up",
-            yaw_deg=0.0, mesh_scale=float(_scale),
-            define_car=_is_chassis,
-            replaces_drawnames=([_dummy] if _dummy else []),
-            lib_id=cf.id, from_library=True, lib_slot=_slot,
-            x_mm=float(_centre[0]), y_mm=float(_centre[1]),
-            z_mm=float(_centre[2]),
-            l_mm=_sz[0] * _scale, w_mm=_sz[1] * _scale, h_mm=_sz[2] * _scale))
-        st.session_state.pop("_dummy_footprints", None)
-        _where = ("the whole car now assembles around it — if it reads "
-                  "backwards or lies on its side, fix it with the ↻ 180° / "
-                  "up-axis controls under “On the car now” on the 3D tab"
-                  if _is_chassis else
-                  f"snapped into the **{_slot}** slot"
-                  + (f", its dummy “{_dummy}” hidden" if _dummy else ""))
-        return True, (f"**{cf.name}** placed on the 3D model — {_where}. "
-                      "Remaining dummies stay until their CAD is uploaded.")
-    except Exception as _e:
-        return False, (f"Couldn't mesh **{cf.name}** ({_e}). STEP is the most "
-                       "reliable SolidWorks export.")
-
-
-def _lib_eject_cad(lib_id):
-    """Remove a library file's part from the 3D model (its dummy returns)."""
-    # Respect the user's choice: autosync must not put it straight back.
-    st.session_state.setdefault("cad_lib_sync_skip", set()).add(lib_id)
-    _idx = _lib_injected_ids().get(lib_id)
-    if _idx is not None:
-        try:
-            st.session_state.car3d_custom_parts.pop(_idx)
-        except Exception:
-            pass
-
-
-def _lib_autosync(cad_store):
-    """Make the 3D model mirror the CAD library — no button required.
-
-    The library persists across sessions; `car3d_custom_parts` does not. So on
-    every render of the 3D model (and of the library itself) we reconcile:
-      * every meshable library file not yet on the car is injected into its
-        slot (the assembly completes itself as the library fills up), unless
-        the user explicitly took that part off the car this session;
-      * any car part whose library file was deleted is ejected (its dummy
-        returns) — the library is the source of truth.
-    Fully guarded and idempotent; a parse failure marks the file as skipped
-    for this session so it never loops.
-    """
-    try:
-        _files = _store_cad_files(cad_store, None)
-    except Exception:
-        return
-    _live_ids = {f.id for f in _files}
-    _skip = st.session_state.setdefault("cad_lib_sync_skip", set())
-    # Eject parts whose library file is gone.
-    _parts = st.session_state.get("car3d_custom_parts", [])
-    _keep = [p for p in _parts
-             if not (p.get("from_library") and p.get("lib_id") not in _live_ids)]
-    if len(_keep) != len(_parts):
-        st.session_state.car3d_custom_parts = _keep
-    # Inject everything meshable that isn't on the car yet.
-    _on = _lib_injected_ids()
-    for _f in _files:
-        if (_f.id in _on) or (_f.id in _skip) \
-                or not (_lib_parseable(_f) or _lib_is_sld(_f)):
-            continue
-        try:
-            _ok, _ = _lib_inject_cad(_f)
-        except Exception:
-            _ok = False
-        if not _ok:
-            _skip.add(_f.id)   # don't retry a bad file every rerun
-
-
-def _lib_snap_overrides(base_overrides):
-    """Snap neighbouring dummies onto injected CAD — the assembly closes up.
-
-    A CAD part fills its slot true-shape (longest axis matched), so on its
-    other axes it can be shorter/longer than the dummy it replaced, leaving a
-    gap or an overlap with the bodies that used to abut that dummy. This walks
-    the recorded part boxes from the last render: any dummy whose fore/aft
-    face touched the replaced dummy's face (with real y/z overlap) is
-    translated along x so it now touches the CAD's actual face — one hop only,
-    clamped to ±250 mm, purely visual. User edits from the part editor are
-    applied ON TOP (their dx adds), so manual nudges always win.
-    """
-    try:
-        _boxes = st.session_state.get("car3d_part_boxes") or {}
-        _parts = [p for p in st.session_state.get("car3d_custom_parts", [])
-                  if p.get("from_library") and not p.get("define_car")
-                  and (p.get("replaces_drawnames") or [])]
-        if not _boxes or not _parts:
-            return base_overrides
-        _replaced = set()
-        for _p in _parts:
-            _replaced.update(_p.get("replaces_drawnames") or [])
-        _ov = {k: dict(v) for k, v in (base_overrides or {}).items()}
-        _TOL, _CLAMP = 60.0, 250.0
-
-        def _ivl(c, s, ax):
-            return c[ax] - s[ax] / 2.0, c[ax] + s[ax] / 2.0
-
-        def _olap(a, b):
-            return min(a[1], b[1]) - max(a[0], b[0]) > 1.0
-
-        for _p in _parts:
-            _cx, _cl = float(_p.get("x_mm", 0)), float(_p.get("l_mm", 0))
-            _cad_lo, _cad_hi = _cx - _cl / 2.0, _cx + _cl / 2.0
-            for _dn in (_p.get("replaces_drawnames") or []):
-                _db = _boxes.get(_dn)
-                if not _db:
-                    continue
-                _dlo, _dhi = _ivl(_db["centre"], _db["size"], 0)
-                _dy = _ivl(_db["centre"], _db["size"], 1)
-                _dz = _ivl(_db["centre"], _db["size"], 2)
-                for _nm, _nb in _boxes.items():
-                    if _nm in _replaced or _nm == _dn:
-                        continue
-                    if not (_olap(_ivl(_nb["centre"], _nb["size"], 1), _dy)
-                            and _olap(_ivl(_nb["centre"], _nb["size"], 2), _dz)):
-                        continue
-                    _nlo, _nhi = _ivl(_nb["centre"], _nb["size"], 0)
-                    _dx = None
-                    if abs(_nlo - _dhi) < _TOL:      # neighbour sat in front
-                        _dx = _cad_hi - _nlo
-                    elif abs(_nhi - _dlo) < _TOL:    # neighbour sat behind
-                        _dx = _cad_lo - _nhi
-                    if _dx is None or abs(_dx) < 3.0:
-                        continue
-                    _dx = max(-_CLAMP, min(_CLAMP, _dx))
-                    _e = _ov.setdefault(_nm, {})
-                    _e["dx"] = float(_e.get("dx", 0.0)) + float(_dx)
-        return _ov
-    except Exception:
-        return base_overrides
 
 
 def _fitfc_geom_fingerprint():
@@ -5142,10 +4887,6 @@ def _fitfc_car_boxes():
     _cache = st.session_state.get("_fitfc_geom_cache")
     if _fp and _cache and _cache.get("fp") == _fp:
         return _cache["inst"], _cache["merged"]
-    try:
-        _lib_autosync(get_store())     # model mirrors the CAD library first
-    except Exception:
-        pass
     _vpf = set(VehicleParams.__dataclass_fields__.keys())
     _vp = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
                            if k in _vpf})
@@ -5173,8 +4914,7 @@ def _fitfc_car_boxes():
         show_floor=False,
         tire_width_mm=float(st.session_state.get("car3d_tirew", 180.0)
                             or 180.0),
-        part_overrides=_lib_snap_overrides(
-            dict(st.session_state.get("car3d_overrides", {}) or {})),
+        part_overrides=dict(st.session_state.get("car3d_overrides", {}) or {}),
         custom_parts=st.session_state.get("car3d_custom_parts", []),
         suppress_subsystems=_sup, suppress_parts=_sup_p, **_kw)
     _inst = dict(getattr(_fig, "_part_instance_boxes", {}) or {})
@@ -10627,12 +10367,6 @@ with tab_car:
           # A CAD part that replaces a subsystem hides ALL that subsystem's dummy
           # bodies (its draw-names). Other subsystems stay on as dummy
           # suggestions. Build the suppression sets from every custom part.
-          # Library ⇄ 3D autosync: the model mirrors the CAD library — parts
-          # published in ANY session appear, deleted ones eject their dummy back.
-          try:
-              _lib_autosync(get_store())
-          except Exception:
-              pass
           _suppress = set()
           _suppress_parts = set()
           for _p in st.session_state.get("car3d_custom_parts", []):
@@ -10653,7 +10387,7 @@ with tab_car:
               show_bodywork=_show_body, show_floor=_show_floor,
               highlight_subsystem=_focus,
               focus_subsystem=_focus, tire_width_mm=float(_tire_w),
-              part_overrides=_lib_snap_overrides(_part_overrides),
+              part_overrides=_part_overrides,
               custom_parts=st.session_state.get("car3d_custom_parts", []),
               suppress_subsystems=_suppress,
               suppress_parts=_suppress_parts,
@@ -10981,21 +10715,13 @@ with tab_car:
                             data_b64=_b64.b64encode(_bytes).decode("ascii"),
                             size_bytes=len(_bytes), note=_pub_note.strip()))
                         _persisted = save_store(_cad_store)
-                        # Library ⇄ 3D model bridge: place it on the car too.
-                        _msg3d = ""
-                        try:
-                            _newest = _store_cad_files(_cad_store, None)[0]
-                            _ok3d, _msg3d = _lib_inject_cad(_newest)
-                            _msg3d = "  \n" + _msg3d
-                        except Exception:
-                            pass
                         _tail = ("" if _persisted else
                                  "  \n_In the library for everyone this session; "
                                  "the cross-session save is degraded (see the "
                                  "warning above) but your file is not lost._")
                         st.success(f"Published {_up.name} "
                                    f"({cadshare_mod.human_size(len(_bytes))})."
-                                   + _msg3d + _tail)
+                                   + _tail)
                         _do_rerun()
                 elif _big_link.strip():
                     _nm = _big_link.strip().rstrip("/").split("/")[-1] or "assembly link"
@@ -11016,45 +10742,13 @@ with tab_car:
         if not _all_files:
             st.info("Nothing shared yet. Be the first to publish a file above.")
         else:
-            try:
-                _lib_autosync(_cad_store)   # model mirrors the library
-            except Exception:
-                pass
-            _injected = _lib_injected_ids()
-            _meshable = [f for f in _all_files if _lib_parseable(f)]
-            _pending = [f for f in _meshable if f.id not in _injected]
-            st.caption("🧩 **Quick assembly:** every meshable file here "
-                       "(STEP/STL/OBJ/GLB) can be placed on the full-car 3D "
-                       "model — it snaps into its subsystem's slot, replaces "
-                       "that dummy, and the remaining dummies keep the car "
-                       "whole until their CAD arrives. A chassis upload "
-                       "re-proportions the entire car around the real tub. "
-                       "Preview only — it feeds no calculation.")
-            if _pending and st.button(
-                    f"🧩 Assemble library on the 3D model "
-                    f"({len(_pending)} file(s) to place)",
-                    key="cad_lib_assemble_all"):
-                _oks, _fails = 0, []
-                for _pf in _pending:
-                    _okp, _msgp = _lib_inject_cad(_pf)
-                    if _okp:
-                        _oks += 1
-                    else:
-                        _fails.append(_msgp)
-                if _oks:
-                    st.success(f"Placed {_oks} part(s) on the 3D model — open "
-                               "the 3D Model tab to see the assembly.")
-                for _fm in _fails:
-                    st.warning(_fm)
-                if _oks:
-                    _do_rerun()
             _subs = ["(all)"] + _store_cad_subsystems(_cad_store)
             _filt = st.selectbox("Filter by subsystem", _subs, key="cad_lib_filter")
             _shown = (_all_files if _filt == "(all)"
                       else _store_cad_files(_cad_store, _filt))
             st.caption(f"{len(_shown)} of {len(_all_files)} file(s)")
             for _cf in _shown:
-                _row = st.columns([2.8, 1.2, 1.1, 1.0, 1.1, 0.8])
+                _row = st.columns([2.8, 1.2, 1.1, 1.0, 0.8])
                 _meta = f"`{_cf.subsystem}`"
                 if _cf.uploader:
                     _meta += f" · {_cf.uploader}"
@@ -11072,29 +10766,7 @@ with tab_car:
                             file_name=_cf.name, key=f"cad_dl_{_cf.id}")
                     except Exception:
                         _row[3].caption("—")
-                # Library ⇄ 3D bridge controls for this file.
-                if _cf.id in _injected:
-                    if _row[4].button("On car ✓ (remove)",
-                                      key=f"cad_3d_off_{_cf.id}",
-                                      help="Take this part off the 3D model — "
-                                           "its dummy placeholder returns."):
-                        _lib_eject_cad(_cf.id)
-                        _do_rerun()
-                elif _lib_parseable(_cf):
-                    if _row[4].button("→ 3D model", key=f"cad_3d_on_{_cf.id}",
-                                      help="Snap this part into its slot on "
-                                           "the full-car 3D model."):
-                        _ok1, _msg1 = _lib_inject_cad(_cf)
-                        (st.success if _ok1 else st.warning)(_msg1)
-                        if _ok1:
-                            _do_rerun()
-                elif _lib_is_sld(_cf):
-                    _row[4].caption("SLDPRT/SLDASM — export STEP "
-                                    "(File ▸ Save As) for the real shape")
-                elif _cf.kind != "link":
-                    _row[4].caption("STEP to view in 3D")
-                if _row[5].button("Remove", key=f"cad_rm_{_cf.id}"):
-                    _lib_eject_cad(_cf.id)
+                if _row[4].button("Remove", key=f"cad_rm_{_cf.id}"):
                     _cad_store.remove_cad_file(_cf.id)
                     save_store(_cad_store)
                     _do_rerun()
