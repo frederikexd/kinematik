@@ -854,7 +854,14 @@ def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
             st.session_state[key] = min(max(float(st.session_state[key]), d_lo), d_hi)
         except (TypeError, ValueError):
             pass
-    result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
+    # When the widget key already exists in session_state, Streamlit owns the
+    # value — passing value= as well triggers a "created with a default value
+    # but also had its value set via the Session State API" warning and the
+    # explicit value= is silently ignored anyway. Omit it in that case.
+    if key is not None and key in st.session_state:
+        result = container.number_input(lbl, d_lo, d_hi, **extra, **kw)
+    else:
+        result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
     metric_result = units_mod.to_metric(float(result), unit)
     if key is not None:
         st.session_state[f"_u_{key}"] = (metric_result, units_mod.current_system())
@@ -883,7 +890,13 @@ def uslider(container, label_with_unit, lo, hi, val, unit, *, step=None,
         extra["step"] = units_mod.from_metric_delta(float(step), unit)
     if key is not None:
         extra["key"] = key
-    result = container.slider(lbl, d_lo, d_hi, d_val, **extra, **kw)
+    # Same as unum: omit value= when session_state already holds this key to
+    # avoid the "created with a default value but also had its value set via
+    # the Session State API" warning.
+    if key is not None and key in st.session_state:
+        result = container.slider(lbl, d_lo, d_hi, **extra, **kw)
+    else:
+        result = container.slider(lbl, d_lo, d_hi, d_val, **extra, **kw)
     metric_result = units_mod.to_metric(float(result), unit)
     if key is not None:
         st.session_state[f"_u_{key}"] = (metric_result, units_mod.current_system())
