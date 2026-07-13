@@ -1952,11 +1952,47 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
     return rows
 
 
-# Backward/forward-compatible alias. Some callers reference
-# ``override_influence_summary``; it is identical to ``influence_summary`` —
-# the influence read-out already reflects any active part overrides via the
-# ledger it is handed.
-override_influence_summary = influence_summary
+# Newer callers pass part edits and expect the influence read-out to fold them
+# in. ``overrides`` is the ``car3d_overrides`` dict: {part_key: {dx,dy,dz,scale,
+# ...}}. We build the base rows, then annotate any subsystem that owns an edited
+# part. Extra/unknown kwargs are tolerated so a version skew never breaks the
+# full-car view.
+def override_influence_summary(vp, ledger, topology_label=None,
+                               overrides=None, **_ignored):
+    rows = influence_summary(vp, ledger, topology_label=topology_label)
+
+    # Map each edited part -> its subsystem, counting only meaningful edits.
+    edited_subs = {}
+    try:
+        for _part_key, _ov in (overrides or {}).items():
+            if not _ov:
+                continue
+            # An override is "meaningful" if any value is non-identity.
+            _vals = _ov.values() if isinstance(_ov, dict) else []
+            _meaningful = any(
+                (v not in (0, 0.0, None, "", False)) and not (k == "scale" and v == 1)
+                for k, v in (_ov.items() if isinstance(_ov, dict) else [])
+            ) or bool(_vals) and not isinstance(_ov, dict)
+            if not _meaningful:
+                continue
+            _sub = PART_SUBSYS_BY_KEY.get(_part_key)
+            if _sub is None:
+                # Fall back to the anchor map (reverse lookup) or "chassis".
+                _sub = next((s for s, p in SUBSYS_ANCHOR_PART.items()
+                             if p == _part_key), "chassis")
+            edited_subs[_sub] = edited_subs.get(_sub, 0) + 1
+    except Exception:
+        edited_subs = {}
+
+    if edited_subs:
+        for _r in rows:
+            _n = edited_subs.get(_r.get("subsystem"))
+            if _n:
+                _r["status"] = "edited"
+                _plural = "s" if _n != 1 else ""
+                _r["detail"] = f"{_r.get('detail', '')}  ·  {_n} part edit{_plural} applied"
+
+    return rows
 
 
 def custom_part_fit(vp, part: dict) -> dict:
