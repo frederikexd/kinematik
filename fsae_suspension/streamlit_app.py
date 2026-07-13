@@ -1966,83 +1966,8 @@ _ad = kin.anti_dive_pct(st.session_state.vp.get("cg_height", 300.0),
 _as = kin.anti_squat_pct(st.session_state.vp.get("cg_height", 300.0),
                          st.session_state.vp.get("wheelbase", 1550.0))
 
-st.write("")
-with st.expander("👋 New here? Your 30-second tour",
-                 expanded=not bool(st.session_state.get("kk_entered", False))):
-    st.markdown("""
-**The whole app in 30 seconds:**
-
-1. **Pick your subteam(s)** in the selector right below this box — one, or
-   several if you own more than one (brakes *and* electronics, say). As you pick,
-   the parts that subteam owns **light up on the 3D car** beside the selector
-   (drag it to spin it). Nothing else opens until you choose, so you're never
-   dropped into a wall of tabs. *Just browsing?* Hit **Just looking** to see the
-   shared tabs.
-2. **You only see your tools.** After you pick, the tabs are grouped into a few
-   simple **categories** — 🧪 Testing & Simulation, 🛠️ Design & Sizing,
-   ✅ Checks & Integration, 📄 Documentation, 📊 Data & Cost. Open a category,
-   then a tab inside it. You see **only your subteam's tabs plus the shared ones**
-   (Integration, Validation, Analytics, Registry, Notes, 3D Model) — not all 25.
-3. **Declare your numbers once** in **✅ Checks & Integration ▸ 🔗 Integration** —
-   mass, CG, envelope, heat, power, downforce. They flow into the 3D model, lap
-   sim, cost BOM and every cross-team check automatically. You never type the
-   same number twice.
-4. **Check the whole car** in **✅ Checks & Integration ▸ 🔗 Integration ▸
-   Verdict Center** — one page shows every subsystem as ✅ works / 🔎 look closer
-   / 🛑 needs attention, so you know what's solid before you commit.
-
----
-
-### 📐 Getting a DXF you can build from (import → extrude → mesh)
-
-Every subsystem can hand you a **real 2-D section as a DXF** — a wing airfoil, a
-mount plate with its bolt holes, a radiator core face, a motor flange — ready to
-drop straight into SolidWorks and extrude.
-
-**Where do the numbers come from? You. Never the app guessing.** This is the part
-people miss, so here it is plainly:
-
-> You type a few **real numbers** into your own tab — the motor bore and bolt PCD,
-> the wing chord, the hardpoints, the radiator core size. The app turns *those*
-> numbers into the exact 2-D section and its DXF. **You never draw anything, and
-> the app never invents dimensions.** That's the whole trade: no numbers in → no
-> section out. So an empty export doesn't mean it's broken — it means the tab that
-> owns those numbers hasn't been filled in yet.
-
-Each subsystem draws from its own inputs — for example:
-
-- **EV Powertrain** → motor bore, bolt PCD, peak torque → motor flange
-- **Suspension** → ball-joint hardpoints (in the **left sidebar**, not the tab
-  body) → upright mount plate + bolt PCD
-- **Aerodynamics** → wing chord + thickness → airfoil section
-- **Cooling** → radiator core width × height → core face
-- **Brakes** → caliper mount + brake torque → mount bracket (rotor is in the
-  Brakes optimiser)
-
-**Then, to get the file:**
-
-1. Open **your subsystem's tab** and enter its real numbers (above). The
-   **📐 Mesh & DXF** export reads them live.
-2. In that same tab, open the panel titled
-   **"📐 &lt;Subsystem&gt; — mesh & DXF export"** (it sits right below the
-   documentation panel, the same way the 🛑 Brakes tab carries its own rotor
-   export).
-3. If it says **"Waiting on numbers,"** it lists exactly which inputs are still
-   missing — fill those in the tab and they tick off. Once they're all in, the
-   short-list and DXF appear on their own.
-4. Pick the section, watch for the **✓ ready to extrude** check, and hit
-   **⬇ Download DXF**.
-5. In SolidWorks: **File ▸ Open ▸ (set type to DXF) ▸ import as a 2D sketch**,
-   then **Extruded Boss/Base**. Mesh the solid in ANSYS. Done.
-
-The units are embedded, holes come in as separate closed loops, and each profile
-is checked so it imports as one clean closed contour — no manual geometry entry.
-
----
-
-Suspension topology and the live hardpoint editor live in the **sidebar** on the
-left. Want every tab described? It's in the project README.
-    """)
+# (The 30-second tour expander was removed by request — the mission
+#  briefing questionnaire below now carries onboarding.)
 
 # ========================================================================== #
 #  ROLE-AWARE TAB ROUTING (category-grouped)
@@ -3319,6 +3244,262 @@ _BRIEF_GOAL_FEATURES = {
 }
 
 # ========================================================================== #
+#  TOOL-LEVEL FEATURE FALLBACK
+#
+#  _BRIEF_GOAL_FEATURES above is goal-tailored copy for the (goal, tool)
+#  pairs a goal *names directly*.  But a tool block can also render when no
+#  goal-specific entry exists:
+#    - Integration + Validation close EVERY briefing (the handover pair),
+#    - a purpose can append tabs (Track adds laptime; Review adds docs /
+#      cost / weight; Learn adds model3d),
+#    - the optional note can pull ANY tool into the plan (see below).
+#  In every one of those cases the block must still cover every feature of
+#  the tool, so this table carries the complete feature list for ALL 23
+#  tool ids.  _brief_tool_block falls back to it whenever no goal-specific
+#  bullets exist for the active goals.
+#
+#  Same rules as the goal table: concrete, name the exact control/output,
+#  never describe a feature that doesn't exist.  Pure Python dict.
+# ========================================================================== #
+_BRIEF_TOOL_FEATURES = {
+    "kinematics": [
+        "Drag any hardpoint in 3D and camber gain, caster, KPI, toe, scrub "
+        "radius and mechanical trail re-solve instantly — every edit is live, "
+        "not a re-run.",
+        "Sweep bump travel and plot the camber-gain curve continuously while "
+        "you drag, so you can chase a target gradient in seconds.",
+        "Bump-steer is shown as a signed degree value with direction for every "
+        "topology, so you can zero it interactively before it reaches the car.",
+        "Switch topology (double wishbone, MacPherson, multi-link, trailing "
+        "arm, solid axle, twist-beam) without re-entering hardpoints.",
+        "Anti-dive and anti-squat percentages update live with the geometry.",
+        "The upright mount-plate DXF export writes your steering-axis geometry "
+        "into a build-ready 2D sketch once the hardpoints are locked.",
+    ],
+    "roll": [
+        "Roll-centre height and lateral migration are plotted across the full "
+        "bump/roll range against the exact hardpoints you just set — same "
+        "state, never stale.",
+        "Lateral load transfer is split into geometric (jacking) and elastic "
+        "(spring) components so you can see whether the roll centre is helping "
+        "or hurting grip.",
+        "Front/rear roll-centre coupling shows the grip-balance tendency — "
+        "understeer or oversteer gradient — continuously as geometry changes.",
+        "Lateral load transfer distribution between axles is shown as a "
+        "percentage split, so you can target a front/rear grip bias before "
+        "picking springs.",
+    ],
+    "compliance": [
+        "Per-member axial load is solved for every arm, pushrod, pullrod and "
+        "tie rod under the braking, cornering and bump load cases you specify.",
+        "Member deflection is computed from the cross-section and material you "
+        "enter — a pushrod that flexes 1.2 mm at peak cornering shows up here "
+        "before it silently deletes your camber curve.",
+        "Corner stiffness under lateral load is checked against your camber-"
+        "compliance budget — pass or flag, at a glance.",
+        "Factor of safety is reported per member per load case, so you know "
+        "which arm is the constraint before opening ANSYS.",
+        "Member loads export cleanly for pasting into ANSYS Mechanical as "
+        "boundary conditions.",
+    ],
+    "tire": [
+        "Load your TTC Pacejka MF52 coefficients and validate the fit — plot "
+        "Fy vs slip angle and Fx vs slip ratio at the vertical loads the car "
+        "actually sees.",
+        "Normalised tyre sensitivity (dFy/dFz) is sanity-checked against "
+        "published FSAE benchmarks before it feeds anything else.",
+        "Peak slip angle and peak lateral force come straight off your fitted "
+        "curves, so the lap sim and setup optimiser work from real numbers.",
+        "Combined slip is shown as a friction-ellipse overlay — how much "
+        "traction is left when braking in a corner.",
+        "A temperature-sensitivity flag warns when your data shows a strong "
+        "warm-up gradient that setup work must account for.",
+    ],
+    "setup": [
+        "Spring-rate sweep: vary front and rear rates and plot ride frequency, "
+        "roll stiffness and pitch stiffness to find the window that keeps all "
+        "three on target.",
+        "Anti-roll bar stiffness is tuned in isolation from springs, so roll "
+        "stiffness moves without disturbing ride frequency.",
+        "The balance solver finds the spring/ARB split that minimises "
+        "understeer gradient at a target lateral acceleration, using your real "
+        "tyre data and geometry.",
+        "Ride-height sensitivity shows how much wheel rate changes across the "
+        "expected ride-height range.",
+        "Bump-stop engagement preview shows when the stops engage relative to "
+        "designed travel.",
+        "Every setup output feeds Track Testing directly, so a balance change "
+        "reads as seconds on a simulated autocross.",
+    ],
+    "laptime": [
+        "The GGV envelope is built from the numbers your subsystems already "
+        "declared — no hand-copied parameters, no transcription errors.",
+        "Run the lap simulation on the track layout you load and read every "
+        "design change as a delta in seconds.",
+        "Overlay simulated laps against track-test data to see where the model "
+        "and the car disagree.",
+        "Because it reads the shared ledger, the car you simulate is always "
+        "the car the team agreed on.",
+    ],
+    "aero": [
+        "Size wings and diffuser against target downforce and drag, with the "
+        "Cl/Cd ratio plotted continuously as you adjust angle and chord.",
+        "The panel-method virtual wind tunnel returns directionally-correct "
+        "loads in seconds, so you shortlist shapes before spending CFD hours.",
+        "Build the aero map and watch the balance shift across the speed and "
+        "ride-height envelope.",
+        "The wing airfoil DXF export feeds straight into the 3D model, so the "
+        "2D section you designed is reflected in the full-car context.",
+    ],
+    "ev": [
+        "Compare motor / drivetrain architectures with mass, heat and lap time "
+        "coupled — a motor swap updates weight, cooling load and lap delta "
+        "together.",
+        "The energy budget integrates regen recovery lap by lap from your "
+        "actual GGV deceleration profile, not a blanket percentage.",
+        "Worst-case heat load is summed from motor, inverter and pack losses "
+        "into a single kW rejection target for cooling sizing.",
+        "Radiator sizing works directly against that rejection target, so the "
+        "cooling system is sized for the car you actually specced.",
+    ],
+    "accum": [
+        "Size cells and pack topology against energy, voltage and mass targets "
+        "in one place.",
+        "The pack thermal model shows whether the accumulator survives "
+        "endurance heat before anything is built.",
+        "FSAE-EV rules checks are built into the sizing flow, so the pack you "
+        "design already passes the gates scrutineers will apply.",
+        "Segment layout and configuration are worked out alongside the "
+        "electrical numbers, not after them.",
+    ],
+    "brakes": [
+        "The bias sweep shows lock-up order as a function of deceleration, so "
+        "you can read the safe bias range for your tyre data before the car "
+        "runs.",
+        "Hydraulic sizing covers master cylinders, calipers and pedal effort "
+        "in the same model as the bias.",
+        "The rotor thermal model integrates temperature over a full endurance "
+        "lap count — cumulative heat exposure, not just peak stop temperature.",
+        "Bolt and bracket factors of safety are computed for the mounting "
+        "hardware under the same load cases.",
+    ],
+    "pcb": [
+        "Import a real .kicad_pcb and get the guilty trace and net named — the "
+        "cause, not just the symptom.",
+        "Copper survival is checked against stall current, catching an "
+        "undersized trace before fabrication when the fix is still free.",
+        "HV/LV checks and signal-integrity screening run on the same imported "
+        "board.",
+        "One-click re-trace replaces undersized copper immediately.",
+    ],
+    "tractive": [
+        "Steps through the exact FSAE-EV electrical inspection checklist, so "
+        "you rehearse tech inspection before the scrutineers see the car.",
+        "Precharge and isolation checks are encoded as gates — pass them here "
+        "before you build the loom.",
+    ],
+    "dfmea": [
+        "Failure modes are captured in a structured DFMEA rather than a "
+        "spreadsheet nobody re-opens.",
+        "Risk propagates across subsystem lines automatically — a cooling "
+        "failure pushes its risk into powertrain without anyone remembering "
+        "to copy it.",
+        "The cross-subsystem view finds the failure that crosses ownership "
+        "boundaries before it finds you at competition.",
+    ],
+    "teamfit": [
+        "Frame Planner names the specific node pairs missing triangulation and "
+        "suggests alternative tube placements, so no sub-frame leaves with a "
+        "mechanism.",
+        "The driver envelope is overlaid on the wireframe and checked against "
+        "the 5-second egress requirement, with clearances to the roll hoop and "
+        "side tubes.",
+        "The load-path audit shows how forces actually travel through the "
+        "structure, with per-defect fixes.",
+        "Component fit is checked in the same view, so packaging problems "
+        "surface while moving a bracket is still a click.",
+    ],
+    "model3d": [
+        "The whole car in 3D with subsystem-ownership colouring — see whose "
+        "part is whose and where the interfaces are.",
+        "Uploading a STEP/STL/OBJ to the shared CAD library auto-places it in "
+        "its slot on the car, replacing the dummy placeholder.",
+        "Clash detection highlights overlapping parts with both names, so "
+        "packaging conflicts are visible early.",
+        "Fit Forecast checks a CAD file against its slot envelope, flags "
+        "interference with neighbours, and scores assembly-readiness 0–100 "
+        "before anyone opens SolidWorks.",
+        "Every subsystem's DXF export feeds back into the 3D model, keeping "
+        "2D design sections reflected in the 3D context.",
+    ],
+    "integration": [
+        "Every subteam declares its interface numbers (mass, CG, torque, heat, "
+        "current, downforce) once, in one ledger — no competing spreadsheet "
+        "versions.",
+        "Every number carries an estimate-vs-confirmed status flag, so "
+        "downstream users always know the confidence level.",
+        "When an interface number changes, the coupling graph flags which "
+        "other subsystems are affected — a torque increase surfaces in upright "
+        "load and cooling requirement automatically.",
+        "The Verdict Center summarises each subsystem as works / look-closer / "
+        "attention on one screen.",
+        "Every declared value links back to its source, so 'where did this "
+        "come from?' always has an answer.",
+        "The manufacturing-release gate blocks any part whose loads are still "
+        "estimates.",
+    ],
+    "validation": [
+        "The formal handover checklist records what is locked and what still "
+        "needs a full-fidelity run.",
+        "You leave with a defined test matrix for ANSYS / ADAMS / MATLAB — the "
+        "expensive tools confirm a design you already trust instead of "
+        "exploring for you.",
+        "Pass criteria and sign-off responsibility are captured alongside each "
+        "open item, so nothing rides on 'we'll remember'.",
+    ],
+    "cost": [
+        "The FSAE Cost event BOM is auto-seeded from the Integration ledger, "
+        "so it tracks the design instead of chasing it.",
+        "CSV export is ready for the cost event submission.",
+        "The price of a decision is visible when you make it, not at the "
+        "deadline.",
+    ],
+    "weight": [
+        "One weight & CG ledger the whole team designs to — the mass "
+        "properties every sim inherits.",
+        "The handover export packages the agreed numbers for downstream tools "
+        "and next year's team.",
+    ],
+    "docs": [
+        "Design-report-ready documentation is generated from work you already "
+        "did in the other tabs — evidence, not re-typing.",
+        "Structured templates cover design intent, assumptions, calculation "
+        "summary, validation & test plan, interfaces, manufacturing, risks, "
+        "changes and handover.",
+        "Design judging is won on reasoning; this is where yours is captured "
+        "in a form judges actually read.",
+    ],
+    "notes": [
+        "Lead notes keep decisions and their rationale next to the numbers "
+        "they justify, so the 'why' survives handover and graduation.",
+        "New notes from other leads surface as live notifications, so a "
+        "decision posted at midnight isn't discovered a week later.",
+    ],
+    "registry": [
+        "The team-wide registry of declared parameters, each with a source and "
+        "a status — no more designing on rumours.",
+        "'Where did this number come from?' always has an answer, because "
+        "provenance is attached to the value itself.",
+    ],
+    "analytics": [
+        "Usage and progress analytics show where the team's design effort is "
+        "actually going.",
+        "Stalled areas surface before the schedule does.",
+    ],
+}
+
+
+# ========================================================================== #
 #  FREETEXT NOTE → PER-TOOL CONTEXTUAL HOOK
 #
 #  Light keyword matching on the user's optional note to inject one sentence
@@ -3418,22 +3599,211 @@ _FREETEXT_KEYWORDS: list[tuple[list[str], str, str]] = [
      "Your note mentions lap time — every design change here returns a delta "
      "in seconds on the track layout you load, so you are always ranking "
      "decisions by the score that matters."),
+    (["autocross", "endurance", "skidpad", "accel event", "acceleration event",
+      "track day", "testing day", "test day"],
+     "laptime",
+     "Your note mentions a track event — load that event's layout here and "
+     "every design decision is scored in seconds on the course that actually "
+     "gets driven."),
+    # --- suspension geometry vocabulary ---
+    (["caster", "kpi", "kingpin", "scrub radius", "mechanical trail",
+      "toe ", " toe", "ackermann", "hardpoint", "pickup point", "geometry",
+      "anti-dive", "anti dive", "anti-squat", "anti squat"],
+     "kinematics",
+     "Your note touches steering-axis / hardpoint geometry — every one of "
+     "those values (caster, KPI, scrub, trail, toe, anti-dive/squat) re-solves "
+     "live as you drag hardpoints, so you can converge on targets "
+     "interactively."),
+    (["load transfer", "weight transfer", "grip balance", "balance shift"],
+     "roll",
+     "Your note mentions load transfer or balance — the transfer split "
+     "(geometric vs elastic, front vs rear) is plotted live against your "
+     "geometry so you can target a grip bias deliberately."),
+    (["pushrod", "pullrod", "a-arm", "a arm", "wishbone", "tie rod",
+      "tierod", "buckl"],
+     "compliance",
+     "Your note names a suspension member — Compliance solves that member's "
+     "load, deflection and factor of safety under your load cases, so you "
+     "know if it's the weak link before FEA."),
+    # --- tyres ---
+    (["tyre", "tire", "ttc", "pacejka", "slip angle", "slip ratio",
+      "contact patch", "grip", "friction ellipse", "mf52"],
+     "tire",
+     "Your note mentions tyres or grip — validate the TTC / Pacejka fit here "
+     "first: every downstream number (setup, lap time, brake bias) inherits "
+     "whatever the tyre model says."),
+    # --- setup ---
+    (["spring", "arb", "anti-roll bar", "anti roll bar", "damper",
+      "ride frequency", "ride height", "understeer", "oversteer",
+      "setup", "bump stop"],
+     "setup",
+     "Your note mentions setup hardware or balance — the Setup Optimiser "
+     "sweeps springs and ARBs against your real geometry and tyres, and the "
+     "balance solver can chase an understeer-gradient target directly."),
+    # --- aero vocabulary ---
+    (["wing", "diffuser", "downforce", "undertray", "endplate", "airfoil",
+      "aero map", "aero balance"],
+     "aero",
+     "Your note mentions aero hardware — size it here against downforce/drag "
+     "targets and watch the balance shift across the envelope before any "
+     "mould or CFD case is committed."),
+    # --- powertrain vocabulary ---
+    (["motor", "inverter", "regen", "torque", "drivetrain", "sprocket",
+      "gear ratio", "final drive"],
+     "ev",
+     "Your note mentions the powertrain — architecture comparisons here "
+     "couple mass, heat and lap time, so a motor or ratio change shows its "
+     "whole-car consequence immediately."),
+    # --- accumulator (pack/battery notes light BOTH ev and accum) ---
+    (["pack", "battery", "accumulator", "cell", "segment", "busbar",
+      "fuse", "soc", "state of charge"],
+     "accum",
+     "Your note mentions the accumulator — cell sizing, pack topology, the "
+     "pack thermal model and the FSAE-EV rules checks all live here, so the "
+     "pack you size is legal and cool enough on the first try."),
+    # --- tractive / rules vocabulary ---
+    (["precharge", "imd", "insulation", "isolation", "shutdown circuit",
+      "tsal", "hv ", " hv", "tech inspection"],
+     "tractive",
+     "Your note mentions HV safety hardware — the tractive gates encode the "
+     "exact checks scrutineers run (precharge, isolation and friends), so "
+     "you can pass them here before the loom exists."),
+    # --- DFMEA / reliability ---
+    (["fail", "failure", "fmea", "dfmea", "reliab", "risk", "break",
+      "broke"],
+     "dfmea",
+     "Your note mentions failures or risk — capture the failure mode in the "
+     "DFMEA and it propagates its risk across subsystem lines automatically, "
+     "so the cross-boundary failure is found before competition finds it."),
+    # --- 3D model / packaging ---
+    (["clash", "packaging", "clearance", "envelope", "interfer", "cad",
+      "step file", "solidworks", "assembly", "3d model", "fit forecast"],
+     "model3d",
+     "Your note mentions packaging or CAD — the 3D model shows your part in "
+     "everyone else's context with clash detection, and Fit Forecast scores "
+     "a CAD file's assembly-readiness 0–100 before anyone opens SolidWorks."),
+    # --- validation / big-tool vocabulary ---
+    (["ansys", "adams", "matlab", "fea", "cfd run", "validate", "sign-off",
+      "signoff", "sign off", "test plan", "test matrix"],
+     "validation",
+     "Your note mentions the full-fidelity tools — the Validation tab is "
+     "where that run is scoped: what's locked, what still needs simulation, "
+     "pass criteria and who signs it off."),
+    # --- cost ---
+    (["cost", "budget", "bom", "price", "cheap", "expensive", "sponsor",
+      "money"],
+     "cost",
+     "Your note mentions cost — the Cost event BOM is auto-seeded from the "
+     "Integration ledger, so the price of a decision is visible when you "
+     "make it, not at the submission deadline."),
+    # --- weight / CG ---
+    (["weight", "mass", " cg", "cg ", "centre of gravity",
+      "center of gravity", "too heavy", "lightweight", "lighter"],
+     "weight",
+     "Your note mentions mass or CG — the Weight & Handover ledger is the one "
+     "agreed source of mass properties, so the CG everyone designs to is the "
+     "one the car actually has."),
+    # --- docs / design event ---
+    (["design report", "design event", "report", "document", "judg",
+      "presentation", "deliverable"],
+     "docs",
+     "Your note mentions reporting or design judging — the Documentation tab "
+     "turns the work you already did into design-report-ready evidence, with "
+     "templates for intent, assumptions, calculations, risks and handover."),
+    # --- notes / decisions ---
+    (["decision", "rationale", "handover", "why we", "meeting",
+      "knowledge transfer"],
+     "notes",
+     "Your note mentions decisions or handover — Lead Notes keeps the "
+     "reasoning next to the numbers it justifies, and new notes surface as "
+     "live notifications to the other leads."),
+    # --- registry / provenance ---
+    (["parameter", "provenance", "source of", "where did", "declared",
+      "trust the number"],
+     "registry",
+     "Your note mentions parameter provenance — the Registry attaches a "
+     "source and a status to every declared value, so no one designs on "
+     "rumours."),
+    # --- analytics / progress ---
+    (["progress", "stalled", "deadline", "behind schedule", "tracking",
+      "who is working"],
+     "analytics",
+     "Your note mentions progress or schedule — Analytics shows where the "
+     "team's design effort is actually going and what has stalled, before "
+     "the schedule notices."),
+    # --- integration vocabulary ---
+    (["interface", "ledger", "single source", "conflict", "disagree",
+      "two versions", "out of date", "out-of-date"],
+     "integration",
+     "Your note mentions interfaces or conflicting values — the Integration "
+     "ledger holds one version of every cross-subsystem number, and its "
+     "coupling graph flags everyone a change affects."),
+    # --- brakes vocabulary ---
+    (["pedal", "master cylinder", "caliper", "brake", "rotor", "disc"],
+     "brakes",
+     "Your note mentions brake hardware — hydraulic sizing, pedal effort, "
+     "bias, lock-up order and rotor thermal all live in the same model here, "
+     "so a caliper or master-cylinder change shows its full consequence."),
 ]
 
 
 def _freetext_hook(freetext: str, tool_id: str) -> str:
-    """Return one contextual sentence if the freetext note matches a keyword
-    for this tool_id, else empty string.  Case-insensitive; first match wins.
-    Pure Python, zero imports beyond builtins."""
+    """Return EVERY contextual sentence whose keywords the freetext note
+    matches for this tool_id (joined, de-duplicated, table order), else "".
+    A note like "rear bump steer is a mess and the camber curve drifts" gets
+    both the bump-steer and the camber hook — nothing applicable is dropped.
+    Case-insensitive.  Pure Python, zero imports beyond builtins."""
     if not freetext:
         return ""
     ft_lower = freetext.lower()
+    hits: list[str] = []
     for keywords, tid, advice in _FREETEXT_KEYWORDS:
         if tid not in (tool_id, "any"):
             continue
-        if any(kw in ft_lower for kw in keywords):
-            return advice
-    return ""
+        if any(kw in ft_lower for kw in keywords) and advice not in hits:
+            hits.append(advice)
+    return " ".join(hits)
+
+
+def _freetext_matched_tools(freetext: str) -> list[str]:
+    """Every tool id the freetext note's keywords touch, in canonical tab
+    order.  Drives the note-aware toolbox expansion: if the note mentions
+    something a tool covers, that tool joins the briefing even when no
+    selected goal would have included it.  Pure Python."""
+    if not freetext:
+        return []
+    ft_lower = freetext.lower()
+    matched = {tid for keywords, tid, _adv in _FREETEXT_KEYWORDS
+               if tid != "any" and any(kw in ft_lower for kw in keywords)}
+    return [t for t in _FULL_ORDER if t in matched]
+
+
+def _freetext_tokens(freetext: str) -> list[str]:
+    """Lower-cased content words (len >= 4) from the note, for marking which
+    feature bullets relate to what the member actually typed.  A tiny
+    stop-list keeps glue words from lighting every bullet.  Pure Python."""
+    if not freetext:
+        return []
+    _stop = {"with", "that", "this", "have", "from", "when", "what",
+             "about", "really", "please", "very", "into", "onto", "then",
+             "than", "there", "their", "they", "some", "much", "mess",
+             "issue", "problem", "still", "just", "like", "want", "need",
+             "keeps", "keep", "gets", "goes", "during", "every", "also"}
+    _word, _out = [], []
+    for ch in freetext.lower():
+        if ch.isalnum() or ch == "-":
+            _word.append(ch)
+        else:
+            if _word:
+                w = "".join(_word)
+                if len(w) >= 4 and w not in _stop and w not in _out:
+                    _out.append(w)
+                _word = []
+    if _word:
+        w = "".join(_word)
+        if len(w) >= 4 and w not in _stop and w not in _out:
+            _out.append(w)
+    return _out
 
 
 def _brief_goal_options(roles):
@@ -3461,6 +3831,14 @@ def _build_briefing(roles, purpose_key, goal_keys, freetext, style="visual"):
     for _t in _BRIEF_PURPOSE_MAP.get(purpose_key, ("", [], ""))[1]:
         if _t not in _tabs:
             _tabs.append(_t)
+    # The optional note expands the toolbox: any tool whose keywords the note
+    # matches joins the plan, so a member who types "pack overheats in
+    # endurance" gets the accumulator, EV and lap-time tools even if none of
+    # the tapped goals would have pulled them in. Tracked separately so the
+    # briefing can say WHY each of these tools is in the plan.
+    _ft = (freetext or "").strip()
+    _note_tabs = [t for t in _freetext_matched_tools(_ft) if t not in _tabs]
+    _tabs.extend(_note_tabs)
     # Handover pair always closes the plan; keep it out of the core list.
     _core = [t for t in _FULL_ORDER
              if t in _tabs and t not in ("integration", "validation")]
@@ -3469,7 +3847,8 @@ def _build_briefing(roles, purpose_key, goal_keys, freetext, style="visual"):
         "purpose": purpose_key,
         "goals": [(_k, _opts[_k][0]) for _k in _goal_keys],
         "active_goal_keys": _goal_keys,          # NEW — carried for feature lookup
-        "freetext": (freetext or "").strip(),
+        "freetext": _ft,
+        "note_tabs": _note_tabs,                 # NEW — tools the note added
         "style": style,
         "core_tabs": _core,
     }
@@ -3583,9 +3962,17 @@ def _render_briefing_panel():
         if _pu:
             st.markdown(_pu[2])
         if _bf.get("freetext"):
+            _nt = [t for t in _bf.get("note_tabs", []) if t in _TAB_META]
+            _nt_msg = ""
+            if _nt:
+                _nt_names = ", ".join(
+                    f"{_TAB_META[t][0]} {_TAB_META[t][1]}" for t in _nt)
+                _nt_msg = (f" Because of it, {_nt_names} "
+                           f"{'joins' if len(_nt) == 1 else 'join'} your "
+                           "toolbox below — look for the 💬 badge.")
             st.caption(f"Your words: “{_bf['freetext']}” — keep that in mind as "
                        "you work through the plan below; the Validation tab is "
-                       "where you'll pin it down as a formal check.")
+                       "where you'll pin it down as a formal check." + _nt_msg)
         st.markdown("**Goals:** " + " · ".join(
             f"*{lab}*" for _k, lab in _bf.get("goals", [])))
         _style = _bf.get("style", "visual")
@@ -3608,8 +3995,10 @@ def _render_briefing_panel():
             _cat = _CAT_LABEL.get(_ID_CATEGORY.get(_tid, ""), "")
 
             # --- header + what-you-do-here ---
-            _parts = [f"**{_n}. {_em} {_lab}**  ·  find it under **{_cat}**",
-                      _need]
+            _hdr = f"**{_n}. {_em} {_lab}**  ·  find it under **{_cat}**"
+            if _tid in _bf.get("note_tabs", []):
+                _hdr += "  ·  💬 *in your toolbox because of your note*"
+            _parts = [_hdr, _need]
 
             # --- plain-English gloss for newcomers ---
             if _style == "new" and _tid in _BRIEF_SIMPLE:
@@ -3620,7 +4009,7 @@ def _render_briefing_panel():
             _parts.append(
                 f"> **Why here, not MATLAB/ANSYS/OptimumK etc.:** {_vs}")
 
-            # --- goal-specific feature deep-dive ---
+            # --- feature deep-dive: goal-specific first, full list otherwise
             # Collect every feature bullet that applies to any active goal for
             # this tool, de-duplicating across multiple goals.
             _feat_seen: set[str] = set()
@@ -3631,12 +4020,35 @@ def _render_briefing_panel():
                         _feat_seen.add(_feat)
                         _feat_lines.append(_feat)
 
+            # No goal-tailored copy for this (goal, tool) combination — the
+            # handover pair, purpose-added tabs and note-added tools land
+            # here.  Fall back to the tool's COMPLETE feature list so every
+            # rendered block always covers every applicable feature.
+            _feat_hdr = ("**What this tool does for your goal — "
+                         "feature by feature:**")
+            if not _feat_lines:
+                _feat_lines = list(_BRIEF_TOOL_FEATURES.get(_tid, []))
+                _feat_hdr = "**Everything this tool does for you:**"
+
             if _feat_lines:
-                _parts.append(
-                    "**What this tool does for your goal — feature by feature:**")
+                # Star the bullets that relate to what the member typed in
+                # the optional note, so their own words visibly steer the
+                # briefing down to the feature level.
+                _toks = _freetext_tokens(_freetext)
+                _starred = False
+                _rendered = []
+                for _f in _feat_lines:
+                    _fl = _f.lower()
+                    if _toks and any(_t in _fl for _t in _toks):
+                        _rendered.append(f"- ⭐ {_f}")
+                        _starred = True
+                    else:
+                        _rendered.append(f"- {_f}")
+                _parts.append(_feat_hdr)
                 # Render as a tight bullet list inline in the markdown block.
-                _parts.append(
-                    "\n".join(f"- {_f}" for _f in _feat_lines))
+                _parts.append("\n".join(_rendered))
+                if _starred:
+                    _parts.append("*⭐ = relates directly to your note.*")
 
             # --- freetext contextual hook ---
             _hook = _freetext_hook(_freetext, _tid)
@@ -21202,6 +21614,48 @@ with tab_docs:
       'declared numbers, calculations, Handover decisions and Lead Notes — is '
       'pulled into the report automatically; you only tweak a few words before '
       'downloading the PDF.</p>', unsafe_allow_html=True)
+
+
+  # ----------------------------------------------------------------- #
+  #  DXF export workflow guide, moved here from the 30-second tour.   #
+  # ----------------------------------------------------------------- #
+  with st.expander(
+      "📐 How to get a build-ready DXF from any subsystem",
+      expanded=False):
+      st.markdown(
+          "**Where do the dimensions come from? You -- never the app guessing.**\n\n"
+          "Every DXF is generated from *your* declared numbers (motor bore and bolt PCD, "
+          "wing chord, hardpoints, radiator core size, ...). Nothing is invented. "
+          "No numbers in = no section out. If an export panel is empty it tells you "
+          "exactly which inputs are still missing -- fill those in the owning tab and "
+          "they tick off.\n\n"
+          "**Step-by-step:**\n\n"
+          "1. Open your subsystem tab and enter its real numbers (see table below).\n"
+          "2. In the same tab (or here under **Mesh & DXF export**), find the panel "
+          "   labelled *\"<Subsystem> -- mesh & DXF export\"*.\n"
+          "3. If it shows *Waiting on numbers*, expand it -- a live checklist names "
+          "   every missing field. Fill them in the owning tab; each item ticks off.\n"
+          "4. Once all inputs are present, the section preview and "
+          "   **Download DXF** button appear automatically.\n"
+          "5. **In SolidWorks:** File > Open > (set type to DXF) > import as a 2-D "
+          "   sketch, then Extruded Boss/Base. Mesh the solid in ANSYS.\n\n"
+          "Units are embedded, bolt holes are separate closed loops, and every profile "
+          "is checked for a single closed contour so SolidWorks never sees an open "
+          "or self-intersecting sketch.\n\n"
+          "---\n\n"
+          "**Where each subsystem's numbers live:**\n\n"
+          "| Subsystem | Where to enter numbers | What you get |\n"
+          "|---|---|---|\n"
+          "| Suspension | Sidebar hardpoint editor (upper + lower outer ball joints) | Upright mount plate + bolt PCD |\n"
+          "| Aerodynamics | Aerodynamics tab -- run scale-model / aeromap | Wing airfoil section |\n"
+          "| EV Powertrain | EV tab -- motor bore + bolt PCD | Motor flange |\n"
+          "| Accumulator | Accumulator tab -- series x parallel cell counts | Segment box cross-section |\n"
+          "| Cooling | Add radiator as a 3D part with core width x height | Radiator core face |\n"
+          "| Brakes | Brakes tab -- caliper-mount bolt check -- bolts + PCD | Caliper-mount bracket blank |\n\n"
+          "The **Mesh & DXF export** subtab at the top of this Documentation tab covers "
+          "every subsystem from one place -- pick the subsystem in the selector above, "
+          "then open that subtab."
+      )
 
   _doc_labels = [f"{_e}  {_lab}" for _k, _e, _lab in _VC_SUBSYS]
   _doc_keys = [_k for _k, _e, _lab in _VC_SUBSYS]
