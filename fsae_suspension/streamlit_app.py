@@ -854,14 +854,7 @@ def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
             st.session_state[key] = min(max(float(st.session_state[key]), d_lo), d_hi)
         except (TypeError, ValueError):
             pass
-    # When the widget key already exists in session_state, Streamlit owns the
-    # value — passing value= as well triggers a "created with a default value
-    # but also had its value set via the Session State API" warning and the
-    # explicit value= is silently ignored anyway. Omit it in that case.
-    if key is not None and key in st.session_state:
-        result = container.number_input(lbl, d_lo, d_hi, **extra, **kw)
-    else:
-        result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
+    result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
     metric_result = units_mod.to_metric(float(result), unit)
     if key is not None:
         st.session_state[f"_u_{key}"] = (metric_result, units_mod.current_system())
@@ -890,13 +883,7 @@ def uslider(container, label_with_unit, lo, hi, val, unit, *, step=None,
         extra["step"] = units_mod.from_metric_delta(float(step), unit)
     if key is not None:
         extra["key"] = key
-    # Same as unum: omit value= when session_state already holds this key to
-    # avoid the "created with a default value but also had its value set via
-    # the Session State API" warning.
-    if key is not None and key in st.session_state:
-        result = container.slider(lbl, d_lo, d_hi, **extra, **kw)
-    else:
-        result = container.slider(lbl, d_lo, d_hi, d_val, **extra, **kw)
+    result = container.slider(lbl, d_lo, d_hi, d_val, **extra, **kw)
     metric_result = units_mod.to_metric(float(result), unit)
     if key is not None:
         st.session_state[f"_u_{key}"] = (metric_result, units_mod.current_system())
@@ -7201,8 +7188,665 @@ _TMPL_BY_ID = {t[0]: t for t in _DOC_TEMPLATES}
 # those call sites and silently drop every tab to the simple fallback report.
 
 
+# --------------------------------------------------------------------------- #
+#  Voice memos — spoken documentation                                          #
+#                                                                              #
+#  Typing up a subsystem doc after a long workshop evening is exactly the      #
+#  moment documentation dies. So inside ✏️ Edit your sections a member can     #
+#  UPLOAD a voice memo (recorded on a phone) and the picked template sections  #
+#  PREFILL themselves from the transcript: spoken section names ("assumptions: #
+#  … calculation summary: …") split the memo explicitly, and everything else   #
+#  is keyword-matched to the best section. The member then just tweaks the     #
+#  text in the ordinary editors — the info is already there.                   #
+#                                                                              #
+#  Transcription is attempted with whichever speech engine is installed (all   #
+#  imports lazy and optional — the app never gains a hard dependency); with    #
+#  none installed, the audio stays attached and a paste-a-transcript fallback  #
+#  routes typed text through the exact same prefill path.                      #
+#                                                                              #
+#  Pure Python throughout: Streamlit widgets + stdlib (hashlib, re, wave, io). #
+# --------------------------------------------------------------------------- #
+_VOICE_MEMO_KEY = "_kinematik_voice_memos"   # session_state: {subsystem: [memo]}
+_VM_ENGINE_CACHE = {}                        # loaded speech models, per process
+_VM_AUDIO_TYPES = ["wav", "mp3", "m4a", "ogg", "oga", "webm", "flac",
+                   "aac", "aiff", "aif", "opus", "amr", "3gp"]
+_VM_MIME = {
+    "wav": "audio/wav", "mp3": "audio/mpeg", "m4a": "audio/mp4",
+    "ogg": "audio/ogg", "oga": "audio/ogg", "webm": "audio/webm",
+    "flac": "audio/flac", "aac": "audio/aac", "aiff": "audio/aiff",
+    "aif": "audio/aiff", "opus": "audio/ogg", "amr": "audio/amr",
+    "3gp": "audio/3gpp",
+}
+
+
+# Speech-to-text is deliberately ISOLATED to two surfaces for now: the
+# 📄 Documentation tab's Document view and the 📝 Lead Notes composer. Every
+# voice-prefill render helper takes a `surface` and no-ops unless that surface
+# is on this allowlist, and render_documentation_center only mounts the
+# uploader when its caller passes enable_voice=True (only the Documentation
+# tab does). To roll the feature out to another surface later, add its name
+# here and pass it from the call site — one greppable place to widen.
+_VM_STT_SURFACES = {"documentation", "lead_notes"}
+
+
+def _vm_stt_allowed(surface):
+    return surface in _VM_STT_SURFACES
+
+
+def _voice_memo_store(subsystem_key):
+    """Per-subsystem list of memo dicts, living in session_state. Never raises."""
+    try:
+        _all = st.session_state.setdefault(_VOICE_MEMO_KEY, {})
+        return _all.setdefault(str(subsystem_key), [])
+    except Exception:
+        return []
+
+
+def _vm_digest(data):
+    import hashlib
+    return hashlib.sha1(data).hexdigest()[:16]
+
+
+def _vm_wav_duration(data):
+    """Duration in seconds for WAV bytes via the stdlib; None for other formats
+    (we don't pull in an audio-decoding dependency just for a label)."""
+    try:
+        import io as _io, wave as _wave
+        with _wave.open(_io.BytesIO(data)) as _w:
+            _fr = _w.getframerate()
+            return (_w.getnframes() / float(_fr)) if _fr else None
+    except Exception:
+        return None
+
+
+def _vm_fmt_dur(sec):
+    if not sec:
+        return ""
+    _m, _s = divmod(int(round(sec)), 60)
+    return f" · {_m}:{_s:02d} min" if _m else f" · {_s}s"
+
+
+def _vm_transcribe(data, filename="memo.wav"):
+    """Best-effort speech-to-text. Tries whichever engine is installed, in order
+    of quality; returns (text, engine_name) or (None, None). Every import is
+    lazy and every failure swallowed — transcription is a bonus, never a
+    requirement, so a bare deployment still attaches memos as audio."""
+    import os as _os, tempfile as _tmp
+
+    _ext = (_os.path.splitext(filename)[1] or ".wav").lower()
+
+    def _to_tempfile():
+        _f = _tmp.NamedTemporaryFile(suffix=_ext, delete=False)
+        _f.write(data)
+        _f.close()
+        return _f.name
+
+    # 1) faster-whisper — best accuracy/speed if the team installed it.
+    try:
+        from faster_whisper import WhisperModel as _FW
+        _mdl = _VM_ENGINE_CACHE.get("faster_whisper")
+        if _mdl is None:
+            _mdl = _FW("base", device="cpu", compute_type="int8")
+            _VM_ENGINE_CACHE["faster_whisper"] = _mdl
+        _p = _to_tempfile()
+        try:
+            _segs, _ = _mdl.transcribe(_p)
+            _txt = " ".join(_s.text.strip() for _s in _segs).strip()
+            if _txt:
+                return _txt, "faster-whisper"
+        finally:
+            _os.unlink(_p)
+    except Exception:
+        pass
+
+    # 2) openai-whisper.
+    try:
+        import whisper as _wh
+        _mdl = _VM_ENGINE_CACHE.get("whisper")
+        if _mdl is None:
+            _mdl = _wh.load_model("base")
+            _VM_ENGINE_CACHE["whisper"] = _mdl
+        _p = _to_tempfile()
+        try:
+            _txt = (_mdl.transcribe(_p).get("text") or "").strip()
+            if _txt:
+                return _txt, "whisper"
+        finally:
+            _os.unlink(_p)
+    except Exception:
+        pass
+
+    # 3) vosk — light offline engine; WAV only (the in-app recorder emits WAV).
+    if _ext == ".wav":
+        try:
+            import io as _io, json as _json, wave as _wave
+            from vosk import KaldiRecognizer as _KR, Model as _VM
+            _mdl = _VM_ENGINE_CACHE.get("vosk")
+            if _mdl is None:
+                _mdl = _VM(lang="en-us")
+                _VM_ENGINE_CACHE["vosk"] = _mdl
+            with _wave.open(_io.BytesIO(data)) as _w:
+                _rec = _KR(_mdl, _w.getframerate())
+                _parts = []
+                while True:
+                    _chunk = _w.readframes(4000)
+                    if not _chunk:
+                        break
+                    if _rec.AcceptWaveform(_chunk):
+                        _parts.append(_json.loads(_rec.Result()).get("text", ""))
+                _parts.append(_json.loads(_rec.FinalResult()).get("text", ""))
+            _txt = " ".join(_t for _t in _parts if _t).strip()
+            if _txt:
+                return _txt, "vosk"
+        except Exception:
+            pass
+
+    # 4) SpeechRecognition (WAV/AIFF/FLAC): offline sphinx, then Google Web API.
+    if _ext in (".wav", ".aiff", ".aif", ".flac"):
+        try:
+            import speech_recognition as _sr
+            _r = _sr.Recognizer()
+            _p = _to_tempfile()
+            try:
+                with _sr.AudioFile(_p) as _src:
+                    _audio = _r.record(_src)
+                for _fn, _nm in ((getattr(_r, "recognize_sphinx", None), "pocketsphinx"),
+                                 (getattr(_r, "recognize_google", None), "google-web")):
+                    if _fn is None:
+                        continue
+                    try:
+                        _txt = (_fn(_audio) or "").strip()
+                        if _txt:
+                            return _txt, _nm
+                    except Exception:
+                        continue
+            finally:
+                _os.unlink(_p)
+        except Exception:
+            pass
+
+    return None, None
+
+
+def _vm_engine_available():
+    """True if at least one transcription engine can be imported (cheap probe)."""
+    import importlib.util as _ilu
+    return any(_ilu.find_spec(_m) is not None
+               for _m in ("faster_whisper", "whisper", "vosk",
+                          "speech_recognition"))
+
+
+_VM_STOPWORDS = {
+    "the", "and", "for", "with", "that", "this", "from", "into", "your",
+    "have", "has", "was", "were", "are", "will", "would", "should", "could",
+    "about", "them", "then", "than", "there", "here", "what", "when", "which",
+    "where", "who", "how", "why", "not", "you", "our", "out", "per", "its",
+    "any", "all", "can", "each", "one", "two", "over", "under", "after",
+    "before", "been", "being", "onto", "also", "very", "just", "like",
+    "section", "sections", "note", "notes", "fill", "edit", "e.g", "etc",
+}
+
+
+def _vm_words(text):
+    """Lowercased content words of `text` (stopwords and short tokens out)."""
+    import re as _re
+    return {w for w in _re.findall(r"[a-zA-Z][a-zA-Z\-]{2,}", (text or "").lower())
+            if w not in _VM_STOPWORDS}
+
+
+def _vm_sentences(text):
+    """Split a transcript into sentence-ish chunks (engines rarely punctuate
+    perfectly, so newlines count as boundaries too)."""
+    import re as _re
+    _parts = _re.split(r"(?<=[.!?])\s+|\n+", (text or "").strip())
+    return [p.strip().strip(",;") for p in _parts if p and p.strip()]
+
+
+def _vm_route_transcript(text, picked_meta):
+    """Distribute a spoken transcript across the picked template sections.
+
+    picked_meta: [(tid, label, icon, heading, skeleton), ...]
+    Returns ({tid: [lines]}, used_markers: bool).
+
+    Two pure-Python passes:
+      1. SPOKEN MARKERS — if the member says section names while talking
+         ("…assumptions: we ran on cold tires… calculation summary: peak was
+         1.6 g…"), the transcript is split at those phrases and each chunk
+         lands in the named section. This is the frictionless dictation path.
+      2. KEYWORD SCORING — anything not claimed by a marker is scored
+         sentence-by-sentence against each section's vocabulary (its label,
+         heading and skeleton prompts); each sentence goes to its best match,
+         and no-signal sentences follow the previous sentence's section (talk
+         tends to stay on topic), defaulting to the first picked section.
+    """
+    _routed = {tid: [] for (tid, *_rest) in picked_meta}
+    if not text or not text.strip() or not picked_meta:
+        return _routed, False
+
+    _flat = " ".join(text.split())
+    _low = _flat.lower()
+
+    # ---- pass 1: spoken section-name markers ---------------------------- #
+    _hits = []  # (pos_in_flat, phrase_len, tid)
+    for _tid, _label, _icon, _heading, _skel in picked_meta:
+        _phrases = set()
+        for _base in ((_label or "").lower().strip(),
+                      (_heading or "").lower().strip()):
+            if not _base:
+                continue
+            # Nobody SAYS "&" or the bracketed part of a template name — match
+            # the natural spoken variants too ("design intent & requirements"
+            # → "design intent and requirements", "design intent").
+            _phrases.update({
+                _base,
+                _base.replace("&", "and").replace("  ", " "),
+                _base.split("&")[0].strip(),
+                _base.split("(")[0].strip(),
+                _base.split("—")[0].strip(),
+            })
+        for _phrase in _phrases:
+            if len(_phrase) < 4:
+                continue
+            _from = 0
+            while True:
+                _p = _low.find(_phrase, _from)
+                if _p < 0:
+                    break
+                _hits.append((_p, len(_phrase), _tid))
+                _from = _p + 1
+    _hits.sort()
+    # De-dup overlapping hits, longest phrase first at equal positions (so
+    # "design intent and requirements" beats its own "design intent" variant).
+    _hits.sort(key=lambda h: (h[0], -h[1]))
+    _marks, _last_end = [], -1
+    for _p, _ln, _tid in _hits:
+        if _p >= _last_end:
+            _marks.append((_p, _ln, _tid))
+            _last_end = _p + _ln
+    _used_markers = len({t for (_p, _l, t) in _marks}) >= 2 or (
+        len(_marks) >= 1 and _marks[0][0] <= 3)
+
+    _leftover = _flat
+    if _used_markers:
+        _leftover = _flat[:_marks[0][0]]
+        for _i, (_p, _ln, _tid) in enumerate(_marks):
+            _start = _p + _ln
+            _stop = _marks[_i + 1][0] if _i + 1 < len(_marks) else len(_flat)
+            _chunk = _flat[_start:_stop].strip(" .,:;—-")
+            for _s in _vm_sentences(_chunk):
+                _routed[_tid].append(_s)
+
+    # ---- pass 2: keyword scoring for whatever's left --------------------- #
+    _vocab = {tid: (_vm_words(_label) | _vm_words(_heading) | _vm_words(_skel))
+              for (tid, _label, _icon, _heading, _skel) in picked_meta}
+    _first_tid = picked_meta[0][0]
+    _prev_tid = _first_tid
+    for _s in _vm_sentences(_leftover):
+        _sw = _vm_words(_s)
+        _best_tid, _best = None, 0
+        for _tid, _kw in _vocab.items():
+            _score = len(_sw & _kw)
+            if _score > _best:
+                _best_tid, _best = _tid, _score
+        _tgt = _best_tid if _best_tid is not None else _prev_tid
+        _routed[_tgt].append(_s)
+        _prev_tid = _tgt
+    return _routed, _used_markers
+
+
+def _vm_apply_prefill(key_prefix, picked_meta, routed):
+    """Write routed lines into the section editors' session_state — MUST run
+    before those text_areas are instantiated on this run (Streamlit forbids
+    changing a widget's state afterwards; the caller guarantees the ordering).
+
+    An untouched editor (empty, or still exactly the template skeleton) is
+    REPLACED by the spoken content; an already-edited one gets the new lines
+    appended, so a prefill never destroys typed work.
+
+    Returns [(label, n_lines)] for the sections that actually received text.
+    """
+    _filled = []
+    for _tid, _label, _icon, _heading, _skel in picked_meta:
+        _lines = [ln for ln in (routed.get(_tid) or []) if ln.strip()]
+        if not _lines:
+            continue
+        _k = f"{key_prefix}_edit_{_tid}"
+        _cur = st.session_state.get(_k, "")
+        _block = "\n".join(_lines)
+        if not _cur.strip() or _cur.strip() == (_skel or "").strip():
+            st.session_state[_k] = _block
+        else:
+            st.session_state[_k] = _cur.rstrip() + "\n\n" + _block
+        _filled.append((_label, len(_lines)))
+    return _filled
+
+
+def _render_voice_memo_prefill(subsystem_key, *, key_prefix, picked_meta,
+                               surface="documentation"):
+    """🎙️ The voice-memo uploader at the top of ✏️ Edit your sections.
+
+    Drop in an audio file → it's transcribed (when a speech engine is
+    installed) → the transcript is routed across the PICKED template sections
+    and prefills their editors below, so the member only tweaks a few words
+    instead of writing each section. Uploads are de-duplicated by content
+    digest and each memo is routed exactly once, so Streamlit reruns never
+    double-fill anything.
+    """
+    if not _vm_stt_allowed(surface):
+        return
+    _memos = _voice_memo_store(subsystem_key)
+
+    st.markdown(
+        '<p class="hint" style="margin:0 0 4px;font-size:.75rem;">'
+        '🎙️ <b>Prefill from a voice memo</b> — talk through the doc on your '
+        'phone (say the section names as you go: <i>“assumptions: … '
+        'calculation summary: …”</i>), drop the file here, and the sections '
+        'below fill themselves in. You just tweak.</p>',
+        unsafe_allow_html=True)
+
+    _ups = st.file_uploader(
+        "Voice memo audio", type=_VM_AUDIO_TYPES, accept_multiple_files=True,
+        key=f"{key_prefix}_vm_up", label_visibility="collapsed",
+        help="Voice Memos (iPhone .m4a), Android recordings, WhatsApp voice "
+             "notes — anything audio. The transcript is split across the "
+             "sections you picked above and dropped into the editors below.")
+
+    _known = {_m.get("digest") for _m in _memos}
+    _engine_ok = _vm_engine_available()
+    _any_new = False
+    for _u in (_ups or []):
+        _data = _u.getvalue()
+        if not _data:
+            continue
+        _dig = _vm_digest(_data)
+        if _dig in _known:
+            continue
+        _any_new = True
+        import datetime as _dt, os as _os
+        _root, _ext = _os.path.splitext(_u.name)
+        _ext = (_ext or ".wav").lstrip(".").lower()
+        _txt, _eng, _filled = "", None, []
+        if _engine_ok:
+            with st.spinner(f"Transcribing “{_u.name}”…"):
+                _t, _eng = _vm_transcribe(_data, _u.name)
+            _txt = (_t or "").strip()
+        if _txt:
+            _routed, _mk = _vm_route_transcript(_txt, picked_meta)
+            _filled = _vm_apply_prefill(key_prefix, picked_meta, _routed)
+        _memos.append({
+            "id": _dig, "digest": _dig,
+            "name": (_root or "voice memo").replace("_", " ").strip(),
+            "when": f"{_dt.datetime.now():%Y-%m-%d %H:%M}",
+            "data": _data, "ext": _ext,
+            "mime": _VM_MIME.get(_ext, "audio/wav"),
+            "dur": _vm_wav_duration(_data) if _ext == "wav" else None,
+            "text": _txt, "engine": _eng, "filled": _filled,
+        })
+        _known.add(_dig)
+        if _filled:
+            st.success("Prefilled from “{}”: {} — tweak below, the wording is "
+                       "yours.".format(
+                           _u.name,
+                           ", ".join(f"{l} ({n} line{'s' if n != 1 else ''})"
+                                     for l, n in _filled)))
+        elif _txt:
+            st.info(f"Transcribed “{_u.name}” but couldn't match it to the "
+                    f"picked sections — its text was added to the first one.")
+
+    if _any_new and not _engine_ok:
+        st.caption("No speech-to-text engine installed, so the audio is "
+                   "attached but can't fill the sections automatically — "
+                   "paste its transcript below, or add `faster-whisper` or "
+                   "`vosk` to the deployment's requirements.")
+
+    # Manual transcript path — also the no-engine fallback: paste (or type)
+    # what was said and it's routed into the sections exactly the same way.
+    with st.expander("…or paste a transcript to route into the sections",
+                     expanded=False):
+        _paste = st.text_area(
+            "Transcript text", key=f"{key_prefix}_vm_paste", height=120,
+            label_visibility="collapsed",
+            placeholder="assumptions: we assumed 50/50 static split… "
+                        "calculation summary: peak lateral was 1.6 g…")
+        if st.button("↧ Route into the sections below",
+                     key=f"{key_prefix}_vm_paste_go"):
+            if (_paste or "").strip():
+                _routed, _mk = _vm_route_transcript(_paste, picked_meta)
+                _filled = _vm_apply_prefill(key_prefix, picked_meta, _routed)
+                if _filled:
+                    st.success("Prefilled: " + ", ".join(
+                        f"{l} ({n})" for l, n in _filled))
+
+    # Memos already used — playback + transcript for reference, delete to tidy.
+    if _memos:
+        with st.expander(f"🎙️ {len(_memos)} memo(s) used for this document",
+                         expanded=False):
+            for _m in list(_memos):
+                _mid = _m["id"]
+                _cols = st.columns([5, 1])
+                _cols[0].markdown(
+                    f"**{_m.get('name', 'memo')}**"
+                    f"{_vm_fmt_dur(_m.get('dur'))} · {_m.get('when', '')}"
+                    + (f" · 📝 {_m['engine']}" if _m.get("engine") else "")
+                    + (" · prefilled " + ", ".join(l for l, _n in _m["filled"])
+                       if _m.get("filled") else ""))
+                if _cols[1].button("🗑", key=f"{key_prefix}_vm_del_{_mid}",
+                                   help="Forget this memo (the text already "
+                                        "in the editors stays)."):
+                    _memos[:] = [_x for _x in _memos if _x["id"] != _mid]
+                    _do_rerun()
+                try:
+                    st.audio(_m["data"], format=_m.get("mime", "audio/wav"))
+                except Exception:
+                    pass
+                if (_m.get("text") or "").strip():
+                    st.caption(f"Transcript: {_m['text'][:400]}"
+                               f"{'…' if len(_m['text']) > 400 else ''}")
+
+
+# Raw-audio size cap for persisting a memo INSIDE a note. Notes live in
+# project.json (rewritten wholesale on save) and in Supabase rows, so the
+# backup must stay small: ~2.5 MB raw ≈ a few minutes of phone-quality audio
+# ≈ ~3.4 MB as base64 in the store. Bigger memos still prefill the text and
+# stay playable in-session; they just aren't embedded in the shared store.
+_VM_NOTE_EMBED_CAP = 2_500_000
+
+
+def _vm_mic_permission_dialog(mic_key):
+    """In-app microphone permission pop-up, shown BEFORE the recorder widget
+    ever renders. Pure Python via st.dialog (a Streamlit modal): the recorder
+    is hidden behind a button, clicking it opens this dialog, and only an
+    explicit “Allow” reveals the mic widget — at which point the browser will
+    additionally show its own native permission prompt the first time the
+    microphone is actually accessed. “Not now” just closes the dialog.
+    The grant is remembered for this session in `st.session_state[mic_key]`
+    and can be revoked from the small 🔇 button next to the recorder.
+    On Streamlit builds without st.dialog, falls back to a two-click inline
+    confirm (grant on the next press) rather than silently enabling the mic.
+    """
+    if not hasattr(st, "dialog"):
+        # No modal support: arm an inline confirm; the caller renders it.
+        st.session_state[f"{mic_key}_inline_confirm"] = True
+        return
+
+    @st.dialog("🎙️ Microphone permission")
+    def _ask():
+        st.markdown(
+            "Recording a note uses your **microphone**.\n\n"
+            "- The recording stays on this page while you edit, and is "
+            "stored **with the note as a backup** when you post it, so "
+            "other leads can play back exactly what was said.\n"
+            "- Your **browser will also ask** for microphone permission "
+            "the first time the recorder is used — that prompt comes from "
+            "the browser itself.\n"
+            "- Nothing is recorded until you press the record button.")
+        _c = st.columns(2)
+        if _c[0].button("✅ Allow and show recorder",
+                        key=f"{mic_key}_yes", type="primary",
+                        width="stretch"):
+            st.session_state[mic_key] = True
+            st.session_state.pop(f"{mic_key}_asking", None)
+            st.rerun()
+        if _c[1].button("Not now", key=f"{mic_key}_no",
+                        width="stretch"):
+            st.session_state[mic_key] = False
+            st.session_state.pop(f"{mic_key}_asking", None)
+            st.rerun()
+
+    _ask()
+
+
+def _render_voice_note_dock(target_key, *, key_prefix, surface="lead_notes"):
+    """🎙️ Speak a Lead Note instead of typing it — record right here OR drop
+    in a voice-memo file. Two things happen:
+
+      1. PREFILL — the transcript is written into the note text box
+         (`st.session_state[target_key]`), so the lead just tweaks and posts.
+         An empty box is filled; typed text gets the transcript appended.
+      2. BACKUP — the newest recording/upload is held as the PENDING backup in
+         `st.session_state[f"{key_prefix}_backup"]`; when the note is posted,
+         the post handler embeds it (base64) in the Note's `voice_memo` field,
+         so the ORIGINAL audio travels with the note into project.json /
+         Supabase. If the transcript was off, the spoken word is still there.
+
+    MUST be rendered ABOVE the target text_area (Streamlit forbids changing a
+    widget's state once it's instantiated). Captures are content-digest
+    de-duplicated, so reruns — including the rerun after posting — never
+    re-prefill or re-attach. Pure Python: st.audio_input + st.file_uploader
+    + stdlib only.
+    """
+    if not _vm_stt_allowed(surface):
+        return
+    _pend_key = f"{key_prefix}_backup"
+    _done = st.session_state.setdefault(f"{key_prefix}_done", set())
+
+    _caps = []  # (name, bytes, ext) captured this run
+    _rc, _uc = st.columns(2)
+    with _rc:
+        if hasattr(st, "audio_input"):
+            _mic_key = f"{key_prefix}_mic_ok"
+            if st.session_state.get(_mic_key):
+                # Permission granted (this session) → the recorder exists.
+                _rec = st.audio_input(
+                    "🔴 Record the note", key=f"{key_prefix}_rec",
+                    help="Records from your microphone, right in the browser. "
+                         "Stop, listen back, and the note text fills itself "
+                         "in — the recording rides along with the post as "
+                         "backup.")
+                if _rec is not None:
+                    _caps.append(("recorded note", _rec.getvalue(), "wav"))
+                if st.button("🔇 Disable microphone",
+                             key=f"{key_prefix}_mic_off",
+                             help="Hide the recorder again for this session. "
+                                  "Anything already captured stays."):
+                    st.session_state[_mic_key] = False
+                    _do_rerun()
+            elif st.session_state.get(f"{_mic_key}_inline_confirm"):
+                # Fallback for Streamlit builds without st.dialog: an explicit
+                # inline confirm instead of a modal — never silently enable.
+                st.caption("Recording uses your microphone; your browser will "
+                           "also ask for permission. Enable the recorder?")
+                _ic = st.columns(2)
+                if _ic[0].button("✅ Allow", key=f"{_mic_key}_inline_yes"):
+                    st.session_state[_mic_key] = True
+                    st.session_state.pop(f"{_mic_key}_inline_confirm", None)
+                    _do_rerun()
+                if _ic[1].button("Not now", key=f"{_mic_key}_inline_no"):
+                    st.session_state.pop(f"{_mic_key}_inline_confirm", None)
+                    _do_rerun()
+            else:
+                # No permission yet → no mic widget on the page at all. The
+                # pop-up appears when the lead asks to record, and stays
+                # mounted (the `_asking` flag) until explicitly answered —
+                # so its buttons still work after any rerun, and dismissing
+                # it with ✕ just re-asks next time rather than silently
+                # granting anything.
+                if st.button("🔴 Record the note",
+                             key=f"{key_prefix}_mic_ask",
+                             help="Opens a permission pop-up first — the "
+                                  "microphone is only used after you allow "
+                                  "it."):
+                    st.session_state[f"{_mic_key}_asking"] = True
+                if st.session_state.get(f"{_mic_key}_asking"):
+                    _vm_mic_permission_dialog(_mic_key)
+                st.caption("Asks for microphone permission before recording.")
+        else:
+            st.caption("In-browser recording needs Streamlit ≥ 1.39 — "
+                       "use the uploader instead.")
+    with _uc:
+        _up = st.file_uploader(
+            "🎙️ …or drop a voice memo", type=_VM_AUDIO_TYPES,
+            accept_multiple_files=False, key=f"{key_prefix}_up",
+            help="Voice Memos (iPhone .m4a), Android recordings, WhatsApp "
+                 "voice notes — the transcript prefills the note and the "
+                 "audio is kept with it as backup.")
+        if _up is not None and _up.getvalue():
+            import os as _os
+            _root, _ext = _os.path.splitext(_up.name)
+            _caps.append(((_root or "voice memo").replace("_", " ").strip(),
+                          _up.getvalue(), (_ext or ".wav").lstrip(".").lower()))
+
+    for _name, _data, _ext in _caps:
+        _dig = _vm_digest(_data)
+        if _dig in _done:
+            continue
+        _done.add(_dig)
+        _txt, _eng = "", None
+        if _vm_engine_available():
+            with st.spinner(f"Transcribing “{_name}”…"):
+                _t, _eng = _vm_transcribe(_data, f"note.{_ext}")
+            _txt = (_t or "").strip()
+        if _txt:
+            _cur = (st.session_state.get(target_key) or "").strip()
+            st.session_state[target_key] = (
+                _cur + "\n\n" + _txt) if _cur else _txt
+        # Newest capture becomes the pending backup for the next post.
+        import datetime as _dt
+        st.session_state[_pend_key] = {
+            "name": _name, "ext": _ext,
+            "mime": _VM_MIME.get(_ext, "audio/wav"),
+            "digest": _dig, "data": _data,
+            "dur": _vm_wav_duration(_data) if _ext == "wav" else None,
+            "when": f"{_dt.datetime.now():%Y-%m-%d %H:%M}",
+            "engine": _eng,
+        }
+        if _txt:
+            st.success(f"Note prefilled from “{_name}”"
+                       f"{f' ({_eng})' if _eng else ''} — tweak below; the "
+                       f"recording posts with the note as backup.")
+        elif _vm_engine_available():
+            st.warning("Couldn't transcribe this one — type the note below; "
+                       "the recording still posts with it as backup.")
+        else:
+            st.caption("No speech-to-text engine installed, so the text box "
+                       "can't fill itself — type the note below; the "
+                       "recording still posts with it as backup. (Add "
+                       "`faster-whisper` or `vosk` to the deployment's "
+                       "requirements to enable transcription.)")
+
+    # The pending backup: show it, let the lead listen back or detach it.
+    _pend = st.session_state.get(_pend_key)
+    if _pend:
+        _bc = st.columns([6, 1])
+        _over = len(_pend.get("data", b"")) > _VM_NOTE_EMBED_CAP
+        _bc[0].caption(
+            f"🎙️ Attached to the next post as backup: "
+            f"**{_pend.get('name', 'memo')}**{_vm_fmt_dur(_pend.get('dur'))}"
+            + (" — ⚠ over the ~2.5 MB cap, too big to store with the note; "
+               "the text still posts normally." if _over else ""))
+        if _bc[1].button("🗑", key=f"{key_prefix}_detach",
+                         help="Detach the audio backup (the text you see in "
+                              "the note box stays)."):
+            st.session_state.pop(_pend_key, None)
+            _do_rerun()
+        try:
+            st.audio(_pend["data"], format=_pend.get("mime", "audio/wav"))
+        except Exception:
+            pass
+
+
 def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
-                                extra_sections=None):
+                                extra_sections=None, enable_voice=False):
     """Merged documentation hub.
 
     Strict render order:
@@ -7224,13 +7868,17 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
     # ------------------------------------------------------------------ #
     #  1. Intro                                                            #
     # ------------------------------------------------------------------ #
+    _voice_blurb = (
+        ' — or <b>🎙️ upload a voice memo</b> inside <i>Edit your sections</i> '
+        'and the picked sections prefill themselves from what you said — '
+        if enable_voice else ', ')
     st.markdown(
         f'<p class="hint" style="margin:0 0 10px;">'
         f'Build the <b>{_name}</b> document without starting from a blank page. '
         f'Everything you&rsquo;ve logged anywhere — declared numbers, calculations '
         f'run, decisions logged to the Handover, and cross-team Lead Notes — is '
         f'pulled in <b>automatically</b>. Choose any extra template sections, tweak '
-        f'the wording inline, sanity-check assumptions, then export '
+        f'the wording inline{_voice_blurb}sanity-check assumptions, then export '
         f'the merged report as PDF or Markdown.</p>',
         unsafe_allow_html=True)
 
@@ -7378,9 +8026,35 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
                   ln for ln in _tbody.splitlines() if not ln.startswith("## "))
               _picked_meta.append((_tid, _tlabel, _ticon, _heading, _skeleton))
 
+          # ------------------------------------------------------------ #
+          #  🎙️ Voice-memo prefill — MUST render before the text_areas    #
+          #  below: it writes routed transcript text into their           #
+          #  session_state keys, and Streamlit forbids changing a         #
+          #  widget's state once the widget is instantiated. Keeping the  #
+          #  uploader physically above the editors makes the ordering     #
+          #  natural AND legal.                                           #
+          # ------------------------------------------------------------ #
+          if enable_voice:
+              try:
+                  _render_voice_memo_prefill(subsystem_key,
+                                             key_prefix=key_prefix,
+                                             picked_meta=_picked_meta,
+                                             surface="documentation")
+              except Exception as _vm_err:
+                  st.caption(f"Voice-memo prefill unavailable "
+                             f"({type(_vm_err).__name__}) — the section "
+                             f"editors below still work as normal.")
+              st.markdown(
+                  '<hr style="margin:8px 0 6px;border:none;'
+                  'border-top:1px solid rgba(128,128,128,.12);">',
+                  unsafe_allow_html=True)
+
           for _tid, _tlabel, _ticon, _heading, _skeleton in _picked_meta:
               # Own the editor's value in session_state (seed once, never pass
-              # value=) — same rule as the template multiselect above.
+              # value=) — same rule as the template multiselect above. This is
+              # also what lets the voice-memo prefill hand text to this editor
+              # without tripping Streamlit's "default value + Session State
+              # API" state-rules warning.
               if f"{key_prefix}_edit_{_tid}" not in st.session_state:
                   st.session_state[f"{key_prefix}_edit_{_tid}"] = _skeleton
               with st.expander(f"{_ticon} {_tlabel}", expanded=False):
@@ -7555,7 +8229,7 @@ def get_doc_sections(subsystem_key):
 
 
 def _render_doc_and_verdict(subsystem_key, *, key_prefix, extra_sections=None,
-                            title_name=None):
+                            title_name=None, enable_voice=False):
     """Render the Document (report) surface for one subsystem.
 
     The per-subsystem VERDICT now lives on the main page (the Design-status
@@ -7569,7 +8243,8 @@ def _render_doc_and_verdict(subsystem_key, *, key_prefix, extra_sections=None,
     try:
         render_documentation_center(
             subsystem_key, key_prefix=f"{key_prefix}_dc",
-            title_name=_nm, extra_sections=extra_sections)
+            title_name=_nm, extra_sections=extra_sections,
+            enable_voice=enable_voice)
     except Exception as _dc_err:
         # Graceful fallback to the original simple report. We surface a
         # short note (instead of silently swallowing) so a member — or
@@ -7620,7 +8295,9 @@ def render_documentation_expander(subsystem_key, *, key_prefix,
     is no longer dropped into each subsystem tab. It is kept as a thin wrapper —
     delegating to the same `_render_doc_and_verdict` / `_render_mesh_section`
     helpers the Documentation tab uses — so any remaining caller still works and
-    the two surfaces can never drift."""
+    the two surfaces can never drift. Deliberately does NOT enable the
+    🎙️ voice-memo prefill (enable_voice stays False): speech-to-text is
+    isolated to the Documentation tab and Lead Notes for now."""
     _nm = title_name or _VC_LABEL.get(
         subsystem_key, subsystem_key.replace("-", " ").title())
     with st.expander(f"📄  {_nm} — documentation & export",
@@ -20625,6 +21302,17 @@ with tab8:
                              format_func=lambda k: "All teams" if k == "all"
                              else integ_mod.TEAMS[k]["label"], key="n_to")
       n_author = pc[2].text_input("Your name", key="n_author")
+      # 🎙️ Speak the note instead of typing it — record here or drop a memo
+      # file; the transcript prefills the box and the audio posts with the
+      # note as backup. Must sit ABOVE the text_area so the transcript can be
+      # written into "n_msg" before that widget is instantiated on this run
+      # (Streamlit's widget-state rule).
+      try:
+          _render_voice_note_dock("n_msg", key_prefix="n_vm",
+                                  surface="lead_notes")
+      except Exception as _nvm_err:
+          st.caption(f"Voice-memo dock unavailable "
+                     f"({type(_nvm_err).__name__}) — typing works as normal.")
       n_msg = st.text_area("Note", key="n_msg", height=80,
                            placeholder="e.g. Upright moved 8 mm inboard — recheck caliper clearance")
       fc = st.columns([1, 1, 3])
@@ -20632,9 +21320,32 @@ with tab8:
       n_urg = fc[1].checkbox("Urgent", key="n_urg")
       if st.button("Post note", key="n_post"):
           if n_msg.strip():
+              # If this note was spoken, embed the ORIGINAL recording as its
+              # backup (base64, capped in size) so it persists to the shared
+              # store with the note — the audio is the source of truth if the
+              # transcription was off. Never let backup handling block a post.
+              _vm_field = {}
+              try:
+                  _vm_pend = st.session_state.get("n_vm_backup") or {}
+                  _vm_raw = _vm_pend.get("data", b"")
+                  if _vm_raw and len(_vm_raw) <= _VM_NOTE_EMBED_CAP:
+                      import base64 as _b64
+                      _vm_field = {
+                          "name": _vm_pend.get("name", "voice memo"),
+                          "ext": _vm_pend.get("ext", "wav"),
+                          "mime": _vm_pend.get("mime", "audio/wav"),
+                          "dur": _vm_pend.get("dur"),
+                          "when": _vm_pend.get("when", ""),
+                          "engine": _vm_pend.get("engine"),
+                          "b64": _b64.b64encode(_vm_raw).decode("ascii"),
+                      }
+              except Exception:
+                  _vm_field = {}
               _new_note = project_mod.Note(
                   from_team=n_from, to_team=n_to, message=n_msg.strip(),
-                  author=n_author, is_request=n_req, urgent=n_urg)
+                  author=n_author, is_request=n_req, urgent=n_urg,
+                  voice_memo=_vm_field)
+              st.session_state.pop("n_vm_backup", None)
               nstore.add_note(_new_note)
               _ok = nstore.save()
               # Remember this id as ours so the poller doesn't toast us our own
@@ -20720,6 +21431,9 @@ with tab8:
                   badges += "<span class='tag warn'>action requested</span> "
               if n.status == "resolved":
                   badges += "<span class='tag good'>resolved</span> "
+              _nvm = getattr(n, "voice_memo", None) or {}
+              if _nvm.get("b64"):
+                  badges += "<span class='tag'>🎙️ voice backup</span> "
               meta = f"{from_label} → {to_label} · {n.ts.replace('T',' ')[:16]}"
               if n.author:
                   meta += f" · {n.author}"
@@ -20744,6 +21458,29 @@ with tab8:
                   f"<span style='font-size:.95rem;'>{n.message}</span><br>"
                   f"<span class='hint'>{meta}</span>{seen_line}</div>",
                   unsafe_allow_html=True)
+              # 🎙️ Voice-memo backup: the note text is what leads read; the
+              # original recording is right here if anyone doubts the wording.
+              if _nvm.get("b64"):
+                  with st.expander(
+                          f"🎙️ Voice memo backup — "
+                          f"{_nvm.get('name', 'recording')}"
+                          f"{_vm_fmt_dur(_nvm.get('dur'))}", expanded=False):
+                      import base64 as _b64d
+                      try:
+                          _nvm_audio = _b64d.b64decode(_nvm["b64"])
+                          st.audio(_nvm_audio,
+                                   format=_nvm.get("mime", "audio/wav"))
+                          st.download_button(
+                              "⬇ Original recording", _nvm_audio,
+                              file_name=f"lead_note_{n.id}."
+                                        f"{_nvm.get('ext', 'wav')}",
+                              mime=_nvm.get("mime", "audio/wav"),
+                              key=f"vmdl_{n.id}")
+                          st.caption("This note was spoken — the recording is "
+                                     "the source of truth if the text reads "
+                                     "off.")
+                      except Exception:
+                          st.caption("Backup audio couldn't be decoded.")
               bc = st.columns([1, 6])
               if n.status == "open":
                   if bc[0].button("Mark resolved", key=f"res_{n.id}"):
@@ -20837,7 +21574,8 @@ with tab_docs:
   with _dv_tab:
       _render_doc_and_verdict(
           _doc_key, key_prefix=_doc_prefix,
-          extra_sections=get_doc_sections(_doc_key), title_name=_doc_nm)
+          extra_sections=get_doc_sections(_doc_key), title_name=_doc_nm,
+          enable_voice=True)   # speech-to-text: Documentation + Lead Notes only
   with _mesh_tab:
       _render_mesh_section(_doc_key, key_prefix=_doc_prefix, title_name=_doc_nm)
 
