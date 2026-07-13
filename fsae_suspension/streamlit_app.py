@@ -9697,16 +9697,21 @@ with tab_car:
           # itself stays the focus. Open it when you want the detail. The
           # read-out folds in whatever you changed in "Edit parts" below, so
           # moving or resizing a body here updates its influence line live.
-          # Guard: override_influence_summary only exists in newer fullcar3d.py;
-          # fall back to influence_summary on older deployments so the full-car
-          # view still assembles rather than crashing.
-          if hasattr(fullcar_mod, "override_influence_summary"):
+          # override_influence_summary folds live Edit-parts changes into the
+          # influence table. Fall back to the base influence_summary if the
+          # deployed fullcar3d hasn't been updated yet (AttributeError) or if
+          # the call fails for any other reason, so the full-car view always
+          # assembles successfully.
+          try:
               _rows = fullcar_mod.override_influence_summary(
                   _vp_car, _led_car, overrides=_part_overrides,
                   topology_label=_topo_lbl)
-          else:
-              _rows = fullcar_mod.influence_summary(
-                  _vp_car, _led_car, topology_label=_topo_lbl)
+          except AttributeError:
+              try:
+                  _rows = fullcar_mod.influence_summary(
+                      _vp_car, _led_car, topology_label=_topo_lbl)
+              except Exception:
+                  _rows = []
           _n_edits = sum(1 for _o in (_part_overrides or {}).values() if _o)
           with st.expander(
                   "Live influence & sizing notes"
