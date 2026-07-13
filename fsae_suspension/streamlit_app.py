@@ -4775,10 +4775,35 @@ def _cad_fill_scale(part_lwh, envelope_lwh):
 
 
 # ========================================================================== #
-#  CAD library — fit forecast helpers (slot mapping for geometry checks)
+#  Team CAD library ⇄ 3D model bridge — "quick assembly" preview
+#
+#  Publishing a parseable CAD file to the shared library also places it on the
+#  full-car 3D model: the file is meshed, snapped into its subsystem's slot
+#  (the exact footprint its dummy placeholder occupies), scaled true-shape to
+#  fill that envelope, and the dummy it replaces is hidden. Every slot whose
+#  CAD hasn't been uploaded yet keeps its dummy, so the car always reads as a
+#  whole — like a SolidWorks quick assembly, but as a live preview that
+#  completes itself as the library fills up. A chassis upload uses the
+#  renderer's `define_car` mode, so the entire car is proportioned around the
+#  real tub. Pure preview: nothing here feeds any calculation.
 # ========================================================================== #
 
 _LIB_MESH_EXTS = {"step", "stp", "stl", "obj", "glb"}
+_LIB_SLD_EXTS = {"sldprt", "sldasm"}   # SolidWorks native — geometry is locked
+
+_SLD_ADVICE = ("SolidWorks native files keep their geometry locked — no "
+               "browser can mesh them. In SolidWorks: **File ▸ Save As ▸ "
+               "STEP (.step)** (10 seconds), publish that, and the real "
+               "shape replaces the stand-in.")
+
+
+def _lib_ext(cf):
+    return (getattr(cf, "name", "") or "").rsplit(".", 1)[-1].lower()
+
+
+def _lib_is_sld(cf):
+    return (getattr(cf, "kind", "file") == "file"
+            and _lib_ext(cf) in _LIB_SLD_EXTS)
 
 # Library subsystem tag -> part slot. Tags with several plausible slots fall
 # through to the filename guess below.
@@ -4822,10 +4847,240 @@ def _lib_slot_for(cf):
                              "Custom / unassigned")
 
 
+def _lib_injected_ids():
+    """{library file id -> index} of parts already placed from the library."""
+    return {p.get("lib_id"): i
+            for i, p in enumerate(st.session_state.get("car3d_custom_parts", []))
+            if p.get("lib_id")}
+
+
 def _lib_parseable(cf):
     return (getattr(cf, "kind", "file") == "file"
             and (getattr(cf, "name", "") or "").rsplit(".", 1)[-1].lower()
             in _LIB_MESH_EXTS)
+
+
+def _lib_inject_cad(cf):
+    """Mesh a library file and snap it into its slot on the 3D model.
+
+    Returns (ok, message). Skips silently-never: every failure explains itself
+    so publishing to the library can never be blocked by the preview.
+    """
+    # SolidWorks native file: geometry can't be extracted, but the user still
+    # deserves to SEE their part on the car. Place a clearly-marked amber
+    # provisional stand-in in its slot (hover names their file), except the
+    # chassis — the dummy monocoque already IS the chassis stand-in, so an
+    # amber box there would only make the car read worse.
+    if _lib_is_sld(cf):
+        if cf.id in _lib_injected_ids():
+            return True, f"**{cf.name}** is already on the 3D model."
+        _slot = _lib_slot_for(cf)
+        for _q in st.session_state.get("car3d_custom_parts", []):
+            if (_q.get("from_library") and not _q.get("provisional")
+                    and _q.get("lib_slot") == _slot):
+                return True, (f"Real CAD already occupies the **{_slot}** "
+                              f"slot; **{cf.name}** stays library-only. "
+                              + _SLD_ADVICE)
+        if _slot == "Chassis":
+            return True, (f"**{cf.name}** is in the library; the dummy "
+                          f"spaceframe stands in for it on the 3D model. "
+                          + _SLD_ADVICE)
+        try:
+            _centre, _env, _subsys, _dummy = _cad_slot_target(_slot)
+            if "car3d_custom_parts" not in st.session_state:
+                st.session_state.car3d_custom_parts = []
+            st.session_state.car3d_custom_parts.append(dict(
+                name=cf.name.rsplit(".", 1)[0] + " (SLDPRT)",
+                subsys=_subsys, shape="box", provisional=True,
+                replaces_drawnames=([_dummy] if _dummy else []),
+                lib_id=cf.id, from_library=True, lib_slot=_slot,
+                x_mm=float(_centre[0]), y_mm=float(_centre[1]),
+                z_mm=float(_centre[2]),
+                l_mm=float(_env[0]), w_mm=float(_env[1]), h_mm=float(_env[2])))
+            st.session_state.pop("_dummy_footprints", None)
+            return True, (f"**{cf.name}** placed as an amber PROVISIONAL "
+                          f"stand-in in the **{_slot}** slot. " + _SLD_ADVICE)
+        except Exception as _se:
+            return False, f"Couldn't place a stand-in for **{cf.name}** ({_se})."
+    if not _lib_parseable(cf):
+        return False, (f"**{cf.name}** can't be meshed here — export STEP "
+                       "(File ▸ Save As ▸ STEP in SolidWorks) to see it on "
+                       "the car.")
+    if cf.id in _lib_injected_ids():
+        return True, f"**{cf.name}** is already on the 3D model."
+    try:
+        import base64 as _b64i, tempfile as _tf, os as _os
+        _sfx = "." + cf.name.rsplit(".", 1)[-1].lower()
+        with _tf.NamedTemporaryFile(delete=False, suffix=_sfx) as _f:
+            _f.write(_b64i.b64decode(cf.data_b64))
+            _path = _f.name
+        try:
+            _payload = chassis_mod.load_part_mesh(_path, max_faces=4000)
+        finally:
+            try:
+                _os.unlink(_path)
+            except Exception:
+                pass
+        _slot = _lib_slot_for(cf)
+        # Upgrade path: a real mesh arriving in a slot evicts any provisional
+        # SolidWorks stand-in holding that slot (e.g. the .sldprt published
+        # earlier), so the amber box gives way to the real geometry.
+        try:
+            _kept, _skipset = [], st.session_state.setdefault(
+                "cad_lib_sync_skip", set())
+            for _q in st.session_state.get("car3d_custom_parts", []):
+                if (_q.get("from_library") and _q.get("provisional")
+                        and _q.get("lib_slot") == _slot):
+                    _skipset.add(_q.get("lib_id"))   # don't re-seat on resync
+                else:
+                    _kept.append(_q)
+            st.session_state.car3d_custom_parts = _kept
+        except Exception:
+            pass
+        _centre, _env, _subsys, _dummy = _cad_slot_target(_slot)
+        _sz = [float(v) for v in _payload["size_mm"]]
+        _is_chassis = (_slot == "Chassis")
+        # True-shape fill of the slot envelope; the renderer's define_car mode
+        # handles the chassis itself (whole car proportioned around the tub).
+        _scale = 1.0 if _is_chassis else _cad_fill_scale(_sz, _env)
+        if "car3d_custom_parts" not in st.session_state:
+            st.session_state.car3d_custom_parts = []
+        st.session_state.car3d_custom_parts.append(dict(
+            name=cf.name.rsplit(".", 1)[0], subsys=_subsys,
+            shape="mesh", mesh=_payload, axis_map="z_up",
+            yaw_deg=0.0, mesh_scale=float(_scale),
+            define_car=_is_chassis,
+            replaces_drawnames=([_dummy] if _dummy else []),
+            lib_id=cf.id, from_library=True, lib_slot=_slot,
+            x_mm=float(_centre[0]), y_mm=float(_centre[1]),
+            z_mm=float(_centre[2]),
+            l_mm=_sz[0] * _scale, w_mm=_sz[1] * _scale, h_mm=_sz[2] * _scale))
+        st.session_state.pop("_dummy_footprints", None)
+        _where = ("the whole car now assembles around it — if it reads "
+                  "backwards or lies on its side, fix it with the ↻ 180° / "
+                  "up-axis controls under “On the car now” on the 3D tab"
+                  if _is_chassis else
+                  f"snapped into the **{_slot}** slot"
+                  + (f", its dummy “{_dummy}” hidden" if _dummy else ""))
+        return True, (f"**{cf.name}** placed on the 3D model — {_where}. "
+                      "Remaining dummies stay until their CAD is uploaded.")
+    except Exception as _e:
+        return False, (f"Couldn't mesh **{cf.name}** ({_e}). STEP is the most "
+                       "reliable SolidWorks export.")
+
+
+def _lib_eject_cad(lib_id):
+    """Remove a library file's part from the 3D model (its dummy returns)."""
+    # Respect the user's choice: autosync must not put it straight back.
+    st.session_state.setdefault("cad_lib_sync_skip", set()).add(lib_id)
+    _idx = _lib_injected_ids().get(lib_id)
+    if _idx is not None:
+        try:
+            st.session_state.car3d_custom_parts.pop(_idx)
+        except Exception:
+            pass
+
+
+def _lib_autosync(cad_store):
+    """Make the 3D model mirror the CAD library — no button required.
+
+    The library persists across sessions; `car3d_custom_parts` does not. So on
+    every render of the 3D model (and of the library itself) we reconcile:
+      * every meshable library file not yet on the car is injected into its
+        slot (the assembly completes itself as the library fills up), unless
+        the user explicitly took that part off the car this session;
+      * any car part whose library file was deleted is ejected (its dummy
+        returns) — the library is the source of truth.
+    Fully guarded and idempotent; a parse failure marks the file as skipped
+    for this session so it never loops.
+    """
+    try:
+        _files = _store_cad_files(cad_store, None)
+    except Exception:
+        return
+    _live_ids = {f.id for f in _files}
+    _skip = st.session_state.setdefault("cad_lib_sync_skip", set())
+    # Eject parts whose library file is gone.
+    _parts = st.session_state.get("car3d_custom_parts", [])
+    _keep = [p for p in _parts
+             if not (p.get("from_library") and p.get("lib_id") not in _live_ids)]
+    if len(_keep) != len(_parts):
+        st.session_state.car3d_custom_parts = _keep
+    # Inject everything meshable that isn't on the car yet.
+    _on = _lib_injected_ids()
+    for _f in _files:
+        if (_f.id in _on) or (_f.id in _skip) \
+                or not (_lib_parseable(_f) or _lib_is_sld(_f)):
+            continue
+        try:
+            _ok, _ = _lib_inject_cad(_f)
+        except Exception:
+            _ok = False
+        if not _ok:
+            _skip.add(_f.id)   # don't retry a bad file every rerun
+
+
+def _lib_snap_overrides(base_overrides):
+    """Snap neighbouring dummies onto injected CAD — the assembly closes up.
+
+    A CAD part fills its slot true-shape (longest axis matched), so on its
+    other axes it can be shorter/longer than the dummy it replaced, leaving a
+    gap or an overlap with the bodies that used to abut that dummy. This walks
+    the recorded part boxes from the last render: any dummy whose fore/aft
+    face touched the replaced dummy's face (with real y/z overlap) is
+    translated along x so it now touches the CAD's actual face — one hop only,
+    clamped to ±250 mm, purely visual. User edits from the part editor are
+    applied ON TOP (their dx adds), so manual nudges always win.
+    """
+    try:
+        _boxes = st.session_state.get("car3d_part_boxes") or {}
+        _parts = [p for p in st.session_state.get("car3d_custom_parts", [])
+                  if p.get("from_library") and not p.get("define_car")
+                  and (p.get("replaces_drawnames") or [])]
+        if not _boxes or not _parts:
+            return base_overrides
+        _replaced = set()
+        for _p in _parts:
+            _replaced.update(_p.get("replaces_drawnames") or [])
+        _ov = {k: dict(v) for k, v in (base_overrides or {}).items()}
+        _TOL, _CLAMP = 60.0, 250.0
+
+        def _ivl(c, s, ax):
+            return c[ax] - s[ax] / 2.0, c[ax] + s[ax] / 2.0
+
+        def _olap(a, b):
+            return min(a[1], b[1]) - max(a[0], b[0]) > 1.0
+
+        for _p in _parts:
+            _cx, _cl = float(_p.get("x_mm", 0)), float(_p.get("l_mm", 0))
+            _cad_lo, _cad_hi = _cx - _cl / 2.0, _cx + _cl / 2.0
+            for _dn in (_p.get("replaces_drawnames") or []):
+                _db = _boxes.get(_dn)
+                if not _db:
+                    continue
+                _dlo, _dhi = _ivl(_db["centre"], _db["size"], 0)
+                _dy = _ivl(_db["centre"], _db["size"], 1)
+                _dz = _ivl(_db["centre"], _db["size"], 2)
+                for _nm, _nb in _boxes.items():
+                    if _nm in _replaced or _nm == _dn:
+                        continue
+                    if not (_olap(_ivl(_nb["centre"], _nb["size"], 1), _dy)
+                            and _olap(_ivl(_nb["centre"], _nb["size"], 2), _dz)):
+                        continue
+                    _nlo, _nhi = _ivl(_nb["centre"], _nb["size"], 0)
+                    _dx = None
+                    if abs(_nlo - _dhi) < _TOL:      # neighbour sat in front
+                        _dx = _cad_hi - _nlo
+                    elif abs(_nhi - _dlo) < _TOL:    # neighbour sat behind
+                        _dx = _cad_lo - _nhi
+                    if _dx is None or abs(_dx) < 3.0:
+                        continue
+                    _dx = max(-_CLAMP, min(_CLAMP, _dx))
+                    _e = _ov.setdefault(_nm, {})
+                    _e["dx"] = float(_e.get("dx", 0.0)) + float(_dx)
+        return _ov
+    except Exception:
+        return base_overrides
 
 
 def _fitfc_geom_fingerprint():
@@ -4887,6 +5142,10 @@ def _fitfc_car_boxes():
     _cache = st.session_state.get("_fitfc_geom_cache")
     if _fp and _cache and _cache.get("fp") == _fp:
         return _cache["inst"], _cache["merged"]
+    try:
+        _lib_autosync(get_store())     # model mirrors the CAD library first
+    except Exception:
+        pass
     _vpf = set(VehicleParams.__dataclass_fields__.keys())
     _vp = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
                            if k in _vpf})
@@ -4914,7 +5173,8 @@ def _fitfc_car_boxes():
         show_floor=False,
         tire_width_mm=float(st.session_state.get("car3d_tirew", 180.0)
                             or 180.0),
-        part_overrides=dict(st.session_state.get("car3d_overrides", {}) or {}),
+        part_overrides=_lib_snap_overrides(
+            dict(st.session_state.get("car3d_overrides", {}) or {})),
         custom_parts=st.session_state.get("car3d_custom_parts", []),
         suppress_subsystems=_sup, suppress_parts=_sup_p, **_kw)
     _inst = dict(getattr(_fig, "_part_instance_boxes", {}) or {})
@@ -9380,10 +9640,802 @@ with tab_car:
                 'font-size:.7rem;letter-spacing:.12em;color:#6f7d8c;">PART TOOLS</p>',
                 unsafe_allow_html=True)
 
-    # Custom parts placed elsewhere (CAD library, subsystem importers) still
-    # flow through the same shared list the renderer reads, so keep it seeded.
+    # ===================================================================== #
+    #  DROP YOUR PART ON THE CAR  —  the frictionless "does it fit" path.    #
+    # ===================================================================== #
+    # The recurring sub-team question ("here's a radiator 289×124, how does it
+    # sit on the car / does it fit / which way up?") answered in three numbers.
+    # Type the part's REAL size in mm and roughly where it goes, hit add, and it
+    # appears on the car immediately — clickable, colour-matched to its team,
+    # with a live clearance read. No scale factors, no CAD export, no waiting on
+    # someone else's file. This is deliberately the first thing on the tab.
     if "car3d_custom_parts" not in st.session_state:
         st.session_state.car3d_custom_parts = []
+
+    # Seed the entry-form fields once. After this, each widget owns its key, so we
+    # never pass both value= and a session_state default (which makes Streamlit
+    # warn and ignore the value). Presets write straight into these keys + rerun.
+    _CP_DEFAULTS = dict(car3d_cp_name="My part",
+                        car3d_cp_subsys="(custom / unassigned)",
+                        car3d_cp_shape="box", car3d_cp_l=200.0, car3d_cp_w=150.0,
+                        car3d_cp_h=100.0, car3d_cp_x=0.0, car3d_cp_y=0.0,
+                        car3d_cp_z=250.0)
+    for _k, _v in _CP_DEFAULTS.items():
+        if _k not in st.session_state:
+            st.session_state[_k] = _v
+
+    # One-tap starting points drawn from real parts the teams are juggling, so a
+    # lead who is skeptical of "yet another tool" gets a result on the first click
+    # and can edit the numbers after, instead of facing an empty form.
+    _PART_PRESETS = {
+        "— pick a starting point —": None,
+        "Radiator — Koolance HX-240YC (289×124×34)":
+            dict(name="Radiator (HX-240YC)", subsys="cooling",
+                 l_mm=289.0, w_mm=124.0, h_mm=34.0, x_mm=-150.0, y_mm=0.0,
+                 z_mm=320.0, shape="box"),
+        "Accumulator — 3 modules (320×330×280)":
+            dict(name="Accumulator", subsys="electrics",
+                 l_mm=320.0, w_mm=330.0, h_mm=280.0, x_mm=100.0, y_mm=0.0,
+                 z_mm=190.0, shape="box"),
+        "Traction motor (Ø150×200)":
+            dict(name="Traction motor", subsys="powertrain",
+                 l_mm=200.0, w_mm=150.0, h_mm=150.0, x_mm=-620.0, y_mm=0.0,
+                 z_mm=200.0, shape="cylinder"),
+        "Blank box (edit the numbers)":
+            dict(name="My part", subsys="(custom / unassigned)",
+                 l_mm=200.0, w_mm=150.0, h_mm=100.0, x_mm=0.0, y_mm=0.0,
+                 z_mm=250.0, shape="box"),
+    }
+    _CP_SUBSYS = ["(custom / unassigned)", "cooling", "powertrain", "electrics",
+                  "aerodynamics", "brakes", "chassis", "suspension"]
+    # SIMPLIFIED: replace by SUBSYSTEM. The picker value is
+    # (subsys_key, display, anchor_part_key, [draw-names to hide]). Replacing a
+    # subsystem hides all its procedural bodies; the rest stay as dummies.
+    _SUB_CATALOG = fullcar_mod.subsystem_catalog()  # (key, display, [drawnames])
+    _SUB_ANCHOR = fullcar_mod.SUBSYS_ANCHOR_PART
+    _PART_PICK = {"(not replacing a subsystem)": None}
+    for _sk, _sdisp, _sdn in _SUB_CATALOG:
+        _PART_PICK[_sdisp] = (_sk, _sdisp, _SUB_ANCHOR.get(_sk), list(_sdn))
+    _PART_PICK_LABELS = list(_PART_PICK.keys())
+
+    with st.expander("➕  Drop your part on the car — type its size in mm, see it fit",
+                     expanded=False):
+        st.markdown(
+            '<p class="hint">Got a part with real dimensions \u2014 a radiator off a '
+            'spec sheet, an accumulator box, a motor? Put its <b>actual size in '
+            'millimetres</b> here and roughly where it sits, and it lands on the car '
+            'right away so you can see how it fits and which way it should face. '
+            'These are real mm, not scale factors. It draws as a clickable body in '
+            'your team\u2019s colour; this is a packaging sketch, not a collision '
+            'check \u2014 the build-day go/no-go still lives in the INTEGRATION '
+            'tab.</p>', unsafe_allow_html=True)
+
+        # ---- UPLOAD A REAL CAD / SKETCH ------------------------------------ #
+        # The team can drop their actual SolidWorks part (or a quick sketch
+        # exported as STEP/STL) and the REAL geometry renders on the car — not a
+        # box approximation. We load + normalise the mesh once, cache it in
+        # session_state keyed by the part name, then add it as a mesh-backed
+        # custom part that flows through the same renderer as everything else.
+        st.markdown('<p class="hint" style="margin:2px 0 4px;"><b>Have the actual '
+                    'CAD?</b> Drop a SolidWorks part or a quick sketch '
+                    '(STEP / STL / OBJ / GLB) and the real shape renders on the car '
+                    '\u2014 not just a box.</p>', unsafe_allow_html=True)
+        _cad_up = st.file_uploader(
+            "Upload CAD / sketch", type=["step", "stp", "stl", "obj", "glb"],
+            key="car3d_cad_up",
+            help="STEP is most reliable from SolidWorks (File ▸ Save As ▸ STEP). "
+                 "STL/OBJ/GLB also work for a quick sketch.")
+        if _cad_up is not None:
+            # Load + normalise only once per uploaded file (keyed by name+size).
+            _sig = f"{_cad_up.name}:{_cad_up.size}"
+            if st.session_state.get("car3d_cad_sig") != _sig:
+                try:
+                    import tempfile as _tf, os as _os
+                    _sfx = "." + _cad_up.name.split(".")[-1]
+                    with _tf.NamedTemporaryFile(delete=False, suffix=_sfx) as _f:
+                        _f.write(_cad_up.getbuffer())
+                        _cad_path = _f.name
+                    with st.spinner("Reading geometry…"):
+                        _payload = chassis_mod.load_part_mesh(_cad_path, max_faces=4000)
+                    _os.unlink(_cad_path)
+                    st.session_state.car3d_cad_payload = _payload
+                    st.session_state.car3d_cad_sig = _sig
+                    st.session_state.car3d_cad_name_default = \
+                        _cad_up.name.rsplit(".", 1)[0]
+                except Exception as _ce:
+                    st.session_state.car3d_cad_payload = None
+                    st.error(
+                        "Couldn't read that CAD (" + str(_ce) + "). STEP is the most "
+                        "reliable export from SolidWorks; for a STEP make sure the "
+                        "cascadio package is installed in the deployment.")
+
+            _payload = st.session_state.get("car3d_cad_payload")
+            if _payload:
+                _sz = _payload["size_mm"]
+                _unit_note = ("" if _payload["unit_scale"] == 1.0 else
+                              " · auto-scaled ×%g (looked like %s)" % (
+                                  _payload["unit_scale"],
+                                  "metres" if _payload["unit_scale"] == 1000 else "inches"))
+                st.markdown(
+                    f'<p class="hint">Loaded <b>{_payload["triangles"]} triangles</b>, '
+                    f'bounding box <b>{_sz[0]:.0f}\u00d7{_sz[1]:.0f}\u00d7{_sz[2]:.0f} '
+                    f'mm</b>{_unit_note}. Pick the part it represents, then snap or '
+                    'type where it sits.</p>', unsafe_allow_html=True)
+
+                # Seed position fields once so the number_inputs own their keys.
+                for _k, _v in dict(car3d_cad_x=0.0, car3d_cad_y=0.0,
+                                   car3d_cad_z=250.0).items():
+                    if _k not in st.session_state:
+                        st.session_state[_k] = _v
+
+                _cc = st.columns([3, 3])
+                _cad_name = _cc[0].text_input(
+                    "Part name", key="car3d_cad_name",
+                    value=st.session_state.get("car3d_cad_name_default", "CAD part"))
+                _cad_pick_lbl = _cc[1].selectbox(
+                    "Which part is this? (sets colour + snap target)",
+                    _PART_PICK_LABELS, key="car3d_cad_pick",
+                    help="Pick the body this CAD represents. It sets the colour and "
+                         "gives you a one-tap Snap to drop it exactly where that "
+                         "part's placeholder sits. You choose below whether to hide "
+                         "the placeholder.")
+                _cad_pick = _PART_PICK.get(_cad_pick_lbl)
+                # tuple = (subsys_key, display, anchor_part_key, [drawnames])
+                _cad_sub = _cad_pick[0] if _cad_pick else "(custom / unassigned)"
+                _is_part = _cad_pick is not None
+
+                # Resolve this car's anchor for the chosen subsystem's representative
+                # body, so position fields and the Snap button use real coordinates.
+                try:
+                    _vp_cad = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
+                                               if k in set(VehicleParams.__dataclass_fields__.keys())})
+                except Exception:
+                    _vp_cad = VehicleParams()
+                try:
+                    _led_cad = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+                except Exception:
+                    _led_cad = None
+                _anchor = (fullcar_mod.part_anchor(_vp_cad, _cad_pick[2], ledger=_led_cad)
+                           if _is_part else None)
+
+                # The generic anchor above is a rough per-subsystem GUESS. The
+                # real dummy a member sees is drawn at its true position (e.g. the
+                # monocoque spans ~2 m and sits nowhere near the guess), which is
+                # exactly why a snapped CAD part landed "aligned" yet visibly off.
+                # Prefer the REAL union box of the actual drawn bodies this
+                # subsystem owns — measured from the last render into
+                # car3d_part_boxes — so Snap and the alignment read-out track what
+                # is actually on screen. Fall back to the guess only when the
+                # measured boxes aren't available yet (first render).
+                if _is_part:
+                    try:
+                        _dns_a = _cad_pick[3] or []
+                        _pbx_a = st.session_state.get("car3d_part_boxes", {}) or {}
+                        # If the real boxes haven't been measured yet (first
+                        # render, before the Model tab has drawn the car), build
+                        # one figure now and measure the bodies we need, caching
+                        # per-body so this stays cheap on reruns. This makes the
+                        # FIRST snap land correctly rather than on the guess.
+                        _need = [d for d in _dns_a if d not in _pbx_a]
+                        if _need:
+                            _fpc = st.session_state.get("_dummy_footprints", {})
+                            _missing = [d for d in _need if d not in _fpc]
+                            if _missing:
+                                _fig_a = fullcar_mod.build_full_car_figure(
+                                    vp=_vp_cad, ledger=_led_cad)
+                                for _d in _missing:
+                                    _fpc[_d] = fullcar_mod.dummy_body_footprint(
+                                        _fig_a, _d)
+                                st.session_state["_dummy_footprints"] = _fpc
+                            # merge measured footprints into a boxes-like view
+                            for _d in _need:
+                                _fp = _fpc.get(_d)
+                                if _fp:
+                                    _pbx_a = dict(_pbx_a)
+                                    _pbx_a[_d] = dict(
+                                        centre=[_fp["x_mm"], _fp["y_mm"],
+                                                _fp["z_mm"]],
+                                        size=[_fp["l_mm"], _fp["w_mm"],
+                                              _fp["h_mm"]])
+                        _los_a, _his_a = [], []
+                        for _dn in _dns_a:
+                            _b = _pbx_a.get(_dn)
+                            if _b:
+                                _bc = _b["centre"]; _bs = _b["size"]
+                                _los_a.append([_bc[i] - _bs[i] / 2 for i in range(3)])
+                                _his_a.append([_bc[i] + _bs[i] / 2 for i in range(3)])
+                        if _los_a:
+                            _lo_a = [min(p[i] for p in _los_a) for i in range(3)]
+                            _hi_a = [max(p[i] for p in _his_a) for i in range(3)]
+                            _anchor = {
+                                "x_mm": (_lo_a[0] + _hi_a[0]) / 2.0,
+                                "y_mm": (_lo_a[1] + _hi_a[1]) / 2.0,
+                                "z_mm": (_lo_a[2] + _hi_a[2]) / 2.0,
+                                "l_mm": _hi_a[0] - _lo_a[0],
+                                "w_mm": _hi_a[1] - _lo_a[1],
+                                "h_mm": _hi_a[2] - _lo_a[2],
+                                "shape": (_anchor or {}).get("shape", "box"),
+                            }
+                    except Exception:
+                        pass  # keep the guessed anchor on any trouble
+
+                # Initialise the position/scale widget keys ONCE, and flush any
+                # pending writes from the Snap / Fit-scale / pick-changed actions
+                # BEFORE the widgets are created (Streamlit forbids assigning to a
+                # widget's key after the widget exists in the same run).
+                for _k, _dv in (("car3d_cad_x", 0.0), ("car3d_cad_y", 0.0),
+                                ("car3d_cad_z", 250.0), ("car3d_cad_scale", 1.0),
+                                ("car3d_cad_yaw", 0.0)):
+                    if _k not in st.session_state:
+                        st.session_state[_k] = _dv
+                _pend = st.session_state.pop("_car3d_cad_pending", None)
+                if _pend:
+                    for _k, _v in _pend.items():
+                        st.session_state[_k] = _v
+
+                # When the picked part changes, queue its anchor centre so the CAD
+                # starts in the right neighbourhood (flushed on the next run).
+                if st.session_state.get("_car3d_cad_pick_prev") != _cad_pick_lbl:
+                    st.session_state._car3d_cad_pick_prev = _cad_pick_lbl
+                    if _anchor:
+                        st.session_state._car3d_cad_pending = dict(
+                            car3d_cad_x=units_mod.from_metric(float(_anchor["x_mm"]), "mm"),
+                            car3d_cad_y=units_mod.from_metric(float(_anchor["y_mm"]), "mm"),
+                            car3d_cad_z=units_mod.from_metric(float(_anchor["z_mm"]), "mm"))
+                        st.rerun()
+
+                _o1 = st.columns([2, 2, 2])
+                _cad_axis = _o1[0].selectbox(
+                    "Orientation", ["auto", "z_up", "y_up", "x_up"],
+                    key="car3d_cad_axis",
+                    format_func=lambda v: {
+                        "auto": "Auto-align to the slot",
+                        "z_up": "Z is up", "y_up": "Y is up", "x_up": "X is up"}[v],
+                    help="Auto rotates the part by a clean 90° to line its longest "
+                         "side up with the slot — never distorts. Override with a "
+                         "fixed up-axis if needed.")
+                _cad_scale = _o1[1].number_input(
+                    "Scale ×", min_value=0.05, max_value=20.0, step=0.05,
+                    key="car3d_cad_scale",
+                    help="Multiplier on the real CAD size. Leave at 1.0 to keep its "
+                         "true dimensions; use “Fit scale” to match the slot.")
+                _cad_yaw = _o1[2].number_input(
+                    "Yaw °", -180.0, 180.0, step=15.0, key="car3d_cad_yaw",
+                    help="Spin about the car's vertical axis to line it up.")
+
+                # One-click: compute the uniform scale that makes the CAD match the
+                # chosen part's slot, WITHOUT letting the renderer auto-balloon. The
+                # user gets a real number they can then see and fine-tune.
+                if _is_part and _anchor and st.button(
+                        "↧ Fit scale to the “%s” area" % _cad_pick[1],
+                        key="car3d_cad_fitscale",
+                        help="Sets the scale × so your CAD fills the space that "
+                             "subsystem occupies, at true proportions. Nudge after."):
+                    try:
+                        # Union the actual placeholder boxes of ALL bodies this
+                        # subsystem owns (e.g. chassis = monocoque+hoop+driver), so
+                        # the CAD fills the real area you see, not one sub-part.
+                        _pbx = st.session_state.get("car3d_part_boxes", {})
+                        _dns = _cad_pick[3]
+                        _los, _his = [], []
+                        for _d in _dns:
+                            _b = _pbx.get(_d)
+                            if _b:
+                                _c = _b["centre"]; _s2 = _b["size"]
+                                _los.append([_c[i] - _s2[i] / 2 for i in range(3)])
+                                _his.append([_c[i] + _s2[i] / 2 for i in range(3)])
+                        if _los:
+                            _lo = [min(p[i] for p in _los) for i in range(3)]
+                            _hi = [max(p[i] for p in _his) for i in range(3)]
+                            _slotd = sorted([_hi[i] - _lo[i] for i in range(3)])
+                            _ctr = [(_lo[i] + _hi[i]) / 2 for i in range(3)]
+                        else:
+                            _slotd = sorted([float(_anchor["l_mm"]),
+                                             float(_anchor["w_mm"]), float(_anchor["h_mm"])])
+                            _ctr = [_anchor["x_mm"], _anchor["y_mm"], _anchor["z_mm"]]
+                        _rawd = sorted([float(x) for x in _sz])
+                        _factor = _slotd[1] / _rawd[1] if _rawd[1] > 1e-6 else 1.0
+                        st.session_state._car3d_cad_pending = dict(
+                            car3d_cad_scale=round(_factor, 3),
+                            car3d_cad_x=units_mod.from_metric(float(_ctr[0]), "mm"),
+                            car3d_cad_y=units_mod.from_metric(float(_ctr[1]), "mm"),
+                            car3d_cad_z=units_mod.from_metric(float(_ctr[2]), "mm"))
+                        st.rerun()
+                    except Exception:
+                        pass
+
+                # Live placed size at the current scale + orientation.
+                _sx, _sy, _sz2 = _sz
+                _axis_now = st.session_state.get("car3d_cad_axis", "auto")
+                if _axis_now == "y_up":
+                    _Lr, _Wr, _Hr = _sx, _sz2, _sy
+                elif _axis_now == "x_up":
+                    _Lr, _Wr, _Hr = _sz2, _sy, _sx
+                else:
+                    _Lr, _Wr, _Hr = _sx, _sy, _sz2
+                _Lr, _Wr, _Hr = _Lr * _cad_scale, _Wr * _cad_scale, _Hr * _cad_scale
+
+                st.markdown('<p class="hint" style="margin:6px 0 2px;"><b>Position of '
+                            'its centre (mm)</b> — x: −rear / +front, y: +right, '
+                            'z: up. Type coordinates, or Snap to the part below.</p>',
+                            unsafe_allow_html=True)
+                _cp = st.columns([2, 2, 2, 2])
+                _cad_x = unum(_cp[0], "Centre x (mm)", -2000, 2000, 0, "mm",
+                              step=10.0, key="car3d_cad_x")
+                _cad_y = unum(_cp[1], "Centre y (mm)", -1200, 1200, 0, "mm",
+                              step=10.0, key="car3d_cad_y")
+                _cad_z = unum(_cp[2], "Centre z (mm)", -200, 2000, 250, "mm",
+                              step=10.0, key="car3d_cad_z")
+                if _cp[3].button("⌖ Snap to part", key="car3d_cad_snap",
+                                 disabled=not _is_part,
+                                 help="Drop the centre exactly onto the chosen "
+                                      "part's position, so it lines up with the car."):
+                    if _anchor:
+                        st.session_state._car3d_cad_pending = dict(
+                            car3d_cad_x=units_mod.from_metric(float(_anchor["x_mm"]), "mm"),
+                            car3d_cad_y=units_mod.from_metric(float(_anchor["y_mm"]), "mm"),
+                            car3d_cad_z=units_mod.from_metric(float(_anchor["z_mm"]), "mm"))
+                        st.rerun()
+
+                # Alignment read-out: how far the current centre is from the target
+                # part's anchor, so the user can see when it lines up.
+                if _anchor:
+                    _dx = _cad_x - _anchor["x_mm"]
+                    _dy = _cad_y - _anchor["y_mm"]
+                    _dz = _cad_z - _anchor["z_mm"]
+                    _off = (_dx**2 + _dy**2 + _dz**2) ** 0.5
+                    _al_col = "#5ad17a" if _off < 15 else ("#ffd166" if _off < 150 else "#ff6b5a")
+                    _al_txt = ("aligned with its slot" if _off < 15 else
+                               "offset %.0f mm from the %s slot (Δ %+.0f, %+.0f, %+.0f)"
+                               % (_off, _cad_pick[1], _dx, _dy, _dz))
+                    st.markdown(
+                        f'<div style="border:1px solid var(--line);border-left:4px '
+                        f'solid {_al_col};border-radius:8px;padding:6px 12px;margin:4px 0;">'
+                        f'<span style="font-size:.9rem;">Placed size '
+                        f'<b>{_Lr:.0f}×{_Wr:.0f}×{_Hr:.0f} mm</b> · '
+                        f'<span style="color:{_al_col};">{_al_txt}</span></span></div>',
+                        unsafe_allow_html=True)
+
+                _rc = st.columns([3, 2])
+                _cad_replace = _rc[0].checkbox(
+                    (f"Replace the dummy “{_cad_pick[1]}” (hide its placeholder)"
+                     if _is_part else "Pick a subsystem above to replace it"),
+                    value=_is_part, key="car3d_cad_replace", disabled=not _is_part,
+                    help="On: every dummy body of that subsystem is hidden so only "
+                         "your CAD shows there — the rest of the car stays as dummy "
+                         "suggestions. Off: your CAD sits alongside the dummy.")
+                _cad_mass = _rc[1].number_input(
+                    "Mass kg (moves CG)", min_value=0.0, max_value=300.0,
+                    value=0.0, step=0.5, key="car3d_cad_mass",
+                    help="If set, this part's weight is folded into the gold CG "
+                         "marker so the car re-balances as parts firm up.")
+
+                _cad_autofit = st.checkbox(
+                    "Auto-size into the area (uniform, true shape) — otherwise keep "
+                    "real CAD size", value=True, key="car3d_cad_autofit",
+                    disabled=not _is_part,
+                    help="On (default): uniformly scaled to fill that subsystem's "
+                         "area — handy when the real size is unknown. Off: draws at "
+                         "real exported size × the scale above. Never distorts.")
+
+                if st.button("Add CAD part to car", key="car3d_cad_add",
+                             type="primary"):
+                    _ax = st.session_state.get("car3d_cad_axis", "auto")
+                    _hide = bool(_cad_replace and _is_part)
+                    _fit = bool(_cad_autofit and _is_part)
+                    _skey = _cad_pick[0] if _is_part else None      # subsystem
+                    _apart = _cad_pick[2] if _is_part else None      # anchor part
+                    _dns = _cad_pick[3] if _is_part else []          # draw-names
+                    st.session_state.car3d_custom_parts.append(dict(
+                        name=(_cad_name.strip() or "CAD part"), subsys=_cad_sub,
+                        shape="mesh", mesh=_payload, axis_map=_ax,
+                        yaw_deg=float(_cad_yaw), mesh_scale=float(_cad_scale),
+                        fit_to_envelope=_fit, fit_mode="fit",
+                        replaces_part=_apart,
+                        replaces_drawnames=(_dns if _hide else []),
+                        replaces_subsys=(_skey if _hide else None),
+                        snap_part=_apart, mass_kg=float(_cad_mass),
+                        x_mm=float(_cad_x), y_mm=float(_cad_y), z_mm=float(_cad_z),
+                        l_mm=float(_Lr), w_mm=float(_Wr), h_mm=float(_Hr)))
+                    st.session_state.car3d_focus = (
+                        _cad_sub if _cad_sub != "(custom / unassigned)" else None)
+                    st.session_state.pop("car3d_cad_sig", None)
+                    st.rerun()
+
+        st.markdown('<p class="hint" style="margin:8px 0 2px;border-top:1px solid '
+                    'var(--line);padding-top:8px;"><b>Or sketch it by hand</b> with '
+                    'dimensions:</p>', unsafe_allow_html=True)
+
+        _pp = st.selectbox("Quick start", list(_PART_PRESETS.keys()), index=0,
+                           key="car3d_cp_preset")
+        if st.session_state.get("_car3d_cp_preset_prev") != _pp:
+            st.session_state._car3d_cp_preset_prev = _pp
+            _seed = _PART_PRESETS.get(_pp)
+            if _seed:
+                st.session_state.car3d_cp_name = _seed["name"]
+                st.session_state.car3d_cp_subsys = _seed["subsys"]
+                st.session_state.car3d_cp_l = _seed["l_mm"]
+                st.session_state.car3d_cp_w = _seed["w_mm"]
+                st.session_state.car3d_cp_h = _seed["h_mm"]
+                st.session_state.car3d_cp_x = _seed["x_mm"]
+                st.session_state.car3d_cp_y = _seed["y_mm"]
+                st.session_state.car3d_cp_z = _seed["z_mm"]
+                st.session_state.car3d_cp_shape = _seed["shape"]
+                st.rerun()
+
+        _r1 = st.columns([3, 2, 1])
+        _cp_name = _r1[0].text_input("Part name", key="car3d_cp_name")
+        _cp_sub = _r1[1].selectbox(
+            "Belongs to", _CP_SUBSYS, key="car3d_cp_subsys",
+            help="Colours the part in this team\u2019s hue and lets the spotlight / "
+                 "click-to-zoom treat it as that subsystem.")
+        _cp_shape = _r1[2].selectbox("Shape", ["box", "cylinder"],
+                                     key="car3d_cp_shape",
+                                     help="Cylinder: length is L, diameter is W (e.g. a motor).")
+
+        st.markdown('<p class="hint" style="margin:6px 0 2px;"><b>Size (mm)</b> '
+                    '\u2014 L is fore\u2013aft, W is left\u2013right, H is up. For a '
+                    'cylinder, L = length and W = diameter.</p>',
+                    unsafe_allow_html=True)
+        _sz = st.columns(3)
+        _cp_l = unum(_sz[0], "Length L (mm)", 1, 3000, 100, "mm",
+                     step=5.0, key="car3d_cp_l")
+        _cp_w = unum(_sz[1], "Width W (mm)", 1, 2000, 100, "mm",
+                     step=5.0, key="car3d_cp_w")
+        _cp_h = unum(_sz[2], "Height H (mm)", 1, 2000, 100, "mm",
+                     step=5.0, key="car3d_cp_h")
+
+        st.markdown('<p class="hint" style="margin:6px 0 2px;"><b>Position of its '
+                    'centre</b> \u2014 x: \u2212 toward rear axle / + toward '
+                    'front, y: + to the right, z: up from the ground. Leave at 0,0,250 '
+                    'and nudge from there.</p>', unsafe_allow_html=True)
+        _ps = st.columns(3)
+        _cp_x = unum(_ps[0], "Centre x (mm)", -1500, 1500, 0, "mm",
+                     step=10.0, key="car3d_cp_x")
+        _cp_y = unum(_ps[1], "Centre y (mm)", -900, 900, 0, "mm",
+                     step=10.0, key="car3d_cp_y")
+        _cp_z = unum(_ps[2], "Centre z (mm)", 0, 1500, 250, "mm",
+                     step=10.0, key="car3d_cp_z")
+
+        # Live fit read on the part being entered — answers "does it fit?" BEFORE
+        # you even add it, against the car's wheelbase/track/hoop-height envelope.
+        try:
+            _vp_fit = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
+                                       if k in set(VehicleParams.__dataclass_fields__.keys())})
+        except Exception:
+            _vp_fit = VehicleParams()
+        _draft = dict(name=_cp_name, subsys=_cp_sub, l_mm=_cp_l, w_mm=_cp_w,
+                      h_mm=_cp_h, x_mm=_cp_x, y_mm=_cp_y, z_mm=_cp_z, shape=_cp_shape)
+        _fit = fullcar_mod.custom_part_fit(_vp_fit, _draft)
+        _fit_color = {"ok": "#5ad17a", "tight": "#ffd166", "over": "#ff6b5a"}[_fit["status"]]
+        _fit_word = {"ok": "Fits the envelope", "tight": "Tight \u2014 check it",
+                     "over": "Pokes outside the car"}[_fit["status"]]
+        st.markdown(
+            f'<div style="border:1px solid var(--line);border-left:4px solid '
+            f'{_fit_color};border-radius:8px;padding:8px 12px;margin:4px 0;">'
+            f'<b style="color:{_fit_color};">{_fit_word}.</b> '
+            f'<span style="font-size:.9rem;">' + "; ".join(_fit["messages"]) +
+            '.</span><br><span class="hint" style="font-size:.82rem;">Quick '
+            'envelope read against wheelbase, track and hoop height \u2014 not a '
+            'collision check. Confirm real clearances in INTEGRATION.</span></div>',
+            unsafe_allow_html=True)
+
+        _ab = st.columns([1, 1, 3])
+        if _ab[0].button("Add to car", key="car3d_cp_add", type="primary"):
+            st.session_state.car3d_custom_parts.append(dict(_draft))
+            st.session_state.car3d_focus = _cp_sub if _cp_sub != "(custom / unassigned)" else None
+            st.rerun()
+        if _ab[1].button("Clear all", key="car3d_cp_clearall",
+                         disabled=not st.session_state.car3d_custom_parts):
+            st.session_state.car3d_custom_parts = []
+            st.rerun()
+
+        # The parts already on the car, each removable. Keeps the list honest and
+        # lets a team pull a part once they've seen it doesn't belong there.
+        if st.session_state.car3d_custom_parts:
+            st.markdown('<p class="hint" style="margin:8px 0 2px;"><b>On the car '
+                        'now:</b></p>', unsafe_allow_html=True)
+            for _ci, _cpd in enumerate(list(st.session_state.car3d_custom_parts)):
+                _lc = st.columns([5, 1])
+                _tag = (' <span style="color:#ffd166;">· awaiting CAD</span>'
+                        if _cpd.get("provisional") else '')
+                _is_mesh = _cpd.get("shape") == "mesh" and _cpd.get("mesh")
+                _mtag = (' <span style="color:#37e0d0;">· CAD mesh</span>'
+                         if _is_mesh else '')
+                _f = lambda v: units_mod.from_metric(float(v), "mm")
+                _ul = units_mod.label("mm")
+                _lc[0].markdown(
+                    f'<span style="font-size:.9rem;">\u2022 <b>{_cpd["name"]}</b> '
+                    f'({_cpd["subsys"]}) \u2014 {_f(_cpd.get("l_mm",0)):.0f}\u00d7'
+                    f'{_f(_cpd.get("w_mm",0)):.0f}\u00d7{_f(_cpd.get("h_mm",0)):.0f} {_ul} @ '
+                    f'({_f(_cpd.get("x_mm",0)):.0f}, {_f(_cpd.get("y_mm",0)):.0f}, '
+                    f'{_f(_cpd.get("z_mm",0)):.0f}){_mtag}{_tag}</span>',
+                    unsafe_allow_html=True)
+                if _lc[1].button("Remove", key=f"car3d_cp_rm_{_ci}"):
+                    st.session_state.car3d_custom_parts.pop(_ci)
+                    st.rerun()
+                # Orientation + nudge for imported CAD meshes. The library
+                # autosync places CAD with yaw 0 / z-up; when a frame comes in
+                # BACKWARDS or lying on its side, these fix it without
+                # re-exporting. Mutations land in session_state before the
+                # figure builds (the car draws into _car_slot after this
+                # section), so they take effect on the same run. Keys use the
+                # library id where present so state survives list reordering.
+                if _is_mesh:
+                    _pk = str(_cpd.get("lib_id") or f"idx{_ci}")
+                    _oc = st.columns([1.1, 1.1, 1.8, 1.3, 1.3, 1.3])
+                    if _oc[0].button("↻ 180°", key=f"car3d_cp_flip_{_pk}",
+                                     help="Spin this CAD half a turn about z — "
+                                          "the fix when an imported frame "
+                                          "reads backwards on the car."):
+                        _cpd["yaw_deg"] = (float(_cpd.get("yaw_deg", 0.0)
+                                                 or 0.0) + 180.0) % 360.0
+                    if _oc[1].button("↻ +90°", key=f"car3d_cp_yaw90_{_pk}",
+                                     help="Rotate 90° about z (vertical)."):
+                        _cpd["yaw_deg"] = (float(_cpd.get("yaw_deg", 0.0)
+                                                 or 0.0) + 90.0) % 360.0
+                    _AXES = ["z_up", "y_up", "x_up"]
+                    _ax_now = _cpd.get("axis_map", "z_up")
+                    _ax_new = _oc[2].selectbox(
+                        "Up axis", _AXES,
+                        index=_AXES.index(_ax_now if _ax_now in _AXES
+                                          else "z_up"),
+                        key=f"car3d_cp_ax_{_pk}",
+                        help="If the part lies on its side, the CAD was "
+                             "exported with a different up axis — switch it "
+                             "here (SolidWorks exports are often y-up).")
+                    if _ax_new != _ax_now:
+                        _cpd["axis_map"] = _ax_new
+                    for _col, _dk, _dlbl, _dhelp in (
+                            (_oc[3], "dx_mm", "Δx mm", "Nudge fore(+)/aft(−)"),
+                            (_oc[4], "dy_mm", "Δy mm", "Nudge right(+)/left(−)"),
+                            (_oc[5], "dz_mm", "Δz mm", "Nudge up(+)/down(−)")):
+                        _dv = _col.number_input(
+                            _dlbl, min_value=-2000.0, max_value=2000.0,
+                            value=float(_cpd.get(_dk, 0.0) or 0.0), step=10.0,
+                            key=f"car3d_cp_{_dk}_{_pk}", help=_dhelp)
+                        if _dv != float(_cpd.get(_dk, 0.0) or 0.0):
+                            _cpd[_dk] = float(_dv)
+
+    # ===================================================================== #
+    #  WAITING ON A PART?  —  unblock the missing-CAD handoff.               #
+    # ===================================================================== #
+    # The other recurring stall: a part lives in someone else's CAD that never
+    # arrives ("I'll ask for the CAD again / one day they'll send it") or shows
+    # up wrong (a mirror of the original). Dependent work freezes because there's
+    # nothing to package around. This panel breaks that: declare the missing part
+    # with a best-guess size NOW and a translucent stand-in lands on the car so
+    # your work continues; when the real CAD finally arrives, drop it on the same
+    # request and it auto-reads the true dimensions, tells you if your guess was
+    # off (catching the mirror / wrong-size handoff), and replaces the stand-in
+    # in place — keeping the position you already worked out.
+    if "car3d_part_requests" not in st.session_state:
+        st.session_state.car3d_part_requests = []
+
+    _open_reqs = [r for r in st.session_state.car3d_part_requests
+                  if not r.get("resolved")]
+    with st.expander(
+            "⏳  Waiting on a part? Place a stand-in so you're not blocked"
+            + (f"  ·  {len(_open_reqs)} open" if _open_reqs else ""),
+            expanded=False):
+        st.markdown(
+            '<p class="hint">A part stuck in someone else\u2019s CAD shouldn\u2019t '
+            'freeze your work. Put your <b>best-guess</b> size and position here and '
+            'a clearly-marked translucent stand-in goes on the car right away, so '
+            'you can keep packaging around it. When the real CAD lands, attach it to '
+            'this request \u2014 it reads the true L\u00d7W\u00d7H automatically, '
+            'warns you if it\u2019s a different size or looks <b>mirrored</b> from '
+            'your guess, and swaps the stand-in for the real part without losing the '
+            'spot you placed it.</p>', unsafe_allow_html=True)
+
+        # Seed the request-form fields once so a "suggest" button can fill them
+        # (a widget can't take both value= and a session_state-owned key).
+        _RQ_DEFAULTS = dict(car3d_rq_l=200.0, car3d_rq_w=150.0, car3d_rq_h=100.0,
+                            car3d_rq_x=0.0, car3d_rq_y=0.0, car3d_rq_z=250.0)
+        for _k, _v in _RQ_DEFAULTS.items():
+            if _k not in st.session_state:
+                st.session_state[_k] = _v
+
+        _rq = st.columns([3, 2, 2])
+        _rq_name = _rq[0].text_input("Part you're waiting on", key="car3d_rq_name",
+                                     placeholder="e.g. Radiator core")
+        _rq_sub = _rq[1].selectbox("For subsystem", _CP_SUBSYS, key="car3d_rq_subsys")
+        _rq_owner = _rq[2].text_input("Owed by (team / person)", key="car3d_rq_owner",
+                                      placeholder="e.g. Powertrain / Joe")
+
+        # ---- FALLBACK: no idea how big it should be? Let the system propose a
+        # target. This is the deepest version of the unblock — a team that can't
+        # even guess gets car-scaled x/y/z dimensions to design TOWARD, derived
+        # from this car's wheelbase/track/tyre and FSAE-typical proportions.
+        _sg1, _sg2 = st.columns([2, 3])
+        if _sg1.button("💡 Suggest target dimensions", key="car3d_rq_suggest",
+                       help="No guess? Fill the boxes with a size the car can "
+                            "actually fit for this subsystem — a number to strive "
+                            "toward until the real part exists."):
+            try:
+                _vp_sg = VehicleParams(**{k: v for k, v in st.session_state.vp.items()
+                                          if k in set(VehicleParams.__dataclass_fields__.keys())})
+            except Exception:
+                _vp_sg = VehicleParams()
+            _sub_for = _rq_sub if _rq_sub != "(custom / unassigned)" else "chassis"
+            try:
+                _led_sg = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+            except Exception:
+                _led_sg = None
+            _sg = fullcar_mod.suggest_part_geometry(_vp_sg, _sub_for, ledger=_led_sg)
+            st.session_state.car3d_rq_l = float(_sg["l_mm"])
+            st.session_state.car3d_rq_w = float(_sg["w_mm"])
+            st.session_state.car3d_rq_h = float(_sg["h_mm"])
+            st.session_state.car3d_rq_x = float(_sg["x_mm"])
+            st.session_state.car3d_rq_y = float(_sg["y_mm"])
+            st.session_state.car3d_rq_z = float(_sg["z_mm"])
+            st.session_state.car3d_rq_suggest_basis = _sg
+            st.rerun()
+
+        _sgb = st.session_state.get("car3d_rq_suggest_basis")
+        if _sgb:
+            _decl = (" Kept your declared " + "/".join(_sgb["from_declared"])
+                     + " from the ledger." if _sgb.get("from_declared") else "")
+            _sg2.markdown(
+                '<div style="border:1px solid var(--line);border-left:4px solid '
+                '#9b8cff;border-radius:8px;padding:6px 12px;margin-top:26px;">'
+                '<span style="font-size:.86rem;"><b>Suggested target</b> '
+                f'\u2014 {_sgb["l_mm"]:.0f}\u00d7{_sgb["w_mm"]:.0f}\u00d7{_sgb["h_mm"]:.0f} '
+                'mm. <span class="hint">' + "; ".join(_sgb["basis"]) + "." + _decl +
+                ' A goal to build toward, not a spec.</span></span></div>',
+                unsafe_allow_html=True)
+
+        st.markdown('<p class="hint" style="margin:6px 0 2px;"><b>Best-guess size '
+                    '(mm)</b> \u2014 a rough box is fine, or use the suggestion above; '
+                    'you\u2019ll replace it with the real one.</p>',
+                    unsafe_allow_html=True)
+        _rs = st.columns(3)
+        _rq_l = unum(_rs[0], "Guess L (mm)", 1, 3000, 100, "mm",
+                     step=5.0, key="car3d_rq_l")
+        _rq_w = unum(_rs[1], "Guess W (mm)", 1, 2000, 100, "mm",
+                     step=5.0, key="car3d_rq_w")
+        _rq_h = unum(_rs[2], "Guess H (mm)", 1, 2000, 100, "mm",
+                     step=5.0, key="car3d_rq_h")
+        _rp = st.columns(3)
+        _rq_x = unum(_rp[0], "Centre x (mm)", -1500, 1500, 0, "mm",
+                     step=10.0, key="car3d_rq_x")
+        _rq_y = unum(_rp[1], "Centre y (mm)", -900, 900, 0, "mm",
+                     step=10.0, key="car3d_rq_y")
+        _rq_z = unum(_rp[2], "Centre z (mm)", 0, 1500, 250, "mm",
+                     step=10.0, key="car3d_rq_z")
+
+        if st.button("Place stand-in & log the request", key="car3d_rq_add",
+                     type="primary"):
+            _pid = "req_%d_%s" % (
+                len(st.session_state.car3d_part_requests),
+                _datetime.datetime.now().strftime("%H%M%S%f"))
+            _stand = dict(name=(_rq_name.strip() or "Awaited part"),
+                          subsys=_rq_sub, l_mm=_rq_l, w_mm=_rq_w, h_mm=_rq_h,
+                          x_mm=_rq_x, y_mm=_rq_y, z_mm=_rq_z, shape="box",
+                          provisional=True, req_id=_pid)
+            st.session_state.car3d_custom_parts.append(_stand)
+            st.session_state.car3d_part_requests.append(dict(
+                req_id=_pid, name=_stand["name"], subsys=_rq_sub,
+                owner=_rq_owner.strip(), guess=dict(l_mm=_rq_l, w_mm=_rq_w, h_mm=_rq_h),
+                suggested=bool(_sgb),
+                placed_on=_datetime.date.today().isoformat(), resolved=False))
+            st.session_state.car3d_focus = (_rq_sub if _rq_sub != "(custom / unassigned)"
+                                            else None)
+            st.session_state.pop("car3d_rq_suggest_basis", None)
+            st.rerun()
+
+        # ---- open requests: each can take the real CAD and be reconciled ---- #
+        if _open_reqs:
+            st.markdown('<p class="hint" style="margin:10px 0 4px;"><b>Open requests '
+                        '\u2014 attach the CAD when it arrives:</b></p>',
+                        unsafe_allow_html=True)
+        for _req in _open_reqs:
+            _rid = _req["req_id"]
+            _g = _req.get("guess", {})
+            st.markdown(
+                f'<div style="border:1px solid var(--line);border-left:4px solid '
+                f'#ffd166;border-radius:8px;padding:8px 12px;margin:4px 0;">'
+                f'<b>{_req["name"]}</b> \u2014 for <i>{_req["subsys"]}</i>'
+                + (f', owed by <b>{_req["owner"]}</b>' if _req.get("owner") else '')
+                + f' \u00b7 stand-in {units_mod.from_metric(_g.get("l_mm",0),"mm"):.0f}\u00d7{units_mod.from_metric(_g.get("w_mm",0),"mm"):.0f}'
+                f'\u00d7{units_mod.from_metric(_g.get("h_mm",0),"mm"):.0f} {units_mod.label("mm")} \u00b7 since {_req.get("placed_on","")}'
+                '</div>', unsafe_allow_html=True)
+
+            _cad = st.file_uploader(
+                f"Drop the real CAD for \u201c{_req['name']}\u201d (STEP / STL / OBJ / GLB)",
+                type=["step", "stp", "stl", "obj", "glb"],
+                key=f"car3d_rq_cad_{_rid}")
+            if _cad is not None:
+                try:
+                    import tempfile as _tf, os as _os
+                    _sfx = "." + _cad.name.split(".")[-1]
+                    with _tf.NamedTemporaryFile(delete=False, suffix=_sfx) as _f:
+                        _f.write(_cad.getbuffer())
+                        _cad_path = _f.name
+                    with st.spinner("Reading the arrived CAD…"):
+                        _payload_r = chassis_mod.load_part_mesh(_cad_path, max_faces=4000)
+                    _os.unlink(_cad_path)
+                    _real = dict(l_mm=_payload_r["size_mm"][0],
+                                 w_mm=_payload_r["size_mm"][1],
+                                 h_mm=_payload_r["size_mm"][2],
+                                 centre_mm=[0.0, 0.0, 0.0])
+                    _rec = fullcar_mod.reconcile_part(_g, _real)
+                    _col = {"match": "#5ad17a", "resize": "#ffd166",
+                            "mirrored": "#ff6b5a", "new": "#5ad17a"}[_rec["status"]]
+                    _word = {"match": "Matches your stand-in",
+                             "resize": "Different size than your guess",
+                             "mirrored": "Looks mirrored / wrong orientation",
+                             "new": "Placing the real part"}[_rec["status"]]
+                    st.markdown(
+                        f'<div style="border:1px solid var(--line);border-left:4px '
+                        f'solid {_col};border-radius:8px;padding:8px 12px;margin:4px 0;">'
+                        f'<b style="color:{_col};">{_word}.</b> '
+                        f'<span style="font-size:.9rem;">Real part reads '
+                        f'<b>{units_mod.from_metric(_real["l_mm"],"mm"):.0f}\u00d7{units_mod.from_metric(_real["w_mm"],"mm"):.0f}'
+                        f'\u00d7{units_mod.from_metric(_real["h_mm"],"mm"):.0f} {units_mod.label("mm")}</b> ({_payload_r["triangles"]} '
+                        f'triangles). ' + " ".join(_rec["messages"])
+                        + ' The real geometry will replace the stand-in box.'
+                        + '</span></div>', unsafe_allow_html=True)
+
+                    _kx = st.checkbox("Keep my stand-in's position (recommended)",
+                                      value=True, key=f"car3d_rq_keep_{_rid}")
+                    _ax_r = st.selectbox(
+                        "Up axis in CAD", ["z_up", "y_up", "x_up"],
+                        key=f"car3d_rq_axis_{_rid}",
+                        help="If the part comes in lying on its side, switch this.")
+                    if st.button(f"Confirm & replace stand-in for \u201c{_req['name']}\u201d",
+                                 key=f"car3d_rq_confirm_{_rid}", type="primary"):
+                        # Turn the stand-in into the confirmed REAL MESH, in place.
+                        for _p in st.session_state.car3d_custom_parts:
+                            if _p.get("req_id") == _rid:
+                                _p["shape"] = "mesh"
+                                _p["mesh"] = _payload_r
+                                _p["axis_map"] = _ax_r
+                                _p["yaw_deg"] = 0.0
+                                _p["mesh_scale"] = 1.0
+                                _p["l_mm"] = _real["l_mm"]
+                                _p["w_mm"] = _real["w_mm"]
+                                _p["h_mm"] = _real["h_mm"]
+                                _p["provisional"] = False
+                                break
+                        _req["resolved"] = True
+                        _req["real"] = _real
+                        _req["verdict"] = _rec["status"]
+                        st.session_state.car3d_focus = (
+                            _req["subsys"] if _req["subsys"] != "(custom / unassigned)"
+                            else None)
+                        st.rerun()
+                except Exception as _ce:
+                    st.error(
+                        "Couldn't read that CAD (" + str(_ce) + "). STEP is most "
+                        "reliable; if it's a STEP make sure cascadio is installed. "
+                        "You can keep using the stand-in meanwhile.")
+
+            _rcols = st.columns([1, 4])
+            if _rcols[0].button("Cancel request", key=f"car3d_rq_cancel_{_rid}"):
+                st.session_state.car3d_custom_parts = [
+                    _p for _p in st.session_state.car3d_custom_parts
+                    if _p.get("req_id") != _rid]
+                st.session_state.car3d_part_requests = [
+                    _r for _r in st.session_state.car3d_part_requests
+                    if _r["req_id"] != _rid]
+                st.rerun()
+
+        # Resolved history — a short record of which guesses were right, and which
+        # handoffs came back mirrored/resized, so the team sees its own pattern.
+        _done = [r for r in st.session_state.car3d_part_requests if r.get("resolved")]
+        if _done:
+            st.markdown('<p class="hint" style="margin:10px 0 2px;"><b>Resolved:'
+                        '</b></p>', unsafe_allow_html=True)
+            for _r in _done:
+                _vc = {"match": "#5ad17a", "resize": "#ffd166",
+                       "mirrored": "#ff6b5a", "new": "#5ad17a"}.get(
+                    _r.get("verdict", "match"), "#8d99a6")
+                st.markdown(
+                    f'<span style="font-size:.88rem;">\u2713 <b>{_r["name"]}</b> '
+                    f'(<span style="color:{_vc};">{_r.get("verdict","resolved")}</span>) '
+                    f'\u2014 now confirmed on the car.</span>', unsafe_allow_html=True)
+
 
     with st.expander("ⓘ  About this view — and the build-day check it is *not*",
                      expanded=False):
@@ -9575,6 +10627,12 @@ with tab_car:
           # A CAD part that replaces a subsystem hides ALL that subsystem's dummy
           # bodies (its draw-names). Other subsystems stay on as dummy
           # suggestions. Build the suppression sets from every custom part.
+          # Library ⇄ 3D autosync: the model mirrors the CAD library — parts
+          # published in ANY session appear, deleted ones eject their dummy back.
+          try:
+              _lib_autosync(get_store())
+          except Exception:
+              pass
           _suppress = set()
           _suppress_parts = set()
           for _p in st.session_state.get("car3d_custom_parts", []):
@@ -9595,7 +10653,7 @@ with tab_car:
               show_bodywork=_show_body, show_floor=_show_floor,
               highlight_subsystem=_focus,
               focus_subsystem=_focus, tire_width_mm=float(_tire_w),
-              part_overrides=_part_overrides,
+              part_overrides=_lib_snap_overrides(_part_overrides),
               custom_parts=st.session_state.get("car3d_custom_parts", []),
               suppress_subsystems=_suppress,
               suppress_parts=_suppress_parts,
@@ -9694,22 +10752,12 @@ with tab_car:
                   st.rerun()
 
           # Live influence read-out + sizing notes, tucked away so the model
-          # itself stays the focus. Open it when you want the detail. The
-          # read-out folds in whatever you changed in "Edit parts" below, so
-          # moving or resizing a body here updates its influence line live.
-          _rows = fullcar_mod.override_influence_summary(
-              _vp_car, _led_car, overrides=_part_overrides,
-              topology_label=_topo_lbl)
-          _n_edits = sum(1 for _o in (_part_overrides or {}).values() if _o)
-          with st.expander(
-                  "Live influence & sizing notes"
-                  + (f"  ·  {_n_edits} part edit(s) applied" if _n_edits else ""),
-                  expanded=False):
+          # itself stays the focus. Open it when you want the detail.
+          _rows = fullcar_mod.influence_summary(_vp_car, _led_car, topology_label=_topo_lbl)
+          with st.expander("Live influence & sizing notes", expanded=False):
               st.markdown('<p class="hint" style="margin-bottom:4px;"><b>What each '
                           'subsystem\u2019s current declaration is doing to the model '
-                          'right now:</b> rows marked <i>edited</i> reflect changes '
-                          'you made in <b>Edit parts</b> below.</p>',
-                          unsafe_allow_html=True)
+                          'right now:</b></p>', unsafe_allow_html=True)
               import pandas as _pd
               _df_inf = _pd.DataFrame(_rows)[["subsystem", "status", "detail"]]
               st.dataframe(_df_inf, hide_index=True, width='stretch')
@@ -9933,13 +10981,21 @@ with tab_car:
                             data_b64=_b64.b64encode(_bytes).decode("ascii"),
                             size_bytes=len(_bytes), note=_pub_note.strip()))
                         _persisted = save_store(_cad_store)
+                        # Library ⇄ 3D model bridge: place it on the car too.
+                        _msg3d = ""
+                        try:
+                            _newest = _store_cad_files(_cad_store, None)[0]
+                            _ok3d, _msg3d = _lib_inject_cad(_newest)
+                            _msg3d = "  \n" + _msg3d
+                        except Exception:
+                            pass
                         _tail = ("" if _persisted else
                                  "  \n_In the library for everyone this session; "
                                  "the cross-session save is degraded (see the "
                                  "warning above) but your file is not lost._")
                         st.success(f"Published {_up.name} "
                                    f"({cadshare_mod.human_size(len(_bytes))})."
-                                   + _tail)
+                                   + _msg3d + _tail)
                         _do_rerun()
                 elif _big_link.strip():
                     _nm = _big_link.strip().rstrip("/").split("/")[-1] or "assembly link"
@@ -9960,13 +11016,45 @@ with tab_car:
         if not _all_files:
             st.info("Nothing shared yet. Be the first to publish a file above.")
         else:
+            try:
+                _lib_autosync(_cad_store)   # model mirrors the library
+            except Exception:
+                pass
+            _injected = _lib_injected_ids()
+            _meshable = [f for f in _all_files if _lib_parseable(f)]
+            _pending = [f for f in _meshable if f.id not in _injected]
+            st.caption("🧩 **Quick assembly:** every meshable file here "
+                       "(STEP/STL/OBJ/GLB) can be placed on the full-car 3D "
+                       "model — it snaps into its subsystem's slot, replaces "
+                       "that dummy, and the remaining dummies keep the car "
+                       "whole until their CAD arrives. A chassis upload "
+                       "re-proportions the entire car around the real tub. "
+                       "Preview only — it feeds no calculation.")
+            if _pending and st.button(
+                    f"🧩 Assemble library on the 3D model "
+                    f"({len(_pending)} file(s) to place)",
+                    key="cad_lib_assemble_all"):
+                _oks, _fails = 0, []
+                for _pf in _pending:
+                    _okp, _msgp = _lib_inject_cad(_pf)
+                    if _okp:
+                        _oks += 1
+                    else:
+                        _fails.append(_msgp)
+                if _oks:
+                    st.success(f"Placed {_oks} part(s) on the 3D model — open "
+                               "the 3D Model tab to see the assembly.")
+                for _fm in _fails:
+                    st.warning(_fm)
+                if _oks:
+                    _do_rerun()
             _subs = ["(all)"] + _store_cad_subsystems(_cad_store)
             _filt = st.selectbox("Filter by subsystem", _subs, key="cad_lib_filter")
             _shown = (_all_files if _filt == "(all)"
                       else _store_cad_files(_cad_store, _filt))
             st.caption(f"{len(_shown)} of {len(_all_files)} file(s)")
             for _cf in _shown:
-                _row = st.columns([2.8, 1.2, 1.1, 1.0, 0.8])
+                _row = st.columns([2.8, 1.2, 1.1, 1.0, 1.1, 0.8])
                 _meta = f"`{_cf.subsystem}`"
                 if _cf.uploader:
                     _meta += f" · {_cf.uploader}"
@@ -9984,7 +11072,29 @@ with tab_car:
                             file_name=_cf.name, key=f"cad_dl_{_cf.id}")
                     except Exception:
                         _row[3].caption("—")
-                if _row[4].button("Remove", key=f"cad_rm_{_cf.id}"):
+                # Library ⇄ 3D bridge controls for this file.
+                if _cf.id in _injected:
+                    if _row[4].button("On car ✓ (remove)",
+                                      key=f"cad_3d_off_{_cf.id}",
+                                      help="Take this part off the 3D model — "
+                                           "its dummy placeholder returns."):
+                        _lib_eject_cad(_cf.id)
+                        _do_rerun()
+                elif _lib_parseable(_cf):
+                    if _row[4].button("→ 3D model", key=f"cad_3d_on_{_cf.id}",
+                                      help="Snap this part into its slot on "
+                                           "the full-car 3D model."):
+                        _ok1, _msg1 = _lib_inject_cad(_cf)
+                        (st.success if _ok1 else st.warning)(_msg1)
+                        if _ok1:
+                            _do_rerun()
+                elif _lib_is_sld(_cf):
+                    _row[4].caption("SLDPRT/SLDASM — export STEP "
+                                    "(File ▸ Save As) for the real shape")
+                elif _cf.kind != "link":
+                    _row[4].caption("STEP to view in 3D")
+                if _row[5].button("Remove", key=f"cad_rm_{_cf.id}"):
+                    _lib_eject_cad(_cf.id)
                     _cad_store.remove_cad_file(_cf.id)
                     save_store(_cad_store)
                     _do_rerun()
