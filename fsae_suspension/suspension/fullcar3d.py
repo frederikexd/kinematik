@@ -59,7 +59,7 @@ COLORS = dict(
     push="#9b8cff", rocker="#5ad17a", spring="#ff9f43",
     wheel="#6f7d8c", tire="#15181c", tire_edge="#3a434c", rim="#23282e",
     # Matte-black tub with a hint of the photo's red/yellow livery accent.
-    monocoque="#1d2024", frame_tube="#9aa3ad", nose="#23262b", livery="#d63a2f",
+    monocoque="#1d2024", nose="#23262b", livery="#d63a2f",
     frame="#0d1013", hoop="#0d1013", helmet="#e9edf1", helmet_band="#d63a2f",
     halo="#10141a",
     wing="#202428", wing_edge="#3a414a", endplate="#16191d",
@@ -68,52 +68,13 @@ COLORS = dict(
     battery="#1f2a20", batt_edge="#5ad17a",
     brake="#c2410c", logger="#33373d",
     point="#e7ecf1", floor="#0c1014", cg="#ffd166",
-    custom="#37e0d0", cad="#1f8bff",
+    custom="#37e0d0",
 )
 
 
 # --------------------------------------------------------------------------- #
 #  Mesh primitives
 # --------------------------------------------------------------------------- #
-def _units_axis_cfg(title_txt, lo_mm, hi_mm):
-    """Scene-axis dict whose tick labels follow the active unit system.
-
-    Doctrine matches units.py: the geometry stays in mm forever — only the
-    PRESENTATION converts. Tick positions are chosen at round numbers in the
-    display unit (mm or in) and placed at their mm-equivalent coordinates, so
-    toggling Imperial relabels the axes without touching a single vertex.
-    Falls back to plain mm labels if units.py is unavailable or the extent
-    is degenerate (empty scene).
-    """
-    base = dict(backgroundcolor="#0e1216", gridcolor="#1d242c",
-                color="#8d99a6")
-    factor, lbl = 1.0, "mm"
-    try:
-        from . import units as _units
-        lbl = _units.label("mm")                    # 'mm' or 'in'
-        if lbl == "in":
-            factor = 25.4                           # mm per display unit
-    except Exception:
-        pass
-    base["title"] = f"{title_txt} [{lbl}]"
-    try:
-        lo, hi = float(lo_mm), float(hi_mm)
-        if np.isfinite(lo) and np.isfinite(hi) and hi > lo:
-            span = (hi - lo) / factor               # extent in display units
-            # nice step targeting ~6 ticks: 1/2/5 × 10^k in the display unit
-            raw = span / 6.0
-            mag = 10.0 ** np.floor(np.log10(max(raw, 1e-9)))
-            step = min((s for s in (1 * mag, 2 * mag, 5 * mag, 10 * mag)
-                        if s >= raw), default=mag)
-            t0 = np.floor(lo / factor / step) * step
-            vals = np.arange(t0, hi / factor + step, step)
-            base["tickvals"] = [float(v) * factor for v in vals]  # mm coords
-            base["ticktext"] = [f"{v:g}" for v in vals]           # unit labels
-    except Exception:
-        pass                                        # title-only fallback
-    return base
-
-
 def _bbox_wire(lo, hi):
     """12 edges of the axis-aligned box [lo,hi] as polyline x/y/z lists (with
     None breaks between segments) for a single Scatter3d trace."""
@@ -198,56 +159,27 @@ def _cylinder(center, axis, radius, length, n=24, cap=True):
 
 
 def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
-                      centre=(0.0, 0.0, 0.0), roll_deg=0.0, pitch_deg=0.0):
+                      centre=(0.0, 0.0, 0.0)):
     """Place an imported CAD part's vertices into the car's SAE frame.
 
     verts come recentred on the part's own bbox centre (from chassis.load_part_mesh).
-    We optionally remap axes (CAD up-axis -> car z-up), apply free rotation about
-    the car's three axes, scale, then translate the part's centre to `centre`.
-    Returns an (N,3) array.
+    We optionally remap axes (CAD up-axis -> car z-up), apply a yaw about car z,
+    scale, then translate the part's centre to `centre`. Returns an (N,3) array.
 
         axis_map : "z_up"  CAD already z-up (no swap)
                    "y_up"  CAD is y-up (Y->Z, Z->-Y): common SolidWorks export
                    "x_up"  CAD is x-up (X->Z, Z->-X)
-
-    roll_deg   : rotation about the car's x-axis (fore-aft) — tips the part L/R.
-    pitch_deg  : rotation about the car's y-axis (lateral) — noses it up/down.
-    yaw_deg    : rotation about the car's z-axis (vertical) — spins it flat.
-    The three are applied roll -> pitch -> yaw, after the CAD-up-axis remap.
     """
     V = np.asarray(verts, float).reshape(-1, 3) * float(scale)
-    # Defensive recentre: placement translates the part's CENTRE to `centre`, so
-    # the incoming verts must be centred on their own bbox. load_part_mesh does
-    # this, but a payload from elsewhere (older cache, hand-built) might not — in
-    # which case the part would land offset by its bbox centre. Recentring here
-    # makes "place by centre" hold no matter the source, which is what keeps an
-    # imported CAD body aligned with the dummy slot it replaces.
-    if len(V):
-        _bb = (V.min(axis=0) + V.max(axis=0)) / 2.0
-        V = V - _bb
     if axis_map == "y_up":
         V = np.column_stack([V[:, 0], -V[:, 2], V[:, 1]])
     elif axis_map == "x_up":
         V = np.column_stack([-V[:, 2], V[:, 1], V[:, 0]])
-
-    def _rot_x(deg):
-        a = np.radians(float(deg)); c, s = np.cos(a), np.sin(a)
-        return np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
-
-    def _rot_y(deg):
-        a = np.radians(float(deg)); c, s = np.cos(a), np.sin(a)
-        return np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
-
-    def _rot_z(deg):
-        a = np.radians(float(deg)); c, s = np.cos(a), np.sin(a)
-        return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
-
-    if roll_deg:
-        V = V @ _rot_x(roll_deg).T
-    if pitch_deg:
-        V = V @ _rot_y(pitch_deg).T
     if yaw_deg:
-        V = V @ _rot_z(yaw_deg).T
+        a = np.radians(float(yaw_deg))
+        ca, sa = np.cos(a), np.sin(a)
+        R = np.array([[ca, -sa, 0.0], [sa, ca, 0.0], [0.0, 0.0, 1.0]])
+        V = V @ R.T
     return V + np.asarray(centre, float)
 
 
@@ -346,18 +278,10 @@ def _sphere(center, radius, n=16):
 # --------------------------------------------------------------------------- #
 #  Corner geometry transforms
 # --------------------------------------------------------------------------- #
-def _corner_transform(p, *, mirror_y, lateral_scale, x_shift, y_center_ref,
-                      size_scale=1.0, z_ground=0.0):
+def _corner_transform(p, *, mirror_y, lateral_scale, x_shift, y_center_ref):
     if p is None:
         return None
     q = np.array(p, float).copy()
-    # Global size scale (from an imported define_car chassis): grow/shrink the
-    # corner's own geometry about the ground contact so the wheel radius, upright
-    # height and link lengths track the car's overall size. Applied to x and z
-    # about (x_shift-relative 0, ground); lateral handled by lateral_scale.
-    if size_scale != 1.0:
-        q[0] = q[0] * size_scale
-        q[2] = z_ground + (q[2] - z_ground) * size_scale
     dy = (q[1] - y_center_ref) * lateral_scale
     q[1] = y_center_ref + (-dy if mirror_y else dy)
     q[0] = q[0] + x_shift
@@ -786,7 +710,7 @@ def build_full_car_figure(
     drawn part without changing the underlying engineering numbers. It is a
     dict keyed by the part's display name (exactly the `name=` each body is
     drawn with, e.g. "Front wing", "Sidepod (cooling)", "Motor + inverter",
-    "Accumulator", "Spaceframe", "Tire", "Brake disc", "Roll hoop", "Driver",
+    "Accumulator", "Monocoque", "Tire", "Brake disc", "Roll hoop", "Driver",
     "Data logger", "Radiator core"). Each value is a dict with any of:
 
         dx, dy, dz : float   # translate the whole part, in mm (SAE axes)
@@ -836,21 +760,6 @@ def build_full_car_figure(
     tf = float(getattr(vp, "track_front", 1200.0))
     tr = float(getattr(vp, "track_rear", 1180.0))
 
-    # ---- imported CAD chassis fits the placeholder ------------------------- #
-    # A `define_car` chassis (Chassis slot, "fit the rest of the car around this
-    # part") is scaled to occupy the SAME footprint as the dummy monocoque on the
-    # standard car, so it drops into the placeholder's exact envelope with the
-    # wheels already correctly proportioned around it. We keep the car's normal
-    # wheelbase/track (the dummy is already sized to them) rather than reshaping,
-    # which kept the frame and wheels mismatched. The scale + centre are computed
-    # in `_def_target` once the dummy footprint is known, below.
-    _car_part = None
-    for _cp in (custom_parts or []):
-        if _cp.get("define_car") and _cp.get("mesh"):
-            _car_part = _cp
-            break
-    _car_scale = 1.0            # wheels/tyres keep their natural size
-
     # Softer front spring -> more static sag -> body visibly lower. Cue, not a calc.
     kf = float(getattr(vp, "spring_rate_front", 35.0) or 35.0)
     ride_drop = _clamp((35.0 - kf) * 0.6, -12.0, 18.0)
@@ -867,6 +776,10 @@ def build_full_car_figure(
 
     fig = go.Figure()
 
+    # ---- suppression sets (CAD import hides its dummy placeholders) ------ #
+    _suppress_subsys = set(suppress_subsystems or ())
+    _suppress_parts  = set(suppress_parts or ())
+
     # ---- user part overrides (size & position) -------------------------- #
     # Resolve once: a part name -> (dx, dy, dz, sx, sy, sz). Scaling is about
     # the part's centroid so a part keeps its place while changing size; the
@@ -877,30 +790,6 @@ def build_full_car_figure(
     # name, and reuse it for every later piece. Overrides are applied at the
     # mesh/seg chokepoint, before _accrue, so click-to-zoom frames the moved part.
     _ov = part_overrides or {}
-
-    # Subsystems / parts whose PROCEDURAL body is replaced by a user CAD/custom
-    # part: skip drawing the stand-in so only the real geometry shows there. A
-    # suppressed SUBSYSTEM also suppresses every catalog body it owns (via
-    # PART_CATALOG). Callers may pass either subsystem keys (suppress_subsystems)
-    # or explicit draw-names (suppress_parts); the two are unioned into one set
-    # of draw-names that the mesh/seg chokepoint honours through _is_hidden.
-    _suppress = set(suppress_subsystems or ())
-    _suppress_names = set(suppress_parts or ())
-    try:
-        for _pk, _pdn, _ps, _pc in PART_CATALOG:
-            if _ps in _suppress:
-                _suppress_names.add(_pdn)
-    except Exception:
-        pass
-
-    # Real drawn extent of each built-in body, keyed by draw-name — recorded even
-    # when the body is then suppressed, so a replacing CAD part can be fitted to
-    # EXACTLY the box its placeholder occupied. Exposed on the returned figure as
-    # `_part_boxes` for the Streamlit CAD "fit to area" tool.
-    _part_boxes: dict = {}
-    # Per-call boxes under each draw-name, clustered into per-INSTANCE boxes
-    # after the build — see fig._part_instance_boxes below.
-    _part_pieces: dict = {}
 
     def _ov_for(name):
         o = _ov.get(name) if name else None
@@ -917,15 +806,6 @@ def build_full_car_figure(
         if dx == dy == dz == 0.0 and sx == sy == sz == 1.0:
             return None
         return (dx, dy, dz, sx, sy, sz)
-
-    def _is_hidden(name):
-        """True when this body should be skipped — either because a part_override
-        asks to hide it, or because a user CAD/custom part replaces its subsystem
-        or the body itself (suppress_subsystems / suppress_parts)."""
-        if name and name in _suppress_names:
-            return True
-        o = _ov.get(name) if name else None
-        return bool(o and o.get("hide"))
 
     _scale_centre: dict[str, np.ndarray] = {}
     # Parts drawn once per corner (4×): scale each instance about ITS OWN
@@ -1008,6 +888,10 @@ def build_full_car_figure(
     # share a name (four tires, four brake discs); they all merge under the one
     # key, so focusing "Tire" frames all four, which is the sensible behaviour.
     part_pts: dict[str, list] = {}
+    # Per-INSTANCE accumulator: same as part_pts but each instance (corner) gets
+    # its own entry so callers can measure the footprint of a single body copy
+    # (e.g. clearance around one brake disc, not the ring of all four).
+    part_instance_pts: dict[str, list] = {}
 
     def _accrue(subsys, pts, part=None, corner=None):
         if pts is None:
@@ -1021,16 +905,22 @@ def build_full_car_figure(
             # all four wheels can be drilled to a single corner. The shared key
             # above still frames all instances; this finer key frames just one.
             if corner:
-                part_pts.setdefault("%s#%s" % (part, corner), []).extend(arr)
+                _inst_key = "%s#%s" % (part, corner)
+                part_pts.setdefault(_inst_key, []).extend(arr)
+                part_instance_pts.setdefault(_inst_key, []).extend(arr)
 
     def seg(p, q, color, w=5, name=None, group=None, subsys=None, corner=None):
         if p is None or q is None:
             return
+        # Suppress dummy placeholders that a real CAD import now covers.
+        if subsys and subsys in _suppress_subsys:
+            return
+        _seg_part = name or group
+        if _seg_part and _seg_part in _suppress_parts:
+            return
         # Override key: prefer the legend name, fall back to the group token so
         # unnamed members of a named part (hoop braces, wing mounts) move too.
         _ovk = name if (name and name in _ov) else (group if group in _ov else name)
-        if _is_hidden(name) or _is_hidden(group):
-            return
         pq = _apply_ov(_ovk, np.array([p, q], float))
         p, q = pq[0], pq[1]
         # Accrue under a STABLE part key. corner_name() returns a label only the
@@ -1059,30 +949,10 @@ def build_full_car_figure(
 
     def mesh(verts, i, j, k, color, name, subsys, base_op=0.6, hover=None,
              corner=None):
-        # Record this body's true drawn box (keyed by draw-name) BEFORE any
-        # suppression, so a replacing CAD part can land in exactly the same place
-        # its placeholder occupied — even when the placeholder is now hidden.
-        if name:
-            try:
-                _vv = _apply_ov(name, verts)
-                _lo = np.asarray(_vv, float).reshape(-1, 3).min(axis=0)
-                _hi = np.asarray(_vv, float).reshape(-1, 3).max(axis=0)
-                if name in _part_boxes:
-                    _pb = _part_boxes[name]
-                    _pb[0] = np.minimum(_pb[0], _lo)
-                    _pb[1] = np.maximum(_pb[1], _hi)
-                else:
-                    _part_boxes[name] = [_lo.copy(), _hi.copy()]
-                # Also keep the PER-CALL box: a body drawn once per corner /
-                # side (4 tires, 2 radiators) merges into one misleading
-                # car-spanning box above; the pieces are clustered into true
-                # per-INSTANCE boxes after the build (fig._part_instance_boxes)
-                # so fit / clearance tools can reason about one instance.
-                _part_pieces.setdefault(name, []).append(
-                    (_lo.copy(), _hi.copy()))
-            except Exception:
-                pass
-        if _is_hidden(name):
+        # Suppress dummy placeholders that a real CAD import now covers.
+        if subsys and subsys in _suppress_subsys:
+            return
+        if name and name in _suppress_parts:
             return
         once = name not in legend_done
         legend_done.add(name)
@@ -1138,8 +1008,7 @@ def build_full_car_figure(
 
     def _xform(p, mirror, lat_scale, x_shift):
         return _corner_transform(p, mirror_y=mirror, lateral_scale=lat_scale,
-                                 x_shift=x_shift, y_center_ref=y_center,
-                                 size_scale=_car_scale)
+                                 x_shift=x_shift, y_center_ref=y_center)
 
     for axle, corner, lat_scale, x_shift, mirror in stations:
         # Stable corner id (FL/FR/RL/RR) for per-corner focus. Side comes from the
@@ -1207,128 +1076,124 @@ def build_full_car_figure(
             z_all += [p[2], q[2]]
         z_all += [corner["wheel_center"][2], corner["contact_patch"][2]]
     z_lo, z_hi = (min(z_all), max(z_all)) if z_all else (0.0, 300.0)
-    tire_r = (abs(front_corner["wheel_center"][2]
-                  - front_corner["contact_patch"][2]) or 228.0) * _car_scale
+    tire_r = abs(front_corner["wheel_center"][2]
+                 - front_corner["contact_patch"][2]) or 228.0
     inner_y_f = tf / 2.0 - tire_width_mm - 40
     inner_y_r = tr / 2.0 - tire_width_mm - 40
 
-    # For a `define_car` chassis: scale it to MATCH the dummy monocoque's real
-    # footprint — the placeholder is already proportioned correctly to the wheels
-    # and the rest of the car, so matching it makes the imported frame sit in the
-    # same envelope. We compute the dummy's exact extents (the same formulas the
-    # monocoque uses below) and scale the CAD uniformly (true shape) so its
-    # dominant length matches, centred on the dummy's centre.
-    _def_target = None
-    if _car_part is not None:
-        try:
-            _pl0 = float(_car_part.get("l_mm", 0) or 0)
-            _pw0 = float(_car_part.get("w_mm", 0) or 0)
-            _ph0 = float(_car_part.get("h_mm", 0) or 0)
-
-            # --- dummy monocoque footprint (mirror the section-2 formulas) ---
-            _dummy_tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
-            _dummy_tub_bot = max(z_lo * 0.5, tire_r * 0.14)
-            _dummy_tub_top = _dummy_tub_bot + _clamp(tire_r * 0.95, 180, 360)
-            _dummy_nose_x = x_front + tire_r * 1.9
-            _dummy_tail_x = x_rear + tire_r * 0.15
-            _dummy_len = abs(_dummy_nose_x - _dummy_tail_x)
-            _dummy_wid = _dummy_tub_w
-            _dummy_hgt = _dummy_tub_top - _dummy_tub_bot
-            _dummy_cx = (_dummy_nose_x + _dummy_tail_x) / 2.0
-            _dummy_cz = (_dummy_tub_top + _dummy_tub_bot) / 2.0
-
-            # Scale so the CAD fits INSIDE the dummy monocoque envelope on every
-            # axis (tightest ratio), keeping true shape, so it occupies the same
-            # space the placeholder did without poking past it. Length-dominant
-            # frames match the length; bulky ones match width/height.
-            _ratios = []
-            if _pl0 > 1:
-                _ratios.append(_dummy_len / _pl0)
-            if _pw0 > 1:
-                _ratios.append(_dummy_wid / _pw0)
-            if _ph0 > 1:
-                _ratios.append(_dummy_hgt / _ph0)
-            _def_scale = max(0.01, min(_ratios) if _ratios else 1.0)
-            _def_target = dict(
-                scale=_def_scale,
-                centre=(_dummy_cx, 0.0, _dummy_cz))
-        except Exception:
-            _def_target = None
-
-    # ---- 2) chassis: FSAE steel SPACEFRAME + roll hoops + driver -------- #
-    #  Tube frame in place of the old lofted monocoque shell: front bulkhead,
-    #  front hoop, cockpit bay, rear box, with bottom/top rails and
-    #  side-impact diagonals — reads instantly as a welded FSAE spaceframe.
-    #  Spans the SAME envelope the shell did (nose tip -> tail, same width and
-    #  deck heights), so slot fitting, part boxes and `define_car` scaling all
-    #  keep working unchanged.
+    # ---- 2) chassis: FSAE monocoque + nosecone + roll hoops + driver ---- #
+    #  Reshaped to read as a real Formula Student car (cf. the reference photo):
+    #  a low, slim survival cell that tapers to a pointed nosecone at the front,
+    #  an open cockpit, a curved MAIN roll hoop behind the driver's head and a
+    #  smaller FRONT hoop ahead of the dash, plus the driver's helmet showing in
+    #  the cockpit — not an F1 halo.
     if show_bodywork:
         ch_it = _iface(ledger, "chassis")
         tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
-        # Sit the frame low like an FSAE car: floor near the ground, deck low.
+        # Sit the tub low like an FSAE car: floor near the ground, deck low.
         tub_bot = max(z_lo * 0.5, tire_r * 0.14)
         tub_top = tub_bot + _clamp(tire_r * 0.95, 180, 360)
+        cz = (tub_top + tub_bot) / 2
         hzz = (tub_top - tub_bot) / 2
+        prof = _ellipse_ring(24)
+
+        # Lofted survival cell: pointed nose tip -> footwell -> cockpit bay ->
+        # tapered tail. Stations run front (tip) to rear.
         nose_tip_x = x_front + tire_r * 1.9
         tail_x = x_rear + tire_r * 0.15
-
-        # Frame stations, front to rear: (x, half-width, z_bottom, z_top).
-        _stn = [
-            # front bulkhead — small, raised off the floor line
-            (nose_tip_x, tub_w * 0.22,
-             tub_bot + hzz * 0.50, tub_bot + hzz * 1.30),
-            # front hoop (dash) — full width, taller than the deck
-            (x_front - wb * 0.05, tub_w * 0.48, tub_bot, tub_top + hzz * 0.55),
-            # main-hoop station (cockpit rear) — the curved hoop itself is the
-            # separate "Roll hoop" body drawn elsewhere
-            (x_front - wb * 0.34, tub_w * 0.50, tub_bot, tub_top),
-            # rear bulkhead / rear box
-            (tail_x, tub_w * 0.36, tub_bot, tub_bot + hzz * 1.60),
-        ]
-        _rt = _clamp(tub_w * 0.045, 8.0, 14.0)     # tube radius (~25 mm OD)
-
-        _fv, _fi, _fj, _fk = [], [], [], []
-        _off = 0
-
-        def _frame_tube(p, q):
-            nonlocal _off
-            v, i, j, k = _tube(np.asarray(p, float), np.asarray(q, float),
-                               _rt, n=10)
-            _fv.append(v)
-            _fi.extend((np.asarray(i) + _off).tolist())
-            _fj.extend((np.asarray(j) + _off).tolist())
-            _fk.extend((np.asarray(k) + _off).tolist())
-            _off += len(v)
-
-        for _s in (-1.0, 1.0):                       # left / right side
-            for _a, _b in zip(_stn[:-1], _stn[1:]):
-                # bottom rail, top rail, and the bay's side-impact diagonal
-                _frame_tube((_a[0], _s * _a[1], _a[2]),
-                            (_b[0], _s * _b[1], _b[2]))
-                _frame_tube((_a[0], _s * _a[1], _a[3]),
-                            (_b[0], _s * _b[1], _b[3]))
-                _frame_tube((_a[0], _s * _a[1], _a[2]),
-                            (_b[0], _s * _b[1], _b[3]))
-            for _p in _stn:                          # station verticals
-                _frame_tube((_p[0], _s * _p[1], _p[2]),
-                            (_p[0], _s * _p[1], _p[3]))
-        for _p in _stn:                              # station cross members
-            _frame_tube((_p[0], -_p[1], _p[2]), (_p[0], +_p[1], _p[2]))
-            _frame_tube((_p[0], -_p[1], _p[3]), (_p[0], +_p[1], _p[3]))
-        # floor cross bracing in the two big bays (cockpit + rear)
-        for _a, _b in ((_stn[1], _stn[2]), (_stn[2], _stn[3])):
-            _frame_tube((_a[0], -_a[1], _a[2]), (_b[0], +_b[1], _b[2]))
-            _frame_tube((_a[0], +_a[1], _a[2]), (_b[0], -_b[1], _b[2]))
-
-        hv = "Spaceframe / welded tube frame"
+        xs = np.linspace(nose_tip_x, tail_x, 9)
+        #             tip   nose  foot  dash  cockpit cock  belly tail   end
+        widths  = np.array([0.05, 0.22, 0.55, 0.88, 1.00, 0.98, 0.86, 0.66, 0.5])
+        heights = np.array([0.10, 0.30, 0.62, 0.85, 0.92, 0.92, 0.85, 0.74, 0.6])
+        zoff    = np.array([0.55, 0.42, 0.18, 0.04, 0.00, 0.00, 0.02, 0.06, 0.1]) * hzz
+        scales = [(tub_w / 2 * w, hzz * h, 0.0, cz + dz)
+                  for w, h, dz in zip(widths, heights, zoff)]
+        mv, mi, mj, mk = _prism_xsection(prof, xs, scales)
+        hv = "Monocoque / survival cell"
         if _g(ch_it, "mass_kg"):
             hv += " · %.1f kg" % _g(ch_it, "mass_kg")
-        mesh(np.vstack(_fv), np.array(_fi), np.array(_fj), np.array(_fk),
-             COLORS["frame_tube"], "Spaceframe", "chassis",
-             base_op=0.96, hover=hv)
+        mesh(mv, mi, mj, mk, COLORS["monocoque"], "Monocoque", "chassis",
+             base_op=0.92, hover=hv)
 
-        # Mid-frame deck height, reused by the roll hoops / driver below.
-        cz = (tub_top + tub_bot) / 2
+        # A thin livery flash down the flank (the photo's red/yellow stripe).
+        fv, fi, fj, fk = _prism_xsection(
+            _ellipse_ring(24),
+            np.linspace(nose_tip_x - tire_r * 0.3, tail_x, 6),
+            [(tub_w / 2 * w * 1.005, hzz * h * 0.16, 0.0, cz + dz)
+             for w, h, dz in zip(widths[2:8], heights[2:8], zoff[2:8])])
+        mesh(fv, fi, fj, fk, COLORS["livery"], "Monocoque", "chassis", 0.9)
+
+        # ---- Spaceframe tube network: FSAE-style steel tube chassis -------- #
+        #  Drawn using the same dimensional variables (tub_w, tub_bot, tub_top,
+        #  nose_tip_x, tail_x, x_front, x_rear, tire_r) so the frame sits
+        #  precisely inside the monocoque envelope.  Every tube is registered
+        #  under the name "Spaceframe" / group "spaceframe_tube" so:
+        #    • It appears in the legend once, labelled "Spaceframe"
+        #    • part_overrides["Spaceframe"] moves / rescales the whole frame
+        #    • _suppress_parts{"Spaceframe"} hides it when a real CAD replaces it
+        #    • _part_boxes["Spaceframe"] gives the mount-overlay its anchor
+        #
+        #  Tube radius is ~2 % of the tub half-height (FSAE ERB typical wall
+        #  size, scaled to the car), so it reads as slender steel, not a block.
+        _sf_r = max(6.0, hzz * 0.022)
+
+        def _sf_tube(p0, p1, *, first=False):
+            """Add one spaceframe tube; legend entry only on the first call."""
+            _nm = corner_name("Spaceframe") if first else None
+            tv, ti, tj, tk = _tube(p0, p1, _sf_r, n=8)
+            mesh(tv, ti, tj, tk, COLORS["frame"], "Spaceframe", "chassis",
+                 base_op=0.88, corner=None)
+
+        _y_half = tub_w * 0.5   # left/right rail y-coord
+
+        # Longitudinal floor rails (left & right): from tail to front bulkhead
+        _rail_z = tub_bot + hzz * 0.05
+        _f_bulk = x_front - wb * 0.05   # approximate front bulkhead x
+        _r_bulk = x_rear  + tire_r * 0.15   # approximate rear bulkhead x
+
+        for _sgn in (-1, 1):
+            _sf_tube([_r_bulk, _sgn * _y_half, _rail_z],
+                     [_f_bulk, _sgn * _y_half, _rail_z],
+                     first=(_sgn == -1))
+
+        # Upper side rails (left & right): front to rear at cockpit-deck height
+        _deck_z = tub_bot + hzz * 1.1
+        for _sgn in (-1, 1):
+            _sf_tube([_r_bulk, _sgn * _y_half * 0.9, _deck_z],
+                     [_f_bulk, _sgn * _y_half * 0.9, _deck_z])
+
+        # Front bulkhead: four corners of the nose bay
+        for (_y0, _z0), (_y1, _z1) in [
+            (( _y_half,  _rail_z), ( _y_half,  _deck_z)),
+            ((-_y_half,  _rail_z), (-_y_half,  _deck_z)),
+            (( _y_half,  _deck_z), (-_y_half,  _deck_z)),
+            (( _y_half,  _rail_z), (-_y_half,  _rail_z)),
+        ]:
+            _sf_tube([_f_bulk, _y0, _z0], [_f_bulk, _y1, _z1])
+
+        # Rear bulkhead: same pattern at the tail
+        for (_y0, _z0), (_y1, _z1) in [
+            (( _y_half,  _rail_z), ( _y_half,  _deck_z)),
+            ((-_y_half,  _rail_z), (-_y_half,  _deck_z)),
+            (( _y_half,  _deck_z), (-_y_half,  _deck_z)),
+            (( _y_half,  _rail_z), (-_y_half,  _rail_z)),
+        ]:
+            _sf_tube([_r_bulk, _y0, _z0], [_r_bulk, _y1, _z1])
+
+        # Mid-bay bulkhead at the firewall (approx behind the cockpit)
+        _fw_x = x_front - wb * 0.40
+        for (_y0, _z0), (_y1, _z1) in [
+            (( _y_half,  _rail_z), ( _y_half,  _deck_z)),
+            ((-_y_half,  _rail_z), (-_y_half,  _deck_z)),
+            (( _y_half,  _deck_z), (-_y_half,  _deck_z)),
+            (( _y_half,  _rail_z), (-_y_half,  _rail_z)),
+        ]:
+            _sf_tube([_fw_x, _y0, _z0], [_fw_x, _y1, _z1])
+
+        # Diagonal bracing (X-braces) in the floor plane at front and rear bays
+        for _bx0, _bx1 in [(_f_bulk, _fw_x), (_fw_x, _r_bulk)]:
+            _sf_tube([_bx0,  _y_half, _rail_z], [_bx1, -_y_half, _rail_z])
+            _sf_tube([_bx0, -_y_half, _rail_z], [_bx1,  _y_half, _rail_z])
 
         # Cockpit opening reference + driver: a helmet sphere sitting in the bay.
         cockpit_x = x_front - wb * 0.16
@@ -1562,45 +1427,6 @@ def build_full_car_figure(
                 cg_label = "CG (declared %.0f kg)" % roll["total_kg"]
         except Exception:
             pass
-    # Fold in any user-dropped custom parts that carry a mass, so a heavy
-    # imported CAD (accumulator, motor…) visibly shifts the CG marker. We treat
-    # the params/declared CG as the baseline car mass acting at (cg_x,cy,cg_h)
-    # and add each part's mass at its own centre, then recompute the weighted
-    # mean. Parts with no mass_kg don't move the CG (packaging-only bodies).
-    _cp_masses = []
-    for _cpm in (custom_parts or []):
-        try:
-            _m = float(_cpm.get("mass_kg", 0.0) or 0.0)
-        except Exception:
-            _m = 0.0
-        if _m > 0:
-            _cp_masses.append((_m, float(_cpm.get("x_mm", 0) or 0),
-                               float(_cpm.get("y_mm", 0) or 0),
-                               float(_cpm.get("z_mm", 0) or 0)))
-    if _cp_masses and cg_h > 0:
-        _base_kg = 0.0
-        if ledger is not None:
-            try:
-                _base_kg = float(ledger.mass_rollup().get("total_kg", 0.0) or 0.0)
-            except Exception:
-                _base_kg = 0.0
-        if _base_kg <= 0:
-            _base_kg = float(getattr(vp, "mass", 0.0) or 0.0)
-        if _base_kg <= 0:
-            _base_kg = 220.0  # nominal FSAE car mass so the blend is sensible
-        _tot = _base_kg
-        _sx = cg_x * _base_kg
-        _sy = cg_y * _base_kg
-        _sz = cg_h * _base_kg
-        for _m, _px, _py, _pz in _cp_masses:
-            _tot += _m
-            _sx += _px * _m
-            _sy += _py * _m
-            _sz += _pz * _m
-        if _tot > 0:
-            cg_x, cg_y, cg_h = _sx / _tot, _sy / _tot, _sz / _tot
-            cg_label = "CG (+%.1f kg parts)" % sum(m for m, *_ in _cp_masses)
-
     if show_cg and cg_h > 0:
         # When a subsystem is spotlit, fade the CG marker too — it's a global
         # readout, not part of any subteam, so it shouldn't out-shine the
@@ -1662,33 +1488,12 @@ def build_full_car_figure(
                 hov = "%s — PROVISIONAL stand-in, %.0f×%.0f×%.0f mm @ (x %.0f, y %.0f, z %.0f)" % (
                     nm, l, w, h, cx, cy, cz)
             else:
-                # Imported CAD meshes always render neon blue so the real
-                # geometry stays visible on the dark scene (and any part saved
-                # earlier with a dark hue is corrected here too). Non-mesh custom
-                # boxes/cylinders keep their chosen/subsystem colour.
-                if has_mesh:
-                    col = COLORS["cad"]
-                else:
-                    col = cp.get("color") or COLORS.get(sub_color_key(sub),
-                                                         COLORS["custom"])
+                col = cp.get("color") or COLORS.get(sub_color_key(sub), COLORS["custom"])
                 base_op = 0.95 if has_mesh else 0.82
                 nm_draw = nm
                 _kind = "CAD mesh" if has_mesh else "%.0f×%.0f×%.0f mm" % (l, w, h)
                 hov = "%s — %s @ (x %.0f, y %.0f, z %.0f)" % (nm, _kind, cx, cy, cz)
             shape = cp.get("shape", "box")
-            # A `define_car` chassis is scaled + centred to fit the real car
-            # (computed above), so it reads as one whole car with the wheels.
-            _msc = float(cp.get("mesh_scale", 1.0) or 1.0)
-            _mcx, _mcy, _mcz = cx, cy, cz
-            if cp.get("define_car") and has_mesh and _def_target is not None:
-                _msc = float(_def_target["scale"])
-                _mcx, _mcy, _mcz = _def_target["centre"]
-            # User nudge offsets apply ON TOP of any auto placement — including
-            # the define_car auto-centre above, which otherwise ignores x/y/z —
-            # so an imported chassis can still be slid into alignment by hand.
-            _mcx += float(cp.get("dx_mm", 0.0) or 0.0)
-            _mcy += float(cp.get("dy_mm", 0.0) or 0.0)
-            _mcz += float(cp.get("dz_mm", 0.0) or 0.0)
             if has_mesh:
                 # Draw the ACTUAL imported geometry, oriented + placed on the car.
                 faces = np.asarray(mesh_payload["faces"], int)
@@ -1696,10 +1501,8 @@ def build_full_car_figure(
                     mesh_payload["verts"],
                     axis_map=cp.get("axis_map", "z_up"),
                     yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
-                    roll_deg=float(cp.get("roll_deg", 0.0) or 0.0),
-                    pitch_deg=float(cp.get("pitch_deg", 0.0) or 0.0),
-                    scale=_msc,
-                    centre=(_mcx, _mcy, _mcz))
+                    scale=float(cp.get("mesh_scale", 1.0) or 1.0),
+                    centre=(cx, cy, cz))
                 mesh(V, faces[:, 0], faces[:, 1], faces[:, 2],
                      col, nm_draw, sub, base_op, hov)
             elif shape == "cylinder":
@@ -1774,19 +1577,6 @@ def build_full_car_figure(
             center=dict(x=float(c_norm[0]), y=float(c_norm[1]), z=float(c_norm[2])),
             eye=dict(x=float(eye[0]), y=float(eye[1]), z=float(eye[2])))
 
-    # Global scene extents (mm) over every accrued vertex — feeds the units-
-    # aware axis tick generator so ticks land on round mm OR round inches.
-    _ext_lo = np.array([np.nan] * 3)
-    _ext_hi = np.array([np.nan] * 3)
-    try:
-        _all = [np.asarray(_p, float).reshape(-1, 3)
-                for _p in subsys_pts.values() if _p]
-        if _all:
-            _all = np.vstack(_all)
-            _ext_lo, _ext_hi = _all.min(axis=0), _all.max(axis=0)
-    except Exception:
-        pass
-
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         # Make rotating the car the primary mouse gesture: left-drag orbits the
@@ -1799,11 +1589,12 @@ def build_full_car_figure(
         # (and the user's own rotation) don't snap the view back.
         uirevision=camera_revision,
         scene=dict(
-            # Axis labels + tick text follow the active unit system (metric /
-            # US) via _units_axis_cfg; geometry and tick POSITIONS stay in mm.
-            xaxis=_units_axis_cfg("x (rear ←→ front)", _ext_lo[0], _ext_hi[0]),
-            yaxis=_units_axis_cfg("y (right)", _ext_lo[1], _ext_hi[1]),
-            zaxis=_units_axis_cfg("z (up)", _ext_lo[2], _ext_hi[2]),
+            xaxis=dict(title="x (rear ←→ front)", backgroundcolor="#0e1216",
+                       gridcolor="#1d242c", color="#8d99a6"),
+            yaxis=dict(title="y (right)", backgroundcolor="#0e1216",
+                       gridcolor="#1d242c", color="#8d99a6"),
+            zaxis=dict(title="z (up)", backgroundcolor="#0e1216",
+                       gridcolor="#1d242c", color="#8d99a6"),
             aspectmode="data", camera=scene_camera,
             dragmode="turntable"),
         font=dict(family="JetBrains Mono", color="#cdd6df", size=10),
@@ -1827,66 +1618,44 @@ def build_full_car_figure(
         object.__setattr__(fig, "_kk_subsys_centroids", _centroids)
     except Exception:
         pass
-    # Expose the real drawn boxes (centre+size in car mm) so the CAD "fit to
-    # area" tool can size a replacement to the ACTUAL placeholder box a part
-    # occupies, not just the rough anchor. Same object.__setattr__ approach as
-    # the centroids above, to bypass plotly's Figure.__setattr__ guard.
-    try:
-        object.__setattr__(fig, "_part_boxes", {
-            nm: dict(
-                centre=[float((lo[i] + hi[i]) / 2.0) for i in range(3)],
-                size=[float(hi[i] - lo[i]) for i in range(3)])
-            for nm, (lo, hi) in _part_boxes.items()})
-    except Exception:
-        try:
-            object.__setattr__(fig, "_part_boxes", {})
-        except Exception:
-            pass
-    # Per-INSTANCE boxes: cluster each name's per-call boxes by overlap (10 mm
-    # slack), so a body drawn once per corner/side yields one box PER COPY —
-    # "Tire" gives four wheel-sized boxes instead of one ring spanning the car.
-    # This is what makes mesh-level fit / clearance forecasting honest: the
-    # merged _part_boxes above stays for envelope fitting (its documented job),
-    # instance boxes are for anything that reasons about a single body.
-    def _cluster_instances(pieces, tol=10.0):
-        n = len(pieces)
-        parent = list(range(n))
 
-        def find(a):
-            while parent[a] != a:
-                parent[a] = parent[parent[a]]
-                a = parent[a]
-            return a
+    # Build per-part bounding-box dict: {part_name: {centre, size, lo, hi}}.
+    # Used by the streamlit app for:
+    #   • _part_boxes  — CAD slot anchoring (fit new import to placeholder bbox)
+    #   • aero mount-point overlay anchor ("Spaceframe" / "Monocoque")
+    #   • Assembly Completion Index (ACI) volume calculations
+    def _bbox_dict(pts_list):
+        if not pts_list:
+            return None
+        arr = np.asarray(pts_list, float).reshape(-1, 3)
+        lo = arr.min(axis=0)
+        hi = arr.max(axis=0)
+        ctr = ((lo + hi) / 2.0).tolist()
+        sz = (hi - lo).tolist()
+        return dict(centre=ctr, size=sz,
+                    bbox_min=lo.tolist(), bbox_max=hi.tolist())
 
-        for a in range(n):
-            la, ha = pieces[a]
-            for b in range(a + 1, n):
-                lb, hb = pieces[b]
-                if ((la - tol <= hb) & (lb - tol <= ha)).all():
-                    ra, rb = find(a), find(b)
-                    if ra != rb:
-                        parent[rb] = ra
-        groups: dict = {}
-        for i in range(n):
-            groups.setdefault(find(i), []).append(i)
-        out = []
-        for idxs in groups.values():
-            lo = np.min([pieces[i][0] for i in idxs], axis=0)
-            hi = np.max([pieces[i][1] for i in idxs], axis=0)
-            out.append(dict(
-                centre=[float((lo[k] + hi[k]) / 2.0) for k in range(3)],
-                size=[float(hi[k] - lo[k]) for k in range(3)]))
-        return out
+    _part_boxes_dict = {}
+    for _pname, _ppts in part_pts.items():
+        _bd = _bbox_dict(_ppts)
+        if _bd:
+            _part_boxes_dict[_pname] = _bd
+
+    _part_instance_boxes_dict = {}
+    for _iname, _ipts in part_instance_pts.items():
+        _bd = _bbox_dict(_ipts)
+        if _bd:
+            _part_instance_boxes_dict[_iname] = _bd
 
     try:
-        object.__setattr__(fig, "_part_instance_boxes", {
-            nm: _cluster_instances(pieces)
-            for nm, pieces in _part_pieces.items() if pieces})
+        object.__setattr__(fig, "_part_boxes", _part_boxes_dict)
     except Exception:
-        try:
-            object.__setattr__(fig, "_part_instance_boxes", {})
-        except Exception:
-            pass
+        pass
+    try:
+        object.__setattr__(fig, "_part_instance_boxes", _part_instance_boxes_dict)
+    except Exception:
+        pass
+
     return fig
 
 
@@ -2103,164 +1872,6 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
                 + ("; CG live" if roll.get("cg_mm") else "; CG needs all masses+positions"))
         except Exception:
             pass
-    return rows
-
-
-# Which subsystem each editable draw-name belongs to, so a part edit in the
-# "Edit parts" panel maps back onto the subsystem it influences. Mirrors the
-# _PART_EDIT table in the app UI; kept here so the influence read-out is a pure
-# function of (vp, ledger, overrides) with no Streamlit dependency.
-_PART_SUBSYSTEM = {
-    "Front wing": "aerodynamics",
-    "Rear wing": "aerodynamics",
-    "Sidepod (cooling)": "cooling",
-    "Radiator core": "cooling",
-    "Motor + inverter": "powertrain",
-    "Accumulator": "electrics",
-    "Spaceframe": "chassis",
-    "Monocoque": "chassis",
-    "Roll hoop": "chassis",
-    "Driver": "chassis",
-    "Tire": "suspension",
-    "Brake disc": "brakes",
-    "Data logger": "data-acquisition",
-}
-
-
-def _override_axis_scales(ov: dict) -> tuple:
-    """Resolve an override dict to (sx, sy, sz) effective scale factors.
-
-    A uniform "scale" applies to all three axes; explicit per-axis sx/sy/sz win
-    over the uniform value on the axes they set. Missing → 1.0 (no change).
-    """
-    base = float(ov.get("scale", 1.0) or 1.0)
-    sx = float(ov.get("sx", base) or base)
-    sy = float(ov.get("sy", base) or base)
-    sz = float(ov.get("sz", base) or base)
-    return sx, sy, sz
-
-
-def describe_part_override(part_name: str, ov: dict) -> dict:
-    """Plain-language read of what one part override does to the model.
-
-    Pure Python, no rendering. Returns a dict with the moved/resized deltas and
-    a human sentence describing the influence, e.g. a wing scaled up reads as
-    more frontal area, a resized radiator as more core volume. This is the
-    per-part building block the Live-influence panel folds into its rows so
-    editing a part is reflected immediately.
-    """
-    dx = float(ov.get("dx", 0.0) or 0.0)
-    dy = float(ov.get("dy", 0.0) or 0.0)
-    dz = float(ov.get("dz", 0.0) or 0.0)
-    sx, sy, sz = _override_axis_scales(ov)
-    moved = (abs(dx) > 1e-6) or (abs(dy) > 1e-6) or (abs(dz) > 1e-6)
-    resized = any(abs(s - 1.0) > 1e-6 for s in (sx, sy, sz))
-    vol_factor = sx * sy * sz
-
-    move_bits = []
-    if abs(dx) > 1e-6:
-        move_bits.append("%s %.0f mm" % ("fwd" if dx > 0 else "aft", abs(dx)))
-    if abs(dy) > 1e-6:
-        move_bits.append("%s %.0f mm" % ("right" if dy > 0 else "left", abs(dy)))
-    if abs(dz) > 1e-6:
-        move_bits.append("%s %.0f mm" % ("up" if dz > 0 else "down", abs(dz)))
-
-    if resized:
-        if abs(sx - sy) < 1e-6 and abs(sy - sz) < 1e-6:
-            size_bit = "scaled ×%.2f (vol ×%.2f)" % (sx, vol_factor)
-        else:
-            size_bit = "scaled x×%.2f/y×%.2f/z×%.2f (vol ×%.2f)" % (
-                sx, sy, sz, vol_factor)
-    else:
-        size_bit = ""
-
-    # Subsystem-specific note on the physical thing the resize is standing in
-    # for, so the influence read is about the car, not just the drawing.
-    subsystem = _PART_SUBSYSTEM.get(part_name, "custom")
-    effect = ""
-    if resized:
-        if subsystem == "aerodynamics":
-            # Wing area scales with the span×chord footprint (x and y here).
-            area_factor = sx * sy
-            effect = "≈ ×%.2f wing area → downforce & drag trend up" % area_factor \
-                if area_factor > 1.0 else \
-                "≈ ×%.2f wing area → downforce & drag trend down" % area_factor
-        elif subsystem == "cooling":
-            effect = "≈ ×%.2f core volume → heat-rejection headroom %s" % (
-                vol_factor, "up" if vol_factor > 1.0 else "down")
-        elif subsystem == "powertrain":
-            effect = "≈ ×%.2f envelope → packaging space %s" % (
-                vol_factor, "up" if vol_factor > 1.0 else "down")
-        elif subsystem == "electrics":
-            effect = "≈ ×%.2f box volume → cell/packaging space %s" % (
-                vol_factor, "up" if vol_factor > 1.0 else "down")
-        elif subsystem == "brakes":
-            # Disc diameter tracks the in-plane scale (x/z of the disc face).
-            dia_factor = (sx + sz) / 2.0
-            effect = "≈ ×%.2f disc diameter → thermal mass & torque arm %s" % (
-                dia_factor, "up" if dia_factor > 1.0 else "down")
-        elif subsystem == "suspension":
-            effect = "≈ ×%.2f tire envelope → contact-patch footprint %s" % (
-                vol_factor, "up" if vol_factor > 1.0 else "down")
-        elif subsystem == "chassis":
-            effect = "≈ ×%.2f volume → occupied space %s" % (
-                vol_factor, "up" if vol_factor > 1.0 else "down")
-
-    detail_bits = []
-    if move_bits:
-        detail_bits.append("moved " + "/".join(move_bits))
-    if size_bit:
-        detail_bits.append(size_bit)
-    if effect:
-        detail_bits.append(effect)
-    detail = "; ".join(detail_bits) if detail_bits else "no change"
-
-    return dict(part=part_name, subsystem=subsystem, moved=moved,
-                resized=resized, dx=dx, dy=dy, dz=dz,
-                sx=sx, sy=sy, sz=sz, vol_factor=vol_factor, detail=detail)
-
-
-def override_influence_summary(vp, ledger, overrides: dict | None = None,
-                               topology_label: str | None = None) -> list:
-    """influence_summary, with the live effect of Edit-parts overrides folded in.
-
-    Starts from the base per-subsystem read (which comes from declared numbers)
-    and, for every active part override, appends a row describing what that edit
-    is doing to the drawn car and which subsystem it belongs to. If a subsystem
-    row already exists, we annotate its status to flag that a view override is
-    now stacked on top of the declared value, so the reader knows the drawing no
-    longer matches the raw declaration. Pure Python; safe to call every rerun.
-    """
-    rows = influence_summary(vp, ledger, topology_label=topology_label)
-    overrides = overrides or {}
-    if not overrides:
-        return rows
-
-    # Collect the described edits, grouped by the subsystem they influence.
-    edits_by_subsys = {}
-    for part_name, ov in overrides.items():
-        if not ov:
-            continue
-        desc = describe_part_override(part_name, ov)
-        if not (desc["moved"] or desc["resized"]):
-            continue
-        edits_by_subsys.setdefault(desc["subsystem"], []).append(desc)
-
-    if not edits_by_subsys:
-        return rows
-
-    # Flag the affected subsystem rows so a reader sees the declaration is now
-    # being overridden in the view, then append one row per edited part.
-    touched = set(edits_by_subsys.keys())
-    for r in rows:
-        if r.get("subsystem") in touched:
-            r["status"] = (r.get("status", "") + " · overridden").strip(" ·")
-
-    for subsystem, descs in edits_by_subsys.items():
-        for d in descs:
-            rows.append(dict(subsystem=subsystem,
-                             status="edited",
-                             detail="%s — %s" % (d["part"], d["detail"])))
     return rows
 
 
@@ -2489,173 +2100,3 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
                 x_mm=round(float(x), 0), y_mm=round(float(y), 0),
                 z_mm=round(float(z), 0), shape=shape, basis=basis,
                 from_declared=from_declared)
-
-
-# Every body the car draws is individually replaceable by a CAD / sketch /
-# estimate. This catalog maps each legend part to: the draw-name the renderer
-# uses (so we can suppress exactly that body), its subsystem (colour + zoom),
-# and an envelope+home so a dropped part auto-fits where THAT part belongs.
-# `key` is a stable id used in session-state and suppression sets.
-# SIMPLIFIED to seven subsystems. Each is replaceable as ONE unit by a CAD /
-# sketch / estimate. Replacing a subsystem hides ALL of its procedural bodies
-# (listed in `drawnames`) so only the real geometry shows there, while every
-# OTHER subsystem stays on screen as a dummy suggestion — wheels, wings, driver,
-# CG, etc. — so the user always sees their part in the context of a full car.
-SUBSYSTEM_CATALOG = [
-    # key            display name        draw-names this subsystem owns
-    ("chassis",      "Chassis",          ["Spaceframe", "Roll hoop", "Driver"]),
-    ("aerodynamics", "Aerodynamics",     ["Front wing", "Rear wing"]),
-    ("cooling",      "Cooling",          ["Sidepod (cooling)", "Radiator core"]),
-    ("powertrain",   "Powertrain",       ["Motor + inverter"]),
-    ("electrics",    "Electrics",        ["Accumulator"]),
-    ("suspension",   "Suspension",       ["Tire", "Upright", "Wheel hub",
-                                          "Upper wishbone", "Lower wishbone",
-                                          "Tie rod", "Pushrod", "Rocker",
-                                          "Spring/damper"]),
-    ("brakes",       "Brakes",           ["Brake disc"]),
-]
-SUBSYS_DRAWNAMES = {k: dn for k, _d, dn in SUBSYSTEM_CATALOG}
-SUBSYS_DISPLAY = {k: d for k, d, _dn in SUBSYSTEM_CATALOG}
-
-# Kept for the renderer's internal anchor/box lookups (per representative body).
-PART_CATALOG = [
-    ("front_wing",      "Front wing",          "aerodynamics", False),
-    ("rear_wing",       "Rear wing",           "aerodynamics", False),
-    ("monocoque",       "Spaceframe",          "chassis",      False),
-    ("roll_hoop",       "Roll hoop",           "chassis",      False),
-    ("driver",          "Driver",              "chassis",      False),
-    ("sidepod",         "Sidepod (cooling)",   "cooling",      False),
-    ("radiator",        "Radiator core",       "cooling",      False),
-    ("motor",           "Motor + inverter",    "powertrain",   False),
-    ("accumulator",     "Accumulator",         "electrics",    False),
-    ("tire",            "Tire",                "suspension",   True),
-    ("brake_disc",      "Brake disc",          "brakes",       True),
-    ("upright",         "Upright",             "suspension",   True),
-]
-# draw-name -> key, for suppression (the renderer suppresses by draw-name).
-PART_DRAWNAME_BY_KEY = {k: dn for k, dn, _s, _c in PART_CATALOG}
-PART_KEY_BY_DRAWNAME = {dn: k for k, dn, _s, _c in PART_CATALOG}
-PART_SUBSYS_BY_KEY = {k: s for k, _dn, s, _c in PART_CATALOG}
-
-# A representative body per subsystem, used to size/anchor a replacement.
-SUBSYS_ANCHOR_PART = {
-    "chassis": "monocoque", "aerodynamics": "front_wing", "cooling": "radiator",
-    "powertrain": "motor", "electrics": "accumulator", "suspension": "tire",
-    "brakes": "brake_disc",
-}
-
-
-def subsystem_catalog():
-    """Public list of (key, display_name, [draw-names]) for the simplified UI."""
-    return list(SUBSYSTEM_CATALOG)
-
-
-def part_catalog():
-    """Public list of (key, display_name, subsystem, is_corner) — internal."""
-    return list(PART_CATALOG)
-
-
-def suggest_part_geometry_for(vp, part_key: str, ledger=None) -> dict:
-    """Per-PART target envelope + home position (finer than per-subsystem).
-
-    Falls back to the subsystem suggestion, then refines for parts that are
-    smaller than their whole subsystem (a roll hoop is not the whole chassis).
-    """
-    sub = PART_SUBSYS_BY_KEY.get(part_key, "chassis")
-    base = suggest_part_geometry(vp, sub, ledger=ledger)
-    wb = float(getattr(vp, "wheelbase", 1550.0))
-    tf = float(getattr(vp, "track_front", 1200.0))
-    tr = float(getattr(vp, "track_rear", 1180.0))
-    tire_r = 228.0
-    x_front, x_rear = wb / 2.0, -wb / 2.0
-
-    def out(l, w, h, x, y, z, shape="box", basis=None):
-        return dict(l_mm=round(l, 0), w_mm=round(w, 0), h_mm=round(h, 0),
-                    x_mm=round(x, 0), y_mm=round(y, 0), z_mm=round(z, 0),
-                    shape=shape, basis=basis or base["basis"],
-                    from_declared=base.get("from_declared", []))
-
-    if part_key == "front_wing":
-        return out(tire_r * 0.65, tf * 0.98, 80, x_front + tire_r * 1.6, 0, tire_r * 0.32,
-                   basis=["chord", "≈ front track", "element stack"])
-    if part_key == "rear_wing":
-        return out(tire_r * 0.7, tr * 0.92, 120, x_rear - tire_r * 0.8, 0, tire_r * 1.15,
-                   basis=["chord", "≈ rear track", "tall element stack"])
-    if part_key == "roll_hoop":
-        return out(60, min(tf, tr) * 0.55, tire_r * 1.7, x_rear + wb * 0.30, 0, tire_r * 1.2,
-                   basis=["tube thickness", "shoulder width", "above the driver"])
-    if part_key == "driver":
-        return out(280, 300, 600, x_front - wb * 0.16, 0, tire_r * 1.4,
-                   basis=["torso", "shoulders", "seated height"])
-    if part_key == "data_logger":
-        return out(160, 120, 80, -wb * 0.16, 0, tire_r * 1.1,
-                   basis=["compact box", "beside driver", "above floor"])
-    if part_key == "tire":
-        return out(360, 200, 360, x_front, tf / 2.0, tire_r,
-                   shape="cylinder", basis=["diameter", "section width", "diameter"])
-    if part_key == "brake_disc":
-        return out(40, 280, 280, x_front, tf / 2.0 - 40, tire_r * 0.9,
-                   shape="cylinder", basis=["disc thickness", "Ø", "Ø at wheel"])
-    if part_key == "upright":
-        return out(180, 160, 260, x_front, tf / 2.0 - 110, tire_r,
-                   basis=["upright depth", "width", "hub-to-arm"])
-    # monocoque, sidepod, radiator, motor, accumulator: subsystem suggestion fits.
-    return base
-
-
-# Single source of truth for WHERE and HOW BIG each part is. Both the placeholder
-# renderer (via _placeholder_box, drawn when a part has no replacement) and the
-# replacement auto-fit read this, so a CAD/sketch/estimate lands in EXACTLY the
-# same box its placeholder occupied — every part integrates on one coordinate
-# system. Honours ledger env_* declarations through suggest_part_geometry_for.
-def part_anchor(vp, part_key: str, ledger=None) -> dict:
-    """Canonical (centre + size + shape) box for a catalog part, in car SAE mm."""
-    return suggest_part_geometry_for(vp, part_key, ledger=ledger)
-
-
-def dummy_body_footprint(fig, name: str) -> dict | None:
-    """Measure a built-in body's real bounding box (mm) from a rendered figure.
-
-    `suggest_part_geometry` gives a rough per-subsystem envelope, but a body like
-    the monocoque actually spans ~2 m nose-to-tail — far bigger than the generic
-    guess. When a user replaces a placeholder with real CAD we want the CAD to
-    fill the SAME footprint the placeholder occupied, so it truly takes its
-    place. This scans every trace drawn under `name` and returns the merged
-    axis-aligned box:
-
-        l_mm, w_mm, h_mm     extents in x, y, z
-        x_mm, y_mm, z_mm     centre of that box
-
-    Returns None if the body isn't present in the figure (e.g. already hidden).
-    """
-    xs_lo = ys_lo = zs_lo = float("inf")
-    xs_hi = ys_hi = zs_hi = float("-inf")
-    found = False
-    for t in getattr(fig, "data", []):
-        if getattr(t, "name", None) != name:
-            continue
-        x = getattr(t, "x", None)
-        y = getattr(t, "y", None)
-        z = getattr(t, "z", None)
-        if x is None or y is None or z is None:
-            continue
-        try:
-            xa = np.asarray(x, float); ya = np.asarray(y, float)
-            za = np.asarray(z, float)
-            xa = xa[np.isfinite(xa)]; ya = ya[np.isfinite(ya)]
-            za = za[np.isfinite(za)]
-            if not len(xa) or not len(ya) or not len(za):
-                continue
-        except Exception:
-            continue
-        xs_lo = min(xs_lo, xa.min()); xs_hi = max(xs_hi, xa.max())
-        ys_lo = min(ys_lo, ya.min()); ys_hi = max(ys_hi, ya.max())
-        zs_lo = min(zs_lo, za.min()); zs_hi = max(zs_hi, za.max())
-        found = True
-    if not found:
-        return None
-    return dict(
-        l_mm=float(xs_hi - xs_lo), w_mm=float(ys_hi - ys_lo),
-        h_mm=float(zs_hi - zs_lo),
-        x_mm=float((xs_lo + xs_hi) / 2.0), y_mm=float((ys_lo + ys_hi) / 2.0),
-        z_mm=float((zs_lo + zs_hi) / 2.0))
