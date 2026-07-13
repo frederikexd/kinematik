@@ -42,6 +42,30 @@ When you commit to an ANSYS run, you are confident the inputs are right. You are
 
 ---
 
+## New: 🧭 Frames & Datums — one convention, whole team, zero ambiguity
+
+Every formula team has had this exact Discord argument:
+
+> *"should i change my model to sae coordinates? … honestly it might be a full redo cause i have a lot of measurements that are plane-specific"*
+> *"I was asking how something affected packaging in x and y and someone was like: wait, what are we defining as x and y"*
+> *"we won't rly know the center of gravity until the master assembly is completely put together… the chassis changes length sometimes, so relativity to the front axle changes too"*
+> *"Idk if judges prefer it"*
+
+Four distinct failures hide in that thread — no declared convention, migration priced as a full redo, origins that drift as the design converges, and nobody able to defend the choice at design judging. **Frames & Datums** (✅ Checks & Integration, shared spine — every subteam sees it) fixes all four:
+
+- **Team convention charter.** Declare one frame — ISO 8855, SAE J670, ISO 4130, the KinematiK internal frame, a typical SolidWorks setup, or a custom frame built from direction words (+z is derived from x × y, so declaring a left-handed frame is mathematically impossible). Saving logs a Decision in the Registry so next year's cohort inherits *why*, and exports a **judge-ready one-page charter**: axis triad, rotation senses, phrasebook, and a one-line answer for the design judge.
+- **Floating datum watch.** Front axle, rear axle, mid-wheelbase and CG datums resolve **live** from the vehicle parameters. When the wheelbase stretches or the CG moves, the tab reports exactly how many millimetres each datum drifted since the charter was saved — CG-relative dimensions can't silently rot, so you *can* base designs on a datum that moves, because you're told when it moved.
+- **Rosetta.** One point or free vector, shown in every convention simultaneously plus plain English ("585 mm left of centreline, 310 mm above ground"). Paste the *words* into chat, not the bare numbers. Free-vector mode shows the classic sign trap live: a +Z tyre load in SAE J670 is −Z in ISO 8855.
+- **Migration wizard — the "full redo" killer.** Convert the live hardpoint set or any `name,x,y,z` CSV between frames *and* datums in one pass, with a per-point audit and a **SolidWorks Curve-Through-XYZ export** so every migrated point lands back in CAD as a sketchable reference. Days of retyping becomes two minutes.
+- **Sign-convention linter.** Per-defect findings with fixes: below-ground points (a Z-down import), mirror-pair asymmetry (a Y-left/Y-right flip), metres imported as millimetres, wrong-datum envelope violations.
+- **Frame tags on everything leaving the platform.** Every DXF's annotation block, the handover report, and the Integration ledger banner carry the declared convention — a section opened in CAD months later still says which way x/y/z point. If no convention is declared, the handover says **UNDECLARED** out loud instead of silently omitting it.
+
+Rotation senses are *computed* from the frame basis via the right-hand rule, never memorised — which is how the tool knows, and shows, that SAE +yaw is nose-right while ISO +yaw is nose-left, and SAE +pitch is nose-up while ISO's is nose-down. (The hardpoint editor's own header used to mislabel its x-rear/y-right/**z-up** frame as "SAE" — SAE J670 is Z-*down*. Fixed: it's ISO 4130-style, and it says so.)
+
+All frame maths lives in `coordinate_frames.py` — pure Python, importable without Streamlit, self-tested with exact identities (`python3 coordinate_frames.py`). See `FRAMES_DATUMS_USAGE.md`.
+
+---
+
 ## Coverage
 
 One environment. Every subsystem. The entire car.
@@ -59,6 +83,7 @@ One environment. Every subsystem. The entire car.
 | **Data Acquisition** | Integration with car-level electrical budget, DAQ-bracket DXF |
 | **Cost & BOM** | FSAE Cost event, auto-seeded from Integration ledger, CSV export |
 | **Integration** | Cross-subsystem ledger, coupling graph, risk propagation, manufacturing-release gate, **Verdict Center** (per-subsystem works / look-closer / attention) |
+| **Frames & Datums** | Team coordinate convention charter, live floating datums with drift watch, frame Rosetta, migration wizard with SolidWorks XYZ export, sign-convention linter, judge-ready charter export, frame tags on every DXF / handover / ledger |
 | **DFMEA** | Live failure mode analysis, pre-seeded rows, RPN recompute, action tracker |
 | **Registry** | Component source of truth, version history, sign-off, CAD provenance parsing |
 
@@ -70,40 +95,22 @@ One environment. Every subsystem. The entire car.
 
 Every subsystem declares what it weighs, draws, rejects and provides into a single **Integration ledger**. That one source feeds the 3D model, the lap sim, the heatmap and the cost BOM. Declare a number once and it propagates everywhere — the eight "we're ~12 kg" estimates can't quietly sum to 18 kg over the number suspension tuned to.
 
+And now every declared number carries a **frame tag**: the Integration ledger banner states the team's coordinate convention (or nags until one is declared), because a number without a frame is exactly the kind of unvalidated input this whole platform exists to prevent.
+
 When any subsystem saves an interface edit, KinematiK walks the change through a coupling graph and shows — unprompted — which other subsystems' risk just moved. Bump the motor torque and you immediately see it load the upright and heat the cooling loop. Every effect carries an honest confidence tag: **measured** (a solver ran), **coupled** (a modelled physical edge), or **judgement** (engineering judgement, no backing physics). A measured edge is demoted if the data behind it is still an estimate. A green board never overstates what is known.
 
 ---
 
-## Three moves to start
+## Four moves to start
 
-0. **Answer the mission briefing.** The landing screen asks four one-tap
-   questions — *what subteam(s) are you on? what are you using KinematiK for?
-   what's the goal? are you a visual thinker?* — and compiles a personal plan:
-   exactly which tools to open, in what order, why you need each one, and why to
-   do it here first so ANSYS / MATLAB / OptimumK only ever **validate** your
-   design instead of debugging your inputs. Every question has a sensible
-   default, so a complete beginner can tap through in seconds, and everything is
-   skippable. Visual thinkers (and anyone brand new) get a live, physically
-   accurate concept graph or 3D render under each recommended tool; newcomers
-   also get a plain-English line per tool. Answering also picks your subteam, so
-   you then see only your tabs plus the shared spine (Integration, Validation,
-   Analytics, Registry, Notes, 3D Model), grouped into five simple categories
-   (Testing, Design, Checks, Docs, Data) — never all 25 at once. Skipped or
-   dismissed the briefing? A one-tap **🧭 Get my mission briefing** button brings
-   it back any time.
-1. **Declare your interface.** In **Integration**, fill what your subteam owns (mass, CG, torque, heat, current, downforce) and untick *estimate* once a number is real. Everything downstream uses it.
-2. **Watch it ripple.** KinematiK walks your change through the coupling graph and flags which other subsystems' risk just moved.
-3. **Clear the cut.** Before a part goes to manufacture, run the **manufacturing-release gate** — a literal go/no-go that blocks any part still resting on an estimate or an unconfirmed load.
+0. **Answer the mission briefing.** The landing screen asks four one-tap questions — *what subteam(s) are you on? what are you using KinematiK for? what's the goal? are you a visual thinker?* — and compiles a personal plan: exactly which tools to open, in what order, why you need each one, and why to do it here first so ANSYS / MATLAB / OptimumK only ever **validate** your design instead of debugging your inputs. Every question has a sensible default, so a complete beginner can tap through in seconds, and everything is skippable. Visual thinkers (and anyone brand new) get a live, physically accurate concept graph or 3D render under each recommended tool; newcomers also get a plain-English line per tool. Answering also picks your subteam, so you then see only your tabs plus the shared spine (Integration, Frames & Datums, Validation, Analytics, Registry, Notes, 3D Model), grouped into five simple categories (Testing, Design, Checks, Docs, Data) — never all 25 at once. Skipped or dismissed the briefing? A one-tap **🧭 Get my mission briefing** button brings it back any time.
+1. **Declare your coordinate convention.** In **Checks → 🧭 Frames & Datums**, pick the team frame and master datum (30 seconds). Every DXF, handover and ledger number is stamped with it from that moment; the migration wizard converts anything you already have.
+2. **Declare your interface.** In **Integration**, fill what your subteam owns (mass, CG, torque, heat, current, downforce) and untick *estimate* once a number is real. Everything downstream uses it.
+3. **Watch it ripple, then clear the cut.** KinematiK walks your change through the coupling graph and flags which other subsystems' risk just moved. Before a part goes to manufacture, run the **manufacturing-release gate** — a literal go/no-go that blocks any part still resting on an estimate or an unconfirmed load.
 
 ### Get a build-ready DXF (no CAD needed to start)
 
-Every subsystem exports the real 2-D section it takes into CAD — a wing airfoil,
-a mount/flange plate with bolt holes, a radiator core face — built from *your*
-computed numbers. In your subsystem tab, open its own **"📐 … — mesh & DXF
-export"** panel (it sits just below the documentation panel, mirroring the
-Brakes tab's inline rotor export), pick a section, and download. In SolidWorks: **File ▸ Open ▸ DXF ▸ import as 2D sketch**, extrude,
-then mesh in ANSYS. Units are embedded and every profile is checked to import as
-one clean closed contour.
+Every subsystem exports the real 2-D section it takes into CAD — a wing airfoil, a mount/flange plate with bolt holes, a radiator core face — built from *your* computed numbers. In your subsystem tab, open its own **"📐 … — mesh & DXF export"** panel (it sits just below the documentation panel, mirroring the Brakes tab's inline rotor export), pick a section, and download. In SolidWorks: **File ▸ Open ▸ DXF ▸ import as 2D sketch**, extrude, then mesh in ANSYS. Units are embedded, every profile is checked to import as one clean closed contour, and the annotation block states the team's declared coordinate convention.
 
 ---
 
@@ -148,6 +155,8 @@ A 50% return rate among students with no obligation to come back is the only met
 
 **Vehicle dynamics layer** — roll-centre migration, anti-dive/anti-squat, load transfer, grip balance, all topology-independent via `GenericKinematics` adapter (`suspension/adapter.py`).
 
+**Coordinate frames** (`coordinate_frames.py`) — pure-Python frame registry and transform core. Every conversion routes `frame A → world → frame B` through one auditable path; all frames are proper rotations (det = +1), so points, forces, moments and angular rates share one transform and only points shift by the datum. Rotation senses are derived from the basis via the right-hand rule. Datums resolve live from the vehicle parameters (`a = L·(1 − weight_dist_front)` from static axle-load balance). Self-tested with exact identities, no fuzz: `python3 coordinate_frames.py`.
+
 **Analytics** (`suspension/analytics.py`) — privacy-respecting usage tracking. Durable identity via IP+UA fingerprint (cookie writes not reliable on Streamlit Cloud). All tracking is anonymous. No personal data stored.
 
 ---
@@ -162,46 +171,29 @@ For the per-feature funnel fix only, run `fix_feature_funnel.sql` standalone.
 
 ## Deploy order
 
-1. Push `streamlit_app.py` and `suspension/analytics.py` together — they are a matched pair.
-2. Run `suspension/analytics_hardening.sql` in Supabase.
-3. Confirm build stamp in the Usage section reads `0.22.0-unified` and streamlit runtime reads `>= 1.58.0`.
+1. Push `streamlit_app.py`, `project.py` and `coordinate_frames.py` together — the handover builder gained a `frame_tag` parameter that the app passes, so they are a matched set.
+2. Push `suspension/analytics.py` with `streamlit_app.py` as before — still a matched pair.
+3. Run `suspension/analytics_hardening.sql` in Supabase.
+4. Confirm build stamp in the Usage section reads `0.23.0-frames` and streamlit runtime reads `>= 1.58.0`.
 
 ---
 
-## What changed in this build (`0.22.0-unified`)
+## What changed in this build (`0.23.0-frames`)
 
-**Team CAD library ⇄ 3D model — quick-assembly preview**
-- The shared CAD library and the full-car 3D model are now one system. Publishing a meshable file (STEP/STL/OBJ/GLB) also places it on the 3D model: it is meshed, snapped into its subsystem's slot (the exact footprint its dummy placeholder occupies, filename + subsystem tag decide the slot), scaled true-shape to fill that envelope, and the dummy it replaces is hidden.
-- Every slot whose CAD hasn't been uploaded keeps its dummy, so the car always reads as a whole — a SolidWorks-style quick assembly that completes itself as the library fills. A chassis upload uses the renderer's `define_car` mode, re-proportioning the entire car around the real tub.
-- Library controls: "🧩 Assemble library on the 3D model" places every un-placed meshable file at once; each row gets "→ 3D model" / "On car ✓ (remove)"; removing a file from the library also takes its part off the car (the dummy returns). Non-meshable formats (SLDPRT/DXF/…) show a "STEP to view in 3D" hint. Preview only — it feeds no calculation.
+**🧭 Frames & Datums — new shared-spine tab (Checks & Integration)**
+- New `coordinate_frames.py`: frame registry (ISO 8855, SAE J670, ISO 4130, KinematiK internal, SolidWorks-typical, custom-from-words with derived +z guaranteeing right-handedness), exact point/vector/rotation-sense transforms via one `frame → world → frame` path, floating datums resolved live from wheelbase / weight split / CG height, datum-drift detection, CSV + SolidWorks Curve-Through-XYZ I/O, sign-convention linter (below-ground / mirror asymmetry / unit sniff / envelope), judge-ready charter markdown. Pure Python, streamlit only imported inside `render()`, exact-identity self-tests.
+- Tab body wired with hard isolation (`try/except`) so the convention tool can never take the studio down; live hardpoint provider filters the session hardpoint dict to 3-vectors and maps keys to human labels.
+- Declaring a charter logs a Decision (`team=integration`, tags `coordinates,standard`) so the convention and its rationale survive into the Registry and next season's handover.
 
-**Mission briefing — frictionless onboarding for any experience level**
-- New four-question landing questionnaire (subteam / purpose / goal / visual thinker) compiles a personal, ordered toolkit: what to open, why you need it, and why to do it here before ANSYS / MATLAB / OptimumK. All defaults pre-filled and every step skippable, so a first-timer enters in seconds.
-- New `suspension/brief_visuals.py`: one concept visual per tool (23 total), built from physically correct, representative FSAE relations — camber gain vs FVSA, ΔW = m·a·h/t load transfer, Pacejka tyre curve, ½ρv²·CL·A downforce, I²Rt/mc pack heating, RC precharge, IPC-2221 trace heating, a spinnable 3D wireframe car, and more. Every caption states the values are illustrative, not the user's car.
-- "Brand new to engineering" mode adds a jargon-free plain-English line per tool. Numbers-only mode renders text without visuals.
-- Pure Python, zero network calls, fully guarded (a visual can never block the text). Figures are released immediately after render plus a post-panel GC sweep; the entire briefing adds ~2 MB peak RSS.
+**Frame tags on everything leaving the platform**
+- `_generic_dxf_bytes` annotation block now stamps the declared convention onto every generic DXF (aero sections, mount plates, radiator faces, brackets, gussets); the brake-rotor DXF (which builds its own R12 file) stamps the same line.
+- `project.build_handover_markdown` gained `frame_tag=""` and renders a **Coordinate convention** section before the weight budget; the app passes the long-form tag, which explicitly reads **UNDECLARED** when no charter exists — formal documents never silently omit the convention.
+- Integration tab banner states the declared convention above the ledger, or nudges to declare one.
 
-**`v_retention` — complete rewrite (two-phase identity resolution)**
-- Previous version grouped by `visitor_id` per row before aggregation. A user whose cookie resolved mid-session produced two different uid values and counted as two people, inflating `total_users` by 2 on every reopen.
-- New version: phase 1 groups by `session_id` and takes `max(visitor_id)` so a cookie resolving on render 2 wins over the NULL from render 1 — one session, one uid, always. Phase 2 aggregates sessions by person.
-- `ck-` cookie ids excluded from identity linking. Cookie writes silently fail on Streamlit Cloud (44 sessions / 43 distinct ids confirmed). Only `fp-` fingerprint and named member are used as durable identity.
-- `total_users` now counts `count(distinct session_id)` — every session ever, including anonymous. Increments by exactly 1 per reopen.
-- `returning_users` now counts return **visits** (`sum(visits - 1)`), not distinct people. Increments by 1 every time an identified user reopens.
+**Hardpoint editor mislabel fixed**
+- The editor header claimed "SAE x-rear y-right z-up". SAE J670 is Z-**down**; the internal frame is ISO 4130-style. Header corrected and now points to Frames & Datums for conversion — the tool no longer commits the exact mislabel the tab was built to end.
 
-**`v_time_to_first_result` — anchor fix**
-- Previous version used `session_start` as `t_start`. Because `session_start` is deferred to render 2, `first_result` events often fired before it, producing negative deltas that averaged to a misleading result.
-- New version uses `min(occurred_at)` across all events as the true session start. Added `t_first_result >= t_start` guard to exclude any historical negatives.
-- Display now shows seconds (e.g. "28 sec") instead of rounding to "0 min".
-
-**`streamlit_app.py` — visitor identity fixes**
-- Early-exit guard now only skips re-resolution when `_ax_resolved_vid_kind` is a confirmed durable value. Previously fired on `"cookie (resolving…)"`, blocking the cookie block on render 2 entirely.
-- First-render branch no longer assigns `ck-` seed to `_vid`. Leaves it `None` so the fingerprint fallback runs instead.
-- Cookie-absent branch no longer mints a new `ck-` seed. Cookie writes fail silently; minting seeds produced a unique id per session that never linked across visits.
-- "Return vs FSAE members" tile and roster size input removed.
-- Time-to-first-result display changed to seconds.
-
-**`suspension/analytics.py` — session_start deferral**
-- `init()` now checks `_ax_resolved_vid_kind` before emitting `session_start`. If still `"cookie (resolving…)"`, defers to next rerun so `session_start` fires with a stable `visitor_id`.
+*(Previous build `0.22.0-unified` — team CAD library ⇄ 3D model quick-assembly preview, mission briefing onboarding, `v_retention` two-phase identity rewrite, `v_time_to_first_result` anchor fix, visitor identity fixes, `session_start` deferral — see Git history for the full notes.)*
 
 ---
 

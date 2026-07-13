@@ -1443,7 +1443,12 @@ with st.sidebar:
         if not _geom_role:
             st.caption("Not your subteam? You can leave this as-is — the rest of "
                        "the studio reads it automatically.")
-        st.markdown(f'<div class="sub" style="color:#8d99a6;font-family:JetBrains Mono;font-size:.7rem;letter-spacing:.18em;margin-bottom:.6rem;">HARDPOINT EDITOR · {_U_LEN} · SAE x-rear y-right z-up</div>', unsafe_allow_html=True)
+        # NB: this frame is ISO 4130-STYLE (x-rear, y-right, Z-UP). It was
+        # previously labelled "SAE", but SAE J670 is Z-DOWN — exactly the
+        # mislabel that starts the "wait, what are we defining as x and y"
+        # argument. Convert to/from any convention in ✅ Checks → 🧭 Frames &
+        # Datums.
+        st.markdown(f'<div class="sub" style="color:#8d99a6;font-family:JetBrains Mono;font-size:.7rem;letter-spacing:.18em;margin-bottom:.6rem;">HARDPOINT EDITOR · {_U_LEN} · x-rear y-right z-up (ISO 4130-style · not SAE Z-down) · convert in 🧭 Frames &amp; Datums</div>', unsafe_allow_html=True)
 
         _is_wishbone = (topo_choice == "double_wishbone")
 
@@ -2011,6 +2016,7 @@ _TAB_META = {
     "pcb":         ("🔌", "Electronics (PCB)"),
     "tractive":    ("⚡", "Tractive Safety"),
     "dfmea":       ("🧯", "DFMEA"),
+    "frames":      ("🧭", "Frames & Datums"),
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
@@ -2034,7 +2040,7 @@ _TAB_CATEGORIES = [
     ("design",   "🛠️", "Design & Sizing",
      ["brakes", "accum", "pcb", "compliance", "teamfit", "model3d"]),
     ("checks",   "✅", "Checks & Integration",
-     ["integration", "validation", "dfmea", "tractive"]),
+     ["integration", "frames", "validation", "dfmea", "tractive"]),
     ("docs",     "📄", "Documentation",
      ["docs", "notes", "weight"]),
     ("data",     "📊", "Data & Cost",
@@ -2053,7 +2059,7 @@ for _cid in _FULL_ORDER:
 
 # Tabs every member uses no matter their subteam — the shared spine of the
 # project (see one car, declare your numbers once, read/leave notes).
-_SHARED_IDS = ["model3d", "integration", "registry", "docs", "notes", "weight", "validation", "analytics"]
+_SHARED_IDS = ["model3d", "integration", "frames", "registry", "docs", "notes", "weight", "validation", "analytics"]
 
 # Subteam -> the tabs that team actually works in (most-used first). The shared
 # spine (_SHARED_IDS: 3D model, integration, registry, notes, weight,
@@ -4194,172 +4200,46 @@ with _pctl:
     # Two identities, on purpose:
     #   session_id  — minted fresh every browser SESSION, so EVERY logon (incl.
     #                 a returning user) produces a new session_start event.
-    #   visitor_id  — durable per BROWSER, persisted to localStorage below, so a
+    #   visitor_id  — durable per BROWSER (cookie, read server-side), so a
     #                 returning visitor is recognised across visits even if they
     #                 never type their name. This is what makes retention / return
     #                 counts correct rather than every visit looking brand-new.
     try:
-        # Durable visitor id — resolved SERVER-SIDE via st.context, which works
-        # on Streamlit Cloud without the sandboxed-iframe cross-origin problems
-        # that made the previous localStorage approach silently fail in prod
-        # (st.components.v1.html runs in a sandboxed iframe; window.parent
-        # access throws cross-origin, so the id never reached the server and
-        # every visit looked new — which is why returning-user counts stuck).
+        # Durable visitor id — resolved SERVER-SIDE and SYNCHRONOUSLY on the
+        # very first render (see suspension/visitor_id.py for design notes):
+        #   1. request cookie (st.context.cookies)  -> returning visitor
+        #   2. ?kvid= query param                   -> legacy carry-over
+        #   3. ip+ua fingerprint (st.context)       -> first visit / no cookie
+        #   4. minted uuid                          -> last resort
+        # Whatever resolves is persisted browser-side (cookie + localStorage)
+        # by a tiny fire-and-forget JS snippet — with NO page reload.
         #
-        # Resolution order, best to worst:
-        #   1. A durable cookie the browser already sent (set on a prior visit).
-        #      Read server-side from st.context.cookies — no iframe needed.
-        #   2. A stable per-device fingerprint: a hash of ip_address + a coarse
-        #      slice of the user-agent. NOT perfect (people behind one NAT with
-        #      identical devices could collide, and a UA/IP change makes a new
-        #      id), but it's STABLE across visits for the same device — far
-        #      better for retention than a fresh UUID every visit, which is what
-        #      was happening. This is a fallback only.
-        #   3. A per-session UUID as a last resort (no IP available, e.g. local).
-        # We also try to SET the cookie via JS so future visits hit case (1),
-        # the most reliable path — but we no longer DEPEND on that write
-        # succeeding, because the fingerprint already gives cross-visit
-        # stability on its own.
-        _vid = None
-        _COOKIE = "kinematik_vid"
-
-        # If we already resolved a DURABLE id earlier this session, keep it.
-        # Only skip re-resolution when the kind is confirmed durable — if it's
-        # still "cookie (resolving…)" we must re-enter the cookie block so
-        # render 2 can promote the seed to the real cookie id before
-        # session_start fires.
-        _resolved_kind = st.session_state.get("_ax_resolved_vid_kind", "")
-        _vid = (
-            st.session_state.get("_ax_resolved_vid")
-            if _resolved_kind not in ("", "cookie (resolving…)")
-            else None
-        )
-
-        # --- 0. durable localStorage id (most reliable on Streamlit Cloud) --- #
-        # Cookies and IP fingerprinting both fail for most anonymous users on
-        # this deployment (see suspension/visitor_id.py), so a returning user
-        # was getting a fresh per-session id each visit and under-counting
-        # returning_users. localStorage survives across visits reliably. When it
-        # resolves, it wins outright and we skip the cookie/fingerprint tiers.
-        if not _vid:
-            try:
-                from suspension.visitor_id import get_durable_visitor_id as _gdv
-                _ls_vid = _gdv(st)
-                if _ls_vid:
-                    _vid = _ls_vid
-                    st.session_state["_ax_resolved_vid"] = _vid
-                    st.session_state["_ax_resolved_vid_kind"] = "localStorage (durable)"
-            except Exception:
-                pass
-
-        # --- 1. durable cookie via CookieManager ---------------------------- #
-        # extra-streamlit-components reads/writes cookies on the PARENT document
-        # correctly even inside Streamlit Cloud's sandboxed component iframe —
-        # unlike raw document.cookie from a component, which the sandbox blocks.
-        # IMPORTANT async caveat: CookieManager.get() returns None on the FIRST
-        # render of a session even when a cookie exists (the component populates
-        # one rerun later). So we must NOT mint+overwrite on first sight of
-        # None — that would clobber a returning user's cookie and break
-        # retention. Instead we wait until the component has populated (tracked
-        # by _ax_cookie_ready) before deciding the cookie is genuinely absent.
-        if not _vid:
-            try:
-                import extra_streamlit_components as _stx
-                import uuid as _uuid
-                if "_ax_cookie_mgr" not in st.session_state:
-                    st.session_state["_ax_cookie_mgr"] = _stx.CookieManager(
-                        key="ax_cookie_mgr")
-                _cm = st.session_state["_ax_cookie_mgr"]
-                _ck = _cm.get(_COOKIE)
-                if _ck:
-                    # Cookie exists -> returning visitor. Use it, lock it in.
-                    _vid = _ck
-                    st.session_state["_ax_resolved_vid"] = _vid
-                    st.session_state["_ax_resolved_vid_kind"] = "cookie (durable)"
-                else:
-                    # get() returned None. Could be (a) genuinely no cookie, or
-                    # (b) first render before async populate. Distinguish by
-                    # whether we've already seen a populated read this session.
-                    if st.session_state.get("_ax_cookie_ready"):
-                        # Cookie confirmed absent — skip minting a ck- seed.
-                        # Cookie writes are silently failing on this deployment
-                        # (44 sessions produced 43 distinct ck- ids — not durable).
-                        # Leave _vid as None so the fingerprint fallback runs.
-                        pass
-                    else:
-                        # First render — the cookie hasn't populated yet.
-                        # Do NOT assign _vid here; leave it None so the
-                        # fingerprint fallback (block 2 below) runs instead.
-                        # The fingerprint is stable across visits so returning
-                        # users are recognised. The ck- seed was being set here
-                        # before, which blocked the fingerprint and gave every
-                        # session a unique id — breaking returning_users.
-                        st.session_state["_ax_cookie_ready"] = True
-                        st.session_state["_ax_resolved_vid_kind"] = "cookie (resolving…)"
-            except Exception:
-                _vid = _vid or None
-
-        # --- 2. server-side device fingerprint fallback --------------------- #
-        if not _vid:
-            try:
-                import hashlib as _hl
-                _ip = None
-                _ua = ""
-                try:
-                    _ip = st.context.ip_address
-                except Exception:
-                    _ip = None
-                try:
-                    _ua = st.context.headers.get("User-Agent") or ""
-                except Exception:
-                    _ua = ""
-                if _ip:
-                    _ua_coarse = _ua[:80]
-                    _fp = _hl.sha256(
-                        f"{_ip}|{_ua_coarse}".encode("utf-8")).hexdigest()
-                    _vid = "fp-" + _fp[:24]
-                    st.session_state["_ax_resolved_vid"] = _vid
-                    st.session_state["_ax_resolved_vid_kind"] = "ip+ua fingerprint"
-            except Exception:
-                _vid = None
-
-        # --- 3. per-session last resort ------------------------------------- #
-        if not _vid:
-            _vid = st.session_state.get("_ax_visitor_seed")
-            if not _vid:
-                import uuid as _uuid
-                _vid = "ses-" + _uuid.uuid4().hex[:24]
-                st.session_state["_ax_visitor_seed"] = _vid
-            st.session_state["_ax_resolved_vid_kind"] = "per-session (NOT durable)"
-
+        # WHY THE REWRITE: the old scheme resolved the id in the browser and
+        # carried it back via ?kvid= + window.location.reload(). That reload
+        # tore down the WebSocket and booted a SECOND Streamlit session on
+        # every fresh visit — the app visibly loaded twice, and analytics
+        # logged two session_starts under two DIFFERENT visitor_ids (fp-/ses-
+        # in the doomed pre-reload session, ls- in the reloaded one),
+        # permanently double-counting every new user. The CookieManager
+        # component added yet another rerun of its own. Both are gone. The id
+        # is now known BEFORE session_start fires, so the wait-N-renders
+        # deferral is gone too and the event always carries a durable id.
+        from suspension.visitor_id import resolve_visitor_id as _rvid
+        _vid, _vid_kind = _rvid(st)
         if _vid:
             _axn.set_visitor_id(_vid)
+            st.session_state["_ax_resolved_vid"] = _vid
+            st.session_state["_ax_resolved_vid_kind"] = _vid_kind
 
         _ax_subteam = (_roles[0] if _roles and _roles != ["everyone"]
                        else "unknown")
         # is_new_member is best-effort: true only on the very first run of THIS
         # browser session (a fresh visit). Cross-visit "new vs returning" is
         # derived properly in SQL from visitor_id, not from this flag.
-
-        # Defer session_start until we have a DURABLE id, so the event that
-        # anchors this visit carries the localStorage id (stable across visits)
-        # rather than a per-session fallback. localStorage resolves one render
-        # later (the JS reloads with ?kvid=...), so on the very first render we
-        # hold off and let the rerun carry the durable id. We wait at most a
-        # couple of renders, then proceed anyway so a browser that blocks
-        # localStorage still gets tracked (just not cross-visit).
-        _kind = st.session_state.get("_ax_resolved_vid_kind", "")
-        _durable = _kind in ("localStorage (durable)", "cookie (durable)",
-                             "ip+ua fingerprint") or bool(
-                             st.session_state.get("_ax_member"))
-        _waits = st.session_state.get("_ax_id_waits", 0)
-        if (not _durable) and _waits < 2:
-            # Give the durable id a chance to resolve on the next render.
-            st.session_state["_ax_id_waits"] = _waits + 1
-        elif not st.session_state.get("_ax_returning", False):
+        if not st.session_state.get("_ax_returning", False):
             _axn.init(member=st.session_state.get("_ax_member"),
                       subteam=_ax_subteam,
-                      is_new_member=not st.session_state.get("_ax_returning", False))
+                      is_new_member=True)
             st.session_state["_ax_returning"] = True
             # Auto-recover any events buffered locally during a past DB outage,
             # once per session, without needing a manual button click.
@@ -6400,6 +6280,18 @@ def publish_geometry_from_parts():
 
 
 # --------------------------------------------------------------------------- #
+def _kk_frame_tag(long=False):
+    """One-line coordinate-convention stamp from the team charter (🧭 Frames &
+    Datums). Returns '' on any failure — an export must never break because
+    the convention tool hiccuped."""
+    try:
+        import coordinate_frames as _cfr
+        return _cfr.charter_tag_line(st.session_state.get("kk_frame_charter"),
+                                     long=long)
+    except Exception:
+        return ""
+
+
 def _generic_dxf_bytes(name, points_mm=None, *, notes=None,
                        polylines=None, circles=None):
     """Build a minimal DXF R12 from real geometry. Unit-aware (mm or in).
@@ -6484,6 +6376,11 @@ def _generic_dxf_bytes(name, points_mm=None, *, notes=None,
 
     # annotation block, stacked above the geometry
     _ann = [f"KinematiK — {name}", f"Units: {_unit_lbl}"]
+    # Stamp the team's declared coordinate convention onto every DXF, so a
+    # section opened in CAD months later still says which way x/y/z point.
+    _ftag = _kk_frame_tag()
+    if _ftag:
+        _ann.append(_ftag)
     if notes:
         _ann.extend(list(notes))
     _all_y = [p[1] for pl in polys for p in pl["pts"]] + \
@@ -9623,7 +9520,11 @@ def _render_rotor_thermal(_bt, _mass, kin):
                     _od_str  = f"OD {r*2:.1f} mm  thick {h:.2f} mm  vent {cand.vented_fraction:.0%}"
                     _hub_str = f"hub bore ~{hub_r*2:.1f} mm (25% OD, adjust to PCD)"
                     _ax_str  = f"Units: mm  |  Revolve about centre-line (Y={-_gap:.1f})"
-                for ti, txt in enumerate([f"KinematiK Rotor - {mat_name}", _od_str, _hub_str, _ax_str]):
+                _rotor_ann = [f"KinematiK Rotor - {mat_name}", _od_str, _hub_str, _ax_str]
+                _rtag = _kk_frame_tag()
+                if _rtag:
+                    _rotor_ann.append(_rtag)
+                for ti, txt in enumerate(_rotor_ann):
                     L("  0\nTEXT")
                     L("  8\nANNOTATION")
                     L(" 10\n0.0")
@@ -9897,6 +9798,7 @@ tab_analytics = _id_to_container["analytics"]
 tab_pcb     = _id_to_container["pcb"]
 tab_tractive = _id_to_container["tractive"]
 tab_dfmea    = _id_to_container["dfmea"]
+tab_frames   = _id_to_container["frames"]
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
@@ -21329,7 +21231,8 @@ with tab7:
           "roll_centre_rear_mm": mid.get("rc_rear", 0.0) if isinstance(mid, dict) else 0.0,
           "max_lateral_g": (veh.max_lateral_g() if hasattr(veh, "max_lateral_g") else 0.0),
       }
-      md = project_mod.build_handover_markdown(store, geometry=geo)
+      md = project_mod.build_handover_markdown(store, geometry=geo,
+                                               frame_tag=_kk_frame_tag(long=True))
       ec = st.columns(3)
       ec[0].download_button("⬇ Handover (.md)", md, file_name="elbee_handover.md",
                             mime="text/markdown", width='stretch')
@@ -24224,6 +24127,15 @@ with tab12:
 # INTEGRATION — suspension↔chassis CAD fit + the interface ledger across the
 # eight sub-teams, combined into one tab.
 with tab13:
+    # Every interface number declared below implicitly assumes a coordinate
+    # convention — surface which one, right where the numbers are declared.
+    _itag = _kk_frame_tag()
+    if _itag:
+        st.caption(f"🧭 {_itag} — every number declared here carries this frame tag.")
+    else:
+        st.caption("🧭 No coordinate convention declared yet — set one in "
+                   "**Checks → Frames & Datums** so x/y/z mean the same thing "
+                   "to every subteam reading this ledger.")
     _iview = feature_menu("integration",
         ["Verdict Center", "Cross-subsystem ledger",
          "Subsystem ↔ chassis (CAD fit)", "Mount-point clash"],
@@ -26975,6 +26887,46 @@ with tab_analytics:
                "var(--cyan)" if _reliable else "var(--amber)")
 
 
+
+# ========================================================================== #
+#  🧭 FRAMES & DATUMS — team coordinate convention charter, live datum watch,
+#  frame Rosetta, migration wizard and sign-convention linter.
+#
+#  Why this tab exists (verbatim from a real team's Discord): "should i
+#  change my model to sae coordinates?... it might be a full redo", "wait
+#  what are we defining as x and y", "we won't rly know the center of
+#  gravity until the master assembly is completely put together... the
+#  chassis changes length sometimes, so relativity to the front axle
+#  changes too". One declared frame, one watched origin, one-click
+#  migration. Logic lives in coordinate_frames.py (pure, self-tested).
+# ========================================================================== #
+with tab_frames:
+    try:
+        import coordinate_frames as _cframes
+
+        def _live_hardpoints():
+            """Current hardpoint set as {name: (x,y,z)} in the KinematiK
+            internal frame (mm, front-axle datum). Scalar design-intent keys
+            (static_camber etc.) are filtered out; only 3-vectors pass."""
+            hp = st.session_state.get("hp", {}) or {}
+            labels = dict(POINTS + ROCKER_POINTS)
+            out = {}
+            for k, v in hp.items():
+                if isinstance(v, (list, tuple)) and len(v) == 3:
+                    try:
+                        out[labels.get(k, k)] = (float(v[0]), float(v[1]),
+                                                 float(v[2]))
+                    except (TypeError, ValueError):
+                        continue
+            if not out:
+                raise ValueError("no 3-vector hardpoints in session yet — "
+                                 "open the Kinematics tab once first")
+            return out, "the live suspension hardpoint editor"
+
+        _cframes.render(get_store=get_store, points_provider=_live_hardpoints)
+    except Exception as _cf_err:
+        # The convention tool must never take the studio down with it.
+        st.error(f"Frames & Datums failed to load: {_cf_err}")
 
 st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · AGPL-3.0. '
             '<i>Tip: on the hosted app, save your project before closing the tab — '

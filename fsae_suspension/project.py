@@ -783,11 +783,14 @@ def estimate_mass_g(volume_mm3: float, material: str) -> float | None:
 # --------------------------------------------------------------------------- #
 def build_handover_markdown(store: ProjectStore,
                             geometry: dict | None = None,
-                            extra_notes: str = "") -> str:
+                            extra_notes: str = "",
+                            frame_tag: str = "") -> str:
     """
     Assemble the full handover report as Markdown. `geometry` is an optional dict
     of the current suspension setup (static alignment, key metrics) so the report
-    captures the design state, not just the admin data.
+    captures the design state, not just the admin data. `frame_tag` is the team's
+    declared coordinate convention (from Frames & Datums) — stamped up front so
+    every dimension in this document is unambiguous to next year's cohort.
     """
     b = store.budget_status()
     today = _dt.date.today().isoformat()
@@ -797,6 +800,14 @@ def build_handover_markdown(store: ProjectStore,
     L.append("This report is auto-generated from the KinematiK project file. It "
              "captures the car's design state, weight budget, and the reasoning behind "
              "key decisions so next year's team starts from knowledge, not a blank page.\n")
+
+    # Coordinate convention — first, because every number below assumes it.
+    if frame_tag:
+        L.append("## Coordinate convention\n")
+        L.append(f"> {frame_tag}\n")
+        L.append("_All dimensions in this report and in the linked CAD exports "
+                 "follow this frame unless a row explicitly states otherwise. "
+                 "Declared and maintained in KinematiK → 🧭 Frames & Datums._\n")
 
     # Weight budget
     L.append("## Weight budget\n")
