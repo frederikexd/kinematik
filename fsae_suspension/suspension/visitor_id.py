@@ -196,7 +196,9 @@ def _persist_browser_side(st, vid: str) -> None:
     </script>
     """
     try:
-        import streamlit.components.v1 as _components
-        _components.html(_js, height=0, width=0)
+        import streamlit as _st
+        # st.components.v1.html was deprecated after 2026-06-01; use st.iframe instead.
+        # height=0 keeps the injected JS invisible (no layout space consumed).
+        _st.iframe(_js, height=0)
     except Exception:
         pass
