@@ -225,6 +225,8 @@ _FROM = {
     # ---------- fullcar3d ----------
     "build_full_car_figure": ("fullcar3d", "build_full_car_figure"),
     "influence_summary":    ("fullcar3d", "influence_summary"),
+    "override_influence_summary": ("fullcar3d", "override_influence_summary"),
+    "describe_part_override": ("fullcar3d", "describe_part_override"),
     # ---------- ggv ----------
     "GGVGenerator":         ("ggv", "GGVGenerator"),
     "GGVParams":            ("ggv", "GGVParams"),
@@ -542,6 +544,7 @@ __all__ = [
     "METRIC_COARSE", "analyze_joint", "joint_findings",
     # fullcar3d
     "build_full_car_figure", "influence_summary",
+    "override_influence_summary", "describe_part_override",
     # GGV
     "GGVGenerator", "GGVParams", "GGVResult", "quick_ggv", "sweep_parameter",
     # PCM cooling

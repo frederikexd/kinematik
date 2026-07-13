@@ -350,7 +350,7 @@ def _agnostic_color(label, registry):
 # Map a subsystem name to the COLORS key whose hue best represents it, so a
 # user-dropped custom part reads as "belonging to" that sub-team at a glance.
 _SUBSYS_COLOR_KEY = {
-    "aerodynamics": "wing", "brakes": "brake", "chassis": "frame",
+    "aerodynamics": "wing", "brakes": "brake", "chassis": "monocoque",
     "cooling": "radiator", "electrics": "batt_edge", "powertrain": "motor",
     "suspension": "point", "data-acquisition": "logger",
 }
@@ -689,8 +689,6 @@ def build_full_car_figure(
     tire_width_mm: float = 180.0,
     part_overrides: dict | None = None,
     custom_parts: list | None = None,
-    suppress_subsystems: set | None = None,
-    suppress_parts: set | None = None,
     height: int = 720,
 ):
     """Assemble a live Formula-car 3D figure.
@@ -775,10 +773,6 @@ def build_full_car_figure(
     x_front, x_rear = +wb / 2.0, -wb / 2.0
 
     fig = go.Figure()
-
-    # ---- suppression sets (CAD import hides its dummy placeholders) ------ #
-    _suppress_subsys = set(suppress_subsystems or ())
-    _suppress_parts  = set(suppress_parts or ())
 
     # ---- user part overrides (size & position) -------------------------- #
     # Resolve once: a part name -> (dx, dy, dz, sx, sy, sz). Scaling is about
@@ -888,10 +882,6 @@ def build_full_car_figure(
     # share a name (four tires, four brake discs); they all merge under the one
     # key, so focusing "Tire" frames all four, which is the sensible behaviour.
     part_pts: dict[str, list] = {}
-    # Per-INSTANCE accumulator: same as part_pts but each instance (corner) gets
-    # its own entry so callers can measure the footprint of a single body copy
-    # (e.g. clearance around one brake disc, not the ring of all four).
-    part_instance_pts: dict[str, list] = {}
 
     def _accrue(subsys, pts, part=None, corner=None):
         if pts is None:
@@ -905,18 +895,10 @@ def build_full_car_figure(
             # all four wheels can be drilled to a single corner. The shared key
             # above still frames all instances; this finer key frames just one.
             if corner:
-                _inst_key = "%s#%s" % (part, corner)
-                part_pts.setdefault(_inst_key, []).extend(arr)
-                part_instance_pts.setdefault(_inst_key, []).extend(arr)
+                part_pts.setdefault("%s#%s" % (part, corner), []).extend(arr)
 
     def seg(p, q, color, w=5, name=None, group=None, subsys=None, corner=None):
         if p is None or q is None:
-            return
-        # Suppress dummy placeholders that a real CAD import now covers.
-        if subsys and subsys in _suppress_subsys:
-            return
-        _seg_part = name or group
-        if _seg_part and _seg_part in _suppress_parts:
             return
         # Override key: prefer the legend name, fall back to the group token so
         # unnamed members of a named part (hoop braces, wing mounts) move too.
@@ -949,11 +931,6 @@ def build_full_car_figure(
 
     def mesh(verts, i, j, k, color, name, subsys, base_op=0.6, hover=None,
              corner=None):
-        # Suppress dummy placeholders that a real CAD import now covers.
-        if subsys and subsys in _suppress_subsys:
-            return
-        if name and name in _suppress_parts:
-            return
         once = name not in legend_done
         legend_done.add(name)
         verts = _apply_ov(name, verts)
@@ -1081,128 +1058,47 @@ def build_full_car_figure(
     inner_y_f = tf / 2.0 - tire_width_mm - 40
     inner_y_r = tr / 2.0 - tire_width_mm - 40
 
-    # ---- 2) chassis: FSAE spaceframe tube network + roll hoops + driver --- #
-    #  A triangulated steel tube chassis scaled from the car's geometry.
-    #  No monocoque shell — every member is an explicit cylinder so the frame
-    #  reads as a welded spaceframe.  All tubes share the name "Spaceframe" so
-    #  part_overrides, suppress_parts, and _part_boxes all work correctly.
-    #
-    #  Key structural members (FSAE Rule T.2 inspired):
-    #    Floor rails        — main longerons, low left & right
-    #    Upper rails        — deck-level longerons, left & right
-    #    Front bulkhead     — T.2.2 impact-attenuator mounting face
-    #    Front hoop base    — T.2.3 front roll hoop lower frame
-    #    Main hoop base     — T.2.1 main roll hoop lower frame
-    #    Rear bulkhead      — powertrain / diff mounting face
-    #    Firewall bulkhead  — driver compartment aft face
-    #    Side impact tubes  — T.2.6 side impact zone (mid-height)
-    #    Diagonal bracing   — X-braces in floor + upper deck bays
-    #    Nose cone tubes    — tapered nose fore of the front bulkhead
-    #    Upright pillars    — vertical corner posts at each bulkhead
+    # ---- 2) chassis: FSAE monocoque + nosecone + roll hoops + driver ---- #
+    #  Reshaped to read as a real Formula Student car (cf. the reference photo):
+    #  a low, slim survival cell that tapers to a pointed nosecone at the front,
+    #  an open cockpit, a curved MAIN roll hoop behind the driver's head and a
+    #  smaller FRONT hoop ahead of the dash, plus the driver's helmet showing in
+    #  the cockpit — not an F1 halo.
     if show_bodywork:
         ch_it = _iface(ledger, "chassis")
         tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
+        # Sit the tub low like an FSAE car: floor near the ground, deck low.
         tub_bot = max(z_lo * 0.5, tire_r * 0.14)
         tub_top = tub_bot + _clamp(tire_r * 0.95, 180, 360)
         cz = (tub_top + tub_bot) / 2
         hzz = (tub_top - tub_bot) / 2
+        prof = _ellipse_ring(24)
 
-        # Tube radius: ~2.2 % of half-height, clipped to FSAE ERB range 12–22 mm.
-        _sf_r = _clamp(hzz * 0.022, 12.0, 22.0)
+        # Lofted survival cell: pointed nose tip -> footwell -> cockpit bay ->
+        # tapered tail. Stations run front (tip) to rear.
+        nose_tip_x = x_front + tire_r * 1.9
+        tail_x = x_rear + tire_r * 0.15
+        xs = np.linspace(nose_tip_x, tail_x, 9)
+        #             tip   nose  foot  dash  cockpit cock  belly tail   end
+        widths  = np.array([0.05, 0.22, 0.55, 0.88, 1.00, 0.98, 0.86, 0.66, 0.5])
+        heights = np.array([0.10, 0.30, 0.62, 0.85, 0.92, 0.92, 0.85, 0.74, 0.6])
+        zoff    = np.array([0.55, 0.42, 0.18, 0.04, 0.00, 0.00, 0.02, 0.06, 0.1]) * hzz
+        scales = [(tub_w / 2 * w, hzz * h, 0.0, cz + dz)
+                  for w, h, dz in zip(widths, heights, zoff)]
+        mv, mi, mj, mk = _prism_xsection(prof, xs, scales)
+        hv = "Monocoque / survival cell"
+        if _g(ch_it, "mass_kg"):
+            hv += " · %.1f kg" % _g(ch_it, "mass_kg")
+        mesh(mv, mi, mj, mk, COLORS["monocoque"], "Monocoque", "chassis",
+             base_op=0.92, hover=hv)
 
-        _sf_drawn = [False]   # mutable flag: legend entry on first tube only
-
-        def _sf_tube(p0, p1, r=None):
-            """Render one spaceframe tube; first call adds the legend entry."""
-            _rv = r if r is not None else _sf_r
-            tv, ti, tj, tk = _tube(p0, p1, _rv, n=10)
-            _nm = "Spaceframe" if not _sf_drawn[0] else None
-            if not _sf_drawn[0]:
-                _sf_drawn[0] = True
-            _hv = "Spaceframe" if _nm else None
-            if _g(ch_it, "mass_kg") and _nm:
-                _hv = "Spaceframe · %.1f kg" % _g(ch_it, "mass_kg")
-            mesh(tv, ti, tj, tk, COLORS["frame"], "Spaceframe", "chassis",
-                 base_op=0.90, hover=_hv)
-
-        # ---- Key x-stations (SAE: +x is forward) ---------------------------
-        _y      = tub_w * 0.5          # half-width at main rails
-        _y_nose = tub_w * 0.28         # half-width at front bulkhead (tapered)
-        _rail_z = tub_bot + hzz * 0.08 # floor rail z
-        _deck_z = tub_bot + hzz * 1.05 # upper rail z
-        _side_z = tub_bot + hzz * 0.52 # side-impact tube z (mid-height)
-
-        _x_fb   = x_front - wb * 0.04  # front bulkhead
-        _x_fh   = x_front - wb * 0.18  # front hoop pillars
-        _x_fw   = x_front - wb * 0.40  # firewall / mid-bay bulkhead
-        _x_mh   = x_front - wb * 0.55  # main hoop base
-        _x_rb   = x_rear  + tire_r * 0.18  # rear bulkhead
-
-        # Nose tip (impact attenuator tip)
-        _x_nose = x_front + tire_r * 1.6
-        _nose_z = tub_bot + hzz * 0.55  # nose cone apex z
-
-        # ---- Nose cone: four tubes converging to a tip ---------------------
-        for _sgn in (-1, 1):
-            _sf_tube([_x_fb,  _sgn * _y_nose, _rail_z], [_x_nose, 0.0, _nose_z])
-            _sf_tube([_x_fb,  _sgn * _y_nose, _deck_z + hzz * 0.1],
-                     [_x_nose, 0.0, _nose_z])
-        # cross brace across front bulkhead face
-        _sf_tube([_x_fb, -_y_nose, _rail_z], [_x_fb,  _y_nose, _rail_z])
-        _sf_tube([_x_fb, -_y_nose, _deck_z + hzz * 0.1],
-                 [_x_fb,  _y_nose, _deck_z + hzz * 0.1])
-        _sf_tube([_x_fb, -_y_nose, _rail_z], [_x_fb, -_y_nose, _deck_z + hzz * 0.1])
-        _sf_tube([_x_fb,  _y_nose, _rail_z], [_x_fb,  _y_nose, _deck_z + hzz * 0.1])
-
-        # ---- Floor rails (main longerons) ----------------------------------
-        for _sgn in (-1, 1):
-            _sf_tube([_x_rb, _sgn * _y, _rail_z], [_x_fb, _sgn * _y_nose, _rail_z])
-
-        # ---- Upper rails ---------------------------------------------------
-        for _sgn in (-1, 1):
-            _sf_tube([_x_rb, _sgn * _y * 0.9, _deck_z],
-                     [_x_fb, _sgn * _y_nose,   _deck_z + hzz * 0.1])
-
-        # ---- Side-impact tubes (T.2.6) at mid-height -----------------------
-        for _sgn in (-1, 1):
-            _sf_tube([_x_rb, _sgn * _y, _side_z], [_x_fb, _sgn * _y_nose, _side_z])
-
-        # ---- Upright pillars at every bulkhead station ---------------------
-        for _x_stn, _yw in [(_x_fb,  _y_nose), (_x_fh, _y),
-                             (_x_fw,  _y),      (_x_mh, _y), (_x_rb, _y)]:
-            for _sgn in (-1, 1):
-                # floor to upper rail
-                _sf_tube([_x_stn, _sgn * _yw, _rail_z],
-                         [_x_stn, _sgn * _yw, _deck_z])
-                # floor to side-impact
-                _sf_tube([_x_stn, _sgn * _yw, _rail_z],
-                         [_x_stn, _sgn * _yw, _side_z])
-
-        # ---- Transverse ties at each station (floor + deck) ----------------
-        for _x_stn, _yw in [(_x_fh, _y), (_x_fw, _y), (_x_mh, _y), (_x_rb, _y)]:
-            _sf_tube([_x_stn, -_yw, _rail_z], [_x_stn,  _yw, _rail_z])
-            _sf_tube([_x_stn, -_yw, _deck_z], [_x_stn,  _yw, _deck_z])
-            _sf_tube([_x_stn, -_yw, _side_z], [_x_stn,  _yw, _side_z])
-
-        # ---- Diagonal X-braces in the floor plane (each bay) ---------------
-        for _bx0, _bx1, _yw0, _yw1 in [
-            (_x_fb, _x_fh, _y_nose, _y),
-            (_x_fh, _x_fw, _y,      _y),
-            (_x_fw, _x_mh, _y,      _y),
-            (_x_mh, _x_rb, _y,      _y),
-        ]:
-            _sf_tube([_bx0,  _yw0, _rail_z], [_bx1, -_yw1, _rail_z])
-            _sf_tube([_bx0, -_yw0, _rail_z], [_bx1,  _yw1, _rail_z])
-
-        # ---- Diagonal X-braces in the upper deck plane ---------------------
-        for _bx0, _bx1 in [(_x_fh, _x_fw), (_x_fw, _x_mh), (_x_mh, _x_rb)]:
-            _sf_tube([_bx0,  _y, _deck_z], [_bx1, -_y, _deck_z])
-            _sf_tube([_bx0, -_y, _deck_z], [_bx1,  _y, _deck_z])
-
-        # ---- Diagonal side bracing (floor rail to upper rail, each bay) ----
-        for _bx0, _bx1 in [(_x_fh, _x_fw), (_x_fw, _x_mh), (_x_mh, _x_rb)]:
-            for _sgn in (-1, 1):
-                _sf_tube([_bx0, _sgn * _y, _rail_z], [_bx1, _sgn * _y, _deck_z])
+        # A thin livery flash down the flank (the photo's red/yellow stripe).
+        fv, fi, fj, fk = _prism_xsection(
+            _ellipse_ring(24),
+            np.linspace(nose_tip_x - tire_r * 0.3, tail_x, 6),
+            [(tub_w / 2 * w * 1.005, hzz * h * 0.16, 0.0, cz + dz)
+             for w, h, dz in zip(widths[2:8], heights[2:8], zoff[2:8])])
+        mesh(fv, fi, fj, fk, COLORS["livery"], "Monocoque", "chassis", 0.9)
 
         # Cockpit opening reference + driver: a helmet sphere sitting in the bay.
         cockpit_x = x_front - wb * 0.16
@@ -1627,44 +1523,6 @@ def build_full_car_figure(
         object.__setattr__(fig, "_kk_subsys_centroids", _centroids)
     except Exception:
         pass
-
-    # Build per-part bounding-box dict: {part_name: {centre, size, lo, hi}}.
-    # Used by the streamlit app for:
-    #   • _part_boxes  — CAD slot anchoring (fit new import to placeholder bbox)
-    #   • aero mount-point overlay anchor ("Spaceframe" / "Monocoque")
-    #   • Assembly Completion Index (ACI) volume calculations
-    def _bbox_dict(pts_list):
-        if not pts_list:
-            return None
-        arr = np.asarray(pts_list, float).reshape(-1, 3)
-        lo = arr.min(axis=0)
-        hi = arr.max(axis=0)
-        ctr = ((lo + hi) / 2.0).tolist()
-        sz = (hi - lo).tolist()
-        return dict(centre=ctr, size=sz,
-                    bbox_min=lo.tolist(), bbox_max=hi.tolist())
-
-    _part_boxes_dict = {}
-    for _pname, _ppts in part_pts.items():
-        _bd = _bbox_dict(_ppts)
-        if _bd:
-            _part_boxes_dict[_pname] = _bd
-
-    _part_instance_boxes_dict = {}
-    for _iname, _ipts in part_instance_pts.items():
-        _bd = _bbox_dict(_ipts)
-        if _bd:
-            _part_instance_boxes_dict[_iname] = _bd
-
-    try:
-        object.__setattr__(fig, "_part_boxes", _part_boxes_dict)
-    except Exception:
-        pass
-    try:
-        object.__setattr__(fig, "_part_instance_boxes", _part_instance_boxes_dict)
-    except Exception:
-        pass
-
     return fig
 
 
@@ -1881,6 +1739,141 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
                 + ("; CG live" if roll.get("cg_mm") else "; CG needs all masses+positions"))
         except Exception:
             pass
+    return rows
+
+
+_PART_SUBSYSTEM = {
+    "Front wing": "aerodynamics",
+    "Rear wing": "aerodynamics",
+    "Sidepod (cooling)": "cooling",
+    "Radiator core": "cooling",
+    "Motor + inverter": "powertrain",
+    "Accumulator": "electrics",
+    "Spaceframe": "chassis",
+    "Monocoque": "chassis",
+    "Roll hoop": "chassis",
+    "Driver": "chassis",
+    "Tire": "suspension",
+    "Brake disc": "brakes",
+    "Data logger": "data-acquisition",
+}
+
+
+def _override_axis_scales(ov: dict) -> tuple:
+    """Resolve an override dict to (sx, sy, sz) effective scale factors.
+
+    A uniform "scale" applies to all three axes; explicit per-axis sx/sy/sz win
+    over the uniform value on the axes they set. Missing → 1.0 (no change).
+    """
+    base = float(ov.get("scale", 1.0) or 1.0)
+    sx = float(ov.get("sx", base) or base)
+    sy = float(ov.get("sy", base) or base)
+    sz = float(ov.get("sz", base) or base)
+    return sx, sy, sz
+
+
+def describe_part_override(part_name: str, ov: dict) -> dict:
+    """Plain-language read of what one part override does to the model."""
+    dx = float(ov.get("dx", 0.0) or 0.0)
+    dy = float(ov.get("dy", 0.0) or 0.0)
+    dz = float(ov.get("dz", 0.0) or 0.0)
+    sx, sy, sz = _override_axis_scales(ov)
+    moved = (abs(dx) > 1e-6) or (abs(dy) > 1e-6) or (abs(dz) > 1e-6)
+    resized = any(abs(s - 1.0) > 1e-6 for s in (sx, sy, sz))
+    vol_factor = sx * sy * sz
+
+    move_bits = []
+    if abs(dx) > 1e-6:
+        move_bits.append("%s %.0f mm" % ("fwd" if dx > 0 else "aft", abs(dx)))
+    if abs(dy) > 1e-6:
+        move_bits.append("%s %.0f mm" % ("right" if dy > 0 else "left", abs(dy)))
+    if abs(dz) > 1e-6:
+        move_bits.append("%s %.0f mm" % ("up" if dz > 0 else "down", abs(dz)))
+
+    if resized:
+        if abs(sx - sy) < 1e-6 and abs(sy - sz) < 1e-6:
+            size_bit = "scaled ×%.2f (vol ×%.2f)" % (sx, vol_factor)
+        else:
+            size_bit = "scaled x×%.2f/y×%.2f/z×%.2f (vol ×%.2f)" % (
+                sx, sy, sz, vol_factor)
+    else:
+        size_bit = ""
+
+    subsystem = _PART_SUBSYSTEM.get(part_name, "custom")
+    effect = ""
+    if resized:
+        if subsystem == "aerodynamics":
+            area_factor = sx * sy
+            effect = "≈ ×%.2f wing area → downforce & drag trend %s" % (
+                area_factor, "up" if area_factor > 1.0 else "down")
+        elif subsystem == "cooling":
+            effect = "≈ ×%.2f core volume → heat-rejection headroom %s" % (
+                vol_factor, "up" if vol_factor > 1.0 else "down")
+        elif subsystem == "powertrain":
+            effect = "≈ ×%.2f envelope → packaging space %s" % (
+                vol_factor, "up" if vol_factor > 1.0 else "down")
+        elif subsystem == "electrics":
+            effect = "≈ ×%.2f box volume → cell/packaging space %s" % (
+                vol_factor, "up" if vol_factor > 1.0 else "down")
+        elif subsystem == "brakes":
+            dia_factor = (sx + sz) / 2.0
+            effect = "≈ ×%.2f disc diameter → thermal mass & torque arm %s" % (
+                dia_factor, "up" if dia_factor > 1.0 else "down")
+        elif subsystem == "suspension":
+            effect = "≈ ×%.2f tire envelope → contact-patch footprint %s" % (
+                vol_factor, "up" if vol_factor > 1.0 else "down")
+        elif subsystem == "chassis":
+            effect = "≈ ×%.2f volume → occupied space %s" % (
+                vol_factor, "up" if vol_factor > 1.0 else "down")
+
+    detail_bits = []
+    if move_bits:
+        detail_bits.append("moved " + "/".join(move_bits))
+    if size_bit:
+        detail_bits.append(size_bit)
+    if effect:
+        detail_bits.append(effect)
+    detail = "; ".join(detail_bits) if detail_bits else "no change"
+
+    return dict(part=part_name, subsystem=subsystem, moved=moved,
+                resized=resized, dx=dx, dy=dy, dz=dz,
+                sx=sx, sy=sy, sz=sz, vol_factor=vol_factor, detail=detail)
+
+
+def override_influence_summary(vp, ledger, overrides: dict | None = None,
+                               topology_label: str | None = None) -> list:
+    """influence_summary with live Edit-parts overrides folded in.
+
+    Falls back gracefully to the base influence_summary rows when no overrides
+    are active, so it is always safe to call in place of influence_summary.
+    """
+    rows = influence_summary(vp, ledger, topology_label=topology_label)
+    overrides = overrides or {}
+    if not overrides:
+        return rows
+
+    edits_by_subsys = {}
+    for part_name, ov in overrides.items():
+        if not ov:
+            continue
+        desc = describe_part_override(part_name, ov)
+        if not (desc["moved"] or desc["resized"]):
+            continue
+        edits_by_subsys.setdefault(desc["subsystem"], []).append(desc)
+
+    if not edits_by_subsys:
+        return rows
+
+    touched = set(edits_by_subsys.keys())
+    for r in rows:
+        if r.get("subsystem") in touched:
+            r["status"] = (r.get("status", "") + " · overridden").strip(" ·")
+
+    for subsystem, descs in edits_by_subsys.items():
+        for d in descs:
+            rows.append(dict(subsystem=subsystem,
+                             status="edited",
+                             detail="%s — %s" % (d["part"], d["detail"])))
     return rows
 
 
@@ -2109,186 +2102,3 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
                 x_mm=round(float(x), 0), y_mm=round(float(y), 0),
                 z_mm=round(float(z), 0), shape=shape, basis=basis,
                 from_declared=from_declared)
-
-
-# --------------------------------------------------------------------------- #
-#  Live influence & sizing summary
-# --------------------------------------------------------------------------- #
-def override_influence_summary(vp, ledger, *, overrides=None,
-                               topology_label=None) -> list[dict]:
-    """Return a list of row-dicts for the "Live influence & sizing notes" table.
-
-    Each dict has:
-        subsystem : str   — display name
-        status    : str   — "declared", "sized from …", "placeholder", "edited"
-        detail    : str   — one-line human note about what the number is doing
-
-    The table is shown in an expander below the 3D model so the team can see
-    at a glance what each sub-team's current numbers actually drive.  Rows
-    marked "edited" reflect part_overrides the user set in "Edit parts".
-    """
-    _ov = overrides or {}
-    rows = []
-
-    wb  = float(getattr(vp, "wheelbase",     1550.0) or 1550.0)
-    tf  = float(getattr(vp, "track_front",   1200.0) or 1200.0)
-    tr  = float(getattr(vp, "track_rear",    1180.0) or 1180.0)
-    kf  = float(getattr(vp, "spring_rate_front", 35.0) or 35.0)
-
-    def _it(name):
-        return _iface(ledger, name)
-
-    def _edited(draw_name):
-        o = _ov.get(draw_name)
-        if not o:
-            return False
-        return any(v for v in o.values())
-
-    # ---- Chassis ---------------------------------------------------------- #
-    ch = _it("chassis")
-    ch_mass = _g(ch, "mass_kg")
-    _ch_ed = _edited("Spaceframe") or _edited("Roll hoop")
-    rows.append(dict(
-        subsystem="Chassis",
-        status="edited" if _ch_ed else ("declared" if ch_mass else "placeholder"),
-        detail=(("%.1f kg spaceframe" % ch_mass) if ch_mass
-                else "No mass declared — add it in INTEGRATION for an accurate CG")))
-
-    # ---- Suspension ------------------------------------------------------- #
-    ride_drop = _clamp((35.0 - kf) * 0.6, -12.0, 18.0)
-    _su_ed = _edited("Tire") or _edited("Brake disc")
-    rows.append(dict(
-        subsystem="Suspension",
-        status="edited" if _su_ed else "sized from spring rate",
-        detail=("Ride height %s %.0f mm from nominal (k_f = %.0f N/mm)"
-                % (("↓" if ride_drop > 0 else "↑"), abs(ride_drop), kf))))
-
-    # ---- Aerodynamics ----------------------------------------------------- #
-    ae = _it("aerodynamics")
-    df_raw = _g(ae, "downforce_n_at_v")
-    df_n = df_raw[0] if isinstance(df_raw, (list, tuple)) and df_raw else df_raw
-    _ae_ed = _edited("Front wing") or _edited("Rear wing")
-    if df_n:
-        rows.append(dict(
-            subsystem="Aerodynamics",
-            status="edited" if _ae_ed else "sized from downforce",
-            detail=("%.0f N declared → %d wing elements, span scales with downforce"
-                    % (df_n, int(_clamp(2 + df_n / 500.0, 2, 4))))))
-    else:
-        rows.append(dict(
-            subsystem="Aerodynamics",
-            status="placeholder",
-            detail="No downforce declared — wing sized to nominal; declare in INTEGRATION"))
-
-    # ---- Cooling ---------------------------------------------------------- #
-    co = _it("cooling")
-    airflow = _g(co, "cooling_airflow_cms")
-    heat_rej = _g(co, "heat_reject_w")
-    _co_ed = _edited("Sidepod (cooling)") or _edited("Radiator core")
-    if airflow:
-        rows.append(dict(
-            subsystem="Cooling",
-            status="edited" if _co_ed else "sized from airflow",
-            detail=("%.2f m³/s → sidepod volume scales; rejects %.0f W"
-                    % (airflow, heat_rej or 0.0))))
-    else:
-        rows.append(dict(
-            subsystem="Cooling",
-            status="placeholder",
-            detail="No airflow declared — sidepod at nominal; declare in INTEGRATION"))
-
-    # ---- Powertrain ------------------------------------------------------- #
-    pt = _it("powertrain")
-    pkw = _g(pt, "peak_power_kw")
-    ptq = _g(pt, "peak_torque_nm")
-    _pt_ed = _edited("Motor + inverter")
-    if pkw:
-        rows.append(dict(
-            subsystem="Powertrain",
-            status="edited" if _pt_ed else "sized from power",
-            detail=("%.0f kW / %.0f N·m → motor cylinder diameter scales"
-                    % (pkw, ptq or 0.0))))
-    else:
-        rows.append(dict(
-            subsystem="Powertrain",
-            status="placeholder",
-            detail="No power declared — motor at nominal 60 kW size; declare in INTEGRATION"))
-
-    # ---- Electrics -------------------------------------------------------- #
-    el = _it("electrics")
-    emass = _g(el, "mass_kg")
-    ex = _g(el, "env_x_mm"); ey = _g(el, "env_y_mm"); ez = _g(el, "env_z_mm")
-    _el_ed = _edited("Accumulator")
-    if ex and ey and ez:
-        rows.append(dict(
-            subsystem="Electrics",
-            status="edited" if _el_ed else "declared envelope",
-            detail="%.0f × %.0f × %.0f mm declared envelope" % (ex, ey, ez)))
-    elif emass:
-        rows.append(dict(
-            subsystem="Electrics",
-            status="edited" if _el_ed else "sized from mass",
-            detail="%.1f kg → accumulator box volume estimated" % emass))
-    else:
-        rows.append(dict(
-            subsystem="Electrics",
-            status="placeholder",
-            detail="No envelope/mass declared — accumulator at nominal; declare in INTEGRATION"))
-
-    # ---- Brakes ----------------------------------------------------------- #
-    br = _it("brakes")
-    btq = _g(br, "brake_torque_nm")
-    _br_ed = _edited("Brake disc")
-    if btq:
-        rows.append(dict(
-            subsystem="Brakes",
-            status="edited" if _br_ed else "sized from torque",
-            detail="%.0f N·m → disc radius %.0f mm" % (
-                btq, 228.0 * _clamp(0.62 + btq / 4000.0, 0.5, 0.85))))
-    else:
-        rows.append(dict(
-            subsystem="Brakes",
-            status="placeholder",
-            detail="No brake torque declared — disc at nominal size; declare in INTEGRATION"))
-
-    # ---- Data-acquisition ------------------------------------------------- #
-    da = _it("data-acquisition")
-    da_mass = _g(da, "mass_kg")
-    _da_ed = _edited("Data logger")
-    rows.append(dict(
-        subsystem="Data-acquisition",
-        status="edited" if _da_ed else ("declared" if da_mass else "placeholder"),
-        detail=(("%.1f kg logger" % da_mass) if da_mass
-                else "Compact logger at fixed 80 × 60 × 40 mm; declare mass in INTEGRATION")))
-
-    # ---- Topology note ---------------------------------------------------- #
-    if topology_label:
-        rows.append(dict(
-            subsystem="Suspension topology",
-            status="info",
-            detail=str(topology_label)))
-
-    return rows
-
-
-# --------------------------------------------------------------------------- #
-#  Dummy-body footprint lookup
-# --------------------------------------------------------------------------- #
-def dummy_body_footprint(fig, dummy_name: str) -> dict | None:
-    """Return {x_mm, y_mm, z_mm, l_mm, w_mm, h_mm} for a named placeholder body.
-
-    Reads the figure's _part_boxes attribute (populated by build_full_car_figure)
-    so the CAD slot importer can snap a real part to the exact space the drawn
-    placeholder occupies — without having to rebuild the figure.
-
-    Returns None if the body wasn't drawn (layer hidden, name not found).
-    """
-    pb = getattr(fig, "_part_boxes", None) or {}
-    bd = pb.get(dummy_name)
-    if not bd:
-        return None
-    c = bd.get("centre", [0.0, 0.0, 0.0])
-    s = bd.get("size",   [0.0, 0.0, 0.0])
-    return dict(
-        x_mm=float(c[0]), y_mm=float(c[1]), z_mm=float(c[2]),
-        l_mm=float(s[0]), w_mm=float(s[1]), h_mm=float(s[2]))
