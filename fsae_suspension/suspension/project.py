@@ -181,7 +181,10 @@ class JSONFileBackend:
         except OSError:
             return None
 
-    def write(self, payload: dict):
+    def write(self, payload: dict, expected_version=None):
+        # expected_version is accepted for interface parity with the Supabase
+        # backends but not enforced here: this backend is the single-user local
+        # file (laptop/tests), where the store in memory is the only editor.
         with open(self.path, "w") as f:
             json.dump(payload, f, indent=2)
 
@@ -196,6 +199,23 @@ class JSONFileBackend:
 # with no Streamlit runtime; a plain dict gives the same hit/miss behaviour
 # without a hard Streamlit dependency.
 _project_blob_cache: dict = {}
+
+
+class StaleWriteError(RuntimeError):
+    """Raised when a save would overwrite a version of the project that someone
+    else wrote after we loaded ours (optimistic-concurrency conflict).
+
+    Carries what we loaded (`mine`) and what the server holds now (`theirs`) so
+    the UI can say exactly what happened and offer a reload instead of silently
+    letting last-write-wins destroy a teammate's ledger edits."""
+
+    def __init__(self, mine, theirs):
+        self.mine = mine
+        self.theirs = theirs
+        super().__init__(
+            f"project changed on the server since it was loaded "
+            f"(loaded version {mine!r}, server now holds {theirs!r}); "
+            f"reload before saving so the newer edits aren't overwritten")
 
 
 class SupabaseBackend:
@@ -282,21 +302,53 @@ class SupabaseBackend:
         except Exception:
             return None
 
-    def write(self, payload: dict):
-        self.client.table(self.TABLE).upsert(
-            {"id": self.project_id, "data": payload}).execute()
-        # Refresh the cache with what we just wrote, keyed on the payload's own
-        # `updated` stamp, so the very next read() on THIS server serves the new
-        # blob from memory instead of re-fetching the row we just sent. Other
-        # servers/sessions still pick the change up via their own version probe.
+    def write(self, payload: dict, expected_version=None):
+        """Persist the blob with optimistic concurrency.
+
+        expected_version is the `updated` stamp of the blob we LOADED. If the
+        row's current stamp differs, someone else saved since we read — raise
+        StaleWriteError instead of overwriting their work (the old behaviour
+        was unconditional last-write-wins, which silently destroys a
+        teammate's edits the moment two people have the app open).
+
+        expected_version=None means "no baseline": first save of a fresh
+        project, or a caller that hasn't adopted versioning. If the row does
+        not exist we insert; if it exists WITH a version we refuse (someone
+        created it while we held an empty project); if it exists without a
+        version (a pre-locking legacy blob) we allow the write once, which is
+        the upgrade path.
+        """
+        row = {"id": self.project_id, "data": payload}
+        if expected_version is not None:
+            # Atomic CAS: UPDATE ... WHERE id = ? AND data->>'updated' = ?.
+            # PostgREST returns the updated rows; zero rows = the version moved
+            # (or the row vanished) — distinguish and refuse.
+            resp = (self.client.table(self.TABLE)
+                    .update(row)
+                    .eq("id", self.project_id)
+                    .eq("data->>updated", str(expected_version))
+                    .execute())
+            if not (resp.data or []):
+                theirs = self.read_version()
+                raise StaleWriteError(mine=expected_version, theirs=theirs)
+        else:
+            current = self.read_version()
+            if current is not None:
+                # A versioned row exists but we loaded nothing — refuse rather
+                # than wipe it. (Legacy unversioned rows return None here and
+                # fall through to the upsert, which is the one-time migration.)
+                raise StaleWriteError(mine=None, theirs=current)
+            self.client.table(self.TABLE).upsert(row).execute()
+        # Refresh the process-global cache with what we just wrote, keyed on the
+        # payload's own `updated` stamp, so the very next read() on THIS server
+        # serves the new blob from memory. Other servers/sessions pick the change
+        # up via their own version probe.
         try:
             new_version = payload.get("updated")
             if new_version is not None:
                 _project_blob_cache[self.project_id] = (
                     (self.project_id, new_version), payload)
             else:
-                # No version to key on — safest to drop any stale cache entry so
-                # the next read does an authoritative full fetch.
                 _project_blob_cache.pop(self.project_id, None)
         except Exception:
             _project_blob_cache.pop(self.project_id, None)
@@ -416,6 +468,8 @@ class ProjectStore:
             self.harness = None
         self.load_error = None
         self.save_error = None
+        self.save_conflict = None       # set when a save loses an optimistic-lock race
+        self._loaded_version = None     # `updated` stamp of the blob our edits sit on
         # EV electrical database: pack + motor params extracted from the
         # electrics lead's Excel workbook. Persisted here so teams don't
         # have to re-upload the xlsx every session — configure once, use always.
@@ -477,16 +531,50 @@ class ProjectStore:
             self.load_error = f"Could not read saved project data: {e}"
             return
         self._apply(d)
+        # Optimistic-concurrency baseline: remember which version of the blob
+        # this store's edits are based on. save() sends it as expected_version
+        # so a concurrent teammate's save can never be silently overwritten.
+        self._loaded_version = (d or {}).get("updated")
+
+    def reload_latest(self):
+        """Discard this store's baseline and re-read the server's current blob.
+        The recovery path after a StaleWriteError: the user re-applies their
+        edit on top of the teammate's version instead of overwriting it."""
+        self.save_conflict = None
+        self.load()
 
     def save(self):
         """Persist the project. Fail-safe: a storage backend error (e.g. a remote
         Supabase/Postgres misconfiguration) is recorded on `self.save_error` and
         returns False rather than raising, so a save side-effect can never crash the
-        caller. Returns True on success."""
+        caller. Returns True on success.
+
+        Concurrency: the write carries the version this store loaded
+        (expected_version). If a teammate saved in between, the backend raises
+        StaleWriteError; we record it on `self.save_conflict` (and mirror it to
+        `save_error` for older call sites) and return False — the caller shows
+        the conflict and offers reload_latest(). No silent last-write-wins."""
+        payload = self._payload()
         try:
-            self.backend.write(self._payload())
+            try:
+                self.backend.write(
+                    payload, expected_version=getattr(self, "_loaded_version", None))
+            except TypeError:
+                # Backend predates the expected_version contract (external /
+                # test doubles) — fall back to the unconditional write.
+                self.backend.write(payload)
             self.save_error = None
+            self.save_conflict = None
+            # Our write is now the server version; future saves compare to it.
+            self._loaded_version = payload.get("updated")
             return True
+        except StaleWriteError as e:
+            self.save_conflict = str(e)
+            self.save_error = (
+                "Not saved — a teammate saved a newer version of the project "
+                "while you were editing. Reload the latest project, then "
+                "re-apply your change so theirs isn't overwritten.")
+            return False
         except Exception as e:
             self.save_error = f"Could not write project data: {e}"
             return False

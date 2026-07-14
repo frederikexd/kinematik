@@ -64,7 +64,118 @@ def _r_brake_bias(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
 _r_brake_bias.reference_claim = "Brake bias should be 50/50 front to rear."
 
 
+# --------------------------------------------------------------------------- #
+#  Throttle return-spring redundancy (FSAE two-spring / single-fault rule)      #
+# --------------------------------------------------------------------------- #
+def _as_return_result(context: Any):
+    """Best-effort extraction of a live ReturnRedundancyResult (or the inputs to
+    compute one) from whatever the app handed us. Duck-typed on purpose — this
+    must never raise on garbage context (the engine relies on that, and so does
+    tests/test_throttle_myth.py::test_bad_context_does_not_crash_engine)."""
+    try:
+        # 1) the result object passed straight through
+        if hasattr(context, "verdict") and hasattr(context, "worst_case"):
+            return context
+        if isinstance(context, dict):
+            # 2) {"return_result": ReturnRedundancyResult}
+            rr = context.get("return_result")
+            if rr is not None and hasattr(rr, "verdict") and hasattr(rr, "worst_case"):
+                return rr
+            # 3) raw inputs: {"springs": [...], "resistance": ..., "margin_target": ...}
+            #    (the discipline unwrap in the engine means a {"brakes": {...}}
+            #    bundle arrives here already unwrapped to the inner dict)
+            springs = context.get("springs")
+            if isinstance(springs, (list, tuple)) and springs:
+                from ..throttle_return import check_return_redundancy
+                kwargs = {}
+                if context.get("resistance") is not None:
+                    kwargs["resistance"] = context["resistance"]
+                if context.get("margin_target") is not None:
+                    kwargs["margin_target"] = context["margin_target"]
+                return check_return_redundancy(list(springs), **kwargs)
+    except Exception:
+        return None
+    return None
+
+
+def _r_throttle_sensor_is_spring(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+    if not (claim.has("sensor", "tps", "apps", "potentiometer")
+            and claim.has("spring", "return")):
+        return None
+    return CheckOutcome(
+        Verdict.MYTH,
+        ("A throttle position sensor is NOT a return spring and cannot count as one "
+         "of the two required return devices. A sensor measures position; it provides "
+         "no closing torque — worse, some sensor bodies add a detent/drag torque that "
+         "FIGHTS the return (that's the sensor_detent term in ReturnResistance). The "
+         "redundancy rule exists so the throttle still closes with any single spring "
+         "failed; only a device that produces closing torque on its own satisfies it. "
+         "Fit two real springs and run check_return_redundancy with each one removed."),
+        provenance="sensor provides zero closing torque; may add detent drag")
+_r_throttle_sensor_is_spring.reference_claim = (
+    "The throttle position sensor can count as one of the two required return springs.")
+
+
+def _r_throttle_identical_backup(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+    if not (claim.has("spring", "throttle")
+            and claim.has("identical", "backup", "back-up", "back up", "unhook",
+                          "one fails", "spring fails", "one breaks", "other is fine",
+                          "still returns", "still closes", "redundan")):
+        return None
+
+    rr = _as_return_result(context)
+    if rr is not None:
+        v = str(getattr(rr, "verdict", "")).upper()
+        worst = getattr(rr, "worst_case", "")
+        margin = getattr(rr, "worst_margin", float("nan"))
+        if v == "FAIL":
+            return CheckOutcome(
+                Verdict.MYTH,
+                (f"Checked against the live model: with the worst single failure "
+                 f"({worst}) the remaining spring does NOT return the throttle with "
+                 f"the required margin (worst margin {margin:.2f}). 'They're identical' "
+                 f"is not a redundancy argument — redundancy is proven per single-fault "
+                 f"case, and this configuration fails one."),
+                provenance=f"live check_return_redundancy: FAIL, worst case {worst}")
+        if v == "PASS":
+            return CheckOutcome(
+                Verdict.TRUE,
+                (f"Confirmed against the live model — but note WHY it holds: each "
+                 f"surviving spring clears the resistance on its OWN measured torque "
+                 f"(worst single-failure margin {margin:.2f}, case {worst}), not "
+                 f"because the springs are 'identical'. If either spring's real torque "
+                 f"drifts, re-run the single-fault check."),
+                provenance=f"live check_return_redundancy: PASS, worst case {worst}")
+        if v == "TIGHT":
+            return CheckOutcome(
+                Verdict.DEPENDS,
+                (f"Marginal on the live numbers: every single-failure case closes, but "
+                 f"the worst case ({worst}) has only {margin:.2f} margin over "
+                 f"friction/stiction — a sticky pivot in the car could hang it. Add "
+                 f"spring authority or reduce resistance before calling this safe."),
+                provenance=f"live check_return_redundancy: TIGHT, worst case {worst}")
+        # INVALID or unrecognised → fall through to the physics answer below.
+
+    return CheckOutcome(
+        Verdict.DEPENDS,
+        ("'Identical springs' is an assumption, not a check. Redundancy means the "
+         "throttle still closes with ANY single spring failed — so verify each "
+         "single-fault case: remove each spring in turn and confirm the survivor's "
+         "net closing torque beats pivot friction, cable drag and sensor detent with "
+         "margin, at both closed and wide-open. Run check_return_redundancy with your "
+         "measured spring torques and resistance; two nominally identical springs can "
+         "still both be too weak alone."),
+        provenance="redundancy is proven per single-fault case, not by symmetry")
+_r_throttle_identical_backup.reference_claim = (
+    "The two throttle return springs are identical, so if one fails the other is fine.")
+
+
 RULES = [
+    Rule("brakes.throttle_sensor_is_spring", "brakes", _r_throttle_sensor_is_spring,
+         keywords_any=("sensor", "tps", "apps", "potentiometer"), priority=4),
+    Rule("brakes.throttle_identical_backup", "brakes", _r_throttle_identical_backup,
+         keywords_any=("throttle", "return spring", "spring", "backup", "unhook"),
+         priority=5),
     Rule("brakes.bigger_rotor_force", "brakes", _r_bigger_rotor_force,
          keywords_any=("bigger rotor", "larger rotor", "bigger disc", "bigger disk",
                        "rotor size", "rotor"), priority=10),

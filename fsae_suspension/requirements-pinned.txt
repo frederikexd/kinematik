@@ -1,0 +1,38 @@
+# KinematiK — Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+# Open source. Original author: Frederik Thio, creator of KinematiK.
+#
+# KinematiK — Python dependencies for the Streamlit deployment.
+#
+# PINNED, not ranged. Why: Streamlit Cloud re-resolves dependencies on every
+# redeploy, so with `>=` ranges two deploys of the SAME commit can run on
+# DIFFERENT numpy/scipy/streamlit — a redeploy on a bad upstream release day
+# becomes an outage you didn't cause and can't bisect. Exact pins make every
+# deploy reproducible: same commit in, same environment out.
+#
+# The == pins below are the exact versions the full test suite (1111 tests)
+# passed against on 2026-07-13. To upgrade: bump the pin on a branch, let CI
+# run the suite against it, merge on green. Never edit pins directly on main.
+#
+# Place this file at the REPOSITORY ROOT (next to the folder that holds
+# streamlit_app.py), which is where Streamlit Cloud looks for it.
+
+# --- core: imported at package-init time; the app will NOT start without these ---
+streamlit==1.59.2
+numpy==2.4.4
+scipy==1.17.1
+plotly==6.9.0
+trimesh==4.12.2
+
+# --- optional features: imported lazily, only when the feature is used ---
+# The app boots fine without these; each one just unlocks its feature.
+openpyxl==3.1.5    # Excel workbook read/write          (ev_electrical_check.py, ev_excel_roundtrip.py)
+rtree==1.4.1       # chassis/part collision queries via trimesh.proximity
+reportlab==4.4.10  # PDF design-handover export         (project.py: render_pdf)
+
+# Not exercised by the sandbox test run — pinned to the latest known-good at
+# time of writing. Verify each on first deploy of this file (open the feature
+# once) and adjust if the deploy log complains:
+supabase==2.27.0            # cloud project sync + workspace isolation backend
+cascadio==0.0.16            # STEP/STP chassis import   (chassis.py, integration.py)
+fast_simplification==0.1.12 # faster CAD-part decimation (falls back to built-in
+                            # vertex clustering if absent)

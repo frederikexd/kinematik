@@ -1153,6 +1153,20 @@ def save_store(store):
     if degraded:
         st.warning(f"⚠ {degraded}")
     ok = store.save()
+    if not ok and getattr(store, "save_conflict", None):
+        # Optimistic-lock conflict: a teammate saved a newer project version
+        # while this session was editing. NOT saved — offer the safe recovery
+        # (pull their version, re-apply this edit) instead of overwriting it.
+        st.error(
+            "✋ Not saved — a teammate saved a newer version of the project "
+            "while you were editing. Load their version first, then re-apply "
+            "your change, so nobody's work is overwritten.")
+        if st.button("🔄 Load latest project (your unsaved edit stays on screen "
+                     "this run — re-enter it after the reload)",
+                     key=f"reload_conflict_{id(store)}"):
+            store.reload_latest()
+            st.rerun()
+        return ok
     if not ok and getattr(store, "save_error", None):
         st.warning(
             f"Saved in this session only — couldn't persist to storage: "
@@ -5802,8 +5816,15 @@ def render_subsystem_documentation(subsystem_key, *, key_prefix,
                         _sv = getattr(_fd.severity, "value", _fd.severity)
                         L.append(f"- [{str(_sv).upper()}] {_fd.message}")
                     L.append("")
-            except Exception:
-                pass
+            except Exception as _cx_e:
+                # A handover that silently OMITS the cross-team checks reads as
+                # "no findings" — worse than admitting they couldn't run.
+                L.append("## Cross-team checks (live)")
+                L.append(f"- [WARNING] Could not compute live cross-team checks "
+                         f"for this handover ({type(_cx_e).__name__}). Re-open "
+                         f"Integration and re-export before relying on this "
+                         f"document.")
+                L.append("")
         if len(L) <= 3:
             L.append(f"_No {_name.lower()} results recorded yet — work through this "
                      f"subsystem's views and publish to INTEGRATION first, then come "
@@ -8146,8 +8167,14 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
                           _sv = getattr(_fd.severity, "value", _fd.severity)
                           L.append(f"- [{str(_sv).upper()}] {_fd.message}")
                       L.append("")
-              except Exception:
-                  pass
+              except Exception as _cx_e2:
+                  # Omitting the checks reads as "no findings" — say it instead.
+                  L.append("## Cross-team checks (live)")
+                  L.append(f"- [WARNING] Could not compute live cross-team "
+                           f"checks for this report ({type(_cx_e2).__name__}). "
+                           f"Re-open Integration and re-export before relying "
+                           f"on this document.")
+                  L.append("")
           if len(L) <= 3:
               L.append(f"_No {_name.lower()} results yet — work through this "
                        f"subsystem's views and publish to INTEGRATION first._")
@@ -13609,7 +13636,14 @@ with tab_ev:
                     if _gV and _gV > 0:
                         _base.cd_a = (2.0 * float(_gN)) / (_rho * _gV * _gV)
             except Exception:
-                pass
+                # The user ASKED for their declared aero. Running the lap on
+                # default coefficients while the toggle says "aero: on" is a
+                # wrong number wearing a right label — say so, loudly.
+                st.warning(
+                    "⚠ Couldn't read the declared aero from the Integration "
+                    "ledger — this lap is running WITHOUT your downforce/drag "
+                    "(default Cl·A / Cd·A). Re-declare aero in Integration, "
+                    "then re-run.")
 
         if _event.startswith("Autocross"):
             _track = lapsim_mod.autocross_track(laps=1)
@@ -16676,8 +16710,14 @@ with tab_brake:
                     _l.append("- _Screening only — a PASS earns the SolidWorks/Ansys "
                               "run, it does not replace it._")
                 _bx.append(("Brake pedal — 2000 N rule", _l))
-            except Exception:
-                pass
+            except Exception as _pd_e:
+                # A safety-rule verdict that silently vanishes from the handover
+                # reads as "not applicable" — say it failed to compute instead.
+                _bx.append(("Brake pedal — 2000 N rule",
+                            [f"- ⚠ Verdict could not be computed for this "
+                             f"document ({type(_pd_e).__name__}). Re-run the "
+                             f"pedal check in the Brakes tab before relying on "
+                             f"this handover."]))
         _rr_doc = st.session_state.get("throttle_return_result")
         if _rr_doc is not None:
             _l = [f"- Verdict: **{getattr(_rr_doc,'verdict','?')}** (worst "

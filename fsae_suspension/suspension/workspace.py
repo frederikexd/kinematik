@@ -151,8 +151,26 @@ class LocalWorkspaceBackend:
             return assert_payload_scoped(data, self.workspace_id)
         return {}
 
-    def write(self, payload: dict):
+    def read_version(self):
+        """The local blob's own `updated` stamp (None if absent/unreadable)."""
+        try:
+            if os.path.exists(self.path):
+                with open(self.path) as f:
+                    return (json.load(f) or {}).get("updated")
+        except Exception:
+            pass
+        return None
+
+    def write(self, payload: dict, expected_version=None):
         assert_payload_scoped(payload, self.workspace_id)
+        # Same optimistic contract as the Supabase backend so behaviour doesn't
+        # change between laptop and cloud: refuse to overwrite a blob that
+        # moved since it was loaded. (Single-user local this rarely fires, but
+        # two terminals or a shared drive make it real.)
+        from .project import StaleWriteError   # lazy: keep module stdlib-only at import
+        current = self.read_version()
+        if current is not None and str(current) != str(expected_version):
+            raise StaleWriteError(mine=expected_version, theirs=current)
         os.makedirs(self.dir, exist_ok=True)
         body = dict(payload)
         body["workspace_id"] = self.workspace_id
@@ -198,14 +216,61 @@ class WorkspaceScopedSupabaseBackend:
             raise CrossWorkspaceViolation("server returned a foreign-workspace row")
         return assert_payload_scoped(row["data"] or {}, self.ctx.workspace_id)
 
-    def write(self, payload: dict):
+    def read_version(self):
+        """Cheap change probe: pull ONLY data->>'updated' for this tenant's row.
+        Returns None on any error or missing row so callers fall back to a full
+        authoritative read rather than assuming 'no change'."""
+        try:
+            resp = (self.client.table(self.TABLE)
+                    .select("data->>updated")
+                    .eq("workspace_id", self.ctx.workspace_id)
+                    .eq("id", self.project_id).execute())
+            rows = resp.data or []
+            if not rows:
+                return None
+            row = rows[0]
+            return row.get("updated") or next(iter(row.values()), None)
+        except Exception:
+            return None
+
+    def write(self, payload: dict, expected_version=None):
+        """Tenant-scoped persist with optimistic concurrency.
+
+        expected_version is the `updated` stamp the caller's edits are based
+        on. A concurrent teammate's save changes that stamp, so the CAS update
+        matches zero rows and we raise StaleWriteError instead of silently
+        replacing their ledger (the old unconditional upsert was
+        last-write-wins — with two subteam leads editing at once, whoever
+        saved second erased the other's declarations without a trace).
+        """
         if not self.ctx.can_write():
             raise WorkspaceError(f"role {self.ctx.role!r} cannot write this workspace")
         assert_payload_scoped(payload, self.ctx.workspace_id)
+        from .project import StaleWriteError   # lazy: keep module stdlib-only at import
+        now = _dt.datetime.utcnow().isoformat() + "Z"
+        if expected_version is not None:
+            # Atomic compare-and-swap: UPDATE ... WHERE workspace_id/id match
+            # AND data->>'updated' still equals what we loaded. PostgREST
+            # returns the updated rows; zero rows means the version moved.
+            resp = (self.client.table(self.TABLE)
+                    .update({"data": payload, "updated_at": now})
+                    .eq("workspace_id", self.ctx.workspace_id)
+                    .eq("id", self.project_id)
+                    .eq("data->>updated", str(expected_version))
+                    .execute())
+            if not (resp.data or []):
+                raise StaleWriteError(mine=expected_version,
+                                      theirs=self.read_version())
+            return
+        # No baseline (fresh project or pre-versioning caller). Refuse to wipe
+        # an existing VERSIONED row; allow first insert and the one-time
+        # upgrade of a legacy unversioned blob.
+        current = self.read_version()
+        if current is not None:
+            raise StaleWriteError(mine=None, theirs=current)
         (self.client.table(self.TABLE)
          .upsert({"workspace_id": self.ctx.workspace_id, "id": self.project_id,
-                  "data": payload,
-                  "updated_at": _dt.datetime.utcnow().isoformat() + "Z"},
+                  "data": payload, "updated_at": now},
                  on_conflict="workspace_id,id")
          .execute())
 
