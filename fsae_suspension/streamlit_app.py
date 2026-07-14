@@ -26799,23 +26799,34 @@ with tab_analytics:
 
     # ---- Headline tiles ---------------------------------------------------- #
     # ACCURACY CONTRACT (why this section looks the way it does):
-    #   Every tile shows ONLY figures measured from analytics_events via the SQL
-    #   views, covering the current retention window (the events table is capped,
-    #   so these are window figures, not lifetime — see analytics_hard_cap.sql).
-    #
-    #   The old pre-purge "baseline" (778 users / $124k as of 2026-07-10) has
-    #   been REMOVED, not just relabelled. The events behind it were deleted in
-    #   the purge, so those numbers can't be recomputed or verified from any
-    #   data that still exists — and the baseline's hours figure was itself
-    #   back-derived from its own dollar headline (hours = dollars / rate), which
-    #   is circular. An unverifiable number doesn't belong in the headline, even
-    #   labelled. What's shown below is smaller, but every figure traces to
-    #   events that are actually in the table right now.
+    #   Two kinds of number, never blended into one tile:
+    #     (A) LIVE — measured from analytics_events via the views, covering the
+    #         current rolling retention window (the table is capped, so this is a
+    #         window figure, not lifetime — see analytics_hard_cap.sql).
+    #     (B) BASELINE — the real pre-purge usage recorded from the live dashboard
+    #         on 2026-07-10 (user counts), kept as a dated snapshot in its own row.
+    #         Its dollar figure is a rounded ESTIMATE (hours back-derived from it),
+    #         so it is labelled as an estimate, not presented as measured.
+    #   (A) and (B) are shown in SEPARATE rows and never added together.
+    _baseline = None
+    try:
+        _bl = _fetch_view("analytics_baseline")
+        if _bl:
+            _baseline = _bl[0]
+    except Exception:
+        _baseline = None
+
+    _base_total = int((_baseline or {}).get("total_users_ever", 0) or 0)
+    _base_return = int((_baseline or {}).get("returning_users", 0) or 0)
+    _base_dollars = float((_baseline or {}).get("dollars_saved", 0) or 0)
+    _base_as_of = str((_baseline or {}).get("as_of", "") or "")
 
     # ---- LIVE figures (measured, current window only) --------------------- #
     _live_total = 0
     _live_return = 0
     _live_ret_pct = None
+    _win_start = None
+    _win_end = None
     _have_retention = bool(retention)
     if retention:
         _rt = retention[0]
@@ -26826,6 +26837,10 @@ with tab_analytics:
         _rp = _rt.get("retention_pct")
         _live_ret_pct = (float(_rp) if _rp is not None
                          else (100.0 * _live_return / _live_total if _live_total else 0.0))
+        # Live window bounds (earliest/latest event still retained). Present
+        # only if the view exposes them (older deployments may not yet).
+        _win_start = _rt.get("window_start")
+        _win_end = _rt.get("window_end")
 
     # ROI view. Distinguish "view returned zero savings" from "view is missing /
     # was dropped by analytics_minimal_views.sql". If v_roi_summary is absent we
@@ -26852,9 +26867,25 @@ with tab_analytics:
         _reliable = _err_pct <= 2.0
 
     # ===== ROW 1: LIVE (measured, current window) ========================== #
-    st.markdown('<div class="k" style="opacity:.75;margin:.2rem 0 .4rem;">'
-                'Live · measured from event data (current retention window)</div>',
-                unsafe_allow_html=True)
+    # Header shows a FIXED cycle-start anchor (the 2026-07-10 purge, from the
+    # baseline's as_of) so people know when this counting cycle began — PLUS an
+    # honest note that the live tiles count a rolling 30-day window, since the
+    # hard cap trims older events. The two together are truthful: a fixed anchor
+    # for context, and a clear statement of what the number actually covers.
+    _cycle_start = _base_as_of or "2026-07-10"   # fixed anchor: when tracking reset
+    _win_note = ""
+    if _win_start:
+        _win_note = (f" · live tiles below count the current window "
+                     f"({_win_start} – {_win_end or 'today'})")
+    st.markdown(
+        '<div class="k" style="opacity:.75;margin:.2rem 0 .4rem;">'
+        f'Live · measured from event data · <b>counting cycle started '
+        f'{_cycle_start}</b>{_win_note}</div>',
+        unsafe_allow_html=True)
+    st.caption("The cycle started on the fixed date above (when tracking was "
+               "reset). The live figures show a rolling 30-day window — older "
+               "events are trimmed to keep the database small — so they reflect "
+               "recent activity, not the whole cycle since that date.")
     _c1, _c2, _c3, _c4 = st.columns(4)
 
     if _have_retention:
