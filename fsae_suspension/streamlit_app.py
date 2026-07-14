@@ -4667,7 +4667,7 @@ _CAD_PART_SLOTS = {
     # label shown in dropdown : (subsystem key, dummy body display-name or None)
     # Chassis is first so it's the default selection — a dummy-backed slot, so
     # the "Replace the dummy" checkbox is live immediately instead of greyed out.
-    "Chassis":                  ("chassis",           "Spaceframe"),
+    "Chassis":                  ("chassis",           "Space frame"),
     "Front wing":               ("aerodynamics",      "Front wing"),
     "Rear wing":                ("aerodynamics",      "Rear wing"),
     "Sidepod / bodywork":       ("cooling",           "Sidepod (cooling)"),
@@ -4811,6 +4811,7 @@ _LIB_NAME_HINTS = [           # first match wins, checked on the lower filename
     ("front wing", "Front wing"), ("frontwing", "Front wing"),
     ("wing", "Front wing"), ("radiator", "Radiator"),
     ("sidepod", "Sidepod / bodywork"), ("body", "Sidepod / bodywork"),
+    ("spaceframe", "Chassis"), ("space frame", "Chassis"),
     ("monocoque", "Chassis"), ("chassis", "Chassis"), ("frame", "Chassis"),
     ("tub", "Chassis"), ("accum", "Accumulator / battery"),
     ("battery", "Accumulator / battery"), ("pack", "Accumulator / battery"),
@@ -10125,7 +10126,7 @@ with tab4:
 #  aero mounts to the CHASSIS, never the bodywork.
 def _add_aero_mount_overlay(fig, *, selected_el=None, n_selected=None):
     _pbx = getattr(fig, "_part_boxes", None) or {}
-    _mono = _pbx.get("Spaceframe") or _pbx.get("Monocoque")
+    _mono = _pbx.get("Space frame") or _pbx.get("Spaceframe") or _pbx.get("Monocoque")
     if not _mono:
         # The dummy chassis body wasn't drawn this render (Bodywork layer off,
         # typical once real chassis CAD replaces it). Anchor to the user's own
@@ -11144,6 +11145,7 @@ with tab_car:
         "Radiator core":     "cooling",
         "Motor + inverter":  "powertrain",
         "Accumulator":       "electrics",
+        "Space frame":       "chassis",
         "Spaceframe":        "chassis",
         "Monocoque":         "chassis",
         "Roll hoop":         "chassis",
