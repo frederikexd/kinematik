@@ -26919,30 +26919,7 @@ with tab_analytics:
                "baselines in feature_baselines. It is only as accurate as those "
                "assumptions.")
 
-    # ===== ROW 2: BASELINE (frozen historical snapshot) ==================== #
-    if _baseline:
-        _as_of_txt = f" (as of {_base_as_of})" if _base_as_of else ""
-        st.markdown(
-            '<div class="k" style="opacity:.75;margin:1rem 0 .4rem;">'
-            f'Historical baseline{_as_of_txt} · frozen pre-purge snapshot, '
-            'NOT live</div>', unsafe_allow_html=True)
-        _bp = (100.0 * _base_return / _base_total) if _base_total else 0.0
-        _b1, _b2, _b3, _b4 = st.columns(4)
-        _ax_metric(_b1, "Users (baseline)", f"{_base_total}",
-                   "observed pre-purge")
-        _ax_metric(_b2, "Returning (baseline)", f"{_bp:.0f}%",
-                   f"{_base_return} of {_base_total}", "var(--cyan)")
-        _ax_metric(_b3, "Value (baseline)", f"~${_base_dollars:,.0f}",
-                   "estimate", "var(--amber)")
-        _ax_metric(_b4, "Source", "snapshot", "dashboard, 2026-07-10",
-                   "var(--cyan)")
-        st.caption("User counts are real pre-purge usage, recorded from the "
-                   "live dashboard on 2026-07-10 before the events table was "
-                   "purged as a storage-capacity measure. The dollar figure is "
-                   "a rounded ROI estimate (hours back-derived from it, not "
-                   "measured), resting on the per-feature time assumptions in "
-                   "feature_baselines. Kept separate from the live numbers "
-                   "above, never added to them.")
+
 
 
 
