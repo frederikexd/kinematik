@@ -62,7 +62,14 @@ def load_chassis(path: str, offset=(0.0, 0.0, 0.0), scale=1.0) -> trimesh.Trimes
     ext = os.path.splitext(path)[1].lower()
 
     if ext in (".step", ".stp"):
-        import cascadio
+        try:
+            import cascadio
+        except ImportError:
+            raise ValueError(
+                "STEP/STP import needs the 'cascadio' package, which isn't "
+                "installed in this environment (no wheel for Python 3.13+). "
+                "Either deploy on Python 3.12, or convert the file to STL/OBJ/GLB "
+                "and upload that instead.")
         with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
             glb_path = tmp.name
         cascadio.step_to_glb(path, glb_path, tol_linear=0.5, tol_angular=0.5)
@@ -186,7 +193,14 @@ def load_part_mesh(path: str, *, max_faces: int = 4000,
     """
     ext = os.path.splitext(path)[1].lower()
     if ext in (".step", ".stp"):
-        import cascadio
+        try:
+            import cascadio
+        except ImportError:
+            raise ValueError(
+                "STEP/STP import needs the 'cascadio' package, which isn't "
+                "installed in this environment (no wheel for Python 3.13+). "
+                "Either deploy on Python 3.12, or convert the file to STL/OBJ/GLB "
+                "and upload that instead.")
         with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
             glb_path = tmp.name
         cascadio.step_to_glb(path, glb_path, tol_linear=0.1, tol_angular=0.3)
