@@ -32,6 +32,18 @@ reportlab==4.4.10  # PDF design-handover export         (project.py: render_pdf)
 # Not exercised by the sandbox test run — pinned to the latest known-good at
 # time of writing. Verify each on first deploy of this file (open the feature
 # once) and adjust if the deploy log complains:
+# Voice memos (spoken documentation / Lead Notes): turn an uploaded phone
+# recording into editable text. Both are OFFLINE and not generative AI —
+# vosk is a classical speech recognizer (fixed model, deterministic, runs on
+# the deployment, no API key), and imageio-ffmpeg ships a static ffmpeg so any
+# phone format (.m4a/.mp3/.ogg/.webm/…) decodes without a system ffmpeg/apt.
+# The app boots without these; the voice uploader just falls back to the
+# paste-a-transcript path until they're present. The ~40 MB Vosk English model
+# self-installs to the OS cache on first use (override dir: KINEMATIK_VOSK_DIR).
+# For higher accuracy, optionally add faster-whisper instead — it's tried first.
+vosk==0.3.45               # offline speech-to-text floor  (streamlit_app.py: _vm_transcribe)
+imageio-ffmpeg==0.5.1      # static ffmpeg for audio decode (streamlit_app.py: _vm_to_wav16k)
+
 supabase==2.27.0            # cloud project sync + workspace isolation backend
 cascadio==0.0.16            # STEP/STP chassis import   (chassis.py, integration.py)
 fast_simplification==0.1.12 # faster CAD-part decimation (falls back to built-in
