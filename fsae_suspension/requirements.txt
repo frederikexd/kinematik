@@ -42,6 +42,12 @@ reportlab==4.4.10  # PDF design-handover export         (project.py: render_pdf)
 # self-installs to the OS cache on first use (override dir: KINEMATIK_VOSK_DIR).
 # For higher accuracy, optionally add faster-whisper instead — it's tried first.
 vosk>=0.3.45; python_version < "3.13"       # offline speech-to-text floor (streamlit_app.py: _vm_transcribe). No 3.13/3.14 wheel; transcription degrades to the paste-a-note fallback when absent. Pin Python to 3.12 to enable it.
+# faster-whisper — PREFERRED engine (_vm_transcribe tries it before vosk). Far
+# more robust to mumbling/accents than vosk's small Kaldi model. Uses the "base"
+# model, CPU, int8 — lean enough for the free tier (~140 MB model cached on first
+# use). Gated to 3.12 because its compiled dep ctranslate2 lags on 3.14; if it's
+# ever skipped the app silently falls back to vosk, never breaks the boot.
+faster-whisper>=1.0; python_version < "3.13"   # better accuracy STT (streamlit_app.py: _vm_transcribe)
 imageio-ffmpeg>=0.5.1      # static ffmpeg for audio decode (streamlit_app.py: _vm_to_wav16k)
 
 supabase==2.27.0            # cloud project sync + workspace isolation backend
