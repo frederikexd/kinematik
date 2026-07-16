@@ -71,6 +71,11 @@ class _LazyModule:
         return mod
 
     def __getattr__(self, item):
+        # Never let a missing dunder trigger a real import: attribute probes for
+        # special methods (e.g. copy/pickle/inspect doing hasattr(mod, "__x__"))
+        # must raise AttributeError cheaply, not import a possibly-broken module.
+        if item.startswith("__") and item.endswith("__"):
+            raise AttributeError(item)
         return getattr(self._load(), item)
 
     def __repr__(self):
@@ -843,9 +848,17 @@ def _install_unit_aware_messages():
         # no matter what state the deployed units module is in.
         _usentence = _ulabel = None
         try:
-            _um = units_mod._load() if hasattr(units_mod, "_load") else units_mod
-            _usentence = getattr(_um, "usentence", None)
-            _ulabel = getattr(_um, "ulabel", None)
+            # Force the real, fully-imported module object ONCE. Everything below
+            # binds concrete function objects off it, so the render-time closure
+            # never touches the lazy proxy again (a re-triggered import that
+            # fails mid-session must not be able to crash a caption/metric call).
+            import importlib as _il
+            _um = _il.import_module("suspension.units")
+            _us = getattr(_um, "usentence", None)
+            _ul = getattr(_um, "ulabel", None)
+            # Only accept genuinely callable, non-lazy functions.
+            if callable(_us) and callable(_ul):
+                _usentence, _ulabel = _us, _ul
         except Exception:
             _usentence = _ulabel = None
         _prettify_ok = callable(_usentence) and callable(_ulabel)
