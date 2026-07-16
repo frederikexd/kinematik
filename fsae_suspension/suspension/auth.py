@@ -153,8 +153,14 @@ class SupabaseAuth:
         database is this human and RLS returns only their rows."""
         from supabase import create_client
         client = create_client(self._url, self._anon_key)
-        # supabase-py 2.31: update the httpx session headers directly
         token = session.access_token
+        refresh = session.refresh_token or token
+        # Set the session on the auth client so it knows the user identity
+        try:
+            client.auth.set_session(token, refresh)
+        except Exception:
+            pass
+        # Also update the postgrest httpx headers directly (supabase-py 2.31)
         client.postgrest.session.headers.update(
             {"Authorization": f"Bearer {token}"}
         )
