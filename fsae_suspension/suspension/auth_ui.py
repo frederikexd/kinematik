@@ -143,6 +143,17 @@ def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
                 break
     with st.sidebar:
         choice = st.selectbox("Workspace", keys, index=index, key="_kx_ws_choice")
+        with st.expander("➕ New workspace", expanded=False):
+            new_ws_name = st.text_input("Workspace name", key="_kx_extra_ws_name")
+            new_ws_kind = st.selectbox("Type", ["team", "ev_startup", "sandbox"],
+                                       key="_kx_extra_ws_kind")
+            if st.button("Create", key="_kx_extra_ws_btn"):
+                try:
+                    new_ws = auth.create_workspace(session, new_ws_name, kind=new_ws_kind)
+                    st.session_state["_kx_ws_id"] = new_ws.id
+                    st.rerun()
+                except AuthError as e:
+                    st.error(str(e))
     ws_id = labels[choice]
     st.session_state["_kx_ws_id"] = ws_id
 
