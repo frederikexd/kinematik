@@ -834,18 +834,29 @@ def _install_unit_aware_messages():
     try:
         from streamlit.delta_generator import DeltaGenerator as _DG
 
+        # Resolve the two prettifier helpers ONCE, defensively. On a fully
+        # up-to-date tree both exist; on an older/partially-deployed units
+        # module either may be missing. If we can't get both, _conv becomes a
+        # pure pass-through and the wrapping below still installs harmlessly —
+        # the app renders with raw labels instead of crashing every widget.
+        try:
+            _usentence = getattr(units_mod, "usentence", None)
+            _ulabel = getattr(units_mod, "ulabel", None)
+        except Exception:
+            _usentence = _ulabel = None
+        _prettify_ok = callable(_usentence) and callable(_ulabel)
+
         def _conv(x):
             # Prettify unit labels in widget strings. This wraps EVERY Streamlit
-            # widget, so it must never raise — if the units module is an older
-            # deployed version missing usentence/ulabel (or anything else goes
-            # wrong), fall back to the original string rather than taking down
-            # the whole page with an AttributeError.
-            if isinstance(x, str):
-                try:
-                    return units_mod.usentence(units_mod.ulabel(x))
-                except Exception:
-                    return x
-            return x
+            # widget, so it must never raise. Guarded three ways: only strings,
+            # only when both helpers resolved, and any failure returns the
+            # original string.
+            if not (_prettify_ok and isinstance(x, str)):
+                return x
+            try:
+                return _usentence(_ulabel(x))
+            except Exception:
+                return x
 
         def _wrap(fn, nstr):
             def _f(self, *a, **kw):
