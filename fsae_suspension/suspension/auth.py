@@ -150,19 +150,25 @@ class SupabaseAuth:
     # ------------------------------------------------------------------ #
     def _user_client(self, session: Session):
         """A PostgREST client bound to the user's JWT, so auth.uid() inside the
-        database is this human and RLS returns only their rows."""
+        database is this human and RLS returns only their rows.
+        
+        supabase-py 2.x builds postgrest lazily from self.options.headers.
+        We must update options.headers AND reset _postgrest BEFORE accessing
+        client.postgrest, otherwise it rebuilds with the anon key."""
         from supabase import create_client
-        client = create_client(self._url, self._anon_key)
         token = session.access_token
-        refresh = session.refresh_token or token
-        # Update options.headers so any lazily-built sub-client picks up the token
+        if not token:
+            raise AuthError("Session has no access token — please sign in again.")
+        client = create_client(self._url, self._anon_key)
         auth_header = f"Bearer {token}"
+        # 1. Update the options dict that _init_postgrest_client reads
         client.options.headers["Authorization"] = auth_header
+        # 2. Update the auth sub-client headers too (used by some RPC paths)
         client.auth._headers["Authorization"] = auth_header
-        # Force-reset postgrest so it rebuilds with the new options.headers
+        # 3. Force postgrest to rebuild with the new options.headers
         client._postgrest = None
-        # Now accessing client.postgrest rebuilds it with correct auth header
-        client.postgrest.session.headers.update({"Authorization": auth_header})
+        # 4. Trigger rebuild — postgrest.session.headers now has the user JWT
+        _ = client.postgrest
         return client
 
     def list_workspaces(self, session: Session) -> list[tuple[Workspace, str]]:
