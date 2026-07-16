@@ -47,7 +47,6 @@ import json
 import time
 import queue
 import atexit
-import random
 import threading
 import datetime as _dt
 import contextlib
@@ -75,56 +74,6 @@ _EVENT_TYPES = {
     "render", "data_pull", "export", "error", "feature_released",
     "first_result",
 }
-
-# --------------------------------------------------------------------------- #
-#  Event sampling — write ONLY what the minimal analytics tab actually reads    #
-# --------------------------------------------------------------------------- #
-#  The lean Analytics tab computes everything from three views:
-#      v_roi_summary   → needs 'workflow_complete' events
-#      v_retention     → needs any event carrying a session/visitor identity;
-#                        'session_start' is the reliable one-per-visit anchor
-#      v_error_rate    → needs 'error' events (and the success flag on completes)
-#
-#  So only THREE event types produce rows any kept view reads: session_start,
-#  workflow_complete, error. Every other event type (tab_open, feature_engage,
-#  render, data_pull, export, feature_released, first_result) would write rows
-#  that nothing queries — pure storage cost. We drop those entirely (rate 0.0)
-#  to keep the table as small as possible, which is the explicit goal here.
-#
-#  To bring a metric back later, re-enable its event type here AND re-create the
-#  view it feeds (analytics_schema.sql / analytics_hardening.sql). 1.0 = keep
-#  all, 0.0 = drop all, anything between = Bernoulli sample at that rate.
-_SAMPLE_RATES: dict = {
-    # kept — the only events the minimal tab's three views consume
-    "session_start":     1.0,
-    "workflow_complete": 1.0,
-    "error":             1.0,
-    # dropped — no minimal-tab view reads these, so writing them is wasted space
-    "tab_open":          0.0,
-    "feature_engage":    0.0,
-    "render":            0.0,
-    "data_pull":         0.0,
-    "export":            0.0,
-    "feature_released":  0.0,
-    "first_result":      0.0,
-}
-
-
-def _keep_event(event_type: str) -> bool:
-    """Return True if this event should be recorded, applying per-type sampling.
-
-    In the minimal configuration only session_start, workflow_complete and error
-    are written (rate 1.0); every other event type is dropped (rate 0.0) because
-    no view in the lean Analytics tab reads it, so storing it is pure cost. An
-    unknown event type defaults to 1.0 (kept) so new instrumentation isn't
-    silently lost — set an explicit rate above to change that. Sampling is
-    independent per call (Bernoulli)."""
-    rate = _SAMPLE_RATES.get(event_type, 1.0)
-    if rate >= 1.0:
-        return True
-    if rate <= 0.0:
-        return False
-    return random.random() < rate
 
 
 # --------------------------------------------------------------------------- #
@@ -259,22 +208,6 @@ class _Session:
 
 _SESS = _Session()   # process-level fallback only (non-Streamlit contexts)
 
-# Process-level set of session_ids that have ALREADY emitted `session_start`.
-# Streamlit can execute the script more than once for a single fresh session
-# (an immediate widget/component-driven rerun on load), which can slip past the
-# per-session_state `started` flag and log the same visit twice — inflating the
-# user count. session_id is minted once per browser session and survives
-# reruns, so guarding the emit on it here makes session_start idempotent per
-# real visit no matter how many times the script re-executes within this server
-# process. The set is shared across all sessions in the process, so a genuinely
-# new visitor (new session_id) is unaffected and still logs exactly once.
-# (Historical note: the old localStorage ?kvid= + location.reload() identity
-# scheme created a genuinely SECOND session per visit with a different
-# session_id AND visitor_id — which this guard could not dedup. That scheme is
-# gone; see suspension/visitor_id.py.)
-_STARTED_SESSIONS: set = set()
-_STARTED_LOCK = threading.Lock()
-
 
 def _store():
     """Return the per-session store: st.session_state when running inside a real
@@ -321,7 +254,7 @@ def _opted_out() -> bool:
 
 
 def init(member: Optional[str] = None, subteam: str = "unknown",
-         is_new_member: bool = False) -> None:
+         is_new_member: bool = False, source: Optional[str] = None) -> None:
     """Start (or update) the analytics session. Safe to call every rerun.
 
     Streamlit reruns the whole script constantly, so this is cheap and emits
@@ -345,26 +278,23 @@ def init(member: Optional[str] = None, subteam: str = "unknown",
             _sset("member", member.strip() or None)
         if subteam:
             _sset("subteam", subteam)
-        # emit session_start once per browser session. The visitor_id is
-        # resolved SYNCHRONOUSLY on render 1 (suspension/visitor_id.py reads
-        # the request cookie / ip+ua fingerprint server-side), so there is no
-        # longer any "wait for the id" deferral here — the first emit always
-        # carries a durable id.
+        # emit session_start once per browser session — but NOT until the
+        # visitor_id is stable. On the very first Streamlit render the
+        # CookieManager hasn't populated yet, so _ax_resolved_vid_kind is
+        # "cookie (resolving…)". Emitting here would tag the event with a
+        # throwaway seed id that differs from the durable cookie id resolved
+        # on render 2, making the user appear as a brand-new visitor on every
+        # reopen and freezing returning_users at 0. We defer by one rerun:
+        # init() is called again on every rerun (it's idempotent), so the
+        # emit fires on render 2 when the id is locked in.
         if not _sget("started"):
-            # Authoritative one-per-visit guard: dedup on the stable session_id in
-            # a process-level set. Streamlit can execute the script more than once
-            # for a single fresh session (e.g. an immediate widget-driven rerun on
-            # load), which could slip past the session_state `started` flag and
-            # emit session_start twice — double-counting the visit. Claim the
-            # session_id atomically; only the first claimant emits.
-            sid = _resolve_session_id()
-            with _STARTED_LOCK:
-                if sid in _STARTED_SESSIONS:
-                    _sset("started", True)
-                    return
-                _STARTED_SESSIONS.add(sid)
+            s = _store()
+            vid_kind = (s.get("_ax_resolved_vid_kind") or "") if s is not None else ""
+            if vid_kind == "cookie (resolving\u2026)":
+                return  # defer to next rerun — visitor_id not yet stable
             _sset("started", True)
-            _emit("session_start", feature=None, is_new_member=is_new_member)
+            _emit("session_start", feature=None, is_new_member=is_new_member,
+                  value_payload={"source": source} if source else None)
     except Exception:
         pass
 
@@ -406,11 +336,6 @@ def _emit(event_type: str, *, feature: Optional[str] = None,
     if not _sget("enabled", True):
         return
     if event_type not in _EVENT_TYPES:
-        return
-    # Sampling gate: drop a fraction of high-frequency latency pings before they
-    # ever hit the queue, keeping DB size and egress sustainable on the free tier
-    # without affecting any metric-critical event (those default to 100%).
-    if not _keep_event(event_type):
         return
     try:
         sid = _resolve_session_id()
@@ -620,15 +545,8 @@ def auto_replay_once() -> int:
     when Supabase is reachable — so buffered events recover without anyone
     having to click a button (the manual-only path meant the buffer was usually
     wiped by an ephemeral-host restart before it was ever replayed). Returns the
-    number replayed (0 if nothing to do / already done this session).
-
-    Honours the kill-switch: with telemetry disabled (KINEMATIK_ANALYTICS=off)
-    this is a no-op, so a disabled deploy never flushes a stale local buffer back
-    into Supabase (which would otherwise spike writes/egress on the deploy that
-    turned analytics off)."""
+    number replayed (0 if nothing to do / already done this session)."""
     try:
-        if not _sget("enabled", True):
-            return 0
         if _sget("_replayed_once"):
             return 0
         _sset("_replayed_once", True)
@@ -651,16 +569,7 @@ def fetch_view(view_name: str) -> list[dict]:
     _VIEW_ERRORS so the dashboard can tell a broken/missing view (e.g. mid-
     migration, when a view is dropped but not yet recreated) apart from a view
     that's simply empty — otherwise both render as blank and look like data
-    loss. Use view_error(view_name) to check.
-
-    Honours the kill-switch: when telemetry is disabled (KINEMATIK_ANALYTICS=off)
-    this returns [] WITHOUT touching Supabase, so the dashboard's per-rerun view
-    pulls generate zero egress. Without this guard, fetch_view kept reading from
-    the DB on every Streamlit rerun even with analytics turned off — the read
-    side ignored the flag that only ever gated the write side."""
-    if not _sget("enabled", True):
-        _VIEW_ERRORS[view_name] = None  # disabled, not an error
-        return []
+    loss. Use view_error(view_name) to check."""
     client = _SINK._get_client()
     if client is None:
         _VIEW_ERRORS[view_name] = None  # not an error, just not configured
