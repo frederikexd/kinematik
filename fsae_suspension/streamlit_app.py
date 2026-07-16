@@ -834,14 +834,18 @@ def _install_unit_aware_messages():
     try:
         from streamlit.delta_generator import DeltaGenerator as _DG
 
-        # Resolve the two prettifier helpers ONCE, defensively. On a fully
-        # up-to-date tree both exist; on an older/partially-deployed units
-        # module either may be missing. If we can't get both, _conv becomes a
-        # pure pass-through and the wrapping below still installs harmlessly —
-        # the app renders with raw labels instead of crashing every widget.
+        # Resolve the two prettifier helpers ONCE, defensively. units_mod is a
+        # lazy module; if its underlying import is broken on a given deploy,
+        # even getattr(..., None) can RAISE (a non-AttributeError from inside
+        # __getattr__ isn't swallowed by the default). So wrap the whole
+        # resolution — including forcing the import — in try/except and fall
+        # back to a pure pass-through. This is what makes the label patch safe
+        # no matter what state the deployed units module is in.
+        _usentence = _ulabel = None
         try:
-            _usentence = getattr(units_mod, "usentence", None)
-            _ulabel = getattr(units_mod, "ulabel", None)
+            _um = units_mod._load() if hasattr(units_mod, "_load") else units_mod
+            _usentence = getattr(_um, "usentence", None)
+            _ulabel = getattr(_um, "ulabel", None)
         except Exception:
             _usentence = _ulabel = None
         _prettify_ok = callable(_usentence) and callable(_ulabel)
