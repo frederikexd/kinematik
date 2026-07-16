@@ -154,6 +154,33 @@ _SUSP_MODULES = dict(
 )
 globals().update({alias: _LazyModule(f"suspension.{sub}")
                   for alias, sub in _SUSP_MODULES.items()})
+
+
+def _heal_units_module(mod):
+    """Guarantee the units module always exposes the prettifier/label helpers.
+
+    The app calls ``units_mod.ulabel`` / ``.usentence`` / ``.label`` directly at
+    ~40 sites (axis titles, ``unum`` widgets, captions). If a stale or partially
+    deployed ``suspension/units.py`` is missing any of them, every one of those
+    calls would raise ``AttributeError`` and white-screen the whole page. This
+    post-import hook backfills any missing name with a safe metric-mode no-op
+    (identity for strings, plain ``value`` for ``label``), so an out-of-date
+    deploy degrades to metric labels instead of crashing.
+    """
+    try:
+        if not callable(getattr(mod, "ulabel", None)):
+            mod.ulabel = lambda text: text
+        if not callable(getattr(mod, "usentence", None)):
+            mod.usentence = lambda text: text
+        if not callable(getattr(mod, "label", None)):
+            mod.label = lambda unit: unit
+    except Exception:
+        pass
+
+
+# Replace the plain lazy units module with a self-healing one.
+units_mod = _LazyModule("suspension.units", post=_heal_units_module)
+
 proclib_mod = _LazyModule("suspension.process_library", post=_purge_stale_proclib)
 wt_mod = _LazyModule("suspension.aero.windtunnel")
 
