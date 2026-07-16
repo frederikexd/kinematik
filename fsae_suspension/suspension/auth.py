@@ -211,6 +211,16 @@ class SupabaseAuth:
                     .execute())
             row = (resp.data or [None])[0]
             if not row:
+                # supabase-py v2 may return empty data even on success;
+                # fall back to reading the workspace we just created.
+                fallback = (client.table("workspaces")
+                            .select("*")
+                            .eq("name", name.strip())
+                            .order("created_at", desc=True)
+                            .limit(1)
+                            .execute())
+                row = (fallback.data or [None])[0]
+            if not row:
                 raise AuthError("Workspace insert returned no row.")
             return Workspace(id=str(row["id"]), name=row["name"],
                              kind=row.get("kind", kind))
