@@ -205,21 +205,18 @@ class SupabaseAuth:
             raise AuthError("Workspace name cannot be empty.")
         client = self._user_client(session)
         try:
-            resp = (client.table("workspaces")
-                    .insert({"name": name.strip(), "kind": kind,
-                             "created_by": session.user_id})
-                    .execute())
-            row = (resp.data or [None])[0]
-            if not row:
-                # supabase-py v2 may return empty data even on success;
-                # fall back to reading the workspace we just created.
-                fallback = (client.table("workspaces")
-                            .select("*")
-                            .eq("name", name.strip())
-                            .order("created_at", desc=True)
-                            .limit(1)
-                            .execute())
-                row = (fallback.data or [None])[0]
+            # Use a SECURITY DEFINER RPC so the insert bypasses RLS correctly
+            # and auth.uid() is always resolved server-side.
+            resp = client.rpc("create_workspace", {
+                "ws_name": name.strip(),
+                "ws_kind": kind,
+            }).execute()
+            row = resp.data
+            if isinstance(row, list):
+                row = row[0] if row else None
+            if isinstance(row, str):
+                import json as _json
+                row = _json.loads(row)
             if not row:
                 raise AuthError("Workspace insert returned no row.")
             return Workspace(id=str(row["id"]), name=row["name"],
