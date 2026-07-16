@@ -89,41 +89,6 @@ st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    initial_sidebar_state="expanded")
 
 # --------------------------------------------------------------------------- #
-#  Feature flag: part-import / part-drop tools.
-#
-#  Hides the two PART TOOLS expanders ("Drop your part on the car …" and
-#  "Waiting on a part? Place a stand-in …") and the PART TOOLS heading. Off by
-#  default. Set env KINEMATIK_SHOW_PART_TOOLS=1 (or st.secrets["show_part_tools"]
-#  = true) to bring them back without touching code.
-# --------------------------------------------------------------------------- #
-def _part_tools_enabled():
-    if os.environ.get("KINEMATIK_SHOW_PART_TOOLS", "").strip().lower() in (
-            "1", "true", "yes", "on"):
-        return True
-    try:
-        return bool(st.secrets.get("show_part_tools", False))
-    except Exception:
-        return False
-
-
-_PART_TOOLS_HIDE_CSS_DONE = False
-
-
-def _part_tools_slot(key):
-    """Keyed container for a PART TOOLS block; hidden via CSS when the flag is
-    off (body still runs, so shared session_state stays intact)."""
-    global _PART_TOOLS_HIDE_CSS_DONE
-    slot = st.container(key=key)
-    if not _part_tools_enabled() and not _PART_TOOLS_HIDE_CSS_DONE:
-        st.markdown(
-            "<style>"
-            ".st-key-parttool_drop, .st-key-parttool_wait, "
-            ".st-key-parttool_heading{display:none !important;}"
-            "</style>", unsafe_allow_html=True)
-        _PART_TOOLS_HIDE_CSS_DONE = True
-    return slot
-
-# --------------------------------------------------------------------------- #
 #  Aesthetic: technical instrument panel. Dark carbon, amber/cyan telemetry,
 #  monospace data, a single high-contrast accent. No generic dashboard look.
 # --------------------------------------------------------------------------- #
@@ -1849,10 +1814,9 @@ with tab_car:
     # and pushes every tool/panel below it — far less to scroll past.
     _car_slot = st.container()
 
-    with _part_tools_slot("parttool_heading"):
-        st.markdown('<p class="hint" style="margin:10px 0 2px;font-family:JetBrains Mono;'
-                    'font-size:.7rem;letter-spacing:.12em;color:#6f7d8c;">PART TOOLS</p>',
-                    unsafe_allow_html=True)
+    st.markdown('<p class="hint" style="margin:10px 0 2px;font-family:JetBrains Mono;'
+                'font-size:.7rem;letter-spacing:.12em;color:#6f7d8c;">PART TOOLS</p>',
+                unsafe_allow_html=True)
 
     # ===================================================================== #
     #  DROP YOUR PART ON THE CAR  —  the frictionless "does it fit" path.    #
@@ -1904,9 +1868,8 @@ with tab_car:
                   "aerodynamics", "brakes", "chassis", "suspension",
                   "data-acquisition"]
 
-    with _part_tools_slot("parttool_drop").expander(
-            "➕  Drop your part on the car — type its size in mm, see it fit",
-            expanded=False):
+    with st.expander("➕  Drop your part on the car — type its size in mm, see it fit",
+                     expanded=False):
         st.markdown(
             '<p class="hint">Got a part with real dimensions \u2014 a radiator off a '
             'spec sheet, an accumulator box, a motor? Put its <b>actual size in '
@@ -2143,7 +2106,7 @@ with tab_car:
 
     _open_reqs = [r for r in st.session_state.car3d_part_requests
                   if not r.get("resolved")]
-    with _part_tools_slot("parttool_wait").expander(
+    with st.expander(
             "⏳  Waiting on a part? Place a stand-in so you're not blocked"
             + (f"  ·  {len(_open_reqs)} open" if _open_reqs else ""),
             expanded=False):
