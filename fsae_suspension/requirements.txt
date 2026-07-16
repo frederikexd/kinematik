@@ -39,3 +39,4 @@ supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseSto
 
 vosk>=0.3.45
 imageio-ffmpeg>=0.4.9
+faster-whisper>=1.0  # speech-to-text (faster than openai-whisper, no model download needed)
