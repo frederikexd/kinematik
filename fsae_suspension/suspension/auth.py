@@ -152,7 +152,12 @@ class SupabaseAuth:
         """A PostgREST client bound to the user's JWT, so auth.uid() inside the
         database is this human and RLS returns only their rows."""
         from supabase import create_client
-        client = create_client(self._url, self._anon_key)
+        from supabase.lib.client_options import ClientOptions
+        client = create_client(
+            self._url,
+            self._anon_key,
+            options=ClientOptions(headers={"Authorization": f"Bearer {session.access_token}"})
+        )
         client.postgrest.auth(session.access_token)
         return client
 
