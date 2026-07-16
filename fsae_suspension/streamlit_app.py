@@ -386,6 +386,58 @@ def _ax_wrap_download(_orig):
     return _wrapped
 
 
+import inspect as _ax_inspect
+
+# Per-rerun counter so multiple unkeyed charts emitted from the SAME source line
+# (e.g. inside a loop) each get a distinct-but-stable key. Streamlit reruns the
+# script top-to-bottom deterministically, so (lineno, nth-hit-this-run) is the
+# same key for the same chart on every rerun — which is exactly what lets
+# Streamlit reuse the existing iframe/WebGL context instead of minting a new one.
+_AX_PLOT_KEY_COUNTS = {}
+_AX_PLOT_RUN_TOKEN = [None]
+
+
+def _ax_auto_plot_key():
+    """Deterministic key for an unkeyed plotly_chart, based on the call site.
+
+    WHY THIS EXISTS — the WebGL/RAM leak fix:
+    Every Plotly 3D chart (go.Mesh3d / go.Scatter3d) spins up its own WebGL
+    context inside Streamlit's iframe. Without a stable `key`, Streamlit treats
+    each rerun's chart as a brand-new element, so switching tabs and back leaves
+    the previous context orphaned (browsers cap live WebGL contexts, and the
+    Python-side figures pile up too). A stable key makes Streamlit reuse the
+    same element, so the context is recycled rather than re-allocated — this is
+    the Plotly/Streamlit analogue of a Three.js dispose() on unmount.
+    """
+    try:
+        # Reset the per-line counters once per script run. We detect a new run
+        # via Streamlit's script run context id; fall back to id(session_state).
+        try:
+            from streamlit.runtime.scriptrunner import get_script_run_ctx as _grc
+            _tok = getattr(_grc(), "script_run_id", None) or id(st.session_state)
+        except Exception:
+            _tok = id(st.session_state)
+        if _AX_PLOT_RUN_TOKEN[0] != _tok:
+            _AX_PLOT_RUN_TOKEN[0] = _tok
+            _AX_PLOT_KEY_COUNTS.clear()
+        # Walk out of this module's wrapper frames to the real call site.
+        _frame = _ax_inspect.currentframe()
+        _lineno = None
+        while _frame is not None:
+            _co = _frame.f_code
+            if _co.co_name not in ("_ax_auto_plot_key", "_wrapped"):
+                _lineno = _frame.f_lineno
+                break
+            _frame = _frame.f_back
+        if _lineno is None:
+            return None
+        _n = _AX_PLOT_KEY_COUNTS.get(_lineno, 0)
+        _AX_PLOT_KEY_COUNTS[_lineno] = _n + 1
+        return f"axplot_L{_lineno}_{_n}"
+    except Exception:
+        return None
+
+
 def _ax_wrap_result(_orig):
     def _wrapped(*args, **kwargs):
         # A result render (chart/plot) means the entered numbers ran and
@@ -397,6 +449,17 @@ def _ax_wrap_result(_orig):
             _af = st.session_state.get("_ax_last_active_tab")
             if _af:
                 _axn.auto_complete(_af, action="result", require_engaged=True)
+        except Exception:
+            pass
+        # Leak fix: if the caller didn't pass an explicit key, inject a stable
+        # one so Streamlit reuses the chart's iframe/WebGL context across reruns
+        # instead of orphaning it on every tab switch. Never override an
+        # explicit key, and stay fully guarded so a render never fails here.
+        try:
+            if "key" not in kwargs or kwargs.get("key") is None:
+                _k = _ax_auto_plot_key()
+                if _k:
+                    kwargs["key"] = _k
         except Exception:
             pass
         return _orig(*args, **kwargs)
@@ -12350,19 +12413,66 @@ with tab_car:
                   _suppress_parts.add(_p["replaces_drawname"])
               if _p.get("replaces_dummy"):
                   _suppress_parts.add(_p["replaces_dummy"])
-          _fig_car = fullcar_mod.build_full_car_figure(
-              vp=_vp_car, ledger=_led_car, topology_label=_topo_lbl,
-              show_tires=_show_tires, show_brakes=_show_brakes,
-              show_aero=_show_aero, show_cooling=_show_cool,
-              show_powertrain=_show_pt, show_electrics=_show_el,
-              show_bodywork=_show_body, show_floor=_show_floor,
-              highlight_subsystem=_focus,
-              focus_subsystem=_focus, tire_width_mm=float(_tire_w),
-              part_overrides=_lib_snap_overrides(_part_overrides),
-              custom_parts=st.session_state.get("car3d_custom_parts", []),
-              suppress_subsystems=_suppress,
-              suppress_parts=_suppress_parts,
-              **_car_kwargs)
+          # --- Rebuild guard (WebGL/RAM leak fix, Python side) -------------- #
+          # build_full_car_figure allocates large numpy vertex arrays for every
+          # body on the car. A full rerun fires on every tab switch, slider nudge
+          # and click, so rebuilding it unconditionally is what churns RAM. We
+          # can't @st.cache_data it (its inputs are live kinematics/ledger
+          # objects with methods — not reliably hashable), so instead we
+          # fingerprint the handful of SCALAR inputs that actually change the
+          # geometry and reuse the last figure (plus its side-effect box attrs)
+          # when nothing relevant moved. Fully guarded: any hiccup falls straight
+          # through to a normal rebuild, so correctness never depends on the memo.
+          _cust_parts = st.session_state.get("car3d_custom_parts", [])
+          _po_snap = _lib_snap_overrides(_part_overrides)
+          _fig_car = None
+          try:
+              import json as _json
+              _fp = _json.dumps({
+                  "topo": _topo_lbl,
+                  "flags": [bool(_show_tires), bool(_show_brakes),
+                            bool(_show_aero), bool(_show_cool), bool(_show_pt),
+                            bool(_show_el), bool(_show_body), bool(_show_floor)],
+                  "focus": _focus, "tire_w": round(float(_tire_w), 3),
+                  "po": _po_snap, "cust": _cust_parts,
+                  "supp": sorted(_suppress),
+                  "supp_parts": sorted(_suppress_parts),
+                  "vp": getattr(_vp_car, "fingerprint", lambda: None)()
+                        if hasattr(_vp_car, "fingerprint")
+                        else [round(float(getattr(_vp_car, _a, 0.0)), 3)
+                              for _a in ("wheelbase", "track_front",
+                                         "track_rear")],
+                  # Ledger is rebuilt fresh each rerun, so id() would never
+                  # match; fingerprint its stable session-state source instead.
+                  "led": st.session_state.get("ledger"),
+                  "extra": sorted(_car_kwargs.keys()),
+              }, sort_keys=True, default=str)
+          except Exception:
+              _fp = None
+          _memo = st.session_state.get("_car3d_fig_memo")
+          if (_fp is not None and _memo is not None
+                  and _memo.get("fp") == _fp and _memo.get("fig") is not None):
+              _fig_car = _memo["fig"]
+
+          if _fig_car is None:
+              _fig_car = fullcar_mod.build_full_car_figure(
+                  vp=_vp_car, ledger=_led_car, topology_label=_topo_lbl,
+                  show_tires=_show_tires, show_brakes=_show_brakes,
+                  show_aero=_show_aero, show_cooling=_show_cool,
+                  show_powertrain=_show_pt, show_electrics=_show_el,
+                  show_bodywork=_show_body, show_floor=_show_floor,
+                  highlight_subsystem=_focus,
+                  focus_subsystem=_focus, tire_width_mm=float(_tire_w),
+                  part_overrides=_po_snap,
+                  custom_parts=_cust_parts,
+                  suppress_subsystems=_suppress,
+                  suppress_parts=_suppress_parts,
+                  **_car_kwargs)
+              # Keep only ONE figure in the memo (max_entries=1) so this can't
+              # itself become a leak — the previous figure is dropped and freed.
+              if _fp is not None:
+                  st.session_state["_car3d_fig_memo"] = {"fp": _fp,
+                                                         "fig": _fig_car}
           # Stash the actual drawn part boxes so the CAD form (which runs before
           # this build on the next rerun) can fit a part to its REAL placeholder,
           # not just the rough anchor. Read from the prior run; refreshes on redraw.
