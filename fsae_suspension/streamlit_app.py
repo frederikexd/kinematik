@@ -835,8 +835,16 @@ def _install_unit_aware_messages():
         from streamlit.delta_generator import DeltaGenerator as _DG
 
         def _conv(x):
+            # Prettify unit labels in widget strings. This wraps EVERY Streamlit
+            # widget, so it must never raise — if the units module is an older
+            # deployed version missing usentence/ulabel (or anything else goes
+            # wrong), fall back to the original string rather than taking down
+            # the whole page with an AttributeError.
             if isinstance(x, str):
-                return units_mod.usentence(units_mod.ulabel(x))
+                try:
+                    return units_mod.usentence(units_mod.ulabel(x))
+                except Exception:
+                    return x
             return x
 
         def _wrap(fn, nstr):
@@ -1076,6 +1084,79 @@ def render_generic_point_editor(topo_key):
                     nv.append(units_mod.to_metric(_disp, "mm"))
                 coords[nm] = nv
     return coords
+
+
+# --------------------------------------------------------------------------- #
+#  Import bridge: importer canonical keys -> each topology's native point names.
+#  The hardpoint importer (suspension.hardpoint_import) emits CANONICAL keys
+#  (e.g. "strut_top", "link1_inner", "arm_hub"). The double-wishbone editor
+#  stores under those same canonical keys in st.session_state['hp'], but every
+#  OTHER topology's live editor stores under the builder's SHORT names (from
+#  topologies.py: "st", "sl", "in1", "out1", "pi", "po", "hub", ...). This table
+#  translates so an import can populate any topology's editor, not just wishbone.
+#  wheel_center/contact_patch ("wc"/"cp") are shared by every topology.
+# --------------------------------------------------------------------------- #
+_IMPORT_KEY_TO_NATIVE = {
+    "double_wishbone": None,   # None = keys already match the wishbone store
+    "macpherson": {
+        "strut_top": "st", "strut_lower": "sl",
+        "lower_front_inner": "lfi", "lower_rear_inner": "lri",
+        "lower_outer": "lo", "tie_rod_inner": "tri", "tie_rod_outer": "tro",
+        "wheel_center": "wc", "contact_patch": "cp",
+    },
+    "multilink": {
+        **{f"link{i}_inner": f"in{i}" for i in range(1, 7)},
+        **{f"link{i}_outer": f"out{i}" for i in range(1, 7)},
+        "wheel_center": "wc", "contact_patch": "cp",
+    },
+    "five_link": {
+        **{f"link{i}_inner": f"in{i}" for i in range(1, 7)},
+        **{f"link{i}_outer": f"out{i}" for i in range(1, 7)},
+        "wheel_center": "wc", "contact_patch": "cp",
+    },
+    "trailing_arm": {
+        "arm_pivot_inboard": "pi", "arm_pivot_outboard": "po", "arm_hub": "hub",
+        "wheel_center": "wc", "contact_patch": "cp",
+    },
+    "semi_trailing_arm": {
+        "arm_pivot_inboard": "pi", "arm_pivot_outboard": "po", "arm_hub": "hub",
+        "wheel_center": "wc", "contact_patch": "cp",
+    },
+    "twist_beam": {
+        "arm_pivot_inboard": "piL", "arm_hub": "hubL",
+        "wheel_center": "wc", "contact_patch": "cp",
+    },
+}
+
+
+def _apply_import_to_topology(topo_key, mapped):
+    """Write imported {canonical_key: [x,y,z]} into the correct editor store for
+    the active topology. Returns (n_applied, skipped_keys). Wishbone writes the
+    canonical keys straight into session_state['hp']; other topologies translate
+    to native names and write into session_state['topo_hp'][topo_key]. Keys with
+    no native slot for this topology are skipped and reported, never guessed."""
+    applied, skipped = 0, []
+    if topo_key == "double_wishbone":
+        for k, xyz in mapped.items():
+            st.session_state.hp[k] = list(xyz)
+            for ax in "xyz":
+                st.session_state.pop(f"{k}_{ax}", None)
+            applied += 1
+        return applied, skipped
+    bridge = _IMPORT_KEY_TO_NATIVE.get(topo_key) or {}
+    store = st.session_state.setdefault("topo_hp", {}).setdefault(topo_key, {})
+    for k, xyz in mapped.items():
+        native = bridge.get(k)
+        if native is None:
+            skipped.append(k)
+            continue
+        store[native] = list(xyz)
+        # clear the editor widget's cached display value so it re-reads
+        st.session_state.pop(f"topo_{topo_key}_{native}_x", None)
+        st.session_state.pop(f"topo_{topo_key}_{native}_y", None)
+        st.session_state.pop(f"topo_{topo_key}_{native}_z", None)
+        applied += 1
+    return applied, skipped
 
 
 def mechanism_with_overrides(topo_key, coords):
@@ -1871,6 +1952,114 @@ with st.sidebar:
                        "joint, or carrier point; the agnostic engine re-solves the "
                        "same RC / anti-dive / balance pipeline.")
             _topo_coords = render_generic_point_editor(topo_choice)
+
+            # ---------------- Import hardpoints (any topology) ------------- #
+            # Same importer as the wishbone path, now available for every
+            # architecture. Points are translated to this topology's native
+            # editor slots by _apply_import_to_topology.
+            with st.expander("📥 Import hardpoints (OptimumK / Excel / CSV)",
+                             expanded=False):
+                st.markdown(
+                    '<p class="hint">Bring in the points you already have — an '
+                    'OptimumK export or any sheet with a name column and X/Y/Z. '
+                    'Recognised names are matched to this architecture\'s '
+                    'points; every assumption (units, axes, side, origin) is '
+                    'shown for you to confirm before anything is applied.</p>',
+                    unsafe_allow_html=True)
+                _g_file = st.file_uploader(
+                    "Point table (.csv / .xlsx)", type=["csv", "xlsx", "xlsm"],
+                    key="_hpi_up_generic")
+                if _g_file is not None:
+                    try:
+                        from suspension import hardpoint_import as _hpi
+                        import coordinate_frames as _cf_mod
+                        _gpts, _ghint = _hpi.parse_tabular(
+                            _g_file.getvalue(), _g_file.name)
+                        if not _gpts:
+                            st.warning("No point rows found — the file needs a "
+                                       "name column and three coordinate columns.")
+                        else:
+                            _ggroups = _hpi.group_corners(_gpts)
+                            _gtags = [t for t in ("FL", "FR", "RL", "RR")
+                                      if _hpi.points_for_corner(_ggroups, t)
+                                      and any(p.corner for p in
+                                              _hpi.points_for_corner(_ggroups, t))]
+                            _gc1, _gc2, _gc3 = st.columns(3)
+                            _gcorner = _gc1.selectbox(
+                                "Corner to import", _gtags or ["(single corner)"],
+                                key="_hpi_corner_generic",
+                                help="Pick one corner; KinematiK models a single "
+                                     "corner.") if _gtags else "(single corner)"
+                            _gframe = _gc2.selectbox(
+                                "File's axis convention",
+                                list(_cf_mod.FRAME_ORDER),
+                                index=list(_cf_mod.FRAME_ORDER).index("iso8855"),
+                                format_func=lambda k: _cf_mod.BUILTIN_FRAMES[k].name,
+                                key="_hpi_frame_generic",
+                                help="What +X/+Y/+Z mean in the FILE.")
+                            _gunit = _gc3.selectbox(
+                                "Units", ["auto-detect", "mm", "m", "in"],
+                                key="_hpi_unit_generic")
+                            _gc4, _gc5 = st.columns(2)
+                            _gmirror = _gc4.selectbox(
+                                "Mirror left→right", ["auto", "yes", "no"],
+                                key="_hpi_mirror_generic",
+                                help="KinematiK's editor corner lives at +y.")
+                            _greorig = _gc5.checkbox(
+                                "Re-origin (x=0 at wheel centre, z=0 at ground)",
+                                value=True, key="_hpi_reorig_generic")
+                            _gwork = (_hpi.points_for_corner(_ggroups, _gcorner)
+                                      if _gtags else _gpts)
+                            _gres = _hpi.build_result(
+                                _gwork, frame_key=_gframe,
+                                unit=None if _gunit == "auto-detect" else _gunit,
+                                header_hint=_ghint,
+                                corner=_gcorner if _gtags else "",
+                                mirror={"auto": None, "yes": True,
+                                        "no": False}[_gmirror],
+                                topology=topo_choice,
+                                reorigin=_greorig)
+                            st.caption(_gres.summary())
+                            for _gw in _gres.warnings:
+                                st.warning(_gw)
+                            if _gres.ambiguous:
+                                st.error("Ambiguous names (left unmapped): "
+                                         + "; ".join(
+                                             f"'{p.name}' → {'/'.join(ks)}"
+                                             for p, ks in _gres.ambiguous[:6]))
+                            if _gres.unmapped:
+                                st.caption("Not recognised (ignored): " + ", ".join(
+                                    p.name for p in _gres.unmapped[:10]) +
+                                    (" …" if len(_gres.unmapped) > 10 else ""))
+                            if _gres.ok:
+                                st.dataframe(
+                                    [{"hardpoint": d.key, "from": d.raw.name,
+                                      "x (mm)": round(d.xyz_mm[0], 1),
+                                      "y (mm)": round(d.xyz_mm[1], 1),
+                                      "z (mm)": round(d.xyz_mm[2], 1)}
+                                     for d in _gres.details],
+                                    hide_index=True, width='stretch')
+                                if st.button(f"✔ Apply {len(_gres.mapped)} points "
+                                             f"to the editor",
+                                             key="_hpi_apply_generic"):
+                                    _n, _skip = _apply_import_to_topology(
+                                        topo_choice, _gres.mapped)
+                                    st.session_state.pop("_sweep_cache", None)
+                                    st.session_state.pop("_sweep_sig", None)
+                                    _msg = (f"Imported {_n} hardpoint"
+                                            f"{'s' if _n != 1 else ''} into the "
+                                            f"{_TOPO_LABELS.get(topo_choice, topo_choice)} "
+                                            f"editor ({_gres.unit}, {_gres.frame_key}"
+                                            f"{', mirrored' if _gres.mirrored else ''}"
+                                            f"{', re-origined' if _gres.reorigined else ''}).")
+                                    if _skip:
+                                        _msg += (" Not used by this topology: "
+                                                 + ", ".join(_skip[:8])
+                                                 + (" …" if len(_skip) > 8 else ""))
+                                    st.success(_msg)
+                                    st.rerun()
+                    except Exception as _ge:
+                        st.error(f"Import failed: {type(_ge).__name__}: {_ge}")
 
     st.markdown("---")
     with st.expander("⚙️ Vehicle", expanded=False):
