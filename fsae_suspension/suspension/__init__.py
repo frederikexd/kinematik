@@ -100,6 +100,8 @@ _SUBMODULES = (
     "throttle_return_ingest",  # bench-log / CAD cross-check ingest for return springs
     "throttle_dynamics",       # coupled return + plate-flutter screening
     "throttle_flutter_cosim",  # quasi-steady flutter co-simulation
+    "history",                 # project version history: fetch, diff, restore
+    "hardpoint_import",        # OptimumK / Excel / CSV hardpoint importer
 )
 
 # ---------------------------------------------------------------------------

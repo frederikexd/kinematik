@@ -268,6 +268,77 @@ class SupabaseAuth:
         except Exception as e:
             raise AuthError(self._rpc_msg(e)) from e
 
+    # ------------------------------------------------------------------ #
+    #  Invite links (self-serve team onboarding — workspace_invites.sql).
+    #  A lead mints one link, pastes it in the team chat, and teammates
+    #  join with the right role. Links can only grant member/viewer, always
+    #  expire, have a use cap, and are revocable — see the SQL for the
+    #  trust properties; this layer only routes and surfaces errors.
+    # ------------------------------------------------------------------ #
+    def create_invite(self, session: Session, workspace_id: str,
+                      role: str = "member", ttl_hours: int = 168,
+                      max_uses: int = 30) -> str:
+        """Mint an invite token for the workspace (caller must be owner/lead).
+        Returns the token string; build the shareable URL with
+        auth_ui.build_join_url()."""
+        if role not in ("member", "viewer"):
+            raise AuthError("Invite links can only grant member or viewer — "
+                            "promote people explicitly in the Members panel.")
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("create_workspace_invite",
+                              {"ws": str(workspace_id), "invite_role": role,
+                               "ttl_hours": int(ttl_hours),
+                               "uses": int(max_uses)}).execute()
+            tok = resp.data
+            if not tok:
+                raise AuthError("Invite RPC returned no token.")
+            return str(tok)
+        except AuthError:
+            raise
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    def redeem_invite(self, session: Session, token: str
+                      ) -> tuple[Workspace, str]:
+        """Join the workspace behind `token`. Idempotent: an existing member
+        keeps their (possibly higher) role. Returns (workspace, role)."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("redeem_workspace_invite",
+                              {"invite_token": str(token).strip()}).execute()
+            rows = resp.data or []
+            if not rows:
+                raise AuthError("Invite redemption returned nothing — "
+                                "the link may be invalid.")
+            row = rows[0]
+            ws = Workspace(id=str(row["workspace_id"]),
+                           name=str(row.get("workspace_name") or "workspace"))
+            return ws, str(row.get("granted_role") or "member")
+        except AuthError:
+            raise
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    def list_invites(self, session: Session, workspace_id: str) -> list[dict]:
+        """Live (unexpired, unrevoked) invite links for the workspace —
+        owner/lead only. For the revoke UI."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("list_workspace_invites",
+                              {"ws": str(workspace_id)}).execute()
+            return list(resp.data or [])
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    def revoke_invite(self, session: Session, token: str) -> None:
+        client = self._user_client(session)
+        try:
+            client.rpc("revoke_workspace_invite",
+                       {"invite_token": str(token).strip()}).execute()
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
     @staticmethod
     def _rpc_msg(e: Exception) -> str:
         """Pull the human-readable message out of a PostgREST/RPC error so the
@@ -303,6 +374,7 @@ class SupabaseAuth:
             user_id=session.user_id,
             access_token=session.access_token,
             role=resolved_role or "member",
+            email=getattr(session, "email", "") or "",
         )
 
 

@@ -38,6 +38,31 @@ create extension if not exists "pgcrypto";   -- gen_random_uuid()
 
 
 -- ----------------------------------------------------------------------------
+--  0. RESET VIEWS FIRST — makes re-running this file always safe
+-- ----------------------------------------------------------------------------
+--  CREATE OR REPLACE VIEW cannot change an existing view's column set (Postgres
+--  error 42P16: "cannot drop columns from view"). Whenever a view definition
+--  below gains/loses/reorders a column relative to what's already deployed, the
+--  replace fails. Dropping every metric view up front sidesteps that entirely —
+--  they are recreated below with their current shape. Views hold no data, so
+--  this is safe and idempotent; cascade clears dependents (e.g. v_roi_summary
+--  depends on v_hours_saved_by_feature).
+drop view if exists v_roi_summary                cascade;
+drop view if exists v_hours_saved_by_feature     cascade;
+drop view if exists v_comparison_to_alternatives cascade;
+drop view if exists v_adoption_funnel            cascade;
+drop view if exists v_time_to_first_result       cascade;
+drop view if exists v_retention                  cascade;
+drop view if exists v_error_rate                 cascade;
+drop view if exists v_latency_by_feature         cascade;
+drop view if exists v_feature_delivery           cascade;
+drop view if exists v_feature_use                cascade;
+drop view if exists v_individual_use             cascade;
+drop view if exists v_active_members_weekly      cascade;
+drop view if exists v_foot_traffic_daily         cascade;
+
+
+-- ----------------------------------------------------------------------------
 --  1. EVENTS — the append-only spine
 -- ----------------------------------------------------------------------------
 --  Every interaction is one row. `event_type` is a small controlled vocabulary;
@@ -278,6 +303,8 @@ order by error_rate_pct desc, attempts desc;
 
 -- ----------------------------------------------------------------------------
 --  F. RETENTION — return users vs one-and-done
+--  (gained window_start/window_end columns; the drop block at the top of this
+--   file clears the old shape so this recreation succeeds.)
 -- ----------------------------------------------------------------------------
 create or replace view v_retention as
 with per_user as (
@@ -300,7 +327,12 @@ select
     round(100.0 * count(*) filter (where visits >= 2)
           / nullif(count(*), 0), 1)                  as retention_pct,
     round(avg(visits), 2)                            as avg_visits_per_user,
-    round(avg(active_days), 2)                       as avg_active_days
+    round(avg(active_days), 2)                       as avg_active_days,
+    -- Live window bounds so the dashboard can show what period these numbers
+    -- cover. window_start is the earliest event still retained (it moves
+    -- forward as the 30-day/row cap trims old rows); window_end is the latest.
+    min(first_day)                                   as window_start,
+    max(last_day)                                    as window_end
 from per_user;
 
 

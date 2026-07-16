@@ -66,6 +66,8 @@ insert into known_features (feature, label, is_tab, reactive_only) values
     ('pcb',         'Electronics (PCB)',       true, false),
     ('tractive',    'Tractive Safety',         true, false),
     ('dfmea',       'DFMEA',                   true, false),
+    ('docs',        'Documentation',           true, false),
+    ('frames',      'Frames & Datums',         true, false),
     ('mythbuster',  'Mythbuster',              false, false)
 on conflict (feature) do update
     set label = excluded.label, is_tab = excluded.is_tab,
@@ -207,7 +209,7 @@ comment on view v_orphaned_feature_events is
 --  visitor_id (persisted client-side, survives across visits), only falling
 --  back further to session_id if even that's missing. This redefinition makes
 --  v_individual_use consistent with v_retention instead of contradicting it.
-drop view if exists v_individual_use;
+drop view if exists v_individual_use cascade;
 create view v_individual_use as
 select
     coalesce(nullif(member, ''), 'anon-' || left(visitor_id, 8), 'anon-' || left(session_id, 8))
@@ -848,7 +850,7 @@ end $$;
 -- different version). CREATE OR REPLACE can't reorder/rename columns (42P16),
 -- so we drop and recreate. Safe: v_retention is a leaf view, nothing depends
 -- on it.
-drop view if exists v_retention;
+drop view if exists v_retention cascade;
 create view v_retention as
 with
 -- Phase 1: one row per session. Only fp- (fingerprint) and named-member
@@ -885,7 +887,12 @@ select
     round(100.0 * sum(greatest(visits - 1, 0))
           / nullif((select count(distinct session_id) from analytics_events), 0), 1) as retention_pct,
     round(avg(visits), 2)                                      as avg_visits_per_user,
-    round(avg(active_days), 2)                                 as avg_active_days
+    round(avg(active_days), 2)                                 as avg_active_days,
+    -- Live window bounds for the dashboard's cycle/window label. Read from the
+    -- actual retained events (earliest/latest), so they move as the row/time cap
+    -- trims old rows. Computed over all events, not just identified users.
+    (select min(occurred_at)::date from analytics_events)      as window_start,
+    (select max(occurred_at)::date from analytics_events)      as window_end
 from per_user;
 
 comment on view v_retention is
@@ -899,7 +906,7 @@ comment on view v_retention is
 -- previously used only coalesce(member, session_id), ignoring the durable
 -- visitor_id — which inflated unique/active counts by treating each visit as a
 -- new person). With both fixes they count distinct PEOPLE correctly.
-drop view if exists v_active_members_weekly;
+drop view if exists v_active_members_weekly cascade;
 create view v_active_members_weekly as
 select
     date_trunc('week', occurred_at)::date                         as week,
@@ -909,7 +916,7 @@ from analytics_events
 group by 1
 order by 1;
 
-drop view if exists v_feature_use;
+drop view if exists v_feature_use cascade;
 create view v_feature_use as
 with per_feature_session as (
     -- one row per (feature, session): what's the DEEPEST stage this session

@@ -60,6 +60,9 @@ def _restore_session(st, auth: SupabaseAuth) -> Optional[Session]:
 
 def _render_sign_in(st, auth: SupabaseAuth) -> None:
     st.markdown("### Sign in to KinematiK")
+    if st.session_state.get(_SS_JOIN):
+        st.info("You've been invited to a team workspace. Sign in — or create "
+                "an account — and you'll join automatically.")
     st.caption("Your project data is isolated per workspace. Sign in to continue.")
     mode = st.radio("mode", ["Sign in", "Create account"],
                     horizontal=True, label_visibility="collapsed")
@@ -86,6 +89,10 @@ def _render_sign_in(st, auth: SupabaseAuth) -> None:
 
 def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
                              ) -> Optional[WorkspaceContext]:
+    # Signed in with an invite pending? Join first — the redeemed workspace
+    # becomes the active one and shows up in the list below on the rerun.
+    if redeem_pending_invite(st, auth, session):
+        st.rerun()
     try:
         workspaces = auth.list_workspaces(session)
     except AuthError as e:
@@ -100,7 +107,9 @@ def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
             _sign_out(st, auth)
 
     if not workspaces:
-        st.info("You are not a member of any workspace yet. Create one to start.")
+        st.info("You are not a member of any workspace yet. Create one to "
+                "start — or, if a teammate sent you an invite link, open it "
+                "while signed in and you'll land in their workspace.")
         name = st.text_input("New workspace name", key="_kx_new_ws")
         kind = st.selectbox("Type", ["team", "ev_startup", "sandbox"],
                             key="_kx_new_ws_kind")
@@ -139,6 +148,8 @@ def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
     with st.sidebar:
         with st.expander("Members", expanded=False):
             render_members_admin(st, ctx)
+            st.divider()
+            render_invite_admin(st, ctx)
     return ctx
 
 
@@ -161,6 +172,124 @@ def current_session(st) -> Optional[Session]:
 
 
 _ADMIN_ROLES = ("lead", "member")   # roles this UI hands out (owner is implicit)
+
+_SS_JOIN = "_kx_join_token"          # invite token pending redemption
+
+
+# --------------------------------------------------------------------------- #
+#  Invite links — capture, redeem, mint, revoke
+#  (workspace_invites.sql provides the enforcement; this is only the flow)
+# --------------------------------------------------------------------------- #
+def build_join_url(token: str, base_url: str = "") -> str:
+    """The shareable link for an invite token. If the deployment's public URL
+    is configured (APP_BASE_URL secret/env), returns a full clickable URL;
+    otherwise a relative '?join=…' the lead prepends their app URL to."""
+    tok = str(token).strip()
+    if not base_url:
+        try:
+            from .project import _read_credential
+            base_url = _read_credential("APP_BASE_URL") or ""
+        except Exception:
+            base_url = ""
+    base_url = (base_url or "").rstrip("/?")
+    return f"{base_url}/?join={tok}" if base_url else f"?join={tok}"
+
+
+def capture_join_token(st) -> Optional[str]:
+    """Pull ?join=<token> off the URL into session_state so it SURVIVES the
+    sign-in reruns (query params can be lost across st.rerun on some hosts).
+    Call early, before the sign-in gate. Returns the pending token, if any."""
+    try:
+        tok = st.query_params.get("join")
+        if isinstance(tok, list):          # older API returns lists
+            tok = tok[0] if tok else None
+        if tok:
+            st.session_state[_SS_JOIN] = str(tok).strip()
+            try:
+                del st.query_params["join"]   # don't re-redeem on every rerun
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return st.session_state.get(_SS_JOIN)
+
+
+def redeem_pending_invite(st, auth: SupabaseAuth, session: Session) -> bool:
+    """If a captured invite token is pending and we're signed in, redeem it,
+    make the joined workspace active, and clear the token. Returns True when
+    a redemption happened (caller should rerun). Errors are surfaced and the
+    token is cleared so a dead link can't wedge the sign-in flow in a loop."""
+    tok = st.session_state.get(_SS_JOIN)
+    if not tok or auth is None or session is None:
+        return False
+    try:
+        ws, role = auth.redeem_invite(session, tok)
+    except AuthError as e:
+        st.error(f"Couldn't join via that invite link: {e}")
+        st.session_state.pop(_SS_JOIN, None)
+        return False
+    st.session_state.pop(_SS_JOIN, None)
+    st.session_state["_kx_ws_id"] = ws.id
+    st.session_state["_ax_invite_join"] = True   # tells analytics this session
+    st.success(f"You've joined **{ws.name}** as {role}. Welcome aboard.")  # arrived via invite link, not organically
+    return True
+
+
+def render_invite_admin(st, ctx: WorkspaceContext) -> None:
+    """Invite-link manager for owners/leads: mint a link, see live links,
+    revoke. Lives inside the Members panel."""
+    auth = st.session_state.get(_SS_AUTH)
+    session = current_session(st)
+    if auth is None or session is None or ctx.role not in ("owner", "lead"):
+        return
+
+    st.markdown("**Invite link**")
+    st.caption("One link for the whole team chat. Links only ever grant "
+               "member/viewer (promote people explicitly), always expire, "
+               "and can be revoked here at any time.")
+    c = st.columns([1, 1, 1])
+    inv_role = c[0].selectbox("Role", ["member", "viewer"], key="_kx_inv_role")
+    inv_days = c[1].selectbox("Expires in", [1, 3, 7, 14, 30], index=2,
+                              format_func=lambda d: f"{d} day{'s' if d > 1 else ''}",
+                              key="_kx_inv_days")
+    inv_uses = c[2].number_input("Max uses", min_value=1, max_value=100,
+                                 value=30, key="_kx_inv_uses")
+    if st.button("Create invite link", key="_kx_inv_make"):
+        try:
+            tok = auth.create_invite(session, ctx.workspace_id, role=inv_role,
+                                     ttl_hours=int(inv_days) * 24,
+                                     max_uses=int(inv_uses))
+        except AuthError as e:
+            st.error(str(e))
+        else:
+            url = build_join_url(tok)
+            st.code(url, language=None)
+            if url.startswith("?"):
+                st.caption("Prepend your app's URL (set the APP_BASE_URL "
+                           "secret to get full links automatically).")
+
+    try:
+        live = auth.list_invites(session, ctx.workspace_id)
+    except AuthError as e:
+        st.caption(f"Couldn't list live invites: {e}")
+        return
+    if live:
+        st.caption(f"{len(live)} live link{'s' if len(live) != 1 else ''}:")
+        for inv in live:
+            tok = str(inv.get("token", ""))
+            row = st.columns([3, 1])
+            row[0].caption(
+                f"…{tok[-6:]} · {inv.get('role')} · "
+                f"{inv.get('use_count', 0)}/{inv.get('max_uses', '?')} used · "
+                f"expires {str(inv.get('expires_at', ''))[:16].replace('T', ' ')}")
+            if row[1].button("Revoke", key=f"_kx_inv_rm_{tok}"):
+                try:
+                    auth.revoke_invite(session, tok)
+                except AuthError as e:
+                    st.error(str(e))
+                else:
+                    st.rerun()
+
 
 
 def render_members_admin(st, ctx: WorkspaceContext) -> None:
@@ -276,9 +405,30 @@ def require_workspace(st) -> Optional[WorkspaceContext]:
     When Supabase IS configured but the user isn't signed in / hasn't picked a
     workspace, this renders the sign-in or picker UI and calls st.stop() so the
     rest of the app never renders another tenant's (or no tenant's) data.
-
-    NOTE: login screen is currently disabled — always runs in local single-user
-    mode regardless of Supabase configuration.
     """
-    # Login screen disabled: skip the gate and run in local single-user mode.
-    return None
+    # Capture ?join=<token> regardless of gate state, so an invite link
+    # opened today is honoured the moment its holder signs in.
+    capture_join_token(st)
+
+    # No Supabase configured -> legacy local single-user mode (unchanged
+    # behaviour for laptops / tests). build_auth() (via _get_auth) returns
+    # None when SUPABASE_URL / key aren't set. This is the graceful
+    # degradation path.
+    auth = _get_auth(st)
+    if auth is None:
+        return None
+
+    # Supabase configured: a signed-in user + selected workspace is required
+    # before any tenant data renders. That is the tenant wall.
+    session = _restore_session(st, auth)
+    if session is None:
+        _render_sign_in(st, auth)
+        st.stop()
+
+    ctx = _render_workspace_picker(st, auth, session)
+    if ctx is None:
+        # Signed in but no workspace chosen yet (picker/creation UI shown).
+        st.stop()
+
+    st.session_state[_SS_CTX] = ctx
+    return ctx
