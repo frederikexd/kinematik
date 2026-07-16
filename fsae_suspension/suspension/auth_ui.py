@@ -113,8 +113,17 @@ def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
         name = st.text_input("New workspace name", key="_kx_new_ws")
         kind = st.selectbox("Type", ["team", "ev_startup", "sandbox"],
                             key="_kx_new_ws_kind")
+        is_lead = st.checkbox(
+            "I am the project lead (allows up to 10 workspaces)",
+            key="_kx_is_lead"
+        )
         if st.button("Create workspace", type="primary"):
             try:
+                if is_lead:
+                    try:
+                        auth._user_client(session).rpc("register_project_lead", {}).execute()
+                    except Exception:
+                        pass
                 ws = auth.create_workspace(session, name, kind=kind)
             except AuthError as e:
                 st.error(str(e))
