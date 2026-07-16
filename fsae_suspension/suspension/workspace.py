@@ -119,6 +119,7 @@ class WorkspaceContext:
     user_id: str = ""
     access_token: str = ""    # the signed-in user's JWT (RLS identity)
     role: str = "member"      # "owner" | "lead" | "member" | "viewer"
+    email: str = ""           # for human-readable audit stamps (saved_by)
 
     def __post_init__(self):
         validate_workspace_id(self.workspace.id)
@@ -248,6 +249,10 @@ class WorkspaceScopedSupabaseBackend:
         assert_payload_scoped(payload, self.ctx.workspace_id)
         from .project import StaleWriteError   # lazy: keep module stdlib-only at import
         now = _dt.datetime.utcnow().isoformat() + "Z"
+        # Audit stamp: who saved this version (shown in the Project history
+        # panel). Copy-then-stamp so the caller's dict isn't mutated.
+        payload = dict(payload)
+        payload["saved_by"] = self.ctx.email or (self.ctx.user_id or "")[:8] or "unknown"
         if expected_version is not None:
             # Atomic compare-and-swap: UPDATE ... WHERE workspace_id/id match
             # AND data->>'updated' still equals what we loaded. PostgREST

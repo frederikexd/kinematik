@@ -244,3 +244,63 @@ def ulabel(text: str) -> str:
         pattern = r"(?<![A-Za-z0-9·/°])" + re.escape(metric_u) + r"(?![A-Za-z0-9·/])"
         out = re.sub(pattern, us_u, out)
     return out
+
+
+# --- convert every "<number> <unit>" pair inside a free-text sentence ------- #
+
+_PAIR_RES = None
+
+
+def _pair_res():
+    """Compiled per-unit regexes for number+unit pairs, longest token first."""
+    global _PAIR_RES
+    if _PAIR_RES is None:
+        out = []
+        for metric_u in _TOKEN_ORDER:
+            us_u = _CONVERSIONS[metric_u][0]
+            if us_u == metric_u:
+                continue
+            pat = re.compile(
+                r"([+-]?\d+(?:\.\d+)?)\s*"
+                + r"(?<![A-Za-z0-9·/°])" + re.escape(metric_u)
+                + r"(?![A-Za-z0-9·/])")
+            out.append((metric_u, pat))
+        _PAIR_RES = out
+    return _PAIR_RES
+
+
+def usentence(text: str) -> str:
+    """Convert every ``<number> <metric-unit>`` pair inside a sentence to the
+    active system — number AND label, preserving each number's decimal
+    precision. Metric mode is a no-op, so it is safe to wrap any user-facing
+    sentence unconditionally.
+
+    Examples (US active):
+        "mass 42.00 kg → 41.00 kg"    -> "mass 92.60 lb → 90.39 lb"
+        "target mass: 230 kg → 228 kg"-> "target mass: 507 lb → 503 lb"
+        "shifted 1530.0 mm"           -> "shifted 60.2 in"
+    Unitless numbers and unknown tokens pass through untouched.
+    """
+    if not is_us() or not text:
+        return text
+
+    def _sub_for(metric_u):
+        us_u, factor, offset = _CONVERSIONS[metric_u]
+
+        def _sub(m):
+            num_text = m.group(1)
+            try:
+                v = float(num_text) * factor + offset
+            except ValueError:
+                return m.group(0)
+            decimals = _infer_decimals(num_text)
+            signed = num_text.lstrip().startswith("+")
+            fmt = f"{{:+.{decimals}f}}" if signed else f"{{:.{decimals}f}}"
+            return fmt.format(v) + " " + us_u
+
+        return _sub
+
+    out = text
+    for metric_u, pat in _pair_res():
+        out = pat.sub(_sub_for(metric_u), out)
+    return out

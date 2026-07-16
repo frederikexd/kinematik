@@ -427,6 +427,7 @@ class ProjectStore:
     geometry = None
     board = None
     cad_files: list = []
+    ledger: dict = {}
 
     def __init__(self, path: str = DEFAULT_PROJECT, backend=None):
         self.path = path
@@ -437,6 +438,10 @@ class ProjectStore:
         self.decisions: list[Decision] = []
         self.notes: list[Note] = []
         self.cad_files: list[CADFile] = []
+        # Integration ledger (cross-team declarations) — persisted as the raw
+        # dict the app keeps in session_state, so this module stays numpy-free
+        # and the blob is exactly what the tabs read/write.
+        self.ledger: dict = {}
         # Geometric mount-point / keep-out ledger (lazy import to avoid a hard
         # numpy dependency for callers that only touch weights/decisions/notes).
         # Defensive: never let an optional import failure leave the store without
@@ -491,6 +496,7 @@ class ProjectStore:
             "board": self.board.as_dict() if self.board else {},
             "harness": self.harness.as_dict() if getattr(self, "harness", None) else {},
             "ev_excel_params": getattr(self, "ev_excel_params", {}),
+            "ledger": getattr(self, "ledger", {}) or {},
             "updated": _dt.datetime.now().isoformat(timespec="seconds"),
         }
 
@@ -519,6 +525,9 @@ class ProjectStore:
         ev_p = d.get("ev_excel_params")
         if ev_p and isinstance(ev_p, dict):
             self.ev_excel_params = ev_p
+        led = d.get("ledger")
+        if isinstance(led, dict) and led:
+            self.ledger = led
 
     # ----------------------------- io ---------------------------------- #
     def load(self):
