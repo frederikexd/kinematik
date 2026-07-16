@@ -37,3 +37,5 @@ supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseSto
                    #  workspace.py: tenant-scoped backend — run workspace_isolation.sql)
 
 
+vosk>=0.3.45
+imageio-ffmpeg>=0.4.9
