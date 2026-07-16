@@ -12670,7 +12670,7 @@ with tab_car:
                 if _cf.note:
                     _meta += f" · _{_cf.note}_"
                 _row[0].markdown(f"**{_cf.name}**  \n{_meta}")
-                _row[1].caption(_cf.ts.replace("T", " "))
+                _row[1].caption(str(getattr(_cf, "ts", "") or "").replace("T", " "))
                 if _cf.kind == "link":
                     _row[2].markdown(f"[open link]({_cf.link})")
                 else:
