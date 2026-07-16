@@ -138,12 +138,9 @@ Professional teams, consultancies, and enterprises: contact for pricing.
 
 ## Usage stats
 
-- **555 total users** across SAE student teams
-- **50% return rate** (279 of 555 came back) — without any retention mechanism, reminder emails, or onboarding
-- **12 seconds** to first result
-- **18 days** of recorded traffic
+Usage numbers live in one place: the in-app **Analytics** tab, computed live from the database as *lifetime = pre-purge baseline snapshot + current 30-day window*. They are deliberately not hand-copied into this README — a stat printed here goes stale the moment it's written, and two documents disagreeing about the same metric is exactly the class of error this platform exists to prevent.
 
-A 50% return rate among students with no obligation to come back is the only metric that matters at this stage. Students are brutally honest users. If it is not useful, they close the tab and never return.
+The one number worth stating in prose: roughly **half of all users come back** without any retention mechanism, reminder emails, or onboarding. Students are brutally honest users. If it is not useful, they close the tab and never return.
 
 ---
 
@@ -157,7 +154,7 @@ A 50% return rate among students with no obligation to come back is the only met
 
 **Coordinate frames** (`coordinate_frames.py`) — pure-Python frame registry and transform core. Every conversion routes `frame A → world → frame B` through one auditable path; all frames are proper rotations (det = +1), so points, forces, moments and angular rates share one transform and only points shift by the datum. Rotation senses are derived from the basis via the right-hand rule. Datums resolve live from the vehicle parameters (`a = L·(1 − weight_dist_front)` from static axle-load balance). Self-tested with exact identities, no fuzz: `python3 coordinate_frames.py`.
 
-**Analytics** (`suspension/analytics.py`) — privacy-respecting usage tracking. Durable identity via IP+UA fingerprint (cookie writes not reliable on Streamlit Cloud). All tracking is anonymous. No personal data stored.
+**Analytics** (`suspension/analytics.py`) — privacy-respecting usage tracking. Identity is a random per-session UUID (plus a browser cookie for return-visit counting); no IP addresses or device fingerprints are collected or stored. A member name is recorded only if the user types one in (opt-in). Telemetry never blocks the UI and a telemetry failure can never crash the app. Only three event types are written (session start, workflow complete, error); raw events are purged after 30 days.
 
 ---
 

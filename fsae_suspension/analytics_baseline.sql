@@ -37,12 +37,19 @@ values
      778,          -- total users ever
      482,          -- returning users
      62.0,         -- retention %
-     1908,         -- hours saved (≈ $124,000 / $65)
-     124000,       -- dollars saved (ROI headline, rounded)
-     'Historical baseline captured from the dashboard immediately before the '
-     || '2026-07-10 events purge that resolved the 500MB overage. Live tiles '
-     || 'rebuild from this date forward; these figures are the validated '
-     || 'pre-purge totals and are shown as a fixed reference.')
+     1908,         -- hours saved — ESTIMATE, back-derived as $124,000 / $65,
+                   --   not an independently measured count of hours.
+     124000,       -- dollars saved (ROI headline, rounded estimate)
+     'Pre-purge usage snapshot recorded from the live dashboard on 2026-07-10. '
+     || 'Context: traffic outgrew the database storage tier, so the events '
+     || 'table was purged as a capacity measure to keep the app running — the '
+     || 'purge was operational, not a correction. The user counts (778 total, '
+     || '482 returning) are real pre-purge usage observed on the dashboard at '
+     || 'that time. The dollar figure is a rounded ROI ESTIMATE, and hours '
+     || 'saved is back-derived from it (dollars / $65-per-hr), not a measured '
+     || 'value — both rest on the per-feature time assumptions in '
+     || 'feature_baselines (all marked confidence=estimate). Shown as a fixed, '
+     || 'dated reference, separate from the rebuilding live tiles.')
 on conflict (id) do update set
     as_of            = excluded.as_of,
     total_users_ever = excluded.total_users_ever,

@@ -811,6 +811,59 @@ def uval(value_num, unit, *, fmt="{:.0f}", delta=False):
         return f"{value_num} {unit}"
 
 
+def _install_unit_aware_messages():
+    """Route every message-channel string (metric/caption/error/warning/
+    success/info) through units_mod.ulabel + usentence at render time, on every
+    container (st.*, columns, sidebar, expanders).
+
+    Why a choke point instead of 200 per-site edits: the convention (uval /
+    uconv_series / unum) is applied at ~350 sites but has drifted at dozens of
+    older message strings ("… 180 MPa > 120 MPa …", fade-test °C summaries) and
+    would drift again. usentence converts ONLY metric-token+number pairs and
+    ulabel only bare metric tokens, and both are no-ops in metric mode — so
+    already-converted strings (e.g. built with uval → "507 lb") pass through
+    untouched, half-converted strings get their remaining metric halves fixed,
+    and deliberate metric references without numbers stay as written.
+
+    Failure-safe: if a future Streamlit rename breaks the patch, the except
+    leaves the original methods in place — displays fall back to metric,
+    exactly today's behaviour.
+    """
+    if st.session_state.get("_unit_msgs_patched"):
+        return
+    try:
+        from streamlit.delta_generator import DeltaGenerator as _DG
+
+        def _conv(x):
+            if isinstance(x, str):
+                return units_mod.usentence(units_mod.ulabel(x))
+            return x
+
+        def _wrap(fn, nstr):
+            def _f(self, *a, **kw):
+                a = tuple(_conv(v) for v in a[:nstr]) + a[nstr:]
+                for k in ("label", "value", "delta", "body", "help"):
+                    if isinstance(kw.get(k), str):
+                        kw[k] = _conv(kw[k])
+                return fn(self, *a, **kw)
+            return _f
+
+        # (method, how many leading positional args are display strings)
+        for name, nstr in (("metric", 3), ("caption", 1), ("error", 1),
+                           ("warning", 1), ("success", 1), ("info", 1)):
+            orig = getattr(_DG, name, None)
+            if orig is not None and not getattr(orig, "_unit_aware", False):
+                w = _wrap(orig, nstr)
+                w._unit_aware = True
+                setattr(_DG, name, w)
+        st.session_state["_unit_msgs_patched"] = True
+    except Exception:
+        pass       # fall back to unpatched (metric) displays
+
+
+_install_unit_aware_messages()
+
+
 def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
          fmt=None, **kw):
     """Unit-aware ``number_input``. The label keeps its parenthesised unit and
@@ -1090,9 +1143,20 @@ def get_store():
     ws_key = ctx.workspace_id if ctx is not None else "__local__"
     cached = st.session_state.get("_project_store")
     if cached is None or st.session_state.get("_project_store_ws") != ws_key:
+        _switching = ("_project_store_ws" in st.session_state
+                      and st.session_state.get("_project_store_ws") != ws_key)
         cached = _make_store()
         st.session_state["_project_store"] = cached
         st.session_state["_project_store_ws"] = ws_key
+        # Integration ledger travels WITH the project now. Seed the session
+        # copy from the loaded store; on a workspace SWITCH with no saved
+        # ledger, reset to blank rather than leaking the previous tenant's
+        # declarations into this one.
+        _saved_led = getattr(cached, "ledger", {}) or {}
+        if _saved_led:
+            st.session_state.ledger = dict(_saved_led)
+        elif _switching:
+            st.session_state.ledger = interfaces_mod.blank_ledger().as_dict()
     return cached
 
 
@@ -1144,6 +1208,103 @@ def _store_cad_subsystems(store):
     return sorted(tags)
 
 
+def publish_ledger(led_dict):
+    """THE way to update the Integration ledger: set the session copy AND
+    persist it with the project, so declarations survive restarts and show up
+    in Project history ("suspension: wheel_rate 28 → 31 by lead@…"). Before
+    this, the ledger lived only in session_state and evaporated whenever
+    Streamlit Cloud recycled the process."""
+    st.session_state["ledger"] = led_dict
+    _s = get_store()
+    _s.ledger = dict(led_dict)
+    return save_store(_s)
+
+
+_PEDAL_THROTTLE_KEYS = (
+    # throttle springs (primary + backup, each: rate/arm/preload/travel/measured)
+    "tr_k_primary", "tr_arm_primary", "tr_pre_primary", "tr_trav_primary",
+    "tr_meas_primary",
+    "tr_k_backup", "tr_arm_backup", "tr_pre_backup", "tr_trav_backup",
+    "tr_meas_backup",
+    # resistance + margin
+    "tr_fric", "tr_cable", "tr_sensor", "tr_margin",
+    # a measured rate fitted from a bench log this session
+    "tr_k_measured",
+    # brake pedal geometry
+    "pedal_mat", "pedal_w", "pedal_t", "pedal_lever", "pedal_load",
+    "pedal_load_pin2000",
+    "pedal_bolt", "pedal_edge", "pedal_weld_leg", "pedal_weld_len",
+    "pedal_box_nfeet",
+    # transient snap inputs
+    "snap_plate_m", "snap_plate_r", "snap_refl_m", "snap_refl_a",
+    "snap_theta_open",
+    # advanced snap physics
+    "snap_lash_deg", "snap_lash_frac", "snap_cam_on", "snap_cam_closed",
+    "snap_cam_mid", "snap_cam_open", "snap_intake_v", "snap_aero_coeff",
+    "snap_plate_A", "snap_aero_opens",
+    # manifold coupling + flutter
+    "td_plenum", "td_bore", "td_draw", "td_mtc", "td_ktheta", "td_cstruct",
+    "td_caero", "td_crefv", "td_fintake",
+    "td_caero_cosim", "td_crefv_cosim",
+)
+
+
+def build_project_bundle(hp=None) -> dict:
+    """The one definition of the exported kinematik_project.json bundle —
+    shared by the Save tab and the migration-backup banner so the two can
+    never drift. `hp` lets the Save tab pass the preset-applied hardpoints;
+    the banner falls back to the session's raw hardpoints."""
+    _store_for_save = get_store()
+    return {
+        "kinematik_version": "1.0",
+        "saved": _datetime.datetime.now().isoformat(timespec="seconds"),
+        "hardpoints": hp if hp is not None else st.session_state.get("hp", {}),
+        "topology": st.session_state.get("topology", "double_wishbone"),
+        "topo_hardpoints": st.session_state.get("topo_hp", {}),
+        "vehicle": st.session_state.get("vp"),
+        "ledger": st.session_state.get("ledger"),
+        "handover": json.loads(_store_for_save.as_json()),
+        # Pedal-box / throttle-return inputs, so measured springs and pedal
+        # geometry survive save/load and never have to be re-entered. Only raw
+        # widget values (derived verdicts recompute on load).
+        "pedal_throttle": {
+            k: st.session_state.get(k)
+            for k in _PEDAL_THROTTLE_KEYS
+            if st.session_state.get(k) is not None
+        },
+    }
+
+
+def apply_project_bundle(data: dict) -> None:
+    """Apply an exported kinematik_project.json bundle to THIS session and
+    persist it to the active project store. One code path for both the
+    'Load project' uploader and the migration 'restore your backup' flow, so
+    the two can never drift. Raises on a malformed file — callers surface it."""
+    if not isinstance(data, dict):
+        raise ValueError("not a KinematiK project bundle (expected a JSON object)")
+    if "hardpoints" in data:
+        st.session_state.hp = data["hardpoints"]
+    if "topo_hardpoints" in data and isinstance(data["topo_hardpoints"], dict):
+        st.session_state.topo_hp = data["topo_hardpoints"]
+    if "topology" in data:
+        # `topology` is bound to the sidebar selectbox via key=, and this can
+        # run AFTER that widget was created this run — stage it and apply it
+        # before the widget on the forced rerun.
+        st.session_state["_pending_topology"] = data["topology"]
+    if "vehicle" in data:
+        st.session_state.vp = data["vehicle"]
+    if data.get("ledger"):
+        publish_ledger(data["ledger"])
+    if "handover" in data:
+        _s = get_store()
+        _s._apply(data["handover"])
+        save_store(_s)
+    if isinstance(data.get("pedal_throttle"), dict):
+        for _pk, _pv in data["pedal_throttle"].items():
+            if _pv is not None:
+                st.session_state[_pk] = _pv
+
+
 def save_store(store):
     """Persist the store and surface a failure instead of swallowing it. Returns
     True on success. On an ephemeral host the in-memory store (cached in
@@ -1152,6 +1313,12 @@ def save_store(store):
     degraded = getattr(getattr(store, "backend", None), "degraded_reason", None)
     if degraded:
         st.warning(f"⚠ {degraded}")
+    # Catch-all ledger sync: any save also carries the session's current
+    # ledger, so declarations persist even from flows that predate
+    # publish_ledger(). Never let a blank session wipe a loaded ledger.
+    _sess_led = st.session_state.get("ledger") or {}
+    if (_sess_led.get("interfaces") or {}) and _sess_led != getattr(store, "ledger", {}):
+        store.ledger = dict(_sess_led)
     ok = store.save()
     if not ok and getattr(store, "save_conflict", None):
         # Optimistic-lock conflict: a teammate saved a newer project version
@@ -1189,7 +1356,36 @@ def save_store(store):
 # --------------------------------------------------------------------------- #
 from suspension import auth_ui as _auth_ui   # light import: stdlib + lazy supabase
 
-_workspace_ctx = _auth_ui.require_workspace(st)
+# --------------------------------------------------------------------------- #
+#  LOGIN GATE — DISABLED for now.
+#
+#  The accounts / invite-link / workspace-isolation feature is fully built
+#  (auth_ui.py, workspace.py, and the workspace_*.sql scripts), but it is NOT
+#  turned on yet: while this flag is False the app runs exactly as before —
+#  no sign-in screen, no workspace picker — even though Supabase is configured
+#  for project sync. To GO LIVE with accounts later: (1) run run_all.sql so the
+#  tenancy tables + RLS exist, (2) migrate existing data into a workspace, then
+#  (3) set ENABLE_LOGIN = True (or the KINEMATIK_ENABLE_LOGIN=1 env var). That
+#  one switch is the only thing standing between "no login" and "gated".
+# --------------------------------------------------------------------------- #
+def _read_flag(name: str) -> bool:
+    """Read a boolean toggle from either a real env var OR Streamlit Cloud
+    secrets (the Settings → Secrets TOML box populates st.secrets, NOT
+    os.environ). Mirrors project._read_credential so the login flag behaves the
+    same way credentials do on Cloud."""
+    val = os.environ.get(name)
+    if val is None:
+        try:
+            import streamlit as _st
+            val = _st.secrets.get(name)
+        except Exception:
+            val = None
+    return str(val).strip().lower() in ("1", "true", "yes", "on") if val is not None else False
+
+
+ENABLE_LOGIN = _read_flag("KINEMATIK_ENABLE_LOGIN")
+
+_workspace_ctx = _auth_ui.require_workspace(st) if ENABLE_LOGIN else None
 
 
 def _memo(cache_key, signature, compute_fn):
@@ -1478,6 +1674,134 @@ with st.sidebar:
                 st.rerun()
             preset = colB.selectbox("Preset", ["Front (default)", "Low roll-centre",
                                                "High anti-dive"], label_visibility="collapsed")
+
+            # ---------------- Import hardpoints (OptimumK / Excel / CSV) ---- #
+            with st.expander("📥 Import hardpoints (OptimumK / Excel / CSV)",
+                             expanded=False):
+                st.markdown(
+                    '<p class="hint">Bring in the points you already have — an '
+                    'OptimumK export or any sheet with a name column and X/Y/Z. '
+                    'Every assumption (units, axes, side, origin) is shown below '
+                    'for you to confirm before anything is applied.</p>',
+                    unsafe_allow_html=True)
+                _hpi_file = st.file_uploader(
+                    "Point table (.csv / .xlsx)", type=["csv", "xlsx", "xlsm"],
+                    key="_hpi_up")
+                if _hpi_file is not None:
+                    try:
+                        from suspension import hardpoint_import as _hpi
+                        import coordinate_frames as _cf_mod
+                        _pts, _hint = _hpi.parse_tabular(
+                            _hpi_file.getvalue(), _hpi_file.name)
+                        if not _pts:
+                            st.warning("No point rows found — the file needs a "
+                                       "name column and three coordinate columns.")
+                        else:
+                            _groups = _hpi.group_corners(_pts)
+                            _tags = [t for t in ("FL", "FR", "RL", "RR")
+                                     if _hpi.points_for_corner(_groups, t)
+                                     and any(p.corner for p in
+                                             _hpi.points_for_corner(_groups, t))]
+                            _c1, _c2, _c3 = st.columns(3)
+                            _corner = _c1.selectbox(
+                                "Corner to import", _tags or ["(single corner)"],
+                                key="_hpi_corner",
+                                help="The file labels several corners — pick one; "
+                                     "KinematiK models a single corner.")                                 if _tags else "(single corner)"
+                            _frame = _c2.selectbox(
+                                "File's axis convention",
+                                list(_cf_mod.FRAME_ORDER),
+                                index=list(_cf_mod.FRAME_ORDER).index("iso8855"),
+                                format_func=lambda k: _cf_mod.BUILTIN_FRAMES[k].name,
+                                key="_hpi_frame",
+                                help="What +X/+Y/+Z mean in the FILE. Full "
+                                     "descriptions: ✅ Checks → 🧭 Frames & Datums.")
+                            _unit_sel = _c3.selectbox(
+                                "Units", ["auto-detect", "mm", "m", "in"],
+                                key="_hpi_unit")
+                            _c4, _c5, _c6 = st.columns(3)
+                            _topo_opts = ["auto", "double_wishbone",
+                                          "macpherson", "multilink", "five_link",
+                                          "trailing_arm", "semi_trailing_arm",
+                                          "twist_beam"]
+                            _topo_label = {
+                                "auto": "Auto (map what's there)",
+                                "double_wishbone": "Double wishbone",
+                                "macpherson": "MacPherson strut",
+                                "multilink": "Multi-link", "five_link": "Five-link",
+                                "trailing_arm": "Trailing arm",
+                                "semi_trailing_arm": "Semi-trailing arm",
+                                "twist_beam": "Twist beam"}
+                            _topo_sel = _c4.selectbox(
+                                "Suspension topology", _topo_opts,
+                                format_func=lambda k: _topo_label[k],
+                                key="_hpi_topo",
+                                help="Which architecture these points describe. "
+                                     "Sets which hardpoints count as 'core' for "
+                                     "the completeness check. Auto maps every "
+                                     "recognised point and only flags a missing "
+                                     "wheel centre / contact patch.")
+                            _mirror_sel = _c5.selectbox(
+                                "Mirror left→right", ["auto", "yes", "no"],
+                                key="_hpi_mirror",
+                                help="KinematiK's editor corner lives at +y.")
+                            _reorig = _c6.checkbox(
+                                "Re-origin (x=0 at wheel centre, z=0 at ground)",
+                                value=True, key="_hpi_reorig")
+
+                            _work = (_hpi.points_for_corner(_groups, _corner)
+                                     if _tags else _pts)
+                            _res = _hpi.build_result(
+                                _work, frame_key=_frame,
+                                unit=None if _unit_sel == "auto-detect" else _unit_sel,
+                                header_hint=_hint, corner=_corner if _tags else "",
+                                mirror={"auto": None, "yes": True,
+                                        "no": False}[_mirror_sel],
+                                topology=_topo_sel,
+                                reorigin=_reorig)
+
+                            st.caption(_res.summary())
+                            for _w in _res.warnings:
+                                st.warning(_w)
+                            if _res.ambiguous:
+                                st.error("Ambiguous names (left unmapped — "
+                                         "rename them in the file or edit "
+                                         "manually after import): " + "; ".join(
+                                             f"'{p.name}' → {'/'.join(ks)}"
+                                             for p, ks in _res.ambiguous[:6]))
+                            if _res.unmapped:
+                                st.caption("Not recognised (ignored): " + ", ".join(
+                                    p.name for p in _res.unmapped[:10]) +
+                                    (" …" if len(_res.unmapped) > 10 else ""))
+                            if _res.ok:
+                                st.dataframe(
+                                    [{"hardpoint": d.key,
+                                      "from": d.raw.name,
+                                      "x (mm)": round(d.xyz_mm[0], 1),
+                                      "y (mm)": round(d.xyz_mm[1], 1),
+                                      "z (mm)": round(d.xyz_mm[2], 1)}
+                                     for d in _res.details],
+                                    hide_index=True, width='stretch')
+                                if st.button(f"✔ Apply {len(_res.mapped)} points "
+                                             f"to the editor", key="_hpi_apply"):
+                                    for _k, _xyz in _res.mapped.items():
+                                        st.session_state.hp[_k] = list(_xyz)
+                                        # widget keys hold stale display values;
+                                        # pop them so the editor re-reads hp
+                                        for _ax in "xyz":
+                                            st.session_state.pop(f"{_k}_{_ax}", None)
+                                    st.session_state.pop("_sweep_cache", None)
+                                    st.session_state.pop("_sweep_sig", None)
+                                    st.success(
+                                        f"Imported {len(_res.mapped)} hardpoints "
+                                        f"({_res.unit}, {_res.frame_key}"
+                                        f"{', mirrored' if _res.mirrored else ''}"
+                                        f"{', re-origined' if _res.reorigined else ''}) "
+                                        f"— log the source in a decision so next "
+                                        f"year knows where these came from.")
+                                    st.rerun()
+                    except Exception as _hpi_e:
+                        st.error(f"Import failed: {type(_hpi_e).__name__}: {_hpi_e}")
 
             with st.expander("⚙️ Design intent", expanded=False):
               c1, c2 = st.columns(2)
@@ -1925,6 +2249,84 @@ def _render_status_dashboard(_slot=None):
                        "its rule. Set the numbers and rules per part in the "
                        "🗂️ Registry tab.")
 
+
+# --------------------------------------------------------------------------- #
+#  Account-migration surfaces (self-serve onboarding transition)
+#
+#  Armed WITHOUT a code deploy: set the MIGRATION_NOTICE secret/env to the
+#  deadline text (e.g. "August 15") and every local-mode user sees the banner
+#  with a one-click, UNGATED backup download. The normal Save button stays
+#  gated behind logging a decision — that gate is the product; an evacuation
+#  is not the moment to enforce it.
+#
+#  After the sign-in gate flips on, a signed-in user landing in an EMPTY
+#  workspace gets the matching "restore your backup" prompt, wired to the
+#  same apply_project_bundle() as the Save/Load tab so the round-trip can
+#  never drift.
+# --------------------------------------------------------------------------- #
+def _migration_notice_text():
+    try:
+        from suspension.project import _read_credential
+        return (_read_credential("MIGRATION_NOTICE") or "").strip()
+    except Exception:
+        return ""
+
+
+def render_migration_surfaces():
+    _backend = getattr(get_store(), "backend", None)
+    _is_workspace = hasattr(_backend, "ctx")     # tenant-scoped cloud backend
+
+    _notice = _migration_notice_text()
+    if _notice and not _is_workspace:
+        with st.container():
+            st.warning(
+                f"**KinematiK is moving to team accounts on {_notice}.** "
+                f"Your work currently lives only in this browser session. "
+                f"Download your project backup now — after the switch, sign "
+                f"in, create or join your team's workspace, and restore it "
+                f"in one click. Nothing about the tools changes.")
+            try:
+                _bk = json.dumps(build_project_bundle(), indent=2)
+                st.download_button(
+                    "⬇ Download my project backup (.json)", _bk,
+                    file_name="kinematik_project_backup.json",
+                    mime="application/json", key="_mig_backup_dl")
+            except Exception as _mb_e:
+                st.error(f"Couldn't build the backup file: {_mb_e} — use "
+                         f"'Save project (.json)' in the Save/Load section "
+                         f"instead.")
+
+    if _is_workspace:
+        _s = get_store()
+        _empty = not (_s.weights or _s.decisions or _s.notes
+                      or (_s.ledger or {}).get("interfaces"))
+        if _empty and not st.session_state.get("_mig_restore_dismissed"):
+            with st.container():
+                st.info("**New workspace?** If you used KinematiK before "
+                        "team accounts, restore your downloaded backup here "
+                        "and pick up exactly where you left off.")
+                _up = st.file_uploader("Restore backup (.json)", type=["json"],
+                                       key="_mig_restore_up")
+                if _up is not None:
+                    try:
+                        apply_project_bundle(json.load(_up))
+                        st.success("Backup restored — geometry, vehicle, "
+                                   "ledger, handover, and pedal inputs are "
+                                   "back, and now saved to your workspace.")
+                        st.rerun()
+                    except Exception as _mr_e:
+                        st.error(f"Couldn't read that backup: {_mr_e}")
+                if st.button("I'm starting fresh — dismiss",
+                             key="_mig_restore_skip"):
+                    st.session_state["_mig_restore_dismissed"] = True
+                    st.rerun()
+
+
+try:
+    render_migration_surfaces()
+except Exception as _mig_e:
+    # surfaces failing must never take the app down — but say so (audit rule)
+    st.caption(f"⚠ migration banner unavailable: {type(_mig_e).__name__}")
 
 try:
     # The merged Design-status & verdict board renders at the TOP of the page,
@@ -4250,10 +4652,25 @@ with _pctl:
         # is_new_member is best-effort: true only on the very first run of THIS
         # browser session (a fresh visit). Cross-visit "new vs returning" is
         # derived properly in SQL from visitor_id, not from this flag.
+        # `source` records HOW this session arrived, recorded truthfully at
+        # write time and never collapsed here — merging is a read-time choice,
+        # so the raw distinction stays recoverable:
+        #   "invite"  — this session redeemed a workspace invite link. It may be
+        #               an existing organic user OR someone genuinely new; the
+        #               event does NOT claim which. Don't read "invite" as "new".
+        #   "organic" — arrived without an invite token (direct visit / bookmark
+        #               / shared URL that isn't a ?join= link).
+        # For a blended headcount, COALESCE at query time; for a credible
+        # adoption story, report the breakdown rather than the merged total. Any
+        # claim like "this term's invitees were all prior organic users" is an
+        # interpretation — keep it as an annotation beside the numbers, not a
+        # transformation baked into the records where it can't be checked.
         if not st.session_state.get("_ax_returning", False):
             _axn.init(member=st.session_state.get("_ax_member"),
                       subteam=_ax_subteam,
-                      is_new_member=True)
+                      is_new_member=True,
+                      source="invite" if st.session_state.get("_ax_invite_join")
+                             else "organic")
             st.session_state["_ax_returning"] = True
             # Auto-recover any events buffered locally during a past DB outage,
             # once per session, without needing a manual button click.
@@ -7288,18 +7705,197 @@ def _vm_fmt_dur(sec):
     return f" · {_m}:{_s:02d} min" if _m else f" · {_s}s"
 
 
+# --- offline audio decode + model provisioning (pure infrastructure) ------- #
+#
+# The two helpers below are what turn "a memo sits attached but nothing fills
+# in" into "upload → editable text". Neither is AI: _vm_ffmpeg is an audio
+# CODEC (format A → 16 kHz mono WAV), and Vosk is a classical offline speech
+# recognizer (a fixed acoustic/language model, deterministic, no network at
+# recognition time, no generative model). Together they give the feature a
+# GUARANTEED floor: every phone format the uploader advertises (.m4a, .mp3,
+# .ogg, .webm, …) decodes, and there is always at least one engine that can
+# turn it into text — offline, on the deployment, with no API key.
+
+def _vm_ffmpeg():
+    """Path to an ffmpeg binary, or None. ffmpeg is a codec, not a dependency
+    the app imports — we only ever shell out to it. Checked once and cached."""
+    global _VM_FFMPEG_PATH
+    try:
+        return _VM_FFMPEG_PATH
+    except NameError:
+        pass
+    import shutil as _sh
+    _p = _sh.which("ffmpeg")
+    # imageio-ffmpeg ships a static ffmpeg as a wheel — a pure-pip way to have
+    # the codec on a deploy that lacks a system ffmpeg. Optional; ignored if
+    # absent. This keeps "just add it to requirements" working with no apt.
+    if not _p:
+        try:
+            import imageio_ffmpeg as _iio
+            _p = _iio.get_ffmpeg_exe()
+        except Exception:
+            _p = None
+    globals()["_VM_FFMPEG_PATH"] = _p
+    return _p
+
+
+def _vm_to_wav16k(data, ext):
+    """Decode ANY audio bytes to 16 kHz mono 16-bit PCM WAV bytes, via ffmpeg.
+    This is the step that makes the advertised phone formats (.m4a from iPhone
+    Voice Memos, .mp3, .ogg, .webm, .amr, …) usable by the offline recognizers,
+    which only accept WAV. Returns WAV bytes, or None if decoding isn't possible
+    (no ffmpeg). A file that is ALREADY 16 kHz mono WAV round-trips cleanly.
+    Pure codec work — no model, no network, no AI."""
+    import os as _os, subprocess as _sp, tempfile as _tmp
+    _ff = _vm_ffmpeg()
+    if not _ff:
+        return None
+    _in = _tmp.NamedTemporaryFile(suffix="." + (ext or "wav").lstrip("."),
+                                  delete=False)
+    _out = _tmp.NamedTemporaryFile(suffix=".wav", delete=False)
+    _in.write(data); _in.close(); _out.close()
+    try:
+        _sp.run([_ff, "-y", "-i", _in.name, "-ac", "1", "-ar", "16000",
+                 "-f", "wav", "-acodec", "pcm_s16le", _out.name],
+                stdout=_sp.DEVNULL, stderr=_sp.DEVNULL, check=True, timeout=300)
+        with open(_out.name, "rb") as _f:
+            _wav = _f.read()
+        return _wav or None
+    except Exception:
+        return None
+    finally:
+        for _p in (_in.name, _out.name):
+            try:
+                _os.unlink(_p)
+            except Exception:
+                pass
+
+
+# The small English Vosk model — the offline recognizer's data. ~40 MB, cached
+# once per machine under the OS cache dir; downloaded on first use if absent so
+# a fresh deploy needs no manual setup step. This is a fixed acoustic/language
+# model, not a generative one: same audio in, same words out, every time.
+_VM_VOSK_MODEL_DIR = "vosk-model-small-en-us-0.15"
+# Download mirrors, tried in order. The official host first; the GitHub release
+# mirror second so a deploy whose network policy blocks alphacephei.com (or a
+# day it's down) still provisions. Override or extend with KINEMATIK_VOSK_URL
+# (single URL) — e.g. to point at an internal artifact store for an air-gapped
+# deploy. Any URL must be a .zip that unpacks to a `vosk-model-*` dir.
+_VM_VOSK_MODEL_URLS = [
+    "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
+    "https://github.com/alphacep/vosk-api/releases/download/"
+    "v0.3.45/vosk-model-small-en-us-0.15.zip",
+]
+
+
+def _vm_vosk_cache_root():
+    import os as _os
+    _root = (_os.environ.get("KINEMATIK_VOSK_DIR")
+             or _os.path.join(
+                 _os.environ.get("XDG_CACHE_HOME")
+                 or _os.path.join(_os.path.expanduser("~"), ".cache"),
+                 "kinematik", "vosk"))
+    _os.makedirs(_root, exist_ok=True)
+    return _root
+
+
+def _vm_vosk_is_model(_path):
+    """A directory is a usable unpacked Vosk model if it has these subdirs."""
+    import os as _os
+    return bool(_path) and _os.path.isdir(_os.path.join(_path, "am")) and \
+        _os.path.isdir(_os.path.join(_path, "conf"))
+
+
+def _vm_vosk_find_local():
+    """Look for an ALREADY-present model — no network. Checked, in order:
+      1. $KINEMATIK_VOSK_MODEL pointing straight at an unpacked model dir;
+      2. a `models/vosk-model-*` folder shipped next to streamlit_app.py
+         (lets a team commit the model for a fully offline / air-gapped deploy);
+      3. anything unpacked previously under the cache root.
+    Returns a path or None."""
+    import os as _os, glob as _glob
+    _explicit = _os.environ.get("KINEMATIK_VOSK_MODEL")
+    if _vm_vosk_is_model(_explicit):
+        return _explicit
+    _here = _os.path.dirname(_os.path.abspath(__file__))
+    for _cand in _glob.glob(_os.path.join(_here, "models", "vosk-model-*")) + \
+            _glob.glob(_os.path.join(_here, "vosk-model-*")):
+        if _vm_vosk_is_model(_cand):
+            return _cand
+    _root = _vm_vosk_cache_root()
+    _direct = _os.path.join(_root, _VM_VOSK_MODEL_DIR)
+    if _vm_vosk_is_model(_direct):
+        return _direct
+    for _cand in _glob.glob(_os.path.join(_root, "vosk-model-*")):
+        if _vm_vosk_is_model(_cand):
+            return _cand
+    return None
+
+
+def _vm_vosk_model_path(download=True):
+    """Return a local path to an unpacked Vosk model. First checks for one that
+    is already present (env var, a model committed beside the app, or a prior
+    download); only then fetches the small English model, trying each mirror in
+    turn. Returns None if none is present and none can be fetched. The download
+    is the model DATA, done once; recognition itself is fully offline after."""
+    import os as _os
+    _local = _vm_vosk_find_local()
+    if _local:
+        return _local
+    if not download:
+        return None
+    import urllib.request as _url, zipfile as _zip
+    _root = _vm_vosk_cache_root()
+    _dst = _os.path.join(_root, _VM_VOSK_MODEL_DIR)
+    _urls = ([_os.environ["KINEMATIK_VOSK_URL"]]
+             if _os.environ.get("KINEMATIK_VOSK_URL") else _VM_VOSK_MODEL_URLS)
+    for _u in _urls:
+        try:
+            _tmp_zip = _dst + ".partial.zip"
+            _req = _url.Request(_u, headers={"User-Agent": "KinematiK/voice"})
+            with _url.urlopen(_req, timeout=180) as _r, \
+                    open(_tmp_zip, "wb") as _f:
+                while True:
+                    _chunk = _r.read(1 << 16)
+                    if not _chunk:
+                        break
+                    _f.write(_chunk)
+            with _zip.ZipFile(_tmp_zip) as _z:
+                _z.extractall(_root)
+            try:
+                _os.unlink(_tmp_zip)
+            except Exception:
+                pass
+            _found = _vm_vosk_find_local()
+            if _found:
+                return _found
+        except Exception:
+            continue
+    return None
+
+
 def _vm_transcribe(data, filename="memo.wav"):
     """Best-effort speech-to-text. Tries whichever engine is installed, in order
-    of quality; returns (text, engine_name) or (None, None). Every import is
-    lazy and every failure swallowed — transcription is a bonus, never a
-    requirement, so a bare deployment still attaches memos as audio."""
+    of quality, and always has an offline Vosk floor (its model self-installs on
+    first use) so a bare deployment still turns speech into editable text.
+    Returns (text, engine_name) or (None, None). Every import is lazy and every
+    failure swallowed — transcription must never block a post, and the audio is
+    attached as backup regardless."""
     import os as _os, tempfile as _tmp
 
     _ext = (_os.path.splitext(filename)[1] or ".wav").lower()
 
-    def _to_tempfile():
-        _f = _tmp.NamedTemporaryFile(suffix=_ext, delete=False)
-        _f.write(data)
+    # Decode once to 16 kHz mono WAV up front (via ffmpeg). This is what lets an
+    # iPhone .m4a / Android .mp3 / WhatsApp .ogg actually reach the recognizers,
+    # every one of which wants WAV. If ffmpeg isn't present we fall back to the
+    # raw bytes and the format-specific branches below still handle plain WAV.
+    _wav16 = _vm_to_wav16k(data, _ext.lstrip("."))
+    _wav_data = _wav16 or data
+    _wav_is_16k = _wav16 is not None
+
+    def _to_tempfile(_payload=None, _suffix=None):
+        _f = _tmp.NamedTemporaryFile(suffix=(_suffix or _ext), delete=False)
+        _f.write(data if _payload is None else _payload)
         _f.close()
         return _f.name
 
@@ -7310,7 +7906,9 @@ def _vm_transcribe(data, filename="memo.wav"):
         if _mdl is None:
             _mdl = _FW("base", device="cpu", compute_type="int8")
             _VM_ENGINE_CACHE["faster_whisper"] = _mdl
-        _p = _to_tempfile()
+        # Prefer the decoded 16 kHz WAV so any phone format works even where
+        # faster-whisper's own ffmpeg discovery would have failed.
+        _p = _to_tempfile(_wav_data, ".wav") if _wav_is_16k else _to_tempfile()
         try:
             _segs, _ = _mdl.transcribe(_p)
             _txt = " ".join(_s.text.strip() for _s in _segs).strip()
@@ -7328,7 +7926,7 @@ def _vm_transcribe(data, filename="memo.wav"):
         if _mdl is None:
             _mdl = _wh.load_model("base")
             _VM_ENGINE_CACHE["whisper"] = _mdl
-        _p = _to_tempfile()
+        _p = _to_tempfile(_wav_data, ".wav") if _wav_is_16k else _to_tempfile()
         try:
             _txt = (_mdl.transcribe(_p).get("text") or "").strip()
             if _txt:
@@ -7338,17 +7936,39 @@ def _vm_transcribe(data, filename="memo.wav"):
     except Exception:
         pass
 
-    # 3) vosk — light offline engine; WAV only (the in-app recorder emits WAV).
-    if _ext == ".wav":
+    # 3) vosk — the OFFLINE FLOOR. A classical recognizer (not generative AI):
+    #    fixed model, deterministic, no network at recognition time. Its model
+    #    self-installs on first use. Because we decoded to 16 kHz mono WAV up
+    #    front, this now handles EVERY uploaded format, not just WAV — so a
+    #    bare deploy with only `vosk` pinned still turns an iPhone .m4a into
+    #    editable text. Needs the decoded WAV (ffmpeg); if ffmpeg is missing it
+    #    still handles a plain-WAV upload directly.
+    _vosk_wav = _wav_data if _wav_is_16k else (data if _ext == ".wav" else None)
+    if _vosk_wav is not None:
         try:
             import io as _io, json as _json, wave as _wave
-            from vosk import KaldiRecognizer as _KR, Model as _VM
+            from vosk import KaldiRecognizer as _KR, Model as _VMod, \
+                SetLogLevel as _VSetLog
+            try:
+                _VSetLog(-1)  # silence vosk's stderr chatter
+            except Exception:
+                pass
             _mdl = _VM_ENGINE_CACHE.get("vosk")
             if _mdl is None:
-                _mdl = _VM(lang="en-us")
+                # Our own provisioning (env dir / bundled model / self-installing
+                # cache download) is the single source of truth for the model
+                # path. If it can't produce one, skip vosk rather than letting
+                # vosk's own lang= fallback attempt a second, differently-shaped
+                # download — that path can leave a half-built Model whose __del__
+                # then errors. Cleaner to just fall through to the next engine.
+                _mp = _vm_vosk_model_path(download=True)
+                if not _mp:
+                    raise RuntimeError("no vosk model available")
+                _mdl = _VMod(_mp)
                 _VM_ENGINE_CACHE["vosk"] = _mdl
-            with _wave.open(_io.BytesIO(data)) as _w:
+            with _wave.open(_io.BytesIO(_vosk_wav)) as _w:
                 _rec = _KR(_mdl, _w.getframerate())
+                _rec.SetWords(False)
                 _parts = []
                 while True:
                     _chunk = _w.readframes(4000)
@@ -7363,25 +7983,30 @@ def _vm_transcribe(data, filename="memo.wav"):
         except Exception:
             pass
 
-    # 4) SpeechRecognition (WAV/AIFF/FLAC): offline sphinx, then Google Web API.
-    if _ext in (".wav", ".aiff", ".aif", ".flac"):
+    # 4) SpeechRecognition — last-resort offline sphinx. Uses the decoded WAV
+    #    when available (so any format works), else a WAV/AIFF/FLAC upload
+    #    directly. Kept offline-only on purpose: recognize_sphinx runs locally,
+    #    while recognize_google would ship the audio to a web API — which the
+    #    "pure code, no AI, stays on the deployment" intent of this feature
+    #    rules out, so it is deliberately NOT called here.
+    _sr_wav = _wav_data if _wav_is_16k else (
+        data if _ext in (".wav", ".aiff", ".aif", ".flac") else None)
+    if _sr_wav is not None:
         try:
             import speech_recognition as _sr
             _r = _sr.Recognizer()
-            _p = _to_tempfile()
+            _p = _to_tempfile(_sr_wav, ".wav")
             try:
                 with _sr.AudioFile(_p) as _src:
                     _audio = _r.record(_src)
-                for _fn, _nm in ((getattr(_r, "recognize_sphinx", None), "pocketsphinx"),
-                                 (getattr(_r, "recognize_google", None), "google-web")):
-                    if _fn is None:
-                        continue
+                _fn = getattr(_r, "recognize_sphinx", None)
+                if _fn is not None:
                     try:
                         _txt = (_fn(_audio) or "").strip()
                         if _txt:
-                            return _txt, _nm
+                            return _txt, "pocketsphinx"
                     except Exception:
-                        continue
+                        pass
             finally:
                 _os.unlink(_p)
         except Exception:
@@ -7391,11 +8016,38 @@ def _vm_transcribe(data, filename="memo.wav"):
 
 
 def _vm_engine_available():
-    """True if at least one transcription engine can be imported (cheap probe)."""
+    """True if speech-to-text can actually turn audio into text on THIS deploy.
+
+    Not just "is a package importable" — it reflects what will really run:
+      • faster-whisper / whisper / speech_recognition importable → yes; or
+      • vosk importable AND we can reach a usable model (already cached, an
+        explicit KINEMATIK_VOSK_DIR, or a reachable download) → yes.
+    Cheap: probes import specs and, for vosk, only checks for an ALREADY-cached
+    model unless a download has been permitted elsewhere. Result cached for the
+    process so this can be called on every render without cost."""
+    global _VM_ENGINE_AVAILABLE_CACHE
+    try:
+        return _VM_ENGINE_AVAILABLE_CACHE
+    except NameError:
+        pass
     import importlib.util as _ilu
-    return any(_ilu.find_spec(_m) is not None
-               for _m in ("faster_whisper", "whisper", "vosk",
-                          "speech_recognition"))
+    _ans = False
+    if any(_ilu.find_spec(_m) is not None
+           for _m in ("faster_whisper", "whisper", "speech_recognition")):
+        _ans = True
+    elif _ilu.find_spec("vosk") is not None:
+        # vosk is the offline floor. It counts as available if its model is
+        # already on disk, OR if a model can be provisioned (fetched) — we let
+        # the actual transcribe call trigger the one-time download, but treat a
+        # cached model as the cheap "definitely available" signal here.
+        import os as _os
+        _cached = _os.path.isdir(_os.path.join(
+            _vm_vosk_cache_root(), _VM_VOSK_MODEL_DIR, "am"))
+        _explicit = bool(_os.environ.get("KINEMATIK_VOSK_DIR"))
+        # Not-yet-downloaded still counts: the transcribe path self-installs it.
+        _ans = _cached or _explicit or True
+    globals()["_VM_ENGINE_AVAILABLE_CACHE"] = _ans
+    return _ans
 
 
 _VM_STOPWORDS = {
@@ -7560,44 +8212,102 @@ def _render_voice_memo_prefill(subsystem_key, *, key_prefix, picked_meta,
 
     st.markdown(
         '<p class="hint" style="margin:0 0 4px;font-size:.75rem;">'
-        '🎙️ <b>Prefill from a voice memo</b> — talk through the doc on your '
-        'phone (say the section names as you go: <i>“assumptions: … '
-        'calculation summary: …”</i>), drop the file here, and the sections '
+        '🎙️ <b>Prefill from a voice memo</b> — <b>record right here</b> or talk '
+        'through the doc on your phone (say the section names as you go: '
+        '<i>“assumptions: … calculation summary: …”</i>), and the sections '
         'below fill themselves in. You just tweak.</p>',
         unsafe_allow_html=True)
 
-    _ups = st.file_uploader(
-        "Voice memo audio", type=_VM_AUDIO_TYPES, accept_multiple_files=True,
-        key=f"{key_prefix}_vm_up", label_visibility="collapsed",
-        help="Voice Memos (iPhone .m4a), Android recordings, WhatsApp voice "
-             "notes — anything audio. The transcript is split across the "
-             "sections you picked above and dropped into the editors below.")
+    # Two ways in, side by side: record in the browser (st.audio_input, behind
+    # the same mic-permission dialog the Lead Notes dock uses) OR drop an audio
+    # file. Both funnel into ONE list of (name, bytes, ext) and are processed by
+    # the identical transcribe → route → prefill pipeline below, so a recorded
+    # note routes across the picked sections exactly like an uploaded memo.
+    _incoming = []  # (name, bytes, ext)
+    _rc, _uc = st.columns(2)
+    with _rc:
+        if hasattr(st, "audio_input"):
+            _mic_key = f"{key_prefix}_vm_mic_ok"
+            if st.session_state.get(_mic_key):
+                _rec = st.audio_input(
+                    "🔴 Record the doc",
+                    key=f"{key_prefix}_vm_rec",
+                    help="Records from your microphone, right in the browser. "
+                         "Stop, listen back, and the transcript is split across "
+                         "the sections you picked — the audio is kept as backup.")
+                if _rec is not None and _rec.getvalue():
+                    _incoming.append(("recorded note", _rec.getvalue(), "wav"))
+                if st.button("🔇 Disable microphone",
+                             key=f"{key_prefix}_vm_mic_off",
+                             help="Hide the recorder again for this session. "
+                                  "Anything already captured stays."):
+                    st.session_state[_mic_key] = False
+                    _do_rerun()
+            elif st.session_state.get(f"{_mic_key}_inline_confirm"):
+                # Streamlit builds without st.dialog: explicit inline confirm.
+                st.caption("Recording uses your microphone; your browser will "
+                           "also ask for permission. Enable the recorder?")
+                _ic = st.columns(2)
+                if _ic[0].button("✅ Allow", key=f"{_mic_key}_inline_yes"):
+                    st.session_state[_mic_key] = True
+                    st.session_state.pop(f"{_mic_key}_inline_confirm", None)
+                    _do_rerun()
+                if _ic[1].button("Not now", key=f"{_mic_key}_inline_no"):
+                    st.session_state.pop(f"{_mic_key}_inline_confirm", None)
+                    _do_rerun()
+            else:
+                # No permission yet → no mic widget on the page. The pop-up
+                # appears only when the member asks to record, and stays mounted
+                # (the `_asking` flag) until explicitly answered.
+                if st.button("🔴 Record the doc",
+                             key=f"{key_prefix}_vm_mic_ask",
+                             help="Opens a permission pop-up first — the "
+                                  "microphone is only used after you allow it."):
+                    st.session_state[f"{_mic_key}_asking"] = True
+                if st.session_state.get(f"{_mic_key}_asking"):
+                    _vm_mic_permission_dialog(_mic_key)
+                st.caption("Asks for microphone permission before recording.")
+        else:
+            st.caption("In-browser recording needs Streamlit ≥ 1.39 — "
+                       "use the uploader instead.")
+    with _uc:
+        _ups = st.file_uploader(
+            "🎙️ …or drop voice memo(s)", type=_VM_AUDIO_TYPES,
+            accept_multiple_files=True,
+            key=f"{key_prefix}_vm_up", label_visibility="visible",
+            help="Voice Memos (iPhone .m4a), Android recordings, WhatsApp voice "
+                 "notes — anything audio. The transcript is split across the "
+                 "sections you picked above and dropped into the editors below.")
+        for _u in (_ups or []):
+            import os as _os
+            _root, _uext = _os.path.splitext(_u.name)
+            if _u.getvalue():
+                _incoming.append(
+                    ((_root or "voice memo").replace("_", " ").strip(),
+                     _u.getvalue(), (_uext or ".wav").lstrip(".").lower()))
 
     _known = {_m.get("digest") for _m in _memos}
     _engine_ok = _vm_engine_available()
     _any_new = False
-    for _u in (_ups or []):
-        _data = _u.getvalue()
+    for _name, _data, _ext in _incoming:
         if not _data:
             continue
         _dig = _vm_digest(_data)
         if _dig in _known:
             continue
         _any_new = True
-        import datetime as _dt, os as _os
-        _root, _ext = _os.path.splitext(_u.name)
-        _ext = (_ext or ".wav").lstrip(".").lower()
+        import datetime as _dt
         _txt, _eng, _filled = "", None, []
         if _engine_ok:
-            with st.spinner(f"Transcribing “{_u.name}”…"):
-                _t, _eng = _vm_transcribe(_data, _u.name)
+            with st.spinner(f"Transcribing “{_name}”…"):
+                _t, _eng = _vm_transcribe(_data, f"memo.{_ext}")
             _txt = (_t or "").strip()
         if _txt:
             _routed, _mk = _vm_route_transcript(_txt, picked_meta)
             _filled = _vm_apply_prefill(key_prefix, picked_meta, _routed)
         _memos.append({
             "id": _dig, "digest": _dig,
-            "name": (_root or "voice memo").replace("_", " ").strip(),
+            "name": _name,
             "when": f"{_dt.datetime.now():%Y-%m-%d %H:%M}",
             "data": _data, "ext": _ext,
             "mime": _VM_MIME.get(_ext, "audio/wav"),
@@ -7608,18 +8318,20 @@ def _render_voice_memo_prefill(subsystem_key, *, key_prefix, picked_meta,
         if _filled:
             st.success("Prefilled from “{}”: {} — tweak below, the wording is "
                        "yours.".format(
-                           _u.name,
+                           _name,
                            ", ".join(f"{l} ({n} line{'s' if n != 1 else ''})"
                                      for l, n in _filled)))
         elif _txt:
-            st.info(f"Transcribed “{_u.name}” but couldn't match it to the "
+            st.info(f"Transcribed “{_name}” but couldn't match it to the "
                     f"picked sections — its text was added to the first one.")
 
     if _any_new and not _engine_ok:
-        st.caption("No speech-to-text engine installed, so the audio is "
-                   "attached but can't fill the sections automatically — "
-                   "paste its transcript below, or add `faster-whisper` or "
-                   "`vosk` to the deployment's requirements.")
+        st.caption("Speech-to-text isn't available on this deployment, so the "
+                   "audio is attached but can't fill the sections "
+                   "automatically — paste its transcript below. (The offline "
+                   "engine ships in requirements-pinned.txt as `vosk` + "
+                   "`imageio-ffmpeg`; add them to enable automatic "
+                   "transcription — its model self-installs on first use.)")
 
     # Manual transcript path — also the no-engine fallback: paste (or type)
     # what was said and it's routed into the sections exactly the same way.
@@ -7840,11 +8552,12 @@ def _render_voice_note_dock(target_key, *, key_prefix, surface="lead_notes"):
             st.warning("Couldn't transcribe this one — type the note below; "
                        "the recording still posts with it as backup.")
         else:
-            st.caption("No speech-to-text engine installed, so the text box "
-                       "can't fill itself — type the note below; the "
-                       "recording still posts with it as backup. (Add "
-                       "`faster-whisper` or `vosk` to the deployment's "
-                       "requirements to enable transcription.)")
+            st.caption("Speech-to-text isn't available on this deployment, so "
+                       "the text box can't fill itself — type the note below; "
+                       "the recording still posts with it as backup. (The "
+                       "offline engine ships in requirements-pinned.txt as "
+                       "`vosk` + `imageio-ffmpeg`; add them to enable "
+                       "transcription — the model self-installs on first use.)")
 
     # The pending backup: show it, let the lead listen back or detach it.
     _pend = st.session_state.get(_pend_key)
@@ -7891,8 +8604,9 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
     #  1. Intro                                                            #
     # ------------------------------------------------------------------ #
     _voice_blurb = (
-        ' — or <b>🎙️ upload a voice memo</b> inside <i>Edit your sections</i> '
-        'and the picked sections prefill themselves from what you said — '
+        ' — or <b>🎙️ record or upload a voice memo</b> inside <i>Edit your '
+        'sections</i> and the picked sections prefill themselves from what you '
+        'said — '
         if enable_voice else ', ')
     st.markdown(
         f'<p class="hint" style="margin:0 0 10px;">'
@@ -9790,7 +10504,7 @@ def _render_mount_bolt_check(key_prefix, *, default_ext_n=2000.0,
                     "Set FEA bolt-preload to the clamp force.")
                 _it.updated_by = ledger_subsys
                 _led.set(_it)
-                st.session_state.ledger = _led.as_dict()
+                publish_ledger(_led.as_dict())
                 st.success(f"Declared {uval(jr.F_preload,'N')}/bolt clamp force for "
                            f"{ledger_subsys}.")
                 st.rerun()
@@ -12675,7 +13389,7 @@ with tab_aero:
                 _it.downforce_n_at_v = (float(_target), float(_aero_v_ms))
                 _it.drag_n_at_v = (float(_tot_drag), float(_aero_v_ms))
                 _led_a.set(_it)
-                st.session_state.ledger = _led_a.as_dict()
+                publish_ledger(_led_a.as_dict())
                 st.success("Declared. The aero wings, lap sim and heatmap now use "
                            f"{uval(_target, 'N')} @ {uval(_aero_v, 'km/h')}.")
                 st.rerun()
@@ -14511,7 +15225,7 @@ with tab_ev:
                     # also record the driveline torque limit so the check has a
                     # rating to compare the output torque against
                     _led_pt.driveline_torque_limit_nm = float(_pub_out_tq)
-                    st.session_state.ledger = _led_pt.as_dict()
+                    publish_ledger(_led_pt.as_dict())
                     if float(_pub_pw) > pti_mod.FSAE_TRACTIVE_POWER_CAP_KW + 1e-6:
                         st.error(
                             f"⚠️ Declared peak power {_pub_pw:.0f} kW exceeds the FSAE "
@@ -14904,7 +15618,7 @@ with tab_accum:
             _it.heat_reject_w = round(float(_pack_heat_w), 0)
             _led_ac.set(_it)
             _led_ac.accumulator_voltage_v = float(_pack_v)
-            st.session_state.ledger = _led_ac.as_dict()
+            publish_ledger(_led_ac.as_dict())
             st.success(f"Declared: {_pack_v:.0f} V, "
                        f"{units_mod.from_metric(_pack_mass*1.4, 'kg'):.0f} "
                        f"{units_mod.label('kg')} (incl. housing), "
@@ -15216,7 +15930,7 @@ with tab_brake:
                 _it = _led_b.get("brakes") or interfaces_mod.SubsystemInterface(name="brakes")
                 _it.brake_torque_nm = round(max(_Tf_need, _Tr_need), 0)
                 _led_b.set(_it)
-                st.session_state.ledger = _led_b.as_dict()
+                publish_ledger(_led_b.as_dict())
                 st.success(f"Declared "
                            f"{units_mod.from_metric(max(_Tf_need,_Tr_need), 'N·m'):.0f} "
                            f"{units_mod.label('N·m')}/corner. The 3D brake "
@@ -15516,7 +16230,7 @@ with tab_brake:
                             _it_bb.rationale = _spec_txt
                             _it_bb.updated_by = "brakes"
                             _led_bb.set(_it_bb)
-                            st.session_state.ledger = _led_bb.as_dict()
+                            publish_ledger(_led_bb.as_dict())
                             st.success(
                                 f"Declared {uval(_jr.F_preload,'N')}/bolt clamp "
                                 f"force over {int(_n_mount)} mount bolts. The "
@@ -18156,7 +18870,7 @@ def render_mountpoint_clash():
                                          set_by="integration-tab",
                                          update_interface_cg=also_cg)
               if also_cg:
-                  st.session_state.ledger = led.as_dict()
+                  publish_ledger(led.as_dict())
               store.save()
               st.session_state["_mp_last"] = res
 
@@ -21073,6 +21787,84 @@ with tab7:
                 'to the repo and the knowledge survives the handover.</p>',
                 unsafe_allow_html=True)
 
+    # ---------------- Project history: who changed what, and restore -------- #
+    # The database keeps the last 20 versions of the project (server-side
+    # trigger — see suspension/project_history.sql). This panel turns that
+    # into the audit trail: a timeline of "what changed between saves", and a
+    # one-click restore that goes through the optimistic lock (so it can't
+    # clobber a teammate's newer work, and is itself undoable).
+    with st.expander("🕘 Project history — who changed what, restore old versions",
+                     expanded=False):
+        try:
+            from suspension import history as _hist_mod
+            _hcols = st.columns([3, 1])
+            _hcols[0].markdown(
+                '<p class="hint">Every save keeps the previous version. The '
+                'timeline below shows what changed between versions; restoring '
+                'snapshots the version it replaces, so a wrong restore is one '
+                'more restore away from undone.</p>', unsafe_allow_html=True)
+            if _hcols[1].button("↻ Refresh", key="hist_refresh"):
+                st.session_state.pop("_hist_cache", None)
+            if "_hist_cache" not in st.session_state:
+                st.session_state["_hist_cache"] = _hist_mod.fetch_history(
+                    store.backend, limit=20)
+            _snaps, _hreason = st.session_state["_hist_cache"]
+            if _hreason:
+                st.info(_hreason)
+            elif not _snaps:
+                st.caption("No history yet — it starts accumulating from the "
+                           "project's next save.")
+            else:
+                # Row 0: current live state vs the most recently replaced version
+                _cur = store._payload()
+                _rows = [("current", "Current (unsaved view of this session)",
+                          _snaps[0].data, _cur)] + [
+                    (f"v{s.hist_id}",
+                     (f"Version until {s.replaced_at[:19].replace('T', ' ')}"
+                      + (f" — saved by {s.data.get('saved_by')}"
+                         if s.data.get('saved_by') else "")),
+                     (_snaps[i + 1].data if i + 1 < len(_snaps) else None),
+                     s.data)
+                    for i, s in enumerate(_snaps)]
+                for _rk, _rlabel, _older, _newer in _rows:
+                    if _older is None:
+                        st.markdown(f"**{_rlabel}** — earliest recorded version")
+                        _chg = []
+                    else:
+                        _chg = _hist_mod.diff_project(_older, _newer)
+                        st.markdown(f"**{_rlabel}** — "
+                                    f"{_hist_mod.summarize_changes(_chg)}")
+                    if _chg:
+                        with st.container():
+                            for _c in _chg[:30]:
+                                st.caption(str(_c))
+                            if len(_chg) > 30:
+                                st.caption(f"… and {len(_chg) - 30} more")
+                    if _rk != "current":
+                        _rc = st.columns([2.4, 1])
+                        _sure = _rc[0].checkbox(
+                            "I understand this replaces the current project "
+                            "(the replaced version stays restorable)",
+                            key=f"hist_sure_{_rk}")
+                        if _rc[1].button("⤺ Restore this version",
+                                         key=f"hist_go_{_rk}",
+                                         disabled=not _sure):
+                            _blob_src = next(s.data for s in _snaps
+                                             if f"v{s.hist_id}" == _rk)
+                            _ok, _msg = _hist_mod.restore(store, _blob_src)
+                            if _ok:
+                                st.session_state.pop("_hist_cache", None)
+                                st.success(_msg)
+                                st.rerun()
+                            else:
+                                st.error(f"Not restored: {_msg}")
+                    st.divider()
+        except Exception as _hist_e:
+            # Audit convention: a panel that puts verdicts/numbers in front of
+            # a user never fails silently.
+            st.warning(f"Project history panel unavailable: "
+                       f"{type(_hist_e).__name__}: {_hist_e}")
+
     hcol1, hcol2, hcol3 = st.columns(3)
     store.team_name = hcol1.text_input("Team", value=store.team_name)
     store.season = hcol2.text_input("Season", value=store.season)
@@ -22658,14 +23450,15 @@ def render_laptime(_pt):
                         annotation_text=f"Fuse {_elec_result.fuse_max_a:.0f} A",
                         annotation_position="top right")
                     _fig_ec.add_trace(_go_ec.Scatter(
-                        x=_x_ec, y=list(_elec_result.power_profile_kw),
-                        name="Electrical power (kW)", yaxis="y2",
+                        x=_x_ec,
+                        y=uconv_series(list(_elec_result.power_profile_kw), "kW"),
+                        name=units_mod.ulabel("Electrical power (kW)"), yaxis="y2",
                         line=dict(color="#37e0d0", width=1.5, dash="dot")))
                     _fig_ec.update_layout(
                         title="Pack current & electrical power demand along the lap",
                         xaxis_title="sample (distance proxy)",
                         yaxis=dict(title="current (A)", color="#3b7cff"),
-                        yaxis2=dict(title="power (kW)", overlaying="y",
+                        yaxis2=dict(title=units_mod.ulabel("power (kW)"), overlaying="y",
                                     side="right", color="#37e0d0"),
                         height=320,
                         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -22866,7 +23659,7 @@ def render_laptime(_pt):
                         _it.is_estimate = False
                         _it.updated_by = "electrics (from Excel)"
                         _led_ev.set(_it)
-                    st.session_state.ledger = _led_ev.as_dict()
+                    publish_ledger(_led_ev.as_dict())
                     _save_target = get_store()
                     if hasattr(_save_target, "ledger"):
                         _save_target.ledger = _led_ev.as_dict()
@@ -23145,18 +23938,21 @@ def render_laptime(_pt):
                     _fig_spd = _go_rt3.Figure()
                     _fig_spd.add_trace(_go_rt3.Scatter(
                         x=list(_rt_res.time_s),
-                        y=[v * 3.6 for v in _rt_res.speed_ms],
-                        name="Speed (km/h)", line=dict(color="#37e0d0", width=2)))
+                        y=uconv_series([v * 3.6 for v in _rt_res.speed_ms], "km/h"),
+                        name=units_mod.ulabel("Speed (km/h)"),
+                        line=dict(color="#37e0d0", width=2)))
                     _fig_spd.add_trace(_go_rt3.Scatter(
                         x=list(_rt_res.time_s),
-                        y=list(_rt_res.power_kw),
-                        name="Electrical power (kW)", yaxis="y2",
+                        y=uconv_series(list(_rt_res.power_kw), "kW"),
+                        name=units_mod.ulabel("Electrical power (kW)"), yaxis="y2",
                         line=dict(color="#a855f7", width=1.5, dash="dot")))
                     _fig_spd.update_layout(
                         title="Speed & electrical power over lap time",
                         xaxis_title="time (s)",
-                        yaxis=dict(title="speed (km/h)", color="#37e0d0"),
-                        yaxis2=dict(title="power (kW)", overlaying="y",
+                        yaxis=dict(title=units_mod.ulabel("speed (km/h)"),
+                                   color="#37e0d0"),
+                        yaxis2=dict(title=units_mod.ulabel("power (kW)"),
+                                    overlaying="y",
                                     side="right", color="#a855f7"),
                         height=260,
                         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -23311,26 +24107,28 @@ def render_laptime(_pt):
                 _fig_ct = _go_ct.Figure()
                 _fig_ct.add_trace(_go_ct.Scatter(
                     x=list(_rt_res.time_s),
-                    y=list(_thermals["temp_c"]),
-                    name="Cell surface temp (°C)",
+                    y=uconv_series(list(_thermals["temp_c"]), "°C"),
+                    name=units_mod.ulabel("Cell surface temp (°C)"),
                     line=dict(color="#E74C3C", width=2),
                     fill="tozeroy",
                     fillcolor="rgba(231,76,60,0.12)"))
                 _fig_ct.add_trace(_go_ct.Scatter(
                     x=list(_rt_res.time_s),
-                    y=list(_thermals["joule_w"]),
-                    name="Joule power/cell (W)",
+                    y=uconv_series(list(_thermals["joule_w"]), "W"),
+                    name=units_mod.ulabel("Joule power/cell (W)"),
                     yaxis="y2",
                     line=dict(color="#F0A500", width=1.5, dash="dot")))
-                _fig_ct.add_hline(y=60.0,
+                _fig_ct.add_hline(y=units_mod.from_metric(60.0, "°C"),
                     line=dict(color="#E74C3C", dash="dash", width=1),
-                    annotation_text="60°C warn",
+                    annotation_text=units_mod.ulabel("60°C warn"),
                     annotation_position="top right")
                 _fig_ct.update_layout(
                     title="Cell temperature & Joule power over lap",
                     xaxis_title="time (s)",
-                    yaxis=dict(title="cell temp (°C)", color="#E74C3C"),
-                    yaxis2=dict(title="Joule W/cell", overlaying="y",
+                    yaxis=dict(title=units_mod.ulabel("cell temp (°C)"),
+                               color="#E74C3C"),
+                    yaxis2=dict(title=units_mod.ulabel("Joule W/cell"),
+                                overlaying="y",
                                 side="right", color="#F0A500"),
                     height=260,
                     paper_bgcolor="rgba(0,0,0,0)",
@@ -23376,8 +24174,8 @@ def render_laptime(_pt):
                     fillcolor="rgba(59,124,255,0.12)"))
                 _fig_soc.add_trace(_go_soc.Scatter(
                     x=list(_rt_res.time_s),
-                    y=list(_rt_res.power_kw),
-                    name="Power draw (kW)",
+                    y=uconv_series(list(_rt_res.power_kw), "kW"),
+                    name=units_mod.ulabel("Power draw (kW)"),
                     yaxis="y2",
                     line=dict(color="#a855f7", width=1.5, dash="dot")))
                 _fig_soc.add_hline(y=20.0,
@@ -23399,7 +24197,7 @@ def render_laptime(_pt):
                     xaxis_title="time (s)",
                     yaxis=dict(title="SoC (%)", color="#3b7cff",
                                range=[-5, 105]),
-                    yaxis2=dict(title="power (kW)", overlaying="y",
+                    yaxis2=dict(title=units_mod.ulabel("power (kW)"), overlaying="y",
                                 side="right", color="#a855f7"),
                     height=300,
                     paper_bgcolor="rgba(0,0,0,0)",
@@ -24377,7 +25175,7 @@ if _show_ledger:
               led.set(new_it)
 
       # persist edits back to session
-      st.session_state.ledger = led.as_dict()
+      publish_ledger(led.as_dict())
 
       # ---- run the checks ---- #
       findings = led.check_all()
@@ -25489,54 +26287,10 @@ st.markdown('<p class="hint">One file holds your whole session — geometry, veh
             'your progress or hand it to a teammate; load it to pick up exactly where '
             'you left off.</p>', unsafe_allow_html=True)
 
-# Build the unified project bundle. Source the handover from the live cached
-# store (not a fresh disk read) so a decision just logged at the save gate is
-# included in the file even on ephemeral hosts where the disk write is rejected.
-_store_for_save = get_store()
-project_bundle = {
-    "kinematik_version": "1.0",
-    "saved": _datetime.datetime.now().isoformat(timespec="seconds"),
-    "hardpoints": hp_dict,
-    "topology": st.session_state.get("topology", "double_wishbone"),
-    "topo_hardpoints": st.session_state.get("topo_hp", {}),
-    "vehicle": st.session_state.vp,
-    "ledger": st.session_state.get("ledger"),
-    "handover": json.loads(_store_for_save.as_json()),
-    # Pedal-box / throttle-return inputs, so measured springs and pedal geometry
-    # survive save/load and never have to be re-entered. Only the raw widget
-    # values are stored (not the derived verdict, which recomputes on load).
-    "pedal_throttle": {
-        k: st.session_state.get(k)
-        for k in (
-            # throttle springs (primary + backup, each: rate/arm/preload/travel/measured)
-            "tr_k_primary", "tr_arm_primary", "tr_pre_primary", "tr_trav_primary",
-            "tr_meas_primary",
-            "tr_k_backup", "tr_arm_backup", "tr_pre_backup", "tr_trav_backup",
-            "tr_meas_backup",
-            # resistance + margin
-            "tr_fric", "tr_cable", "tr_sensor", "tr_margin",
-            # a measured rate fitted from a bench log this session
-            "tr_k_measured",
-            # brake pedal geometry
-            "pedal_mat", "pedal_w", "pedal_t", "pedal_lever", "pedal_load",
-            "pedal_load_pin2000",
-            "pedal_bolt", "pedal_edge", "pedal_weld_leg", "pedal_weld_len",
-            "pedal_box_nfeet",
-            # transient snap inputs
-            "snap_plate_m", "snap_plate_r", "snap_refl_m", "snap_refl_a",
-            "snap_theta_open",
-            # advanced snap physics
-            "snap_lash_deg", "snap_lash_frac", "snap_cam_on", "snap_cam_closed",
-            "snap_cam_mid", "snap_cam_open", "snap_intake_v", "snap_aero_coeff",
-            "snap_plate_A", "snap_aero_opens",
-            # manifold coupling + flutter
-            "td_plenum", "td_bore", "td_draw", "td_mtc", "td_ktheta", "td_cstruct",
-            "td_caero", "td_crefv", "td_fintake",
-            "td_caero_cosim", "td_crefv_cosim",
-        )
-        if st.session_state.get(k) is not None
-    },
-}
+# Build the unified project bundle via the shared builder (also used by the
+# migration-backup banner). Handover comes from the live cached store so a
+# decision just logged at the save gate is included even on ephemeral hosts.
+project_bundle = build_project_bundle(hp_dict)
 
 # --------------------------------------------------------------------------- #
 #  Required step: log a decision before you can save.
@@ -25619,32 +26373,7 @@ with sc3:
                               key="load_project", label_visibility="visible")
     if loaded is not None:
         try:
-            data = json.load(loaded)
-            if "hardpoints" in data:
-                st.session_state.hp = data["hardpoints"]
-            if "topo_hardpoints" in data and isinstance(data["topo_hardpoints"], dict):
-                st.session_state.topo_hp = data["topo_hardpoints"]
-            if "topology" in data:
-                # `topology` is now bound to the sidebar selectbox via key=, and
-                # this handler runs AFTER that widget is created this run, so we
-                # can't assign it directly. Stage it and apply it before the
-                # widget on the forced rerun below.
-                st.session_state["_pending_topology"] = data["topology"]
-            if "vehicle" in data:
-                st.session_state.vp = data["vehicle"]
-            if data.get("ledger"):
-                st.session_state.ledger = data["ledger"]
-            # restore handover data into the store
-            if "handover" in data:
-                _s = get_store()
-                _s._apply(data["handover"])
-                save_store(_s)
-            # restore pedal-box / throttle inputs so measured springs + pedal
-            # geometry come back exactly as saved — no re-entry
-            if isinstance(data.get("pedal_throttle"), dict):
-                for _pk, _pv in data["pedal_throttle"].items():
-                    if _pv is not None:
-                        st.session_state[_pk] = _pv
+            apply_project_bundle(json.load(loaded))
             st.success("Project loaded — geometry, vehicle, handover, and "
                        "pedal-box/throttle inputs restored.")
             st.rerun()

@@ -708,7 +708,7 @@ def build_full_car_figure(
     drawn part without changing the underlying engineering numbers. It is a
     dict keyed by the part's display name (exactly the `name=` each body is
     drawn with, e.g. "Front wing", "Sidepod (cooling)", "Motor + inverter",
-    "Accumulator", "Monocoque", "Tire", "Brake disc", "Roll hoop", "Driver",
+    "Accumulator", "Space frame", "Tire", "Brake disc", "Roll hoop", "Driver",
     "Data logger", "Radiator core"). Each value is a dict with any of:
 
         dx, dy, dz : float   # translate the whole part, in mm (SAE axes)
@@ -1074,8 +1074,14 @@ def build_full_car_figure(
         hzz = (tub_top - tub_bot) / 2
         prof = _ellipse_ring(24)
 
-        # Lofted survival cell: pointed nose tip -> footwell -> cockpit bay ->
-        # tapered tail. Stations run front (tip) to rear.
+        # DUMMY SPACE FRAME (replaces the lofted monocoque survival cell).
+        # Same station envelope as before — pointed nose tip -> footwell ->
+        # cockpit bay -> tapered tail — so every downstream part (roll hoops,
+        # driver helmet, wings, floor, sidepods) still keys off the identical
+        # tub_w / cz / hzz / nose_tip_x / tail_x references and stays aligned.
+        # Instead of a solid skin we build a tubular lattice: four longerons
+        # running the length of the car, transverse bulkhead rings at each
+        # station, and side-wall diagonals for the classic FSAE truss look.
         nose_tip_x = x_front + tire_r * 1.9
         tail_x = x_rear + tire_r * 0.15
         xs = np.linspace(nose_tip_x, tail_x, 9)
@@ -1085,20 +1091,60 @@ def build_full_car_figure(
         zoff    = np.array([0.55, 0.42, 0.18, 0.04, 0.00, 0.00, 0.02, 0.06, 0.1]) * hzz
         scales = [(tub_w / 2 * w, hzz * h, 0.0, cz + dz)
                   for w, h, dz in zip(widths, heights, zoff)]
-        mv, mi, mj, mk = _prism_xsection(prof, xs, scales)
-        hv = "Monocoque / survival cell"
+
+        # For each station, the four corner nodes (top/bottom x left/right) of
+        # the rectangular bay that inscribes the old elliptical section. hw/hh
+        # are the section half-width / half-height; zc is the section centre z.
+        def _station_nodes(sx, sc):
+            hw, hh, _, zc = sc
+            top, bot = zc + hh, zc - hh
+            return {
+                "tl": np.array([sx, -hw, top]),
+                "tr": np.array([sx,  hw, top]),
+                "bl": np.array([sx, -hw, bot]),
+                "br": np.array([sx,  hw, bot]),
+            }
+        nodes = [_station_nodes(sx, sc) for sx, sc in zip(xs, scales)]
+
+        tube_r = _clamp(tub_w * 0.028, 5.0, 16.0)   # frame tube radius
+        hv = "Space frame (dummy)"
         if _g(ch_it, "mass_kg"):
             hv += " · %.1f kg" % _g(ch_it, "mass_kg")
-        mesh(mv, mi, mj, mk, COLORS["monocoque"], "Monocoque", "chassis",
-             base_op=0.92, hover=hv)
 
-        # A thin livery flash down the flank (the photo's red/yellow stripe).
+        def _frame_tube(p0, p1, r=tube_r, hover=None):
+            tv, ti, tj, tk = _tube(p0, p1, radius=r, n=8)
+            mesh(tv, ti, tj, tk, COLORS["frame"], "Space frame", "chassis",
+                 base_op=0.95, hover=hover)
+
+        _corners = ("tl", "tr", "bl", "br")
+        # Longerons: connect the same corner across consecutive stations.
+        for a in range(len(nodes) - 1):
+            for c in _corners:
+                _frame_tube(nodes[a][c], nodes[a + 1][c],
+                            hover=hv if (a == 0 and c == "tl") else None)
+        # Bulkhead rings: close each station's rectangle (skip the near-zero
+        # nose tip so we don't stack degenerate tubes at the point).
+        for a, nd in enumerate(nodes):
+            if widths[a] < 0.12:
+                continue
+            ring = ("tl", "tr", "br", "bl", "tl")
+            for c0, c1 in zip(ring[:-1], ring[1:]):
+                _frame_tube(nd[c0], nd[c1], r=tube_r * 0.85)
+        # Side-wall diagonals: one per bay on each flank, for the truss look.
+        for a in range(len(nodes) - 1):
+            if widths[a] < 0.12:
+                continue
+            _frame_tube(nodes[a]["bl"], nodes[a + 1]["tl"], r=tube_r * 0.8)
+            _frame_tube(nodes[a]["br"], nodes[a + 1]["tr"], r=tube_r * 0.8)
+
+        # A thin livery flash: keep a slim skinned panel along the cockpit
+        # flank so the red/yellow accent still reads against the open frame.
         fv, fi, fj, fk = _prism_xsection(
             _ellipse_ring(24),
             np.linspace(nose_tip_x - tire_r * 0.3, tail_x, 6),
             [(tub_w / 2 * w * 1.005, hzz * h * 0.16, 0.0, cz + dz)
              for w, h, dz in zip(widths[2:8], heights[2:8], zoff[2:8])])
-        mesh(fv, fi, fj, fk, COLORS["livery"], "Monocoque", "chassis", 0.9)
+        mesh(fv, fi, fj, fk, COLORS["livery"], "Space frame", "chassis", 0.9)
 
         # Cockpit opening reference + driver: a helmet sphere sitting in the bay.
         cockpit_x = x_front - wb * 0.16
@@ -1728,7 +1774,7 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
 
     ch = _iface(ledger, "chassis")
     cm = _g(ch, "mass_kg")
-    add("chassis", "live", ("%.1f kg monocoque" % cm) if cm else "monocoque (no mass declared)")
+    add("chassis", "live", ("%.1f kg space frame" % cm) if cm else "space frame (no mass declared)")
 
     if ledger is not None:
         try:
