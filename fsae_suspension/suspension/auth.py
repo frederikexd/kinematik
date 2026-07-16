@@ -153,10 +153,10 @@ class SupabaseAuth:
         database is this human and RLS returns only their rows."""
         from supabase import create_client
         client = create_client(self._url, self._anon_key)
-        # supabase-py 2.x: set JWT on both postgrest and the auth header
-        client.postgrest.auth(session.access_token)
+        # supabase-py 2.31: update the httpx session headers directly
+        token = session.access_token
         client.postgrest.session.headers.update(
-            {"Authorization": f"Bearer {session.access_token}"}
+            {"Authorization": f"Bearer {token}"}
         )
         return client
 
