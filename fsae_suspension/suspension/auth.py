@@ -155,15 +155,14 @@ class SupabaseAuth:
         client = create_client(self._url, self._anon_key)
         token = session.access_token
         refresh = session.refresh_token or token
-        # Set the session on the auth client so it knows the user identity
-        try:
-            client.auth.set_session(token, refresh)
-        except Exception:
-            pass
-        # Also update the postgrest httpx headers directly (supabase-py 2.31)
-        client.postgrest.session.headers.update(
-            {"Authorization": f"Bearer {token}"}
-        )
+        # Update options.headers so any lazily-built sub-client picks up the token
+        auth_header = f"Bearer {token}"
+        client.options.headers["Authorization"] = auth_header
+        client.auth._headers["Authorization"] = auth_header
+        # Force-reset postgrest so it rebuilds with the new options.headers
+        client._postgrest = None
+        # Now accessing client.postgrest rebuilds it with correct auth header
+        client.postgrest.session.headers.update({"Authorization": auth_header})
         return client
 
     def list_workspaces(self, session: Session) -> list[tuple[Workspace, str]]:
