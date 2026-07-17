@@ -263,12 +263,12 @@ def redeem_pending_invite(st, auth: SupabaseAuth, session: Session) -> bool:
 
 def render_workspace_oversight(st, session: Optional[Session] = None) -> None:
     """
-    Oversight panel for owners and project leads: EVERY workspace the signed-in
-    user administers, each with how many people are using it, who the owner
-    is, who the lead(s) are, the full member roster, when it was last touched
-    and by whom, plus an expandable recent-save trail. The RPCs behind this
-    (workspace_oversight.sql) re-check the caller's role server-side, so a
-    plain member reaching this panel simply sees nothing.
+    Oversight panel for the owner and project leads. Pick a workspace from the
+    selector; the panel then shows that workspace's roster with every member's
+    role in it (Owner / Lead / Member), how many people are using it, when it
+    was last touched and by whom, plus an expandable recent-save trail. The
+    RPCs behind this (workspace_oversight.sql) re-check the caller's role
+    server-side, so a plain member reaching this panel simply sees nothing.
 
     Drop it anywhere:
         from suspension import auth_ui
@@ -295,57 +295,86 @@ def render_workspace_oversight(st, session: Optional[Session] = None) -> None:
                    "workspaces where you are the owner or a lead.")
         return
 
-    for r in rows:
-        ws_id = str(r.get("workspace_id", ""))
-        name = r.get("name") or ws_id
-        n = int(r.get("member_count") or 0)
-        leads = list(r.get("lead_emails") or [])
-        members = list(r.get("member_emails") or [])
-        viewers = list(r.get("viewer_emails") or [])
-        owner = r.get("owner_email") or "—"
-        last = str(r.get("last_activity") or "")[:16].replace("T", " ")
-        saved_by = r.get("last_saved_by") or ""
-        saves7 = int(r.get("saves_7d") or 0)
+    # --- workspace selector: the selection drives everything below --------- #
+    by_id = {str(r.get("workspace_id", "")): r for r in rows}
+    labels = {f"{r.get('name') or wid}": wid for wid, r in by_id.items()}
+    keys = list(labels.keys())
+    choice = st.selectbox("Workspace", keys, key="_kx_oversight_ws")
+    r = by_id[labels[choice]]
 
-        st.markdown(f"**{name}**  ·  `{r.get('kind', 'team')}`  ·  "
-                    f"{n} member{'s' if n != 1 else ''} using it")
-        st.caption(f"Owner: {owner}  ·  "
-                   f"Lead{'s' if len(leads) != 1 else ''}: "
-                   f"{', '.join(leads) if leads else '— none assigned —'}")
-        if members:
-            st.caption("Members: " + ", ".join(members))
-        if viewers:
-            st.caption("Viewers: " + ", ".join(viewers))
-        if last:
-            st.caption(f"Last activity: {last}"
-                       + (f" by {saved_by}" if saved_by else "")
-                       + (f"  ·  {saves7} save{'s' if saves7 != 1 else ''} "
-                          "in the last 7 days" if saves7 else ""))
-        else:
-            st.caption("No project activity yet.")
+    ws_id = str(r.get("workspace_id", ""))
+    name = r.get("name") or ws_id
+    leads = list(r.get("lead_emails") or [])
+    members = list(r.get("member_emails") or [])
+    viewers = list(r.get("viewer_emails") or [])
+    owner = r.get("owner_email") or "—"
+    last = str(r.get("last_activity") or "")[:16].replace("T", " ")
+    saved_by = r.get("last_saved_by") or ""
+    saves7 = int(r.get("saves_7d") or 0)
+    # Viewers still count toward "using it" (the schema keeps the role) but the
+    # UI only ever surfaces owner / lead / member as assignable roles.
+    n = int(r.get("member_count") or 0)
 
-        with st.expander("Recent activity", expanded=False):
-            try:
-                events = auth.workspace_activity(session, ws_id, limit=25)
-            except AuthError as e:
-                st.caption(f"Couldn't load the save trail: {e}")
-                events = []
-            if not events:
-                st.caption("No saves recorded yet.")
-            for ev in events:
-                ts = str(ev.get("happened_at") or "")[:16].replace("T", " ")
-                who = ev.get("saved_by") or "unknown"
-                pid = ev.get("project_id") or "default"
-                kind = ev.get("event") or ""
-                st.caption(f"{ts} — **{who}** saved `{pid}`"
-                           + ("  _(current version)_" if kind == "current" else ""))
-        st.divider()
+    st.markdown(f"**{name}**  ·  `{r.get('kind', 'team')}`  ·  "
+                f"{n} using it "
+                f"({len(leads)} lead{'s' if len(leads) != 1 else ''}, "
+                f"{len(members)} member{'s' if len(members) != 1 else ''})")
+
+    # Explicit per-person roster for the SELECTED workspace, each tagged with
+    # their role in it. Ordered owner → lead → member. role_by_email also tags
+    # the activity feed below. (viewers, if any legacy rows exist, are folded
+    # in at the end without an assignable-role label.)
+    role_by_email: dict[str, str] = {}
+    roster: list[tuple[str, str]] = []
+    if owner and owner != "—":
+        roster.append((owner, "Owner"))
+        role_by_email[owner] = "Owner"
+    for e in leads:
+        roster.append((e, "Lead"))
+        role_by_email[e] = "Lead"
+    for e in members:
+        roster.append((e, "Member"))
+        role_by_email[e] = "Member"
+    for e in viewers:
+        roster.append((e, "Viewer"))
+        role_by_email[e] = "Viewer"
+    for email, role in roster:
+        st.caption(f"• {email} — `{role}`")
+
+    if last:
+        st.caption(f"Last activity: {last}"
+                   + (f" by {saved_by}" if saved_by else "")
+                   + (f"  ·  {saves7} save{'s' if saves7 != 1 else ''} "
+                      "in the last 7 days" if saves7 else ""))
+    else:
+        st.caption("No project activity yet.")
+
+    with st.expander("Recent activity", expanded=False):
+        try:
+            events = auth.workspace_activity(session, ws_id, limit=25)
+        except AuthError as e:
+            st.caption(f"Couldn't load the save trail: {e}")
+            events = []
+        if not events:
+            st.caption("No saves recorded yet.")
+        for ev in events:
+            ts = str(ev.get("happened_at") or "")[:16].replace("T", " ")
+            who = ev.get("saved_by") or "unknown"
+            pid = ev.get("project_id") or "default"
+            kind = ev.get("event") or ""
+            # Tag the saver with their current role where we know it, so the
+            # trail reads "… by alice — Lead" not just a bare email.
+            who_role = role_by_email.get(who)
+            who_label = f"{who} — {who_role}" if who_role else who
+            st.caption(f"{ts} — **{who_label}** saved `{pid}`"
+                       + ("  _(current version)_" if kind == "current" else ""))
 
 
 def _roster_summary_line(st, members: list[dict]) -> None:
-    """One-glance headline above the roster: how many are using the workspace,
-    who the lead(s) are and who the members are — exactly what an owner/lead
-    needs to see at the moment they're assigning people to it."""
+    """One-glance headline above the roster: how many are using the workspace
+    and, split by role, who is a lead vs. a plain member — what an owner/lead
+    needs to see at the moment they're assigning people to it. The owner and
+    each member's own role are shown per-row below; this is the summary."""
     n = len(members)
     by_role: dict[str, list[str]] = {}
     for m in members:
@@ -353,11 +382,14 @@ def _roster_summary_line(st, members: list[dict]) -> None:
             str(m.get("email", "(unknown)")))
     leads = by_role.get("lead", [])
     plain = by_role.get("member", [])
-    st.caption(
-        f"**{n} member{'s' if n != 1 else ''}** using this workspace  ·  "
+    parts = [
         f"Lead{'s' if len(leads) != 1 else ''}: "
-        f"{', '.join(leads) if leads else '— none assigned —'}  ·  "
-        f"Members: {', '.join(plain) if plain else '—'}")
+        f"{', '.join(leads) if leads else '— none assigned —'}",
+        f"Member{'s' if len(plain) != 1 else ''}: "
+        f"{', '.join(plain) if plain else '—'}",
+    ]
+    st.caption(f"**{n} member{'s' if n != 1 else ''}** using this workspace  ·  "
+               + "  ·  ".join(parts))
 
 
 def render_invite_admin(st, ctx: WorkspaceContext) -> None:
@@ -369,11 +401,11 @@ def render_invite_admin(st, ctx: WorkspaceContext) -> None:
         return
 
     st.markdown("**Invite link**")
-    st.caption("One link for the whole team chat. Links only ever grant "
-               "member/viewer (promote people explicitly), always expire, "
-               "and can be revoked here at any time.")
+    st.caption("One link for the whole team chat. Pick the role the link "
+               "grants — everyone who joins through it lands in with that "
+               "role. Links always expire and can be revoked here at any time.")
     c = st.columns([1, 1, 1])
-    inv_role = c[0].selectbox("Role", ["member", "viewer"], key="_kx_inv_role")
+    inv_role = c[0].selectbox("Role", ["member", "lead"], key="_kx_inv_role")
     inv_days = c[1].selectbox("Expires in", [1, 3, 7, 14, 30], index=2,
                               format_func=lambda d: f"{d} day{'s' if d > 1 else ''}",
                               key="_kx_inv_days")
