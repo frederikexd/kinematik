@@ -33,13 +33,12 @@ and the cluster.
 Run:  python demo_piv.py
 """
 
-import os
 import tempfile
 
 import numpy as np
 
 from suspension.aero import (
-    Attitude, SheetOrientation, LaserSheetPlane, PIVProvenance, FramePair,
+    Attitude, SheetOrientation, LaserSheetPlane, FramePair,
     PIVProcessor, AcquisitionPlan, OfflinePIVRig, RigUnavailable, GroundState,
     CFDFieldSlice, correlate_field,
 )

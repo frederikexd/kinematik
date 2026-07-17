@@ -20,8 +20,7 @@ import numpy as np
 from suspension import (
     SuspensionKinematics, Hardpoints, VehicleDynamics, VehicleParams,
     default_tire, EVParams,
-    PackLayout, CellParams, AirflowParams, Fan,
-    simulate_pack_thermal, optimize_fan_placement, fan_grid_candidates,
+    PackLayout, CellParams, AirflowParams, simulate_pack_thermal, optimize_fan_placement, fan_grid_candidates,
 )
 from suspension.lapsim import LapSimulator, LapSimParams, autocross_track
 

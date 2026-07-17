@@ -30,7 +30,7 @@ there). Every solver returns plain numpy time-series arrays sized for direct
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Mapping, Optional, Sequence
+from typing import Mapping, Sequence
 
 import numpy as np
 

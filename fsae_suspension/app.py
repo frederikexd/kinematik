@@ -28,11 +28,8 @@ from suspension import (
     SuspensionKinematics, Hardpoints,
     VehicleDynamics, VehicleParams,
     MATERIALS, MemberStiffness, CompliantCorner,
-    load_flex_body, corner_wheel_load, WheelLoad,
-    GenericKinematics, list_templates, example as topo_example,
+    load_flex_body, corner_wheel_load, GenericKinematics, example as topo_example,
 )
-from suspension import compliance as compliance_mod
-from suspension import flex as flex_mod
 from suspension import chassis as chassis_mod
 from suspension import integration as integ_mod
 from suspension import project as project_mod

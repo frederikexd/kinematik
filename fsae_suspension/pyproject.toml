@@ -1,0 +1,71 @@
+# KinematiK — packaging, tooling, and dependency source of truth.
+#
+# requirements.txt is kept ONLY because Streamlit Cloud reads it; it must stay
+# in sync with [project.dependencies] below. Everything else (pytest, ruff,
+# local installs, CI) reads this file.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kinematik"
+version = "0.11.0"
+description = "Formula SAE / Formula EV full-car pre-validation platform: one connected environment for every subsystem, feeding verified inputs into ANSYS/ADAMS/MATLAB."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "Frederik Thio" }]
+keywords = ["fsae", "formula-student", "suspension", "kinematics", "vehicle-dynamics", "pre-validation"]
+
+# Core: imported at package-init time; the app will not start without these.
+dependencies = [
+    "streamlit>=1.49,<2",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "plotly>=5.18",
+    "trimesh>=4.0",
+]
+
+[project.optional-dependencies]
+# Each extra unlocks one lazily-imported feature; the app boots without them.
+excel = ["openpyxl>=3.1"]                  # ev_electrical_check, ev_excel_roundtrip
+cad = ["cascadio>=0.0.16", "fast_simplification>=0.1", "rtree>=1.0"]
+pdf = ["reportlab>=4.0"]                   # project.py: render_pdf
+cloud = ["supabase>=2.0"]                  # project sync, workspaces, analytics
+all = ["kinematik[excel,cad,pdf,cloud]"]
+dev = [
+    "kinematik[all]",
+    "pytest>=8",
+    "ruff>=0.5",
+]
+
+[tool.setuptools]
+packages = ["suspension", "suspension.aero", "suspension.myth_rules", "powertrain"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = [
+    # surfaced by tests today; fix workspace.py utcnow() then promote to error
+    "default::DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["docs", "examples"]
+
+[tool.ruff.lint]
+# Start pragmatic: correctness classes only. Ratchet up (add "B", "UP", "SIM")
+# once the baseline is clean — never loosen.
+select = ["E9", "F63", "F7", "F82", "F401", "F811"]
+
+[tool.ruff.lint.per-file-ignores]
+# streamlit_app.py injects its module aliases via globals().update(_SUSP_MODULES)
+# (lazy loading to stay under the 1 GB cloud RAM limit), which static analysis
+# cannot see — every alias reads as an undefined name. Real F821s elsewhere
+# still fail CI.
+"streamlit_app.py" = ["F821"]
+# __init__.py imports are the public API surface (re-exports), not dead code.
+"**/__init__.py" = ["F401"]

@@ -14,7 +14,7 @@ from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass
 
-from .kinematics import SuspensionKinematics, Hardpoints
+from .kinematics import SuspensionKinematics
 
 
 @dataclass

@@ -18995,7 +18995,6 @@ def render_manufacturing_readiness(geom):
     This is the lowest-friction design that still catches the collision that would
     cost the re-make: interference stops the build, everything else informs it.
     """
-    from suspension.interfaces import Severity
     findings = geom.check_clashes()
 
     # Partition the real clash findings (ignore the synthetic OK/MISSING summary
@@ -19275,7 +19274,6 @@ def render_mountpoint_clash():
               # "did THIS point clash" but what the move did to the WHOLE-CAR verdict,
               # so a subsystem dragging a mount sees instantly whether it just created
               # or cleared a build stop — without scrolling back to the banner.
-              from suspension.interfaces import Severity as _Sev
               _post = geom.check_clashes()
               _has_interf = any(f.check == "clash-interference" for f in _post)
               _has_clear = any(f.check == "clash-clearance" for f in _post)

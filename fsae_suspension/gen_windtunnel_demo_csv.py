@@ -30,15 +30,13 @@ Run:  python gen_windtunnel_demo_csv.py [output_dir]
 """
 
 import csv
-import io
-import math
 import os
 import sys
 
 from suspension.aero import windtunnel as wt
 from suspension.aero import (
-    Attitude, CaseSpec, PhysicalAeroMap, VirtualWindTunnel,
-    FluentVerificationSolver, ride_heights_to_attitude,
+    PhysicalAeroMap, VirtualWindTunnel,
+    FluentVerificationSolver,
 )
 
 

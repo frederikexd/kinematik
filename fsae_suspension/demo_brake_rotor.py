@@ -23,7 +23,7 @@ from suspension import (
     SuspensionKinematics, Hardpoints, VehicleDynamics, VehicleParams,
     default_tire,
     ReferenceRotorCFD, build_convective_map,
-    RotorGeometry, RotorThermalParams, PadSpec, BRAKE_FLUIDS,
+    RotorGeometry, PadSpec, BRAKE_FLUIDS,
     simulate_rotor_thermal, fluid_boil_check,
     rotor_candidate_grid, optimize_rotor,
 )

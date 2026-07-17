@@ -32,7 +32,7 @@ import tempfile
 
 from suspension.aero import windtunnel as wt
 from suspension.aero import (
-    get_backend, ride_heights_to_attitude, DEFAULT_MEMBER_NAMES,
+    get_backend, DEFAULT_MEMBER_NAMES,
 )
 
 

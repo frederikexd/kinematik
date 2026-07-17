@@ -27,7 +27,6 @@ Run:  python demo_panel_method.py
 import os
 import tempfile
 
-import numpy as np
 import trimesh
 
 from suspension.aero import (
