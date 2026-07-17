@@ -8,7 +8,7 @@ typed).
 import pytest
 
 from suspension.interfaces import (
-    SubsystemInterface, IntegrationLedger, blank_ledger,
+    SubsystemInterface, blank_ledger,
 )
 from suspension import dfmea
 from suspension.risk_propagation import (

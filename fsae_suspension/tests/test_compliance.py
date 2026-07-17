@@ -19,14 +19,12 @@ reduction), the equilibrium residuals, and the signs of compliance steer/camber.
 Run:  python -m pytest tests/  (or just: python tests/test_compliance.py)
 """
 import numpy as np
-import sys, os, json, tempfile
+import sys, os, tempfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from suspension import (
     SuspensionKinematics, Hardpoints, VehicleDynamics, VehicleParams,
-    MATERIALS, tube_section, axial_stiffness_tube,
-    FlexElement, FlexMesh, guyan_condense, CondensedFlexBody,
-    load_flex_body, read_mnf,
+    MATERIALS, tube_section, FlexElement, FlexMesh, load_flex_body, read_mnf,
     WheelLoad, solve_member_forces,
     MemberStiffness, CompliantCorner, corner_wheel_load,
 )
@@ -283,7 +281,6 @@ def test_public_api_and_version():
 # --------------------------------------------------------------------------- #
 #  Non-linear joint compliance (bushings / rod ends / spherical bearings)
 # --------------------------------------------------------------------------- #
-from suspension import JointCompliance
 from suspension.joints import JointCompliance as _JC
 
 

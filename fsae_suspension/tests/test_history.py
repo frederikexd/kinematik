@@ -6,10 +6,9 @@ anything unmodelled is flagged as 'other fields changed' rather than hidden,
 and restore goes through the optimistic lock so it can't clobber newer work."""
 import copy
 
-import pytest
 
 from suspension.history import (
-    diff_project, fetch_history, restore, summarize_changes, Change)
+    diff_project, fetch_history, restore, summarize_changes)
 from suspension.project import ProjectStore, StaleWriteError
 
 

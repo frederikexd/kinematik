@@ -1,10 +1,9 @@
 """Tests for the bracket Factor-of-Safety screening module (FoS ≥ 1.5 on yield)."""
 
-import math
 import pytest
 
 from suspension.bracket_fos import (
-    Bracket, BracketMaterial, MATERIALS, screen_bracket, compare_materials,
+    Bracket, MATERIALS, screen_bracket, compare_materials,
     bracket_report,
 )
 from suspension.interfaces import Severity

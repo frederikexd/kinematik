@@ -1,7 +1,6 @@
 """Tests for suspension.pt_integration — the powertrain integration layer."""
 
 import math
-import numpy as np
 import pytest
 
 from suspension import pt_integration as pti

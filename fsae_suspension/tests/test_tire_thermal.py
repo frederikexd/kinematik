@@ -57,8 +57,7 @@ except Exception:
 
 from suspension.tire_cosim import (StructuralTireModel, WheelState, TireOutput,
                                    TireProvenance, TireFidelity, make_tire_backend)
-from suspension.tire_thermal import (ThermalTireModel, ThermalParams, ThermalRun,
-                                     default_thermal_params, simulate_warmup, psi)
+from suspension.tire_thermal import (ThermalTireModel, ThermalParams, default_thermal_params, simulate_warmup, psi)
 
 _PASS, _FAIL = [], []
 

@@ -8,7 +8,6 @@ project blob, round-trips through the store, shows up in Project history in
 engineering language, and restore reproduces (or clears) it exactly."""
 import copy
 
-import pytest
 
 from suspension.history import diff_project, restore
 from suspension.interfaces import IntegrationLedger, SubsystemInterface

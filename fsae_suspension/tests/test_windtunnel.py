@@ -31,8 +31,7 @@ import pytest
 
 from suspension.aero import (
     Attitude, CoeffResult, CFDProvenance, SolverFidelity, SolverUnavailable,
-    ReferenceAeroModel, StarCCMSolver, TSAutoSolver, LocalSubmitter,
-    RideHeights, AeroMapGrid, GroundState, TunnelProvenance, PhysicalAeroMap,
+    ReferenceAeroModel, TSAutoSolver, RideHeights, AeroMapGrid, GroundState, TunnelProvenance, PhysicalAeroMap,
     VirtualWindTunnel, ride_heights_to_attitude, attitude_to_ride_heights,
     downforce_to_clift, drag_to_cdrag, AeroProvider,
 )

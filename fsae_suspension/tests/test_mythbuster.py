@@ -14,7 +14,6 @@ These lock in three things:
   3. Every discipline has at least one rule, every rule with a reference claim
      fires on its own example, and no claim ever crashes the engine.
 """
-import importlib
 
 import pytest
 

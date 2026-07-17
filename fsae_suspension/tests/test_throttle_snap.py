@@ -12,7 +12,7 @@ import math
 import pytest
 
 from suspension.throttle_return import (
-    ReturnSpring, ReturnResistance, ThrottleInertia, SnapResult, SnapModel,
+    ReturnSpring, ReturnResistance, ThrottleInertia, SnapModel,
     estimate_throttle_inertia, simulate_return_snap,
     simulate_return_snap_single_failures)
 from suspension.interfaces import Severity

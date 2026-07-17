@@ -25,7 +25,6 @@ solver chooser dressed up:
 
 Run:  python -m pytest tests/test_ensemble.py
 """
-import math
 import os
 import tempfile
 
@@ -34,7 +33,7 @@ import pytest
 from suspension.aero import (
     Attitude, CaseSpec, CoeffResult, CFDProvenance, SolverFidelity, CFDSolver,
     SolverUnavailable, get_backend,
-    EnsembleTunnelSolver, EnsembleResult, MemberOutcome, fused_results,
+    EnsembleTunnelSolver, EnsembleResult, fused_results,
     DEFAULT_MEMBER_NAMES,
 )
 from suspension.aero import windtunnel as wt

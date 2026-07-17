@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 from suspension.aero import (
-    BalanceAxis, BalanceCalibration, ScannerVendor, PressureScannerSpec,
+    BalanceCalibration, ScannerVendor, PressureScannerSpec,
     ForceBalanceSpec, DAQChassis, VibrationFilter, AcquisitionSpec,
     BalanceReading, DAQUnavailable, OfflineDAQ, SyntheticDAQ, VirtualInstrument,
     TapLocation, TapCalibration, WingSurface, RawPressureScan,

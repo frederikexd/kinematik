@@ -27,7 +27,6 @@ Run:  python tests/test_lapsim.py   (or: python -m pytest tests/)
 
 import os
 import sys
-import math
 import importlib.util
 import types
 

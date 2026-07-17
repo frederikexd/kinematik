@@ -7,7 +7,6 @@ Covers the rule the brakes/pedal-box lead actually asked for:
   * the brake pedal withstands 2000 N (delegates to the FoS-on-yield bracket gate).
 """
 
-import math
 import pytest
 
 from suspension.throttle_return import (

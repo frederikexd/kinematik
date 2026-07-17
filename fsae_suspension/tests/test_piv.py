@@ -25,7 +25,6 @@ rather than a pretty overlay:
 
 Run:  python -m pytest tests/test_piv.py
 """
-import math
 import os
 import tempfile
 

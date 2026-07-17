@@ -17,7 +17,6 @@ the ~1 GB Community-Cloud ceiling:
   * Nothing here raises into the app, ever — a memory helper must not be the
     thing that crashes a tab.
 """
-import gc
 
 import pytest
 

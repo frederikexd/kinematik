@@ -8,7 +8,6 @@ missing-evidence, single-defect veto, slotted-K torque windows, and the
 IFF contract: the clipboard PDF exists exactly when the gate is green.
 Run: python tests/test_release_gate.py"""
 
-import copy
 import importlib
 import os
 import sys

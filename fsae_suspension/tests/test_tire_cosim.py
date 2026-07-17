@@ -31,8 +31,7 @@ from suspension.tire_cosim import (
     StructuralTireModel, ReferenceTireModel, FTireModel, CDTireModel,
     WheelState, TireOutput, TireProvenance, TireFidelity,
     make_tire_backend, default_structural_tire)
-from suspension.tire_cosim_driver import (CosimCornerSet, run_cosim_maneuver,
-                                          CORNER_NAMES)
+from suspension.tire_cosim_driver import (CosimCornerSet, run_cosim_maneuver)
 
 _PASS, _FAIL = [], []
 

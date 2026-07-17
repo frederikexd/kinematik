@@ -35,7 +35,7 @@ import pytest
 
 from suspension.aero import (
     WingSurface, TapLocation, TapCalibration, ScanProvenance, RawPressureScan,
-    CpField, CFDSurfaceCp, correlate_cp, DEFAULT_CP_TOL,
+    CFDSurfaceCp, correlate_cp, DEFAULT_CP_TOL,
 )
 
 

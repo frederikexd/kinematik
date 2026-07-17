@@ -23,7 +23,6 @@ These lock in the generality upgrade for the sanity-check / myth-buster:
 No AI, no network — the same properties the rest of the myth-buster guarantees.
 """
 from suspension import mythbuster as mb
-from suspension import myth_reasoner as reasoner
 from suspension import myth_coupling as coupling
 from suspension import myth_sources as sources
 

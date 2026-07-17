@@ -20,7 +20,7 @@ import math
 import unittest
 
 from suspension.aero.plug_builder import (
-    NoseconeBody, FoamSheet, SlicePlan, StackTolerance, layer_template_svg,
+    NoseconeBody, FoamSheet, SlicePlan, layer_template_svg,
     LayupRecipe, MaterialsEstimate, BuildStep, default_build_day,
     BuildDaySchedule, PreflightGate, PlugBuildPlan,
 )

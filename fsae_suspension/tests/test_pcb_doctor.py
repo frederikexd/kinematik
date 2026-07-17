@@ -6,7 +6,6 @@
 """PCB Doctor — parse a real board file, diagnose real-life failures, name the
 component, patch the traces in place, and verify the patched file re-parses."""
 
-import math
 import unittest
 
 from suspension.pcb_doctor import (

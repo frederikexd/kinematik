@@ -12,7 +12,6 @@ never added to the re-export table.
 """
 import importlib
 
-import pytest
 
 import suspension
 

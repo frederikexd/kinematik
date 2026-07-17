@@ -23,11 +23,11 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from suspension.tiremodel import (PacejkaLateral, default_tire, describe)
+from suspension.tiremodel import (PacejkaLateral, default_tire)
 from suspension.tirefit import fit_mf52_lateral
 from suspension import (SuspensionKinematics, Hardpoints,
                         VehicleDynamics, VehicleParams)
-from suspension.setup import sensitivity, optimise, evaluate
+from suspension.setup import sensitivity, optimise
 
 
 _PASS, _FAIL = [], []

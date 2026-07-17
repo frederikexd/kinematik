@@ -19,7 +19,6 @@ so the numbers are reproducible and the asserts are exact-ish.
 """
 
 import math
-import numpy as np
 
 from suspension.interfaces import (
     Severity, IntegrationLedger, SubsystemInterface, blank_ledger,

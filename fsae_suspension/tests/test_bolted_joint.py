@@ -1,10 +1,9 @@
 """Tests for the bolted-joint pedal-box mount analysis (VDI 2230 / Shigley)."""
 
-import math
 import pytest
 
 from suspension.bolted_joint import (
-    Fastener, ClampedStack, analyze_joint, joint_findings, BOLT_GRADES,
+    Fastener, ClampedStack, analyze_joint, joint_findings,
 )
 from suspension.interfaces import Severity
 

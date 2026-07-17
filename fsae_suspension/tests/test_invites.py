@@ -9,7 +9,7 @@ redirect. SQL-side enforcement (expiry, use caps, no-downgrade, revocation)
 lives in workspace_invites.sql and is exercised by the RPC contract here."""
 import pytest
 
-from suspension.auth import AuthError, Session, SupabaseAuth, Workspace
+from suspension.auth import AuthError, Session, SupabaseAuth
 from suspension import auth_ui
 
 

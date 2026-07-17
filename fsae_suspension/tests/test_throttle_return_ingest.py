@@ -12,7 +12,7 @@ import pytest
 
 from suspension.throttle_return_ingest import (
     spring_rate_from_bench_log, crosscheck_pedal_against_cad,
-    BenchFit, CadCrossCheck)
+    BenchFit)
 from suspension.interfaces import Severity
 
 

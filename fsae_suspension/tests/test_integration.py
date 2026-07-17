@@ -5,7 +5,7 @@
 # ============================================================================
 
 """Tests for the generic multi-team part-vs-chassis interference checker."""
-import numpy as np, trimesh, sys, os
+import trimesh, sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from suspension import integration as ig
 

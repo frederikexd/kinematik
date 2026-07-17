@@ -26,7 +26,7 @@ import numpy as np
 from suspension.harness import (
     Connector, WireRun, HarnessLedger, check_harness,
     awg_area_mm2, awg_nominal_od_mm, polyline_length_mm,
-    segment_lengths_mm, vertex_bend_radius_mm,
+    vertex_bend_radius_mm,
     CU_DENSITY_KG_M3,
 )
 from suspension.interfaces import Severity

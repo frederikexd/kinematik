@@ -82,7 +82,6 @@ def test_parallel_equal_arms_zero_camber_gain():
     with no rotation, so camber gain must be ~zero through travel. This is the
     textbook result and catches sign/geometry regressions in the solver.
     """
-    import numpy as np
     hp = Hardpoints.default()
     hp.upper_front_inner = np.array([-110.0, 200.0, 290.0])
     hp.upper_rear_inner  = np.array([140.0, 200.0, 290.0])
@@ -121,7 +120,6 @@ def test_validation_rejects_2d_point():
 
 
 def test_validation_rejects_coincident_balljoints():
-    import numpy as _np
     hp = Hardpoints.default()
     hp.upper_outer = hp.lower_outer.copy()
     try:

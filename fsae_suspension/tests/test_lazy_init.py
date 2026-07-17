@@ -14,8 +14,6 @@ lazy-resolution table (``_FROM`` / ``_SUBMODULES``) in sync, so a future
 contributor cannot silently reintroduce an unresolvable public name or the old
 eager-import coupling.
 """
-import importlib
-import importlib.abc
 import subprocess
 import sys
 

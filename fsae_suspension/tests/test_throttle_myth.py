@@ -9,7 +9,6 @@ The point these lock in: the mythbuster must CATCH the "identical springs so the
 backup is fine" assumption, and — when the app hands it the live throttle-return
 context — refute it against the real numbers, not just recite the rule.
 """
-import pytest
 
 from suspension import mythbuster as mb
 from suspension.throttle_return import (

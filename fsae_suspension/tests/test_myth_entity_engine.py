@@ -7,7 +7,6 @@ the bridge into the existing MythEngine. All headless, no DB, no network.
 """
 import os
 import sys
-import math
 
 import pytest
 

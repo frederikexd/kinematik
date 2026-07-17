@@ -22,7 +22,7 @@ import numpy as np
 
 from suspension.interfaces import Severity
 from suspension.tractive_system import (
-    Rules, PrechargeCircuit, simulate_precharge, check_precharge,
+    PrechargeCircuit, simulate_precharge, check_precharge,
     ShutdownNode, ShutdownChain, check_shutdown_chain,
     TSAL, check_tsal, BSPD, check_bspd, check_tractive_system,
 )

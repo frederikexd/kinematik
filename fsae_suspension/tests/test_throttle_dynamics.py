@@ -9,9 +9,8 @@ import math
 import pytest
 
 from suspension.throttle_dynamics import (
-    compressible_mass_flow, throttle_flow_area, R_AIR, GAMMA,
-    ManifoldParams, FlutterParams, CoupledResult, FlutterResult,
-    simulate_coupled_return, screen_plate_flutter)
+    compressible_mass_flow, throttle_flow_area, GAMMA,
+    ManifoldParams, FlutterParams, simulate_coupled_return, screen_plate_flutter)
 from suspension.throttle_return import (
     ThrottleInertia, ReturnSpring, ReturnResistance)
 from suspension.interfaces import Severity
