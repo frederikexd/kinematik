@@ -34,7 +34,6 @@ populated only when a real FTire/CDTire backend is bound.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -145,8 +144,7 @@ def run_cosim_maneuver(veh, kind: str = "step_steer",
 
     Returns a dict {result, tire_history, backend_status, warnings}. Never raises.
     """
-    from .transient import (TransientSolver, run_maneuver,  # local import: avoid cycle
-                            step_steer_maneuver, snap_oversteer_maneuver,
+    from .transient import (TransientSolver, step_steer_maneuver, snap_oversteer_maneuver,
                             brake_to_throttle_maneuver, curb_strike_maneuver)
 
     builders = {

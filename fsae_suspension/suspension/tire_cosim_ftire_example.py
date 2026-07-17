@@ -39,7 +39,7 @@ import numpy as np
 
 from .tire_cosim import (WheelState, TireOutput, TireProvenance, TireFidelity,
                          _ExternalTireBackend)
-from .tiremodel import PacejkaLateral, default_tire, relaxation_length
+from .tiremodel import PacejkaLateral, default_tire
 
 
 # --------------------------------------------------------------------------- #

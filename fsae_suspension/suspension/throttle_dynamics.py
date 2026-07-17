@@ -62,7 +62,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Optional
 
 from .interfaces import Finding, Severity
-from .throttle_return import ThrottleInertia, AIR_DENSITY_KGM3
+from .throttle_return import ThrottleInertia
 
 
 R_AIR = 287.0          # J/(kg·K) specific gas constant, air

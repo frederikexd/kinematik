@@ -79,7 +79,7 @@ from typing import Optional
 
 import numpy as np
 
-from .tiremodel import PacejkaLateral, default_tire, relaxation_length
+from .tiremodel import PacejkaLateral, default_tire
 from .tire_cosim import (TireFidelity, TireProvenance, WheelState, TireOutput,
                          ReferenceTireModel)
 

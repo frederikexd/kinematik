@@ -91,7 +91,7 @@ from typing import Callable
 import numpy as np
 
 from .dynamics import VehicleDynamics, VehicleParams
-from .tiremodel import (PacejkaLateral, CombinedSlipTire, default_tire,
+from .tiremodel import (CombinedSlipTire, default_tire,
                         default_combined_tire, relaxation_length)
 from .damper import DamperCurve, default_damper
 

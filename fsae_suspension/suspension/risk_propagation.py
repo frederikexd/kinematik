@@ -68,10 +68,9 @@ from typing import Optional, Callable
 from .interfaces import (
     SubsystemInterface,
     IntegrationLedger,
-    SUBSYSTEMS,
     Severity,
 )
-from .dfmea import compute_rpn, classify_risk, RiskBand
+from .dfmea import compute_rpn, classify_risk
 
 
 # --------------------------------------------------------------------------- #

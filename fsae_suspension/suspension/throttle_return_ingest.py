@@ -51,9 +51,8 @@ from __future__ import annotations
 
 import csv
 import io
-import math
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import Optional
 
 from .interfaces import Finding, Severity

@@ -40,8 +40,7 @@ from __future__ import annotations
 
 import numpy as np
 from .topology import (
-    MechanismBuilder, Mechanism, Link, OnLine, InPlane, Revolute,
-    Coincident, AxleRoll, Constraint,
+    MechanismBuilder, Mechanism,
 )
 
 

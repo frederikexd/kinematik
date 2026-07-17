@@ -40,7 +40,7 @@ from __future__ import annotations
 import numpy as np
 from scipy.optimize import least_squares
 
-from .tiremodel import PacejkaLateral, _DEFAULT_FSAE_COEFFS, _DEFAULT_FSAE_FNOMIN
+from .tiremodel import PacejkaLateral, _DEFAULT_FSAE_COEFFS
 
 
 # The lateral coefficients we fit, in order. A focused subset of MF5.2 that carries

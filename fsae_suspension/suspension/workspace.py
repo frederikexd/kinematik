@@ -30,7 +30,7 @@ import json
 import os
 import re
 import datetime as _dt
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 _WS_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
@@ -248,7 +248,7 @@ class WorkspaceScopedSupabaseBackend:
             raise WorkspaceError(f"role {self.ctx.role!r} cannot write this workspace")
         assert_payload_scoped(payload, self.ctx.workspace_id)
         from .project import StaleWriteError   # lazy: keep module stdlib-only at import
-        now = _dt.datetime.utcnow().isoformat() + "Z"
+        now = _dt.datetime.now(_dt.timezone.utc).isoformat().replace("+00:00", "Z")
         # Audit stamp: who saved this version (shown in the Project history
         # panel). Copy-then-stamp so the caller's dict isn't mutated.
         payload = dict(payload)
