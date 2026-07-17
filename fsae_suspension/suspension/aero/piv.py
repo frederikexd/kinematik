@@ -69,9 +69,9 @@ writable and testable now, with synthetic frames, against no hardware and no sol
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Optional, Protocol, Sequence, runtime_checkable
+from typing import Optional, Protocol, runtime_checkable
 
 import numpy as np
 

@@ -34,7 +34,7 @@ import io
 import math
 import re
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
 __all__ = [
     "RawPoint", "MappedPoint", "ImportResult",
@@ -340,6 +340,12 @@ def _tokens(name: str) -> set:
                   "bellcrank", "pushrod", "pullrod", "balljoint", "contactpatch"):
         if fused in joined:
             toks.add(fused)
+    # "track rod" (British) is a tie rod; "track bar" (American) is a panhard
+    # bar. Bare "track" sits in BOTH concept vocabularies, so once the fused
+    # "trackrod" form is confirmed, drop the bare token — otherwise every
+    # "track rod inner/outer" is refused as ambiguous against panhard_chassis.
+    if "trackrod" in toks:
+        toks.discard("track")
     # split a trailing digit off numbered link/arm words: "link1" -> {link1, link},
     # "arm3" -> {arm3, arm}, "l4" -> {l4, l}. Keeps the ordinal in the fused token
     # (read by _ordinal_of) while exposing the bare concept word for _has().

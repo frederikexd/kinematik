@@ -30,7 +30,7 @@ unit-testable in isolation and the rest of KinematiK keeps importing cleanly.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 

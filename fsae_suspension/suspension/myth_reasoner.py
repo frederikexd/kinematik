@@ -48,7 +48,7 @@ returned verdict onto a ``MythResult``.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Optional
 
 # We depend only on the parsed-claim shape, not the engine, to avoid import

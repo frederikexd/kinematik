@@ -71,7 +71,7 @@ from typing import Any, Callable, Optional
 
 # Reuse the existing parser so number/unit extraction stays identical and the
 # two engines never disagree on what a claim "contains".
-from .mythbuster import parse_claim, ParsedClaim, Verdict
+from .mythbuster import parse_claim, ParsedClaim
 
 
 # =========================================================================== #

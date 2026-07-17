@@ -64,14 +64,13 @@ HONEST SCOPE (same contract as pack_thermal / tire_thermal)
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 
 import numpy as np
 
 from .interfaces import Finding, Severity
-from .pack_thermal import CellParams, PackLayout, PackThermalResult
+from .pack_thermal import PackLayout, PackThermalResult
 
 
 # --------------------------------------------------------------------------- #

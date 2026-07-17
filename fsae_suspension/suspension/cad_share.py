@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import csv
 import io
-import math
 import datetime as _dt
 from dataclasses import dataclass
 from typing import Optional

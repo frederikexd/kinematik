@@ -74,7 +74,7 @@ hardware.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import Optional, Sequence, Protocol, runtime_checkable
 
@@ -83,7 +83,7 @@ import numpy as np
 from .cfd import Attitude
 from .windtunnel import GroundState
 from .pressure_tap import (
-    TapLocation, TapCalibration, RawPressureScan, ScanProvenance,
+    TapLocation, RawPressureScan, ScanProvenance,
 )
 
 

@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import csv
 import io
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 from .cfd import Attitude, CoeffResult, CFDProvenance, SolverFidelity

@@ -32,7 +32,7 @@ Data flow (fully Python-evaluated, no Excel engine required)
 """
 from __future__ import annotations
 
-import io, math, os, shutil, tempfile
+import io, math, os, tempfile
 from dataclasses import dataclass, field
 from typing import Sequence
 
@@ -906,11 +906,9 @@ def build_enhanced_excel(
         import openpyxl
         from openpyxl.styles import (
             PatternFill, Font, Alignment, Border, Side,
-            GradientFill,
         )
         from openpyxl.utils import get_column_letter
-        from openpyxl.chart import AreaChart, Reference
-        from openpyxl.chart.series import SeriesLabel
+        from openpyxl.chart import Reference
     except ImportError:
         # Return original bytes if openpyxl not available
         return excel_bytes

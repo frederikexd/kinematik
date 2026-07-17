@@ -69,7 +69,7 @@ replacement for an FEA where one is actually required.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from typing import Optional
 
 from .interfaces import Finding, Severity

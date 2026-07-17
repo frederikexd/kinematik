@@ -61,11 +61,11 @@ from __future__ import annotations
 
 import os
 import statistics
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, Sequence
 
 from .cfd import (
-    Attitude, CaseSpec, CoeffResult, CFDProvenance, SolverFidelity,
+    CaseSpec, CoeffResult, CFDProvenance, SolverFidelity,
     SolverUnavailable,
 )
 from .backends import FluentVerificationSolver

@@ -35,7 +35,6 @@ from __future__ import annotations
 import os
 import json
 import uuid
-import shutil
 import datetime as _dt
 from dataclasses import dataclass, field, asdict, fields as _dc_fields
 

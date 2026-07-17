@@ -75,6 +75,40 @@ _EVENT_TYPES = {
     "first_result",
 }
 
+# Minimal-analytics mode (see MINIMAL_ANALYTICS_DEPLOY.md): only the event
+# types that feed a kept Supabase view are written; everything else is dropped
+# AT SOURCE so the analytics_events table stays under its ~1 MB budget.
+# A rate of 1.0 keeps every event, 0.0 drops every event; intermediate values
+# are reserved for future probabilistic sampling. session_start feeds the
+# users/retention view, workflow_complete feeds the ROI view, and error feeds
+# the reliability view — those three are metric-critical and always kept.
+_SAMPLE_RATES: dict = {
+    "session_start":     1.0,
+    "workflow_complete": 1.0,
+    "error":             1.0,
+    "tab_open":          0.0,
+    "feature_engage":    0.0,
+    "render":            0.0,
+    "data_pull":         0.0,
+    "export":            0.0,
+    "feature_released":  0.0,
+    "first_result":      0.0,
+}
+
+
+def _sampled(event_type: str) -> bool:
+    """True if this event type should be written under the current sampling
+    policy. Unknown types default to kept (the _EVENT_TYPES check in _emit
+    already guards the vocabulary); a rate of exactly 0.0 short-circuits
+    without drawing randomness so the hot path stays cheap."""
+    rate = _SAMPLE_RATES.get(event_type, 1.0)
+    if rate >= 1.0:
+        return True
+    if rate <= 0.0:
+        return False
+    import random
+    return random.random() < rate
+
 
 # --------------------------------------------------------------------------- #
 #  Background sink — one daemon thread drains a queue into Supabase / JSONL    #
@@ -336,6 +370,8 @@ def _emit(event_type: str, *, feature: Optional[str] = None,
     if not _sget("enabled", True):
         return
     if event_type not in _EVENT_TYPES:
+        return
+    if not _sampled(event_type):
         return
     try:
         sid = _resolve_session_id()

@@ -43,7 +43,7 @@ A single "corner" is modelled. Left/right symmetry is handled by mirroring y.
 from __future__ import annotations
 
 import numpy as np
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from scipy.optimize import least_squares
 
 

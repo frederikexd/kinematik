@@ -31,7 +31,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from .dfmea import compute_rpn, classify_risk, RiskBand, COLUMNS
 from .bolted_joint import BOLT_GRADES, METRIC_COARSE, Fastener

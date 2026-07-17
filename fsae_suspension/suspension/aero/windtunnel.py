@@ -67,7 +67,7 @@ mismatch it reports is a real mismatch; a hole it reports is a real hole.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import Optional, Sequence
 

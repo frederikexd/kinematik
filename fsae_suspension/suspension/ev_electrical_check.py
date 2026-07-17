@@ -40,9 +40,8 @@ is usable in unit tests and in the Streamlit UI alike.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
-from typing import Optional, Sequence
+from typing import Sequence
 
 import numpy as np
 

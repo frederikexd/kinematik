@@ -42,11 +42,9 @@ from __future__ import annotations
 import os
 import re
 import io
-import json
 import hashlib
 import zipfile
 import datetime as _dt
-from dataclasses import dataclass, field, asdict
 
 # --------------------------------------------------------------------------- #
 #  File-type classification

@@ -58,7 +58,6 @@ against a runnable reference backend with no external binary or license.
 from __future__ import annotations
 
 import itertools
-import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Protocol, Sequence, runtime_checkable

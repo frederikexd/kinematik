@@ -129,7 +129,7 @@ from __future__ import annotations
 import csv
 import io
 import math
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass
 from typing import Callable, Optional, Sequence
 
 from .scale_model import ScaleSpec, SimilitudePlan, ToleranceBudget

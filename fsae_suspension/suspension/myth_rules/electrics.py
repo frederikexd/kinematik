@@ -4,7 +4,6 @@
 """Electrics myth rules (HV pack, wiring, tractive-system safety). Checks
 against gas-law/Ohm/IPC physics; ties to tractive_system, electronics, harness."""
 from __future__ import annotations
-import math
 from typing import Any, Optional
 from ..mythbuster import CheckOutcome, ParsedClaim, Rule, Verdict, register
 

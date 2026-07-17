@@ -33,7 +33,6 @@ from typing import Optional
 from .workspace import (
     Workspace,
     WorkspaceContext,
-    WorkspaceError,
     refuse_service_role,
     validate_workspace_id,
 )
@@ -339,9 +338,9 @@ class SupabaseAuth:
         """Mint an invite token for the workspace (caller must be owner/lead).
         Returns the token string; build the shareable URL with
         auth_ui.build_join_url()."""
-        if role not in ("lead", "member"):
-            raise AuthError("Invite links can grant lead or member — "
-                            "ownership is set when the workspace is created.")
+        if role not in ("member", "viewer"):
+            raise AuthError("Invite links can only grant member or viewer — "
+                            "promote people explicitly in the Members panel.")
         client = self._user_client(session)
         try:
             resp = client.rpc("create_workspace_invite",

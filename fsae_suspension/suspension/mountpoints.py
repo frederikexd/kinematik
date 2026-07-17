@@ -38,7 +38,7 @@ from typing import Optional
 
 import numpy as np
 
-from .interfaces import Finding, Severity, IntegrationLedger, SubsystemInterface
+from .interfaces import Finding, Severity, IntegrationLedger
 
 
 # --------------------------------------------------------------------------- #
