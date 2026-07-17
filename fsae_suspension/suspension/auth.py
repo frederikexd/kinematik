@@ -269,6 +269,42 @@ class SupabaseAuth:
         except Exception as e:
             raise AuthError(self._rpc_msg(e)) from e
 
+    # ------------------------------------------------------------------ #
+    #  Oversight (workspace_oversight.sql). Owner/lead visibility layer:
+    #  every workspace the caller administers, with usage counts, the full
+    #  roster split by role, and the recent save trail. Both RPCs re-check
+    #  the caller's role server-side, so nothing here trusts the client.
+    # ------------------------------------------------------------------ #
+    def workspace_overview(self, session: Session) -> list[dict]:
+        """One dict per workspace where the caller is owner or lead:
+        {workspace_id, name, kind, my_role, member_count, owner_email,
+         lead_emails, member_emails, viewer_emails, last_activity,
+         last_saved_by, saves_7d}. A plain member gets an empty list —
+        oversight is an admin surface, not a directory."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("workspace_overview", {}).execute()
+            return list(resp.data or [])
+        except Exception as e:
+            raise AuthError(
+                f"Could not load workspace overview: {self._rpc_msg(e)}") from e
+
+    def workspace_activity(self, session: Session, workspace_id: str,
+                           limit: int = 25) -> list[dict]:
+        """Recent save events for ONE workspace (owner/lead only), newest
+        first: [{happened_at, saved_by, project_id, event}, ...] where event
+        is 'current' (the live blob) or 'snapshot' (a prior version captured
+        by the history trigger)."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("workspace_activity",
+                              {"ws": str(workspace_id),
+                               "lim": int(limit)}).execute()
+            return list(resp.data or [])
+        except Exception as e:
+            raise AuthError(
+                f"Could not load workspace activity: {self._rpc_msg(e)}") from e
+
     def set_member_role(self, session: Session, workspace_id: str,
                         target_user_id: str, role: str) -> None:
         client = self._user_client(session)

@@ -170,6 +170,12 @@ def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
             render_members_admin(st, ctx)
             st.divider()
             render_invite_admin(st, ctx)
+        # Oversight: shown only to users who administer at least one
+        # workspace (owner or lead anywhere) — every workspace they hand
+        # out, with headcount, lead, roster and the recent save trail.
+        if any(role in ("owner", "lead") for _, role in workspaces):
+            with st.expander("Oversight", expanded=False):
+                render_workspace_oversight(st, session)
     return ctx
 
 
@@ -253,6 +259,105 @@ def redeem_pending_invite(st, auth: SupabaseAuth, session: Session) -> bool:
     st.session_state["_ax_invite_join"] = True   # tells analytics this session
     st.success(f"You've joined **{ws.name}** as {role}. Welcome aboard.")  # arrived via invite link, not organically
     return True
+
+
+def render_workspace_oversight(st, session: Optional[Session] = None) -> None:
+    """
+    Oversight panel for owners and project leads: EVERY workspace the signed-in
+    user administers, each with how many people are using it, who the owner
+    is, who the lead(s) are, the full member roster, when it was last touched
+    and by whom, plus an expandable recent-save trail. The RPCs behind this
+    (workspace_oversight.sql) re-check the caller's role server-side, so a
+    plain member reaching this panel simply sees nothing.
+
+    Drop it anywhere:
+        from suspension import auth_ui
+        auth_ui.render_workspace_oversight(st)
+    """
+    auth = st.session_state.get(_SS_AUTH)
+    session = session or current_session(st)
+    if auth is None or session is None:
+        st.info("Oversight is available when signed in.")
+        return
+
+    try:
+        rows = auth.workspace_overview(session)
+    except AuthError as e:
+        # Most common cause: workspace_oversight.sql not run yet.
+        st.warning(f"Couldn't load the oversight view: {e}\n\n"
+                   "If this deployment predates it, run "
+                   "`suspension/workspace_oversight.sql` in the Supabase "
+                   "SQL editor.")
+        return
+
+    if not rows:
+        st.caption("You don't administer any workspaces yet — oversight shows "
+                   "workspaces where you are the owner or a lead.")
+        return
+
+    for r in rows:
+        ws_id = str(r.get("workspace_id", ""))
+        name = r.get("name") or ws_id
+        n = int(r.get("member_count") or 0)
+        leads = list(r.get("lead_emails") or [])
+        members = list(r.get("member_emails") or [])
+        viewers = list(r.get("viewer_emails") or [])
+        owner = r.get("owner_email") or "—"
+        last = str(r.get("last_activity") or "")[:16].replace("T", " ")
+        saved_by = r.get("last_saved_by") or ""
+        saves7 = int(r.get("saves_7d") or 0)
+
+        st.markdown(f"**{name}**  ·  `{r.get('kind', 'team')}`  ·  "
+                    f"{n} member{'s' if n != 1 else ''} using it")
+        st.caption(f"Owner: {owner}  ·  "
+                   f"Lead{'s' if len(leads) != 1 else ''}: "
+                   f"{', '.join(leads) if leads else '— none assigned —'}")
+        if members:
+            st.caption("Members: " + ", ".join(members))
+        if viewers:
+            st.caption("Viewers: " + ", ".join(viewers))
+        if last:
+            st.caption(f"Last activity: {last}"
+                       + (f" by {saved_by}" if saved_by else "")
+                       + (f"  ·  {saves7} save{'s' if saves7 != 1 else ''} "
+                          "in the last 7 days" if saves7 else ""))
+        else:
+            st.caption("No project activity yet.")
+
+        with st.expander("Recent activity", expanded=False):
+            try:
+                events = auth.workspace_activity(session, ws_id, limit=25)
+            except AuthError as e:
+                st.caption(f"Couldn't load the save trail: {e}")
+                events = []
+            if not events:
+                st.caption("No saves recorded yet.")
+            for ev in events:
+                ts = str(ev.get("happened_at") or "")[:16].replace("T", " ")
+                who = ev.get("saved_by") or "unknown"
+                pid = ev.get("project_id") or "default"
+                kind = ev.get("event") or ""
+                st.caption(f"{ts} — **{who}** saved `{pid}`"
+                           + ("  _(current version)_" if kind == "current" else ""))
+        st.divider()
+
+
+def _roster_summary_line(st, members: list[dict]) -> None:
+    """One-glance headline above the roster: how many are using the workspace,
+    who the lead(s) are and who the members are — exactly what an owner/lead
+    needs to see at the moment they're assigning people to it."""
+    n = len(members)
+    by_role: dict[str, list[str]] = {}
+    for m in members:
+        by_role.setdefault(str(m.get("role", "member")), []).append(
+            str(m.get("email", "(unknown)")))
+    leads = by_role.get("lead", [])
+    plain = by_role.get("member", [])
+    st.caption(
+        f"**{n} member{'s' if n != 1 else ''}** using this workspace  ·  "
+        f"Lead{'s' if len(leads) != 1 else ''}: "
+        f"{', '.join(leads) if leads else '— none assigned —'}  ·  "
+        f"Members: {', '.join(plain) if plain else '—'}")
 
 
 def render_invite_admin(st, ctx: WorkspaceContext) -> None:
@@ -345,6 +450,8 @@ def render_members_admin(st, ctx: WorkspaceContext) -> None:
 
     if not members:
         st.caption("No members found.")
+    else:
+        _roster_summary_line(st, members)
     for m in members:
         uid = str(m.get("user_id", ""))
         email = m.get("email", "(unknown)")

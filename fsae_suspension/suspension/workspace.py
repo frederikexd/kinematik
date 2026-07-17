@@ -356,3 +356,44 @@ class MemoryWorkspaceRegistry:
     def list_rows(self, user_id: str, ws_id: str, table: str) -> list[str]:
         self._gate(user_id, ws_id)
         return sorted(rid for (w, t, rid) in self._rows if w == ws_id and t == table)
+
+    # -- oversight (reference semantics of workspace_oversight.sql) --------- #
+    def overview(self, user_id: str) -> list[dict]:
+        """One dict per workspace the user ADMINISTERS (owner or lead), with
+        the usage/roster shape the SQL RPC returns: member_count, owner,
+        leads, members, viewers. A plain member/viewer gets an empty list —
+        oversight is an admin surface, never a directory of other tenants."""
+        out = []
+        for ws_id, roster in self._members.items():
+            my_role = roster.get(user_id)
+            if my_role not in ("owner", "lead"):
+                continue
+            by_role: dict[str, list[str]] = {}
+            for uid, role in roster.items():
+                by_role.setdefault(role, []).append(uid)
+            ws = self._workspaces[ws_id]
+            out.append({
+                "workspace_id": ws_id,
+                "name": ws.name,
+                "kind": ws.kind,
+                "my_role": my_role,
+                "member_count": len(roster),
+                "owner": sorted(by_role.get("owner", []))[:1] and
+                         sorted(by_role.get("owner", []))[0] or None,
+                "leads": sorted(by_role.get("lead", [])),
+                "members": sorted(by_role.get("member", [])),
+                "viewers": sorted(by_role.get("viewer", [])),
+            })
+        out.sort(key=lambda r: str(r["name"]).lower())
+        return out
+
+    def activity(self, user_id: str, ws_id: str) -> list[dict]:
+        """Rows currently stored in the workspace, visible to owner/lead only
+        (mirrors workspace_activity's permission rule)."""
+        if self._members.get(ws_id, {}).get(user_id) not in ("owner", "lead"):
+            raise WorkspaceError(
+                "only the owner or a lead may view workspace activity")
+        return [{"table": t, "row_id": rid,
+                 "saved_by": (d or {}).get("saved_by")}
+                for (w, t, rid), d in sorted(self._rows.items())
+                if w == ws_id]
