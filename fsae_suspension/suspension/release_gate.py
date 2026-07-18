@@ -18,6 +18,12 @@
 #    4. torque specifications      (every fastener specced, inside its
 #                                   grade-derived preload window, slotted
 #                                   joints on K_eff not catalogue K)
+#    5. EV accumulator (if ev_present) — tractive-system electrical envelope
+#                                   (fuse/current margin, per-cell overcurrent,
+#                                   lap energy budget) + transient pack thermal
+#                                   (hottest-cell peak vs runaway ceiling with
+#                                   margin). Consumes the real ElecCheckResult /
+#                                   PackThermalResult solver outputs.
 #
 #  IF AND ONLY IF every check passes, build_clipboard()/render_clipboard_pdf()
 #  emit the printable "Tech Assembly & Torque Clipboard Checklist" for
@@ -104,6 +110,29 @@ class GateInputs:
     # torque specs
     torque_specs: list = field(default_factory=list)       # [TorqueSpec]
     required_fastener_locations: list = field(default_factory=list)
+    # EV accumulator / tractive system — the go/no-go the platform was missing.
+    # Feed the REAL solver outputs (duck-typed, so the gate keeps its no-heavy-
+    # import discipline): an ev_electrical_check.ElecCheckResult and a
+    # pack_thermal.PackThermalResult. Either object may be replaced by the
+    # precomputed scalar overrides below, exactly as chassis accepts a live frame
+    # OR precomputed audits. Absent evidence FAILS — a car is never released on a
+    # thermal or electrical check nobody ran.
+    ev_present: bool = False                                # True ⇒ this is an EV; run the section
+    elec_result: Any = None                                 # ElecCheckResult (duck-typed)
+    pack_thermal_result: Any = None                         # PackThermalResult (duck-typed)
+    # precomputed electrical overrides (used only when elec_result is None)
+    fuse_blown: Optional[bool] = None
+    cell_overcurrent: Optional[bool] = None
+    energy_empty: Optional[bool] = None
+    peak_current_a: Optional[float] = None
+    fuse_max_a: Optional[float] = None
+    # precomputed thermal overrides (used only when pack_thermal_result is None)
+    pack_peak_cell_c: Optional[float] = None
+    pack_cells_over_limit: Optional[int] = None
+    # limits (long-standing, conservative; teams may tighten, never silently loosen)
+    cell_temp_limit_c: float = 60.0                        # FSAE-EV lithium abort ceiling
+    cell_temp_margin_c: float = 5.0                        # require peak ≤ limit − margin
+    tractive_current_margin_frac: float = 0.10             # peak ≤ fuse × (1 − margin)
     # identity for the clipboard
     team: str = "Elbee Racing"
     car: str = ""
@@ -280,9 +309,111 @@ def _torque_checks(gi: GateInputs) -> list:
     return out
 
 
+def _ev_checks(gi: GateInputs) -> list:
+    """Accumulator + tractive-system go/no-go.
+
+    The most safety- and scrutineering-critical prevalidation an EV team does,
+    and the one class of number that stays an *estimate* in a spreadsheet until
+    a full thermal/electrical sim finally computes it — usually a week and a
+    fire-risk too late. This section pulls KinematiK's own solver outputs
+    (ElecCheckResult, PackThermalResult) into the manufacturing go/no-go so a
+    pack cannot be released to build on an electrical or thermal envelope nobody
+    verified.
+
+    Honesty contract, same as every other section: a missing result FAILS its
+    check. We never assume a pack is safe because no one measured it.
+    """
+    out = []
+    if not gi.ev_present:
+        return out  # combustion / non-EV car: section does not apply
+
+    # ---- electrical envelope (fuse, per-cell overcurrent, energy) ---------- #
+    er = gi.elec_result
+    fuse_blown = er.fuse_blown if er is not None else gi.fuse_blown
+    cell_oc = er.cell_overcurrent if er is not None else gi.cell_overcurrent
+    energy_empty = er.energy_empty if er is not None else gi.energy_empty
+    peak_a = er.peak_current_a if er is not None else gi.peak_current_a
+    fuse_a = er.fuse_max_a if er is not None else gi.fuse_max_a
+
+    if fuse_blown is None or peak_a is None or fuse_a is None:
+        out.append(GateCheck(
+            "EV-01", "accumulator", "tractive-system electrical check present",
+            False, "no result", "run ev_electrical_check",
+            "supply elec_result (ElecCheckResult) or the fuse/current overrides"))
+    else:
+        # fuse must not blow AND peak must sit under the fuse with margin — a
+        # peak that only just clears the fuse is a lap-to-lap failure waiting on
+        # a hot day. Both conditions in one check so a single defect vetoes.
+        ceiling = fuse_a * (1.0 - gi.tractive_current_margin_frac)
+        ok = (not fuse_blown) and (peak_a <= ceiling)
+        out.append(GateCheck(
+            "EV-01", "accumulator",
+            f"peak pack current ≤ fuse less {gi.tractive_current_margin_frac:.0%} margin",
+            ok, f"peak {peak_a:.0f} A" + (" (FUSE BLOWN)" if fuse_blown else ""),
+            f"≤ {ceiling:.0f} A (fuse {fuse_a:.0f} A)",
+            "peak tractive current vs AIR/fuse rating on the simulated lap"))
+
+    if cell_oc is None:
+        out.append(GateCheck(
+            "EV-02", "accumulator", "per-cell overcurrent check present", False,
+            "no result", "run ev_electrical_check",
+            "supply elec_result or the cell_overcurrent override"))
+    else:
+        out.append(GateCheck(
+            "EV-02", "accumulator", "no cell exceeds its rated discharge current",
+            not cell_oc, "overcurrent" if cell_oc else "within rating",
+            "every cell ≤ rating",
+            "per-cell current = pack current ÷ parallel count vs the cell datasheet"))
+
+    if energy_empty is None:
+        out.append(GateCheck(
+            "EV-03", "accumulator", "energy-budget check present", False,
+            "no result", "run ev_electrical_check",
+            "supply elec_result or the energy_empty override"))
+    else:
+        out.append(GateCheck(
+            "EV-03", "accumulator", "pack completes the lap above its usable floor",
+            not energy_empty, "drained below floor" if energy_empty else "energy OK",
+            "≥ usable floor",
+            "endurance-critical: a pack that browns out mid-lap is a DNF, not a setup"))
+
+    # ---- thermal envelope (per-cell peak temperature) ---------------------- #
+    ptr = gi.pack_thermal_result
+    if ptr is not None:
+        peak_c = ptr.hottest_peak_c
+        over = ptr.breach_count
+        breached = ptr.any_cell_breached_limit
+    else:
+        peak_c = gi.pack_peak_cell_c
+        over = gi.pack_cells_over_limit
+        breached = None if over is None else over > 0
+
+    limit = gi.cell_temp_limit_c - gi.cell_temp_margin_c
+    if peak_c is None or (over is None and breached is None):
+        out.append(GateCheck(
+            "EV-04", "accumulator", "transient pack-thermal run present", False,
+            "no result", "run simulate_pack_thermal",
+            "supply pack_thermal_result (PackThermalResult) or the thermal overrides"))
+    else:
+        # NaN peak (a failed/synthesized run) must fail, not sneak through a
+        # comparison — a thermal run that didn't converge is not evidence.
+        peak_ok = peak_c == peak_c and peak_c <= limit          # NaN-safe
+        no_breach = (over == 0) if over is not None else (not breached)
+        out.append(GateCheck(
+            "EV-04", "accumulator",
+            f"hottest cell peak ≤ {gi.cell_temp_limit_c:g} °C less {gi.cell_temp_margin_c:g} °C margin",
+            bool(peak_ok and no_breach),
+            ("no thermal field" if peak_c != peak_c else f"peak {peak_c:.1f} °C")
+            + (f", {over} cell(s) over limit" if over else ""),
+            f"≤ {limit:.0f} °C",
+            "transient per-cell temperature over the virtual lap; margin keeps "
+            "the pack clear of thermal-runaway onset on a hot competition day"))
+    return out
+
+
 def run_gate(gi: GateInputs) -> GateReport:
     checks = _chassis_checks(gi) + _cooling_checks(gi) + _brake_checks(gi) \
-        + _torque_checks(gi)
+        + _torque_checks(gi) + _ev_checks(gi)
     checks.sort(key=lambda c: c.check_id)
     return GateReport(
         released=all(c.passed for c in checks) and len(checks) > 0,
@@ -292,7 +423,12 @@ def run_gate(gi: GateInputs) -> GateReport:
             else "audited",
             "manifold_segments": sorted(gi.manifold_dp_kpa),
             "brake_components": sorted(gi.brake_fos),
-            "torque_specs": len(gi.torque_specs)})
+            "torque_specs": len(gi.torque_specs),
+            "ev_accumulator": (
+                "n/a" if not gi.ev_present else
+                "audited" if (gi.elec_result is not None or gi.fuse_blown is not None)
+                and (gi.pack_thermal_result is not None or gi.pack_peak_cell_c is not None)
+                else "incomplete")})
 
 
 # --------------------------------------------------------------------------- #
@@ -332,6 +468,25 @@ def build_clipboard(report: GateReport, gi: GateInputs) -> Clipboard:
                    f"(NOT catalogue K={gi.pedal_joint.K_nominal}); slot washers fitted")
         brk.append("Pedal position set, tabs clamped, paint-pen witness marks applied")
     sec.append(("Brakes — safety margins", brk))
+    if gi.ev_present:
+        er = gi.elec_result
+        ptr = gi.pack_thermal_result
+        peak_a = (er.peak_current_a if er is not None else gi.peak_current_a)
+        fuse_a = (er.fuse_max_a if er is not None else gi.fuse_max_a)
+        peak_c = (ptr.hottest_peak_c if ptr is not None else gi.pack_peak_cell_c)
+        ev = []
+        if peak_a is not None and fuse_a is not None:
+            ev.append(f"Verify AIR/fuse rating {fuse_a:.0f} A \u2265 sim peak {peak_a:.0f} A; "
+                      f"confirm fuse part number matches the released electrical BOM")
+        ev.append("Confirm per-cell discharge within datasheet rating (parallel count as built)")
+        ev.append("IMD / insulation-monitoring functional; HV interlock loop continuous")
+        if peak_c is not None and peak_c == peak_c:
+            ev.append(f"Pack cooling as modelled: sim hottest cell {peak_c:.1f} \u00b0C "
+                      f"(ceiling {gi.cell_temp_limit_c:g} \u00b0C) \u2014 fans/ducts fitted per thermal model")
+        else:
+            ev.append(f"Pack cooling fitted per thermal model (ceiling {gi.cell_temp_limit_c:g} \u00b0C)")
+        ev.append("Cell-temp sensors reading and logged to the energy meter before first run")
+        sec.append(("EV Accumulator \u2014 tractive-system envelope", ev))
     rows = []
     for t in sorted(gi.torque_specs, key=lambda s: (s.location, s.label)):
         win = t.torque_window_Nm()
