@@ -66,6 +66,38 @@ All frame maths lives in `coordinate_frames.py` — pure Python, importable with
 
 ---
 
+## New: 🎯 Proof Engine — certainty as a budget, pass criteria sealed before the run
+
+No CAE, PLM, or requirements tool answers the two questions that actually govern the week before ANSYS: *which validation is worth doing first*, and *what counts as a pass, decided before the result exists*. The Proof Engine (✅ Checks & Integration, shared spine) answers both:
+
+- **Quantified uncertainty ledger.** Every declared number carries a ± from a five-step evidence grade — guess ±40 %, estimate ±20 %, modelled ±10 %, measured ±3 %, verified ±1 % — and the band **inflates with age** (a measurement's uncertainty doubles at its staleness half-life, capped at guess). A checkbox can never claim *measured*; only a dated claim with a source can.
+- **Variance attribution.** Deterministic one-at-a-time perturbation propagates every band to the objective you pick (lap time, endurance energy, pack thermal margin, mass) and shows which inputs dominate: *"±1.9 s on lap time; 61 % of it is a CG height nobody has measured."* Reproducible by hand — same ledger in, same numbers out, always.
+- **The ranked proof plan.** A catalog of evidence actions — corner scales, tilt-test CG, coast-down, dyno pull, flow bench, pack thermal log, strain-gauged mount, an ANSYS study — ranked by **uncertainty retired per hour**. Corner scales can outrank ANSYS, and the arithmetic shows exactly why. The plan exports as a pinnable one-page markdown with the frame charter stamped on it. This is value-of-information planning: the literal list of questions worth asking the expensive tools.
+- **🔏 Pre-registered validation contracts.** Borrowed from experimental science and never before shipped in an engineering tool: the acceptance band and criterion are fixed and **sha256-sealed before the run**. Judging fills a result block and never touches sealed fields; edit the band afterward and the seal breaks — and a broken seal refuses judgment out loud. "FoS 1.05 is probably fine" can never be decided after seeing the result.
+- **The three-way verdict.** Every contract carries a plausibility envelope (prediction ± 3σ from the ledger — computed, not chosen). PASS inside the band. FAIL outside the band but plausible — a design finding, caught before the first cut. **DISCREPANT** outside the envelope — the run and the ledger disagree about reality, so neither number is acted on until units, frame, BCs, and geometry version are audited. A failed design and a garbage run finally stop looking the same.
+
+All of it lives in `suspension/proof_engine.py` — pure Python, headless, self-tested (`python3 -m suspension.proof_engine`), with the UI in `ui/proof_planner.py` as the first tab under the new `ui/` module pattern. See `docs/BOTTLENECKS.md` for the full prevalidation bottleneck map this feature closes.
+
+---
+
+## New: 🧨 Saboteur — mutation testing for the input deck. Which errors would you fail to notice?
+
+The Proof Engine's DISCREPANT verdict catches the garbage run that looks *impossible*. That leaves the deadliest class untouched: **the garbage that looks fine**. A pounds-into-kg slip on one subsystem, the kilo prefix slipping on a heat load, a Z-down hardpoint sheet in a Z-up deck, one subsystem silently missing from the mass roll-up — each can move the answer by an amount that sits comfortably inside the plausibility envelope. The run comes back, the number is believable, the sealed contract says PASS, and the team acts on it. Nobody audits a result that confirms what they expected.
+
+Software engineering solved the mirror-image problem decades ago: **mutation testing** — deliberately inject known bug classes, see which ones the test suite fails to notice, and you know exactly where its holes are. No CAE, PLM, or requirements tool has ever pointed that idea at an engineering input deck. The Saboteur (✅ Checks & Integration, shared spine) does:
+
+- **The sabotage sweep.** Ten catalogued corruption classes — each one a documented, real failure from the bottleneck map (unit thousandfold slips, inches-into-mm, lb-into-kg, lb·ft-into-N·m, frame Z flips, dropped and double-counted roll-up terms) — are injected one at a time into a shadow copy of the uncertainty ledger. For every (corruption, target) pair the sweep asks: *would anyone notice?* On a representative FSAE-EV deck, the answer is brutal: **only ~8 % of catalogued corruptions push the result outside its own 3σ envelope.** The other 92 % would come home from ANSYS wearing a plausible face.
+- **Tripwires chosen by arithmetic, not folklore.** A tripwire is a cheap checksum recorded *alongside* the run — rolled-up mass from the mesher's printout, CG height sign, torque-per-power (implied motor base speed), implied pack voltage, heat-loss fraction. The distinction that makes them work: a tripwire compares the run against **the deck**, not against reality. However uncertain the declared numbers are about the real car, a solver that consumed the declared deck must reproduce the deck's own arithmetic to a tight consistency tolerance — so the wires stay sharp precisely when the deck is most uncertain, which is when garbage is most likely. A greedy set-cover picks the fewest wires that expose the most silent corruptions; four wires typically take detection from ~8 % to **100 %** of the catalog.
+- **Sealed like a contract.** The wire set, expected values, and bands are sha256-sealed before the run. A skipped tripwire is not a passed one; an edited sheet refuses to judge.
+- **The garbage names itself.** When readings come back and a wire trips, the deviation pattern is matched against every predicted corruption signature (cosine similarity on band-normalised deviations — deterministic, checkable by hand). The verdict is not "something is wrong" but *"this signature matches pounds-into-kg on the accumulator mass, magnitude 1.0× predicted."* The audit that used to eat an evening starts with a named suspect. A pattern matching *nothing* in the catalog says so honestly instead of naming a false suspect.
+- **Honest blind spots.** Any corruption invisible to the result *and* to every available wire is listed out loud, with the only remaining defence named (measure that input directly) — and the coverage number charges for it. A cap-shortened sheet charges its truncation victims the same way. No unearned green boards, including this tab's own.
+
+Why no one has built it: a tool that tells you which of a solver's answers would be undetectably wrong is a tool no solver vendor will ever ship. And it costs the team **zero new data entry** — it reuses the exact uncertainty ledger the Proof Engine already maintains.
+
+All of it lives in `suspension/saboteur.py` — pure Python, headless, self-tested (`python3 -m suspension.saboteur`), UI in `ui/saboteur.py`. See bottleneck **#12** in `docs/BOTTLENECKS.md`.
+
+---
+
 ## Coverage
 
 One environment. Every subsystem. The entire car.
@@ -84,6 +116,8 @@ One environment. Every subsystem. The entire car.
 | **Cost & BOM** | FSAE Cost event, auto-seeded from Integration ledger, CSV export |
 | **Integration** | Cross-subsystem ledger, coupling graph, risk propagation, manufacturing-release gate, **Verdict Center** (per-subsystem works / look-closer / attention) |
 | **Frames & Datums** | Team coordinate convention charter, live floating datums with drift watch, frame Rosetta, migration wizard with SolidWorks XYZ export, sign-convention linter, judge-ready charter export, frame tags on every DXF / handover / ledger |
+| **Proof Engine** | Quantified evidence grades with staleness decay, deterministic uncertainty attribution to lap time / energy / thermal / mass, evidence actions ranked by uncertainty retired per hour, sha256-sealed pre-registered validation contracts, PASS / FAIL / DISCREPANT verdicts |
+| **Saboteur** | Mutation testing for the input deck: ten catalogued corruption classes injected into a shadow ledger, silent-killer detection, tripwire checksums picked by deterministic detectability set-cover, sha256-sealed pre-flight sheets, corruption fingerprinting that names the garbage class from the tripped pattern |
 | **DFMEA** | Live failure mode analysis, pre-seeded rows, RPN recompute, action tracker |
 | **Registry** | Component source of truth, version history, sign-off, CAD provenance parsing |
 
@@ -171,11 +205,21 @@ For the per-feature funnel fix only, run `fix_feature_funnel.sql` standalone.
 1. Push `streamlit_app.py`, `project.py` and `coordinate_frames.py` together — the handover builder gained a `frame_tag` parameter that the app passes, so they are a matched set.
 2. Push `suspension/analytics.py` with `streamlit_app.py` as before — still a matched pair.
 3. Run `suspension/analytics_hardening.sql` in Supabase.
-4. Confirm build stamp in the Usage section reads `0.23.0-frames` and streamlit runtime reads `>= 1.58.0`.
+4. Confirm build stamp in the Usage section reads `0.24.0-saboteur` and streamlit runtime reads `>= 1.58.0`.
 
 ---
 
-## What changed in this build (`0.23.0-frames`)
+## What changed in this build (`0.24.0-saboteur`)
+
+**🧨 Saboteur — new shared-spine tab (Checks & Integration)**
+- New `suspension/saboteur.py`: mutation catalog (thousandfold/imperial unit slips, frame Z flip, kilo-prefix slips, dropped & double-counted roll-up terms, each with its real-world story), sabotage sweep over a shadow copy of the uncertainty ledger, silent-killer classification against the objective's own 3σ envelope, tripwire catalog with per-wire deck-consistency tolerances and real-world read instructions, greedy detectability set-cover (runs until nothing catchable remains; a caller-imposed cap charges its victims to the blind-spot list), sha256-sealed pre-flight sheets, cosine fingerprinting of tripped patterns against predicted corruption signatures, honest-blind-spot reporting, markdown export. Pure stdlib, deterministic end to end, self-tested.
+- New `ui/saboteur.py` under the `ui/` strangulation pattern: kill board, coverage before/after, sheet sealing, judge-a-run panel with named suspects. Shares the `proof_pedigree` session map with the Proof Planner — one pedigree, two consumers, on purpose. Can optionally judge the sweep against an open validation contract's acceptance band, answering: *could garbage hand you a PASS?*
+- `tests/test_saboteur.py`: 22 tests pinning determinism, per-class detection (z-flip caught by the CG wire, lb·ft by torque-per-power, dropped terms by rolled-up mass), honesty (blind spots reported and charged, unavailable wires never offered, verified pedigrees never shrink tripwire tolerances), seal tampering refused, fingerprint correctness (injected corruption identified at cosine > 0.99, magnitude 1.0×), and uncatalogued errors admitted rather than misattributed.
+- `docs/BOTTLENECKS.md` gains bottleneck **#12 — the garbage that flatters the envelope**, closing the residual #8 left open.
+
+*(Previous build `0.23.0-frames` below.)*
+
+## What changed in build (`0.23.0-frames`)
 
 **🧭 Frames & Datums — new shared-spine tab (Checks & Integration)**
 - New `coordinate_frames.py`: frame registry (ISO 8855, SAE J670, ISO 4130, KinematiK internal, SolidWorks-typical, custom-from-words with derived +z guaranteeing right-handedness), exact point/vector/rotation-sense transforms via one `frame → world → frame` path, floating datums resolved live from wheelbase / weight split / CG height, datum-drift detection, CSV + SolidWorks Curve-Through-XYZ I/O, sign-convention linter (below-ground / mirror asymmetry / unit sniff / envelope), judge-ready charter markdown. Pure Python, streamlit only imported inside `render()`, exact-identity self-tests.

@@ -2776,6 +2776,8 @@ _TAB_META = {
     "tractive":    ("⚡", "Tractive Safety"),
     "dfmea":       ("🧯", "DFMEA"),
     "frames":      ("🧭", "Frames & Datums"),
+    "proof":       ("🎯", "Proof Planner"),
+    "saboteur":    ("🧨", "Saboteur"),
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
@@ -2799,7 +2801,8 @@ _TAB_CATEGORIES = [
     ("design",   "🛠️", "Design & Sizing",
      ["brakes", "accum", "pcb", "compliance", "teamfit", "model3d"]),
     ("checks",   "✅", "Checks & Integration",
-     ["integration", "frames", "validation", "dfmea", "tractive"]),
+     ["integration", "frames", "validation", "proof", "saboteur", "dfmea",
+      "tractive"]),
     ("docs",     "📄", "Documentation",
      ["docs", "notes", "weight"]),
     ("data",     "📊", "Data & Cost",
@@ -2818,7 +2821,7 @@ for _cid in _FULL_ORDER:
 
 # Tabs every member uses no matter their subteam — the shared spine of the
 # project (see one car, declare your numbers once, read/leave notes).
-_SHARED_IDS = ["model3d", "integration", "frames", "registry", "docs", "notes", "weight", "validation", "analytics"]
+_SHARED_IDS = ["model3d", "integration", "frames", "registry", "docs", "notes", "weight", "validation", "proof", "saboteur", "analytics"]
 
 # Subteam -> the tabs that team actually works in (most-used first). The shared
 # spine (_SHARED_IDS: 3D model, integration, registry, notes, weight,
@@ -3125,6 +3128,28 @@ _BRIEF_TOOLS = {
         "expensive software.",
         "This is the bridge tab — it exists precisely so the expensive tools "
         "are used to CONFIRM, with a defined test matrix, not to explore."),
+    "proof": (
+        "Quantified uncertainty on every declared number, attributed to the "
+        "objective you care about, with a ranked plan of what to prove next "
+        "and sealed pass/fail contracts written before any run.",
+        "Solver hours are the scarcest thing you have. You need this so the "
+        "8-hour ANSYS study happens only after the 2-hour corner-scale "
+        "session the arithmetic says matters more.",
+        "This is value-of-information planning plus pre-registration — the "
+        "acceptance band is hashed before the sim runs, so 'FoS 1.05 is "
+        "probably fine' can never be decided after seeing the result."),
+    "saboteur": (
+        "Injects the classic input-deck corruptions — unit slips, frame "
+        "flips, dropped roll-up terms — into a shadow copy of the ledger and "
+        "shows which ones would come back from a sim looking plausible, then "
+        "seals a short tripwire sheet that exposes them.",
+        "The DISCREPANT verdict catches garbage that looks impossible; this "
+        "catches the worse kind — garbage that looks fine. You need it so a "
+        "pounds-into-kg slip can never come home wearing a PASS.",
+        "Mutation testing for input decks: no solver vendor will ever build "
+        "the tool that tells you which of their answers would be "
+        "undetectably wrong. The checksums are chosen by detectability "
+        "arithmetic, not folklore, and sealed before the run."),
     "cost": (
         "FSAE Cost event BOM, auto-seeded from the Integration ledger, CSV "
         "export ready.",
@@ -3209,6 +3234,12 @@ _BRIEF_SIMPLE = {
     "validation": "The final checklist before the expensive software: what's "
                   "decided, what's locked, and exactly what still needs the "
                   "big simulation to confirm.",
+    "proof": "Shows how sure the team really is about each number, which "
+             "doubt hurts most, what test or sim to do next — and locks in "
+             "what counts as a pass before anyone runs it.",
+    "saboteur": "Deliberately breaks a copy of your numbers the ways teams "
+                "really break them, finds the breaks nobody would notice, "
+                "and gives you a short checklist that catches them.",
     "cost": "Competitions score you on cost too. This builds the price list "
             "of the car and shows what each decision costs.",
     "weight": "One agreed list of how heavy everything is and where it sits — "
@@ -4221,6 +4252,24 @@ _BRIEF_TOOL_FEATURES = {
         "exploring for you.",
         "Pass criteria and sign-off responsibility are captured alongside each "
         "open item, so nothing rides on 'we'll remember'.",
+    ],
+    "proof": [
+        "Every ledger number carries a ± band from its evidence grade, and "
+        "the band inflates as the evidence ages.",
+        "Validation actions are ranked by uncertainty retired per hour on "
+        "the objective you pick — corner scales can outrank ANSYS, and the "
+        "arithmetic shows why.",
+        "Acceptance bands are sealed (sha256) before the run; results come "
+        "back PASS, FAIL, or DISCREPANT — and DISCREPANT means the run and "
+        "the ledger disagree about reality.",
+    ],
+    "saboteur": [
+        "Every catalogued corruption class is injected one at a time; the "
+        "kill board shows exactly which would sail through unnoticed.",
+        "A greedy set-cover picks the fewest tripwire checksums that expose "
+        "the silent ones — recorded with every run, sealed like a contract.",
+        "When a wire trips, the deviation pattern names the most likely "
+        "corruption class, so the audit starts with a suspect.",
     ],
     "cost": [
         "The FSAE Cost event BOM is auto-seeded from the Integration ledger, "
@@ -10887,6 +10936,28 @@ tab_pcb     = _id_to_container["pcb"]
 tab_tractive = _id_to_container["tractive"]
 tab_dfmea    = _id_to_container["dfmea"]
 tab_frames   = _id_to_container["frames"]
+tab_proof    = _id_to_container["proof"]
+tab_saboteur = _id_to_container["saboteur"]
+
+# --- 🎯 Proof Planner — first tab under the ui/ strangulation pattern. ------ #
+# All physics lives in suspension/proof_engine.py; all drawing in
+# ui/proof_planner.py. This shell only routes the container. New tabs land
+# this way from now on (see ui/__init__.py and CONTRIBUTING.md).
+with tab_proof:
+    try:
+        from ui import proof_planner as _proof_planner_mod
+        _proof_planner_mod.render()
+    except Exception as _pp_err:            # noqa: BLE001 — a broken tab must
+        st.error(f"Proof Planner failed to render: {_pp_err}")  # not kill the app
+
+# --- 🧨 Saboteur — adversarial pre-flight, same ui/ pattern. ---------------- #
+# All physics lives in suspension/saboteur.py; all drawing in ui/saboteur.py.
+with tab_saboteur:
+    try:
+        from ui import saboteur as _saboteur_mod
+        _saboteur_mod.render()
+    except Exception as _sb_err:            # noqa: BLE001 — a broken tab must
+        st.error(f"Saboteur failed to render: {_sb_err}")  # not kill the app
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
