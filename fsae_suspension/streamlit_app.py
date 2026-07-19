@@ -2778,6 +2778,10 @@ _TAB_META = {
     "frames":      ("🧭", "Frames & Datums"),
     "proof":       ("🎯", "Proof Planner"),
     "saboteur":    ("🧨", "Saboteur"),
+    "phantom":     ("👻", "Phantom Car"),
+    "earshot":     ("🎙️", "Earshot"),
+    "fusebox":     ("⛓️", "Fusebox"),
+    "ghost":       ("👻🔩", "Ghost Topology"),
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
@@ -2799,10 +2803,10 @@ _TAB_CATEGORIES = [
      ["kinematics", "roll", "tire", "aero", "ev", "laptime",
       "setup"]),
     ("design",   "🛠️", "Design & Sizing",
-     ["brakes", "accum", "pcb", "compliance", "teamfit", "model3d"]),
+     ["brakes", "accum", "pcb", "compliance", "ghost", "teamfit", "model3d"]),
     ("checks",   "✅", "Checks & Integration",
-     ["integration", "frames", "validation", "proof", "saboteur", "dfmea",
-      "tractive"]),
+     ["integration", "frames", "validation", "proof", "saboteur", "phantom",
+      "earshot", "fusebox", "dfmea", "tractive"]),
     ("docs",     "📄", "Documentation",
      ["docs", "notes", "weight"]),
     ("data",     "📊", "Data & Cost",
@@ -2821,7 +2825,7 @@ for _cid in _FULL_ORDER:
 
 # Tabs every member uses no matter their subteam — the shared spine of the
 # project (see one car, declare your numbers once, read/leave notes).
-_SHARED_IDS = ["model3d", "integration", "frames", "registry", "docs", "notes", "weight", "validation", "proof", "saboteur", "analytics"]
+_SHARED_IDS = ["model3d", "integration", "frames", "registry", "docs", "notes", "weight", "validation", "proof", "saboteur", "phantom", "earshot", "fusebox", "analytics"]
 
 # Subteam -> the tabs that team actually works in (most-used first). The shared
 # spine (_SHARED_IDS: 3D model, integration, registry, notes, weight,
@@ -3150,6 +3154,64 @@ _BRIEF_TOOLS = {
         "the tool that tells you which of their answers would be "
         "undetectably wrong. The checksums are chosen by detectability "
         "arithmetic, not folklore, and sealed before the run."),
+    "phantom": (
+        "Makes every subsystem disclose the design value its sizing actually "
+        "uses, prices each hedge in σ of the quantity's own evidence-graded "
+        "band, and judges the lot against one sha256-sealed design "
+        "percentile.",
+        "Every subsystem hedges the same uncertainty in secret and nobody "
+        "adds it up — so the car gets fat defending statistically impossible "
+        "cars while the energy budget runs naked. You need this to see the "
+        "conservatism nobody has ever totalled.",
+        "Margin stacking is invisible to every solver, PLM, and requirements "
+        "tool by construction; the join that adds it up only exists where the "
+        "numbers, their σ, and who consumes them already live together — "
+        "here. β states the odds each load case defends against; the three "
+        "cars price the envelope spent on ones that cannot exist."),
+    "earshot": (
+        "Power analysis for the test day: laps needed vs laps the pack can "
+        "feed, the drift bias each run order inherits, the band an "
+        "instrument will really deliver, and a sha256-sealed session sheet "
+        "written before the trailer loads.",
+        "A track day is the scarcest thing you have after solver hours. You "
+        "need this so a 0.3 s wing is never 'tested' in a session that "
+        "could only hear 0.7 s — and a real gain never gets buried as "
+        "'inconclusive'.",
+        "Clinical trials have refused to start without a power calculation "
+        "for fifty years; no engineering tool has ever run one for a test "
+        "day. A NOT-DETECTED comes back priced with the chance a real "
+        "effect hid, and a test that can't beat the ledger's current band "
+        "is called MOOT before anyone loads the trailer."),
+    "fusebox": (
+        "The failure-order audit: for every credible overload chain, the "
+        "probability each element breaks FIRST — priced with your own "
+        "evidence-graded \u03c3 — judged against a sha256-sealed Fuse Charter, "
+        "with exact fixes including 'measure, don't machine'.",
+        "A big enough hit WILL break something; the only choice you get is "
+        "which part. You need this so a Tuesday curb costs a $45 tie rod "
+        "from the spares box, not the six-week upright — and so nothing "
+        "forbidden (accumulator, cell restraint) is ever first.",
+        "Electrical engineering chose its victims 150 years ago; mechanical "
+        "load paths choose by accident, and FEA sees one part at a time so "
+        "the ORDERING is invisible to every tool. It only becomes computable "
+        "where capacities, their \u03c3, costs and lead times live together \u2014 "
+        "here."),
+    "ghost": (
+        "The deformed-geometry audit: walks a transient overload and "
+        "solves the suspension geometry the car ACTUALLY has at each "
+        "instant — compliance-shifted camber/toe, migrating load "
+        "paths, transient FoS on yield and buckling, and the tyre-force "
+        "feedback loop gain measured (1.0 is instability).",
+        "The geometry the tyre operates on at the load peak is not the "
+        "geometry you drew. You need this to catch compliance that "
+        "inverts your camber intent, an FoS that only dips mid-event, "
+        "and a feedback loop going unstable — none of which a static "
+        "case can show.",
+        "Closing the tyre–compliance loop honestly means co-simulating "
+        "FEA against multibody dynamics. Time-scale separation collapses "
+        "it to the compliance solve along the load history — laptop "
+        "arithmetic — because the corner, load-path and transient "
+        "stacks already live together here."),
     "cost": (
         "FSAE Cost event BOM, auto-seeded from the Integration ledger, CSV "
         "export ready.",
@@ -3240,6 +3302,25 @@ _BRIEF_SIMPLE = {
     "saboteur": "Deliberately breaks a copy of your numbers the ways teams "
                 "really break them, finds the breaks nobody would notice, "
                 "and gives you a short checklist that catches them.",
+    "phantom": "Adds up all the safety margin every subteam quietly added on "
+               "its own, shows where you're paying for it twice and where "
+               "you're not covered at all, and prices the weight spent on a "
+               "car that can't actually happen.",
+    "earshot": "Before you spend a test day, this checks the day can even "
+               "answer your question — how many laps you'd really need, "
+               "what order to run them in so worn tires don't fake the "
+               "result, and whether your measuring gear is precise enough "
+               "to be worth the trip.",
+    "fusebox": "When the car hits something hard, ONE part breaks first. "
+               "This shows which part that actually is (it's a coin flip "
+               "more often than you'd think), makes sure it's the cheap "
+               "one you have a spare for \u2014 never the battery box \u2014 and "
+               "prints exactly what to change if it isn't.",
+    "ghost": "Your parts bend under load, and the bent shape changes how "
+             "the tyre grips — which bends them more. This shows the "
+             "geometry the car really has in a hard corner or over a "
+             "curb, whether the bending flips your camber the wrong way, "
+             "and whether any link gets overloaded while it happens.",
     "cost": "Competitions score you on cost too. This builds the price list "
             "of the car and shows what each decision costs.",
     "weight": "One agreed list of how heavy everything is and where it sits — "
@@ -4270,6 +4351,53 @@ _BRIEF_TOOL_FEATURES = {
         "the silent ones — recorded with every run, sealed like a contract.",
         "When a wire trips, the deviation pattern names the most likely "
         "corruption class, so the audit starts with a suspect.",
+    ],
+    "phantom": [
+        "Each consumer discloses the value its sizing actually uses; every "
+        "hedge is priced in σ of that quantity's own evidence-graded band.",
+        "One sealed Margin Charter percentile judges the lot — ALIGNED, "
+        "STACKED, UNDER-COVERED, NAKED, or ANTI-HEDGED — with the excess "
+        "priced as releasable envelope.",
+        "The two-cars detector flags quantities assumed >1σ apart, β states "
+        "the odds each load case defends against, and the three-cars view "
+        "prices the envelope spent on impossible cars.",
+    ],
+    "earshot": [
+        "Laps-per-config from the two-sample power formula, MDE for the "
+        "session you actually have, and the pack itself sets the lap budget "
+        "— the test plan is spent in the same kWh the race is.",
+        "AABB / ABAB / ABBA drift bias computed exactly for linear drift, "
+        "with the swap cost each ordering pays shown next to it.",
+        "Instrument arithmetic decides the evidence grade a test EARNS; a "
+        "plan that can't beat the ledger's current band is MOOT, and the "
+        "sealed sheet turns 'inconclusive' into a priced miss probability.",
+    ],
+    "fusebox": [
+        "P(fails first) per element from the minimum of independent normal "
+        "capacities \u2014 \u03c3 from the Proof Engine's grade\u2192band law, fifth "
+        "consumer \u2014 deterministic quadrature with a napkin-checkable "
+        "pairwise form.",
+        "Verdicts vs a sealed Fuse Charter: FUSED / COIN-FLIP / INVERTED / "
+        "UNFUSED / BREACH-RISK (an S3 element that can plausibly be first "
+        "outranks everything), plus the expected overload bill in $ and "
+        "days.",
+        "Three exact fixes per rival \u2014 soften the fuse (floored), stiffen "
+        "the rival, or SHARPEN its evidence grade: a pull test can buy the "
+        "ordering three weeks of re-machining can't. Incidents judge "
+        "AS-DESIGNED / SURPRISE / BREACH, and every break banks a free "
+        "capacity datum.",
+    ],
+    "ghost": [
+        "Walks a transient overload and solves the DEFORMED suspension "
+        "geometry at each instant — quasi-static compliance along the "
+        "load history, cached, laptop-cheap by time-scale separation.",
+        "Reports geometry drift vs rigid intent (camber/toe/RC/contact "
+        "patch), member load-path migration, and each link’s transient "
+        "FoS on yield AND pinned-pinned Euler buckling vs the 1.5 rule.",
+        "Closes the tyre-force feedback loop with the gain MEASURED by "
+        "contraction: verdicts FEEDBACK_DIVERGENT / COMPLIANCE_INVERTED "
+        "/ MARGIN_BREACHED / COMPLIANCE_DEGRADED / RIGID_FAITHFUL, and "
+        "fast edges flagged as a job for FEA, not answered.",
     ],
     "cost": [
         "The FSAE Cost event BOM is auto-seeded from the Integration ledger, "
@@ -10938,6 +11066,10 @@ tab_dfmea    = _id_to_container["dfmea"]
 tab_frames   = _id_to_container["frames"]
 tab_proof    = _id_to_container["proof"]
 tab_saboteur = _id_to_container["saboteur"]
+tab_phantom  = _id_to_container["phantom"]
+tab_earshot  = _id_to_container["earshot"]
+tab_fusebox  = _id_to_container["fusebox"]
+tab_ghost    = _id_to_container["ghost"]
 
 # --- 🎯 Proof Planner — first tab under the ui/ strangulation pattern. ------ #
 # All physics lives in suspension/proof_engine.py; all drawing in
@@ -10958,6 +11090,51 @@ with tab_saboteur:
         _saboteur_mod.render()
     except Exception as _sb_err:            # noqa: BLE001 — a broken tab must
         st.error(f"Saboteur failed to render: {_sb_err}")  # not kill the app
+
+# --- 👻 Phantom Car — the margin audit, same ui/ pattern. ------------------ #
+# All physics lives in suspension/phantom_car.py; all drawing in
+# ui/phantom_car.py. Shares the proof_pedigree session map with the Proof
+# Planner and the Saboteur — one pedigree, three consumers, on purpose.
+with tab_phantom:
+    try:
+        from ui import phantom_car as _phantom_mod
+        _phantom_mod.render()
+    except Exception as _ph_err:            # noqa: BLE001 — a broken tab must
+        st.error(f"Phantom Car failed to render: {_ph_err}")  # not kill app
+
+# --- 🎙️ Earshot — the test-day power audit, same ui/ pattern. -------------- #
+# All statistics live in suspension/earshot.py; all drawing in ui/earshot.py.
+# Reads the same pedigree the Proof Planner maintains — one ledger, fourth
+# consumer, on purpose: the noise floor and effect sizes are ledger numbers.
+with tab_earshot:
+    try:
+        from ui import earshot as _earshot_mod
+        _earshot_mod.render()
+    except Exception as _ear_err:           # noqa: BLE001 — a broken tab must
+        st.error(f"Earshot failed to render: {_ear_err}")  # not kill the app
+
+# --- ⛓️ Fusebox — the failure-order audit, same ui/ pattern. ---------------- #
+# All statistics live in suspension/fusebox.py; all drawing in ui/fusebox.py.
+# Capacities are new one-line declarations, but their σ pricing is the exact
+# Proof Engine evidence-grade band law — one pedigree law, fifth consumer.
+with tab_fusebox:
+    try:
+        from ui import fusebox as _fusebox_mod
+        _fusebox_mod.render()
+    except Exception as _fb_err:            # noqa: BLE001 — a broken tab must
+        st.error(f"Fusebox failed to render: {_fb_err}")  # not kill the app
+
+# --- 👻🔩 Ghost Topology — transient compliance audit, same ui/ pattern. ----- #
+# All physics lives in suspension/ghost_topology.py (joining kinematics,
+# loadpath, compliance and the transient solver); all drawing in
+# ui/ghost_topology.py. Reads the live hardpoints when the Kinematics tab has
+# set them — one geometry, another consumer, on purpose.
+with tab_ghost:
+    try:
+        from ui import ghost_topology as _ghost_mod
+        _ghost_mod.render()
+    except Exception as _gh_err:            # noqa: BLE001 — a broken tab must
+        st.error(f"Ghost Topology failed to render: {_gh_err}")  # not kill app
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
