@@ -1383,15 +1383,194 @@ def get_store():
         cached = _make_store()
         st.session_state["_project_store"] = cached
         st.session_state["_project_store_ws"] = ws_key
-        # Integration ledger travels WITH the project now. Seed the session
-        # copy from the loaded store; on a workspace SWITCH with no saved
-        # ledger, reset to blank rather than leaking the previous tenant's
-        # declarations into this one.
+        # Integration ledger seeding — LOCAL (no-tenancy) mode only. When a
+        # workspace context is active, the ledger is a CROSS-WORKSPACE shared
+        # surface and is seeded by get_shared_store() instead, so switching
+        # workspaces neither reseeds nor resets it.
+        if ctx is None:
+            _saved_led = getattr(cached, "ledger", {}) or {}
+            if _saved_led:
+                st.session_state.ledger = dict(_saved_led)
+            elif _switching:
+                st.session_state.ledger = interfaces_mod.blank_ledger().as_dict()
+    return cached
+
+
+# --------------------------------------------------------------------------- #
+#  ECOSYSTEM-SHARED SCOPE
+#  (Lead Notes · Integration ledger · Team CAD library)
+#
+#  Product decision: a project lead who creates workspaces and hands invite
+#  links to their subsystem leads is one ECOSYSTEM (an "org"). Within that
+#  ecosystem, these three surfaces are shared across ALL of its workspaces —
+#  a note posted, a ledger declaration, or a CAD file uploaded in any of them
+#  is visible from every other one. A different project lead's set of
+#  workspaces is a completely separate ecosystem: nothing crosses between
+#  ecosystems. Everything else (geometry, weights, decisions/handover, pedal
+#  inputs, …) stays strictly workspace-scoped as before.
+#
+#  Mechanism: each ecosystem has ONE designated shared workspace (a normal
+#  workspace row flagged is_shared_scope, provisioned server-side — see
+#  shared_scope.sql). A SECOND store is bound to that workspace id; all
+#  reads/writes of the three shared surfaces go through get_shared_store() /
+#  _make_shared_store(); the per-workspace store is untouched.
+#
+#  Resolution order for "which workspace is my ecosystem's shared scope":
+#    1. ctx attribute — auth_ui can stash shared_workspace_id on the
+#       WorkspaceContext at sign-in (preferred once workspace.py is updated);
+#    2. KINEMATIK_SHARED_WORKSPACE_ID env/secret — manual override for
+#       single-team deployments;
+#    3. the kinematik_shared_workspace(uuid) RPC (created by shared_scope.sql),
+#       called through whatever Supabase client handle the store backend
+#       exposes.
+#  If none resolve, the shared store FAILS CLOSED to the per-workspace store:
+#  no cross-workspace sharing, and — critically — no risk of leaking one
+#  ecosystem's notes into another. Server-side RLS enforces the ecosystem
+#  boundary regardless of anything this client does.
+#
+#  With tenancy OFF (ENABLE_LOGIN False) there is only one store, so the
+#  shared store IS the project store and behaviour is exactly as before.
+# --------------------------------------------------------------------------- #
+
+def _resolve_shared_workspace_id():
+    """The id of THIS ecosystem's shared workspace, or None if it can't be
+    determined (fail closed -> workspace-scoped). Cached in session_state per
+    active workspace; a failed resolution is also cached for the session so we
+    don't re-hit the backend on every rerun. Never raises."""
+    ctx = _active_workspace_ctx()
+    if ctx is None:
+        return None
+    _ws = getattr(ctx, "workspace_id", None)
+    _cache = st.session_state.setdefault("_kx_shared_ws_cache", {})
+    if _ws in _cache:
+        return _cache[_ws]
+
+    _resolved = None
+    # 1) stashed on the context at sign-in (workspace.py / auth_ui support).
+    for _attr in ("shared_workspace_id", "org_shared_workspace_id",
+                  "ecosystem_workspace_id"):
+        _v = getattr(ctx, _attr, None)
+        if _v:
+            _resolved = str(_v)
+            break
+    # 2) manual override for single-team deployments.
+    if _resolved is None:
+        try:
+            _resolved = (os.environ.get("KINEMATIK_SHARED_WORKSPACE_ID")
+                         or st.secrets.get("KINEMATIK_SHARED_WORKSPACE_ID")
+                         or None)
+        except Exception:
+            _resolved = os.environ.get("KINEMATIK_SHARED_WORKSPACE_ID") or None
+    # 3) ask the server (RPC from shared_scope.sql) through any Supabase
+    #    client handle we can reach on the active store's backend.
+    if _resolved is None and _ws:
+        try:
+            _backend = getattr(get_store(), "backend", None)
+            _client = None
+            for _cattr in ("client", "supabase", "sb", "_client"):
+                _client = getattr(_backend, _cattr, None)
+                if _client is not None and hasattr(_client, "rpc"):
+                    break
+                _client = None
+            if _client is not None:
+                _res = _client.rpc("kinematik_shared_workspace",
+                                   {"for_workspace": str(_ws)}).execute()
+                _data = getattr(_res, "data", None)
+                if _data:
+                    _resolved = str(_data if isinstance(_data, str)
+                                    else (_data[0] if isinstance(_data, list)
+                                          else _data))
+        except Exception:
+            _resolved = None
+    if _resolved is not None and str(_resolved) == str(_ws):
+        # The active workspace IS the shared one (e.g. a one-workspace
+        # ecosystem) — the per-workspace store already covers it.
+        _resolved = None
+    _cache[_ws] = _resolved
+    return _resolved
+
+
+def _shared_workspace_ctx():
+    """A WorkspaceContext bound to THIS ecosystem's shared workspace, or None
+    when there is no tenancy, the shared workspace can't be resolved, or the
+    context can't be rebuilt. A None return simply falls back to the
+    per-workspace store. Never raises.
+
+    NB: WorkspaceContext.workspace_id is a read-only property derived from a
+    nested frozen Workspace, so we can't just mutate the id — we build a fresh
+    Workspace(id=shared) and a fresh context around it, carrying the SAME
+    signed-in identity (user_id / access_token / role / email) so Supabase RLS
+    still sees the human, and membership is re-checked server-side."""
+    ctx = _active_workspace_ctx()
+    if ctx is None:
+        return None
+    _shared_id = _resolve_shared_workspace_id()
+    if not _shared_id:
+        return None
+    try:
+        from suspension.workspace import WorkspaceContext as _WC, Workspace as _WS
+        _orig_ws = getattr(ctx, "workspace", None)
+        _shared_ws = _WS(
+            id=str(_shared_id),
+            name="(shared scope)",
+            kind=getattr(_orig_ws, "kind", "team") or "team",
+        )
+        return _WC(
+            workspace=_shared_ws,
+            user_id=getattr(ctx, "user_id", "") or "",
+            access_token=getattr(ctx, "access_token", "") or "",
+            role=getattr(ctx, "role", "member") or "member",
+            email=getattr(ctx, "email", "") or "",
+        )
+    except Exception:
+        return None
+
+
+def _make_shared_store():
+    """Construct a store bound to this ecosystem's shared scope. Falls back to
+    the ordinary per-workspace/local store when tenancy is off or the shared
+    scope can't be resolved, so nothing can crash on the fallback path."""
+    _ctx = _shared_workspace_ctx()
+    if _ctx is not None:
+        try:
+            from suspension.workspace import workspace_store
+            _s = workspace_store(_ctx, root=os.getcwd())
+            _s._kx_shared_scope = True
+            return _s
+        except Exception:
+            pass
+    return _make_store()
+
+
+def shared_scope_active():
+    """True when the three shared surfaces are genuinely riding a separate
+    ecosystem-shared workspace (vs. quietly falling back to the per-workspace
+    store). Lets UI copy be honest about delivery scope."""
+    return (_active_workspace_ctx() is not None
+            and _resolve_shared_workspace_id() is not None)
+
+
+def get_shared_store():
+    """Session-cached shared-scope store (mirror of get_store()).
+
+    With tenancy OFF this simply returns get_store() — one store, one cache,
+    zero behaviour change. With tenancy ON it caches its own store keyed by
+    the active workspace (a switch may land in a DIFFERENT ecosystem, whose
+    shared scope is a different workspace) and seeds the session's Integration
+    ledger from the SHARED store — the ledger is an ecosystem surface, so
+    switching between workspaces of the SAME ecosystem doesn't reset it."""
+    ctx = _active_workspace_ctx()
+    if ctx is None:
+        return get_store()
+    _ctx_key = getattr(ctx, "workspace_id", None) or "__ws__"
+    cached = st.session_state.get("_shared_project_store")
+    if cached is None or st.session_state.get("_shared_project_store_for") != _ctx_key:
+        cached = _make_shared_store()
+        st.session_state["_shared_project_store"] = cached
+        st.session_state["_shared_project_store_for"] = _ctx_key
         _saved_led = getattr(cached, "ledger", {}) or {}
-        if _saved_led:
+        if _saved_led and not (st.session_state.get("ledger") or {}).get("interfaces"):
             st.session_state.ledger = dict(_saved_led)
-        elif _switching:
-            st.session_state.ledger = interfaces_mod.blank_ledger().as_dict()
     return cached
 
 
@@ -1448,9 +1627,13 @@ def publish_ledger(led_dict):
     persist it with the project, so declarations survive restarts and show up
     in Project history ("suspension: wheel_rate 28 → 31 by lead@…"). Before
     this, the ledger lived only in session_state and evaporated whenever
-    Streamlit Cloud recycled the process."""
+    Streamlit Cloud recycled the process.
+
+    The ledger is a CROSS-WORKSPACE shared surface: it persists to the shared
+    scope store, so a declaration made in one workspace is visible from every
+    other workspace (with tenancy off this is the ordinary project store)."""
     st.session_state["ledger"] = led_dict
-    _s = get_store()
+    _s = get_shared_store()
     _s.ledger = dict(led_dict)
     return save_store(_s)
 
@@ -1510,11 +1693,17 @@ def build_project_bundle(hp=None) -> dict:
     }
 
 
-def apply_project_bundle(data: dict) -> None:
+def apply_project_bundle(data: dict, include_shared_ledger: bool = True) -> None:
     """Apply an exported kinematik_project.json bundle to THIS session and
     persist it to the active project store. One code path for both the
     'Load project' uploader and the migration 'restore your backup' flow, so
-    the two can never drift. Raises on a malformed file — callers surface it."""
+    the two can never drift. Raises on a malformed file — callers surface it.
+
+    include_shared_ledger: with ecosystem sharing active, the Integration
+    ledger in a backup would overwrite the TEAM-WIDE shared ledger, not just
+    this workspace's view — callers in tenancy mode pass the user's explicit
+    choice (checkbox, default off). In local mode it's always applied, as
+    before."""
     if not isinstance(data, dict):
         raise ValueError("not a KinematiK project bundle (expected a JSON object)")
     if "hardpoints" in data:
@@ -1529,7 +1718,12 @@ def apply_project_bundle(data: dict) -> None:
     if "vehicle" in data:
         st.session_state.vp = data["vehicle"]
     if data.get("ledger"):
-        publish_ledger(data["ledger"])
+        if include_shared_ledger or not shared_scope_active():
+            publish_ledger(data["ledger"])
+        else:
+            st.info("Skipped the backup's Integration ledger — the live "
+                    "team-wide ledger was left untouched (tick the checkbox "
+                    "before restoring if you really mean to replace it).")
     if "handover" in data:
         _s = get_store()
         _s._apply(data["handover"])
@@ -1551,8 +1745,15 @@ def save_store(store):
     # Catch-all ledger sync: any save also carries the session's current
     # ledger, so declarations persist even from flows that predate
     # publish_ledger(). Never let a blank session wipe a loaded ledger.
+    # Tenancy note: the ledger is a CROSS-WORKSPACE shared surface, so this
+    # sync only applies to the shared-scope store (or the single local store
+    # when tenancy is off) — a per-workspace save must NOT stamp a copy of the
+    # global ledger into that tenant's row.
     _sess_led = st.session_state.get("ledger") or {}
-    if (_sess_led.get("interfaces") or {}) and _sess_led != getattr(store, "ledger", {}):
+    _ledger_lives_here = (getattr(store, "_kx_shared_scope", False)
+                          or _active_workspace_ctx() is None)
+    if (_ledger_lives_here and (_sess_led.get("interfaces") or {})
+            and _sess_led != getattr(store, "ledger", {})):
         store.ledger = dict(_sess_led)
     ok = store.save()
     if not ok and getattr(store, "save_conflict", None):
@@ -1695,23 +1896,25 @@ NOTE_POLL_SECONDS = 2
 
 
 def _peek_notes_version():
-    """Cheap probe: the shared store's current version tag, without loading the
-    whole project. None means 'couldn't tell' -> caller should do a full read
-    rather than assume nothing changed. Never raises. Tenant-aware via _make_store."""
+    """Cheap probe: the current version tag of the SHARED cross-workspace
+    store (notes are global — every workspace polls the same scope), without
+    loading the whole project. None means 'couldn't tell' -> caller should do
+    a full read rather than assume nothing changed. Never raises."""
     try:
-        return _make_store().read_version()
+        return _make_shared_store().read_version()
     except Exception:
         return None
 
 
 def _load_notes_from_disk():
-    """Read notes straight from the shared backend, bypassing the per-session
-    cached store, so we see what *other* sessions have written. Never raises.
+    """Read notes straight from the SHARED cross-workspace backend, bypassing
+    the per-session cached store, so we see what other sessions — in ANY
+    workspace — have written. Never raises.
 
     EXPENSIVE path (full store construction); poll_note_notifications gates it
     behind the cheap version probe so it only runs when something changed."""
     try:
-        fresh = _make_store()
+        fresh = _make_shared_store()
         return list(fresh.notes)
     except Exception:
         return []
@@ -2650,9 +2853,18 @@ def render_migration_surfaces():
                         "and pick up exactly where you left off.")
                 _up = st.file_uploader("Restore backup (.json)", type=["json"],
                                        key="_mig_restore_up")
+                _inc_led = True
+                if shared_scope_active():
+                    _inc_led = st.checkbox(
+                        "Also replace the TEAM-WIDE shared Integration "
+                        "ledger with this backup's copy (affects every "
+                        "workspace in your team — leave off if the team is "
+                        "already declaring numbers)",
+                        value=False, key="_mig_restore_inc_ledger")
                 if _up is not None:
                     try:
-                        apply_project_bundle(json.load(_up))
+                        apply_project_bundle(json.load(_up),
+                                             include_shared_ledger=_inc_led)
                         st.success("Backup restored — geometry, vehicle, "
                                    "ledger, handover, and pedal inputs are "
                                    "back, and now saved to your workspace.")
@@ -2782,6 +2994,8 @@ _TAB_META = {
     "earshot":     ("🎙️", "Earshot"),
     "fusebox":     ("⛓️", "Fusebox"),
     "ghost":       ("👻🔩", "Ghost Topology"),
+    "phantom_env": ("📦👻", "Phantom Envelope"),
+    "thermic":     ("👻🔥", "ThermicPatch"),
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
@@ -2800,10 +3014,11 @@ _FULL_ORDER = list(_TAB_META.keys())
 # ========================================================================== #
 _TAB_CATEGORIES = [
     ("testing",  "🧪", "Testing & Simulation",
-     ["kinematics", "roll", "tire", "aero", "ev", "laptime",
+     ["kinematics", "roll", "tire", "thermic", "aero", "ev", "laptime",
       "setup"]),
     ("design",   "🛠️", "Design & Sizing",
-     ["brakes", "accum", "pcb", "compliance", "ghost", "teamfit", "model3d"]),
+     ["brakes", "accum", "pcb", "compliance", "ghost", "phantom_env",
+      "teamfit", "model3d"]),
     ("checks",   "✅", "Checks & Integration",
      ["integration", "frames", "validation", "proof", "saboteur", "phantom",
       "earshot", "fusebox", "dfmea", "tractive"]),
@@ -2836,7 +3051,7 @@ _SHARED_IDS = ["model3d", "integration", "frames", "registry", "docs", "notes", 
 # needs the EV tab, where radiator sizing/CAD lives; brakes wants lap time & GGV
 # to see how brake balance plays out on track).
 _ROLE_TABS = {
-    "suspension": ["kinematics", "roll", "compliance", "tire",
+    "suspension": ["kinematics", "roll", "compliance", "tire", "thermic",
                    "setup", "laptime"],
     "aero":       ["aero", "laptime", "setup"],
     "powertrain": ["ev", "laptime", "setup", "dfmea"],
@@ -2848,7 +3063,7 @@ _ROLE_TABS = {
     "dataacq":    ["pcb", "dfmea"],
     # brakes wants Track Testing (lap time + GGV) to see brake balance on track,
     # plus tyre grip.
-    "brakes":     ["brakes", "tire", "laptime"],
+    "brakes":     ["brakes", "tire", "thermic", "laptime"],
     "chassis":    ["teamfit", "compliance"],
     "cost":       ["cost"],
     "everyone":   [],   # just the shared spine
@@ -3212,6 +3427,21 @@ _BRIEF_TOOLS = {
         "it to the compliance solve along the load history — laptop "
         "arithmetic — because the corner, load-path and transient "
         "stacks already live together here."),
+    "thermic": (
+        "The flash-heat grip audit: marches a lightweight 3-node radial "
+        "thermal ladder (Surface \u2192 Core \u2192 Carcass) along the same "
+        "transient Ghost Topology solves, and scales the Magic-Formula "
+        "peak-grip factor D by the CORE tread temperature at every "
+        "instant \u2014 reporting the worst millisecond of thermal grip loss.",
+        "A Pacejka force law has no temperature, so every grip number "
+        "elsewhere is a single-temperature snapshot. You need this to catch "
+        "the tyre sliding itself out of its thermal window mid-corner \u2014 "
+        "the flash-heat spike and the newtons of lateral force it deletes "
+        "that a static grip number cannot see.",
+        "A full 3D FEA heat-transfer solve takes hours; the honest shortcut "
+        "is an explicit 1D finite-difference ladder run along the force/slip "
+        "history you already solved \u2014 laptop arithmetic \u2014 reusing the "
+        "co-sim channel's thermal parameters so the two describe one tyre."),
     "cost": (
         "FSAE Cost event BOM, auto-seeded from the Integration ledger, CSV "
         "export ready.",
@@ -3321,6 +3551,10 @@ _BRIEF_SIMPLE = {
              "geometry the car really has in a hard corner or over a "
              "curb, whether the bending flips your camber the wrong way, "
              "and whether any link gets overloaded while it happens.",
+    "thermic": "Tyres only grip in a temperature window. This shows how hot "
+               "the tread gets in a hard corner, whether it overheats out of "
+               "that window mid-event, and how much grip the heat quietly "
+               "steals \u2014 which a normal grip number can't see.",
     "cost": "Competitions score you on cost too. This builds the price list "
             "of the car and shows what each decision costs.",
     "weight": "One agreed list of how heavy everything is and where it sits — "
@@ -6883,8 +7117,10 @@ def _logged_record_sections(subsystem_key):
         sections.append(("Decisions logged to Handover", lines))
 
     # --- Lead notes to/from this subsystem --------------------------------- #
+    # Notes are a cross-workspace shared surface — read them from the shared
+    # store, not the per-workspace one (decisions above stay workspace-scoped).
     try:
-        _notes = [n for n in _store.notes
+        _notes = [n for n in get_shared_store().notes
                   if n.to_team == subsystem_key or n.from_team == subsystem_key]
         _notes = sorted(_notes, key=lambda n: getattr(n, "ts", ""), reverse=True)
     except Exception:
@@ -11291,6 +11527,8 @@ tab_phantom  = _id_to_container["phantom"]
 tab_earshot  = _id_to_container["earshot"]
 tab_fusebox  = _id_to_container["fusebox"]
 tab_ghost    = _id_to_container["ghost"]
+tab_phantom_env = _id_to_container["phantom_env"]
+tab_thermic  = _id_to_container["thermic"]
 
 # --- 🎯 Proof Planner — first tab under the ui/ strangulation pattern. ------ #
 # All physics lives in suspension/proof_engine.py; all drawing in
@@ -11356,6 +11594,33 @@ with tab_ghost:
         _ghost_mod.render()
     except Exception as _gh_err:            # noqa: BLE001 — a broken tab must
         st.error(f"Ghost Topology failed to render: {_gh_err}")  # not kill app
+
+# --- 📦👻 Phantom Envelope — swept-load packaging, same ui/ pattern. -------- #
+# All physics lives in suspension/phantom_envelope.py (which joins kinematics,
+# compliance and the Ghost Topology engine); all drawing in
+# ui/phantom_envelope.py. Reads the live hardpoints when the Kinematics tab has
+# set them — one geometry, another consumer, on purpose. Carves the rigid motion
+# sweep and the compliance-warped loaded sweep, and answers 'does my mount clear
+# the arm?' as a fast clearance query against the swept capsules.
+with tab_phantom_env:
+    try:
+        from ui import phantom_envelope as _phantom_env_mod
+        _phantom_env_mod.render()
+    except Exception as _pe_err:            # noqa: BLE001 — a broken tab must
+        st.error(f"Phantom Envelope failed to render: {_pe_err}")  # not kill app
+
+# --- 👻🔥 ThermicPatch — flash-heat grip window, same ui/ pattern. ---------- #
+# All physics lives in suspension/thermic_patch.py (a lightweight 3-node radial
+# thermal ladder that reuses suspension/tire_thermal.py's parameters, marched
+# along the same transient the Ghost Topology engine solves); all drawing in
+# ui/thermic_patch.py. Reads no live hardpoints — it consumes the transient
+# force/slip history and scales Pacejka grip by core temperature per instant.
+with tab_thermic:
+    try:
+        from ui import thermic_patch as _thermic_mod
+        _thermic_mod.render()
+    except Exception as _tp_err:            # noqa: BLE001 — a broken tab must
+        st.error(f"ThermicPatch failed to render: {_tp_err}")  # not kill app
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
@@ -13215,7 +13480,12 @@ with tab_car:
     st.caption("Everyone's CAD in one place, the SES location pack, and a "
                "ready-to-run ANSYS torsion deck — all from the shared 3D model.")
 
-    _cad_store = get_store()
+    # The Team CAD library is a CROSS-WORKSPACE shared surface: uploads,
+    # deletions, and reads below (including the torsion-deck / SES exports
+    # further down that reuse this handle) all go through the shared-scope
+    # store, so a file dropped in one workspace shows up in every workspace's
+    # library.
+    _cad_store = get_shared_store()
 
     # ----------------------------------------------------------------- #
     #  1 · Team CAD library
@@ -22549,12 +22819,17 @@ with tab6:
                         rationale=edited, author="TEAM FIT", tags="auto-captured"))
                     posted = ""
                     if notify_team != "(don't notify)":
-                        _s.add_note(project_mod.Note(
+                        # The notification is a Lead Note — a cross-workspace
+                        # shared surface — so it posts to the SHARED store
+                        # (the decision above stays in this workspace).
+                        _ns = _make_shared_store()
+                        _ns.add_note(project_mod.Note(
                             from_team=team, to_team=notify_team,
                             message=(f"{part_name} {res['verdict'].lower()} vs chassis "
                                      f"(min {uval(res['min_clearance_mm'], 'mm', fmt='{:.1f}')}). {edited}"),
                             author=note_author or "TEAM FIT",
                             is_request=True, urgent=notify_urgent))
+                        _ns.save()
                         posted = f" · note sent to {integ_mod.TEAMS[notify_team]['label']}"
                     _s.save()
                     st.success(f"Logged to handover{posted}.")
@@ -22947,7 +23222,10 @@ with tab7:
 
 # ----------------------------- TAB 8 --------------------------------------- #
 with tab8:
-    nstore = _make_store()
+    # Lead Notes are a CROSS-WORKSPACE shared surface: every read, post,
+    # resolve/reopen, and read-receipt below goes through the shared-scope
+    # store, so a note posted in one workspace is seen from all of them.
+    nstore = _make_shared_store()
 
     # The lead is looking at the notes — clear the unread badge for this session
     # and treat everything currently on disk as seen.
@@ -23060,10 +23338,15 @@ with tab8:
                   # Genuinely delivered: written to the shared store every other
                   # session polls, so their poller will toast them within
                   # NOTE_POLL_SECONDS. This is the real "it reached other users".
+                  _scope_note = ""
+                  if _active_workspace_ctx() is not None and not shared_scope_active():
+                      _scope_note = (" (this workspace only — ecosystem-wide "
+                                     "sharing isn't provisioned yet, see "
+                                     "shared_scope.sql)")
                   st.session_state["_last_post_confirm"] = (
                       f"✅ Posted to shared storage — {_recipients} will be "
-                      f"notified within {NOTE_POLL_SECONDS}s, and you'll see "
-                      "“Seen by” below once they open this tab.")
+                      f"notified within {NOTE_POLL_SECONDS}s{_scope_note}, and "
+                      "you'll see “Seen by” below once they open this tab.")
                   st.toast(f"Delivered — {_recipients} will be notified.", icon="✅")
               elif _ok and not _shared:
                   # Saved, but only to local/ephemeral storage — on Streamlit Cloud
@@ -24522,7 +24805,10 @@ def render_laptime(_pt):
                         _it.updated_by = "electrics (from Excel)"
                         _led_ev.set(_it)
                     publish_ledger(_led_ev.as_dict())
-                    _save_target = get_store()
+                    # Belt-and-braces re-save targets the SHARED store — the
+                    # ledger is cross-workspace, so it must never be stamped
+                    # into a single workspace's row.
+                    _save_target = get_shared_store()
                     if hasattr(_save_target, "ledger"):
                         _save_target.ledger = _led_ev.as_dict()
                         save_store(_save_target)
@@ -27233,9 +27519,16 @@ sc2.download_button("⬇ Sweep data (.csv)", buf.getvalue(),
 with sc3:
     loaded = st.file_uploader("📂 Load project (.json)", type=["json"],
                               key="load_project", label_visibility="visible")
+    _ld_inc_led = True
+    if shared_scope_active():
+        _ld_inc_led = st.checkbox(
+            "Also replace the TEAM-WIDE shared Integration ledger with this "
+            "file's copy (affects every workspace in your team)",
+            value=False, key="_load_inc_ledger")
     if loaded is not None:
         try:
-            apply_project_bundle(json.load(loaded))
+            apply_project_bundle(json.load(loaded),
+                                 include_shared_ledger=_ld_inc_led)
             st.success("Project loaded — geometry, vehicle, handover, and "
                        "pedal-box/throttle inputs restored.")
             st.rerun()
