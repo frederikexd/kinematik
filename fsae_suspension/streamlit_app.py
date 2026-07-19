@@ -3367,14 +3367,35 @@ _BRIEF_PURPOSE_MAP = {k: (lab, ids, line) for k, lab, ids, line in _BRIEF_PURPOS
 
 # Question 3 — the goal, offered per selected subteam. role -> list of
 # (goal_key, pill label, tab ids that achieve it).
+# Cross-cutting verification goals. These are offered to EVERY subteam (appended
+# to each role's list below) because the adversarial / value-of-information tools
+# — Proof Planner, Saboteur, Phantom Car, Earshot, Fusebox, Ghost Topology — are
+# not owned by one subsystem; any member with a number to trust, a test day to
+# spend, or a load path to survive needs them. Without these entries the six
+# tools ship with full briefing copy but are unreachable from the questionnaire.
+_VERIFY_GOALS = [
+    ("vg_prove",  "Prove my numbers are worth simulating (plan the next test/sim)",
+     ["proof", "saboteur"]),
+    ("vg_margin", "Check the team isn't stacking hidden safety margin",
+     ["phantom"]),
+    ("vg_testday", "Make a track/test day actually answer the question",
+     ["earshot"]),
+    ("vg_survive", "See what breaks first & how the car deforms under overload",
+     ["fusebox", "ghost"]),
+    ("vg_oversee", "Track team progress, provenance & decision history",
+     ["registry", "notes", "analytics"]),
+]
+
 _ROLE_GOALS = {
     "suspension": [
         ("susp_geo",   "Nail the geometry (camber gain, bump steer, roll centres)",
          ["kinematics", "roll"]),
         ("susp_flex",  "Make sure nothing flexes (member loads & stiffness)",
-         ["compliance"]),
+         ["compliance", "ghost"]),
         ("susp_setup", "Find the setup (springs, ARBs, balance)",
          ["setup", "tire", "laptime"]),
+        ("susp_verify", "Stress-test the corner under transient overload",
+         ["ghost", "fusebox", "proof"]),
     ],
     "aero": [
         ("aero_size", "Size wings & diffuser for target downforce/drag",
@@ -3382,7 +3403,7 @@ _ROLE_GOALS = {
         ("aero_map",  "Aero map & balance across the envelope",
          ["aero", "laptime"]),
         ("aero_pre",  "Shortlist shapes before CFD / wind-tunnel time",
-         ["aero", "validation"]),
+         ["aero", "validation", "proof"]),
     ],
     "powertrain": [
         ("pt_arch",   "Pick the motor / drivetrain architecture",
@@ -3390,7 +3411,7 @@ _ROLE_GOALS = {
         ("pt_energy", "Energy budget, regen & lap time",
          ["ev", "laptime"]),
         ("pt_rel",    "Reliability — failure modes & cooling load",
-         ["ev", "dfmea"]),
+         ["ev", "dfmea", "fusebox"]),
     ],
     "electrics": [
         ("el_pack",  "Size the accumulator (cells, topology, rules)",
@@ -3398,7 +3419,7 @@ _ROLE_GOALS = {
         ("el_pcb",   "Design or debug PCBs & wiring",
          ["pcb"]),
         ("el_safe",  "Pass the EV safety & rules gates",
-         ["tractive", "dfmea"]),
+         ["tractive", "dfmea", "fusebox"]),
     ],
     "cooling": [
         ("co_size", "Size radiators & flow for worst-case heat",
@@ -3411,6 +3432,8 @@ _ROLE_GOALS = {
          ["pcb"]),
         ("dq_int",  "Tie DAQ into the car electrical budget",
          ["pcb", "dfmea"]),
+        ("dq_power", "Make sure a test day can hear the effect you're chasing",
+         ["earshot"]),
     ],
     "brakes": [
         ("br_bias", "Get bias & lock-up order right",
@@ -3418,7 +3441,7 @@ _ROLE_GOALS = {
         ("br_therm", "Rotor thermal, fade & rotor design",
          ["brakes"]),
         ("br_hw",   "Hydraulics, bolts & bracket factors of safety",
-         ["brakes"]),
+         ["brakes", "fusebox"]),
     ],
     "chassis": [
         ("ch_frame", "Plan the frame (nodes, tubes, triangulation)",
@@ -3426,19 +3449,33 @@ _ROLE_GOALS = {
         ("ch_fit",   "Driver & component fit",
          ["teamfit"]),
         ("ch_stiff", "Stiffness & load paths",
-         ["compliance"]),
+         ["compliance", "ghost"]),
+        ("ch_survive", "Which member breaks first under a big hit",
+         ["fusebox", "ghost"]),
     ],
     "cost": [
         ("cs_bom",    "Build the FSAE Cost event BOM",
          ["cost"]),
         ("cs_ledger", "Weight & cost ledger across the team",
          ["cost", "weight"]),
+        ("cs_margin", "Find weight spent defending impossible load cases",
+         ["phantom"]),
     ],
     "everyone": [
         ("ev_all", "See the whole car and how the numbers connect",
          ["model3d", "integration"]),
     ],
 }
+
+# Append the shared verification goals to every subteam so the six adversarial /
+# VoI tools are reachable no matter which subsystem the member is on. (The
+# duplicate-goal-key guard in _brief_goal_options de-dups if a subteam already
+# names one of these tools via its own goal.)
+for _rk, _rgoals in _ROLE_GOALS.items():
+    _existing = {_g[0] for _g in _rgoals}
+    for _vg in _VERIFY_GOALS:
+        if _vg[0] not in _existing:
+            _rgoals.append(_vg)
 
 _CAT_LABEL = {ck: f"{cem} {clab}" for ck, cem, clab, _ in _TAB_CATEGORIES}
 
@@ -4117,6 +4154,190 @@ _BRIEF_GOAL_FEATURES = {
         "Manufacturing-release gate: a formal go/no-go that blocks any part "
         "whose loads are still estimates — so nothing goes to manufacture "
         "resting on unconfirmed inputs.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  CROSS-CUTTING VERIFICATION GOALS
+    #  (proof, saboteur, phantom, earshot, fusebox, ghost — wired to the
+    #  shared _VERIFY_GOALS and to per-role verification goals so every
+    #  member can reach them from the questionnaire.)
+    # ------------------------------------------------------------------ #
+    ("vg_prove", "proof"): [
+        "Every ledger number carries a ± band set by its evidence grade, and "
+        "the band inflates automatically as the evidence ages — so you can "
+        "see which numbers are actually soft before you trust them in a sim.",
+        "Validation actions are ranked by uncertainty retired per hour against "
+        "the objective you pick, so a 2-hour corner-scale can visibly outrank "
+        "an 8-hour ANSYS study — and the arithmetic shows exactly why.",
+        "Acceptance bands are sha256-sealed before the run, and results return "
+        "PASS, FAIL, or DISCREPANT — DISCREPANT meaning the run and the ledger "
+        "disagree about reality, which is the failure a raw sim never flags.",
+    ],
+    ("vg_prove", "saboteur"): [
+        "Every catalogued input-deck corruption (unit slips, frame flips, "
+        "dropped roll-up terms) is injected one at a time into a shadow ledger, "
+        "and the kill board shows exactly which ones would sail through a sim "
+        "looking plausible.",
+        "A greedy set-cover picks the fewest tripwire checksums that expose the "
+        "silent corruptions — chosen by detectability arithmetic, not folklore, "
+        "and sealed with every run like a contract.",
+        "When a tripwire trips, the deviation pattern names the most likely "
+        "corruption class, so your audit starts with a named suspect instead of "
+        "a blank page.",
+    ],
+    ("vg_margin", "phantom"): [
+        "Each subsystem discloses the design value its sizing actually uses, and "
+        "every hedge is priced in σ of that quantity's own evidence-graded band "
+        "— so hidden conservatism becomes a number for the first time.",
+        "One sha256-sealed Margin Charter percentile judges the whole car — "
+        "ALIGNED, STACKED, UNDER-COVERED, NAKED, or ANTI-HEDGED — with any "
+        "excess priced as weight you can release.",
+        "The two-cars detector flags quantities assumed more than 1σ apart, β "
+        "states the odds each load case defends against, and the three-cars view "
+        "prices the envelope spent defending statistically impossible cars.",
+    ],
+    ("vg_testday", "earshot"): [
+        "Laps-per-config come from the two-sample power formula, the minimum "
+        "detectable effect is computed for the session you actually have, and "
+        "the pack itself sets the lap budget — the test plan is spent in the "
+        "same kWh the race is.",
+        "Run-order drift bias (AABB / ABAB / ABBA) is computed exactly for "
+        "linear drift, with the swap cost each ordering pays shown next to it, "
+        "so worn tyres or a cooling pack can't fake your result.",
+        "Instrument arithmetic decides the evidence grade a test can EARN; a "
+        "plan that can't beat the ledger's current band is called MOOT before "
+        "the trailer loads, and the sealed sheet turns 'inconclusive' into a "
+        "priced miss probability.",
+    ],
+    ("vg_survive", "fusebox"): [
+        "For every credible overload chain, P(fails first) per element is solved "
+        "from the minimum of independent normal capacities, with σ inherited "
+        "from the Proof Engine's grade→band law — deterministic, napkin-"
+        "checkable arithmetic.",
+        "Verdicts against a sha256-sealed Fuse Charter — FUSED / COIN-FLIP / "
+        "INVERTED / UNFUSED / BREACH-RISK — flag when a forbidden element "
+        "(accumulator, cell restraint) could plausibly break first, plus the "
+        "expected overload bill in dollars and days.",
+        "Three exact fixes per rival — soften the fuse, stiffen the rival, or "
+        "SHARPEN its evidence grade so a $45 tie rod fails before the six-week "
+        "upright — and a pull test can buy the ordering three weeks of "
+        "re-machining can't.",
+    ],
+    ("vg_survive", "ghost"): [
+        "Walks a transient overload and solves the DEFORMED suspension geometry "
+        "at each instant — quasi-static compliance along the load history, "
+        "cached and laptop-cheap by time-scale separation.",
+        "Reports geometry drift vs your rigid intent (camber, toe, roll centre, "
+        "contact patch), member load-path migration, and each link's transient "
+        "FoS on both yield and pinned-pinned Euler buckling against the 1.5 "
+        "rule.",
+        "Closes the tyre-force feedback loop with the gain MEASURED by "
+        "contraction — verdicts FEEDBACK_DIVERGENT / COMPLIANCE_INVERTED / "
+        "MARGIN_BREACHED / COMPLIANCE_DEGRADED / RIGID_FAITHFUL — and flags "
+        "fast edges as a job for FEA rather than pretending to answer them.",
+    ],
+    ("susp_verify", "ghost"): [
+        "Walks a curb strike or transient corner and solves the geometry the "
+        "tyre ACTUALLY operates on at the load peak — catching compliance that "
+        "inverts your designed camber intent, which no static case can show.",
+        "Each suspension link gets a transient FoS on yield and buckling across "
+        "the whole load history, so an FoS that only dips mid-event is caught "
+        "instead of hiding between static snapshots.",
+        "The tyre-compliance feedback gain is measured (1.0 is instability), so "
+        "a corner that quietly runs away from your camber intent is named "
+        "before it's welded.",
+    ],
+    ("susp_verify", "fusebox"): [
+        "For a big lateral or curb hit, shows which suspension member breaks "
+        "FIRST — often a coin flip — and whether it's the cheap tie rod you "
+        "have a spare for rather than the upright.",
+        "Prices each overload chain in expected dollars and lead-time days, so "
+        "the failure order is a budgeting decision you make on purpose, not an "
+        "accident you discover at competition.",
+        "Names the exact change — soften, stiffen, or sharpen the evidence — "
+        "that moves the fuse onto the part you want to sacrifice.",
+    ],
+    ("susp_verify", "proof"): [
+        "Ranks what to prove next about the corner by uncertainty retired per "
+        "hour, so a corner-scale session that de-risks your compliance numbers "
+        "can outrank a full multibody run.",
+        "Seals the acceptance band for each suspension number before the run, "
+        "so 'FoS 1.05 is probably fine' can never be decided after seeing the "
+        "result.",
+    ],
+    ("ch_survive", "fusebox"): [
+        "For every credible frame overload, shows which tube or node yields "
+        "first and whether that ordering is the one you designed — never a "
+        "forbidden element.",
+        "Prices the overload bill in dollars and days and gives three exact "
+        "fixes, so the sacrificial member is a $-cheap, fast-to-replace one.",
+    ],
+    ("ch_survive", "ghost"): [
+        "Solves the deformed frame-and-suspension geometry through a transient "
+        "load so load-path migration under a big hit is visible before it "
+        "surprises you.",
+        "Reports transient FoS on yield and Euler buckling per member against "
+        "the 1.5 rule, flagging fast edges as an FEA job rather than answering "
+        "them cheaply.",
+    ],
+    ("dq_power", "earshot"): [
+        "Tells you how many laps your instrument and pack can actually support "
+        "for the effect you're chasing, so a sensor that's too noisy to hear a "
+        "0.3 s gain is caught before the test day is spent.",
+        "Computes the evidence grade a logging setup can EARN and calls a "
+        "plan MOOT if it can't beat the ledger's current band — so DAQ spec is "
+        "driven by what the data can prove, not by channel count.",
+    ],
+    ("cs_margin", "phantom"): [
+        "Adds up the safety margin every subteam quietly added on its own and "
+        "prices the weight spent defending load cases that can't all happen at "
+        "once — weight is cost and lap time.",
+        "Flags NAKED quantities where nobody added margin at all, so you cut "
+        "the double-counted grams without shaving the one number that was "
+        "actually exposed.",
+    ],
+    ("pt_rel", "fusebox"): [
+        "For a powertrain overload, shows which element breaks first and "
+        "guarantees it's never a forbidden one (accumulator, cell restraint), "
+        "with the expected bill in dollars and days.",
+        "Gives three exact fixes per failure chain, including 'sharpen the "
+        "evidence grade' — a bench test can buy the right failure order faster "
+        "than a redesign.",
+    ],
+    ("el_safe", "fusebox"): [
+        "Audits the electrical/tractive overload order so a forbidden element "
+        "can never be first to fail, judged against a sealed Fuse Charter "
+        "before you build the loom.",
+        "Prices each credible failure chain and names the cheapest fix that "
+        "restores a safe, rules-legal failure order.",
+    ],
+    ("aero_pre", "proof"): [
+        "Ranks which aero uncertainty to retire next per hour of effort, so a "
+        "quick tuft or tap-test can outrank booking CFD or tunnel time.",
+        "Seals the acceptance band for each shortlisted shape before the CFD "
+        "run, so a candidate can't be quietly re-graded to a pass after the "
+        "result comes in.",
+    ],
+    ("vg_oversee", "registry"): [
+        "Every declared parameter carries a source and a status, so you can "
+        "see at a glance which numbers the team is designing on and which are "
+        "still rumours.",
+        "Provenance links each value back to its origin — test data, supplier "
+        "spec, or a KinematiK calculation — so 'where did this number come "
+        "from?' always has a traceable answer.",
+    ],
+    ("vg_oversee", "notes"): [
+        "Lead Notes keeps the reasoning next to the numbers it justifies, so "
+        "the 'why' behind a decision survives handover, graduation and long "
+        "meetings.",
+        "New notes surface as live notifications to the other leads, so a "
+        "rationale isn't buried in a doc nobody reopens.",
+    ],
+    ("vg_oversee", "analytics"): [
+        "Usage and progress analytics show where the team's design effort is "
+        "actually going and what has stalled — before the schedule notices.",
+        "Per-subsystem activity lets a lead spot the quiet corner that's "
+        "behind while there's still time to move help onto it.",
     ],
 }
 
