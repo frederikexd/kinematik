@@ -88,6 +88,7 @@ _SUBMODULES = (
     "topology",
     "tractive_system",
     "transient",
+    "ghost_topology",   # Ghost Topology — transient compliance audit
     "tubeframe",          # Frame Planner — added from frame_planner branch
     "units",
     "adapter",
@@ -391,6 +392,17 @@ _FROM = {
     "brake_to_throttle_maneuver": ("transient", "brake_to_throttle_maneuver"),
     "curb_strike_maneuver": ("transient", "curb_strike_maneuver"),
     "run_maneuver":         ("transient", "run_maneuver"),
+    # ghost topology — transient compliance audit
+    "MemberSection":        ("ghost_topology", "MemberSection"),
+    "TireSensitivity":      ("ghost_topology", "TireSensitivity"),
+    "GhostCorner":          ("ghost_topology", "GhostCorner"),
+    "GhostInstant":         ("ghost_topology", "GhostInstant"),
+    "GhostThresholds":      ("ghost_topology", "GhostThresholds"),
+    "GhostAudit":           ("ghost_topology", "GhostAudit"),
+    "ghost_audit":          ("ghost_topology", "ghost_audit"),
+    "ghost_audit_transient": ("ghost_topology", "ghost_audit_transient"),
+    "render_ghost_md":      ("ghost_topology", "render_ghost_md"),
+    "uniform_sections":     ("ghost_topology", "uniform_sections"),
     "snap_oversteer_maneuver": ("transient", "snap_oversteer_maneuver"),
     "step_steer_maneuver":  ("transient", "step_steer_maneuver"),
     "transient_vs_qss_corner": ("transient", "transient_vs_qss_corner"),
@@ -551,6 +563,10 @@ __all__ = [
     "step_steer_maneuver", "snap_oversteer_maneuver", "brake_to_throttle_maneuver",
     "curb_strike_maneuver", "run_maneuver", "transient_vs_qss_corner",
     "transient",
+    # ghost topology — transient compliance audit
+    "MemberSection", "TireSensitivity", "GhostCorner", "GhostInstant",
+    "GhostThresholds", "GhostAudit", "ghost_audit", "ghost_audit_transient",
+    "render_ghost_md", "uniform_sections", "ghost_topology",
     # EV powertrain & energy
     "Powertrain", "EVParams", "EVLapSimulator",
     "EVRunResult", "ArchitectureComparison", "ev_powertrain",
