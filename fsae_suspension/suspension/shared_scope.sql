@@ -230,6 +230,101 @@ create policy ws_shared_visible on workspaces for select
 
 commit;
 
+-- ----------------------------------------------------------------------------
+--  6. Hide the shared-scope workspace from the oversight panel too.
+--     workspace_overview() (workspace_oversight.sql) lists every workspace the
+--     caller owns/leads — which includes the ecosystem's hidden shared-scope
+--     workspace, since the lead owns it. That workspace is plumbing, not a
+--     place anyone works, so it must not appear there any more than it appears
+--     in the picker (auth.py::list_workspaces already filters it out). We
+--     redefine the function with the SAME body plus a single `not
+--     w.is_shared_scope` guard. Wrapped in a guard so this is a no-op on
+--     deployments that never installed workspace_oversight.sql.
+-- ----------------------------------------------------------------------------
+do $$
+begin
+    if to_regprocedure('public.workspace_overview()') is null then
+        return;   -- oversight layer not installed; nothing to patch
+    end if;
+
+    create or replace function workspace_overview()
+    returns table (
+        workspace_id   uuid,
+        name           text,
+        kind           text,
+        my_role        text,
+        member_count   integer,
+        owner_email    text,
+        lead_emails    text[],
+        member_emails  text[],
+        viewer_emails  text[],
+        last_activity  timestamptz,
+        last_saved_by  text,
+        saves_7d       integer
+    )
+    language plpgsql stable security definer set search_path = public as $body$
+    declare has_history boolean := to_regclass('public.kinematik_project_history') is not null;
+    begin
+        return query
+        with mine as (
+            select m.workspace_id, m.role as my_role
+            from workspace_members m
+            where m.user_id = auth.uid() and m.role in ('owner', 'lead')
+        ),
+        roster as (
+            select m.workspace_id,
+                   count(*)::integer                                   as member_count,
+                   max(u.email::text) filter (where m.role = 'owner')  as owner_email,
+                   coalesce(array_agg(u.email::text order by u.email)
+                            filter (where m.role = 'lead'),   '{}')    as lead_emails,
+                   coalesce(array_agg(u.email::text order by u.email)
+                            filter (where m.role = 'member'), '{}')    as member_emails,
+                   coalesce(array_agg(u.email::text order by u.email)
+                            filter (where m.role = 'viewer'), '{}')    as viewer_emails
+            from workspace_members m
+            join auth.users u on u.id = m.user_id
+            where m.workspace_id in (select mine.workspace_id from mine)
+            group by m.workspace_id
+        ),
+        proj as (
+            select p.workspace_id,
+                   max(p.updated_at)                                as cur_updated,
+                   (array_agg(p.data->>'saved_by'
+                              order by p.updated_at desc))[1]       as cur_saved_by
+            from kinematik_workspace_projects p
+            where p.workspace_id in (select mine.workspace_id from mine)
+            group by p.workspace_id
+        ),
+        hist as (
+            select h.workspace_id,
+                   max(h.replaced_at)                               as last_snap,
+                   count(*) filter (where h.replaced_at
+                                           > now() - interval '7 days')::integer
+                                                                    as saves_7d
+            from kinematik_project_history h
+            where has_history
+              and h.workspace_id in (select mine.workspace_id from mine)
+            group by h.workspace_id
+        )
+        select w.id, w.name::text, w.kind::text, mine.my_role::text,
+               coalesce(roster.member_count, 0),
+               roster.owner_email,
+               coalesce(roster.lead_emails,   '{}'),
+               coalesce(roster.member_emails, '{}'),
+               coalesce(roster.viewer_emails, '{}'),
+               greatest(proj.cur_updated, hist.last_snap),
+               proj.cur_saved_by,
+               coalesce(hist.saves_7d, 0)
+        from mine
+        join workspaces w on w.id = mine.workspace_id
+        left join roster on roster.workspace_id = mine.workspace_id
+        left join proj   on proj.workspace_id   = mine.workspace_id
+        left join hist   on hist.workspace_id   = mine.workspace_id
+        where not w.is_shared_scope            -- hide ecosystem shared scope
+        order by lower(w.name);
+    end $body$;
+end $$;
+
 -- ============================================================================
 --  Optional (recommended) — auth_ui.py, ~4 lines in _render_workspace_picker
 --  right after `ctx = auth.context_for(session, ws_id)`:
