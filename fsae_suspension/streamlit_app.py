@@ -1,11 +1,11 @@
 # ============================================================================
-#  KinematiK — Formula SAE EV vehicle dynamics toolkit
+#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
 #  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
 
 """
-KinematiK — open-source Formula SAE EV design studio.
+KinematiK — open-source Formula SAE suspension design studio.
 
 Edit hardpoints live for any suspension topology — double wishbone, MacPherson,
 multi-link, trailing/semi-trailing arm, solid axle, twist-beam, truck steer, or a
@@ -29,7 +29,7 @@ import streamlit as st
 
 # First Streamlit command — the page frame (title, layout, sidebar chrome) is
 # on screen before ANY engineering package is evaluated.
-st.set_page_config(page_title="KinematiK · FSAE EV Design Studio",
+st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
                    page_icon="◢", layout="wide",
                    initial_sidebar_state="expanded")
 
@@ -882,6 +882,14 @@ ROCKER_POINTS = [
     ("rocker_spring",  "Rocker · spring pickup"),
     ("spring_inner",   "Spring/damper · chassis mount"),
 ]
+
+
+# Provenance / confidence badges live in suspension/provenance.py so the ui/
+# tool modules can import them without a circular dependency on this file. Re-
+# exported here for the app-body call sites. One honest provenance signal per
+# derived output, in the shared EvidenceGrade vocabulary — see that module.
+from suspension.provenance import (          # noqa: E402
+    provenance_tag, confidence_note, grade_key as _grade_key)
 
 
 def metric(label, value, unit="", cls=""):
@@ -2997,6 +3005,10 @@ _TAB_META = {
     "phantom_env": ("📦👻", "Phantom Envelope"),
     "thermic":     ("👻🔥", "ThermicPatch"),
     "stochastic":  ("🎲🛡️", "Stochastic Inversion"),
+    "genesis":     ("🧬", "InverseGenesis"),
+    "forge":       ("⚡🔩", "SimulForge"),
+    "morph":       ("🕸️🔩", "MorphMesh"),
+    "omni":        ("🪐", "OmniCore"),
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
@@ -3015,11 +3027,11 @@ _FULL_ORDER = list(_TAB_META.keys())
 # ========================================================================== #
 _TAB_CATEGORIES = [
     ("testing",  "🧪", "Testing & Simulation",
-     ["kinematics", "roll", "tire", "thermic", "aero", "ev", "laptime",
-      "setup"]),
+     ["kinematics", "roll", "tire", "thermic", "forge", "aero", "ev",
+      "laptime", "setup"]),
     ("design",   "🛠️", "Design & Sizing",
      ["brakes", "accum", "pcb", "compliance", "ghost", "phantom_env",
-      "stochastic", "teamfit", "model3d"]),
+      "stochastic", "genesis", "morph", "omni", "teamfit", "model3d"]),
     ("checks",   "✅", "Checks & Integration",
      ["integration", "frames", "validation", "proof", "saboteur", "phantom",
       "earshot", "fusebox", "dfmea", "tractive"]),
@@ -3053,10 +3065,12 @@ _SHARED_IDS = ["model3d", "integration", "frames", "registry", "docs", "notes", 
 # to see how brake balance plays out on track).
 _ROLE_TABS = {
     "suspension": ["kinematics", "roll", "compliance", "tire", "thermic",
-                   "stochastic", "setup", "laptime"],
+                   "forge", "stochastic", "genesis", "morph", "omni",
+                   "setup", "laptime"],
     "aero":       ["aero", "laptime", "setup"],
     "powertrain": ["ev", "laptime", "setup", "dfmea"],
-    "electrics":  ["accum", "ev", "laptime", "pcb", "tractive", "dfmea"],
+    "electrics":  ["accum", "ev", "laptime", "pcb", "tractive", "dfmea",
+                   "forge", "omni"],
     # cooling's radiator sizing / CAD import lives in the EV tab; it also owns
     # the DFMEA + tractive (precharge/PCM) surfaces.
     "cooling":    ["ev", "dfmea", "tractive"],
@@ -3065,7 +3079,7 @@ _ROLE_TABS = {
     # brakes wants Track Testing (lap time + GGV) to see brake balance on track,
     # plus tyre grip.
     "brakes":     ["brakes", "tire", "thermic", "laptime"],
-    "chassis":    ["teamfit", "compliance"],
+    "chassis":    ["teamfit", "compliance", "morph", "omni"],
     "cost":       ["cost"],
     "everyone":   [],   # just the shared spine
 }
@@ -3428,6 +3442,75 @@ _BRIEF_TOOLS = {
         "it to the compliance solve along the load history — laptop "
         "arithmetic — because the corner, load-path and transient "
         "stacks already live together here."),
+    "forge": (
+        "The unified mechatronic co-solver: the transient vehicle DAE "
+        "extended with the active-ARB winding states and the live bus "
+        "constraint — loads drive currents, currents sag the bus, sag "
+        "weakens the actuator, lost authority lands back on the tyres, "
+        "every millisecond both directions — then a declared electrical "
+        "defect (sagging pack, corroded connector, brownout-marginal "
+        "controller, dead servo) is linted against the pristine car "
+        "across response, structure, first-failure order and the "
+        "test-day energy budget.",
+        "The simulated car with pristine electrics has roll authority "
+        "the real car never had. You need this to catch a wiring defect "
+        "expressing itself as a structural overload, a brownout that "
+        "makes the car passive mid-corner, a pecking order re-chosen by "
+        "milliohms, and an energy bill that quietly starves a test day.",
+        "Vehicle-dynamics tools assume ideal actuators; electrical tools "
+        "assume static loads; the wire between them exists in neither. "
+        "The coupling only becomes computable where the transient "
+        "solver, the compliance/margin stack, the failure-order audit "
+        "and the session-budget arithmetic already live together — "
+        "here."),
+    "morph": (
+        "The structural auto-synthesizer: condenses the shifting member "
+        "force history Ghost Topology solved into a load FAN (direction "
+        "\u00d7 amplitude \u00d7 exposure), grows a minimum-compliance "
+        "topology against the whole fan at once, then MEASURES the "
+        "finished shape against the declared fabrication limits of your "
+        "own shop class \u2014 ribs the welder or the mill can't hold are "
+        "REJECTED and the growth re-runs coarser, with the mass/stiffness "
+        "premium of buildability printed on the result.",
+        "Big-software generative design grows organic parts against a "
+        "static load arrow, and the shop rejects them \u2014 a transient "
+        "event never loads a tab from one direction, and a hand welder "
+        "cannot hold a 1.5 mm rib next to a bead. You need this so the "
+        "grown bracket answers the load history the car actually applies "
+        "AND survives first contact with your own floor.",
+        "Topology optimisers live in FEA suites that never met the "
+        "transient solver, and manufacturability lives in a DFM checker "
+        "that never met either. The loop only closes where the audited "
+        "load history, the shop's declared error field, and the growth "
+        "already share one corner \u2014 here, as a few hundred small "
+        "plane-stress solves on a laptop."),
+    "omni": (
+        "The vehicle-synthesis referee: parses ONE plain-language mission "
+        "prompt through a deterministic grammar (with a printed receipt of "
+        "every word it consumed, assumed, or ignored), then runs "
+        "InverseGenesis, SimulForge + the Ghost audit, and MorphMesh over "
+        "a small lattice of shop \\u00d7 actuator \\u00d7 volume-fraction "
+        "configurations and referees the survivors onto a Pareto front "
+        "\\u2014 laps of energy, composure, mass, cost, build-yield \\u2014 "
+        "with a priority-weighted knee pick, per-axis dominance receipts, "
+        "and every veto NAMED by the engine that issued it. A self-healing "
+        "digital-twin panel then matches measured telemetry drift against "
+        "pre-computed defect signatures and emits a gain de-rate plus a "
+        "printable shim spec.",
+        "The three synthesis engines each answer their own question and "
+        "quietly disagree about the car: the geometry the yield engine "
+        "loves starves the actuator the electrics sized, and the bracket "
+        "that survives the shop pays a mass premium nobody priced. You "
+        "need one referee that runs them against the SAME mission and "
+        "shows where each trade kills another \\u2014 before steel is cut, "
+        "not after the car drifts out of tune.",
+        "Multi-disciplinary optimisation lives in six-figure MDO suites "
+        "that never met a student shop's weld-pull number, and 'AI car "
+        "design' demos hide the trade-offs inside a black box. The honest "
+        "referee only exists where all three engines already share one "
+        "hardpoint set and one tolerance field \\u2014 here \\u2014 so the "
+        "front is a few dozen screening-fidelity solves on a laptop, with "
+        "receipts, not a certificate."),
     "thermic": (
         "The flash-heat grip audit: marches a lightweight 3-node radial "
         "thermal ladder (Surface \u2192 Core \u2192 Carcass) along the same "
@@ -3459,6 +3542,27 @@ _BRIEF_TOOLS = {
         "becomes laptop arithmetic here because the forward solver is fast "
         "enough to finite-difference, so the error cloud propagates through "
         "one priced sensitivity matrix instead of a cluster."),
+    "genesis": (
+        "The stochastic inverse engine: draw target kinematic curves inside "
+        "acceptance bands, box the legal volume each hardpoint may occupy "
+        "(minus keep-out volumes), and deterministic reverse gradients pull "
+        "the coordinates into the curves \u2014 then a build-yield "
+        "co-optimizer rejects every knife-edge optimum the declared shop "
+        "field can't hold, keeping the most manufacturing-resilient "
+        "geometry.",
+        "Engineers spend days guessing coordinates to chase curves by hand, "
+        "and every textbook inverse routine that skips the guessing assumes "
+        "a perfect machinist. You need this so the intent is stated ONCE as "
+        "curves, the geometry is generated inside the packaging reality, "
+        "and the answer is a car your welder can actually hit \u2014 not a "
+        "knife edge that only exists on screen.",
+        "No black-box optimiser: each step is one central-difference "
+        "Jacobian of the full nonlinear solver (the exact reverse "
+        "sensitivities backprop would give, computed honestly) and a damped "
+        "Gauss\u2013Newton solve clamped to the legal boxes \u2014 and each "
+        "candidate's yield is the same priced linearisation Stochastic "
+        "Inversion ships, verified by full-solve subsamples printed with "
+        "the result."),
     "cost": (
         "FSAE Cost event BOM, auto-seeded from the Integration ledger, CSV "
         "export ready.",
@@ -3568,6 +3672,12 @@ _BRIEF_SIMPLE = {
              "geometry the car really has in a hard corner or over a "
              "curb, whether the bending flips your camber the wrong way, "
              "and whether any link gets overloaded while it happens.",
+    "forge": "The car's electronics and its suspension are simulated as "
+             "ONE machine: a weak battery or a corroded plug makes the "
+             "active anti-roll bar slow and feeble, the car leans more, the "
+             "parts get hammered harder — and this shows exactly which part "
+             "would now break first and how many test laps the defect "
+             "costs.",
     "thermic": "Tyres only grip in a temperature window. This shows how hot "
                "the tread gets in a hard corner, whether it overheats out of "
                "that window mid-event, and how much grip the heat quietly "
@@ -3577,6 +3687,23 @@ _BRIEF_SIMPLE = {
                   "when that happens, moves it so it does, and after the "
                   "chassis is welded tells you exactly which shims to add "
                   "to get your handling numbers back.",
+    "genesis": "Instead of guessing coordinates for days, draw the handling "
+               "curves you want and box where mounts are allowed to go \u2014 "
+               "the tool generates the geometry for you, and it picks the "
+               "version your welder can actually build, not the perfect one "
+               "that falls apart when a weld pulls a tab.",
+    "morph": "Instead of sketching a bracket and hoping, this GROWS the "
+             "shape for you from the loads the car actually applies during "
+             "a manoeuvre \u2014 and it refuses to draw anything your own "
+             "shop can't build: too-thin ribs get rejected and the shape "
+             "re-grows chunkier, telling you exactly what that costs.",
+    "omni": "Type what car you want in one sentence \\u2014 budget, terrain, "
+            "your shop's skill level \\u2014 and this runs the three design "
+            "engines against each other and shows you the honest menu of "
+            "cars you could build: which is cheapest, which is lightest, "
+            "which one dies and WHO killed it. Later, feed it what the "
+            "real car measures and it names the likely broken part and "
+            "prints the fix.",
     "cost": "Competitions score you on cost too. This builds the price list "
             "of the car and shows what each decision costs.",
     "weight": "One agreed list of how heavy everything is and where it sits — "
@@ -3637,9 +3764,11 @@ _VERIFY_GOALS = [
     ("vg_testday", "Make a track/test day actually answer the question",
      ["earshot"]),
     ("vg_survive", "See what breaks first & how the car deforms under overload",
-     ["fusebox", "ghost"]),
+     ["fusebox", "ghost", "forge"]),
     ("vg_build",  "Make the design survive being built by hand (weld tolerance)",
-     ["stochastic"]),
+     ["stochastic", "morph"]),
+    ("vg_referee", "Referee the subsystem trade-offs (one mission prompt \u2192 Pareto front)",
+     ["omni"]),
     ("vg_oversee", "Track team progress, provenance & decision history",
      ["registry", "notes", "analytics"]),
 ]
@@ -3647,13 +3776,13 @@ _VERIFY_GOALS = [
 _ROLE_GOALS = {
     "suspension": [
         ("susp_geo",   "Nail the geometry (camber gain, bump steer, roll centres)",
-         ["kinematics", "roll"]),
+         ["kinematics", "roll", "genesis"]),
         ("susp_flex",  "Make sure nothing flexes (member loads & stiffness)",
          ["compliance", "ghost"]),
         ("susp_setup", "Find the setup (springs, ARBs, balance)",
-         ["setup", "tire", "laptime"]),
+         ["setup", "tire", "thermic", "laptime"]),
         ("susp_verify", "Stress-test the corner under transient overload",
-         ["ghost", "fusebox", "proof"]),
+         ["ghost", "forge", "fusebox", "proof"]),
     ],
     "aero": [
         ("aero_size", "Size wings & diffuser for target downforce/drag",
@@ -3675,7 +3804,7 @@ _ROLE_GOALS = {
         ("el_pack",  "Size the accumulator (cells, topology, rules)",
          ["accum", "tractive"]),
         ("el_pcb",   "Design or debug PCBs & wiring",
-         ["pcb"]),
+         ["pcb", "forge"]),
         ("el_safe",  "Pass the EV safety & rules gates",
          ["tractive", "dfmea", "fusebox"]),
     ],
@@ -3697,7 +3826,7 @@ _ROLE_GOALS = {
         ("br_bias", "Get bias & lock-up order right",
          ["brakes", "tire"]),
         ("br_therm", "Rotor thermal, fade & rotor design",
-         ["brakes"]),
+         ["brakes", "thermic"]),
         ("br_hw",   "Hydraulics, bolts & bracket factors of safety",
          ["brakes", "fusebox"]),
     ],
@@ -4597,6 +4726,106 @@ _BRIEF_GOAL_FEATURES = {
         "Per-subsystem activity lets a lead spot the quiet corner that's "
         "behind while there's still time to move help onto it.",
     ],
+
+    # --- susp_geo → InverseGenesis (the stochastic inverse engine) ---------- #
+    ("susp_geo", "genesis"): [
+        "Draw the camber, toe and roll-centre curves you want \u2014 with "
+        "acceptance bands \u2014 and the engine generates hardpoint "
+        "coordinates that land on them, instead of you guessing millimetres "
+        "for days.",
+        "Every candidate is clamped to a per-point legal volume and screened "
+        "against keep-out boxes (headers, mounts, bodywork), so nothing it "
+        "proposes needs a packaging respin.",
+        "The build-yield co-optimizer prices each curve-hitting geometry "
+        "against your shop's weld-error field and rejects the knife-edge "
+        "optimum in favour of the coordinates a real welder can hold.",
+    ],
+
+    # --- vg_build → Stochastic (manufacturing-yield audit) ------------------ #
+    # This goal names the Stochastic tool directly; cover every feature so the
+    # weld-tolerance plan is complete rather than falling back to a stub.
+    ("vg_build", "stochastic"): [
+        "Declare the ASYMMETRIC per-point error field your shop actually holds "
+        "— a separate ± band per hardpoint per axis — instead of the single "
+        "symmetric tolerance a drawing note pretends to.",
+        "Sweeps thousands of buildable cars through the real kinematics and "
+        "reports the manufacturing yield: the fraction of as-built chassis that "
+        "still land inside your acceptance bands.",
+        "Set the acceptance bands yourself — the max |as-built − design| you'll "
+        "still sign off on per metric (camber, toe, bump steer, roll centre) — "
+        "so 'in tolerance' means what your scrutineer means by it.",
+        "Ranks the first-order variance share per point, so you learn WHICH tab "
+        "is spending your yield and stop tolerancing the ones that don't matter.",
+        "Re-aims the nominal up-wind of the weld pull: when the error field is "
+        "biased, it shifts the design target so the EXPECTED as-built car lands "
+        "back on your intent instead of off it.",
+        "Closes the metrology loop — feed measured as-built coordinates and it "
+        "solves a verified shim-pack Alignment Prescription against the "
+        "adjusters the car actually has, turning a mis-pulled tab into shim "
+        "arithmetic instead of a test-day mystery.",
+    ],
+
+    # --- Thermic (flash-heat tyre grip) routed to setup & brake-thermal ----- #
+    ("susp_setup", "thermic"): [
+        "Marches a 3-node radial thermal ladder (Surface → Core → Carcass) "
+        "along the same transient event, so you see the tyre heat up and cool "
+        "through the corner instead of assuming one fixed temperature.",
+        "Scales the Magic-Formula peak-grip factor D by the live CORE tread "
+        "temperature at every instant, so the grip your setup relies on is the "
+        "grip the hot tyre actually has — not a catalogue number.",
+        "Reports the worst millisecond of thermal grip loss and the newtons of "
+        "lateral force it deletes, catching a tyre that slides itself out of "
+        "its window mid-corner before the setup is frozen.",
+        "Lists the worst ~12 instants by force lost to heat, so you can tell "
+        "whether a balance problem is geometry, springs, or simply a tyre "
+        "running outside its compound window.",
+    ],
+    ("br_therm", "thermic"): [
+        "Runs the same 3-node Surface → Core → Carcass thermal ladder used for "
+        "grip, so the rotor-thermal story and the tyre-thermal story are told "
+        "against one shared temperature history.",
+        "Scales peak tyre grip by core temperature at every instant, showing "
+        "how a brake-heat-soaked corner loses the grip your bias assumed and "
+        "changes the lock-up order you tuned.",
+        "Flags the worst-case flash-heat instant and the lateral force lost, so "
+        "a fade problem you'd blame on the rotor can be attributed correctly to "
+        "the tyre leaving its window.",
+    ],
+
+    # --- Upgrade generic fallbacks to goal-specific copy -------------------- #
+    ("susp_flex", "ghost"): [
+        "Solves the DEFORMED corner geometry at every instant of a transient "
+        "overload, so you see how far the camber/toe/roll-centre you designed "
+        "actually drifts once the links flex under load.",
+        "Reports each member's transient factor of safety on BOTH yield and "
+        "pinned-pinned Euler buckling against the 1.5 rule, so a slender arm "
+        "that's fine statically but buckles under the peak can't hide.",
+        "Measures the tyre-force feedback gain by contraction and returns a "
+        "verdict — RIGID_FAITHFUL through COMPLIANCE_INVERTED — telling you "
+        "whether compliance quietly rewrote the geometry you chose.",
+    ],
+    ("ch_stiff", "ghost"): [
+        "Walks a transient overload and solves the deformed load path at each "
+        "instant, exposing which members carry the hit and how the path "
+        "migrates as the structure flexes — the stiffness story a static check "
+        "misses.",
+        "Gives each link's transient FoS on yield and Euler buckling vs the 1.5 "
+        "rule, so you find the member that governs stiffness before it's welded.",
+        "Flags fast edges as a job for FEA rather than pretending to answer "
+        "them, so your one ANSYS run confirms the load path instead of hunting "
+        "for it.",
+    ],
+    ("br_hw", "fusebox"): [
+        "Ranks P(fails first) across every bolt, bracket and hydraulic element "
+        "from their independent capacities, so you learn which piece of brake "
+        "hardware is the real weak link, not which one has the scariest number.",
+        "Judges the ranking against a sealed Fuse Charter — FUSED / COIN-FLIP / "
+        "INVERTED / UNFUSED / BREACH-RISK — so an unintended part being first "
+        "in line is called out explicitly.",
+        "Offers three exact fixes per rival — soften the intended fuse, stiffen "
+        "the rival, or sharpen its evidence grade with a pull test — plus the "
+        "expected overload bill in dollars and days.",
+    ],
 }
 
 # ========================================================================== #
@@ -4916,6 +5145,98 @@ _BRIEF_TOOL_FEATURES = {
         "Usage and progress analytics show where the team's design effort is "
         "actually going.",
         "Stalled areas surface before the schedule does.",
+    ],
+    "genesis": [
+        "Draw target kinematic curves inside acceptance bands and let "
+        "deterministic reverse gradients generate the hardpoints \u2014 the "
+        "curves are the anchor; the points get pulled into place.",
+        "Declare the legal volume per hardpoint plus keep-out boxes, so every "
+        "generated coordinate is physically mountable, never just "
+        "mathematically optimal.",
+        "The build-yield co-optimizer rejects knife-edge optima against the "
+        "Stochastic Inversion error field and reports the resilience premium "
+        "the winner bought.",
+    ],
+    "stochastic": [
+        "Declare the asymmetric per-point weld-error field your shop actually "
+        "holds, then sweep thousands of buildable cars and read the "
+        "manufacturing yield against acceptance bands you set.",
+        "Rank the variance share per hardpoint to see which tab is spending "
+        "your yield, and let it re-aim the nominal up-wind of a biased pull.",
+        "Feed measured as-built coordinates to solve a verified shim-pack "
+        "Alignment Prescription against the adjusters the car actually has.",
+    ],
+    "thermic": [
+        "Marches a 3-node Surface → Core → Carcass thermal ladder along the "
+        "transient event and scales peak tyre grip by live core temperature, so "
+        "grip reflects the hot tyre rather than a fixed catalogue number.",
+        "Reports the worst millisecond of thermal grip loss and the lateral "
+        "force it deletes, catching a tyre sliding out of its window mid-corner.",
+        "Lists the worst instants by force lost to heat, separating a real "
+        "balance problem from a tyre simply running outside its compound window.",
+    ],
+    "forge": [
+        "Co-solves the transient vehicle DAE with the actuator winding "
+        "states and the live bus voltage every millisecond — the active "
+        "anti-roll bar's authority is an OUTPUT of the electrical state, "
+        "never an assumption.",
+        "Runs the same manoeuvre under a declared electrical defect "
+        "(sagging pack, corroded connector, brownout-marginal controller, "
+        "dead servo) and reports the roll and load-cycle amplification the "
+        "defect causes.",
+        "Re-audits the transient structural margins under the degraded "
+        "load history via the Ghost Topology stack, so a wiring defect "
+        "that breaches the 1.5 rule is caught as the structural load case "
+        "it really is.",
+        "Races the branch fuse and connector against the wishbone members "
+        "in Fusebox's first-failure probability, and flags when milliohms "
+        "re-choose the car's victim.",
+        "Prices the defect's energy bill in Earshot's own pack-budget "
+        "currency and re-judges the planned A/B session — a defect that "
+        "quietly turns a test day UNDERPOWERED is named before the "
+        "trailer loads.",
+    ],
+    "morph": [
+        "Condenses the transient member-force history from the Ghost "
+        "Topology audit into a load fan \u2014 every distinct direction the "
+        "force sweeps through, weighted by exposure, sign reversals kept "
+        "as opposing arrows.",
+        "Grows a multi-case SIMP topology on the declared plate domain "
+        "against the whole fan at once, ribbing along the migrating load "
+        "paths and stripping the metal no case ever stresses.",
+        "Measures every grown shape by morphological opening against the "
+        "shop-class fabrication limits (hand_weld / jig_weld / cnc, the "
+        "same names Stochastic Inversion presets carry) \u2014 unbuildable "
+        "ribs are REJECTED and the growth re-runs coarser.",
+        "Prints the premium of buildability when a rejection forced "
+        "coarsening: the compliance given up and the feature size gained "
+        "\u2014 the argument for a jig, or the receipt for the hand welder.",
+        "Screens the survivor at peak fan loads against the standing "
+        "1.5-on-yield rule and ships cells CSV, a pixel-exact outline for "
+        "the CAD seat, JSON summary, and a design-review report.",
+    ],
+    "omni": [
+        "Parses one plain-language mission prompt through a deterministic "
+        "grammar \\u2014 budget, terrain, drive layout, shop tolerance, "
+        "priority words \\u2014 and prints a receipt of every token it "
+        "consumed, every default it assumed, and every word it ignored.",
+        "Runs the shared-hardpoint lattice \\u2014 shop class \\u00d7 "
+        "actuator size \\u00d7 volume fraction \\u2014 through "
+        "InverseGenesis, SimulForge with the Ghost transient audit, and "
+        "MorphMesh, reusing each engine's own verdicts unchanged.",
+        "Referees the survivors onto a Pareto front over laps of energy, "
+        "composure, mass, cost and build-yield; every dominated config "
+        "carries a per-axis dominance receipt naming exactly who beats it "
+        "and where.",
+        "Names every veto by the engine that issued it \\u2014 NO_FIT from "
+        "the yield engine, brownout from the bus, UNBUILDABLE from the "
+        "shop check, or over the mission budget \\u2014 so a dead config "
+        "is an argument, not a blank.",
+        "Self-healing digital twin: matches measured telemetry drift "
+        "against pre-computed defect signatures (cosine match, honest "
+        "\\u2018matches nothing\\u2019 below threshold) and emits a "
+        "deliverable-moment gain de-rate plus a printable camber-shim "
+        "spec.",
     ],
 }
 
@@ -11472,9 +11793,10 @@ def _render_mount_bolt_check(key_prefix, *, default_ext_n=2000.0,
                  "the load is fully on — it yields at install. This is the red "
                  "ring the FEA shows; fix it here.")
     elif jr.bearing_yield:
-        st.error(f"✗ Head crushes the base: {jr.sigma_bearing:.0f} MPa > "
-                 f"{jr.bearing_allow:.0f} MPa. Fit a hardened steel washer or a "
-                 "harder base.")
+        st.error(units_mod.usentence(
+                 f"✗ Head crushes the base: {jr.sigma_bearing:.0f} MPa > "
+                 f"{jr.bearing_allow:.0f} MPa.") + " Fit a hardened steel washer "
+                 "or a harder base.")
     else:
         st.success(f"✓ Sound spec: preload {uval(jr.F_preload,'N')}, "
                    f"{pf*100:.0f}% of proof, {jr.separation_safety:.1f}× "
@@ -11554,6 +11876,10 @@ tab_ghost    = _id_to_container["ghost"]
 tab_phantom_env = _id_to_container["phantom_env"]
 tab_thermic  = _id_to_container["thermic"]
 tab_stochastic = _id_to_container["stochastic"]
+tab_genesis  = _id_to_container["genesis"]
+tab_forge    = _id_to_container["forge"]
+tab_morph    = _id_to_container["morph"]
+tab_omni     = _id_to_container["omni"]
 
 # --- 🎯 Proof Planner — first tab under the ui/ strangulation pattern. ------ #
 # All physics lives in suspension/proof_engine.py; all drawing in
@@ -11658,6 +11984,61 @@ with tab_stochastic:
         _stoch_mod.render()
     except Exception as _sx_err:            # noqa: BLE001 — a broken tab must
         st.error(f"Stochastic Inversion failed to render: {_sx_err}")  # not kill app
+
+# --- 🧬 InverseGenesis — the stochastic inverse engine, same ui/ pattern. --- #
+# All physics lives in suspension/inverse_genesis.py (deterministic reverse
+# gradients through the rigid kinematics solver, a legal-volume/keep-out
+# boundary filter speaking the Phantom Envelope query dialect, and a
+# build-yield co-optimizer over the Stochastic Inversion tolerance fields);
+# all drawing in ui/inverse_genesis.py. Reads the live hardpoints when the
+# Kinematics tab has set them, and can write the generated geometry back —
+# one geometry, another consumer AND the first producer, on purpose.
+with tab_genesis:
+    try:
+        from ui import inverse_genesis as _genesis_mod
+        _genesis_mod.render()
+    except Exception as _ig_err:            # noqa: BLE001 — a broken tab must
+        st.error(f"InverseGenesis failed to render: {_ig_err}")  # not kill app
+
+# --- ⚡🔩 SimulForge — unified mechatronic co-solver, same ui/ pattern. ------ #
+# All physics lives in suspension/simulforge.py (joining transient,
+# ghost_topology, fusebox and earshot); all drawing in ui/simulforge.py.
+# Reads the live hardpoints when the Kinematics tab has set them — one
+# geometry, another consumer, on purpose.
+with tab_forge:
+    try:
+        from ui import simulforge as _forge_mod
+        _forge_mod.render()
+    except Exception as _sfg_err:           # noqa: BLE001 — a broken tab must
+        st.error(f"SimulForge failed to render: {_sfg_err}")  # not kill app
+
+# --- 🕸️🔩 MorphMesh — structural auto-synthesizer, same ui/ pattern. -------- #
+# All physics lives in suspension/morphmesh.py (joining ghost_topology,
+# kinematics and the stochastic shop classes: transient load fan → multi-case
+# SIMP growth → morphological fabrication audit that REJECTS unbuildable
+# ribs); all drawing in ui/morphmesh.py. Reads the live hardpoints when the
+# Kinematics tab has set them — one geometry, another consumer, on purpose.
+with tab_morph:
+    try:
+        from ui import morphmesh as _morph_mod
+        _morph_mod.render()
+    except Exception as _mmx_err:           # noqa: BLE001 — a broken tab must
+        st.error(f"MorphMesh failed to render: {_mmx_err}")  # not kill app
+
+# --- 🪐 OmniCore — vehicle-synthesis referee, same ui/ pattern. ------------- #
+# All physics lives in suspension/omnicore.py (mission-prompt grammar with a
+# printed parse receipt → shared-hardpoint lattice run through InverseGenesis,
+# SimulForge + Ghost audit and MorphMesh → refereed Pareto front with named
+# vetoes and dominance receipts → self-healing digital twin: defect-signature
+# match + gain de-rate + shim spec); all drawing in ui/omnicore.py. Reads the
+# live hardpoints when the Kinematics tab has set them — one geometry, every
+# engine, one referee, on purpose.
+with tab_omni:
+    try:
+        from ui import omnicore as _omni_mod
+        _omni_mod.render()
+    except Exception as _omni_err:          # noqa: BLE001 — a broken tab must
+        st.error(f"OmniCore failed to render: {_omni_err}")  # not kill app
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
@@ -12611,9 +12992,10 @@ with tab_car:
                                      key="car3d_cp_shape",
                                      help="Cylinder: length is L, diameter is W (e.g. a motor).")
 
-        st.markdown('<p class="hint" style="margin:6px 0 2px;"><b>Size (mm)</b> '
+        st.markdown(units_mod.ulabel(
+                    '<p class="hint" style="margin:6px 0 2px;"><b>Size (mm)</b> '
                     '\u2014 L is fore\u2013aft, W is left\u2013right, H is up. For a '
-                    'cylinder, L = length and W = diameter.</p>',
+                    'cylinder, L = length and W = diameter.</p>'),
                     unsafe_allow_html=True)
         _sz = st.columns(3)
         _cp_l = unum(_sz[0], "Length L (mm)", 1, 3000, 100, "mm",
@@ -25221,26 +25603,35 @@ def render_laptime(_pt):
                 _t_hi = max(_thermals["peak_temp_c"], 30.0)
                 _grad = _np_ext.linspace(0.85, 1.15, _n_s)
 
-                import plotly.graph_objects as _go_hm
+                # Display temperatures follow the active unit system: the
+                # model computes °C, but the plotted z-values, cell labels,
+                # colour-scale bounds and colorbar title all switch to °F in
+                # US mode so the whole heatmap stays consistent with the toggle.
+                _t_unit = units_mod.label("°C")
                 _hm_z    = []
                 _hm_text = []
                 for _si in range(_n_s):
                     row_z, row_t = [], []
                     for _pi in range(_n_p):
                         _ct = _t_lo + (_t_hi - _t_lo) * _grad[_si]
-                        row_z.append(_ct)
-                        row_t.append(f"S{_si+1}/P{_pi+1}<br>{_ct:.1f}°C")
+                        _ct_disp = units_mod.from_metric(_ct, "°C")
+                        row_z.append(_ct_disp)
+                        row_t.append(f"S{_si+1}/P{_pi+1}<br>{_ct_disp:.1f}{_t_unit}")
                     _hm_z.append(row_z)
                     _hm_text.append(row_t)
 
+                _z_lo = units_mod.from_metric(_t_lo, "°C")
+                _z_hi = units_mod.from_metric(_t_hi, "°C")
+
+                import plotly.graph_objects as _go_hm
                 _fig_hm = _go_hm.Figure(data=_go_hm.Heatmap(
                     z=_hm_z,
                     text=_hm_text,
                     hovertemplate="%{text}<extra></extra>",
                     colorscale=[[0,"#37E0D0"],[0.5,"#F0A500"],[1,"#E74C3C"]],
-                    zmin=_t_lo, zmax=_t_hi,
+                    zmin=_z_lo, zmax=_z_hi,
                     colorbar=dict(
-                        title=dict(text="°C", font=dict(color="#cdd6df")),
+                        title=dict(text=_t_unit, font=dict(color="#cdd6df")),
                         tickfont=dict(color="#cdd6df"),
                         bgcolor="rgba(0,0,0,0)"),
                     xgap=2, ygap=2,
@@ -25249,7 +25640,7 @@ def render_laptime(_pt):
                     title=dict(
                         text=f"Battery pack — {_n_s}S × {_n_p}P "
                              f"({_n_s*_n_p} cells) | "
-                             f"Peak {_t_hi:.1f}°C | "
+                             f"Peak {_z_hi:.1f}{_t_unit} | "
                              f"Joule: {_thermals['total_joule_kwh']*1000:.1f} Wh/cell",
                         font=dict(color="#cdd6df", size=12)),
                     xaxis=dict(

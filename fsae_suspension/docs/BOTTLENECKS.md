@@ -294,6 +294,53 @@ only — the surviving population is handed to Ghost Topology, Phantom
 Envelope and ThermicPatch, which finally receive a distribution instead of
 a point.
 
+### 18 · The design loop that only runs forward
+Every kinematics tool on earth — including this repo's, until now — runs the
+design loop in the one direction nobody wants: guess coordinates, solve, read
+the curves, wince, guess again. The intent was never coordinates; it was
+"~1° of camber gain, dead bump steer, a roll centre that doesn't dive" — and
+engineers burn days of the season translating that intent into x/y/z
+millimetres by hand, because the tools only speak coordinates. The few
+inverse-kinematics routines that exist in industry make it worse in a
+subtler way: they optimise to the target EXACTLY, which lands the answer on
+a sensitivity knife-edge, and every one of them assumes a perfect machinist
+— so the "optimal" geometry is precisely the FRAGILE one bottleneck #17
+exists to catch, generated on purpose. And none of them knows where the
+headers are: the mathematically ideal pickup that lives inside an exhaust
+primary is a packaging respin (#9) delivered by an optimiser.
+**Attacked now (new):** 🧬 InverseGenesis — the stochastic inverse engine.
+The engineer draws the intent directly: target kinematic curves over wheel
+travel (camber, toe, roll-centre height, scrub), each station inside an
+acceptance band, plus the LEGAL VOLUME each movable hardpoint may occupy —
+per-point boxes minus keep-out volumes queried through the exact Phantom
+Envelope capsule dialect (a carved envelope of a neighbouring assembly, or a
+declared box for "the header lives here"). The curves become the anchor and
+deterministic reverse gradients pull the points into alignment: each
+iteration is one central-difference Jacobian of the band-weighted residual
+through the full nonlinear corner solver (the exact reverse sensitivities
+backpropagation would produce, computed honestly because the forward solver
+is fast enough to differentiate) and a damped Gauss–Newton step clamped to
+the boxes, with keep-out contact rejected as a wall, not a penalty. Then
+the stage no textbook routine has: multiple deterministic starts produce a
+family of curve-hitting candidates, and the BUILD-YIELD CO-OPTIMIZER
+charges each for its manufacturing fragility against the #17 error field —
+the coupling being that a candidate's fit residual has already spent part
+of the band, so only the leftover headroom absorbs the weld scatter. A
+geometry that nails the target dead-centre but collapses when a welder
+pulls a tab 1.5 mm is verdicted KNIFE_EDGE and REJECTED in favour of the
+slightly-off-centre candidate the shop can hold, and the yield premium the
+winner bought is printed. The linearisation is priced the #17 way — full
+nonlinear verification solves, pass/fail agreement printed, self-demotion
+below the floor — and when the bands, boxes and field are JOINTLY
+unsatisfiable the engine says exactly that, naming the binding band, the
+clamped box face or the violated keep-out, instead of fabricating an
+optimum. Verdicts: RESILIENT / TEMPERED / KNIFE_EDGE / NO_FIT. Scope,
+honestly: the rigid corner solver (feed the generated geometry to Ghost
+Topology next), independent per-point errors, keep-out screening of the
+pickup as a probe sphere rather than the bracket around it — and an
+obstacle envelope must be carved from NEIGHBOURING assemblies, never from
+the corner being designed.
+
 ### 9 · Interference found at the mill
 Rework is the tax for not integrating before cutting; a richer team can
 afford to cut twice.
