@@ -1,11 +1,11 @@
 # ============================================================================
-#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
+#  KinematiK — Formula SAE EV vehicle dynamics toolkit
 #  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
 
 """
-KinematiK — open-source Formula SAE suspension design studio.
+KinematiK — open-source Formula SAE EV design studio.
 
 Edit hardpoints live for any suspension topology — double wishbone, MacPherson,
 multi-link, trailing/semi-trailing arm, solid axle, twist-beam, truck steer, or a
@@ -29,7 +29,7 @@ import streamlit as st
 
 # First Streamlit command — the page frame (title, layout, sidebar chrome) is
 # on screen before ANY engineering package is evaluated.
-st.set_page_config(page_title="KinematiK · FSAE Suspension Studio",
+st.set_page_config(page_title="KinematiK · FSAE EV Design Studio",
                    page_icon="◢", layout="wide",
                    initial_sidebar_state="expanded")
 
