@@ -109,7 +109,24 @@ def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
     # Who is a registered project lead — the source of truth for who may create
     # workspaces. Only leads create; everyone else joins via invite. Reflected
     # honestly in the UI below (never just assumed from a checkbox).
-    lead = auth.project_lead_status(session)
+    #
+    # Called defensively: if the deployed auth backend predates project-lead
+    # gating (no project_lead_status method), or the RPC isn't installed yet,
+    # fall back to a safe snapshot instead of crashing the whole app here.
+    _lead_default = {"is_lead": False, "workspace_count": 0,
+                     "workspace_cap": 10, "can_create": False,
+                     "is_owner": False, "_resolved": False}
+    _pls = getattr(auth, "project_lead_status", None)
+    if callable(_pls):
+        try:
+            lead = _pls(session) or _lead_default
+        except Exception:
+            lead = dict(_lead_default)
+    else:
+        lead = dict(_lead_default)
+    # Guarantee the keys the UI reads always exist, whatever the backend returns.
+    for _k, _v in _lead_default.items():
+        lead.setdefault(_k, _v)
 
     if not workspaces:
         if lead["is_lead"]:
@@ -387,20 +404,28 @@ def render_workspace_oversight(st, session: Optional[Session] = None) -> None:
                     st.caption("⚠️ **Hasn't signed in yet:** "
                                + ", ".join(str(m.get("email", "?"))
                                            for m in _not_signed))
+                def _ts(v):
+                    s = str(v or "")[:16].replace("T", " ")
+                    return s if s else "—"
+
                 for m in roster:
                     email = str(m.get("email", "?"))
                     role = str(m.get("role", "member"))
                     if not m.get("signed_up"):
-                        badge, detail = "⚪ never signed in", ""
+                        badge = "⚪ never signed in"
                     elif m.get("active"):
-                        _ls = str(m.get("last_saved_at") or "")[:16].replace("T", " ")
                         badge = "🟢 active"
-                        detail = f" · last save {_ls}" if _ls else ""
                     else:
-                        _si = str(m.get("last_sign_in_at") or "")[:16].replace("T", " ")
                         badge = "🟡 signed in, no saves yet"
-                        detail = f" · last sign-in {_si}" if _si else ""
-                    st.caption(f"{badge} — **{email}** `{role}`{detail}")
+
+                    _joined = _ts(m.get("joined_at"))
+                    _seen   = _ts(m.get("last_sign_in_at"))
+                    _saved  = _ts(m.get("last_saved_at"))
+
+                    st.caption(f"{badge} — **{email}** `{role}`")
+                    st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;joined {_joined}  ·  "
+                               f"last sign-in {_seen}  ·  last save {_saved}",
+                               unsafe_allow_html=True)
 
         with st.expander("Recent activity", expanded=False):
             try:
