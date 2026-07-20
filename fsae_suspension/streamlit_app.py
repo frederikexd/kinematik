@@ -5998,20 +5998,56 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
     return;
   }
   var utter = null;
-  function build(){
+  var _chosenVoice = null;
+
+  // Pick the best English voice. Priority: en-GB > en-US > any en- locale.
+  // getVoices() is empty on first call in Chrome until voiceschanged fires.
+  function _pickVoice(){
+    var voices = synth.getVoices();
+    if(!voices.length) return null;
+    var prefer = ["en-GB","en-US","en-AU","en-CA","en-NZ","en-ZA","en-IN"];
+    for(var i=0; i<prefer.length; i++){
+      for(var j=0; j<voices.length; j++){
+        if(voices[j].lang === prefer[i]) return voices[j];
+      }
+    }
+    // fallback: any voice whose lang starts with "en"
+    for(var j=0; j<voices.length; j++){
+      if(voices[j].lang.toLowerCase().startsWith("en")) return voices[j];
+    }
+    return null; // last resort: browser default (no assignment = OS default)
+  }
+
+  function _resolveVoice(cb){
+    var v = _pickVoice();
+    if(v){ cb(v); return; }
+    // voices not loaded yet — wait for the event (Chrome), then retry once
+    synth.addEventListener("voiceschanged", function _vc(){
+      synth.removeEventListener("voiceschanged", _vc);
+      cb(_pickVoice());
+    });
+  }
+
+  function build(voice){
     var u = new SpeechSynthesisUtterance(text);
     u.rate = parseFloat(document.getElementById("__UID___rate").value) || 1;
+    u.lang = "en-GB";          // hint the engine even if voice assignment works
+    if(voice) u.voice = voice;
     u.onend   = function(){ status.textContent = "finished"; };
     u.onstart = function(){ status.textContent = "playing…"; };
     u.onerror = function(){ status.textContent = "stopped"; };
     return u;
   }
+
   document.getElementById("__UID___play").onclick = function(){
     if(synth.paused && synth.speaking){ synth.resume();
       status.textContent = "playing…"; return; }
     try{ synth.cancel(); }catch(e){}
-    utter = build();
-    synth.speak(utter);
+    _resolveVoice(function(voice){
+      _chosenVoice = voice;
+      utter = build(voice);
+      synth.speak(utter);
+    });
   };
   document.getElementById("__UID___pause").onclick = function(){
     if(synth.speaking && !synth.paused){ synth.pause();
@@ -6025,7 +6061,7 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
     if(synth.speaking){
       var wasPaused = synth.paused;
       try{ synth.cancel(); }catch(e){}
-      utter = build(); synth.speak(utter);
+      utter = build(_chosenVoice); synth.speak(utter);
       if(wasPaused){ synth.pause(); }
     }
   };
