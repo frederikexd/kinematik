@@ -284,6 +284,21 @@ def _show_results(st, np, pe, rigid_env, comp_env, delta, corner):
     d.metric("Loaded pts", f"{comp_env.n_points}",
              help="Boundary cloud size of the compliance-warped sweep.")
 
+    # Provenance: the growth number is a modelled output of the compliance
+    # sweep; its absolute value rides on the member stiffnesses fed in. Flag it
+    # as an indicative packaging risk margin and name the upgrade path, so a
+    # reviewer reads it as "where to look", not a certified clearance.
+    try:
+        from suspension.provenance import confidence_note as _conf
+        _conf(st, "modelled", calibrated=False,
+              extra=("quasi-static compliance sweep over representative member "
+                     "stiffnesses — a proactive packaging-risk margin"),
+              calibrate_with=("measured link/bush stiffnesses (a static pull "
+                              "test per member) to turn this into a certified "
+                              "clearance"))
+    except Exception:
+        pass
+
     if comp_env.excluded:
         st.warning("Excluded from the loaded carve (elastic geometry void past "
                    "yield): " + "; ".join(
@@ -364,17 +379,33 @@ def _show_results(st, np, pe, rigid_env, comp_env, delta, corner):
 
 
 def _clearance_line(st, q):
+    # Display clearance (mm) and probe loads (N) in the active unit system so
+    # this readout tracks the metric/US toggle like the rest of the app. The
+    # stored values stay SI; only the shown number + label convert. If the
+    # units module can't be imported for any reason, fall back to metric.
+    try:
+        from suspension import units as _u
+        _mm = lambda v: (_u.from_metric(v, "mm"), _u.label("mm"))
+        _n  = lambda v: (_u.from_metric(v, "N"), _u.label("N"))
+    except Exception:                       # pragma: no cover
+        _mm = lambda v: (v, "mm")
+        _n  = lambda v: (v, "N")
+
     if q.nearest_member == "":
         st.info("no members carved")
         return
     if q.violates:
-        st.markdown(f"🔴 **VIOLATES by {abs(q.clearance_mm):.2f} mm** — "
+        _cv, _cu = _mm(abs(q.clearance_mm))
+        st.markdown(f"🔴 **VIOLATES by {_cv:.2f} {_cu}** — "
                     f"nearest link **{q.nearest_member}**"
                     + (f", t = {q.nearest_t_s*1000:.0f} ms"
                        if q.nearest_t_s == q.nearest_t_s else ""))
         if q.nearest_load_N:
             ld = q.nearest_load_N
-            st.caption(f"at Fy {ld['Fy']:.0f} N, Fz {ld['Fz']:.0f} N")
+            _fy, _fu = _n(ld['Fy'])
+            _fz, _   = _n(ld['Fz'])
+            st.caption(f"at Fy {_fy:.0f} {_fu}, Fz {_fz:.0f} {_fu}")
     else:
-        st.markdown(f"🟢 **clears by {q.clearance_mm:.2f} mm** — "
+        _cv, _cu = _mm(q.clearance_mm)
+        st.markdown(f"🟢 **clears by {_cv:.2f} {_cu}** — "
                     f"nearest link **{q.nearest_member}**")

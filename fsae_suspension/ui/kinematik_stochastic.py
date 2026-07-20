@@ -276,6 +276,23 @@ def render():
         m4.metric("Engine", "full nonlinear",
                   help="Every sampled build was a complete solver run.")
 
+    # Provenance: the yield is a modelled number whose trustworthiness is
+    # bounded entirely by the declared shop error field above — it is a
+    # proactive buildability risk indicator, not a measured pass rate. Say so
+    # once, in the shared grade vocabulary, and name the measurement that
+    # upgrades it from indicative to measured.
+    try:
+        from suspension.provenance import confidence_note as _conf
+        _cal = ss.get("stochastic_field_measured", False)
+        _conf(st, "modelled", calibrated=_cal,
+              extra=("first-order sweep over the error field YOU declared — "
+                     "the yield inherits that field's accuracy"),
+              calibrate_with=("one CMM / FARO-arm pass over ~10 built chassis "
+                              "to replace the assumed ± bands with your shop's "
+                              "measured spread"))
+    except Exception:
+        pass
+
     for w in res.warnings:
         st.warning(w)
 

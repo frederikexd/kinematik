@@ -162,6 +162,21 @@ def render():
               help="Fraction of available lateral force lost to heat at the "
                    "worst instant, and the corner/time it happens.")
 
+    # One inline provenance signal on the headline numbers themselves, in the
+    # shared grade vocabulary, so a reader sees their epistemic status without
+    # reading the banner above. Calibrated flips this from uncalibrated to a
+    # modelled ±10% grade automatically.
+    try:
+        from suspension.provenance import confidence_note as _conf
+        _conf(st, "modelled", calibrated=bool(tr.calibrated),
+              extra=("3-node radial thermal ladder along the transient — a "
+                     "closed-form surrogate, not a 3D FEA heat solve"),
+              calibrate_with=("one TTC temperature-swept tyre run (or a single "
+                              "pyrometer trace across a stint) to replace the "
+                              "representative ladder params with yours"))
+    except Exception:
+        pass
+
     # publish a compact summary for any cross-tab consumer / handover
     ss["thermic_last"] = {"maneuver": man_label, **s}
 
