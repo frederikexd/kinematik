@@ -4826,6 +4826,116 @@ _BRIEF_GOAL_FEATURES = {
         "the rival, or sharpen its evidence grade with a pull test — plus the "
         "expected overload bill in dollars and days.",
     ],
+
+    # ------------------------------------------------------------------ #
+    #  ELECTRICS — SimulForge for the PCB / wiring debug goal
+    # ------------------------------------------------------------------ #
+    ("el_pcb", "forge"): [
+        "Co-solves the transient vehicle DAE with the actuator winding states "
+        "and the live bus voltage every millisecond, so a wiring or connector "
+        "defect you're debugging is expressed as the loss of active-ARB "
+        "authority it actually causes — not guessed at.",
+        "Runs the manoeuvre under the exact electrical defect you're chasing "
+        "(sagging pack, corroded connector, brownout-marginal controller, dead "
+        "servo) and reports the roll and load-cycle amplification that defect "
+        "puts on the car — turning a fuzzy 'the board feels weak' into newtons "
+        "and degrees.",
+        "Prices the defect's energy bill in Earshot's pack-budget currency and "
+        "re-judges the planned session, so a marginal harness that quietly "
+        "turns a test day UNDERPOWERED is named before the loom is even built.",
+        "Races the branch fuse and connector against the wishbone members in "
+        "Fusebox's first-failure probability, flagging when milliohms in your "
+        "wiring re-choose which part of the car breaks first.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  SUSPENSION — SimulForge for the transient corner stress-test goal
+    # ------------------------------------------------------------------ #
+    ("susp_verify", "forge"): [
+        "Drives the corner through the transient manoeuvre with the active-ARB "
+        "authority solved as an OUTPUT of the live bus state, so the roll you "
+        "stress-test is the roll the real (electrically imperfect) car has, "
+        "never the ideal-actuator fiction.",
+        "Re-audits the corner's transient structural margins under the degraded "
+        "load history through the Ghost Topology stack, so an electrical defect "
+        "that breaches the 1.5 rule surfaces here as the structural overload it "
+        "really is.",
+        "Reports the roll and load-cycle amplification a declared defect adds, "
+        "so you can see exactly how much extra the wishbones and pushrod eat "
+        "when the anti-roll authority sags mid-corner.",
+        "Feeds the amplified load history straight into the Fusebox first-"
+        "failure order, so you learn whether the degraded corner changes which "
+        "member gives way first.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  CROSS-CUTTING — SimulForge for the 'what breaks first' survive goal
+    # ------------------------------------------------------------------ #
+    ("vg_survive", "forge"): [
+        "Simulates the overload event with the electrical and mechanical "
+        "systems as ONE machine — a weak pack or corroded plug makes the active "
+        "anti-roll bar slow and feeble, the car leans further, and the parts "
+        "get hammered harder — so 'what breaks first' is answered on the car "
+        "the defect actually creates.",
+        "Re-runs the Ghost Topology transient margin audit under the degraded "
+        "load history, catching a wiring defect that only breaches the 1.5 rule "
+        "once the actuator has lost authority mid-event.",
+        "Races the branch fuse and connector against the structural members in "
+        "Fusebox's first-failure probability and flags when milliohms re-choose "
+        "the victim, so the failure order you plan around is the real one.",
+        "Prices the defect's energy bill in Earshot's pack-budget currency and "
+        "re-judges the planned A/B session, so a fault that would silently "
+        "starve a test day is exposed alongside the structural verdict.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  CROSS-CUTTING — MorphMesh for the build-tolerance survive goal
+    # ------------------------------------------------------------------ #
+    ("vg_build", "morph"): [
+        "Grows the bracket or member against the full transient load fan from "
+        "the Ghost Topology audit — every direction the force sweeps through, "
+        "weighted by exposure — so the shape answers the load history the car "
+        "actually applies, not a single static arrow.",
+        "Measures every grown shape by morphological opening against your shop "
+        "class (hand_weld / jig_weld / cnc — the same names Stochastic "
+        "Inversion uses), and REJECTS ribs your own welder or mill can't hold, "
+        "re-growing coarser until the shape survives first contact with the "
+        "floor.",
+        "Prints the buildability premium when a rejection forced coarsening — "
+        "the compliance given up and the minimum feature size gained — so 'buy "
+        "a jig or hand-weld it' becomes a number, not an argument.",
+        "Screens the survivor at peak fan loads against the 1.5-on-yield rule "
+        "and ships cells CSV, a pixel-exact outline for the CAD seat, a JSON "
+        "summary and a design-review report — a build-ready, buildable part.",
+    ],
+
+    # ------------------------------------------------------------------ #
+    #  CROSS-CUTTING — OmniCore for the referee / Pareto-front goal
+    # ------------------------------------------------------------------ #
+    ("vg_referee", "omni"): [
+        "Parses one plain-language mission prompt through a deterministic "
+        "grammar — budget, terrain, drive layout, shop tolerance, priority "
+        "words — and prints a receipt of every token it consumed, every default "
+        "it assumed and every word it ignored, so the referee's brief is "
+        "auditable before it runs.",
+        "Runs the shared-hardpoint lattice (shop class × actuator size × volume "
+        "fraction) through InverseGenesis, SimulForge with the Ghost transient "
+        "audit, and MorphMesh — reusing each engine's own verdicts unchanged, "
+        "so the trade-off is refereed on the SAME car every engine already "
+        "judged.",
+        "Referees the survivors onto a Pareto front over laps of energy, "
+        "composure, mass, cost and build-yield, with a priority-weighted knee "
+        "pick and a per-axis dominance receipt naming exactly who beats each "
+        "dominated config and where.",
+        "Names every veto by the engine that issued it — NO_FIT from the yield "
+        "engine, brownout from the bus, UNBUILDABLE from the shop check, or "
+        "over the mission budget — so a dead config comes back as an argument, "
+        "not a blank.",
+        "Runs a self-healing digital-twin pass that matches measured telemetry "
+        "drift against pre-computed defect signatures and emits a gain de-rate "
+        "plus a printable camber-shim spec, so the referee keeps working after "
+        "the car is on track.",
+    ],
 }
 
 # ========================================================================== #
@@ -5671,7 +5781,7 @@ def _render_brief_questionnaire(roles):
                        "visual")
         st.session_state["kk_briefing"] = _build_briefing(
             roles, _pu_key, _go_keys, _ft, style=_st_key)
-        st.session_state["kk_briefing_open"] = True
+        st.session_state["kk_briefing_open"] = False
         st.session_state["kk_entered"] = True
         st.session_state["kk_brief_pending"] = False
         st.rerun()
@@ -5679,6 +5789,257 @@ def _render_brief_questionnaire(roles):
         st.session_state["kk_entered"] = True
         st.session_state["kk_brief_pending"] = False
         st.rerun()
+
+
+# --------------------------------------------------------------------------- #
+#  Brief → text.  ONE compiler builds the ordered tool plan the panel renders,
+#  and emits it two ways from the SAME walk so the PDF, the on-screen panel and
+#  the spoken audio can never drift apart:
+#    • markdown  — headed, bulleted; fed straight to project_mod.render_pdf.
+#    • speech    — plain prose, jargon punctuation smoothed, for the browser's
+#                  speech synthesiser (no server-side TTS, no new dependency).
+#  The feature-selection logic here MIRRORS _brief_tool_block exactly: goal-
+#  tailored bullets when they exist for an active goal, else the tool's full
+#  fallback list — so "every feature for your subsystem, goal and proficiency"
+#  is what gets both printed and read aloud, not a summary.
+# --------------------------------------------------------------------------- #
+def _briefing_ordered_tools(_bf):
+    """The (index, tool_id) plan exactly as the panel renders it: core tabs in
+    canonical order, then the Integration + Validation handover pair."""
+    _out = []
+    _n = 0
+    for _tid in _bf.get("core_tabs", []):
+        if _tid in _TAB_META and _tid in _BRIEF_TOOLS:
+            _n += 1
+            _out.append((_n, _tid))
+    for _tid in ("integration", "validation"):
+        _n += 1
+        _out.append((_n, _tid))
+    return _out
+
+
+def _briefing_feature_lines(_bf, _tid):
+    """Feature bullets for one tool under the active goals — identical rule to
+    _brief_tool_block: goal-specific first (de-duped across goals), else the
+    tool's complete fallback list."""
+    _active_goals = _bf.get("active_goal_keys", [])
+    _seen, _lines = set(), []
+    for _gk in _active_goals:
+        for _feat in _BRIEF_GOAL_FEATURES.get((_gk, _tid), []):
+            if _feat not in _seen:
+                _seen.add(_feat)
+                _lines.append(_feat)
+    if not _lines:
+        _lines = list(_BRIEF_TOOL_FEATURES.get(_tid, []))
+    return _lines
+
+
+def _briefing_to_text(_bf):
+    """Compile the whole briefing into (markdown, speech_text).
+
+    markdown  → project_mod.render_pdf for the downloadable PDF.
+    speech    → the browser speech synthesiser for the audio player.
+    Both are generated from one pass so they always agree with the panel.
+    """
+    _style = _bf.get("style", "visual")
+    _names = " + ".join(_ROLE_LABELS.get(r, r).split(" / ")[0]
+                        for r in _bf.get("roles", []))
+    _pu = _BRIEF_PURPOSE_MAP.get(_bf.get("purpose"))
+    _goal_labels = [lab for _k, lab in _bf.get("goals", [])]
+
+    _md = []      # markdown lines for the PDF
+    _sp = []      # spoken sentences for TTS
+
+    _md.append("# KinematiK — Your Mission Briefing")
+    _md.append(f"**Subteam:** {_names}")
+    _sp.append(f"KinematiK mission briefing for {_names}.")
+    if _pu:
+        _md.append(f"**Using KinematiK for:** {_pu[0]}")
+        _md.append("")
+        _md.append(_pu[2])
+        _sp.append(_pu[2])
+    if _goal_labels:
+        _md.append("")
+        _md.append("**Goals:** " + "; ".join(_goal_labels))
+        _sp.append("Your goals: " + "; ".join(_goal_labels) + ".")
+    if _bf.get("freetext"):
+        _md.append("")
+        _md.append(f"**Your note:** “{_bf['freetext']}”")
+        _sp.append(f"Your note was: {_bf['freetext']}.")
+    if _style == "new":
+        _newline = ("New here? Every tool below comes with a plain-English "
+                    "line. Nothing you click in KinematiK can break anything — "
+                    "every value has a sensible default, so play freely.")
+        _md.append("")
+        _md.append("_" + _newline + "_")
+        _sp.append(_newline)
+
+    _md.append("")
+    _md.append("---")
+    _md.append("## Your tool plan — what to use, in what order, and why")
+    _sp.append("Here is your tool plan, in order.")
+
+    for _n, _tid in _briefing_ordered_tools(_bf):
+        _em, _lab = _TAB_META[_tid]
+        _need, _why, _vs = _BRIEF_TOOLS[_tid]
+        _cat = _CAT_LABEL.get(_ID_CATEGORY.get(_tid, ""), "")
+        _note_flag = _tid in _bf.get("note_tabs", [])
+
+        _md.append("")
+        _hdr = f"### {_n}. {_lab}"
+        if _cat:
+            _hdr += f"  ·  under {_cat}"
+        _md.append(_hdr)
+        if _note_flag:
+            _md.append("_In your toolbox because of your note._")
+        _md.append(_need)
+
+        _sp.append(f"Tool {_n}: {_lab}."
+                   + (" This is in your toolbox because of your note."
+                      if _note_flag else ""))
+        _sp.append(_need)
+
+        if _style == "new" and _tid in _BRIEF_SIMPLE:
+            _md.append("")
+            _md.append(f"**In plain English:** {_BRIEF_SIMPLE[_tid]}")
+            _sp.append("In plain English: " + _BRIEF_SIMPLE[_tid])
+
+        _md.append("")
+        _md.append(f"**Why you need it:** {_why}")
+        _md.append(f"**Why here, not MATLAB/ANSYS/OptimumK:** {_vs}")
+        _sp.append("Why you need it: " + _why)
+
+        _lines = _briefing_feature_lines(_bf, _tid)
+        if _lines:
+            _feat_hdr = ("**What this tool does for your goal, feature by "
+                         "feature:**")
+            _md.append("")
+            _md.append(_feat_hdr)
+            for _f in _lines:
+                _md.append(f"- {_f}")
+            _sp.append("Its features for your goal:")
+            for _f in _lines:
+                _sp.append(_f)
+
+    _md.append("")
+    _md.append("---")
+    _closing = ("The most expensive error class isn't a bad simulation — it's "
+                "a wrong input reaching a good simulator. Iterate here, let "
+                "Integration keep every subteam's numbers consistent, run the "
+                "Validation handover, and then open ANSYS, ADAMS or MATLAB "
+                "once, to confirm a design you already trust. Always validate "
+                "with the full-fidelity tools before manufacturing.")
+    _md.append("**The point of all this:** " + _closing)
+    _sp.append(_closing)
+
+    # Speech: strip characters the synthesiser reads awkwardly, and any
+    # markdown emphasis that slipped through; join into flowing sentences.
+    def _clean_speech(_s):
+        for _a, _b in (("→", " to "), ("×", " by "), ("·", ". "),
+                       ("—", ", "), ("–", ", "), ("**", ""), ("*", ""),
+                       ("“", ""), ("”", ""), (">", ""), ("σ", "sigma"),
+                       ("β", "beta"), ("μ", "micro")):
+            _s = _s.replace(_a, _b)
+        return " ".join(_s.split())
+
+    _speech_text = " ".join(_clean_speech(_x) for _x in _sp if _x and _x.strip())
+    return "\n".join(_md), _speech_text
+
+
+def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
+    """Inline audio player for the briefing using the browser's built-in speech
+    synthesiser (Web Speech API). No server-side TTS, no new dependency, no
+    network — the text is spoken locally by the user's browser. Play / pause /
+    stop and a speed control; the text is JSON-embedded so quotes and newlines
+    can't break the component."""
+    import json as _json
+    import streamlit.components.v1 as _components
+
+    _payload = _json.dumps(_speech_text)
+    _uid = "kkbrief_" + str(abs(hash(key)) % (10 ** 8))
+    _html = """
+<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+            border:1px solid #d7e7e1;border-radius:10px;padding:10px 12px;
+            background:#f4faf7;max-width:860px;">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <button id="__UID___play"  style="cursor:pointer;border:0;border-radius:8px;
+        padding:6px 14px;background:#0f6e56;color:#fff;font-weight:600;">
+        ▶ Play briefing</button>
+    <button id="__UID___pause" style="cursor:pointer;border:0;border-radius:8px;
+        padding:6px 12px;background:#e1f5ee;color:#0f6e56;font-weight:600;">
+        ⏸ Pause</button>
+    <button id="__UID___stop"  style="cursor:pointer;border:0;border-radius:8px;
+        padding:6px 12px;background:#e1f5ee;color:#0f6e56;font-weight:600;">
+        ⏹ Stop</button>
+    <label style="font-size:13px;color:#0f6e56;margin-left:4px;">Speed
+      <select id="__UID___rate" style="margin-left:4px;border-radius:6px;
+          border:1px solid #cfe3db;padding:2px 4px;">
+        <option value="0.85">0.85×</option>
+        <option value="1" selected>1×</option>
+        <option value="1.15">1.15×</option>
+        <option value="1.3">1.3×</option>
+        <option value="1.5">1.5×</option>
+      </select>
+    </label>
+    <span id="__UID___status" style="font-size:12px;color:#4a6a61;
+          margin-left:auto;">ready</span>
+  </div>
+  <div style="font-size:11px;color:#6b8a81;margin-top:6px;">
+    Spoken locally by your browser — nothing is uploaded.
+  </div>
+</div>
+<script>
+(function(){
+  var text = __PAYLOAD__;
+  var synth = window.speechSynthesis;
+  var status = document.getElementById("__UID___status");
+  if(!synth){
+    status.textContent = "audio not supported in this browser";
+    return;
+  }
+  var utter = null;
+  function build(){
+    var u = new SpeechSynthesisUtterance(text);
+    u.rate = parseFloat(document.getElementById("__UID___rate").value) || 1;
+    u.onend   = function(){ status.textContent = "finished"; };
+    u.onstart = function(){ status.textContent = "playing…"; };
+    u.onerror = function(){ status.textContent = "stopped"; };
+    return u;
+  }
+  document.getElementById("__UID___play").onclick = function(){
+    if(synth.paused && synth.speaking){ synth.resume();
+      status.textContent = "playing…"; return; }
+    try{ synth.cancel(); }catch(e){}
+    utter = build();
+    synth.speak(utter);
+  };
+  document.getElementById("__UID___pause").onclick = function(){
+    if(synth.speaking && !synth.paused){ synth.pause();
+      status.textContent = "paused"; }
+  };
+  document.getElementById("__UID___stop").onclick = function(){
+    try{ synth.cancel(); }catch(e){}
+    status.textContent = "stopped";
+  };
+  document.getElementById("__UID___rate").onchange = function(){
+    if(synth.speaking){
+      var wasPaused = synth.paused;
+      try{ synth.cancel(); }catch(e){}
+      utter = build(); synth.speak(utter);
+      if(wasPaused){ synth.pause(); }
+    }
+  };
+  // Stop narration if the component is torn down (tab change / rerun).
+  window.addEventListener("beforeunload", function(){
+    try{ synth.cancel(); }catch(e){}
+  });
+})();
+</script>
+"""
+    _html = _html.replace("__PAYLOAD__", _payload).replace("__UID__", _uid)
+    # Let any failure propagate — the caller wraps this in its own try/except
+    # and surfaces a visible caption, so we never swallow the real reason here.
+    _components.html(_html, height=120)
 
 
 def _render_briefing_panel():
@@ -5723,6 +6084,54 @@ def _render_briefing_panel():
                     "plain-English line and a live picture of the physics. "
                     "Nothing you click in KinematiK can break anything — "
                     "every value has a sensible default, so play freely.")
+
+        # --- Listen to it / take it with you -------------------------------- #
+        # The whole briefing — every recommended tool and every feature for
+        # this subteam, goal and proficiency — as spoken audio and a PDF, both
+        # compiled from the same walk that renders the panel below. Each control
+        # is guarded independently so one failing can never hide the other, and
+        # a failure surfaces a visible caption instead of silently vanishing
+        # (the panel is called under a broad try/except at the call site).
+        try:
+            _brief_md, _brief_speech = _briefing_to_text(_bf)
+        except Exception as _bce:
+            _brief_md, _brief_speech = "", ""
+            st.caption(f"Couldn't compile the briefing text: {_bce}")
+
+        st.markdown("**🎧 Listen to your briefing · 📄 take it with you**")
+        _ac, _pc = st.columns(2)
+
+        # Audio (browser speech synthesiser). Fully isolated: any failure here
+        # must not touch the PDF button beside it.
+        with _ac:
+            if _brief_speech:
+                try:
+                    _render_briefing_audio(_brief_speech, key="kk_brief_audio")
+                except Exception as _ae:
+                    st.caption(f"Audio player unavailable: {_ae}")
+            else:
+                st.caption("Audio unavailable — no briefing text.")
+
+        # PDF download. Isolated from the audio above.
+        with _pc:
+            _pdf_bytes = None
+            if _brief_md:
+                try:
+                    import tempfile as _tfb, os as _osb
+                    _bp = _osb.path.join(_tfb.gettempdir(),
+                                         "kinematik_mission_briefing.pdf")
+                    project_mod.render_pdf(_brief_md, _bp)
+                    with open(_bp, "rb") as _bpf:
+                        _pdf_bytes = _bpf.read()
+                except Exception as _bpe:
+                    st.caption(f"PDF export unavailable: {_bpe}")
+            if _pdf_bytes:
+                st.download_button(
+                    "⬇ Download briefing as PDF", _pdf_bytes,
+                    file_name="kinematik_mission_briefing.pdf",
+                    mime="application/pdf", width="stretch",
+                    key="kk_brief_pdf_dl")
+
         st.divider()
 
         # Collect all active goal keys once, outside the inner function.
