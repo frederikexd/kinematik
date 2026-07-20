@@ -187,11 +187,26 @@ class SupabaseAuth:
             ids = [r["workspace_id"] for r in member_rows]
             role_by_id = {str(r["workspace_id"]): r.get("role", "member")
                           for r in member_rows}
-            ws = (client.table("workspaces")
-                  .select("id, name, kind")
-                  .in_("id", ids).execute())
+            # The ecosystem's shared-scope workspace (Lead Notes / Integration
+            # ledger / Team CAD library) is provisioned server-side and every
+            # ecosystem member is auto-enrolled in it — but it is NOT a place
+            # users work: its three surfaces are surfaced transparently inside
+            # the real workspaces. So keep it out of the picker entirely. We
+            # request is_shared_scope defensively: on a deployment that hasn't
+            # run shared_scope.sql the column doesn't exist, so we retry without
+            # it and simply show every membership (nothing to hide there).
+            try:
+                ws = (client.table("workspaces")
+                      .select("id, name, kind, is_shared_scope")
+                      .in_("id", ids).execute())
+            except Exception:
+                ws = (client.table("workspaces")
+                      .select("id, name, kind")
+                      .in_("id", ids).execute())
             out: list[tuple[Workspace, str]] = []
             for row in (ws.data or []):
+                if row.get("is_shared_scope"):
+                    continue   # hidden ecosystem shared scope — never a pickable workspace
                 wid = str(row["id"])
                 out.append((
                     Workspace(id=wid, name=row.get("name", wid),
@@ -234,6 +249,66 @@ class SupabaseAuth:
             raise
         except Exception as e:
             raise AuthError(f"Could not create workspace: {e}") from e
+
+    # ------------------------------------------------------------------ #
+    #  Project-lead gating (see project_leads.sql). Only registered project
+    #  leads may create workspaces; everyone else joins via invite. These
+    #  wrap the SECURITY DEFINER RPCs so the UI can show/enforce lead status.
+    # ------------------------------------------------------------------ #
+    def register_as_project_lead(self, session: Session) -> None:
+        """Opt the signed-in user in as a project lead. Idempotent."""
+        if not session.is_valid():
+            raise AuthError("Not signed in.")
+        try:
+            self._user_client(session).rpc("register_project_lead", {}).execute()
+        except Exception as e:
+            raise AuthError(f"Could not register as project lead: {e}") from e
+
+    def project_lead_status(self, session: Session) -> dict:
+        """Snapshot the picker renders to reflect who is a registered lead:
+        {is_lead, workspace_count, workspace_cap, can_create}. Fails soft to a
+        conservative non-lead snapshot so the UI never crashes if the RPC is
+        missing (e.g. project_leads.sql not yet applied)."""
+        _fallback = {"is_lead": False, "workspace_count": 0,
+                     "workspace_cap": 10, "can_create": False,
+                     "is_owner": False, "_resolved": False}
+        if not session.is_valid():
+            return _fallback
+        try:
+            resp = self._user_client(session).rpc(
+                "project_lead_status", {}).execute()
+            row = resp.data
+            if isinstance(row, list):
+                row = row[0] if row else None
+            if not isinstance(row, dict):
+                return _fallback
+            return {
+                "is_lead": bool(row.get("is_lead", False)),
+                "workspace_count": int(row.get("workspace_count", 0) or 0),
+                "workspace_cap": int(row.get("workspace_cap", 10) or 10),
+                "can_create": bool(row.get("can_create", False)),
+                "is_owner": bool(row.get("is_owner", False)),
+                "_resolved": True,
+            }
+        except Exception:
+            return _fallback
+
+    def promote_project_lead(self, session: Session, email: str) -> None:
+        """Owner (or an existing lead) appoints another account, by email, as a
+        project lead so they too can create workspaces. The target must already
+        have a KinematiK account. Permission is re-checked server-side; a
+        non-owner/non-lead caller gets a permission error surfaced as AuthError.
+        """
+        if not session.is_valid():
+            raise AuthError("Not signed in.")
+        if not (email or "").strip():
+            raise AuthError("Enter an email address.")
+        try:
+            self._user_client(session).rpc(
+                "promote_project_lead",
+                {"lead_email": email.strip()}).execute()
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
 
     # ------------------------------------------------------------------ #
     #  Member administration (via SECURITY DEFINER RPCs, see
@@ -303,6 +378,22 @@ class SupabaseAuth:
         except Exception as e:
             raise AuthError(
                 f"Could not load workspace activity: {self._rpc_msg(e)}") from e
+
+    def workspace_roster_status(self, session: Session,
+                                workspace_id: str) -> list[dict]:
+        """Per-member sign-up / activity status for ONE workspace (owner/lead
+        only): [{user_id, email, role, signed_up, last_sign_in_at, joined_at,
+        last_saved_at, active}, ...]. 'signed_up' means the account has ever
+        signed in; 'active' means signed in AND has at least one save here.
+        Returns [] (not an error) if the roster-status RPC isn't installed, so
+        the oversight panel degrades gracefully on older deployments."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("workspace_roster_status",
+                              {"ws": str(workspace_id)}).execute()
+            return list(resp.data or [])
+        except Exception:
+            return []
 
     def set_member_role(self, session: Session, workspace_id: str,
                         target_user_id: str, role: str) -> None:

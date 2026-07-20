@@ -89,6 +89,7 @@ _SUBMODULES = (
     "tractive_system",
     "transient",
     "ghost_topology",   # Ghost Topology — transient compliance audit
+    "kinematik_stochastic",  # Stochastic Inversion — tolerance sweep / metrology twin
     "tubeframe",          # Frame Planner — added from frame_planner branch
     "units",
     "adapter",
@@ -400,6 +401,22 @@ _FROM = {
     "GhostThresholds":      ("ghost_topology", "GhostThresholds"),
     "GhostAudit":           ("ghost_topology", "GhostAudit"),
     "ghost_audit":          ("ghost_topology", "ghost_audit"),
+    # ---------- Stochastic Inversion (kinematik_stochastic) ----------
+    "ToleranceSpec":          ("kinematik_stochastic", "ToleranceSpec"),
+    "ToleranceField":         ("kinematik_stochastic", "ToleranceField"),
+    "YieldSpec":              ("kinematik_stochastic", "YieldSpec"),
+    "StochasticThresholds":   ("kinematik_stochastic", "StochasticThresholds"),
+    "StochasticResult":       ("kinematik_stochastic", "StochasticResult"),
+    "Sensitivity":            ("kinematik_stochastic", "Sensitivity"),
+    "sensitivity":            ("kinematik_stochastic", "sensitivity"),
+    "stochastic_sweep":       ("kinematik_stochastic", "stochastic_sweep"),
+    "RobustNudge":            ("kinematik_stochastic", "RobustNudge"),
+    "robust_nudge":           ("kinematik_stochastic", "robust_nudge"),
+    "Adjuster":               ("kinematik_stochastic", "Adjuster"),
+    "Prescription":           ("kinematik_stochastic", "Prescription"),
+    "alignment_prescription": ("kinematik_stochastic", "alignment_prescription"),
+    "render_stochastic_md":   ("kinematik_stochastic", "render_stochastic_md"),
+    "render_prescription_md": ("kinematik_stochastic", "render_prescription_md"),
     "ghost_audit_transient": ("ghost_topology", "ghost_audit_transient"),
     "render_ghost_md":      ("ghost_topology", "render_ghost_md"),
     "uniform_sections":     ("ghost_topology", "uniform_sections"),
@@ -567,6 +584,11 @@ __all__ = [
     "MemberSection", "TireSensitivity", "GhostCorner", "GhostInstant",
     "GhostThresholds", "GhostAudit", "ghost_audit", "ghost_audit_transient",
     "render_ghost_md", "uniform_sections", "ghost_topology",
+    "kinematik_stochastic", "ToleranceSpec", "ToleranceField", "YieldSpec",
+    "StochasticThresholds", "StochasticResult", "Sensitivity", "sensitivity",
+    "stochastic_sweep", "RobustNudge", "robust_nudge", "Adjuster",
+    "Prescription", "alignment_prescription", "render_stochastic_md",
+    "render_prescription_md",
     # EV powertrain & energy
     "Powertrain", "EVParams", "EVLapSimulator",
     "EVRunResult", "ArchitectureComparison", "ev_powertrain",

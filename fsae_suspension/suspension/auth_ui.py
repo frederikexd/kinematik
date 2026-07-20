@@ -106,30 +106,42 @@ def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
         if st.button("Sign out", key="_kx_signout"):
             _sign_out(st, auth)
 
+    # Who is a registered project lead — the source of truth for who may create
+    # workspaces. Only leads create; everyone else joins via invite. Reflected
+    # honestly in the UI below (never just assumed from a checkbox).
+    lead = auth.project_lead_status(session)
+
     if not workspaces:
-        st.info("You are not a member of any workspace yet. Create one to "
-                "start — or, if a teammate sent you an invite link, open it "
-                "while signed in and you'll land in their workspace.")
-        name = st.text_input("New workspace name", key="_kx_new_ws")
-        kind = st.selectbox("Type", ["team", "ev_startup", "sandbox"],
-                            key="_kx_new_ws_kind")
-        is_lead = st.checkbox(
-            "I am the project lead (allows up to 10 workspaces)",
-            key="_kx_is_lead"
-        )
-        if st.button("Create workspace", type="primary"):
-            try:
-                if is_lead:
+        if lead["is_lead"]:
+            st.success("✅ You're signed up as a **project lead**. Create your "
+                       "first workspace to start your ecosystem, then invite "
+                       "your subsystem leads and members into it.")
+            name = st.text_input("New workspace name", key="_kx_new_ws")
+            kind = st.selectbox("Type", ["team", "ev_startup", "sandbox"],
+                                key="_kx_new_ws_kind")
+            if st.button("Create workspace", type="primary"):
+                try:
+                    ws = auth.create_workspace(session, name, kind=kind)
+                except AuthError as e:
+                    st.error(str(e))
+                    return None
+                st.session_state["_kx_ws_id"] = ws.id
+                st.rerun()
+        else:
+            st.info("You're **not** a member of any workspace yet. If a project "
+                    "lead sent you an invite link, open it while signed in and "
+                    "you'll land in their workspace.")
+            if lead.get("is_owner"):
+                st.divider()
+                st.caption("You're the project **owner**. Register yourself as a "
+                           "lead to create and run workspaces.")
+                if st.button("Enable workspace creation", key="_kx_reg_lead"):
                     try:
-                        auth._user_client(session).rpc("register_project_lead", {}).execute()
-                    except Exception:
-                        pass
-                ws = auth.create_workspace(session, name, kind=kind)
-            except AuthError as e:
-                st.error(str(e))
-                return None
-            st.session_state["_kx_ws_id"] = ws.id
-            st.rerun()
+                        auth.register_as_project_lead(session)
+                    except AuthError as e:
+                        st.error(str(e))
+                        return None
+                    st.rerun()
         return None
 
     labels = {f"{ws.name}  ·  {role}": ws.id for ws, role in workspaces}
@@ -143,17 +155,50 @@ def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
                 break
     with st.sidebar:
         choice = st.selectbox("Workspace", keys, index=index, key="_kx_ws_choice")
-        with st.expander("➕ New workspace", expanded=False):
-            new_ws_name = st.text_input("Workspace name", key="_kx_extra_ws_name")
-            new_ws_kind = st.selectbox("Type", ["team", "ev_startup", "sandbox"],
-                                       key="_kx_extra_ws_kind")
-            if st.button("Create", key="_kx_extra_ws_btn"):
-                try:
-                    new_ws = auth.create_workspace(session, new_ws_name, kind=new_ws_kind)
-                    st.session_state["_kx_ws_id"] = new_ws.id
-                    st.rerun()
-                except AuthError as e:
-                    st.error(str(e))
+        # Creating more workspaces is a project-lead action only. Reflect the
+        # caller's real status rather than showing everyone a create box.
+        if lead["is_lead"]:
+            _cnt, _cap = lead["workspace_count"], lead["workspace_cap"]
+            with st.expander(f"➕ New workspace  ({_cnt}/{_cap})", expanded=False):
+                if lead["can_create"]:
+                    new_ws_name = st.text_input("Workspace name",
+                                                key="_kx_extra_ws_name")
+                    new_ws_kind = st.selectbox(
+                        "Type", ["team", "ev_startup", "sandbox"],
+                        key="_kx_extra_ws_kind")
+                    if st.button("Create", key="_kx_extra_ws_btn"):
+                        try:
+                            new_ws = auth.create_workspace(
+                                session, new_ws_name, kind=new_ws_kind)
+                            st.session_state["_kx_ws_id"] = new_ws.id
+                            st.rerun()
+                        except AuthError as e:
+                            st.error(str(e))
+                else:
+                    st.caption(f"You've reached your workspace limit "
+                               f"({_cnt}/{_cap}). Remove an unused workspace "
+                               "to create another.")
+        else:
+            # A member/subsystem lead who joined via invite: make it clear
+            # creation isn't theirs. Only the project owner sees a way to
+            # enable it for themselves; everyone else joins via invite.
+            with st.expander("➕ New workspace", expanded=False):
+                if lead.get("is_owner"):
+                    st.caption("You're the project **owner**. Enable workspace "
+                               "creation to start building your ecosystem.")
+                    if st.button("Enable workspace creation",
+                                 key="_kx_reg_lead_2"):
+                        try:
+                            auth.register_as_project_lead(session)
+                            st.rerun()
+                        except AuthError as e:
+                            st.error(str(e))
+                else:
+                    st.caption("Only the **project lead** can create "
+                               "workspaces. You joined via invite, so you work "
+                               "inside the lead's workspaces. Need your own "
+                               "workspace? Ask the project owner to appoint you "
+                               "as a lead.")
     ws_id = labels[choice]
     st.session_state["_kx_ws_id"] = ws_id
 
@@ -323,6 +368,39 @@ def render_workspace_oversight(st, session: Optional[Session] = None) -> None:
                           "in the last 7 days" if saves7 else ""))
         else:
             st.caption("No project activity yet.")
+
+        with st.expander("Sign-up status", expanded=False):
+            try:
+                roster = auth.workspace_roster_status(session, ws_id)
+            except AuthError as e:
+                st.caption(f"Couldn't load sign-up status: {e}")
+                roster = []
+            if not roster:
+                st.caption("No roster to show yet — or this deployment "
+                           "predates the roster-status view (run "
+                           "`suspension/workspace_roster_status.sql`).")
+            else:
+                _not_signed = [m for m in roster if not m.get("signed_up")]
+                _signed_idle = [m for m in roster
+                                if m.get("signed_up") and not m.get("active")]
+                if _not_signed:
+                    st.caption("⚠️ **Hasn't signed in yet:** "
+                               + ", ".join(str(m.get("email", "?"))
+                                           for m in _not_signed))
+                for m in roster:
+                    email = str(m.get("email", "?"))
+                    role = str(m.get("role", "member"))
+                    if not m.get("signed_up"):
+                        badge, detail = "⚪ never signed in", ""
+                    elif m.get("active"):
+                        _ls = str(m.get("last_saved_at") or "")[:16].replace("T", " ")
+                        badge = "🟢 active"
+                        detail = f" · last save {_ls}" if _ls else ""
+                    else:
+                        _si = str(m.get("last_sign_in_at") or "")[:16].replace("T", " ")
+                        badge = "🟡 signed in, no saves yet"
+                        detail = f" · last sign-in {_si}" if _si else ""
+                    st.caption(f"{badge} — **{email}** `{role}`{detail}")
 
         with st.expander("Recent activity", expanded=False):
             try:
@@ -501,6 +579,35 @@ def render_members_admin(st, ctx: WorkspaceContext) -> None:
             try:
                 auth.add_member(session, ctx.workspace_id, new_email, role=new_role)
                 st.success(f"Added {new_email} as {new_role}.")
+                st.rerun()
+            except AuthError as e:
+                st.error(str(e))
+
+    # --- appoint a project lead (owner only) ----------------------------- #
+    # Appointing a lead is deployment-wide (it lets that account create its OWN
+    # workspaces), not workspace-scoped — so it's gated on OWNER status, not on
+    # being an admin of this particular workspace. The RPC re-checks server-side.
+    try:
+        _lead_status = auth.project_lead_status(session)
+    except Exception:
+        _lead_status = {}
+    if _lead_status.get("is_owner"):
+        st.divider()
+        st.markdown("**Appoint a project lead**")
+        st.caption("Lets this person create and run their own workspaces. They "
+                   "must already have a KinematiK account. Ordinary members "
+                   "don't need this — just add them above or send an invite.")
+        st.caption("ℹ️ If someone was given an **invite link** by their project "
+                   "lead, they don't need to be appointed here — they can "
+                   "disregard this and just open the invite link to join.")
+        lc = st.columns([7, 2])
+        lead_email = lc[0].text_input("Lead email", key="_kx_promote_email",
+                                      label_visibility="collapsed",
+                                      placeholder="subsystem-lead@university.edu")
+        if lc[1].button("Appoint", key="_kx_promote_btn"):
+            try:
+                auth.promote_project_lead(session, lead_email)
+                st.success(f"{lead_email} can now create workspaces.")
                 st.rerun()
             except AuthError as e:
                 st.error(str(e))
