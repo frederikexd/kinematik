@@ -2996,6 +2996,7 @@ _TAB_META = {
     "ghost":       ("👻🔩", "Ghost Topology"),
     "phantom_env": ("📦👻", "Phantom Envelope"),
     "thermic":     ("👻🔥", "ThermicPatch"),
+    "stochastic":  ("🎲🛡️", "Stochastic Inversion"),
 }
 _FULL_ORDER = list(_TAB_META.keys())
 
@@ -3018,7 +3019,7 @@ _TAB_CATEGORIES = [
       "setup"]),
     ("design",   "🛠️", "Design & Sizing",
      ["brakes", "accum", "pcb", "compliance", "ghost", "phantom_env",
-      "teamfit", "model3d"]),
+      "stochastic", "teamfit", "model3d"]),
     ("checks",   "✅", "Checks & Integration",
      ["integration", "frames", "validation", "proof", "saboteur", "phantom",
       "earshot", "fusebox", "dfmea", "tractive"]),
@@ -3052,7 +3053,7 @@ _SHARED_IDS = ["model3d", "integration", "frames", "registry", "docs", "notes", 
 # to see how brake balance plays out on track).
 _ROLE_TABS = {
     "suspension": ["kinematics", "roll", "compliance", "tire", "thermic",
-                   "setup", "laptime"],
+                   "stochastic", "setup", "laptime"],
     "aero":       ["aero", "laptime", "setup"],
     "powertrain": ["ev", "laptime", "setup", "dfmea"],
     "electrics":  ["accum", "ev", "laptime", "pcb", "tractive", "dfmea"],
@@ -3442,6 +3443,22 @@ _BRIEF_TOOLS = {
         "is an explicit 1D finite-difference ladder run along the force/slip "
         "history you already solved \u2014 laptop arithmetic \u2014 reusing the "
         "co-sim channel's thermal parameters so the two describe one tyre."),
+    "stochastic": (
+        "The manufacturing-yield audit: declares the ASYMMETRIC error field "
+        "your shop actually welds to, sweeps thousands of buildable cars "
+        "through the kinematics, and reports the yield \u2014 then re-aims the "
+        "nominal up-wind of the weld pull, and turns measured as-built "
+        "coordinates into a verified shim-pack Alignment Prescription.",
+        "The car on the floor is never the car on screen \u2014 welds pull tabs "
+        "by millimetres and every solver in the chain is blind to it. You "
+        "need this so the geometry you tuned survives being built by hand, "
+        "and so a mis-pulled tab becomes a shim arithmetic problem instead "
+        "of a mystery at the first test day.",
+        "CAD, PLM and kinematics tools all take coordinates as exact \u2014 "
+        "tolerance lives in a drawing note nobody simulates. The sweep "
+        "becomes laptop arithmetic here because the forward solver is fast "
+        "enough to finite-difference, so the error cloud propagates through "
+        "one priced sensitivity matrix instead of a cluster."),
     "cost": (
         "FSAE Cost event BOM, auto-seeded from the Integration ledger, CSV "
         "export ready.",
@@ -3555,6 +3572,11 @@ _BRIEF_SIMPLE = {
                "the tread gets in a hard corner, whether it overheats out of "
                "that window mid-event, and how much grip the heat quietly "
                "steals \u2014 which a normal grip number can't see.",
+    "stochastic": "The welder will miss by a millimetre or two \u2014 every "
+                  "team's does. This shows whether your design still works "
+                  "when that happens, moves it so it does, and after the "
+                  "chassis is welded tells you exactly which shims to add "
+                  "to get your handling numbers back.",
     "cost": "Competitions score you on cost too. This builds the price list "
             "of the car and shows what each decision costs.",
     "weight": "One agreed list of how heavy everything is and where it sits — "
@@ -3616,6 +3638,8 @@ _VERIFY_GOALS = [
      ["earshot"]),
     ("vg_survive", "See what breaks first & how the car deforms under overload",
      ["fusebox", "ghost"]),
+    ("vg_build",  "Make the design survive being built by hand (weld tolerance)",
+     ["stochastic"]),
     ("vg_oversee", "Track team progress, provenance & decision history",
      ["registry", "notes", "analytics"]),
 ]
@@ -11529,6 +11553,7 @@ tab_fusebox  = _id_to_container["fusebox"]
 tab_ghost    = _id_to_container["ghost"]
 tab_phantom_env = _id_to_container["phantom_env"]
 tab_thermic  = _id_to_container["thermic"]
+tab_stochastic = _id_to_container["stochastic"]
 
 # --- 🎯 Proof Planner — first tab under the ui/ strangulation pattern. ------ #
 # All physics lives in suspension/proof_engine.py; all drawing in
@@ -11621,6 +11646,18 @@ with tab_thermic:
         _thermic_mod.render()
     except Exception as _tp_err:            # noqa: BLE001 — a broken tab must
         st.error(f"ThermicPatch failed to render: {_tp_err}")  # not kill app
+
+# --- 🎲🛡️ Stochastic Inversion — manufacturing yield, same ui/ pattern. ----- #
+# All physics lives in suspension/kinematik_stochastic.py (a Monte Carlo /
+# priced-linearisation tolerance layer over the rigid kinematics solver); all
+# drawing in ui/kinematik_stochastic.py. Reads the live hardpoints when the
+# Kinematics tab has set them — one geometry, another consumer, on purpose.
+with tab_stochastic:
+    try:
+        from ui import kinematik_stochastic as _stoch_mod
+        _stoch_mod.render()
+    except Exception as _sx_err:            # noqa: BLE001 — a broken tab must
+        st.error(f"Stochastic Inversion failed to render: {_sx_err}")  # not kill app
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any

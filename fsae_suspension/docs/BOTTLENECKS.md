@@ -246,6 +246,54 @@ output is exactly the load case and the pass criterion to hand the FEA seat —
 which instant of which event — not a substitute for it. Fifth consumer of the
 compliance stack, first consumer that closes the tyre loop.
 
+### 17 · The car nobody welds
+Every tool in the chain — enterprise PLM, this repo's own kinematics tab
+until now, the student spreadsheet — takes hardpoints as EXACT coordinates.
+Tolerance lives in a drawing note that nothing downstream ever simulates. On
+the floor the car is a random draw from a cloud around the design: hand welds
+pull tabs by 1–2 mm and pull them TOWARD the bead (a bias, not a scatter),
+jig errors stack, rod ends carry play. So the deck describes one car, the
+welder builds another, and a geometry optimised to a knife-edge peak on
+screen ships fragile: the tuning the team did all season was tuning a car
+that was never going to exist, and the first anyone learns of it is the tyre
+stickers coming back wrong at a test day nobody can afford to repeat. The
+mirror-image failure closes the loop: once the chassis IS welded and
+measured, no tool turns the as-built error back into the shim stack that
+restores the intent — alignment day is folklore and iteration instead of
+arithmetic.
+**Attacked now (new):** 🎲🛡️ Stochastic Inversion — the manufacturing-yield
+audit. Declare the ASYMMETRIC per-point, per-axis error field the shop
+actually holds (presets seed it; every bound editable) and the kinematic
+acceptance bands, and thousands of buildable cars sweep through the forward
+solver — the honest trick is one central-difference sensitivity matrix that
+propagates the error cloud in microseconds, PRICED live against a subsample
+of full nonlinear solves whose pass/fail agreement is printed with every
+yield (below the floor, the result demotes itself and says run full mode).
+The yield's anatomy is attributed: which metric kills it, and which tab's
+tolerance drives that metric — the jig worth building, named. An asymmetric
+field means E[Δmetric] = J·μ ≠ 0 — the EXPECTED as-built car is off-intent
+before the first cut — so the robust nudge solves the nominal shift that
+re-centres the whole cloud in the bands (aim up-wind of the weld pull),
+verified by full solves judged against the ORIGINAL intent so the goalposts
+cannot quietly move; a centred field gets the honest sentence (no nominal
+shift helps — jig the tabs or widen the bands) instead of a fabricated
+optimum. And the metrology loop closes: paste the CMM/caliper as-built
+coordinates (a >25 mm shift is refused as a units/frame slip, the Saboteur
+lesson, never shimmed), declare the adjusters the car really has — point,
+axis, range, shim step — and the Alignment Prescription solves, quantises,
+clamps and then RE-SOLVES the shimmed geometry in full: the residual printed
+is the one the real car will carry, and a metric in the null space of the
+declared adjusters is named unreachable instead of rounded away. Verdicts:
+ROBUST / MARGINAL / FRAGILE / SOLVER_LIMITED (perturbed geometries that fail
+to solve mean the nominal sits near a kinematic singularity — a fragility no
+shim fixes); RESTORED / PARTIAL / UNSHIMMABLE for the prescription. Scope,
+honestly: independent per-point errors (a jig shifting a cluster together is
+a nominal move, not a field), links built-to-fit (manufacturing error, not
+compliance — Ghost Topology owns the loaded deflection), kinematic intent
+only — the surviving population is handed to Ghost Topology, Phantom
+Envelope and ThermicPatch, which finally receive a distribution instead of
+a point.
+
 ### 9 · Interference found at the mill
 Rework is the tax for not integrating before cutting; a richer team can
 afford to cut twice.
