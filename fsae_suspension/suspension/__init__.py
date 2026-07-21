@@ -93,6 +93,7 @@ _SUBMODULES = (
     "simulforge",       # SimulForge — unified mechatronic co-solver
     "kinematik_stochastic",  # Stochastic Inversion — tolerance sweep / metrology twin
     "inverse_genesis",       # InverseGenesis — stochastic inverse engine
+    "inverse_genesis_fullcar",  # InverseGenesis-FullCar — full-vehicle inverse
     "morphmesh",             # MorphMesh — structural auto-synthesizer
     "omnicore",              # OmniCore — vehicle-synthesis referee
     "tubeframe",          # Frame Planner — added from frame_planner branch
@@ -450,6 +451,26 @@ _FROM = {
     "build_yield":            ("inverse_genesis", "build_yield"),
     "inverse_genesis_run":    ("inverse_genesis", "inverse_genesis"),
     "render_genesis_md":      ("inverse_genesis", "render_genesis_md"),
+    # ---------- InverseGenesis-FullCar (inverse_genesis_fullcar) ----------
+    "CellSpec":               ("inverse_genesis_fullcar", "CellSpec"),
+    "RuleMatrix":             ("inverse_genesis_fullcar", "RuleMatrix"),
+    "DesignSpace":            ("inverse_genesis_fullcar", "DesignSpace"),
+    "PointsReference":        ("inverse_genesis_fullcar", "PointsReference"),
+    "FullCarConfig":          ("inverse_genesis_fullcar", "FullCarConfig"),
+    "ConfigScore":            ("inverse_genesis_fullcar", "ConfigScore"),
+    "FullCarResult":          ("inverse_genesis_fullcar", "FullCarResult"),
+    "FullCarLoadCase":        ("inverse_genesis_fullcar", "LoadCase"),
+    "synthesize_fullcar":     ("inverse_genesis_fullcar", "synthesize_fullcar"),
+    "evaluate_config":        ("inverse_genesis_fullcar", "evaluate_config"),
+    "kinematic_intent_for":   ("inverse_genesis_fullcar", "kinematic_intent_for"),
+    "synthesize_hardpoints":  ("inverse_genesis_fullcar", "synthesize_hardpoints"),
+    "load_case_for":          ("inverse_genesis_fullcar", "load_case_for"),
+    "export_hardpoints_csv":  ("inverse_genesis_fullcar", "export_hardpoints_csv"),
+    "export_flash_constants_c":  ("inverse_genesis_fullcar",
+                                  "export_flash_constants_c"),
+    "export_flash_constants_py": ("inverse_genesis_fullcar",
+                                  "export_flash_constants_py"),
+    "render_fullcar_md":      ("inverse_genesis_fullcar", "render_fullcar_md"),
     "LoadCase":               ("morphmesh", "LoadCase"),
     "LoadFan":                ("morphmesh", "LoadFan"),
     "load_fan_from_audit":    ("morphmesh", "load_fan_from_audit"),
