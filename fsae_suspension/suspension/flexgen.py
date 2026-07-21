@@ -114,6 +114,29 @@ def render():
     from suspension.flex import MATERIALS
     import suspension.flexgen as fg
 
+    # --- deployment integrity guard --------------------------------------- #
+    # This tab and suspension/flexgen.py ship together. If the running image
+    # has a stale or partial copy of the physics module (an old .pyc, a
+    # half-synced deploy), a bare fg.FlexureBlade(...) later would fail with a
+    # cryptic "module has no attribute 'FlexureBlade'". Name the real cause
+    # once, up front, instead — the fix is redeploying the module, not editing
+    # inputs. (See suspension/flexgen.py; every symbol below is module-level.)
+    _required = ("FlexureBlade", "BladeSection", "BladeLoadCase", "PRBChain",
+                 "equivalent_spring", "flexgen_lint", "coilover_downsize",
+                 "export_stl", "export_step", "layup_map",
+                 "render_flexgen_md")
+    _missing = [n for n in _required if not hasattr(fg, n)]
+    if _missing:
+        st.error(
+            "FlexGen's physics module is out of date in this deployment: "
+            f"`suspension/flexgen.py` is missing {', '.join(_missing)}. "
+            "The UI and the solver ship as a pair — redeploy the current "
+            "`suspension/flexgen.py` (and clear any stale "
+            "`suspension/__pycache__/flexgen.*.pyc`). Loaded module: "
+            f"`{getattr(fg, '__file__', '?')}`."
+        )
+        return
+
     st.markdown("### 🌿🔩 FlexGen — compliant kinematics synthesizer")
     st.caption(
         "Replace a ball joint with a monolithic flexure blade: zero friction, "
