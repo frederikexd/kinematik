@@ -24,10 +24,28 @@ Session keys used:
 from __future__ import annotations
 
 
+def _plt():
+    """Return matplotlib.pyplot (Agg) if it's installed, else None.
+
+    Plotting is a *convenience*, not the product: every number, table and
+    export in this tab comes from suspension/flexgen.py (pure numpy). If the
+    deployment image ships without matplotlib, the tab must still deliver all
+    of that rather than crash on a missing optional dependency — so callers
+    check for None and skip the picture, keeping the physics.
+    """
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        return plt
+    except Exception:               # noqa: BLE001 — any import failure = no plot
+        return None
+
+
 def _fig_sweep(spring, blade):
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    plt = _plt()
+    if plt is None:
+        return None
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.6, 3.4))
     ax1.plot(spring.z_mm, spring.f_n, lw=2)
@@ -56,9 +74,9 @@ def _fig_sweep(spring, blade):
 
 def _fig_blade(blade, state):
     import numpy as np
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    plt = _plt()
+    if plt is None:
+        return None
 
     fig, ax = plt.subplots(figsize=(6.4, 2.6))
     # undeformed centreline
@@ -96,7 +114,33 @@ def render():
     from suspension.flex import MATERIALS
     import suspension.flexgen as fg
 
+    # --- deployment integrity guard --------------------------------------- #
+    # This tab and suspension/flexgen.py ship together. If the running image
+    # has a stale or partial copy of the physics module (an old .pyc, a
+    # half-synced deploy), a bare fg.FlexureBlade(...) later would fail with a
+    # cryptic "module has no attribute 'FlexureBlade'". Name the real cause
+    # once, up front, instead — the fix is redeploying the module, not editing
+    # inputs. (See suspension/flexgen.py; every symbol below is module-level.)
+    _required = ("FlexureBlade", "BladeSection", "BladeLoadCase", "PRBChain",
+                 "equivalent_spring", "flexgen_lint", "coilover_downsize",
+                 "export_stl", "export_step", "layup_map",
+                 "render_flexgen_md")
+    _missing = [n for n in _required if not hasattr(fg, n)]
+    if _missing:
+        st.error(
+            "FlexGen's physics module is out of date in this deployment: "
+            f"`suspension/flexgen.py` is missing {', '.join(_missing)}. "
+            "The UI and the solver ship as a pair — redeploy the current "
+            "`suspension/flexgen.py` (and clear any stale "
+            "`suspension/__pycache__/flexgen.*.pyc`). Loaded module: "
+            f"`{getattr(fg, '__file__', '?')}`."
+        )
+        return
+
     st.markdown("### 🌿🔩 FlexGen — compliant kinematics synthesizer")
+    st.caption(
+        f"build flexgen-2 · module `{getattr(fg, '__file__', '?')}`"
+    )
     st.caption(
         "Replace a ball joint with a monolithic flexure blade: zero friction, "
         "zero slop, maintenance-free — priced honestly in strain energy, "
@@ -208,8 +252,18 @@ def render():
                    "blade — not an effective-length chart.")
     m4.metric("Blade mass", f"{blade.mass_g():.1f} g")
 
-    st.pyplot(_fig_sweep(spring, blade), use_container_width=True)
-    st.pyplot(_fig_blade(blade, full), use_container_width=True)
+    _sweep_fig = _fig_sweep(spring, blade)
+    _blade_fig = _fig_blade(blade, full)
+    if _sweep_fig is not None and _blade_fig is not None:
+        st.pyplot(_sweep_fig, use_container_width=True)
+        st.pyplot(_blade_fig, use_container_width=True)
+    else:
+        st.caption(
+            "📉 Plots are unavailable in this deployment (matplotlib is not "
+            "installed) — every number, the compliance matrix and all exports "
+            "below are unaffected. `pip install matplotlib` to restore the "
+            "load–travel, equivalent-spring and deformed-blade figures."
+        )
 
     # ---------------- coilover downsizing ---------------- #
     st.markdown("#### Coilover downsizing")
