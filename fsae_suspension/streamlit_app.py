@@ -3006,6 +3006,7 @@ _TAB_META = {
     "thermic":     ("👻🔥", "ThermicPatch"),
     "stochastic":  ("🎲🛡️", "Stochastic Inversion"),
     "genesis":     ("🧬", "InverseGenesis"),
+    "genesis_fc":  ("🧬🏁", "InverseGenesis-FullCar"),
     "forge":       ("⚡🔩", "SimulForge"),
     "morph":       ("🕸️🔩", "MorphMesh"),
     "omni":        ("🪐", "OmniCore"),
@@ -3032,7 +3033,7 @@ _TAB_CATEGORIES = [
       "laptime", "setup"]),
     ("design",   "🛠️", "Design & Sizing",
      ["brakes", "accum", "pcb", "compliance", "ghost", "phantom_env",
-      "stochastic", "genesis", "morph", "omni", "flexgen", "teamfit",
+      "stochastic", "genesis", "genesis_fc", "morph", "omni", "flexgen", "teamfit",
       "model3d"]),
     ("checks",   "✅", "Checks & Integration",
      ["integration", "frames", "validation", "proof", "saboteur", "phantom",
@@ -3067,10 +3068,10 @@ _SHARED_IDS = ["model3d", "integration", "frames", "registry", "docs", "notes", 
 # to see how brake balance plays out on track).
 _ROLE_TABS = {
     "suspension": ["kinematics", "roll", "compliance", "flexgen", "tire",
-                   "thermic", "forge", "stochastic", "genesis", "morph",
+                   "thermic", "forge", "stochastic", "genesis", "genesis_fc", "morph",
                    "omni", "setup", "laptime"],
     "aero":       ["aero", "laptime", "setup"],
-    "powertrain": ["ev", "laptime", "setup", "dfmea"],
+    "powertrain": ["ev", "genesis_fc", "laptime", "setup", "dfmea"],
     "electrics":  ["accum", "ev", "laptime", "pcb", "tractive", "dfmea",
                    "forge", "omni"],
     # cooling's radiator sizing / CAD import lives in the EV tab; it also owns
@@ -11933,6 +11934,7 @@ tab_phantom_env = _id_to_container["phantom_env"]
 tab_thermic  = _id_to_container["thermic"]
 tab_stochastic = _id_to_container["stochastic"]
 tab_genesis  = _id_to_container["genesis"]
+tab_genesis_fc = _id_to_container["genesis_fc"]
 tab_forge    = _id_to_container["forge"]
 tab_morph    = _id_to_container["morph"]
 tab_omni     = _id_to_container["omni"]
@@ -12056,6 +12058,20 @@ with tab_genesis:
         _genesis_mod.render()
     except Exception as _ig_err:            # noqa: BLE001 — a broken tab must
         st.error(f"InverseGenesis failed to render: {_ig_err}")  # not kill app
+
+# --- 🧬🏁 InverseGenesis-FullCar — full-vehicle inverse, same ui/ pattern. -- #
+# All physics lives in suspension/inverse_genesis_fullcar.py (staged
+# deterministic inverse search over the battery/architecture/gear grid, one
+# consistent car per candidate through the QSS lap chain and the transient
+# pack-thermal network, the corner-level InverseGenesis reused for hardpoint
+# synthesis); all drawing in ui/inverse_genesis_fullcar.py. Can stage the
+# winner's derived kinematic intent for the corner InverseGenesis tab.
+with tab_genesis_fc:
+    try:
+        from ui import inverse_genesis_fullcar as _fc_mod
+        _fc_mod.render()
+    except Exception as _fc_err:            # noqa: BLE001 — a broken tab must
+        st.error(f"InverseGenesis-FullCar failed to render: {_fc_err}")  # not kill app
 
 # --- ⚡🔩 SimulForge — unified mechatronic co-solver, same ui/ pattern. ------ #
 # All physics lives in suspension/simulforge.py (joining transient,
