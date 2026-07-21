@@ -91,8 +91,12 @@ def _load_build_briefing():
     src, tree = _load_app_tree()
     need = {"_BRIEF_PURPOSES", "_ROLE_GOALS", "_VERIFY_GOALS",
             "_FREETEXT_KEYWORDS", "_FULL_ORDER", "_TAB_META", "_BRIEF_TOOLS",
+            "_BRIEF_SIMPLE", "_BRIEF_TOOL_FEATURES", "_BRIEF_GOAL_FEATURES",
+            "_ROLE_LABELS", "_CAT_LABEL", "_ID_CATEGORY", "_TAB_CATEGORIES",
             "_build_briefing", "_brief_goal_options",
-            "_freetext_matched_tools", "_BRIEF_PURPOSE_MAP"}
+            "_freetext_matched_tools", "_BRIEF_PURPOSE_MAP",
+            "_briefing_ordered_tools", "_briefing_feature_lines",
+            "_briefing_to_text"}
     segs = []
     for node in tree.body:
         names = []
@@ -105,6 +109,10 @@ def _load_build_briefing():
             names = [node.name]
         if names and any(n in need for n in names):
             segs.append((node.lineno, ast.get_source_segment(src, node)))
+        elif isinstance(node, ast.For):
+            seg = ast.get_source_segment(src, node)
+            if seg and "_ID_CATEGORY[" in seg:
+                segs.append((node.lineno, seg))
     segs.sort()
     ns: dict = {}
     exec("from __future__ import annotations\n"
@@ -151,3 +159,65 @@ def test_freetext_still_expands_the_toolbox():
                style="numbers", proficiency="advanced")
     # the note should pull in at least one energy/thermal-related tab
     assert bf["note_tabs"], "freetext note added no tools"
+
+
+# --------------------------------------------------------------------------- #
+#  Audio + PDF — the briefing compiles to spoken text and a PDF-ready markdown
+# --------------------------------------------------------------------------- #
+def test_briefing_compiles_to_text_and_speech():
+    ns = _load_build_briefing()
+    build = ns["_build_briefing"]
+    to_text = ns["_briefing_to_text"]
+    bf = build(["suspension"], "design", [], "", style="visual",
+               proficiency="intermediate")
+    md, speech = to_text(bf)
+    assert md.startswith("# KinematiK — Your Mission Briefing")
+    assert "Your tool plan" in md
+    assert len(speech) > 100          # a real spoken script, not empty
+    # speech must be free of the markdown/glyph noise the cleaner strips
+    for bad in ("**", "→", "×", "“", "”"):
+        assert bad not in speech
+
+
+def test_briefing_text_depth_tracks_proficiency():
+    ns = _load_build_briefing()
+    build = ns["_build_briefing"]
+    to_text = ns["_briefing_to_text"]
+    opts = {k: (lab, ids)
+            for k, lab, ids in ns["_brief_goal_options"](["powertrain"])}
+    synth = next(k for k, (lab, ids) in opts.items() if "genesis_fc" in ids)
+
+    md_beg, _ = to_text(build(["powertrain"], "design", [synth], "",
+                              style="visual", proficiency="beginner"))
+    md_int, _ = to_text(build(["powertrain"], "design", [synth], "",
+                              style="visual", proficiency="intermediate"))
+    md_adv, _ = to_text(build(["powertrain"], "design", [synth], "",
+                              style="visual", proficiency="advanced"))
+
+    # the FullCar tool is present in the PDF markdown at every level
+    for md in (md_beg, md_int, md_adv):
+        assert "InverseGenesis-FullCar" in md
+
+    # beginner adds plain-English; advanced collapses the external-tool
+    # comparison; intermediate keeps it and is between the two in length
+    assert "In plain English" in md_beg
+    assert "Why here, not MATLAB" in md_int
+    assert "Why here, not MATLAB" not in md_adv
+    assert len(md_beg) > len(md_int) > len(md_adv)
+
+
+def test_briefing_markdown_renders_to_pdf():
+    import os
+    import tempfile
+    from suspension import project as pj
+
+    ns = _load_build_briefing()
+    build = ns["_build_briefing"]
+    to_text = ns["_briefing_to_text"]
+    bf = build(["powertrain"], "design", [], "pack overheats in endurance",
+               style="visual", proficiency="beginner")
+    md, _ = to_text(bf)
+    out = os.path.join(tempfile.gettempdir(), "t_mission_briefing.pdf")
+    pj.render_pdf(md, out)             # must not raise on any briefing content
+    assert os.path.getsize(out) > 1000
+    os.unlink(out)
