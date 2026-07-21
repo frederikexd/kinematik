@@ -32,6 +32,8 @@ cascadio>=0.0.16; python_version < "3.13"   # STEP/STP chassis import (chassis.p
 fast_simplification>=0.1   # faster CAD-part decimation for the 3D model (optional;
                            # falls back to built-in vertex clustering if absent)
 rtree>=1.0         # chassis/part collision queries via trimesh.proximity
+matplotlib>=3.7    # FlexGen tab plots (ui/flexgen.py). Optional: the tab
+                   # degrades to numbers-only + a caption when absent.
 reportlab>=4.0     # PDF design-handover export         (project.py: render_pdf)
 supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseStore;
                    #  workspace.py: tenant-scoped backend — run workspace_isolation.sql)
