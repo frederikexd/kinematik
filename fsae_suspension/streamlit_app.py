@@ -5915,6 +5915,297 @@ def _render_brief_questionnaire(roles):
         st.rerun()
 
 
+def _briefing_ordered_tools(_bf):
+    """The (index, tool_id) plan exactly as the panel renders it: core tabs in
+    canonical order, then the Integration + Validation handover pair."""
+    _out = []
+    _n = 0
+    for _tid in _bf.get("core_tabs", []):
+        if _tid in _TAB_META and _tid in _BRIEF_TOOLS:
+            _n += 1
+            _out.append((_n, _tid))
+    for _tid in ("integration", "validation"):
+        _n += 1
+        _out.append((_n, _tid))
+    return _out
+
+
+def _briefing_feature_lines(_bf, _tid):
+    """Feature bullets for one tool under the active goals — identical rule to
+    _brief_tool_block: goal-specific first (de-duped across goals), else the
+    tool's complete fallback list. Advanced proficiency with no goal-specific
+    bullets gets none (the panel shows a pointer instead of the full dump)."""
+    _active_goals = _bf.get("active_goal_keys", [])
+    _seen, _lines = set(), []
+    for _gk in _active_goals:
+        for _feat in _BRIEF_GOAL_FEATURES.get((_gk, _tid), []):
+            if _feat not in _seen:
+                _seen.add(_feat)
+                _lines.append(_feat)
+    if not _lines and _bf.get("proficiency") != "advanced":
+        _lines = list(_BRIEF_TOOL_FEATURES.get(_tid, []))
+    return _lines
+
+
+def _briefing_to_text(_bf):
+    """Compile the whole briefing into (markdown, speech_text).
+
+    markdown  -> project_mod.render_pdf for the downloadable PDF.
+    speech    -> the browser speech synthesiser for the audio player.
+    Both come from ONE pass over the same plan the panel renders, and both
+    honour the subteam / goal / proficiency trio: the depth (plain-English for
+    beginners, terse for advanced) matches what's shown on screen, so the PDF
+    and the audio always agree with the panel.
+    """
+    _style = _bf.get("style", "visual")
+    _prof = _bf.get("proficiency", "intermediate")
+    _names = " + ".join(_ROLE_LABELS.get(r, r).split(" / ")[0]
+                        for r in _bf.get("roles", []))
+    _pu = _BRIEF_PURPOSE_MAP.get(_bf.get("purpose"))
+    _goal_labels = [lab for _k, lab in _bf.get("goals", [])]
+
+    _md = []      # markdown lines for the PDF
+    _sp = []      # spoken sentences for TTS
+
+    _md.append("# KinematiK — Your Mission Briefing")
+    _md.append(f"**Subteam:** {_names}")
+    _sp.append(f"KinematiK mission briefing for {_names}.")
+    if _pu:
+        _md.append(f"**Using KinematiK for:** {_pu[0]}")
+        _md.append("")
+        _md.append(_pu[2])
+        _sp.append(_pu[2])
+    if _goal_labels:
+        _md.append("")
+        _md.append("**Goals:** " + "; ".join(_goal_labels))
+        _sp.append("Your goals: " + "; ".join(_goal_labels) + ".")
+    _prof_label = {"beginner": "New to this — explained as we go",
+                   "intermediate": "Comfortable with the subsystem",
+                   "advanced": "Advanced — terse plan"}.get(_prof)
+    if _prof_label:
+        _md.append("")
+        _md.append(f"**Experience level:** {_prof_label}")
+    if _bf.get("freetext"):
+        _md.append("")
+        _md.append(f"**Your note:** “{_bf['freetext']}”")
+        _sp.append(f"Your note was: {_bf['freetext']}.")
+    if _style == "new" or _prof == "beginner":
+        _newline = ("New here? Every tool below comes with a plain-English "
+                    "line. Nothing you click in KinematiK can break anything — "
+                    "every value has a sensible default, so play freely.")
+        _md.append("")
+        _md.append("_" + _newline + "_")
+        _sp.append(_newline)
+
+    _md.append("")
+    _md.append("---")
+    _md.append("## Your tool plan — what to use, in what order, and why")
+    _sp.append("Here is your tool plan, in order.")
+
+    _plain = (_style == "new" or _prof == "beginner")
+    _terse = (_prof == "advanced")
+    for _n, _tid in _briefing_ordered_tools(_bf):
+        _em, _lab = _TAB_META[_tid]
+        _need, _why, _vs = _BRIEF_TOOLS[_tid]
+        _cat = _CAT_LABEL.get(_ID_CATEGORY.get(_tid, ""), "")
+        _note_flag = _tid in _bf.get("note_tabs", [])
+
+        _md.append("")
+        _hdr = f"### {_n}. {_lab}"
+        if _cat:
+            _hdr += f"  ·  under {_cat}"
+        _md.append(_hdr)
+        if _note_flag:
+            _md.append("_In your toolbox because of your note._")
+        _md.append(_need)
+
+        _sp.append(f"Tool {_n}: {_lab}."
+                   + (" This is in your toolbox because of your note."
+                      if _note_flag else ""))
+        _sp.append(_need)
+
+        if _plain and _tid in _BRIEF_SIMPLE:
+            _md.append("")
+            _md.append(f"**In plain English:** {_BRIEF_SIMPLE[_tid]}")
+            _sp.append("In plain English: " + _BRIEF_SIMPLE[_tid])
+
+        _md.append("")
+        _md.append(f"**Why you need it:** {_why}")
+        if not _terse:
+            _md.append(f"**Why here, not MATLAB/ANSYS/OptimumK:** {_vs}")
+        _sp.append("Why you need it: " + _why)
+
+        _lines = _briefing_feature_lines(_bf, _tid)
+        if _lines:
+            _feat_hdr = ("**What this tool does for your goal, feature by "
+                         "feature:**")
+            _md.append("")
+            _md.append(_feat_hdr)
+            for _f in _lines:
+                _md.append(f"- {_f}")
+            if not _terse:
+                _sp.append("Its features for your goal:")
+                for _f in _lines:
+                    _sp.append(_f)
+
+    _md.append("")
+    _md.append("---")
+    _closing = ("The most expensive error class isn't a bad simulation — it's "
+                "a wrong input reaching a good simulator. Iterate here, let "
+                "Integration keep every subteam's numbers consistent, run the "
+                "Validation handover, and then open ANSYS, ADAMS or MATLAB "
+                "once, to confirm a design you already trust. Always validate "
+                "with the full-fidelity tools before manufacturing.")
+    _md.append("**The point of all this:** " + _closing)
+    _sp.append(_closing)
+
+    # Speech: strip characters the synthesiser reads awkwardly, and any
+    # markdown emphasis that slipped through; join into flowing sentences.
+    def _clean_speech(_s):
+        for _a, _b in (("→", " to "), ("×", " by "), ("·", ". "),
+                       ("—", ", "), ("–", ", "), ("**", ""), ("*", ""),
+                       ("“", ""), ("”", ""), (">", ""), ("σ", "sigma"),
+                       ("β", "beta"), ("μ", "micro")):
+            _s = _s.replace(_a, _b)
+        return " ".join(_s.split())
+
+    _speech_text = " ".join(_clean_speech(_x) for _x in _sp
+                            if _x and _x.strip())
+    return "\n".join(_md), _speech_text
+
+
+def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
+    """Inline audio player for the briefing using the browser's built-in speech
+    synthesiser (Web Speech API). No server-side TTS, no new dependency, no
+    network — the text is spoken locally by the user's browser. Play / pause /
+    stop and a speed control; the text is JSON-embedded so quotes and newlines
+    can't break the component."""
+    import json as _json
+    import streamlit.components.v1 as _components
+
+    _payload = _json.dumps(_speech_text)
+    _uid = "kkbrief_" + str(abs(hash(key)) % (10 ** 8))
+    _html = """
+<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+            border:1px solid #d7e7e1;border-radius:10px;padding:10px 12px;
+            background:#f4faf7;max-width:860px;">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <button id="__UID___play"  style="cursor:pointer;border:0;border-radius:8px;
+        padding:6px 14px;background:#0f6e56;color:#fff;font-weight:600;">
+        ▶ Play briefing</button>
+    <button id="__UID___pause" style="cursor:pointer;border:0;border-radius:8px;
+        padding:6px 12px;background:#e1f5ee;color:#0f6e56;font-weight:600;">
+        ⏸ Pause</button>
+    <button id="__UID___stop"  style="cursor:pointer;border:0;border-radius:8px;
+        padding:6px 12px;background:#e1f5ee;color:#0f6e56;font-weight:600;">
+        ⏹ Stop</button>
+    <label style="font-size:13px;color:#0f6e56;margin-left:4px;">Speed
+      <select id="__UID___rate" style="margin-left:4px;border-radius:6px;
+          border:1px solid #cfe3db;padding:2px 4px;">
+        <option value="0.85">0.85×</option>
+        <option value="1" selected>1×</option>
+        <option value="1.15">1.15×</option>
+        <option value="1.3">1.3×</option>
+        <option value="1.5">1.5×</option>
+      </select>
+    </label>
+    <span id="__UID___status" style="font-size:12px;color:#4a6a61;
+          margin-left:auto;">ready</span>
+  </div>
+  <div style="font-size:11px;color:#6b8a81;margin-top:6px;">
+    Spoken locally by your browser — nothing is uploaded.
+  </div>
+</div>
+<script>
+(function(){
+  var text = __PAYLOAD__;
+  var synth = window.speechSynthesis;
+  var status = document.getElementById("__UID___status");
+  if(!synth){
+    status.textContent = "audio not supported in this browser";
+    return;
+  }
+  var utter = null;
+  var _chosenVoice = null;
+
+  // Pick the best English voice. Priority: en-GB > en-US > any en- locale.
+  // getVoices() is empty on first call in Chrome until voiceschanged fires.
+  function _pickVoice(){
+    var voices = synth.getVoices();
+    if(!voices.length) return null;
+    var prefer = ["en-GB","en-US","en-AU","en-CA","en-NZ","en-ZA","en-IN"];
+    for(var i=0; i<prefer.length; i++){
+      for(var j=0; j<voices.length; j++){
+        if(voices[j].lang === prefer[i]) return voices[j];
+      }
+    }
+    // fallback: any voice whose lang starts with "en"
+    for(var j=0; j<voices.length; j++){
+      if(voices[j].lang.toLowerCase().startsWith("en")) return voices[j];
+    }
+    return null; // last resort: browser default (no assignment = OS default)
+  }
+
+  function _resolveVoice(cb){
+    var v = _pickVoice();
+    if(v){ cb(v); return; }
+    // voices not loaded yet — wait for the event (Chrome), then retry once
+    synth.addEventListener("voiceschanged", function _vc(){
+      synth.removeEventListener("voiceschanged", _vc);
+      cb(_pickVoice());
+    });
+  }
+
+  function build(voice){
+    var u = new SpeechSynthesisUtterance(text);
+    u.rate = parseFloat(document.getElementById("__UID___rate").value) || 1;
+    u.lang = "en-GB";          // hint the engine even if voice assignment works
+    if(voice) u.voice = voice;
+    u.onend   = function(){ status.textContent = "finished"; };
+    u.onstart = function(){ status.textContent = "playing…"; };
+    u.onerror = function(){ status.textContent = "stopped"; };
+    return u;
+  }
+
+  document.getElementById("__UID___play").onclick = function(){
+    if(synth.paused && synth.speaking){ synth.resume();
+      status.textContent = "playing…"; return; }
+    try{ synth.cancel(); }catch(e){}
+    _resolveVoice(function(voice){
+      _chosenVoice = voice;
+      utter = build(voice);
+      synth.speak(utter);
+    });
+  };
+  document.getElementById("__UID___pause").onclick = function(){
+    if(synth.speaking && !synth.paused){ synth.pause();
+      status.textContent = "paused"; }
+  };
+  document.getElementById("__UID___stop").onclick = function(){
+    try{ synth.cancel(); }catch(e){}
+    status.textContent = "stopped";
+  };
+  document.getElementById("__UID___rate").onchange = function(){
+    if(synth.speaking){
+      var wasPaused = synth.paused;
+      try{ synth.cancel(); }catch(e){}
+      utter = build(_chosenVoice); synth.speak(utter);
+      if(wasPaused){ synth.pause(); }
+    }
+  };
+  // Stop narration if the component is torn down (tab change / rerun).
+  window.addEventListener("beforeunload", function(){
+    try{ synth.cancel(); }catch(e){}
+  });
+})();
+</script>
+"""
+    _html = _html.replace("__PAYLOAD__", _payload).replace("__UID__", _uid)
+    # Let any failure propagate — the caller wraps this in its own try/except
+    # and surfaces a visible caption, so we never swallow the real reason here.
+    _components.html(_html, height=120)
+
+
 def _render_briefing_panel():
     """Post-entry: the compiled briefing, pinned above the tabs, dismissible."""
     _bf = st.session_state.get("kk_briefing")
@@ -5967,6 +6258,54 @@ def _render_briefing_panel():
             st.caption("🏎️ **Advanced mode:** terse plan — tool, where it is, "
                        "and the goal-relevant capabilities only. The "
                        "rationale and external-tool comparisons are collapsed.")
+
+        # --- Listen to it / take it with you -------------------------------- #
+        # The whole briefing — every recommended tool and every feature for
+        # this subteam, goal and proficiency — as spoken audio and a PDF, both
+        # compiled from the same walk that renders the panel below. Each control
+        # is guarded independently so one failing can never hide the other, and
+        # a failure surfaces a visible caption instead of silently vanishing
+        # (the panel is called under a broad try/except at the call site).
+        try:
+            _brief_md, _brief_speech = _briefing_to_text(_bf)
+        except Exception as _bce:
+            _brief_md, _brief_speech = "", ""
+            st.caption(f"Couldn't compile the briefing text: {_bce}")
+
+        st.markdown("**🎧 Listen to your briefing · 📄 take it with you**")
+        _ac, _pc = st.columns(2)
+
+        # Audio (browser speech synthesiser). Fully isolated: any failure here
+        # must not touch the PDF button beside it.
+        with _ac:
+            if _brief_speech:
+                try:
+                    _render_briefing_audio(_brief_speech, key="kk_brief_audio")
+                except Exception as _ae:
+                    st.caption(f"Audio player unavailable: {_ae}")
+            else:
+                st.caption("Audio unavailable — no briefing text.")
+
+        # PDF download. Isolated from the audio above.
+        with _pc:
+            _pdf_bytes = None
+            if _brief_md:
+                try:
+                    import tempfile as _tfb, os as _osb
+                    _bp = _osb.path.join(_tfb.gettempdir(),
+                                         "kinematik_mission_briefing.pdf")
+                    project_mod.render_pdf(_brief_md, _bp)
+                    with open(_bp, "rb") as _bpf:
+                        _pdf_bytes = _bpf.read()
+                except Exception as _bpe:
+                    st.caption(f"PDF export unavailable: {_bpe}")
+            if _pdf_bytes:
+                st.download_button(
+                    "⬇ Download briefing as PDF", _pdf_bytes,
+                    file_name="kinematik_mission_briefing.pdf",
+                    mime="application/pdf", use_container_width=True,
+                    key="kk_brief_pdf_dl")
+
         st.divider()
 
         # Collect all active goal keys once, outside the inner function.
