@@ -3586,13 +3586,72 @@ _BRIEF_TOOLS = {
         "candidate's yield is the same priced linearisation Stochastic "
         "Inversion ships, verified by full-solve subsamples printed with "
         "the result."),
+    "genesis_fc": (
+        "The full-vehicle inverse engine: declare the track, the FSAE-EV "
+        "rulebook bounds and a points objective, and it walks the whole "
+        "design chain BACKWARDS \\u2014 points to battery series/parallel "
+        "count, drive architecture and gear ratio, then to suspension "
+        "kinematic intent, hardpoints, structural load cases and firmware "
+        "constants. One consistent car per candidate: pack size sets mass, "
+        "mass sets lap time AND energy AND cell current, current sets "
+        "temperature, temperature decides whether Endurance finishes.",
+        "The season's biggest loop is normally walked forwards once and by "
+        "committee \\u2014 pick a pack in September, simulate in January, find "
+        "out in April it overheats on lap 11. You need this so the winning "
+        "configuration is the highest-points car that ACTUALLY FINISHES THE "
+        "SEASON: the fastest-on-paper design that cooks its cells mid-"
+        "endurance is rejected and named, not discovered at competition.",
+        "A lap sim answers 'is THIS car fast?'; it can't answer 'which car "
+        "should exist?'. This enumerates the battery/architecture/gear grid "
+        "exhaustively and runs each candidate through the same QSS lap chain "
+        "plus a transient per-cell pack-thermal integration \\u2014 seconds, "
+        "deterministic, with the exact evaluation count printed. It hands the "
+        "corner InverseGenesis its kinematic intent and the frame tools their "
+        "load cases, so downstream tools validate one coherent car."),
+    "frames": (
+        "Declare ONE coordinate convention for the whole car (SAE J670, ISO "
+        "8855, SolidWorks default…), pin a floating datum, and convert every "
+        "subteam's plane-specific measurements into it automatically \\u2014 "
+        "including a datum that moves as the chassis length changes.",
+        "The silent killer is two subteams exchanging x/y/z that mean "
+        "different things, or measurements pinned to a datum (CG, front axle) "
+        "that drifts as the car evolves. You need this so a number never "
+        "contradicts another number just because nobody wrote down what frame "
+        "it was in \\u2014 the argument that eats a week of Discord.",
+        "CAD picks a convention per part and won't reconcile them; converting "
+        "hundreds of measurements by hand is the 'full redo' nobody does, so "
+        "the debt compounds. Here the conversion is one declared transform, "
+        "applied everywhere at once, and the datum is a live reference \\u2014 "
+        "so switching conventions costs a click, not the season."),
+    "phantom_env": (
+        "Carve the exact 3D volume a moving corner CLAIMS across its full "
+        "range of motion, then WARP it by the real compliance deflection, and "
+        "ask 'does my motor mount clear the upper arm at 1.8 g?' \\u2014 an "
+        "instant, attributed answer instead of a manual CAD interference "
+        "check.",
+        "A rigid CAD interference check sees only the no-load envelope; under "
+        "load the links deflect and claim more space, and that's exactly where "
+        "the packaging surprise bites. You need this so the powertrain and "
+        "chassis teams design against the volume the loaded corner ACTUALLY "
+        "needs, not the optimistic rigid one.",
+        "CAD gives one static interference check and misses compliance "
+        "entirely; a full transient MBD study to recover the deformed envelope "
+        "is an afternoon. This reads the deformed geometry at every audited "
+        "instant, reports clearance attributed to the governing link, load and "
+        "moment, and exports the forbidden volume as a point cloud \\u2014 in "
+        "the same corner frame the geometry was defined in."),
     "cost": (
-        "FSAE Cost event BOM, auto-seeded from the Integration ledger, CSV "
-        "export ready.",
-        "Cost is a scored event AND a design constraint. You need this to know "
-        "the price of a decision when you make it, not at the deadline.",
-        "Cost isn't a simulation problem — but a cost surprise forces redesign. "
-        "Seeing $ per decision here prevents the late-season panic."),
+        "The FSAE Cost event BOM, auto-seeded from the Integration ledger and "
+        "CSV-export ready \\u2014 every line item priced as you design, not "
+        "reconstructed at the deadline.",
+        "Cost is a scored event AND a hard design constraint. You need this so "
+        "the price of a decision is visible the moment you make it \\u2014 the "
+        "late-season 'we can't afford the design we already built' panic comes "
+        "from pricing last instead of continuously.",
+        "Cost isn't a simulation, so it lives in nobody's solver and surfaces "
+        "too late; a spreadsheet BOM drifts from the real design. Seeded from "
+        "the same Integration ledger every subteam already feeds, the number "
+        "here tracks the car you're actually building."),
     "weight": (
         "Weight & CG ledger and the handover export.",
         "Mass is the one parameter every subsystem fights over. You need this "
@@ -3746,6 +3805,23 @@ _BRIEF_SIMPLE = {
              "numbers, so the reasons aren't forgotten in two weeks.",
     "analytics": "Shows where the team is spending its effort, so slow spots "
                  "are visible before deadlines find them.",
+    "genesis_fc": "Instead of guessing a battery, motor layout and gearing and "
+                  "simulating for hours to find it overheats late in the race, "
+                  "you say how many points you want and it hands back the exact "
+                  "pack, gearing and suspension that actually finish the whole "
+                  "race — and tells you which fast-looking designs would cook "
+                  "themselves.",
+    "frames": "Different subteams call the same directions x, y and z by "
+              "different names, so their numbers quietly disagree. This picks "
+              "one shared convention for the whole car and translates "
+              "everyone's measurements into it automatically.",
+    "phantom_env": "A moving suspension corner sweeps through a chunk of space, "
+                   "and it needs even more room once the parts flex under load. "
+                   "This draws that real space so you can check nothing (like a "
+                   "motor mount) gets hit when the car is working hard.",
+    "cost": "Competitions score you on price too. This keeps a running BOM so "
+            "you know what each design choice costs while you make it, not at "
+            "the deadline.",
 }
 
 # Question 2 — what are you using KinematiK for? key -> (label, extra tab ids,
@@ -3807,6 +3883,9 @@ _ROLE_GOALS = {
     "suspension": [
         ("susp_geo",   "Nail the geometry (camber gain, bump steer, roll centres)",
          ["kinematics", "roll", "genesis"]),
+        ("susp_synth", "Start from a whole-car points target and get suspension "
+                       "intent + hardpoints",
+         ["genesis_fc", "genesis", "kinematics"]),
         ("susp_flex",  "Make sure nothing flexes (member loads & stiffness)",
          ["compliance", "ghost"]),
         ("susp_flexgen", "Design a flexure blade to REPLACE a ball joint",
@@ -3829,6 +3908,9 @@ _ROLE_GOALS = {
          ["ev"]),
         ("pt_energy", "Energy budget, regen & lap time",
          ["ev", "laptime"]),
+        ("pt_synth",  "Synthesize the whole car from a points target "
+                      "(pack, architecture, gearing)",
+         ["genesis_fc", "ev", "laptime"]),
         ("pt_rel",    "Reliability — failure modes & cooling load",
          ["ev", "dfmea", "fusebox"]),
     ],
@@ -5189,6 +5271,68 @@ _BRIEF_TOOL_FEATURES = {
         "Stochastic Inversion error field and reports the resilience premium "
         "the winner bought.",
     ],
+    "genesis_fc": [
+        "Declare the track, the FSAE-EV rulebook bounds (power/voltage/segment "
+        "caps, wheelbase minimum, cell-temp limit, endurance distance) and a "
+        "points objective; the engine synthesizes the whole car backwards from "
+        "the points you want.",
+        "Enumerates the battery series/parallel grid and drive architecture "
+        "(single+diff, twin-axle, four-motor torque-vectoring) exhaustively, "
+        "refining the gear ratio by deterministic golden-section search \\u2014 "
+        "no black-box metaheuristic, and the exact evaluation count is printed.",
+        "Scores each candidate through the repo's own QSS lap chain across "
+        "Acceleration, Skidpad, Autocross and Endurance, so pack mass, lap "
+        "time, lap energy and cell current all come from one consistent car.",
+        "Runs a transient per-cell pack-thermal integration of the whole "
+        "endurance stint on the finalists and computes the exact lap a pack "
+        "would overheat \\u2014 the fastest-on-paper car that cooks itself is "
+        "verdicted THERMAL_DNF and rejected, not crowned.",
+        "Hands the winning car's derived kinematic intent straight to the "
+        "corner InverseGenesis, and its peak-cornering member loads to the "
+        "frame tools, so the suspension and structure you develop next belong "
+        "to the same coherent vehicle.",
+        "Exports the derived control calibration (power/current limits, regen "
+        "bounds, per-wheel grip ceilings, BMS thresholds) as a C header and a "
+        "Python module, and the hardpoints as a coordinate table \\u2014 "
+        "calibration and CAD inputs, honestly labelled, not firmware or STEP.",
+    ],
+    "frames": [
+        "Declare the car's coordinate convention once (SAE J670, ISO 8855, "
+        "ISO 4130 or a SolidWorks default) so every exchanged number carries "
+        "an unambiguous frame instead of a silent assumption.",
+        "Convert any subteam's plane-specific measurements into the shared "
+        "convention with one declared transform, so switching conventions is a "
+        "click rather than the 'full redo' nobody signs up for.",
+        "Pin a floating datum (CG, front axle) that updates as the chassis "
+        "length changes, so measurements referenced to it never rot as the car "
+        "evolves.",
+        "Flag numbers that arrive without a frame attached, so a contradiction "
+        "between two subteams is caught at exchange time, not at assembly.",
+    ],
+    "phantom_env": [
+        "Sweeps the rigid linkage through its full travel to draw the no-load "
+        "motion envelope \\u2014 the volume a CAD interference check sees.",
+        "Runs a transient event through the Ghost Topology compliance engine "
+        "and reads the DEFORMED geometry at every audited instant, carving the "
+        "larger volume the loaded links actually claim.",
+        "Reports exactly how far the compliant envelope grows outside the rigid "
+        "one \\u2014 the ground a rigid CAD check silently misses.",
+        "Drop a candidate point and probe radius (a motor mount, a coolant "
+        "line) and get clearance or violation attributed to the governing "
+        "link, instant and load.",
+        "Ships the forbidden volume as a lightweight .json/.csv point cloud in "
+        "the same corner frame the geometry was defined in, ready for the "
+        "packaging team's CAD.",
+    ],
+    "cost": [
+        "Builds the FSAE Cost event BOM auto-seeded from the Integration "
+        "ledger, so the priced list is the car every subteam is actually "
+        "feeding, not a separate spreadsheet that drifts.",
+        "Shows the price of a design decision at the moment you make it, so "
+        "cost is a live constraint rather than a deadline surprise.",
+        "Exports competition-ready CSV so the Cost event submission is a "
+        "download, not a week of reconstruction.",
+    ],
     "stochastic": [
         "Declare the asymmetric per-point weld-error field your shop actually "
         "holds, then sweep thousands of buildable cars and read the "
@@ -5618,8 +5762,14 @@ def _brief_goal_options(roles):
     return _opts
 
 
-def _build_briefing(roles, purpose_key, goal_keys, freetext, style="visual"):
-    """Compile the questionnaire answers into the briefing payload."""
+def _build_briefing(roles, purpose_key, goal_keys, freetext, style="visual",
+                    proficiency="intermediate"):
+    """Compile the questionnaire answers into the briefing payload.
+
+    Tailored on the subsystem/goal/proficiency trio: roles + purpose + goals
+    pick WHICH tools and WHY each; proficiency sets how DEEP each tool block
+    goes (see _render_briefing_panel); style sets visuals + plain-English.
+    """
     _opts = {k: (lab, ids) for k, lab, ids in _brief_goal_options(roles)}
     _goal_keys = [k for k in (goal_keys or []) if k in _opts] or list(_opts)[:1]
     _tabs = []
@@ -5649,6 +5799,7 @@ def _build_briefing(roles, purpose_key, goal_keys, freetext, style="visual"):
         "freetext": _ft,
         "note_tabs": _note_tabs,                 # NEW — tools the note added
         "style": style,
+        "proficiency": proficiency,              # NEW — beginner|intermediate|advanced
         "core_tabs": _core,
     }
 
@@ -5717,6 +5868,29 @@ def _render_brief_questionnaire(roles):
         _st_sel = st.radio("style", _st_labels, horizontal=True,
                            key="kk_brief_style", label_visibility="collapsed")
 
+    # Q5 — proficiency. Separate axis from visual-thinking: it sets how DEEP
+    # each tool block goes (beginner = plain-English + full feature list +
+    # guardrails; advanced = terse, goal-only bullets, no hand-holding) and
+    # the order emphasis. This is the subsystem/goal/proficiency trio the
+    # briefing now tailors on.
+    _PROF_OPTS = [
+        ("beginner", "🌱 New to this — explain as you go"),
+        ("intermediate", "🔧 Comfortable — I know my subsystem"),
+        ("advanced", "🏎️ Advanced — just the plan, terse"),
+    ]
+    _pf_labels = [lab for _k, lab in _PROF_OPTS]
+    st.markdown("**5 · How much FSAE experience do you have here?**")
+    st.caption("Sets how much each tool is explained — not which tools you "
+               "get. Everyone gets the full, correct toolkit.")
+    if _pills:
+        _pf_sel = st.pills("prof", _pf_labels, selection_mode="single",
+                           default=_pf_labels[1], key="kk_brief_prof",
+                           label_visibility="collapsed")
+    else:
+        _pf_sel = st.radio("prof", _pf_labels, horizontal=True,
+                           index=1, key="kk_brief_prof",
+                           label_visibility="collapsed")
+
     _b1, _b2 = st.columns([1.6, 1.0])
     if _b1.button("⚡ Build my toolkit & enter", type="primary",
                   use_container_width=True):
@@ -5726,8 +5900,11 @@ def _render_brief_questionnaire(roles):
         _go_keys = [k for k, lab, _i in _go_opts if lab in (_sel or [])]
         _st_key = next((k for k, lab in _STYLE_OPTS if lab == _st_sel),
                        "visual")
+        _pf_key = next((k for k, lab in _PROF_OPTS if lab == _pf_sel),
+                       "intermediate")
         st.session_state["kk_briefing"] = _build_briefing(
-            roles, _pu_key, _go_keys, _ft, style=_st_key)
+            roles, _pu_key, _go_keys, _ft, style=_st_key,
+            proficiency=_pf_key)
         st.session_state["kk_briefing_open"] = True
         st.session_state["kk_entered"] = True
         st.session_state["kk_brief_pending"] = False
@@ -5775,11 +5952,21 @@ def _render_briefing_panel():
         st.markdown("**Goals:** " + " · ".join(
             f"*{lab}*" for _k, lab in _bf.get("goals", [])))
         _style = _bf.get("style", "visual")
+        _prof = _bf.get("proficiency", "intermediate")
         if _style == "new":
             st.info("🌱 **New here? Perfect.** Every tool below comes with a "
                     "plain-English line and a live picture of the physics. "
                     "Nothing you click in KinematiK can break anything — "
                     "every value has a sensible default, so play freely.")
+        if _prof == "beginner":
+            st.caption("🌱 **Beginner mode:** each tool is explained in plain "
+                       "English, with the full list of what it does and a "
+                       "safety note. You still get the complete, correct "
+                       "toolkit — nothing is hidden, just explained.")
+        elif _prof == "advanced":
+            st.caption("🏎️ **Advanced mode:** terse plan — tool, where it is, "
+                       "and the goal-relevant capabilities only. The "
+                       "rationale and external-tool comparisons are collapsed.")
         st.divider()
 
         # Collect all active goal keys once, outside the inner function.
@@ -5787,8 +5974,10 @@ def _render_briefing_panel():
         _freetext = _bf.get("freetext", "")
 
         def _brief_tool_block(_n, _tid):
-            """One recommended tool: header / what / plain-English / why / vs /
-            goal-specific features / freetext hook / visual."""
+            """One recommended tool, rendered at a depth set by proficiency:
+            beginner = plain-English + full feature list + guardrail; advanced
+            = terse, goal-only bullets, rationale collapsed; intermediate =
+            the balanced default."""
             _em, _lab = _TAB_META[_tid]
             _need, _why, _vs = _BRIEF_TOOLS[_tid]
             _cat = _CAT_LABEL.get(_ID_CATEGORY.get(_tid, ""), "")
@@ -5799,14 +5988,20 @@ def _render_briefing_panel():
                 _hdr += "  ·  💬 *in your toolbox because of your note*"
             _parts = [_hdr, _need]
 
-            # --- plain-English gloss for newcomers ---
-            if _style == "new" and _tid in _BRIEF_SIMPLE:
+            # --- plain-English gloss: for the visual-new style OR any beginner,
+            #     since a beginner wants it regardless of the visual toggle. ---
+            if (_style == "new" or _prof == "beginner") \
+                    and _tid in _BRIEF_SIMPLE:
                 _parts.append(f"🌱 *In plain English:* {_BRIEF_SIMPLE[_tid]}")
 
-            # --- strategic why + vs ---
-            _parts.append(f"**Why you need it:** {_why}")
-            _parts.append(
-                f"> **Why here, not MATLAB/ANSYS/OptimumK etc.:** {_vs}")
+            # --- strategic why + vs. Advanced collapses this to keep the plan
+            #     terse; beginner/intermediate get the full reasoning. ---
+            if _prof == "advanced":
+                _parts.append(f"*Why:* {_why}")
+            else:
+                _parts.append(f"**Why you need it:** {_why}")
+                _parts.append(
+                    f"> **Why here, not MATLAB/ANSYS/OptimumK etc.:** {_vs}")
 
             # --- feature deep-dive: goal-specific first, full list otherwise
             # Collect every feature bullet that applies to any active goal for
@@ -5822,12 +6017,19 @@ def _render_briefing_panel():
             # No goal-tailored copy for this (goal, tool) combination — the
             # handover pair, purpose-added tabs and note-added tools land
             # here.  Fall back to the tool's COMPLETE feature list so every
-            # rendered block always covers every applicable feature.
+            # rendered block always covers every applicable feature — EXCEPT
+            # in advanced mode, where an exhaustive dump is noise: an advanced
+            # user with no goal-specific bullets gets a one-line pointer.
             _feat_hdr = ("**What this tool does for your goal — "
                          "feature by feature:**")
             if not _feat_lines:
-                _feat_lines = list(_BRIEF_TOOL_FEATURES.get(_tid, []))
-                _feat_hdr = "**Everything this tool does for you:**"
+                if _prof == "advanced":
+                    _feat_lines = []      # keep advanced blocks tight
+                    _parts.append("*Full capability list in the tool; "
+                                  "no goal-specific subset to highlight.*")
+                else:
+                    _feat_lines = list(_BRIEF_TOOL_FEATURES.get(_tid, []))
+                    _feat_hdr = "**Everything this tool does for you:**"
 
             if _feat_lines:
                 # Star the bullets that relate to what the member typed in
@@ -5854,10 +6056,20 @@ def _render_briefing_panel():
             if _hook:
                 _parts.append(f"💬 *Your note:* {_hook}")
 
+            # --- beginner guardrail: reassure that exploring is safe ---
+            if _prof == "beginner":
+                _parts.append("🛟 *No wrong moves here — every field has a "
+                              "sensible default, so open it and change one "
+                              "number at a time to see what it does.*")
+
             st.markdown("\n\n".join(_parts))
 
-            # --- live concept visual (visual / new modes) ---
-            if _style in ("visual", "new"):
+            # --- live concept visual. Shown for visual thinkers, the brand-new
+            #     style, and always for beginners (a picture is worth most to
+            #     someone learning), unless they asked for numbers-only. ---
+            _show_visual = (_style in ("visual", "new")
+                            or (_prof == "beginner" and _style != "numbers"))
+            if _show_visual:
                 # Lazy import + full guard: a visual can never block the text.
                 try:
                     from suspension.brief_visuals import concept_figure
