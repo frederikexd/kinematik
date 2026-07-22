@@ -364,6 +364,7 @@ def _ax_wrap_button(_orig):
                     if _already:
                         _axn.auto_complete(_af, action="run",
                                            require_engaged=True)
+                        _ax_autodoc(_af, "run")
         except Exception:
             pass
         return _res
@@ -380,6 +381,7 @@ def _ax_wrap_download(_orig):
                 _af = st.session_state.get("_ax_last_active_tab")
                 if _af:
                     _axn.auto_complete(_af, action="export", require_engaged=False)
+                    _ax_autodoc(_af, "export")
         except Exception:
             pass
         return _res
@@ -449,6 +451,7 @@ def _ax_wrap_result(_orig):
             _af = st.session_state.get("_ax_last_active_tab")
             if _af:
                 _axn.auto_complete(_af, action="result", require_engaged=True)
+                _ax_autodoc(_af, "result")
         except Exception:
             pass
         # Leak fix: if the caller didn't pass an explicit key, inject a stable
@@ -518,6 +521,48 @@ if not getattr(st, "_ax_input_patched", False):
 #  back-fills engagement, so completions can never sit below engagements.
 #  Fully guarded; the spinner still behaves exactly as before.
 # --------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+#  Auto-documentation bridge.
+#
+#  The completion wrappers below (spinner / result-render / button / download)
+#  already fire once per genuine "the numbers ran" event for the active
+#  feature. This helper piggy-backs on that single signal to ALSO drop a
+#  per-feature activity row, so EVERY calculation, simulation, or feature run
+#  is documented automatically — no per-tab wiring needed. Tabs that want a
+#  rich, specific line still call record_feature_activity() directly; those
+#  layer on top of this generic capture (dedupe keeps them from doubling).
+#
+#  record_feature_activity is defined much later in the file, but this only
+#  runs at call time (inside a running app), by which point it exists — so the
+#  forward reference is safe. Fully guarded; documentation must never break a
+#  feature.
+# --------------------------------------------------------------------------- #
+_AX_AUTODOC_LABELS = {
+    "run":    "Ran a calculation / simulation",
+    "result": "Produced a result",
+    "export":  "Exported a result",
+}
+
+
+def _ax_autodoc(feature, action="run"):
+    try:
+        _fn = globals().get("record_feature_activity")
+        if _fn is None or not feature:
+            return
+        # Once-per-session-per-feature-per-action: the completion signal can
+        # fire on many reruns while the user stays on a tab; we only want ONE
+        # generic "this feature was run" row, not one per rerun. Rich explicit
+        # record_feature_activity() calls are unaffected (different summaries).
+        _seen_key = f"_ax_autodoc_{feature}_{action}"
+        if st.session_state.get(_seen_key):
+            return
+        _lbl = _AX_AUTODOC_LABELS.get(action, "Used this feature")
+        _fn(feature, "note", _lbl)
+        st.session_state[_seen_key] = True
+    except Exception:
+        pass
+
+
 if not getattr(st, "_ax_spinner_patched", False):
     import contextlib as _ax_ctxlib
     _ax_orig_spinner = st.spinner
@@ -532,6 +577,7 @@ if not getattr(st, "_ax_spinner_patched", False):
             _af = st.session_state.get("_ax_last_active_tab")
             if _af:
                 _axn.auto_complete(_af, action="run", require_engaged=True)
+                _ax_autodoc(_af, "run")
         except Exception:
             pass
 
@@ -1689,6 +1735,8 @@ def build_project_bundle(hp=None) -> dict:
         "topo_hardpoints": st.session_state.get("topo_hp", {}),
         "vehicle": st.session_state.get("vp"),
         "ledger": st.session_state.get("ledger"),
+        "integration_document": st.session_state.get(
+            "_kinematik_integration_document"),
         "handover": json.loads(_store_for_save.as_json()),
         # Pedal-box / throttle-return inputs, so measured springs and pedal
         # geometry survive save/load and never have to be re-entered. Only raw
@@ -1725,6 +1773,11 @@ def apply_project_bundle(data: dict, include_shared_ledger: bool = True) -> None
         st.session_state["_pending_topology"] = data["topology"]
     if "vehicle" in data:
         st.session_state.vp = data["vehicle"]
+    if isinstance(data.get("integration_document"), dict):
+        # The comprehensive committed-feature document travels with the
+        # project so a loaded backup carries the same combined deliverable.
+        st.session_state["_kinematik_integration_document"] = dict(
+            data["integration_document"])
     if data.get("ledger"):
         if include_shared_ledger or not shared_scope_active():
             publish_ledger(data["ledger"])
@@ -7487,6 +7540,33 @@ class _TabOpenProxy:
         return self._container.__enter__()
 
     def __exit__(self, *exc):
+        # When the ACTIVE feature tab finishes rendering its body, append the
+        # per-feature documentation panel (download-just-this-feature vs.
+        # commit-to-the-Integration-Ledger). Doing it here means every feature
+        # gets the panel with no per-tab edits.
+        #
+        # We render BEFORE delegating the real __exit__: at this moment the
+        # container is still the active Streamlit context (it pops only when
+        # the underlying __exit__ we call at the end returns), so writing into
+        # it here appends the panel to the bottom of THIS tab's body — no
+        # re-entry, and the container's __exit__ is still called exactly once.
+        #
+        # Guards: only the tab the user is actually on (so the panel isn't
+        # drawn ~40× per run), only when the body didn't raise, and only for
+        # feature tabs that own real analysis — the shared-spine utility tabs
+        # (notes, registry, docs, the integration hub itself) are skipped
+        # because a "document this feature" panel there is just noise.
+        try:
+            _clean = not (exc and exc[0] is not None)
+            _key = self._feature
+            _skip = {"notes", "registry", "docs", "integration", "analytics",
+                     "model3d", "weight"}
+            _fn = globals().get("render_feature_documentation")
+            if (_clean and _fn is not None and _key not in _skip
+                    and _key in _ax_active_ids):
+                _fn(_key)
+        except Exception:
+            pass  # documentation must never break the tab
         return self._container.__exit__(*exc)
 
     def __getattr__(self, name):
@@ -8746,6 +8826,500 @@ def render_subsystem_documentation(subsystem_key, *, key_prefix,
             else:
                 st.warning("Couldn't write to the Handover log (backend offline) — "
                            "the PDF above is still yours to download.")
+
+
+
+# ==========================================================================
+#  PER-FEATURE DOCUMENTATION  →  INTEGRATION DOCUMENT LEDGER
+#
+#  The subsystem-level Documentation panel above answers "what did the
+#  SUSPENSION team do". This block answers the finer-grained question the
+#  garage actually asks while working: "I just ran a calc / a sim / used a
+#  tool — capture THAT, for THIS feature."
+#
+#  Two things are added, both purely additive (nothing above changes):
+#
+#   1. record_feature_activity(feature, kind, summary, ...) — the same idea
+#      as record_activity(), but keyed by FEATURE id (kinematics, roll,
+#      forge, genesis_fc, …) instead of subsystem. Every feature still maps
+#      to an owning subsystem (_FEATURE_SUBSYS), so a feature's captured work
+#      ALSO flows into that subsystem's existing report + ledger paths — the
+#      finer key is a superset, never a replacement.
+#
+#   2. render_feature_documentation(feature) — a compact panel that gives the
+#      user exactly the fork you described:
+#         • "Download the PDF for just this feature" — this feature's
+#           calculations / simulations only, nothing else; or
+#         • "Commit to the Integration Ledger" — folds this feature's block
+#           into ONE persistent, comprehensive cross-subsystem document that
+#           accumulates alongside every other committed feature and every
+#           other subsystem. build_integration_document() renders that whole
+#           thing as a single grouped PDF.
+#
+#  The integration document ledger persists through the SAME shared-store
+#  path as the interface ledger (publish_ledger / save_store), so a commit
+#  survives a restart and is visible team-wide.
+# ==========================================================================
+
+# --- Feature → owning subsystem -------------------------------------------- #
+# Derived from _ROLE_TABS (which team works in which tab). Where a tab is used
+# by several teams we assign the PRIMARY owner; shared/spine tabs map to a
+# neutral "integration" bucket so their captures still land somewhere sane.
+_FEATURE_SUBSYS = {
+    # suspension / dynamics
+    "kinematics": "suspension", "roll": "suspension", "compliance": "suspension",
+    "flexgen": "suspension", "tire": "suspension", "thermic": "suspension",
+    "forge": "suspension", "stochastic": "suspension", "genesis": "suspension",
+    "genesis_fc": "suspension", "morph": "suspension", "omni": "suspension",
+    "setup": "suspension", "laptime": "suspension", "ghost": "suspension",
+    "phantom_env": "suspension",
+    # aero
+    "aero": "aerodynamics",
+    # powertrain
+    "ev": "powertrain",
+    # electrics
+    "accum": "electrics", "pcb": "electrics", "tractive": "electrics",
+    "fusebox": "electrics",
+    # brakes
+    "brakes": "brakes",
+    # chassis
+    "teamfit": "chassis", "frames": "chassis", "weight": "chassis",
+    # cooling / dfmea live with whoever owns them; dfmea is cross-cutting
+    "dfmea": "powertrain",
+    # cross-cutting / shared spine → integration bucket
+    "integration": "integration", "validation": "integration",
+    "proof": "integration", "saboteur": "integration", "phantom": "integration",
+    "earshot": "integration", "registry": "integration", "analytics": "integration",
+    "model3d": "integration", "docs": "integration", "notes": "integration",
+    "cost": "cost",
+}
+
+
+def _feature_subsys(feature):
+    """Owning subsystem key for a feature id (falls back to 'integration')."""
+    return _FEATURE_SUBSYS.get(str(feature), "integration")
+
+
+def _feature_label(feature):
+    """Human 'emoji Label' for a feature id, from _TAB_META; id itself if unknown."""
+    _m = _TAB_META.get(str(feature))
+    if _m:
+        return f"{_m[0]} {_m[1]}"
+    return str(feature).replace("_", " ").title()
+
+
+# --- Per-feature activity capture ------------------------------------------ #
+_FEATURE_ACTIVITY_KEY = "_kinematik_feature_activity_log"
+
+
+def record_feature_activity(feature, kind, summary, *, detail=None,
+                            subsystem=None):
+    """Record one thing the user did IN A SPECIFIC FEATURE (a calc, a sim, a
+    tool run), for that feature's own documentation.
+
+    Mirrors record_activity() but keyed by feature id. It ALSO forwards to
+    record_activity() against the feature's owning subsystem, so nothing that
+    already reads subsystem activity (the subsystem report, the ledger) loses
+    anything — the feature log is strictly finer-grained, never a detour.
+
+    Never raises: telemetry must not break a feature.
+    """
+    import datetime as _dt
+    _feat = str(feature)
+    _sub = subsystem or _feature_subsys(_feat)
+    # 1) fine-grained, per-feature
+    try:
+        _log = st.session_state.setdefault(_FEATURE_ACTIVITY_KEY, {})
+        _rows = _log.setdefault(_feat, [])
+        _sig = (str(kind), str(summary))
+        _hit = None
+        for _r in _rows:
+            if (_r.get("kind"), _r.get("summary")) == _sig:
+                _hit = _r
+                break
+        if _hit is not None:
+            _hit["ts"] = f"{_dt.datetime.now():%Y-%m-%d %H:%M}"
+            _hit["count"] = _hit.get("count", 1) + 1
+            if detail:
+                _hit["detail"] = detail
+        else:
+            _rows.append({
+                "kind": str(kind), "summary": str(summary), "detail": detail,
+                "subsystem": _sub,
+                "ts": f"{_dt.datetime.now():%Y-%m-%d %H:%M}", "count": 1,
+            })
+    except Exception:
+        pass
+    # 2) roll up into the owning subsystem's existing log too
+    try:
+        record_activity(_sub, kind, summary, detail=detail)
+    except Exception:
+        pass
+
+
+def get_feature_activity(feature):
+    """Recorded rows for one feature (oldest→newest). Never raises."""
+    try:
+        return list(st.session_state.get(_FEATURE_ACTIVITY_KEY, {}).get(
+            str(feature), []))
+    except Exception:
+        return []
+
+
+def _feature_activity_sections(feature):
+    """This feature's captured work as report sections — same grouping/order as
+    the subsystem version, so a feature PDF reads like a subsystem one but
+    scoped to the single tool. [] when nothing was captured."""
+    rows = get_feature_activity(feature)
+    if not rows:
+        return []
+    by_kind = {}
+    for r in rows:
+        by_kind.setdefault(r.get("kind", "note"), []).append(r)
+    sections = []
+    seen = set()
+    for kind, heading in _ACTIVITY_KIND_HEADINGS:
+        group = by_kind.get(kind)
+        if not group:
+            continue
+        seen.add(kind)
+        lines = []
+        for r in group:
+            _c = r.get("count", 1)
+            _times = f" _(\u00d7{_c})_" if _c and _c > 1 else ""
+            _dtl = f" — {r['detail']}" if r.get("detail") else ""
+            _ts = f"  \u00b7 {r['ts']}" if r.get("ts") else ""
+            lines.append(f"- {r.get('summary','')}{_dtl}{_times}{_ts}")
+        sections.append((heading, lines))
+    for kind, group in by_kind.items():
+        if kind in seen:
+            continue
+        sections.append((kind.title(),
+                         [f"- {r.get('summary','')}" for r in group]))
+    return sections
+
+
+def _feature_report_md(feature):
+    """Full Markdown for ONE feature's document: header + this feature's
+    captured calculations/simulations. Self-contained (no ledger interface
+    block — that's a subsystem-level concept), so it's exactly 'the PDF for
+    just this feature'."""
+    import datetime as _dt
+    _lbl = _feature_label(feature)
+    _sub = _feature_subsys(feature)
+    _subname = _VC_LABEL.get(_sub, _sub.replace("-", " ").title())
+    L = [f"# Elbee Racing — {_lbl} Feature Report",
+         f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK · "
+         f"{_subname} subsystem._", ""]
+    _secs = _feature_activity_sections(feature)
+    if not _secs:
+        L.append(f"_No calculations or simulations captured in {_lbl} yet — "
+                 f"run something in this tool and it will be documented here "
+                 f"automatically._")
+        return "\n".join(L)
+    for _heading, _lines in _secs:
+        if _lines:
+            L.append(f"## {_heading}")
+            L.extend(_lines)
+            L.append("")
+    return "\n".join(L)
+
+
+# --- The Integration Document Ledger (persistent, cross-subsystem) ---------- #
+#  A dict on session_state, mirrored to the shared store so it is team-wide and
+#  survives restarts:
+#     { feature_id: {"label","subsystem","committed_on","md"} , ... }
+#  Kept SEPARATE from st.session_state["ledger"] (the interface contract) so
+#  the two never collide, but persisted the same way (save_store carries it).
+_DOC_LEDGER_KEY = "_kinematik_integration_document"
+
+
+def _doc_ledger():
+    return st.session_state.setdefault(_DOC_LEDGER_KEY, {})
+
+
+def _persist_doc_ledger():
+    """Mirror the integration-document ledger to the shared store so a commit
+    is team-wide and survives a restart. Best-effort — a persistence miss
+    still leaves the commit live for this session."""
+    try:
+        _led = dict(_doc_ledger())
+        st.session_state[_DOC_LEDGER_KEY] = _led
+        _s = get_shared_store()
+        # stash on the store object; save_store persists the store as usual
+        setattr(_s, "integration_document", _led)
+        return save_store(_s)
+    except Exception:
+        return False
+
+
+def _load_doc_ledger_from_store():
+    """Seed the session's integration-document ledger from the shared store on
+    first use, so a teammate's commits (or a previous session's) are visible.
+    Only fills when the session copy is empty, so it never clobbers a fresh
+    commit made this run."""
+    try:
+        if _doc_ledger():
+            return
+        _s = get_shared_store()
+        _saved = getattr(_s, "integration_document", {}) or {}
+        if _saved:
+            st.session_state[_DOC_LEDGER_KEY] = dict(_saved)
+    except Exception:
+        pass
+
+
+def commit_feature_to_integration(feature):
+    """Fold this feature's current document into the Integration Document
+    ledger (create or update its entry) and persist. Returns True on success."""
+    import datetime as _dt
+    _feat = str(feature)
+    _led = _doc_ledger()
+    _led[_feat] = {
+        "label": _feature_label(_feat),
+        "subsystem": _feature_subsys(_feat),
+        "committed_on": f"{_dt.datetime.now():%Y-%m-%d %H:%M}",
+        "md": _feature_report_md(_feat),
+    }
+    st.session_state[_DOC_LEDGER_KEY] = _led
+    return _persist_doc_ledger()
+
+
+def build_integration_document():
+    """Assemble THE one comprehensive document from every committed feature,
+    grouped by subsystem. This is the cross-team deliverable that grows as
+    each feature is committed — one Markdown string, ready for render_pdf."""
+    import datetime as _dt
+    _load_doc_ledger_from_store()
+    _led = _doc_ledger()
+    L = ["# Elbee Racing — Integration Document",
+         f"_Comprehensive cross-subsystem record · generated "
+         f"{_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._", ""]
+    if not _led:
+        L.append("_Nothing committed to the Integration Ledger yet. In any "
+                 "feature's documentation panel, choose **Commit to the "
+                 "Integration Ledger** and it will appear here alongside every "
+                 "other subsystem._")
+        return "\n".join(L)
+
+    # group committed features by subsystem, in the canonical _VC_SUBSYS order
+    _by_sub = {}
+    for _feat, _entry in _led.items():
+        _by_sub.setdefault(_entry.get("subsystem", "integration"),
+                           []).append((_feat, _entry))
+    _order = [k for k, _e, _lab in _VC_SUBSYS] + ["integration", "cost"]
+    _seen_sub = set()
+
+    # contents line
+    _n_feats = len(_led)
+    _n_subs = len({e.get("subsystem", "integration") for e in _led.values()})
+    L.append(f"_Contains {_n_feats} committed feature"
+             f"{'s' if _n_feats != 1 else ''} across {_n_subs} subsystem"
+             f"{'s' if _n_subs != 1 else ''}._")
+    L.append("")
+
+    def _emit_subsystem(_sub):
+        _entries = _by_sub.get(_sub)
+        if not _entries:
+            return
+        _subname = _VC_LABEL.get(_sub, _sub.replace("-", " ").title())
+        L.append(f"# {_subname}")
+        for _feat, _entry in _entries:
+            L.append(f"## {_entry.get('label', _feat)}")
+            _co = _entry.get("committed_on")
+            if _co:
+                L.append(f"_Committed {_co}._")
+            L.append("")
+            # inline the feature's own report, demoting its headings one level
+            # so it nests cleanly (## calc-groups become ### under the feature)
+            for _line in (_entry.get("md", "") or "").splitlines():
+                if _line.startswith("# ") or _line.startswith("## "):
+                    # drop the feature report's own H1 title/subtitle lines;
+                    # demote its section H2s to H3s
+                    if _line.startswith("## "):
+                        L.append("#" + _line)  # ## -> ###
+                    # (skip the H1 title line entirely; we already printed it)
+                elif _line.startswith("_Generated ") or _line.startswith(
+                        "_No calculations"):
+                    continue
+                else:
+                    L.append(_line)
+            L.append("")
+
+    for _sub in _order:
+        if _sub in _seen_sub:
+            continue
+        _seen_sub.add(_sub)
+        _emit_subsystem(_sub)
+    # any subsystem not in the canonical order (safety net)
+    for _sub in _by_sub:
+        if _sub not in _seen_sub:
+            _emit_subsystem(_sub)
+
+    return "\n".join(L)
+
+
+def render_feature_documentation(feature, *, key_prefix=None):
+    """Compact per-feature documentation panel — the fork you asked for.
+
+    Drop it at the bottom of any feature body:
+        render_feature_documentation("kinematics")
+
+    Shows the calculations/simulations captured for THIS feature, then lets
+    the user either download a PDF of just this feature, or commit it into the
+    one comprehensive Integration Document alongside every other subsystem.
+    Never raises — a documentation convenience must not break the tool.
+    """
+    try:
+        _feat = str(feature)
+        _kp = key_prefix or f"featdoc_{_feat}"
+        _lbl = _feature_label(_feat)
+        _load_doc_ledger_from_store()
+
+        _md = _feature_report_md(_feat)
+        _has_content = bool(_feature_activity_sections(_feat))
+        _committed = _feat in _doc_ledger()
+
+        with st.expander(f"📄 Document this feature — {_lbl}",
+                         expanded=False):
+            if not _has_content:
+                st.caption("Run a calculation or a simulation in this tool and "
+                           "it will be captured here automatically — then you "
+                           "can export it or commit it to the Integration "
+                           "Ledger.")
+            if _committed:
+                st.caption("✓ Already in the Integration Document "
+                           f"(committed {_doc_ledger()[_feat].get('committed_on','')}). "
+                           "Re-commit to refresh it with your latest runs.")
+
+            with st.expander("Preview this feature's report", expanded=False):
+                st.markdown(_md)
+
+            _mode = st.radio(
+                "What should this do?",
+                [f"Download the PDF for just {_lbl}",
+                 "Commit to the Integration Ledger "
+                 "(one document, all subsystems)"],
+                key=f"{_kp}_mode")
+
+            _safe = _feat.replace("-", "_")
+            if _mode.startswith("Download the PDF"):
+                _cols = st.columns([2, 3])
+                _pdf_ok = False
+                try:
+                    import tempfile as _tf, os as _os
+                    _pp = _os.path.join(_tf.gettempdir(),
+                                        f"elbee_feature_{_safe}.pdf")
+                    project_mod.render_pdf(_md, _pp)
+                    with open(_pp, "rb") as _pf:
+                        _pdf_bytes = _pf.read()
+                    _pdf_ok = True
+                except Exception as _pe:
+                    _cols[0].warning(f"PDF unavailable: {_pe}")
+                if _pdf_ok:
+                    _cols[0].download_button(
+                        f"⬇ {_lbl} (.pdf)", _pdf_bytes,
+                        file_name=f"elbee_feature_{_safe}.pdf",
+                        mime="application/pdf", width="stretch",
+                        key=f"{_kp}_pdf", disabled=not _has_content)
+                    _cols[1].download_button(
+                        f"⬇ {_lbl} (.md)", _md.encode("utf-8"),
+                        file_name=f"elbee_feature_{_safe}.md",
+                        mime="text/markdown", width="stretch",
+                        key=f"{_kp}_dl_md", disabled=not _has_content)
+                if not _has_content:
+                    st.caption("Nothing captured yet — the buttons light up "
+                               "once you've run something here.")
+            else:
+                st.caption("Commits this feature's calculations & simulations "
+                           "into the shared Integration Document, grouped under "
+                           "its subsystem. It joins every other committed "
+                           "feature in one comprehensive, team-wide deliverable "
+                           "that persists across sessions.")
+                if st.button("✓ Commit this feature to the Integration Ledger",
+                             key=f"{_kp}_commit", disabled=not _has_content,
+                             width="stretch"):
+                    if commit_feature_to_integration(_feat):
+                        st.success(
+                            f"{_lbl} committed to the Integration Document. "
+                            "See the full combined document in the "
+                            "Integration tab.")
+                    else:
+                        st.warning(
+                            f"{_lbl} committed for this session, but persisting "
+                            "team-wide failed (backend offline) — it's still in "
+                            "the combined document below until restart.")
+    except Exception as _fe:
+        try:
+            st.caption(f"(Feature documentation unavailable: "
+                       f"{type(_fe).__name__})")
+        except Exception:
+            pass
+
+
+def render_integration_document_panel(*, key_prefix="integration_doc"):
+    """The reader/export end of the ledger: preview + PDF/MD download of the
+    ONE comprehensive Integration Document. Mount this in the Integration tab.
+    Never raises."""
+    try:
+        _load_doc_ledger_from_store()
+        _led = _doc_ledger()
+        _n = len(_led)
+        st.markdown("###### 📚 Integration Document")
+        st.caption("Every feature committed to the Integration Ledger, "
+                   "assembled into one comprehensive document grouped by "
+                   "subsystem. Each feature's documentation panel is where "
+                   "things get committed here.")
+        if not _led:
+            st.info("Nothing committed yet. In any feature, open **Document "
+                    "this feature** and choose **Commit to the Integration "
+                    "Ledger**.")
+            return
+        # a compact manifest of what's in the document
+        _by_sub = {}
+        for _feat, _entry in _led.items():
+            _by_sub.setdefault(_entry.get("subsystem", "integration"),
+                               []).append(_entry.get("label", _feat))
+        _manifest = "  ·  ".join(
+            f"**{_VC_LABEL.get(_s, _s.title())}**: {', '.join(_labs)}"
+            for _s, _labs in _by_sub.items())
+        st.markdown(_manifest)
+
+        _md = build_integration_document()
+        with st.expander("Preview the full Integration Document",
+                         expanded=False):
+            st.markdown(_md)
+
+        _cols = st.columns([2, 3])
+        _pdf_ok = False
+        try:
+            import tempfile as _tf, os as _os
+            _pp = _os.path.join(_tf.gettempdir(),
+                                "elbee_integration_document.pdf")
+            project_mod.render_pdf(_md, _pp)
+            with open(_pp, "rb") as _pf:
+                _pdf_bytes = _pf.read()
+            _pdf_ok = True
+        except Exception as _pe:
+            _cols[0].warning(f"PDF unavailable: {_pe}")
+        if _pdf_ok:
+            _cols[0].download_button(
+                "⬇ Integration Document (.pdf)", _pdf_bytes,
+                file_name="elbee_integration_document.pdf",
+                mime="application/pdf", width="stretch",
+                key=f"{key_prefix}_pdf")
+            _cols[1].download_button(
+                "⬇ Integration Document (.md)", _md.encode("utf-8"),
+                file_name="elbee_integration_document.md",
+                mime="text/markdown", width="stretch",
+                key=f"{key_prefix}_md")
+        _vc_disclaimer("the Integration Document")
+    except Exception as _pe2:
+        try:
+            st.caption(f"(Integration Document unavailable: "
+                       f"{type(_pe2).__name__})")
+        except Exception:
+            pass
 
 
 # === BEGIN spliced Verdict Center / Docs templates / Mesh+DXF ===
@@ -27712,11 +28286,14 @@ with tab13:
                    "to every subteam reading this ledger.")
     _iview = feature_menu("integration",
         ["Verdict Center", "Cross-subsystem ledger",
+         "Integration Document",
          "Subsystem ↔ chassis (CAD fit)", "Mount-point clash"],
         title="Integration tools",
         descriptions={
             "Verdict Center": "Whole-car verdict, per-subsystem boxes, sanity-check",
             "Cross-subsystem ledger": "Declare each subsystem's interface numbers",
+            "Integration Document": "The one combined doc — every committed feature, "
+                                    "grouped by subsystem",
             "Subsystem ↔ chassis (CAD fit)": "Does it fit the chassis envelope?",
             "Mount-point clash": "Mount-point clearance & clash check"})
 
@@ -27727,6 +28304,11 @@ with tab13:
         except Exception as _vce:
             st.warning(f"Verdict Center unavailable: {_vce}")
             render_mythbuster()
+    elif _iview == "Integration Document":
+        try:
+            render_integration_document_panel()
+        except Exception as _ide:
+            st.warning(f"Integration Document unavailable: {_ide}")
     elif _iview == "Subsystem ↔ chassis (CAD fit)":
         render_suspension_vs_chassis()
     elif _iview == "Mount-point clash":
