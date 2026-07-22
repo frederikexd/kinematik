@@ -6353,28 +6353,38 @@ def _briefing_local_audio(_speech_text: str, download=True):
 
 @st.cache_data(show_spinner=False, ttl=300, max_entries=2)
 def _briefing_audio_file_available() -> bool:
-    """Can this deployment produce a downloadable audio FILE at all? True if a
-    LOCAL piper voice model is already present (no download, no network), or if
-    the gTTS endpoint is reachable. Cached (5 min) so the check runs once, not
-    on every rerun, and never blocks the page for long.
-
-    This exists so the UI can decide UP FRONT whether to offer the 'Generate
-    audio file' button, instead of showing a button that only reveals it can't
-    deliver after a click and a spinner. The browser speech player and the
-    offline HTML/txt downloads do NOT depend on this — they always work."""
-    # 1) a piper model already on disk => local synthesis, no network needed.
+    """Can this deployment produce a downloadable MP3 at all? True when:
+      (a) a LOCAL piper voice model is already on disk (no network), OR
+      (b) piper is installed AND its voice model can be fetched (the model host
+          is reachable) — the case that makes MP3 work on Streamlit Cloud,
+          which HAS outbound network even though it ships no model, OR
+      (c) the gTTS online endpoint is reachable.
+    Cached (5 min) so the check runs once, not on every rerun, and never blocks
+    the page for long. The browser player and the offline HTML/txt downloads do
+    NOT depend on this — they always work."""
+    # (a) a piper model already on disk => local synthesis, no network needed.
     try:
         if _vm_piper_find_local():
-            try:
-                import piper  # noqa: F401 — engine must also be importable
-                return True
-            except Exception:
-                pass
+            import piper  # noqa: F401 — engine must also be importable
+            return True
     except Exception:
         pass
-    # 2) otherwise, is the online gTTS engine importable AND reachable? A short,
-    #    low-cost reachability probe with a tight timeout so a blocked network
-    #    fails fast rather than hanging the panel.
+    # (b) piper installed AND the model host reachable => we can download it
+    #     once on first generate. This is the path that lights up the MP3
+    #     button on Streamlit Cloud (network yes, committed model no).
+    try:
+        import piper  # noqa: F401
+        import urllib.request as _u
+        _req = _u.Request("https://huggingface.co/rhasspy/piper-voices/"
+                          "resolve/main/voices.json",
+                          method="HEAD",
+                          headers={"User-Agent": "KinematiK/audio-probe"})
+        with _u.urlopen(_req, timeout=4) as _r:
+            if 200 <= getattr(_r, "status", 200) < 500:
+                return True
+    except Exception:
+        pass
+    # (c) otherwise, is the online gTTS engine importable AND reachable?
     try:
         import gtts  # noqa: F401
     except Exception:
@@ -6840,14 +6850,16 @@ def _render_briefing_panel():
                         _title = "KinematiK Mission Briefing"
                         _off = _briefing_offline_html(_brief_speech, _title)
                         st.download_button(
-                            "⬇ Offline audio (HTML)",
+                            "⬇ Take it with you (offline audio)",
                             _off.encode("utf-8"),
                             file_name="kinematik_briefing_audio.html",
                             mime="text/html", use_container_width=True,
                             key="kk_brief_audio_html_dl",
-                            help="A self-contained player — open it offline and "
-                                 "your device speaks the briefing. Nothing is "
-                                 "uploaded; no internet needed.")
+                            help="A self-contained audio player in one file — "
+                                 "open it on any device, offline, and it speaks "
+                                 "the briefing aloud with the words highlighting "
+                                 "as they're read. Nothing is uploaded; no "
+                                 "internet needed.")
                     except Exception as _oe:
                         st.caption(f"Offline audio unavailable: {_oe}")
                 with _dl_txt:
@@ -6860,14 +6872,15 @@ def _render_briefing_panel():
                         help="Plain text of the spoken briefing — readable "
                              "anywhere, or paste into any text-to-speech app.")
 
-                # Downloadable audio FILE (mp3/wav). Preferred engine is local
-                # piper (no network); gTTS is the online fallback. Both can be
-                # genuinely unavailable on a given deploy (no committed voice
-                # model AND no outbound network — e.g. Streamlit Cloud without
-                # the model bundled). Rather than offer a button that fails only
-                # AFTER a click + spinner, we probe availability once (cached)
-                # and either show a working button or a calm pointer to the
-                # offline HTML player above, which always works.
+                # Downloadable audio FILE (mp3/wav) — only offered when an
+                # engine can actually produce one (local piper model present,
+                # or gTTS reachable). We probe availability once (cached) so we
+                # never dangle a button that fails after a click. When NO engine
+                # is available (e.g. Streamlit Cloud with no model committed and
+                # no outbound TTS), we simply don't show anything here — the
+                # Offline audio (HTML) button above already IS the portable,
+                # no-internet option (it plays AND highlights), so an apology
+                # would be noise, not help.
                 _aud = st.session_state.get("kk_brief_audio_file")
                 if _aud is not None:
                     _eng = _aud.get("engine")
@@ -6891,7 +6904,18 @@ def _render_briefing_panel():
                                       "bundled local voice when available (no "
                                       "internet needed), otherwise online "
                                       "text-to-speech."):
-                        with st.spinner("Synthesizing audio…"):
+                        # First run downloads a ~20 MB local voice once, then
+                        # caches it for the session; later runs are instant and
+                        # need no network. Say so, so the wait reads as progress.
+                        _have_model = False
+                        try:
+                            _have_model = bool(_vm_piper_find_local())
+                        except Exception:
+                            _have_model = False
+                        _msg = ("Synthesizing audio…" if _have_model
+                                else "Setting up the local voice (one-time "
+                                     "~20 MB download), then synthesizing…")
+                        with st.spinner(_msg):
                             _bytes, _ext, _mime = _briefing_local_audio(
                                 _brief_speech)
                             _engine = "local"
@@ -6907,16 +6931,11 @@ def _render_briefing_panel():
                             # availability said yes but synthesis still failed
                             # (transient) — point to the guaranteed path.
                             st.caption("Couldn't synthesize an audio file just "
-                                       "now — the **Offline audio (HTML)** "
-                                       "player above works with no internet.")
-                else:
-                    # No downloadable-audio engine on this deploy. Don't dangle a
-                    # dead button — the offline HTML player is the answer, and it
-                    # already does everything (play + word-highlight, offline).
-                    st.caption("💡 A downloadable MP3 isn't available on this "
-                               "deployment. Use **⬇ Offline audio (HTML)** "
-                               "above — it plays the briefing with word "
-                               "highlighting and needs no internet.")
+                                       "now — the **Take it with you (offline "
+                                       "audio)** player above works with no "
+                                       "internet.")
+                # else: no engine on this deploy -> show nothing; the offline
+                # HTML button above is the complete portable answer.
             else:
                 st.caption("Audio unavailable — no briefing text.")
 

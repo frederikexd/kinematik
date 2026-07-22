@@ -32,9 +32,19 @@ cascadio>=0.0.16; python_version < "3.13"   # STEP/STP chassis import (chassis.p
 fast_simplification>=0.1   # faster CAD-part decimation for the 3D model (optional;
                            # falls back to built-in vertex clustering if absent)
 rtree>=1.0         # chassis/part collision queries via trimesh.proximity
-matplotlib>=3.7    # FlexGen tab plots (ui/flexgen.py). Optional: the tab
-                   # degrades to numbers-only + a caption when absent.
 reportlab>=4.0     # PDF design-handover export         (project.py: render_pdf)
+gTTS>=2.5          # downloadable MP3 of the mission briefing (streamlit_app.py:
+                   #  _briefing_mp3_bytes). Needs network at call time; the app
+                   #  and the offline HTML/txt briefing downloads work without it.
+piper-tts>=1.2     # PREFERRED offline TTS for the briefing audio file
+                   #  (streamlit_app.py: _briefing_local_audio). Fully local at
+                   #  synthesis time — no network, no rate limit. On Streamlit
+                   #  Cloud the filesystem is ephemeral, so COMMIT a voice model
+                   #  under models/ (see models/README.md) rather than relying on
+                   #  the one-time runtime download, which would re-fetch on every
+                   #  cold start. Falls back to gTTS, then to the offline HTML
+                   #  player, when absent. ffmpeg (present on Streamlit Cloud)
+                   #  transcodes its WAV to MP3; without ffmpeg you get WAV.
 supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseStore;
                    #  workspace.py: tenant-scoped backend — run workspace_isolation.sql)
 
