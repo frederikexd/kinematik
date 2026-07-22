@@ -6442,10 +6442,11 @@ def _briefing_mp3_bytes(_speech_text: str):
         return None
 
 
-def _briefing_unified_html(_bf, _speech_text):
+def _briefing_unified_html(_bf, _speech_text, _figs_html=None):
     """The UNIFIED briefing surface: one component that renders the full rich
     briefing (headings, 'find it under…', why-you-need-it, feature bullets with
-    ⭐) AND speaks it with word-by-word highlighting IN THE SAME DOM.
+    ⭐, AND the per-tool concept diagram) AND speaks it with word-by-word
+    highlighting IN THE SAME DOM.
 
     Why one component rather than highlighting the Streamlit-rendered page:
     the speech + word-boundary events live inside this iframe, and on Streamlit
@@ -6454,14 +6455,17 @@ def _briefing_unified_html(_bf, _speech_text):
     briefing text live INSIDE the speaking iframe is what lets the actual
     briefing highlight as it reads — no separate transcript box.
 
-    The visible HTML is built from the SAME (_bf) data the panel's tool blocks
-    use, and the spoken/ highlighted stream is _speech_text (already cleaned).
-    Word spans carry their char offset into _speech_text so boundary events map
-    to the right word. Concept figures aren't representable here; they render
-    below, in Streamlit, interleaved by tool."""
+    Diagrams are interleaved by embedding each tool's Plotly figure as an
+    inline div (``_figs_html`` maps tool_id -> plotly to_html fragment);
+    plotly.js is loaded once from CDN when any figure is present. The visible
+    HTML is built from the SAME (_bf) data the panel's tool blocks use, and the
+    spoken/highlighted stream is _speech_text (already cleaned). Word spans
+    carry their char offset into _speech_text so boundary events map to the
+    right word."""
     import html as _h
     import json as _json
 
+    _figs_html = _figs_html or {}
     _style = _bf.get("style", "visual")
     _prof = _bf.get("proficiency", "intermediate")
     _active_goals = _bf.get("active_goal_keys", [])
@@ -6559,6 +6563,9 @@ def _briefing_unified_html(_bf, _speech_text):
         if _prof == "beginner":
             _b.append('<p class="kkmuted">🛟 No wrong moves here — every field '
                       'has a sensible default.</p>')
+        _fig = _figs_html.get(_tid)
+        if _fig:
+            _b.append('<div class="kkfig">' + _fig + '</div>')
         _b.append('</div>')
 
     _core = [t for t in _bf.get("core_tabs", [])
@@ -6575,8 +6582,11 @@ def _briefing_unified_html(_bf, _speech_text):
 
     _payload = _json.dumps(_sp)
     _uid = "kku_" + str(abs(hash(_sp)) % (10 ** 8))
+    _plotly_cdn = ('<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" '
+                   'charset="utf-8"></script>') if _figs_html else ""
     _tpl = """
-<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+__PLOTLY__
+<div id="__ROOT__" style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
             border:1px solid #d7e7e1;border-radius:10px;padding:12px 14px;
             background:#f4faf7;width:100%;box-sizing:border-box;">
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;
@@ -6619,12 +6629,15 @@ def _briefing_unified_html(_bf, _speech_text):
  #__ROOT__ .kkw{border-radius:4px;padding:0 1px;transition:background .05s;}
  #__ROOT__ .kkw.on{background:#ffe27a;color:#183029;box-shadow:0 0 0 2px #ffe27a;}
  #__ROOT__ .kkw.done{color:#8aa79d;}
+ #__ROOT__ .kkfig{margin:8px 0 2px;background:#fff;border:1px solid #e3efeb;
+    border-radius:8px;padding:4px;}
 </style>
 <script>
 (function(){
   var text = __PAYLOAD__;
-  var root = document.currentScript.parentElement;
-  root.id = "__ROOT__";
+  // The script runs AFTER innerHTML injection, so the injected-script self-
+  // reference is null here — find the root by its known id, with a fallback.
+  var root = document.getElementById("__ROOT__") || document;
   var synth = window.speechSynthesis;
   var status = document.getElementById("__UID___status");
   var spans = Array.prototype.slice.call(root.querySelectorAll(".kkw"))
@@ -6674,6 +6687,7 @@ def _briefing_unified_html(_bf, _speech_text):
 </script>
 """
     return (_tpl.replace("__BODY__", _body_html)
+                .replace("__PLOTLY__", _plotly_cdn)
                 .replace("__PAYLOAD__", _payload)
                 .replace("__ROOT__", _uid)
                 .replace("__UID__", _uid))
@@ -6751,14 +6765,62 @@ def _render_briefing_panel():
         st.markdown("**🎧 Your briefing — press play to hear it and follow "
                     "along as each word highlights · 📄 take it with you**")
 
-        # THE unified briefing: one surface that shows the full rich briefing
-        # AND speaks it with word highlighting in the same DOM. Replaces the
-        # old split of (separate transcript box) + (duplicate text below).
+        # THE unified briefing: ONE surface that shows the full rich briefing —
+        # text AND the per-tool concept diagrams — and speaks it with word-by-
+        # word highlighting in the same DOM. Diagrams are embedded as inline
+        # Plotly divs (plotly.js loaded once via CDN), interleaved after each
+        # tool's text, so nothing is duplicated or split off into a side panel.
         if _brief_speech:
             try:
                 import streamlit.components.v1 as _bcomp
-                _uni = _briefing_unified_html(_bf, _brief_speech)
-                _bcomp.html(_uni, height=620, scrolling=True)
+                _style0 = _bf.get("style", "visual")
+                _prof0 = _bf.get("proficiency", "intermediate")
+                _want_figs = (_style0 in ("visual", "new")
+                              or (_prof0 == "beginner" and _style0 != "numbers"))
+                _figs_html = {}
+                if _want_figs:
+                    try:
+                        import plotly.io as _pio
+                        from suspension.brief_visuals import concept_figure
+                        _plan_ids = [t for t in _bf.get("core_tabs", [])
+                                     if t in _TAB_META and t in _BRIEF_TOOLS]
+                        _plan_ids += ["integration", "validation"]
+                        _first = True
+                        for _tid0 in _plan_ids:
+                            try:
+                                _fig0, _cap0 = concept_figure(_tid0)
+                                if _fig0 is None:
+                                    continue
+                                _fig0.update_layout(
+                                    height=260,
+                                    margin=dict(l=8, r=8, t=28, b=8))
+                                # plotly.js only in the FIRST fragment; the CDN
+                                # tag in the template loads the library once.
+                                _frag = _pio.to_html(
+                                    _fig0, full_html=False,
+                                    include_plotlyjs=False,
+                                    config={"displaylogo": False,
+                                            "displayModeBar": False},
+                                    div_id=f"bfig_{_tid0}")
+                                _figs_html[_tid0] = _frag
+                                if _cap0:
+                                    _figs_html[_tid0] += (
+                                        '<div style="font-size:.85rem;'
+                                        'color:#6b8a81;margin:2px 4px;">'
+                                        + _html.escape(_cap0) + '</div>')
+                                _first = False
+                                try:
+                                    _mem.release_figure(_fig0)
+                                except Exception:
+                                    pass
+                            except Exception:
+                                continue
+                    except Exception:
+                        _figs_html = {}
+                _uni = _briefing_unified_html(_bf, _brief_speech, _figs_html)
+                # taller when diagrams are inline so they have room to breathe
+                _uni_h = 760 if _figs_html else 620
+                _bcomp.html(_uni, height=_uni_h, scrolling=True)
             except Exception as _ue:
                 st.caption(f"Briefing player unavailable: {_ue}")
                 # last-ditch: at least show the text so nothing is lost
@@ -6878,58 +6940,6 @@ def _render_briefing_panel():
                     mime="application/pdf", use_container_width=True,
                     key="kk_brief_pdf_dl")
 
-        st.divider()
-
-        # Collect all active goal keys once, outside the inner function.
-        _active_goals = _bf.get("active_goal_keys", [])
-        _freetext = _bf.get("freetext", "")
-
-        # The full briefing TEXT now lives in the unified component above (it
-        # speaks and highlights in one surface). Down here we render ONLY what
-        # that iframe can't hold: the live concept figures, one per tool, under
-        # a small label. No prose is repeated — this is the visual companion to
-        # the spoken briefing, not a second copy of it.
-        _show_visual = (_style in ("visual", "new")
-                        or (_prof == "beginner" and _style != "numbers"))
-
-        def _brief_tool_figure(_n, _tid):
-            if not _show_visual:
-                return
-            _meta = _TAB_META.get(_tid)
-            if not _meta:
-                return
-            _em, _lab = _meta
-            _cat = _CAT_LABEL.get(_ID_CATEGORY.get(_tid, ""), "")
-            try:
-                from suspension.brief_visuals import concept_figure
-                _fig, _cap = concept_figure(_tid)
-                if _fig is None:
-                    return
-                st.markdown(f"**{_n}. {_em} {_lab}**  ·  find it under "
-                            f"**{_cat}**")
-                st.plotly_chart(
-                    _fig, width="stretch", key=f"brief_fig_{_tid}",
-                    config={"displaylogo": False, "displayModeBar": False})
-                try:
-                    _mem.release_figure(_fig)
-                except Exception:
-                    pass
-                _fig = None
-                if _cap:
-                    st.caption(_cap)
-            except Exception:
-                pass
-
-        if _show_visual:
-            st.caption("Concept visuals for each tool in your plan:")
-        for _i, _tid in enumerate(_bf.get("core_tabs", []), start=1):
-            if _tid not in _TAB_META or _tid not in _BRIEF_TOOLS:
-                continue
-            _brief_tool_figure(_i, _tid)
-        # The handover pair always closes the plan.
-        _n0 = len(_bf.get("core_tabs", []))
-        for _j, _tid in enumerate(("integration", "validation"), start=_n0 + 1):
-            _brief_tool_figure(_j, _tid)
         st.divider()
         st.markdown(
             "**The point of all this:** the most expensive error class isn't a "
