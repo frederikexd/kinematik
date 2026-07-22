@@ -6074,210 +6074,6 @@ def _briefing_to_text(_bf):
     return "\n".join(_md), _speech_text
 
 
-def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
-    """Inline audio player for the briefing using the browser's built-in speech
-    synthesiser (Web Speech API). No server-side TTS, no new dependency, no
-    network — the text is spoken locally by the user's browser.
-
-    Below the controls it shows the full transcript with KARAOKE-STYLE word
-    highlighting: as the browser speaks, the utterance's `boundary` events give
-    the character offset of each spoken word, so we light up the matching word
-    and auto-scroll to keep it in view — the reader always knows where to look.
-    Play / pause / stop and a speed control; the text is JSON-embedded so quotes
-    and newlines can't break the component."""
-    import json as _json
-    import streamlit.components.v1 as _components
-
-    _payload = _json.dumps(_speech_text)
-    _uid = "kkbrief_" + str(abs(hash(key)) % (10 ** 8))
-    _html = """
-<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-            border:1px solid #d7e7e1;border-radius:10px;padding:12px 14px;
-            background:#f4faf7;width:100%;box-sizing:border-box;">
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-    <button id="__UID___play"  style="cursor:pointer;border:0;border-radius:8px;
-        padding:6px 14px;background:#0f6e56;color:#fff;font-weight:600;">
-        ▶ Play briefing</button>
-    <button id="__UID___pause" style="cursor:pointer;border:0;border-radius:8px;
-        padding:6px 12px;background:#e1f5ee;color:#0f6e56;font-weight:600;">
-        ⏸ Pause</button>
-    <button id="__UID___stop"  style="cursor:pointer;border:0;border-radius:8px;
-        padding:6px 12px;background:#e1f5ee;color:#0f6e56;font-weight:600;">
-        ⏹ Stop</button>
-    <label style="font-size:13px;color:#0f6e56;margin-left:4px;">Speed
-      <select id="__UID___rate" style="margin-left:4px;border-radius:6px;
-          border:1px solid #cfe3db;padding:2px 4px;">
-        <option value="0.85">0.85×</option>
-        <option value="1" selected>1×</option>
-        <option value="1.15">1.15×</option>
-        <option value="1.3">1.3×</option>
-        <option value="1.5">1.5×</option>
-      </select>
-    </label>
-    <span id="__UID___status" style="font-size:12px;color:#4a6a61;
-          margin-left:auto;">ready</span>
-  </div>
-  <div style="font-size:11px;color:#6b8a81;margin-top:6px;">
-    Spoken locally by your browser — nothing is uploaded. Follow along below;
-    the word being spoken is highlighted.
-  </div>
-  <div id="__UID___script" style="margin-top:10px;max-height:340px;
-       overflow-y:auto;line-height:1.75;font-size:1rem;color:#2a4a41;
-       padding:12px 14px;background:#fff;border:1px solid #e3efeb;
-       border-radius:8px;"></div>
-</div>
-<style>
- #__UID___script .kkw{border-radius:4px;padding:0 1px;transition:background .05s;}
- #__UID___script .kkw.on{background:#ffe27a;color:#183029;box-shadow:0 0 0 2px #ffe27a;}
- #__UID___script .kkw.done{color:#6b8a81;}
-</style>
-<script>
-(function(){
-  var text = __PAYLOAD__;
-  var synth = window.speechSynthesis;
-  var status = document.getElementById("__UID___status");
-  var scriptEl = document.getElementById("__UID___script");
-  if(!synth){
-    status.textContent = "audio not supported in this browser";
-    if(scriptEl){ scriptEl.textContent = text; }
-    return;
-  }
-  var utter = null;
-  var _chosenVoice = null;
-
-  // --- build the transcript as word spans, each tagged with its character
-  //     range in `text`, so a boundary charIndex maps to the right word. ---
-  var spans = [];   // {el, start, end}
-  (function buildScript(){
-    var re = /\\S+/g, m, last = 0, frag = document.createDocumentFragment();
-    function esc(s){ return document.createTextNode(s); }
-    while((m = re.exec(text)) !== null){
-      if(m.index > last){ frag.appendChild(esc(text.slice(last, m.index))); }
-      var span = document.createElement("span");
-      span.className = "kkw";
-      span.textContent = m[0];
-      span.dataset.start = m.index;
-      span.dataset.end = m.index + m[0].length;
-      frag.appendChild(span);
-      spans.push({el: span, start: m.index, end: m.index + m[0].length});
-      last = m.index + m[0].length;
-    }
-    if(last < text.length){ frag.appendChild(esc(text.slice(last))); }
-    scriptEl.appendChild(frag);
-  })();
-
-  var curIdx = -1;
-  function clearHighlight(){
-    for(var i=0;i<spans.length;i++){ spans[i].el.classList.remove("on","done"); }
-    curIdx = -1;
-  }
-  // highlight the word whose range contains charIndex; mark prior words done
-  function highlightAt(charIndex){
-    var idx = -1;
-    for(var i=0;i<spans.length;i++){
-      if(charIndex >= spans[i].start && charIndex < spans[i].end){ idx = i; break; }
-      if(spans[i].start > charIndex){ break; }
-      idx = i; // last word that started at/under charIndex
-    }
-    if(idx === curIdx) return;
-    for(var i=0;i<spans.length;i++){
-      var c = spans[i].el.classList;
-      if(i < idx){ c.add("done"); c.remove("on"); }
-      else if(i === idx){ c.add("on"); c.remove("done"); }
-      else { c.remove("on","done"); }
-    }
-    curIdx = idx;
-    if(idx >= 0){
-      var el = spans[idx].el, box = scriptEl;
-      var top = el.offsetTop - box.offsetTop;
-      if(top < box.scrollTop + 10 || top > box.scrollTop + box.clientHeight - 30){
-        box.scrollTo({top: top - box.clientHeight/2, behavior:"smooth"});
-      }
-    }
-  }
-
-  function _pickVoice(){
-    var voices = synth.getVoices();
-    if(!voices.length) return null;
-    var prefer = ["en-GB","en-US","en-AU","en-CA","en-NZ","en-ZA","en-IN"];
-    for(var i=0; i<prefer.length; i++){
-      for(var j=0; j<voices.length; j++){
-        if(voices[j].lang === prefer[i]) return voices[j];
-      }
-    }
-    for(var j=0; j<voices.length; j++){
-      if(voices[j].lang.toLowerCase().startsWith("en")) return voices[j];
-    }
-    return null;
-  }
-  function _resolveVoice(cb){
-    var v = _pickVoice();
-    if(v){ cb(v); return; }
-    synth.addEventListener("voiceschanged", function _vc(){
-      synth.removeEventListener("voiceschanged", _vc);
-      cb(_pickVoice());
-    });
-  }
-
-  function build(voice){
-    var u = new SpeechSynthesisUtterance(text);
-    u.rate = parseFloat(document.getElementById("__UID___rate").value) || 1;
-    u.lang = "en-GB";
-    if(voice) u.voice = voice;
-    // The boundary event fires per word/sentence with a character offset —
-    // this is what drives the karaoke highlight. Not every engine emits word
-    // boundaries; when absent, audio still plays, just without highlighting.
-    u.onboundary = function(ev){
-      if(ev.name === "word" || ev.charIndex != null){ highlightAt(ev.charIndex); }
-    };
-    u.onstart = function(){ status.textContent = "playing…"; };
-    u.onend   = function(){ status.textContent = "finished";
-      for(var i=0;i<spans.length;i++){ spans[i].el.classList.remove("on"); } };
-    u.onerror = function(){ status.textContent = "stopped"; };
-    return u;
-  }
-
-  document.getElementById("__UID___play").onclick = function(){
-    if(synth.paused && synth.speaking){ synth.resume();
-      status.textContent = "playing…"; return; }
-    try{ synth.cancel(); }catch(e){}
-    clearHighlight();
-    _resolveVoice(function(voice){
-      _chosenVoice = voice;
-      utter = build(voice);
-      synth.speak(utter);
-    });
-  };
-  document.getElementById("__UID___pause").onclick = function(){
-    if(synth.speaking && !synth.paused){ synth.pause();
-      status.textContent = "paused"; }
-  };
-  document.getElementById("__UID___stop").onclick = function(){
-    try{ synth.cancel(); }catch(e){}
-    clearHighlight();
-    status.textContent = "stopped";
-  };
-  document.getElementById("__UID___rate").onchange = function(){
-    if(synth.speaking){
-      var wasPaused = synth.paused;
-      try{ synth.cancel(); }catch(e){}
-      clearHighlight();
-      utter = build(_chosenVoice); synth.speak(utter);
-      if(wasPaused){ synth.pause(); }
-    }
-  };
-  window.addEventListener("beforeunload", function(){
-    try{ synth.cancel(); }catch(e){}
-  });
-})();
-</script>
-"""
-    _html = _html.replace("__PAYLOAD__", _payload).replace("__UID__", _uid)
-    # Let any failure propagate — the caller wraps this in its own try/except
-    # and surfaces a visible caption, so we never swallow the real reason here.
-    _components.html(_html, height=500)
-
-
 def _briefing_offline_html(_speech_text: str, _title_line: str = "") -> str:
     """A single self-contained .html file the user can DOWNLOAD and open later
     with no internet: it re-speaks the briefing through their own browser's
@@ -6646,6 +6442,243 @@ def _briefing_mp3_bytes(_speech_text: str):
         return None
 
 
+def _briefing_unified_html(_bf, _speech_text):
+    """The UNIFIED briefing surface: one component that renders the full rich
+    briefing (headings, 'find it under…', why-you-need-it, feature bullets with
+    ⭐) AND speaks it with word-by-word highlighting IN THE SAME DOM.
+
+    Why one component rather than highlighting the Streamlit-rendered page:
+    the speech + word-boundary events live inside this iframe, and on Streamlit
+    Cloud an iframe cannot reach the parent document (cross-origin sandbox), so
+    'highlight the real page from here' is not reliably possible. Making the
+    briefing text live INSIDE the speaking iframe is what lets the actual
+    briefing highlight as it reads — no separate transcript box.
+
+    The visible HTML is built from the SAME (_bf) data the panel's tool blocks
+    use, and the spoken/ highlighted stream is _speech_text (already cleaned).
+    Word spans carry their char offset into _speech_text so boundary events map
+    to the right word. Concept figures aren't representable here; they render
+    below, in Streamlit, interleaved by tool."""
+    import html as _h
+    import json as _json
+
+    _style = _bf.get("style", "visual")
+    _prof = _bf.get("proficiency", "intermediate")
+    _active_goals = _bf.get("active_goal_keys", [])
+    _note_tabs = set(_bf.get("note_tabs", []))
+    _freetext = _bf.get("freetext", "")
+    _toks = _freetext_tokens(_freetext) if _freetext else []
+
+    # Build the visible briefing as segments. Each segment is either static
+    # chrome (a heading, a label) or 'spoken' text that must both display AND
+    # map to a slice of _speech_text for highlighting. We emit spoken segments
+    # as word spans; static chrome is plain. To keep highlight offsets correct
+    # we track a cursor into _speech_text and, for each spoken chunk, find it in
+    # order so the span char-ranges line up with what the engine actually says.
+    _sp = _speech_text
+    _cursor = [0]                      # mutable closure cell
+
+    def _esc(_s):
+        return _h.escape(_s, quote=False)
+
+    def _spoken(_text):
+        """Render _text as highlightable word spans, advancing the cursor to
+        keep char-offsets aligned to _speech_text. If the chunk isn't found
+        ahead (punctuation/whitespace drift), fall back to plain escaped text
+        so display never breaks — that chunk just won't light up."""
+        _idx = _sp.find(_text.strip()[:40], _cursor[0]) if _text.strip() else -1
+        _out = []
+        if _idx < 0:
+            return _esc(_text)
+        _base = _idx
+        import re as _re
+        _pos = _base
+        _frag = _sp[_base:_base + len(_text)]
+        for _m in _re.finditer(r"\S+", _frag):
+            _ws, _we = _base + _m.start(), _base + _m.end()
+            _out.append(_esc(_frag[_pos - _base:_m.start()]))
+            _out.append(f'<span class="kkw" data-s="{_ws}" data-e="{_we}">'
+                        f'{_esc(_m.group(0))}</span>')
+            _pos = _we
+        _out.append(_esc(_frag[_pos - _base:]))
+        _cursor[0] = _base + len(_text)
+        return "".join(_out)
+
+    _b = ['<div class="kkbrief-body">']
+
+    # tool plan, tool by tool — mirrors _brief_tool_block's content
+    def _emit_tool(_n, _tid):
+        from_meta = _TAB_META.get(_tid)
+        if not from_meta or _tid not in _BRIEF_TOOLS:
+            return
+        _em, _lab = from_meta
+        _need, _why, _vs = _BRIEF_TOOLS[_tid]
+        _cat = _CAT_LABEL.get(_ID_CATEGORY.get(_tid, ""), "")
+        _note = _tid in _note_tabs
+        _b.append('<div class="kktool">')
+        _hdr = f"{_n}. {_em} {_esc(_lab)}"
+        _b.append(f'<div class="kkh">{_hdr}'
+                  f'<span class="kkcat"> · find it under {_esc(_cat)}</span>'
+                  + ('<span class="kknote"> · 💬 in your toolbox because of '
+                     'your note</span>' if _note else '')
+                  + '</div>')
+        _b.append(f'<p>{_spoken(_need)}</p>')
+        if (_style == "new" or _prof == "beginner") and _tid in _BRIEF_SIMPLE:
+            _b.append(f'<p class="kkplain">🌱 In plain English: '
+                      f'{_spoken(_BRIEF_SIMPLE[_tid])}</p>')
+        if _prof == "advanced":
+            _b.append(f'<p><b>Why:</b> {_spoken(_why)}</p>')
+        else:
+            _b.append(f'<p><b>Why you need it:</b> {_spoken(_why)}</p>')
+            _b.append(f'<blockquote>Why here, not MATLAB/ANSYS/OptimumK: '
+                      f'{_esc(_vs)}</blockquote>')
+        # feature bullets (goal-specific first, else full list), with ⭐ for
+        # note-relevant ones — identical rule to _brief_tool_block.
+        _seen, _lines = set(), []
+        for _gk in _active_goals:
+            for _feat in _BRIEF_GOAL_FEATURES.get((_gk, _tid), []):
+                if _feat not in _seen:
+                    _seen.add(_feat)
+                    _lines.append(_feat)
+        _fhdr = "What this tool does for your goal — feature by feature:"
+        if not _lines:
+            if _prof == "advanced":
+                _lines = []
+                _b.append('<p class="kkmuted">Full capability list in the '
+                          'tool; no goal-specific subset to highlight.</p>')
+            else:
+                _lines = list(_BRIEF_TOOL_FEATURES.get(_tid, []))
+                _fhdr = "Everything this tool does for you:"
+        if _lines:
+            _b.append(f'<p class="kkfh"><b>{_esc(_fhdr)}</b></p><ul>')
+            for _f in _lines:
+                _star = _toks and any(_t in _f.lower() for _t in _toks)
+                _b.append('<li>' + ('⭐ ' if _star else '')
+                          + _spoken(_f) + '</li>')
+            _b.append('</ul>')
+        if _prof == "beginner":
+            _b.append('<p class="kkmuted">🛟 No wrong moves here — every field '
+                      'has a sensible default.</p>')
+        _b.append('</div>')
+
+    _core = [t for t in _bf.get("core_tabs", [])
+             if t in _TAB_META and t in _BRIEF_TOOLS]
+    _i = 0
+    for _tid in _core:
+        _i += 1
+        _emit_tool(_i, _tid)
+    for _tid in ("integration", "validation"):
+        _i += 1
+        _emit_tool(_i, _tid)
+    _b.append("</div>")
+    _body_html = "".join(_b)
+
+    _payload = _json.dumps(_sp)
+    _uid = "kku_" + str(abs(hash(_sp)) % (10 ** 8))
+    _tpl = """
+<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+            border:1px solid #d7e7e1;border-radius:10px;padding:12px 14px;
+            background:#f4faf7;width:100%;box-sizing:border-box;">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+              position:sticky;top:0;background:#f4faf7;padding-bottom:8px;
+              z-index:2;">
+    <button id="__UID___play"  style="cursor:pointer;border:0;border-radius:8px;
+        padding:6px 14px;background:#0f6e56;color:#fff;font-weight:600;">
+        ▶ Play briefing</button>
+    <button id="__UID___pause" style="cursor:pointer;border:0;border-radius:8px;
+        padding:6px 12px;background:#e1f5ee;color:#0f6e56;font-weight:600;">
+        ⏸ Pause</button>
+    <button id="__UID___stop"  style="cursor:pointer;border:0;border-radius:8px;
+        padding:6px 12px;background:#e1f5ee;color:#0f6e56;font-weight:600;">
+        ⏹ Stop</button>
+    <label style="font-size:13px;color:#0f6e56;margin-left:4px;">Speed
+      <select id="__UID___rate" style="margin-left:4px;border-radius:6px;
+          border:1px solid #cfe3db;padding:2px 4px;">
+        <option value="0.85">0.85×</option><option value="1" selected>1×</option>
+        <option value="1.15">1.15×</option><option value="1.3">1.3×</option>
+        <option value="1.5">1.5×</option>
+      </select></label>
+    <span id="__UID___status" style="font-size:12px;color:#4a6a61;
+          margin-left:auto;">ready · press play to follow along</span>
+  </div>
+  __BODY__
+</div>
+<style>
+ #__ROOT__ .kkbrief-body{color:#203c34;font-size:1rem;line-height:1.7;}
+ #__ROOT__ .kktool{padding:10px 0;border-top:1px solid #e3efeb;}
+ #__ROOT__ .kktool:first-child{border-top:0;}
+ #__ROOT__ .kkh{font-weight:700;color:#0f6e56;margin:2px 0 6px;}
+ #__ROOT__ .kkcat,#__ROOT__ .kknote{font-weight:400;color:#6b8a81;font-size:.9rem;}
+ #__ROOT__ blockquote{margin:6px 0;padding:4px 10px;border-left:3px solid #cfe3db;
+    color:#4a6a61;font-size:.92rem;background:#eef6f2;}
+ #__ROOT__ ul{margin:4px 0 4px 2px;padding-left:18px;}
+ #__ROOT__ li{margin:2px 0;}
+ #__ROOT__ .kkplain{color:#2a6a55;}
+ #__ROOT__ .kkmuted{color:#6b8a81;font-size:.9rem;}
+ #__ROOT__ .kkfh{margin:6px 0 2px;}
+ #__ROOT__ .kkw{border-radius:4px;padding:0 1px;transition:background .05s;}
+ #__ROOT__ .kkw.on{background:#ffe27a;color:#183029;box-shadow:0 0 0 2px #ffe27a;}
+ #__ROOT__ .kkw.done{color:#8aa79d;}
+</style>
+<script>
+(function(){
+  var text = __PAYLOAD__;
+  var root = document.currentScript.parentElement;
+  root.id = "__ROOT__";
+  var synth = window.speechSynthesis;
+  var status = document.getElementById("__UID___status");
+  var spans = Array.prototype.slice.call(root.querySelectorAll(".kkw"))
+              .map(function(el){ return {el:el,
+                s:parseInt(el.dataset.s,10), e:parseInt(el.dataset.e,10)}; })
+              .sort(function(a,b){ return a.s-b.s; });
+  if(!synth){ status.textContent="audio not supported — read below"; return; }
+  var utter=null, chosen=null, cur=-1;
+  function clearHi(){ for(var i=0;i<spans.length;i++) spans[i].el.classList.remove("on","done"); cur=-1; }
+  function hiAt(ci){
+    var idx=-1;
+    for(var i=0;i<spans.length;i++){
+      if(ci>=spans[i].s && ci<spans[i].e){ idx=i; break; }
+      if(spans[i].s>ci) break; idx=i;
+    }
+    if(idx===cur) return;
+    for(var i=0;i<spans.length;i++){ var c=spans[i].el.classList;
+      if(i<idx){c.add("done");c.remove("on");}
+      else if(i===idx){c.add("on");c.remove("done");}
+      else c.remove("on","done"); }
+    cur=idx;
+    if(idx>=0){ spans[idx].el.scrollIntoView({block:"center",behavior:"smooth"}); }
+  }
+  function pick(){ var v=synth.getVoices(); if(!v.length) return null;
+    var pref=["en-GB","en-US","en-AU","en-CA","en-NZ","en-ZA","en-IN"];
+    for(var i=0;i<pref.length;i++) for(var j=0;j<v.length;j++) if(v[j].lang===pref[i]) return v[j];
+    for(var j=0;j<v.length;j++) if(v[j].lang.toLowerCase().startsWith("en")) return v[j];
+    return null; }
+  function resolve(cb){ var v=pick(); if(v){cb(v);return;}
+    synth.addEventListener("voiceschanged",function h(){synth.removeEventListener("voiceschanged",h);cb(pick());}); }
+  function build(voice){ var u=new SpeechSynthesisUtterance(text);
+    u.rate=parseFloat(document.getElementById("__UID___rate").value)||1; u.lang="en-GB";
+    if(voice)u.voice=voice;
+    u.onboundary=function(ev){ if(ev.name==="word"||ev.charIndex!=null) hiAt(ev.charIndex); };
+    u.onstart=function(){status.textContent="playing…";};
+    u.onend=function(){status.textContent="finished"; for(var i=0;i<spans.length;i++) spans[i].el.classList.remove("on");};
+    u.onerror=function(){status.textContent="stopped";}; return u; }
+  document.getElementById("__UID___play").onclick=function(){
+    if(synth.paused&&synth.speaking){synth.resume();status.textContent="playing…";return;}
+    try{synth.cancel();}catch(e){} clearHi(); resolve(function(v){chosen=v;utter=build(v);synth.speak(utter);}); };
+  document.getElementById("__UID___pause").onclick=function(){ if(synth.speaking&&!synth.paused){synth.pause();status.textContent="paused";} };
+  document.getElementById("__UID___stop").onclick=function(){ try{synth.cancel();}catch(e){} clearHi(); status.textContent="stopped"; };
+  document.getElementById("__UID___rate").onchange=function(){ if(synth.speaking){var p=synth.paused;
+    try{synth.cancel();}catch(e){} clearHi(); utter=build(chosen);synth.speak(utter); if(p)synth.pause(); } };
+  window.addEventListener("beforeunload",function(){ try{synth.cancel();}catch(e){} });
+})();
+</script>
+"""
+    return (_tpl.replace("__BODY__", _body_html)
+                .replace("__PAYLOAD__", _payload)
+                .replace("__ROOT__", _uid)
+                .replace("__UID__", _uid))
+
+
 def _render_briefing_panel():
     """Post-entry: the compiled briefing, pinned above the tabs, dismissible."""
     _bf = st.session_state.get("kk_briefing")
@@ -6715,19 +6748,27 @@ def _render_briefing_panel():
             _brief_md, _brief_speech = "", ""
             st.caption(f"Couldn't compile the briefing text: {_bce}")
 
-        st.markdown("**🎧 Listen to your briefing · 📄 take it with you**")
+        st.markdown("**🎧 Your briefing — press play to hear it and follow "
+                    "along as each word highlights · 📄 take it with you**")
+
+        # THE unified briefing: one surface that shows the full rich briefing
+        # AND speaks it with word highlighting in the same DOM. Replaces the
+        # old split of (separate transcript box) + (duplicate text below).
+        if _brief_speech:
+            try:
+                import streamlit.components.v1 as _bcomp
+                _uni = _briefing_unified_html(_bf, _brief_speech)
+                _bcomp.html(_uni, height=620, scrolling=True)
+            except Exception as _ue:
+                st.caption(f"Briefing player unavailable: {_ue}")
+                # last-ditch: at least show the text so nothing is lost
+                st.markdown(_brief_md or "")
+
         _ac, _pc = st.columns(2)
 
-        # Audio (browser speech synthesiser). Fully isolated: any failure here
-        # must not touch the PDF button beside it.
+        # Downloads live below the unified briefing now.
         with _ac:
             if _brief_speech:
-                try:
-                    _render_briefing_audio(_brief_speech, key="kk_brief_audio")
-                except Exception as _ae:
-                    st.caption(f"Audio player unavailable: {_ae}")
-
-                # Offline: a downloadable self-contained HTML player (re-speaks
                 # via the browser, works with no internet) plus a plain-text
                 # transcript that any device or TTS app can read. Both guarded
                 # independently so neither can hide the other.
@@ -6843,134 +6884,52 @@ def _render_briefing_panel():
         _active_goals = _bf.get("active_goal_keys", [])
         _freetext = _bf.get("freetext", "")
 
-        def _brief_tool_block(_n, _tid):
-            """One recommended tool, rendered at a depth set by proficiency:
-            beginner = plain-English + full feature list + guardrail; advanced
-            = terse, goal-only bullets, rationale collapsed; intermediate =
-            the balanced default."""
-            _em, _lab = _TAB_META[_tid]
-            _need, _why, _vs = _BRIEF_TOOLS[_tid]
+        # The full briefing TEXT now lives in the unified component above (it
+        # speaks and highlights in one surface). Down here we render ONLY what
+        # that iframe can't hold: the live concept figures, one per tool, under
+        # a small label. No prose is repeated — this is the visual companion to
+        # the spoken briefing, not a second copy of it.
+        _show_visual = (_style in ("visual", "new")
+                        or (_prof == "beginner" and _style != "numbers"))
+
+        def _brief_tool_figure(_n, _tid):
+            if not _show_visual:
+                return
+            _meta = _TAB_META.get(_tid)
+            if not _meta:
+                return
+            _em, _lab = _meta
             _cat = _CAT_LABEL.get(_ID_CATEGORY.get(_tid, ""), "")
-
-            # --- header + what-you-do-here ---
-            _hdr = f"**{_n}. {_em} {_lab}**  ·  find it under **{_cat}**"
-            if _tid in _bf.get("note_tabs", []):
-                _hdr += "  ·  💬 *in your toolbox because of your note*"
-            _parts = [_hdr, _need]
-
-            # --- plain-English gloss: for the visual-new style OR any beginner,
-            #     since a beginner wants it regardless of the visual toggle. ---
-            if (_style == "new" or _prof == "beginner") \
-                    and _tid in _BRIEF_SIMPLE:
-                _parts.append(f"🌱 *In plain English:* {_BRIEF_SIMPLE[_tid]}")
-
-            # --- strategic why + vs. Advanced collapses this to keep the plan
-            #     terse; beginner/intermediate get the full reasoning. ---
-            if _prof == "advanced":
-                _parts.append(f"*Why:* {_why}")
-            else:
-                _parts.append(f"**Why you need it:** {_why}")
-                _parts.append(
-                    f"> **Why here, not MATLAB/ANSYS/OptimumK etc.:** {_vs}")
-
-            # --- feature deep-dive: goal-specific first, full list otherwise
-            # Collect every feature bullet that applies to any active goal for
-            # this tool, de-duplicating across multiple goals.
-            _feat_seen: set[str] = set()
-            _feat_lines: list[str] = []
-            for _gk in _active_goals:
-                for _feat in _BRIEF_GOAL_FEATURES.get((_gk, _tid), []):
-                    if _feat not in _feat_seen:
-                        _feat_seen.add(_feat)
-                        _feat_lines.append(_feat)
-
-            # No goal-tailored copy for this (goal, tool) combination — the
-            # handover pair, purpose-added tabs and note-added tools land
-            # here.  Fall back to the tool's COMPLETE feature list so every
-            # rendered block always covers every applicable feature — EXCEPT
-            # in advanced mode, where an exhaustive dump is noise: an advanced
-            # user with no goal-specific bullets gets a one-line pointer.
-            _feat_hdr = ("**What this tool does for your goal — "
-                         "feature by feature:**")
-            if not _feat_lines:
-                if _prof == "advanced":
-                    _feat_lines = []      # keep advanced blocks tight
-                    _parts.append("*Full capability list in the tool; "
-                                  "no goal-specific subset to highlight.*")
-                else:
-                    _feat_lines = list(_BRIEF_TOOL_FEATURES.get(_tid, []))
-                    _feat_hdr = "**Everything this tool does for you:**"
-
-            if _feat_lines:
-                # Star the bullets that relate to what the member typed in
-                # the optional note, so their own words visibly steer the
-                # briefing down to the feature level.
-                _toks = _freetext_tokens(_freetext)
-                _starred = False
-                _rendered = []
-                for _f in _feat_lines:
-                    _fl = _f.lower()
-                    if _toks and any(_t in _fl for _t in _toks):
-                        _rendered.append(f"- ⭐ {_f}")
-                        _starred = True
-                    else:
-                        _rendered.append(f"- {_f}")
-                _parts.append(_feat_hdr)
-                # Render as a tight bullet list inline in the markdown block.
-                _parts.append("\n".join(_rendered))
-                if _starred:
-                    _parts.append("*⭐ = relates directly to your note.*")
-
-            # --- freetext contextual hook ---
-            _hook = _freetext_hook(_freetext, _tid)
-            if _hook:
-                _parts.append(f"💬 *Your note:* {_hook}")
-
-            # --- beginner guardrail: reassure that exploring is safe ---
-            if _prof == "beginner":
-                _parts.append("🛟 *No wrong moves here — every field has a "
-                              "sensible default, so open it and change one "
-                              "number at a time to see what it does.*")
-
-            st.markdown("\n\n".join(_parts))
-
-            # --- live concept visual. Shown for visual thinkers, the brand-new
-            #     style, and always for beginners (a picture is worth most to
-            #     someone learning), unless they asked for numbers-only. ---
-            _show_visual = (_style in ("visual", "new")
-                            or (_prof == "beginner" and _style != "numbers"))
-            if _show_visual:
-                # Lazy import + full guard: a visual can never block the text.
+            try:
+                from suspension.brief_visuals import concept_figure
+                _fig, _cap = concept_figure(_tid)
+                if _fig is None:
+                    return
+                st.markdown(f"**{_n}. {_em} {_lab}**  ·  find it under "
+                            f"**{_cat}**")
+                st.plotly_chart(
+                    _fig, width="stretch", key=f"brief_fig_{_tid}",
+                    config={"displaylogo": False, "displayModeBar": False})
                 try:
-                    from suspension.brief_visuals import concept_figure
-                    _fig, _cap = concept_figure(_tid)
-                    if _fig is not None:
-                        st.plotly_chart(
-                            _fig, width="stretch",
-                            key=f"brief_fig_{_tid}",
-                            config={"displaylogo": False,
-                                    "displayModeBar": False})
-                        # RAM hygiene: Streamlit has serialized the figure;
-                        # drop the Python-side object immediately so 23
-                        # figures never coexist with the tab bodies below.
-                        try:
-                            _mem.release_figure(_fig)
-                        except Exception:
-                            pass
-                        _fig = None
-                        if _cap:
-                            st.caption(_cap)
+                    _mem.release_figure(_fig)
                 except Exception:
                     pass
+                _fig = None
+                if _cap:
+                    st.caption(_cap)
+            except Exception:
+                pass
 
+        if _show_visual:
+            st.caption("Concept visuals for each tool in your plan:")
         for _i, _tid in enumerate(_bf.get("core_tabs", []), start=1):
             if _tid not in _TAB_META or _tid not in _BRIEF_TOOLS:
                 continue
-            _brief_tool_block(_i, _tid)
+            _brief_tool_figure(_i, _tid)
         # The handover pair always closes the plan.
         _n0 = len(_bf.get("core_tabs", []))
         for _j, _tid in enumerate(("integration", "validation"), start=_n0 + 1):
-            _brief_tool_block(_j, _tid)
+            _brief_tool_figure(_j, _tid)
         st.divider()
         st.markdown(
             "**The point of all this:** the most expensive error class isn't a "
