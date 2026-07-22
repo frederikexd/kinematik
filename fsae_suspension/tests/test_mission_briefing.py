@@ -471,3 +471,34 @@ def test_unified_briefing_word_spans_align_to_speech():
         # the speech + highlight engine is present and self-contained
         assert "u.onboundary" in html and ".kkw.on{" in html
         assert "var text =" in html
+        # the highlight must actually be able to FIRE: the root is found by id
+        # (not the null-prone document.currentScript), so spans are collected.
+        assert 'id="' in html
+        assert "getElementById(" in html
+        assert "document.currentScript" not in html
+
+
+def test_unified_briefing_embeds_diagrams_when_given():
+    """Diagrams are interleaved INSIDE the unified surface (not a side panel):
+    each tool's figure HTML is embedded, and plotly.js is pulled once via CDN
+    only when figures are present."""
+    ns = _load_build_briefing()
+    build = ns["_build_briefing"]
+    to_text = ns["_briefing_to_text"]
+    uni = ns["_briefing_unified_html"]
+    opts = {k: (lab, ids)
+            for k, lab, ids in ns["_brief_goal_options"](["powertrain"])}
+    synth = next(k for k, (lab, ids) in opts.items() if "genesis_fc" in ids)
+    bf = build(["powertrain"], "design", [synth], "",
+               style="visual", proficiency="intermediate")
+    _md, speech = to_text(bf)
+
+    figs = {"ev": '<div id="bfig_ev">FIG_EV</div>',
+            "genesis_fc": '<div id="bfig_gfc">FIG_GFC</div>'}
+    html = uni(bf, speech, figs)
+    assert "FIG_EV" in html and "FIG_GFC" in html      # embedded inline
+    assert "cdn.plot.ly" in html                        # library loaded once
+
+    # no figures -> no CDN weight added
+    html2 = uni(bf, speech, {})
+    assert "cdn.plot.ly" not in html2
