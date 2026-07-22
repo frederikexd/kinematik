@@ -5905,7 +5905,7 @@ def _render_brief_questionnaire(roles):
         st.session_state["kk_briefing"] = _build_briefing(
             roles, _pu_key, _go_keys, _ft, style=_st_key,
             proficiency=_pf_key)
-        st.session_state["kk_briefing_open"] = True
+        st.session_state.pop("kk_brief_audio_file", None)  # stale audio
         st.session_state["kk_entered"] = True
         st.session_state["kk_brief_pending"] = False
         st.rerun()
@@ -6077,9 +6077,14 @@ def _briefing_to_text(_bf):
 def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
     """Inline audio player for the briefing using the browser's built-in speech
     synthesiser (Web Speech API). No server-side TTS, no new dependency, no
-    network — the text is spoken locally by the user's browser. Play / pause /
-    stop and a speed control; the text is JSON-embedded so quotes and newlines
-    can't break the component."""
+    network — the text is spoken locally by the user's browser.
+
+    Below the controls it shows the full transcript with KARAOKE-STYLE word
+    highlighting: as the browser speaks, the utterance's `boundary` events give
+    the character offset of each spoken word, so we light up the matching word
+    and auto-scroll to keep it in view — the reader always knows where to look.
+    Play / pause / stop and a speed control; the text is JSON-embedded so quotes
+    and newlines can't break the component."""
     import json as _json
     import streamlit.components.v1 as _components
 
@@ -6113,23 +6118,84 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
           margin-left:auto;">ready</span>
   </div>
   <div style="font-size:11px;color:#6b8a81;margin-top:6px;">
-    Spoken locally by your browser — nothing is uploaded.
+    Spoken locally by your browser — nothing is uploaded. The word being
+    spoken is highlighted below.
   </div>
+  <div id="__UID___script" style="margin-top:10px;max-height:180px;
+       overflow-y:auto;line-height:1.7;font-size:.95rem;color:#2a4a41;
+       padding:8px 10px;background:#fff;border:1px solid #e3efeb;
+       border-radius:8px;"></div>
 </div>
+<style>
+ #__UID___script .kkw{border-radius:4px;padding:0 1px;transition:background .05s;}
+ #__UID___script .kkw.on{background:#ffe27a;color:#183029;box-shadow:0 0 0 2px #ffe27a;}
+ #__UID___script .kkw.done{color:#6b8a81;}
+</style>
 <script>
 (function(){
   var text = __PAYLOAD__;
   var synth = window.speechSynthesis;
   var status = document.getElementById("__UID___status");
+  var scriptEl = document.getElementById("__UID___script");
   if(!synth){
     status.textContent = "audio not supported in this browser";
+    if(scriptEl){ scriptEl.textContent = text; }
     return;
   }
   var utter = null;
   var _chosenVoice = null;
 
-  // Pick the best English voice. Priority: en-GB > en-US > any en- locale.
-  // getVoices() is empty on first call in Chrome until voiceschanged fires.
+  // --- build the transcript as word spans, each tagged with its character
+  //     range in `text`, so a boundary charIndex maps to the right word. ---
+  var spans = [];   // {el, start, end}
+  (function buildScript(){
+    var re = /\\S+/g, m, last = 0, frag = document.createDocumentFragment();
+    function esc(s){ return document.createTextNode(s); }
+    while((m = re.exec(text)) !== null){
+      if(m.index > last){ frag.appendChild(esc(text.slice(last, m.index))); }
+      var span = document.createElement("span");
+      span.className = "kkw";
+      span.textContent = m[0];
+      span.dataset.start = m.index;
+      span.dataset.end = m.index + m[0].length;
+      frag.appendChild(span);
+      spans.push({el: span, start: m.index, end: m.index + m[0].length});
+      last = m.index + m[0].length;
+    }
+    if(last < text.length){ frag.appendChild(esc(text.slice(last))); }
+    scriptEl.appendChild(frag);
+  })();
+
+  var curIdx = -1;
+  function clearHighlight(){
+    for(var i=0;i<spans.length;i++){ spans[i].el.classList.remove("on","done"); }
+    curIdx = -1;
+  }
+  // highlight the word whose range contains charIndex; mark prior words done
+  function highlightAt(charIndex){
+    var idx = -1;
+    for(var i=0;i<spans.length;i++){
+      if(charIndex >= spans[i].start && charIndex < spans[i].end){ idx = i; break; }
+      if(spans[i].start > charIndex){ break; }
+      idx = i; // last word that started at/under charIndex
+    }
+    if(idx === curIdx) return;
+    for(var i=0;i<spans.length;i++){
+      var c = spans[i].el.classList;
+      if(i < idx){ c.add("done"); c.remove("on"); }
+      else if(i === idx){ c.add("on"); c.remove("done"); }
+      else { c.remove("on","done"); }
+    }
+    curIdx = idx;
+    if(idx >= 0){
+      var el = spans[idx].el, box = scriptEl;
+      var top = el.offsetTop - box.offsetTop;
+      if(top < box.scrollTop + 10 || top > box.scrollTop + box.clientHeight - 30){
+        box.scrollTo({top: top - box.clientHeight/2, behavior:"smooth"});
+      }
+    }
+  }
+
   function _pickVoice(){
     var voices = synth.getVoices();
     if(!voices.length) return null;
@@ -6139,17 +6205,14 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
         if(voices[j].lang === prefer[i]) return voices[j];
       }
     }
-    // fallback: any voice whose lang starts with "en"
     for(var j=0; j<voices.length; j++){
       if(voices[j].lang.toLowerCase().startsWith("en")) return voices[j];
     }
-    return null; // last resort: browser default (no assignment = OS default)
+    return null;
   }
-
   function _resolveVoice(cb){
     var v = _pickVoice();
     if(v){ cb(v); return; }
-    // voices not loaded yet — wait for the event (Chrome), then retry once
     synth.addEventListener("voiceschanged", function _vc(){
       synth.removeEventListener("voiceschanged", _vc);
       cb(_pickVoice());
@@ -6159,10 +6222,17 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
   function build(voice){
     var u = new SpeechSynthesisUtterance(text);
     u.rate = parseFloat(document.getElementById("__UID___rate").value) || 1;
-    u.lang = "en-GB";          // hint the engine even if voice assignment works
+    u.lang = "en-GB";
     if(voice) u.voice = voice;
-    u.onend   = function(){ status.textContent = "finished"; };
+    // The boundary event fires per word/sentence with a character offset —
+    // this is what drives the karaoke highlight. Not every engine emits word
+    // boundaries; when absent, audio still plays, just without highlighting.
+    u.onboundary = function(ev){
+      if(ev.name === "word" || ev.charIndex != null){ highlightAt(ev.charIndex); }
+    };
     u.onstart = function(){ status.textContent = "playing…"; };
+    u.onend   = function(){ status.textContent = "finished";
+      for(var i=0;i<spans.length;i++){ spans[i].el.classList.remove("on"); } };
     u.onerror = function(){ status.textContent = "stopped"; };
     return u;
   }
@@ -6171,6 +6241,7 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
     if(synth.paused && synth.speaking){ synth.resume();
       status.textContent = "playing…"; return; }
     try{ synth.cancel(); }catch(e){}
+    clearHighlight();
     _resolveVoice(function(voice){
       _chosenVoice = voice;
       utter = build(voice);
@@ -6183,17 +6254,18 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
   };
   document.getElementById("__UID___stop").onclick = function(){
     try{ synth.cancel(); }catch(e){}
+    clearHighlight();
     status.textContent = "stopped";
   };
   document.getElementById("__UID___rate").onchange = function(){
     if(synth.speaking){
       var wasPaused = synth.paused;
       try{ synth.cancel(); }catch(e){}
+      clearHighlight();
       utter = build(_chosenVoice); synth.speak(utter);
       if(wasPaused){ synth.pause(); }
     }
   };
-  // Stop narration if the component is torn down (tab change / rerun).
   window.addEventListener("beforeunload", function(){
     try{ synth.cancel(); }catch(e){}
   });
@@ -6203,7 +6275,336 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
     _html = _html.replace("__PAYLOAD__", _payload).replace("__UID__", _uid)
     # Let any failure propagate — the caller wraps this in its own try/except
     # and surfaces a visible caption, so we never swallow the real reason here.
-    _components.html(_html, height=120)
+    _components.html(_html, height=340)
+
+
+def _briefing_offline_html(_speech_text: str, _title_line: str = "") -> str:
+    """A single self-contained .html file the user can DOWNLOAD and open later
+    with no internet: it re-speaks the briefing through their own browser's
+    speech synthesiser, exactly like the in-app player.
+
+    Why an HTML file and not a .wav/.mp3: honest, reliable offline audio bytes
+    need a server-side TTS engine (eSpeak/gTTS), which is either a network call
+    or a fragile system dependency this app deliberately avoids — the in-app
+    audio is 'spoken locally by your browser, nothing uploaded', and this keeps
+    that promise. A downloaded WAV captured from speechSynthesis is unsupported
+    on Safari/Firefox; this HTML player works in every modern browser, fully
+    offline, and carries the full script as text too so it's readable even if a
+    device has no voices installed. The spoken text is JSON-embedded so quotes
+    and newlines can't break the file."""
+    import html as _html_mod
+    import json as _json
+
+    _payload = _json.dumps(_speech_text)
+    _readable = _html_mod.escape(_speech_text)
+    _title = _html_mod.escape(_title_line or "KinematiK Mission Briefing")
+    _doc = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>__TITLE__ — audio</title>
+<style>
+ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      max-width:820px;margin:24px auto;padding:0 16px;color:#183029;}
+ h1{font-size:1.25rem;color:#0f6e56;}
+ .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+      border:1px solid #d7e7e1;border-radius:10px;padding:10px 12px;
+      background:#f4faf7;}
+ button{cursor:pointer;border:0;border-radius:8px;padding:6px 14px;font-weight:600;}
+ #play{background:#0f6e56;color:#fff;} #pause,#stop{background:#e1f5ee;color:#0f6e56;}
+ select{border-radius:6px;border:1px solid #cfe3db;padding:2px 4px;}
+ #status{font-size:12px;color:#4a6a61;margin-left:auto;}
+ .note{font-size:12px;color:#6b8a81;margin:8px 2px;}
+ .script{white-space:pre-wrap;line-height:1.7;margin-top:18px;padding-top:14px;
+         border-top:1px solid #e3efeb;color:#2a4a41;font-size:.95rem;}
+ .script .kkw{border-radius:4px;padding:0 1px;}
+ .script .kkw.on{background:#ffe27a;color:#183029;box-shadow:0 0 0 2px #ffe27a;}
+ .script .kkw.done{color:#8aa79d;}
+</style></head><body>
+<h1>🎧 __TITLE__</h1>
+<div class="bar">
+  <button id="play">▶ Play</button>
+  <button id="pause">⏸ Pause</button>
+  <button id="stop">⏹ Stop</button>
+  <label style="font-size:13px;color:#0f6e56;">Speed
+    <select id="rate">
+      <option value="0.85">0.85×</option><option value="1" selected>1×</option>
+      <option value="1.15">1.15×</option><option value="1.3">1.3×</option>
+      <option value="1.5">1.5×</option>
+    </select></label>
+  <span id="status">ready</span>
+</div>
+<p class="note">Plays through your device's built-in voice — works fully
+offline, nothing is uploaded. The word being spoken is highlighted below; the
+full text is there to read even if your device has no voices installed.</p>
+<div class="script" id="script">__READABLE__</div>
+<script>
+(function(){
+  var text = __PAYLOAD__;
+  var synth = window.speechSynthesis;
+  var status = document.getElementById("status");
+  var scriptEl = document.getElementById("script");
+
+  // Rebuild the transcript as word spans tagged with their char ranges so a
+  // boundary charIndex maps to the right word for karaoke highlighting. (The
+  // static text is the pre-JS fallback for no-JS / no-speech devices.)
+  var spans = [];
+  if(scriptEl){
+    scriptEl.textContent = "";
+    var re=/\\S+/g, m, last=0, frag=document.createDocumentFragment();
+    while((m=re.exec(text))!==null){
+      if(m.index>last) frag.appendChild(document.createTextNode(text.slice(last,m.index)));
+      var sp=document.createElement("span"); sp.className="kkw"; sp.textContent=m[0];
+      frag.appendChild(sp); spans.push({el:sp,start:m.index,end:m.index+m[0].length});
+      last=m.index+m[0].length;
+    }
+    if(last<text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    scriptEl.appendChild(frag);
+  }
+  var curIdx=-1;
+  function clearHi(){ for(var i=0;i<spans.length;i++) spans[i].el.classList.remove("on","done"); curIdx=-1; }
+  function hiAt(ci){
+    var idx=-1;
+    for(var i=0;i<spans.length;i++){
+      if(ci>=spans[i].start && ci<spans[i].end){ idx=i; break; }
+      if(spans[i].start>ci) break; idx=i;
+    }
+    if(idx===curIdx) return;
+    for(var i=0;i<spans.length;i++){ var c=spans[i].el.classList;
+      if(i<idx){c.add("done");c.remove("on");} else if(i===idx){c.add("on");c.remove("done");}
+      else c.remove("on","done"); }
+    curIdx=idx;
+    if(idx>=0){ var el=spans[idx].el, top=el.offsetTop;
+      if(top<window.scrollY+60 || top>window.scrollY+window.innerHeight-80)
+        window.scrollTo({top:top-window.innerHeight/2,behavior:"smooth"}); }
+  }
+  if(!synth){ status.textContent = "audio not supported — read the text below"; return; }
+  var utter=null, chosen=null;
+  function pick(){ var v=synth.getVoices(); if(!v.length) return null;
+    var pref=["en-GB","en-US","en-AU","en-CA","en-NZ","en-ZA","en-IN"];
+    for(var i=0;i<pref.length;i++) for(var j=0;j<v.length;j++) if(v[j].lang===pref[i]) return v[j];
+    for(var j=0;j<v.length;j++) if(v[j].lang.toLowerCase().startsWith("en")) return v[j];
+    return null; }
+  function resolve(cb){ var v=pick(); if(v){cb(v);return;}
+    synth.addEventListener("voiceschanged",function h(){synth.removeEventListener("voiceschanged",h);cb(pick());}); }
+  function build(voice){ var u=new SpeechSynthesisUtterance(text);
+    u.rate=parseFloat(document.getElementById("rate").value)||1; u.lang="en-GB";
+    if(voice)u.voice=voice;
+    u.onboundary=function(ev){ if(ev.name==="word"||ev.charIndex!=null) hiAt(ev.charIndex); };
+    u.onend=function(){status.textContent="finished"; for(var i=0;i<spans.length;i++) spans[i].el.classList.remove("on");};
+    u.onstart=function(){status.textContent="playing…";};
+    u.onerror=function(){status.textContent="stopped";}; return u; }
+  document.getElementById("play").onclick=function(){
+    if(synth.paused&&synth.speaking){synth.resume();status.textContent="playing…";return;}
+    try{synth.cancel();}catch(e){} clearHi(); resolve(function(v){chosen=v;utter=build(v);synth.speak(utter);}); };
+  document.getElementById("pause").onclick=function(){ if(synth.speaking&&!synth.paused){synth.pause();status.textContent="paused";} };
+  document.getElementById("stop").onclick=function(){ try{synth.cancel();}catch(e){} clearHi(); status.textContent="stopped"; };
+  document.getElementById("rate").onchange=function(){ if(synth.speaking){var p=synth.paused;
+    try{synth.cancel();}catch(e){} clearHi(); utter=build(chosen);synth.speak(utter); if(p)synth.pause(); } };
+})();
+</script></body></html>"""
+    return (_doc.replace("__PAYLOAD__", _payload)
+                .replace("__READABLE__", _readable)
+                .replace("__TITLE__", _title))
+
+
+# --- local, no-network TTS via piper (preferred MP3 engine) --------------- #
+# piper is a fully-offline neural TTS. Unlike gTTS it makes NO network call at
+# synthesis time — the only network is a ONE-TIME model download (or the model
+# is committed beside the app for an air-gapped deploy). Same three-tier lookup
+# as the Vosk provisioner above: env var -> models/ folder -> cache download.
+_VM_PIPER_VOICE = "en_US-lessac-low"           # ~20 MB — small, repo-friendly
+_VM_PIPER_QUALITY = "low"
+_VM_PIPER_LANG_FAMILY = "en"
+_VM_PIPER_LANG_CODE = "en_US"
+
+
+def _vm_piper_cache_root():
+    import os as _os
+    _root = (_os.environ.get("KINEMATIK_PIPER_DIR")
+             or _os.path.join(
+                 _os.environ.get("XDG_CACHE_HOME")
+                 or _os.path.join(_os.path.expanduser("~"), ".cache"),
+                 "kinematik", "piper"))
+    _os.makedirs(_root, exist_ok=True)
+    return _root
+
+
+def _vm_piper_is_model(_onnx):
+    """A piper voice is a .onnx file with its .onnx.json config beside it."""
+    import os as _os
+    return bool(_onnx) and _os.path.isfile(_onnx) \
+        and _os.path.isfile(_onnx + ".json")
+
+
+def _vm_piper_find_local():
+    """An ALREADY-present voice model — no network. Checked, in order:
+      1. $KINEMATIK_PIPER_MODEL pointing straight at a .onnx voice file;
+      2. a `models/*.onnx` committed beside streamlit_app.py (air-gapped deploy);
+      3. anything downloaded previously under the cache root.
+    Returns the .onnx path or None."""
+    import glob as _glob
+    import os as _os
+    _explicit = _os.environ.get("KINEMATIK_PIPER_MODEL")
+    if _vm_piper_is_model(_explicit):
+        return _explicit
+    _here = _os.path.dirname(_os.path.abspath(__file__))
+    for _cand in (_glob.glob(_os.path.join(_here, "models", "*.onnx"))
+                  + _glob.glob(_os.path.join(_here, "*.onnx"))):
+        if _vm_piper_is_model(_cand):
+            return _cand
+    for _cand in _glob.glob(_os.path.join(_vm_piper_cache_root(), "*.onnx")):
+        if _vm_piper_is_model(_cand):
+            return _cand
+    return None
+
+
+def _vm_piper_model_path(download=True):
+    """Local path to a piper .onnx voice. Finds a present one first (env var,
+    a model committed beside the app, or a prior download); only then fetches
+    the voice ONCE via piper's own downloader. Returns None if none present and
+    none can be fetched. Synthesis after this is fully offline."""
+    _local = _vm_piper_find_local()
+    if _local:
+        return _local
+    if not download:
+        return None
+    try:
+        from piper.download_voices import download_voice
+    except Exception:
+        return None
+    import glob as _glob
+    import os as _os
+    _root = _vm_piper_cache_root()
+    try:
+        # piper's downloader lays the .onnx + .onnx.json into _root
+        download_voice(_VM_PIPER_VOICE, _root)
+    except Exception:
+        return None
+    for _cand in _glob.glob(_os.path.join(_root, "*.onnx")):
+        if _vm_piper_is_model(_cand):
+            return _cand
+    return None
+
+
+def _briefing_piper_wav_bytes(_speech_text: str, download=True):
+    """Synthesize the briefing to WAV bytes with local piper, or None.
+
+    None is a normal outcome (piper not installed, or no voice model present
+    and none fetchable) — the caller then falls back to gTTS or the offline
+    HTML. Once a model is present this needs NO network and cannot be rate-
+    limited: the whole point of bundling it."""
+    _txt = (_speech_text or "").strip()
+    if not _txt:
+        return None
+    try:
+        from piper import PiperVoice
+    except Exception:
+        return None
+    _model = _vm_piper_model_path(download=download)
+    if not _model:
+        return None
+    import io
+    import wave
+    try:
+        _voice = PiperVoice.load(_model)
+        _buf = io.BytesIO()
+        with wave.open(_buf, "wb") as _wf:
+            _voice.synthesize_wav(_txt, _wf)
+        _data = _buf.getvalue()
+        return _data if _data else None
+    except Exception:
+        return None
+
+
+def _wav_bytes_to_mp3(_wav_bytes: bytes):
+    """Transcode WAV bytes to MP3 via ffmpeg if available, else return the WAV
+    unchanged with a flag. Returns (bytes, ext, mime). ffmpeg is present on
+    most hosts (and in this image); when it isn't, a WAV download is still a
+    perfectly good offline audio file, just larger."""
+    import shutil
+    if not _wav_bytes:
+        return None, None, None
+    _ff = shutil.which("ffmpeg")
+    if not _ff:
+        return _wav_bytes, "wav", "audio/wav"
+    import subprocess
+    import tempfile
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as _fi:
+            _fi.write(_wav_bytes)
+            _in = _fi.name
+        _out = _in[:-4] + ".mp3"
+        subprocess.run([_ff, "-y", "-loglevel", "error", "-i", _in,
+                        "-codec:a", "libmp3lame", "-qscale:a", "4", _out],
+                       check=True, timeout=180)
+        with open(_out, "rb") as _f:
+            _mp3 = _f.read()
+        return (_mp3, "mp3", "audio/mpeg") if _mp3 else \
+            (_wav_bytes, "wav", "audio/wav")
+    except Exception:
+        return _wav_bytes, "wav", "audio/wav"
+
+
+def _briefing_local_audio(_speech_text: str, download=True):
+    """Preferred path: fully-local audio via piper, transcoded to MP3 when
+    ffmpeg is present. Returns (bytes, ext, mime) or (None, None, None). No
+    network at synthesis time once the voice model is provisioned."""
+    _wav = _briefing_piper_wav_bytes(_speech_text, download=download)
+    if not _wav:
+        return None, None, None
+    return _wav_bytes_to_mp3(_wav)
+
+
+def _briefing_mp3_bytes(_speech_text: str):
+    """Best-effort MP3 of the briefing via gTTS (Google Text-to-Speech).
+
+    Returns raw MP3 bytes, or None if unavailable — and None is a NORMAL
+    outcome, handled by the caller, never an error surfaced to the user:
+
+      * gTTS is an OPTIONAL dependency (see requirements.txt). If it isn't
+        installed, this returns None and the always-works offline HTML/txt
+        downloads carry the offline story instead.
+      * gTTS makes a NETWORK call to Google's TTS endpoint. That call can be
+        blocked, rate-limited, or offline — any failure returns None rather
+        than breaking the panel. This is why the MP3 is an enhancement layered
+        ON TOP of the browser player, not a replacement for it.
+
+    gTTS caps a single request's text length, so long briefings are chunked on
+    sentence boundaries and the MP3 fragments concatenated (MP3 frames are
+    self-delimiting, so byte concatenation yields one playable file)."""
+    _txt = (_speech_text or "").strip()
+    if not _txt:
+        return None
+    try:
+        from gtts import gTTS               # optional dependency
+    except Exception:
+        return None
+    import io
+    import re
+
+    # Split into <=450-char chunks on sentence boundaries so no single gTTS
+    # request is rejected for length; keep sentences intact where possible.
+    _chunks, _cur = [], ""
+    for _sent in re.split(r"(?<=[.!?])\s+", _txt):
+        if not _sent:
+            continue
+        if len(_cur) + len(_sent) + 1 > 450 and _cur:
+            _chunks.append(_cur)
+            _cur = _sent
+        else:
+            _cur = (_cur + " " + _sent).strip()
+    if _cur:
+        _chunks.append(_cur)
+
+    try:
+        _buf = io.BytesIO()
+        for _c in _chunks:
+            gTTS(text=_c, lang="en", tld="co.uk").write_to_fp(_buf)
+        _data = _buf.getvalue()
+        return _data if _data else None
+    except Exception:
+        # network blocked / API change / rate limit — degrade silently
+        return None
 
 
 def _render_briefing_panel():
@@ -6219,9 +6620,12 @@ def _render_briefing_panel():
             st.session_state["kk_entered"] = False
             st.rerun()
         return
-    _open = bool(st.session_state.pop("kk_briefing_open", False))
+    # The briefing panel always renders COLLAPSED — it's a reference the user
+    # opens when they want it, not a wall that reopens itself on every rerun.
+    # (We still clear any legacy open-flag so nothing forces it back open.)
+    st.session_state.pop("kk_briefing_open", None)
     with st.expander("🧭 Your mission briefing — what to use, in what order, "
-                     "and why", expanded=_open):
+                     "and why", expanded=False):
         _pu = _BRIEF_PURPOSE_MAP.get(_bf.get("purpose"))
         _names = " + ".join(_ROLE_LABELS.get(r, r).split(" / ")[0]
                             for r in _bf.get("roles", []))
@@ -6283,6 +6687,83 @@ def _render_briefing_panel():
                     _render_briefing_audio(_brief_speech, key="kk_brief_audio")
                 except Exception as _ae:
                     st.caption(f"Audio player unavailable: {_ae}")
+
+                # Offline: a downloadable self-contained HTML player (re-speaks
+                # via the browser, works with no internet) plus a plain-text
+                # transcript that any device or TTS app can read. Both guarded
+                # independently so neither can hide the other.
+                _dl_html, _dl_txt = st.columns(2)
+                with _dl_html:
+                    try:
+                        _title = "KinematiK Mission Briefing"
+                        _off = _briefing_offline_html(_brief_speech, _title)
+                        st.download_button(
+                            "⬇ Offline audio (HTML)",
+                            _off.encode("utf-8"),
+                            file_name="kinematik_briefing_audio.html",
+                            mime="text/html", use_container_width=True,
+                            key="kk_brief_audio_html_dl",
+                            help="A self-contained player — open it offline and "
+                                 "your device speaks the briefing. Nothing is "
+                                 "uploaded; no internet needed.")
+                    except Exception as _oe:
+                        st.caption(f"Offline audio unavailable: {_oe}")
+                with _dl_txt:
+                    st.download_button(
+                        "⬇ Transcript (.txt)",
+                        _brief_speech.encode("utf-8"),
+                        file_name="kinematik_briefing.txt",
+                        mime="text/plain", use_container_width=True,
+                        key="kk_brief_txt_dl",
+                        help="Plain text of the spoken briefing — readable "
+                             "anywhere, or paste into any text-to-speech app.")
+
+                # Downloadable audio file for offline listening. Preferred
+                # engine is LOCAL piper (no network at synthesis time once its
+                # voice model is provisioned); if piper isn't available it falls
+                # back to gTTS (network). Either way the offline HTML/txt above
+                # remain the guaranteed no-dependency path. Gated behind a
+                # button so we never synthesize on every rerun.
+                _aud = st.session_state.get("kk_brief_audio_file")
+                if _aud is None:
+                    if st.button("🔊 Generate audio file (offline listening)",
+                                 use_container_width=True,
+                                 key="kk_brief_mp3_gen",
+                                 help="Creates a downloadable audio file. Uses "
+                                      "the bundled local voice when available "
+                                      "(no internet needed), otherwise online "
+                                      "text-to-speech."):
+                        with st.spinner("Synthesizing audio…"):
+                            _bytes, _ext, _mime = _briefing_local_audio(
+                                _brief_speech)
+                            _engine = "local"
+                            if not _bytes:
+                                _bytes = _briefing_mp3_bytes(_brief_speech)
+                                _ext, _mime, _engine = "mp3", "audio/mpeg", "gtts"
+                        if _bytes:
+                            st.session_state["kk_brief_audio_file"] = {
+                                "bytes": _bytes, "ext": _ext, "mime": _mime,
+                                "engine": _engine}
+                            st.rerun()
+                        else:
+                            st.caption("Audio file unavailable here (no local "
+                                       "voice model and online TTS not "
+                                       "reachable). The offline HTML player "
+                                       "above works with no internet.")
+                else:
+                    _eng = _aud.get("engine")
+                    _lbl = ("⬇ Download audio ("
+                            + _aud["ext"].upper()
+                            + (", local voice)" if _eng == "local"
+                               else ", online voice)"))
+                    st.download_button(
+                        _lbl, _aud["bytes"],
+                        file_name="kinematik_briefing." + _aud["ext"],
+                        mime=_aud["mime"], use_container_width=True,
+                        key="kk_brief_mp3_dl")
+                    if _eng == "local":
+                        st.caption("Generated by the bundled local voice — "
+                                   "no internet was used.")
             else:
                 st.caption("Audio unavailable — no briefing text.")
 
