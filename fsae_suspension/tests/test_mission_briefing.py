@@ -96,7 +96,8 @@ def _load_build_briefing():
             "_build_briefing", "_brief_goal_options",
             "_freetext_matched_tools", "_BRIEF_PURPOSE_MAP",
             "_briefing_ordered_tools", "_briefing_feature_lines",
-            "_briefing_to_text", "_briefing_offline_html"}
+            "_briefing_to_text", "_briefing_offline_html",
+            "_briefing_unified_html", "_freetext_tokens"}
     segs = []
     for node in tree.body:
         names = []
@@ -424,53 +425,6 @@ def _load_offline_html_fn():
     return ns["_briefing_offline_html"]
 
 
-def _capture_inapp_audio_html():
-    """Capture the HTML _render_briefing_audio hands to components.html,
-    by stubbing streamlit so no real Streamlit runtime is needed."""
-    import ast as _ast
-    import sys
-    import types
-
-    with open(_APP, encoding="utf-8") as f:
-        src = f.read()
-    tree = _ast.parse(src)
-    seg = next(_ast.get_source_segment(src, n) for n in tree.body
-               if isinstance(n, _ast.FunctionDef)
-               and n.name == "_render_briefing_audio")
-
-    captured = {}
-    comp = types.ModuleType("streamlit.components.v1")
-    comp.html = lambda h, height=None: captured.__setitem__("html", h)
-    saved = {k: sys.modules.get(k) for k in
-             ("streamlit", "streamlit.components", "streamlit.components.v1")}
-    sys.modules["streamlit"] = types.ModuleType("streamlit")
-    sys.modules["streamlit.components"] = types.ModuleType(
-        "streamlit.components")
-    sys.modules["streamlit.components.v1"] = comp
-    try:
-        ns: dict = {}
-        exec("from __future__ import annotations\n" + seg, ns)  # noqa: S102
-        ns["_render_briefing_audio"]("Word one. Word two here.", key="k")
-        return captured.get("html", "")
-    finally:
-        for k, v in saved.items():
-            if v is None:
-                sys.modules.pop(k, None)
-            else:
-                sys.modules[k] = v
-
-
-def test_inapp_player_has_word_highlight_machinery():
-    html = _capture_inapp_audio_html()
-    assert html
-    # boundary event drives the highlight; word spans + active-word CSS exist;
-    # the current word is scrolled into view
-    assert "u.onboundary" in html
-    assert 'className = "kkw"' in html or ".kkw" in html
-    assert ".kkw.on{" in html
-    assert "scrollTo(" in html
-
-
 def test_offline_html_has_word_highlight_machinery():
     offline = _load_offline_html_fn()
     html = offline("Word one. Word two here.", "KinematiK Mission Briefing")
@@ -479,3 +433,41 @@ def test_offline_html_has_word_highlight_machinery():
     assert "scrollTo(" in html
     # the static escaped transcript remains as the no-JS / no-speech fallback
     assert 'id="script"' in html
+
+
+def test_unified_briefing_word_spans_align_to_speech():
+    """The unified component highlights the REAL briefing text. Correctness
+    hinges on every word span's data-s/data-e slicing the spoken text to
+    exactly that visible word, in order — otherwise the highlight drifts."""
+    import html as _h
+    import re
+
+    ns = _load_build_briefing()
+    build = ns["_build_briefing"]
+    to_text = ns["_briefing_to_text"]
+    uni = ns["_briefing_unified_html"]
+    opts = {k: (lab, ids)
+            for k, lab, ids in ns["_brief_goal_options"](["powertrain"])}
+    synth = next(k for k, (lab, ids) in opts.items() if "genesis_fc" in ids)
+
+    for prof in ("beginner", "intermediate", "advanced"):
+        bf = build(["powertrain"], "design", [synth],
+                   "pack overheats in endurance",
+                   style="visual", proficiency=prof)
+        _md, speech = to_text(bf)
+        html = uni(bf, speech)
+        spans = re.findall(
+            r'<span class="kkw" data-s="(\d+)" data-e="(\d+)">(.*?)</span>',
+            html)
+        assert len(spans) > 20
+        offs = []
+        for s, e, txt in spans:
+            s, e = int(s), int(e)
+            # the char slice of the spoken text equals the visible word
+            assert speech[s:e] == _h.unescape(txt)
+            offs.append(s)
+        # offsets advance in order so the highlight moves forward, never jumps
+        assert all(offs[i] <= offs[i + 1] for i in range(len(offs) - 1))
+        # the speech + highlight engine is present and self-contained
+        assert "u.onboundary" in html and ".kkw.on{" in html
+        assert "var text =" in html
