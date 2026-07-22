@@ -6092,8 +6092,8 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
     _uid = "kkbrief_" + str(abs(hash(key)) % (10 ** 8))
     _html = """
 <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-            border:1px solid #d7e7e1;border-radius:10px;padding:10px 12px;
-            background:#f4faf7;max-width:860px;">
+            border:1px solid #d7e7e1;border-radius:10px;padding:12px 14px;
+            background:#f4faf7;width:100%;box-sizing:border-box;">
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
     <button id="__UID___play"  style="cursor:pointer;border:0;border-radius:8px;
         padding:6px 14px;background:#0f6e56;color:#fff;font-weight:600;">
@@ -6118,12 +6118,12 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
           margin-left:auto;">ready</span>
   </div>
   <div style="font-size:11px;color:#6b8a81;margin-top:6px;">
-    Spoken locally by your browser — nothing is uploaded. The word being
-    spoken is highlighted below.
+    Spoken locally by your browser — nothing is uploaded. Follow along below;
+    the word being spoken is highlighted.
   </div>
-  <div id="__UID___script" style="margin-top:10px;max-height:180px;
-       overflow-y:auto;line-height:1.7;font-size:.95rem;color:#2a4a41;
-       padding:8px 10px;background:#fff;border:1px solid #e3efeb;
+  <div id="__UID___script" style="margin-top:10px;max-height:340px;
+       overflow-y:auto;line-height:1.75;font-size:1rem;color:#2a4a41;
+       padding:12px 14px;background:#fff;border:1px solid #e3efeb;
        border-radius:8px;"></div>
 </div>
 <style>
@@ -6275,7 +6275,7 @@ def _render_briefing_audio(_speech_text: str, key: str = "kk_brief_audio"):
     _html = _html.replace("__PAYLOAD__", _payload).replace("__UID__", _uid)
     # Let any failure propagate — the caller wraps this in its own try/except
     # and surfaces a visible caption, so we never swallow the real reason here.
-    _components.html(_html, height=340)
+    _components.html(_html, height=500)
 
 
 def _briefing_offline_html(_speech_text: str, _title_line: str = "") -> str:
@@ -6555,6 +6555,45 @@ def _briefing_local_audio(_speech_text: str, download=True):
     return _wav_bytes_to_mp3(_wav)
 
 
+@st.cache_data(show_spinner=False, ttl=300, max_entries=2)
+def _briefing_audio_file_available() -> bool:
+    """Can this deployment produce a downloadable audio FILE at all? True if a
+    LOCAL piper voice model is already present (no download, no network), or if
+    the gTTS endpoint is reachable. Cached (5 min) so the check runs once, not
+    on every rerun, and never blocks the page for long.
+
+    This exists so the UI can decide UP FRONT whether to offer the 'Generate
+    audio file' button, instead of showing a button that only reveals it can't
+    deliver after a click and a spinner. The browser speech player and the
+    offline HTML/txt downloads do NOT depend on this — they always work."""
+    # 1) a piper model already on disk => local synthesis, no network needed.
+    try:
+        if _vm_piper_find_local():
+            try:
+                import piper  # noqa: F401 — engine must also be importable
+                return True
+            except Exception:
+                pass
+    except Exception:
+        pass
+    # 2) otherwise, is the online gTTS engine importable AND reachable? A short,
+    #    low-cost reachability probe with a tight timeout so a blocked network
+    #    fails fast rather than hanging the panel.
+    try:
+        import gtts  # noqa: F401
+    except Exception:
+        return False
+    try:
+        import urllib.request as _u
+        _req = _u.Request("https://translate.google.com/",
+                          method="HEAD",
+                          headers={"User-Agent": "KinematiK/audio-probe"})
+        with _u.urlopen(_req, timeout=3) as _r:
+            return 200 <= getattr(_r, "status", 200) < 500
+    except Exception:
+        return False
+
+
 def _briefing_mp3_bytes(_speech_text: str):
     """Best-effort MP3 of the briefing via gTTS (Google Text-to-Speech).
 
@@ -6718,20 +6757,36 @@ def _render_briefing_panel():
                         help="Plain text of the spoken briefing — readable "
                              "anywhere, or paste into any text-to-speech app.")
 
-                # Downloadable audio file for offline listening. Preferred
-                # engine is LOCAL piper (no network at synthesis time once its
-                # voice model is provisioned); if piper isn't available it falls
-                # back to gTTS (network). Either way the offline HTML/txt above
-                # remain the guaranteed no-dependency path. Gated behind a
-                # button so we never synthesize on every rerun.
+                # Downloadable audio FILE (mp3/wav). Preferred engine is local
+                # piper (no network); gTTS is the online fallback. Both can be
+                # genuinely unavailable on a given deploy (no committed voice
+                # model AND no outbound network — e.g. Streamlit Cloud without
+                # the model bundled). Rather than offer a button that fails only
+                # AFTER a click + spinner, we probe availability once (cached)
+                # and either show a working button or a calm pointer to the
+                # offline HTML player above, which always works.
                 _aud = st.session_state.get("kk_brief_audio_file")
-                if _aud is None:
-                    if st.button("🔊 Generate audio file (offline listening)",
+                if _aud is not None:
+                    _eng = _aud.get("engine")
+                    _lbl = ("⬇ Download audio ("
+                            + _aud["ext"].upper()
+                            + (", local voice)" if _eng == "local"
+                               else ", online voice)"))
+                    st.download_button(
+                        _lbl, _aud["bytes"],
+                        file_name="kinematik_briefing." + _aud["ext"],
+                        mime=_aud["mime"], use_container_width=True,
+                        key="kk_brief_mp3_dl")
+                    if _eng == "local":
+                        st.caption("Generated by the bundled local voice — "
+                                   "no internet was used.")
+                elif _briefing_audio_file_available():
+                    if st.button("🔊 Generate audio file (MP3)",
                                  use_container_width=True,
                                  key="kk_brief_mp3_gen",
-                                 help="Creates a downloadable audio file. Uses "
-                                      "the bundled local voice when available "
-                                      "(no internet needed), otherwise online "
+                                 help="Creates a downloadable MP3. Uses the "
+                                      "bundled local voice when available (no "
+                                      "internet needed), otherwise online "
                                       "text-to-speech."):
                         with st.spinner("Synthesizing audio…"):
                             _bytes, _ext, _mime = _briefing_local_audio(
@@ -6746,24 +6801,19 @@ def _render_briefing_panel():
                                 "engine": _engine}
                             st.rerun()
                         else:
-                            st.caption("Audio file unavailable here (no local "
-                                       "voice model and online TTS not "
-                                       "reachable). The offline HTML player "
-                                       "above works with no internet.")
+                            # availability said yes but synthesis still failed
+                            # (transient) — point to the guaranteed path.
+                            st.caption("Couldn't synthesize an audio file just "
+                                       "now — the **Offline audio (HTML)** "
+                                       "player above works with no internet.")
                 else:
-                    _eng = _aud.get("engine")
-                    _lbl = ("⬇ Download audio ("
-                            + _aud["ext"].upper()
-                            + (", local voice)" if _eng == "local"
-                               else ", online voice)"))
-                    st.download_button(
-                        _lbl, _aud["bytes"],
-                        file_name="kinematik_briefing." + _aud["ext"],
-                        mime=_aud["mime"], use_container_width=True,
-                        key="kk_brief_mp3_dl")
-                    if _eng == "local":
-                        st.caption("Generated by the bundled local voice — "
-                                   "no internet was used.")
+                    # No downloadable-audio engine on this deploy. Don't dangle a
+                    # dead button — the offline HTML player is the answer, and it
+                    # already does everything (play + word-highlight, offline).
+                    st.caption("💡 A downloadable MP3 isn't available on this "
+                               "deployment. Use **⬇ Offline audio (HTML)** "
+                               "above — it plays the briefing with word "
+                               "highlighting and needs no internet.")
             else:
                 st.caption("Audio unavailable — no briefing text.")
 
