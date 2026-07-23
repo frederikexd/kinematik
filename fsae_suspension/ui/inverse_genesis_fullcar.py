@@ -67,6 +67,7 @@ def render():
     import numpy as np
     import pandas as pd
     import streamlit as st
+    from suspension import units as _units
     from suspension import inverse_genesis_fullcar as fc
     from suspension.pack_thermal import CellParams
 
@@ -99,21 +100,17 @@ def render():
     # ================= 1 · the rule matrix ================================
     st.markdown("###### 1 · The rule matrix — the constraint bounds")
     r1, r2, r3 = st.columns(3)
-    max_power = r1.number_input("Max TS power (kW)", 20.0, 200.0, 80.0, 5.0,
-                                key="fc_pwr")
+    max_power = _units.unum(r1, "Max TS power (kW)", 20.0, 200.0, 80.0, 'kW', step=5.0, key="fc_pwr")
     max_ts_v = r2.number_input("Max TS voltage (VDC)", 100.0, 800.0, 600.0,
                                10.0, key="fc_tsv")
-    endurance_km = r3.number_input("Endurance distance (km)", 5.0, 30.0, 22.0,
-                                   0.5, key="fc_endkm")
+    endurance_km = _units.unum(r3, "Endurance distance (km)", 5.0, 30.0, 22.0, 'km', step=0.5, key="fc_endkm")
     r4, r5, r6 = st.columns(3)
     max_seg_v = r4.number_input("Max segment voltage (VDC)", 40.0, 200.0,
                                 120.0, 5.0, key="fc_segv")
     max_seg_e = r5.number_input("Max segment energy (MJ)", 1.0, 12.0, 6.0,
                                 0.5, key="fc_sege")
-    cell_limit = r6.number_input("Cell temp limit (°C)", 40.0, 80.0, 60.0,
-                                 1.0, key="fc_tlim")
-    min_wb = st.number_input("Minimum wheelbase (mm)", 1400.0, 1800.0, 1525.0,
-                             5.0, key="fc_wb")
+    cell_limit = _units.unum(r6, "Cell temp limit (°C)", 40.0, 80.0, 60.0, '°C', step=1.0, key="fc_tlim")
+    min_wb = _units.unum(st, "Minimum wheelbase (mm)", 1400.0, 1800.0, 1525.0, 'mm', step=5.0, key="fc_wb")
     rules = fc.RuleMatrix(
         max_power_kw=max_power, max_ts_voltage=max_ts_v,
         max_segment_voltage=max_seg_v, max_segment_energy_mj=max_seg_e,
@@ -143,12 +140,9 @@ def render():
 
     with st.expander("The fixed car & cell (the search does not move these)"):
         f1, f2, f3 = st.columns(3)
-        base_mass = f1.number_input("Base mass excl. cells & motors (kg)",
-                                    120.0, 320.0, 215.0, 5.0, key="fc_bm")
-        wheelbase = f2.number_input("Wheelbase (mm)", 1400.0, 1800.0, 1550.0,
-                                    5.0, key="fc_wbcar")
-        ambient = f3.number_input("Cooling-air inlet (°C)", 10.0, 45.0, 30.0,
-                                  1.0, key="fc_amb")
+        base_mass = _units.unum(f1, "Base mass excl. cells & motors (kg)", 120.0, 320.0, 215.0, 'kg', step=5.0, key="fc_bm")
+        wheelbase = _units.unum(f2, "Wheelbase (mm)", 1400.0, 1800.0, 1550.0, 'mm', step=5.0, key="fc_wbcar")
+        ambient = _units.unum(f3, "Cooling-air inlet (°C)", 10.0, 45.0, 30.0, '°C', step=1.0, key="fc_amb")
         c1, c2, c3 = st.columns(3)
         cap_ah = c1.number_input("Cell capacity (Ah)", 1.0, 10.0, 4.5, 0.1,
                                  key="fc_cap")

@@ -97,6 +97,7 @@ def _hardpoints_from_session(ss):
 def render():
     import numpy as np
     import streamlit as st
+    from suspension import units as _units
     from suspension import simulforge as sf
     from suspension import ghost_topology as gt
     from suspension import transient as tr
@@ -140,12 +141,9 @@ def render():
     # ---------------- 2 · actuator & bus knobs ------------------------------
     with st.expander("Actuator & bus (datasheet knobs)", expanded=False):
         a1, a2, a3, a4 = st.columns(4)
-        kp = a1.number_input("Roll gain kp (N·m/rad)", 0.0, 60_000.0,
-                             12_000.0, 500.0, key="forge_kp")
-        kd = a2.number_input("Roll gain kd (N·m·s/rad)", 0.0, 5_000.0,
-                             900.0, 50.0, key="forge_kd")
-        m_max = a3.number_input("Actuator ceiling (N·m)", 0.0, 3_000.0,
-                                900.0, 50.0, key="forge_mmax")
+        kp = _units.unum(a1, "Roll gain kp (N·m/rad)", 0.0, 60_000.0, 12_000.0, 'N·m/rad', step=500.0, key="forge_kp")
+        kd = _units.unum(a2, "Roll gain kd (N·m·s/rad)", 0.0, 5_000.0, 900.0, 'N·m·s/rad', step=50.0, key="forge_kd")
+        m_max = _units.unum(a3, "Actuator ceiling (N·m)", 0.0, 3_000.0, 900.0, 'N·m', step=50.0, key="forge_mmax")
         fuse_a = a4.number_input("Branch fuse (A)", 5.0, 60.0, 25.0, 1.0,
                                  key="forge_fuse")
         b1, b2, b3, b4 = st.columns(4)

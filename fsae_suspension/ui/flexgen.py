@@ -110,6 +110,7 @@ def _fig_blade(blade, state):
 
 def render():
     import streamlit as st
+    from suspension import units as _units
 
     from suspension.flex import MATERIALS
     import suspension.flexgen as fg
@@ -173,13 +174,10 @@ def render():
                  "square (Euler K=1); fixed-free = single blade replacing one "
                  "ball joint (K=2).")
     with c2:
-        L = st.number_input("Blade length L [mm]", 20.0, 300.0, 90.0, 5.0,
-                            key="fxg_L")
-        b = st.number_input("Blade width b [mm] (stiff direction)", 5.0,
-                            120.0, 35.0, 1.0, key="fxg_b")
+        L = _units.unum(st, "Blade length L [mm]", 20.0, 300.0, 90.0, 'mm', step=5.0, key="fxg_L")
+        b = _units.unum(st, "Blade width b [mm] (stiff direction)", 5.0, 120.0, 35.0, 'mm', step=1.0, key="fxg_b")
     with c3:
-        t_root = st.number_input("Root thickness t [mm]", 0.3, 12.0, 1.5,
-                                 0.1, key="fxg_tr")
+        t_root = _units.unum(st, "Root thickness t [mm]", 0.3, 12.0, 1.5, 'mm', step=0.1, key="fxg_tr")
         taper = st.slider("Taper t_tip/t_root", 0.4, 1.0, 0.75, 0.05,
                           key="fxg_tp",
                           help="Thinning toward the tip moves peak strain "
@@ -187,15 +185,11 @@ def render():
 
     c4, c5, c6 = st.columns(3)
     with c4:
-        travel = st.number_input("Bump/droop travel ± [mm]", 0.5, 60.0, 6.0,
-                                 0.5, key="fxg_z")
+        travel = _units.unum(st, "Bump/droop travel ± [mm]", 0.5, 60.0, 6.0, 'mm', step=0.5, key="fxg_z")
     with c5:
-        axial = st.number_input(
-            "Axial load at max corner [N] (− = compression)",
-            -20000.0, 20000.0, -600.0, 50.0, key="fxg_ax")
+        axial = _units.unum(st, "Axial load at max corner [N] (− = compression)", -20000.0, 20000.0, -600.0, 'N', step=50.0, key="fxg_ax")
     with c6:
-        k_target = st.number_input("Target wheel rate [N/mm]", 1.0, 500.0,
-                                   35.0, 1.0, key="fxg_kt")
+        k_target = _units.unum(st, "Target wheel rate [N/mm]", 1.0, 500.0, 35.0, 'N/mm', step=1.0, key="fxg_kt")
         mr = st.number_input("Motion ratio (wheel/spring)", 0.3, 2.0, 1.0,
                              0.05, key="fxg_mr")
 

@@ -34,6 +34,7 @@ def _frame_note(ss) -> str:
 
 def render():
     import streamlit as st
+    from suspension import units as _units
     from suspension import proof_engine as pe
     from suspension import saboteur as sab
     from suspension.interfaces import IntegrationLedger

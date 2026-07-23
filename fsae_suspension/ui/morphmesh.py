@@ -166,11 +166,32 @@ def render():
     from suspension import morphmesh as mmx
     from suspension import transient as tr
     from suspension.compliance import CompliantCorner
+    from suspension import units as _units
 
     ss = st.session_state
 
+    # ----- unit-system edge conversion -------------------------------------
+    # The engine (suspension/morphmesh.py) is metric-native: every dimension it
+    # consumes is millimetres and every stress is MPa. All unit-bearing inputs
+    # below go through the shared unit-aware widgets in suspension.units, so the
+    # label, bounds, step and stored value follow the active display system while
+    # the engine still always receives metric. (Metric mode is a no-op.)
+    _US = _units.is_us()
+
+    def _len_input(col, label, lo_mm, hi_mm, default_mm, step_mm, key,
+                   help=None):
+        return _units.unum(col, f"{label} (mm)", lo_mm, hi_mm, default_mm,
+                           "mm", step=step_mm, key=key,
+                           fmt=("%.3f" if _US else "%.2f"), help=help)
+
+    def _stress_input(col, label, lo_mpa, hi_mpa, default_mpa, step_mpa, key,
+                      help=None):
+        return _units.unum(col, f"{label} (MPa)", lo_mpa, hi_mpa, default_mpa,
+                           "MPa", step=step_mpa, key=key,
+                           fmt=("%.2f" if _US else "%.0f"), help=help)
+
     st.subheader("🕸️🔩 MorphMesh — grow the bracket, let the shop veto it")
-    st.caption(
+    st.caption(_units.usentence(
         "Big-software generative design grows beautiful organic parts against "
         "a static load arrow — then the shop rejects them, because a transient "
         "event never loads a tab from one direction, and a hand welder cannot "
@@ -181,7 +202,7 @@ def render():
         "can't build — re-growing coarser and printing the mass/stiffness "
         "premium of buildability. A screening shape for the CAD seat and the "
         "FEA queue, not a certified part — the scope notes are in the module "
-        "docstring and the report footer.")
+        "docstring and the report footer."))
 
     hp, hp_note = _hardpoints_from_session(ss)
     st.caption(f"Geometry: {hp_note}.")
@@ -213,17 +234,17 @@ def render():
                            "Pivot bracket (bolted bellcrank web)"],
                           key="mmx_preset", horizontal=True)
         p1, p2, p3, p4 = st.columns(4)
-        wdt = p1.number_input("Width (mm)", 30.0, 200.0,
-                              60.0 if preset.startswith("Chassis") else 90.0,
-                              5.0, key="mmx_w")
-        hgt = p2.number_input("Height (mm)", 30.0, 200.0,
-                              80.0 if preset.startswith("Chassis") else 70.0,
-                              5.0, key="mmx_h")
-        thk = p3.number_input("Thickness (mm)", 1.5, 12.0,
-                              4.0 if preset.startswith("Chassis") else 5.0,
-                              0.5, key="mmx_t")
-        bore = p4.number_input("Load bore r (mm)", 3.0, 12.0, 5.0, 0.5,
-                               key="mmx_bore")
+        wdt = _len_input(p1, "Width", 30.0, 200.0,
+                         60.0 if preset.startswith("Chassis") else 90.0,
+                         5.0, key="mmx_w")
+        hgt = _len_input(p2, "Height", 30.0, 200.0,
+                         80.0 if preset.startswith("Chassis") else 70.0,
+                         5.0, key="mmx_h")
+        thk = _len_input(p3, "Thickness", 1.5, 12.0,
+                         4.0 if preset.startswith("Chassis") else 5.0,
+                         0.5, key="mmx_t")
+        bore = _len_input(p4, "Load bore r", 3.0, 12.0, 5.0, 0.5,
+                          key="mmx_bore")
         m1, m2, m3 = st.columns(3)
         material = m1.selectbox("Material", ["Steel 4130", "Steel mild",
                                              "Aluminium 6061", "Aluminium 7075",
@@ -233,13 +254,16 @@ def render():
         yield_default = {"Steel 4130": 460.0, "Steel mild": 250.0,
                          "Aluminium 6061": 276.0, "Aluminium 7075": 503.0,
                          "Titanium Ti-6Al-4V": 880.0}[material]
-        yld = m2.number_input("Yield (MPa)", 100.0, 1200.0, yield_default, 5.0,
-                              key="mmx_yield")
-        h_mm = m3.select_slider("Mesh cell (mm)", options=[1.0, 1.5, 2.0, 2.5],
-                                value=1.5, key="mmx_hmm",
-                                help="Element size of the growth grid. 1.5 mm "
-                                     "is the interactive sweet spot; 1.0 mm "
-                                     "roughly quadruples the solve time.")
+        yld = _stress_input(m2, "Yield", 100.0, 1200.0, yield_default, 5.0,
+                            key="mmx_yield")
+        # Mesh-cell options are metric constants; the shared widget shows them
+        # in the active unit but returns the metric option for the engine.
+        h_mm = _units.uselect_slider(
+            m3, "Mesh cell (mm)", [1.0, 1.5, 2.0, 2.5], 1.5, "mm",
+            key="mmx_hmm",
+            help="Element size of the growth grid. 1.5 mm "
+                 "is the interactive sweet spot; 1.0 mm "
+                 "roughly quadruples the solve time.")
 
     # ---------------- 3 · the shop's veto ----------------------------------
     with st.expander("Fabrication limits — the shop's veto", expanded=True):
@@ -257,17 +281,17 @@ def render():
         except Exception:
             pass
         f1, f2, f3 = st.columns(3)
-        rib = f1.number_input("Min rib (mm)", 0.5, 20.0,
-                              float(seeded.min_rib_mm) if seeded else 5.0, 0.5,
-                              key=f"mmx_rib_{_SHOPS[shop_label]}")
-        haz = f2.number_input("HAZ band (mm)", 0.0, 25.0,
-                              float(seeded.haz_mm) if seeded else 8.0, 1.0,
-                              key=f"mmx_haz_{_SHOPS[shop_label]}",
-                              help="Measured up from the weld line. 0 disables "
-                                   "the zone (bolted / machined brackets).")
-        ribh = f3.number_input("Min rib in HAZ (mm)", 0.5, 30.0,
-                               float(seeded.min_rib_haz_mm) if seeded else 8.0,
-                               0.5, key=f"mmx_ribh_{_SHOPS[shop_label]}")
+        rib = _len_input(f1, "Min rib", 0.5, 20.0,
+                         float(seeded.min_rib_mm) if seeded else 5.0, 0.5,
+                         key=f"mmx_rib_{_SHOPS[shop_label]}")
+        haz = _len_input(f2, "HAZ band", 0.0, 25.0,
+                         float(seeded.haz_mm) if seeded else 8.0, 1.0,
+                         key=f"mmx_haz_{_SHOPS[shop_label]}",
+                         help="Measured up from the weld line. 0 disables "
+                              "the zone (bolted / machined brackets).")
+        ribh = _len_input(f3, "Min rib in HAZ", 0.5, 30.0,
+                          float(seeded.min_rib_haz_mm) if seeded else 8.0,
+                          0.5, key=f"mmx_ribh_{_SHOPS[shop_label]}")
 
     # ---------------- 4 · the growth budget --------------------------------
     with st.expander("Growth budget & link tubes", expanded=False):
@@ -282,21 +306,19 @@ def render():
                             help="Direction-static events collapse to fewer "
                                  "cases on their own.")
         t1, t2, t3, t4 = st.columns(4)
-        od = t1.number_input("Link OD (mm)", 8.0, 30.0, 19.05, 0.05,
-                             key="mmx_od")
-        wall = t2.number_input("Wall (mm)", 0.5, 3.0, 0.9, 0.05,
-                               key="mmx_wall")
+        od = _len_input(t1, "Link OD", 8.0, 30.0, 19.05, 0.05, key="mmx_od")
+        wall = _len_input(t2, "Wall", 0.5, 3.0, 0.9, 0.05, key="mmx_wall")
         tmat = t3.selectbox("Tube material", ["Steel 4130", "Steel mild",
                                               "Aluminium 6061",
                                               "Aluminium 7075",
                                               "Titanium Ti-6Al-4V"],
                             key="mmx_tmat")
-        tyld = t4.number_input("Tube yield (MPa)", 100.0, 1200.0,
-                               {"Steel 4130": 460.0, "Steel mild": 250.0,
-                                "Aluminium 6061": 276.0,
-                                "Aluminium 7075": 503.0,
-                                "Titanium Ti-6Al-4V": 880.0}[tmat], 5.0,
-                               key="mmx_tyld")
+        tyld = _stress_input(t4, "Tube yield", 100.0, 1200.0,
+                             {"Steel 4130": 460.0, "Steel mild": 250.0,
+                              "Aluminium 6061": 276.0,
+                              "Aluminium 7075": 503.0,
+                              "Titanium Ti-6Al-4V": 880.0}[tmat], 5.0,
+                             key="mmx_tyld")
 
     # ---------------- 5 · run ----------------------------------------------
     run = st.button("Grow the shape", type="primary", key="mmx_run")

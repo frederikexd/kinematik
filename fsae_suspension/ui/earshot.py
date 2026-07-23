@@ -44,6 +44,7 @@ def _frame_note(ss) -> str:
 
 def render():
     import streamlit as st
+    from suspension import units as _units
     from suspension import earshot as ea
 
     ss = st.session_state
@@ -182,28 +183,28 @@ def render():
 
         if test.startswith("Tilt"):
             c1, c2, c3 = st.columns(3)
-            m = c1.number_input("Car+driver mass (kg)", 100.0, 500.0, 250.0)
-            wb = c1.number_input("Wheelbase (mm)", 1000.0, 2500.0, 1550.0)
-            h = c2.number_input("Expected CG height (mm)", 100.0, 600.0, 300.0)
+            m = _units.unum(c1, "Car+driver mass (kg)", 100.0, 500.0, 250.0, 'kg')
+            wb = _units.unum(c1, "Wheelbase (mm)", 1000.0, 2500.0, 1550.0, 'mm')
+            h = _units.unum(c2, "Expected CG height (mm)", 100.0, 600.0, 300.0, 'mm')
             ang = c2.number_input("Tilt angle (°)", 3.0, 40.0, 8.0, 1.0)
-            sres = c3.number_input("Scale resolution (kg)", 0.05, 5.0, 0.5)
+            sres = _units.unum(c3, "Scale resolution (kg)", 0.05, 5.0, 0.5, 'kg')
             asig = c3.number_input("Angle σ (°)", 0.05, 3.0, 0.5)
             rep = int(c3.number_input("Independent repeats", 1, 10, 1))
             r = ea.resolve_tilt_cg(m, wb, h, ang, sres, asig, rep)
         elif test.startswith("Coast"):
             c1, c2, c3 = st.columns(3)
-            m = c1.number_input("Mass (kg)", 100.0, 500.0, 250.0)
-            cda = c1.number_input("Declared CdA (m²)", 0.3, 3.0, 1.1)
-            vh = c2.number_input("High band speed (m/s)", 5.0, 40.0, 22.0)
-            vl = c2.number_input("Low band speed (m/s)", 2.0, 30.0, 10.0)
-            sv = c3.number_input("Speed sensor σ (m/s)", 0.01, 1.0, 0.14)
+            m = _units.unum(c1, "Mass (kg)", 100.0, 500.0, 250.0, 'kg')
+            cda = _units.unum(c1, "Declared CdA (m²)", 0.3, 3.0, 1.1, 'm²')
+            vh = _units.unum(c2, "High band speed (m/s)", 5.0, 40.0, 22.0, 'm/s')
+            vl = _units.unum(c2, "Low band speed (m/s)", 2.0, 30.0, 10.0, 'm/s')
+            sv = _units.unum(c3, "Speed sensor σ (m/s)", 0.01, 1.0, 0.14, 'm/s')
             tb = c3.number_input("Band duration (s)", 0.5, 20.0, 3.0)
             rp = int(c3.number_input("Paired runs (2 directions)", 1, 20, 4))
             r = ea.resolve_coastdown(m, cda, 1.204, vh, vl, sv, tb, rp)
         else:
             c1, c2 = st.columns(2)
-            m = c1.number_input("Mass (kg)", 100.0, 500.0, 250.0)
-            pres = c2.number_input("Pad resolution (kg)", 0.05, 5.0, 0.5)
+            m = _units.unum(c1, "Mass (kg)", 100.0, 500.0, 250.0, 'kg')
+            pres = _units.unum(c2, "Pad resolution (kg)", 0.05, 5.0, 0.5, 'kg')
             rep = int(c2.number_input("Re-zeroed repeats", 1, 10, 1))
             r = ea.resolve_corner_scales(m, pres, rep)
 

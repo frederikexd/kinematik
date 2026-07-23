@@ -121,6 +121,7 @@ def _draw_front(res):
 def render():
     import numpy as np
     import streamlit as st
+    from suspension import units as _units
     from suspension import omnicore as oc
 
     ss = st.session_state
@@ -368,8 +369,7 @@ def _render_twin(st, np, res):
     camber_drift = c1.number_input(
         "Measured camber drift vs alignment sheet (deg)", -3.0, 3.0, 0.0,
         0.05, key="omni_tw_cam")
-    span_mm = c2.number_input("Mount bolt span for the shim (mm)", 20.0,
-                              200.0, 80.0, 5.0, key="omni_tw_span")
+    span_mm = _units.unum(c2, "Mount bolt span for the shim (mm)", 20.0, 200.0, 80.0, 'mm', step=5.0, key="omni_tw_span")
 
     diag = oc.diagnose(base, measured, sigs)
     plan = oc.heal_plan(diag, forge0, camber_drift_deg=float(camber_drift),

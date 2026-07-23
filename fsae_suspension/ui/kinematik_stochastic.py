@@ -117,6 +117,7 @@ def _parse_asbuilt_csv(text: str, hp):
 def render():
     import numpy as np
     import streamlit as st
+    from suspension import units as _units
     from suspension import kinematik_stochastic as ks
 
     ss = st.session_state
@@ -149,9 +150,7 @@ def render():
                                   "below)", list(_SHOPS.keys()),
                                   key="stoch_shop")
     with c2:
-        pull = st.number_input("Systematic weld pull (mm)", 0.0, 3.0, 0.0, 0.1,
-                               key="stoch_pull",
-                               help="A weld bead laid on one side draws the "
+        pull = _units.unum(st, "Systematic weld pull (mm)", 0.0, 3.0, 0.0, 'mm', step=0.1, key="stoch_pull", help="A weld bead laid on one side draws the "
                                     "tab TOWARD it every time — a bias, not a "
                                     "scatter. Applied to the four wishbone "
                                     "tabs along the axis chosen next.")
@@ -210,10 +209,8 @@ def render():
                                         0.05, key="stoch_b_camber"),
         bump_steer_deg=b2.number_input("Δbump steer (°)", 0.01, 1.0, 0.10,
                                        0.01, key="stoch_b_steer"),
-        rc_height_mm=b3.number_input("ΔRC height (mm)", 0.5, 30.0, 8.0, 0.5,
-                                     key="stoch_b_rc"),
-        scrub_mm=b4.number_input("Δscrub (mm)", 0.5, 15.0, 4.0, 0.5,
-                                 key="stoch_b_scrub"),
+        rc_height_mm=_units.unum(b3, "ΔRC height (mm)", 0.5, 30.0, 8.0, 'mm', step=0.5, key="stoch_b_rc"),
+        scrub_mm=_units.unum(b4, "Δscrub (mm)", 0.5, 15.0, 4.0, 'mm', step=0.5, key="stoch_b_scrub"),
         caster_deg=b5.number_input("Δcaster (°)", 0.05, 2.0, 0.30, 0.05,
                                    key="stoch_b_caster"))
 
@@ -340,8 +337,7 @@ def render():
                    "re-centres the whole cloud in the bands — aiming up-wind "
                    "of the weld pull — bounded by how far you allow the "
                    "design to move.")
-        freedom = st.number_input("Design freedom per coordinate (± mm)",
-                                  0.5, 10.0, 3.0, 0.5, key="stoch_freedom")
+        freedom = _units.unum(st, "Design freedom per coordinate (± mm)", 0.5, 10.0, 3.0, 'mm', step=0.5, key="stoch_freedom")
         verify_n = st.select_slider("Full-solve verification samples",
                                     [0, 100, 200, 400], value=100,
                                     key="stoch_nudge_verify")
@@ -407,10 +403,8 @@ def render():
                                key=f"stoch_adj_p{k}")
             ax = a2.selectbox("axis", _AXES, index=_AXES.index(da),
                               key=f"stoch_adj_a{k}")
-            rng = a3.number_input("± range (mm)", 0.5, 10.0, 3.0, 0.5,
-                                  key=f"stoch_adj_r{k}")
-            stp = a4.number_input("shim step (mm)", 0.0, 2.0, 0.5, 0.05,
-                                  key=f"stoch_adj_s{k}")
+            rng = _units.unum(a3, "± range (mm)", 0.5, 10.0, 3.0, 'mm', step=0.5, key=f"stoch_adj_r{k}")
+            stp = _units.unum(a4, "shim step (mm)", 0.0, 2.0, 0.5, 'mm', step=0.05, key=f"stoch_adj_s{k}")
             adjusters.append(ks.Adjuster(pnt, ax, -float(rng), float(rng),
                                          float(stp)))
 

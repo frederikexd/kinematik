@@ -76,6 +76,7 @@ def _hardpoints_from_session(ss):
 def render():
     import numpy as np
     import streamlit as st
+    from suspension import units as _units
     from suspension import ghost_topology as gt
     from suspension import transient as tr
     from suspension.compliance import CompliantCorner
@@ -118,10 +119,8 @@ def render():
     # ---------------- 2 · the structure -------------------------------------
     with st.expander("Link tubes, tabs & margins", expanded=False):
         m1, m2, m3, m4 = st.columns(4)
-        od = m1.number_input("Link OD (mm)", 8.0, 30.0, 19.05, 0.05,
-                             key="ghost_od")
-        wall = m2.number_input("Wall (mm)", 0.5, 3.0, 0.9, 0.05,
-                               key="ghost_wall")
+        od = _units.unum(m1, "Link OD (mm)", 8.0, 30.0, 19.05, 'mm', step=0.05, key="ghost_od")
+        wall = _units.unum(m2, "Wall (mm)", 0.5, 3.0, 0.9, 'mm', step=0.05, key="ghost_wall")
         material = m3.selectbox("Material", ["Steel 4130", "Steel mild",
                                              "Aluminium 6061", "Aluminium 7075",
                                              "Titanium Ti-6Al-4V"],
@@ -129,14 +128,11 @@ def render():
         yield_default = {"Steel 4130": 460.0, "Steel mild": 250.0,
                          "Aluminium 6061": 276.0, "Aluminium 7075": 503.0,
                          "Titanium Ti-6Al-4V": 880.0}[material]
-        yld = m4.number_input("Yield (MPa)", 100.0, 1200.0, yield_default, 5.0,
-                              key="ghost_yield",
-                              help="The FoS rule's denominator — same "
+        yld = _units.unum(m4, "Yield (MPa)", 100.0, 1200.0, yield_default, 'MPa', step=5.0, key="ghost_yield", help="The FoS rule's denominator — same "
                                    "1.5-on-yield gate as the bracket screen.")
         k_tab_on = st.checkbox("Chassis tabs flex too (series stiffness)",
                                value=True, key="ghost_tab_on")
-        k_tab = st.number_input("Tab stiffness (N/mm)", 200.0, 50000.0, 8000.0,
-                                100.0, key="ghost_tab", disabled=not k_tab_on)
+        k_tab = _units.unum(st, "Tab stiffness (N/mm)", 200.0, 50000.0, 8000.0, 'N/mm', step=100.0, key="ghost_tab", disabled=not k_tab_on)
 
     with st.expander("Tyre feedback sensitivities", expanded=False):
         st.caption("First-order ∂Fy/∂camber and ∂Fy/∂toe at the operating "

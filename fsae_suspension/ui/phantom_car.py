@@ -45,6 +45,7 @@ _VERDICT_STYLE = {
 
 def render():
     import streamlit as st
+    from suspension import units as _units
     from suspension import proof_engine as pe
     from suspension import phantom_car as ph
     from suspension.interfaces import IntegrationLedger

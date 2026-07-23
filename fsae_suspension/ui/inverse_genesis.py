@@ -92,6 +92,7 @@ def render():
     import numpy as np
     import pandas as pd
     import streamlit as st
+    from suspension import units as _units
     from suspension import inverse_genesis as ig
     from suspension import kinematik_stochastic as ks
 
@@ -125,8 +126,7 @@ def render():
                "honestly ask for a probability-zero car (the editor floors "
                "it).")
     c1, c2 = st.columns(2)
-    travel = c1.slider("Travel range (± mm)", 10.0, 35.0, 25.0, 2.5,
-                       key="ig_travel")
+    travel = _units.uslider(c1, "Travel range (± mm)", 10.0, 35.0, 25.0, 'mm', step=2.5, key="ig_travel")
     n_st = int(c2.select_slider("Stations", [3, 5, 7, 9], value=5,
                                 key="ig_nst"))
     stations = np.linspace(-travel, travel, n_st)
@@ -209,11 +209,9 @@ def render():
                                   "x_hi", "y_hi", "z_hi"]),
             key="ig_keepout", num_rows="dynamic", hide_index=True)
         k1, k2 = st.columns(2)
-        probe = k1.number_input("Probe radius (mm) — covers the tab, not "
-                                "just the pickup", 0.0, 30.0, 6.0, 1.0,
-                                key="ig_probe")
-        min_cl = k2.number_input("Required clearance (mm)", 0.0, 20.0, 2.0,
-                                 0.5, key="ig_mincl")
+        probe = _units.unum(k1, "Probe radius (mm) — covers the tab, not "
+                                "just the pickup", 0.0, 30.0, 6.0, 'mm', step=1.0, key="ig_probe")
+        min_cl = _units.unum(k2, "Required clearance (mm)", 0.0, 20.0, 2.0, 'mm', step=0.5, key="ig_mincl")
     keep_out = []
     for _, row in ko_df.iterrows():
         try:
@@ -239,8 +237,7 @@ def render():
     s1, s2, s3 = st.columns([2, 1, 1])
     shop_label = s1.selectbox("Shop class (Stochastic Inversion preset)",
                               list(_SHOPS.keys()), key="ig_shop")
-    pull = s2.number_input("Weld pull (mm)", 0.0, 3.0, 0.0, 0.1,
-                           key="ig_pull")
+    pull = _units.unum(s2, "Weld pull (mm)", 0.0, 3.0, 0.0, 'mm', step=0.1, key="ig_pull")
     pull_axis = s3.selectbox("Pull axis", _AXES, index=2, key="ig_pull_axis")
     fld = ks.ToleranceField.preset(_SHOPS[shop_label],
                                    weld_pull_mm=float(pull),

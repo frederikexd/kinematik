@@ -109,6 +109,7 @@ def _draw_envelope_3d(rigid, compliant, probe=None, probe_r=0.0):
 def render():
     import numpy as np
     import streamlit as st
+    from suspension import units as _units
     from suspension import ghost_topology as gt
     from suspension import phantom_envelope as pe
     from suspension import transient as tr
@@ -153,11 +154,9 @@ def render():
 
     t1, t2, t3 = st.columns(3)
     with t1:
-        tr_lo = st.number_input("Bump travel (mm)", 0.0, 60.0, 25.0, 1.0,
-                                key="penv_bump")
+        tr_lo = _units.unum(st, "Bump travel (mm)", 0.0, 60.0, 25.0, 'mm', step=1.0, key="penv_bump")
     with t2:
-        tr_hi = st.number_input("Droop travel (mm)", 0.0, 60.0, 25.0, 1.0,
-                                key="penv_droop")
+        tr_hi = _units.unum(st, "Droop travel (mm)", 0.0, 60.0, 25.0, 'mm', step=1.0, key="penv_droop")
     with t3:
         n_travel = st.slider("Rigid sweep poses", 3, 21, 9, key="penv_ntravel",
                              help="How finely the no-load motion range is "
@@ -166,9 +165,8 @@ def render():
     # ---------------- 2 · the structure -------------------------------------
     with st.expander("Link tubes, tab stiffness & capsule inflation", expanded=False):
         m1, m2, m3, m4 = st.columns(4)
-        od = m1.number_input("Link OD (mm)", 8.0, 30.0, 19.05, 0.05,
-                             key="penv_od")
-        wall = m2.number_input("Wall (mm)", 0.5, 3.0, 0.9, 0.05, key="penv_wall")
+        od = _units.unum(m1, "Link OD (mm)", 8.0, 30.0, 19.05, 'mm', step=0.05, key="penv_od")
+        wall = _units.unum(m2, "Wall (mm)", 0.5, 3.0, 0.9, 'mm', step=0.05, key="penv_wall")
         material = m3.selectbox("Material", ["Steel 4130", "Steel mild",
                                              "Aluminium 6061", "Aluminium 7075",
                                              "Titanium Ti-6Al-4V"],
@@ -176,19 +174,15 @@ def render():
         yield_default = {"Steel 4130": 460.0, "Steel mild": 250.0,
                          "Aluminium 6061": 276.0, "Aluminium 7075": 503.0,
                          "Titanium Ti-6Al-4V": 880.0}[material]
-        yld = m4.number_input("Yield (MPa)", 100.0, 1200.0, yield_default, 5.0,
-                              key="penv_yield")
+        yld = _units.unum(m4, "Yield (MPa)", 100.0, 1200.0, yield_default, 'MPa', step=5.0, key="penv_yield")
         i1, i2 = st.columns(2)
-        inflate = i1.number_input(
-            "Capsule inflation (mm)", 0.0, 40.0, 3.0, 0.5, key="penv_inflate",
-            help="Added to each tube's radius to cover tabs, gusset webs, rod "
+        inflate = _units.unum(i1, "Capsule inflation (mm)", 0.0, 40.0, 3.0, 'mm', step=0.5, key="penv_inflate", help="Added to each tube's radius to cover tabs, gusset webs, rod "
                  "ends and clevises the bare tube doesn't model. A defensible "
                  "packaging margin — bump it if your A-arms carry a lot of "
                  "outboard hardware.")
         k_tab_on = i2.checkbox("Chassis tabs flex too", value=True,
                                key="penv_tabon")
-        k_tab = st.number_input("Tab stiffness (N/mm)", 200.0, 50000.0, 8000.0,
-                                100.0, key="penv_tab", disabled=not k_tab_on)
+        k_tab = _units.unum(st, "Tab stiffness (N/mm)", 200.0, 50000.0, 8000.0, 'N/mm', step=100.0, key="penv_tab", disabled=not k_tab_on)
 
     all_members = ("UF", "UR", "LF", "LR", "TR", "PR")
     with st.expander("Members to carve", expanded=False):
@@ -319,15 +313,10 @@ def _show_results(st, np, pe, rigid_env, comp_env, delta, corner):
                "answer is exact against the swept capsules and attributed to "
                "the governing link, instant, and load.")
     q1, q2, q3, q4 = st.columns(4)
-    px = q1.number_input("x (mm)", -400.0, 400.0,
-                         float(round((mn_c[0] + mx_c[0]) / 2, 1)), 1.0,
-                         key="penv_qx")
-    py = q2.number_input("y (mm)", 0.0, 700.0,
-                         float(round(mx_c[1] - 20.0, 1)), 1.0, key="penv_qy")
-    pz = q3.number_input("z (mm)", 0.0, 500.0,
-                         float(round((mn_c[2] + mx_c[2]) / 2, 1)), 1.0,
-                         key="penv_qz")
-    pr = q4.number_input("probe r (mm)", 0.0, 60.0, 6.0, 0.5, key="penv_qr")
+    px = _units.unum(q1, "x (mm)", -400.0, 400.0, float(round((mn_c[0] + mx_c[0]) / 2, 1)), 'mm', step=1.0, key="penv_qx")
+    py = _units.unum(q2, "y (mm)", 0.0, 700.0, float(round(mx_c[1] - 20.0, 1)), 'mm', step=1.0, key="penv_qy")
+    pz = _units.unum(q3, "z (mm)", 0.0, 500.0, float(round((mn_c[2] + mx_c[2]) / 2, 1)), 'mm', step=1.0, key="penv_qz")
+    pr = _units.unum(q4, "probe r (mm)", 0.0, 60.0, 6.0, 'mm', step=0.5, key="penv_qr")
 
     probe = np.array([px, py, pz])
     q_rig = rigid_env.query(probe, probe_radius_mm=pr)

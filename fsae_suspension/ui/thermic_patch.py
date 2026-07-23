@@ -41,6 +41,7 @@ _CORNERS = ("FL", "FR", "RL", "RR")
 def render():
     import numpy as np
     import streamlit as st
+    from suspension import units as _units
     from suspension.transient import run_maneuver
     from suspension import thermic_patch as th
 
@@ -75,26 +76,16 @@ def render():
         "grip window the core starts — a tyre entering at 92 °C on a baked track "
         "has no headroom, one at 78 °C has room to heat into the sweet spot.")
     s1, s2, s3 = st.columns(3)
-    init_temp = s1.slider("Core temp entering event (°C)", 40.0, 120.0, 82.0,
-                          1.0, key="thermic_init",
-                          help="Uniform starting temperature of all three nodes.")
-    ambient = s2.slider("Air temp (°C)", 5.0, 45.0, 30.0, 1.0,
-                        key="thermic_amb",
-                        help="Ambient the tread surface convects to.")
-    track_temp = s3.slider("Track surface temp (°C)", 20.0, 65.0, 42.0, 1.0,
-                           key="thermic_track",
-                           help="The warmed asphalt the contact patch conducts "
+    init_temp = _units.uslider(s1, "Core temp entering event (°C)", 40.0, 120.0, 82.0, '°C', step=1.0, key="thermic_init", help="Uniform starting temperature of all three nodes.")
+    ambient = _units.uslider(s2, "Air temp (°C)", 5.0, 45.0, 30.0, '°C', step=1.0, key="thermic_amb", help="Ambient the tread surface convects to.")
+    track_temp = _units.uslider(s3, "Track surface temp (°C)", 20.0, 65.0, 42.0, '°C', step=1.0, key="thermic_track", help="The warmed asphalt the contact patch conducts "
                                 "into. A baked summer track sinks far less heat.")
 
     with st.expander("Compound window & ladder detail (advanced)"):
         w1, w2 = st.columns(2)
-        t_opt = w1.slider("Window centre T_opt (°C)", 60.0, 110.0, 85.0, 1.0,
-                          key="thermic_topt",
-                          help="Core temperature of PEAK grip for this compound. "
+        t_opt = _units.uslider(w1, "Window centre T_opt (°C)", 60.0, 110.0, 85.0, '°C', step=1.0, key="thermic_topt", help="Core temperature of PEAK grip for this compound. "
                                "Grip falls off either side of it.")
-        half_w = w2.slider("Window half-width (°C)", 15.0, 55.0, 35.0, 1.0,
-                           key="thermic_hw",
-                           help="How far from the optimum grip falls to the "
+        half_w = _units.uslider(w2, "Window half-width (°C)", 15.0, 55.0, 35.0, '°C', step=1.0, is_delta=True, key="thermic_hw", help="How far from the optimum grip falls to the "
                                 "floor (cold side; the hot side falls faster).")
         st.caption(
             "The grip law is a parabola centred on T_opt, equal to 1.0 there and "
