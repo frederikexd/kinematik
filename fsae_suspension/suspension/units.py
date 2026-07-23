@@ -71,6 +71,17 @@ _CONVERSIONS = {
     "N·s/mm":  ("lbf·s/in", 5.7101471627,     0.0),
     "m³/s":    ("ft³/s",   35.314666721,      0.0),     # volumetric flow
     "L/s":     ("ft³/s",   0.0353146667,      0.0),
+    "m³/h":    ("ft³/min", 0.5885777778,      0.0),     # volumetric flow (CFM)
+    "m²":      ("ft²",     10.763910417,      0.0),      # area
+    "cm²":     ("in²",     0.1550003100,      0.0),      # area
+    "km":      ("mi",      0.6213711922,      0.0),      # distance
+    "cc":      ("in³",     0.0610237441,      0.0),      # small volume
+    "kg/s":    ("lb/s",    2.2046226218,      0.0),      # mass flow
+    "J/g":     ("BTU/lb",  0.4299226139,      0.0),      # specific energy
+    "Pa":      ("psi",     0.0001450377,      0.0),      # pressure
+    "N·m/rad": ("lbf·ft/rad", 0.7375621493,  0.0),       # torsional stiffness
+    "N·m·s":   ("lbf·ft·s",   0.7375621493,  0.0),       # rotational damping
+    "N·m·s/rad": ("lbf·ft·s/rad", 0.7375621493, 0.0),    # rotational damping/rate
 }
 
 # Units that are identical in both systems (kept explicit for clarity / safety).
@@ -304,3 +315,144 @@ def usentence(text: str) -> str:
     for metric_u, pat in _pair_res():
         out = pat.sub(_sub_for(metric_u), out)
     return out
+
+
+# --------------------------------------------------------------------------- #
+#  Unit-aware Streamlit widgets  (the single edge where display units live)
+# --------------------------------------------------------------------------- #
+# These are the canonical unit-aware wrappers for the whole app. EVERY widget
+# that carries a physical unit should go through one of these instead of calling
+# st.number_input / st.slider / st.select_slider directly, so the metric<->US
+# toggle flows through every feature seamlessly:
+#
+#   * the label keeps its parenthesised unit and switches it with the toggle
+#     (via ``ulabel`` — e.g. "(mm)" -> "(in)", "(MPa)" -> "(ksi)");
+#   * min / max / value / step convert to the active unit for display;
+#   * the returned value converts straight back to metric, so all downstream
+#     engine code keeps seeing SI regardless of what the user is looking at;
+#   * a shadow session-state entry remembers the metric value and the system it
+#     was entered in, so flipping the toggle re-converts the live widget value
+#     instead of re-interpreting an inch number as a millimetre one.
+#
+# Units that are identical in both systems (°, %, g, s, ratios) are not in the
+# conversion table, so passing unit="°" (or omitting a convertible unit) makes
+# these behave exactly like the bare Streamlit widget — safe to use everywhere.
+
+
+def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
+         fmt=None, is_delta=False, **kw):
+    """Unit-aware ``number_input``. See module notes above.
+
+    ``is_delta=True`` converts the field as a DIFFERENCE (a span, gradient or
+    margin) rather than an absolute reading — it scales but takes no offset, so
+    a 35 °C window half-width shows as 63 °F-degrees, not 95. For offset-free
+    units (mm, N, kg, …) it makes no difference."""
+    conv = from_metric_delta if is_delta else from_metric
+    back = (lambda v, u: v / _CONVERSIONS[u][1]
+            if (is_us() and u in _CONVERSIONS) else v) if is_delta else to_metric
+    lbl = ulabel(label_with_unit)
+    d_lo = conv(float(lo), unit) if lo is not None else None
+    d_hi = conv(float(hi), unit) if hi is not None else None
+    d_val = conv(float(val), unit) if val is not None else None
+    if key is not None and st is not None:
+        shadow = f"_u_{key}"
+        cur_sys = current_system()
+        if shadow in st.session_state:
+            old_metric, old_sys = st.session_state[shadow]
+            if old_sys != cur_sys:
+                d_val = conv(old_metric, unit)
+                st.session_state[key] = d_val
+            elif key in st.session_state:
+                try:
+                    d_val = float(st.session_state[key])
+                except (TypeError, ValueError):
+                    pass
+    extra = {}
+    if step is not None:
+        extra["step"] = from_metric_delta(float(step), unit)
+    if fmt is not None:
+        extra["format"] = fmt
+    if key is not None:
+        extra["key"] = key
+    # Clamp so a stored/default value outside [lo,hi] can't crash the widget.
+    if d_val is not None and d_lo is not None:
+        d_val = max(d_val, d_lo)
+    if d_val is not None and d_hi is not None:
+        d_val = min(d_val, d_hi)
+    if key is not None and st is not None and key in st.session_state \
+            and (d_lo is not None or d_hi is not None):
+        try:
+            cur = float(st.session_state[key])
+            if d_lo is not None:
+                cur = max(cur, d_lo)
+            if d_hi is not None:
+                cur = min(cur, d_hi)
+            st.session_state[key] = cur
+        except (TypeError, ValueError):
+            pass
+    result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
+    metric_result = back(float(result), unit)
+    if key is not None and st is not None:
+        st.session_state[f"_u_{key}"] = (metric_result, current_system())
+    return metric_result
+
+
+def uslider(container, label_with_unit, lo, hi, val, unit, *, step=None,
+            key=None, is_delta=False, **kw):
+    """Unit-aware ``slider``. Same contract as :func:`unum` (incl. is_delta)."""
+    conv = from_metric_delta if is_delta else from_metric
+    back = (lambda v, u: v / _CONVERSIONS[u][1]
+            if (is_us() and u in _CONVERSIONS) else v) if is_delta else to_metric
+    lbl = ulabel(label_with_unit)
+    d_lo = conv(float(lo), unit)
+    d_hi = conv(float(hi), unit)
+    d_val = conv(float(val), unit)
+    if key is not None and st is not None:
+        shadow = f"_u_{key}"
+        cur_sys = current_system()
+        if shadow in st.session_state:
+            old_metric, old_sys = st.session_state[shadow]
+            if old_sys != cur_sys:
+                d_val = conv(old_metric, unit)
+                st.session_state[key] = d_val
+            elif key in st.session_state:
+                try:
+                    d_val = float(st.session_state[key])
+                except (TypeError, ValueError):
+                    pass
+    extra = {}
+    if step is not None:
+        extra["step"] = from_metric_delta(float(step), unit)
+    if key is not None:
+        extra["key"] = key
+    d_val = min(max(d_val, d_lo), d_hi)
+    result = container.slider(lbl, d_lo, d_hi, d_val, **extra, **kw)
+    metric_result = back(float(result), unit)
+    if key is not None and st is not None:
+        st.session_state[f"_u_{key}"] = (metric_result, current_system())
+    return metric_result
+
+
+def uselect_slider(container, label_with_unit, options, value, unit, *,
+                   key=None, **kw):
+    """Unit-aware ``select_slider``. ``options`` and ``value`` are given in
+    METRIC; the widget shows them in the active unit (via ``format_func``) and
+    the metric option is returned. This keeps discrete metric choices (mesh
+    sizes, gauge steps) exact — nothing is re-quantised — while the labels and
+    the tick read-outs follow the toggle."""
+    lbl = ulabel(label_with_unit)
+    metric_opts = list(options)
+
+    def _fmt(v):
+        disp = from_metric(float(v), unit)
+        if not is_us() or unit not in _CONVERSIONS:
+            # keep the caller's natural formatting in metric
+            return f"{v:g}"
+        return f"{disp:.3f}".rstrip("0").rstrip(".")
+
+    extra = {}
+    if key is not None:
+        extra["key"] = key
+    # select_slider returns one of the (metric) options directly.
+    return container.select_slider(lbl, options=metric_opts, value=value,
+                                   format_func=_fmt, **extra, **kw)
