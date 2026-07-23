@@ -193,23 +193,77 @@ globals().update({alias: _LazyModule(f"suspension.{sub}")
 
 
 def _heal_units_module(mod):
-    """Guarantee the units module always exposes the prettifier/label helpers.
+    """Guarantee the units module always exposes the label AND widget helpers.
 
-    The app calls ``units_mod.ulabel`` / ``.usentence`` / ``.label`` directly at
-    ~40 sites (axis titles, ``unum`` widgets, captions). If a stale or partially
-    deployed ``suspension/units.py`` is missing any of them, every one of those
-    calls would raise ``AttributeError`` and white-screen the whole page. This
-    post-import hook backfills any missing name with a safe metric-mode no-op
-    (identity for strings, plain ``value`` for ``label``), so an out-of-date
-    deploy degrades to metric labels instead of crashing.
+    The app calls ``units_mod.ulabel`` / ``.usentence`` / ``.label`` at ~40 sites
+    and the unit-aware WIDGETS ``.uslider`` / ``.unum`` / ``.uselect_slider`` at a
+    handful more (plus the scalar converters). If a stale or partially deployed
+    ``suspension/units.py`` is missing any of them, that call raises
+    ``AttributeError`` and white-screens the whole page — which is exactly the
+    ``uslider`` crash seen on Streamlit Cloud when the deployed units.py predated
+    those helpers. This post-import hook backfills EVERY name the app depends on
+    with a safe metric-mode fallback, so an out-of-date deploy degrades to working
+    metric-only controls instead of crashing. (The real fix is to redeploy so the
+    module is current; this just stops a stale deploy from taking the page down.)
     """
     try:
+        # --- string/label helpers: identity in metric mode ---
         if not callable(getattr(mod, "ulabel", None)):
             mod.ulabel = lambda text: text
         if not callable(getattr(mod, "usentence", None)):
             mod.usentence = lambda text: text
         if not callable(getattr(mod, "label", None)):
             mod.label = lambda unit: unit
+
+        # --- scalar converters: identity in metric mode ---
+        if not callable(getattr(mod, "from_metric", None)):
+            mod.from_metric = lambda value, unit: value
+        if not callable(getattr(mod, "to_metric", None)):
+            mod.to_metric = lambda value, unit: value
+        if not callable(getattr(mod, "from_metric_delta", None)):
+            mod.from_metric_delta = lambda value, unit: value
+        if not callable(getattr(mod, "is_us", None)):
+            mod.is_us = lambda: False
+        if not callable(getattr(mod, "current_system", None)):
+            mod.current_system = lambda: "metric"
+
+        # --- unit-aware widgets: fall back to plain metric-labelled widgets ---
+        # These ignore unit conversion (metric only) and keep the unit visible in
+        # the label so the control still reads sensibly. Signature mirrors the
+        # real helpers: (container, label_with_unit, lo, hi, val, unit, ...).
+        def _plain_slider(container, label_with_unit, lo, hi, val, unit,
+                          *, step=None, key=None, is_delta=False, **kw):
+            extra = {}
+            if step is not None:
+                extra["step"] = step
+            if key is not None:
+                extra["key"] = key
+            v = min(max(val, lo), hi)
+            return container.slider(label_with_unit, lo, hi, v, **extra, **kw)
+
+        def _plain_num(container, label_with_unit, lo, hi, val, unit,
+                       *, step=None, key=None, fmt=None, is_delta=False, **kw):
+            extra = {}
+            if step is not None:
+                extra["step"] = step
+            if key is not None:
+                extra["key"] = key
+            return container.number_input(label_with_unit, lo, hi, val, **extra, **kw)
+
+        def _plain_select_slider(container, label_with_unit, options, value, unit,
+                                 *, key=None, **kw):
+            extra = {}
+            if key is not None:
+                extra["key"] = key
+            return container.select_slider(label_with_unit, options=options,
+                                           value=value, **extra, **kw)
+
+        if not callable(getattr(mod, "uslider", None)):
+            mod.uslider = _plain_slider
+        if not callable(getattr(mod, "unum", None)):
+            mod.unum = _plain_num
+        if not callable(getattr(mod, "uselect_slider", None)):
+            mod.uselect_slider = _plain_select_slider
     except Exception:
         pass
 
