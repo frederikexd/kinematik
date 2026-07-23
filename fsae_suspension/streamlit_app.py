@@ -1080,83 +1080,20 @@ def _install_unit_aware_messages():
 _install_unit_aware_messages()
 
 
-def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
-         fmt=None, **kw):
-    """Unit-aware ``number_input``. The label keeps its parenthesised unit and
-    switches it with the toggle (via ``ulabel``). The min/max/value/step convert
-    to the active unit for display, and the result converts back to metric so
-    downstream code always sees SI.
-
-    If ``key`` is provided, a shadow session-state key tracks the metric value
-    and the unit system it was stored in. When the user switches units, the
-    widget key is overwritten with the re-converted value *before* the widget
-    instantiates, so it doesn't mis-interpret old display-unit state.
-    """
-    lbl = units_mod.ulabel(label_with_unit)
-    d_lo = units_mod.from_metric(float(lo), unit)
-    d_hi = units_mod.from_metric(float(hi), unit)
-    d_val = units_mod.from_metric(float(val), unit)
-    if key is not None:
-        shadow = f"_u_{key}"
-        cur_sys = units_mod.current_system()
-        if shadow in st.session_state:
-            old_metric, old_sys = st.session_state[shadow]
-            if old_sys != cur_sys:
-                d_val = units_mod.from_metric(old_metric, unit)
-                st.session_state[key] = d_val
-            elif key in st.session_state:
-                d_val = float(st.session_state[key])
-    extra = {}
-    if step is not None:
-        extra["step"] = units_mod.from_metric_delta(float(step), unit)
-    if fmt is not None:
-        extra["format"] = fmt
-    if key is not None:
-        extra["key"] = key
-    # Safety net: a stored/default value outside [lo,hi] makes Streamlit's
-    # number_input raise ("value N is greater than max_value M"). Clamp the
-    # displayed value into range so an out-of-range stored number can never
-    # crash the widget; downstream range/rules checks flag it separately.
-    d_val = min(max(d_val, d_lo), d_hi)
-    if key is not None and key in st.session_state:
-        try:
-            st.session_state[key] = min(max(float(st.session_state[key]), d_lo), d_hi)
-        except (TypeError, ValueError):
-            pass
-    result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
-    metric_result = units_mod.to_metric(float(result), unit)
-    if key is not None:
-        st.session_state[f"_u_{key}"] = (metric_result, units_mod.current_system())
-    return metric_result
+# Unit-aware widgets now live in suspension/units.py so every ui/*.py module
+# can share the exact same metric<->US round-trip. Thin delegators here keep the
+# original names (and the lazy units import) so the ~100 existing call sites in
+# this file keep working unchanged.
+def unum(*a, **k):
+    return units_mod.unum(*a, **k)
 
 
-def uslider(container, label_with_unit, lo, hi, val, unit, *, step=None,
-            key=None, **kw):
-    """Unit-aware ``slider``. Same idea as ``unum`` but for sliders."""
-    lbl = units_mod.ulabel(label_with_unit)
-    d_lo = units_mod.from_metric(float(lo), unit)
-    d_hi = units_mod.from_metric(float(hi), unit)
-    d_val = units_mod.from_metric(float(val), unit)
-    if key is not None:
-        shadow = f"_u_{key}"
-        cur_sys = units_mod.current_system()
-        if shadow in st.session_state:
-            old_metric, old_sys = st.session_state[shadow]
-            if old_sys != cur_sys:
-                d_val = units_mod.from_metric(old_metric, unit)
-                st.session_state[key] = d_val
-            elif key in st.session_state:
-                d_val = float(st.session_state[key])
-    extra = {}
-    if step is not None:
-        extra["step"] = units_mod.from_metric_delta(float(step), unit)
-    if key is not None:
-        extra["key"] = key
-    result = container.slider(lbl, d_lo, d_hi, d_val, **extra, **kw)
-    metric_result = units_mod.to_metric(float(result), unit)
-    if key is not None:
-        st.session_state[f"_u_{key}"] = (metric_result, units_mod.current_system())
-    return metric_result
+def uslider(*a, **k):
+    return units_mod.uslider(*a, **k)
+
+
+def uselect_slider(*a, **k):
+    return units_mod.uselect_slider(*a, **k)
 
 
 # --------------------------------------------------------------------------- #
@@ -2492,8 +2429,8 @@ with st.sidebar:
                                round(units_mod.from_metric(float(vp["cg_height"]), "mm"), 1))
           vp["cg_height"] = units_mod.to_metric(_cg_disp, "mm")
       else:
-          vp["mass"] = st.slider("Mass + driver (kg)", 180, 360, int(vp["mass"]))
-          vp["cg_height"] = st.slider("CG height (mm)", 200, 400, int(vp["cg_height"]))
+          vp["mass"] = uslider(st, "Mass + driver (kg)", 180, 360, int(vp["mass"]), 'kg')
+          vp["cg_height"] = uslider(st, "CG height (mm)", 200, 400, int(vp["cg_height"]), 'mm')
       vp["weight_dist_front"] = st.slider("Front weight (%)", 40, 60,
                                           int(vp["weight_dist_front"] * 100)) / 100
 
@@ -16031,19 +15968,13 @@ with tab_car:
                    "icon) and the coordinate table as CSV.")
 
         _hvc = st.columns(3)
-        _hv_x = _hvc[0].number_input("HV accumulator x (mm)", value=-150.0,
-                                     step=5.0, key="ses_hv_x")
-        _hv_y = _hvc[1].number_input("HV accumulator y (mm)", value=0.0,
-                                     step=5.0, key="ses_hv_y")
-        _hv_z = _hvc[2].number_input("HV accumulator z (mm)", value=180.0,
-                                     step=5.0, key="ses_hv_z")
+        _hv_x = unum(_hvc[0], "HV accumulator x (mm)", None, None, -150.0, 'mm', step=5.0, key="ses_hv_x")
+        _hv_y = unum(_hvc[1], "HV accumulator y (mm)", None, None, 0.0, 'mm', step=5.0, key="ses_hv_y")
+        _hv_z = unum(_hvc[2], "HV accumulator z (mm)", None, None, 180.0, 'mm', step=5.0, key="ses_hv_z")
         _lvc = st.columns(3)
-        _lv_x = _lvc[0].number_input("LV battery x (mm)", value=200.0,
-                                     step=5.0, key="ses_lv_x")
-        _lv_y = _lvc[1].number_input("LV battery y (mm)", value=150.0,
-                                     step=5.0, key="ses_lv_y")
-        _lv_z = _lvc[2].number_input("LV battery z (mm)", value=120.0,
-                                     step=5.0, key="ses_lv_z")
+        _lv_x = unum(_lvc[0], "LV battery x (mm)", None, None, 200.0, 'mm', step=5.0, key="ses_lv_x")
+        _lv_y = unum(_lvc[1], "LV battery y (mm)", None, None, 150.0, 'mm', step=5.0, key="ses_lv_y")
+        _lv_z = unum(_lvc[2], "LV battery z (mm)", None, None, 120.0, 'mm', step=5.0, key="ses_lv_z")
 
         # Parts already placed on the shared 3D model (subsystem centroids).
         _placed = {}
@@ -16474,10 +16405,7 @@ with tab_aero:
     # 1.0 m². This is the area C_L/C_D are normalised to, so forces scale with it.
     _aero_area = float(st.session_state.vp.get("frontal_area_m2", 0.0) or 0.0)
     _ac = st.columns([1, 1, 1, 1])
-    _aero_area = _ac[0].number_input(
-        "Reference area A (m²)", 0.5, 2.0,
-        value=(_aero_area if _aero_area > 0 else 1.0), step=0.05,
-        help="Planform/frontal area the coefficients are referenced to. FSAE cars "
+    _aero_area = unum(_ac[0], "Reference area A (m²)", 0.5, 2.0, _aero_area if _aero_area > 0 else 1.0, 'm²', step=0.05, help="Planform/frontal area the coefficients are referenced to. FSAE cars "
              "are ~1.0 m². Forces scale linearly with this.")
     _aero_v = _ac[1].number_input(
         f"Speed ({units_mod.label('km/h')})", 10.0, 140.0, value=60.0, step=5.0,
@@ -16755,16 +16683,10 @@ with tab_aero:
                 "Scale ratio (model/full)", 0.10, 1.0, value=0.4, step=0.05,
                 help="0.4 = 40% = 1:2.5 model.  Full-size dimensions are recovered as "
                      "scaled ÷ ratio — the two can never drift apart.")
-            _sc_chord = _sc_cols[1].number_input(
-                "Scaled chord (mm)", 50.0, 2000.0, value=500.0, step=10.0,
-                help="Streamwise reference length OF THE MODEL.  Sets the Reynolds number.")
-            _sc_height = _sc_cols[2].number_input(
-                "Scaled height (mm)", 0.0, 1000.0, value=260.0, step=5.0,
-                help="Spanwise height of the scaled article (optional — used for blockage "
+            _sc_chord = unum(_sc_cols[1], "Scaled chord (mm)", 50.0, 2000.0, 500.0, 'mm', step=10.0, help="Streamwise reference length OF THE MODEL.  Sets the Reynolds number.")
+            _sc_height = unum(_sc_cols[2], "Scaled height (mm)", 0.0, 1000.0, 260.0, 'mm', step=5.0, help="Spanwise height of the scaled article (optional — used for blockage "
                      "and frontal area, not similitude).")
-            _sc_width = _sc_cols[3].number_input(
-                "Scaled width (mm)", 0.0, 1000.0, value=250.0, step=5.0,
-                help="Depth / width of the scaled article.")
+            _sc_width = unum(_sc_cols[3], "Scaled width (mm)", 0.0, 1000.0, 250.0, 'mm', step=5.0, help="Depth / width of the scaled article.")
 
             try:
                 _spec = ScaleSpec(
@@ -16800,17 +16722,11 @@ with tab_aero:
             with st.expander("2 · Reynolds similitude", expanded=False):
                 # ── 2. Similitude ─────────────────────────────────────────────── #
                 _sim_cols = st.columns([1, 1, 1])
-                _full_speed_kmh = _sim_cols[0].number_input(
-                    "Full-size race speed (km/h)", 10.0, 200.0, value=60.0, step=5.0,
-                    help="The on-track speed you want the scaled run to reproduce. "
+                _full_speed_kmh = unum(_sim_cols[0], "Full-size race speed (km/h)", 10.0, 200.0, 60.0, 'km/h', step=5.0, help="The on-track speed you want the scaled run to reproduce. "
                          "FSAE corners are 40–70 km/h; endurance straight ~100+.")
-                _tunnel_max_kmh = _sim_cols[1].number_input(
-                    "Tunnel max speed (km/h)", 10.0, 300.0, value=160.0, step=5.0,
-                    help="Your tunnel's ceiling. A 40%-scale model at 60 km/h full-size "
+                _tunnel_max_kmh = unum(_sim_cols[1], "Tunnel max speed (km/h)", 10.0, 300.0, 160.0, 'km/h', step=5.0, help="Your tunnel's ceiling. A 40%-scale model at 60 km/h full-size "
                          "needs 150 km/h to match Reynolds — check the tunnel can reach it.")
-                _temp_c = _sim_cols[2].number_input(
-                    "Air temperature (°C)", -10.0, 50.0, value=15.0, step=1.0,
-                    help="Shop / tunnel temperature. Kinematic viscosity varies ~5% over "
+                _temp_c = unum(_sim_cols[2], "Air temperature (°C)", -10.0, 50.0, 15.0, '°C', step=1.0, help="Shop / tunnel temperature. Kinematic viscosity varies ~5% over "
                          "a typical seasonal range — worth getting right.")
 
                 _sim = SimilitudePlan.match_reynolds(
@@ -16853,20 +16769,12 @@ with tab_aero:
                     'report says so explicitly.</p>',
                     unsafe_allow_html=True)
                 _tol_cols = st.columns([1, 1, 1, 1])
-                _dev_chord = _tol_cols[0].number_input(
-                    "Chord deviation (mm)", 0.0, 50.0, value=0.0, step=0.5,
-                    help="Streamwise chord built long or short of nominal. "
+                _dev_chord = unum(_tol_cols[0], "Chord deviation (mm)", 0.0, 50.0, 0.0, 'mm', step=0.5, help="Streamwise chord built long or short of nominal. "
                          "~1:1 fractional error on C_l reference.")
-                _dev_camber = _tol_cols[1].number_input(
-                    "Camber / LE deviation (mm)", 0.0, 20.0, value=0.0, step=0.5,
-                    help="Leading-edge or camber-line off the CAD — the big one on a "
+                _dev_camber = unum(_tol_cols[1], "Camber / LE deviation (mm)", 0.0, 20.0, 0.0, 'mm', step=0.5, help="Leading-edge or camber-line off the CAD — the big one on a "
                          "moldless / 3-D-printed part. ~3× chord-fraction onto C_l.")
-                _dev_span = _tol_cols[2].number_input(
-                    "Span deviation (mm)", 0.0, 50.0, value=0.0, step=0.5,
-                    help="Span (height) built off-nominal. ~1:1 onto C_l via planform area.")
-                _dev_wave = _tol_cols[3].number_input(
-                    "Surface waviness (mm)", 0.0, 5.0, value=0.0, step=0.1,
-                    help="Print-layer steps / weave print-through. Trips the boundary layer "
+                _dev_span = unum(_tol_cols[2], "Span deviation (mm)", 0.0, 50.0, 0.0, 'mm', step=0.5, help="Span (height) built off-nominal. ~1:1 onto C_l via planform area.")
+                _dev_wave = unum(_tol_cols[3], "Surface waviness (mm)", 0.0, 5.0, 0.0, 'mm', step=0.1, help="Print-layer steps / weave print-through. Trips the boundary layer "
                          "and loads heavily onto C_d (~2.5×), little onto C_l.")
 
                 _budget = ToleranceBudget(_spec)
@@ -16906,9 +16814,7 @@ with tab_aero:
                     "Incidence error (°)", 0.0, 10.0, value=0.0, step=0.25,
                     help="As-built pitch / angle-of-attack of the element vs the CAD. "
                          "Even 1° shifts C_l measurably on a high-load FSAE element.")
-                _mnt_pos = _mnt_cols[1].number_input(
-                    "Fore/aft position error (mm)", 0.0, 50.0, value=0.0, step=1.0,
-                    help="How far the element sits forward/aft of its design station.")
+                _mnt_pos = unum(_mnt_cols[1], "Fore/aft position error (mm)", 0.0, 50.0, 0.0, 'mm', step=1.0, help="How far the element sits forward/aft of its design station.")
                 _mount = MountAlignment(
                     incidence_error_deg=_mnt_inc,
                     position_error_mm=_mnt_pos,
@@ -16984,15 +16890,8 @@ with tab_aero:
 
                 # Wheelbase for ride-height → attitude conversion
                 _prov_wb_cols = st.columns([1, 1, 2])
-                _sm_wb = _prov_wb_cols[0].number_input(
-                    "Wheelbase (mm)", 1000.0, 2000.0, value=1550.0, step=10.0,
-                    key="sm_prov_wb",
-                    help="Distance between front and rear ride-height reference planes.")
-                _sm_ref_len = _prov_wb_cols[1].number_input(
-                    "Reference length (mm)", 100.0, 2000.0,
-                    value=float(_sc_chord), step=10.0,
-                    key="sm_prov_reflen",
-                    help="Streamwise reference length for coefficient normalisation — "
+                _sm_wb = unum(_prov_wb_cols[0], "Wheelbase (mm)", 1000.0, 2000.0, 1550.0, 'mm', step=10.0, key="sm_prov_wb", help="Distance between front and rear ride-height reference planes.")
+                _sm_ref_len = unum(_prov_wb_cols[1], "Reference length (mm)", 100.0, 2000.0, float(_sc_chord), 'mm', step=10.0, key="sm_prov_reflen", help="Streamwise reference length for coefficient normalisation — "
                          "defaults to the scaled chord above.")
 
                 # Measured points: upload CSV or enter manually
@@ -17051,17 +16950,9 @@ with tab_aero:
                         'Sign convention: <b>c_lift negative = downforce</b>.</p>',
                         unsafe_allow_html=True)
                     _man_cols = st.columns([1, 1, 1, 1, 1, 1])
-                    _man_front = _man_cols[0].number_input(
-                        "Front RH (mm)", 10.0, 150.0, value=30.0, step=2.5,
-                        key="sm_man_front")
-                    _man_rear = _man_cols[1].number_input(
-                        "Rear RH (mm)", 10.0, 150.0, value=30.0, step=2.5,
-                        key="sm_man_rear")
-                    _man_speed = _man_cols[2].number_input(
-                        "Speed (m/s)", 5.0, 100.0,
-                        value=float(round(_sim.achievable_speed_ms, 1)),
-                        step=1.0, key="sm_man_speed",
-                        help="Defaults to the planned tunnel speed from section 2.")
+                    _man_front = unum(_man_cols[0], "Front RH (mm)", 10.0, 150.0, 30.0, 'mm', step=2.5, key="sm_man_front")
+                    _man_rear = unum(_man_cols[1], "Rear RH (mm)", 10.0, 150.0, 30.0, 'mm', step=2.5, key="sm_man_rear")
+                    _man_speed = unum(_man_cols[2], "Speed (m/s)", 5.0, 100.0, float(round(_sim.achievable_speed_ms, 1)), 'm/s', step=1.0, key="sm_man_speed", help="Defaults to the planned tunnel speed from section 2.")
                     _man_cl = _man_cols[3].number_input(
                         "C_lift (−ve = downforce)", -5.0, 5.0, value=-1.0, step=0.05,
                         key="sm_man_cl")
@@ -17462,10 +17353,7 @@ with tab_aero:
                 "composite panels.")
         with _hc[1]:
             st.markdown("**Bonded joint instead of (or with) bolts?**")
-            _adh = st.number_input(
-                "Adhesive design allowable (MPa)", 0.2, 5.0, 1.5, 0.1,
-                key="aero_mnt_adh",
-                help="Datasheet lap-shear for structural epoxies/methacrylates "
+            _adh = unum(st, "Adhesive design allowable (MPa)", 0.2, 5.0, 1.5, 'MPa', step=0.1, key="aero_mnt_adh", help="Datasheet lap-shear for structural epoxies/methacrylates "
                      "is 10–25 MPa, but peel sensitivity, surface prep, "
                      "temperature and fatigue knock the usable design value "
                      "down to ~1–2 MPa. Never design a bond to the datasheet "
@@ -17804,19 +17692,9 @@ with tab_ev:
             _mf_def_tq = 230.0
         with st.expander("📐 Enter motor face dimensions", expanded=True):
             _mf_cols = st.columns(4)
-            _mf_bore = _mf_cols[0].number_input(
-                "Motor bore ⌀ (mm)",
-                min_value=10.0, max_value=500.0,
-                value=float(st.session_state.get("_mf_bore_mm", 80.0)),
-                step=1.0, key="mf_bore_mm",
-                help="Inner bore diameter of the motor face — the central clearance "
+            _mf_bore = unum(_mf_cols[0], "Motor bore ⌀ (mm)", 10.0, 500.0, float(st.session_state.get("_mf_bore_mm", 80.0)), 'mm', step=1.0, key="mf_bore_mm", help="Inner bore diameter of the motor face — the central clearance "
                      "hole the shaft passes through. From your motor datasheet.")
-            _mf_pcd = _mf_cols[1].number_input(
-                "Bolt PCD (mm)",
-                min_value=20.0, max_value=800.0,
-                value=float(st.session_state.get("_mf_pcd_mm", 160.0)),
-                step=1.0, key="mf_pcd_mm",
-                help="Pitch-circle diameter of the motor-face bolt pattern. "
+            _mf_pcd = unum(_mf_cols[1], "Bolt PCD (mm)", 20.0, 800.0, float(st.session_state.get("_mf_pcd_mm", 160.0)), 'mm', step=1.0, key="mf_pcd_mm", help="Pitch-circle diameter of the motor-face bolt pattern. "
                      "From the motor datasheet or measured face-to-face.")
             _mf_nbolts = int(_mf_cols[2].number_input(
                 "Number of bolts",
@@ -17824,12 +17702,7 @@ with tab_ev:
                 value=int(st.session_state.get("_mf_n_bolts", 4)),
                 step=1, key="mf_n_bolts",
                 help="Bolt count on the motor-face flange — typically 4 for FSAE motors."))
-            _mf_tq = _mf_cols[3].number_input(
-                "Peak torque (N·m)",
-                min_value=1.0, max_value=2000.0,
-                value=float(st.session_state.get("_mf_peak_tq", _mf_def_tq)),
-                step=5.0, key="mf_peak_tq",
-                help="Motor peak torque used to size the flange wall thickness. "
+            _mf_tq = unum(_mf_cols[3], "Peak torque (N·m)", 1.0, 2000.0, float(st.session_state.get("_mf_peak_tq", _mf_def_tq)), 'N·m', step=5.0, key="mf_peak_tq", help="Motor peak torque used to size the flange wall thickness. "
                      "Matches the value on your motor datasheet.")
             # Cache the values so they survive reruns without the expander open
             st.session_state["_mf_bore_mm"] = _mf_bore
@@ -18266,28 +18139,15 @@ with tab_ev:
             ccol = st.columns(4)
             _heat_default = pti_mod.estimate_motor_heat_w(
                 float(_gm_pw if '_gm_pw' in dir() else _power_kw))
-            _heat_w = ccol[0].number_input(
-                "Heat to reject — motor+inverter (W)", 200.0, 20000.0,
-                value=float(round(_heat_default, 0)), step=100.0, key="pti_heat",
-                help="Estimated from (1−efficiency) over an endurance duty cycle; "
+            _heat_w = unum(ccol[0], "Heat to reject — motor+inverter (W)", 200.0, 20000.0, float(round(_heat_default, 0)), 'W', step=100.0, key="pti_heat", help="Estimated from (1−efficiency) over an endurance duty cycle; "
                      "replace with a measured dyno/thermal number when you have it.")
-            _pack_heat_w = ccol[1].number_input(
-                "Pack heat add (W)", 0.0, 10000.0, value=600.0, step=100.0,
-                key="pti_packheat",
-                help="Accumulator joule heating that shares the loop, if any.")
-            _rig_flow = ccol[2].number_input(
-                "Rig measured flow (m³/h)", 50.0, 700.0, value=400.0, step=10.0,
-                key="pti_rigflow",
-                help="A point you read off the cooling test rig: airflow…")
-            _rig_dp = ccol[3].number_input(
-                "…at static pressure (Pa)", 10.0, 349.0, value=150.0, step=10.0,
-                key="pti_rigdp", help="…and the static pressure at that flow. "
+            _pack_heat_w = unum(ccol[1], "Pack heat add (W)", 0.0, 10000.0, 600.0, 'W', step=100.0, key="pti_packheat", help="Accumulator joule heating that shares the loop, if any.")
+            _rig_flow = unum(ccol[2], "Rig measured flow (m³/h)", 50.0, 700.0, 400.0, 'm³/h', step=10.0, key="pti_rigflow", help="A point you read off the cooling test rig: airflow…")
+            _rig_dp = unum(ccol[3], "…at static pressure (Pa)", 10.0, 349.0, 150.0, 'Pa', step=10.0, key="pti_rigdp", help="…and the static pressure at that flow. "
                 "KinematiK backs out the loop restriction k = Δp/Q².")
 
             ccol2 = st.columns(2)
-            _air_dt = ccol2[0].slider("Design air-side ΔT (°C)", 5, 40, 20, 1,
-                                      key="pti_airdt",
-                                      help="Temperature rise of the air through the "
+            _air_dt = uslider(ccol2[0], "Design air-side ΔT (°C)", 5, 40, 20, '°C', step=1, is_delta=True, key="pti_airdt", help="Temperature rise of the air through the "
                                            "radiator core at the design point.")
             try:
                 _fan = pti_mod.FanCurve.spal_default()
@@ -18377,26 +18237,11 @@ with tab_ev:
                 'once and the export unlocks automatically.</p>',
                 unsafe_allow_html=True)
             _rc_cols = st.columns(3)
-            _rc_w = _rc_cols[0].number_input(
-                "Core width (mm)",
-                min_value=50.0, max_value=1000.0,
-                value=float(st.session_state.get("_rc_w_mm", 280.0)),
-                step=5.0, key="rc_w_mm",
-                help="Width of the radiator core face — the dimension across the "
+            _rc_w = unum(_rc_cols[0], "Core width (mm)", 50.0, 1000.0, float(st.session_state.get("_rc_w_mm", 280.0)), 'mm', step=5.0, key="rc_w_mm", help="Width of the radiator core face — the dimension across the "
                      "car. From your radiator datasheet or sizing calculation.")
-            _rc_h = _rc_cols[1].number_input(
-                "Core height (mm)",
-                min_value=50.0, max_value=1000.0,
-                value=float(st.session_state.get("_rc_h_mm", 200.0)),
-                step=5.0, key="rc_h_mm",
-                help="Height of the radiator core face. Together with width this "
+            _rc_h = unum(_rc_cols[1], "Core height (mm)", 50.0, 1000.0, float(st.session_state.get("_rc_h_mm", 200.0)), 'mm', step=5.0, key="rc_h_mm", help="Height of the radiator core face. Together with width this "
                      "defines the cross-section the DXF will draw.")
-            _rc_depth = _rc_cols[2].number_input(
-                "Core depth (mm)",
-                min_value=0.0, max_value=200.0,
-                value=float(st.session_state.get("_rc_depth_mm", 32.0)),
-                step=1.0, key="rc_depth_mm",
-                help="Radiator core depth (thickness). Used for notes on the DXF "
+            _rc_depth = unum(_rc_cols[2], "Core depth (mm)", 0.0, 200.0, float(st.session_state.get("_rc_depth_mm", 32.0)), 'mm', step=1.0, key="rc_depth_mm", help="Radiator core depth (thickness). Used for notes on the DXF "
                      "— does not change the 2D face outline.")
             st.session_state["_rc_w_mm"]     = _rc_w
             st.session_state["_rc_h_mm"]     = _rc_h
@@ -18459,10 +18304,7 @@ with tab_ev:
                              float(st.session_state.get("_pti_heat_w",
                                    pti_mod.estimate_motor_heat_w(_pub_pw))),
                              "W", step=100.0, key="pti_pub_heat")
-            _pub_cool = pcol2[2].number_input(
-                "Cooling airflow req (m³/s)", 0.0, 2.0,
-                value=float(st.session_state.get("_pti_cooling_cms", 0.10)),
-                step=0.01, format="%.3f", key="pti_pub_cool")
+            _pub_cool = unum(pcol2[2], "Cooling airflow req (m³/s)", 0.0, 2.0, float(st.session_state.get("_pti_cooling_cms", 0.10)), 'm³/s', step=0.01, fmt="%.3f", key="pti_pub_cool")
             _pub_mounts = int(pcol2[3].number_input(
                 "Mount points", 2, 8, value=4, step=1, key="pti_pub_mounts"))
 
@@ -19339,11 +19181,7 @@ with tab_brake:
             # home in the app, so we ask for it here (seeded to a typical radial-
             # mount span) rather than invent it. Without a PCD the export honestly
             # stays gated, exactly like the other subsystems.
-            _cal_pcd = st.columns([1, 2])[0].number_input(
-                "Caliper mount bolt PCD (mm)", 20.0, 200.0,
-                value=float(st.session_state.get("brake_cal_pcd", 82.0)),
-                step=1.0, key="brake_cal_pcd",
-                help="Centre-to-centre span of the caliper mounting bolts (the "
+            _cal_pcd = unum(st.columns([1, 2])[0], "Caliper mount bolt PCD (mm)", 20.0, 200.0, float(st.session_state.get("brake_cal_pcd", 82.0)), 'mm', step=1.0, key="brake_cal_pcd", help="Centre-to-centre span of the caliper mounting bolts (the "
                      "bolt-circle the bracket is drilled to). Measure it off your "
                      "caliper — a typical FSAE radial mount is ~80–90 mm. This "
                      "sizes the exported bracket blank in the Mesh & DXF panel.")
@@ -19819,13 +19657,10 @@ with tab_brake:
                     _kc = st.columns(2)
                     with _kc[0]:
                         st.markdown("**Single measurement:** one known load & travel")
-                        _bf = st.number_input("Load hung (N)", 1.0, 500.0, 19.6,
-                                              step=1.0, key="tr_bench_F",
-                                              help="A labelled gym plate or a luggage "
+                        _bf = unum(st, "Load hung (N)", 1.0, 500.0, 19.6, 'N', step=1.0, key="tr_bench_F", help="A labelled gym plate or a luggage "
                                                    "scale pulled to a mark.")
                         _imp(st, _bf, "N", "{:.1f}")
-                        _bx = st.number_input("Deflection (mm)", 1.0, 300.0, 35.0,
-                                              step=1.0, key="tr_bench_x")
+                        _bx = unum(st, "Deflection (mm)", 1.0, 300.0, 35.0, 'mm', step=1.0, key="tr_bench_x")
                         _imp(st, _bx, "mm", "{:.2f}")
                         try:
                             _kb = _tr.k_from_deflection(_bf, _bx / 1000.0)
@@ -19837,12 +19672,9 @@ with tab_brake:
                             st.warning(str(_ke))
                     with _kc[1]:
                         st.markdown("**Coil geometry** (datasheet or measure)")
-                        _wd = st.number_input("Wire dia d (mm)", 0.2, 6.0, 1.2,
-                                              step=0.1, key="tr_wire_d")
+                        _wd = unum(st, "Wire dia d (mm)", 0.2, 6.0, 1.2, 'mm', step=0.1, key="tr_wire_d")
                         _imp(st, _wd, "mm", "{:.3f}")
-                        _cd = st.number_input("Mean coil dia D (mm)", 2.0, 40.0, 9.0,
-                                              step=0.5, key="tr_coil_D",
-                                              help="Mean = outer dia − wire dia.")
+                        _cd = unum(st, "Mean coil dia D (mm)", 2.0, 40.0, 9.0, 'mm', step=0.5, key="tr_coil_D", help="Mean = outer dia − wire dia.")
                         _imp(st, _cd, "mm", "{:.3f}")
                         _na = st.number_input("Active coils Na", 1.0, 40.0, 6.0,
                                               step=0.5, key="tr_active_n",
@@ -19918,17 +19750,12 @@ with tab_brake:
 
                 st.markdown("##### What fights the return (be generous)")
                 _rc = st.columns(4)
-                _fr = _rc[0].number_input("pivot friction (N·m)", 0.0, 5.0, 0.10,
-                                          step=0.02, key="tr_fric",
-                                          help="Worst-case Coulomb friction / stiction "
+                _fr = unum(_rc[0], "pivot friction (N·m)", 0.0, 5.0, 0.10, 'N·m', step=0.02, key="tr_fric", help="Worst-case Coulomb friction / stiction "
                                                "at the pivot and linkage.")
                 _imp(_rc[0], _fr, "N·m", "{:.3f}")
-                _cdg = _rc[1].number_input("cable/rod drag (N·m)", 0.0, 5.0, 0.05,
-                                           step=0.02, key="tr_cable")
+                _cdg = unum(_rc[1], "cable/rod drag (N·m)", 0.0, 5.0, 0.05, 'N·m', step=0.02, key="tr_cable")
                 _imp(_rc[1], _cdg, "N·m", "{:.3f}")
-                _sd = _rc[2].number_input("sensor detent (N·m)", 0.0, 5.0, 0.02,
-                                          step=0.02, key="tr_sensor",
-                                          help="Any return-fighting torque from the "
+                _sd = unum(_rc[2], "sensor detent (N·m)", 0.0, 5.0, 0.02, 'N·m', step=0.02, key="tr_sensor", help="Any return-fighting torque from the "
                                                "TPS/APPS body. Sensors are not springs.")
                 _imp(_rc[2], _sd, "N·m", "{:.3f}")
                 _mt = _rc[3].number_input("margin target", 0.25, 4.0, 1.0, step=0.25,
@@ -20026,20 +19853,14 @@ with tab_brake:
                         key="snap_plate_m",
                         help="Mass of the throttle plate/flap.") / 1000.0
                     _imp(_ic[0], _plate_m * 1000.0, "g_mass", "{:.2f}")
-                    _plate_r = _ic[1].number_input(
-                        "plate half-width (mm)", 2.0, 60.0, 20.0, step=1.0,
-                        key="snap_plate_r",
-                        help="Half the plate width (rotation radius).") / 1000.0
+                    _plate_r = unum(_ic[1], "plate half-width (mm)", 2.0, 60.0, 20.0, 'mm', step=1.0, key="snap_plate_r", help="Half the plate width (rotation radius).") / 1000.0
                     _imp(_ic[1], _plate_r * 1000.0, "mm", "{:.2f}")
                     _refl_m = _ic[2].number_input(
                         "cable+pedal mass (g)", 0.0, 1000.0, 0.0, step=10.0,
                         key="snap_refl_m",
                         help="Optional: pedal/cable mass reflected to the shaft.") / 1000.0
                     _imp(_ic[2], _refl_m * 1000.0, "g_mass", "{:.2f}")
-                    _refl_a = _ic[3].number_input(
-                        "at arm (mm)", 0.0, 200.0, 0.0, step=5.0,
-                        key="snap_refl_a",
-                        help="Lever arm for that reflected mass.") / 1000.0
+                    _refl_a = unum(_ic[3], "at arm (mm)", 0.0, 200.0, 0.0, 'mm', step=5.0, key="snap_refl_a", help="Lever arm for that reflected mass.") / 1000.0
                     _imp(_ic[3], _refl_a * 1000.0, "mm", "{:.2f}")
                     _theta_open = st.number_input(
                         "throttle travel, closed→open (deg)", 10.0, 120.0, 90.0,
@@ -20091,19 +19912,14 @@ with tab_brake:
                         st.markdown("**Aero load on the plate** (needs a real "
                                     "coefficient — defaults to zero and is flagged)")
                         _aec = st.columns(4)
-                        _intake_v = _aec[0].number_input(
-                            "intake speed (m/s)", 0.0, 120.0, 0.0, step=5.0,
-                            key="snap_intake_v",
-                            help="Airflow speed past the plate. If you set this but "
+                        _intake_v = unum(_aec[0], "intake speed (m/s)", 0.0, 120.0, 0.0, 'm/s', step=5.0, key="snap_intake_v", help="Airflow speed past the plate. If you set this but "
                                  "leave the coefficient at 0, aero is treated as zero "
                                  "and flagged — no invented number.")
                         _aero_coeff = _aec[1].number_input(
                             "aero torque coeff", 0.0, 10.0, 0.0, step=0.1,
                             key="snap_aero_coeff",
                             help="From a flow bench or CFD. 0 = aero off.")
-                        _plate_A = _aec[2].number_input(
-                            "plate area (cm²)", 0.0, 50.0, 0.0, step=0.5,
-                            key="snap_plate_A") / 1e4
+                        _plate_A = unum(_aec[2], "plate area (cm²)", 0.0, 50.0, 0.0, 'cm²', step=0.5, key="snap_plate_A") / 1e4
                         _aero_opens = _aec[3].checkbox(
                             "aero opens plate", value=True, key="snap_aero_opens",
                             help="Airflow tends to hold the plate OPEN (the dangerous "
@@ -20180,16 +19996,9 @@ with tab_brake:
 
                         with _md1:
                             _mc = st.columns(4)
-                            _plenum = _mc[0].number_input(
-                                "plenum volume (cc)", 100.0, 8000.0, 2000.0,
-                                step=100.0, key="td_plenum") / 1e6
-                            _bore = _mc[1].number_input(
-                                "throttle bore area (cm²)", 1.0, 60.0, 15.0,
-                                step=1.0, key="td_bore") / 1e4
-                            _draw = _mc[2].number_input(
-                                "engine airflow draw (kg/s)", 0.0, 0.3, 0.05,
-                                step=0.01, key="td_draw",
-                                help="Mean mass flow the engine pulls from the plenum "
+                            _plenum = unum(_mc[0], "plenum volume (cc)", 100.0, 8000.0, 2000.0, 'cc', step=100.0, key="td_plenum") / 1e6
+                            _bore = unum(_mc[1], "throttle bore area (cm²)", 1.0, 60.0, 15.0, 'cm²', step=1.0, key="td_bore") / 1e4
+                            _draw = unum(_mc[2], "engine airflow draw (kg/s)", 0.0, 0.3, 0.05, 'kg/s', step=0.01, key="td_draw", help="Mean mass flow the engine pulls from the plenum "
                                      "at the operating point. 0 = engine off.")
                             _mtc = _mc[3].number_input(
                                 "manifold torque coeff", 0.0, 1e-3, 0.0,
@@ -20232,26 +20041,13 @@ with tab_brake:
 
                         with _md2:
                             _fc = st.columns(4)
-                            _ktheta = _fc[0].number_input(
-                                "torsional stiffness (N·m/rad)", 0.1, 50.0, 2.0,
-                                step=0.5, key="td_ktheta",
-                                help="Return-spring rate about the axis + shaft.")
-                            _cstruct = _fc[1].number_input(
-                                "structural damping (N·m·s)", 0.0, 0.1, 0.001,
-                                format="%.4f", step=0.001, key="td_cstruct")
-                            _caero = _fc[2].number_input(
-                                "aero damping coeff (N·m·s)", -0.05, 0.05, 0.0,
-                                format="%.4f", step=0.001, key="td_caero",
-                                help="From CFD or a flow rig. NEGATIVE = aero feeds "
+                            _ktheta = unum(_fc[0], "torsional stiffness (N·m/rad)", 0.1, 50.0, 2.0, 'N·m/rad', step=0.5, key="td_ktheta", help="Return-spring rate about the axis + shaft.")
+                            _cstruct = unum(_fc[1], "structural damping (N·m·s)", 0.0, 0.1, 0.001, 'N·m·s', step=0.001, fmt="%.4f", key="td_cstruct")
+                            _caero = unum(_fc[2], "aero damping coeff (N·m·s)", -0.05, 0.05, 0.0, 'N·m·s', step=0.001, fmt="%.4f", key="td_caero", help="From CFD or a flow rig. NEGATIVE = aero feeds "
                                      "energy in (flutter risk). 0 = aeroelastic part "
                                      "NOT modelled (the screen will say so).")
-                            _crefv = _fc[3].number_input(
-                                "aero ref speed (m/s)", 0.0, 120.0, 30.0, step=5.0,
-                                key="td_crefv",
-                                help="Speed the aero coeff was measured at.")
-                            _fintake = st.number_input(
-                                "intake speed to screen at (m/s)", 0.0, 120.0, 40.0,
-                                step=5.0, key="td_fintake")
+                            _crefv = unum(_fc[3], "aero ref speed (m/s)", 0.0, 120.0, 30.0, 'm/s', step=5.0, key="td_crefv", help="Speed the aero coeff was measured at.")
+                            _fintake = unum(st, "intake speed to screen at (m/s)", 0.0, 120.0, 40.0, 'm/s', step=5.0, key="td_fintake")
 
                             # Co-sim: source the aero-damping coefficient from CFD
                             # instead of typing it. Closes the loop honestly — the
@@ -22704,14 +22500,10 @@ def _render_trace_prescriber(pdr_mod, board_ctx):
         pc = st.columns(4)
         cur = pc[0].number_input("Current (A)", 0.05, 500.0, value=8.0,
                                  step=0.5, key="pdr_rx_i")
-        dT = pc[1].number_input("Allowed rise (°C)", 5.0, 100.0, value=20.0,
-                                step=5.0, key="pdr_rx_dt",
-                                help="10 °C is conservative, 20 °C typical, "
+        dT = unum(pc[1], "Allowed rise (°C)", 5.0, 100.0, 20.0, '°C', step=5.0, is_delta=True, key="pdr_rx_dt", help="10 °C is conservative, 20 °C typical, "
                                      "45 °C aggressive (hot underhood board).")
-        ln = pc[2].number_input("Run length (mm)", 5.0, 2000.0, value=120.0,
-                                step=5.0, key="pdr_rx_len")
-        drill = pc[3].number_input("Via drill (mm)", 0.15, 1.2, value=0.3,
-                                   step=0.05, key="pdr_rx_drill")
+        ln = unum(pc[2], "Run length (mm)", 5.0, 2000.0, 120.0, 'mm', step=5.0, key="pdr_rx_len")
+        drill = unum(pc[3], "Via drill (mm)", 0.15, 1.2, 0.3, 'mm', step=0.05, key="pdr_rx_drill")
         p = pdr_mod.prescribe_trace(
             cur, dT_c=dT, length_mm=ln,
             rail_v=float(board_ctx.rail_nominal_v), via_drill_mm=drill)
@@ -23241,12 +23033,9 @@ def _render_harness_fragment():
         _v0 = (float(harness.vib_g), float(harness.excitation_lo_hz),
                float(harness.excitation_hi_hz), float(harness.max_span_mm),
                float(harness.max_sag_mm))
-        harness.ambient_c = st.number_input(
-            "Ambient (°C)", -20.0, 150.0, value=_amb0, key="hn_amb")
-        harness.clearance_warn_mm = st.number_input(
-            "Clearance WARN (mm)", 0.0, 100.0, value=_cw0, key="hn_cw")
-        harness.clearance_fail_mm = st.number_input(
-            "Clearance FAIL (mm)", 0.0, 50.0, value=_cf0, key="hn_cf")
+        harness.ambient_c = unum(st, "Ambient (°C)", -20.0, 150.0, _amb0, '°C', key="hn_amb")
+        harness.clearance_warn_mm = unum(st, "Clearance WARN (mm)", 0.0, 100.0, _cw0, 'mm', key="hn_cw")
+        harness.clearance_fail_mm = unum(st, "Clearance FAIL (mm)", 0.0, 50.0, _cf0, 'mm', key="hn_cf")
         st.markdown("**Vibration / flex screen**")
         harness.vib_g = st.number_input(
             "Vibration level (g)", 0.5, 30.0, value=_v0[0], step=0.5,
@@ -23261,13 +23050,9 @@ def _render_harness_fragment():
             "can resonate.")
         harness.excitation_hi_hz = _b[1].number_input(
             "to (Hz)", 5.0, 5000.0, value=_v0[2], key="hn_bh")
-        harness.max_span_mm = st.number_input(
-            "Max unsupported span (mm)", 50.0, 2000.0, value=_v0[3],
-            key="hn_ms", help="Longest run allowed between two supports "
+        harness.max_span_mm = unum(st, "Max unsupported span (mm)", 50.0, 2000.0, _v0[3], 'mm', key="hn_ms", help="Longest run allowed between two supports "
             "(cable ties / clips). 300 mm is common loom practice.")
-        harness.max_sag_mm = st.number_input(
-            "Max allowed sag (mm)", 1.0, 200.0, value=_v0[4], key="hn_sag",
-            help="How far a span may droop at the vibration level before "
+        harness.max_sag_mm = unum(st, "Max allowed sag (mm)", 1.0, 200.0, _v0[4], 'mm', key="hn_sag", help="How far a span may droop at the vibration level before "
             "it's flagged.")
         if (harness.ambient_c, harness.clearance_warn_mm,
                 harness.clearance_fail_mm) != (_amb0, _cw0, _cf0) or \
@@ -23360,20 +23145,15 @@ def _render_harness_fragment():
             cn = st.text_input("Name", key="cn_name")
             cown = st.selectbox("Owned by", _SUBS, key="cn_own")
             cg = st.columns(3)
-            cx = cg[0].number_input("x (mm)", -5000.0, 5000.0, key="cn_x",
-                                    help="Toward the back of the car.")
-            cy = cg[1].number_input("y (mm)", -5000.0, 5000.0, key="cn_y",
-                                    help="To the driver's right.")
-            cz = cg[2].number_input("z (mm)", -5000.0, 5000.0, key="cn_z",
-                                    help="Up from the ground/reference.")
+            cx = unum(cg[0], "x (mm)", -5000.0, 5000.0, None, 'mm', key="cn_x", help="Toward the back of the car.")
+            cy = unum(cg[1], "y (mm)", -5000.0, 5000.0, None, 'mm', key="cn_y", help="To the driver's right.")
+            cz = unum(cg[2], "z (mm)", -5000.0, 5000.0, None, 'mm', key="cn_z", help="Up from the ground/reference.")
             cg2 = st.columns(3)
             ccav = cg2[0].number_input("Cavities", 1, 200, key="cn_cav",
                                        help="How many pin slots the plug has "
                                             "(counts crimp contacts in the "
                                             "BOM).")
-            csr = cg2[1].number_input("Strain relief (mm)", 0.0, 200.0,
-                                      key="cn_sr",
-                                      help="Wire must leave this plug "
+            csr = unum(cg2[1], "Strain relief (mm)", 0.0, 200.0, None, 'mm', key="cn_sr", help="Wire must leave this plug "
                                            "STRAIGHT for this long before "
                                            "its first bend, or it fatigues "
                                            "at the crimp. 25 mm is typical.")
@@ -23488,17 +23268,14 @@ def _render_harness_fragment():
                                            "THICKER wire. 10 ≈ jumper-cable "
                                            "core, 22 ≈ headphone wire.")
             wnet = wg[1].text_input("Net", key="wr_net")
-            wod = wg[2].number_input("OD (mm, 0=AWG nom)", 0.0, 30.0,
-                                     key="wr_od")
+            wod = unum(wg[2], "OD (mm, 0=AWG nom)", 0.0, 30.0, None, 'mm', key="wr_od")
             wg2 = st.columns(2)
             wfrom = wg2[0].selectbox("From connector", conn_names, key="wr_from")
             wto = wg2[1].selectbox("To connector", conn_names, key="wr_to")
             wg3 = st.columns(3)
             wmult = wg3[0].number_input("Min bend ×OD", 1.0, 20.0, key="wr_mult")
-            wloop = wg3[1].number_input("Service loop (mm)", 0.0, 1000.0,
-                                        key="wr_loop")
-            wstrip = wg3[2].number_input("Strip/end (mm)", 0.0, 100.0,
-                                         key="wr_strip")
+            wloop = unum(wg3[1], "Service loop (mm)", 0.0, 1000.0, None, 'mm', key="wr_loop")
+            wstrip = unum(wg3[2], "Strip/end (mm)", 0.0, 100.0, None, 'mm', key="wr_strip")
             wg4 = st.columns(2)
             wcur = wg4[0].number_input("Carries current (A, 0=from net)",
                                        0.0, 1000.0, key="wr_cur")
@@ -24677,10 +24454,8 @@ with tab6:
 
           st.markdown("###### Alternative-tubing equivalency screen")
           _ec = st.columns([1, 1, 1.6, 1])
-          _e_od = _ec[0].number_input("OD (mm)", 10.0, 60.0, 28.0, 0.1,
-                                      key="tf_eq_od")
-          _e_wl = _ec[1].number_input("Wall (mm)", 0.5, 5.0, 1.6, 0.05,
-                                      key="tf_eq_wall")
+          _e_od = unum(_ec[0], "OD (mm)", 10.0, 60.0, 28.0, 'mm', step=0.1, key="tf_eq_od")
+          _e_wl = unum(_ec[1], "Wall (mm)", 0.5, 5.0, 1.6, 'mm', step=0.05, key="tf_eq_wall")
           _e_cls = _ec[2].selectbox(
               "Member class", list(tf_mod.MEMBER_CLASS_MIN_SIZE),
               index=list(tf_mod.MEMBER_CLASS_MIN_SIZE).index("side_impact"),
@@ -24709,24 +24484,16 @@ with tab6:
                      format_func=dict(_KINDS).get, horizontal=True,
                      key="tf_panel_kind")
       _pc1 = st.columns(4)
-      _p_w = _pc1[0].number_input("Width (mm)", 50.0, 3000.0, 900.0, 10.0,
-                                  key="tf_p_w")
-      _p_h = _pc1[1].number_input("Height (mm)", 50.0, 3000.0, 450.0, 10.0,
-                                  key="tf_p_h")
-      _p_t = _pc1[2].number_input("Thickness (mm)", 0.3, 15.0, 2.0, 0.1,
-                                  key="tf_p_t")
+      _p_w = unum(_pc1[0], "Width (mm)", 50.0, 3000.0, 900.0, 'mm', step=10.0, key="tf_p_w")
+      _p_h = unum(_pc1[1], "Height (mm)", 50.0, 3000.0, 450.0, 'mm', step=10.0, key="tf_p_h")
+      _p_t = unum(_pc1[2], "Thickness (mm)", 0.3, 15.0, 2.0, 'mm', step=0.1, key="tf_p_t")
       _p_mat = _pc1[3].selectbox("Material", list(tf_mod.PANEL_MATERIALS),
                                  key="tf_p_mat")
       _pc2 = st.columns(4)
-      _p_pitch = _pc2[0].number_input("Fastener pitch (mm)", 20.0, 1000.0,
-                                      150.0, 5.0, key="tf_p_pitch")
-      _p_v = _pc2[1].number_input("Top speed (km/h)", 0.0, 200.0, 110.0, 5.0,
-                                  key="tf_p_v",
-                                  help="Sets the aero pressure via q = ½ρv²·Cp "
+      _p_pitch = unum(_pc2[0], "Fastener pitch (mm)", 20.0, 1000.0, 150.0, 'mm', step=5.0, key="tf_p_pitch")
+      _p_v = unum(_pc2[1], "Top speed (km/h)", 0.0, 200.0, 110.0, 'km/h', step=5.0, key="tf_p_v", help="Sets the aero pressure via q = ½ρv²·Cp "
                                        "(Cp 1.2, conservative worst patch).")
-      _p_press = _pc2[2].number_input("…or pressure override (kPa)", 0.0, 50.0,
-                                      0.0, 0.1, key="tf_p_press",
-                                      help="0 = use the speed-derived q.")
+      _p_press = unum(_pc2[2], "…or pressure override (kPa)", 0.0, 50.0, 0.0, 'kPa', step=0.1, key="tf_p_press", help="0 = use the speed-derived q.")
       _p_g = _pc2[3].number_input("Inertial g (vibration)", 0.0, 20.0, 3.0,
                                   0.5, key="tf_p_g",
                                   help="Screening judgement figure, not a "
@@ -24770,8 +24537,7 @@ with tab6:
 
       st.markdown("###### Seat & harness — attachment loads")
       _hc = st.columns(4)
-      _h_m = _hc[0].number_input("Driver + gear (kg)", 40.0, 150.0, 77.0, 1.0,
-                                 key="tf_h_m")
+      _h_m = unum(_hc[0], "Driver + gear (kg)", 40.0, 150.0, 77.0, 'kg', step=1.0, key="tf_h_m")
       _h_g = _hc[1].number_input("Frontal decel (g)", 5.0, 40.0, 20.0, 1.0,
                                  key="tf_h_g",
                                  help="Screening judgement figure — the "
@@ -24795,8 +24561,7 @@ with tab6:
                   unsafe_allow_html=True)
 
       _sc2 = st.columns(4)
-      _s_m = _sc2[0].number_input("Seat mass (kg)", 1.0, 20.0, 4.0, 0.5,
-                                  key="tf_s_m")
+      _s_m = unum(_sc2[0], "Seat mass (kg)", 1.0, 20.0, 4.0, 'kg', step=0.5, key="tf_s_m")
       _s_n = _sc2[1].number_input("Seat mounts", 2, 8, 4, 1, key="tf_s_n")
       _s_f = _sc2[2].selectbox("Seat fastener",
                                [o["name"] for o in tf_mod.FASTENER_OPTIONS],
@@ -24823,19 +24588,9 @@ with tab6:
       unsafe_allow_html=True)
   with st.expander("📐 Enter gusset leg lengths", expanded=False):
       _gu_cols = st.columns(2)
-      _gu_a = _gu_cols[0].number_input(
-          "Gusset leg A (mm)",
-          min_value=10.0, max_value=500.0,
-          value=float(st.session_state.get("_gu_leg_a_mm", 60.0)),
-          step=1.0, key="gu_leg_a_mm",
-          help="Length of the first gusset leg — one edge of the triangular "
+      _gu_a = unum(_gu_cols[0], "Gusset leg A (mm)", 10.0, 500.0, float(st.session_state.get("_gu_leg_a_mm", 60.0)), 'mm', step=1.0, key="gu_leg_a_mm", help="Length of the first gusset leg — one edge of the triangular "
                "reinforcement plate at the tube node.")
-      _gu_b = _gu_cols[1].number_input(
-          "Gusset leg B (mm)",
-          min_value=10.0, max_value=500.0,
-          value=float(st.session_state.get("_gu_leg_b_mm", 45.0)),
-          step=1.0, key="gu_leg_b_mm",
-          help="Length of the second gusset leg — the other edge meeting at "
+      _gu_b = unum(_gu_cols[1], "Gusset leg B (mm)", 10.0, 500.0, float(st.session_state.get("_gu_leg_b_mm", 45.0)), 'mm', step=1.0, key="gu_leg_b_mm", help="Length of the second gusset leg — the other edge meeting at "
                "the node.")
       st.session_state["_gu_leg_a_mm"] = _gu_a
       st.session_state["_gu_leg_b_mm"] = _gu_b
@@ -26569,20 +26324,14 @@ def render_laptime(_pt):
              "This is the same file the electrics lead maintains.")
 
     _elec_col1, _elec_col2 = st.columns(2)
-    _elec_mass = _elec_col1.number_input(
-        "Vehicle mass incl. driver (kg)", 150.0, 400.0, 230.0, 5.0,
-        key="elec_mass",
-        help="Used to compute acceleration power demand along the lap.")
+    _elec_mass = unum(_elec_col1, "Vehicle mass incl. driver (kg)", 150.0, 400.0, 230.0, 'kg', step=5.0, key="elec_mass", help="Used to compute acceleration power demand along the lap.")
     _elec_driveff = _elec_col2.slider(
         "Drivetrain efficiency (%)", 70, 98, 90, 1,
         key="elec_driveff",
         help="Combined inverter + motor + gearbox efficiency (%). "
              "Use 90% if unsure.") / 100.0
 
-    _elec_cda = _elec_col1.number_input(
-        "Drag CdA (m\u00b2)", 0.0, 3.0, 1.10, 0.05,
-        key="elec_cda",
-        help="Aerodynamic drag area. Match the value used in the lap sim above.")
+    _elec_cda = unum(_elec_col1, "Drag CdA (m\u00b2)", 0.0, 3.0, 1.10, 'm²', step=0.05, key="elec_cda", help="Aerodynamic drag area. Match the value used in the lap sim above.")
     _elec_crr = _elec_col2.number_input(
         "Rolling resistance crr", 0.005, 0.05, 0.018, 0.002,
         format="%.3f",
@@ -27073,8 +26822,7 @@ def render_laptime(_pt):
 
         if _rt_source2.startswith("Custom"):
             _rt_c1, _rt_c2 = st.columns(2)
-            _rt_avg_ms2 = _rt_c1.number_input(
-                "Average lap speed (m/s)", 0.0, 50.0, 15.0, 0.5, key="rt_avg_ms2")
+            _rt_avg_ms2 = unum(_rt_c1, "Average lap speed (m/s)", 0.0, 50.0, 15.0, 'm/s', step=0.5, key="rt_avg_ms2")
             _rt_laptime2 = _rt_c2.number_input(
                 "Lap time (s)", 10.0, 300.0, 75.0, 1.0, key="rt_laptime2")
             import numpy as _np_rt2
@@ -27891,9 +27639,7 @@ with tab12:
                         '<small>must match your CFD post-processor</small></span></div>',
                         unsafe_allow_html=True)
             wc = st.columns(4)
-            wt_area = wc[0].number_input("Reference area A (m²)", 0.5, 3.0,
-                                         value=1.00, step=0.05, key="wt_area",
-                                         help="Frontal area the C_l/C_d are normalised by. "
+            wt_area = unum(wc[0], "Reference area A (m²)", 0.5, 3.0, 1.00, 'm²', step=0.05, key="wt_area", help="Frontal area the C_l/C_d are normalised by. "
                                               "MUST match the reference area set in Fluent.")
             wt_wb = wc[1].number_input("Wheelbase", 1000.0, 2000.0,
                                        value=1550.0, step=10.0, key="wt_wb",
@@ -28346,8 +28092,7 @@ if _show_ledger:
                                              float(led.driveline_torque_limit_nm or 0.0), "N·m", step=10.0) or None
         lc2 = st.columns(3)
         led.lv_voltage_v = lc2[0].number_input("LV bus (V)", 6.0, 60.0, value=float(led.lv_voltage_v), step=1.0)
-        led.lv_supply_capacity_w = lc2[1].number_input("LV supply capacity (W)", 0.0, 5000.0,
-                                                        value=float(led.lv_supply_capacity_w), step=50.0)
+        led.lv_supply_capacity_w = unum(lc2[1], "LV supply capacity (W)", 0.0, 5000.0, float(led.lv_supply_capacity_w), 'W', step=50.0)
         led.accumulator_voltage_v = lc2[2].number_input("Accumulator (V)", 0.0, 600.0,
                                                          value=float(led.accumulator_voltage_v), step=10.0)
         lc3 = st.columns(4)
@@ -29483,10 +29228,8 @@ with tab_track:
                               key="tt_pw")
       tract = pc[1].number_input("Traction cap", 500.0, 6000.0, value=2600.0,
                                  step=100.0, key="tt_tract")
-      cda = pc[2].number_input("Drag CdA (m²)", 0.0, 3.0, value=1.10, step=0.05,
-                               key="tt_cda")
-      cla = pc[3].number_input("Downforce ClA (m²)", 0.0, 6.0, value=2.60,
-                               step=0.1, key="tt_cla")
+      cda = unum(pc[2], "Drag CdA (m²)", 0.0, 3.0, 1.10, 'm²', step=0.05, key="tt_cda")
+      cla = unum(pc[3], "Downforce ClA (m²)", 0.0, 6.0, 2.60, 'm²', step=0.1, key="tt_cla")
       pc2 = st.columns(4)
       drive = pc2[0].selectbox("Drive", ["rwd", "awd"], index=0, key="tt_drive")
       brake_g = pc2[1].number_input("Brake cap (g)", 0.5, 3.0, value=1.8,
@@ -29723,24 +29466,9 @@ with tab_pcb:
       unsafe_allow_html=True)
   with st.expander("📐 Enter board footprint", expanded=False):
       _bd_cols = st.columns(3)
-      _bd_w = _bd_cols[0].number_input(
-          "Board width (mm)",
-          min_value=10.0, max_value=500.0,
-          value=float(st.session_state.get("_bd_w_mm", 80.0)),
-          step=1.0, key="bd_w_mm",
-          help="Width of the PCB / sensor board footprint.")
-      _bd_h = _bd_cols[1].number_input(
-          "Board height (mm)",
-          min_value=10.0, max_value=500.0,
-          value=float(st.session_state.get("_bd_h_mm", 60.0)),
-          step=1.0, key="bd_h_mm",
-          help="Height (length) of the PCB / sensor board footprint.")
-      _bd_margin = _bd_cols[2].number_input(
-          "Mount margin (mm)",
-          min_value=2.0, max_value=30.0,
-          value=float(st.session_state.get("_bd_margin_mm", 6.0)),
-          step=0.5, key="bd_margin_mm",
-          help="Inset from the board edge to the mounting-hole centres.")
+      _bd_w = unum(_bd_cols[0], "Board width (mm)", 10.0, 500.0, float(st.session_state.get("_bd_w_mm", 80.0)), 'mm', step=1.0, key="bd_w_mm", help="Width of the PCB / sensor board footprint.")
+      _bd_h = unum(_bd_cols[1], "Board height (mm)", 10.0, 500.0, float(st.session_state.get("_bd_h_mm", 60.0)), 'mm', step=1.0, key="bd_h_mm", help="Height (length) of the PCB / sensor board footprint.")
+      _bd_margin = unum(_bd_cols[2], "Mount margin (mm)", 2.0, 30.0, float(st.session_state.get("_bd_margin_mm", 6.0)), 'mm', step=0.5, key="bd_margin_mm", help="Inset from the board edge to the mounting-hole centres.")
       st.session_state["_bd_w_mm"]      = _bd_w
       st.session_state["_bd_h_mm"]      = _bd_h
       st.session_state["_bd_margin_mm"] = _bd_margin
@@ -29820,8 +29548,7 @@ with tab_tractive:
       _rdis = _pc1[3].number_input("Discharge R (Ω, 0 = none)", 0.0, 1e7,
                                    15000.0, key="pc_rdis")
       _pc2 = st.columns(3)
-      _e_rate = _pc2[0].number_input("Resistor energy rating (J, 0 = unknown)",
-                                     0.0, 1e5, 100.0, key="pc_erate")
+      _e_rate = unum(_pc2[0], "Resistor energy rating (J, 0 = unknown)", 0.0, 1e5, 100.0, 'J', key="pc_erate")
       _tsw = _pc2[1].number_input("Switch shorts R at t = (s, 0 = never)",
                                   0.0, 30.0, 2.0, key="pc_tsw")
 
@@ -29907,8 +29634,7 @@ with tab_tractive:
           st.markdown("**BSPD**")
           _react = st.number_input("Reaction time (ms)", 1.0, 2000.0, 300.0,
                                    key="bspd_ms")
-          _bp = st.number_input("Trip power threshold (W)", 0.0, 1e5, 5000.0,
-                                key="bspd_w")
+          _bp = unum(st, "Trip power threshold (W)", 0.0, 1e5, 5000.0, 'W', key="bspd_w")
           _render_findings(tract_mod.check_bspd(
               tract_mod.BSPD(brake_threshold=10.0, power_threshold_w=_bp,
                              reaction_time_s=_react / 1000.0), _rules))
@@ -29924,13 +29650,10 @@ with tab_tractive:
       _par = _wc[1].number_input("Parallel (p)", 1, 50, 3, key="pcm_p")
       _mass_g = _wc[2].number_input("Wax per cell (g)", 0.0, 500.0, 15.0,
                                     key="pcm_g")
-      _ambient = _wc[3].number_input("Inlet air (°C)", 0.0, 60.0, 35.0,
-                                     key="pcm_amb")
+      _ambient = unum(_wc[3], "Inlet air (°C)", 0.0, 60.0, 35.0, '°C', key="pcm_amb")
       _wc2 = st.columns(4)
-      _tmelt = _wc2[0].number_input("Wax melt temp (°C)", 20.0, 90.0, 45.0,
-                                    key="pcm_tm")
-      _lheat = _wc2[1].number_input("Latent heat (J/g)", 50.0, 400.0, 200.0,
-                                    key="pcm_l")
+      _tmelt = unum(_wc2[0], "Wax melt temp (°C)", 20.0, 90.0, 45.0, '°C', key="pcm_tm")
+      _lheat = unum(_wc2[1], "Latent heat (J/g)", 50.0, 400.0, 200.0, 'J/g', key="pcm_l")
       _stint = _wc2[2].number_input("Endurance stint (s)", 60.0, 3000.0, 1500.0,
                                     key="pcm_stint")
       _peakA = _wc2[3].number_input("Pack current peak (A)", 10.0, 800.0, 300.0,
