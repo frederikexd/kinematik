@@ -12556,7 +12556,27 @@ def _render_pedal_packaging(_pb, _mass):
         nobody writes down.
 
     `_pb` is the imported pedal_box module (verified present by the caller).
+
+    UNITS: the pedal_box engine is metric throughout (mm / N / bar / cc), like the
+    rest of the package. EVERY user-facing string built here goes through
+    `units_mod.usentence`, which rewrites number+unit pairs into the active system.
+    That is deliberate rather than relying on the app's DeltaGenerator prettify
+    patch: `st.error`/`st.warning`/`st.info` are bound at Streamlit import time, so
+    module-level `st.*` calls never see that patch -- only calls on a container
+    (a column or expander) do. Findings come out of the engine as metric prose, so
+    they must be converted explicitly here or an imperial user reads millimetres.
     """
+    # Local aliases: _uS converts "<number> <metric unit>" pairs inside prose,
+    # _uL rewrites bare unit tokens in labels/titles. Both are no-ops in metric.
+    _uS = units_mod.usentence
+    _uL = units_mod.ulabel
+
+    def _banner(f, container=None):
+        """Render one Finding on the right channel, unit-converted."""
+        _tgt = container if container is not None else st
+        {"ok": _tgt.success, "warning": _tgt.warning, "fail": _tgt.error,
+         "missing": _tgt.info}.get(f.severity.value, _tgt.info)(_uS(f.message))
+
     st.markdown(
         '<p class="hint"><b>Does it fit, can it reach the bias, and does the pedal '
         'stop before the floor?</b> Hydraulic sizing answers "can we make enough '
@@ -12571,9 +12591,6 @@ def _render_pedal_packaging(_pb, _mass):
                             "Pedal travel budget"],
                    horizontal=True, key="pedalbox_view",
                    label_visibility="collapsed")
-
-    _uLen = units_mod.label("mm")
-    _uF = units_mod.label("N")
 
     # Shared geometry, kept in session so the three views describe ONE pedal box.
     _ratio = float(st.session_state.get("brake_pedal_ratio", 5.0))
@@ -12608,11 +12625,11 @@ def _render_pedal_packaging(_pb, _mass):
         _sc2 = st.columns(4)
         _mcfam = _sc2[0].selectbox("Cylinder family", list(_pb.MC_FAMILIES.keys()),
                                    index=1, key="pbx_fam")
-        _measured = _sc2[1].number_input(
-            "Measured MC body length (mm, 0 = use catalogue)", 0.0, 250.0, 0.0,
-            step=1.0, key="pbx_mcmeas",
-            help="Put a caliper on the actual cylinder. Catalogue lengths differ "
-                 "by 20–40 mm across families — often most of the deficit.")
+        _measured = unum(_sc2[1], "Measured MC body length (mm · 0 = catalogue)",
+                         0.0, 250.0, 0.0, "mm", step=1.0, key="pbx_mcmeas",
+                         help="Put a caliper on the actual cylinder. Catalogue "
+                              "lengths differ by 20.0 mm to 40.0 mm across families — often "
+                              "most of the deficit.")
         _outlet = _sc2[2].selectbox("MC outlet / line exit",
                                     list(_pb.FITTING_STACK_MM.keys()),
                                     key="pbx_outlet",
@@ -12632,31 +12649,32 @@ def _render_pedal_packaging(_pb, _mass):
         umetric(_m[0], "Installed length", _stack.installed_mm, "mm")
         umetric(_m[1], "Available", _stack.available_mm, "mm")
         _m[2].metric("Verdict", _stack.verdict,
-                     delta=(f"{_stack.deficit_mm:+.0f} mm"
+                     delta=(_uS(f"{_stack.deficit_mm:+.1f} mm")
                             if abs(_stack.deficit_mm) > 0.5 else None),
                      delta_color="inverse" if _stack.deficit_mm > 0 else "normal")
 
         # Where the length actually goes, longest-first.
         _segs = sorted(_stack.segments, key=lambda s: s.length_mm)
+        _seg_x = uconv_series([s.length_mm for s in _segs], "mm")
         _fig = go.Figure(go.Bar(
-            x=[s.length_mm for s in _segs], y=[s.name for s in _segs],
+            x=_seg_x, y=[s.name for s in _segs],
             orientation="h", marker_color="#ff9f2e",
-            text=[f"{s.length_mm:.0f}" for s in _segs], textposition="outside"))
+            text=[f"{v:.1f}" if units_mod.is_us() else f"{v:.0f}"
+                  for v in _seg_x], textposition="outside"))
         _fig.update_layout(
-            title="Where the length goes (mm)", height=360,
+            title=_uL("Where the length goes (mm)"), height=360,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#cdd6df", size=11),
-            margin=dict(l=0, r=40, t=36, b=0), xaxis_title="mm")
+            margin=dict(l=0, r=40, t=36, b=0), xaxis_title=_uL("mm"))
         st.plotly_chart(_fig, width='stretch', key="pbx_stack_bar")
 
         for _f in _stack.findings:
-            {"ok": st.success, "warning": st.warning, "fail": st.error,
-             "missing": st.info}.get(_f.severity.value, st.info)(_f.message)
+            _banner(_f)
 
         # ---- the "any ideas?" menu, priced -----------------------------
         if _stack.deficit_mm > 0:
-            st.markdown("##### Where the %d mm could come from"
-                        % round(_stack.deficit_mm))
+            st.markdown("##### " + _uS(f"Where the {_stack.deficit_mm:.1f} mm "
+                                       f"could come from"))
             _rank = st.select_slider(
                 "How much are you willing to change?",
                 options=["Adjustment only", "Parts, no performance cost",
@@ -12672,31 +12690,32 @@ def _render_pedal_packaging(_pb, _mass):
             _plan = _pb.plan_shortening(_stack, _opts, max_cost_rank=_rank_n)
 
             if _plan.solved:
-                st.success(f"✓ {_plan.total_gain_mm:.0f} mm recovered against the "
-                           f"{_plan.deficit_mm:.0f} mm needed, using "
-                           f"{len(_plan.chosen)} change(s).")
+                st.success(_uS(
+                    f"✓ {_plan.total_gain_mm:.1f} mm recovered against the "
+                    f"{_plan.deficit_mm:.1f} mm needed, using "
+                    f"{len(_plan.chosen)} change(s)."))
             else:
-                st.error(f"✗ The affordable menu returns "
-                         f"{_plan.total_gain_mm:.0f} mm of "
-                         f"{_plan.deficit_mm:.0f} mm — {_plan.remaining_mm:.0f} mm "
-                         f"still to find. Widen what you'll change, or this is a "
-                         f"chassis conversation.")
+                st.error(_uS(
+                    f"✗ The affordable menu returns {_plan.total_gain_mm:.1f} mm "
+                    f"of {_plan.deficit_mm:.1f} mm — {_plan.remaining_mm:.1f} mm "
+                    f"still to find.") + " Widen what you'll change, or this is a "
+                    "chassis conversation.")
 
             _chosen = {o.name for o in _plan.chosen}
             for _o in _opts:
                 _tag = "✅ in the plan" if _o.name in _chosen else (
                     "—" if _o.feasible else "🚫 not feasible")
-                with st.expander(f"{_o.gain_mm:+.0f} mm · {_o.name} · {_tag}"):
+                with st.expander(_uS(f"{_o.gain_mm:+.1f} mm") +
+                                 f" · {_o.name} · {_tag}"):
                     st.caption(f"Cost: {_o.cost}")
                     for _k, _v in _o.side_effects.items():
-                        st.markdown(f"- **{_k}:** {_v}")
+                        st.markdown(_uS(f"- **{_k}:** {_v}"))
                     if _o.requires_recheck:
                         st.caption("Re-check after this: "
                                    + "; ".join(_o.requires_recheck))
 
             for _f in _plan.findings:
-                {"ok": st.success, "warning": st.warning, "fail": st.error,
-                 "missing": st.info}.get(_f.severity.value, st.info)(_f.message)
+                _banner(_f)
 
     # ==================================================================== #
     elif _pv == "Balance bar & bias":
@@ -12746,14 +12765,14 @@ def _render_pedal_packaging(_pb, _mass):
         _m[1].metric("Centred bar", f"{_auth.bias_at_centre*100:.1f}%")
         _m[2].metric("Target reachable?",
                      "Yes" if _auth.target_reachable else "No",
-                     delta=(f"at {_auth.offset_for_target_mm:+.1f} mm"
+                     delta=(_uS(f"at {_auth.offset_for_target_mm:+.2f} mm")
                             if _auth.target_reachable else "change a bore"),
                      delta_color="normal" if _auth.target_reachable else "inverse")
         _m[3].metric("Bias per adjuster turn",
                      f"{_auth.bias_per_turn*100:.2f}%",
                      help="What the driver gets from one turn between runs.")
 
-        _xs = [s["offset_mm"] for s in _auth.sweep]
+        _xs = uconv_series([s["offset_mm"] for s in _auth.sweep], "mm")
         _ys = [s["bias_front"]*100 for s in _auth.sweep]
         _figb = go.Figure()
         _figb.add_trace(go.Scatter(x=_xs, y=_ys, mode="lines", name="achievable",
@@ -12761,11 +12780,12 @@ def _render_pedal_packaging(_pb, _mass):
         _figb.add_hline(y=_target*100, line_dash="dash", line_color="#5ad17a",
                         annotation_text=f"target {_target*100:.0f}%")
         if _auth.target_reachable:
-            _figb.add_vline(x=_auth.offset_for_target_mm, line_dash="dot",
-                            line_color="#5ad17a")
+            _figb.add_vline(
+                x=units_mod.from_metric(_auth.offset_for_target_mm, "mm"),
+                line_dash="dot", line_color="#5ad17a")
         _figb.update_layout(
             title="Front bias vs balance-bar position", height=320,
-            xaxis_title="bar offset toward the front cylinder (mm)",
+            xaxis_title=_uL("bar offset toward the front cylinder (mm)"),
             yaxis_title="front torque bias (%)",
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#cdd6df", size=11),
@@ -12773,8 +12793,7 @@ def _render_pedal_packaging(_pb, _mass):
         st.plotly_chart(_figb, width='stretch', key="pbx_bias_curve")
 
         for _f in _auth.findings:
-            {"ok": st.success, "warning": st.warning, "fail": st.error,
-             "missing": st.info}.get(_f.severity.value, st.info)(_f.message)
+            _banner(_f)
 
         _at = _pb.balance_bar_bias(
             pedal_force_N=_pforce, pedal_ratio=_ratio, front=_front, rear=_rear,
@@ -12786,9 +12805,9 @@ def _render_pedal_packaging(_pb, _mass):
         umetric(_p[1], "Rear line pressure", _at.pressure_rear_bar, "bar")
         umetric(_p[2], "Front axle torque", _at.torque_front_Nm, "N·m")
         umetric(_p[3], "Rear axle torque", _at.torque_rear_Nm, "N·m")
-        st.caption(f"At {units_mod.from_metric(_pforce,'N'):.0f} {_uF} of pedal "
-                   f"force through a {_ratio:.2f} pedal ratio"
-                   + (f", bar at {_auth.offset_for_target_mm:+.2f} mm."
+        st.caption(_uS(f"At {_pforce:.0f} N of pedal force through a "
+                       f"{_ratio:.2f} pedal ratio")
+                   + (_uS(f", bar at {_auth.offset_for_target_mm:+.2f} mm.")
                       if _auth.target_reachable else ", bar centred."))
 
         # Carry the achieved pressures forward so the travel view uses the
@@ -12823,28 +12842,27 @@ def _render_pedal_packaging(_pb, _mass):
         _those = _tc2[0].selectbox(
             "Flexible hose type",
             ["PTFE braided (steel)", "rubber hose"], key="pbx_t_hose")
-        _thoseL = _tc2[1].number_input("Flex hose per corner (m)", 0.1, 2.0, 0.6,
-                                       step=0.05, key="pbx_t_hoseL")
-        _thardL = _tc2[2].number_input("Routed hardline (m)", 0.2, 8.0, 1.8,
-                                       step=0.1, key="pbx_t_hardL",
-                                       help="Measure the ROUTED length off the CAD, "
-                                            "not the straight-line distance.")
-        _tair = _tc2[3].number_input("Trapped air (cc)", 0.0, 5.0, 0.0, step=0.1,
-                                     key="pbx_t_air",
-                                     help="Set >0 to see what a bad bleed costs. "
-                                          "It dominates everything else.")
+        _thoseL = unum(_tc2[1], "Flex hose per corner (m)", 0.1, 2.0, 0.6, "m",
+                       step=0.05, fmt="%.2f", key="pbx_t_hoseL")
+        _thardL = unum(_tc2[2], "Routed hardline (m)", 0.2, 8.0, 1.8, "m",
+                       step=0.1, fmt="%.2f", key="pbx_t_hardL",
+                       help="Measure the ROUTED length off the CAD, not the "
+                            "straight-line distance.")
+        _tair = unum(_tc2[3], "Trapped air (cc)", 0.0, 5.0, 0.0, "cc", step=0.1,
+                     fmt="%.2f", key="pbx_t_air",
+                     help="Set >0 to see what a bad bleed costs. It dominates "
+                          "everything else.")
 
         _tc3 = st.columns(3)
         _tavail = unum(_tc3[0], "Available pedal travel (mm)", 20.0, 150.0, 60.0,
                        "mm", step=5.0, key="pbx_t_avail")
         _tstroke = unum(_tc3[1], "MC stroke limit (mm)", 8.0, 40.0, 25.4, "mm",
                         step=0.5, key="pbx_t_stroke")
-        _tpress = _tc3[2].number_input(
-            "Line pressure (bar)", 10.0, 150.0,
-            float(st.session_state.get("pbx_press_f", 60.0)), step=5.0,
-            key="pbx_t_press",
-            help="Pre-filled from the Balance bar view so travel is computed at "
-                 "the pressure your hardware actually makes.")
+        _tpress = unum(_tc3[2], "Line pressure (bar)", 10.0, 150.0,
+                       float(st.session_state.get("pbx_press_f", 60.0)), "bar",
+                       step=5.0, key="pbx_t_press",
+                       help="Pre-filled from the Balance bar view so travel is "
+                            "computed at the pressure your hardware actually makes.")
 
         _circ = _pb.CircuitSpec(mc_bore_mm=_tbore, caliper_piston_dia_mm=_tcp,
                                 pistons_per_side=int(_tnp), opposed=bool(_topp),
@@ -12861,8 +12879,8 @@ def _render_pedal_packaging(_pb, _mass):
                 'One measurement cannot separate hose stretch from pad squash — it '
                 '<i>can</i> stop the total being a guess.</p>',
                 unsafe_allow_html=True)
-            _meas = st.number_input("Measured pedal travel at the pad (mm, 0 = skip)",
-                                    0.0, 200.0, 0.0, step=1.0, key="pbx_t_meas")
+            _meas = unum(st, "Measured pedal travel at the pad (mm · 0 = skip)",
+                         0.0, 200.0, 0.0, "mm", step=1.0, key="pbx_t_meas")
             if _meas > 0:
                 try:
                     _tp = _pb.calibrate_travel_params(
@@ -12870,9 +12888,9 @@ def _render_pedal_packaging(_pb, _mass):
                         line_pressure_bar=float(_tpress), pedal_ratio=_ratio,
                         base=_tp, hose_length_m=float(_thoseL),
                         hardline_length_m=float(_thardL))
-                    st.success(f"Calibrated: {_tp.fitted_to}")
+                    st.success(_uS(f"Calibrated: {_tp.fitted_to}"))
                 except ValueError as _ce:
-                    st.warning(str(_ce))
+                    st.warning(_uS(str(_ce)))
 
         _tr = _pb.pedal_travel(
             circuit=_circ, line_pressure_bar=float(_tpress), pedal_ratio=_ratio,
@@ -12881,40 +12899,42 @@ def _render_pedal_packaging(_pb, _mass):
             mc_stroke_limit_mm=_tstroke)
 
         _m = st.columns(4)
-        umetric(_m[0], "Fluid demanded", _tr.total_cc, "", fmt="{:.2f}")
-        _m[0].caption("cc")
+        umetric(_m[0], "Fluid demanded", _tr.total_cc, "cc", fmt="{:.2f}")
         umetric(_m[1], "MC stroke", _tr.mc_stroke_mm, "mm", fmt="{:.1f}")
-        umetric(_m[2], "Travel at the pad", _tr.pedal_travel_mm, "mm")
+        umetric(_m[2], "Travel at the pad", _tr.pedal_travel_mm, "mm",
+                fmt="{:.1f}")
         _m[3].metric("Verdict", _tr.verdict,
                      delta=f"{_tr.stroke_utilisation*100:.0f}% of stroke",
                      delta_color=("normal" if _tr.verdict == "PASS"
                                   else "inverse"))
 
         _items = sorted(_tr.items, key=lambda i: i.volume_cc)
+        _item_x = uconv_series([i.volume_cc for i in _items], "cc")
+        _worst = max(_item_x) if _item_x else 0.0
         _figt = go.Figure(go.Bar(
-            x=[i.volume_cc for i in _items], y=[i.name for i in _items],
-            orientation="h",
-            marker_color=["#ff5a52" if i.volume_cc == _items[-1].volume_cc
-                          else "#ff9f2e" for i in _items],
-            text=[f"{i.volume_cc:.3f}" for i in _items], textposition="outside"))
+            x=_item_x, y=[i.name for i in _items], orientation="h",
+            marker_color=["#ff5a52" if v == _worst else "#ff9f2e"
+                          for v in _item_x],
+            text=[f"{v:.4f}" if units_mod.is_us() else f"{v:.3f}"
+                  for v in _item_x], textposition="outside"))
         _figt.update_layout(
-            title="Where the fluid goes (cc) — go after the top bar first",
+            title=_uL("Where the fluid goes (cc) — go after the top bar first"),
             height=340, paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#cdd6df", size=11),
-            margin=dict(l=0, r=50, t=36, b=0), xaxis_title="cc")
+            margin=dict(l=0, r=50, t=36, b=0), xaxis_title=_uL("cc"))
         st.plotly_chart(_figt, width='stretch', key="pbx_travel_bar")
 
         for _f in _tr.findings:
-            {"ok": st.success, "warning": st.warning, "fail": st.error,
-             "missing": st.info}.get(_f.severity.value, st.info)(_f.message)
+            _banner(_f)
 
         with st.expander("What each consumer is, and why it is that size"):
             for _i in sorted(_tr.items, key=lambda x: -x.volume_cc):
-                st.markdown(f"**{_i.name}** — {_i.volume_cc:.3f} cc"
-                            + ("  ·  scales with pressure" if _i.pressure_dependent
-                               else "  ·  fixed geometry"))
+                st.markdown(
+                    _uS(f"**{_i.name}** — {_i.volume_cc:.3f} cc")
+                    + ("  ·  scales with pressure" if _i.pressure_dependent
+                       else "  ·  fixed geometry"))
                 if _i.note:
-                    st.caption(_i.note)
+                    st.caption(_uS(_i.note))
 
 
 def _render_rotor_thermal(_bt, _mass, kin):
