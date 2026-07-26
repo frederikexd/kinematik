@@ -487,3 +487,119 @@ def test_provenance_names_what_is_safe_and_what_is_not():
     p = pb.provenance()
     assert "safe" in p and "provisional" in p
     assert "parameters" in p["provisional"].lower()
+
+
+# =========================================================================== #
+#  6. Unit-conversion safety
+#
+#  The engine is metric, but the app renders findings verbatim through
+#  units.usentence(), which converts "<number> <unit>" pairs in place and
+#  PRESERVES the source decimal precision. Two consequences bite:
+#
+#    * mm -> in divides by 25.4, so a 0-decimal source ("85 mm") renders as
+#      "3 in" and an 8 mm value renders as "0 in" -- the number is destroyed.
+#      Every mm figure in a user-facing string therefore needs >= 1 decimal.
+#    * a range written "20-40 mm" has only ONE unit token, so only the 40
+#      converts and an imperial user reads "20-2 in". Both endpoints must
+#      carry their own unit.
+#
+#  These guard both properties at the source, because the failure is silent:
+#  the app renders happily and just shows the wrong number.
+# =========================================================================== #
+import re as _re
+import suspension.pedal_box as _pbmod
+
+
+def _all_finding_messages():
+    """Findings from every entry point, so the scan covers real output."""
+    front = pb.CircuitSpec(mc_bore_mm=15.875, caliper_piston_dia_mm=30.0,
+                           pistons_per_side=2, rotor_dia_mm=220.0, n_corners=2)
+    rear = pb.CircuitSpec(mc_bore_mm=17.5, caliper_piston_dia_mm=25.0,
+                          pistons_per_side=1, rotor_dia_mm=200.0, n_corners=2)
+    msgs = []
+    for available in (150.0, 290.0, 600.0):
+        s = pb.stack_up(available_mm=available)
+        msgs += [f.message for f in s.findings]
+        msgs += [f.message for f in pb.plan_shortening(s).findings]
+    msgs += [f.message for f in pb.balance_bar_bias(
+        pedal_force_N=500.0, pedal_ratio=5.0, front=front, rear=rear,
+        bar_offset_mm=27.0).findings]
+    for target in (0.30, 0.65, 0.70):
+        msgs += [f.message for f in pb.bias_authority(
+            pedal_force_N=500.0, pedal_ratio=5.0, front=front, rear=rear,
+            target_bias=target).findings]
+    for params in (pb.TravelParams(), pb.TravelParams(air_cc=2.0)):
+        t = pb.pedal_travel(circuit=front, line_pressure_bar=63.0,
+                            pedal_ratio=5.0, params=params)
+        msgs += [f.message for f in t.findings]
+        msgs += [i.note for i in t.items if i.note]
+    msgs += [f.message for f in pb.study(
+        available_mm=290.0, front=front, rear=rear).findings]
+    return [m for m in msgs if m]
+
+
+def test_every_mm_figure_survives_imperial_conversion():
+    """A 0-decimal mm figure becomes a useless integer inch. Require a decimal."""
+    bad = []
+    for msg in _all_finding_messages():
+        # "<digits> mm" with no decimal point, on a word boundary.
+        for m in _re.finditer(r"(?<![\d.])(\d+) mm\b", msg):
+            bad.append((m.group(0), msg[:70]))
+    assert not bad, (
+        "These mm figures have no decimal, so imperial users see a rounded "
+        f"integer inch (8 mm -> '0 in'): {bad}")
+
+
+def test_every_cc_figure_keeps_enough_decimals():
+    """cc -> in^3 multiplies by 0.061, so 2 decimals of cc rounds to nothing."""
+    bad = []
+    for msg in _all_finding_messages():
+        for m in _re.finditer(r"(\d+)\.(\d{0,2}) cc\b", msg):
+            bad.append((m.group(0), msg[:70]))
+    assert not bad, (
+        f"These cc figures need >=3 decimals to survive conversion: {bad}")
+
+
+def test_no_numeric_range_shares_a_single_unit_token():
+    """"20-40 mm" converts only the 40, so imperial reads "20-2 in"."""
+    bad = []
+    for msg in _all_finding_messages():
+        for m in _re.finditer(r"\d[\d.]*\s*[-\u2013]\s*\d[\d.]*\s*(mm|cc|bar|N)\b",
+                              msg):
+            bad.append((m.group(0), msg[:70]))
+    assert not bad, (
+        "Both endpoints of a range must carry their own unit, or only the "
+        f"second converts: {bad}")
+
+
+def test_conversion_actually_produces_sane_imperial_numbers():
+    """End-to-end: force US mode and check the headline figures convert."""
+    import suspension.units as u
+    orig_cur, orig_is = u.current_system, u.is_us
+    try:
+        u.current_system = lambda: u.US
+        u.is_us = lambda: True
+        s = pb.stack_up(available_mm=290.0)
+        txt = u.usentence(
+            next(f.message for f in s.findings
+                 if f.check == "pedal_box_envelope"))
+        # 84.9 mm deficit -> 3.3 in, 290 mm -> 11.4 in. Neither may round to 0.
+        assert "3.3 in" in txt, txt
+        assert "11.4 in" in txt, txt
+        assert " 0 in" not in txt, txt
+        assert "mm" not in txt, f"metric unit leaked through: {txt}"
+    finally:
+        u.current_system, u.is_us = orig_cur, orig_is
+
+
+def test_metric_mode_is_untouched():
+    """The conversion layer must be a no-op in metric — no silent rewriting."""
+    import suspension.units as u
+    orig_cur, orig_is = u.current_system, u.is_us
+    try:
+        u.current_system = lambda: u.METRIC
+        u.is_us = lambda: False
+        for msg in _all_finding_messages():
+            assert u.usentence(msg) == msg
+    finally:
+        u.current_system, u.is_us = orig_cur, orig_is
