@@ -206,14 +206,14 @@ class StackUpResult:
             notes=list(self.notes))
 
     def summary(self) -> str:
-        head = (f"Pedal box stack-up: {self.installed_mm:.0f} mm installed vs "
-                f"{self.available_mm:.0f} mm available -> {self.verdict}")
+        head = (f"Pedal box stack-up: {self.installed_mm:.1f} mm installed vs "
+                f"{self.available_mm:.1f} mm available -> {self.verdict}")
         if self.deficit_mm > 0:
-            head += f" (need to find {self.deficit_mm:.0f} mm)"
+            head += f" (need to find {self.deficit_mm:.1f} mm)"
         lines = [head]
         for s in sorted(self.segments, key=lambda s: -s.length_mm):
             tag = "measured" if s.measured else "catalogue/estimate"
-            adj = (f", {s.adjustable_mm:.0f} mm of it adjustable"
+            adj = (f", {s.adjustable_mm:.1f} mm of it adjustable"
                    if s.adjustable_mm > 0 else "")
             lines.append(f"    {s.length_mm:7.1f} mm  {s.name}  [{tag}{adj}]")
         return "\n".join(lines)
@@ -291,17 +291,17 @@ def stack_up(*,
         findings.append(Finding(
             check="mc_body_length_source", severity=Severity.MISSING,
             message=(f"Master-cylinder body length came from the '{mc_family}' "
-                     f"catalogue placeholder ({mc_body_mm:.0f} mm), not from your "
+                     f"catalogue placeholder ({mc_body_mm:.1f} mm), not from your "
                      f"part. Put a caliper on the cylinder and pass mc_body_mm -- "
-                     f"body lengths differ by 20-40 mm across families and that is "
-                     f"most of the deficit you are chasing."),
+                     f"body lengths differ by 20.0 mm to 40.0 mm across families and "
+                     f"that is most of the deficit you are chasing."),
             subsystems=["brakes"]))
     else:
         mc_body_mm = float(mc_body_mm)
         if mc_body_measured:
             findings.append(Finding(
                 check="mc_body_length_source", severity=Severity.OK,
-                message=f"Master-cylinder body length {mc_body_mm:.0f} mm is a "
+                message=f"Master-cylinder body length {mc_body_mm:.1f} mm is a "
                         f"measured value.",
                 subsystems=["brakes"]))
         else:
@@ -318,7 +318,7 @@ def stack_up(*,
         findings.append(Finding(
             check="mc_outlet_stack", severity=Severity.WARN,
             message=(f"The line exit behind the cylinders is carrying "
-                     f"{mc_outlet_mm:.0f} mm of the stack ('{mc_outlet}'), which "
+                     f"{mc_outlet_mm:.1f} mm of the stack ('{mc_outlet}'), which "
                      f"includes the bend radius the hardline needs to turn away "
                      f"from the cylinder. This is the segment most often missing "
                      f"from a CAD envelope check, because the fitting is modelled "
@@ -339,10 +339,10 @@ def stack_up(*,
     if pushrod_adjustable < 3.0:
         findings.append(Finding(
             check="pushrod_adjustment_exhausted", severity=Severity.WARN,
-            message=(f"The pushrod has only {pushrod_adjustable:.0f} mm of length "
+            message=(f"The pushrod has only {pushrod_adjustable:.1f} mm of length "
                      f"left before thread engagement drops under the "
-                     f"{MIN_THREAD_ENGAGEMENT_D:.1f}x{pushrod_thread_dia_mm:.0f} mm "
-                     f"= {min_engagement:.0f} mm minimum. Winding it out past that "
+                     f"{MIN_THREAD_ENGAGEMENT_D:.1f}x{pushrod_thread_dia_mm:.1f} mm "
+                     f"= {min_engagement:.1f} mm minimum. Winding it out past that "
                      f"is not an adjustment, it is a failure mode -- the deficit has "
                      f"to come from somewhere else."),
             subsystems=["brakes"]))
@@ -350,14 +350,14 @@ def stack_up(*,
     segments = [
         StackSegment("Pedal pad to pivot (X projection of the lever)",
                      pad_to_pivot_x, 0.0, False,
-                     f"{pedal_lever_mm:.0f} mm arm at {pedal_rest_angle_deg:.0f} deg "
+                     f"{pedal_lever_mm:.1f} mm arm at {pedal_rest_angle_deg:.0f} deg "
                      f"from X. A more upright pedal projects less."),
         StackSegment("Pedal arc clearance (pad sweep under braking)",
                      float(pedal_arc_clearance_mm), 0.0, False,
                      "Room the pad needs to travel without touching anything."),
         StackSegment("Pivot to balance-bar clevis",
                      pivot_to_clevis_x, 0.0, False,
-                     f"Lever/ratio = {clevis_arm_mm:.0f} mm arm. Raising the pedal "
+                     f"Lever/ratio = {clevis_arm_mm:.1f} mm arm. Raising the pedal "
                      f"ratio pulls this in."),
         StackSegment("Balance bar + clevises + spherical bearing",
                      float(balance_bar_stack_mm), 0.0, False,
@@ -365,8 +365,8 @@ def stack_up(*,
         StackSegment("Pushrod",
                      float(pushrod_mm) * cos_tilt, pushrod_adjustable * cos_tilt,
                      False,
-                     f"{pushrod_adjustable:.0f} mm can be wound out before thread "
-                     f"engagement hits the {min_engagement:.0f} mm floor."),
+                     f"{pushrod_adjustable:.1f} mm can be wound out before thread "
+                     f"engagement hits the {min_engagement:.1f} mm floor."),
         StackSegment("Master cylinder body",
                      mc_body_mm * cos_tilt, 0.0, bool(mc_body_measured),
                      "The part. Only a different part changes this."),
@@ -388,24 +388,24 @@ def stack_up(*,
         verdict = "DOES NOT FIT"
         findings.append(Finding(
             check="pedal_box_envelope", severity=Severity.FAIL,
-            message=(f"The assembly is {deficit:.0f} mm longer than the "
-                     f"{available_mm:.0f} mm available. Run shorten_options() "
+            message=(f"The assembly is {deficit:.1f} mm longer than the "
+                     f"{available_mm:.1f} mm available. Run shorten_options() "
                      f"against this deficit -- the pushrod alone can only return "
-                     f"{pushrod_adjustable:.0f} mm of it."),
+                     f"{pushrod_adjustable:.1f} mm of it."),
             subsystems=["brakes", "chassis"]))
     elif -deficit < float(tight_band_mm):
         verdict = "TIGHT"
         findings.append(Finding(
             check="pedal_box_envelope", severity=Severity.WARN,
-            message=(f"It fits with only {-deficit:.0f} mm to spare, inside the "
-                     f"{tight_band_mm:.0f} mm tight band. One fitting change or one "
+            message=(f"It fits with only {-deficit:.1f} mm to spare, inside the "
+                     f"{tight_band_mm:.1f} mm tight band. One fitting change or one "
                      f"thicker mount plate puts it over."),
             subsystems=["brakes", "chassis"]))
     else:
         verdict = "FITS"
         findings.append(Finding(
             check="pedal_box_envelope", severity=Severity.OK,
-            message=f"Fits with {-deficit:.0f} mm to spare.",
+            message=f"Fits with {-deficit:.1f} mm to spare.",
             subsystems=["brakes", "chassis"]))
 
     if tilt_deg > 0:
@@ -447,7 +447,7 @@ class ShortenOption:
         return asdict(self)
 
     def label(self) -> str:
-        return f"{self.gain_mm:+.0f} mm  {self.name}  ({self.cost})"
+        return f"{self.gain_mm:+.1f} mm  {self.name}  ({self.cost})"
 
 
 @dataclass
@@ -468,9 +468,9 @@ class ShortenPlan:
                     findings=[f.as_dict() for f in self.findings])
 
     def summary(self) -> str:
-        lines = [f"Need {self.deficit_mm:.0f} mm. "
+        lines = [f"Need {self.deficit_mm:.1f} mm. "
                  + ("SOLVED" if self.solved
-                    else f"SHORT BY {self.remaining_mm:.0f} mm")
+                    else f"SHORT BY {self.remaining_mm:.1f} mm")
                  + f" with {len(self.chosen)} change(s):"]
         for o in self.chosen:
             lines.append("    " + o.label())
@@ -563,8 +563,8 @@ def shorten_options(stack: StackUpResult, *,
             gain_mm=fam_now["body_mm"] - fam_short["body_mm"], cost_rank=1,
             cost="buy different cylinders",
             side_effects={
-                "usable stroke": f"drops {lost_stroke:.0f} mm to "
-                                 f"{fam_short['stroke_mm']:.0f} mm -- only safe if "
+                "usable stroke": f"drops {lost_stroke:.1f} mm to "
+                                 f"{fam_short['stroke_mm']:.1f} mm -- only safe if "
                                  f"pedal_travel() says the circuit needs less than "
                                  f"that with a reserve",
                 "lead time": "a parts order sits on the critical path",
@@ -743,7 +743,7 @@ def plan_shortening(stack: StackUpResult,
     if solved:
         findings.append(Finding(
             check="shorten_plan", severity=Severity.OK,
-            message=(f"{total:.0f} mm recovered against a {deficit:.0f} mm deficit "
+            message=(f"{total:.1f} mm recovered against a {deficit:.1f} mm deficit "
                      f"using {len(chosen)} change(s), none above cost rank "
                      f"{max_cost_rank}. Every option carries a re-check -- run them "
                      f"before this counts as closed."),
@@ -751,8 +751,8 @@ def plan_shortening(stack: StackUpResult,
     else:
         findings.append(Finding(
             check="shorten_plan", severity=Severity.FAIL,
-            message=(f"The affordable menu returns {total:.0f} mm of the "
-                     f"{deficit:.0f} mm needed, leaving {remaining:.0f} mm. This is "
+            message=(f"The affordable menu returns {total:.1f} mm of the "
+                     f"{deficit:.1f} mm needed, leaving {remaining:.1f} mm. This is "
                      f"no longer an adjustment problem. The honest options are a "
                      f"cylinder family with a shorter body, a floor-mounted pedal, "
                      f"or moving the bulkhead -- all of which are chassis "
@@ -870,7 +870,7 @@ def balance_bar_bias(*, pedal_force_N: float, pedal_ratio: float,
         findings.append(Finding(
             check="balance_bar_offset", severity=Severity.FAIL,
             message=(f"A {e:+.1f} mm offset puts the pivot outside the "
-                     f"{L:.0f} mm clevis span. The bar cannot be assembled like "
+                     f"{L:.1f} mm clevis span. The bar cannot be assembled like "
                      f"that."),
             subsystems=["brakes"]))
         a = max(a, 1e-6)
@@ -1150,12 +1150,12 @@ class TravelResult:
         return sorted(self.items, key=lambda i: -i.volume_cc)[:k]
 
     def summary(self) -> str:
-        lines = [f"Pedal travel: {self.pedal_travel_mm:.0f} mm at the pad of "
-                 f"{self.available_travel_mm:.0f} mm available -> {self.verdict}",
-                 f"  {self.total_cc:.2f} cc demanded, "
+        lines = [f"Pedal travel: {self.pedal_travel_mm:.1f} mm at the pad of "
+                 f"{self.available_travel_mm:.1f} mm available -> {self.verdict}",
+                 f"  {self.total_cc:.3f} cc demanded, "
                  f"{self.mc_stroke_mm:.1f} mm of cylinder stroke "
                  f"({self.stroke_utilisation*100:.0f}% of the "
-                 f"{self.mc_stroke_limit_mm:.0f} mm limit)"]
+                 f"{self.mc_stroke_limit_mm:.1f} mm limit)"]
         for i in self.biggest(4):
             lines.append(f"    {i.volume_cc:6.3f} cc  {i.name}")
         return "\n".join(lines)
@@ -1213,7 +1213,7 @@ def pedal_travel(*, circuit: CircuitSpec,
     v_knock = swept_mm2 * float(p.knockback_mm) / 1000.0
     items.append(VolumeItem(
         "Piston knockback / running clearance", v_knock, False,
-        f"{swept_mm2:.0f} mm2 of moving piston across {n_cal} caliper(s) x "
+        f"{swept_mm2:.1f} mm2 of moving piston across {n_cal} caliper(s) x "
         f"{p.knockback_mm:.2f} mm. Wheel-bearing and hub compliance make this "
         f"worse on track than on the bench."))
 
@@ -1227,7 +1227,7 @@ def pedal_travel(*, circuit: CircuitSpec,
     v_cal = float(p.caliper_cc_per_bar) * n_cal * P
     items.append(VolumeItem(
         "Caliper housing deflection", v_cal, True,
-        f"{p.caliper_cc_per_bar*1000:.1f} cc/kbar per caliper at {P:.0f} bar."))
+        f"{p.caliper_cc_per_bar*1000:.3f} cc/kbar per caliper at {P:.0f} bar."))
 
     v_hose = p.hose_cc_per_m_per_bar() * float(hose_length_m) * n_cal * P
     items.append(VolumeItem(
@@ -1250,7 +1250,7 @@ def pedal_travel(*, circuit: CircuitSpec,
     v_comp = v_fluid_total * (P * 1e5) / K
     items.append(VolumeItem(
         "Fluid compressibility", v_comp, True,
-        f"{v_fluid_total:.1f} cc of {p.fluid} at {P:.0f} bar, K={K/1e9:.2f} GPa. "
+        f"{v_fluid_total:.3f} cc of {p.fluid} at {P:.0f} bar, K={K/1e9:.2f} GPa. "
         f"Hot or water-contaminated fluid is softer than this."))
 
     # --- air ---------------------------------------------------------------
@@ -1259,7 +1259,7 @@ def pedal_travel(*, circuit: CircuitSpec,
         v_air = float(p.air_cc) * (1.0 - 1.0 / (1.0 + P))
         items.append(VolumeItem(
             "Trapped air (compressed)", v_air, True,
-            f"{p.air_cc:.2f} cc of air at atmospheric collapses to almost nothing "
+            f"{p.air_cc:.3f} cc of air at atmospheric collapses to almost nothing "
             f"at {P:.0f} bar, and every cc of that collapse is pedal travel you "
             f"paid for. Bleed it out."))
 
@@ -1289,15 +1289,15 @@ def pedal_travel(*, circuit: CircuitSpec,
             findings.append(Finding(
                 check="mc_stroke", severity=Severity.FAIL,
                 message=(f"The circuit demands {stroke_mm:.1f} mm of cylinder "
-                         f"stroke against a {mc_stroke_limit_mm:.0f} mm limit. The "
+                         f"stroke against a {mc_stroke_limit_mm:.1f} mm limit. The "
                          f"piston bottoms before the brakes are fully applied -- "
                          f"this is a pedal that goes to the floor, not a soft one."),
                 subsystems=["brakes"]))
         if travel_mm > float(available_travel_mm):
             findings.append(Finding(
                 check="pedal_travel", severity=Severity.FAIL,
-                message=(f"{travel_mm:.0f} mm of travel at the pad against "
-                         f"{available_travel_mm:.0f} mm available. Go after the "
+                message=(f"{travel_mm:.1f} mm of travel at the pad against "
+                         f"{available_travel_mm:.1f} mm available. Go after the "
                          f"largest consumers first: "
                          + ", ".join(i.name for i in
                                      sorted(items, key=lambda x: -x.volume_cc)[:2])
@@ -1308,7 +1308,7 @@ def pedal_travel(*, circuit: CircuitSpec,
         verdict = "TIGHT"
         findings.append(Finding(
             check="pedal_travel", severity=Severity.WARN,
-            message=(f"{travel_mm:.0f} mm of travel uses "
+            message=(f"{travel_mm:.1f} mm of travel uses "
                      f"{travel_mm/max(available_travel_mm,1e-9)*100:.0f}% of what "
                      f"is available, and the cylinder is at {util*100:.0f}% of its "
                      f"stroke. That leaves nothing for pad wear, a hot circuit, or "
@@ -1318,14 +1318,14 @@ def pedal_travel(*, circuit: CircuitSpec,
         verdict = "PASS"
         findings.append(Finding(
             check="pedal_travel", severity=Severity.OK,
-            message=(f"{travel_mm:.0f} mm at the pad, cylinder at {util*100:.0f}% "
+            message=(f"{travel_mm:.1f} mm at the pad, cylinder at {util*100:.0f}% "
                      f"of stroke. Reserve for wear and heat."),
             subsystems=["brakes"]))
 
     if p.air_cc > 0:
         findings.append(Finding(
             check="trapped_air", severity=Severity.WARN,
-            message=(f"This budget includes {p.air_cc:.2f} cc of trapped air. If "
+            message=(f"This budget includes {p.air_cc:.3f} cc of trapped air. If "
                      f"you are modelling a badly-bled system to see the effect, "
                      f"good. If that is your real state, bleed it before you "
                      f"conclude anything about the cylinder bore."),
@@ -1397,7 +1397,7 @@ def calibrate_travel_params(*, measured_pedal_travel_mm: float,
         air_cc=p0.air_cc, free_play_mm=p0.free_play_mm,
         compliance_scale=k,
         calibrated=True,
-        fitted_to=f"{fitted_to} ({target:.0f} mm at "
+        fitted_to=f"{fitted_to} ({target:.1f} mm at "
                   f"{line_pressure_bar:.0f} bar, compliance scale x{k:.3f})")
 
 
