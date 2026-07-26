@@ -105,6 +105,7 @@ _SUBMODULES = (
     "ev_excel_roundtrip",
     "master_assembly",    # Master Assembly compilation engine (dummy/CAD blend)
     "throttle_return",         # throttle return-spring redundancy (T.6.2.4 / brake-pedal 2000 N)
+    "pedal_box",               # pedal-box packaging stack-up, balance-bar bias, pedal travel
     "throttle_return_ingest",  # bench-log / CAD cross-check ingest for return springs
     "throttle_dynamics",       # coupled return + plate-flutter screening
     "throttle_flutter_cosim",  # quasi-steady flutter co-simulation
@@ -524,6 +525,32 @@ _FROM = {
     "optimize_rotor":         ("brakes", "optimize_rotor"),
     "rotor_candidate_grid":   ("brakes", "rotor_candidate_grid"),
     "simulate_rotor_thermal": ("brakes", "simulate_rotor_thermal"),
+
+    # ---------- brakes: pedal-box packaging / balance bar / pedal travel ----------
+    "CircuitSpec":            ("pedal_box", "CircuitSpec"),
+    "StackSegment":           ("pedal_box", "StackSegment"),
+    "StackUpResult":          ("pedal_box", "StackUpResult"),
+    "ShortenOption":          ("pedal_box", "ShortenOption"),
+    "ShortenPlan":            ("pedal_box", "ShortenPlan"),
+    "BalanceBarResult":       ("pedal_box", "BalanceBarResult"),
+    "BiasAuthority":          ("pedal_box", "BiasAuthority"),
+    "TravelParams":           ("pedal_box", "TravelParams"),
+    "TravelResult":           ("pedal_box", "TravelResult"),
+    "VolumeItem":             ("pedal_box", "VolumeItem"),
+    "PedalBoxStudy":          ("pedal_box", "PedalBoxStudy"),
+    "stack_up":               ("pedal_box", "stack_up"),
+    "shorten_options":        ("pedal_box", "shorten_options"),
+    "plan_shortening":        ("pedal_box", "plan_shortening"),
+    "balance_bar_bias":       ("pedal_box", "balance_bar_bias"),
+    "bias_authority":         ("pedal_box", "bias_authority"),
+    "pedal_travel":           ("pedal_box", "pedal_travel"),
+    "line_volume_cc":         ("pedal_box", "line_volume_cc"),
+    "calibrate_travel_params": ("pedal_box", "calibrate_travel_params"),
+    "pedal_box_study":        ("pedal_box", "study"),
+    "MC_FAMILIES":            ("pedal_box", "MC_FAMILIES"),
+    "FITTING_STACK_MM":       ("pedal_box", "FITTING_STACK_MM"),
+    "HOSE_EXPANSION_CC_PER_M_PER_BAR":
+        ("pedal_box", "HOSE_EXPANSION_CC_PER_M_PER_BAR"),
     # ---------- throttle return / flutter ----------
     "ReturnResistance":       ("throttle_return", "ReturnResistance"),
     "ReturnSpring":           ("throttle_return", "ReturnSpring"),
@@ -762,6 +789,15 @@ __all__ = [
     "demo_frame", "frame_summary_for_ledger",
     "plan_panel_attachment", "harness_attachment_loads", "seat_mount_check",
     "dynamic_pressure_kPa",
+    # brakes: pedal-box packaging, balance-bar bias, pedal-travel budget
+    "pedal_box",
+    "CircuitSpec", "StackSegment", "StackUpResult", "ShortenOption",
+    "ShortenPlan", "BalanceBarResult", "BiasAuthority", "TravelParams",
+    "TravelResult", "VolumeItem", "PedalBoxStudy",
+    "stack_up", "shorten_options", "plan_shortening",
+    "balance_bar_bias", "bias_authority", "pedal_travel", "line_volume_cc",
+    "calibrate_travel_params", "pedal_box_study",
+    "MC_FAMILIES", "FITTING_STACK_MM", "HOSE_EXPANSION_CC_PER_M_PER_BAR",
     # Integrated DFMEA Risk Engine (live risk matrix + slotted-joint calculator)
     "risk_engine",
     "RiskEngine", "RiskRule", "RiskReport", "LiveRisk", "Reading",
