@@ -12543,6 +12543,380 @@ def render_process_library(subsystem_key, *, key_prefix, title=None):
             pass
 
 
+def _render_pedal_packaging(_pb, _mass):
+    """The Brakes ▸ Packaging & travel view.
+
+    Three coupled questions the rest of the Brakes tab cannot answer:
+      * the assembly is longer than the bay -- where does the length go, and which
+        levers buy it back at what cost (the "we need to shorten the blue distance,
+        any ideas?" problem, priced),
+      * a dual-MC balance bar sets bias with HARDWARE -- can these bores even reach
+        the bias the Bias & lock-up view asked for, and with trim left over,
+      * every packaging fix is paid for in pedal travel, and travel is the budget
+        nobody writes down.
+
+    `_pb` is the imported pedal_box module (verified present by the caller).
+    """
+    st.markdown(
+        '<p class="hint"><b>Does it fit, can it reach the bias, and does the pedal '
+        'stop before the floor?</b> Hydraulic sizing answers "can we make enough '
+        'torque". These three answer whether the assembly that makes it can '
+        'actually be built. They are computed together on purpose: a bigger bore '
+        'shortens the cylinder and cuts travel but raises pedal effort by the '
+        'square of the bore ratio, and a higher pedal ratio cuts effort but '
+        'multiplies travel. Nothing here is free.</p>',
+        unsafe_allow_html=True)
+
+    _pv = st.radio("View", ["Packaging stack-up", "Balance bar & bias",
+                            "Pedal travel budget"],
+                   horizontal=True, key="pedalbox_view",
+                   label_visibility="collapsed")
+
+    _uLen = units_mod.label("mm")
+    _uF = units_mod.label("N")
+
+    # Shared geometry, kept in session so the three views describe ONE pedal box.
+    _ratio = float(st.session_state.get("brake_pedal_ratio", 5.0))
+    _bore = float(st.session_state.get("brake_mc_bore_mm", 15.875))
+    _pforce = float(st.session_state.get("brake_driver_pedal_force", 500.0))
+    _rotor = float(st.session_state.get("brake_rotor_dia_mm", 220.0))
+
+    # ==================================================================== #
+    if _pv == "Packaging stack-up":
+        st.markdown(
+            '<p class="hint" style="margin:-2px 0 8px;">Every millimetre of the '
+            'installed length gets an owner. The segment CAD envelope checks most '
+            'often miss is the <b>line exit behind the cylinders</b> — the fitting '
+            'plus the bend radius the hardline needs to turn away. It is in here.</p>',
+            unsafe_allow_html=True)
+
+        _sc = st.columns(4)
+        _avail = unum(_sc[0], "Space available (mm)", 120.0, 600.0, 290.0, "mm",
+                      step=5.0, key="pbx_avail",
+                      help="Bulkhead face to where the pedal pad has to sit.")
+        _lever = unum(_sc[1], "Pedal lever, pad→pivot (mm)", 40.0, 250.0,
+                      float(st.session_state.get("pedal_lever", 90.0)), "mm",
+                      step=5.0, key="pbx_lever")
+        _rest = _sc[2].slider("Pedal rest angle (° from X)", 5, 55, 25, 1,
+                              key="pbx_rest",
+                              help="A more upright pedal projects less length "
+                                   "onto X. Cheap length, paid for in ankle angle.")
+        _tilt = _sc[3].slider("Cylinder tilt (°)", 0, 20, 0, 1, key="pbx_tilt",
+                              help="Tilted cylinders only cost cos(tilt) of their "
+                                   "length along X — but load the bore sideways.")
+
+        _sc2 = st.columns(4)
+        _mcfam = _sc2[0].selectbox("Cylinder family", list(_pb.MC_FAMILIES.keys()),
+                                   index=1, key="pbx_fam")
+        _measured = _sc2[1].number_input(
+            "Measured MC body length (mm, 0 = use catalogue)", 0.0, 250.0, 0.0,
+            step=1.0, key="pbx_mcmeas",
+            help="Put a caliper on the actual cylinder. Catalogue lengths differ "
+                 "by 20–40 mm across families — often most of the deficit.")
+        _outlet = _sc2[2].selectbox("MC outlet / line exit",
+                                    list(_pb.FITTING_STACK_MM.keys()),
+                                    key="pbx_outlet",
+                                    help="Includes the hardline bend radius, not "
+                                         "just the fitting.")
+        _push = unum(_sc2[3], "Pushrod length (mm)", 20.0, 150.0, 55.0, "mm",
+                     step=1.0, key="pbx_push")
+
+        _stack = _pb.stack_up(
+            available_mm=_avail, pedal_lever_mm=_lever, pedal_ratio=_ratio,
+            pedal_rest_angle_deg=float(_rest), tilt_deg=float(_tilt),
+            mc_family=_mcfam, mc_outlet=_outlet, pushrod_mm=_push,
+            mc_body_mm=(_measured if _measured > 0 else None),
+            mc_body_measured=bool(_measured > 0))
+
+        _m = st.columns(3)
+        umetric(_m[0], "Installed length", _stack.installed_mm, "mm")
+        umetric(_m[1], "Available", _stack.available_mm, "mm")
+        _m[2].metric("Verdict", _stack.verdict,
+                     delta=(f"{_stack.deficit_mm:+.0f} mm"
+                            if abs(_stack.deficit_mm) > 0.5 else None),
+                     delta_color="inverse" if _stack.deficit_mm > 0 else "normal")
+
+        # Where the length actually goes, longest-first.
+        _segs = sorted(_stack.segments, key=lambda s: s.length_mm)
+        _fig = go.Figure(go.Bar(
+            x=[s.length_mm for s in _segs], y=[s.name for s in _segs],
+            orientation="h", marker_color="#ff9f2e",
+            text=[f"{s.length_mm:.0f}" for s in _segs], textposition="outside"))
+        _fig.update_layout(
+            title="Where the length goes (mm)", height=360,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cdd6df", size=11),
+            margin=dict(l=0, r=40, t=36, b=0), xaxis_title="mm")
+        st.plotly_chart(_fig, width='stretch', key="pbx_stack_bar")
+
+        for _f in _stack.findings:
+            {"ok": st.success, "warning": st.warning, "fail": st.error,
+             "missing": st.info}.get(_f.severity.value, st.info)(_f.message)
+
+        # ---- the "any ideas?" menu, priced -----------------------------
+        if _stack.deficit_mm > 0:
+            st.markdown("##### Where the %d mm could come from"
+                        % round(_stack.deficit_mm))
+            _rank = st.select_slider(
+                "How much are you willing to change?",
+                options=["Adjustment only", "Parts, no performance cost",
+                         "Trade pedal force or travel", "Re-layout"],
+                value="Trade pedal force or travel", key="pbx_rank")
+            _rank_n = {"Adjustment only": 0, "Parts, no performance cost": 1,
+                       "Trade pedal force or travel": 2, "Re-layout": 3}[_rank]
+
+            _opts = _pb.shorten_options(
+                _stack, pedal_lever_mm=_lever, pedal_ratio=_ratio,
+                pedal_rest_angle_deg=float(_rest), mc_bore_mm=_bore,
+                mc_family=_mcfam, mc_outlet=_outlet, tilt_deg=float(_tilt))
+            _plan = _pb.plan_shortening(_stack, _opts, max_cost_rank=_rank_n)
+
+            if _plan.solved:
+                st.success(f"✓ {_plan.total_gain_mm:.0f} mm recovered against the "
+                           f"{_plan.deficit_mm:.0f} mm needed, using "
+                           f"{len(_plan.chosen)} change(s).")
+            else:
+                st.error(f"✗ The affordable menu returns "
+                         f"{_plan.total_gain_mm:.0f} mm of "
+                         f"{_plan.deficit_mm:.0f} mm — {_plan.remaining_mm:.0f} mm "
+                         f"still to find. Widen what you'll change, or this is a "
+                         f"chassis conversation.")
+
+            _chosen = {o.name for o in _plan.chosen}
+            for _o in _opts:
+                _tag = "✅ in the plan" if _o.name in _chosen else (
+                    "—" if _o.feasible else "🚫 not feasible")
+                with st.expander(f"{_o.gain_mm:+.0f} mm · {_o.name} · {_tag}"):
+                    st.caption(f"Cost: {_o.cost}")
+                    for _k, _v in _o.side_effects.items():
+                        st.markdown(f"- **{_k}:** {_v}")
+                    if _o.requires_recheck:
+                        st.caption("Re-check after this: "
+                                   + "; ".join(_o.requires_recheck))
+
+            for _f in _plan.findings:
+                {"ok": st.success, "warning": st.warning, "fail": st.error,
+                 "missing": st.info}.get(_f.severity.value, st.info)(_f.message)
+
+    # ==================================================================== #
+    elif _pv == "Balance bar & bias":
+        st.markdown(
+            '<p class="hint" style="margin:-2px 0 8px;">The Bias &amp; lock-up view '
+            'tells you what bias the car <i>wants</i>. This tells you what your '
+            '<b>bores and calipers can actually make</b>. The bar only trims bias '
+            '— the hardware sets it, and a bar sitting against its stop has no trim '
+            'left for a test day.</p>', unsafe_allow_html=True)
+
+        _bc = st.columns(4)
+        _bf = unum(_bc[0], "Front MC bore (mm)", 12.0, 25.4, _bore, "mm",
+                   step=0.397, key="pbx_bore_f")
+        _br = unum(_bc[1], "Rear MC bore (mm)", 12.0, 25.4, 17.5, "mm",
+                   step=0.397, key="pbx_bore_r")
+        _barL = unum(_bc[2], "Bar clevis spacing (mm)", 30.0, 120.0, 60.0, "mm",
+                     step=2.0, key="pbx_barL")
+        _target = _bc[3].slider(
+            "Target front bias (%)", 40, 85,
+            int(st.session_state.get("brake_front_bias_pct", 65)), 1,
+            key="pbx_target") / 100.0
+
+        _bc2 = st.columns(4)
+        _cpf = unum(_bc2[0], "Front caliper piston ⌀ (mm)", 15.0, 45.0, 30.0, "mm",
+                    step=1.0, key="pbx_cpf")
+        _cpr = unum(_bc2[1], "Rear caliper piston ⌀ (mm)", 15.0, 45.0, 25.0, "mm",
+                    step=1.0, key="pbx_cpr")
+        _rdf = unum(_bc2[2], "Front rotor ⌀ (mm)", 150.0, 320.0, _rotor, "mm",
+                    step=5.0, key="pbx_rdf")
+        _rdr = unum(_bc2[3], "Rear rotor ⌀ (mm)", 150.0, 320.0, 200.0, "mm",
+                    step=5.0, key="pbx_rdr")
+
+        _front = _pb.CircuitSpec(mc_bore_mm=_bf, caliper_piston_dia_mm=_cpf,
+                                 pistons_per_side=2, opposed=True,
+                                 rotor_dia_mm=_rdf, n_corners=2)
+        _rear = _pb.CircuitSpec(mc_bore_mm=_br, caliper_piston_dia_mm=_cpr,
+                                pistons_per_side=1, opposed=True,
+                                rotor_dia_mm=_rdr, n_corners=2)
+
+        _auth = _pb.bias_authority(pedal_force_N=_pforce, pedal_ratio=_ratio,
+                                   front=_front, rear=_rear,
+                                   bar_length_mm=_barL, target_bias=_target)
+
+        _m = st.columns(4)
+        _m[0].metric("Reachable band",
+                     f"{_auth.bias_min*100:.0f}–{_auth.bias_max*100:.0f}%")
+        _m[1].metric("Centred bar", f"{_auth.bias_at_centre*100:.1f}%")
+        _m[2].metric("Target reachable?",
+                     "Yes" if _auth.target_reachable else "No",
+                     delta=(f"at {_auth.offset_for_target_mm:+.1f} mm"
+                            if _auth.target_reachable else "change a bore"),
+                     delta_color="normal" if _auth.target_reachable else "inverse")
+        _m[3].metric("Bias per adjuster turn",
+                     f"{_auth.bias_per_turn*100:.2f}%",
+                     help="What the driver gets from one turn between runs.")
+
+        _xs = [s["offset_mm"] for s in _auth.sweep]
+        _ys = [s["bias_front"]*100 for s in _auth.sweep]
+        _figb = go.Figure()
+        _figb.add_trace(go.Scatter(x=_xs, y=_ys, mode="lines", name="achievable",
+                                   line=dict(color="#ff9f2e", width=3)))
+        _figb.add_hline(y=_target*100, line_dash="dash", line_color="#5ad17a",
+                        annotation_text=f"target {_target*100:.0f}%")
+        if _auth.target_reachable:
+            _figb.add_vline(x=_auth.offset_for_target_mm, line_dash="dot",
+                            line_color="#5ad17a")
+        _figb.update_layout(
+            title="Front bias vs balance-bar position", height=320,
+            xaxis_title="bar offset toward the front cylinder (mm)",
+            yaxis_title="front torque bias (%)",
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cdd6df", size=11),
+            margin=dict(l=0, r=0, t=36, b=0), showlegend=False)
+        st.plotly_chart(_figb, width='stretch', key="pbx_bias_curve")
+
+        for _f in _auth.findings:
+            {"ok": st.success, "warning": st.warning, "fail": st.error,
+             "missing": st.info}.get(_f.severity.value, st.info)(_f.message)
+
+        _at = _pb.balance_bar_bias(
+            pedal_force_N=_pforce, pedal_ratio=_ratio, front=_front, rear=_rear,
+            bar_length_mm=_barL,
+            bar_offset_mm=(_auth.offset_for_target_mm
+                           if _auth.target_reachable else 0.0))
+        _p = st.columns(4)
+        umetric(_p[0], "Front line pressure", _at.pressure_front_bar, "bar")
+        umetric(_p[1], "Rear line pressure", _at.pressure_rear_bar, "bar")
+        umetric(_p[2], "Front axle torque", _at.torque_front_Nm, "N·m")
+        umetric(_p[3], "Rear axle torque", _at.torque_rear_Nm, "N·m")
+        st.caption(f"At {units_mod.from_metric(_pforce,'N'):.0f} {_uF} of pedal "
+                   f"force through a {_ratio:.2f} pedal ratio"
+                   + (f", bar at {_auth.offset_for_target_mm:+.2f} mm."
+                      if _auth.target_reachable else ", bar centred."))
+
+        # Carry the achieved pressures forward so the travel view uses the
+        # pressure this hardware ACTUALLY makes, not a round number.
+        st.session_state["pbx_press_f"] = float(_at.pressure_front_bar)
+        st.session_state["pbx_press_r"] = float(_at.pressure_rear_bar)
+
+    # ==================================================================== #
+    else:   # Pedal travel budget
+        st.markdown(
+            '<p class="hint" style="margin:-2px 0 8px;">Every part of the circuit '
+            'swallows fluid before the pads bite: knockback, pad squash, caliper '
+            'spread, hose stretch, the fluid itself. Add it up, divide by the '
+            'cylinder area, multiply by the pedal ratio — that is your travel. This '
+            'is also what <b>"brake lines mapped and calculated"</b> needs: routed '
+            'length is fluid you have to move.</p>', unsafe_allow_html=True)
+
+        _tc = st.columns(4)
+        _tbore = unum(_tc[0], "MC bore (mm)", 12.0, 25.4, _bore, "mm", step=0.397,
+                      key="pbx_t_bore")
+        _tcp = unum(_tc[1], "Caliper piston ⌀ (mm)", 15.0, 45.0, 30.0, "mm",
+                    step=1.0, key="pbx_t_cp")
+        _tnp = _tc[2].number_input("Pistons per side", 1, 4, 2, step=1,
+                                   key="pbx_t_np")
+        _topp = _tc[3].checkbox("Opposed-piston caliper", value=True,
+                                key="pbx_t_opp",
+                                help="In an opposed caliper EVERY piston moves, so "
+                                     "the fluid demand is double a floating "
+                                     "caliper's — while the clamp force is the same.")
+
+        _tc2 = st.columns(4)
+        _those = _tc2[0].selectbox(
+            "Flexible hose type",
+            ["PTFE braided (steel)", "rubber hose"], key="pbx_t_hose")
+        _thoseL = _tc2[1].number_input("Flex hose per corner (m)", 0.1, 2.0, 0.6,
+                                       step=0.05, key="pbx_t_hoseL")
+        _thardL = _tc2[2].number_input("Routed hardline (m)", 0.2, 8.0, 1.8,
+                                       step=0.1, key="pbx_t_hardL",
+                                       help="Measure the ROUTED length off the CAD, "
+                                            "not the straight-line distance.")
+        _tair = _tc2[3].number_input("Trapped air (cc)", 0.0, 5.0, 0.0, step=0.1,
+                                     key="pbx_t_air",
+                                     help="Set >0 to see what a bad bleed costs. "
+                                          "It dominates everything else.")
+
+        _tc3 = st.columns(3)
+        _tavail = unum(_tc3[0], "Available pedal travel (mm)", 20.0, 150.0, 60.0,
+                       "mm", step=5.0, key="pbx_t_avail")
+        _tstroke = unum(_tc3[1], "MC stroke limit (mm)", 8.0, 40.0, 25.4, "mm",
+                        step=0.5, key="pbx_t_stroke")
+        _tpress = _tc3[2].number_input(
+            "Line pressure (bar)", 10.0, 150.0,
+            float(st.session_state.get("pbx_press_f", 60.0)), step=5.0,
+            key="pbx_t_press",
+            help="Pre-filled from the Balance bar view so travel is computed at "
+                 "the pressure your hardware actually makes.")
+
+        _circ = _pb.CircuitSpec(mc_bore_mm=_tbore, caliper_piston_dia_mm=_tcp,
+                                pistons_per_side=int(_tnp), opposed=bool(_topp),
+                                rotor_dia_mm=_rotor, n_corners=2)
+
+        # A measured pedal turns every trade below from representative into
+        # calibrated. One number, one bench session.
+        _tp = _pb.TravelParams(hose_type=_those, air_cc=float(_tair))
+        with st.expander("Calibrate against one bench measurement "
+                         "(turns this from representative into yours)"):
+            st.markdown(
+                '<p class="hint" style="margin:-2px 0 8px;">Pump the pedal to a firm '
+                'stop at a known line pressure and measure the travel at the pad. '
+                'One measurement cannot separate hose stretch from pad squash — it '
+                '<i>can</i> stop the total being a guess.</p>',
+                unsafe_allow_html=True)
+            _meas = st.number_input("Measured pedal travel at the pad (mm, 0 = skip)",
+                                    0.0, 200.0, 0.0, step=1.0, key="pbx_t_meas")
+            if _meas > 0:
+                try:
+                    _tp = _pb.calibrate_travel_params(
+                        measured_pedal_travel_mm=float(_meas), circuit=_circ,
+                        line_pressure_bar=float(_tpress), pedal_ratio=_ratio,
+                        base=_tp, hose_length_m=float(_thoseL),
+                        hardline_length_m=float(_thardL))
+                    st.success(f"Calibrated: {_tp.fitted_to}")
+                except ValueError as _ce:
+                    st.warning(str(_ce))
+
+        _tr = _pb.pedal_travel(
+            circuit=_circ, line_pressure_bar=float(_tpress), pedal_ratio=_ratio,
+            hose_length_m=float(_thoseL), hardline_length_m=float(_thardL),
+            params=_tp, available_travel_mm=_tavail,
+            mc_stroke_limit_mm=_tstroke)
+
+        _m = st.columns(4)
+        umetric(_m[0], "Fluid demanded", _tr.total_cc, "", fmt="{:.2f}")
+        _m[0].caption("cc")
+        umetric(_m[1], "MC stroke", _tr.mc_stroke_mm, "mm", fmt="{:.1f}")
+        umetric(_m[2], "Travel at the pad", _tr.pedal_travel_mm, "mm")
+        _m[3].metric("Verdict", _tr.verdict,
+                     delta=f"{_tr.stroke_utilisation*100:.0f}% of stroke",
+                     delta_color=("normal" if _tr.verdict == "PASS"
+                                  else "inverse"))
+
+        _items = sorted(_tr.items, key=lambda i: i.volume_cc)
+        _figt = go.Figure(go.Bar(
+            x=[i.volume_cc for i in _items], y=[i.name for i in _items],
+            orientation="h",
+            marker_color=["#ff5a52" if i.volume_cc == _items[-1].volume_cc
+                          else "#ff9f2e" for i in _items],
+            text=[f"{i.volume_cc:.3f}" for i in _items], textposition="outside"))
+        _figt.update_layout(
+            title="Where the fluid goes (cc) — go after the top bar first",
+            height=340, paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#cdd6df", size=11),
+            margin=dict(l=0, r=50, t=36, b=0), xaxis_title="cc")
+        st.plotly_chart(_figt, width='stretch', key="pbx_travel_bar")
+
+        for _f in _tr.findings:
+            {"ok": st.success, "warning": st.warning, "fail": st.error,
+             "missing": st.info}.get(_f.severity.value, st.info)(_f.message)
+
+        with st.expander("What each consumer is, and why it is that size"):
+            for _i in sorted(_tr.items, key=lambda x: -x.volume_cc):
+                st.markdown(f"**{_i.name}** — {_i.volume_cc:.3f} cc"
+                            + ("  ·  scales with pressure" if _i.pressure_dependent
+                               else "  ·  fixed geometry"))
+                if _i.note:
+                    st.caption(_i.note)
+
+
 def _render_rotor_thermal(_bt, _mass, kin):
     """The Brakes ▸ Rotor thermal view. `_bt` is the imported brake_thermal
     module (already verified present by the caller), `_mass` the live car mass,
@@ -18884,6 +19258,7 @@ with tab_brake:
     _bview = feature_menu("brakes",
                           ["Bias & lock-up", "Hydraulic sizing",
                            "Bolt & bracket FoS", "Pedal box & throttle",
+                           "Packaging & travel",
                            "Rotor thermal", "Documentation"],
                           title="Brakes tools",
                           descriptions={
@@ -18891,6 +19266,7 @@ with tab_brake:
                               "Hydraulic sizing": "Master cylinder, pedal ratio, line pressure",
                               "Bolt & bracket FoS": "Mount bolt + bracket safety factors",
                               "Pedal box & throttle": "Pedal geometry & throttle bench",
+                              "Packaging & travel": "Does it fit? Balance-bar bias, pedal travel",
                               "Rotor thermal": "Rotor temp, optimiser, mesh & DXF export",
                               "Documentation": "Report, verdict, export for brakes"})
 
@@ -19032,6 +19408,8 @@ with tab_brake:
         _mc_dia = unum(hc[2], "Master cyl. ⌀ (mm)", 12, 25, 15.875, "mm", step=0.397,
                        help="Smaller bore = more line pressure for the same pedal force, "
                             "but more pedal travel. 5/8\" = 15.875 mm is common.")
+        # Carried so Packaging & travel describes the SAME cylinder, not a second one.
+        st.session_state["brake_mc_bore_mm"] = float(_mc_dia)
         _pad_mu = hc[3].number_input("Pad friction μ", 0.3, 0.6, value=0.45, step=0.01,
                                      help="Brake pad coefficient of friction against the rotor.")
 
@@ -20490,6 +20868,22 @@ with tab_brake:
                     st.session_state.pop("_u_brake_bolt_extN", None)
                     st.success("Seeded. Open Bolt & bracket FoS ▸ Bolt preload & torque "
                                "to spec the pedal-box mount bolts against this load.")
+
+    # =================================================================== #
+    elif _bview == "Packaging & travel":
+        try:
+            import suspension.pedal_box as _pb
+        except Exception:
+            _pb = None
+        if _pb is None:
+            st.info("The pedal-box packaging model isn't available in this "
+                    "deployment yet — the `suspension/pedal_box.py` module hasn't "
+                    "been deployed. The rest of the Brakes workspace works; once "
+                    "that file is pushed, this view will compute the longitudinal "
+                    "stack-up, the balance-bar bias authority and the pedal-travel "
+                    "budget.")
+        else:
+            _render_pedal_packaging(_pb, float(_mass))
 
     # =================================================================== #
     elif _bview == "Rotor thermal":

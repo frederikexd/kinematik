@@ -52,3 +52,6 @@ supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseSto
 vosk>=0.3.45
 imageio-ffmpeg>=0.4.9
 faster-whisper>=1.0  # speech-to-text (faster than openai-whisper, no model download needed)
+google-api-python-client>=2.0   # Google Drive export of stamped reports (drive_export.py)
+google-auth>=2.0                # service-account / OAuth credentials for Drive
+google-auth-oauthlib>=1.0       # per-user OAuth consent flow for Drive export
