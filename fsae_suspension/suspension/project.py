@@ -46,6 +46,28 @@ DEFAULT_PROJECT = "project.json"
 # --------------------------------------------------------------------------- #
 #  Records
 # --------------------------------------------------------------------------- #
+def _serialize_reports_safe(reports):
+    """Serialize report metadata for the project blob. Lazy-imports report_store
+    so project.py stays importable even if that module is absent; never raises,
+    so a report-serialisation problem can't block saving the rest of the project."""
+    try:
+        from .report_store import serialize_reports
+        return serialize_reports(reports)
+    except Exception:
+        # tolerate already-dict rows or a missing module: keep dicts, drop the rest
+        return [r for r in (reports or []) if isinstance(r, dict)]
+
+
+def _deserialize_reports_safe(raw):
+    """Restore report metadata from the project blob. Never raises — a bad or
+    older-schema row is skipped rather than crashing the whole project load."""
+    try:
+        from .report_store import deserialize_reports
+        return deserialize_reports(raw)
+    except Exception:
+        return []
+
+
 @dataclass
 class WeightItem:
     team: str
@@ -438,7 +460,7 @@ class ProjectStore:
         self.decisions: list[Decision] = []
         self.notes: list[Note] = []
         self.cad_files: list[CADFile] = []
-        # Integration ledger (cross-team declarations) — persisted as the raw
+        self.reports: list = []          # stored calculation-report metadata        # Integration ledger (cross-team declarations) — persisted as the raw
         # dict the app keeps in session_state, so this module stays numpy-free
         # and the blob is exactly what the tabs read/write.
         self.ledger: dict = {}
@@ -495,6 +517,7 @@ class ProjectStore:
             "geometry": self.geometry.as_dict() if self.geometry else {},
             "board": self.board.as_dict() if self.board else {},
             "harness": self.harness.as_dict() if getattr(self, "harness", None) else {},
+            "reports": _serialize_reports_safe(getattr(self, "reports", [])),
             "ev_excel_params": getattr(self, "ev_excel_params", {}),
             "ledger": getattr(self, "ledger", {}) or {},
             "updated": _dt.datetime.now().isoformat(timespec="seconds"),
@@ -510,6 +533,7 @@ class ProjectStore:
         self.decisions = [Decision(**x) for x in d.get("decisions", [])]
         self.notes = [Note(**n) for n in d.get("notes", [])]
         self.cad_files = [CADFile(**c) for c in d.get("cad_files", [])]
+        self.reports = _deserialize_reports_safe(d.get("reports", []))
         geom = d.get("geometry")
         if geom:
             from .mountpoints import GeometryLedger
