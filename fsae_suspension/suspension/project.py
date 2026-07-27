@@ -1004,6 +1004,7 @@ def build_handover_markdown(store: ProjectStore,
 
 def render_pdf(markdown_text: str, out_path: str):
     """Render the handover Markdown to a clean PDF via reportlab."""
+    import re as _re
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import mm
@@ -1020,6 +1021,30 @@ def render_pdf(markdown_text: str, out_path: str):
 
     flow = []
     table_buf = []
+
+    def _md_to_rl(text: str) -> str:
+        """Convert a single line of Markdown inline syntax to ReportLab XML.
+
+        Safe order of operations:
+          1. Escape bare & so it doesn't conflict with XML entities.
+          2. Escape bare < and > that are NOT part of our own tags, so
+             filenames like .kicad_pcb and angle-bracket expressions don't
+             inject broken XML into the Paragraph parser.
+          3. Apply **bold** and _italic_ using word-boundary-aware regexes
+             so underscores INSIDE words (e.g. kicad_pcb, file_name) are
+             never mistaken for italic markers.
+        """
+        # 1. Escape & first (must come before we introduce any & via entities)
+        text = text.replace("&", "&amp;")
+        # 2. Escape bare < and > (ReportLab's Paragraph parser chokes on them)
+        text = text.replace("<", "&lt;").replace(">", "&gt;")
+        # 3. Bold: **text** — greedy enough for multi-word spans
+        text = _re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+        # 4. Italic: _text_ only when the underscores sit at word boundaries,
+        #    i.e. NOT preceded/followed by a word character.  This skips
+        #    snake_case identifiers and file extensions like .kicad_pcb.
+        text = _re.sub(r'(?<!\w)_([^_]+?)_(?!\w)', r'<i>\1</i>', text)
+        return text
 
     def flush_table():
         nonlocal table_buf
@@ -1051,23 +1076,17 @@ def render_pdf(markdown_text: str, out_path: str):
         if not s:
             flow.append(Spacer(1, 4))
         elif s.startswith("# "):
-            flow.append(Paragraph(s[2:], h1))
+            flow.append(Paragraph(_md_to_rl(s[2:]), h1))
         elif s.startswith("## "):
-            flow.append(Paragraph(s[3:], h2))
+            flow.append(Paragraph(_md_to_rl(s[3:]), h2))
         elif s.startswith("### "):
-            flow.append(Paragraph(s[4:].replace("  ", ""), h3))
+            flow.append(Paragraph(_md_to_rl(s[4:].replace("  ", "")), h3))
         elif s.startswith("- "):
-            txt = s[2:].replace("**", "<b>", 1)
-            txt = txt.replace("**", "</b>", 1) if "<b>" in txt else txt
-            flow.append(Paragraph("• " + txt, body))
+            flow.append(Paragraph("• " + _md_to_rl(s[2:]), body))
         elif s.startswith("---"):
             flow.append(Spacer(1, 6))
         else:
-            txt = s.replace("**", "<b>", 1)
-            txt = txt.replace("**", "</b>", 1) if "<b>" in txt else txt
-            txt = txt.replace("_", "<i>", 1)
-            txt = txt.replace("_", "</i>", 1) if "<i>" in txt else txt
-            flow.append(Paragraph(txt, body))
+            flow.append(Paragraph(_md_to_rl(s), body))
     flush_table()
 
     doc = SimpleDocTemplate(out_path, pagesize=A4,
