@@ -638,6 +638,424 @@ if not getattr(st, "_ax_spinner_patched", False):
     st.spinner = _ax_spinner
     st._ax_spinner_patched = True
 
+
+# --------------------------------------------------------------------------- #
+#  Generic RESULT + VERDICT capture.
+#
+#  The auto-documentation bridge above logs that a feature ran ("Produced a
+#  result"). That is enough to stop a feature's doc panel reading "nothing
+#  captured", but it carries no NUMBERS, so every subsystem report except brakes
+#  was a list of verbs with no findings in it.
+#
+#  Rather than hand-wire ~38 features (unmaintainable, and it would drift the
+#  moment anyone adds a tool), this captures the two things every feature already
+#  renders and that genuinely ARE its headline output:
+#
+#    * st.metric  -> the numbers a view puts at the top. label + value, verbatim
+#                    as the user saw them, so units are already correct.
+#    * success / warning / error -> the verdict banners. These are how every
+#                    module surfaces its Findings, so capturing them captures the
+#                    PASS/WARN/FAIL story without knowing any feature's physics.
+#
+#  Attribution uses `_ax_rendering_tab` (set per tab body in _TabOpenProxy), not
+#  `_ax_last_active_tab`, because every tab body runs on every script-run.
+#  Capture is gated on the feature having been genuinely OPENED this session
+#  (`_ax_open_<feature>`), so tabs whose bodies execute invisibly in the
+#  background never fabricate content the user never looked at.
+#
+#  Fully guarded and capped. Documentation must never break — or bloat — a
+#  feature.
+# --------------------------------------------------------------------------- #
+_FEATURE_RESULTS_KEY = "_kinematik_feature_results"
+_MAX_CAPTURED_METRICS = 40
+_MAX_CAPTURED_VERDICTS = 24
+_MAX_CAPTURED_ARTIFACTS = 24
+_VERDICT_MIN_CHARS = 12          # skip one-word chrome like "Saved"
+_VERDICT_MAX_CHARS = 400
+
+# The container class, captured at patch time. Used to tell a bound-class call
+# (`col.plotly_chart(fig)` -> args are (self, fig)) from an already-bound module
+# call (`st.plotly_chart(fig)` -> args are (fig,)) for wrappers whose first real
+# argument is an OBJECT rather than a string, where the string heuristic used by
+# the metric/alert wrappers cannot apply.
+_AX_DG_CLASS = None
+
+
+def _ax_positional_args_obj(args):
+    """Drop a leading container when the first real argument isn't a string."""
+    _a = list(args)
+    try:
+        if _a and _AX_DG_CLASS is not None and isinstance(_a[0], _AX_DG_CLASS):
+            return _a[1:]
+        # Fallback when the class isn't resolvable: a Streamlit container has no
+        # figure/table-ish surface, so if the first arg looks like neither a
+        # figure nor tabular data, treat it as `self`.
+        if _a and not any(hasattr(_a[0], _attr) for _attr in
+                          ("data", "layout", "shape", "columns", "to_dict")):
+            return _a[1:]
+    except Exception:
+        pass
+    return _a
+
+
+def _ax_capture_feature():
+    """The feature whose body is rendering right now, if it may be captured."""
+    try:
+        _f = st.session_state.get("_ax_rendering_tab")
+        if not _f:
+            return None
+        # Only features the user was actually AT this session. Every tab body
+        # executes on every run; without this, a background tab would silently
+        # fill the report with numbers nobody looked at.
+        #
+        # Two independent signals, either sufficient:
+        #   _ax_open_<f>    — the tab was opened. Derived from the container's
+        #                     `.open`, which is a real-browser signal only.
+        #   _ax_engaged_<f> — the user touched a widget in this tab. Comes from
+        #                     the widget wrappers, a completely different
+        #                     mechanism.
+        # Requiring only the first would mean that if `.open` is ever
+        # unavailable — an older Streamlit, a deployment where the category
+        # container never reports open — NOTHING captures anywhere and every
+        # document silently goes empty again. Two mechanisms, either of which
+        # proves presence, is what stops one upstream quirk taking documentation
+        # offline app-wide.
+        if not (st.session_state.get(f"_ax_open_{_f}")
+                or st.session_state.get(f"_ax_engaged_{_f}")):
+            return None
+        return str(_f)
+    except Exception:
+        return None
+
+
+def _ax_store(feature, bucket):
+    _all = st.session_state.setdefault(_FEATURE_RESULTS_KEY, {})
+    _feat = _all.setdefault(str(feature), {"metrics": [], "verdicts": []})
+    return _feat.setdefault(bucket, [])
+
+
+def capture_metric(label, value, *, feature=None, delta=None):
+    """Record one headline number for a feature's documentation. Never raises.
+
+    Deduped by label with last-value-wins, because a metric is re-rendered on
+    every rerun and the report wants the CURRENT value, not a history of every
+    intermediate one the user scrubbed through on a slider.
+    """
+    try:
+        _f = feature or _ax_capture_feature()
+        if not _f:
+            return
+        _lbl = str(label).strip()
+        _val = str(value).strip()
+        if not _lbl or not _val:
+            return
+        _rows = _ax_store(_f, "metrics")
+        for _r in _rows:
+            if _r.get("label") == _lbl:
+                _r["value"] = _val
+                if delta:
+                    _r["delta"] = str(delta)
+                return
+        if len(_rows) >= _MAX_CAPTURED_METRICS:
+            return
+        _row = {"label": _lbl, "value": _val}
+        if delta:
+            _row["delta"] = str(delta)
+        _rows.append(_row)
+    except Exception:
+        pass
+
+
+def capture_verdict(text, severity="info", *, feature=None):
+    """Record one verdict/finding banner for a feature's documentation.
+
+    Deduped on the text itself: a banner re-renders every run, and the report
+    wants the set of live findings, not one row per rerun.
+    """
+    try:
+        _f = feature or _ax_capture_feature()
+        if not _f:
+            return
+        _t = " ".join(str(text).split())
+        if not (_VERDICT_MIN_CHARS <= len(_t) <= _VERDICT_MAX_CHARS):
+            return
+        if _t.startswith("<") or "</" in _t:      # raw HTML chrome, not a finding
+            return
+        _rows = _ax_store(_f, "verdicts")
+        for _r in _rows:
+            if _r.get("text") == _t:
+                _r["severity"] = str(severity)
+                return
+        if len(_rows) >= _MAX_CAPTURED_VERDICTS:
+            return
+        _rows.append({"text": _t, "severity": str(severity)})
+    except Exception:
+        pass
+
+
+def capture_artifact(kind, title, detail="", *, feature=None):
+    """Record that a feature produced a chart / table / other visual result.
+
+    Many features' real output is a plot or a table, not a metric — a lap-time
+    trace, a GG-V envelope, a tyre curve, a BOM. Those documented as "Ran a
+    calculation" and nothing else. This records WHAT was produced and its shape
+    (axes, series, row/column counts), which is what a design-review reader needs
+    to know a plot exists and what it showed. The pixels themselves aren't
+    captured — a Markdown report can't hold them — but "Lap time vs corner radius,
+    3 series" is far better than silence.
+
+    Deduped on (kind, title): a chart re-renders on every rerun.
+    """
+    try:
+        _f = feature or _ax_capture_feature()
+        if not _f:
+            return
+        _t = " ".join(str(title).split())[:160]
+        if not _t:
+            return
+        _rows = _ax_store(_f, "artifacts")
+        for _r in _rows:
+            if _r.get("kind") == kind and _r.get("title") == _t:
+                if detail:
+                    _r["detail"] = str(detail)[:200]
+                return
+        if len(_rows) >= _MAX_CAPTURED_ARTIFACTS:
+            return
+        _rows.append({"kind": str(kind), "title": _t,
+                      "detail": str(detail)[:200] if detail else ""})
+    except Exception:
+        pass
+
+
+def _ax_plot_summary(fig):
+    """(title, 'x vs y · N series') for a plotly figure, best-effort.
+
+    Reads only public attributes and tolerates every shape a caller might pass
+    (go.Figure, a dict spec, or something else entirely), because this runs
+    inside a render path that must never fail.
+    """
+    _title = _x = _y = ""
+    _n = 0
+    try:
+        _lay = getattr(fig, "layout", None)
+        if _lay is None and isinstance(fig, dict):
+            _lay = fig.get("layout")
+        if _lay is not None:
+            _t = getattr(_lay, "title", None)
+            if _t is None and isinstance(_lay, dict):
+                _t = _lay.get("title")
+            _title = (getattr(_t, "text", None)
+                      or (_t.get("text") if isinstance(_t, dict) else None)
+                      or (_t if isinstance(_t, str) else "") or "")
+            for _ax, _dst in (("xaxis", "x"), ("yaxis", "y")):
+                _a = getattr(_lay, _ax, None)
+                if _a is None and isinstance(_lay, dict):
+                    _a = _lay.get(_ax)
+                if _a is None:
+                    continue
+                _at = getattr(_a, "title", None)
+                if _at is None and isinstance(_a, dict):
+                    _at = _a.get("title")
+                _txt = (getattr(_at, "text", None)
+                        or (_at.get("text") if isinstance(_at, dict) else None)
+                        or (_at if isinstance(_at, str) else "") or "")
+                if _dst == "x":
+                    _x = _txt
+                else:
+                    _y = _txt
+    except Exception:
+        pass
+    try:
+        _data = getattr(fig, "data", None)
+        if _data is None and isinstance(fig, dict):
+            _data = fig.get("data")
+        _n = len(_data or ())
+    except Exception:
+        _n = 0
+    _bits = []
+    # Only describe the axes we actually know. Emitting "? vs cost ($)" puts a
+    # question mark in a design-review document, which reads like a defect
+    # rather than a chart that simply didn't label one axis.
+    if _y and _x:
+        _bits.append(f"{_y} vs {_x}")
+    elif _y or _x:
+        _bits.append(f"{_y or _x} axis")
+    if _n:
+        _bits.append(f"{_n} series" if _n != 1 else "1 series")
+    _title = (_title or "").strip()
+    if not _title:
+        # An untitled plot still evidences work. Prefer naming it by its axes —
+        # "toe vs travel" is a real description; "(untitled chart)" is not.
+        _title = (f"{_y} vs {_x}" if (_y and _x) else (_y or _x or ""))
+    return _title, " · ".join(_bits)
+
+
+def _ax_wrap_chart(_orig):
+    def _wrapped(*args, **kwargs):
+        try:
+            _a = _ax_positional_args_obj(args)
+            _fig = kwargs.get("figure_or_data", _a[0] if _a else None)
+            if _fig is not None:
+                _title, _shape = _ax_plot_summary(_fig)
+                # A plot with neither a title nor labelled axes still evidences
+                # that work was done, so record it rather than dropping it.
+                if _title or _shape:
+                    capture_artifact("chart", _title or "(untitled chart)",
+                                     _shape)
+        except Exception:
+            pass
+        return _orig(*args, **kwargs)
+    return _wrapped
+
+
+def _ax_plural(n, word):
+    """'1 row' / '2 rows' — a report that says '1 rows' looks unproofed."""
+    return f"{n} {word}" if n == 1 else f"{n} {word}s"
+
+
+def _ax_table_summary(data):
+    """'R rows x C cols' plus a few column names, for a dataframe-ish object."""
+    try:
+        _shape = getattr(data, "shape", None)
+        _cols = getattr(data, "columns", None)
+        if _shape and len(_shape) == 2:
+            _bits = f"{_ax_plural(_shape[0], 'row')} x " \
+                    f"{_ax_plural(_shape[1], 'col')}"
+        elif isinstance(data, (list, tuple)):
+            _bits = _ax_plural(len(data), "row")
+        elif isinstance(data, dict):
+            _bits = _ax_plural(len(data), "column")
+        else:
+            return ""
+        if _cols is not None:
+            try:
+                _names = [str(c) for c in list(_cols)[:5]]
+                if _names:
+                    _bits += " · " + ", ".join(_names)
+                    if len(list(_cols)) > 5:
+                        _bits += ", …"
+            except Exception:
+                pass
+        return _bits
+    except Exception:
+        return ""
+
+
+def _ax_wrap_table(_orig, kind="table"):
+    def _wrapped(*args, **kwargs):
+        try:
+            _a = _ax_positional_args_obj(args)
+            _data = kwargs.get("data", _a[0] if _a else None)
+            if _data is not None:
+                _sum = _ax_table_summary(_data)
+                if _sum:
+                    capture_artifact(kind, _sum)
+        except Exception:
+            pass
+        return _orig(*args, **kwargs)
+    return _wrapped
+
+
+def get_feature_results(feature):
+    """{'metrics': [...], 'verdicts': [...], 'artifacts': [...]} for a feature.
+
+    Always returns all three buckets, so callers can index them unconditionally
+    and a session recorded before artifacts existed still reads cleanly.
+    """
+    _empty = {"metrics": [], "verdicts": [], "artifacts": []}
+    try:
+        _got = dict(st.session_state.get(_FEATURE_RESULTS_KEY, {}).get(
+            str(feature), {}))
+        for _k, _v in _empty.items():
+            _got.setdefault(_k, list(_v))
+        return _got
+    except Exception:
+        return {"metrics": [], "verdicts": [], "artifacts": []}
+
+
+def _ax_positional_args(args):
+    """Drop a leading `self` when a wrapper is invoked through the class.
+
+    `col.metric(...)` resolves via DeltaGenerator so args are (self, label, ...),
+    while `st.metric(...)` is already bound so args are (label, ...). The label
+    is ALWAYS a string in both shapes, so a non-string first argument is the
+    container -- a far sturdier test than sniffing a private Streamlit
+    attribute, which would silently stop matching on an upgrade and take the
+    whole capture layer quietly offline.
+    """
+    _a = list(args)
+    if _a and not isinstance(_a[0], str):
+        _a = _a[1:]
+    return _a
+
+
+def _ax_wrap_metric(_orig):
+    def _wrapped(*args, **kwargs):
+        try:
+            # signature: metric(label, value, delta=None, ...)
+            _a = _ax_positional_args(args)
+            _lbl = kwargs.get("label", _a[0] if len(_a) > 0 else None)
+            _val = kwargs.get("value", _a[1] if len(_a) > 1 else None)
+            _dlt = kwargs.get("delta", _a[2] if len(_a) > 2 else None)
+            if _lbl is not None and _val is not None:
+                capture_metric(_lbl, _val, delta=_dlt)
+        except Exception:
+            pass
+        return _orig(*args, **kwargs)
+    return _wrapped
+
+
+def _ax_wrap_alert(_orig, severity):
+    def _wrapped(*args, **kwargs):
+        try:
+            _a = _ax_positional_args(args)
+            _body = kwargs.get("body", _a[0] if _a else None)
+            if isinstance(_body, str):
+                capture_verdict(_body, severity)
+        except Exception:
+            pass
+        return _orig(*args, **kwargs)
+    return _wrapped
+
+
+if not getattr(st, "_ax_capture_patched", False):
+    try:
+        from streamlit.delta_generator import DeltaGenerator as _AxCapDG
+
+        _AX_DG_CLASS = _AxCapDG
+
+        if hasattr(_AxCapDG, "metric"):
+            _AxCapDG.metric = _ax_wrap_metric(_AxCapDG.metric)
+        if hasattr(st, "metric"):
+            st.metric = _ax_wrap_metric(st.metric)
+        for _nm, _sev in (("success", "ok"), ("warning", "warning"),
+                          ("error", "fail")):
+            if hasattr(_AxCapDG, _nm):
+                setattr(_AxCapDG, _nm,
+                        _ax_wrap_alert(getattr(_AxCapDG, _nm), _sev))
+            # st.<alert> is bound at import time, so patch the module too —
+            # this is the same reason unit conversion had to be explicit.
+            if hasattr(st, _nm):
+                setattr(st, _nm, _ax_wrap_alert(getattr(st, _nm), _sev))
+        # Charts and tables: for many features the plot IS the result, and a
+        # document that omits it reads as though nothing was produced.
+        # NB plotly_chart is already wrapped upstream by _ax_wrap_result (for
+        # completion telemetry + the plot-key leak fix); wrapping the wrapper is
+        # fine — each layer does its own guarded work and delegates.
+        if hasattr(_AxCapDG, "plotly_chart"):
+            _AxCapDG.plotly_chart = _ax_wrap_chart(_AxCapDG.plotly_chart)
+        if hasattr(st, "plotly_chart"):
+            st.plotly_chart = _ax_wrap_chart(st.plotly_chart)
+        for _nm, _kind in (("dataframe", "table"), ("table", "table")):
+            if hasattr(_AxCapDG, _nm):
+                setattr(_AxCapDG, _nm,
+                        _ax_wrap_table(getattr(_AxCapDG, _nm), _kind))
+            if hasattr(st, _nm):
+                setattr(st, _nm, _ax_wrap_table(getattr(st, _nm), _kind))
+        st._ax_capture_patched = True
+    except Exception:
+        pass       # capture is best-effort; never block the app
+
 # --------------------------------------------------------------------------- #
 #  Cached compute layer.
 #
@@ -7504,7 +7922,7 @@ class _TabOpenProxy:
     they're already on (which would inflate "opens" into "every click while
     on this tab")."""
 
-    __slots__ = ("_container", "_feature")
+    __slots__ = ("_container", "_feature", "_prev_render")
 
     def __init__(self, container, feature: str):
         object.__setattr__(self, "_container", container)
@@ -7528,6 +7946,19 @@ class _TabOpenProxy:
                     pass  # telemetry must never break the tab itself
         if _is_active:
             st.session_state["_ax_last_active_tab"] = _key
+        # Attribution for the generic result/verdict capture layer. EVERY tab
+        # body executes on EVERY script-run, so "_ax_last_active_tab" (which
+        # only updates for the visible tab) would credit all 38 tabs' metrics to
+        # whichever tab the user happens to be on. This records the tab actually
+        # RENDERING right now, and __exit__ restores the previous one so nested
+        # or sequential tab bodies each get their own numbers.
+        try:
+            object.__setattr__(
+                self, "_prev_render",
+                st.session_state.get("_ax_rendering_tab"))
+            st.session_state["_ax_rendering_tab"] = _key
+        except Exception:
+            pass
         return self._container.__enter__()
 
     def __exit__(self, *exc):
@@ -7558,6 +7989,13 @@ class _TabOpenProxy:
                 _fn(_key)
         except Exception:
             pass  # documentation must never break the tab
+        # Restore the previous rendering tab so capture attribution unwinds
+        # correctly (see __enter__).
+        try:
+            st.session_state["_ax_rendering_tab"] = getattr(
+                self, "_prev_render", None)
+        except Exception:
+            pass
         return self._container.__exit__(*exc)
 
     def __getattr__(self, name):
@@ -8960,14 +9398,33 @@ def get_feature_activity(feature):
 def _feature_activity_sections(feature):
     """This feature's captured work as report sections — same grouping/order as
     the subsystem version, so a feature PDF reads like a subsystem one but
-    scoped to the single tool. [] when nothing was captured."""
+    scoped to the single tool. [] when nothing was captured.
+
+    Two sources, in order: the RESULTS the generic capture layer lifted off the
+    feature's own metrics and verdict banners (the numbers), then the activity
+    log (what the member did). Results lead because a document that opens with
+    "Ran a calculation" and no figures is what made these reports useless.
+
+    `_captured_result_sections` is defined much later in this file; resolving it
+    through globals() at call time keeps the forward reference safe, the same
+    way the auto-doc bridge reaches record_feature_activity.
+    """
+    sections = []
+    try:
+        _cap = globals().get("_captured_result_sections")
+        if _cap is not None:
+            sections.extend(_cap(feature))
+    except Exception:
+        pass       # documentation must never break a feature
+
     rows = get_feature_activity(feature)
     if not rows:
-        return []
+        return sections
     by_kind = {}
     for r in rows:
         by_kind.setdefault(r.get("kind", "note"), []).append(r)
-    sections = []
+    # NB: append to `sections`, do NOT re-bind it — the captured result sections
+    # gathered above must survive.
     seen = set()
     for kind, heading in _ACTIVITY_KIND_HEADINGS:
         group = by_kind.get(kind)
@@ -11979,12 +12436,90 @@ def publish_doc_sections(subsystem_key, sections):
 
 
 def get_doc_sections(subsystem_key):
-    """Return whatever a subsystem tab last published for its report, or []."""
+    """Report sections for a subsystem: whatever its tab explicitly published,
+    PLUS whatever the generic capture layer picked up from every feature that
+    subsystem owns.
+
+    Explicit sections come first because they are hand-authored and richer; the
+    captured ones fill in for the ~38 features that have no bespoke publisher, so
+    every subsystem's document carries real numbers instead of a list of verbs.
+    Duplicate headings are not a problem — they read as complementary sections.
+    """
     try:
-        return list(st.session_state.get(_DOC_EXTRA_KEY, {}).get(
+        _explicit = list(st.session_state.get(_DOC_EXTRA_KEY, {}).get(
             str(subsystem_key), []))
     except Exception:
+        _explicit = []
+    try:
+        return _explicit + _captured_sections_for_subsystem(subsystem_key)
+    except Exception:
+        return _explicit
+
+
+_SEVERITY_MARK = {"ok": "✅", "warning": "⚠️", "fail": "❌", "info": "ℹ️"}
+
+# Glyphs app messages already use to mark their own status. When a captured
+# banner starts with one, prefixing a second severity mark renders as
+# "✅ ✓ System voltage < 600 V" in the document — visibly unproofed.
+_STATUS_GLYPHS = ("✓", "✗", "✅", "❌", "⚠️", "⚠", "ℹ️", "•", "🛑", "🔎")
+
+
+def _mark_for(text, severity):
+    """Severity glyph for a captured banner, unless it already has one."""
+    _t = (text or "").lstrip()
+    if _t.startswith(_STATUS_GLYPHS):
+        return ""
+    return _SEVERITY_MARK.get(severity, "•")
+
+
+def _captured_result_sections(feature):
+    """(heading, [lines]) built from one feature's captured metrics + verdicts.
+
+    Returns [] when nothing was captured, so a report simply omits the feature
+    rather than carrying an empty heading.
+    """
+    _res = get_feature_results(feature)
+    _metrics = _res.get("metrics") or []
+    _verdicts = _res.get("verdicts") or []
+    _artifacts = _res.get("artifacts") or []
+    if not (_metrics or _verdicts or _artifacts):
         return []
+    _label = _feature_label(feature)
+    _out = []
+    if _metrics:
+        _lines = []
+        for _r in _metrics:
+            _d = f" ({_r['delta']})" if _r.get("delta") else ""
+            _lines.append(f"- {_r['label']}: **{_r['value']}**{_d}")
+        _out.append((f"{_label} — results", _lines))
+    if _verdicts:
+        _lines = []
+        for _r in _verdicts:
+            _mark = _mark_for(_r.get("text", ""), _r.get("severity", "info"))
+            _lines.append(f"- {_mark} {_r['text']}".replace("-  ", "- "))
+        _out.append((f"{_label} — checks & verdicts", _lines))
+    if _artifacts:
+        # For plenty of features the plot IS the result, so naming it and its
+        # shape is the difference between a document that reflects the work and
+        # one that looks empty.
+        _lines = []
+        for _r in _artifacts:
+            _mark = "📈" if _r.get("kind") == "chart" else "📋"
+            _dtl = f" — {_r['detail']}" if _r.get("detail") else ""
+            _lines.append(f"- {_mark} {_r.get('title','')}{_dtl}")
+        _out.append((f"{_label} — charts & tables produced", _lines))
+    return _out
+
+
+def _captured_sections_for_subsystem(subsystem_key):
+    """Captured sections for every feature this subsystem owns, in a stable
+    order so the document doesn't reshuffle between runs."""
+    _key = str(subsystem_key)
+    _feats = sorted(f for f, s in _FEATURE_SUBSYS.items() if s == _key)
+    _out = []
+    for _f in _feats:
+        _out.extend(_captured_result_sections(_f))
+    return _out
 
 
 def _render_doc_and_verdict(subsystem_key, *, key_prefix, extra_sections=None,
@@ -12577,6 +13112,37 @@ def _render_pedal_packaging(_pb, _mass):
         {"ok": _tgt.success, "warning": _tgt.warning, "fail": _tgt.error,
          "missing": _tgt.info}.get(f.severity.value, _tgt.info)(_uS(f.message))
 
+    def _capture(slot, payload, kind, summary, detail):
+        """Stash a result for the Documentation tab AND log it as activity.
+
+        Two separate pipelines, both of which this view has to feed or its work
+        never reaches a report:
+
+          * `st.session_state["pbx_doc_<slot>"]` is read by the Brakes ▸
+            Documentation branch, the same way it reads brake_front_bias_pct and
+            friends from the sibling views. Plain dicts, so they stay cheap and
+            serialisable.
+          * `record_feature_activity` drives the per-feature doc panel ("Nothing
+            captured yet — the buttons light up once you've run something here").
+            The generic auto-doc bridge only ever logs one vague "Produced a
+            result" row per session, so a specific line has to be recorded here.
+
+        Recording is skipped when the detail is unchanged, because
+        record_feature_activity dedupes on (kind, summary) and bumps a counter --
+        firing on every Streamlit rerun would show a meaningless "(x47)".
+        """
+        try:
+            st.session_state[f"pbx_doc_{slot}"] = payload
+        except Exception:
+            pass
+        try:
+            _seen = f"_pbx_logged_{slot}"
+            if st.session_state.get(_seen) != detail:
+                record_feature_activity("brakes", kind, summary, detail=detail)
+                st.session_state[_seen] = detail
+        except Exception:
+            pass       # documentation must never break the feature
+
     st.markdown(
         '<p class="hint"><b>Does it fit, can it reach the bias, and does the pedal '
         'stop before the floor?</b> Hydraulic sizing answers "can we make enough '
@@ -12648,6 +13214,21 @@ def _render_pedal_packaging(_pb, _mass):
         _m = st.columns(3)
         umetric(_m[0], "Installed length", _stack.installed_mm, "mm")
         umetric(_m[1], "Available", _stack.available_mm, "mm")
+
+        _capture(
+            "stack",
+            dict(installed_mm=_stack.installed_mm,
+                 available_mm=_stack.available_mm,
+                 deficit_mm=_stack.deficit_mm, verdict=_stack.verdict,
+                 is_estimate=_stack.is_estimate, outlet=_outlet,
+                 mc_family=(_mcfam if _measured <= 0 else "measured part"),
+                 segments=[(s.name, s.length_mm) for s in
+                           sorted(_stack.segments, key=lambda s: -s.length_mm)]),
+            "calculation", "Pedal-box longitudinal stack-up",
+            _uS(f"{_stack.installed_mm:.1f} mm installed vs "
+                f"{_stack.available_mm:.1f} mm available — {_stack.verdict}"
+                + (f", {_stack.deficit_mm:.1f} mm to find"
+                   if _stack.deficit_mm > 0 else "")))
         _m[2].metric("Verdict", _stack.verdict,
                      delta=(_uS(f"{_stack.deficit_mm:+.1f} mm")
                             if abs(_stack.deficit_mm) > 0.5 else None),
@@ -12702,6 +13283,21 @@ def _render_pedal_packaging(_pb, _mass):
                     "chassis conversation.")
 
             _chosen = {o.name for o in _plan.chosen}
+
+            _capture(
+                "plan",
+                dict(deficit_mm=_plan.deficit_mm,
+                     total_gain_mm=_plan.total_gain_mm,
+                     remaining_mm=_plan.remaining_mm, solved=_plan.solved,
+                     appetite=_rank,
+                     chosen=[(o.name, o.gain_mm, o.cost) for o in _plan.chosen]),
+                "optimisation", "Pedal-box shortening plan",
+                _uS(f"{_plan.total_gain_mm:.1f} mm recovered of "
+                    f"{_plan.deficit_mm:.1f} mm needed")
+                + (" — solved" if _plan.solved
+                   else _uS(f" — {_plan.remaining_mm:.1f} mm still to find"))
+                + f" (appetite: {_rank})")
+
             for _o in _opts:
                 _tag = "✅ in the plan" if _o.name in _chosen else (
                     "—" if _o.feasible else "🚫 not feasible")
@@ -12815,6 +13411,23 @@ def _render_pedal_packaging(_pb, _mass):
         st.session_state["pbx_press_f"] = float(_at.pressure_front_bar)
         st.session_state["pbx_press_r"] = float(_at.pressure_rear_bar)
 
+        _capture(
+            "bias",
+            dict(bias_min=_auth.bias_min, bias_max=_auth.bias_max,
+                 bias_at_centre=_auth.bias_at_centre, target=_target,
+                 reachable=_auth.target_reachable,
+                 offset_mm=_auth.offset_for_target_mm,
+                 per_turn=_auth.bias_per_turn,
+                 bore_f=_bf, bore_r=_br, bar_len_mm=_barL,
+                 press_f=_at.pressure_front_bar, press_r=_at.pressure_rear_bar,
+                 torque_f=_at.torque_front_Nm, torque_r=_at.torque_rear_Nm),
+            "calculation", "Balance-bar bias authority",
+            f"reachable {_auth.bias_min*100:.1f}%–{_auth.bias_max*100:.1f}% front; "
+            f"target {_target*100:.0f}% "
+            + (_uS(f"reachable at {_auth.offset_for_target_mm:+.2f} mm bar offset")
+               if _auth.target_reachable else "NOT reachable with these bores"))
+
+
     # ==================================================================== #
     else:   # Pedal travel budget
         st.markdown(
@@ -12909,6 +13522,26 @@ def _render_pedal_packaging(_pb, _mass):
                                   else "inverse"))
 
         _items = sorted(_tr.items, key=lambda i: i.volume_cc)
+
+        _capture(
+            "travel",
+            dict(total_cc=_tr.total_cc, stroke_mm=_tr.mc_stroke_mm,
+                 travel_mm=_tr.pedal_travel_mm,
+                 available_mm=_tr.available_travel_mm,
+                 stroke_limit_mm=_tr.mc_stroke_limit_mm,
+                 utilisation=_tr.stroke_utilisation, verdict=_tr.verdict,
+                 calibrated=bool(_tp.calibrated), fitted_to=_tp.fitted_to,
+                 hose=_those, hose_m=_thoseL, hardline_m=_thardL,
+                 pressure_bar=_tpress,
+                 items=[(i.name, i.volume_cc) for i in
+                        sorted(_tr.items, key=lambda x: -x.volume_cc)]),
+            "calculation", "Pedal-travel budget",
+            _uS(f"{_tr.pedal_travel_mm:.1f} mm at the pad of "
+                f"{_tr.available_travel_mm:.1f} mm available")
+            + f" — {_tr.verdict}, cylinder at {_tr.stroke_utilisation*100:.0f}% "
+            + ("of stroke (calibrated)" if _tp.calibrated
+               else "of stroke (representative parameters)"))
+
         _item_x = uconv_series([i.volume_cc for i in _items], "cc")
         _worst = max(_item_x) if _item_x else 0.0
         _figt = go.Figure(go.Bar(
@@ -20992,8 +21625,100 @@ with tab_brake:
                           f"{'closes' if _c.closes else 'HANGS OPEN'}")
             _bx.append(("Throttle return springs — single-fault redundancy", _l))
 
+        # --- Packaging & travel -------------------------------------------
+        # These come from the Packaging & travel view via session_state, the
+        # same way bias/pedal-ratio do above. Written through usentence so an
+        # imperial user gets an imperial report, not millimetres.
+        _uSd = units_mod.usentence
+        _pk = st.session_state.get("pbx_doc_stack")
+        if _pk:
+            _l = [_uSd(f"- Installed length **{_pk['installed_mm']:.1f} mm** vs "
+                       f"**{_pk['available_mm']:.1f} mm** available — "
+                       f"**{_pk['verdict']}**")]
+            if _pk.get("deficit_mm", 0) > 0:
+                _l.append(_uSd(f"- Deficit to find: **{_pk['deficit_mm']:.1f} mm**"))
+            _l.append(f"- Line exit modelled as _{_pk.get('outlet','?')}_, "
+                      f"cylinder body from _{_pk.get('mc_family','?')}_")
+            for _nm, _mm in (_pk.get("segments") or [])[:4]:
+                _l.append(_uSd(f"  - {_nm}: {_mm:.1f} mm"))
+            if _pk.get("is_estimate"):
+                _l.append("- _Segment lengths include catalogue placeholders — "
+                          "measure the real cylinders before ordering._")
+            _bx.append(("Pedal box — longitudinal packaging", _l))
+
+        _pl = st.session_state.get("pbx_doc_plan")
+        if _pl:
+            _l = [_uSd(f"- Recovered **{_pl['total_gain_mm']:.1f} mm** of the "
+                       f"**{_pl['deficit_mm']:.1f} mm** needed — "
+                       + ("**solved**" if _pl.get("solved")
+                          else f"**{_pl['remaining_mm']:.1f} mm still to find**")),
+                  f"- Appetite for change: _{_pl.get('appetite','?')}_"]
+            for _nm, _g, _c in (_pl.get("chosen") or []):
+                _l.append(_uSd(f"  - {_g:+.1f} mm — {_nm} ({_c})"))
+            if not _pl.get("solved"):
+                _l.append("- _Not an adjustment problem: needs a shorter cylinder "
+                          "family, a floor-mounted pedal, or a bulkhead move._")
+            _bx.append(("Pedal box — shortening plan", _l))
+
+        _bb = st.session_state.get("pbx_doc_bias")
+        if _bb:
+            _l = [f"- Reachable front bias: "
+                  f"**{_bb['bias_min']*100:.1f}% – {_bb['bias_max']*100:.1f}%** "
+                  f"(centred bar {_bb['bias_at_centre']*100:.1f}%)",
+                  f"- Target **{_bb['target']*100:.0f}%** front — "
+                  + (_uSd(f"reachable at **{_bb['offset_mm']:+.2f} mm** bar offset")
+                     if _bb.get("reachable")
+                     else "**NOT reachable** with these bores; change a bore"),
+                  _uSd(f"- Bores: front **{_bb['bore_f']:.2f} mm**, rear "
+                       f"**{_bb['bore_r']:.2f} mm**, bar span "
+                       f"{_bb['bar_len_mm']:.1f} mm"),
+                  f"- Adjuster sensitivity: **{_bb['per_turn']*100:.2f}% bias "
+                  f"per turn**",
+                  _uSd(f"- Line pressure {_bb['press_f']:.0f} bar front / "
+                       f"{_bb['press_r']:.0f} bar rear; axle torque "
+                       f"{_bb['torque_f']:.0f} N·m / {_bb['torque_r']:.0f} N·m")]
+            _bx.append(("Balance bar — bias authority", _l))
+
+        _tv = st.session_state.get("pbx_doc_travel")
+        if _tv:
+            _l = [_uSd(f"- Pedal travel **{_tv['travel_mm']:.1f} mm** at the pad of "
+                       f"**{_tv['available_mm']:.1f} mm** available — "
+                       f"**{_tv['verdict']}**"),
+                  _uSd(f"- Fluid demand {_tv['total_cc']:.3f} cc → "
+                       f"{_tv['stroke_mm']:.1f} mm of cylinder stroke "
+                       f"({_tv['utilisation']*100:.0f}% of the "
+                       f"{_tv['stroke_limit_mm']:.1f} mm limit)"),
+                  _uSd(f"- Lines: {_tv.get('hose','?')}, {_tv['hose_m']:.2f} m per "
+                       f"corner + {_tv['hardline_m']:.2f} m hardline at "
+                       f"{_tv['pressure_bar']:.0f} bar")]
+            for _nm, _cc in (_tv.get("items") or [])[:3]:
+                _l.append(_uSd(f"  - {_nm}: {_cc:.3f} cc"))
+            _l.append("- _Calibrated: " + _tv.get("fitted_to", "") + "_"
+                      if _tv.get("calibrated") else
+                      "- _Representative compliance parameters — calibrate against "
+                      "one bench measurement before quoting an absolute travel._")
+            _bx.append(("Pedal travel budget", _l))
+
         # Documentation now lives in the central DOCUMENTATION tab. Publish the
         # brakes-specific report sections there so they're not lost.
+        #
+        # If nothing has been computed yet, say WHY and where to go. Publishing a
+        # silent empty list is what makes the Documentation tab read "nothing is
+        # captured" with no hint that the fix is simply to open the other views
+        # first -- every section above is built from numbers that only exist once
+        # its view has run.
+        if not _bx:
+            _bx.append((
+                "Nothing captured yet",
+                ["- No brakes numbers have been computed in this session yet.",
+                 "- Each section of this report is built from a view's live "
+                 "results, so open the ones you need and they appear here:",
+                 "  - **Bias & lock-up** — front bias, rotor diameter",
+                 "  - **Hydraulic sizing** — pedal ratio, driver pedal force",
+                 "  - **Pedal box & throttle** — 2000 N pedal check, return springs",
+                 "  - **Packaging & travel** — stack-up, shortening plan, "
+                 "balance-bar authority, pedal-travel budget",
+                 "- Then come back here; nothing else is needed."]))
         publish_doc_sections("brakes", _bx)
 
 
