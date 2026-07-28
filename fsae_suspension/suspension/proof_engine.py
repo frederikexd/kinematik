@@ -511,6 +511,13 @@ DEFAULT_ACTIONS: list[EvidenceAction] = [
         "Instrumented stops from 60 km/h; back out per-corner torque from "
         "decel and known mass (which is why corner scales come first)."),
     EvidenceAction(
+        "caliper_bore", "Caliper a bore / OD (hose ID, barb, spigot)", "workshop",
+        0.2, ["hose_id_mm", "barb_od_mm"], EvidenceGrade.MEASURED,
+        "Digital calipers, three points around the bore at 60°, record the "
+        "smallest. Barb OD at the crest of the retention ramp, not the root. "
+        "Two operators re-measure for VERIFIED. Cheapest evidence in the shop "
+        "and it retires arguments that otherwise run for hours."),
+    EvidenceAction(
         "current_log", "Log peak current at competition limits", "track",
         3.0, ["peak_current_a"], EvidenceGrade.MEASURED,
         "DAQ the DC bus through accel + one hot lap at the derate settings "
