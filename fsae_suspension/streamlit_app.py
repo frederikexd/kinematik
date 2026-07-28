@@ -184,7 +184,7 @@ _SUSP_MODULES = dict(
     riskprop_mod="risk_propagation", pti_mod="pt_integration",
     fitfc_mod="fit_forecast",
     registry_mod="registry",        ingest_mod="cad_ingest",
-    cadshare_mod="cad_share",
+    cadshare_mod="cad_share",       _simh="sim_handoff",
     _axn="analytics",
     _mem="mem_utils",               # RAM hygiene: keep under the 1 GB cloud limit
 )
@@ -3454,6 +3454,7 @@ _TAB_META = {
     "integration": ("🔗", "Integration"),
     "registry":    ("🗂️", "Registry"),
     "analytics":   ("📊", "Analytics"),
+    "daq":         ("📡", "Data Acquisition"),
     "pcb":         ("🔌", "Electronics (PCB)"),
     "tractive":    ("⚡", "Tractive Safety"),
     "dfmea":       ("🧯", "DFMEA"),
@@ -3494,7 +3495,7 @@ _TAB_CATEGORIES = [
      ["kinematics", "roll", "tire", "thermic", "forge", "aero", "ev",
       "laptime", "setup"]),
     ("design",   "🛠️", "Design & Sizing",
-     ["brakes", "accum", "pcb", "compliance", "ghost", "phantom_env",
+     ["brakes", "accum", "daq", "pcb", "compliance", "ghost", "phantom_env",
       "stochastic", "genesis", "genesis_fc", "morph", "omni", "flexgen", "teamfit",
       "model3d"]),
     ("checks",   "✅", "Checks & Integration",
@@ -3533,14 +3534,16 @@ _ROLE_TABS = {
                    "thermic", "forge", "stochastic", "genesis", "genesis_fc", "morph",
                    "omni", "setup", "laptime"],
     "aero":       ["aero", "laptime", "setup"],
-    "powertrain": ["ev", "genesis_fc", "laptime", "setup", "dfmea"],
-    "electrics":  ["accum", "ev", "laptime", "pcb", "tractive", "dfmea",
+    "powertrain": ["ev", "daq", "genesis_fc", "laptime", "setup", "dfmea"],
+    "electrics":  ["accum", "ev", "laptime", "pcb", "daq", "tractive", "dfmea",
                    "forge", "omni"],
     # cooling's radiator sizing / CAD import lives in the EV tab; it also owns
-    # the DFMEA + tractive (precharge/PCM) surfaces.
-    "cooling":    ["ev", "dfmea", "tractive"],
-    # data-acquisition lives in the Electronics/PCB tab.
-    "dataacq":    ["pcb", "dfmea"],
+    # the DFMEA + tractive (precharge/PCM) surfaces, and the coolant
+    # instrumentation (inlet/outlet ΔT + flow) in the DAQ tab.
+    "cooling":    ["ev", "daq", "dfmea", "tractive"],
+    # data-acquisition owns the channel plan; the PCB tab remains its hardware
+    # surface.
+    "dataacq":    ["daq", "pcb", "dfmea"],
     # brakes wants Track Testing (lap time + GGV) to see brake balance on track,
     # plus tyre grip.
     "brakes":     ["brakes", "tire", "thermic", "laptime"],
@@ -3772,6 +3775,19 @@ _BRIEF_TOOLS = {
         "A rotor thermal FEA is only as good as the heat input. This computes "
         "that input from YOUR car's mass, speed and bias — so ANSYS validates a "
         "rotor that's already in the right family."),
+    "daq": (
+        "Every sensor the team wants, with the review questions attached and "
+        "the arithmetic they imply actually carried out — Nyquist, CAN bus "
+        "load, rail current, card space.",
+        "A sensor list grows one meeting at a time and nobody ever multiplies "
+        "channels by sample rate and compares it to the bus. You need this "
+        "because the frames that get dropped at competition are always the "
+        "ones nobody was watching.",
+        "No simulator checks whether your channel list fits your bus. A "
+        "spreadsheet will happily add a column and stay green. Here an "
+        "unanswered question keeps the verdict off READY and marks every "
+        "budget as a floor, because an undeclared channel adds load to the "
+        "real car and nothing to your estimate."),
     "pcb": (
         "Copper survival, signal integrity, HV/LV checks — import a real "
         ".kicad_pcb and get the guilty component named.",
@@ -4174,6 +4190,9 @@ _BRIEF_SIMPLE = {
     "brakes": "This makes sure the car can stop hard without the rear wheels "
               "locking first (which spins the car) and without the discs "
               "overheating.",
+    "daq": "Sensors send readings down a shared wire that only has so much "
+           "room. This works out whether everything you want to measure "
+           "actually fits, and how often each thing needs to be read.",
     "pcb": "Circuit boards carry the car's electricity. This checks the "
            "copper paths are thick enough not to burn out.",
     "tractive": "Electric race cars must pass strict safety checks before "
@@ -4834,14 +4853,6 @@ _BRIEF_GOAL_FEATURES = {
         "Coolant flow rate and pump sizing: required volumetric flow is computed "
         "from target temperature rise; the tool flags if your declared pump "
         "curve can deliver it.",
-        "Coolant network solver: Darcy–Weisbach friction and minor losses down "
-        "every hose run, crossed with the pump curve to find the real "
-        "flow/pressure operating point, plus an equal-ΔP split solve at each "
-        "of the team's 29 mm wye junctions — so you see how much flow each "
-        "branch actually gets, not how much you hoped it would.",
-        "Transient loop temperature: an effectiveness–NTU march over a repeated "
-        "lap shows whether the coolant settles below your limit or is still "
-        "climbing at the end of endurance.",
         "Radiator-core DXF: the core face geometry (width, height, inlet/outlet "
         "nipple positions) exports as a 2D DXF from your computed dimensions "
         "— ready for the sidepod designer.",
@@ -5551,6 +5562,33 @@ _BRIEF_TOOL_FEATURES = {
         "lap count — cumulative heat exposure, not just peak stop temperature.",
         "Bolt and bracket factors of safety are computed for the mounting "
         "hardware under the same load cases.",
+    ],
+    "daq": [
+        "The sensor review checklist is the schema, so an unanswered question "
+        "is a tracked state rather than an empty cell that looks like "
+        "progress — and completeness is computed from the table, so it cannot "
+        "drift from it.",
+        "CAN bus load uses the real ISO 11898-1 frame layout including "
+        "worst-case bit stuffing, not a round number, and reports worst-case "
+        "arbitration latency per message so you know which channel goes late.",
+        "Nyquist is checked per channel against declared signal bandwidth: "
+        "undersampling is a hard failure because aliasing cannot be undone in "
+        "post, and gross oversampling is flagged as bus spent for nothing.",
+        "The BMS UART-to-CAN bridge sizes the serial link, packs signals into "
+        "frames grouped by rate, gives shutdown-relevant signals the "
+        "identifiers that win arbitration — and refuses to invent a frame map "
+        "before anyone has read the datasheet.",
+        "Rail current, logger write rate and session size are summed against "
+        "real capacities, and reported as floors whenever a channel is still "
+        "unspecified.",
+        "The coolant inlet/outlet pair is checked for whether it can resolve "
+        "the delta-T it was bought to measure, with the heat-rejection "
+        "uncertainty that follows from it.",
+        "Findings route to the subteams that own the mount, the rail and the "
+        "isolation boundary, so 'what other subteam does this affect?' is "
+        "computed instead of remembered.",
+        "The review documentation table is generated from the plan, so it "
+        "cannot drift the way a hand-maintained one does.",
     ],
     "pcb": [
         "Import a real .kicad_pcb and get the guilty trace and net named — the "
@@ -10816,13 +10854,16 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
         _r.update({k: v for k, v in (c.get("meta") or {}).items()
                    if v is not None})
         _rows.append(_r)
-    st.markdown("**Short-list to mesh** — each row is a real section from your "
-                "computed numbers; confirm in Ansys / your FEA:")
+    st.markdown("**Sections to take forward** — each row is a real section "
+                "built from your computed numbers. Pick one below and the mesh "
+                "shortlist for it appears with the export:")
     st.dataframe(_rows, width="stretch", hide_index=True)
 
     # --- DXF export per short-listed geometry ------------------------------ #
-    st.markdown("**Export to CAD (DXF)** — imports into SolidWorks as one closed "
-                "sketch; extrude/revolve, then mesh in ANSYS:")
+    st.markdown("**Export** — the DXF imports into SolidWorks as one closed "
+                "sketch to extrude or revolve. The handoff zip carries the same "
+                "section with its roles, mesh sizing and load cases attached, "
+                "so ANSYS setup starts from numbers instead of from scratch:")
     _labels = {i: c.get("label", f"section {i+1}")
                for i, c in enumerate(candidates)}
     # Tie the widget key to the current candidate set (labels + count). When the
@@ -10846,7 +10887,8 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
                    "extruding.")
     else:
         st.caption("✓ Profile checked: single closed contour, holes as separate "
-                   "loops, units embedded — imports ready to extrude.")
+                   "loops, units embedded (always mm) — imports ready to "
+                   "extrude, with each loop on a layer that says what it is.")
 
     _dxf_kwargs = _cand.get("dxf_kwargs")
     if _dxf_kwargs:
@@ -10857,14 +10899,85 @@ def render_mesh_and_dxf(subsystem_key, *, key_prefix, candidates=None,
                                   _cand.get("profile_mm", [(0, 0)]),
                                   notes=_notes)
     _safe = subsystem_key.replace("-", "_")
-    st.download_button(
-        "⬇ Download DXF", data=_dxf,
-        file_name=f"kinematik_{_safe}_{_pick+1}.dxf",
+
+    # ---- the simulation handoff ------------------------------------------ #
+    # Same section, described so a solver doesn't have to re-derive intent:
+    # roles on named layers plus XDATA, the bolt pattern recognised as a bolt
+    # pattern, a mesh ladder sized off the geometry's own thinnest feature, and
+    # the load cases bound to those same names. The plain DXF above stays
+    # exactly as it was for anyone who just wants a sketch to trace.
+    _ho = None
+    try:
+        _ho = _simh.handoff_for_candidate(subsystem_key, _cand,
+                                          frame_tag=_kk_frame_tag(long=True))
+    except Exception as _he:                      # never break the export
+        st.caption(f"Handoff extras unavailable: {_he}")
+
+    _cols = st.columns(2)
+    _cols[0].download_button(
+        "⬇ Download DXF", data=(_ho["dxf"] if _ho else _dxf),
+        file_name=(_ho["dxf_name"] if _ho else
+                   f"kinematik_{_safe}_{_pick+1}.dxf"),
         mime="application/dxf", key=f"{key_prefix}_gdxf_dl")
+    if _ho:
+        _cols[1].download_button(
+            "⬇ Simulation handoff (.zip)", data=_ho["bundle"],
+            file_name=_ho["bundle_name"], mime="application/zip",
+            key=f"{key_prefix}_handoff_dl",
+            help="DXF with roles on layers, the mesh shortlist, the load "
+                 "cases, and a manifest tying them together.")
+
+    if _ho:
+        _sec, _mesh = _ho["section"], _ho["mesh"]
+        _b = _mesh.basis
+
+        # --- the mesh shortlist proper ------------------------------------ #
+        st.markdown("**Mesh shortlist** — three levels sized from this "
+                    "section's own thinnest feature, not a fixed millimetre "
+                    "value:")
+        st.dataframe(_simh.mesh_rows(_mesh), width="stretch", hide_index=True)
+        st.caption(
+            f"Sizing basis: thinnest material **{_b['min_feature_mm']:g} mm** "
+            f"({_b['min_feature_from']}). Method: **{_b['method']}** — "
+            f"{_b['method_rationale']} Defeature below "
+            f"{_b['defeature_mm']:g} mm. {_b['estimate_note']}")
+        if _b.get("shell_alternative"):
+            st.caption(f"↳ {_b['shell_alternative']}")
+
+        # --- what the handoff recognised, so it can be checked ------------ #
+        if _sec.fastener_groups:
+            for _g in _sec.fastener_groups:
+                _bolt = _g.bolt or {}
+                st.caption(
+                    f"🔩 **{_g.id}** — {_simh.pattern_phrase(_g)}. Starting "
+                    f"pretension {_bolt.get('pretension_n', '—')} N "
+                    f"(≈{_bolt.get('install_torque_nm', '—')} N·m at K="
+                    f"{_bolt.get('nut_factor', '—')}). The thread is read back "
+                    f"from the clearance hole and the preload is a starting "
+                    f"value — K is where the real scatter lives, so set yours.")
+
+        _st = _ho["study"]
+        _need = [lc["name"] for lc in _st.load_cases if lc.get("required")]
+        if _need:
+            st.warning(
+                "The handoff is complete except for " +
+                ", ".join(f"`{n}`" for n in _need) +
+                " — those load values aren't declared anywhere yet, so they're "
+                "marked *required* rather than filled in with a guess. A run "
+                "should stop on them.")
+        else:
+            st.caption(
+                f"✓ Handoff ready: {_st.analysis_type.replace('_', ' ')} on "
+                f"{_st.material['name']}, {len(_st.load_cases)} load case(s) "
+                f"and {len(_st.constraints)} constraint(s), all bound to the "
+                f"layer names in the DXF. Extrude {_sec.extrude_mm:g} mm "
+                f"({_sec.extrude_source}).")
+
     # Immediately free up the memory holding those DXF text blocks. The del is
     # the actual win; the collection is throttled so it doesn't stall every
     # rerun (st.tabs runs this tab's code on every interaction).
     del _dxf
+    _ho = None
     _mem.maybe_collect()
     _vc_disclaimer(f"the {_name.lower()} section")
 # === END spliced block ===
@@ -14609,6 +14722,7 @@ tab_forge    = _id_to_container["forge"]
 tab_morph    = _id_to_container["morph"]
 tab_omni     = _id_to_container["omni"]
 tab_flexgen  = _id_to_container["flexgen"]
+tab_daq      = _id_to_container["daq"]
 
 # --- 🎯 Proof Planner — first tab under the ui/ strangulation pattern. ------ #
 # All physics lives in suspension/proof_engine.py; all drawing in
@@ -14797,6 +14911,20 @@ with tab_flexgen:
         _flexgen_mod.render()
     except Exception as _fxg_err:           # noqa: BLE001 — a broken tab must
         st.error(f"FlexGen failed to render: {_fxg_err}")  # not kill the app
+
+# --- 📡 Data Acquisition — the vehicle-side channel plan. ------------------- #
+# All physics/arithmetic lives in suspension/daq_plan.py (CAN frame lengths and
+# bus load, response-time latency, Nyquist, ADC quantisation, rail current,
+# ΔT error propagation, UART link budget); all drawing in ui/daq_plan.py.
+# Standalone by design — a data-acq lead can plan channels before any
+# hardpoint set, ledger or CAD exists, because the sensor list is its own
+# input. This is the tab the `dataacq` role previously did not have.
+with tab_daq:
+    try:
+        from ui import daq_plan as _daq_mod
+        _daq_mod.render()
+    except Exception as _daq_err:           # noqa: BLE001 — a broken tab must
+        st.error(f"Data Acquisition failed to render: {_daq_err}")  # not kill the app
 tab_car = tab4
 
 # Global live notifier: polls the shared store and toasts every session when any
@@ -18848,7 +18976,6 @@ with tab_ev:
             "📈 Power & RPM explained",
             "⚙️ Gear ratio & sprocket",
             "🌡️ Cooling rig & fan",
-            "🧊 Coolant network solver",
             "📤 Publish to ledger",
             "🔀 Cross-team checks",
             "📋 Live spec sheet",
@@ -19354,730 +19481,9 @@ with tab_ev:
                 st.info("Enter core width and height above to unlock the cooling DXF export.")
 
         # ================================================================= #
-        #  PANEL 3 — Coolant-side network solver                            #
+        #  PANEL 3 — Publish powertrain to the integration ledger           #
         # ================================================================= #
-        # Panel 2 above solves the AIR side (fan curve vs duct restriction).
-        # This panel is the COOLANT side, and it is the UI surface for
-        # powertrain.engine.CoolingNetwork — Darcy-Weisbach pipe friction and
-        # minor losses, the team's 29 mm wye junctions with an equal-DeltaP
-        # split solve, the pump-vs-system operating point, and an
-        # effectiveness-NTU lumped-capacitance temperature march over a
-        # repeated lap. The solver shipped with the powertrain package and is
-        # lazily bound at the top of this file; until now nothing called it.
         with _pt_tabs[3]:
-            st.markdown(
-                '<p class="hint" style="margin:0 0 6px;">The panel before this one '
-                'sizes the <b>air</b> side — fan against duct restriction. This one '
-                'solves the <b>coolant</b> side: how much flow the pump actually '
-                'delivers through your hoses and wye junctions, how that flow splits '
-                'at each branch, and whether the loop holds temperature over a full '
-                'endurance run. Same cooling package, the other half of the '
-                'problem.</p>',
-                unsafe_allow_html=True)
-
-            try:
-                # ---- fluid ---------------------------------------------- #
-                _cn_fluid_name = st.radio(
-                    "Coolant", ["50/50 water–glycol", "Plain water"],
-                    horizontal=True, key="cn_fluid",
-                    help="Glycol buys freeze/boil and corrosion protection but "
-                         "carries ~15% less heat per kilogram and is thicker, so "
-                         "the pump works harder for the same heat moved. Plain "
-                         "water is the best coolant and the worst everything else.")
-                _cn_fl = (CoolantProps.water()
-                          if str(_cn_fluid_name).startswith("Plain")
-                          else CoolantProps())
-
-                # ---- pump ------------------------------------------------ #
-                st.markdown("##### Pump")
-                _cn_p = st.columns(2)
-                _cn_dp0 = unum(_cn_p[0], "Shut-off head (kPa)", 5.0, 250.0, 55.0,
-                               'kPa', step=5.0, key="cn_dp0",
-                               help="Pressure the pump makes at zero flow — the top "
-                                    "of its curve. EWP80-class electric pumps sit "
-                                    "near 55 kPa.")
-                _cn_qmax = unum(_cn_p[1], "Free-flow (L/min)", 5.0, 200.0, 48.0,
-                                'L/min', step=1.0, key="cn_qmax",
-                                help="Flow the pump makes against zero restriction — "
-                                     "the far end of its curve. Both numbers come "
-                                     "off the pump datasheet.")
-                _cn_pump = PumpCurve(dp0_pa=float(_cn_dp0) * 1e3,
-                                     q_max_m3s=float(_cn_qmax) / 6e4)
-
-                # ---- hose runs ------------------------------------------- #
-                st.markdown("##### Hose runs")
-                st.caption(
-                    "Two lumped runs — the leg out to the motor/inverter and the "
-                    "return. ΣK is that run's minor-loss total: roughly 0.3 per "
-                    "smooth bend, 1.0 per tight one, plus fittings and the cold "
-                    "plate.")
-                _cn_s1 = st.columns(3)
-                _cn_d1 = unum(_cn_s1[0], "Feed — bore (mm)", 6.0, 60.0, 29.0, 'mm',
-                              step=1.0, key="cn_d1",
-                              help="Internal diameter of the hose. Pressure drop "
-                                   "goes as roughly 1/D⁵ — dropping from 29 to "
-                                   "19 mm costs about 5× the loss.")
-                _cn_l1 = unum(_cn_s1[1], "Feed — length (m)", 0.1, 10.0, 1.8, 'm',
-                              step=0.1, key="cn_l1",
-                              help="Developed length of the run, following the "
-                                   "actual routing rather than straight-line.")
-                _cn_k1 = unum(_cn_s1[2], "Feed — ΣK", 0.0, 30.0, 2.0, '',
-                              step=0.5, key="cn_k1",
-                              help="Sum of minor-loss coefficients on this run.")
-                _cn_s2 = st.columns(3)
-                _cn_d2 = unum(_cn_s2[0], "Return — bore (mm)", 6.0, 60.0, 29.0, 'mm',
-                              step=1.0, key="cn_d2")
-                _cn_l2 = unum(_cn_s2[1], "Return — length (m)", 0.1, 10.0, 1.2, 'm',
-                              step=0.1, key="cn_l2")
-                _cn_k2 = unum(_cn_s2[2], "Return — ΣK", 0.0, 30.0, 1.5, '',
-                              step=0.5, key="cn_k2")
-                _cn_segs = (
-                    PipeSegment(d_m=float(_cn_d1) * 1e-3, length_m=float(_cn_l1),
-                                k_minor=float(_cn_k1)),
-                    PipeSegment(d_m=float(_cn_d2) * 1e-3, length_m=float(_cn_l2),
-                                k_minor=float(_cn_k2)),
-                )
-
-                # ---- radiator core (coolant side) ------------------------ #
-                st.markdown("##### Radiator core")
-                _cn_r = st.columns(4)
-                _cn_ua = unum(_cn_r[0], "Core UA (W/K)", 20.0, 2000.0, 220.0, 'W/K',
-                              step=10.0, key="cn_ua",
-                              help="Overall conductance × area for the core. From "
-                                   "the datasheet, or back it out of a measured "
-                                   "heat rejection and ΔT.")
-                _cn_face = unum(_cn_r[1], "Frontal area (m²)", 0.005, 0.5,
-                                float(st.session_state.get("_rc_w_mm", 280.0))
-                                * float(st.session_state.get("_rc_h_mm", 200.0))
-                                * 1e-6, 'm²', step=0.005, key="cn_face",
-                                help="Core face area. Defaults to the width × "
-                                     "height you entered in the rig panel.")
-                _cn_cap = uslider(_cn_r[2], "Duct capture (–)", 0.10, 1.00, 0.55, '',
-                                  step=0.05, key="cn_cap",
-                                  help="Fraction of free-stream speed that actually "
-                                       "reaches the core. Sidepod ducting on an "
-                                       "FSAE car rarely beats 0.6.")
-                _cn_zeta = unum(_cn_r[3], "Core ζ (coolant side)", 0.0, 40.0, 4.0, '',
-                                step=0.5, key="cn_zeta",
-                                help="Minor-loss coefficient for the coolant path "
-                                     "through the core itself.")
-                _cn_rad = Radiator(ua_w_per_k=float(_cn_ua),
-                                   frontal_area_m2=float(_cn_face),
-                                   air_capture_eff=float(_cn_cap),
-                                   dp_coolant_k=float(_cn_zeta))
-
-                # ---- junctions ------------------------------------------- #
-                st.markdown("##### Wye junctions")
-                _cn_jkeys = list(STANDARD_Y_BRANCHES)
-                _cn_pick = st.multiselect(
-                    "Junctions in the loop", _cn_jkeys, default=_cn_jkeys,
-                    key="cn_juncs",
-                    help="The team's three custom wyes, all on a common 29 mm "
-                         "inlet. Each one splits the flow — the solver finds the "
-                         "split that makes both legs see the same pressure drop, "
-                         "which is what physically happens.")
-                _cn_juncs = tuple(STANDARD_Y_BRANCHES[k] for k in _cn_pick)
-
-                # ---- one branch leg, in detail --------------------------- #
-                # The three standard wyes have fixed bores, which is fine for
-                # the loop total but useless for "does this hose size matter on
-                # THAT leg". Turning this on swaps the chosen wye for one of any
-                # bore and folds its downstream run into leg_k, so the equal-ΔP
-                # split solve sees the real leg instead of a bare junction.
-                st.markdown("##### Branch leg (detail)")
-                _cn_detail = st.checkbox(
-                    "Size one branch leg — override its hose bore and downstream run",
-                    value=False, key="cn_detail",
-                    help="Off, every wye uses its standard bore and the branch "
-                         "legs are assumed identical. On, one junction becomes "
-                         "editable and its hose run is modelled, which is what "
-                         "you need to settle an argument about a specific hose.")
-                _cn_branch = None
-                _cn_cmp_rows = []
-                if _cn_detail and _cn_pick:
-                    _cn_bsel = st.selectbox(
-                        "Which junction", _cn_pick, index=len(_cn_pick) - 1,
-                        key="cn_bsel",
-                        help="The wye whose branch you're sizing. Its inlet bore "
-                             "is kept; only the branch and its run change.")
-                    _cn_b1 = st.columns(4)
-                    _cn_dbr = unum(_cn_b1[0], "Branch hose ID (mm)", 4.0, 50.0, 12.0,
-                                   'mm', step=0.1, key="cn_dbr",
-                                   help="Internal diameter of the hose on this "
-                                        "branch — the number that gets argued "
-                                        "about. Measure it, don't assume it.")
-                    _cn_bl = unum(_cn_b1[1], "Leg length (m)", 0.05, 5.0, 0.60, 'm',
-                                  step=0.05, key="cn_bl",
-                                  help="Developed length from the wye to whatever "
-                                       "this leg feeds.")
-                    _cn_bk = unum(_cn_b1[2], "Leg ΣK", 0.0, 30.0, 1.5, '', step=0.5,
-                                  key="cn_bk",
-                                  help="Minor losses on the run itself — bends, "
-                                       "fittings, the entry.")
-                    _cn_bz = unum(_cn_b1[3], "Device ζ", 0.0, 60.0, 6.0, '', step=0.5,
-                                  key="cn_bz",
-                                  help="Loss through whatever sits on the end of "
-                                       "this leg — cold plate, jacket, chiller.")
-                    _cn_b2 = st.columns(2)
-                    _cn_bq = unum(_cn_b2[0], "Heat on this leg (W)", 0.0, 20000.0,
-                                  1500.0, 'W', step=100.0, key="cn_bq",
-                                  help="Heat the device on this leg dumps into the "
-                                       "coolant. Sets the leg's temperature rise.")
-                    _cn_cmp = _cn_b2[1].checkbox(
-                        "Compare against a second bore", value=False, key="cn_cmp",
-                        help="Solves the whole loop twice and tables the "
-                             "difference — the honest way to test whether a hose "
-                             "size change is worth arguing about.")
-                    if _cn_cmp:
-                        _cn_dbr2 = unum(_cn_b2[1], "Second hose ID (mm)", 4.0, 50.0,
-                                        12.7, 'mm', step=0.1, key="cn_dbr2")
-
-                    def _cn_solve_branch(_d_m):
-                        """Swap the selected wye for one of bore `_d_m` and fold
-                        its downstream leg into leg_k as f·L/d + ΣK + ζ, all
-                        referenced to that leg's own velocity head — which is the
-                        reference leg_k already uses. The friction factor needs
-                        the branch flow and the branch flow needs the friction
-                        factor, so iterate; it converges in two passes."""
-                        _base = STANDARD_Y_BRANCHES[_cn_bsel]
-                        _nm = f"{_base.d_in_m*1e3:.0f}mm-{_d_m*1e3:.1f}mm"
-                        _others = tuple(STANDARD_Y_BRANCHES[k] for k in _cn_pick
-                                        if k != _cn_bsel)
-                        _qb, _n, _jb = 1e-5, None, None
-                        for _ in range(8):
-                            _f = PipeSegment(
-                                d_m=_d_m, length_m=float(_cn_bl),
-                                k_minor=float(_cn_bk)
-                            ).audit(max(_qb, 1e-7), _cn_fl)["f_darcy"]
-                            _kb = (_f * float(_cn_bl) / _d_m
-                                   + float(_cn_bk) + float(_cn_bz))
-                            _w = YBranch(name=_nm, d_in_m=_base.d_in_m,
-                                         d_branch_m=_d_m)
-                            _n = CoolingNetwork(
-                                fluid=_cn_fl, pump=_cn_pump, radiator=_cn_rad,
-                                segments=_cn_segs, junctions=_others + (_w,),
-                                leg_k={_nm: (0.0, _kb)})
-                            _jb = next(j for j in _n.audit()["junctions"]
-                                       if j["name"] == _nm)
-                            _qn = _jb["mdot_branch_kgs"] / _cn_fl.rho
-                            if abs(_qn - _qb) < 1e-10:
-                                _qb = _qn
-                                break
-                            _qb = _qn
-                        _op = _n.operating_point()
-                        _mdot = _jb["mdot_branch_kgs"]
-                        return dict(
-                            net=_n, d_mm=_d_m * 1e3, split=_jb["branch_frac"],
-                            q_branch_lpm=_qb * 6e4,
-                            v_branch=_qb / (np.pi * _d_m ** 2 / 4.0),
-                            loop_lpm=_op["q_lpm"], loop_dp_kpa=_op["dp_pa"] / 1e3,
-                            dt_k=(float(_cn_bq) / (_mdot * _cn_fl.cp)
-                                  if _mdot > 1e-9 else float("inf")))
-
-                    _cn_branch = _cn_solve_branch(float(_cn_dbr) * 1e-3)
-                    _cn_cmp_rows = [_cn_branch]
-                    if _cn_cmp:
-                        _cn_cmp_rows.append(
-                            _cn_solve_branch(float(_cn_dbr2) * 1e-3))
-
-                _cn_net = (_cn_branch["net"] if _cn_branch is not None
-                           else CoolingNetwork(fluid=_cn_fl, pump=_cn_pump,
-                                               radiator=_cn_rad,
-                                               segments=_cn_segs,
-                                               junctions=_cn_juncs))
-
-                # ---- operating point ------------------------------------- #
-                _cn_op = _cn_net.operating_point()
-                _cn_audit = _cn_net.audit()
-
-                st.markdown("---")
-                st.markdown("#### Where the loop actually runs")
-                _cn_m = st.columns(4)
-                _cn_m[0].markdown(metric("Flow", f"{_cn_op['q_lpm']:.1f}", "L/min"),
-                                  unsafe_allow_html=True)
-                _cn_m[1].markdown(metric("Loop ΔP", f"{_cn_op['dp_pa']/1e3:.1f}",
-                                         "kPa"), unsafe_allow_html=True)
-                _cn_m[2].markdown(metric("Mass flow",
-                                         f"{_cn_op['mdot_kgs']:.2f}", "kg/s"),
-                                  unsafe_allow_html=True)
-                _cn_cstream = _cn_op["mdot_kgs"] * _cn_fl.cp
-                _cn_m[3].markdown(metric("Stream capacity",
-                                         f"{_cn_cstream:.0f}", "W/K"),
-                                  unsafe_allow_html=True)
-
-                _cn_qq = np.linspace(1e-9, _cn_pump.q_max_m3s, 120)
-                _cn_pump_dp = [_cn_pump.dp(float(q)) for q in _cn_qq]
-                _cn_sys_dp = [_cn_net.system_dp(float(q)) for q in _cn_qq]
-                import plotly.graph_objects as _go_cn
-                _cnf = _go_cn.Figure()
-                _cnf.add_trace(_go_cn.Scatter(
-                    x=_cn_qq * 6e4, y=np.asarray(_cn_pump_dp) / 1e3,
-                    name="Pump curve", line=dict(color="#37e0d0", width=3)))
-                _cnf.add_trace(_go_cn.Scatter(
-                    x=_cn_qq * 6e4, y=np.asarray(_cn_sys_dp) / 1e3,
-                    name="System resistance (your loop)",
-                    line=dict(color="#ff9f43", width=2, dash="dot")))
-                _cnf.add_trace(_go_cn.Scatter(
-                    x=[_cn_op["q_lpm"]], y=[_cn_op["dp_pa"] / 1e3],
-                    name="Operating point", mode="markers",
-                    marker=dict(color="#ff5a52", size=12, symbol="x")))
-                _cnf.update_layout(
-                    title="Pump vs loop — the coolant-side operating point",
-                    xaxis_title="flow (L/min)", yaxis_title="ΔP (kPa)",
-                    height=340, paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#cdd6df", size=11),
-                    margin=dict(l=0, r=0, t=36, b=0),
-                    legend=dict(bgcolor="rgba(0,0,0,0)"))
-                st.plotly_chart(_cnf, width='stretch', key="cn_curve")
-
-                # ---- per-segment and per-junction tables ----------------- #
-                _cn_a, _cn_b = st.columns(2)
-                with _cn_a:
-                    st.markdown("**Hose runs**")
-                    st.dataframe([
-                        {"run": _nm, "⌀ mm": round(_s["d_mm"], 1),
-                         "L m": round(_s["L_m"], 2),
-                         "v m/s": round(_s["v_ms"], 2),
-                         "Re": f"{_s['reynolds']:,.0f}",
-                         "f": round(_s["f_darcy"], 4),
-                         "ΔP kPa": round(_s["dp_pa"] / 1e3, 2)}
-                        for _nm, _s in zip(("feed", "return"),
-                                           _cn_audit["segments"])],
-                        width="stretch", hide_index=True)
-                    _cn_lam = [s for s in _cn_audit["segments"]
-                               if 0 < s["reynolds"] < 2300]
-                    if _cn_lam:
-                        st.caption("• A run is laminar at this flow — unusual for a "
-                                   "coolant loop, and a sign the bore is oversized "
-                                   "for the pump.")
-                with _cn_b:
-                    st.markdown("**Wye junctions**")
-                    if _cn_audit["junctions"]:
-                        st.dataframe([
-                            {"junction": _j["name"],
-                             "branch %": f"{_j['branch_frac']*100:.0f}",
-                             "v in m/s": round(_j["v_in_ms"], 2),
-                             "v branch m/s": round(_j["v_branch_ms"], 2),
-                             "ṁ branch kg/s": round(_j["mdot_branch_kgs"], 3),
-                             "ΔP kPa": round(max(_j["dp_run_pa"],
-                                                 _j["dp_branch_pa"]) / 1e3, 2)}
-                            for _j in _cn_audit["junctions"]],
-                            width="stretch", hide_index=True)
-                        st.caption(
-                            "Branch % is solved, not assumed: it's the split that "
-                            "makes both legs see the same pressure drop.")
-                    else:
-                        st.info("No junctions selected — the loop is a plain series "
-                                "circuit.")
-
-                # ---- branch leg results / bore comparison ---------------- #
-                if _cn_branch is not None:
-                    st.markdown("---")
-                    st.markdown(f"#### Branch leg — {_cn_bsel}")
-                    _cn_bm = st.columns(4)
-                    _cn_bm[0].markdown(metric("Branch flow",
-                                              f"{_cn_branch['q_branch_lpm']:.2f}",
-                                              "L/min"), unsafe_allow_html=True)
-                    _cn_bm[1].markdown(metric("Branch velocity",
-                                              f"{_cn_branch['v_branch']:.2f}", "m/s"),
-                                       unsafe_allow_html=True)
-                    _cn_bm[2].markdown(metric("Split to branch",
-                                              f"{_cn_branch['split']*100:.1f}", "%"),
-                                       unsafe_allow_html=True)
-                    _cn_bm[3].markdown(metric("Leg ΔT",
-                                              f"{_cn_branch['dt_k']:.2f}", "K"),
-                                       unsafe_allow_html=True)
-                    if _cn_branch["v_branch"] > 3.0:
-                        st.caption("• Over 3 m/s in the branch — erosion and noise "
-                                   "territory for a silicone hose.")
-                    elif _cn_branch["v_branch"] < 0.3:
-                        st.caption("• Under 0.3 m/s — this leg is barely flowing; "
-                                   "air will not purge out of it on its own.")
-
-                    if len(_cn_cmp_rows) == 2:
-                        _a, _b = _cn_cmp_rows
-                        st.markdown("**Bore comparison**")
-                        st.dataframe([
-                            {"": _lab,
-                             f"{_a['d_mm']:.1f} mm": _fa,
-                             f"{_b['d_mm']:.1f} mm": _fb,
-                             "difference": _fd}
-                            for _lab, _fa, _fb, _fd in (
-                                ("loop flow (L/min)",
-                                 f"{_a['loop_lpm']:.2f}", f"{_b['loop_lpm']:.2f}",
-                                 f"{_b['loop_lpm']-_a['loop_lpm']:+.2f}"),
-                                ("loop ΔP (kPa)",
-                                 f"{_a['loop_dp_kpa']:.2f}", f"{_b['loop_dp_kpa']:.2f}",
-                                 f"{_b['loop_dp_kpa']-_a['loop_dp_kpa']:+.2f}"),
-                                ("branch flow (L/min)",
-                                 f"{_a['q_branch_lpm']:.2f}",
-                                 f"{_b['q_branch_lpm']:.2f}",
-                                 f"{_b['q_branch_lpm']-_a['q_branch_lpm']:+.2f}"),
-                                ("branch velocity (m/s)",
-                                 f"{_a['v_branch']:.2f}", f"{_b['v_branch']:.2f}",
-                                 f"{_b['v_branch']-_a['v_branch']:+.2f}"),
-                                ("leg ΔT (K)",
-                                 f"{_a['dt_k']:.2f}", f"{_b['dt_k']:.2f}",
-                                 f"{_b['dt_k']-_a['dt_k']:+.2f}"),
-                            )], width="stretch", hide_index=True)
-
-                        _cn_ddt = abs(_b["dt_k"] - _a["dt_k"])
-                        _cn_dq = (abs(_b["loop_lpm"] - _a["loop_lpm"])
-                                  / max(_a["loop_lpm"], 1e-9) * 100.0)
-                        if _cn_ddt < 1.0 and _cn_dq < 2.0:
-                            st.success(
-                                f"**{_a['d_mm']:.1f} vs {_b['d_mm']:.1f} mm is not "
-                                f"worth the argument.** It moves this leg's "
-                                f"temperature rise by {_cn_ddt:.2f} K and loop flow "
-                                f"by {_cn_dq:.2f}% — neither is measurable on the "
-                                "car. Choose on what fits the barb and what you can "
-                                "actually get hold of.")
-                        else:
-                            st.warning(
-                                f"**The bore matters here.** Going "
-                                f"{_a['d_mm']:.1f} → {_b['d_mm']:.1f} mm shifts the "
-                                f"leg ΔT by {_cn_ddt:.2f} K and loop flow by "
-                                f"{_cn_dq:.2f}%. Size it deliberately rather than "
-                                "taking whatever is on the shelf.")
-                        try:
-                            record_activity(
-                                "cooling", "calculation",
-                                f"Branch bore comparison on {_cn_bsel}: "
-                                f"{_a['d_mm']:.1f} mm gives {_a['q_branch_lpm']:.2f} "
-                                f"L/min and ΔT {_a['dt_k']:.2f} K; "
-                                f"{_b['d_mm']:.1f} mm gives {_b['q_branch_lpm']:.2f} "
-                                f"L/min and ΔT {_b['dt_k']:.2f} K "
-                                f"(Δ {_cn_ddt:.2f} K, loop flow {_cn_dq:.2f}%)")
-                        except Exception:
-                            pass
-
-                    # ---- does it actually fit? ---------------------------- #
-                    # Flow rarely discriminates between two hoses one size
-                    # apart; fit always does. Fit is a measurement, not a
-                    # calculation, so the honest tool here is a pre-registered
-                    # contract: band fixed now, calipers later, seal proving the
-                    # goalposts never moved. Seals into the SAME
-                    # ss.proof_contracts register the Proof Planner tab reads.
-                    st.markdown("---")
-                    st.markdown("#### Does the hose actually fit?")
-                    st.markdown(
-                        '<p class="hint" style="margin:0 0 6px;">The solver above '
-                        'answers whether the bore matters to the <b>flow</b>. It '
-                        'usually doesn\'t. What decides a hose is whether it goes '
-                        'onto the barb as a stretch fit — and that is a '
-                        'measurement, not a calculation. So this seals a '
-                        '<b>validation contract</b>: the acceptance band is fixed '
-                        'now, before anyone picks up the calipers, and the seal '
-                        'proves afterwards that it never moved.</p>',
-                        unsafe_allow_html=True)
-                    from suspension import proof_engine as _pe
-
-                    _cn_gmap = {g.label: g for g in _pe.EvidenceGrade}
-                    _cn_f1 = st.columns(2)
-                    _cn_barb = unum(_cn_f1[0], "Barb / spigot OD (mm)", 2.0, 60.0,
-                                    float(_cn_dbr), 'mm', step=0.1, key="cn_barb",
-                                    help="Outside diameter at the crest of the "
-                                         "retention ramp, not the root. Measure "
-                                         "this one first — it sets the band the "
-                                         "hose has to land inside.")
-                    _cn_hgl = _cn_f1[1].selectbox(
-                        "Where does that hose ID come from?", list(_cn_gmap),
-                        index=0, key="cn_hgrade",
-                        help="Pedigree of the branch hose ID entered above. A "
-                             "guess carries ±40%, which is exactly why an "
-                             "argument about 0.7 mm cannot be settled by "
-                             "discussion.")
-                    _cn_hg = _cn_gmap[_cn_hgl]
-                    _cn_hq = _pe.Quantity(
-                        key="cooling.branch_hose_id_mm", subsystem="cooling",
-                        channel="hose_id_mm", label="branch hose ID",
-                        value=float(_cn_dbr), unit="mm", grade=_cn_hg,
-                        source=f"coolant network panel — {_cn_bsel} branch")
-                    _cn_hu = _cn_hq.abs_unc()
-                    st.caption(
-                        f"{float(_cn_dbr):.1f} mm graded *{_cn_hg.value}* carries "
-                        f"±{_cn_hu:.1f} mm — the real claim is \"somewhere between "
-                        f"{float(_cn_dbr)-_cn_hu:.1f} and {float(_cn_dbr)+_cn_hu:.1f} "
-                        "mm\". Contract the hose ID itself, never the clearance: "
-                        "a clearance is a small difference of two large uncertain "
-                        "numbers, and grading it directly produces a band far "
-                        "tighter than the inputs justify.")
-
-                    _cn_gap = float(_cn_dbr) - float(_cn_barb)
-                    if _cn_hg.rank < _pe.EvidenceGrade.MEASURED.rank:
-                        st.info(
-                            f"Advisory only — the hose ID is a {_cn_hg.value}, so "
-                            f"the {_cn_gap:+.1f} mm below is arithmetic on an "
-                            "unmeasured number. Seal the contract and go measure.")
-                    if _cn_gap > 0.05:
-                        st.warning(
-                            f"**{_cn_gap:+.1f} mm clearance** — the hose is loose on "
-                            "the barb and the clamp is doing all the work. PTFE "
-                            "tape does not fix this: it seals threads, not barbs, "
-                            "and it lowers the friction holding the hose on.")
-                    elif _cn_gap < -float(1.0):
-                        st.warning(
-                            f"**{_cn_gap:.1f} mm interference** — that much stretch "
-                            "usually will not seat over the ramp without heat, and "
-                            "it thins the wall where the clamp bites.")
-                    else:
-                        st.success(f"**{_cn_gap:+.1f} mm** — stretch fit, which is "
-                                   "the way round you want it.")
-
-                    _cn_f2 = st.columns([1, 1, 1])
-                    _cn_maxint = unum(_cn_f2[0], "Max interference (mm)", 0.1, 5.0,
-                                      1.0, 'mm', step=0.1, key="cn_maxint",
-                                      help="How much smaller than the barb the "
-                                           "hose may be and still seat. Sets the "
-                                           "low edge of the acceptance band.")
-                    _cn_fauth = _cn_f2[1].text_input("Sealed by", key="cn_fit_author",
-                                                     placeholder="your name")
-                    _cn_act = next((_a for _a in _pe.DEFAULT_ACTIONS
-                                    if _a.key == "caliper_bore"), None)
-                    if _cn_act is None:      # proof_engine not yet updated
-                        _cn_act = _pe.EvidenceAction(
-                            "caliper_bore", "Caliper the hose ID and the barb OD",
-                            "workshop", 0.2, ["hose_id_mm"],
-                            _pe.EvidenceGrade.MEASURED,
-                            "Digital calipers, three points around the bore; "
-                            "barb OD at the crest of the ramp.")
-                    if _cn_f2[2].button("🔏 Seal fit contract", key="cn_fit_seal"):
-                        try:
-                            _cn_note = (
-                                f"Stretch fit onto a {float(_cn_barb):.1f} mm barb: "
-                                f"hose ID at or below barb OD, and no more than "
-                                f"{float(_cn_maxint):.1f} mm under it or it will "
-                                f"not seat. Hydraulics do not decide this — the "
-                                f"solver puts this leg at "
-                                f"{_cn_branch['q_branch_lpm']:.2f} L/min and ΔT "
-                                f"{_cn_branch['dt_k']:.2f} K, and a bore change of "
-                                f"one hose size barely moves either.")
-                            _cn_c = _pe.create_contract(
-                                _cn_act, _cn_hq,
-                                float(_cn_barb) - float(_cn_maxint),
-                                float(_cn_barb), _cn_note, _cn_fauth)
-                            st.session_state.setdefault("proof_contracts", [])
-                            st.session_state["proof_contracts"].append(
-                                _cn_c.as_dict())
-                            try:
-                                record_activity(
-                                    "cooling", "condition",
-                                    f"Sealed fit contract {_cn_c.id} on "
-                                    f"{_cn_bsel} branch hose: pass band "
-                                    f"[{_cn_c.pass_lo:.1f}, {_cn_c.pass_hi:.1f}] mm "
-                                    f"against a {float(_cn_barb):.1f} mm barb")
-                            except Exception:
-                                pass
-                            st.rerun()
-                        except ValueError as _cn_ce:
-                            st.error(str(_cn_ce))
-
-                    # ---- contracts sealed from this panel ----------------- #
-                    _cn_regs = [(_i, _cd) for _i, _cd in enumerate(
-                        st.session_state.get("proof_contracts", []))
-                        if _cd.get("quantity_key") == "cooling.branch_hose_id_mm"]
-                    for _cn_i, _cn_cd in _cn_regs:
-                        _c = _pe.ValidationContract.from_dict(_cn_cd)
-                        _ok = _c.verify_seal()
-                        _badge = {"open": "🟡 OPEN", "pass": "🟢 PASS",
-                                  "fail": "🔴 FAIL",
-                                  "discrepant": "🟣 DISCREPANT"}.get(
-                                      _c.status, _c.status)
-                        if not _ok:
-                            _badge = "⚠️ SEAL BROKEN"
-                        with st.expander(f"{_badge} — hose ID vs "
-                                         f"[{_c.pass_lo:.1f}, {_c.pass_hi:.1f}] mm "
-                                         f"· sealed {_c.created_on}"):
-                            st.caption(f"Seal `{_c.seal[:16]}…` · plausibility "
-                                       f"[{_c.plaus_lo:.1f}, {_c.plaus_hi:.1f}] mm "
-                                       "— from the pedigree, not chosen by you.")
-                            st.markdown(f"**Why this band:** {_c.criterion_note}")
-                            if _c.status == _pe.Verdict.OPEN.value and _ok:
-                                _jc = st.columns([2, 1])
-                                _mv = _jc[0].number_input(
-                                    "Caliper reading (mm)",
-                                    value=float(_c.predicted), step=0.1,
-                                    key=f"cn_fit_r_{_c.id}")
-                                if _jc[1].button("Judge", key=f"cn_fit_j_{_c.id}"):
-                                    _j = _pe.judge_result(_c, float(_mv))
-                                    st.session_state["proof_contracts"][_cn_i] = \
-                                        _j.as_dict()
-                                    st.rerun()
-                            elif _c.status != _pe.Verdict.OPEN.value:
-                                st.markdown(f"**{_c.status.upper()}** — measured "
-                                            f"{_c.result_value:g} mm on "
-                                            f"{_c.judged_on}.")
-                                st.caption(_c.judgment_note)
-                                if _c.status == _pe.Verdict.PASS.value:
-                                    st.success(
-                                        "Fit is proven and the solver already "
-                                        "showed flow is indifferent — this hose "
-                                        "is the answer. Nothing left to argue.")
-                                elif _c.status == _pe.Verdict.FAIL.value:
-                                    st.error(
-                                        "Wrong hose for this barb, and no amount "
-                                        "of flow margin rescues it. Source the "
-                                        "correct ID or change the barb.")
-                        if not _ok:
-                            st.error("Seal broken — the sealed fields were edited "
-                                     "after the fact. This contract cannot be "
-                                     "judged; seal a fresh one.")
-
-                # ---- transient lap thermal ------------------------------- #
-                st.markdown("---")
-                st.markdown("#### Does it hold temperature over a run?")
-                st.markdown(
-                    '<p class="hint" style="margin:0 0 6px;">The hydraulics above fix '
-                    'the coolant mass flow; this marches the loop temperature over a '
-                    'repeated lap, rejecting heat through the core against ram air '
-                    'that rises and falls with car speed. What you\'re looking for is '
-                    'a curve that flattens out below your limit — not one still '
-                    'climbing at the end.</p>',
-                    unsafe_allow_html=True)
-
-                _cn_t1 = st.columns(4)
-                _cn_heat = unum(_cn_t1[0], "Heat into the loop (W)", 200.0, 30000.0,
-                                float(st.session_state.get("_pti_heat_w", 4000.0))
-                                + 600.0, 'W', step=100.0, key="cn_heat",
-                                help="Lap-average heat the coolant has to carry — "
-                                     "motor, inverter and any pack heat sharing the "
-                                     "loop. Defaults to the rig panel's number.")
-                _cn_amb = unum(_cn_t1[1], "Ambient air (°C)", -10.0, 55.0, 30.0, '°C',
-                               step=1.0, key="cn_amb",
-                               help="Design-day air temperature. Comp days in "
-                                    "summer routinely beat 30 °C on the tarmac.")
-                _cn_t0 = unum(_cn_t1[2], "Start temperature (°C)", 0.0, 120.0, 40.0,
-                              '°C', step=1.0, key="cn_t0",
-                              help="Coolant temperature as you leave the line — "
-                                   "usually warm from the previous run.")
-                _cn_laps = int(uslider(_cn_t1[3], "Laps", 1, 30, 12, '', step=1,
-                                       key="cn_laps",
-                                       help="Endurance is about 22 km; a dozen laps "
-                                            "is enough to see whether it settles."))
-
-                _cn_t2 = st.columns(4)
-                _cn_lapt = unum(_cn_t2[0], "Lap time (s)", 20.0, 200.0, 75.0, 's',
-                                step=1.0, key="cn_lapt")
-                _cn_vmin = unum(_cn_t2[1], "Slowest corner (km/h)", 5.0, 80.0, 25.0,
-                                'km/h', step=1.0, key="cn_vmin")
-                _cn_vmax = unum(_cn_t2[2], "Fastest point (km/h)", 20.0, 160.0, 85.0,
-                                'km/h', step=1.0, key="cn_vmax")
-                _cn_vol = unum(_cn_t2[3], "Coolant volume (L)", 0.5, 15.0, 2.5, 'L',
-                               step=0.1, key="cn_vol",
-                               help="Total fluid in the loop. More volume damps the "
-                                    "temperature swing but doesn't change where it "
-                                    "settles.")
-
-                _cn_vmin_ms = float(min(_cn_vmin, _cn_vmax)) / 3.6
-                _cn_vmax_ms = float(max(_cn_vmin, _cn_vmax)) / 3.6
-                _cn_tp = np.linspace(0.0, float(_cn_lapt), 240)
-                # Autocross-shaped profile: speed swings between the slowest
-                # corner and the fastest point a handful of times per lap.
-                _cn_vp = _cn_vmin_ms + (_cn_vmax_ms - _cn_vmin_ms) * 0.5 * (
-                    1.0 - np.cos(2.0 * np.pi * 4.0 * _cn_tp / float(_cn_lapt)))
-                # Losses roughly track speed; normalised so the lap mean is
-                # exactly the heat figure entered above.
-                _cn_qp = np.maximum(_cn_vp / max(float(np.mean(_cn_vp)), 1e-6),
-                                    0.3) * float(_cn_heat)
-                st.caption(
-                    "The lap profile is a synthetic autocross shape built from the "
-                    "three numbers above — swap in a real speed trace from Track "
-                    "Testing when you have one.")
-
-                _cn_th = simulate_lap_thermal(
-                    _cn_net, t_s=_cn_tp, v_car_ms=_cn_vp, q_gen_w=_cn_qp,
-                    n_laps=_cn_laps, t_amb_c=float(_cn_amb),
-                    t0_c=float(_cn_t0), coolant_volume_l=float(_cn_vol))
-
-                _cn_tf = _go_cn.Figure()
-                _cn_tf.add_trace(_go_cn.Scatter(
-                    x=_cn_th.t_s, y=_cn_th.t_coolant_c, name="Coolant",
-                    line=dict(color="#ff5a52", width=2)))
-                _cn_tf.add_trace(_go_cn.Scatter(
-                    x=_cn_th.t_s,
-                    y=np.full_like(_cn_th.t_s, float(_cn_amb)), name="Ambient",
-                    line=dict(color="#7a8896", width=1, dash="dot")))
-                _cn_tf.update_layout(
-                    title=f"Coolant temperature over {_cn_laps} laps",
-                    xaxis_title="time (s)", yaxis_title="temperature (°C)",
-                    height=320, paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#cdd6df", size=11),
-                    margin=dict(l=0, r=0, t=36, b=0),
-                    legend=dict(bgcolor="rgba(0,0,0,0)"))
-                st.plotly_chart(_cn_tf, width='stretch', key="cn_thermal")
-
-                _cn_m2 = st.columns(3)
-                _cn_m2[0].markdown(metric("Peak coolant",
-                                          f"{_cn_th.t_peak_c:.1f}", "°C"),
-                                   unsafe_allow_html=True)
-                _cn_m2[1].markdown(metric("Steady margin",
-                                          f"{_cn_th.steady_margin_w:+.0f}", "W"),
-                                   unsafe_allow_html=True)
-                _cn_m2[2].markdown(metric("Rejected (mean)",
-                                          f"{float(np.mean(_cn_th.q_reject_w)):.0f}",
-                                          "W"), unsafe_allow_html=True)
-
-                # A loop that is coping converges: rejection rises with coolant
-                # temperature until it balances the heat in, so the steady
-                # margin tends to zero either way. The honest test is whether
-                # the temperature has stopped drifting, and where it stopped.
-                _cn_lap_pts = max(int(float(_cn_lapt) / 0.05), 1)
-                _cn_tc = _cn_th.t_coolant_c
-                _cn_drift = float(
-                    _cn_tc[-1] - _cn_tc[max(len(_cn_tc) - _cn_lap_pts - 1, 0)])
-                _cn_settled = abs(_cn_drift) < 1.0
-                if _cn_settled and _cn_th.t_peak_c < 95.0:
-                    st.success(
-                        f"Settles at **{_cn_th.t_peak_c:.0f} °C** and holds there — "
-                        f"the loop carries {float(_cn_heat):.0f} W at "
-                        f"{float(_cn_amb):g} °C ambient.")
-                elif _cn_settled and _cn_th.t_peak_c < 120.0:
-                    st.warning(
-                        f"Stabilises, but at **{_cn_th.t_peak_c:.0f} °C** — into "
-                        "boiling territory for a low-pressure cap. Raise cap "
-                        "pressure, core UA, duct capture or flow.")
-                elif _cn_settled:
-                    st.error(
-                        f"Balances only at **{_cn_th.t_peak_c:.0f} °C** — the core "
-                        "is far too small for this heat load. Nothing in the loop "
-                        "survives that; this needs more core area or a real "
-                        "reduction in heat rejected to coolant.")
-                else:
-                    st.error(
-                        f"**Still climbing after {_cn_laps} laps** — up "
-                        f"{_cn_drift:+.1f} °C on the final lap alone, at "
-                        f"{_cn_th.t_peak_c:.0f} °C and rising. More core area, "
-                        "better duct capture or more flow; a bigger tank only "
-                        "delays it.")
-
-                st.session_state["_cn_q_lpm"] = float(_cn_op["q_lpm"])
-                st.session_state["_cn_peak_c"] = float(_cn_th.t_peak_c)
-                try:
-                    record_activity(
-                        "cooling", "condition",
-                        f"Coolant loop: {_cn_fluid_name}, pump "
-                        f"{float(_cn_dp0):.0f} kPa / {float(_cn_qmax):.0f} L/min, "
-                        f"{len(_cn_pick)} wye junction(s), core UA "
-                        f"{float(_cn_ua):.0f} W/K, heat {float(_cn_heat):.0f} W at "
-                        f"{float(_cn_amb):g} °C ambient")
-                    record_activity(
-                        "cooling", "calculation",
-                        f"Coolant network: {_cn_op['q_lpm']:.1f} L/min at "
-                        f"{_cn_op['dp_pa']/1e3:.1f} kPa; peak coolant "
-                        f"{_cn_th.t_peak_c:.1f} °C over {_cn_laps} laps, steady "
-                        f"margin {_cn_th.steady_margin_w:+.0f} W")
-                except Exception:
-                    pass
-
-            except Exception as _cn_err:
-                st.warning(f"Coolant network solver unavailable: {_cn_err}")
-
-        # ================================================================= #
-        #  PANEL 4 — Publish powertrain to the integration ledger           #
-        # ================================================================= #
-        with _pt_tabs[4]:
             st.markdown(
                 '<p class="hint" style="margin:0 0 6px;">This is the step the team '
                 'has been missing. <b>Every other sub-team publishes their numbers to '
@@ -20182,9 +19588,9 @@ with tab_ev:
                     st.warning(f"Couldn't publish: {_pe}")
 
         # ================================================================= #
-        #  PANEL 5 — Cross-team checks (powertrain's findings, live)         #
+        #  PANEL 4 — Cross-team checks (powertrain's findings, live)         #
         # ================================================================= #
-        with _pt_tabs[5]:
+        with _pt_tabs[4]:
             st.markdown(
                 '<p class="hint" style="margin:0 0 6px;">The cross-team physics checks '
                 'that touch powertrain, run live against whatever\u2019s in the ledger right '
@@ -20219,9 +19625,9 @@ with tab_ev:
                 st.warning(f"Couldn't run cross-team checks: {_ke}")
 
         # ================================================================= #
-        #  PANEL 6 — Live spec sheet (replaces the screenshot)              #
+        #  PANEL 5 — Live spec sheet (replaces the screenshot)              #
         # ================================================================= #
-        with _pt_tabs[6]:
+        with _pt_tabs[5]:
             st.markdown(
                 '<p class="hint" style="margin:0 0 6px;">The <b>Design EV Spec Sheet</b>, '
                 'generated from the numbers you\u2019ve committed instead of a screenshot '
