@@ -4834,6 +4834,14 @@ _BRIEF_GOAL_FEATURES = {
         "Coolant flow rate and pump sizing: required volumetric flow is computed "
         "from target temperature rise; the tool flags if your declared pump "
         "curve can deliver it.",
+        "Coolant network solver: Darcy–Weisbach friction and minor losses down "
+        "every hose run, crossed with the pump curve to find the real "
+        "flow/pressure operating point, plus an equal-ΔP split solve at each "
+        "of the team's 29 mm wye junctions — so you see how much flow each "
+        "branch actually gets, not how much you hoped it would.",
+        "Transient loop temperature: an effectiveness–NTU march over a repeated "
+        "lap shows whether the coolant settles below your limit or is still "
+        "climbing at the end of endurance.",
         "Radiator-core DXF: the core face geometry (width, height, inlet/outlet "
         "nipple positions) exports as a 2D DXF from your computed dimensions "
         "— ready for the sidepod designer.",
@@ -18840,6 +18848,7 @@ with tab_ev:
             "📈 Power & RPM explained",
             "⚙️ Gear ratio & sprocket",
             "🌡️ Cooling rig & fan",
+            "🧊 Coolant network solver",
             "📤 Publish to ledger",
             "🔀 Cross-team checks",
             "📋 Live spec sheet",
@@ -19345,9 +19354,373 @@ with tab_ev:
                 st.info("Enter core width and height above to unlock the cooling DXF export.")
 
         # ================================================================= #
-        #  PANEL 3 — Publish powertrain to the integration ledger           #
+        #  PANEL 3 — Coolant-side network solver                            #
         # ================================================================= #
+        # Panel 2 above solves the AIR side (fan curve vs duct restriction).
+        # This panel is the COOLANT side, and it is the UI surface for
+        # powertrain.engine.CoolingNetwork — Darcy-Weisbach pipe friction and
+        # minor losses, the team's 29 mm wye junctions with an equal-DeltaP
+        # split solve, the pump-vs-system operating point, and an
+        # effectiveness-NTU lumped-capacitance temperature march over a
+        # repeated lap. The solver shipped with the powertrain package and is
+        # lazily bound at the top of this file; until now nothing called it.
         with _pt_tabs[3]:
+            st.markdown(
+                '<p class="hint" style="margin:0 0 6px;">The panel before this one '
+                'sizes the <b>air</b> side — fan against duct restriction. This one '
+                'solves the <b>coolant</b> side: how much flow the pump actually '
+                'delivers through your hoses and wye junctions, how that flow splits '
+                'at each branch, and whether the loop holds temperature over a full '
+                'endurance run. Same cooling package, the other half of the '
+                'problem.</p>',
+                unsafe_allow_html=True)
+
+            try:
+                # ---- fluid ---------------------------------------------- #
+                _cn_fluid_name = st.radio(
+                    "Coolant", ["50/50 water–glycol", "Plain water"],
+                    horizontal=True, key="cn_fluid",
+                    help="Glycol buys freeze/boil and corrosion protection but "
+                         "carries ~15% less heat per kilogram and is thicker, so "
+                         "the pump works harder for the same heat moved. Plain "
+                         "water is the best coolant and the worst everything else.")
+                _cn_fl = (CoolantProps.water()
+                          if str(_cn_fluid_name).startswith("Plain")
+                          else CoolantProps())
+
+                # ---- pump ------------------------------------------------ #
+                st.markdown("##### Pump")
+                _cn_p = st.columns(2)
+                _cn_dp0 = unum(_cn_p[0], "Shut-off head (kPa)", 5.0, 250.0, 55.0,
+                               'kPa', step=5.0, key="cn_dp0",
+                               help="Pressure the pump makes at zero flow — the top "
+                                    "of its curve. EWP80-class electric pumps sit "
+                                    "near 55 kPa.")
+                _cn_qmax = unum(_cn_p[1], "Free-flow (L/min)", 5.0, 200.0, 48.0,
+                                'L/min', step=1.0, key="cn_qmax",
+                                help="Flow the pump makes against zero restriction — "
+                                     "the far end of its curve. Both numbers come "
+                                     "off the pump datasheet.")
+                _cn_pump = PumpCurve(dp0_pa=float(_cn_dp0) * 1e3,
+                                     q_max_m3s=float(_cn_qmax) / 6e4)
+
+                # ---- hose runs ------------------------------------------- #
+                st.markdown("##### Hose runs")
+                st.caption(
+                    "Two lumped runs — the leg out to the motor/inverter and the "
+                    "return. ΣK is that run's minor-loss total: roughly 0.3 per "
+                    "smooth bend, 1.0 per tight one, plus fittings and the cold "
+                    "plate.")
+                _cn_s1 = st.columns(3)
+                _cn_d1 = unum(_cn_s1[0], "Feed — bore (mm)", 6.0, 60.0, 29.0, 'mm',
+                              step=1.0, key="cn_d1",
+                              help="Internal diameter of the hose. Pressure drop "
+                                   "goes as roughly 1/D⁵ — dropping from 29 to "
+                                   "19 mm costs about 5× the loss.")
+                _cn_l1 = unum(_cn_s1[1], "Feed — length (m)", 0.1, 10.0, 1.8, 'm',
+                              step=0.1, key="cn_l1",
+                              help="Developed length of the run, following the "
+                                   "actual routing rather than straight-line.")
+                _cn_k1 = unum(_cn_s1[2], "Feed — ΣK", 0.0, 30.0, 2.0, '',
+                              step=0.5, key="cn_k1",
+                              help="Sum of minor-loss coefficients on this run.")
+                _cn_s2 = st.columns(3)
+                _cn_d2 = unum(_cn_s2[0], "Return — bore (mm)", 6.0, 60.0, 29.0, 'mm',
+                              step=1.0, key="cn_d2")
+                _cn_l2 = unum(_cn_s2[1], "Return — length (m)", 0.1, 10.0, 1.2, 'm',
+                              step=0.1, key="cn_l2")
+                _cn_k2 = unum(_cn_s2[2], "Return — ΣK", 0.0, 30.0, 1.5, '',
+                              step=0.5, key="cn_k2")
+                _cn_segs = (
+                    PipeSegment(d_m=float(_cn_d1) * 1e-3, length_m=float(_cn_l1),
+                                k_minor=float(_cn_k1)),
+                    PipeSegment(d_m=float(_cn_d2) * 1e-3, length_m=float(_cn_l2),
+                                k_minor=float(_cn_k2)),
+                )
+
+                # ---- radiator core (coolant side) ------------------------ #
+                st.markdown("##### Radiator core")
+                _cn_r = st.columns(4)
+                _cn_ua = unum(_cn_r[0], "Core UA (W/K)", 20.0, 2000.0, 220.0, 'W/K',
+                              step=10.0, key="cn_ua",
+                              help="Overall conductance × area for the core. From "
+                                   "the datasheet, or back it out of a measured "
+                                   "heat rejection and ΔT.")
+                _cn_face = unum(_cn_r[1], "Frontal area (m²)", 0.005, 0.5,
+                                float(st.session_state.get("_rc_w_mm", 280.0))
+                                * float(st.session_state.get("_rc_h_mm", 200.0))
+                                * 1e-6, 'm²', step=0.005, key="cn_face",
+                                help="Core face area. Defaults to the width × "
+                                     "height you entered in the rig panel.")
+                _cn_cap = uslider(_cn_r[2], "Duct capture (–)", 0.10, 1.00, 0.55, '',
+                                  step=0.05, key="cn_cap",
+                                  help="Fraction of free-stream speed that actually "
+                                       "reaches the core. Sidepod ducting on an "
+                                       "FSAE car rarely beats 0.6.")
+                _cn_zeta = unum(_cn_r[3], "Core ζ (coolant side)", 0.0, 40.0, 4.0, '',
+                                step=0.5, key="cn_zeta",
+                                help="Minor-loss coefficient for the coolant path "
+                                     "through the core itself.")
+                _cn_rad = Radiator(ua_w_per_k=float(_cn_ua),
+                                   frontal_area_m2=float(_cn_face),
+                                   air_capture_eff=float(_cn_cap),
+                                   dp_coolant_k=float(_cn_zeta))
+
+                # ---- junctions ------------------------------------------- #
+                st.markdown("##### Wye junctions")
+                _cn_jkeys = list(STANDARD_Y_BRANCHES)
+                _cn_pick = st.multiselect(
+                    "Junctions in the loop", _cn_jkeys, default=_cn_jkeys,
+                    key="cn_juncs",
+                    help="The team's three custom wyes, all on a common 29 mm "
+                         "inlet. Each one splits the flow — the solver finds the "
+                         "split that makes both legs see the same pressure drop, "
+                         "which is what physically happens.")
+                _cn_juncs = tuple(STANDARD_Y_BRANCHES[k] for k in _cn_pick)
+
+                _cn_net = CoolingNetwork(fluid=_cn_fl, pump=_cn_pump,
+                                         radiator=_cn_rad, segments=_cn_segs,
+                                         junctions=_cn_juncs)
+
+                # ---- operating point ------------------------------------- #
+                _cn_op = _cn_net.operating_point()
+                _cn_audit = _cn_net.audit()
+
+                st.markdown("---")
+                st.markdown("#### Where the loop actually runs")
+                _cn_m = st.columns(4)
+                _cn_m[0].markdown(metric("Flow", f"{_cn_op['q_lpm']:.1f}", "L/min"),
+                                  unsafe_allow_html=True)
+                _cn_m[1].markdown(metric("Loop ΔP", f"{_cn_op['dp_pa']/1e3:.1f}",
+                                         "kPa"), unsafe_allow_html=True)
+                _cn_m[2].markdown(metric("Mass flow",
+                                         f"{_cn_op['mdot_kgs']:.2f}", "kg/s"),
+                                  unsafe_allow_html=True)
+                _cn_cstream = _cn_op["mdot_kgs"] * _cn_fl.cp
+                _cn_m[3].markdown(metric("Stream capacity",
+                                         f"{_cn_cstream:.0f}", "W/K"),
+                                  unsafe_allow_html=True)
+
+                _cn_qq = np.linspace(1e-9, _cn_pump.q_max_m3s, 120)
+                _cn_pump_dp = [_cn_pump.dp(float(q)) for q in _cn_qq]
+                _cn_sys_dp = [_cn_net.system_dp(float(q)) for q in _cn_qq]
+                import plotly.graph_objects as _go_cn
+                _cnf = _go_cn.Figure()
+                _cnf.add_trace(_go_cn.Scatter(
+                    x=_cn_qq * 6e4, y=np.asarray(_cn_pump_dp) / 1e3,
+                    name="Pump curve", line=dict(color="#37e0d0", width=3)))
+                _cnf.add_trace(_go_cn.Scatter(
+                    x=_cn_qq * 6e4, y=np.asarray(_cn_sys_dp) / 1e3,
+                    name="System resistance (your loop)",
+                    line=dict(color="#ff9f43", width=2, dash="dot")))
+                _cnf.add_trace(_go_cn.Scatter(
+                    x=[_cn_op["q_lpm"]], y=[_cn_op["dp_pa"] / 1e3],
+                    name="Operating point", mode="markers",
+                    marker=dict(color="#ff5a52", size=12, symbol="x")))
+                _cnf.update_layout(
+                    title="Pump vs loop — the coolant-side operating point",
+                    xaxis_title="flow (L/min)", yaxis_title="ΔP (kPa)",
+                    height=340, paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=36, b=0),
+                    legend=dict(bgcolor="rgba(0,0,0,0)"))
+                st.plotly_chart(_cnf, width='stretch', key="cn_curve")
+
+                # ---- per-segment and per-junction tables ----------------- #
+                _cn_a, _cn_b = st.columns(2)
+                with _cn_a:
+                    st.markdown("**Hose runs**")
+                    st.dataframe([
+                        {"run": _nm, "⌀ mm": round(_s["d_mm"], 1),
+                         "L m": round(_s["L_m"], 2),
+                         "v m/s": round(_s["v_ms"], 2),
+                         "Re": f"{_s['reynolds']:,.0f}",
+                         "f": round(_s["f_darcy"], 4),
+                         "ΔP kPa": round(_s["dp_pa"] / 1e3, 2)}
+                        for _nm, _s in zip(("feed", "return"),
+                                           _cn_audit["segments"])],
+                        width="stretch", hide_index=True)
+                    _cn_lam = [s for s in _cn_audit["segments"]
+                               if 0 < s["reynolds"] < 2300]
+                    if _cn_lam:
+                        st.caption("• A run is laminar at this flow — unusual for a "
+                                   "coolant loop, and a sign the bore is oversized "
+                                   "for the pump.")
+                with _cn_b:
+                    st.markdown("**Wye junctions**")
+                    if _cn_audit["junctions"]:
+                        st.dataframe([
+                            {"junction": _j["name"],
+                             "branch %": f"{_j['branch_frac']*100:.0f}",
+                             "v in m/s": round(_j["v_in_ms"], 2),
+                             "v branch m/s": round(_j["v_branch_ms"], 2),
+                             "ṁ branch kg/s": round(_j["mdot_branch_kgs"], 3),
+                             "ΔP kPa": round(max(_j["dp_run_pa"],
+                                                 _j["dp_branch_pa"]) / 1e3, 2)}
+                            for _j in _cn_audit["junctions"]],
+                            width="stretch", hide_index=True)
+                        st.caption(
+                            "Branch % is solved, not assumed: it's the split that "
+                            "makes both legs see the same pressure drop.")
+                    else:
+                        st.info("No junctions selected — the loop is a plain series "
+                                "circuit.")
+
+                # ---- transient lap thermal ------------------------------- #
+                st.markdown("---")
+                st.markdown("#### Does it hold temperature over a run?")
+                st.markdown(
+                    '<p class="hint" style="margin:0 0 6px;">The hydraulics above fix '
+                    'the coolant mass flow; this marches the loop temperature over a '
+                    'repeated lap, rejecting heat through the core against ram air '
+                    'that rises and falls with car speed. What you\'re looking for is '
+                    'a curve that flattens out below your limit — not one still '
+                    'climbing at the end.</p>',
+                    unsafe_allow_html=True)
+
+                _cn_t1 = st.columns(4)
+                _cn_heat = unum(_cn_t1[0], "Heat into the loop (W)", 200.0, 30000.0,
+                                float(st.session_state.get("_pti_heat_w", 4000.0))
+                                + 600.0, 'W', step=100.0, key="cn_heat",
+                                help="Lap-average heat the coolant has to carry — "
+                                     "motor, inverter and any pack heat sharing the "
+                                     "loop. Defaults to the rig panel's number.")
+                _cn_amb = unum(_cn_t1[1], "Ambient air (°C)", -10.0, 55.0, 30.0, '°C',
+                               step=1.0, key="cn_amb",
+                               help="Design-day air temperature. Comp days in "
+                                    "summer routinely beat 30 °C on the tarmac.")
+                _cn_t0 = unum(_cn_t1[2], "Start temperature (°C)", 0.0, 120.0, 40.0,
+                              '°C', step=1.0, key="cn_t0",
+                              help="Coolant temperature as you leave the line — "
+                                   "usually warm from the previous run.")
+                _cn_laps = int(uslider(_cn_t1[3], "Laps", 1, 30, 12, '', step=1,
+                                       key="cn_laps",
+                                       help="Endurance is about 22 km; a dozen laps "
+                                            "is enough to see whether it settles."))
+
+                _cn_t2 = st.columns(4)
+                _cn_lapt = unum(_cn_t2[0], "Lap time (s)", 20.0, 200.0, 75.0, 's',
+                                step=1.0, key="cn_lapt")
+                _cn_vmin = unum(_cn_t2[1], "Slowest corner (km/h)", 5.0, 80.0, 25.0,
+                                'km/h', step=1.0, key="cn_vmin")
+                _cn_vmax = unum(_cn_t2[2], "Fastest point (km/h)", 20.0, 160.0, 85.0,
+                                'km/h', step=1.0, key="cn_vmax")
+                _cn_vol = unum(_cn_t2[3], "Coolant volume (L)", 0.5, 15.0, 2.5, 'L',
+                               step=0.1, key="cn_vol",
+                               help="Total fluid in the loop. More volume damps the "
+                                    "temperature swing but doesn't change where it "
+                                    "settles.")
+
+                _cn_vmin_ms = float(min(_cn_vmin, _cn_vmax)) / 3.6
+                _cn_vmax_ms = float(max(_cn_vmin, _cn_vmax)) / 3.6
+                _cn_tp = np.linspace(0.0, float(_cn_lapt), 240)
+                # Autocross-shaped profile: speed swings between the slowest
+                # corner and the fastest point a handful of times per lap.
+                _cn_vp = _cn_vmin_ms + (_cn_vmax_ms - _cn_vmin_ms) * 0.5 * (
+                    1.0 - np.cos(2.0 * np.pi * 4.0 * _cn_tp / float(_cn_lapt)))
+                # Losses roughly track speed; normalised so the lap mean is
+                # exactly the heat figure entered above.
+                _cn_qp = np.maximum(_cn_vp / max(float(np.mean(_cn_vp)), 1e-6),
+                                    0.3) * float(_cn_heat)
+                st.caption(
+                    "The lap profile is a synthetic autocross shape built from the "
+                    "three numbers above — swap in a real speed trace from Track "
+                    "Testing when you have one.")
+
+                _cn_th = simulate_lap_thermal(
+                    _cn_net, t_s=_cn_tp, v_car_ms=_cn_vp, q_gen_w=_cn_qp,
+                    n_laps=_cn_laps, t_amb_c=float(_cn_amb),
+                    t0_c=float(_cn_t0), coolant_volume_l=float(_cn_vol))
+
+                _cn_tf = _go_cn.Figure()
+                _cn_tf.add_trace(_go_cn.Scatter(
+                    x=_cn_th.t_s, y=_cn_th.t_coolant_c, name="Coolant",
+                    line=dict(color="#ff5a52", width=2)))
+                _cn_tf.add_trace(_go_cn.Scatter(
+                    x=_cn_th.t_s,
+                    y=np.full_like(_cn_th.t_s, float(_cn_amb)), name="Ambient",
+                    line=dict(color="#7a8896", width=1, dash="dot")))
+                _cn_tf.update_layout(
+                    title=f"Coolant temperature over {_cn_laps} laps",
+                    xaxis_title="time (s)", yaxis_title="temperature (°C)",
+                    height=320, paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#cdd6df", size=11),
+                    margin=dict(l=0, r=0, t=36, b=0),
+                    legend=dict(bgcolor="rgba(0,0,0,0)"))
+                st.plotly_chart(_cn_tf, width='stretch', key="cn_thermal")
+
+                _cn_m2 = st.columns(3)
+                _cn_m2[0].markdown(metric("Peak coolant",
+                                          f"{_cn_th.t_peak_c:.1f}", "°C"),
+                                   unsafe_allow_html=True)
+                _cn_m2[1].markdown(metric("Steady margin",
+                                          f"{_cn_th.steady_margin_w:+.0f}", "W"),
+                                   unsafe_allow_html=True)
+                _cn_m2[2].markdown(metric("Rejected (mean)",
+                                          f"{float(np.mean(_cn_th.q_reject_w)):.0f}",
+                                          "W"), unsafe_allow_html=True)
+
+                # A loop that is coping converges: rejection rises with coolant
+                # temperature until it balances the heat in, so the steady
+                # margin tends to zero either way. The honest test is whether
+                # the temperature has stopped drifting, and where it stopped.
+                _cn_lap_pts = max(int(float(_cn_lapt) / 0.05), 1)
+                _cn_tc = _cn_th.t_coolant_c
+                _cn_drift = float(
+                    _cn_tc[-1] - _cn_tc[max(len(_cn_tc) - _cn_lap_pts - 1, 0)])
+                _cn_settled = abs(_cn_drift) < 1.0
+                if _cn_settled and _cn_th.t_peak_c < 95.0:
+                    st.success(
+                        f"Settles at **{_cn_th.t_peak_c:.0f} °C** and holds there — "
+                        f"the loop carries {float(_cn_heat):.0f} W at "
+                        f"{float(_cn_amb):g} °C ambient.")
+                elif _cn_settled and _cn_th.t_peak_c < 120.0:
+                    st.warning(
+                        f"Stabilises, but at **{_cn_th.t_peak_c:.0f} °C** — into "
+                        "boiling territory for a low-pressure cap. Raise cap "
+                        "pressure, core UA, duct capture or flow.")
+                elif _cn_settled:
+                    st.error(
+                        f"Balances only at **{_cn_th.t_peak_c:.0f} °C** — the core "
+                        "is far too small for this heat load. Nothing in the loop "
+                        "survives that; this needs more core area or a real "
+                        "reduction in heat rejected to coolant.")
+                else:
+                    st.error(
+                        f"**Still climbing after {_cn_laps} laps** — up "
+                        f"{_cn_drift:+.1f} °C on the final lap alone, at "
+                        f"{_cn_th.t_peak_c:.0f} °C and rising. More core area, "
+                        "better duct capture or more flow; a bigger tank only "
+                        "delays it.")
+
+                st.session_state["_cn_q_lpm"] = float(_cn_op["q_lpm"])
+                st.session_state["_cn_peak_c"] = float(_cn_th.t_peak_c)
+                try:
+                    record_activity(
+                        "cooling", "condition",
+                        f"Coolant loop: {_cn_fluid_name}, pump "
+                        f"{float(_cn_dp0):.0f} kPa / {float(_cn_qmax):.0f} L/min, "
+                        f"{len(_cn_pick)} wye junction(s), core UA "
+                        f"{float(_cn_ua):.0f} W/K, heat {float(_cn_heat):.0f} W at "
+                        f"{float(_cn_amb):g} °C ambient")
+                    record_activity(
+                        "cooling", "calculation",
+                        f"Coolant network: {_cn_op['q_lpm']:.1f} L/min at "
+                        f"{_cn_op['dp_pa']/1e3:.1f} kPa; peak coolant "
+                        f"{_cn_th.t_peak_c:.1f} °C over {_cn_laps} laps, steady "
+                        f"margin {_cn_th.steady_margin_w:+.0f} W")
+                except Exception:
+                    pass
+
+            except Exception as _cn_err:
+                st.warning(f"Coolant network solver unavailable: {_cn_err}")
+
+        # ================================================================= #
+        #  PANEL 4 — Publish powertrain to the integration ledger           #
+        # ================================================================= #
+        with _pt_tabs[4]:
             st.markdown(
                 '<p class="hint" style="margin:0 0 6px;">This is the step the team '
                 'has been missing. <b>Every other sub-team publishes their numbers to '
@@ -19452,9 +19825,9 @@ with tab_ev:
                     st.warning(f"Couldn't publish: {_pe}")
 
         # ================================================================= #
-        #  PANEL 4 — Cross-team checks (powertrain's findings, live)         #
+        #  PANEL 5 — Cross-team checks (powertrain's findings, live)         #
         # ================================================================= #
-        with _pt_tabs[4]:
+        with _pt_tabs[5]:
             st.markdown(
                 '<p class="hint" style="margin:0 0 6px;">The cross-team physics checks '
                 'that touch powertrain, run live against whatever\u2019s in the ledger right '
@@ -19489,9 +19862,9 @@ with tab_ev:
                 st.warning(f"Couldn't run cross-team checks: {_ke}")
 
         # ================================================================= #
-        #  PANEL 5 — Live spec sheet (replaces the screenshot)              #
+        #  PANEL 6 — Live spec sheet (replaces the screenshot)              #
         # ================================================================= #
-        with _pt_tabs[5]:
+        with _pt_tabs[6]:
             st.markdown(
                 '<p class="hint" style="margin:0 0 6px;">The <b>Design EV Spec Sheet</b>, '
                 'generated from the numbers you\u2019ve committed instead of a screenshot '
