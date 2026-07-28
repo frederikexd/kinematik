@@ -48,12 +48,14 @@ _SUBMODULES = (
     "compliance",
     "correlation",
     "damper",
+    "daq_plan",
     "dynamics",
     "electronics",
     "ev_powertrain",
     "flex",
     "flexgen",
     "fullcar3d",
+    "fuse_test",
     "ggv",
     "harness",
     "integration",
@@ -111,6 +113,7 @@ _SUBMODULES = (
     "throttle_flutter_cosim",  # quasi-steady flutter co-simulation
     "history",                 # project version history: fetch, diff, restore
     "hardpoint_import",        # OptimumK / Excel / CSV hardpoint importer
+    "sim_handoff",             # semantic DXF + mesh shortlist + study contract
 )
 
 # ---------------------------------------------------------------------------

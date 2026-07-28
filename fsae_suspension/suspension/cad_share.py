@@ -31,6 +31,15 @@ from typing import Optional
 # or a fine STL blows past this fast, and we don't want to bloat project.json).
 CAD_EMBED_LIMIT_BYTES = 10 * 1024 * 1024   # 10 MB
 
+# The APDL deck and the DXF/manifest handoff are two halves of one contract, so
+# they carry the same schema id. Imported defensively: sim_handoff is stdlib-only
+# and cannot fail in practice, but an export must never break because a sibling
+# module hiccuped.
+try:
+    from suspension.sim_handoff import SCHEMA as _HANDOFF_SCHEMA
+except Exception:                                        # pragma: no cover
+    _HANDOFF_SCHEMA = "kinematik.sim-handoff/v1"
+
 
 # --------------------------------------------------------------------------- #
 #  File-size guard for the Team CAD library
@@ -177,6 +186,23 @@ def _round(x: float, nd: int = 6) -> float:
     return round(float(x), nd)
 
 
+def _cm_name(prefix: str, key: str) -> str:
+    """A legal APDL component name from a KinematiK key.
+
+    APDL allows 32 characters of letters, digits and underscores, and is
+    case-insensitive — so 'upper_front_inner' becomes KK_HP_UPPER_FRONT_INNER.
+    Anything longer is truncated from the RIGHT, keeping the prefix and the
+    start of the key, because that is the part a human recognises. Collisions
+    after truncation are possible in principle but not in practice: the
+    hardpoint keys are a fixed, short vocabulary.
+    """
+    safe = "".join(c if (c.isalnum() or c == "_") else "_"
+                   for c in str(key)).strip("_").upper()
+    while "__" in safe:
+        safe = safe.replace("__", "_")
+    return f"{prefix}_{safe}"[:32]
+
+
 def build_apdl_deck(hp_dict: dict,
                     section: BeamSection,
                     material: BeamMaterial,
@@ -214,6 +240,13 @@ def build_apdl_deck(hp_dict: dict,
     A(f"! Units: SI (m, Pa, kg). SAE axes as modelled (x rear, y right, z up).")
     A(f"! BEAM188 line bodies. Section + material from the Compliance tab.")
     A(f"! ======================================================================")
+    # A machine-readable tag, in APDL's own comment command so it survives a
+    # round-trip through Mechanical. It lets this deck be paired with the
+    # handoff manifest that ships beside it — same schema, same vocabulary, and
+    # the components below use the same KK_ names the manifest does.
+    A(f"/COM,KK-SCHEMA {_HANDOFF_SCHEMA}")
+    A("/COM,KK-ARTEFACT apdl-beam-torsion")
+    A("/COM,KK-BIND components below are named; bind BCs by name, not by number")
     A("/PREP7")
     A("ET,1,BEAM188")
     A("KEYOPT,1,3,3        ! quadratic transverse shear, cubic option")
@@ -245,6 +278,21 @@ def build_apdl_deck(hp_dict: dict,
         A(f"K,{kp},{_round(xyz[0]*mm)},{_round(xyz[1]*mm)},{_round(xyz[2]*mm)}   ! {key}")
     A("")
 
+    # --- named components for every keypoint ----------------------------- #
+    # Without these, applying a boundary condition means picking a keypoint
+    # number out of the comments by eye, and every re-run with a different
+    # topology renumbers them. A component binds by NAME, so a constraint
+    # written once survives a geometry change — and anything reading this deck
+    # alongside the handoff manifest sees the same identifiers in both.
+    if kp_of:
+        A("! --- named components: bind boundary conditions by NAME, not by ---")
+        A("! --- keypoint number, which renumbers whenever topology changes ---")
+        for key, num in kp_of.items():
+            A(f"KSEL,S,KP,,{num} $ CM,{_cm_name('KK_HP', key)},KP")
+        A(f"KSEL,S,KP,,1,{kp} $ CM,KK_KP_SUSP,KP")
+        A("ALLSEL,ALL")
+        A("")
+
     # --- suspension links (lines between keypoints) ---------------------- #
     # Each tuple: (label, endpoint_key_a, endpoint_key_b). Only emitted when
     # both endpoints exist, so a direct-acting corner (no rocker) still works.
@@ -265,11 +313,22 @@ def build_apdl_deck(hp_dict: dict,
     A("TYPE,1 $ MAT,1")
     A("! --- suspension links (BEAM188) ---")
     n_links = 0
+    ln = 0                          # ANSYS numbers lines in creation order
+    link_ln: dict[str, int] = {}
     for label, a, b in link_defs:
         if a in kp_of and b in kp_of:
-            A(f"L,{kp_of[a]},{kp_of[b]}   ! {label}")
+            ln += 1
+            link_ln[label] = ln
+            A(f"L,{kp_of[a]},{kp_of[b]}   ! {label}  (line {ln})")
             n_links += 1
     A("")
+    if link_ln:
+        A("! --- named components per link, plus the set as a whole ---")
+        for label, num in link_ln.items():
+            A(f"LSEL,S,LINE,,{num} $ CM,{_cm_name('KK_LN', label)},LINE")
+        A(f"LSEL,S,LINE,,1,{ln} $ CM,KK_LN_SUSP,LINE")
+        A("ALLSEL,ALL")
+        A("")
 
     # --- optional Frame Planner tubes ------------------------------------ #
     n_frame_tubes = 0
@@ -300,13 +359,27 @@ def build_apdl_deck(hp_dict: dict,
             A(f"SECDATA,{_round(ri)},{_round(ro)},8")
         A("")
 
+        if node_kp:
+            A("! --- named components for the frame nodes ---")
+            for nid, num in node_kp.items():
+                A(f"KSEL,S,KP,,{num} $ CM,{_cm_name('KK_ND', nid)},KP")
+            A("ALLSEL,ALL")
+            A("")
+
+        frame_ln_first = ln + 1
         for tube in getattr(frame, "tubes", []):
             a, b = str(tube.a), str(tube.b)
             if a in node_kp and b in node_kp:
                 sid = sec_of_size.get(getattr(tube, "size", ""), 1)
+                ln += 1
                 A(f"SECNUM,{sid}")
-                A(f"L,{node_kp[a]},{node_kp[b]}   ! frame tube {tube.name} (size {getattr(tube,'size','?')})")
+                A(f"L,{node_kp[a]},{node_kp[b]}   ! frame tube {tube.name} "
+                  f"(size {getattr(tube,'size','?')}, line {ln})")
                 n_frame_tubes += 1
+        if n_frame_tubes:
+            A("")
+            A(f"LSEL,S,LINE,,{frame_ln_first},{ln} $ CM,KK_LN_FRAME,LINE")
+            A("ALLSEL,ALL")
         A("")
 
     # --- mesh ------------------------------------------------------------ #
@@ -318,7 +391,7 @@ def build_apdl_deck(hp_dict: dict,
 
     # --- solution recipe (commented; the engineer applies real BCs) ------ #
     A("! ====================================================================")
-    A("! TORSIONAL STIFFNESS RECIPE (uncomment / adapt node selections)")
+    A("! TORSIONAL STIFFNESS RECIPE")
     A("!   1. Constrain the REAR hub keypoints (fix all DOF).")
     A("!   2. Apply a couple across the FRONT hubs: equal & opposite Fz")
     A("!      a known track half-width apart  ->  torque T = F * track.")
@@ -326,17 +399,40 @@ def build_apdl_deck(hp_dict: dict,
     A("!   4. twist theta = atan((dz_left - dz_right) / track)   [rad]")
     A("!      K_torsion = T / theta   [N*m/rad]  (or /deg * pi/180).")
     A("! --------------------------------------------------------------------")
+    A("! The PARAMETERS below are live - edit them here, in one place. The load")
+    A("! and constraint block stays commented on purpose: which keypoints are")
+    A("! your front and rear hubs depends on the frame you loaded, and this")
+    A("! deck will not guess at a boundary condition on your behalf. Fill in")
+    A("! the two component names and uncomment.")
+    A("! --------------------------------------------------------------------")
+    A("*SET,KK_TRACK_M ,1.200        ! front track, m - EDIT")
+    A("*SET,KK_FORCE_N ,500.0        ! one side of the couple, N - EDIT")
+    A("*SET,KK_TORQUE  ,KK_FORCE_N*KK_TRACK_M      ! applied torque, N*m")
+    A("! --------------------------------------------------------------------")
     A("! /SOLU")
     A("! ANTYPE,STATIC")
-    A("! ! --- example: fix rear hubs ---")
-    A("! ! NSEL,S,LOC,X,<rear_hub_x_m>   $ D,ALL,ALL,0   $ ALLSEL")
-    A("! ! --- example: front couple ---")
-    A("! ! F,<front_left_node>,FZ, 500")
-    A("! ! F,<front_right_node>,FZ,-500")
+    A("! ! --- fix the rear hubs (bind by component name, e.g. KK_ND_<node>) --")
+    A("! ! CMSEL,S,<rear_hub_component>  $ DK,ALL,ALL,0  $ ALLSEL,ALL")
+    A("! ! --- front couple ---------------------------------------------------")
+    A("! ! CMSEL,S,<front_left_component>   $ FK,ALL,FZ, KK_FORCE_N  $ ALLSEL,ALL")
+    A("! ! CMSEL,S,<front_right_component>  $ FK,ALL,FZ,-KK_FORCE_N  $ ALLSEL,ALL")
     A("! SOLVE")
     A("! FINISH")
     A("! /POST1")
     A("! ! PRNSOL,U,Z   ! read front-hub vertical deflections")
+    A("! ! K_torsion = KK_TORQUE / atan((dz_left-dz_right)/KK_TRACK_M)")
+    A("! --------------------------------------------------------------------")
+    A("! Components defined by this deck (CMLIST lists them all at any time):")
+    A("!   KK_HP_<hardpoint>  one per defined suspension pickup point")
+    A("!   KK_KP_SUSP         every suspension keypoint")
+    A("!   KK_LN_<link>       one per suspension link line")
+    A("!   KK_LN_SUSP         every suspension link")
+    if n_frame_tubes:
+        # Listed only when a frame is actually in this deck. A legend that
+        # names components the deck never created is worse than no legend:
+        # it sends someone looking for a selection that does not exist.
+        A("!   KK_ND_<node>       one per frame node")
+        A("!   KK_LN_FRAME        all the tubes from the Frame Planner")
     A("! ====================================================================")
     A(f"! summary: {n_links} suspension links"
       + (f" + {n_frame_tubes} frame tubes" if n_frame_tubes else "")
