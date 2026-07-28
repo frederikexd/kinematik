@@ -61,60 +61,110 @@ def _hardpoints_from_session(ss):
 
 
 def _draw_front(res):
-    """The front as a scatter matrix's honest little brother: cost on x,
-    composure on y, marker size = structural mass, colour = endurance range;
-    the front ringed, the knee starred, infeasibles shown hollow with an ×."""
+    """The front as an interactive Plotly scatter: cost on x, composure on y,
+    marker size = structural mass, colour = endurance range; Pareto configs
+    ringed in orange, knee starred, infeasibles shown as grey ×."""
     import numpy as np
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    import plotly.graph_objects as go
     from suspension import omnicore as oc
 
-    fig, ax = plt.subplots(figsize=(7.4, 4.6))
+    fig = go.Figure()
     feas = [c for c in res.configs if c.feasible]
     infe = [c for c in res.configs if not c.feasible]
+
     if feas:
         x = np.array([c.objectives["cost"] for c in feas])
         y = np.array([c.objectives["composure"] for c in feas])
         m = np.array([c.objectives["mass"] for c in feas])
         lp = np.array([c.objectives["laps"] for c in feas])
-        sizes = 60.0 + 220.0 * (m - m.min()) / max(float(np.ptp(m)), 1e-9)
-        scat = ax.scatter(x, y, s=sizes, c=lp, cmap="viridis",
-                          edgecolors="#333", linewidths=0.6, zorder=3)
-        fig.colorbar(scat, ax=ax, label="endurance range (laps)")
-        for c in feas:
-            if c.cid in res.pareto_ids:
-                ax.scatter([c.objectives["cost"]],
-                           [c.objectives["composure"]], s=340,
-                           facecolors="none", edgecolors="#e08a3c",
-                           linewidths=1.8, zorder=4)
-            if c.cid == res.knee_id:
-                ax.scatter([c.objectives["cost"]],
-                           [c.objectives["composure"]], marker="*",
-                           s=420, color="#d1495b", zorder=5,
-                           label="referee's pick (knee)")
-            ax.annotate(f"#{c.cid}", (c.objectives["cost"],
-                                      c.objectives["composure"]),
-                        textcoords="offset points", xytext=(6, 5),
-                        fontsize=7.5)
-    for c in infe:
-        cost = c.objectives.get("cost", float("nan"))
-        comp = c.objectives.get("composure", float("nan"))
-        if np.isfinite(cost) and np.isfinite(comp):
-            ax.scatter([cost], [comp], marker="x", s=70, color="#999",
-                       zorder=2)
-            ax.annotate(f"#{c.cid}", (cost, comp),
-                        textcoords="offset points", xytext=(6, 5),
-                        fontsize=7.5, color="#999")
-    ax.set_xlabel(f"decision-scope cost ({oc.AXES['cost'][1]})")
-    ax.set_ylabel(f"event composure ({oc.AXES['composure'][1]}) — lower is "
-                  "more composed")
-    ax.set_title("The screening front — orange ring = Pareto, ★ = knee, "
-                 "× = vetoed; marker size = structural mass", fontsize=9.5)
-    if feas and any(c.cid == res.knee_id for c in feas):
-        ax.legend(loc="best", fontsize=8)
-    ax.grid(alpha=0.25)
-    fig.tight_layout()
+        m_range = float(np.ptp(m)) or 1e-9
+        sizes = 10.0 + 30.0 * (m - m.min()) / m_range
+
+        # ---- feasible configs (colour = laps, size = mass) ----------------
+        labels = [f"#{c.cid}" for c in feas]
+        hover = [
+            f"<b>#{c.cid}</b><br>"
+            f"cost: ${c.objectives['cost']:,.0f}<br>"
+            f"composure: {c.objectives['composure']:.4f}<br>"
+            f"mass: {c.objectives['mass']:.2f} kg<br>"
+            f"laps: {c.objectives['laps']:.2f}"
+            for c in feas
+        ]
+        fig.add_trace(go.Scatter(
+            x=x, y=y, mode="markers+text",
+            marker=dict(
+                size=sizes, color=lp, colorscale="Viridis",
+                colorbar=dict(title="endurance range (laps)"),
+                line=dict(color="#333333", width=0.6),
+            ),
+            text=labels, textposition="top right",
+            textfont=dict(size=9),
+            hovertext=hover, hoverinfo="text",
+            name="feasible",
+        ))
+
+        # ---- Pareto ring (orange outline) ----------------------------------
+        pareto = [c for c in feas if c.cid in res.pareto_ids]
+        if pareto:
+            fig.add_trace(go.Scatter(
+                x=[c.objectives["cost"] for c in pareto],
+                y=[c.objectives["composure"] for c in pareto],
+                mode="markers",
+                marker=dict(size=[
+                    12.0 + 30.0 * (c.objectives["mass"] - m.min()) / m_range
+                    for c in pareto
+                ] , color="rgba(0,0,0,0)",
+                    line=dict(color="#e08a3c", width=2.2)),
+                hoverinfo="skip", name="Pareto front",
+            ))
+
+        # ---- knee star -----------------------------------------------------
+        knee = [c for c in feas if c.cid == res.knee_id]
+        if knee:
+            fig.add_trace(go.Scatter(
+                x=[knee[0].objectives["cost"]],
+                y=[knee[0].objectives["composure"]],
+                mode="markers",
+                marker=dict(symbol="star", size=18, color="#d1495b"),
+                hovertext=[f"★ referee's pick #{knee[0].cid}"],
+                hoverinfo="text", name="referee's pick (knee)",
+            ))
+
+    # ---- infeasible (grey ×) -----------------------------------------------
+    if infe:
+        ix = [c.objectives.get("cost", None) for c in infe]
+        iy = [c.objectives.get("composure", None) for c in infe]
+        valid = [(xi, yi, c) for xi, yi, c in zip(ix, iy, infe)
+                 if xi is not None and yi is not None
+                 and np.isfinite(xi) and np.isfinite(yi)]
+        if valid:
+            fig.add_trace(go.Scatter(
+                x=[v[0] for v in valid], y=[v[1] for v in valid],
+                mode="markers+text",
+                marker=dict(symbol="x", size=9, color="#888888"),
+                text=[f"#{v[2].cid}" for v in valid],
+                textposition="top right", textfont=dict(size=9, color="#888"),
+                hovertext=[f"#{v[2].cid} (vetoed)" for v in valid],
+                hoverinfo="text", name="infeasible / vetoed",
+            ))
+
+    fig.update_layout(
+        xaxis_title=f"decision-scope cost ({oc.AXES['cost'][1]})",
+        yaxis_title=f"event composure ({oc.AXES['composure'][1]}) — lower is more composed",
+        title=dict(
+            text="The screening front — orange ring = Pareto, ★ = knee, × = vetoed; "
+                 "marker size = structural mass",
+            font=dict(size=12),
+        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        height=480,
+        margin=dict(l=60, r=20, t=80, b=60),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#c9d3dd"),
+        xaxis=dict(gridcolor="#2a3340"),
+        yaxis=dict(gridcolor="#2a3340"),
+    )
     return fig
 
 
@@ -267,7 +317,7 @@ def _show_result(st, np, res):
     # ---------------- 4 · the front ----------------------------------------
     st.markdown("#### The screening front")
     fig = _draw_front(res)
-    st.pyplot(fig, clear_figure=True)
+    st.plotly_chart(fig, use_container_width=True)
 
     # ---------------- 5 · the scorecard, vetoes and receipts ---------------
     st.markdown("#### Scorecard")
