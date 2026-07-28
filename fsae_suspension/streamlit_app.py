@@ -19478,9 +19478,113 @@ with tab_ev:
                          "which is what physically happens.")
                 _cn_juncs = tuple(STANDARD_Y_BRANCHES[k] for k in _cn_pick)
 
-                _cn_net = CoolingNetwork(fluid=_cn_fl, pump=_cn_pump,
-                                         radiator=_cn_rad, segments=_cn_segs,
-                                         junctions=_cn_juncs)
+                # ---- one branch leg, in detail --------------------------- #
+                # The three standard wyes have fixed bores, which is fine for
+                # the loop total but useless for "does this hose size matter on
+                # THAT leg". Turning this on swaps the chosen wye for one of any
+                # bore and folds its downstream run into leg_k, so the equal-ΔP
+                # split solve sees the real leg instead of a bare junction.
+                st.markdown("##### Branch leg (detail)")
+                _cn_detail = st.checkbox(
+                    "Size one branch leg — override its hose bore and downstream run",
+                    value=False, key="cn_detail",
+                    help="Off, every wye uses its standard bore and the branch "
+                         "legs are assumed identical. On, one junction becomes "
+                         "editable and its hose run is modelled, which is what "
+                         "you need to settle an argument about a specific hose.")
+                _cn_branch = None
+                _cn_cmp_rows = []
+                if _cn_detail and _cn_pick:
+                    _cn_bsel = st.selectbox(
+                        "Which junction", _cn_pick, index=len(_cn_pick) - 1,
+                        key="cn_bsel",
+                        help="The wye whose branch you're sizing. Its inlet bore "
+                             "is kept; only the branch and its run change.")
+                    _cn_b1 = st.columns(4)
+                    _cn_dbr = unum(_cn_b1[0], "Branch hose ID (mm)", 4.0, 50.0, 12.0,
+                                   'mm', step=0.1, key="cn_dbr",
+                                   help="Internal diameter of the hose on this "
+                                        "branch — the number that gets argued "
+                                        "about. Measure it, don't assume it.")
+                    _cn_bl = unum(_cn_b1[1], "Leg length (m)", 0.05, 5.0, 0.60, 'm',
+                                  step=0.05, key="cn_bl",
+                                  help="Developed length from the wye to whatever "
+                                       "this leg feeds.")
+                    _cn_bk = unum(_cn_b1[2], "Leg ΣK", 0.0, 30.0, 1.5, '', step=0.5,
+                                  key="cn_bk",
+                                  help="Minor losses on the run itself — bends, "
+                                       "fittings, the entry.")
+                    _cn_bz = unum(_cn_b1[3], "Device ζ", 0.0, 60.0, 6.0, '', step=0.5,
+                                  key="cn_bz",
+                                  help="Loss through whatever sits on the end of "
+                                       "this leg — cold plate, jacket, chiller.")
+                    _cn_b2 = st.columns(2)
+                    _cn_bq = unum(_cn_b2[0], "Heat on this leg (W)", 0.0, 20000.0,
+                                  1500.0, 'W', step=100.0, key="cn_bq",
+                                  help="Heat the device on this leg dumps into the "
+                                       "coolant. Sets the leg's temperature rise.")
+                    _cn_cmp = _cn_b2[1].checkbox(
+                        "Compare against a second bore", value=False, key="cn_cmp",
+                        help="Solves the whole loop twice and tables the "
+                             "difference — the honest way to test whether a hose "
+                             "size change is worth arguing about.")
+                    if _cn_cmp:
+                        _cn_dbr2 = unum(_cn_b2[1], "Second hose ID (mm)", 4.0, 50.0,
+                                        12.7, 'mm', step=0.1, key="cn_dbr2")
+
+                    def _cn_solve_branch(_d_m):
+                        """Swap the selected wye for one of bore `_d_m` and fold
+                        its downstream leg into leg_k as f·L/d + ΣK + ζ, all
+                        referenced to that leg's own velocity head — which is the
+                        reference leg_k already uses. The friction factor needs
+                        the branch flow and the branch flow needs the friction
+                        factor, so iterate; it converges in two passes."""
+                        _base = STANDARD_Y_BRANCHES[_cn_bsel]
+                        _nm = f"{_base.d_in_m*1e3:.0f}mm-{_d_m*1e3:.1f}mm"
+                        _others = tuple(STANDARD_Y_BRANCHES[k] for k in _cn_pick
+                                        if k != _cn_bsel)
+                        _qb, _n, _jb = 1e-5, None, None
+                        for _ in range(8):
+                            _f = PipeSegment(
+                                d_m=_d_m, length_m=float(_cn_bl),
+                                k_minor=float(_cn_bk)
+                            ).audit(max(_qb, 1e-7), _cn_fl)["f_darcy"]
+                            _kb = (_f * float(_cn_bl) / _d_m
+                                   + float(_cn_bk) + float(_cn_bz))
+                            _w = YBranch(name=_nm, d_in_m=_base.d_in_m,
+                                         d_branch_m=_d_m)
+                            _n = CoolingNetwork(
+                                fluid=_cn_fl, pump=_cn_pump, radiator=_cn_rad,
+                                segments=_cn_segs, junctions=_others + (_w,),
+                                leg_k={_nm: (0.0, _kb)})
+                            _jb = next(j for j in _n.audit()["junctions"]
+                                       if j["name"] == _nm)
+                            _qn = _jb["mdot_branch_kgs"] / _cn_fl.rho
+                            if abs(_qn - _qb) < 1e-10:
+                                _qb = _qn
+                                break
+                            _qb = _qn
+                        _op = _n.operating_point()
+                        _mdot = _jb["mdot_branch_kgs"]
+                        return dict(
+                            net=_n, d_mm=_d_m * 1e3, split=_jb["branch_frac"],
+                            q_branch_lpm=_qb * 6e4,
+                            v_branch=_qb / (np.pi * _d_m ** 2 / 4.0),
+                            loop_lpm=_op["q_lpm"], loop_dp_kpa=_op["dp_pa"] / 1e3,
+                            dt_k=(float(_cn_bq) / (_mdot * _cn_fl.cp)
+                                  if _mdot > 1e-9 else float("inf")))
+
+                    _cn_branch = _cn_solve_branch(float(_cn_dbr) * 1e-3)
+                    _cn_cmp_rows = [_cn_branch]
+                    if _cn_cmp:
+                        _cn_cmp_rows.append(
+                            _cn_solve_branch(float(_cn_dbr2) * 1e-3))
+
+                _cn_net = (_cn_branch["net"] if _cn_branch is not None
+                           else CoolingNetwork(fluid=_cn_fl, pump=_cn_pump,
+                                               radiator=_cn_rad,
+                                               segments=_cn_segs,
+                                               junctions=_cn_juncs))
 
                 # ---- operating point ------------------------------------- #
                 _cn_op = _cn_net.operating_point()
@@ -19566,6 +19670,259 @@ with tab_ev:
                     else:
                         st.info("No junctions selected — the loop is a plain series "
                                 "circuit.")
+
+                # ---- branch leg results / bore comparison ---------------- #
+                if _cn_branch is not None:
+                    st.markdown("---")
+                    st.markdown(f"#### Branch leg — {_cn_bsel}")
+                    _cn_bm = st.columns(4)
+                    _cn_bm[0].markdown(metric("Branch flow",
+                                              f"{_cn_branch['q_branch_lpm']:.2f}",
+                                              "L/min"), unsafe_allow_html=True)
+                    _cn_bm[1].markdown(metric("Branch velocity",
+                                              f"{_cn_branch['v_branch']:.2f}", "m/s"),
+                                       unsafe_allow_html=True)
+                    _cn_bm[2].markdown(metric("Split to branch",
+                                              f"{_cn_branch['split']*100:.1f}", "%"),
+                                       unsafe_allow_html=True)
+                    _cn_bm[3].markdown(metric("Leg ΔT",
+                                              f"{_cn_branch['dt_k']:.2f}", "K"),
+                                       unsafe_allow_html=True)
+                    if _cn_branch["v_branch"] > 3.0:
+                        st.caption("• Over 3 m/s in the branch — erosion and noise "
+                                   "territory for a silicone hose.")
+                    elif _cn_branch["v_branch"] < 0.3:
+                        st.caption("• Under 0.3 m/s — this leg is barely flowing; "
+                                   "air will not purge out of it on its own.")
+
+                    if len(_cn_cmp_rows) == 2:
+                        _a, _b = _cn_cmp_rows
+                        st.markdown("**Bore comparison**")
+                        st.dataframe([
+                            {"": _lab,
+                             f"{_a['d_mm']:.1f} mm": _fa,
+                             f"{_b['d_mm']:.1f} mm": _fb,
+                             "difference": _fd}
+                            for _lab, _fa, _fb, _fd in (
+                                ("loop flow (L/min)",
+                                 f"{_a['loop_lpm']:.2f}", f"{_b['loop_lpm']:.2f}",
+                                 f"{_b['loop_lpm']-_a['loop_lpm']:+.2f}"),
+                                ("loop ΔP (kPa)",
+                                 f"{_a['loop_dp_kpa']:.2f}", f"{_b['loop_dp_kpa']:.2f}",
+                                 f"{_b['loop_dp_kpa']-_a['loop_dp_kpa']:+.2f}"),
+                                ("branch flow (L/min)",
+                                 f"{_a['q_branch_lpm']:.2f}",
+                                 f"{_b['q_branch_lpm']:.2f}",
+                                 f"{_b['q_branch_lpm']-_a['q_branch_lpm']:+.2f}"),
+                                ("branch velocity (m/s)",
+                                 f"{_a['v_branch']:.2f}", f"{_b['v_branch']:.2f}",
+                                 f"{_b['v_branch']-_a['v_branch']:+.2f}"),
+                                ("leg ΔT (K)",
+                                 f"{_a['dt_k']:.2f}", f"{_b['dt_k']:.2f}",
+                                 f"{_b['dt_k']-_a['dt_k']:+.2f}"),
+                            )], width="stretch", hide_index=True)
+
+                        _cn_ddt = abs(_b["dt_k"] - _a["dt_k"])
+                        _cn_dq = (abs(_b["loop_lpm"] - _a["loop_lpm"])
+                                  / max(_a["loop_lpm"], 1e-9) * 100.0)
+                        if _cn_ddt < 1.0 and _cn_dq < 2.0:
+                            st.success(
+                                f"**{_a['d_mm']:.1f} vs {_b['d_mm']:.1f} mm is not "
+                                f"worth the argument.** It moves this leg's "
+                                f"temperature rise by {_cn_ddt:.2f} K and loop flow "
+                                f"by {_cn_dq:.2f}% — neither is measurable on the "
+                                "car. Choose on what fits the barb and what you can "
+                                "actually get hold of.")
+                        else:
+                            st.warning(
+                                f"**The bore matters here.** Going "
+                                f"{_a['d_mm']:.1f} → {_b['d_mm']:.1f} mm shifts the "
+                                f"leg ΔT by {_cn_ddt:.2f} K and loop flow by "
+                                f"{_cn_dq:.2f}%. Size it deliberately rather than "
+                                "taking whatever is on the shelf.")
+                        try:
+                            record_activity(
+                                "cooling", "calculation",
+                                f"Branch bore comparison on {_cn_bsel}: "
+                                f"{_a['d_mm']:.1f} mm gives {_a['q_branch_lpm']:.2f} "
+                                f"L/min and ΔT {_a['dt_k']:.2f} K; "
+                                f"{_b['d_mm']:.1f} mm gives {_b['q_branch_lpm']:.2f} "
+                                f"L/min and ΔT {_b['dt_k']:.2f} K "
+                                f"(Δ {_cn_ddt:.2f} K, loop flow {_cn_dq:.2f}%)")
+                        except Exception:
+                            pass
+
+                    # ---- does it actually fit? ---------------------------- #
+                    # Flow rarely discriminates between two hoses one size
+                    # apart; fit always does. Fit is a measurement, not a
+                    # calculation, so the honest tool here is a pre-registered
+                    # contract: band fixed now, calipers later, seal proving the
+                    # goalposts never moved. Seals into the SAME
+                    # ss.proof_contracts register the Proof Planner tab reads.
+                    st.markdown("---")
+                    st.markdown("#### Does the hose actually fit?")
+                    st.markdown(
+                        '<p class="hint" style="margin:0 0 6px;">The solver above '
+                        'answers whether the bore matters to the <b>flow</b>. It '
+                        'usually doesn\'t. What decides a hose is whether it goes '
+                        'onto the barb as a stretch fit — and that is a '
+                        'measurement, not a calculation. So this seals a '
+                        '<b>validation contract</b>: the acceptance band is fixed '
+                        'now, before anyone picks up the calipers, and the seal '
+                        'proves afterwards that it never moved.</p>',
+                        unsafe_allow_html=True)
+                    from suspension import proof_engine as _pe
+
+                    _cn_gmap = {g.label: g for g in _pe.EvidenceGrade}
+                    _cn_f1 = st.columns(2)
+                    _cn_barb = unum(_cn_f1[0], "Barb / spigot OD (mm)", 2.0, 60.0,
+                                    float(_cn_dbr), 'mm', step=0.1, key="cn_barb",
+                                    help="Outside diameter at the crest of the "
+                                         "retention ramp, not the root. Measure "
+                                         "this one first — it sets the band the "
+                                         "hose has to land inside.")
+                    _cn_hgl = _cn_f1[1].selectbox(
+                        "Where does that hose ID come from?", list(_cn_gmap),
+                        index=0, key="cn_hgrade",
+                        help="Pedigree of the branch hose ID entered above. A "
+                             "guess carries ±40%, which is exactly why an "
+                             "argument about 0.7 mm cannot be settled by "
+                             "discussion.")
+                    _cn_hg = _cn_gmap[_cn_hgl]
+                    _cn_hq = _pe.Quantity(
+                        key="cooling.branch_hose_id_mm", subsystem="cooling",
+                        channel="hose_id_mm", label="branch hose ID",
+                        value=float(_cn_dbr), unit="mm", grade=_cn_hg,
+                        source=f"coolant network panel — {_cn_bsel} branch")
+                    _cn_hu = _cn_hq.abs_unc()
+                    st.caption(
+                        f"{float(_cn_dbr):.1f} mm graded *{_cn_hg.value}* carries "
+                        f"±{_cn_hu:.1f} mm — the real claim is \"somewhere between "
+                        f"{float(_cn_dbr)-_cn_hu:.1f} and {float(_cn_dbr)+_cn_hu:.1f} "
+                        "mm\". Contract the hose ID itself, never the clearance: "
+                        "a clearance is a small difference of two large uncertain "
+                        "numbers, and grading it directly produces a band far "
+                        "tighter than the inputs justify.")
+
+                    _cn_gap = float(_cn_dbr) - float(_cn_barb)
+                    if _cn_hg.rank < _pe.EvidenceGrade.MEASURED.rank:
+                        st.info(
+                            f"Advisory only — the hose ID is a {_cn_hg.value}, so "
+                            f"the {_cn_gap:+.1f} mm below is arithmetic on an "
+                            "unmeasured number. Seal the contract and go measure.")
+                    if _cn_gap > 0.05:
+                        st.warning(
+                            f"**{_cn_gap:+.1f} mm clearance** — the hose is loose on "
+                            "the barb and the clamp is doing all the work. PTFE "
+                            "tape does not fix this: it seals threads, not barbs, "
+                            "and it lowers the friction holding the hose on.")
+                    elif _cn_gap < -float(1.0):
+                        st.warning(
+                            f"**{_cn_gap:.1f} mm interference** — that much stretch "
+                            "usually will not seat over the ramp without heat, and "
+                            "it thins the wall where the clamp bites.")
+                    else:
+                        st.success(f"**{_cn_gap:+.1f} mm** — stretch fit, which is "
+                                   "the way round you want it.")
+
+                    _cn_f2 = st.columns([1, 1, 1])
+                    _cn_maxint = unum(_cn_f2[0], "Max interference (mm)", 0.1, 5.0,
+                                      1.0, 'mm', step=0.1, key="cn_maxint",
+                                      help="How much smaller than the barb the "
+                                           "hose may be and still seat. Sets the "
+                                           "low edge of the acceptance band.")
+                    _cn_fauth = _cn_f2[1].text_input("Sealed by", key="cn_fit_author",
+                                                     placeholder="your name")
+                    _cn_act = next((_a for _a in _pe.DEFAULT_ACTIONS
+                                    if _a.key == "caliper_bore"), None)
+                    if _cn_act is None:      # proof_engine not yet updated
+                        _cn_act = _pe.EvidenceAction(
+                            "caliper_bore", "Caliper the hose ID and the barb OD",
+                            "workshop", 0.2, ["hose_id_mm"],
+                            _pe.EvidenceGrade.MEASURED,
+                            "Digital calipers, three points around the bore; "
+                            "barb OD at the crest of the ramp.")
+                    if _cn_f2[2].button("🔏 Seal fit contract", key="cn_fit_seal"):
+                        try:
+                            _cn_note = (
+                                f"Stretch fit onto a {float(_cn_barb):.1f} mm barb: "
+                                f"hose ID at or below barb OD, and no more than "
+                                f"{float(_cn_maxint):.1f} mm under it or it will "
+                                f"not seat. Hydraulics do not decide this — the "
+                                f"solver puts this leg at "
+                                f"{_cn_branch['q_branch_lpm']:.2f} L/min and ΔT "
+                                f"{_cn_branch['dt_k']:.2f} K, and a bore change of "
+                                f"one hose size barely moves either.")
+                            _cn_c = _pe.create_contract(
+                                _cn_act, _cn_hq,
+                                float(_cn_barb) - float(_cn_maxint),
+                                float(_cn_barb), _cn_note, _cn_fauth)
+                            st.session_state.setdefault("proof_contracts", [])
+                            st.session_state["proof_contracts"].append(
+                                _cn_c.as_dict())
+                            try:
+                                record_activity(
+                                    "cooling", "condition",
+                                    f"Sealed fit contract {_cn_c.id} on "
+                                    f"{_cn_bsel} branch hose: pass band "
+                                    f"[{_cn_c.pass_lo:.1f}, {_cn_c.pass_hi:.1f}] mm "
+                                    f"against a {float(_cn_barb):.1f} mm barb")
+                            except Exception:
+                                pass
+                            st.rerun()
+                        except ValueError as _cn_ce:
+                            st.error(str(_cn_ce))
+
+                    # ---- contracts sealed from this panel ----------------- #
+                    _cn_regs = [(_i, _cd) for _i, _cd in enumerate(
+                        st.session_state.get("proof_contracts", []))
+                        if _cd.get("quantity_key") == "cooling.branch_hose_id_mm"]
+                    for _cn_i, _cn_cd in _cn_regs:
+                        _c = _pe.ValidationContract.from_dict(_cn_cd)
+                        _ok = _c.verify_seal()
+                        _badge = {"open": "🟡 OPEN", "pass": "🟢 PASS",
+                                  "fail": "🔴 FAIL",
+                                  "discrepant": "🟣 DISCREPANT"}.get(
+                                      _c.status, _c.status)
+                        if not _ok:
+                            _badge = "⚠️ SEAL BROKEN"
+                        with st.expander(f"{_badge} — hose ID vs "
+                                         f"[{_c.pass_lo:.1f}, {_c.pass_hi:.1f}] mm "
+                                         f"· sealed {_c.created_on}"):
+                            st.caption(f"Seal `{_c.seal[:16]}…` · plausibility "
+                                       f"[{_c.plaus_lo:.1f}, {_c.plaus_hi:.1f}] mm "
+                                       "— from the pedigree, not chosen by you.")
+                            st.markdown(f"**Why this band:** {_c.criterion_note}")
+                            if _c.status == _pe.Verdict.OPEN.value and _ok:
+                                _jc = st.columns([2, 1])
+                                _mv = _jc[0].number_input(
+                                    "Caliper reading (mm)",
+                                    value=float(_c.predicted), step=0.1,
+                                    key=f"cn_fit_r_{_c.id}")
+                                if _jc[1].button("Judge", key=f"cn_fit_j_{_c.id}"):
+                                    _j = _pe.judge_result(_c, float(_mv))
+                                    st.session_state["proof_contracts"][_cn_i] = \
+                                        _j.as_dict()
+                                    st.rerun()
+                            elif _c.status != _pe.Verdict.OPEN.value:
+                                st.markdown(f"**{_c.status.upper()}** — measured "
+                                            f"{_c.result_value:g} mm on "
+                                            f"{_c.judged_on}.")
+                                st.caption(_c.judgment_note)
+                                if _c.status == _pe.Verdict.PASS.value:
+                                    st.success(
+                                        "Fit is proven and the solver already "
+                                        "showed flow is indifferent — this hose "
+                                        "is the answer. Nothing left to argue.")
+                                elif _c.status == _pe.Verdict.FAIL.value:
+                                    st.error(
+                                        "Wrong hose for this barb, and no amount "
+                                        "of flow margin rescues it. Source the "
+                                        "correct ID or change the barb.")
+                        if not _ok:
+                            st.error("Seal broken — the sealed fields were edited "
+                                     "after the fact. This contract cannot be "
+                                     "judged; seal a fresh one.")
 
                 # ---- transient lap thermal ------------------------------- #
                 st.markdown("---")
