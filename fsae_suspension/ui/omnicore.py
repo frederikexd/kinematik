@@ -368,6 +368,7 @@ def _show_result(st, np, res):
 
 def _render_twin(st, np, res):
     from suspension import omnicore as oc
+    from suspension import units as _units
 
     st.markdown("## 🩺 The self-healing twin")
     st.caption(
