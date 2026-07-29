@@ -6324,6 +6324,16 @@ def _render_brief_questionnaire(roles):
         '<b>validate</b> your design instead of debugging your inputs. '
         'Or skip straight in.</p></div>', unsafe_allow_html=True)
 
+    # --- The express lane: two sentences + data instead of five taps. ------
+    #  Collapsed by default so it never competes with onboarding, but one
+    #  click away for the member who is out of time. Engine lives in
+    #  suspension/express.py; this shell only calls render() (ui/ rules).
+    try:
+        from ui import express_lane as _express_mod
+        _express_mod.render(hardpoints=st.session_state.get("hardpoints"))
+    except Exception as _exp_err:                            # noqa: BLE001
+        st.caption(f"(express lane unavailable: {_exp_err})")
+
     _pu_labels = [lab for _k, lab, _ids, _l in _BRIEF_PURPOSES]
     _go_opts = _brief_goal_options(roles)
     _go_labels = [lab for _k, lab, _ids in _go_opts]
