@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Optional
 
 from .auth import AuthError, SupabaseAuth, Session, build_auth
@@ -445,22 +446,106 @@ def render_workspace_oversight(st, session: Optional[Session] = None) -> None:
         st.divider()
 
 
-def _roster_summary_line(st, members: list[dict]) -> None:
-    """One-glance headline above the roster: how many are using the workspace,
-    who the lead(s) are and who the members are — exactly what an owner/lead
-    needs to see at the moment they're assigning people to it."""
+# --------------------------------------------------------------------------- #
+#  Presenting people
+# --------------------------------------------------------------------------- #
+#  A roster is a list of humans, not a list of mailboxes. The address is an
+#  administrative detail: an owner needs it to act on a row, and nobody else
+#  needs it at all. Printing nine personal gmail addresses into a sidebar that
+#  every member of the workspace can read is a privacy leak wearing the
+#  costume of a feature.
+#  Deployment-level display names, for the cases derivation cannot reach.
+#  Populate from config if you have it; the roster prefers a server-side
+#  `display_name` first, this second, and derivation only as a last resort.
+NAME_OVERRIDES: dict[str, str] = {}
+
+
+def _display_name(member: object) -> str:
+    """A person's label for the roster.
+
+    Order of preference, most reliable first:
+
+      1. A name the auth layer returned (`display_name` / `name` /
+         `full_name`). `list_members` gives `{user_id, email, role, added_at}`
+         today, so this is wired for the day that column exists rather than
+         used now.
+      2. `NAME_OVERRIDES`, for the addresses derivation gets wrong.
+      3. Derivation from the local part.
+
+    DERIVATION IS A GUESS AND IT IS TREATED AS ONE. An earlier version tried
+    to be clever by classifying local parts like "mail" or "info" as mailboxes
+    rather than people, and rendering those as the bare address. It was wrong
+    on the first real roster it met — mail@ was a person's own domain — and
+    the failure was doubly bad, because "not a person" also meant "no need to
+    mask", so the one address it misjudged was the one address it published in
+    full. Every local part is now treated identically: split it if it splits,
+    capitalise it if it doesn't, and never infer anything about who is behind
+    it. When derivation reads badly, that is what NAME_OVERRIDES is for.
+    """
+    if isinstance(member, dict):
+        for key in ("display_name", "name", "full_name"):
+            v = str(member.get(key) or "").strip()
+            if v:
+                return v
+        email = str(member.get("email") or "")
+    else:
+        email = str(member or "")
+
+    if email in NAME_OVERRIDES:
+        return NAME_OVERRIDES[email]
+
+    local = email.split("@")[0]
+    if not local:
+        return "(unknown)"
+    words = []
+    for part in [x for x in re.split(r"[._\-+]+", local) if x]:
+        stem = re.sub(r"\d+$", "", part)          # trailing enrolment digits
+        if not stem.isalpha():
+            continue
+        #  A single letter is an initial, not noise — 'a.holland' is A. Holland.
+        words.append(f"{stem.upper()}." if len(stem) == 1
+                     else stem.capitalize())
+    return " ".join(words) if words else local
+
+
+def _roster_summary_line(st, members: list[dict], *,
+                         viewer_email: str = "") -> None:
+    """The roster, as a roster: who owns it, and how many people are on it.
+
+    POLICY: exactly one address is public — the owner's. Everyone else is a
+    count.
+
+    The reasoning is that the owner's address is the one with a job to do. It
+    is who you contact to be added, removed, or re-roled, so publishing it
+    saves nine people a round of "who do I ask". Every other address on the
+    roster answers no question its holder asked to have answered, and a panel
+    any member can open is a poor place to keep eight personal mailboxes.
+
+    A viewer's own address is shown back to them, because confirming which
+    account you are signed in as is not a disclosure.
+    """
     n = len(members)
-    by_role: dict[str, list[str]] = {}
+    owners = [str(m.get("email", "")) for m in members
+              if str(m.get("role", "")) == "owner"]
+    counts: dict[str, int] = {}
     for m in members:
-        by_role.setdefault(str(m.get("role", "member")), []).append(
-            str(m.get("email", "(unknown)")))
-    leads = by_role.get("lead", [])
-    plain = by_role.get("member", [])
-    st.caption(
-        f"**{n} member{'s' if n != 1 else ''}** using this workspace  ·  "
-        f"Lead{'s' if len(leads) != 1 else ''}: "
-        f"{', '.join(leads) if leads else '— none assigned —'}  ·  "
-        f"Members: {', '.join(plain) if plain else '—'}")
+        r = str(m.get("role", "member"))
+        counts[r] = counts.get(r, 0) + 1
+
+    if owners:
+        st.markdown("**Owner** · " + ", ".join(owners))
+    else:
+        st.caption("No owner is assigned to this workspace.")
+
+    order = ("lead", "member", "viewer")
+    bits = [f"**{counts[r]}** {r}{'s' if counts[r] != 1 else ''}"
+            for r in order if counts.get(r)]
+    bits += [f"**{v}** {k}" for k, v in sorted(counts.items())
+             if k not in order and k != "owner"]
+    st.caption(f"{n} member{'s' if n != 1 else ''} in total"
+               + ("  ·  " + "  ·  ".join(bits) if bits else ""))
+    if viewer_email:
+        st.caption(f"You're signed in as {viewer_email}.")
 
 
 def render_invite_admin(st, ctx: WorkspaceContext) -> None:
@@ -553,8 +638,27 @@ def render_members_admin(st, ctx: WorkspaceContext) -> None:
 
     if not members:
         st.caption("No members found.")
-    else:
-        _roster_summary_line(st, members)
+        return
+    _own = next((str(m.get("email", "")) for m in members
+                 if str(m.get("user_id", "")) == session.user_id), "")
+    _roster_summary_line(st, members, viewer_email=_own)
+
+    #  Non-admins stop here. There is no expander, no list and no masked
+    #  addresses — a member who wants to know who else is on the workspace can
+    #  ask the owner, whose address is the one thing above that is published.
+    if not is_admin:
+        return
+
+    #  Below this point is the MANAGEMENT list, and it shows real addresses on
+    #  purpose: you cannot re-role or remove someone you cannot identify, and
+    #  a roster of display names would make "remove Anna Holland" a guess when
+    #  two Annas exist. The exposure is deliberate, scoped to owners and
+    #  leads, and labelled so it reads as a decision rather than a leak.
+    st.divider()
+    st.markdown("**Manage members**")
+    st.caption("Addresses are shown here because administering a row requires "
+               "identifying it. Only owners and leads see this section.")
+
     for m in members:
         uid = str(m.get("user_id", ""))
         email = m.get("email", "(unknown)")
@@ -562,10 +666,12 @@ def render_members_admin(st, ctx: WorkspaceContext) -> None:
         is_self = uid == session.user_id
         is_owner_row = role == "owner"
 
-        cols = st.columns([5, 3, 2]) if is_admin else st.columns([7, 3])
-        cols[0].markdown(f"**{email}**" + (" · _you_" if is_self else ""))
+        cols = st.columns([5, 3, 2])
+        cols[0].markdown(f"**{_display_name(m)}**"
+                         + (" · _you_" if is_self else ""))
+        cols[0].caption(email)
 
-        if is_admin and not is_owner_row:
+        if not is_owner_row:
             # Role selector (owner rows are fixed; owners aren't re-roled here).
             new_role = cols[1].selectbox(
                 "role", _ADMIN_ROLES,
@@ -587,7 +693,7 @@ def render_members_admin(st, ctx: WorkspaceContext) -> None:
                 except AuthError as e:
                     st.error(str(e))
         else:
-            (cols[1] if is_admin else cols[1]).markdown(f"`{role}`")
+            cols[1].markdown(f"`{role}`")
 
     # --- add member ------------------------------------------------------ #
     if is_admin:
