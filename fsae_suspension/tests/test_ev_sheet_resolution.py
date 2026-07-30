@@ -305,3 +305,111 @@ def test_extract_params_returns_a_populated_pack_dict():
     d = rt.extract_params_from_excel(_bytes(_workbook("BatteryPackConfig")))
     assert d["pack"], "pack dict is empty — the sheet was not read"
     assert d["motor"]
+
+
+# --------------------------------------------------------------------------- #
+#  5. The off-by-one row map
+# --------------------------------------------------------------------------- #
+#  Second reported crash:
+#      Lap time section unavailable: The value 1.792 is less than the min_value 100.0.
+#  1.792 is BatteryPackConfig!B11, the pack internal resistance. The fixed row
+#  map had no entry for that row, so every key from pack_voltage_v down read one
+#  row too high and the resistance was handed to a voltage widget.
+# --------------------------------------------------------------------------- #
+def test_pack_voltage_is_not_the_resistance():
+    """The exact reproduction: B11 must never be read as pack voltage."""
+    ws = rt.resolve_pack_sheet(_workbook())
+    pack = rt.read_pack_values(ws, [])
+    assert pack["pack_voltage_v"] == pytest.approx(504.0)
+    assert pack["pack_voltage_v"] != pytest.approx(1.792)
+
+
+def test_every_pack_value_lands_in_its_widget_range():
+    """The widget bounds are the real contract — assert against them directly."""
+    pack = rt.read_pack_values(rt.resolve_pack_sheet(_workbook()), [])
+    bounds = {
+        "pack_voltage_v":   (100.0, 1000.0),
+        "pack_capacity_ah": (1.0, 100.0),
+        "pack_energy_wh":   (100.0, 20000.0),
+        "fuse_max_a":       (1.0, 1000.0),
+    }
+    for key, (lo, hi) in bounds.items():
+        assert key in pack, f"{key} missing"
+        assert lo <= pack[key] <= hi, f"{key}={pack[key]} outside {lo}..{hi}"
+
+
+def test_values_are_read_by_label_not_position():
+    """Insert a row at the top: coordinates shift, labels don't."""
+    wb = _workbook()
+    wb["BatteryPackConfig"].insert_rows(1)
+    wb["BatteryPackConfig"]["A1"] = "--- notes added by someone ---"
+    pack = rt.read_pack_values(rt.resolve_pack_sheet(wb), [])
+    assert pack["pack_voltage_v"] == pytest.approx(504.0)
+    assert pack["n_series"] == 140
+    assert pack["fuse_max_a"] == 50
+
+
+def test_derived_values_come_from_primary_inputs():
+    """Pack voltage/capacity/energy are derived, not read from computed cells.
+
+    Those cells are where the workbook's arithmetic errors live, so reading them
+    would import the errors.
+    """
+    wb = _workbook()
+    ws = wb["BatteryPackConfig"]
+    ws.cell(12, 2, 999)          # corrupt the sheet's own 'pack nominal voltage'
+    pack = rt.read_pack_values(ws, [])
+    assert pack["pack_voltage_v"] == pytest.approx(140 * 3.6)
+
+
+def test_sheet_disagreement_is_reported_not_silently_dropped():
+    warns = []
+    rt.read_pack_values(rt.resolve_pack_sheet(_workbook()), warns)
+    # the fixture carries the workbook's real 1.792 resistance error
+    assert any("pack_r_ohm" in w for w in warns)
+    assert any("1.792" in w for w in warns)
+
+
+def test_pack_resistance_is_derived_correctly():
+    """S*(R_cell/P), not cell_count*(R_cell/P) which cancels to S*R_cell."""
+    pack = rt.read_pack_values(rt.resolve_pack_sheet(_workbook()), [])
+    assert pack["pack_r_ohm"] == pytest.approx(140 * (0.0128 / 3))
+    assert pack["pack_r_ohm"] != pytest.approx(1.792)
+
+
+def test_implausible_value_is_dropped_with_an_explanation():
+    """Better a missing key than a value that crashes a widget three frames on."""
+    wb = _workbook()
+    ws = wb["BatteryPackConfig"]
+    ws.cell(3, 2, 999999)        # absurd series count
+    warns = []
+    pack = rt.read_pack_values(ws, warns)
+    assert "n_series" not in pack
+    assert any("outside the plausible range" in w for w in warns)
+
+
+def test_abbreviated_labels_still_work():
+    """The older sheet vocabulary ('pack V', 'cell I') must keep resolving."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Battery Pack Calcs"
+    for i, (lbl, val) in enumerate([
+            ("Fuse max (A)", 50), ("n_parallel", 4), ("n_series", 120),
+            ("cell V", 3.6), ("cell Ah", 4.2), ("endurance km", 22),
+            ("max cells", 600), ("cell R ohm", 0.012), ("cell wt kg", 0.045),
+            ("pack cells", 480), ("pack V", 432), ("cell I", 180),
+            ("power kW", 78), ("pack Ah", 16.8), ("pack Wh", 7257),
+            ("joule kWh", 0.85)], start=1):
+        ws.cell(i, 1, lbl)
+        ws.cell(i, 2, val)
+    pack = rt.read_pack_values(ws, [])
+    assert pack["pack_voltage_v"] == pytest.approx(432.0)
+    assert pack["cell_current_a"] == 180
+    assert pack["joule_heating_kwh"] == pytest.approx(0.85)
+
+
+def test_roundtrip_exposes_the_resistance_disagreement_as_a_warning():
+    v, t = _lap()
+    r = rt.lap_to_excel_roundtrip(v, t, _bytes(_workbook()), lap_time_s=4.0)
+    assert r.ok
+    assert any("pack_r_ohm" in w for w in r.warnings)
