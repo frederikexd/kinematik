@@ -490,6 +490,43 @@ def check_lap_from_speed_csv(
               drag_cda=drag_cda, crr=crr)
 
 
+
+def gear_ratio_value(v):
+    """One gear-ratio cell to a float, recovering date-formatted cells.
+
+    Two cells in the shipped workbook (1/8 and 1/10) carry a DATE number
+    format, so their cached values come back as `datetime.time` and `float()`
+    raises. The old code passed `default=1.0` here, which turned both into a
+    perfectly plausible direct-drive ratio and reported nothing — gears 8 and 10
+    silently became 1:1.
+
+    The values are recoverable, because an Excel time serial IS a fraction of a
+    day: 1/8 stores as 03:00:00 and 1/10 as 02:24:00, and dividing by 24 hours
+    returns 0.125 and 0.1 exactly. So this recovers rather than defaults, and
+    says which cells needed it.
+
+    Returns (value, status) where status is 'ok', 'recovered' or 'unreadable'.
+    """
+    import datetime as _dt
+    if isinstance(v, bool) or v is None:
+        return None, "unreadable"
+    if isinstance(v, (int, float)):
+        return float(v), "ok"
+    if isinstance(v, _dt.timedelta):
+        return v.total_seconds() / 86400.0, "recovered"
+    if isinstance(v, _dt.datetime):
+        # A full datetime has lost the fraction to a date epoch; do not guess.
+        return None, "unreadable"
+    if isinstance(v, _dt.time):
+        frac = (v.hour * 3600 + v.minute * 60 + v.second
+                + v.microsecond / 1e6) / 86400.0
+        return (frac, "recovered") if frac > 0 else (None, "unreadable")
+    try:
+        return float(str(v).strip()), "ok"
+    except (TypeError, ValueError):
+        return None, "unreadable"
+
+
 def extract_params_from_excel(excel_bytes: bytes) -> dict:
     """
     Extract only the static parameters from the workbook — pack specs, motor
@@ -533,17 +570,40 @@ def extract_params_from_excel(excel_bytes: bytes) -> dict:
             motor[key] = _safe_float(ws_ep.cell(row=row, column=col).value)
 
     gear_ratios: list[float] = []
+    gear_notes: list[str] = []
+    gear_recovered: list[int] = []
+    gear_unreadable: list[int] = []
     if ws_ep:
-        for col in range(_EP_GEAR_COL_START, _EP_GEAR_COL_END + 1):
-            v = ws_ep.cell(row=_EP_GEAR_RATIO_ROW, column=col).value
-            gear_ratios.append(_safe_float(v, default=1.0))
+        for idx, col in enumerate(range(_EP_GEAR_COL_START,
+                                       _EP_GEAR_COL_END + 1), start=1):
+            cell = ws_ep.cell(row=_EP_GEAR_RATIO_ROW, column=col)
+            val, status = gear_ratio_value(cell.value)
+            if status == "recovered":
+                gear_recovered.append(idx)
+                gear_notes.append(
+                    f"gear {idx} ({cell.coordinate}) had a date number format; "
+                    f"recovered {val:.6g} from the time serial. Set that cell's "
+                    f"format to General in the workbook.")
+            elif status == "unreadable":
+                gear_unreadable.append(idx)
+                gear_notes.append(
+                    f"gear {idx} ({cell.coordinate}) could not be read "
+                    f"({cell.value!r}); left as 1.0, so treat that column as "
+                    f"direct drive rather than a real ratio.")
+                val = 1.0
+            gear_ratios.append(float(val))
     else:
         gear_ratios = [1.0] * 15
+        gear_notes.append("no propulsion sheet found; gear ratios all default "
+                          "to 1.0")
 
     return {
         "pack": pack,
         "motor": motor,
         "gear_ratios": gear_ratios,
+        "gear_ratio_notes": gear_notes,
+        "gear_ratios_recovered": gear_recovered,
+        "gear_ratios_unreadable": gear_unreadable,
         "_source": "excel",
     }
 

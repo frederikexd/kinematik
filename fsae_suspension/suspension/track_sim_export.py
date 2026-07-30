@@ -832,6 +832,128 @@ def _write_provenance(ws, spec: ExportSpec) -> None:
 # ===================================================================== #
 #  Recalculation
 # ===================================================================== #
+#: Functions that exist only in Microsoft 365. Anything older — Excel 2021,
+#: 2019, 2016, LibreOffice, Google Sheets, Numbers, most preview panes — returns
+#: #NAME? for these, and because the ones in this workbook are ARRAY formulas
+#: spilling down thousands of rows, five of them produce roughly nineteen
+#: thousand error cells. Those errors are the "zeroes and blank pages": a
+#: #NAME? in the source column makes every dependent sum, min and max blank or
+#: zero, so the workbook looks empty rather than broken.
+#:
+#: Each replacement is exact, not approximate:
+#:   CHOOSECOLS(range, n) -> INDEX(range, 0, n)   — row 0 means "whole column"
+#:   CHOOSEROWS(range, n) -> INDEX(range, n, 0)
+MODERN_FUNCTION_REWRITES: tuple[tuple[str, str, str], ...] = (
+    ("CHOOSECOLS", r"_xlfn\.CHOOSECOLS\s*\(", "INDEX_COLS"),
+    ("CHOOSEROWS", r"_xlfn\.CHOOSEROWS\s*\(", "INDEX_ROWS"),
+)
+
+
+def _rewrite_choose(formula: str) -> tuple[str, int]:
+    """Rewrite CHOOSECOLS/CHOOSEROWS to INDEX, respecting nesting.
+
+    Argument splitting is done by walking the string and tracking parenthesis
+    depth and quotes, because a regex cannot tell the comma in
+    `CHOOSECOLS(A1:C3, ROUND(1/B2,0))` that separates arguments from the one
+    inside ROUND.
+    """
+    import re as _re
+    count = 0
+    for name, pattern, kind in MODERN_FUNCTION_REWRITES:
+        while True:
+            m = _re.search(pattern, formula)
+            if not m:
+                break
+            start = m.end()                       # just past the opening paren
+            depth, i, in_str = 1, start, False
+            args, cur = [], []
+            while i < len(formula) and depth > 0:
+                ch = formula[i]
+                if ch == '"':
+                    in_str = not in_str
+                if not in_str:
+                    if ch == "(":
+                        depth += 1
+                    elif ch == ")":
+                        depth -= 1
+                        if depth == 0:
+                            break
+                    elif ch == "," and depth == 1:
+                        args.append("".join(cur)); cur = []
+                        i += 1
+                        continue
+                cur.append(ch)
+                i += 1
+            args.append("".join(cur))
+            if depth != 0 or len(args) < 2:
+                # Unbalanced or unexpected shape: leave it alone rather than
+                # produce a formula that is wrong in a new way.
+                break
+            rng, sel = args[0].strip(), args[1].strip()
+            repl = (f"INDEX({rng},0,{sel})" if kind == "INDEX_COLS"
+                    else f"INDEX({rng},{sel},0)")
+            formula = formula[:m.start()] + repl + formula[i + 1:]
+            count += 1
+    return formula, count
+
+
+def make_portable(path: str) -> dict:
+    """Replace Microsoft-365-only functions in place, everywhere in a workbook.
+
+    Returns {"CHOOSECOLS": n, ...} counting what was rewritten. Preserves array
+    formulas as array formulas — dropping the array wrapper would change a
+    spilling column into a single value, which is a different bug with the same
+    symptom.
+    """
+    import openpyxl
+    from openpyxl.worksheet.formula import ArrayFormula
+
+    wb = openpyxl.load_workbook(path)
+    changed: dict[str, int] = {}
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                v = cell.value
+                is_array = isinstance(v, ArrayFormula)
+                text = v.text if is_array else v
+                if not isinstance(text, str) or "_xlfn." not in text:
+                    continue
+                new, n = _rewrite_choose(text)
+                if n:
+                    for name, _pat, _k in MODERN_FUNCTION_REWRITES:
+                        if name in text:
+                            changed[name] = changed.get(name, 0) + 1
+                    cell.value = (ArrayFormula(v.ref, new) if is_array else new)
+    if changed:
+        # Ask Excel to recompute everything on open, so the rewritten formulas
+        # replace whatever stale cached values are sitting in the file.
+        try:
+            wb.calculation.fullCalcOnLoad = True
+        except Exception:
+            pass
+        wb.save(path)
+    return changed
+
+
+def modern_function_report(path: str) -> dict:
+    """Count remaining 365-only functions, per sheet. Used as a gate."""
+    import re as _re
+    import openpyxl
+    from openpyxl.worksheet.formula import ArrayFormula
+    wb = openpyxl.load_workbook(path)
+    out: dict[str, int] = {}
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                v = cell.value
+                text = v.text if isinstance(v, ArrayFormula) else v
+                if isinstance(text, str) and "_xlfn." in text:
+                    for fn in _re.findall(r"_xlfn\.([A-Z]+)", text):
+                        out[f"{ws.title}:{fn}"] = out.get(
+                            f"{ws.title}:{fn}", 0) + 1
+    return out
+
+
 def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
     """Populate cached values via LibreOffice, so Python readers see numbers.
 
@@ -951,6 +1073,22 @@ def export_track_sim(source_path: str, out_path: str,
 
     if os.path.abspath(source_path) != os.path.abspath(out_path):
         shutil.copy(source_path, out_path)
+
+    # Compatibility pass FIRST, on the user's own sheets. Five CHOOSECOLS array
+    # formulas in this workbook spill roughly nineteen thousand #NAME? cells on
+    # any Excel that is not Microsoft 365, and a #NAME? in a source column makes
+    # every dependent sum, min and max blank or zero — which is exactly the
+    # "zeroes and blank pages" symptom. INDEX(range,0,n) is an exact
+    # replacement and works in every version.
+    portable = make_portable(out_path)
+    if portable:
+        warnings.append(
+            "Replaced Microsoft-365-only functions with portable equivalents: "
+            + ", ".join(f"{k} x{v}" for k, v in sorted(portable.items()))
+            + ". These were array formulas spilling #NAME? across thousands of "
+              "cells on any Excel older than 365, which is what made the "
+              "downstream sheets read as zero or blank.")
+
     wb = openpyxl.load_workbook(out_path)
     for name in [s for s in wb.sheetnames if s.startswith(SHEET_PREFIX)]:
         del wb[name]
@@ -985,6 +1123,12 @@ def export_track_sim(source_path: str, out_path: str,
     # Dashboard first: it is what a reviewer opens.
     order = [S_DASH] + [s for s in wb.sheetnames if s != S_DASH]
     wb._sheets = [wb[s] for s in order]
+    # openpyxl writes formulas without cached values. Excel shows 0 or blank for
+    # an uncached formula unless told to recompute, so this flag is not optional.
+    try:
+        wb.calculation.fullCalcOnLoad = True
+    except Exception:
+        pass
     wb.save(out_path)
 
     added = [S_DASH, S_INPUTS, S_TRACE, S_PACK, S_GEARS, S_ADVISOR, S_PROV]
@@ -1000,6 +1144,12 @@ def export_track_sim(source_path: str, out_path: str,
                       "consumers until the file is opened and saved in Excel.")
         else:
             result.formula_errors = formula_errors(out_path)
+            leftover = modern_function_report(out_path)
+            if leftover:
+                warnings.append(
+                    "Microsoft-365-only functions still present: "
+                    + ", ".join(f"{k} x{v}" for k, v in sorted(leftover.items()))
+                    + ". These will read as #NAME? outside Microsoft 365.")
             if result.formula_errors:
                 warnings.append(
                     "Formula errors present: "
