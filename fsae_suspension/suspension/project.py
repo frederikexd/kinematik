@@ -46,6 +46,28 @@ DEFAULT_PROJECT = "project.json"
 # --------------------------------------------------------------------------- #
 #  Records
 # --------------------------------------------------------------------------- #
+def _serialize_reports_safe(reports):
+    """Serialize report metadata for the project blob. Lazy-imports report_store
+    so project.py stays importable even if that module is absent; never raises,
+    so a report-serialisation problem can't block saving the rest of the project."""
+    try:
+        from .report_store import serialize_reports
+        return serialize_reports(reports)
+    except Exception:
+        # tolerate already-dict rows or a missing module: keep dicts, drop the rest
+        return [r for r in (reports or []) if isinstance(r, dict)]
+
+
+def _deserialize_reports_safe(raw):
+    """Restore report metadata from the project blob. Never raises — a bad or
+    older-schema row is skipped rather than crashing the whole project load."""
+    try:
+        from .report_store import deserialize_reports
+        return deserialize_reports(raw)
+    except Exception:
+        return []
+
+
 @dataclass
 class WeightItem:
     team: str
@@ -181,7 +203,10 @@ class JSONFileBackend:
         except OSError:
             return None
 
-    def write(self, payload: dict):
+    def write(self, payload: dict, expected_version=None):
+        # expected_version is accepted for interface parity with the Supabase
+        # backends but not enforced here: this backend is the single-user local
+        # file (laptop/tests), where the store in memory is the only editor.
         with open(self.path, "w") as f:
             json.dump(payload, f, indent=2)
 
@@ -232,14 +257,28 @@ def _jwt_expiry(key: str):
 def diagnose_storage_error(exc, *, backend=None) -> str:
     """Turn a storage exception into advice that points at the actual cause.
 
-    Every branch here exists because the generic message misdirects for that
-    case. An expired token and a missing RLS policy both surface as "could not
-    write", and the remedies share nothing.
+    Every branch exists because the generic message misdirects for that case.
+    An expired token, a missing RLS policy and a broken deployment all surface
+    as "could not write project data", and the remedies share nothing.
     """
     import datetime as _dt
 
     text = str(exc)
     low = text.lower()
+
+    # --- not a storage problem at all --------------------------------------
+    # A failed import or missing attribute means the deployed code is broken;
+    # it merely surfaces here because the save path is the first thing to touch
+    # it. Saying "check your Supabase table" for this wastes real time.
+    if ("cannot import name" in low or "no module named" in low
+            or "has no attribute" in low):
+        return ("This is NOT a storage problem — it is a broken import in the "
+                "deployed code, which happens to surface on the save path. "
+                "Supabase, the table and its policies are all fine. Check that "
+                "every file was copied to the right place: note that this repo "
+                "has BOTH a top-level project.py and a suspension/project.py, "
+                "and the app imports suspension.project. Overwriting one with "
+                "the other removes names the rest of the package depends on.")
 
     # --- expired credential -------------------------------------------------
     if "pgrst303" in low or "jwt expired" in low:
@@ -256,7 +295,8 @@ def diagnose_storage_error(exc, *, backend=None) -> str:
             ago = now - exp
             days = ago.days
             msg += (f" The key expired {exp:%Y-%m-%d %H:%M} UTC"
-                    + (f", {days} day{'s' if days != 1 else ''} ago." if days >= 1
+                    + (f", {days} day{'s' if days != 1 else ''} ago."
+                       if days >= 1
                        else f", {int(ago.total_seconds() // 3600)}h ago."))
         msg += (" Fix: in the Supabase dashboard go to Project Settings > API, "
                 "copy the current anon (or service_role) key, and replace "
@@ -264,20 +304,17 @@ def diagnose_storage_error(exc, *, backend=None) -> str:
                 "code change is needed.")
         return msg
 
-    # --- malformed or wrong credential -------------------------------------
     if "pgrst301" in low or "jwsinvalid" in low or "invalid jwt" in low:
         return ("The Supabase API key is not a valid token. Check that "
                 "SUPABASE_KEY holds the whole key with no line breaks or "
                 "surrounding quotes — a truncated paste is the usual cause.")
 
-    # --- the table really is missing ---------------------------------------
     if "42p01" in low or "does not exist" in low or "pgrst205" in low:
         table = getattr(backend, "TABLE", "kinematik_project")
         return (f"The table '{table}' was not found. Create it with columns "
                 f"id text primary key, data jsonb, updated timestamptz, and "
                 f"confirm SUPABASE_URL points at the right project.")
 
-    # --- row-level security -------------------------------------------------
     if "42501" in low or "row-level security" in low or "rls" in low:
         table = getattr(backend, "TABLE", "kinematik_project")
         return (f"A row-level-security policy on '{table}' is refusing the "
@@ -285,23 +322,38 @@ def diagnose_storage_error(exc, *, backend=None) -> str:
                 f"key's role, or use the service_role key for server-side "
                 f"writes.")
 
-    # --- connectivity -------------------------------------------------------
     if any(t in low for t in ("timed out", "timeout", "connection",
                               "name resolution", "getaddrinfo", "ssl")):
         return ("Could not reach Supabase. This looks like a network problem "
                 "rather than a configuration one; the saved-in-session copy is "
                 "intact and a retry may simply work.")
 
-    # --- payload size -------------------------------------------------------
     if "413" in low or "too large" in low or "payload" in low:
         return ("The project document was rejected as too large. Trim stored "
                 "history or move large artefacts out of the project blob.")
 
     table = getattr(backend, "TABLE", "kinematik_project")
     return (f"Unrecognised storage error. Worth checking, in this order: that "
-            f"the API key is current, that the table '{table}' exists with "
-            f"columns (id text, data jsonb), and only then its row-level-"
-            f"security policy.")
+            f"the deployed code imports cleanly, that the API key is current, "
+            f"that the table '{table}' exists with columns (id text, data "
+            f"jsonb), and only then its row-level-security policy.")
+
+
+class StaleWriteError(RuntimeError):
+    """Raised when a save would overwrite a version of the project that someone
+    else wrote after we loaded ours (optimistic-concurrency conflict).
+
+    Carries what we loaded (`mine`) and what the server holds now (`theirs`) so
+    the UI can say exactly what happened and offer a reload instead of silently
+    letting last-write-wins destroy a teammate's ledger edits."""
+
+    def __init__(self, mine, theirs):
+        self.mine = mine
+        self.theirs = theirs
+        super().__init__(
+            f"project changed on the server since it was loaded "
+            f"(loaded version {mine!r}, server now holds {theirs!r}); "
+            f"reload before saving so the newer edits aren't overwritten")
 
 
 class SupabaseBackend:
@@ -325,9 +377,8 @@ class SupabaseBackend:
         self.client = create_client(url, key)
         self.project_id = project_id
         self.url = url
-        # Retained so an expired-token error can name the expiry date. It is the
-        # same key already held inside the client; keeping a reference does not
-        # widen exposure.
+        # Retained so an expired-token error can name the expiry date. Same key
+        # the client already holds; keeping a reference widens nothing.
         self.key = key
         self.key_expires_at = _jwt_expiry(key)
 
@@ -414,21 +465,53 @@ class SupabaseBackend:
         except Exception:
             return None
 
-    def write(self, payload: dict):
-        self.client.table(self.TABLE).upsert(
-            {"id": self.project_id, "data": payload}).execute()
-        # Refresh the cache with what we just wrote, keyed on the payload's own
-        # `updated` stamp, so the very next read() on THIS server serves the new
-        # blob from memory instead of re-fetching the row we just sent. Other
-        # servers/sessions still pick the change up via their own version probe.
+    def write(self, payload: dict, expected_version=None):
+        """Persist the blob with optimistic concurrency.
+
+        expected_version is the `updated` stamp of the blob we LOADED. If the
+        row's current stamp differs, someone else saved since we read — raise
+        StaleWriteError instead of overwriting their work (the old behaviour
+        was unconditional last-write-wins, which silently destroys a
+        teammate's edits the moment two people have the app open).
+
+        expected_version=None means "no baseline": first save of a fresh
+        project, or a caller that hasn't adopted versioning. If the row does
+        not exist we insert; if it exists WITH a version we refuse (someone
+        created it while we held an empty project); if it exists without a
+        version (a pre-locking legacy blob) we allow the write once, which is
+        the upgrade path.
+        """
+        row = {"id": self.project_id, "data": payload}
+        if expected_version is not None:
+            # Atomic CAS: UPDATE ... WHERE id = ? AND data->>'updated' = ?.
+            # PostgREST returns the updated rows; zero rows = the version moved
+            # (or the row vanished) — distinguish and refuse.
+            resp = (self.client.table(self.TABLE)
+                    .update(row)
+                    .eq("id", self.project_id)
+                    .eq("data->>updated", str(expected_version))
+                    .execute())
+            if not (resp.data or []):
+                theirs = self.read_version()
+                raise StaleWriteError(mine=expected_version, theirs=theirs)
+        else:
+            current = self.read_version()
+            if current is not None:
+                # A versioned row exists but we loaded nothing — refuse rather
+                # than wipe it. (Legacy unversioned rows return None here and
+                # fall through to the upsert, which is the one-time migration.)
+                raise StaleWriteError(mine=None, theirs=current)
+            self.client.table(self.TABLE).upsert(row).execute()
+        # Refresh the process-global cache with what we just wrote, keyed on the
+        # payload's own `updated` stamp, so the very next read() on THIS server
+        # serves the new blob from memory. Other servers/sessions pick the change
+        # up via their own version probe.
         try:
             new_version = payload.get("updated")
             if new_version is not None:
                 _project_blob_cache[self.project_id] = (
                     (self.project_id, new_version), payload)
             else:
-                # No version to key on — safest to drop any stale cache entry so
-                # the next read does an authoritative full fetch.
                 _project_blob_cache.pop(self.project_id, None)
         except Exception:
             _project_blob_cache.pop(self.project_id, None)
@@ -507,6 +590,7 @@ class ProjectStore:
     geometry = None
     board = None
     cad_files: list = []
+    ledger: dict = {}
 
     def __init__(self, path: str = DEFAULT_PROJECT, backend=None):
         self.path = path
@@ -517,6 +601,10 @@ class ProjectStore:
         self.decisions: list[Decision] = []
         self.notes: list[Note] = []
         self.cad_files: list[CADFile] = []
+        self.reports: list = []          # stored calculation-report metadata        # Integration ledger (cross-team declarations) — persisted as the raw
+        # dict the app keeps in session_state, so this module stays numpy-free
+        # and the blob is exactly what the tabs read/write.
+        self.ledger: dict = {}
         # Geometric mount-point / keep-out ledger (lazy import to avoid a hard
         # numpy dependency for callers that only touch weights/decisions/notes).
         # Defensive: never let an optional import failure leave the store without
@@ -549,6 +637,8 @@ class ProjectStore:
         self.load_error = None
         self.save_error = None
         self.save_hint = None
+        self.save_conflict = None       # set when a save loses an optimistic-lock race
+        self._loaded_version = None     # `updated` stamp of the blob our edits sit on
         # EV electrical database: pack + motor params extracted from the
         # electrics lead's Excel workbook. Persisted here so teams don't
         # have to re-upload the xlsx every session — configure once, use always.
@@ -569,7 +659,9 @@ class ProjectStore:
             "geometry": self.geometry.as_dict() if self.geometry else {},
             "board": self.board.as_dict() if self.board else {},
             "harness": self.harness.as_dict() if getattr(self, "harness", None) else {},
+            "reports": _serialize_reports_safe(getattr(self, "reports", [])),
             "ev_excel_params": getattr(self, "ev_excel_params", {}),
+            "ledger": getattr(self, "ledger", {}) or {},
             "updated": _dt.datetime.now().isoformat(timespec="seconds"),
         }
 
@@ -583,6 +675,7 @@ class ProjectStore:
         self.decisions = [Decision(**x) for x in d.get("decisions", [])]
         self.notes = [Note(**n) for n in d.get("notes", [])]
         self.cad_files = [CADFile(**c) for c in d.get("cad_files", [])]
+        self.reports = _deserialize_reports_safe(d.get("reports", []))
         geom = d.get("geometry")
         if geom:
             from .mountpoints import GeometryLedger
@@ -598,6 +691,9 @@ class ProjectStore:
         ev_p = d.get("ev_excel_params")
         if ev_p and isinstance(ev_p, dict):
             self.ev_excel_params = ev_p
+        led = d.get("ledger")
+        if isinstance(led, dict) and led:
+            self.ledger = led
 
     # ----------------------------- io ---------------------------------- #
     def load(self):
@@ -610,24 +706,60 @@ class ProjectStore:
             self.load_error = f"Could not read saved project data: {e}"
             return
         self._apply(d)
+        # Optimistic-concurrency baseline: remember which version of the blob
+        # this store's edits are based on. save() sends it as expected_version
+        # so a concurrent teammate's save can never be silently overwritten.
+        self._loaded_version = (d or {}).get("updated")
+
+    def reload_latest(self):
+        """Discard this store's baseline and re-read the server's current blob.
+        The recovery path after a StaleWriteError: the user re-applies their
+        edit on top of the teammate's version instead of overwriting it."""
+        self.save_conflict = None
+        self.load()
 
     def save(self):
         """Persist the project. Fail-safe: a storage backend error (e.g. a remote
         Supabase/Postgres misconfiguration) is recorded on `self.save_error` and
         returns False rather than raising, so a save side-effect can never crash the
-        caller. Returns True on success."""
+        caller. Returns True on success.
+
+        Concurrency: the write carries the version this store loaded
+        (expected_version). If a teammate saved in between, the backend raises
+        StaleWriteError; we record it on `self.save_conflict` (and mirror it to
+        `save_error` for older call sites) and return False — the caller shows
+        the conflict and offers reload_latest(). No silent last-write-wins."""
+        payload = self._payload()
         try:
-            self.backend.write(self._payload())
+            try:
+                self.backend.write(
+                    payload, expected_version=getattr(self, "_loaded_version", None))
+            except TypeError:
+                # Backend predates the expected_version contract (external /
+                # test doubles) — fall back to the unconditional write.
+                self.backend.write(payload)
             self.save_error = None
             self.save_hint = None
+            self.save_conflict = None
+            # Our write is now the server version; future saves compare to it.
+            self._loaded_version = payload.get("updated")
             return True
+        except StaleWriteError as e:
+            self.save_conflict = str(e)
+            self.save_error = (
+                "Not saved — a teammate saved a newer version of the project "
+                "while you were editing. Reload the latest project, then "
+                "re-apply your change so theirs isn't overwritten.")
+            return False
         except Exception as e:
             self.save_error = f"Could not write project data: {e}"
-            # A cause-specific hint. The previous generic advice named the table,
-            # its columns and its RLS policy for every failure, which is wrong
-            # advice for the most common one (an expired key) and sends people
-            # auditing policies that were never involved.
-            self.save_hint = diagnose_storage_error(e, backend=self.backend)
+            # A cause-specific hint. The previous generic advice named the
+            # table, its columns and its RLS policy for every failure, which is
+            # the wrong advice for the two most common ones — an expired key and
+            # a broken deployment — and sends people auditing policies that
+            # were never involved.
+            self.save_hint = diagnose_storage_error(
+                e, backend=getattr(self, "backend", None))
             return False
 
     def read_version(self):
@@ -1022,6 +1154,7 @@ def build_handover_markdown(store: ProjectStore,
 
 def render_pdf(markdown_text: str, out_path: str):
     """Render the handover Markdown to a clean PDF via reportlab."""
+    import re as _re
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import mm
@@ -1038,6 +1171,30 @@ def render_pdf(markdown_text: str, out_path: str):
 
     flow = []
     table_buf = []
+
+    def _md_to_rl(text: str) -> str:
+        """Convert a single line of Markdown inline syntax to ReportLab XML.
+
+        Safe order of operations:
+          1. Escape bare & so it doesn't conflict with XML entities.
+          2. Escape bare < and > that are NOT part of our own tags, so
+             filenames like .kicad_pcb and angle-bracket expressions don't
+             inject broken XML into the Paragraph parser.
+          3. Apply **bold** and _italic_ using word-boundary-aware regexes
+             so underscores INSIDE words (e.g. kicad_pcb, file_name) are
+             never mistaken for italic markers.
+        """
+        # 1. Escape & first (must come before we introduce any & via entities)
+        text = text.replace("&", "&amp;")
+        # 2. Escape bare < and > (ReportLab's Paragraph parser chokes on them)
+        text = text.replace("<", "&lt;").replace(">", "&gt;")
+        # 3. Bold: **text** — greedy enough for multi-word spans
+        text = _re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+        # 4. Italic: _text_ only when the underscores sit at word boundaries,
+        #    i.e. NOT preceded/followed by a word character.  This skips
+        #    snake_case identifiers and file extensions like .kicad_pcb.
+        text = _re.sub(r'(?<!\w)_([^_]+?)_(?!\w)', r'<i>\1</i>', text)
+        return text
 
     def flush_table():
         nonlocal table_buf
@@ -1069,23 +1226,17 @@ def render_pdf(markdown_text: str, out_path: str):
         if not s:
             flow.append(Spacer(1, 4))
         elif s.startswith("# "):
-            flow.append(Paragraph(s[2:], h1))
+            flow.append(Paragraph(_md_to_rl(s[2:]), h1))
         elif s.startswith("## "):
-            flow.append(Paragraph(s[3:], h2))
+            flow.append(Paragraph(_md_to_rl(s[3:]), h2))
         elif s.startswith("### "):
-            flow.append(Paragraph(s[4:].replace("  ", ""), h3))
+            flow.append(Paragraph(_md_to_rl(s[4:].replace("  ", "")), h3))
         elif s.startswith("- "):
-            txt = s[2:].replace("**", "<b>", 1)
-            txt = txt.replace("**", "</b>", 1) if "<b>" in txt else txt
-            flow.append(Paragraph("• " + txt, body))
+            flow.append(Paragraph("• " + _md_to_rl(s[2:]), body))
         elif s.startswith("---"):
             flow.append(Spacer(1, 6))
         else:
-            txt = s.replace("**", "<b>", 1)
-            txt = txt.replace("**", "</b>", 1) if "<b>" in txt else txt
-            txt = txt.replace("_", "<i>", 1)
-            txt = txt.replace("_", "</i>", 1) if "<i>" in txt else txt
-            flow.append(Paragraph(txt, body))
+            flow.append(Paragraph(_md_to_rl(s), body))
     flush_table()
 
     doc = SimpleDocTemplate(out_path, pagesize=A4,
