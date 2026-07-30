@@ -253,7 +253,8 @@ def test_gear_study_has_a_torque_column_and_a_recommendation(source, tmp_path):
     assert any("Recommended" in str(h) for h in hdr)
     row = next(r for r in range(18, 26)
                if "Lowest workable" in str(ws.cell(r, 1).value or ""))
-    assert str(ws.cell(row, 2).value).startswith("=")
+    # the label is merged across A:D, so the value sits in E
+    assert str(ws.cell(row, 5).value).startswith("=")
 
 
 def test_torque_scales_inversely_with_reduction():
@@ -460,3 +461,116 @@ def test_bytes_wrapper_leaves_the_source_bytes_untouched(source):
     v_ms, t = _ms_and_t()
     tse.export_track_sim_bytes(raw, v_ms, t, recalc=False)
     assert raw == before
+
+
+# --------------------------------------------------------------------------- #
+#  9. Rendering
+# --------------------------------------------------------------------------- #
+#  Long explanatory text was originally written as a plain string in column A.
+#  A 240-character sentence in a 34-wide column does not render: it spills over
+#  every neighbour, or is clipped by the first non-empty cell to its right.
+# --------------------------------------------------------------------------- #
+def _merged_rows(ws):
+    out = set()
+    for rng in ws.merged_cells.ranges:
+        for r in range(rng.min_row, rng.max_row + 1):
+            out.add(r)
+    return out
+
+
+def test_long_notes_are_merged_and_wrapped(source, tmp_path):
+    res = _export(source, tmp_path)
+    wb = openpyxl.load_workbook(res.path)
+    for name in (tse.S_DASH, tse.S_INPUTS, tse.S_PACK, tse.S_GEARS,
+                 tse.S_ADVISOR):
+        ws = wb[name]
+        c = ws["A2"]
+        assert isinstance(c.value, str) and len(c.value) > 60, \
+            f"{name}!A2 is not the note"
+        assert 2 in _merged_rows(ws), f"{name}!A2 is not merged"
+        assert c.alignment.wrap_text, f"{name}!A2 is not wrapped"
+
+
+def test_merged_notes_have_an_explicit_row_height(source, tmp_path):
+    """Excel does not auto-fit the height of a merged wrapped cell."""
+    res = _export(source, tmp_path)
+    wb = openpyxl.load_workbook(res.path)
+    for name in (tse.S_DASH, tse.S_INPUTS, tse.S_PACK, tse.S_GEARS,
+                 tse.S_ADVISOR):
+        h = wb[name].row_dimensions[2].height
+        assert h and h >= tse._LINE_HEIGHT, f"{name} row 2 has no height"
+
+
+def test_no_unwrapped_cell_badly_overflows_its_column(source, tmp_path):
+    res = _export(source, tmp_path)
+    wb = openpyxl.load_workbook(res.path)
+    problems = []
+    for name in [s for s in wb.sheetnames if s.startswith(tse.SHEET_PREFIX)]:
+        ws = wb[name]
+        merged = _merged_rows(ws)
+        for row in ws.iter_rows(max_row=min(ws.max_row, 60)):
+            for c in row:
+                if c.value is None or c.row in merged:
+                    continue
+                if isinstance(c.value, str) and c.value.startswith("="):
+                    continue
+                text = str(c.value)
+                if "\n" in text:
+                    text = max(text.split("\n"), key=len)
+                if len(text) <= 14:
+                    continue
+                w = ws.column_dimensions[c.column_letter].width
+                wrapped = bool(c.alignment and c.alignment.wrap_text)
+                if not wrapped and (w is None or len(text) > w * 1.4):
+                    problems.append(f"{name}!{c.coordinate} "
+                                    f"({len(text)} chars, width {w})")
+    assert not problems, "overflowing cells: " + "; ".join(problems[:6])
+
+
+def test_every_column_with_content_has_a_width(source, tmp_path):
+    res = _export(source, tmp_path)
+    wb = openpyxl.load_workbook(res.path)
+    for name in [s for s in wb.sheetnames if s.startswith(tse.SHEET_PREFIX)]:
+        ws = wb[name]
+        cols = {c.column_letter for row in ws.iter_rows(max_row=6)
+                for c in row if c.value is not None}
+        for col in cols:
+            assert ws.column_dimensions[col].width, \
+                f"{name} column {col} has no width"
+
+
+def test_trace_header_splits_name_from_unit(source, tmp_path):
+    """'Accel (grip-limited) (m/s^2)' is 28 chars in a 12.5-wide column."""
+    res = _export(source, tmp_path)
+    ws = openpyxl.load_workbook(res.path)[tse.S_TRACE]
+    assert "\n" in ws["D2"].value
+    assert ws["D2"].alignment.wrap_text
+    assert ws.row_dimensions[2].height >= 30
+
+
+def test_sheets_freeze_their_headers(source, tmp_path):
+    res = _export(source, tmp_path)
+    wb = openpyxl.load_workbook(res.path)
+    for name in (tse.S_DASH, tse.S_TRACE, tse.S_GEARS, tse.S_ADVISOR,
+                 tse.S_INPUTS):
+        assert wb[name].freeze_panes, f"{name} does not freeze its header"
+
+
+def test_provenance_section_headers_are_merged(source, tmp_path):
+    res = _export(source, tmp_path)
+    ws = openpyxl.load_workbook(res.path)[tse.S_PROV]
+    merged = _merged_rows(ws)
+    headers = [r for r in range(1, ws.max_row + 1)
+               if ws.cell(r, 1).value and not ws.cell(r, 2).value]
+    assert any(r in merged for r in headers)
+
+
+def test_autofit_ignores_merged_rows():
+    """Including them is what sized column A for a 240-character sentence."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws["A1"] = "short"
+    ws["A2"] = "x" * 240
+    ws.merge_cells("A2:D2")
+    tse._autofit(ws, max_w=46.0)
+    assert ws.column_dimensions["A"].width < 40
