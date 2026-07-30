@@ -394,3 +394,69 @@ def test_unreadable_pack_falls_back_with_a_warning(tmp_path):
 def test_module_provenance_declares_its_limits():
     assert tse.PROVENANCE["known_limits"]
     assert tse.PROVENANCE["hard_rule"]
+
+
+# --------------------------------------------------------------------------- #
+#  8. The bytes wrapper the UI calls
+# --------------------------------------------------------------------------- #
+def _ms_and_t(n=30, dt=0.0666667):
+    mph = _trace(n)
+    return ([v * pdw.MPH_TO_MS for v in mph], [i * dt for i in range(n)])
+
+
+def test_bytes_wrapper_returns_a_workbook_with_kx_sheets(source):
+    v_ms, t = _ms_and_t()
+    data, res = tse.export_track_sim_bytes(open(source, "rb").read(), v_ms, t,
+                                           recalc=False)
+    wb = openpyxl.load_workbook(io.BytesIO(data))
+    assert [s for s in wb.sheetnames if s.startswith(tse.SHEET_PREFIX)]
+    assert res.sheets_added
+
+
+def test_bytes_wrapper_derives_dt_from_the_time_axis(source):
+    v_ms, t = _ms_and_t(n=30, dt=0.05)
+    data, res = tse.export_track_sim_bytes(open(source, "rb").read(), v_ms, t,
+                                           recalc=False)
+    ws = openpyxl.load_workbook(io.BytesIO(data))[tse.S_INPUTS]
+    row = next(r for r in range(1, 60)
+               if str(ws.cell(r, 1).value or "").startswith("Sample interval"))
+    assert ws.cell(row, 2).value == pytest.approx(0.05)
+
+
+def test_bytes_wrapper_converts_ms_to_mph(source):
+    v_ms, t = _ms_and_t()
+    data, _ = tse.export_track_sim_bytes(open(source, "rb").read(), v_ms, t,
+                                         recalc=False)
+    ws = openpyxl.load_workbook(io.BytesIO(data))[tse.S_TRACE]
+    assert ws["B3"].value == pytest.approx(v_ms[0] / pdw.MPH_TO_MS, rel=0.2)
+
+
+def test_uneven_time_base_is_reported(source):
+    v_ms, t = _ms_and_t(n=30)
+    t[15] += 0.5                      # a gap in the log
+    _data, res = tse.export_track_sim_bytes(open(source, "rb").read(), v_ms, t,
+                                            recalc=False)
+    assert any("uneven" in w.lower() for w in res.warnings)
+
+
+def test_even_time_base_is_not_flagged(source):
+    v_ms, t = _ms_and_t(n=30)
+    _data, res = tse.export_track_sim_bytes(open(source, "rb").read(), v_ms, t,
+                                            recalc=False)
+    assert not any("uneven" in w.lower() for w in res.warnings)
+
+
+def test_bytes_wrapper_rejects_a_degenerate_time_axis(source):
+    raw = open(source, "rb").read()
+    with pytest.raises(ValueError):
+        tse.export_track_sim_bytes(raw, [10.0], [0.0], recalc=False)
+    with pytest.raises(ValueError):
+        tse.export_track_sim_bytes(raw, [10.0, 11.0], [1.0, 1.0], recalc=False)
+
+
+def test_bytes_wrapper_leaves_the_source_bytes_untouched(source):
+    raw = open(source, "rb").read()
+    before = bytes(raw)
+    v_ms, t = _ms_and_t()
+    tse.export_track_sim_bytes(raw, v_ms, t, recalc=False)
+    assert raw == before
