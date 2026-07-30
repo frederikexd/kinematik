@@ -954,6 +954,178 @@ def modern_function_report(path: str) -> dict:
     return out
 
 
+_RANGE_RE = r"([A-Za-z_][A-Za-z0-9_ .]*!|)\$?([A-Z]{1,3})\$?(\d+):\$?([A-Z]{1,3})\$?(\d+)"
+
+
+def _data_blocks(ws, col: int = 8) -> list:
+    """Contiguous runs of populated rows in `col`, as (first, last) pairs.
+
+    MUST be given the FORMULA view of the worksheet, not the cached-value view.
+    openpyxl drops cached values whenever it saves, so a data_only view of a
+    workbook this module has already touched looks empty everywhere and every
+    range appears to point at nothing. A cell holding a formula is populated
+    even when its cached value is gone — that is the structural extent, and the
+    structural extent is what a range reference has to match.
+    """
+    blocks, start = [], None
+    for r in range(1, (ws.max_row or 0) + 1):
+        has = ws.cell(r, col).value is not None
+        if has and start is None:
+            start = r
+        elif not has and start is not None:
+            blocks.append((start, r - 1))
+            start = None
+    if start is not None:
+        blocks.append((start, ws.max_row))
+    return blocks
+
+
+def audit_block_references(path: str) -> list[dict]:
+    """Find formulas whose referenced range sits in an EMPTY region.
+
+    This is the other half of the zero problem, and it is not a formula bug —
+    it is a data-extent bug. The legacy export path rewrote ElecPropulsion's
+    three stacked blocks as 335 rows of static values each, occupying rows
+    1-1008, while ThermalLoad, EMFs and BearingBlowOut still reference the
+    original fixed offsets at rows 1895-5689. Every one of those references now
+    points at blank cells, and INDEX over blank cells returns 0 — so those tabs
+    read as solid zeros with no error anywhere to explain it.
+
+    It cannot be repaired: the rows the formulas want were replaced by values,
+    not formulas, so the missing samples no longer exist in the file. The only
+    remedy is to export again from the ORIGINAL workbook, which is why this
+    reports rather than silently patches.
+    """
+    import re as _re
+    import openpyxl
+    from openpyxl.worksheet.formula import ArrayFormula
+
+    wb = openpyxl.load_workbook(path)
+    extents: dict[str, list] = {}
+    findings: list[dict] = []
+
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                v = cell.value
+                text = v.text if isinstance(v, ArrayFormula) else v
+                if not isinstance(text, str) or "!" not in text:
+                    continue
+                for m in _re.finditer(_RANGE_RE, text):
+                    sheet_ref = m.group(1)[:-1] if m.group(1) else None
+                    if not sheet_ref:
+                        continue
+                    sheet_ref = sheet_ref.strip().strip("'")
+                    if sheet_ref not in wb.sheetnames:
+                        continue
+                    r1, r2 = int(m.group(3)), int(m.group(5))
+                    if r2 - r1 < 2:            # single cells / tiny ranges
+                        continue
+                    if sheet_ref not in extents:
+                        extents[sheet_ref] = _data_blocks(wb[sheet_ref])
+                    blocks = extents[sheet_ref]
+                    covered = any(b[0] <= r1 <= b[1] or b[0] <= r2 <= b[1]
+                                  or (r1 <= b[0] and b[1] <= r2)
+                                  for b in blocks)
+                    if not covered:
+                        findings.append({
+                            "where": f"{ws.title}!{cell.coordinate}",
+                            "target": sheet_ref,
+                            "range": f"{m.group(2)}{r1}:{m.group(4)}{r2}",
+                            "blocks": blocks,
+                        })
+    return findings
+
+
+def repair_range_overshoot(path: str) -> list[str]:
+    """Shrink formula ranges that run a few rows past their data.
+
+    Distinct from the case above: here the range mostly hits data and overshoots
+    the end, so the tail contributes zeros. `EMFs` reads ElecPropulsion rows
+    3789:5682 while the block ends at 5681, which is why its last value is 0
+    even in the untouched original workbook. Trimming to the real extent is
+    safe and exact.
+
+    Only trims; never extends, because extending would invent coverage.
+    """
+    import re as _re
+    import openpyxl
+    from openpyxl.worksheet.formula import ArrayFormula
+
+    wb = openpyxl.load_workbook(path)
+    extents: dict[str, list] = {}
+    changed: list[str] = []
+
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                v = cell.value
+                is_arr = isinstance(v, ArrayFormula)
+                text = v.text if is_arr else v
+                if not isinstance(text, str) or "!" not in text:
+                    continue
+                new_text = text
+                shrink_by = 0
+                for m in list(_re.finditer(_RANGE_RE, text)):
+                    ref = m.group(1)[:-1].strip().strip("'") if m.group(1) else None
+                    if not ref or ref not in wb.sheetnames:
+                        continue
+                    r1, r2 = int(m.group(3)), int(m.group(5))
+                    if r2 - r1 < 2:
+                        continue
+                    if ref not in extents:
+                        extents[ref] = _data_blocks(wb[ref])
+                    blk = next((b for b in extents[ref] if b[0] <= r1 <= b[1]),
+                               None)
+                    if blk and r2 > blk[1]:
+                        old = m.group(0)
+                        new = old.replace(f"{m.group(4)}{r2}",
+                                          f"{m.group(4)}{blk[1]}")
+                        if m.group(5) != str(blk[1]):
+                            new_text = new_text.replace(old, new)
+                            shrink_by = max(shrink_by, r2 - blk[1])
+                            changed.append(
+                                f"{ws.title}!{cell.coordinate}: "
+                                f"{ref}!{m.group(2)}{r1}:{m.group(4)}{r2} "
+                                f"-> row {blk[1]} (block ends there; the extra "
+                                f"rows contributed zeros)")
+                if new_text != text:
+                    if is_arr:
+                        # The spill range must shrink with the result, or the
+                        # orphaned tail rows evaluate to #N/A — a new error where
+                        # there used to be a zero.
+                        ref = v.ref
+                        if shrink_by and ":" in ref:
+                            a_, b_ = ref.split(":", 1)
+                            mm = _re.match(r"(\$?[A-Z]{1,3}\$?)(\d+)$", b_)
+                            if mm:
+                                last_new = int(mm.group(2)) - shrink_by
+                                ref = f"{a_}:{mm.group(1)}{last_new}"
+                                # Blank the rows that fall outside the shrunk
+                                # spill. Left in place they keep whatever
+                                # literal the original file cached there — a
+                                # stray #N/A or 0 at the foot of the column,
+                                # which is precisely the kind of lone zero this
+                                # pass exists to remove.
+                                colL = mm.group(1).replace("$", "")
+                                for _r in range(last_new + 1,
+                                                last_new + 1 + shrink_by):
+                                    try:
+                                        ws.cell(_r, ws[f"{colL}1"].column).value = None
+                                    except Exception:
+                                        pass
+                        cell.value = ArrayFormula(ref, new_text)
+                    else:
+                        cell.value = new_text
+    if changed:
+        try:
+            wb.calculation.fullCalcOnLoad = True
+        except Exception:
+            pass
+        wb.save(path)
+    return changed
+
+
 def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
     """Populate cached values via LibreOffice, so Python readers see numbers.
 
@@ -1088,6 +1260,38 @@ def export_track_sim(source_path: str, out_path: str,
             + ". These were array formulas spilling #NAME? across thousands of "
               "cells on any Excel older than 365, which is what made the "
               "downstream sheets read as zero or blank.")
+
+    # Trim ranges that overshoot their data block by a few rows. EMFs reads one
+    # row past the power block even in the untouched original, which is why its
+    # last value is zero.
+    trimmed = repair_range_overshoot(out_path)
+    if trimmed:
+        warnings.append(
+            f"Trimmed {len(trimmed)} formula range(s) that ran past the end of "
+            f"their data and were contributing zeros: " + "; ".join(trimmed[:3])
+            + ("" if len(trimmed) <= 3 else f" (+{len(trimmed)-3} more)"))
+
+    # Detect ranges pointing at wholly empty regions. This is what makes the
+    # ThermalLoad and EMFs tabs read as solid zeros, and it cannot be repaired.
+    stale = audit_block_references(out_path)
+    if stale:
+        tgt = stale[0]["target"]
+        blocks = stale[0]["blocks"]
+        span = (f"rows {blocks[0][0]}-{blocks[-1][1]}" if blocks else "no rows")
+        warnings.append(
+            f"ZEROS EXPLAINED: {len(stale)} formula(s) reference empty regions "
+            f"of '{tgt}'. That sheet holds data in {span}, but these formulas "
+            f"read further down: "
+            + "; ".join(f"{f['where']} -> {f['target']}!{f['range']}"
+                        for f in stale[:3])
+            + ". INDEX over blank cells returns 0, which is why those tabs are "
+              "solid zeros with no error to explain it. This is NOT repairable "
+              "here: the rows those formulas want were overwritten with static "
+              "values by an earlier 'enhanced' export, so the samples no longer "
+              "exist. Re-run this export against the ORIGINAL "
+              "FSAE_EV_Power_Draw.xlsx rather than against a previously "
+              "enhanced copy. The KX sheets below are self-contained and "
+              "unaffected.")
 
     wb = openpyxl.load_workbook(out_path)
     for name in [s for s in wb.sheetnames if s.startswith(SHEET_PREFIX)]:
