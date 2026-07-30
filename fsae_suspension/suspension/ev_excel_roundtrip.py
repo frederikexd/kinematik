@@ -47,6 +47,70 @@ _SVT_SHEET  = "SpeedVsTime"
 _PACK_SHEET = "Battery Pack Calcs"
 _EP_SHEET   = "ElecPropulsion"
 
+# Sheet names are not stable across versions of this workbook: the pack sheet
+# has shipped as "Battery Pack Calcs" and as "BatteryPackConfig", and a plain
+# wb["Battery Pack Calcs"] raises KeyError on the latter — which is what took
+# the whole Lap time tab down with
+#   "Lap time section unavailable: 'Worksheet Battery Pack Calcs does not exist.'"
+#
+# Aliases are tried first, then the sheet is identified by the row labels it
+# contains. Matching on content is the durable half: a sheet holding "Series
+# Battery Count" and "Fuse Max" is the pack sheet whatever it has been renamed
+# to, and renaming a tab is exactly the kind of edit nobody thinks to report.
+_PACK_SHEET_ALIASES = ("Battery Pack Calcs", "BatteryPackConfig",
+                       "Battery Pack Config", "BatteryPackCalcs",
+                       "Pack Config", "Battery Pack")
+_PACK_SHEET_LABELS  = ("series battery count", "fuse max")
+
+_SVT_SHEET_ALIASES  = ("SpeedVsTime", "Speed Vs Time", "SpeedvsTime")
+_EP_SHEET_ALIASES   = ("ElecPropulsion", "Elec Propulsion", "ElectricPropulsion")
+
+
+def resolve_sheet(wb, aliases, labels=()):
+    """Find a worksheet by alias, then by the row labels it contains.
+
+    Returns the worksheet or None. Never raises — a caller that cannot proceed
+    without the sheet should say so in its own terms, because "Worksheet X does
+    not exist" tells the user nothing about which feature just died or why.
+    """
+    for name in aliases:
+        if name in wb.sheetnames:
+            return wb[name]
+    lowered = {n.lower().replace(" ", ""): n for n in wb.sheetnames}
+    for name in aliases:
+        key = name.lower().replace(" ", "")
+        if key in lowered:
+            return wb[lowered[key]]
+    if labels:
+        for ws in wb.worksheets:
+            try:
+                seen = " ".join(str(ws.cell(r, 1).value or "").lower()
+                                for r in range(1, min(ws.max_row or 1, 40) + 1))
+            except Exception:
+                # Some openpyxl versions refuse random access on a read_only
+                # worksheet. Streaming the first column works everywhere.
+                seen = ""
+                for i, row in enumerate(ws.iter_rows(max_col=1,
+                                                     values_only=True)):
+                    if i >= 40:
+                        break
+                    seen += " " + str((row[0] if row else "") or "").lower()
+            if all(lab in seen for lab in labels):
+                return ws
+    return None
+
+
+def resolve_pack_sheet(wb):
+    return resolve_sheet(wb, _PACK_SHEET_ALIASES, _PACK_SHEET_LABELS)
+
+
+def resolve_svt_sheet(wb):
+    return resolve_sheet(wb, _SVT_SHEET_ALIASES, ("time (s)",))
+
+
+def resolve_ep_sheet(wb):
+    return resolve_sheet(wb, _EP_SHEET_ALIASES, ("motor peak torque (nm)",))
+
 # Battery Pack Calcs — label → (row, col) of the *value* cell
 _PACK_CELLS: dict[str, tuple[int,int]] = {
     "fuse_max_a":         (1,  2),
@@ -230,10 +294,10 @@ def load_speed_vs_time(path: str) -> tuple[np.ndarray, np.ndarray]:
         wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     except Exception:
         return np.array([0.0, 1.0]), np.array([0.0, 0.0])
-    if _SVT_SHEET not in wb.sheetnames:
+    if resolve_svt_sheet(wb) is None:
         return np.array([0.0, 1.0]), np.array([0.0, 0.0])
     times, speeds = [], []
-    for row in wb[_SVT_SHEET].iter_rows(values_only=True):
+    for row in resolve_svt_sheet(wb).iter_rows(values_only=True):
         t, v = row[0], row[1]
         if isinstance(t, (int, float)) and isinstance(v, (int, float)):
             times.append(float(t))
@@ -300,13 +364,13 @@ def extract_params_from_excel(excel_bytes: bytes) -> dict:
         return {"_source": "excel", "_error": str(exc)}
 
     pack: dict[str, float] = {}
-    ws_pack = wb[_PACK_SHEET] if _PACK_SHEET in wb.sheetnames else None
+    ws_pack = resolve_pack_sheet(wb)
     if ws_pack:
         for key, (row, col) in _PACK_CELLS.items():
             pack[key] = _safe_float(ws_pack.cell(row=row, column=col).value)
 
     motor: dict[str, float] = {}
-    ws_ep = wb[_EP_SHEET] if _EP_SHEET in wb.sheetnames else None
+    ws_ep = resolve_ep_sheet(wb)
     if ws_ep:
         for key, (row, col) in _EP_PARAMS.items():
             motor[key] = _safe_float(ws_ep.cell(row=row, column=col).value)
@@ -474,13 +538,13 @@ def lap_to_excel_roundtrip(
     wb_data = openpyxl.load_workbook(io.BytesIO(excel_bytes), data_only=True)
 
     pack: dict[str, float] = {}
-    ws_pack_d = wb_data[_PACK_SHEET] if _PACK_SHEET in wb_data.sheetnames else None
+    ws_pack_d = resolve_pack_sheet(wb_data)
     if ws_pack_d:
         for key, (row, col) in _PACK_CELLS.items():
             pack[key] = _safe_float(ws_pack_d.cell(row=row, column=col).value)
 
     motor: dict[str, float] = {}
-    ws_ep_d = wb_data[_EP_SHEET] if _EP_SHEET in wb_data.sheetnames else None
+    ws_ep_d = resolve_ep_sheet(wb_data)
     if ws_ep_d:
         for key, (row, col) in _EP_PARAMS.items():
             motor[key] = _safe_float(ws_ep_d.cell(row=row, column=col).value)
@@ -556,7 +620,13 @@ def lap_to_excel_roundtrip(
 
     # ── 9. Write updated workbook (all computed values as plain numbers) ───
     # 9a. SpeedVsTime — clear old data, write new
-    ws_svt = wb[_SVT_SHEET]
+    ws_svt = resolve_svt_sheet(wb)
+    if ws_svt is None:
+        return ExcelRoundTripResult(
+            ok=False,
+            error="This workbook has no speed-profile sheet. Expected one "
+                  "named SpeedVsTime (or holding a 'time (s)' column); found: "
+                  + ", ".join(wb.sheetnames))
     orig_max = ws_svt.max_row
     for r in range(2, orig_max + 1):
         ws_svt.cell(row=r, column=1).value = None
@@ -573,7 +643,12 @@ def lap_to_excel_roundtrip(
     ws_svt.cell(row=max_row, column=2).value = float(np.max(v_mph))
 
     # 9b. ElecPropulsion — write computed values as plain numbers
-    ws_ep = wb[_EP_SHEET]
+    ws_ep = resolve_ep_sheet(wb)
+    if ws_ep is None:
+        return ExcelRoundTripResult(
+            ok=False,
+            error="This workbook has no propulsion sheet. Expected one named "
+                  "ElecPropulsion; found: " + ", ".join(wb.sheetnames))
 
     # Clear old blocks beyond header + param rows
     # (Rows 2..orig_max in all formula columns H..V)
@@ -613,9 +688,23 @@ def lap_to_excel_roundtrip(
             phase_i = motor_pf * math.sqrt(3) * motor_eff * rpm_all[i, gi]
             ws_ep.cell(row=r, column=col).value = round(phase_i, 6)
 
-    # 9c. Battery Pack Calcs — stamp the KinematiK summary block
-    ws_bpc = wb[_PACK_SHEET]
-    summary_start = 18
+    # 9c. Pack sheet — stamp the KinematiK summary block.
+    # Missing is NOT fatal: the summary is a convenience, and losing it must not
+    # take down the lap-time results the caller actually asked for.
+    ws_bpc = resolve_pack_sheet(wb)
+    if ws_bpc is None:
+        warnings.append(
+            "Pack sheet not found (looked for " +
+            ", ".join(_PACK_SHEET_ALIASES[:2]) +
+            " and for a sheet holding 'Series Battery Count'); skipped the "
+            "KinematiK summary block. Lap-time and current results below are "
+            "unaffected.")
+        summary_start = None
+    else:
+        # Never a hardcoded row. The pack sheet has grown between versions —
+        # row 18 holds 'Pack Energy 10% SOC' in the current one, so stamping
+        # there silently destroyed two of the user's own formulas.
+        summary_start = ws_bpc.max_row + 2
     summary_data = [
         ("─── KinematiK Lap Sim ───",      ""),
         ("Lap Time (s)",                    round(float(lap_time_s), 3) if lap_time_s else ""),
@@ -635,10 +724,11 @@ def lap_to_excel_roundtrip(
         ("Fuse-limited Speed Ceiling (mph)", round(fuse_speed_ms * 2.23694, 1)),
         ("Feasibility",                      "PASS" if feasible else "FAIL"),
     ]
-    for offset, (label, val) in enumerate(summary_data):
-        r = summary_start + offset
-        ws_bpc.cell(row=r, column=1).value = label
-        ws_bpc.cell(row=r, column=2).value = val
+    if summary_start is not None:
+        for offset, (label, val) in enumerate(summary_data):
+            r = summary_start + offset
+            ws_bpc.cell(row=r, column=1).value = label
+            ws_bpc.cell(row=r, column=2).value = val
 
     # 9d. Save to bytes
     buf = io.BytesIO()

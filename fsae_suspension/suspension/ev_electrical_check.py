@@ -107,18 +107,30 @@ class ElecParams:
         except Exception:
             return cls()
 
-        # --- Battery Pack Calcs sheet ---
+        # --- Pack sheet ---
+        # Resolved by alias and then by content, NOT by an exact sheet name.
+        # The old `if "Battery Pack Calcs" in wb.sheetnames` guard meant this
+        # method silently returned its own dataclass defaults for any workbook
+        # using the other spelling — and because those defaults happen to be
+        # 504 V / 15 Ah / 140S3P, the output looked correct while ignoring the
+        # file entirely, surviving every edit the team made to it.
+        from .ev_excel_roundtrip import resolve_pack_sheet, resolve_ep_sheet
+
         pack: dict = {}
-        if "Battery Pack Calcs" in wb.sheetnames:
-            for row in wb["Battery Pack Calcs"].iter_rows(values_only=True):
-                if row[0] and row[1] is not None:
+        ws_pack = resolve_pack_sheet(wb)
+        if ws_pack is not None:
+            for row in ws_pack.iter_rows(values_only=True):
+                if row and row[0] and len(row) > 1 and row[1] is not None:
                     pack[str(row[0]).strip()] = row[1]
 
         # --- ElecPropulsion sheet (first 12 rows of labelled params) ---
         ep: dict = {}
-        if "ElecPropulsion" in wb.sheetnames:
-            for row in list(wb["ElecPropulsion"].iter_rows(max_row=12, values_only=True)):
-                if row[0] and row[1] is not None:
+        ws_ep = resolve_ep_sheet(wb)
+        if ws_ep is not None:
+            for i, row in enumerate(ws_ep.iter_rows(values_only=True)):
+                if i >= 12:
+                    break
+                if row and row[0] and len(row) > 1 and row[1] is not None:
                     ep[str(row[0]).strip()] = row[1]
 
         def g(d, *keys, default=None):
