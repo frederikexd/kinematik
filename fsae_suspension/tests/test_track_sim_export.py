@@ -726,3 +726,147 @@ def test_the_real_workbook_has_no_error_cells_after_export(tmp_path):
     tse.export_track_sim(src, out, _trace(40), 0.0666667, recalc=True)
     assert tse.modern_function_report(out) == {}
     assert tse.formula_errors(out) == {}
+
+
+# --------------------------------------------------------------------------- #
+#  11. Zeros from data-extent mismatch
+# --------------------------------------------------------------------------- #
+#  Second half of the zero problem, and not a formula bug at all. The legacy
+#  export rewrote ElecPropulsion's three stacked blocks as ~335 rows of static
+#  values in rows 1-1008, while ThermalLoad/EMFs/BearingBlowOut still reference
+#  the original offsets at rows 1895-5689. INDEX over blank cells returns 0, so
+#  those tabs read as solid zeros with no error to explain it.
+# --------------------------------------------------------------------------- #
+def _wb_blocks(tmp_path, block_rows, ref_range):
+    """A workbook whose dependent formula points at `ref_range`."""
+    wb = openpyxl.Workbook()
+    svt = wb.active
+    svt.title = "SpeedVsTime"
+    svt["A1"], svt["B1"] = "time (s)", "Speed (mph)"
+    ep = wb.create_sheet("ElecPropulsion")
+    ep["A1"], ep["B1"] = "Motor Peak Torque (Nm)", 120
+    for i in range(15):
+        ep.cell(1, 8 + i, 1.0 / (i + 1))
+    for r in range(2, block_rows + 2):
+        for c in range(8, 23):
+            ep.cell(r, c, 1.0 * r)
+    dep = wb.create_sheet("ThermalLoad")
+    dep["A1"] = "Joule Heat (kW)"
+    dep["F1"] = f"=INDEX(ElecPropulsion!{ref_range},0,7)"
+    p = tmp_path / "b.xlsx"
+    wb.save(p)
+    return str(p)
+
+
+def test_reference_into_an_empty_region_is_detected(tmp_path):
+    path = _wb_blocks(tmp_path, block_rows=300, ref_range="H1895:V3787")
+    found = tse.audit_block_references(path)
+    assert found, "a reference into blank rows was not detected"
+    assert found[0]["target"] == "ElecPropulsion"
+    assert "1895" in found[0]["range"]
+
+
+def test_reference_inside_the_data_is_not_flagged(tmp_path):
+    path = _wb_blocks(tmp_path, block_rows=4000, ref_range="H1895:V3787")
+    assert tse.audit_block_references(path) == []
+
+
+def test_extent_detection_uses_the_formula_view(tmp_path):
+    """A workbook this module has saved has no cached values. Detecting extents
+    from the cached view makes every range look like it points at nothing."""
+    path = _wb_blocks(tmp_path, block_rows=4000, ref_range="H1895:V3787")
+    tse.make_portable(path)          # re-saves, stripping every cached value
+    assert tse.audit_block_references(path) == [], \
+        "false positive: extents were read from the cached view"
+
+
+def test_overshooting_range_is_trimmed(tmp_path):
+    """EMFs reads one row past the power block even in the untouched original,
+    which is why its last value is zero."""
+    path = _wb_blocks(tmp_path, block_rows=100, ref_range="H2:V150")
+    changed = tse.repair_range_overshoot(path)
+    assert changed
+    f = openpyxl.load_workbook(path)["ThermalLoad"]["F1"].value
+    assert "V101" in f or "V100" in f
+    assert "V150" not in f
+
+
+def test_trim_never_extends_a_range(tmp_path):
+    path = _wb_blocks(tmp_path, block_rows=500, ref_range="H2:V100")
+    assert tse.repair_range_overshoot(path) == []
+    assert "V100" in openpyxl.load_workbook(path)["ThermalLoad"]["F1"].value
+
+
+def test_array_spill_shrinks_with_the_trimmed_range(tmp_path):
+    """Otherwise the orphaned tail rows become #N/A — a new error replacing an
+    old zero."""
+    from openpyxl.worksheet.formula import ArrayFormula
+    wb = openpyxl.Workbook()
+    ep = wb.active
+    ep.title = "ElecPropulsion"
+    for r in range(2, 52):
+        for c in range(8, 23):
+            ep.cell(r, c, float(r))
+    dep = wb.create_sheet("Dep")
+    dep["A1"] = ArrayFormula("A1:A60", "=INDEX(ElecPropulsion!H2:V60,0,1)")
+    dep["A60"] = 0.0                       # a stray literal in the orphan row
+    p = str(tmp_path / "arr.xlsx")
+    wb.save(p)
+
+    tse.repair_range_overshoot(p)
+    cell = openpyxl.load_workbook(p)["Dep"]["A1"].value
+    assert isinstance(cell, ArrayFormula)
+    last = int(cell.ref.split(":")[1].lstrip("$ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+    assert last == 51, f"spill range not shrunk (ref={cell.ref})"
+
+
+def test_orphan_rows_are_cleared(tmp_path):
+    """A literal left below a shrunk spill is exactly the lone stray zero."""
+    from openpyxl.worksheet.formula import ArrayFormula
+    wb = openpyxl.Workbook()
+    ep = wb.active
+    ep.title = "ElecPropulsion"
+    for r in range(2, 52):
+        for c in range(8, 23):
+            ep.cell(r, c, float(r))
+    dep = wb.create_sheet("Dep")
+    dep["A1"] = ArrayFormula("A1:A60", "=INDEX(ElecPropulsion!H2:V60,0,1)")
+    dep["A55"] = 0.0
+    p = str(tmp_path / "orph.xlsx")
+    wb.save(p)
+    tse.repair_range_overshoot(p)
+    assert openpyxl.load_workbook(p)["Dep"]["A55"].value is None
+
+
+def test_export_from_a_previously_enhanced_workbook_explains_the_zeros(tmp_path):
+    """The user-facing case: it must name the cause and the remedy."""
+    path = _wb_blocks(tmp_path, block_rows=300, ref_range="H1895:V3787")
+    out = str(tmp_path / "o.xlsx")
+    res = tse.export_track_sim(path, out, _trace(), 0.0666667, recalc=False)
+    joined = " ".join(res.warnings)
+    assert "ZEROS EXPLAINED" in joined
+    assert "ORIGINAL" in joined
+    assert "not repairable" in joined.lower()
+
+
+def test_export_from_the_original_does_not_cry_wolf(tmp_path):
+    path = _wb_blocks(tmp_path, block_rows=4000, ref_range="H1895:V3787")
+    out = str(tmp_path / "o.xlsx")
+    res = tse.export_track_sim(path, out, _trace(), 0.0666667, recalc=False)
+    assert not any("ZEROS EXPLAINED" in w for w in res.warnings)
+
+
+@needs_soffice
+def test_the_real_workbook_ends_with_no_zeros_and_no_errors(tmp_path):
+    """End to end: ThermalLoad, EMFs and BearingBlowOut fully populated."""
+    import os
+    src = "/mnt/user-data/uploads/FSAE_EV_Power_Draw.xlsx"
+    if not os.path.exists(src):
+        pytest.skip("source workbook not present")
+    ws = openpyxl.load_workbook(src, data_only=True)["SpeedVsTime"]
+    v = [x for x in (ws.cell(r, 2).value for r in range(2, ws.max_row + 1))
+         if isinstance(x, (int, float))]
+    out = str(tmp_path / "real.xlsx")
+    res = tse.export_track_sim(src, out, v, 0.0666667, recalc=True)
+    assert res.formula_errors == {}
+    assert not any("ZEROS EXPLAINED" in w for w in res.warnings)
