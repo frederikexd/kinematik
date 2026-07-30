@@ -574,3 +574,155 @@ def test_autofit_ignores_merged_rows():
     ws.merge_cells("A2:D2")
     tse._autofit(ws, max_w=46.0)
     assert ws.column_dimensions["A"].width < 40
+
+
+# --------------------------------------------------------------------------- #
+#  10. Portability — the actual cause of "zeroes and blank pages"
+# --------------------------------------------------------------------------- #
+#  The workbook uses CHOOSECOLS, which exists only in Microsoft 365. Everything
+#  older — Excel 2021/2019/2016, LibreOffice, Google Sheets, Numbers, preview
+#  panes — returns #NAME?. Because the five uses are ARRAY formulas spilling
+#  down thousands of rows, they produced 18,949 error cells, and a #NAME? in a
+#  source column makes every dependent sum/min/max blank or zero. The sheet
+#  therefore looks empty rather than broken.
+#
+#  INDEX(range, 0, n) is an exact replacement: row index 0 means "whole column".
+# --------------------------------------------------------------------------- #
+def test_choosecols_rewrites_to_index():
+    out, n = tse._rewrite_choose("=_xlfn.CHOOSECOLS(A1:C3,2)")
+    assert n == 1
+    assert out == "=INDEX(A1:C3,0,2)"
+
+
+def test_chooserows_rewrites_to_index():
+    out, n = tse._rewrite_choose("=_xlfn.CHOOSEROWS(A1:C3,2)")
+    assert n == 1
+    assert out == "=INDEX(A1:C3,2,0)"
+
+
+def test_nested_commas_are_not_mistaken_for_argument_separators():
+    """A regex would split on the comma inside ROUND()."""
+    src = "=_xlfn.CHOOSECOLS(ElecPropulsion!H1895:V3787,ROUND(1/B2,0))"
+    out, n = tse._rewrite_choose(src)
+    assert n == 1
+    assert out == "=INDEX(ElecPropulsion!H1895:V3787,0,ROUND(1/B2,0))"
+
+
+def test_rewrite_survives_surrounding_arithmetic():
+    src = ("=_xlfn.CHOOSECOLS(A1:C3,ROUND(1/B2,0))^2 * "
+           "BatteryPackConfig!B11")
+    out, n = tse._rewrite_choose(src)
+    assert n == 1
+    assert out.startswith("=INDEX(A1:C3,0,ROUND(1/B2,0))^2")
+    assert out.endswith("BatteryPackConfig!B11")
+
+
+def test_multiple_occurrences_all_rewritten():
+    src = "=_xlfn.CHOOSECOLS(A1:C3,1)+_xlfn.CHOOSECOLS(D1:F3,2)"
+    out, n = tse._rewrite_choose(src)
+    assert n == 2
+    assert "_xlfn" not in out
+
+
+def test_commas_inside_string_literals_are_respected():
+    src = '=_xlfn.CHOOSECOLS(A1:C3,IF(B1>0,1,2))&"a,b"'
+    out, n = tse._rewrite_choose(src)
+    assert n == 1
+    assert out == '=INDEX(A1:C3,0,IF(B1>0,1,2))&"a,b"'
+
+
+def test_formula_without_modern_functions_is_untouched():
+    src = "=SUM(A1:A10)/COUNT(A1:A10)"
+    out, n = tse._rewrite_choose(src)
+    assert n == 0 and out == src
+
+
+def test_malformed_call_is_left_alone_rather_than_broken():
+    """Better an unchanged #NAME? than a new, differently wrong formula."""
+    src = "=_xlfn.CHOOSECOLS(A1:C3"          # unbalanced
+    out, n = tse._rewrite_choose(src)
+    assert n == 0 and out == src
+
+
+def _wb_with_choosecols(tmp_path):
+    from openpyxl.worksheet.formula import ArrayFormula
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Data"
+    for r in range(1, 4):
+        for c in range(1, 4):
+            ws.cell(r, c, r * 10 + c)
+    ws["E1"] = ArrayFormula("E1:E3", "=_xlfn.CHOOSECOLS(A1:C3,2)")
+    ws["F1"] = "=_xlfn.CHOOSECOLS(A1:C3,1)"
+    p = tmp_path / "cc.xlsx"
+    wb.save(p)
+    return str(p)
+
+
+def test_make_portable_rewrites_and_counts(tmp_path):
+    path = _wb_with_choosecols(tmp_path)
+    assert tse.modern_function_report(path)
+    changed = tse.make_portable(path)
+    assert changed.get("CHOOSECOLS") == 2
+    assert tse.modern_function_report(path) == {}
+
+
+def test_make_portable_keeps_array_formulas_as_arrays(tmp_path):
+    """Dropping the array wrapper turns a spilling column into one value —
+    a different bug with the same symptom."""
+    from openpyxl.worksheet.formula import ArrayFormula
+    path = _wb_with_choosecols(tmp_path)
+    tse.make_portable(path)
+    ws = openpyxl.load_workbook(path)["Data"]
+    assert isinstance(ws["E1"].value, ArrayFormula)
+    assert ws["E1"].value.ref == "E1:E3"
+    assert "INDEX" in ws["E1"].value.text
+
+
+def test_make_portable_sets_full_recalc_on_load(tmp_path):
+    path = _wb_with_choosecols(tmp_path)
+    tse.make_portable(path)
+    assert openpyxl.load_workbook(path).calculation.fullCalcOnLoad is True
+
+
+def test_make_portable_is_a_noop_on_a_clean_workbook(tmp_path):
+    wb = openpyxl.Workbook()
+    wb.active["A1"] = "=SUM(B1:B3)"
+    p = str(tmp_path / "clean.xlsx")
+    wb.save(p)
+    assert tse.make_portable(p) == {}
+
+
+def test_export_makes_the_source_sheets_portable(source, tmp_path):
+    """The user's own sheets are made portable; only formulas change."""
+    from openpyxl.worksheet.formula import ArrayFormula
+    wb = openpyxl.load_workbook(source)
+    wb["ElecPropulsion"]["Z1"] = ArrayFormula(
+        "Z1:Z3", "=_xlfn.CHOOSECOLS(A1:C3,2)")
+    src2 = str(tmp_path / "with_cc.xlsx")
+    wb.save(src2)
+
+    out = str(tmp_path / "out.xlsx")
+    res = tse.export_track_sim(src2, out, _trace(), 0.0666667, recalc=False)
+    assert tse.modern_function_report(out) == {}
+    assert any("365" in w for w in res.warnings)
+
+
+def test_export_sets_full_recalc_on_load(source, tmp_path):
+    """openpyxl writes formulas with no cached value; Excel shows 0 or blank
+    for those unless asked to recompute."""
+    res = _export(source, tmp_path)
+    assert openpyxl.load_workbook(res.path).calculation.fullCalcOnLoad is True
+
+
+@needs_soffice
+def test_the_real_workbook_has_no_error_cells_after_export(tmp_path):
+    """End to end on the actual file: 18,949 #NAME? cells before, none after."""
+    import os
+    src = "/mnt/user-data/uploads/FSAE_EV_Power_Draw.xlsx"
+    if not os.path.exists(src):
+        pytest.skip("source workbook not present")
+    out = str(tmp_path / "real.xlsx")
+    tse.export_track_sim(src, out, _trace(40), 0.0666667, recalc=True)
+    assert tse.modern_function_report(out) == {}
+    assert tse.formula_errors(out) == {}
