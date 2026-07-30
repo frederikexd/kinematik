@@ -117,6 +117,27 @@ def _header(ws, coord, text):
     _style(ws, coord, bold=True, size=12).value = text
 
 
+def _title(ws, text: str, last_col: int) -> None:
+    """A sheet title, merged across the used width.
+
+    Titles are longer than the first column on every one of these sheets. Excel
+    will spill text over an empty neighbour, but the moment someone puts a value
+    in B the title is silently clipped — merging makes it independent of that.
+    """
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=last_col)
+    _style(ws, "A1", bold=True, size=12).value = text
+
+
+def _footer_label(ws, row: int, text: str, label_last_col: int,
+                  value_col: int, value_formula: str, fmt: str = "General"):
+    """A wide merged label with its value just to the right of it."""
+    ws.merge_cells(start_row=row, start_column=1,
+                   end_row=row, end_column=label_last_col)
+    _style(ws, f"A{row}", bold=False).value = text
+    _style(ws, f"{_col(value_col)}{row}", bold=True, fmt=fmt).value = \
+        value_formula
+
+
 def _label(ws, row, text, col=1):
     _style(ws, f"{_col(col)}{row}", bold=False).value = text
 
@@ -127,6 +148,87 @@ def _col(n: int) -> str:
         n, r = divmod(n - 1, 26)
         s = chr(65 + r) + s
     return s
+
+
+#: Notes and headers were originally written as plain long strings in column A.
+#: A 240-character sentence in a 34-wide column does not render: it either
+#: spills across every neighbour or is clipped by the first non-empty cell to
+#: its right, and neither looks intentional. Explanatory text now gets merged
+#: across the sheet's used width, wrapped, and given an explicit row height,
+#: because Excel does not auto-fit the height of a merged wrapped cell.
+_CHARS_PER_LINE_PER_WIDTH = 1.05
+_LINE_HEIGHT = 13.5
+
+
+def _note(ws, row: int, text: str, last_col: int, *, color="808080",
+          width_hint: Optional[float] = None) -> None:
+    """A wrapped, merged block of explanatory text that actually renders."""
+    from openpyxl.styles import Alignment
+    ws.merge_cells(start_row=row, start_column=1,
+                   end_row=row, end_column=last_col)
+    c = _style(ws, f"A{row}", color=color, wrap=True)
+    c.value = text
+    c.alignment = Alignment(wrap_text=True, vertical="top")
+    total_width = width_hint or sum(
+        (ws.column_dimensions[_col(i)].width or 10) for i in range(1, last_col + 1))
+    per_line = max(20.0, total_width * _CHARS_PER_LINE_PER_WIDTH)
+    lines = max(1, math.ceil(len(text) / per_line))
+    ws.row_dimensions[row].height = lines * _LINE_HEIGHT + 4
+
+
+def _autofit(ws, *, min_w=9.0, max_w=46.0, skip_rows=(), header_rows=()):
+    """Set column widths from actual content, ignoring merged note rows.
+
+    Merged cells are excluded because their text length says nothing about how
+    wide any single column needs to be — including them is what produced a
+    column A sized for a 240-character sentence.
+    """
+    merged_rows = set()
+    for rng in ws.merged_cells.ranges:
+        for r in range(rng.min_row, rng.max_row + 1):
+            merged_rows.add(r)
+    longest: dict[str, int] = {}
+    for row in ws.iter_rows():
+        for c in row:
+            if c.value is None or c.row in merged_rows or c.row in skip_rows:
+                continue
+            if isinstance(c.value, str) and c.value.startswith("="):
+                continue                     # formula text is not what renders
+            text = str(c.value)
+            if c.row in header_rows:
+                text = max(text.split(), key=len) if text.split() else text
+            longest[c.column_letter] = max(longest.get(c.column_letter, 0),
+                                           len(text))
+    for col, n in longest.items():
+        want = min(max_w, max(min_w, n + 2.5))
+        cur = ws.column_dimensions[col].width
+        if cur is None or cur < want:
+            ws.column_dimensions[col].width = want
+
+
+def _wrap_header(ws, row: int, last_col: int, height: float = 30.0):
+    """Let a two-word header wrap onto two lines instead of being clipped."""
+    from openpyxl.styles import Alignment
+    for i in range(1, last_col + 1):
+        c = ws.cell(row, i)
+        if c.value is not None:
+            c.alignment = Alignment(wrap_text=True, vertical="bottom",
+                                    horizontal="center")
+    ws.row_dimensions[row].height = height
+
+
+def _fit_wrapped_rows(ws, col: str, width: float):
+    """Give every wrapped cell in `col` a row height that fits its text."""
+    for row in ws.iter_rows(min_col=ws[col + "1"].column,
+                            max_col=ws[col + "1"].column):
+        for c in row:
+            if c.value is None or not isinstance(c.value, str):
+                continue
+            if c.alignment and c.alignment.wrap_text:
+                lines = max(1, math.ceil(len(c.value) / max(20.0, width)))
+                have = ws.row_dimensions[c.row].height or 0
+                ws.row_dimensions[c.row].height = max(
+                    have, lines * _LINE_HEIGHT + 4)
 
 
 def _input(ws, row, label, value, unit="", note="", fmt="0.0000",
@@ -176,8 +278,8 @@ def _write_inputs(ws, spec: ExportSpec) -> dict:
     workbook, and every current figure depends on them, so they are the first
     cells a reviewer should look at.
     """
-    _header(ws, "A1", "KinematiK — inputs for the lap-sim export")
-    _style(ws, "A2", color="808080", wrap=True).value = (
+    _title(ws, "KinematiK \u2014 inputs for the lap-sim export", 4)
+    _NOTE_INPUTS = (
         "Blue = typed input. Yellow = assumption not taken from the workbook; "
         "confirm before quoting any result. Everything on the other KX sheets "
         "is a formula referencing this one, so editing here updates the whole "
@@ -291,6 +393,9 @@ def _write_inputs(ws, spec: ExportSpec) -> dict:
     ws.column_dimensions["B"].width = 14
     ws.column_dimensions["C"].width = 9
     ws.column_dimensions["D"].width = 62
+    _note(ws, 2, _NOTE_INPUTS, 4)
+    _fit_wrapped_rows(ws, "D", 60)
+    ws.freeze_panes = "A4"
     return r
 
 
@@ -315,9 +420,13 @@ _TRACE_COLS = [
 
 def _write_trace(ws, spec: ExportSpec, ref: dict, n: int) -> dict:
     """The lap, as formulas. Editing an input on KX Inputs moves every row."""
-    _header(ws, "A1", "KinematiK — lap trace (every column a live formula)")
+    _title(ws, "KinematiK \u2014 lap trace (every column a live formula)",
+           len(_TRACE_COLS))
     for i, (name, unit, _fmt) in enumerate(_TRACE_COLS, start=1):
-        _style(ws, f"{_col(i)}2", bold=True).value = f"{name} ({unit})"
+        # Name and unit on separate lines: "Accel (grip-limited) (m/s^2)" is 28
+        # characters and was being clipped by a 13-wide column.
+        _style(ws, f"{_col(i)}2", bold=True).value = f"{name}\n({unit})"
+    _wrap_header(ws, 2, len(_TRACE_COLS), height=34)
     ws.freeze_panes = "A3"
 
     I = f"'{S_INPUTS}'!"
@@ -355,19 +464,19 @@ def _write_trace(ws, spec: ExportSpec, ref: dict, n: int) -> dict:
         for i, (_nm, _u, fmt) in enumerate(_TRACE_COLS, start=1):
             _style(ws, f"{_col(i)}{r}", fmt=fmt)
     for i in range(1, len(_TRACE_COLS) + 1):
-        ws.column_dimensions[_col(i)].width = 13
+        ws.column_dimensions[_col(i)].width = 12.5
     return {"first": first, "last": last}
 
 
 def _write_pack_limits(ws, ref: dict) -> dict:
     """The pack's electrical envelope — none of which the original computes."""
     I = f"'{S_INPUTS}'!"
-    _header(ws, "A1", "KinematiK — pack limits")
-    _style(ws, "A2", color="808080", wrap=True).value = (
+    _title(ws, "KinematiK \u2014 pack limits", 3)
+    _note(ws, 2,
         "All derived from the primary cell inputs. The workbook's own pack "
         "resistance cell multiplies the TOTAL cell count by R_cell/P, which "
-        "cancels to S*R_cell and discards the parallel benefit — 3x high for "
-        "140S3P. These figures use S*(R_cell/P).")
+        "cancels to S*R_cell and discards the parallel benefit \u2014 3x high "
+        "for 140S3P. These figures use S*(R_cell/P).", 3)
     out = {}
     row = 4
     rows = [
@@ -411,10 +520,10 @@ def _write_dashboard(ws, ref: dict, tr: dict, pk: dict) -> dict:
     I, P = f"'{S_INPUTS}'!", f"'{S_PACK}'!"
     T = f"'{S_TRACE}'!"
     f, l = tr["first"], tr["last"]
-    _header(ws, "A1", "KinematiK — lap-sim dashboard")
-    _style(ws, "A2", color="808080", wrap=True).value = (
+    _title(ws, "KinematiK \u2014 lap-sim dashboard", 3)
+    _note(ws, 2,
         "Every cell here is a formula. Change an input on the KX Inputs sheet "
-        "and these move with it.")
+        "and these move with it.", 3, width_hint=104)
 
     row = 4
     _header(ws, f"A{row}", "Lap")
@@ -519,6 +628,8 @@ def _write_dashboard(ws, ref: dict, tr: dict, pk: dict) -> dict:
     ws.column_dimensions["A"].width = 30
     ws.column_dimensions["B"].width = 74
     ws.column_dimensions["C"].width = 8
+    _fit_wrapped_rows(ws, "B", 72)
+    ws.freeze_panes = "A4"
     keys["distance"] = dist
     return keys
 
@@ -533,11 +644,12 @@ def _write_gear_study(ws, spec: ExportSpec, ref: dict, tr: dict) -> None:
     """
     I, T = f"'{S_INPUTS}'!", f"'{S_TRACE}'!"
     f, l = tr["first"], tr["last"]
-    _header(ws, "A1", "KinematiK — gear study")
-    _style(ws, "A2", color="808080", wrap=True).value = (
+    _title(ws, "KinematiK \u2014 gear study", 6)
+    _note(ws, 2,
         "Motor speed scales with the reduction and torque scales inversely, so "
         "both are exact from the peak wheel speed and peak tractive force. "
-        "Pack current does not vary with gearing at all.")
+        "Pack current does not vary with gearing at all, which is why a "
+        "current-only sweep cannot choose a ratio.", 6, width_hint=104)
     hdr = ["Reduction (:1)", "Peak motor speed (rpm)",
            "Peak motor torque (Nm)", "Overspeed?", "Torque verdict",
            "Recommended?"]
@@ -565,8 +677,10 @@ def _write_gear_study(ws, spec: ExportSpec, ref: dict, tr: dict) -> None:
     for i, w in enumerate((16, 22, 22, 14, 16, 14), start=1):
         ws.column_dimensions[_col(i)].width = w
 
-    _label(ws, row + 1, "Lowest workable reduction")
-    _style(ws, f"B{row+1}", bold=True).value = (
+    _wrap_header(ws, 4, 6, height=30)
+    ws.freeze_panes = "A5"
+    _footer_label(
+        ws, row + 1, "Lowest workable reduction", 4, 5,
         f'=IFERROR(INDEX(A5:A{row-1},MATCH("YES",F5:F{row-1},0)),'
         f'"none of the ratios tested works")')
 
@@ -582,12 +696,12 @@ def _write_advisor(ws, spec: ExportSpec, ref: dict, pk: dict,
     keep making that recommendation, which is why all three gates are here.
     """
     I, P, D = f"'{S_INPUTS}'!", f"'{S_PACK}'!", f"'{S_DASH}'!"
-    _header(ws, "A1", "KinematiK — pack advisor")
-    _style(ws, "A2", color="808080", wrap=True).value = (
+    _title(ws, "KinematiK \u2014 pack advisor", 11)
+    _note(ws, 2,
         "A candidate must clear three gates, not one: enough usable energy for "
         "the endurance distance, a power ceiling above peak demand, and a "
         "per-cell current inside the cell C-rating. Energy alone recommends "
-        "packs that cannot supply the current.")
+        "packs that cannot supply the current.", 11, width_hint=150)
 
     hdr = ["Series", "Parallel", "Cells", "Nominal V", "Usable kWh",
            "R (ohm)", "Ceiling (kW)", "Peak cell C", "Energy needed (kWh)",
@@ -634,20 +748,24 @@ def _write_advisor(ws, spec: ExportSpec, ref: dict, pk: dict,
         row += 1
     for i, w in enumerate((8, 9, 8, 11, 11, 10, 12, 12, 18, 10, 58), start=1):
         ws.column_dimensions[_col(i)].width = w
+    _wrap_header(ws, 4, 11, height=32)
+    ws.freeze_panes = "A5"
+    _fit_wrapped_rows(ws, "K", 56)
 
-    _label(ws, row + 1, "Smallest pack that clears all three gates")
-    _style(ws, f"B{row+1}", bold=True).value = (
+    _footer_label(
+        ws, row + 1, "Smallest pack that clears all three gates", 9, 10,
         f'=IFERROR("P="&TEXT(INDEX(B5:B{row-1},'
         f'MATCH("YES*",K5:K{row-1},0)),"0"),'
         f'"none of the candidates tested clears all three")')
-    _style(ws, f"A{row+3}", color="808080", wrap=True).value = (
+    _note(ws, row + 3,
         "Energy needed is for the full endurance distance, not one lap. The "
         "previous advisor compared a single lap's energy against the pack and "
-        "reported a large surplus where there was a shortfall.")
+        "reported a large surplus where there was a shortfall.", 11,
+        width_hint=150)
 
 
 def _write_provenance(ws, spec: ExportSpec) -> None:
-    _header(ws, "A1", "KinematiK — provenance and corrections")
+    _title(ws, "KinematiK \u2014 provenance and corrections", 2)
     rows = [
         ("", ""),
         ("Corrected relative to the original workbook", ""),
@@ -698,6 +816,9 @@ def _write_provenance(ws, spec: ExportSpec) -> None:
     r = 2
     for a, b in rows:
         if a and not b:
+            # Section headers are longer than column A; merge across so they
+            # render as headings instead of being clipped at the B boundary.
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=2)
             _header(ws, f"A{r}", a)
         else:
             _label(ws, r, a)
@@ -705,6 +826,7 @@ def _write_provenance(ws, spec: ExportSpec) -> None:
         r += 1
     ws.column_dimensions["A"].width = 26
     ws.column_dimensions["B"].width = 96
+    _fit_wrapped_rows(ws, "B", 94)
 
 
 # ===================================================================== #
