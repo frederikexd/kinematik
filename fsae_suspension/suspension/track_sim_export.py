@@ -886,6 +886,66 @@ def export_track_sim(source_path: str, out_path: str,
     return result
 
 
+def export_track_sim_bytes(excel_bytes: bytes,
+                           speed_ms: Sequence[float],
+                           time_s: Sequence[float], *,
+                           pack: Optional[pdw.PackSpec] = None,
+                           vehicle: Optional[pdw.VehicleSpec] = None,
+                           drive: Optional[pdw.DriveSpec] = None,
+                           lap_time_s: Optional[float] = None,
+                           reductions: Sequence[float] = tuple(range(1, 16)),
+                           smooth_window: int = 11,
+                           endurance_km: Optional[float] = None,
+                           max_cell_c_rate: float = 10.0,
+                           recalc: bool = True
+                           ) -> tuple[bytes, "TrackSimExport"]:
+    """Bytes in, bytes out — the shape a Streamlit download button needs.
+
+    Takes the same `speed_ms` / `time_s` arrays as the old
+    `lap_to_excel_roundtrip`, so swapping the call site over is a rename plus
+    reading `.excel_bytes` from the tuple instead of the result object.
+
+    `dt` is taken from the mean spacing of `time_s` rather than assumed, since
+    a lap sim's output is not always evenly sampled; a non-uniform trace is
+    reported as a warning because the trapezoidal energy sum and the central
+    difference both assume a fixed step.
+    """
+    if len(time_s) < 2:
+        raise ValueError("need at least two samples")
+    t = [float(x) for x in time_s]
+    dt = (t[-1] - t[0]) / (len(t) - 1)
+    if dt <= 0:
+        raise ValueError("time_s must increase")
+
+    speed_mph = [float(v) / pdw.MPH_TO_MS for v in speed_ms]
+
+    src_dir = tempfile.mkdtemp(prefix="kx_src_")
+    try:
+        src = os.path.join(src_dir, "source.xlsx")
+        out = os.path.join(src_dir, "FSAE_EV_KinematiK_TrackSim.xlsx")
+        with open(src, "wb") as fh:
+            fh.write(excel_bytes)
+        res = export_track_sim(
+            src, out, speed_mph, dt, pack=pack, vehicle=vehicle, drive=drive,
+            lap_time_s=lap_time_s, reductions=reductions,
+            smooth_window=smooth_window, endurance_km=endurance_km,
+            max_cell_c_rate=max_cell_c_rate, recalc=recalc)
+
+        # Flag an uneven time base rather than silently averaging over it.
+        steps = [t[i + 1] - t[i] for i in range(len(t) - 1)]
+        if steps and (max(steps) - min(steps)) > 0.05 * dt:
+            res.warnings.append(
+                f"Time base is uneven (steps {min(steps):.4g}..{max(steps):.4g} s, "
+                f"mean {dt:.4g} s). The trace formulas assume a fixed step, so "
+                f"the accelerations and the energy integral are approximate. "
+                f"Resample the lap to a uniform dt for exact figures.")
+        with open(out, "rb") as fh:
+            data = fh.read()
+        return data, res
+    finally:
+        shutil.rmtree(src_dir, ignore_errors=True)
+
+
 PROVENANCE = {
     "physics_grounded": [
         "force balance, P_elec = P_wheel/eta, sag-aware current — all from "
