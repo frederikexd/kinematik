@@ -131,6 +131,163 @@ _PACK_CELLS: dict[str, tuple[int,int]] = {
     "joule_heating_kwh":  (16, 2),
 }
 
+# _PACK_CELLS above is a fixed row map, and it is a SHIFTED COPY of the current
+# workbook's layout: that sheet has "Battery Pack Internal Resistance" at row 11,
+# which the map does not list at all, so every key from `pack_voltage_v` down
+# reads one row too high. Pack voltage came back as 1.792 (the resistance) and
+# reached a Streamlit number_input with min_value=100.0, producing
+#
+#   Lap time section unavailable: The value 1.792 is less than the min_value 100.0.
+#
+# — a widget error that says nothing about the workbook. `pack_energy_wh` was
+# mis-reading too (15, the pack capacity) and would have crashed the same way on
+# the next widget.
+#
+# Reading by ROW LABEL removes the whole failure mode: inserting a row shifts
+# coordinates but not labels. The map is kept only as a last-resort fallback for
+# a sheet with no recognisable labels.
+_PACK_LABEL_KEYS: dict[str, tuple[str, ...]] = {
+    "fuse_max_a":        ("fuse max",),
+    "n_parallel":        ("parrallel battery count", "parallel battery count",
+                          "n_parallel"),
+    "n_series":          ("series battery count", "n_series"),
+    "cell_voltage_v":    ("nominal battery voltage", "cell v"),
+    "cell_capacity_ah":  ("capacity battery cell", "cell ah"),
+    "endurance_km":      ("endurance length", "endurance km"),
+    "max_cells":         ("max battery cells", "max cells"),
+    "cell_r_ohm":        ("internal resistance battery cell", "cell r"),
+    "cell_weight_kg":    ("battery cell weight", "cell wt"),
+    "pack_cell_count":   ("battery pack cell count", "pack cells"),
+    "pack_r_ohm":        ("battery pack internal resistance", "pack r"),
+    "pack_voltage_v":    ("battery pack nominal voltage", "pack v"),
+    "cell_current_a":    ("current across a single cell", "cell i"),
+    "power_draw_kw":     ("power draw", "power kw"),
+    "pack_capacity_ah":  ("pack capacity", "pack ah"),
+    "pack_energy_kwh":   ("pack energy (kwh)",),
+    "pack_energy_wh":    ("pack wh",),
+    "pack_energy_80_kwh": ("pack energy 80",),
+    "pack_energy_10_kwh": ("pack energy 10",),
+    "joule_heating_kwh": ("joule heating", "joule kwh"),
+}
+
+#: Plausibility windows. A value outside its window is a layout mismatch, not a
+#: design choice, and saying so beats handing it to a widget that can only
+#: complain about its own min_value.
+_PACK_RANGES: dict[str, tuple[float, float]] = {
+    "fuse_max_a":       (1.0, 1000.0),
+    "n_parallel":       (1.0, 100.0),
+    "n_series":         (1.0, 400.0),
+    "cell_voltage_v":   (1.0, 5.0),
+    "cell_capacity_ah": (0.1, 500.0),
+    "cell_r_ohm":       (1e-5, 1.0),
+    "pack_voltage_v":   (10.0, 1200.0),
+    "pack_capacity_ah": (0.1, 2000.0),
+    "pack_energy_wh":   (10.0, 200000.0),
+}
+
+
+def read_pack_values(ws, warnings: list | None = None) -> dict[str, float]:
+    """Read the pack sheet by row label, then derive and sanity-check.
+
+    Three layers, in order of trust:
+
+    1. **Primary inputs read by label** — fuse rating, series/parallel counts,
+       cell voltage, capacity, resistance, weight. These are the numbers a human
+       typed, and they are the only ones worth reading.
+    2. **Derived quantities computed here** — pack voltage, capacity, energy.
+       Deriving beats reading the sheet's own derived cells, because those cells
+       are where the arithmetic errors live: the pack-resistance cell in the
+       current workbook computes `cell_count * (R/P)`, which cancels to
+       `S * R_cell` and is 3x high. Reading it would import the error.
+    3. **Coordinate fallback** — only if the sheet has no labels this recognises.
+
+    Disagreements between a derived value and the sheet's own cell are appended
+    to `warnings` rather than silently resolved either way, because they are
+    findings about the workbook, not noise.
+    """
+    warnings = warnings if warnings is not None else []
+    pack: dict[str, float] = {}
+
+    # --- 1. by label ------------------------------------------------------- #
+    labels: dict[str, float] = {}
+    try:
+        for row in ws.iter_rows(max_col=2, values_only=True):
+            if not row or row[0] is None:
+                continue
+            lab = str(row[0]).strip().lower()
+            if lab and len(row) > 1 and row[1] is not None:
+                labels.setdefault(lab, row[1])
+    except Exception:
+        labels = {}
+
+    def by_label(key):
+        for want in _PACK_LABEL_KEYS.get(key, ()):
+            for lab, val in labels.items():
+                if want in lab:
+                    return _safe_float(val, default=None)
+        return None
+
+    for key in _PACK_LABEL_KEYS:
+        v = by_label(key)
+        if v is not None:
+            pack[key] = v
+
+    # --- 3. coordinate fallback, only where labels found nothing ----------- #
+    if not labels:
+        warnings.append(
+            "Pack sheet has no recognisable row labels; falling back to fixed "
+            "cell coordinates, which are only correct for the original sheet "
+            "layout. Verify the values shown against the workbook.")
+        for key, (row, col) in _PACK_CELLS.items():
+            try:
+                pack[key] = _safe_float(ws.cell(row=row, column=col).value)
+            except Exception:
+                pass
+
+    # --- 2. derive, and cross-check against the sheet ---------------------- #
+    s, p = pack.get("n_series"), pack.get("n_parallel")
+    cv, cap = pack.get("cell_voltage_v"), pack.get("cell_capacity_ah")
+    cr = pack.get("cell_r_ohm")
+
+    def check(key, derived, unit, tol=0.02):
+        """Prefer the derived value; report a sheet cell that disagrees."""
+        sheet = pack.get(key)
+        pack[key] = derived
+        if sheet is not None and derived and abs(sheet - derived) > tol * abs(derived):
+            warnings.append(
+                f"Workbook's {key} reads {sheet:.4g} {unit} but the primary "
+                f"inputs give {derived:.4g} {unit}. Using the derived value.")
+
+    if s and cv:
+        check("pack_voltage_v", s * cv, "V")
+    if p and cap:
+        check("pack_capacity_ah", p * cap, "Ah")
+    if s and p:
+        check("pack_cell_count", s * p, "cells")
+    if pack.get("pack_voltage_v") and pack.get("pack_capacity_ah"):
+        pack["pack_energy_wh"] = (pack["pack_voltage_v"]
+                                  * pack["pack_capacity_ah"])
+        pack["pack_energy_kwh"] = pack["pack_energy_wh"] / 1000.0
+    if s and p and cr:
+        # R = S * (R_cell / P). The sheet's own cell uses the total cell count
+        # in place of S, which discards the parallel benefit entirely.
+        check("pack_r_ohm", s * (cr / p), "ohm")
+
+    # --- plausibility ------------------------------------------------------ #
+    for key, (lo, hi) in _PACK_RANGES.items():
+        v = pack.get(key)
+        if v is not None and not (lo <= v <= hi):
+            warnings.append(
+                f"{key} = {v:.4g} is outside the plausible range {lo:g}..{hi:g}. "
+                f"This normally means the pack sheet's layout differs from what "
+                f"was expected, so a neighbouring row was read instead.")
+            pack.pop(key)
+
+    # keep the legacy alias the older callers expect
+    if "pack_energy_wh" in pack:
+        pack.setdefault("pack_energy_wh", pack["pack_energy_wh"])
+    return pack
+
 # ElecPropulsion scalar params — key → (row, col)
 _EP_PARAMS: dict[str, tuple[int,int]] = {
     "motor_peak_torque_nm":  (1,  2),
@@ -364,10 +521,10 @@ def extract_params_from_excel(excel_bytes: bytes) -> dict:
         return {"_source": "excel", "_error": str(exc)}
 
     pack: dict[str, float] = {}
+    _pack_warnings: list[str] = []
     ws_pack = resolve_pack_sheet(wb)
     if ws_pack:
-        for key, (row, col) in _PACK_CELLS.items():
-            pack[key] = _safe_float(ws_pack.cell(row=row, column=col).value)
+        pack = read_pack_values(ws_pack, _pack_warnings)
 
     motor: dict[str, float] = {}
     ws_ep = resolve_ep_sheet(wb)
@@ -540,8 +697,7 @@ def lap_to_excel_roundtrip(
     pack: dict[str, float] = {}
     ws_pack_d = resolve_pack_sheet(wb_data)
     if ws_pack_d:
-        for key, (row, col) in _PACK_CELLS.items():
-            pack[key] = _safe_float(ws_pack_d.cell(row=row, column=col).value)
+        pack = read_pack_values(ws_pack_d, warnings)
 
     motor: dict[str, float] = {}
     ws_ep_d = resolve_ep_sheet(wb_data)
