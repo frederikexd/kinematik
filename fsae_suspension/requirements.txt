@@ -55,3 +55,4 @@ faster-whisper>=1.0  # speech-to-text (faster than openai-whisper, no model down
 google-api-python-client>=2.0   # Google Drive export of stamped reports (drive_export.py)
 google-auth>=2.0                # service-account / OAuth credentials for Drive
 google-auth-oauthlib>=1.0       # per-user OAuth consent flow for Drive export
+xlcalculator>=0.5
