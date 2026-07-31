@@ -1440,68 +1440,163 @@ def rebuild_propulsion_blocks(path: str, speed_mph: Sequence[float],
     }
 
 
-def _find_soffice() -> str | None:
-    """Return the soffice binary path, searching common locations."""
-    # shutil.which respects PATH; also check fixed locations that cloud
-    # environments sometimes have outside the default PATH.
-    candidate = shutil.which("soffice") or shutil.which("libreoffice")
-    if candidate:
-        return candidate
-    for fixed in (
-        "/usr/bin/soffice",
-        "/usr/lib/libreoffice/program/soffice",
-        "/opt/libreoffice/program/soffice",
-        "/snap/bin/libreoffice",
-    ):
-        if os.path.isfile(fixed):
-            return fixed
-    return None
+def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
+    """Populate formula caches so Python data_only readers see numbers.
 
+    Strategy (in order):
+    1. Pure-Python evaluation via xlcalculator — no external dependency, works
+       on every platform including Streamlit Cloud.  Handles cross-sheet
+       references with absolute ($) addressing.  String-result cells (IF/TEXT/&)
+       are skipped; their cached values stay empty, which is fine because the KX
+       sheets are almost entirely numeric.
+    2. LibreOffice headless — used as fallback if xlcalculator is not installed.
+       Handles 100 % of formulas including string results.
 
-def _ensure_libreoffice() -> str | None:
-    """Return soffice path, auto-installing on apt-based systems if missing."""
-    found = _find_soffice()
-    if found:
-        return found
-    # On Streamlit Cloud (Debian/Ubuntu) we can install at runtime when
-    # packages.txt hasn't taken effect or the image predates the change.
+    Either path writes the cached <v> values into the xlsx ZIP in-place so that
+    openpyxl data_only=True and KinematiK's own loaders see real numbers.
+    """
+    # ── Path 1: pure-Python via xlcalculator ─────────────────────────────────
     try:
-        subprocess.run(
-            ["apt-get", "install", "-y", "--no-install-recommends",
-             "libreoffice-calc"],
-            check=True, capture_output=True, timeout=120)
-        return _find_soffice()
-    except Exception:
+        import xlcalculator as _xlc
+        _HAS_XLC = True
+    except ImportError:
+        _HAS_XLC = False
+
+    if _HAS_XLC:
+        try:
+            import zipfile as _zf, io as _io, re as _re
+            import openpyxl as _opx
+
+            compiler = _xlc.ModelCompiler()
+            model = compiler.read_and_parse_archive(path)
+
+            # xlcalculator stores cells as "Sheet!B42" but formula cross-sheet
+            # references use absolute notation "Sheet!$B$42".  Add alias entries
+            # for every dollar-sign variant so the AST evaluator finds them.
+            _aliases: dict = {}
+            for _ref, _cell in list(model.cells.items()):
+                _m = _re.match(r"(.*!)([A-Z]+)(\d+)$", _ref)
+                if _m:
+                    _sp, _col, _row = _m.groups()
+                    for _variant in (
+                        f"{_sp}${_col}${_row}",
+                        f"{_sp}${_col}{_row}",
+                        f"{_sp}{_col}${_row}",
+                    ):
+                        _aliases[_variant] = _cell
+            model.cells.update(_aliases)
+
+            ev = _xlc.Evaluator(model)
+
+            # Evaluate every canonical (non-alias) formula cell.
+            _numeric: dict[str, float] = {}
+            _n_skip = 0
+            for _ref, _cell in model.cells.items():
+                if "$" in _ref:
+                    continue  # skip aliases
+                if _cell.formula is None:
+                    continue
+                try:
+                    _raw = ev.evaluate(_ref)
+                    _val = _raw.value if hasattr(_raw, "value") else _raw
+                    if isinstance(_val, bool):
+                        _numeric[_ref] = 1.0 if _val else 0.0
+                    elif isinstance(_val, (int, float)):
+                        _numeric[_ref] = float(_val)
+                    else:
+                        _n_skip += 1  # string result — skip
+                except Exception:
+                    _n_skip += 1
+
+            if _numeric:
+                # Build sheet-name → sheet-index map.
+                _wb = _opx.load_workbook(path)
+                _sidx = {n: i + 1 for i, n in enumerate(_wb.sheetnames)}
+                _wb.close()
+
+                # Patch the xlsx ZIP in-memory: inject <v>number</v> into each
+                # formula cell's XML element, keeping the <f> formula intact.
+                _buf = _io.BytesIO()
+                with _zf.ZipFile(path, "r") as _zin:
+                    with _zf.ZipFile(_buf, "w", _zf.ZIP_DEFLATED) as _zout:
+                        for _item in _zin.infolist():
+                            _data = _zin.read(_item.filename)
+                            _sm = _re.match(
+                                r"xl/worksheets/sheet(\d+)\.xml",
+                                _item.filename)
+                            if _sm:
+                                _si = int(_sm.group(1))
+                                _sname = next(
+                                    (n for n, i in _sidx.items() if i == _si),
+                                    None)
+                                if _sname:
+                                    _xml = _data.decode("utf-8")
+                                    for _ref, _val in _numeric.items():
+                                        _sn, _ca = _ref.split("!", 1)
+                                        if _sn != _sname:
+                                            continue
+                                        _vs = (
+                                            str(int(_val))
+                                            if _val == int(_val)
+                                            and abs(_val) < 1e15
+                                            else repr(_val)
+                                        )
+                                        _xml = _re.sub(
+                                            rf"(<c r=\"{_re.escape(_ca)}\"[^>]*>)"
+                                            rf"(<f(?:[^>]*)>[^<]*</f>)<v></v>"
+                                            rf"(</c>)",
+                                            rf"\1\2<v>{_vs}</v>\3",
+                                            _xml,
+                                        )
+                                    _data = _xml.encode("utf-8")
+                            _zout.writestr(_item, _data)
+                with open(path, "wb") as _fh:
+                    _fh.write(_buf.getvalue())
+
+                return True, (
+                    f"recalculated ({len(_numeric)} cells cached via "
+                    f"xlcalculator; {_n_skip} string/error cells skipped)")
+
+        except Exception as _xlc_err:
+            pass  # fall through to LibreOffice
+
+    # ── Path 2: LibreOffice headless ─────────────────────────────────────────
+    def _find_soffice() -> str | None:
+        candidate = shutil.which("soffice") or shutil.which("libreoffice")
+        if candidate:
+            return candidate
+        for fixed in (
+            "/usr/bin/soffice",
+            "/usr/lib/libreoffice/program/soffice",
+            "/opt/libreoffice/program/soffice",
+            "/snap/bin/libreoffice",
+        ):
+            if os.path.isfile(fixed):
+                return fixed
         return None
 
+    soffice_bin = _find_soffice()
+    if not soffice_bin:
+        # Try apt-get on Debian/Ubuntu hosts (Streamlit Cloud).
+        try:
+            subprocess.run(
+                ["apt-get", "install", "-y", "--no-install-recommends",
+                 "libreoffice-calc"],
+                check=True, capture_output=True, timeout=120)
+            soffice_bin = _find_soffice()
+        except Exception:
+            pass
 
-def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
-    """Populate cached values via LibreOffice, so Python readers see numbers.
-
-    Without this the file is Excel-only: openpyxl writes formula strings and
-    evaluates nothing, so `data_only=True` returns None for every derived cell.
-    That is the defect that made the previous export unreadable by KinematiK's
-    own loaders.
-
-    Auto-installs libreoffice-calc via apt on Debian/Ubuntu hosts (including
-    Streamlit Cloud) if the binary is not already present. Uses the bundled
-    scripts/office/soffice.py sandbox wrapper to handle AF_UNIX-restricted
-    environments.
-    """
-    soffice_bin = _ensure_libreoffice()
     if not soffice_bin:
         return False, (
-            "LibreOffice is not available and could not be installed automatically. "
-            "Open the file in Excel and save it once to populate formula caches.")
+            "Formula caches could not be populated: xlcalculator is not "
+            "installed and LibreOffice is not available.  "
+            "pip install xlcalculator  to fix this, or open the downloaded "
+            "file in Excel and save it once.")
 
-    # Build env: SAL_USE_VCLPLUGIN=svp forces the headless VCL plugin so
-    # LibreOffice never tries to open a display or an X11 socket, which is
-    # the common failure mode in cloud sandboxes.  We do NOT use the bundled
-    # scripts/office/soffice.py wrapper because it tries to compile a C shim
-    # with gcc (to fake AF_UNIX sockets) which may not be available.
     _env = os.environ.copy()
     _env["SAL_USE_VCLPLUGIN"] = "svp"
-    _env.setdefault("HOME", tempfile.gettempdir())   # LO needs a writable HOME
+    _env.setdefault("HOME", tempfile.gettempdir())
 
     outdir = tempfile.mkdtemp(prefix="kx_recalc_")
     try:
@@ -1514,9 +1609,9 @@ def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
         if not os.path.exists(produced):
             return False, "LibreOffice ran but produced no output"
         shutil.copy(produced, path)
-        return True, "recalculated"
+        return True, "recalculated via LibreOffice"
     except subprocess.TimeoutExpired:
-        return False, f"recalculation timed out after {timeout}s"
+        return False, f"LibreOffice recalculation timed out after {timeout}s"
     except subprocess.CalledProcessError as exc:
         stderr_snippet = (exc.stderr or b"")[:400].decode("utf-8", errors="replace")
         return False, f"LibreOffice failed: {stderr_snippet!r}"
