@@ -1440,6 +1440,41 @@ def rebuild_propulsion_blocks(path: str, speed_mph: Sequence[float],
     }
 
 
+def _find_soffice() -> str | None:
+    """Return the soffice binary path, searching common locations."""
+    # shutil.which respects PATH; also check fixed locations that cloud
+    # environments sometimes have outside the default PATH.
+    candidate = shutil.which("soffice") or shutil.which("libreoffice")
+    if candidate:
+        return candidate
+    for fixed in (
+        "/usr/bin/soffice",
+        "/usr/lib/libreoffice/program/soffice",
+        "/opt/libreoffice/program/soffice",
+        "/snap/bin/libreoffice",
+    ):
+        if os.path.isfile(fixed):
+            return fixed
+    return None
+
+
+def _ensure_libreoffice() -> str | None:
+    """Return soffice path, auto-installing on apt-based systems if missing."""
+    found = _find_soffice()
+    if found:
+        return found
+    # On Streamlit Cloud (Debian/Ubuntu) we can install at runtime when
+    # packages.txt hasn't taken effect or the image predates the change.
+    try:
+        subprocess.run(
+            ["apt-get", "install", "-y", "--no-install-recommends",
+             "libreoffice-calc"],
+            check=True, capture_output=True, timeout=120)
+        return _find_soffice()
+    except Exception:
+        return None
+
+
 def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
     """Populate cached values via LibreOffice, so Python readers see numbers.
 
@@ -1448,34 +1483,37 @@ def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
     That is the defect that made the previous export unreadable by KinematiK's
     own loaders.
 
-    Uses the bundled scripts/office/soffice.py sandbox wrapper when it can be
-    found relative to this file, so LibreOffice works in AF_UNIX-restricted
-    environments (e.g. the Streamlit Cloud sandbox).
+    Auto-installs libreoffice-calc via apt on Debian/Ubuntu hosts (including
+    Streamlit Cloud) if the binary is not already present. Uses the bundled
+    scripts/office/soffice.py sandbox wrapper to handle AF_UNIX-restricted
+    environments.
     """
-    if not (shutil.which("soffice") or shutil.which("libreoffice")):
-        return False, "LibreOffice not installed; open and save the file once in Excel to populate formula caches"
+    soffice = _ensure_libreoffice()
+    if not soffice:
+        return False, (
+            "LibreOffice is not available and could not be installed automatically. "
+            "Open the file in Excel and save it once to populate formula caches.")
 
-    # Try the bundled sandbox wrapper first; fall back to bare soffice env.
+    # Try the bundled sandbox wrapper first (handles AF_UNIX-blocked envs).
     _here = os.path.dirname(os.path.abspath(__file__))
-    _wrapper = os.path.join(_here, "..", "scripts", "office", "soffice.py")
-    _wrapper = os.path.normpath(_wrapper)
+    _wrapper = os.path.normpath(
+        os.path.join(_here, "..", "scripts", "office", "soffice.py"))
 
-    def _run_soffice(args: list, env=None) -> subprocess.CompletedProcess:
+    def _run(args: list) -> subprocess.CompletedProcess:
         if os.path.isfile(_wrapper):
             import importlib.util as _ilu
             spec = _ilu.spec_from_file_location("_soffice_wrap", _wrapper)
-            mod  = _ilu.module_from_spec(spec)
+            mod = _ilu.module_from_spec(spec)
             spec.loader.exec_module(mod)               # type: ignore[union-attr]
             return mod.run_soffice(args, check=True, capture_output=True,
                                    timeout=timeout)
-        return subprocess.run(
-            ["soffice"] + args,
-            env=env, check=True, capture_output=True, timeout=timeout)
+        return subprocess.run([soffice] + args,
+                              check=True, capture_output=True, timeout=timeout)
 
     outdir = tempfile.mkdtemp(prefix="kx_recalc_")
     try:
-        _run_soffice(["--headless", "--norestore", "--convert-to", "xlsx",
-                      "--outdir", outdir, path])
+        _run(["--headless", "--norestore", "--convert-to", "xlsx",
+              "--outdir", outdir, path])
         produced = os.path.join(
             outdir, os.path.splitext(os.path.basename(path))[0] + ".xlsx")
         if not os.path.exists(produced):
