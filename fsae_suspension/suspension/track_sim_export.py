@@ -1126,6 +1126,320 @@ def repair_range_overshoot(path: str) -> list[str]:
     return changed
 
 
+#: The canonical ElecPropulsion block layout in an untouched
+#: FSAE_EV_Power_Draw.xlsx: RPM, current draw, motor power, stacked vertically.
+#: Formulas across the workbook reference these fixed offsets.
+CANONICAL_EP_BLOCKS: tuple[tuple[int, int], ...] = ((2, 1894), (1895, 3787),
+                                                    (3789, 5681))
+
+
+def remap_stale_block_references(path: str, *,
+                                 target_sheet: str = "ElecPropulsion"
+                                 ) -> list[str]:
+    """Repoint formulas at the block their data actually occupies now.
+
+    The legacy export rewrote the three stacked blocks as ~335 rows of values
+    each, so they sit at rows 1-1008 while every dependent formula still
+    references the canonical offsets at 1895-5681. Those references land on
+    blank cells and INDEX returns 0, which is the wall of zeros.
+
+    The remap is well-determined rather than a guess: a reference is matched to
+    a canonical block by which one contains its start row, and that ordinal then
+    selects the correspondingly-ordered block actually present in the file. Three
+    canonical blocks, three present blocks, matched in order. If the counts do
+    not agree the function does nothing and says so, because a partial remap
+    would move numbers to the wrong physical quantity — worse than leaving the
+    zeros, which at least look wrong.
+
+    Single-row references to the old MIN/MAX summary rows cannot be remapped —
+    those rows no longer exist — so they are rewritten as MIN()/MAX() over the
+    mapped block, which is what they meant in the first place.
+    """
+    import re as _re
+    import openpyxl
+    from openpyxl.worksheet.formula import ArrayFormula
+
+    wb = openpyxl.load_workbook(path)
+    if target_sheet not in wb.sheetnames:
+        return []
+
+    # Nothing to repair unless some reference actually points at blank rows.
+    # Checked first so a healthy workbook — where blocks 1 and 2 are contiguous
+    # and therefore scan as a single run — is silently left alone instead of
+    # being told the pairing is ambiguous.
+    if not any(f["target"] == target_sheet
+               for f in audit_block_references(path)):
+        return []
+
+    present = [b for b in _data_blocks(wb[target_sheet]) if b[1] - b[0] > 2]
+    if len(present) != len(CANONICAL_EP_BLOCKS):
+        return [f"Not remapped: found {len(present)} data block(s) in "
+                f"'{target_sheet}' but the formulas reference "
+                f"{len(CANONICAL_EP_BLOCKS)}. Refusing to guess the pairing."]
+    # Guarded per-reference below, not by comparing block positions: the only
+    # references worth moving are the ones pointing at nothing. A range that
+    # already lands on data is correct wherever it happens to sit.
+
+    changed: list[str] = []
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                v = cell.value
+                is_arr = isinstance(v, ArrayFormula)
+                text = v.text if is_arr else v
+                if not isinstance(text, str) or target_sheet not in text:
+                    continue
+                new_text = text
+                for m in list(_re.finditer(_RANGE_RE, text)):
+                    ref = m.group(1)[:-1].strip().strip("'") if m.group(1) else ""
+                    if ref != target_sheet:
+                        continue
+                    r1, r2 = int(m.group(3)), int(m.group(5))
+                    # Already reading real data? Then it is fine as it is.
+                    if any(b[0] <= r1 <= b[1] for b in present):
+                        continue
+                    ordinal = next((i for i, (a, b)
+                                    in enumerate(CANONICAL_EP_BLOCKS)
+                                    if a <= r1 <= b), None)
+                    if ordinal is None:
+                        continue
+                    nb = present[ordinal]
+                    # Block 1 starts one row below its detected start, because
+                    # row 1 of that block is the gear-ratio header.
+                    lo = nb[0] + 1 if ordinal == 0 else nb[0]
+                    hi = nb[1]
+                    if (r1, r2) == (lo, hi):
+                        continue
+                    old = m.group(0)
+                    new = (f"{m.group(1)}{m.group(2)}{lo}:"
+                           f"{m.group(4)}{hi}")
+                    new_text = new_text.replace(old, new)
+                    changed.append(
+                        f"{ws.title}!{cell.coordinate}: {target_sheet}!"
+                        f"{m.group(2)}{r1}:{m.group(4)}{r2} -> rows {lo}-{hi} "
+                        f"(block {ordinal + 1})")
+                if new_text != text:
+                    if is_arr:
+                        # Spill no further than the data now supports.
+                        ref_s = v.ref
+                        mm = _re.match(r"(\$?[A-Z]{1,3}\$?)(\d+):"
+                                       r"(\$?[A-Z]{1,3}\$?)(\d+)$", ref_s)
+                        if mm:
+                            rows_avail = hi - lo + 1
+                            first = int(mm.group(2))
+                            ref_s = (f"{mm.group(1)}{first}:{mm.group(3)}"
+                                     f"{first + rows_avail - 1}")
+                        cell.value = ArrayFormula(ref_s, new_text)
+                    else:
+                        cell.value = new_text
+
+    # The vanished MIN/MAX summary rows, rewritten as aggregates over the block.
+    tl = wb["ThermalLoad"] if "ThermalLoad" in wb.sheetnames else None
+    if tl is not None:
+        cur_lo, cur_hi = present[1]
+        for coord, agg in (("B4", "MIN"), ("B5", "MAX")):
+            v = tl[coord].value
+            text = v.text if isinstance(v, ArrayFormula) else v
+            if not isinstance(text, str):
+                continue
+            if _re.search(rf"{target_sheet}!\$?[A-Z]+\$?5(68[0-9]|69[0-9])",
+                          text):
+                tl[coord] = (
+                    f"=({agg}(INDEX({target_sheet}!H{cur_lo}:V{cur_hi},0,"
+                    f"ROUND(1/B2,0))))^2 * BatteryPackConfig!B11")
+                changed.append(
+                    f"ThermalLoad!{coord}: referenced the deleted {agg} summary "
+                    f"row; rewritten as {agg}() over rows {cur_lo}-{cur_hi}")
+
+    if changed:
+        try:
+            wb.calculation.fullCalcOnLoad = True
+        except Exception:
+            pass
+        wb.save(path)
+    return changed
+
+
+def audit_block_column_coverage(path: str, *,
+                                target_sheet: str = "ElecPropulsion",
+                                first_col: int = 8, last_col: int = 22
+                                ) -> list[str]:
+    """Report data blocks that have lost most of their gear columns.
+
+    The legacy export wrote the current-draw block for gear 1 ONLY — one of
+    fifteen columns. Remapping the references cannot help: the other fourteen
+    columns of current data were discarded, not moved. Any sheet reading the
+    current block at a gear other than 1 therefore reads blank cells and returns
+    zero, and no amount of formula repair recovers it.
+
+    This is the check that distinguishes "repairable" from "re-export from the
+    original", so it is worth running before promising anyone a fix.
+    """
+    import openpyxl
+    # FORMULA view, not the cached view. This module re-saves workbooks (the
+    # portability pass does), and openpyxl drops every cached value when it
+    # saves — so a data_only read reports each column as empty and this check
+    # concludes the workbook is damaged when it is perfectly healthy. That
+    # false positive previously triggered a rebuild that overwrote the user's
+    # own ElecPropulsion formulas with static values. A cell holding a formula
+    # is populated; that is the only reading that survives a round trip.
+    wb = openpyxl.load_workbook(path)
+    if target_sheet not in wb.sheetnames:
+        return []
+    ws = wb[target_sheet]
+    out: list[str] = []
+    n_cols = last_col - first_col + 1
+    for i, (lo, hi) in enumerate(
+            [b for b in _data_blocks(ws) if b[1] - b[0] > 2], start=1):
+        have = [c - first_col + 1 for c in range(first_col, last_col + 1)
+                if any(ws.cell(r, c).value is not None
+                       for r in range(lo, min(hi, lo + 60) + 1))]
+        if 0 < len(have) < n_cols:
+            out.append(
+                f"block {i} (rows {lo}-{hi}) holds only {len(have)} of "
+                f"{n_cols} columns (gears {', '.join(map(str, have))}). "
+                f"Any formula reading this block at another gear returns zero, "
+                f"and the missing columns cannot be reconstructed — they were "
+                f"discarded when the workbook was written, not relocated.")
+    return out
+
+
+def repair_workbook(path: str) -> dict:
+    """Every repair pass, in the order they depend on each other.
+
+    Portability first (so nothing is #NAME?), then block remapping (so nothing
+    points at blank rows), then overshoot trimming (so no tail contributes
+    zeros).
+    """
+    out = {}
+    out["portable"] = make_portable(path)
+    out["remapped"] = remap_stale_block_references(path)
+    out["trimmed"] = repair_range_overshoot(path)
+    out["stale"] = audit_block_references(path)
+    out["coverage"] = audit_block_column_coverage(path)
+    return out
+
+
+def _resample(values: Sequence[float], n: int) -> list:
+    """Linearly resample a series to exactly `n` points."""
+    src = list(values)
+    if n <= 0:
+        return []
+    if len(src) == 1:
+        return [float(src[0])] * n
+    if len(src) == n:
+        return [float(v) for v in src]
+    out = []
+    last = len(src) - 1
+    for i in range(n):
+        pos = i * last / (n - 1) if n > 1 else 0.0
+        lo = int(math.floor(pos))
+        hi = min(lo + 1, last)
+        frac = pos - lo
+        out.append(float(src[lo]) * (1 - frac) + float(src[hi]) * frac)
+    return out
+
+
+def rebuild_propulsion_blocks(path: str, speed_mph: Sequence[float],
+                              pack: "pdw.PackSpec",
+                              vehicle: "pdw.VehicleSpec",
+                              drive: "pdw.DriveSpec", *,
+                              dt_s: float,
+                              reductions: Sequence[float] = tuple(range(1, 16)),
+                              smooth_window: int = 11,
+                              target_sheet: str = "ElecPropulsion") -> dict:
+    """Rewrite ElecPropulsion's three blocks in full, at the canonical rows.
+
+    This is what removes the "export from the original, never from an enhanced
+    copy" caveat. The legacy path truncated the blocks to the lap length and
+    wrote the current block for gear 1 only — one of fifteen columns — so every
+    dependent sheet read blanks at any other gear. Warning about that was never
+    a fix; the data has to come back.
+
+    Two decisions make the reconstruction work:
+
+    **Canonical offsets, always.** The blocks are written to rows 2-1894,
+    1895-3787 and 3789-5681 regardless of how many samples the lap has, because
+    ThermalLoad, EMFs and BearingBlowOut reference those exact rows. The trace
+    is resampled to 1893 points to fit. Rebuilding at the lap's own length would
+    reproduce the original bug in a new place.
+
+    **All fifteen gear columns.** Motor speed genuinely varies with the
+    reduction, so those columns differ. Pack current and electrical power do
+    NOT — power is force times speed however the gearbox delivers it — so those
+    columns are filled identically across gears. That is the physics, not a
+    shortcut, and it is why a current-only gear sweep could never have chosen a
+    ratio.
+    """
+    import openpyxl
+
+    wb = openpyxl.load_workbook(path)
+    if target_sheet not in wb.sheetnames:
+        return {"rebuilt": False, "reason": f"no '{target_sheet}' sheet"}
+    ws = wb[target_sheet]
+
+    b1, b2, b3 = CANONICAL_EP_BLOCKS
+    n = b1[1] - b1[0] + 1                      # 1893
+    sp = _resample(pdw._moving_average(list(speed_mph), smooth_window), n)
+
+    # Corrected physics once; current and power are gear-independent.
+    base = pdw.power_draw_trace(sp, dt_s, pack, vehicle, drive,
+                                smooth_window=1)
+    wheel_rpm = [s * pdw.MPH_TO_IN_PER_MIN
+                 / (vehicle.wheel_diameter_in * math.pi) for s in sp]
+
+    first_col, last_col = 8, 8 + len(reductions) - 1
+
+    # Clear the old blocks so nothing survives underneath the new ones.
+    for r in range(2, max(ws.max_row, b3[1]) + 1):
+        for c in range(first_col, last_col + 1):
+            ws.cell(r, c).value = None
+        if r in (b2[0] - 1, b3[0] - 1) or ws.cell(r, 7).value in (
+                "Current Draw (A)", "Phase Current (A)", "Motor Power (kW)"):
+            ws.cell(r, 7).value = None
+
+    ws.cell(b1[0] - 1, 7).value = "RPM (Load)"
+    for i in range(n):
+        for gi, red in enumerate(reductions):
+            ws.cell(b1[0] + i, first_col + gi).value = round(
+                wheel_rpm[i] * float(red), 4)
+
+    ws.cell(b2[0] - 1, 7).value = "Current Draw (A)"
+    for i in range(n):
+        val = round(base.i_pack_a[i], 6)
+        for gi in range(len(reductions)):
+            ws.cell(b2[0] + i, first_col + gi).value = val
+
+    ws.cell(b3[0] - 1, 7).value = "Motor Power (kW)"
+    for i in range(n):
+        val = round(base.p_elec_w[i] / 1000.0, 6)
+        for gi in range(len(reductions)):
+            ws.cell(b3[0] + i, first_col + gi).value = val
+
+    # The MIN/MAX summary rows the original workbook keeps below the blocks.
+    stat_min, stat_max = b3[1] + 2, b3[1] + 3
+    ws.cell(stat_min, 7).value = "Min Current (A)"
+    ws.cell(stat_max, 7).value = "Max Current (A)"
+    for gi in range(len(reductions)):
+        c = first_col + gi
+        col = ws.cell(1, c).column_letter
+        ws.cell(stat_min, c).value = f"=MIN({col}{b2[0]}:{col}{b2[1]})"
+        ws.cell(stat_max, c).value = f"=MAX({col}{b2[0]}:{col}{b2[1]})"
+
+    try:
+        wb.calculation.fullCalcOnLoad = True
+    except Exception:
+        pass
+    wb.save(path)
+    return {
+        "rebuilt": True,
+        "rows": n,
+        "gears": len(reductions),
+        "blocks": [b1, b2, b3],
+        "resampled_from": len(speed_mph),
+    }
+
+
 def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
     """Populate cached values via LibreOffice, so Python readers see numbers.
 
@@ -1204,6 +1518,7 @@ def export_track_sim(source_path: str, out_path: str,
                      smooth_window: int = 11,
                      endurance_km: Optional[float] = None,
                      max_cell_c_rate: float = 10.0,
+                     rebuild_propulsion: bool = True,
                      recalc: bool = True) -> TrackSimExport:
     """Write the lap-sim result into a copy of the electrics workbook.
 
@@ -1221,11 +1536,35 @@ def export_track_sim(source_path: str, out_path: str,
         try:
             pack = pdw.read_pack_config(source_path)
         except pdw.WorkbookReadError as exc:
-            warnings.append(
-                f"Could not read the pack from the workbook ({exc}); using "
-                f"declared defaults. Every pack figure below is therefore a "
-                f"default, not a reading.")
-            pack = pdw.PackSpec()
+            # A workbook that has been through openpyxl has no cached values, so
+            # every formula cell reads as empty. Recalculating a scratch copy
+            # restores them; falling straight through to defaults would report a
+            # pack nobody specified.
+            pack = None
+            scratch = None
+            try:
+                import tempfile as _tf
+                scratch = os.path.join(_tf.mkdtemp(prefix="kx_pack_"),
+                                       "src.xlsx")
+                shutil.copy(source_path, scratch)
+                ok, _msg = recalculate(scratch)
+                if ok:
+                    pack = pdw.read_pack_config(scratch)
+                    warnings.append(
+                        "Pack values were uncached in the source workbook "
+                        "(every formula read as empty); recalculated a scratch "
+                        "copy and read them from that.")
+            except Exception:
+                pack = None
+            finally:
+                if scratch:
+                    shutil.rmtree(os.path.dirname(scratch), ignore_errors=True)
+            if pack is None:
+                warnings.append(
+                    f"Could not read the pack from the workbook ({exc}); using "
+                    f"declared defaults. Every pack figure below is therefore a "
+                    f"default, not a reading.")
+                pack = pdw.PackSpec()
     vehicle = vehicle or pdw.VehicleSpec()
     drive = drive or pdw.DriveSpec()
     if endurance_km is None:
@@ -1260,6 +1599,47 @@ def export_track_sim(source_path: str, out_path: str,
             + ". These were array formulas spilling #NAME? across thousands of "
               "cells on any Excel older than 365, which is what made the "
               "downstream sheets read as zero or blank.")
+
+    thin = audit_block_column_coverage(out_path)
+    stale_now = audit_block_references(out_path)
+    if (thin or stale_now) and rebuild_propulsion:
+        # Do not merely warn. The blocks are reconstructible from the speed
+        # trace with correct physics, so rebuild them at the canonical rows the
+        # dependent sheets reference. This is what makes an already-damaged
+        # workbook usable instead of telling someone to go and find the original.
+        info = rebuild_propulsion_blocks(
+            out_path, spec.speed_mph, pack, vehicle, drive,
+            dt_s=dt_s, reductions=tuple(reductions),
+            smooth_window=smooth_window)
+        if info.get("rebuilt"):
+            warnings.append(
+                f"Source workbook had damaged propulsion data "
+                f"({'; '.join(thin) if thin else 'formulas pointing at blank rows'}). "
+                f"Rebuilt all three blocks at the canonical rows "
+                f"{info['blocks'][0][0]}-{info['blocks'][2][1]} with "
+                f"{info['gears']} gear columns and {info['rows']} samples "
+                f"(resampled from {info['resampled_from']}), using the "
+                f"corrected physics. ThermalLoad, EMFs and BearingBlowOut now "
+                f"work at every gear, not just gear 1.")
+            for _pass in (repair_range_overshoot, remap_stale_block_references):
+                _pass(out_path)
+    elif thin:
+        warnings.append(
+            "Damaged propulsion data in the source workbook: " + " ".join(thin)
+            + " Pass rebuild_propulsion=True to reconstruct it, or re-export "
+              "from the original workbook.")
+
+
+    # If the blocks have been relocated by an earlier legacy export, repoint the
+    # formulas at where the data actually is now.
+    remapped = remap_stale_block_references(out_path)
+    if remapped:
+        warnings.append(
+            f"Repointed {len(remapped)} formula reference(s) at the data's "
+            f"current position — an earlier export moved ElecPropulsion's "
+            f"blocks and left every dependent formula reading blank rows: "
+            + "; ".join(remapped[:3])
+            + ("" if len(remapped) <= 3 else f" (+{len(remapped)-3} more)"))
 
     # Trim ranges that overshoot their data block by a few rows. EMFs reads one
     # row past the power block even in the untouched original, which is why its
@@ -1373,6 +1753,7 @@ def export_track_sim_bytes(excel_bytes: bytes,
                            smooth_window: int = 11,
                            endurance_km: Optional[float] = None,
                            max_cell_c_rate: float = 10.0,
+                           rebuild_propulsion: bool = True,
                            recalc: bool = True
                            ) -> tuple[bytes, "TrackSimExport"]:
     """Bytes in, bytes out — the shape a Streamlit download button needs.
@@ -1405,7 +1786,8 @@ def export_track_sim_bytes(excel_bytes: bytes,
             src, out, speed_mph, dt, pack=pack, vehicle=vehicle, drive=drive,
             lap_time_s=lap_time_s, reductions=reductions,
             smooth_window=smooth_window, endurance_km=endurance_km,
-            max_cell_c_rate=max_cell_c_rate, recalc=recalc)
+            max_cell_c_rate=max_cell_c_rate,
+            rebuild_propulsion=rebuild_propulsion, recalc=recalc)
 
         # Flag an uneven time base rather than silently averaging over it.
         steps = [t[i + 1] - t[i] for i in range(len(t) - 1)]

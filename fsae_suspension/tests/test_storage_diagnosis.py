@@ -28,7 +28,7 @@ import time
 import openpyxl
 import pytest
 
-from project import _jwt_expiry, diagnose_storage_error
+from suspension.project import _jwt_expiry, diagnose_storage_error
 from suspension.ev_excel_roundtrip import gear_ratio_value
 
 
@@ -270,3 +270,61 @@ def test_the_real_workbook_yields_fifteen_correct_ratios():
     assert d["gear_ratios_recovered"] == [8, 10]
     for i, r in enumerate(d["gear_ratios"], start=1):
         assert r == pytest.approx(1.0 / i), f"gear {i} is {r}"
+
+
+# --------------------------------------------------------------------------- #
+#  A broken deployment is not a storage problem
+# --------------------------------------------------------------------------- #
+#  Reported error:
+#    Could not write project data: cannot import name 'StaleWriteError' from
+#    'suspension.project' (/mount/src/.../suspension/project.py)
+#  ...followed by advice to check the Supabase table and its RLS policy. None of
+#  that was involved. The repo has TWO project.py files and the package imports
+#  suspension.project; overwriting it with the top-level copy strips names the
+#  rest of the package needs.
+# --------------------------------------------------------------------------- #
+_IMPORT_ERROR = ("cannot import name 'StaleWriteError' from "
+                 "'suspension.project' (/mount/src/kinematik/"
+                 "fsae_suspension/suspension/project.py)")
+
+
+def test_import_failure_is_not_blamed_on_storage():
+    msg = diagnose_storage_error(_IMPORT_ERROR, backend=_Backend(_key(30)))
+    assert "NOT a storage problem" in msg
+    assert "broken import" in msg
+
+
+def test_import_failure_advice_names_the_two_project_files():
+    msg = diagnose_storage_error(_IMPORT_ERROR, backend=_Backend(_key(30)))
+    assert "suspension/project.py" in msg
+    assert "suspension.project" in msg
+
+
+@pytest.mark.parametrize("err", [
+    "No module named 'suspension.power_draw'",
+    "'ProjectStore' object has no attribute 'save_hint'",
+    "cannot import name 'X' from 'y'",
+])
+def test_all_deployment_errors_take_the_same_branch(err):
+    assert "NOT a storage problem" in diagnose_storage_error(err)
+
+
+def test_stale_write_error_is_still_importable():
+    """The regression this whole episode caused: the name must survive."""
+    from suspension.project import StaleWriteError
+    assert issubclass(StaleWriteError, RuntimeError)
+
+
+def test_the_live_module_is_the_one_carrying_the_helpers():
+    """Both must exist in suspension.project, since that is what the app imports."""
+    import suspension.project as sp
+    assert callable(sp.diagnose_storage_error)
+    assert callable(sp._jwt_expiry)
+    assert hasattr(sp, "StaleWriteError")
+
+
+def test_save_hint_attribute_exists_before_any_save():
+    from suspension.project import ProjectStore
+    import inspect
+    src = inspect.getsource(ProjectStore)
+    assert "save_hint" in src

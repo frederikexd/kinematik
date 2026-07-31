@@ -156,6 +156,10 @@ LOCATION_SUBTEAMS: dict[str, tuple[str, ...]] = {
     "steering":       ("chassis", "suspension"),
     "chassis":        ("chassis",),
     "cockpit":        ("chassis", "electrics"),
+    #: A GNSS/IMU node is mounted by chassis, but the antenna wants sky and the
+    #: mounting position is constrained toward the CG — which is aero's and
+    #: chassis's problem jointly, not data-acq's alone.
+    "gnss_node":      ("chassis", "aero", "electrics"),
     "aero_element":   ("aero", "chassis"),
     "ecu":            ("electrics",),
     "gearbox":        ("powertrain",),

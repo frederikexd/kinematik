@@ -2243,9 +2243,23 @@ def save_store(store):
     if not ok and getattr(store, "save_error", None):
         st.warning(
             f"Saved in this session only — couldn't persist to storage: "
-            f"{store.save_error} Check the Supabase table name "
-            f"('kinematik_project'), its columns (id text, data jsonb), and the "
-            f"key's row-level-security policy.")
+            f"{store.save_error}")
+        # The hint is derived from the actual error code rather than being one
+        # fixed sentence. An expired API key, a broken deployment and a missing
+        # RLS policy all surface as "could not write" and share no remedy.
+        _hint = getattr(store, "save_hint", None)
+        if not _hint:
+            try:
+                from suspension.project import diagnose_storage_error as _diag
+                _hint = _diag(store.save_error,
+                              backend=getattr(store, "backend", None))
+            except Exception:
+                _hint = ""
+        if _hint:
+            st.info(_hint)
+        st.caption(
+            "Your edits are safe for this session. Export a backup from the "
+            "sidebar if you need them to outlive the tab.")
     return ok
 
 
@@ -27639,8 +27653,9 @@ def render_laptime(_pt):
     st.markdown(
         '<p class="hint">The lap-time sim finds the <i>mechanically</i> fastest lap. '
         'This check tells you whether the <b>electrical system can actually deliver it</b>. '
-        'Upload the electrics lead\'s Excel workbook (the one with Battery Pack Calcs, '
-        'ElecPropulsion, and SpeedVsTime sheets) and the checker will flag any fuse '
+        'Upload the electrics lead\'s Excel workbook (the pack sheet may be named '
+        'Battery Pack Calcs or BatteryPackConfig \u2014 either works, and it is also '
+        'found by its row labels if renamed) and the checker will flag any fuse '
         'violations, cell overcurrent, or energy deficits — in plain English, '
         'before you freeze the build.</p>',
         unsafe_allow_html=True)
@@ -27649,7 +27664,9 @@ def render_laptime(_pt):
         "Upload FSAE_EV_Power_Draw.xlsx (electrics lead's workbook)",
         type=["xlsx"],
         key="elec_check_xlsx",
-        help="Needs sheets: 'Battery Pack Calcs', 'ElecPropulsion', 'SpeedVsTime'. "
+        help="Needs a pack sheet ('Battery Pack Calcs' or 'BatteryPackConfig'), "
+             "plus 'ElecPropulsion' and 'SpeedVsTime'. Sheets are matched by name "
+             "or by their row labels, so a renamed tab still resolves. "
              "This is the same file the electrics lead maintains.")
 
     _elec_col1, _elec_col2 = st.columns(2)
@@ -27915,12 +27932,24 @@ def render_laptime(_pt):
             _motor_db = _ev_db.get("motor", {})
             _gr_db    = _ev_db.get("gear_ratios", [])
             _db_has_data = True
+            _gr_rec  = _ev_db.get("gear_ratios_recovered", []) or []
+            _gr_bad  = _ev_db.get("gear_ratios_unreadable", []) or []
+            _gr_good = len(_gr_db) - len(_gr_bad)
             st.success(
                 f"✅ Imported and saved — "
                 f"pack voltage {_pack_db.get('pack_voltage_v', 0):.0f} V, "
                 f"fuse {_pack_db.get('fuse_max_a', 0):.0f} A, "
-                f"{len(_gr_db)} gear ratios. "
+                f"{_gr_good} of {len(_gr_db)} gear ratios usable. "
                 f"These values are now stored in the project.")
+            # Reporting these matters: a gear ratio that silently defaults to
+            # 1.0 is indistinguishable from a real direct-drive column.
+            for _n in (_ev_db.get("gear_ratio_notes") or []):
+                st.info(_n)
+            if _gr_bad:
+                st.warning(
+                    f"Gear ratio(s) {', '.join(str(g) for g in _gr_bad)} could "
+                    f"not be read and are set to 1.0. Any result for those "
+                    f"columns is a direct-drive result, not a reduction.")
 
     # ── Manual param editor (always visible when data exists) ──────────
     if _db_has_data:
@@ -28402,35 +28431,88 @@ def render_laptime(_pt):
                     '<p class="hint">Each square is one physical cell. '
                     'Colour maps estimated surface temperature from the Joule '
                     'heat model (I²R per cell, with convective cooling). '
-                    'Series rows at the bottom of the stack run hotter — '
-                    'thermal gradient applied from the BMS data.</p>',
+                    'Series position runs left to right, with the bottom of '
+                    'the stack — the hottest end — at the right. The three '
+                    'parallel strings in a series group share a node and are '
+                    'modelled at the same temperature, so the rows are '
+                    'deliberately identical: variation here is along the series '
+                    'axis only.</p>',
                     unsafe_allow_html=True)
 
                 _n_s = max(int(_rt_res.pack.get("n_series",   1) or 1), 1)
                 _n_p = max(int(_rt_res.pack.get("n_parallel", 1) or 1), 1)
+                # Cell temperatures along the series stack.
+                #
+                # The previous form was `_t_lo + (_t_hi - _t_lo) * grad` with
+                # grad = 0.85..1.15 — a MULTIPLIER applied to the whole
+                # ambient-to-peak span. That pushed the hottest cell to 76.2 degC
+                # while the title reported the model's 69.5, left half the cells
+                # above zmax clipped to identical solid red, and wasted 85% of
+                # the colour bar on a range no cell ever occupied. Hence a chart
+                # that was uniformly red regardless of the data.
+                #
+                # Here the spread is applied to the temperature RISE, so the
+                # hottest row equals the model's peak exactly and the coolest
+                # sees 85% of the rise. zmin/zmax then come from the data.
                 _t_lo = 25.0
-                _t_hi = max(_thermals["peak_temp_c"], 30.0)
-                _grad = _np_ext.linspace(0.85, 1.15, _n_s)
+                _t_hi = max(_thermals["peak_temp_c"], _t_lo + 5.0)
+                _rise = _t_hi - _t_lo
+                _spread = 0.15
+                _row_t = [
+                    _t_lo + _rise * (1.0 - _spread
+                                     + _spread * (_si / max(_n_s - 1, 1)))
+                    for _si in range(_n_s)
+                ]
 
                 # Display temperatures follow the active unit system: the
                 # model computes °C, but the plotted z-values, cell labels,
                 # colour-scale bounds and colorbar title all switch to °F in
                 # US mode so the whole heatmap stays consistent with the toggle.
                 _t_unit = units_mod.label("°C")
-                _hm_z    = []
-                _hm_text = []
-                for _si in range(_n_s):
-                    row_z, row_t = [], []
-                    for _pi in range(_n_p):
-                        _ct = _t_lo + (_t_hi - _t_lo) * _grad[_si]
-                        _ct_disp = units_mod.from_metric(_ct, "°C")
-                        row_z.append(_ct_disp)
-                        row_t.append(f"S{_si+1}/P{_pi+1}<br>{_ct_disp:.1f}{_t_unit}")
-                    _hm_z.append(row_z)
-                    _hm_text.append(row_t)
 
-                _z_lo = units_mod.from_metric(_t_lo, "°C")
-                _z_hi = units_mod.from_metric(_t_hi, "°C")
+                # Orientation: a 140x3 matrix drawn tall gives every row about
+                # 3 px inside a 520 px plot, and a 2 px gap then eats most of
+                # that — which is why it rendered as hairlines. Long axis goes
+                # horizontal instead, where there is room.
+                _hm_flip = _n_s >= 3 * _n_p
+
+                _cells_disp = [units_mod.from_metric(t, "°C") for t in _row_t]
+                if _hm_flip:
+                    # rows = parallel strings, columns = series position
+                    _hm_z = [[_cells_disp[_si] for _si in range(_n_s)]
+                             for _pi in range(_n_p)]
+                    _hm_text = [[f"S{_si+1}/P{_pi+1}<br>"
+                                 f"{_cells_disp[_si]:.1f}{_t_unit}"
+                                 for _si in range(_n_s)]
+                                for _pi in range(_n_p)]
+                else:
+                    _hm_z = [[_cells_disp[_si]] * _n_p for _si in range(_n_s)]
+                    _hm_text = [[f"S{_si+1}/P{_pi+1}<br>"
+                                 f"{_cells_disp[_si]:.1f}{_t_unit}"
+                                 for _pi in range(_n_p)]
+                                for _si in range(_n_s)]
+
+                # Bounds from the data, so the whole colour bar is used and
+                # nothing clips.
+                _z_lo = min(_cells_disp)
+                _z_hi = max(_cells_disp)
+                if abs(_z_hi - _z_lo) < 1e-6:      # degenerate: 1S pack
+                    _z_lo, _z_hi = _z_lo - 0.5, _z_hi + 0.5
+
+                # Thinned tick labels. Forcing all 140 produced an unreadable
+                # smear; ~14 labels at round intervals is legible and still
+                # locates any row.
+                _s_step  = max(1, _n_s // 14)
+                _s_ticks = list(range(0, _n_s, _s_step))
+                _s_text  = [f"S{i+1}" for i in _s_ticks]
+                _p_ticks = list(range(_n_p))
+                _p_text  = [f"P{p+1}" for p in range(_n_p)]
+
+                # Gaps only when cells are big enough to keep some fill.
+                _n_cols = _n_s if _hm_flip else _n_p
+                _n_rows = _n_p if _hm_flip else _n_s
+                _xgap = 1 if _n_cols > 40 else 2
+                _ygap = 1 if _n_rows > 40 else 2
 
                 import plotly.graph_objects as _go_hm
                 _fig_hm = _go_hm.Figure(data=_go_hm.Heatmap(
@@ -28443,31 +28525,34 @@ def render_laptime(_pt):
                         title=dict(text=_t_unit, font=dict(color="#cdd6df")),
                         tickfont=dict(color="#cdd6df"),
                         bgcolor="rgba(0,0,0,0)"),
-                    xgap=2, ygap=2,
+                    xgap=_xgap, ygap=_ygap,
                 ))
                 _fig_hm.update_layout(
                     title=dict(
                         text=f"Battery pack — {_n_s}S × {_n_p}P "
                              f"({_n_s*_n_p} cells) | "
-                             f"Peak {_z_hi:.1f}{_t_unit} | "
+                             f"Peak {max(_cells_disp):.1f}{_t_unit} | "
                              f"Joule: {_thermals['total_joule_kwh']*1000:.1f} Wh/cell",
                         font=dict(color="#cdd6df", size=12)),
                     xaxis=dict(
-                        title="Parallel string (P)", showgrid=False,
-                        tickfont=dict(color="#8899aa"),
+                        title=("Series position (S) — bottom of stack at right"
+                               if _hm_flip else "Parallel string (P)"),
+                        showgrid=False, tickfont=dict(color="#8899aa"),
                         tickmode="array",
-                        tickvals=list(range(_n_p)),
-                        ticktext=[f"P{p+1}" for p in range(_n_p)]),
+                        tickvals=(_s_ticks if _hm_flip else _p_ticks),
+                        ticktext=(_s_text if _hm_flip else _p_text)),
                     yaxis=dict(
-                        title="Series row (S)", showgrid=False,
-                        tickfont=dict(color="#8899aa"),
+                        title=("Parallel string (P)" if _hm_flip
+                               else "Series row (S)"),
+                        showgrid=False, tickfont=dict(color="#8899aa"),
                         tickmode="array",
-                        tickvals=list(range(_n_s)),
-                        ticktext=[f"S{s+1}" for s in range(_n_s)],
-                        autorange="reversed"),
+                        tickvals=(_p_ticks if _hm_flip else _s_ticks),
+                        ticktext=(_p_text if _hm_flip else _s_text),
+                        autorange=(None if _hm_flip else "reversed")),
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
-                    height=max(200, min(_n_s * 36 + 100, 520)),
+                    height=(max(190, _n_p * 46 + 130) if _hm_flip
+                            else max(220, min(_n_s * 30 + 110, 560))),
                     margin=dict(l=0, r=60, t=48, b=0),
                 )
                 st.plotly_chart(_fig_hm, width="stretch", key="rt_heatmap")
@@ -28674,8 +28759,57 @@ def render_laptime(_pt):
                 _cached_b2 = st.session_state.get("_rt_excel_bytes")
                 if _cached_b2:
                     import numpy as _np_enh
-                    with st.spinner("Building enhanced workbook with heatmap, SoC, and feasibility sheets…"):
-                        # First produce the standard round-trip workbook
+                    from suspension import track_sim_export as _tse_mod
+                    with st.spinner("Building corrected track-sim workbook "
+                                    "(live formulas, recalculated)…"):
+                        # The corrected exporter: real physics, live Excel
+                        # formulas, cached values, and it writes only 'KX '
+                        # sheets so nothing of the user's is modified.
+                        _kx_bytes, _kx_res = _tse_mod.export_track_sim_bytes(
+                            excel_bytes = _cached_b2,
+                            speed_ms    = _np_enh.array(_rt_res.speed_ms, dtype=float),
+                            time_s      = _np_enh.array(_rt_res.time_s,   dtype=float),
+                            lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else None,
+                        )
+                    _enh_col1.download_button(
+                        label="⬇ Download track-sim workbook (corrected)",
+                        data=_kx_bytes,
+                        file_name="FSAE_EV_KinematiK_TrackSim.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key="rt_kx_download_btn")
+                    _enh_col2.markdown(
+                        '<p class="hint" style="margin-top:10px;">'
+                        'Adds seven <b>KX</b> sheets and changes none of yours. '
+                        'Every derived cell is a live formula, so editing '
+                        '<b>KX Inputs</b> updates the dashboard, the gear study '
+                        'and the pack advice. Start at <b>KX Dashboard</b>; the '
+                        'yellow cells on <b>KX Inputs</b> are assumptions not '
+                        'present in the original workbook (mass, CdA, Crr, '
+                        'inverter efficiency, cell C-rating) and every current '
+                        'figure depends on them.</p>',
+                        unsafe_allow_html=True)
+                    if not _kx_res.recalculated:
+                        st.warning(
+                            f"Formula cache not populated: {_kx_res.recalc_message}. "
+                            f"The file is correct in Excel, but open and save it "
+                            f"once before any script reads it.")
+                    for _w in _kx_res.warnings:
+                        st.info(_w)
+                    if _kx_res.formula_errors:
+                        st.error("Formula errors in the export: "
+                                 + ", ".join(f"{k} x{len(v)}"
+                                             for k, v in _kx_res.formula_errors.items()))
+
+                    with st.expander("Legacy enhanced workbook (superseded)",
+                                     expanded=False):
+                        st.markdown(
+                            '<p class="hint">Kept for comparison only. It bakes '
+                            'computed values in as constants using the original '
+                            'workbook\'s formulas, so its gear ratios are '
+                            'inverted, its pack resistance is 3x high, and its '
+                            'peak-power figure exceeds what the pack can '
+                            'physically deliver. Prefer the corrected workbook '
+                            'above.</p>', unsafe_allow_html=True)
                         _rt_base = roundtrip_mod.lap_to_excel_roundtrip(
                             speed_ms    = _np_enh.array(_rt_res.speed_ms, dtype=float),
                             time_s      = _np_enh.array(_rt_res.time_s,   dtype=float),
@@ -28695,21 +28829,19 @@ def render_laptime(_pt):
                                 top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2" in dir() else 0.0,
                                 avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2" in dir() else 0.0,
                             )
-                            _enh_col1.download_button(
-                                label="⬇ Download enhanced Excel (+3 sheets)",
+                            st.download_button(
+                                label="⬇ Download legacy enhanced Excel (+3 sheets)",
                                 data=_enh_bytes,
                                 file_name="FSAE_EV_KinematiK_Enhanced.xlsx",
                                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                 key="rt_enh_download_btn")
-                            _enh_col2.markdown(
+                            st.markdown(
                                 '<p class="hint" style="margin-top:10px;">'
-                                'Includes all original sheets plus: '
-                                '<b>PackHeatmap</b> (cell grid with thermal colours + '
-                                'Python xlwings macro stub to regenerate the chart), '
-                                '<b>LapEnergy</b> (SoC depletion curve, stop marker, '
-                                'energy timeline + chart), '
-                                '<b>FeasiblePack</b> (minimum pack advisor + what-if '
-                                'capacity table).</p>',
+                                'Original sheets plus <b>PackHeatmap</b>, '
+                                '<b>LapEnergy</b> and <b>FeasiblePack</b>. Note '
+                                'that FeasiblePack reasons from energy alone, so '
+                                'it can recommend a pack that cannot supply the '
+                                'current; use KX Pack Advisor instead.</p>',
                                 unsafe_allow_html=True)
                 else:
                     _enh_col1.markdown(

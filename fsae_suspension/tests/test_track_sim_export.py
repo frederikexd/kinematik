@@ -838,15 +838,24 @@ def test_orphan_rows_are_cleared(tmp_path):
     assert openpyxl.load_workbook(p)["Dep"]["A55"].value is None
 
 
-def test_export_from_a_previously_enhanced_workbook_explains_the_zeros(tmp_path):
-    """The user-facing case: it must name the cause and the remedy."""
+def test_export_from_a_previously_enhanced_workbook_repairs_it(tmp_path):
+    """The user-facing case. This used to only EXPLAIN the zeros and send the
+    user off to find the original workbook; it now reconstructs the data."""
     path = _wb_blocks(tmp_path, block_rows=300, ref_range="H1895:V3787")
     out = str(tmp_path / "o.xlsx")
     res = tse.export_track_sim(path, out, _trace(), 0.0666667, recalc=False)
+    assert tse.audit_block_references(out) == []
+    assert res.trace is not None
+
+
+def test_declining_the_rebuild_still_explains_the_zeros(tmp_path):
+    path, _ = _wb_relocated(tmp_path, rows=300, cols_block2=1)
+    out = str(tmp_path / "o.xlsx")
+    res = tse.export_track_sim(path, out, _trace(), 0.0666667,
+                               rebuild_propulsion=False, recalc=False)
     joined = " ".join(res.warnings)
-    assert "ZEROS EXPLAINED" in joined
-    assert "ORIGINAL" in joined
-    assert "not repairable" in joined.lower()
+    assert "1 of 15" in joined
+    assert "rebuild_propulsion=True" in joined
 
 
 def test_export_from_the_original_does_not_cry_wolf(tmp_path):
@@ -870,3 +879,374 @@ def test_the_real_workbook_ends_with_no_zeros_and_no_errors(tmp_path):
     res = tse.export_track_sim(src, out, v, 0.0666667, recalc=True)
     assert res.formula_errors == {}
     assert not any("ZEROS EXPLAINED" in w for w in res.warnings)
+
+
+# --------------------------------------------------------------------------- #
+#  12. Relocated blocks, and data that is simply gone
+# --------------------------------------------------------------------------- #
+def _wb_relocated(tmp_path, rows=300, cols_block2=15):
+    """Mimics a legacy-exported workbook: three blocks moved up, and the
+    current-draw block written for only some gear columns."""
+    wb = openpyxl.Workbook()
+    svt = wb.active
+    svt.title = "SpeedVsTime"
+    svt["A1"], svt["B1"] = "time (s)", "Speed (mph)"
+    ep = wb.create_sheet("ElecPropulsion")
+    ep["A1"], ep["B1"] = "Motor Peak Torque (Nm)", 120
+    for i in range(15):
+        ep.cell(1, 8 + i, 1.0 / (i + 1))
+    b1 = (2, rows + 1)
+    b2 = (rows + 3, 2 * rows + 2)
+    b3 = (2 * rows + 4, 3 * rows + 3)
+    for lo, hi, ncol in ((b1[0], b1[1], 15), (b2[0], b2[1], cols_block2),
+                         (b3[0], b3[1], 15)):
+        for r in range(lo, hi + 1):
+            for c in range(8, 8 + ncol):
+                ep.cell(r, c, float(r))
+    tl = wb.create_sheet("ThermalLoad")
+    tl["A1"], tl["B1"] = "Select Gear Ratio", 7
+    tl["A2"], tl["B2"] = "Gear Reduction", "=1/B1"
+    tl["F1"] = "=INDEX(ElecPropulsion!H1895:V3787,0,ROUND(1/B2,0))^2"
+    tl["A4"] = "Min Joule Heat (kW)"
+    tl["B4"] = "=(INDEX(ElecPropulsion!H5685:V5685,1,ROUND(1/B2,0)))^2"
+    p = tmp_path / "reloc.xlsx"
+    wb.save(p)
+    return str(p), (b1, b2, b3)
+
+
+def test_relocated_blocks_are_repointed(tmp_path):
+    path, (b1, b2, b3) = _wb_relocated(tmp_path)
+    changed = tse.remap_stale_block_references(path)
+    assert changed
+    f = openpyxl.load_workbook(path)["ThermalLoad"]["F1"].value
+    assert f"H{b2[0]}:V{b2[1]}" in f
+    assert "H1895" not in f
+
+
+def test_deleted_summary_rows_become_aggregates(tmp_path):
+    """The MIN/MAX rows no longer exist; MIN() over the block is what they meant."""
+    path, (_b1, b2, _b3) = _wb_relocated(tmp_path)
+    changed = tse.remap_stale_block_references(path)
+    b4 = openpyxl.load_workbook(path)["ThermalLoad"]["B4"].value
+    assert b4.startswith("=(MIN(")
+    assert f"H{b2[0]}:V{b2[1]}" in b4
+    assert any("summary row" in c for c in changed)
+
+
+def test_remap_refuses_when_the_pairing_is_ambiguous(tmp_path):
+    """Two blocks against three references: guessing would put numbers under
+    the wrong physical quantity, which is worse than visible zeros."""
+    wb = openpyxl.Workbook()
+    ep = wb.active
+    ep.title = "ElecPropulsion"
+    for r in list(range(2, 60)) + list(range(70, 128)):
+        for c in range(8, 23):
+            ep.cell(r, c, float(r))
+    tl = wb.create_sheet("ThermalLoad")
+    tl["F1"] = "=INDEX(ElecPropulsion!H1895:V3787,0,7)"
+    p = str(tmp_path / "amb.xlsx")
+    wb.save(p)
+    out = tse.remap_stale_block_references(p)
+    assert out and "Refusing to guess" in out[0]
+    assert "H1895" in openpyxl.load_workbook(p)["ThermalLoad"]["F1"].value
+
+
+def test_canonical_workbook_is_not_remapped(tmp_path):
+    """Blocks at their canonical rows must be left alone.
+
+    In the real workbook blocks 1 and 2 are CONTIGUOUS (rows 2-1894 then
+    1895-3787), so a scan sees them as one run. What makes the canonical case
+    safe is not block counting but the per-reference guard: every reference
+    already lands on data, so nothing is moved.
+    """
+    wb = openpyxl.Workbook()
+    ep = wb.active
+    ep.title = "ElecPropulsion"
+    for i in range(15):
+        ep.cell(1, 8 + i, 1.0 / (i + 1))
+    for r in list(range(2, 3788)) + list(range(3789, 5682)):
+        for c in range(8, 23):
+            ep.cell(r, c, float(r))
+    tl = wb.create_sheet("ThermalLoad")
+    tl["B1"], tl["B2"] = 7, "=1/B1"
+    tl["F1"] = "=INDEX(ElecPropulsion!H1895:V3787,0,ROUND(1/B2,0))^2"
+    p = str(tmp_path / "canon.xlsx")
+    wb.save(p)
+    assert tse.remap_stale_block_references(p) == []
+    assert "H1895:V3787" in openpyxl.load_workbook(p)["ThermalLoad"]["F1"].value
+
+
+def test_single_block_workbook_refuses_rather_than_guessing(tmp_path):
+    """One block against three canonical references is not a pairing.
+
+    The reference must be genuinely stale for this path to be reached — a
+    reference that already lands on data needs no repair whatever the block
+    count.
+    """
+    path = _wb_blocks(tmp_path, block_rows=300, ref_range="H1895:V3787")
+    out = tse.remap_stale_block_references(path)
+    assert out and "Refusing to guess" in out[0]
+
+
+def test_missing_gear_columns_are_reported_as_unrecoverable(tmp_path):
+    """The legacy export kept gear 1 only for the current block — 1 of 15."""
+    path, _ = _wb_relocated(tmp_path, cols_block2=1)
+    out = tse.audit_block_column_coverage(path)
+    assert out
+    assert "1 of 15" in out[0]
+    assert "cannot be reconstructed" in out[0]
+
+
+def test_full_column_coverage_is_not_flagged(tmp_path):
+    path, _ = _wb_relocated(tmp_path, cols_block2=15)
+    assert tse.audit_block_column_coverage(path) == []
+
+
+def test_repair_workbook_runs_every_pass(tmp_path):
+    path, _ = _wb_relocated(tmp_path, cols_block2=1)
+    out = tse.repair_workbook(path)
+    assert set(out) == {"portable", "remapped", "trimmed", "stale", "coverage"}
+    assert out["remapped"]
+    assert out["coverage"]
+    assert out["stale"] == []        # remapping resolved the empty references
+
+
+def test_column_loss_is_repaired_rather_than_merely_reported(tmp_path):
+    path, _ = _wb_relocated(tmp_path, cols_block2=1)
+    out = str(tmp_path / "o.xlsx")
+    res = tse.export_track_sim(path, out, _trace(), 0.0666667, recalc=False)
+    assert any("Rebuilt all three blocks" in w for w in res.warnings)
+    assert tse.audit_block_column_coverage(out) == []
+
+
+# --------------------------------------------------------------------------- #
+#  13. Rebuilding lost propulsion data
+# --------------------------------------------------------------------------- #
+#  Removes the "export from the original, never from an enhanced copy" caveat.
+#  The legacy path wrote the current block for gear 1 only and truncated all
+#  three blocks, so dependent sheets read zero at any other gear. Warning about
+#  that was never a fix — the data is reconstructible from the speed trace.
+# --------------------------------------------------------------------------- #
+def test_resample_hits_the_requested_length_and_endpoints():
+    out = tse._resample([0.0, 10.0], 5)
+    assert len(out) == 5
+    assert out[0] == pytest.approx(0.0)
+    assert out[-1] == pytest.approx(10.0)
+    assert out[2] == pytest.approx(5.0)
+
+
+def test_resample_handles_degenerate_input():
+    assert tse._resample([7.0], 4) == [7.0] * 4
+    assert tse._resample([1.0, 2.0, 3.0], 3) == [1.0, 2.0, 3.0]
+    assert tse._resample([1.0], 0) == []
+
+
+def test_rebuild_writes_canonical_rows_and_all_gears(tmp_path):
+    """Canonical rows because the dependent sheets reference those exact
+    offsets; rebuilding at the lap's own length recreates the original bug."""
+    path, _ = _wb_relocated(tmp_path, rows=300, cols_block2=1)
+    info = tse.rebuild_propulsion_blocks(
+        path, _trace(200), pdw.PackSpec(), pdw.VehicleSpec(), pdw.DriveSpec(),
+        dt_s=0.0666667)
+    assert info["rebuilt"]
+    assert tuple(info["blocks"]) == tse.CANONICAL_EP_BLOCKS
+    assert info["gears"] == 15
+    assert info["rows"] == 1893
+
+    ws = openpyxl.load_workbook(path)["ElecPropulsion"]
+    b1, b2, b3 = tse.CANONICAL_EP_BLOCKS
+    for lo, hi in (b1, b2, b3):
+        for col in (8, 15, 22):                 # first, middle, last gear
+            assert ws.cell(lo, col).value is not None
+            assert ws.cell(hi, col).value is not None
+
+
+def test_rebuild_restores_full_column_coverage(tmp_path):
+    path, _ = _wb_relocated(tmp_path, rows=300, cols_block2=1)
+    assert tse.audit_block_column_coverage(path)
+    tse.rebuild_propulsion_blocks(path, _trace(200), pdw.PackSpec(),
+                                  pdw.VehicleSpec(), pdw.DriveSpec(),
+                                  dt_s=0.0666667)
+    assert tse.audit_block_column_coverage(path) == []
+
+
+def test_rebuilt_rpm_varies_with_gear_but_current_does_not(tmp_path):
+    """Motor speed scales with the reduction. Pack current does not, because
+    power is force times speed however the gearbox delivers it."""
+    path, _ = _wb_relocated(tmp_path, rows=300, cols_block2=1)
+    tse.rebuild_propulsion_blocks(path, _trace(200), pdw.PackSpec(),
+                                  pdw.VehicleSpec(), pdw.DriveSpec(),
+                                  dt_s=0.0666667)
+    ws = openpyxl.load_workbook(path)["ElecPropulsion"]
+    b1, b2, _b3 = tse.CANONICAL_EP_BLOCKS
+    rpm_g1, rpm_g7 = ws.cell(b1[0] + 5, 8).value, ws.cell(b1[0] + 5, 14).value
+    assert rpm_g7 == pytest.approx(rpm_g1 * 7, rel=1e-6)
+    cur_g1, cur_g7 = ws.cell(b2[0] + 5, 8).value, ws.cell(b2[0] + 5, 14).value
+    assert cur_g1 == pytest.approx(cur_g7)
+
+
+def test_export_rebuilds_a_damaged_source_by_default(tmp_path):
+    path, _ = _wb_relocated(tmp_path, rows=300, cols_block2=1)
+    out = str(tmp_path / "o.xlsx")
+    res = tse.export_track_sim(path, out, _trace(), 0.0666667, recalc=False)
+    assert any("Rebuilt all three blocks" in w for w in res.warnings)
+    assert tse.audit_block_column_coverage(out) == []
+    assert tse.audit_block_references(out) == []
+
+
+def test_rebuild_can_be_declined(tmp_path):
+    path, _ = _wb_relocated(tmp_path, rows=300, cols_block2=1)
+    out = str(tmp_path / "o.xlsx")
+    res = tse.export_track_sim(path, out, _trace(), 0.0666667,
+                               rebuild_propulsion=False, recalc=False)
+    assert not any("Rebuilt all three blocks" in w for w in res.warnings)
+    assert any("rebuild_propulsion=True" in w for w in res.warnings)
+
+
+def test_healthy_source_is_not_rebuilt(tmp_path):
+    """A workbook whose references all land on data must be left alone."""
+    wb = openpyxl.Workbook()
+    ep = wb.active
+    ep.title = "ElecPropulsion"
+    for i in range(15):
+        ep.cell(1, 8 + i, 1.0 / (i + 1))
+    for r in list(range(2, 3788)) + list(range(3789, 5682)):
+        for c in range(8, 23):
+            ep.cell(r, c, float(r))
+    svt = wb.create_sheet("SpeedVsTime")
+    svt["A1"], svt["B1"] = "time (s)", "Speed (mph)"
+    tl = wb.create_sheet("ThermalLoad")
+    tl["B1"], tl["B2"] = 7, "=1/B1"
+    tl["F1"] = "=INDEX(ElecPropulsion!H1895:V3787,0,ROUND(1/B2,0))^2"
+    src = str(tmp_path / "healthy.xlsx")
+    wb.save(src)
+    out = str(tmp_path / "o.xlsx")
+    res = tse.export_track_sim(src, out, _trace(), 0.0666667, recalc=False)
+    assert not any("Rebuilt all three blocks" in w for w in res.warnings)
+    ws = openpyxl.load_workbook(out)["ElecPropulsion"]
+    assert ws.cell(2, 8).value == 2.0        # untouched original values
+
+
+def test_passes_run_in_dependency_order(tmp_path):
+    """Rebuild must precede remapping: remapping first repoints formulas at the
+    old positions, which the rebuild then clears."""
+    import inspect
+    src = inspect.getsource(tse.export_track_sim)
+    assert (src.index("audit_block_column_coverage")
+            < src.index("rebuild_propulsion_blocks")
+            < src.index("remap_stale_block_references"))
+
+
+def test_coverage_check_uses_the_formula_view(tmp_path):
+    """The trap that has now bitten three separate checks in this module.
+
+    openpyxl drops every cached value when it saves, and the portability pass
+    saves. A data_only read of an already-processed workbook therefore reports
+    every column as empty, this check concludes the file is damaged, and the
+    rebuild overwrites the user's own formulas with static values. A cell
+    holding a formula is populated — that is the only reading that survives a
+    round trip.
+    """
+    wb = openpyxl.Workbook()
+    ep = wb.active
+    ep.title = "ElecPropulsion"
+    for i in range(15):
+        ep.cell(1, 8 + i, 1.0 / (i + 1))
+    for r in range(2, 40):
+        for c in range(8, 23):
+            ep.cell(r, c, f"=SpeedVsTime!B{r}*{c}")     # formulas, no cache
+    svt = wb.create_sheet("SpeedVsTime")
+    for r in range(2, 40):
+        svt.cell(r, 2, 30.0)
+    path = str(tmp_path / "formulas.xlsx")
+    wb.save(path)
+    assert tse.audit_block_column_coverage(path) == [], \
+        "formula cells were read as empty columns"
+
+
+def test_a_healthy_workbook_keeps_its_own_formulas(tmp_path):
+    """The regression this nearly shipped: the rebuild replacing live formulas
+    on a workbook that was never damaged."""
+    wb = openpyxl.Workbook()
+    ep = wb.active
+    ep.title = "ElecPropulsion"
+    for i in range(15):
+        ep.cell(1, 8 + i, 1.0 / (i + 1))
+    for r in list(range(2, 3788)) + list(range(3789, 5682)):
+        for c in range(8, 23):
+            ep.cell(r, c, float(r))
+    ep["H2"] = "=SpeedVsTime!B2*2"
+    svt = wb.create_sheet("SpeedVsTime")
+    svt["A1"], svt["B1"] = "time (s)", "Speed (mph)"
+    tl = wb.create_sheet("ThermalLoad")
+    tl["B1"], tl["B2"] = 7, "=1/B1"
+    tl["F1"] = "=INDEX(ElecPropulsion!H1895:V3787,0,ROUND(1/B2,0))^2"
+    src = str(tmp_path / "healthy2.xlsx")
+    wb.save(src)
+
+    out = str(tmp_path / "o.xlsx")
+    res = tse.export_track_sim(src, out, _trace(), 0.0666667, recalc=False)
+    assert not any("Rebuilt all three blocks" in w for w in res.warnings)
+    assert openpyxl.load_workbook(out)["ElecPropulsion"]["H2"].value == \
+        "=SpeedVsTime!B2*2"
+
+
+# --------------------------------------------------------------------------- #
+#  14. The cached-value trap, guarded for good
+# --------------------------------------------------------------------------- #
+#  openpyxl drops every cached value when it saves. Any check that reads the
+#  data_only view of a workbook this module has already touched sees an empty
+#  sheet. That mistake was made three times here: once in extent detection, once
+#  in stale-reference auditing, and once in column-coverage auditing — where it
+#  reported the untouched original as damaged and triggered a rebuild that
+#  overwrote the user's own formulas with static values.
+# --------------------------------------------------------------------------- #
+def test_coverage_check_uses_the_formula_view(tmp_path):
+    """A workbook whose caches were stripped must not read as damaged."""
+    path, _ = _wb_relocated(tmp_path, rows=300, cols_block2=15)
+    assert tse.audit_block_column_coverage(path) == []
+    tse.make_portable(path)                 # re-saves, stripping every cache
+    assert tse.audit_block_column_coverage(path) == [], \
+        "false positive: coverage was read from the cached view"
+
+
+def test_formula_cells_count_as_populated_for_coverage(tmp_path):
+    """Formulas with no cached value are still data as far as extent goes."""
+    wb = openpyxl.Workbook()
+    ep = wb.active
+    ep.title = "ElecPropulsion"
+    for i in range(15):
+        ep.cell(1, 8 + i, 1.0 / (i + 1))
+    for r in range(2, 40):
+        for c in range(8, 23):
+            ep.cell(r, c, "=1+1")           # formula, never evaluated
+    p = str(tmp_path / "f.xlsx")
+    wb.save(p)
+    assert tse.audit_block_column_coverage(p) == []
+
+
+def test_a_healthy_workbooks_formulas_are_never_overwritten(tmp_path):
+    """The regression this guards: rebuilding a healthy sheet replaced live
+    formulas with constants, silently turning a model into a snapshot."""
+    wb = openpyxl.Workbook()
+    ep = wb.active
+    ep.title = "ElecPropulsion"
+    for i in range(15):
+        ep.cell(1, 8 + i, 1.0 / (i + 1))
+    for r in list(range(2, 3788)) + list(range(3789, 5682)):
+        for c in range(8, 23):
+            ep.cell(r, c, "=ROW()")
+    svt = wb.create_sheet("SpeedVsTime")
+    svt["A1"], svt["B1"] = "time (s)", "Speed (mph)"
+    tl = wb.create_sheet("ThermalLoad")
+    tl["B1"], tl["B2"] = 7, "=1/B1"
+    tl["F1"] = "=INDEX(ElecPropulsion!H1895:V3787,0,ROUND(1/B2,0))^2"
+    src = str(tmp_path / "healthy.xlsx")
+    wb.save(src)
+
+    out = str(tmp_path / "o.xlsx")
+    res = tse.export_track_sim(src, out, _trace(), 0.0666667, recalc=False)
+    assert not any("Rebuilt all three blocks" in w for w in res.warnings)
+    after = openpyxl.load_workbook(out)["ElecPropulsion"]
+    assert after["H2"].value == "=ROW()", "a live formula was replaced"
+    assert after["V5681"].value == "=ROW()"
