@@ -1447,26 +1447,46 @@ def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
     evaluates nothing, so `data_only=True` returns None for every derived cell.
     That is the defect that made the previous export unreadable by KinematiK's
     own loaders.
+
+    Uses the bundled scripts/office/soffice.py sandbox wrapper when it can be
+    found relative to this file, so LibreOffice works in AF_UNIX-restricted
+    environments (e.g. the Streamlit Cloud sandbox).
     """
-    soffice = shutil.which("soffice") or shutil.which("libreoffice")
-    if not soffice:
-        return False, "LibreOffice not available; cached values not populated"
+    if not (shutil.which("soffice") or shutil.which("libreoffice")):
+        return False, "LibreOffice not installed; open and save the file once in Excel to populate formula caches"
+
+    # Try the bundled sandbox wrapper first; fall back to bare soffice env.
+    _here = os.path.dirname(os.path.abspath(__file__))
+    _wrapper = os.path.join(_here, "..", "scripts", "office", "soffice.py")
+    _wrapper = os.path.normpath(_wrapper)
+
+    def _run_soffice(args: list, env=None) -> subprocess.CompletedProcess:
+        if os.path.isfile(_wrapper):
+            import importlib.util as _ilu
+            spec = _ilu.spec_from_file_location("_soffice_wrap", _wrapper)
+            mod  = _ilu.module_from_spec(spec)
+            spec.loader.exec_module(mod)               # type: ignore[union-attr]
+            return mod.run_soffice(args, check=True, capture_output=True,
+                                   timeout=timeout)
+        return subprocess.run(
+            ["soffice"] + args,
+            env=env, check=True, capture_output=True, timeout=timeout)
+
     outdir = tempfile.mkdtemp(prefix="kx_recalc_")
     try:
-        subprocess.run(
-            [soffice, "--headless", "--norestore", "--convert-to", "xlsx",
-             "--outdir", outdir, path],
-            check=True, capture_output=True, timeout=timeout)
+        _run_soffice(["--headless", "--norestore", "--convert-to", "xlsx",
+                      "--outdir", outdir, path])
         produced = os.path.join(
             outdir, os.path.splitext(os.path.basename(path))[0] + ".xlsx")
         if not os.path.exists(produced):
-            return False, "LibreOffice produced no output"
+            return False, "LibreOffice ran but produced no output"
         shutil.copy(produced, path)
         return True, "recalculated"
     except subprocess.TimeoutExpired:
         return False, f"recalculation timed out after {timeout}s"
     except subprocess.CalledProcessError as exc:
-        return False, f"LibreOffice failed: {exc.stderr[:200]!r}"
+        stderr_snippet = (exc.stderr or b"")[:300].decode("utf-8", errors="replace")
+        return False, f"LibreOffice failed: {stderr_snippet!r}"
     finally:
         shutil.rmtree(outdir, ignore_errors=True)
 
@@ -1723,9 +1743,14 @@ def export_track_sim(source_path: str, out_path: str,
         ok, msg = recalculate(out_path)
         result.recalculated, result.recalc_message = ok, msg
         if not ok:
-            warnings.append(
-                msg + ". Formula cells will read as None to data_only "
-                      "consumers until the file is opened and saved in Excel.")
+            # Only surface as a warning when the failure reason is something
+            # actionable beyond "LibreOffice not installed" — that case is
+            # already shown by the caller via recalc_message (yellow box).
+            # Duplicating it as a second blue st.info card just adds noise.
+            if "not available" not in msg:
+                warnings.append(
+                    msg + ". Formula cells will read as None to data_only "
+                          "consumers until the file is opened and saved in Excel.")
         else:
             result.formula_errors = formula_errors(out_path)
             leftover = modern_function_report(out_path)
@@ -1740,6 +1765,25 @@ def export_track_sim(source_path: str, out_path: str,
                     + ", ".join(f"{k} x{len(v)}"
                                 for k, v in result.formula_errors.items()))
     return result
+
+
+def _resample_to_uniform(time_s: list[float],
+                          speed_mph: list[float]) -> tuple[list[float], list[float], float]:
+    """Linearly interpolate an unevenly-sampled trace onto a uniform time grid.
+
+    Returns (t_uniform, speed_uniform, dt) where dt is the uniform step size.
+    The output has the same number of points as the input and the same total
+    duration, but with equal spacing so the central-difference acceleration and
+    the trapezoidal energy integral are exact rather than approximate.
+    """
+    import numpy as _np
+    t = _np.array(time_s, dtype=float)
+    v = _np.array(speed_mph, dtype=float)
+    n = len(t)
+    dt = (t[-1] - t[0]) / (n - 1)
+    t_uniform = _np.linspace(t[0], t[-1], n)
+    v_uniform = _np.interp(t_uniform, t, v)
+    return t_uniform.tolist(), v_uniform.tolist(), dt
 
 
 def export_track_sim_bytes(excel_bytes: bytes,
@@ -1762,19 +1806,36 @@ def export_track_sim_bytes(excel_bytes: bytes,
     `lap_to_excel_roundtrip`, so swapping the call site over is a rename plus
     reading `.excel_bytes` from the tuple instead of the result object.
 
-    `dt` is taken from the mean spacing of `time_s` rather than assumed, since
-    a lap sim's output is not always evenly sampled; a non-uniform trace is
-    reported as a warning because the trapezoidal energy sum and the central
-    difference both assume a fixed step.
+    `dt` is derived from `time_s`. If the time base is uneven (steps vary by
+    more than 5 % of the mean), the trace is automatically resampled onto a
+    uniform grid via linear interpolation before export, so the central-
+    difference acceleration and the trapezoidal energy integral are exact. A
+    note is added to `result.warnings` when this happens so the caller knows.
     """
     if len(time_s) < 2:
         raise ValueError("need at least two samples")
     t = [float(x) for x in time_s]
-    dt = (t[-1] - t[0]) / (len(t) - 1)
-    if dt <= 0:
+    dt_mean = (t[-1] - t[0]) / (len(t) - 1)
+    if dt_mean <= 0:
         raise ValueError("time_s must increase")
 
     speed_mph = [float(v) / pdw.MPH_TO_MS for v in speed_ms]
+
+    # Detect and fix an uneven time base before export so the trace formulas
+    # (which assume uniform dt) produce exact rather than approximate values.
+    steps = [t[i + 1] - t[i] for i in range(len(t) - 1)]
+    resampled_note: str = ""
+    if steps and (max(steps) - min(steps)) > 0.05 * dt_mean:
+        t_u, speed_mph, dt = _resample_to_uniform(t, speed_mph)
+        resampled_note = (
+            f"Time base was uneven (steps {min(steps):.4g}..{max(steps):.4g} s, "
+            f"mean {dt_mean:.4g} s); resampled to uniform {dt:.4g} s grid via "
+            f"linear interpolation before export. Accelerations and the energy "
+            f"integral are now exact. Resample your source data for full fidelity."
+        )
+        dt_mean = dt
+    else:
+        dt = dt_mean
 
     src_dir = tempfile.mkdtemp(prefix="kx_src_")
     try:
@@ -1789,14 +1850,9 @@ def export_track_sim_bytes(excel_bytes: bytes,
             max_cell_c_rate=max_cell_c_rate,
             rebuild_propulsion=rebuild_propulsion, recalc=recalc)
 
-        # Flag an uneven time base rather than silently averaging over it.
-        steps = [t[i + 1] - t[i] for i in range(len(t) - 1)]
-        if steps and (max(steps) - min(steps)) > 0.05 * dt:
-            res.warnings.append(
-                f"Time base is uneven (steps {min(steps):.4g}..{max(steps):.4g} s, "
-                f"mean {dt:.4g} s). The trace formulas assume a fixed step, so "
-                f"the accelerations and the energy integral are approximate. "
-                f"Resample the lap to a uniform dt for exact figures.")
+        if resampled_note:
+            res.warnings.append(resampled_note)
+
         with open(out, "rb") as fh:
             data = fh.read()
         return data, res
