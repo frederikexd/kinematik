@@ -1747,7 +1747,7 @@ def export_track_sim(source_path: str, out_path: str,
             # actionable beyond "LibreOffice not installed" — that case is
             # already shown by the caller via recalc_message (yellow box).
             # Duplicating it as a second blue st.info card just adds noise.
-            if "not available" not in msg:
+            if "not installed" not in msg and "not available" not in msg:
                 warnings.append(
                     msg + ". Formula cells will read as None to data_only "
                           "consumers until the file is opened and saved in Excel.")
