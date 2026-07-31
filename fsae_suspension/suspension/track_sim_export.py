@@ -1488,32 +1488,27 @@ def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
     scripts/office/soffice.py sandbox wrapper to handle AF_UNIX-restricted
     environments.
     """
-    soffice = _ensure_libreoffice()
-    if not soffice:
+    soffice_bin = _ensure_libreoffice()
+    if not soffice_bin:
         return False, (
             "LibreOffice is not available and could not be installed automatically. "
             "Open the file in Excel and save it once to populate formula caches.")
 
-    # Try the bundled sandbox wrapper first (handles AF_UNIX-blocked envs).
-    _here = os.path.dirname(os.path.abspath(__file__))
-    _wrapper = os.path.normpath(
-        os.path.join(_here, "..", "scripts", "office", "soffice.py"))
-
-    def _run(args: list) -> subprocess.CompletedProcess:
-        if os.path.isfile(_wrapper):
-            import importlib.util as _ilu
-            spec = _ilu.spec_from_file_location("_soffice_wrap", _wrapper)
-            mod = _ilu.module_from_spec(spec)
-            spec.loader.exec_module(mod)               # type: ignore[union-attr]
-            return mod.run_soffice(args, check=True, capture_output=True,
-                                   timeout=timeout)
-        return subprocess.run([soffice] + args,
-                              check=True, capture_output=True, timeout=timeout)
+    # Build env: SAL_USE_VCLPLUGIN=svp forces the headless VCL plugin so
+    # LibreOffice never tries to open a display or an X11 socket, which is
+    # the common failure mode in cloud sandboxes.  We do NOT use the bundled
+    # scripts/office/soffice.py wrapper because it tries to compile a C shim
+    # with gcc (to fake AF_UNIX sockets) which may not be available.
+    _env = os.environ.copy()
+    _env["SAL_USE_VCLPLUGIN"] = "svp"
+    _env.setdefault("HOME", tempfile.gettempdir())   # LO needs a writable HOME
 
     outdir = tempfile.mkdtemp(prefix="kx_recalc_")
     try:
-        _run(["--headless", "--norestore", "--convert-to", "xlsx",
-              "--outdir", outdir, path])
+        subprocess.run(
+            [soffice_bin, "--headless", "--norestore", "--convert-to", "xlsx",
+             "--outdir", outdir, path],
+            env=_env, check=True, capture_output=True, timeout=timeout)
         produced = os.path.join(
             outdir, os.path.splitext(os.path.basename(path))[0] + ".xlsx")
         if not os.path.exists(produced):
@@ -1523,7 +1518,7 @@ def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
     except subprocess.TimeoutExpired:
         return False, f"recalculation timed out after {timeout}s"
     except subprocess.CalledProcessError as exc:
-        stderr_snippet = (exc.stderr or b"")[:300].decode("utf-8", errors="replace")
+        stderr_snippet = (exc.stderr or b"")[:400].decode("utf-8", errors="replace")
         return False, f"LibreOffice failed: {stderr_snippet!r}"
     finally:
         shutil.rmtree(outdir, ignore_errors=True)
