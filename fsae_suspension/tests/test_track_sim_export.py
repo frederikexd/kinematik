@@ -309,12 +309,82 @@ def test_advisor_lists_the_current_pack_among_candidates(source, tmp_path):
 # --------------------------------------------------------------------------- #
 #  6. Cached values — the defect that made the old file unreadable
 # --------------------------------------------------------------------------- #
-def test_without_recalc_the_warning_is_explicit(source, tmp_path, monkeypatch):
+def test_cached_values_do_not_need_libreoffice(source, tmp_path, monkeypatch):
+    """The deployment target has no LibreOffice. The file must still read.
+
+    This is the regression that mattered most: on Streamlit Cloud the export
+    fell back to "no cached values", which is precisely the defect the module
+    exists to fix, on the only machine anyone actually ran it on.
+    """
     monkeypatch.setattr(tse.shutil, "which", lambda *_a, **_k: None)
     out = str(tmp_path / "o.xlsx")
-    res = tse.export_track_sim(source, out, _trace(), 0.0666667, recalc=True)
-    assert not res.recalculated
-    assert any("cached" in w.lower() or "None" in w for w in res.warnings)
+    res = tse.export_track_sim(source, out, _trace(30), 0.0666667, recalc=True)
+    assert res.recalculated, res.recalc_message
+    assert "in process" in res.recalc_message
+    ws = openpyxl.load_workbook(out, data_only=True)[tse.S_DASH]
+    for cell in ("B11", "B13", "B14"):
+        v = ws[cell].value
+        assert isinstance(v, (int, float)), f"{cell} read back as {v!r}"
+
+
+def test_formulas_survive_the_in_process_recalculation(source, tmp_path,
+                                                       monkeypatch):
+    """Caching values must not turn the model into a snapshot."""
+    monkeypatch.setattr(tse.shutil, "which", lambda *_a, **_k: None)
+    out = str(tmp_path / "o.xlsx")
+    tse.export_track_sim(source, out, _trace(20), 0.0666667, recalc=True)
+    ws = openpyxl.load_workbook(out)[tse.S_DASH]
+    assert str(ws["B14"].value).startswith("=")
+
+
+def test_in_process_verdicts_are_strings_not_zeros(source, tmp_path,
+                                                   monkeypatch):
+    monkeypatch.setattr(tse.shutil, "which", lambda *_a, **_k: None)
+    out = str(tmp_path / "o.xlsx")
+    tse.export_track_sim(source, out, _trace(20), 0.0666667, recalc=True)
+    ws = openpyxl.load_workbook(out, data_only=True)[tse.S_DASH]
+    verdicts = [ws.cell(r, 2).value for r in range(1, 40)
+                if isinstance(ws.cell(r, 2).value, str)
+                and ("PASS" in ws.cell(r, 2).value
+                     or "FAIL" in ws.cell(r, 2).value)]
+    assert verdicts, "no verdict string was cached"
+
+
+@needs_soffice
+def test_in_process_values_agree_with_libreoffice(source, tmp_path,
+                                                  monkeypatch):
+    """The fallback is only worth having if it agrees with the real thing."""
+    from suspension import xlsx_formula_cache as xfc
+
+    lo = str(tmp_path / "lo.xlsx")
+    tse.export_track_sim(source, lo, _trace(25), 0.0666667, recalc=True)
+
+    py = str(tmp_path / "py.xlsx")
+    monkeypatch.setattr(tse.shutil, "which", lambda *_a, **_k: None)
+    tse.export_track_sim(source, py, _trace(25), 0.0666667, recalc=True)
+    monkeypatch.undo()
+
+    a = openpyxl.load_workbook(lo, data_only=True)
+    b = openpyxl.load_workbook(py, data_only=True)
+    compared = 0
+    for name in (tse.S_DASH, tse.S_PACK, tse.S_TRACE, tse.S_GEARS,
+                 tse.S_ADVISOR):
+        wa, wb_ = a[name], b[name]
+        for row in wa.iter_rows():
+            for cell in row:
+                x, y = cell.value, wb_[cell.coordinate].value
+                if isinstance(x, (int, float)) and not isinstance(x, bool):
+                    assert isinstance(y, (int, float)), (
+                        f"{name}!{cell.coordinate} cached {y!r}, "
+                        f"LibreOffice says {x!r}")
+                    assert y == pytest.approx(x, rel=1e-9, abs=1e-9), (
+                        f"{name}!{cell.coordinate}: {y} vs {x}")
+                    compared += 1
+                elif isinstance(x, str) and x.strip():
+                    assert y == x, f"{name}!{cell.coordinate}: {y!r} vs {x!r}"
+                    compared += 1
+    assert compared > 200, f"only {compared} cells compared"
+    assert xfc.SUPPORTED_FUNCTIONS
 
 
 @needs_soffice
@@ -438,6 +508,67 @@ def test_uneven_time_base_is_reported(source):
     _data, res = tse.export_track_sim_bytes(open(source, "rb").read(), v_ms, t,
                                             recalc=False)
     assert any("uneven" in w.lower() for w in res.warnings)
+
+
+def test_the_trace_carries_the_real_timestamps(source):
+    """A dropped frame must appear in column A, not be averaged away."""
+    v_ms, t = _ms_and_t(n=30)
+    for i in range(15, 30):
+        t[i] += 0.5                   # a half-second gap mid-lap
+    data, _res = tse.export_track_sim_bytes(open(source, "rb").read(), v_ms, t,
+                                            recalc=False)
+    ws = openpyxl.load_workbook(io.BytesIO(data))[tse.S_TRACE]
+    written = [ws.cell(r, 1).value for r in range(3, 33)]
+    assert written == [pytest.approx(x) for x in t]
+
+
+def test_sample_weights_sum_to_the_elapsed_time(source, tmp_path, monkeypatch):
+    """The trapezoidal weights are what make an uneven integral exact."""
+    monkeypatch.setattr(tse.shutil, "which", lambda *_a, **_k: None)
+    n = 25
+    t = [i * 0.05 for i in range(n)]
+    for i in range(12, n):
+        t[i] += 0.4
+    mph = _trace(n)
+    out = str(tmp_path / "o.xlsx")
+    tse.export_track_sim(source, out, mph, 0.05, time_s=t, recalc=True)
+    ws = openpyxl.load_workbook(out, data_only=True)[tse.S_TRACE]
+    weights = [ws.cell(r, 16).value for r in range(3, 3 + n)]
+    assert sum(weights) == pytest.approx(t[-1] - t[0])
+    dash = openpyxl.load_workbook(out, data_only=True)[tse.S_DASH]
+    assert dash["B5"].value == pytest.approx(t[-1] - t[0])
+
+
+def test_energy_on_an_uneven_log_matches_a_hand_integral(source, tmp_path,
+                                                         monkeypatch):
+    """Cross-check the sheet's energy against a trapezoid done in Python."""
+    monkeypatch.setattr(tse.shutil, "which", lambda *_a, **_k: None)
+    n = 25
+    t = [i * 0.05 for i in range(n)]
+    for i in range(12, n):
+        t[i] += 0.4
+    out = str(tmp_path / "o.xlsx")
+    tse.export_track_sim(source, out, _trace(n), 0.05, time_s=t, recalc=True)
+    wb = openpyxl.load_workbook(out, data_only=True)
+    tr = wb[tse.S_TRACE]
+    p_elec = [tr.cell(r, 10).value for r in range(3, 3 + n)]
+    hand = sum((p_elec[i] + p_elec[i + 1]) / 2 * (t[i + 1] - t[i])
+               for i in range(n - 1)) / 3600000
+    assert wb[tse.S_DASH]["B14"].value == pytest.approx(hand, rel=1e-9)
+
+
+def test_acceleration_uses_the_real_interval(source, tmp_path):
+    """Dividing by a nominal step invents accelerations across a log gap."""
+    n = 20
+    t = [i * 0.05 for i in range(n)]
+    t[10] = t[9] + 0.5                 # one long interval
+    for i in range(11, n):
+        t[i] = t[i - 1] + 0.05
+    out = str(tmp_path / "o.xlsx")
+    tse.export_track_sim(source, out, _trace(n), 0.05, time_s=t, recalc=False)
+    f = openpyxl.load_workbook(out)[tse.S_TRACE]["D12"].value
+    assert "A13-A11" in f.replace(" ", "")
+    assert "Inputs'!$B$" not in f.split("MIN(")[-1].split(",")[-1]
 
 
 def test_even_time_base_is_not_flagged(source):
