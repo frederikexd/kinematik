@@ -51,8 +51,17 @@ WHAT THIS MODULE DOES INSTEAD
   a formula referencing them. Change the mass on `KX Inputs` and the whole
   workbook moves, including the gear recommendation. This is the difference
   between a report and a model.
-* **Cached values populated.** `export_track_sim` recalculates through
-  LibreOffice before returning, so `data_only=True` readers see numbers.
+* **Cached values populated, with or without LibreOffice.**
+  `export_track_sim` recalculates before returning, so `data_only=True` readers
+  see numbers. LibreOffice is used when it is installed; when it is not — which
+  is the normal case on Streamlit Cloud, in slim containers and in CI —
+  `xlsx_formula_cache` evaluates the formulas in process instead. It covers the
+  operators and functions these sheets use and refuses anything else rather
+  than guessing, so a cell is either right or left empty.
+* **The clock is the trace's own.** Column A of `KX Lap Trace` holds the real
+  timestamps and column P each sample's share of the elapsed time; every
+  derivative divides by an actual interval and every integral is a weighted
+  sum. An unevenly logged lap is exact rather than approximate.
 * **Nothing of the user's is touched.** Every sheet this writes is prefixed
   `KX `. Their formulas, their layout and their row numbering are left exactly
   as they were, which also means the audit trail survives and re-running is
@@ -255,6 +264,12 @@ class ExportSpec:
     drive: pdw.DriveSpec
     speed_mph: Sequence[float]
     dt_s: float
+    #: The actual sample times, when the caller has them. A lap sim's output is
+    #: not always evenly spaced, and `dt_s` is only their mean; the trace sheet
+    #: writes these into column A and every derivative and integral is taken
+    #: against them, so an uneven log is handled exactly rather than smeared
+    #: over an average step. None means "assume uniform k*dt_s".
+    time_s: Optional[Sequence[float]] = None
     lap_time_s: Optional[float] = None
     reductions: Sequence[float] = tuple(range(1, 16))
     smooth_window: int = 11
@@ -371,8 +386,11 @@ def _write_inputs(ws, spec: ExportSpec) -> dict:
 
     _header(ws, f"A{row}", "Session")
     row += 1
-    r["dt"] = _input(ws, row, "Sample interval", spec.dt_s, "s", "",
-                     "0.00000"); row += 1
+    r["dt"] = _input(ws, row, "Sample interval", spec.dt_s, "s",
+                     "Mean spacing, for reference only. Nothing divides by "
+                     "it: the trace differentiates and integrates against its "
+                     "own time column, so an unevenly logged lap is still "
+                     "exact.", "0.00000"); row += 1
     r["endurance"] = _input(ws, row, "Endurance distance",
                             spec.endurance_km or 22.0, "km", "",
                             "0.0"); row += 1
@@ -415,6 +433,13 @@ _TRACE_COLS = [
     ("Joule heat", "W", "0.0"),
     ("Motor speed", "rpm", "0"),
     ("Motor torque", "Nm", "0.00"),
+    #: Each sample's share of the lap's duration — half the gap to the sample
+    #: before plus half the gap to the sample after, which is the trapezoidal
+    #: weight. Every integral on the dashboard is SUMPRODUCT(quantity, this)
+    #: rather than SUM(quantity)*dt, so a log with a dropout or a variable
+    #: rate integrates correctly instead of approximately. The column sums to
+    #: exactly the elapsed time.
+    ("Sample weight", "s", "0.0000"),
 ]
 
 
@@ -434,12 +459,14 @@ def _write_trace(ws, spec: ExportSpec, ref: dict, n: int) -> dict:
     for k in range(n):
         r = first + k
         prev, nxt = max(first, r - 1), min(last, r + 1)
-        span = f"({nxt}-{prev})" if False else None
         # speed in m/s
         ws[f"C{r}"] = f"=B{r}*{I}{ref['mph_ms']}"
-        # central difference; the divisor counts the rows actually spanned so
-        # the first and last samples use a one-sided step rather than a wrong one
-        raw = (f"(C{nxt}-C{prev})/(({nxt}-{prev})*{I}{ref['dt']})")
+        # Central difference taken against the TIME COLUMN, not against a
+        # nominal step: dividing by (rows spanned) * dt assumes every sample is
+        # equally spaced, and a logger that drops a frame then reports an
+        # acceleration inversely proportional to a gap it never had. A3:A is
+        # the real clock, so this is exact however the lap was sampled.
+        raw = f"IFERROR((C{nxt}-C{prev})/(A{nxt}-A{prev}),0)"
         grip = f"{I}{ref['mu']}*{I}{ref['g']}"
         ws[f"D{r}"] = f"=MAX(-{grip},MIN({grip},{raw}))"
         ws[f"E{r}"] = (f"=IF(C{r}>0.05,{I}{ref['crr']}*{I}{ref['mass']}"
@@ -461,6 +488,9 @@ def _write_trace(ws, spec: ExportSpec, ref: dict, n: int) -> dict:
                        f"*{I}{ref['reduction']}")
         ws[f"O{r}"] = (f"=MAX(0,H{r})*({I}{ref['wheel_in']}*0.0254/2)"
                        f"/({I}{ref['reduction']}*{I}{ref['eta_drive']})")
+        # Trapezoidal weight: half the step behind plus half the step ahead,
+        # one-sided at the two ends. Sums to exactly the elapsed time.
+        ws[f"P{r}"] = f"=(A{nxt}-A{prev})/2"
         for i, (_nm, _u, fmt) in enumerate(_TRACE_COLS, start=1):
             _style(ws, f"{_col(i)}{r}", fmt=fmt)
     for i in range(1, len(_TRACE_COLS) + 1):
@@ -528,9 +558,13 @@ def _write_dashboard(ws, ref: dict, tr: dict, pk: dict) -> dict:
     row = 4
     _header(ws, f"A{row}", "Lap")
     row += 1
+    # The weight column sums to the elapsed time and turns every integral into
+    # a true trapezoidal sum, so none of these depend on the samples being
+    # evenly spaced.
+    W = f"{T}P{f}:P{l}"
     items = [
-        ("Duration", f"=({l}-{f}+1)*{I}{ref['dt']}", "s", "0.00"),
-        ("Distance", f"=SUMPRODUCT({T}C{f}:C{l})*{I}{ref['dt']}/1000", "km",
+        ("Duration", f"=SUM({W})", "s", "0.00"),
+        ("Distance", f"=SUMPRODUCT({T}C{f}:C{l},{W})/1000", "km",
          "0.000"),
         ("Peak speed", f"=MAX({T}B{f}:B{l})", "mph", "0.0"),
         ("Mean speed", f"=AVERAGE({T}C{f}:C{l})*3.6", "km/h", "0.0"),
@@ -551,7 +585,7 @@ def _write_dashboard(ws, ref: dict, tr: dict, pk: dict) -> dict:
         ("Mean pack current", f"=AVERAGE({T}K{f}:K{l})", "A", "0.00", None),
         ("Peak electrical power", f"=MAX({T}J{f}:J{l})/1000", "kW", "0.00",
          "peak_p"),
-        ("Energy used", f"=SUMPRODUCT({T}J{f}:J{l})*{I}{ref['dt']}/3600000",
+        ("Energy used", f"=SUMPRODUCT({T}J{f}:J{l},{W})/3600000",
          "kWh", "0.0000", "energy"),
         ("Peak cell current", f"=B{row}/{I}{ref['n_par']}", "A", "0.00", None),
         ("Peak cell C-rate", f"=B{row+4}/{I}{ref['cell_ah']}", "C", "0.0",
@@ -559,7 +593,7 @@ def _write_dashboard(ws, ref: dict, tr: dict, pk: dict) -> dict:
         ("Samples over pack ceiling", f"=SUM({T}L{f}:L{l})", "-", "0", None),
         ("Joule heat, mean", f"=AVERAGE({T}M{f}:M{l})", "W", "0.0", None),
         ("Joule heat, total",
-         f"=SUMPRODUCT({T}M{f}:M{l})*{I}{ref['dt']}/3600", "Wh", "0.0", None),
+         f"=SUMPRODUCT({T}M{f}:M{l},{W})/3600", "Wh", "0.0", None),
     ]
     keys = {}
     for lab, formula, unit, fmt, key in items:
@@ -783,6 +817,11 @@ def _write_provenance(ws, spec: ExportSpec) -> None:
                             "count in place of S, which cancels to S*R_cell "
                             "and is 3x high for 140S3P."),
         ("Energy", "sum(P*dt). The original summed instantaneous watts."),
+        ("Time base", "Accelerations are differentiated against the trace's "
+                      "own time column and every integral is weighted by each "
+                      "sample's share of the elapsed time, so a log with a "
+                      "dropout or a variable sample rate is exact rather than "
+                      "smeared over a mean step."),
         ("Gear selection", "Reported as motor torque, which varies with the "
                            "ratio. Pack current does not."),
         ("Pack advice", "Gated on energy, power ceiling and per-cell C-rate "
@@ -811,7 +850,10 @@ def _write_provenance(ws, spec: ExportSpec) -> None:
         ("Formulas", "Every derived cell is a live formula referencing "
                      "'KX Inputs'. The export is a model, not a snapshot."),
         ("Cached values", "The workbook is recalculated before being returned, "
-                          "so data_only readers see numbers rather than None."),
+                          "so data_only readers see numbers rather than None. "
+                          "LibreOffice does it where it exists; where it does "
+                          "not, the formulas are evaluated in process. Excel "
+                          "recomputes everything on open either way."),
     ]
     r = 2
     for a, b in rows:
@@ -1440,183 +1482,79 @@ def rebuild_propulsion_blocks(path: str, speed_mph: Sequence[float],
     }
 
 
-def recalculate(path: str, timeout: int = 180) -> tuple[bool, str]:
-    """Populate formula caches so Python data_only readers see numbers.
-
-    Strategy (in order):
-    1. Pure-Python evaluation via xlcalculator — no external dependency, works
-       on every platform including Streamlit Cloud.  Handles cross-sheet
-       references with absolute ($) addressing.  String-result cells (IF/TEXT/&)
-       are skipped; their cached values stay empty, which is fine because the KX
-       sheets are almost entirely numeric.
-    2. LibreOffice headless — used as fallback if xlcalculator is not installed.
-       Handles 100 % of formulas including string results.
-
-    Either path writes the cached <v> values into the xlsx ZIP in-place so that
-    openpyxl data_only=True and KinematiK's own loaders see real numbers.
-    """
-    # ── Path 1: pure-Python via xlcalculator ─────────────────────────────────
-    try:
-        import xlcalculator as _xlc
-        _HAS_XLC = True
-    except ImportError:
-        _HAS_XLC = False
-
-    if _HAS_XLC:
-        try:
-            import zipfile as _zf, io as _io, re as _re
-            import openpyxl as _opx
-
-            compiler = _xlc.ModelCompiler()
-            model = compiler.read_and_parse_archive(path)
-
-            # xlcalculator stores cells as "Sheet!B42" but formula cross-sheet
-            # references use absolute notation "Sheet!$B$42".  Add alias entries
-            # for every dollar-sign variant so the AST evaluator finds them.
-            _aliases: dict = {}
-            for _ref, _cell in list(model.cells.items()):
-                _m = _re.match(r"(.*!)([A-Z]+)(\d+)$", _ref)
-                if _m:
-                    _sp, _col, _row = _m.groups()
-                    for _variant in (
-                        f"{_sp}${_col}${_row}",
-                        f"{_sp}${_col}{_row}",
-                        f"{_sp}{_col}${_row}",
-                    ):
-                        _aliases[_variant] = _cell
-            model.cells.update(_aliases)
-
-            ev = _xlc.Evaluator(model)
-
-            # Evaluate every canonical (non-alias) formula cell.
-            _numeric: dict[str, float] = {}
-            _n_skip = 0
-            for _ref, _cell in model.cells.items():
-                if "$" in _ref:
-                    continue  # skip aliases
-                if _cell.formula is None:
-                    continue
-                try:
-                    _raw = ev.evaluate(_ref)
-                    _val = _raw.value if hasattr(_raw, "value") else _raw
-                    if isinstance(_val, bool):
-                        _numeric[_ref] = 1.0 if _val else 0.0
-                    elif isinstance(_val, (int, float)):
-                        _numeric[_ref] = float(_val)
-                    else:
-                        _n_skip += 1  # string result — skip
-                except Exception:
-                    _n_skip += 1
-
-            if _numeric:
-                # Build sheet-name → sheet-index map.
-                _wb = _opx.load_workbook(path)
-                _sidx = {n: i + 1 for i, n in enumerate(_wb.sheetnames)}
-                _wb.close()
-
-                # Patch the xlsx ZIP in-memory: inject <v>number</v> into each
-                # formula cell's XML element, keeping the <f> formula intact.
-                _buf = _io.BytesIO()
-                with _zf.ZipFile(path, "r") as _zin:
-                    with _zf.ZipFile(_buf, "w", _zf.ZIP_DEFLATED) as _zout:
-                        for _item in _zin.infolist():
-                            _data = _zin.read(_item.filename)
-                            _sm = _re.match(
-                                r"xl/worksheets/sheet(\d+)\.xml",
-                                _item.filename)
-                            if _sm:
-                                _si = int(_sm.group(1))
-                                _sname = next(
-                                    (n for n, i in _sidx.items() if i == _si),
-                                    None)
-                                if _sname:
-                                    _xml = _data.decode("utf-8")
-                                    for _ref, _val in _numeric.items():
-                                        _sn, _ca = _ref.split("!", 1)
-                                        if _sn != _sname:
-                                            continue
-                                        _vs = (
-                                            str(int(_val))
-                                            if _val == int(_val)
-                                            and abs(_val) < 1e15
-                                            else repr(_val)
-                                        )
-                                        _xml = _re.sub(
-                                            rf"(<c r=\"{_re.escape(_ca)}\"[^>]*>)"
-                                            rf"(<f(?:[^>]*)>[^<]*</f>)<v></v>"
-                                            rf"(</c>)",
-                                            rf"\1\2<v>{_vs}</v>\3",
-                                            _xml,
-                                        )
-                                    _data = _xml.encode("utf-8")
-                            _zout.writestr(_item, _data)
-                with open(path, "wb") as _fh:
-                    _fh.write(_buf.getvalue())
-
-                return True, (
-                    f"recalculated ({len(_numeric)} cells cached via "
-                    f"xlcalculator; {_n_skip} string/error cells skipped)")
-
-        except Exception as _xlc_err:
-            pass  # fall through to LibreOffice
-
-    # ── Path 2: LibreOffice headless ─────────────────────────────────────────
-    def _find_soffice() -> str | None:
-        candidate = shutil.which("soffice") or shutil.which("libreoffice")
-        if candidate:
-            return candidate
-        for fixed in (
-            "/usr/bin/soffice",
-            "/usr/lib/libreoffice/program/soffice",
-            "/opt/libreoffice/program/soffice",
-            "/snap/bin/libreoffice",
-        ):
-            if os.path.isfile(fixed):
-                return fixed
-        return None
-
-    soffice_bin = _find_soffice()
-    if not soffice_bin:
-        # Try apt-get on Debian/Ubuntu hosts (Streamlit Cloud).
-        try:
-            subprocess.run(
-                ["apt-get", "install", "-y", "--no-install-recommends",
-                 "libreoffice-calc"],
-                check=True, capture_output=True, timeout=120)
-            soffice_bin = _find_soffice()
-        except Exception:
-            pass
-
-    if not soffice_bin:
-        return False, (
-            "Formula caches could not be populated: xlcalculator is not "
-            "installed and LibreOffice is not available.  "
-            "pip install xlcalculator  to fix this, or open the downloaded "
-            "file in Excel and save it once.")
-
-    _env = os.environ.copy()
-    _env["SAL_USE_VCLPLUGIN"] = "svp"
-    _env.setdefault("HOME", tempfile.gettempdir())
-
+def _recalculate_via_libreoffice(path: str, timeout: int) -> tuple[bool, str]:
+    soffice = shutil.which("soffice") or shutil.which("libreoffice")
+    if not soffice:
+        return False, "LibreOffice not available"
     outdir = tempfile.mkdtemp(prefix="kx_recalc_")
     try:
         subprocess.run(
-            [soffice_bin, "--headless", "--norestore", "--convert-to", "xlsx",
+            [soffice, "--headless", "--norestore", "--convert-to", "xlsx",
              "--outdir", outdir, path],
-            env=_env, check=True, capture_output=True, timeout=timeout)
+            check=True, capture_output=True, timeout=timeout)
         produced = os.path.join(
             outdir, os.path.splitext(os.path.basename(path))[0] + ".xlsx")
         if not os.path.exists(produced):
-            return False, "LibreOffice ran but produced no output"
+            return False, "LibreOffice produced no output"
         shutil.copy(produced, path)
-        return True, "recalculated via LibreOffice"
+        return True, "recalculated with LibreOffice"
     except subprocess.TimeoutExpired:
-        return False, f"LibreOffice recalculation timed out after {timeout}s"
+        return False, f"LibreOffice timed out after {timeout}s"
     except subprocess.CalledProcessError as exc:
-        stderr_snippet = (exc.stderr or b"")[:400].decode("utf-8", errors="replace")
-        return False, f"LibreOffice failed: {stderr_snippet!r}"
+        return False, f"LibreOffice failed: {exc.stderr[:200]!r}"
     finally:
         shutil.rmtree(outdir, ignore_errors=True)
+
+
+def recalculate(path: str, timeout: int = 180, *,
+                only_prefix: Optional[str] = SHEET_PREFIX
+                ) -> tuple[bool, str]:
+    """Populate cached values, so `data_only=True` readers see numbers.
+
+    Without this the file is Excel-only: openpyxl writes formula strings and
+    evaluates nothing, so `data_only=True` returns None for every derived cell.
+    That is the defect that made the previous export unreadable by KinematiK's
+    own loaders.
+
+    Two engines, tried in order:
+
+    1. **LibreOffice**, when it is installed. It evaluates the whole workbook
+       including the user's own sheets, so it stays the preferred path.
+    2. **`xlsx_formula_cache`**, the in-process evaluator. LibreOffice is
+       absent from Streamlit Cloud, from slim containers and from most CI
+       images — which is to say from everywhere this actually runs — and
+       falling back to "no cached values" there meant the export degraded to
+       the exact defect it exists to fix, on the machines that matter. The
+       evaluator covers the operators and functions the KX sheets use, and
+       skips anything it does not understand rather than guessing, so a cell is
+       either correct or left empty.
+
+    `only_prefix` limits which cells are *written* by the fallback, not which
+    are read: a KX formula that points at one of the user's sheets still
+    resolves through it. Pass None to cache the whole workbook, which is what
+    reading a pack config out of a stranger's file needs.
+    """
+    ok, msg = _recalculate_via_libreoffice(path, timeout)
+    if ok:
+        return True, msg
+    lo_reason = msg
+
+    try:
+        from . import xlsx_formula_cache as xfc
+        report = xfc.populate_cached_values(path, only_prefix=only_prefix)
+    except Exception as exc:                      # pragma: no cover - defensive
+        return False, (f"{lo_reason}; in-process evaluation also failed "
+                       f"({type(exc).__name__}: {exc})")
+
+    written, skipped = report.get("written", 0), report.get("skipped", 0)
+    if not written:
+        return False, (f"{lo_reason}; the in-process evaluator understood none "
+                       f"of the {skipped} formula(s) it was given")
+    detail = f"cached {written} formula cell(s) in process ({lo_reason})"
+    if skipped:
+        detail += (f"; {skipped} cell(s) use constructs it does not model and "
+                   f"were left uncached")
+    return True, detail
 
 
 def formula_errors(path: str) -> dict[str, list[str]]:
@@ -1658,6 +1596,7 @@ class TrackSimExport:
 
 def export_track_sim(source_path: str, out_path: str,
                      speed_mph: Sequence[float], dt_s: float, *,
+                     time_s: Optional[Sequence[float]] = None,
                      pack: Optional[pdw.PackSpec] = None,
                      vehicle: Optional[pdw.VehicleSpec] = None,
                      drive: Optional[pdw.DriveSpec] = None,
@@ -1695,7 +1634,9 @@ def export_track_sim(source_path: str, out_path: str,
                 scratch = os.path.join(_tf.mkdtemp(prefix="kx_pack_"),
                                        "src.xlsx")
                 shutil.copy(source_path, scratch)
-                ok, _msg = recalculate(scratch)
+                # The pack lives on one of the user's own sheets, so the
+                # prefix restriction has to come off for this one.
+                ok, _msg = recalculate(scratch, only_prefix=None)
                 if ok:
                     pack = pdw.read_pack_config(scratch)
                     warnings.append(
@@ -1718,8 +1659,18 @@ def export_track_sim(source_path: str, out_path: str,
     if endurance_km is None:
         endurance_km = 22.0
 
+    times = None
+    if time_s is not None:
+        times = [float(x) for x in time_s]
+        if len(times) != len(speed_mph):
+            warnings.append(
+                f"Ignored the supplied time axis: {len(times)} timestamps "
+                f"against {len(speed_mph)} speed samples. Falling back to a "
+                f"uniform {dt_s:g} s step.")
+            times = None
+
     spec = ExportSpec(pack=pack, vehicle=vehicle, drive=drive,
-                      speed_mph=list(speed_mph), dt_s=dt_s,
+                      speed_mph=list(speed_mph), dt_s=dt_s, time_s=times,
                       lap_time_s=lap_time_s, reductions=tuple(reductions),
                       smooth_window=smooth_window, endurance_km=endurance_km,
                       max_cell_c_rate=max_cell_c_rate)
@@ -1831,9 +1782,17 @@ def export_track_sim(source_path: str, out_path: str,
     ws_tr = wb.create_sheet(S_TRACE)
     smoothed = pdw._moving_average(spec.speed_mph, smooth_window)
     n = len(smoothed)
+    # Column A is the clock every derivative and integral is taken against, so
+    # it carries the real timestamps whenever the caller supplied them.
+    times = spec.time_s if spec.time_s is not None else [
+        k * dt_s for k in range(n)]
     for k, (sp) in enumerate(smoothed):
         r = 3 + k
-        ws_tr[f"A{r}"] = round(k * dt_s, 6)
+        # Nanoseconds, not the old microseconds: this column is the divisor of
+        # every derivative and the weight of every integral, so rounding it is
+        # rounding the physics. Nine places is finer than any logger and keeps
+        # the literal short enough to render in a 12.5-wide column.
+        ws_tr[f"A{r}"] = round(float(times[k]), 9)
         ws_tr[f"B{r}"] = round(float(sp), 4)
     tr = _write_trace(ws_tr, spec, ref, n)
 
@@ -1871,14 +1830,9 @@ def export_track_sim(source_path: str, out_path: str,
         ok, msg = recalculate(out_path)
         result.recalculated, result.recalc_message = ok, msg
         if not ok:
-            # Only surface as a warning when the failure reason is something
-            # actionable beyond "LibreOffice not installed" — that case is
-            # already shown by the caller via recalc_message (yellow box).
-            # Duplicating it as a second blue st.info card just adds noise.
-            if "not installed" not in msg and "not available" not in msg:
-                warnings.append(
-                    msg + ". Formula cells will read as None to data_only "
-                          "consumers until the file is opened and saved in Excel.")
+            warnings.append(
+                msg + ". Formula cells will read as None to data_only "
+                      "consumers until the file is opened and saved in Excel.")
         else:
             result.formula_errors = formula_errors(out_path)
             leftover = modern_function_report(out_path)
@@ -1893,25 +1847,6 @@ def export_track_sim(source_path: str, out_path: str,
                     + ", ".join(f"{k} x{len(v)}"
                                 for k, v in result.formula_errors.items()))
     return result
-
-
-def _resample_to_uniform(time_s: list[float],
-                          speed_mph: list[float]) -> tuple[list[float], list[float], float]:
-    """Linearly interpolate an unevenly-sampled trace onto a uniform time grid.
-
-    Returns (t_uniform, speed_uniform, dt) where dt is the uniform step size.
-    The output has the same number of points as the input and the same total
-    duration, but with equal spacing so the central-difference acceleration and
-    the trapezoidal energy integral are exact rather than approximate.
-    """
-    import numpy as _np
-    t = _np.array(time_s, dtype=float)
-    v = _np.array(speed_mph, dtype=float)
-    n = len(t)
-    dt = (t[-1] - t[0]) / (n - 1)
-    t_uniform = _np.linspace(t[0], t[-1], n)
-    v_uniform = _np.interp(t_uniform, t, v)
-    return t_uniform.tolist(), v_uniform.tolist(), dt
 
 
 def export_track_sim_bytes(excel_bytes: bytes,
@@ -1934,36 +1869,21 @@ def export_track_sim_bytes(excel_bytes: bytes,
     `lap_to_excel_roundtrip`, so swapping the call site over is a rename plus
     reading `.excel_bytes` from the tuple instead of the result object.
 
-    `dt` is derived from `time_s`. If the time base is uneven (steps vary by
-    more than 5 % of the mean), the trace is automatically resampled onto a
-    uniform grid via linear interpolation before export, so the central-
-    difference acceleration and the trapezoidal energy integral are exact. A
-    note is added to `result.warnings` when this happens so the caller knows.
+    `time_s` is passed through to the trace sheet rather than collapsed to a
+    step, since a lap sim's output is not always evenly sampled. `dt` is still
+    derived from it as the mean spacing, but only as a reported figure: the
+    formulas differentiate and integrate against the timestamps themselves, so
+    a log with a dropout or a variable rate comes out exact. A non-uniform
+    trace is still reported, because it says something about the log.
     """
     if len(time_s) < 2:
         raise ValueError("need at least two samples")
     t = [float(x) for x in time_s]
-    dt_mean = (t[-1] - t[0]) / (len(t) - 1)
-    if dt_mean <= 0:
+    dt = (t[-1] - t[0]) / (len(t) - 1)
+    if dt <= 0:
         raise ValueError("time_s must increase")
 
     speed_mph = [float(v) / pdw.MPH_TO_MS for v in speed_ms]
-
-    # Detect and fix an uneven time base before export so the trace formulas
-    # (which assume uniform dt) produce exact rather than approximate values.
-    steps = [t[i + 1] - t[i] for i in range(len(t) - 1)]
-    resampled_note: str = ""
-    if steps and (max(steps) - min(steps)) > 0.05 * dt_mean:
-        t_u, speed_mph, dt = _resample_to_uniform(t, speed_mph)
-        resampled_note = (
-            f"Time base was uneven (steps {min(steps):.4g}..{max(steps):.4g} s, "
-            f"mean {dt_mean:.4g} s); resampled to uniform {dt:.4g} s grid via "
-            f"linear interpolation before export. Accelerations and the energy "
-            f"integral are now exact. Resample your source data for full fidelity."
-        )
-        dt_mean = dt
-    else:
-        dt = dt_mean
 
     src_dir = tempfile.mkdtemp(prefix="kx_src_")
     try:
@@ -1972,15 +1892,26 @@ def export_track_sim_bytes(excel_bytes: bytes,
         with open(src, "wb") as fh:
             fh.write(excel_bytes)
         res = export_track_sim(
-            src, out, speed_mph, dt, pack=pack, vehicle=vehicle, drive=drive,
+            src, out, speed_mph, dt, time_s=t,
+            pack=pack, vehicle=vehicle, drive=drive,
             lap_time_s=lap_time_s, reductions=reductions,
             smooth_window=smooth_window, endurance_km=endurance_km,
             max_cell_c_rate=max_cell_c_rate,
             rebuild_propulsion=rebuild_propulsion, recalc=recalc)
 
-        if resampled_note:
-            res.warnings.append(resampled_note)
-
+        # Report an uneven time base rather than silently averaging over it.
+        # The sheet no longer approximates one — column A holds the real
+        # timestamps and column P their trapezoidal weights — so this says what
+        # the log looks like and what was done about it, not what to go and fix.
+        steps = [t[i + 1] - t[i] for i in range(len(t) - 1)]
+        if steps and (max(steps) - min(steps)) > 0.05 * dt:
+            res.warnings.append(
+                f"Time base is uneven (steps {min(steps):.4g}..{max(steps):.4g} s, "
+                f"mean {dt:.4g} s). The lap trace carries the real timestamps "
+                f"and weights each sample by its own share of the elapsed time, "
+                f"so the accelerations and the energy integral are exact for "
+                f"the log as recorded. The pass/fail findings are computed "
+                f"separately at the mean step and can differ slightly.")
         with open(out, "rb") as fh:
             data = fh.read()
         return data, res
@@ -2004,5 +1935,12 @@ PROVENANCE = {
         "Vehicle mass, CdA, Crr, inverter efficiency and cell C-rating are "
         "assumptions this export introduces; they are yellow-filled on "
         "KX Inputs and listed on KX Provenance.",
+        "Without LibreOffice the cached values come from this package's own "
+        "evaluator, which models the operators and functions the KX sheets "
+        "use and nothing else. Cells it cannot evaluate keep no cached value "
+        "rather than a guessed one, and Excel recomputes all of them on open.",
+        "The sheet integrates against the trace's real timestamps, but the "
+        "Python-side findings still run at the mean sample interval, so on a "
+        "badly uneven log the two can disagree at the margin.",
     ],
 }
