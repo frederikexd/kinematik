@@ -434,3 +434,75 @@ def test_both_app_copies_carry_identical_briefing_tables(app_path, tables):
     assert other.role_goals == tables.role_goals
     assert other.verify_goals == tables.verify_goals
     assert other.freetext == tables.freetext
+
+
+# --------------------------------------------------------------------------- #
+#  The ANSYS run-log view is briefed on all three axes
+# --------------------------------------------------------------------------- #
+#  The view lives INSIDE the aero tab rather than being its own tab, so the
+#  coverage audit cannot see it: `aero` was already reachable and already had
+#  copy, so nothing was reported as missing while the feature went unmentioned.
+#  A tab-level audit is the wrong granularity for a tab-level feature, and these
+#  tests are the granularity that catches it.
+def _mentions_run_log(line):
+    low = line.lower()
+    return "run log" in low or "run-log" in low
+
+
+def _aero_goals(tables):
+    return [gk for _role, goals in effective_role_goals(tables).items()
+            for gk, _lab, ids in goals if "aero" in ids]
+
+
+def test_run_log_feature_is_in_the_canonical_aero_capability_list(tables):
+    """The floor every goal inherits, and what an untailored goal falls back to."""
+    assert any(_mentions_run_log(f) for f in tables.tool_features["aero"]), (
+        "the Aerodynamics tab briefs its features without mentioning the ANSYS "
+        "run-log consolidation view")
+
+
+@pytest.mark.parametrize("prof", PROFICIENCIES)
+def test_every_aero_goal_mentions_the_run_log_view(tables, prof):
+    """
+    Subsystem x goal x proficiency: at every level, a member sent to the aero
+    tab is told the run-log view is in it.
+    """
+    silent = []
+    for goal_key in _aero_goals(tables):
+        plan = resolve_feature_lines("aero", [goal_key], tables, prof)
+        if not any(_mentions_run_log(l) for l in plan.all_lines):
+            silent.append(f"{goal_key}/{prof}")
+    assert not silent, f"goals that never mention the run-log view: {silent}"
+
+
+def test_each_aero_goal_has_its_own_tailored_run_log_line(tables):
+    """
+    Not just present — tailored. Sizing wants the derived Cd, the aero map wants
+    the n/spread on each point, pre-CFD wants to know which runs were wasted.
+    A single line copy-pasted across all three would pass the test above and
+    still tell two of them nothing useful.
+    """
+    lines = {}
+    for goal_key in _aero_goals(tables):
+        tailored = [l for l in tables.goal_features.get((goal_key, "aero"), [])
+                    if _mentions_run_log(l)]
+        assert tailored, f"{goal_key} has no tailored run-log line"
+        lines[goal_key] = tailored[0]
+    assert len(set(lines.values())) == len(lines), (
+        f"the same run-log line is reused across goals: {lines}")
+
+
+def test_run_log_view_has_a_note_box_route(tables):
+    """Typing "fluent" or "which runs" must reach the tab that holds it."""
+    routes = [kws for kws, tid, _adv in tables.freetext if tid == "aero"]
+    flat = {k for kws in routes for k in kws}
+    for word in ("fluent", "ansys", "run log", "which runs"):
+        assert word in flat, f"no note-box keyword for {word!r}"
+
+
+def test_beginner_gloss_explains_the_run_log_view_in_plain_english(tables):
+    """Beginner mode leans on _BRIEF_SIMPLE; jargon there helps nobody."""
+    gloss = tables.simple["aero"].lower()
+    assert "run-log" in gloss or "run log" in gloss
+    for jargon in ("y+", "stagnation", "coeffresult", "nyquist"):
+        assert jargon not in gloss, f"{jargon!r} does not belong in a plain gloss"

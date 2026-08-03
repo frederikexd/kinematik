@@ -4193,7 +4193,7 @@ _BRIEF_SIMPLE = {
              "This finds good starting positions for those knobs.",
     "laptime": "This turns any design choice into the answer that matters: "
                "does it make a lap faster or slower, and by how much?",
-    "aero": "Wings push the car down onto the road so the tyres grip harder. "
+    "aero": "Wings push the car down onto the road so the tyres grip harder. It is also where the CFD the team runs gets cleaned up: the run-log tool throws out the simulations that went wrong and averages the ones left, telling you why each one was dropped. "
             "This is where you pick how big the wings are and where the push "
             "goes.",
     "ev": "This is where you choose the electric motor and check the battery "
@@ -4636,6 +4636,12 @@ _BRIEF_GOAL_FEATURES = {
         "Virtual wind-tunnel mode assembles the full-car aero model and runs a "
         "panel-method sweep of yaw angles from −10° to +10°, returning Cl, Cd "
         "and Cm at each — no meshing required.",
+        "When the CFD comes back, the ANSYS run-log consolidation view turns the "
+        "team\u2019s Fluent run sheet into one defensible Cl and Cd per operating "
+        "point to size against \u2014 and because the sheet usually leaves the drag "
+        "coefficient blank, it backs Cd out of the drag force and the reference "
+        "area it inferred, so the L/D you are sizing to actually exists instead "
+        "of being estimated a second time by hand.",
     ],
     ("aero_map", "aero"): [
         "Full aero map: Cl, Cd and pitching moment are computed at a grid of "
@@ -4656,6 +4662,12 @@ _BRIEF_GOAL_FEATURES = {
         "Sensitivity runs (one variable at a time: ride height, angle, span) "
         "are one click each — you can build a tolerance band around the map "
         "without re-running the full grid manually.",
+        "The ANSYS run-log consolidation view averages the team\u2019s Fluent runs "
+        "per ride height and loads them straight into this map as the same "
+        "CoeffResult objects a solver backend produces \u2014 and each point "
+        "carries how many runs it came from and how far they disagreed, so a "
+        "ride height that only one run survived at is labelled a single run "
+        "rather than quietly plotted as a converged mean.",
     ],
     ("aero_map", "laptime"): [
         "The aero map feeds directly into the GGV builder so every speed-"
@@ -4680,6 +4692,12 @@ _BRIEF_GOAL_FEATURES = {
         "PIV post-processing module can ingest wind-tunnel PIV images and "
         "overlay velocity vectors on the geometry — so real-tunnel data and "
         "model predictions are in the same environment.",
+        "After the CFD hours are spent, the ANSYS run-log consolidation view "
+        "tells you which of those runs were worth them: most first iterations "
+        "are rejected, and it names why \u2014 y+ in the buffer layer, min and max "
+        "surface mesh lengths typed in backwards, a stagnation pressure that "
+        "says the reference velocity was wrong \u2014 so the next batch does not "
+        "repeat the mistake that wasted the last one.",
     ],
     ("aero_pre", "validation"): [
         "The Validation tab produces a formal handover checklist that records "
@@ -5836,6 +5854,13 @@ _BRIEF_TOOL_FEATURES = {
         "ride-height envelope.",
         "The wing airfoil DXF export feeds straight into the 3D model, so the "
         "2D section you designed is reflected in the full-car context.",
+        "Upload the ANSYS run log the team fills in after each Fluent run and "
+        "every row is screened against explicit physics and mesh-quality "
+        "criteria — y+ judged against that row\u2019s own turbulence model, peak "
+        "gauge pressure checked against the reference conditions, each row\u2019s "
+        "implied reference area cross-checked against its neighbours\u2019 — then "
+        "only the runs that survive are averaged, with a written reason "
+        "attached to every exclusion.",
     ],
     "ev": [
         "Compare motor / drivetrain architectures with mass, heat and lap time "
@@ -6501,6 +6526,15 @@ _FREETEXT_KEYWORDS: list[tuple[list[str], str, str]] = [
      "Your note mentions brake hardware — hydraulic sizing, pedal effort, "
      "bias, lock-up order and rotor thermal all live in the same model here, "
      "so a caliper or master-cylinder change shows its full consequence."),
+    (["ansys", "fluent", "run log", "run sheet", "which runs", "bad runs",
+      "average the runs", "consolidate", "cfd results", "y+", "yplus",
+      "mesh quality", "converged"],
+     "aero",
+     "Your note mentions CFD runs \u2014 the Aerodynamics tab\u2019s ANSYS run-log "
+     "consolidation screens the team\u2019s Fluent run sheet row by row (y+ against "
+     "each row\u2019s own turbulence model, stagnation Cp against the reference "
+     "conditions, reference area against its neighbours\u2019), averages only what "
+     "survives, and gives a written reason for every run it drops."),
     # --- coverage-audit additions: every remaining tool gets a note route ----
     #  Without these, a member who types the exact problem a tool solves is
     #  never handed that tool. Keywords are the words a member actually uses.
