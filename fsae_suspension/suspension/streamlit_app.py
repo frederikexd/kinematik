@@ -18388,7 +18388,48 @@ with tab_aero:
     #  Engine: suspension/aero/run_log.py (pure, tested, no Streamlit).
     #  This view is the shell: upload, thresholds, verdicts, downloads, handoff.
     elif _view == "ANSYS run-log consolidation":
+      # Everything in this view is wrapped so that a failure here reports ITSELF
+      # and leaves the rest of the Aerodynamics tab standing. Without this, one
+      # missing attribute on the engine raised all the way to the tab-level
+      # handler and replaced the whole workspace with "Could not build the aero
+      # workspace" — the view's problem, presented as the tab's.
+      try:
+        class _RunLogReported(Exception):
+            """Already shown the user a specific, actionable message; the
+            wrapper below swallows this so it is not reported twice. Defined
+            here rather than at module level so the view block stays
+            self-contained and can be lifted out and tested on its own."""
+
         import suspension.aero.run_log as _rl
+
+        # The view and the engine ship together, so a partial update (or a stale
+        # .pyc left behind by one) puts an older run_log.py on the path and the
+        # view reaches for fields it does not have. That used to raise straight
+        # past this view into the tab-level handler and take the ENTIRE
+        # Aerodynamics tab down with it. Check up front and say what to do.
+        _rl_missing = [_n for _n in ("ScreenConfig", "process", "write_workbook",
+                                     "consolidated_csv", "to_coeff_results",
+                                     "Flag", "Severity")
+                       if not hasattr(_rl, _n)]
+        _rl_missing += ["ConsolidatedCase." + _n
+                        for _n in ("setup_summary", "setup_consistent")
+                        if not hasattr(getattr(_rl, "ConsolidatedCase", object), _n)]
+        _rl_missing += ["ConsolidationReport." + _n
+                        for _n in ("contributor_stats",)
+                        if not hasattr(getattr(_rl, "ConsolidationReport", object), _n)]
+        if _rl_missing:
+            st.error(
+                "**This view is newer than the engine behind it.** "
+                f"`suspension/aero/run_log.py` is missing: "
+                f"{', '.join(_rl_missing)}.\n\n"
+                "Replace `suspension/aero/run_log.py` with the version that "
+                "shipped alongside this `streamlit_app.py`, then delete any "
+                "stale `__pycache__` folders (`find . -name __pycache__ -exec "
+                "rm -rf {} +`) and restart Streamlit \u2014 an unzipped file can "
+                "carry an older timestamp than the .pyc cached beside it, and "
+                "Python will keep using the cache.")
+            st.caption(f"Loaded engine: {getattr(_rl, '__file__', 'unknown')}")
+            raise _RunLogReported()
 
         st.markdown(
             '<p class="hint">Drop in the <b>run log the wings team fills in after '
@@ -18657,6 +18698,13 @@ with tab_aero:
         elif _rl_up is None:
             st.caption("No file yet. The sheet can be the raw .xlsx the team "
                        "keeps \u2014 banner row, renamed columns and all.")
+      except _RunLogReported:
+        pass          # the guard above already told the user exactly what to do
+      except Exception as _rl_fatal:
+        st.error(f"The run-log view failed: {_rl_fatal}")
+        st.caption("The rest of the Aerodynamics tab is unaffected. If this "
+                   "mentions a missing attribute, `suspension/aero/run_log.py` "
+                   "is out of step with this file.")
 
     # ---------------------------------------------------------------- VIEW 4 #
     elif _view == "Scale model planning":

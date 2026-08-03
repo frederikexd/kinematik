@@ -445,3 +445,120 @@ def test_setup_consistency_toggle_is_wired_through():
     codes_off = {c for v in off.session_state["rl_report"].verdicts
                  for c in v.warn_codes}
     assert "SETUP_MISMATCH" not in codes_off
+
+
+# --------------------------------------------------------------------------- #
+#  A stale engine must not take the tab down
+# --------------------------------------------------------------------------- #
+#  Reported from the field: "Could not build the aero workspace: 'ConsolidatedCase'
+#  object has no attribute 'setup_summary'". The view and the engine ship
+#  together, so a partial update (or a stale .pyc — an unzipped file can carry an
+#  older timestamp than the cache beside it) leaves an old run_log.py on the path.
+#  The real defect was not the mismatch: it was that ONE missing attribute raised
+#  past this view into the tab-level handler and replaced the entire Aerodynamics
+#  workspace with a message about the tab. A view's problem must stay the view's.
+import types                                                       # noqa: E402
+
+
+def _with_engine(monkeypatch, module):
+    """Swap the engine the view imports. `import a.b.c as x` resolves through
+    the PARENT PACKAGE attribute, so patching sys.modules alone is not enough."""
+    import suspension.aero
+    monkeypatch.setitem(sys.modules, "suspension.aero.run_log", module)
+    monkeypatch.setattr(suspension.aero, "run_log", module, raising=False)
+
+
+def _outdated_engine():
+    import suspension.aero.run_log as rl
+
+    class _OldCase:            # pre-solver-setup ConsolidatedCase
+        pass
+
+    class _OldReport:          # pre-contributor-stats ConsolidationReport
+        pass
+
+    return types.SimpleNamespace(
+        ScreenConfig=rl.ScreenConfig, process=rl.process,
+        write_workbook=rl.write_workbook, consolidated_csv=rl.consolidated_csv,
+        to_coeff_results=rl.to_coeff_results, Flag=rl.Flag, Severity=rl.Severity,
+        ConsolidatedCase=_OldCase, ConsolidationReport=_OldReport,
+        __file__="/somewhere/old/run_log.py")
+
+
+def test_outdated_engine_reports_itself_and_names_what_is_missing(monkeypatch):
+    _with_engine(monkeypatch, _outdated_engine())
+    st = _run_view({"upload": _Upload(_sample_csv(), "x.csv"), "rl_go": True})
+
+    errors = st.texts("error")
+    assert len(errors) == 1, "the same problem must not be reported twice"
+    msg = errors[0]
+    assert "newer than the engine" in msg
+    for missing in ("setup_summary", "setup_consistent", "contributor_stats"):
+        assert missing in msg, f"{missing} not named in the message"
+    # Actionable: says what to replace AND warns about the stale .pyc trap.
+    assert "run_log.py" in msg and "__pycache__" in msg
+    # And names which file actually got loaded, so a shadowed copy is findable.
+    assert any("/somewhere/old/run_log.py" in c for c in st.texts("caption"))
+
+
+def test_outdated_engine_stops_before_rendering_half_a_result(monkeypatch):
+    _with_engine(monkeypatch, _outdated_engine())
+    st = _run_view({"upload": _Upload(_sample_csv(), "x.csv"), "rl_go": True})
+    assert not st.calls("metric")
+    assert not st.calls("dataframe")
+    assert not st.calls("download_button")
+
+
+def test_an_unexpected_engine_failure_is_contained_to_the_view(monkeypatch):
+    """
+    Not just the known mismatch: ANY exception in the view must be caught here.
+    This is the regression for the tab-level "Could not build the aero
+    workspace" that the field report actually showed.
+    """
+    import suspension.aero.run_log as rl
+
+    def _boom(*a, **k):
+        raise RuntimeError("engine exploded")
+
+    # NOT process(): that call already has its own, more specific handler
+    # ("Could not read that run log"). consolidated_csv runs later, outside it —
+    # exactly the kind of call that used to escape and take the tab with it.
+    broken = types.SimpleNamespace(
+        ScreenConfig=rl.ScreenConfig, process=rl.process,
+        write_workbook=rl.write_workbook, consolidated_csv=_boom,
+        to_coeff_results=rl.to_coeff_results, Flag=rl.Flag, Severity=rl.Severity,
+        ConsolidatedCase=rl.ConsolidatedCase,
+        ConsolidationReport=rl.ConsolidationReport, __file__="x")
+    _with_engine(monkeypatch, broken)
+
+    # Must not raise — if it does, the tab-level handler eats the whole tab.
+    st = _run_view({"upload": _Upload(_sample_csv(), "x.csv"), "rl_go": True})
+    assert any("engine exploded" in e for e in st.texts("error"))
+    assert any("rest of the Aerodynamics tab is unaffected" in c
+               for c in st.texts("caption"))
+    # The results rendered before the failure are still on screen.
+    assert st.calls("metric")
+
+
+def test_a_failure_inside_process_gets_its_own_specific_message(monkeypatch):
+    """The inner handler is more specific and should win over the wrapper."""
+    import suspension.aero.run_log as rl
+
+    def _boom(*a, **k):
+        raise RuntimeError("engine exploded")
+
+    broken = types.SimpleNamespace(
+        ScreenConfig=rl.ScreenConfig, process=_boom,
+        write_workbook=rl.write_workbook, consolidated_csv=rl.consolidated_csv,
+        to_coeff_results=rl.to_coeff_results, Flag=rl.Flag, Severity=rl.Severity,
+        ConsolidatedCase=rl.ConsolidatedCase,
+        ConsolidationReport=rl.ConsolidationReport, __file__="x")
+    _with_engine(monkeypatch, broken)
+    st = _run_view({"upload": _Upload(_sample_csv(), "x.csv"), "rl_go": True})
+    assert any("Could not read that run log" in e for e in st.texts("error"))
+    assert "rl_report" not in st.session_state
+
+
+def test_current_engine_triggers_no_version_warning(ran):
+    """The guard must be silent when the shipped engine is in place."""
+    assert not any("newer than the engine" in e for e in ran.texts("error"))
