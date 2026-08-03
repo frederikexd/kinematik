@@ -41,7 +41,7 @@ import importlib
 _SUBMODULES = {
     "aeromap", "backends", "cfd", "coupling", "daq", "ensemble",
     "fluent_journal", "meshing", "orchestrator", "panel_method",
-    "piv", "plug_builder", "pressure_tap", "scale_model",
+    "piv", "plug_builder", "pressure_tap", "run_log", "scale_model",
     "submit", "windtunnel",
 }
 
@@ -186,6 +186,33 @@ _SYMBOL_HOME = {
     "BuildDaySchedule":     "plug_builder",
     "GateItem":             "plug_builder",
     "PreflightGate":        "plug_builder",
+    # run_log — ANSYS run-log ingest / screening / consolidation
+    "ScreenConfig":         "run_log",
+    "Severity":             "run_log",
+    "WallTreatment":        "run_log",
+    "Flag":                 "run_log",
+    "RunRow":               "run_log",
+    "Derived":              "run_log",
+    "Verdict":              "run_log",
+    "CaseKey":              "run_log",
+    "ConsolidatedCase":     "run_log",
+    "ConsolidationReport":  "run_log",
+    "parse_run_log":        "run_log",
+    "parse_rows_from_grid": "run_log",
+    "screen":               "run_log",
+    "consolidate":          "run_log",
+    "process":              "run_log",
+    "to_coeff_results":     "run_log",
+    "write_workbook":       "run_log",
+    "write_csv_bundle":     "run_log",
+    "consolidated_csv":     "run_log",
+    "wall_treatment_for":   "run_log",
+    "dynamic_pressure":     "run_log",
+    "implied_reference_area": "run_log",
+    "modified_z_scores":    "run_log",
+    "DEFAULT_RHO":          "run_log",
+    "LOG_LAW_INTERSECTION_YPLUS": "run_log",
+    "CANONICAL_FIELDS":     "run_log",
     "PlugBuildPlan":        "plug_builder",
 }
 
@@ -193,7 +220,7 @@ _SYMBOL_HOME = {
 _FALLBACK_SCAN = (
     "cfd", "backends", "aeromap", "orchestrator", "coupling", "meshing",
     "windtunnel", "piv", "pressure_tap", "daq", "scale_model",
-    "plug_builder", "ensemble", "submit", "panel_method",
+    "plug_builder", "ensemble", "submit", "panel_method", "run_log",
 )
 
 __all__ = sorted(_SUBMODULES | set(_SYMBOL_HOME))

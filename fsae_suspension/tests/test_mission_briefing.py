@@ -96,6 +96,12 @@ def _load_build_briefing():
             "_build_briefing", "_brief_goal_options",
             "_freetext_matched_tools", "_BRIEF_PURPOSE_MAP",
             "_briefing_ordered_tools", "_briefing_feature_lines",
+            # The coverage rewrite split feature resolution out into
+            # _briefing_feature_plan (which delegates to
+            # suspension.brief_coverage) plus the _briefing_tables wrapper it
+            # needs; without them the exec'd namespace NameErrors on any tool
+            # block. See tests/test_brief_coverage.py for what they guarantee.
+            "_briefing_feature_plan", "_briefing_tables",
             "_briefing_to_text", "_briefing_offline_html",
             "_briefing_unified_html", "_freetext_tokens"}
     segs = []

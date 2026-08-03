@@ -4372,6 +4372,8 @@ _VERIFY_GOALS = [
      ["omni"]),
     ("vg_oversee", "Track team progress, provenance & decision history",
      ["registry", "notes", "analytics"]),
+    ("vg_frames", "Make sure every subteam's numbers share one coordinate frame",
+     ["frames"]),
 ]
 
 _ROLE_GOALS = {
@@ -4388,7 +4390,7 @@ _ROLE_GOALS = {
         ("susp_setup", "Find the setup (springs, ARBs, balance)",
          ["setup", "tire", "thermic", "laptime"]),
         ("susp_verify", "Stress-test the corner under transient overload",
-         ["ghost", "forge", "fusebox", "proof"]),
+         ["ghost", "forge", "fusebox", "proof", "phantom_env"]),
     ],
     "aero": [
         ("aero_size", "Size wings & diffuser for target downforce/drag",
@@ -4425,9 +4427,9 @@ _ROLE_GOALS = {
     ],
     "dataacq": [
         ("dq_spec", "Spec sensors, logging & brackets",
-         ["pcb"]),
+         ["daq", "pcb"]),
         ("dq_int",  "Tie DAQ into the car electrical budget",
-         ["pcb", "dfmea"]),
+         ["daq", "pcb", "dfmea"]),
         ("dq_power", "Make sure a test day can hear the effect you're chasing",
          ["earshot"]),
     ],
@@ -4443,7 +4445,7 @@ _ROLE_GOALS = {
         ("ch_frame", "Plan the frame (nodes, tubes, triangulation)",
          ["teamfit", "compliance"]),
         ("ch_fit",   "Driver & component fit",
-         ["teamfit"]),
+         ["teamfit", "phantom_env"]),
         ("ch_stiff", "Stiffness & load paths",
          ["compliance", "ghost"]),
         ("ch_survive", "Which member breaks first under a big hit",
@@ -4670,7 +4672,8 @@ _BRIEF_GOAL_FEATURES = {
         "(different end-plate geometries, gurney heights, diffuser angles) in "
         "minutes and rank them by Cl/Cd.",
         "Each configuration's geometry is logged so you can track which variant "
-        "produced which number — no more 'which spreadsheet had the good result?'",
+        "produced which number — no more 'which spreadsheet had the good "
+        "result?' every time a number is questioned.",
         "The virtual wind tunnel gives you a directional pressure distribution "
         "along the wing surface — enough to see separation risk before committing "
         "to CFD meshing.",
@@ -5434,6 +5437,295 @@ _BRIEF_GOAL_FEATURES = {
         "Offers three exact fixes per rival — soften the intended fuse, stiffen "
         "the rival, or sharpen its evidence grade with a pull test — plus the "
         "expected overload bill in dollars and days.",
+    ],
+    # --- gaps closed by the coverage audit (suspension.brief_coverage) ------
+    #  Each entry below existed as a goal->tool route with no tailored copy, so
+    #  the member was told to open a tool without being told what it does for
+    #  the thing they actually asked for.
+    ("susp_synth", "genesis_fc"): [
+        "Declare the track, the FSAE-EV rulebook bounds and a points objective, "
+        "and the engine synthesizes the whole car backwards from the points you "
+        "want \u2014 the suspension intent falls out of a vehicle that already "
+        "scores, instead of being guessed and justified later.",
+        "It enumerates the battery series/parallel grid and drive architecture "
+        "exhaustively and refines gear ratio by deterministic golden-section "
+        "search, so the car handing you hardpoint intent is a searched optimum, "
+        "not one engineer's starting guess.",
+        "Every candidate is scored through the repo's own QSS lap chain across "
+        "Acceleration, Skidpad, Autocross and Endurance, so the mass and lap "
+        "time your geometry inherits come from one consistent car.",
+        "Finalists get a transient per-cell pack-thermal integration of the full "
+        "endurance stint; a car that cooks itself is verdicted THERMAL_DNF and "
+        "rejected, so you never inherit intent from a vehicle that cannot finish.",
+        "The winning car's derived kinematic intent goes straight to the corner "
+        "InverseGenesis and its peak-cornering member loads to the frame tools "
+        "\u2014 that handoff is exactly this goal's next step.",
+    ],
+    ("susp_synth", "genesis"): [
+        "Takes the whole-car intent from FullCar and turns it into real "
+        "hardpoints: draw the target kinematic curves inside acceptance bands "
+        "and deterministic reverse gradients pull the points into place.",
+        "Declare the legal volume per hardpoint plus keep-out boxes, so every "
+        "coordinate it generates is physically mountable on the car FullCar just "
+        "specified \u2014 never only mathematically optimal.",
+        "The build-yield co-optimizer rejects knife-edge optima against the "
+        "Stochastic Inversion error field and reports the resilience premium the "
+        "winner bought, so the synthesized geometry survives being welded.",
+    ],
+    ("susp_synth", "kinematics"): [
+        "This is where the synthesized hardpoints become editable: drag any "
+        "point and camber gain, caster, KPI, toe, scrub radius and mechanical "
+        "trail re-solve instantly, so you can sanity-check what the synthesis "
+        "handed you before committing.",
+        "Sweep bump travel and plot the camber-gain curve continuously to "
+        "confirm the generated geometry actually tracks the curve you targeted.",
+        "Bump-steer is shown as a signed degree value with direction, so a "
+        "synthesis result that traded it away is visible immediately.",
+        "Anti-dive and anti-squat percentages update live, letting you check the "
+        "longitudinal behaviour the points target did not explicitly constrain.",
+        "Switch topology without re-entering hardpoints, so you can test whether "
+        "the synthesized intent survives a different linkage choice.",
+        "Once the points are locked, the upright mount-plate DXF export writes "
+        "the steering-axis geometry into a build-ready 2D sketch.",
+    ],
+    ("susp_flexgen", "flexgen"): [
+        "Solves the blade as a pseudo-rigid-body / discretized-elastica chain "
+        "with analytic gradient and Hessian \u2014 the tangent Hessian IS the "
+        "stiffness, so the non-linear tip compliance matrix and the buckling "
+        "load are computed for your blade, never chart-looked-up.",
+        "Tracks the elastic strain energy the blade stores per mm of bump travel "
+        "and converts it into the flexure's own wheel-rate contribution, then "
+        "downsizes the physical coilover by exactly that amount \u2014 and "
+        "refuses out loud when the blades alone over-spring the corner.",
+        "Lints every declared corner case for first-pass yield, Goodman "
+        "high-cycle fatigue and buckling against the computed critical load "
+        "\u2014 and REFUSES to certify a laminate's fatigue, because no honest "
+        "isotropic law exists for it.",
+        "Synthesizes the lightest (length, thickness) blade that passes its own "
+        "lint by deterministic grid search \u2014 reproducible by hand, no seed "
+        "\u2014 and reports honest infeasibility when the box holds no answer.",
+        "Exports the tapered blank as STEP and printable STL plus a fibre/build "
+        "orientation map per station, labelled as guidance rather than a "
+        "certified laminate schedule.",
+    ],
+    ("susp_verify", "forge"): [
+        "Co-solves the transient vehicle DAE with the actuator winding states "
+        "and live bus voltage every millisecond, so an active anti-roll bar's "
+        "authority under your overload is an OUTPUT of the electrical state "
+        "rather than an assumption the corner study inherited.",
+        "Re-runs the same manoeuvre under a declared electrical defect \u2014 "
+        "sagging pack, corroded connector, brownout-marginal controller, dead "
+        "servo \u2014 and reports the roll and load-cycle amplification it causes.",
+        "Re-audits the transient structural margins under that degraded load "
+        "history through the Ghost Topology stack, so a wiring defect that "
+        "breaches the 1.5 rule is caught as the structural load case it is.",
+        "Races the branch fuse and connector against the wishbone members in "
+        "Fusebox's first-failure probability, and flags when milliohms re-choose "
+        "which part of your corner breaks first.",
+    ],
+    ("susp_verify", "phantom_env"): [
+        "Sweeps the rigid linkage through its full travel to draw the no-load "
+        "motion envelope \u2014 the same volume a CAD interference check sees, "
+        "so you can compare like for like.",
+        "Runs your transient overload event through the Ghost Topology "
+        "compliance engine and reads the DEFORMED geometry at every audited "
+        "instant, carving the larger volume the loaded links actually claim.",
+        "Reports exactly how far the compliant envelope grows outside the rigid "
+        "one \u2014 the ground a rigid CAD check silently misses on an "
+        "overloaded corner.",
+        "Drop a candidate point and probe radius and get clearance or violation "
+        "attributed to the governing link, instant and load.",
+    ],
+    ("pt_synth", "genesis_fc"): [
+        "Declare the track, the FSAE-EV rulebook bounds (power/voltage/segment "
+        "caps, wheelbase minimum, cell-temp limit, endurance distance) and a "
+        "points objective, and the engine synthesizes the whole car backwards "
+        "from the points you want.",
+        "It enumerates the battery series/parallel grid and the drive "
+        "architecture \u2014 single+diff, twin-axle, four-motor "
+        "torque-vectoring \u2014 exhaustively, refining gear ratio by "
+        "deterministic golden-section search, with the exact evaluation count "
+        "printed rather than a black-box metaheuristic.",
+        "Each candidate is scored through the repo's own QSS lap chain across "
+        "all four dynamic events, so pack mass, lap time, lap energy and cell "
+        "current all come from one consistent car.",
+        "Finalists get a transient per-cell pack-thermal integration of the "
+        "whole endurance stint and the exact lap a pack would overheat: the "
+        "fastest-on-paper car that cooks itself is verdicted THERMAL_DNF and "
+        "rejected, not crowned.",
+        "Exports the derived control calibration \u2014 power/current limits, "
+        "regen bounds, per-wheel grip ceilings, BMS thresholds \u2014 as a C "
+        "header and a Python module, honestly labelled as calibration inputs "
+        "rather than firmware.",
+    ],
+    ("pt_synth", "ev"): [
+        "The architecture the synthesis picked opens here for interrogation: "
+        "motor and drivetrain comparisons couple mass, heat and lap time, so "
+        "questioning one choice shows its whole-car cost immediately.",
+        "The energy budget integrates regen recovery lap by lap from your actual "
+        "GGV deceleration profile, so the endurance energy the synthesis assumed "
+        "is checkable against your own numbers rather than a blanket percentage.",
+        "Worst-case heat load is summed from motor, inverter and pack losses "
+        "into a single kW rejection target \u2014 the number the synthesis's "
+        "thermal verdict ultimately rested on.",
+        "Radiator sizing works directly against that rejection target, closing "
+        "the loop between the synthesized pack and the cooling it needs.",
+    ],
+    ("pt_synth", "laptime"): [
+        "The GGV envelope is built from the numbers your subsystems already "
+        "declared, so the lap the synthesis optimised against and the lap you "
+        "simulate here are the same lap \u2014 no hand-copied parameters.",
+        "Run the lap simulation on the track layout you load and read every "
+        "deviation from the synthesized car as a delta in seconds.",
+        "Overlay simulated laps against track-test data to see where the "
+        "synthesized car and the real one disagree.",
+        "Because it reads the shared ledger, the car you simulate is always the "
+        "car the team agreed on rather than a private copy of it.",
+    ],
+    ("el_pcb", "forge"): [
+        "Co-solves the transient vehicle DAE with the actuator winding states "
+        "and the live bus voltage every millisecond, so your board's supply "
+        "behaviour and the car's mechanical response are one solution, not two "
+        "models bolted together.",
+        "Runs the manoeuvre under a declared electrical defect \u2014 sagging "
+        "pack, corroded connector, brownout-marginal controller, dead servo "
+        "\u2014 and reports the roll and load-cycle amplification your defect "
+        "causes downstream.",
+        "Races the branch fuse and connector against the structural members in "
+        "Fusebox's first-failure probability, and flags when milliohms re-choose "
+        "the car's victim \u2014 the case where a wiring decision becomes a "
+        "structural one.",
+        "Re-audits the transient structural margins under the degraded load "
+        "history via Ghost Topology, so a wiring defect that breaches the 1.5 "
+        "rule is named as the load case it really is.",
+        "Prices the defect's energy bill in Earshot's pack-budget currency and "
+        "re-judges the planned A/B session, so a board fault that quietly turns "
+        "a test day UNDERPOWERED is caught before the trailer loads.",
+    ],
+    ("vg_survive", "forge"): [
+        "Co-solves the transient vehicle DAE with actuator winding states and "
+        "live bus voltage every millisecond, so what survives is judged with the "
+        "electrical state included rather than assumed away.",
+        "Runs the same manoeuvre under a declared electrical defect and reports "
+        "the roll and load-cycle amplification the defect causes \u2014 the "
+        "overload case nobody writes down.",
+        "Re-audits transient structural margins under that degraded load history "
+        "through Ghost Topology, catching a wiring defect that breaches the 1.5 "
+        "rule as a structural load case.",
+        "Races the branch fuse and connector against the wishbone members in "
+        "Fusebox's first-failure probability, so you learn whether the thing "
+        "that breaks first is even mechanical.",
+        "Prices the defect's energy bill in Earshot's pack-budget currency and "
+        "re-judges the planned session against it.",
+    ],
+    ("vg_build", "morph"): [
+        "Condenses the transient member-force history from the Ghost Topology "
+        "audit into a load fan \u2014 every direction the force sweeps through, "
+        "weighted by exposure, with sign reversals kept as opposing arrows.",
+        "Grows a multi-case SIMP topology on your declared plate domain against "
+        "the whole fan at once, ribbing along the migrating load paths and "
+        "stripping metal no case ever stresses.",
+        "Measures every grown shape by morphological opening against shop-class "
+        "fabrication limits \u2014 hand_weld / jig_weld / cnc, the same names "
+        "Stochastic Inversion uses \u2014 and REJECTS unbuildable ribs, "
+        "re-running coarser rather than shipping a part your shop cannot make.",
+        "Prints the premium of buildability whenever a rejection forced "
+        "coarsening: the compliance given up and the feature size gained "
+        "\u2014 the argument for a jig, or the receipt for the hand welder.",
+        "Screens the survivor at peak fan loads against the standing "
+        "1.5-on-yield rule and ships cells CSV, a pixel-exact outline for the "
+        "CAD seat, a JSON summary and a design-review report.",
+    ],
+    ("vg_referee", "omni"): [
+        "Parses one plain-language mission prompt through a deterministic "
+        "grammar \u2014 budget, terrain, drive layout, shop tolerance, priority "
+        "words \u2014 and prints a receipt of every token it consumed, every "
+        "default it assumed and every word it ignored.",
+        "Runs the shared-hardpoint lattice (shop class \u00d7 actuator size "
+        "\u00d7 volume fraction) through InverseGenesis, SimulForge with the "
+        "Ghost transient audit, and MorphMesh, reusing each engine's own "
+        "verdicts unchanged rather than re-deciding them.",
+        "Referees the survivors onto a Pareto front over laps of energy, "
+        "composure, mass, cost and build-yield, and every dominated config "
+        "carries a per-axis dominance receipt naming exactly who beats it "
+        "and where.",
+        "Names every veto by the engine that issued it \u2014 NO_FIT from the "
+        "yield engine, brownout from the bus, UNBUILDABLE from the shop check, "
+        "or over the mission budget \u2014 so a dead config is an argument "
+        "rather than a blank.",
+        "The self-healing digital twin matches measured telemetry drift against "
+        "pre-computed defect signatures and emits a deliverable-moment gain "
+        "de-rate plus a printable camber-shim spec, with an honest \u2018matches "
+        "nothing\u2019 below threshold.",
+    ],
+    ("vg_frames", "frames"): [
+        "Declare the car's coordinate convention once \u2014 SAE J670, ISO "
+        "8855, ISO 4130 or a SolidWorks default \u2014 so every exchanged "
+        "number carries an unambiguous frame instead of a silent assumption.",
+        "Convert any subteam's plane-specific measurements into the shared "
+        "convention with one declared transform, so switching conventions is a "
+        "click rather than the 'full redo' nobody signs up for.",
+        "Pin a floating datum (CG, front axle) that updates as the chassis "
+        "length changes, so measurements referenced to it never rot as the car "
+        "evolves.",
+        "Flag numbers that arrive without a frame attached, so a contradiction "
+        "between two subteams is caught at exchange time rather than at "
+        "assembly.",
+    ],
+    ("dq_spec", "daq"): [
+        "The sensor review checklist IS the schema, so an unanswered question is "
+        "a tracked state rather than an empty cell that looks like progress "
+        "\u2014 and completeness is computed from the table, so it cannot drift "
+        "from it.",
+        "Nyquist is checked per channel against declared signal bandwidth: "
+        "undersampling is a hard failure because aliasing cannot be undone in "
+        "post, and gross oversampling is flagged as bus spent for nothing.",
+        "CAN bus load uses the real ISO 11898-1 frame layout including "
+        "worst-case bit stuffing, and reports worst-case arbitration latency per "
+        "message so you know which channel goes late.",
+        "The coolant inlet/outlet pair is checked for whether it can actually "
+        "resolve the delta-T it was bought to measure, with the heat-rejection "
+        "uncertainty that follows.",
+        "Findings route to the subteams that own the mount, the rail and the "
+        "isolation boundary, so 'what other subteam does this affect?' is "
+        "computed instead of remembered.",
+        "The review documentation table is generated from the plan, so it cannot "
+        "drift the way a hand-maintained one does.",
+    ],
+    ("dq_int", "daq"): [
+        "Rail current, logger write rate and session size are summed against "
+        "real capacities and reported as FLOORS whenever a channel is still "
+        "unspecified \u2014 so a partially-specced DAQ gives you a lower bound, "
+        "not a false total.",
+        "CAN bus load is computed from the real ISO 11898-1 frame layout "
+        "including worst-case bit stuffing, with worst-case arbitration latency "
+        "per message, so the electrical budget is built on the real wire.",
+        "The BMS UART-to-CAN bridge sizes the serial link, packs signals into "
+        "frames grouped by rate and gives shutdown-relevant signals the "
+        "identifiers that win arbitration \u2014 and refuses to invent a frame "
+        "map before anyone has read the datasheet.",
+        "Findings route automatically to the subteams owning the mount, the rail "
+        "and the isolation boundary, which is exactly the cross-subsystem tie-in "
+        "this goal is about.",
+        "Nyquist is enforced per channel, so a channel added to fill spare bus "
+        "capacity cannot quietly alias.",
+    ],
+    ("ch_fit", "phantom_env"): [
+        "Sweeps the rigid linkage through its full travel to draw the no-load "
+        "motion envelope \u2014 the volume a CAD interference check sees.",
+        "Runs a transient event through the Ghost Topology compliance engine and "
+        "reads the DEFORMED geometry at every audited instant, carving the "
+        "larger volume the loaded links actually claim \u2014 the clearance a "
+        "static fit check silently misses.",
+        "Reports exactly how far the compliant envelope grows outside the rigid "
+        "one, so 'it fitted in CAD' can be checked against what the loaded car "
+        "does.",
+        "Drop a candidate point and probe radius \u2014 a motor mount, a "
+        "coolant line \u2014 and get clearance or violation attributed to the "
+        "governing link, instant and load.",
+        "Ships the forbidden volume as a lightweight .json/.csv point cloud in "
+        "the same corner frame the geometry was defined in, ready for the "
+        "packaging team's CAD.",
     ],
 }
 
@@ -6209,6 +6501,118 @@ _FREETEXT_KEYWORDS: list[tuple[list[str], str, str]] = [
      "Your note mentions brake hardware — hydraulic sizing, pedal effort, "
      "bias, lock-up order and rotor thermal all live in the same model here, "
      "so a caliper or master-cylinder change shows its full consequence."),
+    # --- coverage-audit additions: every remaining tool gets a note route ----
+    #  Without these, a member who types the exact problem a tool solves is
+    #  never handed that tool. Keywords are the words a member actually uses.
+    (["daq", "sensor", "logger", "logging", "telemetry", "can bus", "canbus",
+      "sample rate", "aliasing", "nyquist"],
+     "daq",
+     "Your note mentions data acquisition \u2014 the DAQ planner checks Nyquist "
+     "per channel against declared bandwidth (undersampling is a hard failure), "
+     "computes real ISO 11898-1 CAN bus load with bit stuffing, and sums rail "
+     "current and logger write rate against real capacities."),
+    (["frame convention", "coordinate", "datum", "origin", "sae j670",
+      "iso 8855", "axis convention", "sign convention"],
+     "frames",
+     "Your note mentions coordinates or datums \u2014 declare the car's "
+     "convention once here and every exchanged number carries an unambiguous "
+     "frame, with numbers that arrive without one flagged at exchange time "
+     "instead of at assembly."),
+    (["clearance", "packaging", "interference", "envelope", "rubs", "fouls",
+      "hits the", "collision"],
+     "phantom_env",
+     "Your note mentions clearance or packaging \u2014 Phantom Envelope carves "
+     "the volume the LOADED links claim, not just the rigid sweep a CAD check "
+     "sees, and attributes any violation to the governing link, instant and "
+     "load."),
+    (["test day", "test plan", "session", "ab test", "a/b", "run plan",
+      "how many runs"],
+     "earshot",
+     "Your note mentions a test session \u2014 Earshot works out whether the "
+     "day can actually hear the effect you are chasing, and prices the run plan "
+     "against the pack energy budget before the trailer loads."),
+    (["flexure", "blade", "ball joint", "rod end", "monoball", "compliant joint"],
+     "flexgen",
+     "Your note mentions a joint or flexure \u2014 FlexGen solves the blade as "
+     "a discretized elastica, converts its stored strain energy into a wheel "
+     "rate and downsizes the coilover by exactly that amount, then lints yield, "
+     "Goodman fatigue and buckling."),
+    (["actuator", "active", "bus voltage", "brownout", "servo", "connector",
+      "corroded", "voltage sag"],
+     "forge",
+     "Your note mentions actuators or bus behaviour \u2014 SimulForge co-solves "
+     "the vehicle DAE with the winding states and live bus voltage, so actuator "
+     "authority is an output of the electrical state rather than an assumption."),
+    (["breaks first", "weak link", "fails first", "overload", "fuse order",
+      "what breaks"],
+     "fusebox",
+     "Your note mentions what breaks first \u2014 Fusebox ranks P(fails first) "
+     "across every member from independent capacities and judges the ranking "
+     "against a sealed Fuse Charter, so an unintended part being first in line "
+     "is called out explicitly."),
+    (["target curve", "reverse", "inverse", "generate hardpoints",
+      "from the curve", "synthesi"],
+     "genesis",
+     "Your note mentions working backwards from a target \u2014 InverseGenesis "
+     "takes drawn kinematic curves inside acceptance bands and generates the "
+     "hardpoints by deterministic reverse gradients, inside declared legal "
+     "volumes and keep-outs."),
+    (["points target", "whole car", "from scratch", "concept car",
+      "competition points", "whole-car"],
+     "genesis_fc",
+     "Your note mentions a whole-car or points target \u2014 FullCar "
+     "synthesizes the entire vehicle backwards from the points you want, scores "
+     "every candidate through the QSS lap chain, and rejects any car that "
+     "overheats its pack mid-endurance."),
+    (["load path", "deform", "transient load", "member force", "how it bends"],
+     "ghost",
+     "Your note mentions load paths or deformation \u2014 Ghost Topology audits "
+     "the transient member-force history and reads the deformed geometry at "
+     "every audited instant, so the load path you get is the one under load."),
+    (["bracket", "plate", "topology", "lighten", "material removal",
+      "generative"],
+     "morph",
+     "Your note mentions lightening a part \u2014 MorphMesh grows a multi-case "
+     "SIMP topology against the whole load fan at once and REJECTS ribs your "
+     "declared shop class cannot build, printing the compliance premium that "
+     "buildability cost."),
+    (["trade off", "trade-off", "compare everything", "pareto", "which config",
+      "mission"],
+     "omni",
+     "Your note mentions trading options \u2014 OmniCore takes one plain-language "
+     "mission prompt and referees the whole lattice onto a Pareto front, with a "
+     "per-axis dominance receipt for every config it kills."),
+    (["safety factor", "margin", "conservative", "over-engineered",
+      "overdesigned", "just in case"],
+     "phantom",
+     "Your note mentions margin \u2014 Phantom Car finds the weight the team is "
+     "spending defending load cases that never happen, so hidden stacked "
+     "conservatism becomes a number you can argue with."),
+    (["worth simulating", "before i run", "which test", "what should i test",
+      "plan the sim", "value of information"],
+     "proof",
+     "Your note mentions planning a test or sim \u2014 Proof Planner ranks what "
+     "to run by how much it would actually change your decision, so the "
+     "expensive run answers a live question."),
+    (["trust", "assumption", "what if i'm wrong", "sensitive to",
+      "fragile", "break my model"],
+     "saboteur",
+     "Your note questions an assumption \u2014 Saboteur attacks your own model "
+     "to find which input the conclusion actually hangs on, before a reviewer "
+     "or the car finds it for you."),
+    (["tolerance", "weld", "build error", "manufacturing variation", "jig",
+      "as-built", "yield"],
+     "stochastic",
+     "Your note mentions build tolerance \u2014 Stochastic Inversion propagates "
+     "the shop's real error field through the geometry, so you pick a design "
+     "that survives being built by hand rather than one that is only optimal on "
+     "paper."),
+    (["tyre temp", "tire temp", "rotor temp", "heat soak", "thermal",
+      "overheat", "fade"],
+     "thermic",
+     "Your note mentions heat \u2014 ThermicPatch carries the thermal state "
+     "through the manoeuvre so grip and fade are computed from the temperature "
+     "the part actually reaches, not a steady-state guess."),
 ]
 
 
@@ -6462,21 +6866,60 @@ def _briefing_ordered_tools(_bf):
     return _out
 
 
+def _briefing_tables():
+    """This module's briefing tables, wrapped for suspension.brief_coverage.
+
+    Built fresh per call (cheap — it is four dict references) so the coverage
+    engine always reads the live tables rather than a snapshot taken at import.
+    """
+    from suspension.brief_coverage import BriefingTables
+    return BriefingTables(
+        tab_meta=_TAB_META, tools=_BRIEF_TOOLS, simple=_BRIEF_SIMPLE,
+        tool_features=_BRIEF_TOOL_FEATURES, goal_features=_BRIEF_GOAL_FEATURES,
+        role_goals=_ROLE_GOALS, verify_goals=_VERIFY_GOALS,
+        purposes=_BRIEF_PURPOSES, freetext=_FREETEXT_KEYWORDS)
+
+
+def _briefing_feature_plan(_bf, _tid):
+    """The full FeaturePlan for one tool: goal-tailored lines, then everything
+    else the tool does. See suspension.brief_coverage.resolve_feature_lines.
+
+    Degrades to the old behaviour if the coverage module is somehow absent, so
+    a missing import can never blank the briefing."""
+    try:
+        from suspension.brief_coverage import resolve_feature_lines
+        return resolve_feature_lines(
+            _tid, _bf.get("active_goal_keys", []), _briefing_tables(),
+            _bf.get("proficiency", "intermediate"))
+    except Exception:                                   # pragma: no cover
+        class _Fallback:
+            primary = []
+            additional = list(_BRIEF_TOOL_FEATURES.get(_tid, []))
+            proficiency = _bf.get("proficiency", "intermediate")
+            tailored = False
+            complete = True
+            all_lines = additional
+
+            @staticmethod
+            def additional_heading():
+                return ""
+        return _Fallback()
+
+
 def _briefing_feature_lines(_bf, _tid):
-    """Feature bullets for one tool under the active goals — identical rule to
-    _brief_tool_block: goal-specific first (de-duped across goals), else the
-    tool's complete fallback list. Advanced proficiency with no goal-specific
-    bullets gets none (the panel shows a pointer instead of the full dump)."""
-    _active_goals = _bf.get("active_goal_keys", [])
-    _seen, _lines = set(), []
-    for _gk in _active_goals:
-        for _feat in _BRIEF_GOAL_FEATURES.get((_gk, _tid), []):
-            if _feat not in _seen:
-                _seen.add(_feat)
-                _lines.append(_feat)
-    if not _lines and _bf.get("proficiency") != "advanced":
-        _lines = list(_BRIEF_TOOL_FEATURES.get(_tid, []))
-    return _lines
+    """Feature bullets for one tool under the active goals.
+
+    COVERAGE RULE (changed — see suspension/brief_coverage.py): goal-tailored
+    bullets lead, and the tool's remaining canonical capabilities follow. The
+    old rule used goal copy XOR the canonical list, so the moment a (goal, tool)
+    pair got tailored copy every capability that copy did not mention became
+    invisible for that goal — tailoring silently SHRANK what the member was
+    told about. Advanced proficiency with no tailored copy got nothing at all.
+
+    Now the member always sees the tool's complete capability set; proficiency
+    changes how many WORDS those capabilities take, never how many of them are
+    mentioned."""
+    return _briefing_feature_plan(_bf, _tid).all_lines
 
 
 def _briefing_to_text(_bf):
@@ -7078,30 +7521,38 @@ def _briefing_unified_html(_bf, _speech_text, _figs_html=None):
             _b.append(f'<p><b>Why you need it:</b> {_spoken(_why)}</p>')
             _b.append(f'<blockquote>Why here, not MATLAB/ANSYS/OptimumK: '
                       f'{_esc(_vs)}</blockquote>')
-        # feature bullets (goal-specific first, else full list), with ⭐ for
-        # note-relevant ones — identical rule to _brief_tool_block.
-        _seen, _lines = set(), []
-        for _gk in _active_goals:
-            for _feat in _BRIEF_GOAL_FEATURES.get((_gk, _tid), []):
-                if _feat not in _seen:
-                    _seen.add(_feat)
-                    _lines.append(_feat)
-        _fhdr = "What this tool does for your goal — feature by feature:"
-        if not _lines:
-            if _prof == "advanced":
-                _lines = []
-                _b.append('<p class="kkmuted">Full capability list in the '
-                          'tool; no goal-specific subset to highlight.</p>')
-            else:
-                _lines = list(_BRIEF_TOOL_FEATURES.get(_tid, []))
-                _fhdr = "Everything this tool does for you:"
-        if _lines:
-            _b.append(f'<p class="kkfh"><b>{_esc(_fhdr)}</b></p><ul>')
-            for _f in _lines:
+        # Feature bullets. COVERAGE RULE (suspension/brief_coverage.py): the
+        # goal-tailored lines lead, then every remaining capability of the tool
+        # — so tailoring ADDS relevance without subtracting coverage. The old
+        # rule showed one list or the other, which meant a tailored (goal, tool)
+        # pair hid every feature its copy happened not to mention, and an
+        # advanced member with no tailored copy saw no features at all.
+        # ⭐ marks a line the member's own note touched.
+        _plan = _briefing_feature_plan(_bf, _tid)
+
+        def _bullets(_hdr, _items):
+            _b.append(f'<p class="kkfh"><b>{_esc(_hdr)}</b></p><ul>')
+            for _f in _items:
                 _star = _toks and any(_t in _f.lower() for _t in _toks)
                 _b.append('<li>' + ('⭐ ' if _star else '')
                           + _spoken(_f) + '</li>')
             _b.append('</ul>')
+
+        if _plan.primary:
+            _bullets("What this tool does for your goal — feature by feature:",
+                     _plan.primary)
+        if _plan.additional:
+            _ahdr = (_plan.additional_heading() if _plan.primary
+                     else "Everything this tool does for you:")
+            if _prof == "advanced" and _plan.primary:
+                # Advanced: fewer WORDS for the same capabilities, never fewer
+                # capabilities — the whole list, condensed to one line.
+                _b.append('<p class="kkmuted">' + _esc(_ahdr) + ' '
+                          + _spoken("; ".join(_f.rstrip(".")
+                                              for _f in _plan.additional))
+                          + '.</p>')
+            else:
+                _bullets(_ahdr, _plan.additional)
         if _prof == "beginner":
             _b.append('<p class="kkmuted">🛟 No wrong moves here — every field '
                       'has a sensible default.</p>')
