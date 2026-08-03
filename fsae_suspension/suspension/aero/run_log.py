@@ -100,7 +100,7 @@ __all__ = [
     "ScreenConfig", "Severity", "WallTreatment", "DEFAULT_RHO",
     "LOG_LAW_INTERSECTION_YPLUS",
     # data shapes
-    "Flag", "RunRow", "Derived", "Verdict", "CaseKey",
+    "Flag", "RunRow", "Derived", "Verdict", "CaseKey", "Discretisation",
     "ConsolidatedCase", "ConsolidationReport",
     # pipeline
     "parse_run_log", "parse_rows_from_grid", "screen", "consolidate",
@@ -109,7 +109,8 @@ __all__ = [
     "write_workbook", "write_csv_bundle", "consolidated_csv",
     # helpers worth reusing / testing
     "wall_treatment_for", "dynamic_pressure", "implied_reference_area",
-    "modified_z_scores", "CANONICAL_FIELDS",
+    "modified_z_scores", "CANONICAL_FIELDS", "SETUP_FIELDS",
+    "discretisation_of", "setup_signature",
 ]
 
 
@@ -185,6 +186,84 @@ def wall_treatment_for(viscous_model: Optional[str]) -> str:
         if re.search(pattern, text):
             return treatment
     return WallTreatment.UNKNOWN
+
+
+class Discretisation:
+    """Spatial discretisation order, as written in the sheet's `Order` column."""
+    FIRST = "first-order"
+    SECOND = "second-order"
+    MIXED = "mixed"
+    UNKNOWN = "unknown"
+
+
+#: `Order` cell text -> discretisation order. Second is checked first so
+#: "First to Second Order" (a run that was ramped) reads as MIXED, not FIRST.
+_ORDER_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"first.*second|1st.*2nd|ramp|blend", Discretisation.MIXED),
+    (r"second|2nd|high.?order|quick|muscl|bounded.?central", Discretisation.SECOND),
+    (r"first|1st|upwind\s*$", Discretisation.FIRST),
+)
+
+
+def discretisation_of(order_text: Optional[str]) -> str:
+    """
+    Classify the `Order` column.
+
+    This is the one solver-setup field with a defensible right answer for a force
+    coefficient. First-order upwind is numerically diffusive: it smears the very
+    gradients a wing's suction peak is made of, so it under-predicts downforce
+    and over-predicts the wake. It is a legitimate way to START a solve and not a
+    legitimate way to finish one, which is why the default is a warning rather
+    than a rejection — the run may have been ramped to second order without the
+    sheet saying so.
+    """
+    if not order_text:
+        return Discretisation.UNKNOWN
+    text = str(order_text).strip().lower()
+    if not text:
+        return Discretisation.UNKNOWN
+    for pattern, kind in _ORDER_PATTERNS:
+        if re.search(pattern, text):
+            return kind
+    return Discretisation.UNKNOWN
+
+
+def _normalise_setup_value(value) -> str:
+    """
+    Fold a setup cell to a comparable token: lower-cased, punctuation stripped.
+
+    So "SIMPLE", "simple" and "Simple " are one scheme, while genuinely different
+    entries stay different. Blank reads as an empty string, which the consistency
+    check treats as "not stated" rather than as a distinct choice.
+    """
+    if value is None:
+        return ""
+    text = str(value).strip().lower()
+    if text in {"", "-", "--", "n/a", "na", "none", "?", "tbd"}:
+        return ""
+    return re.sub(r"[^a-z0-9]+", "", text)
+
+
+def setup_signature(row: "RunRow") -> tuple:
+    """
+    The method a run was solved with, as a comparable tuple.
+
+    Turbulence model, pressure-velocity scheme, discretisation order and
+    initialisation. Courant number and pseudo time step are deliberately excluded:
+    they affect the PATH to convergence, not the converged answer, so two runs
+    that differ only there are still two samples of the same quantity.
+    """
+    return (
+        _normalise_setup_value(row.viscous_model),
+        _normalise_setup_value(row.scheme),
+        discretisation_of(row.order),
+        _normalise_setup_value(row.initialization),
+    )
+
+
+#: Human labels for the parts of a setup signature, for readable flag messages.
+_SETUP_PART_LABELS = ("viscous model", "scheme", "discretisation order",
+                      "initialization")
 
 
 def dynamic_pressure(speed_ms: Optional[float], rho: float = DEFAULT_RHO) -> Optional[float]:
@@ -276,6 +355,23 @@ class ScreenConfig:
     mass_imbalance_warn: float = 1e-4              # kg/s, absolute
     mass_imbalance_reject: float = 1e-3
 
+    # -- solver setup ------------------------------------------------------- #
+    #: First-order spatial discretisation smears the gradients a suction peak is
+    #: made of. Warn by default rather than reject: it is a legitimate way to
+    #: start a solve, and a run ramped to second order may not say so in the sheet.
+    reject_first_order: bool = False
+    #: Pseudo-transient Courant number. Very large values converge the residuals
+    #: while the flow field is still moving — a converged-LOOKING answer.
+    courant_warn_max: float = 500.0
+    courant_warn_min: float = 0.5
+    #: Compare each run's method against the rest of its operating point. Two runs
+    #: solved differently are not two samples of the same quantity.
+    check_setup_consistency: bool = True
+    #: A mixed turbulence model within one operating point is the sharpest version
+    #: of that problem. Off by default: the tool reports the split rather than
+    #: silently picking which half of the team was right.
+    reject_mixed_turbulence: bool = False
+
     # -- pressure-field physics ------------------------------------------- #
     cp_stagnation_warn: tuple = (0.80, 1.30)       # max gauge pressure / q
     cp_stagnation_reject: tuple = (0.30, 2.00)
@@ -347,13 +443,17 @@ class Flag:
 
 #: Canonical field name -> human label used in output sheets. Order matters: it is
 #: the column order of the Accepted/Rejected sheets.
+#: The 27 columns of the wings-team sheet, IN SHEET ORDER and with the sheet's
+#: own labels, so every output table reads as the same document the team filled
+#: in rather than a rearrangement of it. `converged` and `iteration` follow as
+#: optional extras: they are not on the standard sheet, but teams add them and
+#: the parser understands them when they appear.
 CANONICAL_FIELDS: tuple[tuple[str, str], ...] = (
     ("contributor",         "Contributor"),
-    ("component",           "Component"),
-    ("ride_height_mm",      "Ride Height (mm)"),
+    ("component",           "Front or Rear Wing?"),
+    ("ride_height_mm",      "Ride-Height (mm)"),
     ("speed_ms",            "Velocity (m/s)"),
     ("desired_yplus",       "Desired Y+"),
-    ("avg_yplus",           "Average Y+"),
     ("min_surface_mesh",    "Min Surface Mesh Length"),
     ("max_surface_mesh",    "Max Surface Mesh Length"),
     ("first_layer_height_m", "First Layer Height (m)"),
@@ -374,9 +474,22 @@ CANONICAL_FIELDS: tuple[tuple[str, str], ...] = (
     ("max_pressure_Pa",     "Max Pressure (Pa)"),
     ("min_pressure_Pa",     "Min. Pressure (Pa)"),
     ("mass_imbalance",      "Mass Imbalance (kg/s)"),
+    ("avg_yplus",           "Average Y+"),
+    ("notes",               "Notes"),
+    # --- optional extras, only populated when the sheet carries them -------- #
     ("converged",           "Converged"),
     ("iteration",           "Iteration"),
-    ("notes",               "Notes"),
+)
+
+#: The solver-setup columns. These do not gate a run on their own numbers the way
+#: y+ or skewness do — they describe METHOD, and method matters comparatively:
+#: two runs at one operating point solved with different turbulence models, or one
+#: first-order and one second-order, are not two samples of the same quantity and
+#: averaging them is averaging apples and oranges. `_screen_setup_consistency`
+#: uses these; `_screen_solver_setup` judges the two that do have a right answer.
+SETUP_FIELDS: tuple[str, ...] = (
+    "viscous_model", "scheme", "order", "pseudo_time_step",
+    "courant_number", "initialization",
 )
 
 _NUMERIC_FIELDS = {
@@ -458,6 +571,9 @@ class Derived:
     wall_treatment: str = WallTreatment.UNKNOWN
     yplus_target_miss: Optional[float] = None
     outlier_z: Optional[float] = None
+    discretisation: str = Discretisation.UNKNOWN
+    setup_signature: tuple = ()
+    setup_matches_group: Optional[bool] = None     # None = not enough peers to tell
 
     def effective_lift_coeff(self, row: RunRow) -> Optional[float]:
         """Reported Cl if present, else the derived one, else None."""
@@ -559,10 +675,33 @@ class ConsolidatedCase:
     lift_to_drag: Optional[float] = None
     spread_pct: Optional[float] = None
 
+    #: The METHOD behind the number. A consolidated coefficient is only
+    #: meaningful alongside the setup that produced it, so it travels with it.
+    viscous_models: list = field(default_factory=list)
+    schemes: list = field(default_factory=list)
+    discretisations: list = field(default_factory=list)
+    initializations: list = field(default_factory=list)
+    courant_range: tuple = ()
+    setup_consistent: bool = True
+
     contributors: list = field(default_factory=list)
     reject_reasons: list = field(default_factory=list)     # list[(label, reason)]
     accepted_rows: list = field(default_factory=list)      # list[Verdict]
     notes: list = field(default_factory=list)
+
+    def setup_summary(self) -> str:
+        """One line naming the method the accepted runs used."""
+        if not self.viscous_models:
+            return "method not recorded"
+        parts = [" / ".join(self.viscous_models)]
+        if self.discretisations:
+            parts.append(" / ".join(self.discretisations))
+        if self.schemes:
+            parts.append(" / ".join(self.schemes))
+        if self.initializations:
+            parts.append("init " + " / ".join(self.initializations))
+        line = ", ".join(parts)
+        return line if self.setup_consistent else "MIXED — " + line
 
     @property
     def confidence(self) -> str:
@@ -570,6 +709,9 @@ class ConsolidatedCase:
             return "NO DATA — every run at this point was rejected"
         if self.n_accepted == 1:
             return "SINGLE RUN — not a mean; no spread available"
+        if not self.setup_consistent:
+            return (f"{self.n_accepted} runs, MIXED SETUP — averaged across "
+                    f"different solver methods")
         if self.spread_pct is None:
             return f"{self.n_accepted} runs"
         if self.spread_pct <= 5.0:
@@ -622,6 +764,34 @@ class ConsolidationReport:
             for f in v.flags:
                 tally[f.code] = tally.get(f.code, 0) + 1
         return dict(sorted(tally.items(), key=lambda kv: (-kv[1], kv[0])))
+
+    def contributor_stats(self) -> list:
+        """
+        Per-contributor: runs submitted, accepted, and the flags they hit most.
+
+        The Contributor column was carrying nothing but a name. This is what it
+        is actually good for — not ranking people, but showing the team where a
+        recurring setup mistake lives, so it gets fixed once at the source
+        instead of being screened out of every batch forever.
+        """
+        by_who: dict = {}
+        for v in self.verdicts:
+            who = (v.row.contributor or "unattributed").strip() or "unattributed"
+            rec = by_who.setdefault(who, {"contributor": who, "runs": 0,
+                                          "accepted": 0, "rejected": 0,
+                                          "flags": {}})
+            rec["runs"] += 1
+            rec["accepted" if v.accepted else "rejected"] += 1
+            for f in v.flags:
+                rec["flags"][f.code] = rec["flags"].get(f.code, 0) + 1
+        out = []
+        for rec in by_who.values():
+            ranked = sorted(rec["flags"].items(), key=lambda kv: (-kv[1], kv[0]))
+            rec["top_flags"] = ", ".join(f"{k} x{n}" for k, n in ranked[:4])
+            rec["acceptance_pct"] = (100.0 * rec["accepted"] / rec["runs"]
+                                     if rec["runs"] else 0.0)
+            out.append(rec)
+        return sorted(out, key=lambda r: (-r["runs"], r["contributor"]))
 
     def summary(self) -> str:
         lines = [
@@ -1194,6 +1364,131 @@ def _screen_solution(row: RunRow, cfg: ScreenConfig, flags: list) -> None:
                 "mass_imbalance", mag, cfg.mass_imbalance_warn))
 
 
+def _screen_solver_setup(row: RunRow, cfg: ScreenConfig, derived: Derived,
+                         flags: list) -> None:
+    """
+    The solver-setup columns: Scheme, Order, Pseudo Time Step, Courant Number,
+    Initialization.
+
+    Only two of these have a defensible right answer on their own. The rest
+    describe method, and method is judged comparatively in
+    `_screen_setup_consistency` — a SIMPLE run and a Coupled run can both be
+    correct, but averaging them together at one operating point is not.
+    """
+    derived.setup_signature = setup_signature(row)
+    derived.discretisation = discretisation_of(row.order)
+
+    if derived.discretisation == Discretisation.FIRST:
+        flags.append(Flag(
+            "FIRST_ORDER",
+            Severity.REJECT if cfg.reject_first_order else Severity.WARN,
+            "solved first-order in space, which is numerically diffusive: it "
+            "smears the pressure gradients a suction peak is made of, so "
+            "downforce comes out low and the wake wide. Fine to start a solve "
+            "on, not to report a coefficient from",
+            "order"))
+
+    c = row.courant_number
+    if c is not None and c > 0:
+        if c > cfg.courant_warn_max:
+            flags.append(Flag(
+                "COURANT_HIGH", Severity.WARN,
+                f"pseudo-transient Courant number {c:g} is above "
+                f"{cfg.courant_warn_max:g} — large pseudo time steps can settle "
+                f"the residuals while the flow field is still moving, which "
+                f"looks converged and is not",
+                "courant_number", c, cfg.courant_warn_max))
+        elif c < cfg.courant_warn_min:
+            flags.append(Flag(
+                "COURANT_LOW", Severity.WARN,
+                f"Courant number {c:g} is very small — the solve advances so "
+                f"slowly that the residual history may flatten long before the "
+                f"forces have actually stopped moving",
+                "courant_number", c, cfg.courant_warn_min))
+    elif c is not None and c <= 0:
+        flags.append(Flag(
+            "COURANT_INVALID", Severity.WARN,
+            f"Courant number {c:g} is not positive", "courant_number", c, 0.0))
+
+    # Not a fault, but worth stating: an unrecorded method cannot be compared
+    # against the rest of the operating point, so it weakens the group check.
+    missing = [label for field_name, label in
+               (("viscous_model", "viscous model"), ("scheme", "scheme"),
+                ("order", "order"), ("initialization", "initialization"))
+               if not _normalise_setup_value(getattr(row, field_name, None))]
+    if missing:
+        flags.append(Flag(
+            "SETUP_UNRECORDED", Severity.WARN,
+            "the run does not record its " + ", ".join(missing)
+            + " — its method cannot be compared against the other runs at this "
+              "operating point",
+            "viscous_model"))
+
+
+def _screen_setup_consistency(verdicts: Sequence[Verdict],
+                              cfg: ScreenConfig) -> None:
+    """
+    Compare each run's method against the rest of its operating point.
+
+    This is the check the solver-setup columns exist for. Every other gate asks
+    "is this run valid?"; this one asks "are these runs the same experiment?".
+    Two runs at one ride height, one on k-epsilon and one on k-omega SST, can
+    both pass every physics gate and still not be two samples of one quantity —
+    averaging them produces a number that describes neither.
+
+    The tool reports the split rather than picking a winner: it cannot know which
+    model the team meant to standardise on. Set `reject_mixed_turbulence` to make
+    the minority a rejection once you have decided.
+    """
+    if not cfg.check_setup_consistency:
+        return
+
+    by_case: dict = {}
+    for v in verdicts:
+        if v.accepted:
+            by_case.setdefault(v.case, []).append(v)
+
+    for case, group in by_case.items():
+        if len(group) < 2:
+            continue
+        # Modal signature across the group, ignoring parts nobody recorded.
+        counts: dict = {}
+        for v in group:
+            counts[v.derived.setup_signature] = \
+                counts.get(v.derived.setup_signature, 0) + 1
+        modal, modal_n = max(counts.items(), key=lambda kv: (kv[1], kv[0]))
+        if len(counts) == 1:
+            for v in group:
+                v.derived.setup_matches_group = True
+            continue
+
+        for v in group:
+            sig = v.derived.setup_signature
+            if sig == modal:
+                v.derived.setup_matches_group = True
+                continue
+            v.derived.setup_matches_group = False
+            differing = [
+                f"{label} ({mine or 'unrecorded'} vs {theirs or 'unrecorded'})"
+                for label, mine, theirs in zip(_SETUP_PART_LABELS, sig, modal)
+                if mine != theirs and (mine or theirs)]
+            if not differing:
+                continue
+            turbulence_differs = sig[0] != modal[0] and (sig[0] or modal[0])
+            severity = (Severity.REJECT
+                        if turbulence_differs and cfg.reject_mixed_turbulence
+                        else Severity.WARN)
+            flags_target = v.flags
+            flags_target.append(Flag(
+                "SETUP_MISMATCH", severity,
+                f"solved with a different method from the other "
+                f"{modal_n} run(s) at this operating point \u2014 "
+                + "; ".join(differing)
+                + ". These are not two samples of the same quantity, so the "
+                  "mean across them describes neither setup",
+                "viscous_model"))
+
+
 def _screen_pressure(row: RunRow, cfg: ScreenConfig, derived: Derived,
                      flags: list) -> None:
     """
@@ -1432,9 +1727,10 @@ def screen(rows: Sequence[RunRow], config: Optional[ScreenConfig] = None) -> lis
     Judge every row and return a Verdict for each, in input order.
 
     The passes run in a deliberate order, cheapest and most certain first:
-      bookkeeping -> forces present -> mesh -> y+ -> solution -> pressure
-      -> reference-area consistency (needs the group) -> supersession
-      -> statistical outliers (needs the survivors).
+      bookkeeping -> forces present -> mesh -> y+ -> solution -> solver setup
+      -> pressure -> reference-area consistency (needs the group) -> setup
+      consistency (needs the group) -> supersession -> statistical outliers
+      (needs the survivors).
     """
     cfg = config or ScreenConfig()
     verdicts: list = []
@@ -1461,6 +1757,7 @@ def screen(rows: Sequence[RunRow], config: Optional[ScreenConfig] = None) -> lis
         _screen_mesh(row, cfg, flags)
         _screen_yplus(row, cfg, derived, flags)
         _screen_solution(row, cfg, flags)
+        _screen_solver_setup(row, cfg, derived, flags)
         _screen_pressure(row, cfg, derived, flags)
 
         v = Verdict(row=row, flags=flags, derived=derived)
@@ -1468,6 +1765,7 @@ def screen(rows: Sequence[RunRow], config: Optional[ScreenConfig] = None) -> lis
         verdicts.append(v)
 
     _resolve_reference_areas(verdicts, cfg)
+    _screen_setup_consistency(verdicts, cfg)
     _screen_supersession(verdicts, cfg)
     _screen_outliers(verdicts, cfg)
     return verdicts
@@ -1540,6 +1838,28 @@ def consolidate(verdicts: Sequence[Verdict],
         if good and not cd:
             notes.append("no drag coefficient available — reported or derived")
 
+        def _distinct(attr):
+            seen, out = set(), []
+            for v in good:
+                raw = getattr(v.row, attr, None)
+                text = str(raw).strip() if raw is not None else ""
+                if text and text.lower() not in seen:
+                    seen.add(text.lower())
+                    out.append(text)
+            return out
+
+        _disc = []
+        for v in good:
+            d = v.derived.discretisation
+            if d != Discretisation.UNKNOWN and d not in _disc:
+                _disc.append(d)
+        _courants = [v.row.courant_number for v in good
+                     if v.row.courant_number is not None]
+        _setup_ok = len({v.derived.setup_signature for v in good}) <= 1
+        if not _setup_ok:
+            notes.append("accepted runs used more than one solver setup \u2014 "
+                         "the mean is across different methods")
+
         cases.append(ConsolidatedCase(
             case=case,
             n_total=len(group),
@@ -1553,6 +1873,13 @@ def consolidate(verdicts: Sequence[Verdict],
             drag_force_mean_N=df_mean, drag_force_sd_N=df_sd,
             reference_area_m2=area, reference_area_basis=basis,
             lift_to_drag=l_over_d, spread_pct=spread,
+            viscous_models=_distinct("viscous_model"),
+            schemes=_distinct("scheme"),
+            discretisations=_disc,
+            initializations=_distinct("initialization"),
+            courant_range=((min(_courants), max(_courants))
+                           if _courants else ()),
+            setup_consistent=_setup_ok,
             contributors=sorted({(v.row.contributor or "?").strip()
                                  for v in good}) or [],
             reject_reasons=[(v.row.label(), v.reason())
@@ -1644,14 +1971,20 @@ _CONSOLIDATED_HEADERS = (
     "Mean Lift Force (N)", "Lift Force SD (N)",
     "Mean Drag Force (N)", "Drag Force SD (N)",
     "L/D", "Spread (%)", "Reference Area (m2)", "Reference Area Basis",
-    "Confidence", "Contributors", "Notes",
+    "Confidence",
+    # The solver setup behind the number. A coefficient without its method is
+    # not reproducible, and a MIXED entry here is why a mean may be meaningless.
+    "Viscous Model(s)", "Scheme(s)", "Discretisation", "Initialization(s)",
+    "Courant Range", "Setup Consistent?",
+    "Contributors", "Notes",
 )
 
 _AUDIT_EXTRA_HEADERS = (
     "Verdict", "Reject Codes", "Warn Codes", "Reason",
     "Dynamic Pressure q (Pa)", "Cp max", "Cp min",
     "Implied Ref Area (m2)", "Ref Area Used (m2)",
-    "Wall Treatment", "Y+ Target Miss (%)", "Outlier z",
+    "Wall Treatment", "Discretisation", "Setup Matches Group?",
+    "Y+ Target Miss (%)", "Outlier z",
     "Lift Coeff (derived)", "Drag Coeff (derived)",
     "Source Row",
 )
@@ -1671,6 +2004,9 @@ def _audit_values(v: Verdict) -> list:
         d.q_Pa, d.cp_max, d.cp_min,
         d.implied_area_lift_m2, d.reference_area_used_m2,
         d.wall_treatment,
+        d.discretisation,
+        ("" if d.setup_matches_group is None
+         else ("yes" if d.setup_matches_group else "NO")),
         None if d.yplus_target_miss is None else d.yplus_target_miss * 100.0,
         d.outlier_z,
         d.lift_coeff_derived, d.drag_coeff_derived,
@@ -1843,7 +2179,15 @@ def write_workbook(report: ConsolidationReport, path: str) -> str:
             stat("STDEV", "Drag Force (N)") if block else c.drag_force_sd_N,
             c.lift_to_drag, c.spread_pct,
             c.reference_area_m2, c.reference_area_basis,
-            c.confidence, ", ".join(c.contributors), "; ".join(c.notes),
+            c.confidence,
+            " / ".join(c.viscous_models), " / ".join(c.schemes),
+            " / ".join(c.discretisations), " / ".join(c.initializations),
+            ("" if not c.courant_range
+             else f"{c.courant_range[0]:g}\u2013{c.courant_range[1]:g}"
+             if c.courant_range[0] != c.courant_range[1]
+             else f"{c.courant_range[0]:g}"),
+            ("yes" if c.setup_consistent else "NO \u2014 mixed methods"),
+            ", ".join(c.contributors), "; ".join(c.notes),
         ])
         row_idx = ws.max_row
         fill = None
@@ -1919,6 +2263,29 @@ def write_workbook(report: ConsolidationReport, path: str) -> str:
                 cell.fill = fill
     autosize(ws_log)
 
+    # ---------------- Contributors --------------------------------------- #
+    ws_who = wb.create_sheet("Contributors")
+    ws_who.append(["Who submitted what, and which checks their runs hit. Not a "
+                   "leaderboard \u2014 a map of where a recurring setup mistake "
+                   "lives, so it gets fixed at the source."])
+    ws_who.cell(row=1, column=1).font = title_font
+    ws_who.append([])
+    who_headers = ["Contributor", "Runs", "Accepted", "Rejected",
+                   "Acceptance (%)", "Most common findings"]
+    ws_who.append(who_headers)
+    style_header(ws_who, 3, len(who_headers))
+    for rec in report.contributor_stats():
+        ws_who.append([rec["contributor"], rec["runs"], rec["accepted"],
+                       rec["rejected"], round(rec["acceptance_pct"], 1),
+                       rec["top_flags"]])
+        fill = (ok_fill if rec["rejected"] == 0
+                else bad_fill if rec["accepted"] == 0 else warn_fill)
+        for col in range(1, len(who_headers) + 1):
+            cell = ws_who.cell(row=ws_who.max_row, column=col)
+            cell.font = base
+            cell.fill = fill
+    autosize(ws_who)
+
     # ---------------- Config --------------------------------------------------
     ws_cfg = wb.create_sheet("Config")
     ws_cfg.append(["Screening criteria used for this run — change these to change "
@@ -1971,7 +2338,15 @@ def consolidated_csv(report: ConsolidationReport) -> str:
             c.drag_force_mean_N, c.drag_force_sd_N,
             c.lift_to_drag, c.spread_pct,
             c.reference_area_m2, c.reference_area_basis,
-            c.confidence, ", ".join(c.contributors), "; ".join(c.notes),
+            c.confidence,
+            " / ".join(c.viscous_models), " / ".join(c.schemes),
+            " / ".join(c.discretisations), " / ".join(c.initializations),
+            ("" if not c.courant_range
+             else f"{c.courant_range[0]:g}\u2013{c.courant_range[1]:g}"
+             if c.courant_range[0] != c.courant_range[1]
+             else f"{c.courant_range[0]:g}"),
+            ("yes" if c.setup_consistent else "NO \u2014 mixed methods"),
+            ", ".join(c.contributors), "; ".join(c.notes),
         ])
     return buf.getvalue()
 
@@ -2002,6 +2377,17 @@ def write_csv_bundle(report: ConsolidationReport, directory: str,
                     w.writerow([v.case.label() if v.case else ""]
                                + _row_values(v) + _audit_values(v))
         paths.append(p)
+
+    p = os.path.join(directory, f"{prefix}_contributors.csv")
+    with open(p, "w", encoding="utf-8", newline="") as fh:
+        w = csv.writer(fh, lineterminator="\n")
+        w.writerow(["Contributor", "Runs", "Accepted", "Rejected",
+                    "Acceptance (%)", "Most common findings"])
+        for rec in report.contributor_stats():
+            w.writerow([rec["contributor"], rec["runs"], rec["accepted"],
+                        rec["rejected"], round(rec["acceptance_pct"], 1),
+                        rec["top_flags"]])
+    paths.append(p)
 
     p = os.path.join(directory, f"{prefix}_screening_report.csv")
     with open(p, "w", encoding="utf-8", newline="") as fh:

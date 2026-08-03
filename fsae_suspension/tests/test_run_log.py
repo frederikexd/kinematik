@@ -35,6 +35,8 @@ from suspension.aero.run_log import (
     to_coeff_results, write_workbook, write_csv_bundle, consolidated_csv,
     wall_treatment_for, dynamic_pressure, implied_reference_area,
     modified_z_scores, LOG_LAW_INTERSECTION_YPLUS,
+    CANONICAL_FIELDS, SETUP_FIELDS, Discretisation,
+    discretisation_of, setup_signature,
 )
 
 
@@ -59,7 +61,7 @@ HEADER = [
 GOOD = [
     "Adriane", "Front Wing", 40, 26.8224, 40, 0.006, 0.012,
     6.2671639751389597e-4, 8, 0.30, 0.70, 1346.37, "k-epsilon", "Simple",
-    "Second", "Disabled", "Disabled", "Standard", -98.22, -0.831694392,
+    "Second", "0.5", 20.0, "Standard", -98.22, -0.831694392,
     23.485, 0.19886, 450.2234, -1515.11, 7.327e-6, 45.0, None,
 ]
 
@@ -71,6 +73,9 @@ def _row(**overrides):
         "desired_yplus": 4, "min_surface_mesh": 5, "max_surface_mesh": 6,
         "first_layer_height_m": 7, "n_layers": 8, "min_ortho_quality": 9,
         "max_skewness": 10, "max_aspect_ratio": 11, "viscous_model": 12,
+        # solver setup — previously unreachable from the fixture
+        "scheme": 13, "order": 14, "pseudo_time_step": 15,
+        "courant_number": 16, "initialization": 17,
         "lift_force_N": 18, "lift_coeff": 19, "drag_force_N": 20,
         "drag_coeff": 21, "max_pressure_Pa": 22, "min_pressure_Pa": 23,
         "mass_imbalance": 24, "avg_yplus": 25, "notes": 26,
@@ -596,7 +601,7 @@ def test_workbook_has_the_expected_sheets_and_reopens(tmp_path):
 
     wb = openpyxl.load_workbook(path)
     assert wb.sheetnames == ["Consolidated", "Accepted Runs", "Rejected Runs",
-                             "Screening Report", "Config"]
+                             "Screening Report", "Contributors", "Config"]
     # The rejected row is present WITH its reason, not merely absent.
     rejected = "\n".join(str(c.value) for row in wb["Rejected Runs"].iter_rows()
                          for c in row if c.value)
@@ -633,7 +638,7 @@ def test_csv_bundle_round_trips(tmp_path):
     report = process(grid(_row(contributor="Khalil - Test"), _row(contributor="A"),
                           _row(contributor="B")))
     paths = write_csv_bundle(report, str(tmp_path))
-    assert len(paths) == 4
+    assert len(paths) == 5
     assert all(os.path.exists(p) for p in paths)
     assert paths[0].endswith("_consolidated.csv")
 
@@ -762,3 +767,271 @@ def test_consolidated_formulas_reference_the_right_block(tmp_path):
         labels = {acc.cell(row=r, column=1).value for r in range(lo, hi + 1)}
         assert labels == {case.case.label()}
     wb.close()
+
+
+# --------------------------------------------------------------------------- #
+#  11) The solver-setup columns
+# --------------------------------------------------------------------------- #
+#  Scheme, Order, Pseudo Time Step, Courant Number and Initialization were parsed
+#  and then ignored — carried into the output tables but never used to judge
+#  anything. These tests pin what they now do. Two of them have a defensible
+#  right answer on their own; the rest only mean something COMPARATIVELY, which
+#  is the check that matters: two runs solved differently at one operating point
+#  are not two samples of one quantity, however valid each is alone.
+def test_canonical_fields_mirror_the_sheet():
+    """Output columns read as the same document the team filled in."""
+    labels = [label for _key, label in CANONICAL_FIELDS]
+    sheet_order = [
+        "Contributor", "Front or Rear Wing?", "Ride-Height (mm)",
+        "Velocity (m/s)", "Desired Y+", "Min Surface Mesh Length",
+        "Max Surface Mesh Length", "First Layer Height (m)", "Number of Layers",
+        "Min Orthogonal Quality", "Max Skewness", "Max Aspect Ratio",
+        "Viscous Model", "Scheme", "Order", "Pseudo Time Step",
+        "Courant Number", "Initialization", "Lift Force (N)",
+        "Lift Coefficient", "Drag Force (N)", "Drag Coefficient",
+        "Max Pressure (Pa)", "Min. Pressure (Pa)", "Mass Imbalance (kg/s)",
+        "Average Y+", "Notes",
+    ]
+    assert labels[:len(sheet_order)] == sheet_order
+    # Optional extras follow, so a sheet carrying them still parses.
+    assert labels[len(sheet_order):] == ["Converged", "Iteration"]
+
+
+def test_every_sheet_column_is_parsed_into_a_field():
+    """
+    All 27 sheet columns reach a field. Uses a row with every cell filled: the
+    point is that no column is silently unmapped, not that a real sheet never
+    leaves Notes blank.
+    """
+    rows, _, unmapped = parse_rows_from_grid(grid(_row(notes="ramped to 2nd")))
+    assert not unmapped, f"sheet columns not mapped to a field: {unmapped}"
+    r = rows[0]
+    for key, label in CANONICAL_FIELDS:
+        if key in ("converged", "iteration"):
+            continue                      # not on the standard sheet
+        assert getattr(r, key) is not None, f"{label} did not reach field {key}"
+    # And the five that used to be parsed-then-ignored are all present.
+    for key in SETUP_FIELDS:
+        assert getattr(r, key) is not None
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("Second", rl.Discretisation.SECOND),
+    ("2nd order upwind", rl.Discretisation.SECOND),
+    ("QUICK", rl.Discretisation.SECOND),
+    ("First", rl.Discretisation.FIRST),
+    ("1st order", rl.Discretisation.FIRST),
+    ("First to Second Order", rl.Discretisation.MIXED),   # a ramped solve
+    ("", rl.Discretisation.UNKNOWN),
+    (None, rl.Discretisation.UNKNOWN),
+])
+def test_discretisation_classification(text, expected):
+    assert rl.discretisation_of(text) == expected
+
+
+def test_first_order_warns_because_it_smears_the_suction_peak():
+    v = screen_one(order="First")
+    assert v.accepted, "first order is how you START a solve — a warning, not a fault"
+    assert "FIRST_ORDER" in codes(v)
+    assert "diffusive" in v.reason()
+
+
+def test_first_order_can_be_made_a_rejection():
+    rows, _, _ = parse_rows_from_grid(grid(_row(order="First")))
+    v = screen(rows, ScreenConfig(reject_first_order=True))[0]
+    assert not v.accepted
+
+
+def test_second_order_is_clean():
+    assert "FIRST_ORDER" not in codes(screen_one(order="Second"))
+
+
+def test_courant_number_band():
+    assert "COURANT_HIGH" in codes(screen_one(courant_number=5000))
+    assert "COURANT_LOW" in codes(screen_one(courant_number=0.05))
+    assert "COURANT_INVALID" in codes(screen_one(courant_number=-3))
+    assert not codes(screen_one(courant_number=50))
+    # All warnings — a Courant choice does not invalidate a converged answer.
+    assert screen_one(courant_number=5000).accepted
+
+
+def test_unrecorded_setup_is_flagged_not_silently_ignored():
+    v = screen_one(viscous_model=None, scheme=None, order=None,
+                   initialization=None)
+    assert "SETUP_UNRECORDED" in codes(v)
+    assert v.accepted
+    assert "cannot be compared" in v.reason()
+
+
+def test_setup_signature_ignores_convergence_path_settings():
+    """
+    Courant number and pseudo time step change the PATH to convergence, not the
+    converged answer, so runs differing only there are still comparable.
+    """
+    rows, _, _ = parse_rows_from_grid(grid(
+        _row(courant_number=10, pseudo_time_step="Disabled"),
+        _row(courant_number=900, pseudo_time_step="0.01")))
+    a, b = rows
+    assert rl.setup_signature(a) == rl.setup_signature(b)
+
+
+def test_mixed_turbulence_model_at_one_point_is_flagged():
+    """
+    The check the setup columns exist for: both runs pass every physics gate and
+    are still not two samples of the same quantity.
+    """
+    q = dynamic_pressure(26.8224)
+    rows = [_row(contributor=f"N{i}") for i in range(3)]
+    rows.append(_row(contributor="ODD", viscous_model="k-omega SST",
+                     avg_yplus=1.0, desired_yplus=1.0))
+    verdicts = screen(parse_rows_from_grid(grid(*rows))[0])
+    by_who = {v.row.contributor: v for v in verdicts}
+    assert "SETUP_MISMATCH" in codes(by_who["ODD"])
+    assert "viscous model" in by_who["ODD"].reason()
+    assert by_who["ODD"].accepted, "reported, not silently dropped"
+    assert by_who["ODD"].derived.setup_matches_group is False
+    assert by_who["N0"].derived.setup_matches_group is True
+
+
+def test_mixed_turbulence_can_be_made_a_rejection():
+    rows = [_row(contributor=f"N{i}") for i in range(3)]
+    rows.append(_row(contributor="ODD", viscous_model="k-omega SST",
+                     avg_yplus=1.0, desired_yplus=1.0))
+    cfg = ScreenConfig(reject_mixed_turbulence=True)
+    verdicts = screen(parse_rows_from_grid(grid(*rows))[0], cfg)
+    by_who = {v.row.contributor: v for v in verdicts}
+    assert not by_who["ODD"].accepted
+
+
+def test_mixed_discretisation_order_is_flagged():
+    rows = [_row(contributor=f"N{i}") for i in range(3)]
+    rows.append(_row(contributor="ODD", order="First"))
+    by_who = {v.row.contributor: v
+              for v in screen(parse_rows_from_grid(grid(*rows))[0])}
+    assert "SETUP_MISMATCH" in codes(by_who["ODD"])
+    assert "discretisation order" in by_who["ODD"].reason()
+
+
+def test_a_consistent_group_raises_no_mismatch():
+    rows = [_row(contributor=f"N{i}") for i in range(4)]
+    verdicts = screen(parse_rows_from_grid(grid(*rows))[0])
+    assert not any("SETUP_MISMATCH" in codes(v) for v in verdicts)
+    assert all(v.derived.setup_matches_group for v in verdicts)
+
+
+def test_setup_consistency_can_be_disabled():
+    rows = [_row(contributor=f"N{i}") for i in range(3)]
+    rows.append(_row(contributor="ODD", scheme="Coupled"))
+    cfg = ScreenConfig(check_setup_consistency=False)
+    verdicts = screen(parse_rows_from_grid(grid(*rows))[0], cfg)
+    assert not any("SETUP_MISMATCH" in codes(v) for v in verdicts)
+
+
+def test_consolidated_case_carries_the_method_behind_the_number():
+    case = consolidate(screen(parse_rows_from_grid(grid(_row(), _row()))[0]))[0]
+    assert case.viscous_models == ["k-epsilon"]
+    assert case.schemes == ["Simple"]
+    assert case.discretisations == ["second-order"]
+    assert case.initializations == ["Standard"]
+    assert case.setup_consistent
+    assert "k-epsilon" in case.setup_summary()
+    assert "second-order" in case.setup_summary()
+
+
+def test_mixed_setup_is_called_out_in_the_summary_and_confidence():
+    rows = [_row(contributor=f"N{i}") for i in range(3)]
+    rows.append(_row(contributor="ODD", scheme="Coupled"))
+    case = consolidate(screen(parse_rows_from_grid(grid(*rows))[0]))[0]
+    assert not case.setup_consistent
+    assert case.setup_summary().startswith("MIXED")
+    assert "MIXED SETUP" in case.confidence
+    assert any("more than one solver setup" in n for n in case.notes)
+
+
+def test_courant_range_is_reported():
+    rows = [_row(contributor="A", courant_number=10),
+            _row(contributor="B", courant_number=200)]
+    case = consolidate(screen(parse_rows_from_grid(grid(*rows))[0]))[0]
+    assert case.courant_range == (10, 200)
+
+
+def test_setup_columns_reach_the_consolidated_output():
+    report = process(grid(_row(), _row()))
+    text = consolidated_csv(report)
+    header = text.splitlines()[0]
+    for col in ("Viscous Model(s)", "Scheme(s)", "Discretisation",
+                "Initialization(s)", "Courant Range", "Setup Consistent?"):
+        assert col in header, f"{col} missing from the consolidated output"
+    assert "k-epsilon" in text and "second-order" in text
+
+
+def test_per_run_sheets_carry_the_setup_verdict(tmp_path):
+    """The Accepted/Rejected sheets show each run's own setup verdict."""
+    report = process(grid(_row(contributor="A"), _row(contributor="B"),
+                          _row(contributor="ODD", scheme="Coupled")))
+    paths = write_csv_bundle(report, str(tmp_path))
+    acc = [p for p in paths
+           if os.path.basename(p).endswith("_accepted_runs.csv")][0]
+    with open(acc, encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    by_who = {r["Contributor"]: r for r in rows}
+    assert by_who["A"]["Discretisation"] == "second-order"
+    assert by_who["A"]["Setup Matches Group?"] == "yes"
+    assert by_who["ODD"]["Setup Matches Group?"] == "NO"
+    # And the sheet's own columns are still there, in sheet order.
+    assert rows[0]["Scheme"] and rows[0]["Order"] and rows[0]["Initialization"]
+
+
+# --------------------------------------------------------------------------- #
+#  12) The Contributor column earns its keep
+# --------------------------------------------------------------------------- #
+def test_contributor_stats_summarise_each_person():
+    report = process(grid(
+        _row(contributor="A"), _row(contributor="A", order="First"),
+        _row(contributor="B"), _row(contributor="Khalil - Test")))
+    stats = {r["contributor"]: r for r in report.contributor_stats()}
+    assert stats["A"]["runs"] == 2 and stats["A"]["accepted"] == 2
+    assert stats["Khalil - Test"]["accepted"] == 0
+    assert stats["Khalil - Test"]["acceptance_pct"] == 0.0
+    assert "TEST_ROW" in stats["Khalil - Test"]["top_flags"]
+    assert "FIRST_ORDER" in stats["A"]["top_flags"]
+
+
+def test_unattributed_rows_are_grouped_not_dropped():
+    report = process(grid(_row(contributor=None)))
+    stats = report.contributor_stats()
+    assert stats[0]["contributor"] == "unattributed"
+    assert stats[0]["runs"] == 1
+
+
+def test_contributors_sheet_and_csv_are_written(tmp_path):
+    openpyxl = pytest.importorskip("openpyxl")
+    report = process(grid(_row(contributor="A"), _row(contributor="B")))
+    path = str(tmp_path / "out.xlsx")
+    write_workbook(report, path)
+    wb = openpyxl.load_workbook(path)
+    assert "Contributors" in wb.sheetnames
+    text = "\n".join(str(c.value) for row in wb["Contributors"].iter_rows()
+                     for c in row if c.value)
+    assert "A" in text and "B" in text
+    wb.close()
+
+    paths = write_csv_bundle(report, str(tmp_path))
+    who = [p for p in paths
+           if os.path.basename(p).endswith("_contributors.csv")][0]
+    with open(who, encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    assert {r["Contributor"] for r in rows} == {"A", "B"}
+
+
+
+def test_disabled_pseudo_transient_parses_without_complaint():
+    """The real sheet often reads 'Disabled' for both — that is not an error."""
+    rows, _, _ = parse_rows_from_grid(grid(
+        _row(pseudo_time_step="Disabled", courant_number="Disabled")))
+    r = rows[0]
+    assert r.pseudo_time_step == "Disabled"
+    assert r.courant_number is None            # not a number, not invented
+    v = screen(rows)[0]
+    assert v.accepted
+    assert not [c for c in codes(v) if c.startswith("COURANT")]

@@ -18462,6 +18462,27 @@ with tab_aero:
                 help="This sheet's convention is negative lift = downforce. A "
                      "positive value then warns about a missing sign flip.")
 
+            _rc3 = st.columns([1, 1, 1])
+            _rl_first = _rc3[0].checkbox(
+                "Reject first-order runs", value=False, key="rl_first_order",
+                help="First-order spatial discretisation is diffusive \u2014 it "
+                     "smears the pressure gradients a suction peak is made of, "
+                     "so downforce reads low. Warned by default because it is a "
+                     "legitimate way to START a solve; tick this once your team "
+                     "has agreed every reported run finishes second-order.")
+            _rl_setupchk = _rc3[1].checkbox(
+                "Check setup consistency", value=True, key="rl_setupchk",
+                help="Compares each run's turbulence model, scheme, "
+                     "discretisation order and initialization against the other "
+                     "runs at the same operating point. Two runs solved "
+                     "differently are not two samples of the same quantity.")
+            _rl_mixedturb = _rc3[2].checkbox(
+                "Reject mixed turbulence models", value=False, key="rl_mixedturb",
+                help="A mixed turbulence model at one operating point is the "
+                     "sharpest version of that problem. Off by default: the tool "
+                     "reports the split rather than picking which half of the "
+                     "team was right. Tick it once you have decided.")
+
         _rl_report = st.session_state.get("rl_report")
 
         if _rl_up is not None and st.button(
@@ -18473,7 +18494,10 @@ with tab_aero:
                                        if _rl_area_mode.startswith("Use") else None),
                     reject_test_rows=bool(_rl_test),
                     enable_outlier_pass=bool(_rl_outlier),
-                    expect_downforce=bool(_rl_downforce))
+                    expect_downforce=bool(_rl_downforce),
+                    reject_first_order=bool(_rl_first),
+                    check_setup_consistency=bool(_rl_setupchk),
+                    reject_mixed_turbulence=bool(_rl_mixedturb))
                 _rl_report = _rl.process(_rl_up.getvalue(), _rl_cfg)
                 st.session_state["rl_report"] = _rl_report
                 st.session_state["rl_source_name"] = _rl_up.name
@@ -18526,6 +18550,12 @@ with tab_aero:
                     "Ref area (m\u00b2)": (None if _c.reference_area_m2 is None
                                        else round(_c.reference_area_m2, 4)),
                     "Confidence": _c.confidence,
+                    # A coefficient without its method is not reproducible, so
+                    # the setup travels with the number rather than sitting in a
+                    # separate sheet nobody opens.
+                    "Solver setup": _c.setup_summary(),
+                    "Setup consistent?": ("yes" if _c.setup_consistent
+                                          else "NO \u2014 mixed methods"),
                 })
             if _rl_rows:
                 st.dataframe(_rl_rows, width="stretch", hide_index=True)
@@ -18550,6 +18580,19 @@ with tab_aero:
                 st.caption("What is going wrong, most common first: "
                            + ", ".join(f"{_k} \u00d7{_n}"
                                        for _k, _n in _rl_tally.items()))
+
+            with st.expander("Contributors \u2014 who submitted what",
+                             expanded=False):
+                st.caption("Not a leaderboard \u2014 a map of where a recurring "
+                           "setup mistake lives, so it gets fixed once at the "
+                           "source instead of being screened out of every batch.")
+                st.dataframe(
+                    [{"Contributor": _r["contributor"], "Runs": _r["runs"],
+                      "Accepted": _r["accepted"], "Rejected": _r["rejected"],
+                      "Acceptance (%)": round(_r["acceptance_pct"], 1),
+                      "Most common findings": _r["top_flags"]}
+                     for _r in _rl_report.contributor_stats()],
+                    width="stretch", hide_index=True)
 
             with st.expander("Full screening report \u2014 every row, every finding",
                              expanded=False):

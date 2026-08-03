@@ -12,6 +12,27 @@ parse_run_log()  ->  screen()  ->  consolidate()  ->  write_workbook()
 
 ---
 
+## Where to find it in the app
+
+**Aerodynamics tab (🌬️) → "ANSYS run-log consolidation"**
+
+1. Upload the run log (`.xlsx` / `.csv`) — the raw sheet the team keeps, banner
+   row and renamed columns and all.
+2. Open **Screening criteria** to adjust thresholds (air density, reference area,
+   scratch-row handling, the outlier pass, sign convention). Defaults are the
+   documented judgement below.
+3. Press **⚡ Screen & consolidate**.
+
+You get headline counts, the consolidated table (one row per operating point),
+**every excluded run with its reason**, the full screening report, both downloads,
+and a **⬇️ Load into the aero map** button that stages the consolidated points as
+`CoeffResult`s for the lap sim.
+
+The view is a thin shell over `run_log.py` — all the physics lives in the module,
+so the same results come out of the CLI, the API and the UI.
+
+---
+
 ## Quick start
 
 ```python
@@ -130,6 +151,50 @@ The same inferred area backfills blank coefficient cells — the real sheet leav
 own `(derived)` column and counted in the case notes; the reported column is never
 overwritten. Set `reference_area_m2` in the config to use a known value instead.
 
+### Solver setup — Scheme, Order, Pseudo Time Step, Courant Number, Initialization
+
+These five columns describe **method**, not measurement, so most of them are
+judged *comparatively* rather than against a fixed limit.
+
+- **`FIRST_ORDER`** — first-order spatial discretisation is numerically diffusive:
+  it smears the very pressure gradients a suction peak is made of, so downforce
+  reads low and the wake reads wide. A **warning** by default, because it's a
+  legitimate way to *start* a solve and a ramped run may not say so in the sheet.
+  Set `reject_first_order=True` once your team agrees every reported run finishes
+  second-order. `"First to Second Order"` is recognised as a ramp, not as first.
+- **`COURANT_HIGH` / `COURANT_LOW`** — a very large pseudo-transient Courant number
+  settles the residuals while the flow field is still moving: converged-*looking*
+  and not converged. Very small, and the residual history flattens long before the
+  forces stop moving. Warnings either way; a Courant choice doesn't invalidate a
+  genuinely converged answer.
+- **`SETUP_UNRECORDED`** — the run doesn't state its method, so it can't be compared
+  against the rest of its operating point. Not a fault, but it weakens the check below.
+- **`SETUP_MISMATCH`** — *the check these columns exist for.* Every other gate asks
+  "is this run valid?"; this one asks **"are these runs the same experiment?"** Two
+  runs at one ride height, one on k-epsilon and one on k-omega SST, can both pass
+  every physics gate and still not be two samples of one quantity — the mean across
+  them describes neither. The tool **reports the split rather than picking a winner**,
+  because it can't know which model the team meant to standardise on. Set
+  `reject_mixed_turbulence=True` once you've decided.
+
+`setup_signature()` deliberately **excludes** Courant number and pseudo time step:
+they change the *path* to convergence, not the converged answer, so two runs
+differing only there are still comparable.
+
+The consolidated output carries the method with the number — `Viscous Model(s)`,
+`Scheme(s)`, `Discretisation`, `Initialization(s)`, `Courant Range` and
+`Setup Consistent?` — because a coefficient without its setup isn't reproducible.
+A mixed group is called out in the confidence string too:
+`4 runs, MIXED SETUP — averaged across different solver methods`.
+
+### Contributor
+
+Was carrying nothing but a name. `report.contributor_stats()` (and the
+**Contributors** sheet / CSV) now gives runs submitted, accepted, rejected and the
+findings each person hits most. Not a leaderboard — a map of where a recurring
+setup mistake lives, so it gets fixed once at the source instead of being screened
+out of every batch forever.
+
 ### Solution health and bookkeeping
 
 - `MASS_IMBALANCE` — rejects above 1e-3 kg/s, warns above 1e-4. Continuity must close.
@@ -183,6 +248,7 @@ chronological, which the sheet does not promise — screen on physics first.
 | **Accepted Runs** | The runs behind those means, grouped by case, with *q*, Cp_max, Cp_min, implied reference area and wall treatment alongside. |
 | **Rejected Runs** | Every excluded run with its code and the sentence explaining it. |
 | **Screening Report** | Every row, every flag, severity, measured value, limit — the full audit trail. Clean rows appear too. |
+| **Contributors** | Runs submitted / accepted / rejected per person, with their most common findings. |
 | **Config** | Every threshold used, the parse warnings, the unmapped columns, and a flag tally. |
 
 The aggregates are formulas rather than baked numbers so the team can audit the
@@ -269,4 +335,4 @@ Useful `Verdict` members: `.accepted`, `.reason()`, `.reject_codes`, `.warn_code
 - The thresholds are engineering judgement, not laws. They are defaults chosen to be
   defensible and are all in one place precisely so a team can argue with them.
 
-Tests: `tests/test_run_log.py` (72 tests).
+Tests: `tests/test_run_log.py` (102) and `tests/test_run_log_ui.py` (26).

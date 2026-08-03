@@ -173,7 +173,12 @@ def _sample_csv() -> bytes:
         "Contributor", "Front or Rear Wing?", "Ride-Height (mm)", "Velocity (m/s)",
         "Desired Y+", "Min Surface Mesh Length", "Max Surface Mesh Length",
         "First Layer Height (m)", "Number of Layers", "Min Orthogonal Quality",
-        "Max Skewness", "Max Aspect Ratio", "Viscous Model", "Lift Force (N)",
+        "Max Skewness", "Max Aspect Ratio", "Viscous Model",
+        # The solver-setup columns are part of the real sheet; without them
+        # every row carries a SETUP_UNRECORDED warning and nothing reads CLEAN.
+        "Scheme", "Order", "Pseudo Time Step", "Courant Number",
+        "Initialization",
+        "Lift Force (N)",
         "Lift Coefficient", "Drag Force (N)", "Drag Coefficient",
         "Max Pressure (Pa)", "Min. Pressure (Pa)", "Mass Imbalance (kg/s)",
         "Average Y+", "Notes",
@@ -182,6 +187,7 @@ def _sample_csv() -> bytes:
     def row(who, cl, mesh=(0.006, 0.012), ortho=0.30, note=""):
         return [who, "Front Wing", 40, 26.8224, 40, mesh[0], mesh[1],
                 6.267e-4, 8, ortho, 0.70, 1346.37, "k-epsilon",
+                "Simple", "Second", "0.5", 20.0, "Standard",
                 cl * q * area, cl, 0.199 * q * area, "",
                 1.02 * q, -3.4 * q, 7.3e-6, 45.0, note]
 
@@ -205,6 +211,15 @@ def _run_view(answers, app_path=_APPS[0]):
     ns = {"st": st, "_view": "ANSYS run-log consolidation", "_aero_area": 1.0}
     exec(compile(_view_source(app_path), "<view>", "exec"), ns)  # noqa: S102
     return st
+
+
+def _table_with(mock, *columns):
+    """Find a rendered dataframe by its columns, not by its render order."""
+    for a, _k in mock.calls("dataframe"):
+        rows = a[0]
+        if rows and all(c in rows[0] for c in columns):
+            return rows
+    raise AssertionError(f"no rendered table with columns {columns}")
 
 
 # --------------------------------------------------------------------------- #
@@ -257,8 +272,7 @@ def test_headline_metrics_are_rendered(ran):
 
 
 def test_consolidated_table_reaches_the_screen(ran):
-    tables = [a[0] for a, _k in ran.calls("dataframe")]
-    consolidated = tables[0]
+    consolidated = _table_with(ran, "Runs kept", "Mean Cl")
     assert len(consolidated) == 1
     row = consolidated[0]
     assert row["Runs kept"] == "2/4"
@@ -269,8 +283,7 @@ def test_consolidated_table_reaches_the_screen(ran):
 
 def test_rejected_runs_are_shown_with_their_reasons(ran):
     """The honesty contract, reaching the screen: no silent filtering."""
-    tables = [a[0] for a, _k in ran.calls("dataframe")]
-    rejected = tables[1]
+    rejected = _table_with(ran, "Why", "Flags")
     assert len(rejected) == 2
     reasons = " ".join(r["Why"] for r in rejected)
     assert "scratch" in reasons.lower()
@@ -280,8 +293,7 @@ def test_rejected_runs_are_shown_with_their_reasons(ran):
 
 def test_screening_report_includes_clean_rows(ran):
     """A row's absence must never be how you learn it was dropped."""
-    tables = [a[0] for a, _k in ran.calls("dataframe")]
-    log = tables[2]
+    log = _table_with(ran, "Code", "Severity", "Explanation")
     assert any(r["Code"] == "CLEAN" for r in log)
     assert {r["Verdict"] for r in log} == {"ACCEPTED", "REJECTED"}
 
@@ -375,12 +387,61 @@ def test_upload_without_pressing_the_button_does_nothing():
 def test_sheet_where_everything_is_rejected_says_so():
     q = 0.5 * 1.225 * 26.8224 ** 2
     header = ("Contributor,Front or Rear Wing?,Ride-Height (mm),Velocity (m/s),"
-              "Min Orthogonal Quality,Viscous Model,Lift Force (N),"
-              "Lift Coefficient,Average Y+\n")
-    bad = f"Test rig,Front Wing,40,26.8224,0.01,k-epsilon,{-0.8 * q * 0.268},-0.8,45\n"
+              "Min Orthogonal Quality,Viscous Model,Scheme,Order,"
+              "Initialization,Lift Force (N),Lift Coefficient,Average Y+\n")
+    bad = (f"Test rig,Front Wing,40,26.8224,0.01,k-epsilon,Simple,Second,"
+           f"Standard,{-0.8 * q * 0.268},-0.8,45\n")
     st = _run_view({
         "upload": _Upload(("banner\n" + header + bad).encode("utf-8"), "x.csv"),
         "rl_go": True,
     })
     assert st.texts("error"), "an all-rejected sheet must say so loudly"
     assert any("rejected" in t.lower() for t in st.texts("error"))
+
+
+# --------------------------------------------------------------------------- #
+#  The solver-setup parameters and contributor breakdown reach the screen
+# --------------------------------------------------------------------------- #
+def test_consolidated_table_shows_the_method_behind_the_number(ran):
+    """A coefficient without its solver setup is not reproducible."""
+    row = _table_with(ran, "Solver setup", "Setup consistent?")[0]
+    assert "k-epsilon" in row["Solver setup"]
+    assert "second-order" in row["Solver setup"]
+    assert row["Setup consistent?"] == "yes"
+
+
+def test_contributors_table_is_rendered(ran):
+    who = _table_with(ran, "Contributor", "Acceptance (%)")
+    assert {r["Contributor"] for r in who} >= {"Adriane", "Rohan"}
+    # The fixture has both "Khalil" and "Khalil - Test"; match exactly.
+    scratch = [r for r in who if r["Contributor"] == "Khalil - Test"][0]
+    assert scratch["Accepted"] == 0
+    assert "TEST_ROW" in scratch["Most common findings"]
+    broken = [r for r in who if r["Contributor"] == "Khalil"][0]
+    assert "MESH_LENGTH_INVERTED" in broken["Most common findings"]
+
+
+def test_first_order_toggle_is_wired_through():
+    csvdata = _sample_csv().decode().replace("Second", "First")
+    st = _run_view({"upload": _Upload(csvdata.encode(), "x.csv"),
+                    "rl_go": True, "rl_first_order": True})
+    report = st.session_state["rl_report"]
+    assert len(report.accepted) == 0, "first-order rejection is not wired through"
+    assert any("FIRST_ORDER" in v.reject_codes for v in report.rejected)
+
+
+def test_setup_consistency_toggle_is_wired_through():
+    """Same sheet, one contributor on a different scheme."""
+    base = _sample_csv().decode().splitlines()
+    odd = base[-1].replace("Rohan", "Priya").replace(",Simple,", ",Coupled,")
+    data = "\n".join(base + [odd]) + "\n"
+    on = _run_view({"upload": _Upload(data.encode(), "x.csv"), "rl_go": True})
+    codes_on = {c for v in on.session_state["rl_report"].verdicts
+                for c in v.warn_codes}
+    assert "SETUP_MISMATCH" in codes_on
+
+    off = _run_view({"upload": _Upload(data.encode(), "x.csv"),
+                     "rl_go": True, "rl_setupchk": False})
+    codes_off = {c for v in off.session_state["rl_report"].verdicts
+                 for c in v.warn_codes}
+    assert "SETUP_MISMATCH" not in codes_off
