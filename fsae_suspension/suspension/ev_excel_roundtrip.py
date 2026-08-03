@@ -32,7 +32,7 @@ Data flow (fully Python-evaluated, no Excel engine required)
 """
 from __future__ import annotations
 
-import io, math, os, tempfile
+import io, math, os, re, tempfile
 from dataclasses import dataclass, field
 from typing import Sequence
 
@@ -425,6 +425,276 @@ def _safe_float(v, default=0.0) -> float:
         return default
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Native profile extent, resampling, and portability
+#
+# THE ZEROS BUG.  ElecPropulsion is not a data dump — it is a live model whose
+# columns H..V are formulas of the form
+#
+#     H2   = (SpeedVsTime!B2 * $H$1 * 1056) / ($B$10 * PI())      RPM
+#     H1895= ($B$8 * $B$11 * H2) / 1000                            current
+#     H3789= ($B$11 * SQRT(3) * $B$6 * H1895 * $B$8) / 1000        power
+#
+# one row per SpeedVsTime row, for all fifteen gear columns, plus MIN/MAX
+# summary rows at 5683-5688.  ThermalLoad, EMFs and BearingBlowOut then read
+# those blocks at HARDCODED ABSOLUTE ROWS (H1895:V3787, H3789:V5682, H2:V1894)
+# and pick a gear column with ROUND(1/ThermalLoad!B2,0) — column N for the
+# default gear 7, not column H.
+#
+# Writing a 335-sample lap into rows 2..336 therefore breaks every one of those
+# references at once: the blocks move up, the referenced rows go blank, and
+# INDEX/CHOOSECOLS over blank cells returns 0 with no error to explain it.
+# That is why the enhanced download reads as zeros where the original does not.
+#
+# The fix is to write the profile at the length the workbook was built for and
+# leave its formulas alone, so every block stays exactly where its dependents
+# expect it and all fifteen gear columns recompute.
+# ─────────────────────────────────────────────────────────────────────────────
+
+#: Fallback profile extent, used only when a workbook's own extent cannot be
+#: discovered. These are the rows the stock FSAE_EV_Power_Draw.xlsx uses.
+_SVT_FALLBACK_EXTENT = (2, 1894)
+
+_SVT_REF_RE = re.compile(r"SpeedVsTime!\$?[A-Z]{1,3}\$?(\d+)", re.IGNORECASE)
+_EP_RANGE_RE = re.compile(
+    r"ElecPropulsion!\$?[A-Z]{1,3}\$?(\d+):\$?[A-Z]{1,3}\$?(\d+)",
+    re.IGNORECASE)
+
+
+def dependent_block_ranges(wb) -> list[tuple[int, int]]:
+    """Every (first, last) ElecPropulsion block range other sheets address.
+
+    The span of these ranges states the block height directly, which is worth
+    more than inferring it from the gaps between starts: a gap only equals the
+    height when no blank separator row sits inside it.
+    """
+    try:
+        from openpyxl.worksheet.formula import ArrayFormula
+    except ImportError:
+        ArrayFormula = ()                                   # type: ignore
+    found: set[tuple[int, int]] = set()
+    for ws in wb.worksheets:
+        if ws.title.lower().startswith("elecpropulsion"):
+            continue
+        for row in ws.iter_rows():
+            for cell in row:
+                v = cell.value
+                text = v.text if isinstance(v, ArrayFormula) else v
+                if not isinstance(text, str) or "ElecPropulsion" not in text:
+                    continue
+                for r1, r2 in _EP_RANGE_RE.findall(text):
+                    if int(r2) - int(r1) > 2:  # a block, not a summary cell
+                        found.add((int(r1), int(r2)))
+    return sorted(found)
+
+
+def _contract_block_height(wb) -> int:
+    """Block height as the dependent sheets state it, by majority.
+
+    Individual ranges are not all trustworthy — this workbook's EMFs reads one
+    row further than BearingBlowOut over the same block — so the height that
+    the most references agree on wins, and ties go to the shorter.
+    """
+    from collections import Counter
+    spans = Counter(r2 - r1 + 1 for r1, r2 in dependent_block_ranges(wb))
+    if not spans:
+        return 0
+    best = max(spans.values())
+    return min(s for s, c in spans.items() if c == best)
+
+
+def dependent_block_starts(wb) -> list[int]:
+    """Rows of ElecPropulsion that other sheets read as block starts.
+
+    ThermalLoad, EMFs and BearingBlowOut address the propulsion blocks by
+    absolute row. Those references are the contract the propulsion sheet has to
+    satisfy, and — unlike the propulsion sheet itself — they survive an export
+    that flattened it. When the blocks have to be rebuilt, this is where the
+    layout to rebuild them at comes from.
+    """
+    return sorted({r1 for r1, _ in dependent_block_ranges(wb)})
+
+
+def _svt_first_data_row(ws_svt, default: int = 2) -> int:
+    """First SpeedVsTime row holding a numeric time AND speed.
+
+    The profile's ORIGIN is a property of SpeedVsTime and nothing else. It must
+    never be borrowed from an ElecPropulsion row number: those are two
+    different row spaces that happen to both start at 2 in the stock workbook.
+    """
+    if ws_svt is None:
+        return default
+    for r in range(1, min(ws_svt.max_row or 0, 200) + 1):
+        a = ws_svt.cell(row=r, column=1).value
+        b = ws_svt.cell(row=r, column=2).value
+        if (isinstance(a, (int, float)) and not isinstance(a, bool)
+                and isinstance(b, (int, float)) and not isinstance(b, bool)):
+            return r
+    return default
+
+
+def native_profile_extent(wb, ws_ep, ws_svt) -> tuple[int, int]:
+    """The profile height this workbook's formulas are wired to.
+
+    Discovered rather than hardcoded, because the extent is a property of the
+    user's file, and tried in order of authority:
+
+    1. ElecPropulsion's own RPM formulas, each naming the SpeedVsTime row it
+       reads — exact, and present in any undamaged workbook.
+    2. The block starts other sheets reference. This is what matters when the
+       propulsion sheet has already been flattened to values by an earlier
+       export: the gap between consecutive block starts IS the block height,
+       and rebuilding at anything else leaves those references reading blanks.
+    3. The populated extent of SpeedVsTime, then the stock layout.
+    """
+    rows: set[int] = set()
+    if ws_ep is not None:
+        for r in range(1, (ws_ep.max_row or 0) + 1):
+            v = ws_ep.cell(row=r, column=_EP_GEAR_COL_START).value
+            if isinstance(v, str) and "SpeedVsTime" in v:
+                rows.update(int(m) for m in _SVT_REF_RE.findall(v))
+    if len(rows) >= 2:
+        return min(rows), max(rows)
+
+    starts = dependent_block_starts(wb)
+    if len(starts) >= 2:
+        # Consecutive starts are one block apart. The smallest gap is the block
+        # height: larger gaps include the blank separator row between blocks.
+        #
+        # Only the HEIGHT transfers. `starts` are ElecPropulsion rows; the value
+        # returned here is a SpeedVsTime extent, and using starts[0] as its
+        # origin wrote the profile at the propulsion sheet's first block row
+        # instead of the profile's own — invisible in the stock workbook, where
+        # both are 2, and wrong everywhere else.
+        height = _contract_block_height(wb)
+        if height < 3:
+            height = min(b - a for a, b in zip(starts, starts[1:]) if b > a)
+        if height >= 3:
+            first = _svt_first_data_row(ws_svt)
+            return first, first + height - 1
+
+    if ws_svt is not None:
+        last = 0
+        for r in range(2, (ws_svt.max_row or 0) + 1):
+            a = ws_svt.cell(row=r, column=1).value
+            b = ws_svt.cell(row=r, column=2).value
+            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+                last = r
+            elif last:
+                break
+        if last >= 3:
+            return 2, last
+    return _SVT_FALLBACK_EXTENT
+
+
+def resample_profile(values: Sequence[float], n: int) -> np.ndarray:
+    """Linearly resample a series onto exactly `n` points.
+
+    Used to fit a lap of any length to the workbook's fixed profile height.
+    Resampling rather than truncating matters: the sheet's row count is not a
+    display detail, it is the domain of every downstream formula, and leaving
+    part of it blank zeroes the sheets that read it.
+    """
+    src = np.asarray(values, dtype=float)
+    if n <= 0:
+        return np.array([], dtype=float)
+    if src.size == 0:
+        return np.zeros(n, dtype=float)
+    if src.size == 1:
+        return np.full(n, float(src[0]))
+    if src.size == n:
+        return src.astype(float)
+    return np.interp(np.linspace(0.0, 1.0, n),
+                     np.linspace(0.0, 1.0, src.size), src)
+
+
+#: Microsoft-365-only functions. Every other Excel — 2021, 2019, 2016,
+#: LibreOffice, Google Sheets, Numbers, most preview panes — returns #NAME? for
+#: these, and a #NAME? in a source column makes every dependent SUM/MIN/MAX
+#: read as blank or zero. The replacements are exact:
+#:     CHOOSECOLS(range, n) -> INDEX(range, 0, n)   row 0 means "whole column"
+#:     CHOOSEROWS(range, n) -> INDEX(range, n, 0)
+_MODERN_FN_RE = re.compile(r"_xlfn\.(CHOOSECOLS|CHOOSEROWS)\s*\(")
+
+
+def _split_args(text: str, start: int) -> tuple[list[str], int]:
+    """Split a function's arguments, respecting nesting and quotes."""
+    depth, i, in_str = 1, start, False
+    args, cur = [], []
+    while i < len(text) and depth > 0:
+        ch = text[i]
+        if ch == '"':
+            in_str = not in_str
+        if not in_str:
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    break
+            elif ch == "," and depth == 1:
+                args.append("".join(cur)); cur = []
+                i += 1
+                continue
+        cur.append(ch)
+        i += 1
+    args.append("".join(cur))
+    return (args, i) if depth == 0 else ([], i)
+
+
+def portable_formula(formula: str) -> tuple[str, int]:
+    """Rewrite 365-only CHOOSECOLS/CHOOSEROWS as INDEX. Returns (text, count)."""
+    count = 0
+    while True:
+        m = _MODERN_FN_RE.search(formula)
+        if not m:
+            break
+        args, end = _split_args(formula, m.end())
+        if len(args) < 2:
+            break                      # unexpected shape — leave it alone
+        rng, sel = args[0].strip(), args[1].strip()
+        repl = (f"INDEX({rng},0,{sel})" if m.group(1) == "CHOOSECOLS"
+                else f"INDEX({rng},{sel},0)")
+        formula = formula[:m.start()] + repl + formula[end + 1:]
+        count += 1
+    return formula, count
+
+
+def make_workbook_portable(wb) -> int:
+    """Replace 365-only functions everywhere in an open workbook, in place."""
+    try:
+        from openpyxl.worksheet.formula import ArrayFormula
+    except ImportError:
+        return 0
+    changed = 0
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                v = cell.value
+                is_arr = isinstance(v, ArrayFormula)
+                text = v.text if is_arr else v
+                if not isinstance(text, str) or "_xlfn." not in text:
+                    continue
+                new, n = portable_formula(text)
+                if n:
+                    cell.value = ArrayFormula(v.ref, new) if is_arr else new
+                    changed += n
+    return changed
+
+
+def _request_full_recalc(wb) -> None:
+    """Make Excel recompute on open.
+
+    openpyxl discards every cached value when it saves, so without this flag a
+    reader that trusts the cache — Excel included, when its calc chain looks
+    clean — shows blanks or zeros for cells that are perfectly correct.
+    """
+    try:
+        wb.calculation.fullCalcOnLoad = True
+    except Exception:
+        pass
+
+
 def _col_letter(n: int) -> str:
     """1-based column index → Excel column letter(s)."""
     result = ""
@@ -525,6 +795,64 @@ def gear_ratio_value(v):
         return float(str(v).strip()), "ok"
     except (TypeError, ValueError):
         return None, "unreadable"
+
+
+#: A gear-ratio cell is either a literal or a simple reciprocal (`=1/7`).
+#: Nothing else is evaluated here — a cell this does not recognise is reported,
+#: not guessed at.
+_SIMPLE_RATIO_RE = re.compile(r"^=\s*(\d+(?:\.\d+)?)\s*/\s*(\d+(?:\.\d+)?)\s*$")
+
+
+def read_gear_ratios(ws_ep_data, ws_ep_formula, warnings: list | None = None
+                     ) -> list[float]:
+    """The fifteen gear ratios from ElecPropulsion H1:V1.
+
+    Reading the cached value alone is not enough. Half those cells hold `=1/7`
+    style formulas, and openpyxl discards every cached value when it saves — so
+    any workbook that has already been through this tool reads them as empty.
+    The old code defaulted those to 1.0, which is a plausible direct-drive
+    ratio and silently multiplied motor speed and current by seven for the
+    default gear. A wrong ratio that looks reasonable is worse than a blank.
+
+    So: cached value first, then the formula text for the simple reciprocals,
+    and only then a reported default.
+    """
+    ratios: list[float] = []
+    recovered: list[int] = []
+    defaulted: list[int] = []
+    for col in range(_EP_GEAR_COL_START, _EP_GEAR_COL_END + 1):
+        idx = col - _EP_GEAR_COL_START + 1
+        val, status = gear_ratio_value(
+            ws_ep_data.cell(row=_EP_GEAR_RATIO_ROW, column=col).value
+            if ws_ep_data is not None else None)
+        if val is None and ws_ep_formula is not None:
+            raw = ws_ep_formula.cell(row=_EP_GEAR_RATIO_ROW, column=col).value
+            if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+                val, status = float(raw), "ok"
+            elif isinstance(raw, str):
+                m = _SIMPLE_RATIO_RE.match(raw.strip())
+                if m and float(m.group(2)) != 0:
+                    val = float(m.group(1)) / float(m.group(2))
+                    status = "recovered"
+                    recovered.append(idx)
+        if val is None or val <= 0:
+            val = 1.0
+            defaulted.append(idx)
+        ratios.append(float(val))
+
+    if warnings is not None:
+        if recovered:
+            warnings.append(
+                "Gear ratio(s) " + ", ".join(map(str, recovered)) +
+                " had no cached value in the uploaded workbook (openpyxl drops "
+                "them on save) and were read from the cell formula instead.")
+        if defaulted:
+            warnings.append(
+                "Gear ratio(s) " + ", ".join(map(str, defaulted)) +
+                " could not be read and were treated as 1:1. Motor speed and "
+                "current for those gears are direct-drive figures, not the "
+                "workbook's — check ElecPropulsion row 1.")
+    return ratios
 
 
 def extract_params_from_excel(excel_bytes: bytes) -> dict:
@@ -765,12 +1093,10 @@ def lap_to_excel_roundtrip(
         for key, (row, col) in _EP_PARAMS.items():
             motor[key] = _safe_float(ws_ep_d.cell(row=row, column=col).value)
 
-    # Gear ratios from header row (H1..V1 of ElecPropulsion)
-    gear_ratios = []
+    # Gear ratios from header row (H1..V1 of ElecPropulsion), recovering the
+    # ones whose cached value is absent rather than defaulting them to 1:1.
     if ws_ep_d:
-        for col in range(_EP_GEAR_COL_START, _EP_GEAR_COL_END + 1):
-            v = ws_ep_d.cell(row=_EP_GEAR_RATIO_ROW, column=col).value
-            gear_ratios.append(_safe_float(v, default=1.0))
+        gear_ratios = read_gear_ratios(ws_ep_d, resolve_ep_sheet(wb), warnings)
     else:
         gear_ratios = [1.0] * 15
 
@@ -843,22 +1169,6 @@ def lap_to_excel_roundtrip(
             error="This workbook has no speed-profile sheet. Expected one "
                   "named SpeedVsTime (or holding a 'time (s)' column); found: "
                   + ", ".join(wb.sheetnames))
-    orig_max = ws_svt.max_row
-    for r in range(2, orig_max + 1):
-        ws_svt.cell(row=r, column=1).value = None
-        ws_svt.cell(row=r, column=2).value = None
-
-    for i, (t, v) in enumerate(zip(t_arr, v_mph)):
-        r = 2 + i
-        ws_svt.cell(row=r, column=1).value = round(float(t), 6)
-        ws_svt.cell(row=r, column=2).value = round(float(v), 4)
-
-    # MAX formula row
-    max_row = 2 + n_pts
-    ws_svt.cell(row=max_row, column=1).value = "Max Speed (mph):"
-    ws_svt.cell(row=max_row, column=2).value = float(np.max(v_mph))
-
-    # 9b. ElecPropulsion — write computed values as plain numbers
     ws_ep = resolve_ep_sheet(wb)
     if ws_ep is None:
         return ExcelRoundTripResult(
@@ -866,43 +1176,134 @@ def lap_to_excel_roundtrip(
             error="This workbook has no propulsion sheet. Expected one named "
                   "ElecPropulsion; found: " + ", ".join(wb.sheetnames))
 
-    # Clear old blocks beyond header + param rows
-    # (Rows 2..orig_max in all formula columns H..V)
-    orig_ep_max = ws_ep.max_row
-    for r in range(2, orig_ep_max + 1):
-        for col in range(_EP_GEAR_COL_START, _EP_GEAR_COL_END + 1):
-            ws_ep.cell(row=r, column=col).value = None
-        # Clear col G labels beyond row 1
-        if ws_ep.cell(row=r, column=7).value not in (None, "Current Draw (A)", "Phase Current (A)"):
-            pass
-        ws_ep.cell(row=r, column=7).value = None
+    # The profile is written at the height the workbook's own formulas are
+    # wired to, NOT at the lap's sample count. Those two are unrelated numbers,
+    # and writing the lap's count is what emptied ElecPropulsion's second and
+    # third blocks out from under ThermalLoad, EMFs and BearingBlowOut.
+    svt_first, svt_last = native_profile_extent(wb, ws_ep, ws_svt)
+    n_rows = svt_last - svt_first + 1
 
-    # Block 1: RPM values (rows 2..n_pts+1, cols H..V)
-    for i in range(n_pts):
-        r = 2 + i
-        for gi in range(len(gear_ratios)):
-            col = _EP_GEAR_COL_START + gi
-            ws_ep.cell(row=r, column=col).value = round(rpm_all[i, gi], 4)
+    t_sheet = resample_profile(t_arr, n_rows)
+    v_sheet = resample_profile(v_mph, n_rows)
+    if n_pts != n_rows:
+        warnings.append(
+            f"Lap profile has {n_pts} samples; the workbook's propulsion "
+            f"formulas are wired to {n_rows} rows "
+            f"(SpeedVsTime {svt_first}-{svt_last}). Resampled to fit so every "
+            f"row of ElecPropulsion and the sheets reading it stay populated. "
+            f"The results reported here use the lap's own {n_pts} samples.")
 
-    # Block 2: Current draw (rows n_pts+3 .. 2*n_pts+2, col H only)
-    cur_label_row  = n_pts + 2
-    cur_start_row  = n_pts + 3
-    ws_ep.cell(row=cur_label_row, column=7).value = "Current Draw (A)"
-    for i in range(n_pts):
-        r = cur_start_row + i
-        ws_ep.cell(row=r, column=8).value = round(current_draw_a[i], 6)
+    # Clear only the profile rows. Everything below them — the Max/Min Speed
+    # and Max/Min Time summary rows — belongs to the user and is left alone.
+    # The old code cleared to ws_svt.max_row and destroyed all four.
+    for r in range(svt_first, svt_last + 1):
+        ws_svt.cell(row=r, column=1).value = None
+        ws_svt.cell(row=r, column=2).value = None
 
-    # Block 3: Phase current (rows 2*n_pts+4 .. 3*n_pts+3, cols H..V)
-    # Formula: =$B$11*(SQRT(3))*$B$6*H{rpm_row}  — NO /1000, result is in raw units
-    phase_label_row = 2 * n_pts + 3
-    phase_start_row = 2 * n_pts + 4
-    ws_ep.cell(row=phase_label_row, column=7).value = "Phase Current (A)"
-    for i in range(n_pts):
-        r = phase_start_row + i
-        for gi in range(len(gear_ratios)):
-            col = _EP_GEAR_COL_START + gi
-            phase_i = motor_pf * math.sqrt(3) * motor_eff * rpm_all[i, gi]
-            ws_ep.cell(row=r, column=col).value = round(phase_i, 6)
+    for i in range(n_rows):
+        r = svt_first + i
+        ws_svt.cell(row=r, column=1).value = round(float(t_sheet[i]), 6)
+        ws_svt.cell(row=r, column=2).value = round(float(v_sheet[i]), 4)
+
+    # 9b. ElecPropulsion.
+    #
+    # Deliberately NOT rewritten. Columns H..V are the workbook's own live
+    # formulas: fifteen gear columns across three stacked blocks, driven off
+    # the SpeedVsTime rows just written, with MIN/MAX summary rows below them.
+    # Replacing them with constants was the defect — it flattened a model into
+    # a snapshot, moved the blocks, and (because the current block was written
+    # to column H alone) left fourteen of fifteen gear columns empty, while the
+    # dependent sheets select column N for the default gear 7. Leaving the
+    # formulas in place keeps every block at the rows its dependents reference
+    # and every gear column populated, and Excel recomputes on open.
+    ep_is_live = any(
+        isinstance(ws_ep.cell(row=r, column=_EP_GEAR_COL_START).value, str)
+        and str(ws_ep.cell(row=r, column=_EP_GEAR_COL_START).value).startswith("=")
+        for r in range(_EP_RPM_ROW_START, min(ws_ep.max_row or 0,
+                                              _EP_RPM_ROW_START + 50) + 1))
+
+    if not ep_is_live:
+        # The propulsion sheet has already been flattened to values by an
+        # earlier export. Rebuild all three blocks at the canonical offsets the
+        # dependent sheets reference, with every gear column filled, so the
+        # workbook still comes out usable instead of full of zeros.
+        rpm_sheet = np.zeros((n_rows, len(gear_ratios)), dtype=float)
+        for gi, gr in enumerate(gear_ratios):
+            rpm_sheet[:, gi] = v_sheet * gr * k_rpm
+
+        # Where the blocks go is stated by the dependent sheets, so read it
+        # rather than assume it. The arithmetic below reproduces the stock
+        # workbook's gap pattern exactly — blocks 1 and 2 contiguous, a blank
+        # row before block 3 — but that pattern is this file's, not a rule. A
+        # workbook spaced differently gets its blocks placed at the rows its own
+        # formulas name; occupying the right rows with the wrong block is the
+        # same defect wearing a different hat.
+        fallback = [(svt_first, svt_last),
+                    (svt_last + 1, svt_last + n_rows),
+                    (svt_last + n_rows + 2, svt_last + 2 * n_rows + 1)]
+        contract = dependent_block_starts(wb)
+        placed = [(s, s + n_rows - 1) for s in contract[:3]]
+        if (len(placed) == 3
+                and all(a[1] < b[0] for a, b in zip(placed, placed[1:]))):
+            b1, b2, b3 = placed
+        else:
+            b1, b2, b3 = fallback
+            if contract:
+                warnings.append(
+                    f"ElecPropulsion block starts named by the dependent "
+                    f"sheets ({contract}) do not fit {n_rows}-row blocks; "
+                    f"rebuilt at the stock layout "
+                    f"({b1[0]}, {b2[0]}, {b3[0]}) instead. Check that "
+                    f"ThermalLoad, EMFs and BearingBlowOut read the block "
+                    f"they mean to.")
+
+        for r in range(2, max(ws_ep.max_row or 0, b3[1]) + 1):
+            for col in range(_EP_GEAR_COL_START, _EP_GEAR_COL_END + 1):
+                ws_ep.cell(row=r, column=col).value = None
+            ws_ep.cell(row=r, column=7).value = None
+
+        ws_ep.cell(row=b1[0], column=7).value = "RPM (Load)"
+        ws_ep.cell(row=b2[0], column=7).value = "Current Draw (A)"
+        ws_ep.cell(row=b3[0], column=7).value = "Motor Power (kW)"
+
+        # The workbook's own chain, reproduced exactly:
+        #   RPM     = SpeedVsTime!B * ratio * 1056 / (B10 * PI)
+        #   current = (B8 * B11 * RPM) / 1000
+        #   power   = (B11 * SQRT(3) * B6 * current * B8) / 1000
+        # Note the third line consumes the CURRENT cell, not the RPM cell.
+        for i in range(n_rows):
+            for gi in range(len(gear_ratios)):
+                col = _EP_GEAR_COL_START + gi
+                rpm = rpm_sheet[i, gi]
+                cur = (pack_v_ep * motor_pf * rpm) / 1000.0
+                pwr = (motor_pf * math.sqrt(3) * motor_eff * cur
+                       * pack_v_ep) / 1000.0
+                # All fifteen columns, in every block. The gear selector picks
+                # a column by ROUND(1/ThermalLoad!B2,0) — column N for the
+                # default gear 7 — and finds nothing if only H was written.
+                ws_ep.cell(row=b1[0] + i, column=col).value = round(rpm, 4)
+                ws_ep.cell(row=b2[0] + i, column=col).value = round(cur, 6)
+                ws_ep.cell(row=b3[0] + i, column=col).value = round(pwr, 6)
+
+        # The summary rows the dependent sheets read by absolute address.
+        stats = [("Min RPM", b1, "MIN"), ("Max RPM", b1, "MAX"),
+                 ("Min Current (A)", b2, "MIN"), ("Max Current (A)", b2, "MAX"),
+                 ("Min Power (W)", b3, "MIN"), ("Max Power (kW)", b3, "MAX")]
+        for si, (label, blk, agg) in enumerate(stats):
+            r = b3[1] + 2 + si
+            ws_ep.cell(row=r, column=7).value = label
+            for gi in range(len(gear_ratios)):
+                col = _EP_GEAR_COL_START + gi
+                L   = _col_letter(col)
+                ws_ep.cell(row=r, column=col).value = \
+                    f"={agg}({L}{blk[0]}:{L}{blk[1]})"
+
+        warnings.append(
+            f"ElecPropulsion held static values rather than formulas — an "
+            f"earlier export had already flattened it. Rebuilt all three "
+            f"blocks at rows {b1[0]}-{b3[1]} across {len(gear_ratios)} gear "
+            f"columns, with the MIN/MAX summary rows, so ThermalLoad, EMFs and "
+            f"BearingBlowOut resolve at every gear instead of reading blanks.")
 
     # 9c. Pack sheet — stamp the KinematiK summary block.
     # Missing is NOT fatal: the summary is a convenience, and losing it must not
@@ -946,7 +1347,23 @@ def lap_to_excel_roundtrip(
             ws_bpc.cell(row=r, column=1).value = label
             ws_bpc.cell(row=r, column=2).value = val
 
-    # 9d. Save to bytes
+    # 9d. Portability. Five CHOOSECOLS array formulas in this workbook spill
+    # roughly nineteen thousand #NAME? cells on any Excel that is not
+    # Microsoft 365, and a #NAME? in a source column makes every dependent
+    # sum, min and max read as blank or zero — the same symptom, a different
+    # cause. INDEX(range,0,n) is an exact equivalent and works everywhere.
+    n_portable = make_workbook_portable(wb)
+    if n_portable:
+        warnings.append(
+            f"Rewrote {n_portable} Microsoft-365-only function call(s) "
+            f"(CHOOSECOLS/CHOOSEROWS) as INDEX. They were array formulas that "
+            f"spill #NAME? on Excel 2021 and older, LibreOffice and Google "
+            f"Sheets, which reads downstream as zeros.")
+
+    # 9e. Save to bytes. openpyxl drops every cached value on save, so the
+    # recalc flag is not optional: without it a reader that trusts the cache
+    # shows blanks or zeros for cells that are entirely correct.
+    _request_full_recalc(wb)
     buf = io.BytesIO()
     wb.save(buf)
     out_bytes = buf.getvalue()
@@ -1156,13 +1573,21 @@ def compute_minimum_feasible_pack(
     min_cap_ah = min_energy_kwh * 1000.0 / max(pack_v, 1.0)
     rec_cap_ah = rec_energy_kwh * 1000.0 / max(pack_v, 1.0)
 
-    # How many parallel strings: ceil(rec_cap_ah / cell_ah)
+    # How many parallel strings: ceil(cap / cell_ah), for both the bare minimum
+    # and the recommended pack. The minimum column used to print "—" for
+    # strings, cells and mass purely because nobody computed them; a dash reads
+    # as "not applicable" when the honest answer is a number.
+    n_par_min   = max(1, math.ceil(min_cap_ah / max(cell_ah, 0.01)))
     n_par_rec   = max(1, math.ceil(rec_cap_ah / max(cell_ah, 0.01)))
     total_cells = n_series * n_par_rec
+    min_cells   = n_series * n_par_min
     pack_mass   = total_cells * cell_mass
 
-    cur_usable  = (pack_v * float(pack.get("pack_capacity_ah", 15.0) or 15.0)
-                   * usable_frac / 1000.0)
+    cur_cap_ah  = float(pack.get("pack_capacity_ah", 15.0) or 15.0)
+    cur_n_par   = int(pack.get("n_parallel", 0) or
+                      max(1, round(cur_cap_ah / max(cell_ah, 0.01))))
+    cur_cells   = int(pack.get("pack_cell_count", 0) or n_series * cur_n_par)
+    cur_usable  = pack_v * cur_cap_ah * usable_frac / 1000.0
     shortfall   = max(0.0, total_energy_kwh - cur_usable)
 
     return {
@@ -1170,6 +1595,13 @@ def compute_minimum_feasible_pack(
         "min_capacity_ah":      round(min_cap_ah, 2),
         "rec_capacity_ah":      round(rec_cap_ah, 2),
         "rec_energy_kwh":       round(rec_energy_kwh, 4),
+        "min_cells_parallel":   n_par_min,
+        "min_total_cells":      min_cells,
+        "min_pack_mass_kg":     round(min_cells * cell_mass, 2),
+        "cur_capacity_ah":      round(cur_cap_ah, 2),
+        "cur_cells_parallel":   cur_n_par,
+        "cur_total_cells":      cur_cells,
+        "cur_pack_mass_kg":     round(cur_cells * cell_mass, 2),
         "rec_cells_series":     n_series,
         "rec_cells_parallel":   n_par_rec,
         "rec_total_cells":      total_cells,
@@ -1439,13 +1871,20 @@ def build_enhanced_excel(
     t2.alignment = Alignment(horizontal="center")
 
     # Summary metrics
+    # A dash cannot distinguish "no value" from "did not happen". When the pack
+    # finishes, there is no stop time and the deficit is a real zero, so both
+    # are stated rather than blanked.
     soc_meta = [
         ("Usable pack energy",    f"{soc_data['usable_kwh']:.3f} kWh"),
         ("Total energy drawn",    f"{result.total_energy_kwh:.3f} kWh"),
         ("Pack finishes lap",     "✅ YES" if soc_data["finishes"] else "❌ NO"),
-        ("Stop time",             f"{soc_data['stop_time_s']:.1f} s" if soc_data["stop_time_s"] else "—"),
-        ("Lap % complete at stop", f"{(soc_data['pct_lap_done'] or 0)*100:.1f} %" if not soc_data["finishes"] else "100 %"),
-        ("Energy deficit",        f"{soc_data['deficit_kwh']:.3f} kWh" if not soc_data['finishes'] else "—"),
+        ("Stop time",             "None — pack finishes"
+                                  if soc_data["finishes"]
+                                  else f"{soc_data['stop_time_s']:.1f} s"),
+        ("Lap % complete at stop", "100 %" if soc_data["finishes"]
+                                  else f"{(soc_data['pct_lap_done'] or 0)*100:.1f} %"),
+        ("Energy deficit",        f"{soc_data['deficit_kwh']:.3f} kWh"),
+        ("Energy margin",         f"{soc_data['usable_kwh'] - result.total_energy_kwh:.3f} kWh"),
     ]
     for ci, (label, val) in enumerate(soc_meta):
         col = ci + 1
@@ -1453,7 +1892,8 @@ def build_enhanced_excel(
             bold=True, size=9, color="FF8899AA")
         ws_le.cell(row=2, column=col).fill = PatternFill(
             fill_type="solid", fgColor="FF0D1117")
-        bad = "NO" in val or "deficit" in label.lower()
+        bad = ("NO" in val) or ("deficit" in label.lower()
+                                and not soc_data["finishes"])
         ws_le.cell(row=3, column=col, value=val).font = Font(
             bold=True, size=11,
             color="FFE74C3C" if bad else "FF37E0D0")
@@ -1529,49 +1969,62 @@ def build_enhanced_excel(
     t3.alignment = Alignment(horizontal="center")
 
     # Current pack vs minimum
+    # Numbers as numbers, not as pre-formatted text: the what-if table below
+    # is numeric and this block was not, so half the sheet could be charted and
+    # summed and half could not. `fmt` is the display format; `None` in a cell
+    # means the quantity genuinely does not exist for that column, and every
+    # one of those is spelled out rather than left as a bare dash.
+    #
+    # Peak current and fuse status are pack-topology-independent — the same lap
+    # draws the same pack current whatever the capacity — so they are stated in
+    # all three columns instead of only under "Minimum needed".
+    _pk_i   = min_pack["peak_current_a"]
+    _fuse   = "✅ OK" if min_pack["fuse_ok"] else "❌ Over"
     fp_rows = [
-        ("",                             "Current pack",   "Minimum needed",    "Recommended (+10%)", "Unit"),
-        ("Energy (usable)",              f"{min_pack['current_usable_kwh']:.3f}",
-                                          f"{min_pack['min_energy_kwh']:.3f}",
-                                          f"{min_pack['rec_energy_kwh']:.3f}",   "kWh"),
-        ("Capacity",                     f"{pack.get('pack_capacity_ah','?')}",
-                                          f"{min_pack['min_capacity_ah']:.2f}",
-                                          f"{min_pack['rec_capacity_ah']:.2f}",  "Ah"),
-        ("Parallel strings",             f"{pack.get('n_parallel','?')}",
-                                          "—",
-                                          f"{min_pack['rec_cells_parallel']}",    "strings"),
-        ("Total cells",                  f"{pack.get('pack_cell_count','?')}",
-                                          "—",
-                                          f"{min_pack['rec_total_cells']}",       "cells"),
-        ("Estimated pack mass",          f"{pack.get('cell_weight_kg',0.065) * (pack.get('pack_cell_count',0) or min_pack['rec_total_cells']):.1f}",
-                                          "—",
-                                          f"{min_pack['rec_pack_mass_kg']:.1f}", "kg"),
-        ("Energy shortfall",             "—",
-                                          f"{min_pack['energy_shortfall_kwh']:.3f}",
-                                          "—",                                   "kWh"),
-        ("Fuse OK for this lap",         "—",
-                                          "✅" if min_pack["fuse_ok"] else "❌",
-                                          "—",                                   ""),
-        ("Peak pack current",            "—",
-                                          f"{min_pack['peak_current_a']:.1f}",
-                                          "—",                                   "A"),
-        ("Fuse rating",                  f"{min_pack['fuse_limit_a']:.0f}",
-                                          f"{min_pack['fuse_limit_a']:.0f}",
-                                          f"{min_pack['fuse_limit_a']:.0f}",     "A"),
+        ("",                     "Current pack", "Minimum needed",
+                                 "Recommended (+10%)", "Unit", None),
+        ("Energy (usable)",      min_pack["current_usable_kwh"],
+                                 min_pack["min_energy_kwh"],
+                                 min_pack["rec_energy_kwh"],    "kWh",   "0.000"),
+        ("Capacity",             min_pack["cur_capacity_ah"],
+                                 min_pack["min_capacity_ah"],
+                                 min_pack["rec_capacity_ah"],   "Ah",    "0.00"),
+        ("Parallel strings",     min_pack["cur_cells_parallel"],
+                                 min_pack["min_cells_parallel"],
+                                 min_pack["rec_cells_parallel"], "strings", "0"),
+        ("Total cells",          min_pack["cur_total_cells"],
+                                 min_pack["min_total_cells"],
+                                 min_pack["rec_total_cells"],   "cells", "0"),
+        ("Estimated pack mass",  min_pack["cur_pack_mass_kg"],
+                                 min_pack["min_pack_mass_kg"],
+                                 min_pack["rec_pack_mass_kg"],  "kg",    "0.0"),
+        ("Energy shortfall",     min_pack["energy_shortfall_kwh"], 0.0, 0.0,
+                                 "kWh",   "0.000"),
+        ("Fuse OK for this lap", _fuse, _fuse, _fuse,           "",      None),
+        ("Peak pack current",    _pk_i, _pk_i, _pk_i,           "A",     "0.0"),
+        ("Fuse rating",          min_pack["fuse_limit_a"],
+                                 min_pack["fuse_limit_a"],
+                                 min_pack["fuse_limit_a"],      "A",     "0"),
     ]
 
     col_colours = ["FF1A2433", "FF131B24", "FF0D1B2A", "FF1A0D2A"]
     for ri, row_data in enumerate(fp_rows):
-        for ci, val in enumerate(row_data):
+        fmt = row_data[5]
+        for ci, val in enumerate(row_data[:5]):
             c = ws_fp.cell(row=ri + 2, column=ci + 1, value=val)
+            if fmt and ci in (1, 2, 3) and isinstance(val, (int, float)):
+                c.number_format = fmt
             c.fill = PatternFill(fill_type="solid", fgColor=col_colours[min(ci, 3)])
             if ri == 0:
                 c.font = Font(bold=True, size=10, color="FF8899AA")
                 c.alignment = Alignment(horizontal="center")
             else:
-                is_bad = ("shortfall" in row_data[0].lower() and ci == 2 and
-                          min_pack["energy_shortfall_kwh"] > 0)
-                is_good = ("Fuse OK" in row_data[0] and ci == 2 and min_pack["fuse_ok"])
+                is_bad = (("shortfall" in row_data[0].lower()
+                           and min_pack["energy_shortfall_kwh"] > 0)
+                          or ("Fuse OK" in row_data[0] and not min_pack["fuse_ok"])
+                          ) and ci in (1, 2, 3)
+                is_good = ("Fuse OK" in row_data[0] and min_pack["fuse_ok"]
+                           and ci in (1, 2, 3))
                 c.font = Font(
                     size=10,
                     color=("FFE74C3C" if is_bad else
@@ -1613,6 +2066,12 @@ def build_enhanced_excel(
         ws_fp.column_dimensions[get_column_letter(col_idx)].width = w
 
     # ── Save ──────────────────────────────────────────────────────────────────
+    # The three sheets above are static, but this re-save drops the cached
+    # values of every formula already in the workbook, so ask for a recalc on
+    # open. Without it the user's own sheets can present as blank or zero in a
+    # file whose formulas are correct.
+    make_workbook_portable(wb)
+    _request_full_recalc(wb)
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
