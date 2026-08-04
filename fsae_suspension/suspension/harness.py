@@ -850,7 +850,16 @@ class HarnessLedger:
     """
     connectors: dict = field(default_factory=dict)   # name -> Connector
     wires: dict = field(default_factory=dict)         # name -> WireRun
+    # Inherited from IntegrationLedger.ambient_c at check time — the car declares
+    # its installed ambient once and the ampacity derate resolves against it.
+    # Set `ambient_is_local = True` to pin this loom to its own number.
     ambient_c: float = 40.0
+    ambient_is_local: bool = False
+    # Wire construction the ampacity derate assumes when a run doesn't say
+    # otherwise. Tefzel (M22759/16, 150 °C) is what most FSAE teams actually run;
+    # the termination is almost always the real limit, not the conductor.
+    insulation: str = "tefzel"
+    termination_c: Optional[float] = 105.0             # crimp lug / boot rating
     clearance_warn_mm: float = 10.0                    # gap that triggers WARN
     clearance_fail_mm: float = 0.0                     # gap that triggers FAIL (touch/through)
     # ---- flex-solver environment (screening levels; every value editable) --
@@ -1448,12 +1457,154 @@ class HarnessLedger:
         return Formboard(branches=branches, nodes=nodes, extent_mm=extent,
                          ties=ties)
 
+    # ---- current resolution: inherit, don't re-type ----------------------- #
+    def bundle_size(self, w: "WireRun") -> int:
+        """
+        How many conductors run alongside this one, for the NEC bundling derate.
+
+        Proxy: conductors sharing the same pair of connectors travel in the same
+        loom branch. It is a proxy, not a measurement of the finished tape-wrap —
+        an over-count is conservative (a lower allowed current), an under-count is
+        not, so a team that tapes several branches together should say so.
+        """
+        ends = {w.from_conn, w.to_conn}
+        return max(1, sum(1 for o in self.wires.values()
+                          if {o.from_conn, o.to_conn} == ends))
+
+    def resolve_currents(self, ledger=None, net_currents: Optional[dict] = None) -> dict:
+        """
+        Work out what each conductor actually has to carry, in precedence order:
+
+          1. `WireRun.carries_current_a` — the electrical member pinned it here.
+          2. `net_currents[wire.net]` — the load the BOARD was already sized for
+             on this same net (see `electronics.net_currents`). A trace and the
+             wire continuing it are one net carrying one current; this is what
+             stops the two halves of the same circuit drifting apart.
+          3. The owning subsystem's declared `peak_current_a` on the integration
+             ledger — the same single source of truth the board reads.
+
+        Returns {wire_name: (amps, source_note)}. A wire that matches none of the
+        three is ABSENT from the result, never defaulted to a number: an
+        un-declared current produces a MISSING finding, not an invented ampacity
+        pass. That is the same rule `check_traces` follows.
+        """
+        net_currents = net_currents or {}
+        out: dict = {}
+        for name, w in self.wires.items():
+            if w.carries_current_a is not None:
+                out[name] = (float(w.carries_current_a),
+                             "pinned on the wire run")
+                continue
+            if w.net and w.net in net_currents:
+                out[name] = (float(net_currents[w.net]),
+                             f"net '{w.net}' — inherited from the board's "
+                             f"worst-case load")
+                continue
+            iface = getattr(ledger, "interfaces", {}).get(w.owner_subsystem) \
+                if ledger is not None else None
+            peak = getattr(iface, "peak_current_a", None) if iface else None
+            if peak is not None:
+                out[name] = (float(peak),
+                             f"ledger: {w.owner_subsystem} declared peak "
+                             f"{float(peak):g} A")
+        return out
+
+    def check_ampacity(self, ledger=None,
+                       net_currents: Optional[dict] = None) -> list:
+        """
+        Can each conductor carry its resolved current where it is actually
+        installed? Runs the NEC-based derate in `wiring.py` — ambient correction,
+        bundling adjustment and the termination limit that usually bites first —
+        against the ambient this loom inherited from the car ledger.
+
+        Emits MISSING (not a pass) where the current is undeclared or where the
+        NEC table has no ampacity for that gauge, so a green harness never means
+        more than the data behind it.
+        """
+        from . import wiring as _wiring
+
+        out: list = []
+        resolved = self.resolve_currents(ledger=ledger, net_currents=net_currents)
+        for name, w in self.wires.items():
+            pair = sorted({w.owner_subsystem, "electrics"})
+            got = resolved.get(name)
+            if got is None:
+                out.append(Finding(
+                    "wire-current", Severity.MISSING,
+                    f"Wire '{name}' ({w.from_conn}->{w.to_conn}) has no resolved "
+                    f"current — cannot check ampacity. Either pin it on the run, "
+                    f"give it a net the board has sized, or declare "
+                    f"{w.owner_subsystem}'s peak current in the Integration tab.",
+                    subsystems=pair,
+                    detail=dict(wire=name, gauge_awg=w.gauge_awg, net=w.net)))
+                continue
+            amps, src = got
+            n_bund = self.bundle_size(w)
+            try:
+                d = _wiring.derate(str(w.gauge_awg), insulation=self.insulation,
+                                   ambient_c=self.ambient_c, n_bundled=n_bund,
+                                   termination_c=self.termination_c)
+            except KeyError:
+                out.append(Finding(
+                    "wire-ampacity", Severity.MISSING,
+                    f"Wire '{name}' is {w.gauge_awg} AWG, which the ampacity "
+                    f"table does not cover — size it by hand.",
+                    subsystems=pair, detail=dict(wire=name, gauge_awg=w.gauge_awg)))
+                continue
+            if d.allowed_a is None:
+                out.append(Finding(
+                    "wire-ampacity", Severity.MISSING,
+                    f"Wire '{name}' is {w.gauge_awg} AWG — the NEC table this "
+                    f"derate is built on publishes no ampacity below 14 AWG, so "
+                    f"the {amps:.1f} A it carries cannot be checked here. Use the "
+                    f"conductor's own datasheet rating.",
+                    subsystems=pair,
+                    detail=dict(wire=name, gauge_awg=w.gauge_awg, current_a=amps,
+                                source=src)))
+                continue
+            margin = d.allowed_a - amps
+            base = dict(wire=name, gauge_awg=w.gauge_awg, current_a=amps,
+                        allowed_a=d.allowed_a, ambient_c=self.ambient_c,
+                        n_bundled=n_bund, insulation=self.insulation,
+                        termination_c=self.termination_c,
+                        temp_factor=d.temp_factor, bundle_factor=d.bundle_factor,
+                        source=src)
+            where = (f"at {self.ambient_c:.0f} °C ambient, bundled with "
+                     f"{n_bund - 1} other conductor(s)" if n_bund > 1
+                     else f"at {self.ambient_c:.0f} °C ambient")
+            if margin < 0:
+                out.append(Finding(
+                    "wire-ampacity", Severity.FAIL,
+                    f"Wire '{name}' carries {amps:.1f} A but {w.gauge_awg} AWG "
+                    f"{self.insulation} is only good for {d.allowed_a:.1f} A "
+                    f"{where} — it overheats. Go up in gauge or split the load. "
+                    f"(Current from: {src}.)",
+                    subsystems=pair, detail=base))
+            elif margin < 0.2 * d.allowed_a:
+                out.append(Finding(
+                    "wire-ampacity", Severity.WARN,
+                    f"Wire '{name}' carries {amps:.1f} A against a derated "
+                    f"{d.allowed_a:.1f} A {where} — under 20 % headroom, so any "
+                    f"extra load or a hotter day pushes it over. "
+                    f"(Current from: {src}.)",
+                    subsystems=pair, detail=base))
+            else:
+                out.append(Finding(
+                    "wire-ampacity", Severity.OK,
+                    f"Wire '{name}': {amps:.1f} A on {w.gauge_awg} AWG, derated "
+                    f"to {d.allowed_a:.1f} A {where}.",
+                    subsystems=pair, detail=base))
+        return out
+
     # ---- persistence ----------------------------------------------------- #
     def as_dict(self):
         return dict(
             connectors={k: v.as_dict() for k, v in self.connectors.items()},
             wires={k: v.as_dict() for k, v in self.wires.items()},
             ambient_c=self.ambient_c,
+            ambient_is_local=self.ambient_is_local,
+            insulation=self.insulation,
+            termination_c=self.termination_c,
             clearance_warn_mm=self.clearance_warn_mm,
             clearance_fail_mm=self.clearance_fail_mm,
             vib_g=self.vib_g,
@@ -1471,7 +1622,8 @@ class HarnessLedger:
             hl.set_connector(Connector.from_dict(v))
         for k, v in (d.get("wires") or {}).items():
             hl.set_wire(WireRun.from_dict(v))
-        for sk in ("ambient_c", "clearance_warn_mm", "clearance_fail_mm",
+        for sk in ("ambient_c", "ambient_is_local", "insulation",
+                   "termination_c", "clearance_warn_mm", "clearance_fail_mm",
                    "vib_g", "excitation_lo_hz", "excitation_hi_hz",
                    "max_span_mm", "max_sag_mm"):
             if d.get(sk) is not None:
@@ -1510,7 +1662,9 @@ class HarnessCheckResult:
 
 
 def check_harness(harness: HarnessLedger,
-                  keepouts: Optional[list] = None) -> HarnessCheckResult:
+                  keepouts: Optional[list] = None,
+                  ledger=None,
+                  net_currents: Optional[dict] = None) -> HarnessCheckResult:
     """
     Run the full pre-cut harness gate: bend-radius + strain-relief on every wire,
     3-D clearance against the supplied keep-out volumes (the same boxes the
@@ -1520,10 +1674,15 @@ def check_harness(harness: HarnessLedger,
     integration board renders.
     """
     findings = []
+    # Resolve the installed ambient from the car-level ledger first — the derate
+    # below is only as right as the temperature it assumes.
+    if ledger is not None:
+        findings += ledger.apply_environment(harness)
     findings += harness.check_bends()
     findings += harness.check_anchoring()
     findings += harness.check_clearance(keepouts=keepouts)
     findings += harness.check_flex(keepouts=keepouts)
+    findings += harness.check_ampacity(ledger=ledger, net_currents=net_currents)
     return HarnessCheckResult(
         findings=findings,
         cut_list=harness.cut_list(),

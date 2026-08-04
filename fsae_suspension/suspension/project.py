@@ -1003,18 +1003,26 @@ class ProjectStore:
     def remove_connector(self, name: str):
         self._ensure_harness().remove_connector(name)
 
-    def harness_check(self):
+    def harness_check(self, ledger=None, net_currents=None):
         """Run the full pre-cut harness gate (bend radius + strain relief +
-        3-D clearance) and roll up cut list / BOM / mass / formboard. The
-        keep-outs come from this project's own geometry ledger, so the loom is
-        checked against the very volumes the mount-points clash against. Returns
-        a HarnessCheckResult; does NOT auto-save."""
+        3-D clearance + ampacity) and roll up cut list / BOM / mass / formboard.
+
+        The keep-outs come from this project's own geometry ledger, so the loom is
+        checked against the very volumes the mount-points clash against. Pass the
+        integration `ledger` to resolve the installed ambient and each
+        conductor's current from the car-level declarations, and `net_currents`
+        (from `electronics.net_currents`) so a wire continuing a board net
+        inherits the load that net was already sized for. Both are optional —
+        without them the ampacity check reports MISSING rather than guessing.
+
+        Returns a HarnessCheckResult; does NOT auto-save."""
         from .harness import check_harness
         keepouts = []
         geom = getattr(self, "geometry", None)
         if geom is not None:
             keepouts = list(getattr(geom, "keepouts", {}).values())
-        return check_harness(self._ensure_harness(), keepouts=keepouts)
+        return check_harness(self._ensure_harness(), keepouts=keepouts,
+                             ledger=ledger, net_currents=net_currents)
 
     # --------------------------- queries ------------------------------- #
     def total_mass_kg(self) -> float:

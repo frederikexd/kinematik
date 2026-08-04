@@ -176,6 +176,7 @@ _SUSP_MODULES = dict(
     lapsim_mod="lapsim",            elec_check_mod="ev_electrical_check",
     roundtrip_mod="ev_excel_roundtrip", pack_mod="pack_thermal",
     damper_mod="damper",            interfaces_mod="interfaces",
+    electronics_mod="electronics",
     transient_mod="transient",      ggv_mod="ggv",
     thermal_mod="tire_thermal",     units_mod="units",
     bracket_mod="bracket_fos",      bolt_mod="bolted_joint",
@@ -24462,6 +24463,8 @@ def render_pcb_doctor():
         st.session_state["pdr_text"] = pdr_mod.demo_kicad_pcb()
         st.session_state["pdr_name"] = "demo_ecu_board.kicad_pcb"
         st.session_state.pop("pdr_assign", None)
+        st.session_state.pop("pdr_assign_fp", None)
+        st.session_state.pop("pdr_assign_edits", None)
     if up is not None:
         raw_bytes = up.getvalue()
         # Guard before decode/parse so one giant upload can't spike RAM for
@@ -24478,6 +24481,8 @@ def render_pcb_doctor():
                 st.session_state["pdr_text"] = raw
                 st.session_state["pdr_name"] = up.name
                 st.session_state.pop("pdr_assign", None)
+                st.session_state.pop("pdr_assign_fp", None)
+                st.session_state.pop("pdr_assign_edits", None)
 
     text = st.session_state.get("pdr_text")
     if not text:
@@ -24505,9 +24510,27 @@ def render_pcb_doctor():
         f"{pboard.board_thickness_mm:g} mm thick")
 
     # ---------------- per-net current/voltage assignments --------------------- #
-    if "pdr_assign" not in st.session_state:
-        st.session_state["pdr_assign"] = pdr_mod.auto_assign_net_currents(
-            pboard, ledger=led)
+    # The diagnosis below reads its ambient off board_ctx. Resolve that from the
+    # car-level ledger here too, so the Doctor agrees with the pre-fab gate even
+    # when a member opens this page without touching the board section first.
+    if led is not None and board_ctx is not None:
+        led.apply_environment(board_ctx)
+    # Re-derive whenever the ledger's declared peak currents change. Keying this
+    # on a fingerprint rather than "is it in session_state" is the difference
+    # between the diagnosis following the ledger and it silently running all
+    # session on whatever the amps were when the board was first loaded.
+    _led_fp = pdr_mod.ledger_fingerprint(led)
+    if (st.session_state.get("pdr_assign") is None
+            or st.session_state.get("pdr_assign_fp") != _led_fp):
+        _fresh = pdr_mod.auto_assign_net_currents(pboard, ledger=led)
+        # A number the electrical member typed by hand is theirs and survives the
+        # re-derive; only ledger-sourced and assumed rows refresh underneath it.
+        for _nid, _ov in (st.session_state.get("pdr_assign_edits") or {}).items():
+            if _nid in _fresh:
+                _fresh[_nid].update(_ov)
+                _fresh[_nid]["source"] = "edited by hand — not from the ledger"
+        st.session_state["pdr_assign"] = _fresh
+        st.session_state["pdr_assign_fp"] = _led_fp
     assign = st.session_state["pdr_assign"]
 
     with st.expander("⚡ Net currents & voltages (auto-filled from the ledger — "
@@ -24532,12 +24555,30 @@ def render_pcb_doctor():
                     "current (A)", min_value=0.0, max_value=500.0, step=0.1),
                 "voltage_v": st.column_config.NumberColumn(
                     "voltage (V)", min_value=0.0, max_value=1000.0, step=1.0)})
+        _edits = st.session_state.setdefault("pdr_assign_edits", {})
         for i, n in enumerate(nids):
             try:
-                assign[n]["current_a"] = float(edited.iloc[i]["current_a"])
-                assign[n]["voltage_v"] = float(edited.iloc[i]["voltage_v"])
+                _cur = float(edited.iloc[i]["current_a"])
+                _vol = float(edited.iloc[i]["voltage_v"])
             except (KeyError, ValueError, IndexError):
-                pass
+                continue
+            # Remember what the user overrode, so a later ledger change refreshes
+            # the rows they never touched without discarding the ones they did.
+            if (_cur != float(assign[n]["current_a"])
+                    or _vol != float(assign[n]["voltage_v"])):
+                _edits[n] = {"current_a": _cur, "voltage_v": _vol}
+                assign[n]["source"] = "edited by hand — not from the ledger"
+            assign[n]["current_a"] = _cur
+            assign[n]["voltage_v"] = _vol
+        if _edits:
+            st.caption(
+                f"{len(_edits)} net(s) edited by hand — these no longer follow "
+                f"the integration ledger.")
+            if st.button("Reset all nets to the ledger", key="pdr_assign_reset"):
+                st.session_state.pop("pdr_assign_edits", None)
+                st.session_state.pop("pdr_assign", None)
+                st.session_state.pop("pdr_assign_fp", None)
+                st.rerun()
 
     # ---------------- the diagnosis (runs live, no button) --------------------- #
     copper_oz = st.number_input(
@@ -24725,25 +24766,39 @@ _HN_SUB_COLOR = {"aerodynamics": "#d9a441", "brakes": "#e1683c",
                  "ecu": "#8d99a6"}
 
 
-def _harness_check_cached(store):
-    """Run store.harness_check() only when the harness or the keep-outs actually
-    changed. The check itself is cheap now (exact vectorised clearance), but on
-    a Streamlit rerun *nothing* should be recomputed for free — this makes every
-    slider drag / text keystroke in the section cost ~zero."""
+def _harness_check_cached(store, ledger=None, net_currents=None):
+    """Run store.harness_check() only when the harness, the keep-outs, the
+    integration ledger or the board's net loads actually changed. The check
+    itself is cheap now (exact vectorised clearance), but on a Streamlit rerun
+    *nothing* should be recomputed for free — this makes every slider drag /
+    text keystroke in the section cost ~zero.
+
+    The ledger and the net currents are part of the cache KEY, not just the
+    call: the ampacity verdict is derived from a declared peak current and an
+    installed ambient, so a cache keyed on the harness alone would keep showing
+    yesterday's answer after someone changed either one."""
     import hashlib
     harness = store._ensure_harness()
     geom = getattr(store, "geometry", None)
     keepouts = list(getattr(geom, "keepouts", {}).values()) if geom else []
+    led_key = ()
+    if ledger is not None:
+        led_key = (float(getattr(ledger, "ambient_c", 0.0) or 0.0),
+                   tuple(sorted(
+                       (str(n), float(getattr(i, "peak_current_a", None) or 0.0))
+                       for n, i in (getattr(ledger, "interfaces", {}) or {}).items())))
     payload = json.dumps(
         [harness.as_dict(),
          [(k.name, getattr(k, "owner_subsystem", ""),
-           list(k.lo_mm), list(k.hi_mm)) for k in keepouts]],
+           list(k.lo_mm), list(k.hi_mm)) for k in keepouts],
+         led_key,
+         sorted((net_currents or {}).items())],
         sort_keys=True, default=str)
     h = hashlib.md5(payload.encode()).hexdigest()
     cached = st.session_state.get("_hn_check_cache")
     if cached is not None and cached[0] == h:
         return cached[1], keepouts
-    res = store.harness_check()
+    res = store.harness_check(ledger=ledger, net_currents=net_currents)
     st.session_state["_hn_check_cache"] = (h, res)
     return res, keepouts
 
@@ -25165,7 +25220,22 @@ def _render_harness_fragment():
 
     store = get_store()
     harness = store._ensure_harness()
-    res, keepouts = _harness_check_cached(store)
+    # The loom inherits the car's ambient and, where a wire continues a board
+    # net, the very current that net's copper was sized for — so the two halves
+    # of one circuit can't be checked against two different numbers.
+    _hn_led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+    _hn_board = getattr(store, "board", None)
+    _hn_nets = {}
+    if _hn_board is not None and getattr(_hn_board, "traces", None):
+        _hn_scn = {}
+        for _tn in _hn_board.traces:
+            _picks = st.session_state.get(f"pcb_scn_{_tn}") or []
+            if _picks:
+                _hn_scn[_tn] = list(_picks)
+        if _hn_scn:
+            _hn_nets = electronics_mod.net_currents(_hn_board, _hn_led, _hn_scn)
+    res, keepouts = _harness_check_cached(store, ledger=_hn_led,
+                                          net_currents=_hn_nets)
 
     # ---- always-visible status strip ---- #
     n_fail = sum(1 for f in res.findings if f.severity.value == "fail")

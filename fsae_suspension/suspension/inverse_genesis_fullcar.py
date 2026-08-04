@@ -283,6 +283,11 @@ class DesignSpace:
     thermal_rows: int = 6
     thermal_cols: int = 14
     ambient_c: float = 30.0
+    # Feeds pack_thermal, so this is cooling-air INLET temperature, inherited
+    # from the ledger's 'cooling_inlet' channel. Set ambient_is_local = True to
+    # sweep a temperature the car has not declared.
+    ambient_is_local: bool = False
+    ENV_CHANNEL = "cooling_inlet"
     # -- fixed vehicle geometry & aero (the search does not move these) ---- #
     wheelbase_mm: float = 1550.0
     track_mm: float = 1200.0

@@ -1060,6 +1060,88 @@ def part_name(dev) -> str:
     return getattr(dev, "part", str(dev))
 
 
+def to_interface(pack: PackSpec, *, name: str = "electrics",
+                 heat_reject_w: Optional[float] = None,
+                 is_estimate: bool = False):
+    """Project the workbook-derived pack onto a `SubsystemInterface`.
+
+    The pack lives in the electrics lead's Excel file, and until now that made it
+    a SECOND source of truth: the accumulator's mass, voltage and fuse limit
+    existed in the workbook AND, separately, in whatever a team had typed into
+    the integration ledger. Two numbers for one pack is exactly the drift the
+    ledger exists to prevent.
+
+    This closes it in the honest direction — the workbook wins, because that is
+    where the electrics lead actually works, and the ledger takes a projection of
+    it. Everything here is DERIVED from the pack (and recomputed, not read back
+    from the sheet's own arithmetic), so the mass roll-up, the LV/HV checks and
+    the trace-current chain all see the same accumulator the power-draw audit
+    does.
+
+    `heat_reject_w` is NOT invented: pack heat depends on the duty cycle, which
+    this function has no access to. Pass it from a `PowerDrawTrace` if you have
+    one, or leave it None and let `check_all()` report it MISSING.
+
+    Note the fuse rating is used as the declared peak current: it is the hard
+    ceiling the pack can legally deliver, which is the right number for sizing
+    copper. If the team's real continuous draw is lower, declare that instead.
+    """
+    from .interfaces import SubsystemInterface
+    return SubsystemInterface(
+        name=name,
+        mass_kg=pack.mass_kg(),
+        voltage_v=pack.nominal_voltage_v(),
+        peak_current_a=pack.fuse_max_a,
+        power_draw_w=pack.power_at_fuse_limit_w(),
+        heat_reject_w=heat_reject_w,
+        is_estimate=is_estimate,
+        updated_by="power_draw.to_interface",
+        notes=f"derived from the pack workbook: {pack.source or '(unnamed file)'}")
+
+
+def sync_ledger(ledger, pack: PackSpec, *,
+                name: str = "electrics",
+                heat_reject_w: Optional[float] = None) -> list:
+    """Write the workbook's pack onto an IntegrationLedger and report what moved.
+
+    Returns a list of Findings naming every field whose ledger value disagreed
+    with the workbook BEFORE the sync — so a team that had been carrying a stale
+    hand-typed accumulator mass sees exactly what was wrong and by how much,
+    rather than the number silently changing under them.
+    """
+    from .interfaces import Finding, Severity
+
+    fresh = to_interface(pack, name=name, heat_reject_w=heat_reject_w)
+    old = ledger.interfaces.get(name)
+    out: list = []
+    if old is not None:
+        for fld, unit in (("mass_kg", "kg"), ("voltage_v", "V"),
+                          ("peak_current_a", "A"), ("power_draw_w", "W")):
+            was, now = getattr(old, fld, None), getattr(fresh, fld, None)
+            if was is None or now is None:
+                continue
+            if abs(float(was) - float(now)) > max(1e-6, 0.005 * abs(float(now))):
+                out.append(Finding(
+                    "pack-sync", Severity.WARN,
+                    f"{name}.{fld} was {float(was):.4g} {unit} in the ledger but "
+                    f"the workbook gives {float(now):.4g} {unit} — the two had "
+                    f"drifted. The workbook value now stands.",
+                    subsystems=[name],
+                    detail=dict(field=fld, was=float(was), now=float(now),
+                                source=pack.source or "workbook")))
+    # Preserve anything the workbook has no opinion about (CG, envelope, mounts).
+    if old is not None:
+        for fld in ("cg_x_mm", "cg_y_mm", "cg_z_mm", "env_x_mm", "env_y_mm",
+                    "env_z_mm", "env_origin_mm", "mount_load_n", "mount_points",
+                    "mounts_on", "max_temp_c", "cooling_airflow_cms"):
+            if getattr(fresh, fld, None) is None and getattr(old, fld, None) is not None:
+                setattr(fresh, fld, getattr(old, fld))
+        if fresh.heat_reject_w is None and old.heat_reject_w is not None:
+            fresh.heat_reject_w = old.heat_reject_w
+    ledger.set(fresh)
+    return out
+
+
 def to_elec_params(pack: PackSpec, vehicle: VehicleSpec):
     """Hand the correctly-read pack to the existing electrical feasibility gate.
 

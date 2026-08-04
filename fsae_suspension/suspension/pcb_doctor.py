@@ -648,6 +648,31 @@ _SIGNAL_NAME = re.compile(
 _SKIP_NAME = re.compile(r"^(gnd|agnd|dgnd|pgnd|earth|chassis)|unconnected|no_?connect|n\$?c$", re.I)
 
 
+def ledger_fingerprint(ledger=None) -> tuple:
+    """
+    A hashable summary of everything `auto_assign_net_currents` reads off the
+    integration ledger. The UI caches the derived assignments for a session; this
+    is what tells it the cache is stale, so a peak current bumped in the
+    Integration tab reaches the diagnosis on the very next rerun instead of the
+    session quietly finishing on the amps it started with.
+
+    Only the declared peaks matter here — adding a note or a mass to the ledger
+    must NOT throw away the electrical member's hand-edited net table.
+    """
+    if ledger is None:
+        return ()
+    out = []
+    for name, iface in (getattr(ledger, "interfaces", {}) or {}).items():
+        peak = getattr(iface, "peak_current_a", None)
+        if peak is None:
+            # Undeclared contributes nothing to the assignment, so its absence
+            # must not appear as a change — otherwise declaring a mass in an
+            # unrelated subsystem would throw away the net table.
+            continue
+        out.append((str(name), float(peak)))
+    return tuple(sorted(out))
+
+
 def auto_assign_net_currents(board: PcbBoard, ledger=None) -> dict:
     """Map each routed net to (current_a, voltage_v, source_note) using name
     heuristics against the integration ledger's declared peak currents. Every

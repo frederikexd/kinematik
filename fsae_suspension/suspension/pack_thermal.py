@@ -152,6 +152,12 @@ class PackLayout:
     parallel: int = 6                   # cells per parallel group (splits pack current)
     cell: CellParams = field(default_factory=default_cell_params)
     ambient_c: float = 30.0             # cooling-air inlet temperature, °C (hot tent day)
+    ambient_is_local: bool = False      # True = ignore the car-level inlet temp
+    # `ambient_c` here is the air ENTERING the pack duct, not the air the car sits
+    # in — a duct fed from behind the radiator runs hotter. It therefore inherits
+    # the ledger's 'cooling_inlet' channel, which falls back to ambient when the
+    # team hasn't declared the inlet as pre-heated.
+    ENV_CHANNEL = "cooling_inlet"
     # The rows×cols grid is the MODULE we visualise thermally; the whole pack may
     # contain several such modules in series. `series` is the full-pack series
     # count (it sets pack voltage and therefore the current the lap demands);

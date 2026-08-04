@@ -168,6 +168,21 @@ class IntegrationLedger:
     lv_voltage_v: float = 24.0             # low-voltage bus
     lv_supply_capacity_w: float = 600.0    # what the LV system can deliver
     total_cooling_airflow_cms: float = 0.0 # airflow the cooling pkg can actually move
+    # Car-level installed ambient — the ONE place "how hot is it where this part
+    # lives" is declared. Before this existed, every downstream ledger carried its
+    # own default (board 40, harness 40, cooling/brakes 35, brake_thermal 30,
+    # fuse_test 25) and they silently disagreed, so a team that measured 55 °C in
+    # the sidepod had to find and edit five files. Sub-ledgers now INHERIT this
+    # unless they opt out locally — see `apply_environment()`.
+    ambient_c: float = 40.0                # underhood/installed ambient (FSAE EV: hot)
+    # Temperature of the air actually ENTERING a radiator or pack duct. This is a
+    # genuinely different quantity from `ambient_c`: it is only equal to ambient
+    # when nothing pre-heats the stream, and a duct sitting behind the radiator
+    # or beside the exhaust runs hotter than the air the car is parked in.
+    # None = "same as ambient", which is the right default for a clean inlet.
+    # Declaring it here means the pack-thermal and radiator sizing still resolve
+    # to ONE number, without pretending a heated inlet is the same as ambient.
+    cooling_inlet_c: Optional[float] = None
     chassis_envelope_mm: Optional[tuple] = None  # (x,y,z) interior the car offers
     upright_design_load_n: Optional[float] = None  # what suspension designed mounts for
     driveline_torque_limit_nm: Optional[float] = None  # what driveshaft/CV is rated for
@@ -178,6 +193,69 @@ class IntegrationLedger:
 
     def get(self, name: str) -> Optional[SubsystemInterface]:
         return self.interfaces.get(name)
+
+    # ---- environment bridge: one ambient, many consumers -------------------- #
+    #  Field names the various thermal specs use for the same physical quantity.
+    #  brake_thermal calls it T_ambient_c, everything else ambient_c.
+    _ENV_ALIASES = ("ambient_c", "T_ambient_c")
+
+    def environment_c(self, channel: str = "ambient") -> float:
+        """The declared temperature for a channel. 'cooling_inlet' falls back to
+        ambient when the team hasn't said the inlet air is pre-heated."""
+        if channel == "cooling_inlet":
+            v = self.cooling_inlet_c
+            return float(self.ambient_c if v is None else v)
+        return float(self.ambient_c)
+
+    def apply_environment(self, *sub_ledgers) -> list:
+        """
+        Push this car's declared temperatures onto every spec that inherits them,
+        so `ambient_c` is declared once and the copper-heating, fusing, wire
+        ampacity, brake-thermal, radiator and pack-thermal models all resolve
+        against the same numbers.
+
+        Which channel a spec reads is declared by an `ENV_CHANNEL` class
+        attribute — 'ambient' (default) for anything sitting in the car's air,
+        'cooling_inlet' for a radiator or duct fed by a directed air stream. The
+        two are kept separate on purpose: they are different physical quantities
+        and collapsing them would quietly overstate how cool a heated duct runs.
+
+        A spec opts OUT by setting `ambient_is_local = True` — the case where one
+        zone genuinely differs (a battery box that runs cooler than the sidepod).
+        Opting out is a deliberate act and is reported, so a divergent
+        temperature is visible rather than accidental.
+
+        Returns a list of Findings describing what stayed local. Specs with no
+        recognised temperature field are skipped silently, so this is safe to
+        call with whatever the caller happens to have.
+        """
+        out: list = []
+        for sub in sub_ledgers:
+            if sub is None:
+                continue
+            attr = next((a for a in self._ENV_ALIASES if hasattr(sub, a)), None)
+            if attr is None:
+                continue
+            channel = getattr(sub, "ENV_CHANNEL", "ambient")
+            want = self.environment_c(channel)
+            who = type(sub).__name__
+            label = ("cooling-inlet air" if channel == "cooling_inlet"
+                     else "installed ambient")
+            if getattr(sub, "ambient_is_local", False):
+                have = float(getattr(sub, attr))
+                if abs(have - want) > 1e-9:
+                    out.append(Finding(
+                        "ambient-local", Severity.INFO,
+                        f"{who} keeps a local {label} of {have:.0f} °C instead "
+                        f"of the car's {want:.0f} °C. That is a deliberate "
+                        f"override — confirm the zone really does run at a "
+                        f"different temperature.",
+                        subsystems=["cooling"],
+                        detail=dict(spec=who, channel=channel,
+                                    local_c=have, car_c=want)))
+                continue
+            setattr(sub, attr, want)
+        return out
 
     # ---- physics bridge: mass roll-up + CG ---------------------------------- #
     def mass_rollup(self) -> dict:
@@ -218,7 +296,7 @@ class IntegrationLedger:
         d = {k: getattr(self, k) for k in (
             "target_mass_kg", "includes_driver_kg", "accumulator_voltage_v",
             "lv_voltage_v", "lv_supply_capacity_w", "total_cooling_airflow_cms",
-            "chassis_envelope_mm", "upright_design_load_n",
+            "ambient_c", "chassis_envelope_mm", "upright_design_load_n",
             "driveline_torque_limit_nm")}
         d["interfaces"] = {k: v.as_dict() for k, v in self.interfaces.items()}
         return d

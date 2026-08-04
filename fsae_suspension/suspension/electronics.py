@@ -404,7 +404,12 @@ class BoardLedger:
     # rail context for brown-out checks
     rail_nominal_v: float = 5.0
     ecu_brownout_v: float = 4.5
+    # Inherited from IntegrationLedger.ambient_c at check time (the car declares
+    # its installed ambient ONCE). The value here is the resolved one the checks
+    # actually use; set `ambient_is_local = True` to pin this board to its own
+    # number when its zone genuinely runs at a different temperature.
     ambient_c: float = 40.0          # underhood ambient for FSAE EV (hot)
+    ambient_is_local: bool = False   # True = ignore the car-level ambient
     max_trace_temp_c: float = 105.0  # typical FR-4 / connector derate ceiling
     fuse_safety_factor: float = 2.0  # require fusing current >= SF * peak current
     coupling_warn_mm: float = 2.0    # pair-to-aggressor gap that triggers WARN
@@ -691,6 +696,7 @@ class BoardLedger:
             rail_nominal_v=self.rail_nominal_v,
             ecu_brownout_v=self.ecu_brownout_v,
             ambient_c=self.ambient_c,
+            ambient_is_local=self.ambient_is_local,
             max_trace_temp_c=self.max_trace_temp_c,
             fuse_safety_factor=self.fuse_safety_factor,
             coupling_warn_mm=self.coupling_warn_mm,
@@ -708,7 +714,7 @@ class BoardLedger:
         for k, v in (d.get("aggressors") or {}).items():
             bl.set_aggressor(Aggressor.from_dict(v))
         for sk in ("rail_nominal_v", "ecu_brownout_v", "ambient_c",
-                   "max_trace_temp_c", "fuse_safety_factor",
+                   "ambient_is_local", "max_trace_temp_c", "fuse_safety_factor",
                    "coupling_warn_mm", "coupling_fail_mm"):
             if d.get(sk) is not None:
                 setattr(bl, sk, d[sk])
@@ -747,6 +753,34 @@ def worst_case_currents(board: BoardLedger,
         if any_declared:
             currents[trace_name] = total
     return currents
+
+
+def net_currents(board: BoardLedger,
+                 ledger: Optional[IntegrationLedger],
+                 scenario: dict) -> dict:
+    """
+    Roll the per-TRACE scenario currents up to per-NET currents.
+
+    A copper trace and the wire that continues it off the board are the same
+    electrical net carrying the same amps, but the board ledger keys loads by
+    trace name while the harness keys conductors by net. This is the translation
+    between them, so `harness.resolve_currents()` can inherit the load the board
+    was already sized for instead of an electrical member re-typing it into the
+    wire — the exact drift `worst_case_currents` exists to prevent, closed one
+    step further downstream.
+
+    Where several traces share a net, the net carries the WORST of them: that is
+    the current any single conductor continuing that net must survive. Returns
+    {net_name: amps}; nets with no scenario load are absent, never zero.
+    """
+    per_trace = worst_case_currents(board, ledger, scenario)
+    out: dict = {}
+    for trace_name, amps in per_trace.items():
+        tr = board.traces.get(trace_name)
+        if tr is None or not tr.net:
+            continue
+        out[tr.net] = max(out.get(tr.net, 0.0), float(amps))
+    return out
 
 
 def undeclared_loads(ledger: Optional[IntegrationLedger],
@@ -808,6 +842,11 @@ def check_board(board: BoardLedger,
     currents = worst_case_currents(board, ledger, scenario)
     missing = undeclared_loads(ledger, scenario)
     findings = []
+    # Resolve the installed ambient from the car-level ledger BEFORE any check
+    # reads it, so fusing margin and steady-state temperature are computed against
+    # the one declared number rather than this ledger's local default.
+    if ledger is not None:
+        findings += ledger.apply_environment(board)
     # Pass `undeclared` only if this BoardLedger's check_traces actually accepts it.
     # Guards against a partial deploy where a newer check_board meets an older
     # check_traces (or vice-versa) — better to lose the richer MISSING wording than

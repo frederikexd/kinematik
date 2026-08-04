@@ -167,8 +167,9 @@ class BrakeThermalParams:
     fade_per_C: float = 0.0012       # fraction of μ lost per °C above onset
     fade_floor: float = 0.45         # never fade effective μ below this fraction
 
-    # --- ambient ---
+    # --- ambient (inherited from IntegrationLedger.ambient_c) ---
     T_ambient_c: float = 30.0
+    ambient_is_local: bool = False
 
     # --- provenance ---
     calibrated: bool = False
@@ -391,6 +392,7 @@ class TwoNodeParams:
     pad_heat_fraction: float = 0.10  # of the friction heat, share into the pad
     # environment / provenance
     T_ambient_c: float = 30.0
+    ambient_is_local: bool = False
     emissivity: float = 0.55
     enable_radiation: bool = True
     calibrated: bool = False

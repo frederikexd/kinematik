@@ -134,10 +134,15 @@ def heat_load_w(shaft_power_w: float, motor_eff: float = 0.94,
 # =========================================================================== #
 @dataclass
 class LoopSpec:
+    # Radiator air INLET temperature, inherited from IntegrationLedger via the
+    # 'cooling_inlet' channel. Set ambient_is_local = True to pin it locally.
+    ENV_CHANNEL = "cooling_inlet"
+
     heat_w: float = 4000.0
     coolant_key: str = "eg50"
     flow_lpm: float = 12.0
     ambient_c: float = 35.0
+    ambient_is_local: bool = False
     coolant_in_c: float = 50.0
     max_coolant_c: float = 65.0        # motor/inverter inlet limit
     radiator_ua_w_per_k: float = 120.0

@@ -620,6 +620,7 @@ class RotorThermalParams:
     temperature trace.
     """
     ambient_c: float = 35.0
+    ambient_is_local: bool = False
     fric_to_rotor: float = 0.92      # fraction of brake power into the disc (rest -> pad)
 
     # conduction conductances (W/K) between lumped nodes
