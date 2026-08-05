@@ -36,8 +36,6 @@ What is pinned here:
 """
 
 import os
-import re
-import sys
 import types
 
 import pytest

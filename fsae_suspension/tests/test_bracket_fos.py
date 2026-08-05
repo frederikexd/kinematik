@@ -139,3 +139,64 @@ def test_report_is_plain_text_and_honest():
     assert "VERDICT" in txt
     assert "Screening only" in txt          # the honesty caveat must be present
     assert "root bending" in txt
+
+
+# --------------------------------------------------------------------------- #
+#  Net section and tear-out geometry (Aug 2026)
+#
+#  Both of these were screening unconservatively. A screening tool that feeds a
+#  1.5 FoS gate may be wrong, but it must only ever be wrong in the safe
+#  direction — these pin that.
+# --------------------------------------------------------------------------- #
+def test_net_section_is_checked_at_the_bolt_hole():
+    """A hole removes material from the load path; the gross section hides it."""
+    mat = MATERIALS["Steel 1018 CR (cold-rolled)"]
+    br = Bracket(name="n", material="Steel 1018 CR (cold-rolled)",
+                 width_mm=30.0, thickness_mm=4.0, P_N=9000.0, lever_arm_mm=0.0,
+                 hole_dia_mm=8.4, load_is_shear=False, n_bolts=1)
+    r = screen_bracket(br)
+    net = next(m for m in r.modes if "net section" in m.mode)
+    gross = next(m for m in r.modes if m.mode == "direct tension (section)")
+    # w/(w-d) = 30/21.6 = 1.389x the gross stress
+    assert net.stress_MPa == pytest.approx(9000.0 / ((30.0 - 8.4) * 4.0), rel=1e-9)
+    assert net.stress_MPa > gross.stress_MPa
+    assert net.fos == pytest.approx(mat.yield_MPa / net.stress_MPa, rel=1e-9)
+
+
+def test_tearout_planes_start_at_the_hole_edge_not_its_centre():
+    """Material inside the hole cannot resist tear-out."""
+    mat = MATERIALS["Steel 1018 CR (cold-rolled)"]
+    d, e, t, P = 10.0, 8.0, 4.0, 6000.0
+    br = Bracket(name="t", material="Steel 1018 CR (cold-rolled)",
+                 width_mm=30.0, thickness_mm=t, P_N=P, lever_arm_mm=0.0,
+                 hole_dia_mm=d, edge_dist_mm=e, load_is_shear=False, n_bolts=1)
+    r = screen_bracket(br)
+    tear = next(m for m in r.modes if "tear-out" in m.mode)
+    assert tear.stress_MPa == pytest.approx(P / (2.0 * (e - d / 2.0) * t), rel=1e-9)
+    # The old form measured from the hole centre and was 2.67x optimistic here.
+    assert tear.stress_MPa > P / (2.0 * e * t)
+    # And on this geometry the correction is the difference between a PASS and
+    # a FAIL against the 1.5 gate — which is the whole point of fixing it.
+    assert tear.fos == pytest.approx(mat.shear_yield_MPa / tear.stress_MPa, rel=1e-9)
+    assert tear.fos < 1.5
+    assert r.governing_mode == "hole tear-out (shear)"
+    assert r.verdict == "FAIL"
+
+
+def test_hole_breaking_through_the_free_edge_is_flagged_not_silently_meshed():
+    """e <= d/2 means there is no tear-out path at all."""
+    br = Bracket(name="b", material="Steel 1018 CR (cold-rolled)",
+                 width_mm=30.0, thickness_mm=4.0, P_N=1000.0, lever_arm_mm=0.0,
+                 hole_dia_mm=12.0, edge_dist_mm=5.0, load_is_shear=False)
+    r = screen_bracket(br)
+    assert not any("tear-out" in m.mode for m in r.modes)
+    assert any("breaks out" in f.message for f in r.findings)
+
+
+def test_hole_wider_than_the_tab_is_flagged():
+    br = Bracket(name="w", material="Steel 1018 CR (cold-rolled)",
+                 width_mm=8.0, thickness_mm=4.0, P_N=1000.0, lever_arm_mm=0.0,
+                 hole_dia_mm=10.0, load_is_shear=False)
+    r = screen_bracket(br)
+    assert not any("net section" in m.mode for m in r.modes)
+    assert any("no net section" in f.message for f in r.findings)

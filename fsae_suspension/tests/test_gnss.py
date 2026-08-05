@@ -16,7 +16,6 @@ unmeasured mounting offset is MISSING and does not quietly become zero. A spec
 sheet that prints "velocity accuracy" as a heading has not stated one.
 """
 
-import math
 
 import pytest
 

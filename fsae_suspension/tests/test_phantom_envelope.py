@@ -19,7 +19,6 @@ Run:  python -m pytest tests/test_phantom_envelope.py
       (or standalone: python tests/test_phantom_envelope.py)
 """
 import json
-import math
 import sys, os
 
 import numpy as np
@@ -34,7 +33,7 @@ from suspension.ghost_topology import (
 )
 from suspension.phantom_envelope import (
     Capsule, _seg_point_distance, _seg_point_distance_batch,
-    PhantomEnvelope, carve_from_states, carve_rigid_envelope,
+    carve_from_states, carve_rigid_envelope,
     carve_ghost_envelope, envelope_delta, radii_from_sections,
     rigid_sweep_states, render_envelope_md,
 )

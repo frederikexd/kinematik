@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from suspension.transient import run_maneuver, TransientResult
 from suspension.thermic_patch import (
     run_thermic_patch, parabolic_mu_scale, verdict_sentence,
-    default_thermal_params, default_ladder_params, LadderParams, ThermicResult)
+    default_thermal_params, LadderParams)
 
 _PASS, _FAIL = [], []
 

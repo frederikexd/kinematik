@@ -16,6 +16,7 @@ genuinely unreachable while any review question is open.
 """
 
 import math
+import pathlib
 
 import pytest
 
@@ -706,8 +707,26 @@ def test_provenance_separates_physics_from_estimate():
 
 
 def test_module_imports_without_streamlit_or_numpy():
-    """Pure model layer — must stay headless and cheap to import."""
-    import importlib
+    """Pure model layer — must stay headless and cheap to import.
+
+    Checked in a FRESH interpreter, not against this session's sys.modules.
+    The old form asserted `"streamlit" not in sys.modules` inside the shared
+    pytest process, so it only ever passed on machines where streamlit was not
+    installed at all — i.e. it silently inverted into a no-op on every real
+    developer machine, and hard-failed as soon as any earlier test in the
+    session imported streamlit. What we actually care about is whether
+    importing this module *pulls streamlit in*, which only a clean process can
+    answer.
+    """
+    import subprocess
     import sys
-    assert "streamlit" not in sys.modules
-    importlib.reload(dp)
+
+    probe = (
+        "import sys; import suspension.daq_plan; "
+        "assert 'streamlit' not in sys.modules, 'daq_plan pulled in streamlit'; "
+        "assert 'numpy' not in sys.modules, 'daq_plan pulled in numpy'"
+    )
+    proc = subprocess.run([sys.executable, "-c", probe],
+                          capture_output=True, text=True,
+                          cwd=str(pathlib.Path(__file__).resolve().parents[1]))
+    assert proc.returncode == 0, proc.stderr.strip()

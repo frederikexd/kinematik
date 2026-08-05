@@ -9,7 +9,6 @@
 #      refusal is the feature, so it gets a test that fails loudly if some
 #      future change makes the tool always produce a ranking.
 # ============================================================================
-import numpy as np
 import pytest
 
 from suspension.dynamics import VehicleParams, VehicleDynamics

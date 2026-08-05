@@ -4,7 +4,6 @@
 #  a blocking contradiction, the reconciled-vehicle handoff, and the paper-vs-
 #  real points delta that makes a heavier assembled car actually score less.
 # ============================================================================
-import numpy as np
 import pytest
 
 from suspension.interfaces import (

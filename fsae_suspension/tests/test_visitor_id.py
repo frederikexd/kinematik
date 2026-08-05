@@ -55,7 +55,7 @@ def test_fingerprint_matches_old_recipe():
     st = _FakeSt(ip=ip, ua=ua)
     vid, kind = resolve_visitor_id(st)
     expected = "fp-" + hashlib.sha256(
-        f"{ip}|{ua[:80]}".encode("utf-8")).hexdigest()[:24]
+        f"{ip}|{ua[:80]}".encode()).hexdigest()[:24]
     assert vid == expected                # old fp- ids keep matching
     assert kind == "ip+ua fingerprint"
 

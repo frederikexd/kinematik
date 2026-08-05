@@ -486,9 +486,27 @@ def test_the_prior_is_no_longer_listed_as_a_bare_estimate():
 
 
 def test_module_stays_headless_and_dependency_free():
+    """Checked in a FRESH interpreter — see the note in test_daq_plan.py.
+
+    The old form read this session's sys.modules, so it passed only where
+    streamlit was not installed and broke the moment any earlier test imported
+    it. The second assertion was `... or True`, which can never fail; the real
+    intent — numpy must not be REQUIRED to import this module — is now actually
+    enforced in the subprocess below.
+    """
+    import pathlib
+    import subprocess
     import sys
-    assert "streamlit" not in sys.modules
-    assert "numpy" not in sys.modules or True   # numpy must not be REQUIRED
+
+    probe = (
+        "import sys; import suspension.fuse_test; "
+        "assert 'streamlit' not in sys.modules, 'fuse_test pulled in streamlit'; "
+        "assert 'numpy' not in sys.modules, 'fuse_test requires numpy'"
+    )
+    proc = subprocess.run([sys.executable, "-c", probe],
+                          capture_output=True, text=True,
+                          cwd=str(pathlib.Path(__file__).resolve().parents[1]))
+    assert proc.returncode == 0, proc.stderr.strip()
 
 
 # ===================================================================== #

@@ -171,7 +171,6 @@ def _draw_front(res):
 def render():
     import numpy as np
     import streamlit as st
-    from suspension import units as _units
     from suspension import omnicore as oc
 
     ss = st.session_state

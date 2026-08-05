@@ -27,7 +27,25 @@ def _restore_cwd_after_test():
 
 def _fresh_module(tmp_cwd, monkeypatch=None):
     """Import a clean copy of analytics with cwd pointed at a temp dir so the
-    local buffer is isolated per test."""
+    local buffer is isolated per test.
+
+    The reload alone is NOT enough isolation. `analytics._SINK` owns a daemon
+    thread with its own queue, and `importlib.reload` builds a new sink while
+    leaving the old thread alive holding whatever it had not yet written. That
+    stale sink then flushes into the next test's buffer, which shows up as an
+    extra `session_start` and an assertion failure in a test that passes fine
+    on its own. It is order-dependent, so it stayed hidden until the suite
+    happened to run these modules adjacently.
+
+    Drain and stop the outgoing sink first.
+    """
+    import suspension.analytics as _prev
+    try:
+        _prev._SINK.flush_blocking(2.0)
+        _prev._SINK._stop.set()
+    except Exception:
+        pass                      # first call in the session: nothing to stop
+
     os.chdir(tmp_cwd)
     import suspension.analytics as ax
     importlib.reload(ax)

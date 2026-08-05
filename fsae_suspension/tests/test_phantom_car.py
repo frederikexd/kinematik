@@ -24,7 +24,7 @@ import pytest
 from suspension.interfaces import SubsystemInterface, blank_ledger
 from suspension.proof_engine import build_uncertainty_ledger
 from suspension.phantom_car import (
-    MarginCharter, MarginDeclaration, audit, car_quantities, create_charter,
+    MarginDeclaration, audit, car_quantities, create_charter,
     demo_declarations, phi, render_docket_md, seed_declarations,
     z_from_percentile, ALIGN_TOL_SIGMA, NAKED_SIGMA, TWO_CARS_SIGMA,
 )

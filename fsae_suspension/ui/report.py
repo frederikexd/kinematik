@@ -21,13 +21,14 @@ from __future__ import annotations
 import os
 import tempfile
 
-try:
-    import streamlit as st
-except Exception:
-    st = None
+#: Bound by render(). Per ui/__init__.py, streamlit is NOT imported at
+#: module scope — that keeps this file importable headless and cheap,
+#: and it is what lets the reachability test verify the contract in a
+#: fresh interpreter.
+st = None
 
 from suspension.report import (
-    CalculationRecord, OutputRow, build_report, suggested_filename,
+    CalculationRecord, build_report, suggested_filename,
 )
 from suspension import drive_export as dx
 from suspension import drive_oauth as ox
@@ -48,8 +49,8 @@ def _read_credential(name):
 def render(record: CalculationRecord | None = None,
            default_team: str = "",
            default_author: str = ""):
-    if st is None:
-        raise RuntimeError("streamlit not available")
+    global st
+    import streamlit as st          # noqa: PLW0603 - see note above
     ss = st.session_state
 
     st.subheader("📄 Calculation Report — stamped sign-off PDF")

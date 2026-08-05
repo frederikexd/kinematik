@@ -90,12 +90,12 @@ def main():
           f"({mount[0]:.0f}, {mount[1]:.0f}, {mount[2]:.0f}), "
           f"probe radius {probe_r:.0f} mm")
     print(f"  vs RIGID sweep    : "
-          + ("VIOLATES by %.2f mm" % abs(q_rigid.clearance_mm) if q_rigid.violates
-             else "clears by %.2f mm" % q_rigid.clearance_mm)
+          + (f"VIOLATES by {abs(q_rigid.clearance_mm):.2f} mm" if q_rigid.violates
+             else f"clears by {q_rigid.clearance_mm:.2f} mm")
           + f"  (nearest {q_rigid.nearest_member})")
     print(f"  vs LOADED envelope: "
-          + ("VIOLATES by %.2f mm" % abs(q_comp.clearance_mm) if q_comp.violates
-             else "clears by %.2f mm" % q_comp.clearance_mm)
+          + (f"VIOLATES by {abs(q_comp.clearance_mm):.2f} mm" if q_comp.violates
+             else f"clears by {q_comp.clearance_mm:.2f} mm")
           + f"  (nearest {q_comp.nearest_member}"
           + (f", t = {q_comp.nearest_t_s*1000:.0f} ms)" if q_comp.nearest_t_s == q_comp.nearest_t_s else ")"))
 

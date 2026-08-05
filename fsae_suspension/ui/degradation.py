@@ -15,12 +15,12 @@ which mechanism actually dominates rather than assuming the dramatic one.
 
 from __future__ import annotations
 
-import numpy as np
 
-try:
-    import streamlit as st
-except Exception:
-    st = None
+#: Bound by render(). Per ui/__init__.py, streamlit is NOT imported at
+#: module scope — that keeps this file importable headless and cheap,
+#: and it is what lets the reachability test verify the contract in a
+#: fresh interpreter.
+st = None
 
 from suspension.kinematics import Hardpoints
 from suspension.degradation import (
@@ -31,8 +31,8 @@ from suspension.degradation import (
 
 
 def render(base_hp: Hardpoints | None = None, vehicle=None):
-    if st is None:
-        raise RuntimeError("streamlit not available")
+    global st
+    import streamlit as st          # noqa: PLW0603 - see note above
     ss = st.session_state
     hp = base_hp or Hardpoints.default()
 

@@ -824,7 +824,6 @@ def _ev_log(n=3000, spike_s=0.4, spike_kw=86.0, blip_kw=90.0):
 
 
 def test_a_real_violation_is_caught_and_priced():
-    from suspension import rules_fsae as rf
     run = ex.run_express("are we legal?", [("run.csv", _ev_log())])
     body = next(a for a in run.artifacts
                 if a.path.endswith("measured_check.md")).data.decode()

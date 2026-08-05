@@ -19,7 +19,6 @@ including the never-raise contract.
 Run:  python -m pytest tests/test_simulforge.py
       (or standalone: python tests/test_simulforge.py)
 """
-import math
 import sys, os
 
 import numpy as np

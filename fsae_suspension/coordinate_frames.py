@@ -599,7 +599,13 @@ def render(get_store=None, points_provider=None):
         # next cohort inherits WHY, not just WHAT.
         if get_store is not None:
             try:
-                import project as project_mod
+                # Was `import project`, which resolved to the STALE root-level
+                # project.py (41 KB) rather than the canonical
+                # suspension/project.py (57 KB) purely because cwd is on
+                # sys.path. Same Decision fields today, but the two copies have
+                # already diverged and the store this writes to lives in the
+                # package version.
+                from suspension import project as project_mod
                 store = get_store()
                 store.add_decision(project_mod.Decision(
                     team="integration",

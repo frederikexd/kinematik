@@ -17,7 +17,6 @@ jig money buys.
 Run:  python demo_morphmesh.py        (about a minute on a laptop)
 """
 
-import numpy as np
 
 from suspension.kinematics import Hardpoints
 from suspension.compliance import CompliantCorner

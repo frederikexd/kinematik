@@ -18,7 +18,7 @@ from suspension.hardpoint_import import (
 #  Fixtures: the KinematiK default corner expressed as an ISO 8855 / metres /
 #  OptimumK-vocabulary export (x fwd, y left → our right-side corner has -y)
 # --------------------------------------------------------------------------- #
-OPTIMUMK_CSV = """Point Name,X (m),Y (m),Z (m)
+OPTIMUMK_CSV = b"""Point Name,X (m),Y (m),Z (m)
 Upper Wishbone Front Pivot FL,0.100,-0.240,0.2808
 Upper Wishbone Rear Pivot FL,-0.130,-0.240,0.2992
 Lower Wishbone Front Pivot FL,0.110,-0.200,0.1225
@@ -31,7 +31,7 @@ Wheel Center FL,0.0,-0.600,0.228
 Contact Patch FL,0.0,-0.605,0.0
 Pushrod Outboard FL,0.005,-0.408,0.120
 Mystery Bracket FL,0.1,0.2,0.3
-""".encode()
+"""
 
 EXPECTED = {
     "upper_front_inner": (-100.0, 240.0, 280.8),
@@ -61,9 +61,9 @@ def test_parse_csv_with_headers_and_unit_hint():
 
 
 def test_parse_headerless_rows_and_semicolon_delimiter():
-    raw = ("Upper wishbone front inboard;-100;240;280.8\n"
-           "junk text row with no numbers\n"
-           "Lower wishbone front inboard;-110;200;122.5\n").encode()
+    raw = (b"Upper wishbone front inboard;-100;240;280.8\n"
+           b"junk text row with no numbers\n"
+           b"Lower wishbone front inboard;-110;200;122.5\n")
     pts, hint = parse_tabular(raw, "points.csv")
     assert [p.name for p in pts] == ["Upper wishbone front inboard",
                                      "Lower wishbone front inboard"]
@@ -86,8 +86,8 @@ def test_parse_xlsx_multisheet(tmp_path):
 
 
 def test_parse_columns_in_any_order():
-    raw = ("Z,Point Name,X,Y\n"
-           "228,Wheel centre,0,600\n").encode()
+    raw = (b"Z,Point Name,X,Y\n"
+           b"228,Wheel centre,0,600\n")
     pts, _ = parse_tabular(raw, "odd.csv")
     assert pts[0].coords == (0.0, 600.0, 228.0)
 

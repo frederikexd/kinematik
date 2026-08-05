@@ -17,7 +17,6 @@ count raises rather than defaulting, and a poll rate above the link's ceiling
 is a FAIL rather than a suggestion.
 """
 
-import math
 
 import pytest
 

@@ -30,6 +30,7 @@ What's guarded:
 
 import ast
 import io
+import pathlib
 import os
 import sys
 import textwrap
@@ -39,8 +40,13 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_APPS = [os.path.join(_ROOT, "streamlit_app.py"),
-         os.path.join(_ROOT, "suspension", "streamlit_app.py")]
+# CONSOLIDATED Aug 2026. The repo used to keep streamlit_app.py in two places
+# and pin them against each other here. There is now ONE app file; the package
+# copy was imported by nothing, exposed by no console script, and referenced in
+# no doc, so the duplication existed only to be policed. `_APPS` stays as a
+# single-element list so the parametrisation below keeps its shape rather than
+# being unpicked line by line.
+_APPS = [os.path.join(_ROOT, "streamlit_app.py")]
 
 _VIEW_HEAD = 'elif _view == "ANSYS run-log consolidation":'
 
@@ -50,7 +56,7 @@ _VIEW_HEAD = 'elif _view == "ANSYS run-log consolidation":'
 # --------------------------------------------------------------------------- #
 def _view_source(app_path):
     """The view's body, dedented and turned into a standalone `if True:` block."""
-    with io.open(app_path, encoding="utf-8") as fh:
+    with open(app_path, encoding="utf-8") as fh:
         lines = fh.readlines()
     start = next(i for i, ln in enumerate(lines) if _VIEW_HEAD in ln)
     indent = len(lines[start]) - len(lines[start].lstrip())
@@ -206,10 +212,17 @@ def _sample_csv() -> bytes:
 
 
 def _run_view(answers, app_path=_APPS[0]):
-    """Exec the real view body against a mock st; return the mock."""
+    """Call the real view against a mock st; return the mock.
+
+    Was: scrape the view body out of streamlit_app.py by line indentation and
+    `exec` the text. The view now lives in ui/run_log.py, so the test can just
+    CALL it — which is the actual prize of the extraction. The old harness
+    could only ever test text it had guessed the boundaries of; this one tests
+    the function the app runs.
+    """
     st = _MockSt(answers)
-    ns = {"st": st, "_view": "ANSYS run-log consolidation", "_aero_area": 1.0}
-    exec(compile(_view_source(app_path), "<view>", "exec"), ns)  # noqa: S102
+    from ui import run_log as _run_log_mod
+    _run_log_mod.render(st, aero_area=1.0)
     return st
 
 
@@ -225,9 +238,9 @@ def _table_with(mock, *columns):
 # --------------------------------------------------------------------------- #
 #  Registration — an unreachable view is not a feature
 # --------------------------------------------------------------------------- #
-@pytest.mark.parametrize("app_path", _APPS, ids=["root", "package"])
+@pytest.mark.parametrize("app_path", _APPS, ids=["root"])
 def test_view_is_registered_in_the_aero_feature_menu(app_path):
-    with io.open(app_path, encoding="utf-8") as fh:
+    with open(app_path, encoding="utf-8") as fh:
         src = fh.read()
     menu = src.split('feature_menu("aerodynamics"', 1)[1][:1200]
     assert '"ANSYS run-log consolidation"' in menu, (
@@ -235,14 +248,29 @@ def test_view_is_registered_in_the_aero_feature_menu(app_path):
     assert "Screen the Fluent run sheet" in menu, "no menu description"
 
 
-@pytest.mark.parametrize("app_path", _APPS, ids=["root", "package"])
-def test_view_body_parses_standalone(app_path):
-    ast.parse(_view_source(app_path))
+def test_view_body_parses_standalone():
+    """The extracted module is importable headless — no streamlit at import."""
+    import importlib
+    ast.parse(pathlib.Path(_ROOT, "ui", "run_log.py").read_text(encoding="utf-8"))
+    mod = importlib.import_module("ui.run_log")
+    assert callable(mod.render), "ui/run_log.py must expose render()"
 
 
-@pytest.mark.parametrize("app_path", _APPS, ids=["root", "package"])
-def test_both_app_copies_carry_the_same_view(app_path):
-    assert _view_source(app_path) == _view_source(_APPS[0])
+def test_the_shell_delegates_and_does_not_keep_a_copy():
+    """The monolith must hand off, not hold a second copy of the view.
+
+    Replaces test_both_app_copies_carry_the_same_view, which pinned two copies
+    of streamlit_app.py against each other. There is now one app file and the
+    view lives outside it; the risk that remains is someone pasting the body
+    back in beside the delegation.
+    """
+    src = pathlib.Path(_ROOT, "streamlit_app.py").read_text(encoding="utf-8")
+    assert "from ui import run_log" in src, (
+        "the shell no longer delegates to ui/run_log.py")
+    assert "_rl_missing" not in src, (
+        "run-log view internals are back in streamlit_app.py - the extraction "
+        "has been partially reverted, so the shell and ui/run_log.py can now "
+        "drift apart")
 
 
 # --------------------------------------------------------------------------- #

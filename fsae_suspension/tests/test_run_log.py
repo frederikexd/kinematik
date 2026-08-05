@@ -22,21 +22,17 @@ happens to produce a number:
 
 import csv
 import io
-import math
 import os
-import tempfile
 
 import pytest
 
 from suspension.aero import run_log as rl
 from suspension.aero.run_log import (
-    ScreenConfig, Severity, WallTreatment, RunRow, CaseKey,
-    parse_run_log, parse_rows_from_grid, screen, consolidate, process,
+    ScreenConfig, Severity, WallTreatment, parse_run_log, parse_rows_from_grid, screen, consolidate, process,
     to_coeff_results, write_workbook, write_csv_bundle, consolidated_csv,
     wall_treatment_for, dynamic_pressure, implied_reference_area,
     modified_z_scores, LOG_LAW_INTERSECTION_YPLUS,
-    CANONICAL_FIELDS, SETUP_FIELDS, Discretisation,
-    discretisation_of, setup_signature,
+    CANONICAL_FIELDS, SETUP_FIELDS,
 )
 
 

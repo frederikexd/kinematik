@@ -31,7 +31,7 @@ from suspension import loadpath as lp
 from suspension.flex import MATERIALS
 from suspension.ghost_topology import (
     MemberSection, uniform_sections, TireSensitivity, GhostCorner,
-    GhostThresholds, ghost_audit, ghost_audit_transient, render_ghost_md,
+    ghost_audit, ghost_audit_transient, render_ghost_md,
     _rc_height_mm, VERDICTS,
 )
 

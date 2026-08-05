@@ -10,7 +10,6 @@ from suspension.arch_synth import (
     ArchitectureProblem, PointsModel, MassModel,
     fast_non_dominated_sort, crowding_distance, _dominates,
     synthesize, compare_architectures, tradeoff_table, evaluate_kinematics,
-    default_discrete_space, default_continuous_space,
 )
 from suspension.kinematics import Hardpoints
 

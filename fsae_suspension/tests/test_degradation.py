@@ -10,8 +10,8 @@ import pytest
 from suspension.kinematics import Hardpoints
 from suspension.degradation import (
     ThermalRamp, ThermalExpansionModel, TyreThermalModel, TyreThermalRamp,
-    DegradationSolver, DegradationConfig, tolerance_sensitivity,
-    THERMAL_ALPHA, PROVENANCE, _corner_metrics, _corner_curves,
+    DegradationSolver, tolerance_sensitivity,
+    THERMAL_ALPHA, PROVENANCE,
 )
 
 

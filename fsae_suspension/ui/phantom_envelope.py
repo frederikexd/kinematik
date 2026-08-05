@@ -114,7 +114,6 @@ def render():
     from suspension import phantom_envelope as pe
     from suspension import transient as tr
     from suspension.compliance import CompliantCorner
-    from suspension import loadpath as lp
 
     ss = st.session_state
 
@@ -248,6 +247,11 @@ def render():
 
 
 def _show_results(st, np, pe, rigid_env, comp_env, delta, corner):
+    # `_units` is imported in render()'s local scope, which does NOT reach here.
+    # Without this line the clearance-query block below raises NameError the
+    # moment a user opens the Phantom Envelope tab.
+    from suspension import units as _units
+
     # ---------------- 4 · the headline --------------------------------------
     grew = delta.max_outward_growth_mm > 0.05
     st.markdown(f"## {'🟠' if grew else '🟢'} Phantom Envelope — corner {corner}")

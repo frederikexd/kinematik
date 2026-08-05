@@ -13,7 +13,34 @@ never added to the re-export table.
 import importlib
 
 
+
 import suspension
+
+
+# ---------------------------------------------------------------------------
+#  Known gaps — declared, not tolerated.
+#
+#  A module listed here is registered in suspension/__init__.py but has no file
+#  behind it. The guard below still FAILS on any *undeclared* gap, so this
+#  cannot become a place where drift hides. Every entry needs an owner and a
+#  removal condition.
+#
+#  Currently empty, and it should stay that way. `sim_handoff` lived here
+#  briefly in Aug 2026 while its module was missing from the tree; the module
+#  was rebuilt against tests/test_sim_handoff.py and the entry removed, which
+#  is exactly the lifecycle this registry is for. Adding an entry is a
+#  last resort, never a way to make CI green.
+# ---------------------------------------------------------------------------
+KNOWN_MISSING_SUBMODULES: dict = {}
+
+
+def test_known_gaps_are_still_gaps():
+    """If a gap gets fixed, this fails and forces the registry to shrink."""
+    stale = [name for name in KNOWN_MISSING_SUBMODULES
+             if importlib.util.find_spec(f"suspension.{name}") is not None]
+    assert not stale, (
+        "these modules now exist — remove them from KNOWN_MISSING_SUBMODULES:\n  "
+        + "\n  ".join(stale))
 
 
 def test_every_from_entry_resolves():
@@ -33,6 +60,8 @@ def test_every_from_entry_resolves():
 def test_every_submodule_imports():
     bad = []
     for submod in suspension._SUBMODULES:
+        if submod in KNOWN_MISSING_SUBMODULES:
+            continue                       # declared above, tracked, not hidden
         try:
             importlib.import_module(f"suspension.{submod}")
         except Exception as exc:

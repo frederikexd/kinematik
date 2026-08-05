@@ -15,13 +15,14 @@ over a broken budget. Only a buildable assembly gets a worthwhileness delta.
 
 from __future__ import annotations
 
-try:
-    import streamlit as st
-except Exception:
-    st = None
+#: Bound by render(). Per ui/__init__.py, streamlit is NOT imported at
+#: module scope — that keeps this file importable headless and cheap,
+#: and it is what lets the reachability test verify the contract in a
+#: fresh interpreter.
+st = None
 
 from suspension.interfaces import IntegrationLedger, Severity
-from suspension.worthwhile import assess, Assumption, PROVENANCE
+from suspension.worthwhile import assess, PROVENANCE
 from suspension.dynamics import VehicleParams
 
 
@@ -35,8 +36,8 @@ def render(ledger: IntegrationLedger | None = None,
            assumptions: list | None = None,
            paper_baseline: VehicleParams | None = None,
            front_kin=None, rear_kin=None, tire=None):
-    if st is None:
-        raise RuntimeError("streamlit not available")
+    global st
+    import streamlit as st          # noqa: PLW0603 - see note above
     ss = st.session_state
 
     st.subheader("🏁 Worthwhile When Assembled — the go / no-go verdict")

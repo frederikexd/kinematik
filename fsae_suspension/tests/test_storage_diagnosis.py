@@ -54,7 +54,7 @@ class _Backend:
 # --------------------------------------------------------------------------- #
 def test_expiry_is_read_from_the_exp_claim():
     got = _jwt_expiry(_key(exp_offset_days=10))
-    expected = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=10)
+    expected = dt.datetime.now(dt.UTC) + dt.timedelta(days=10)
     assert abs((got - expected).total_seconds()) < 120
 
 

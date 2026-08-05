@@ -6,7 +6,6 @@
 #  upload can't run in CI.
 # ============================================================================
 import os
-import io
 import json
 import tempfile
 import pytest
@@ -148,6 +147,11 @@ def test_export_missing_local_file_fails_cleanly():
 
 def test_export_without_creds_returns_actionable_reason(monkeypatch, tmp_path):
     monkeypatch.delenv("GOOGLE_SERVICE_ACCOUNT_JSON", raising=False)
+    # This test is about the MISSING-CREDENTIAL branch, not the missing-library
+    # branch. Without pinning libraries_present, an environment lacking the
+    # optional `drive` extra short-circuits earlier and returns the
+    # "libraries not installed" reason, failing the assert for the wrong reason.
+    monkeypatch.setattr(dx, "libraries_present", lambda: True)
     pdf = tmp_path / "r.pdf"
     pdf.write_bytes(b"%PDF-1.4\n%%EOF\n")
     r = dx.export_report(str(pdf), "r.pdf", team="Suspension",
@@ -223,7 +227,12 @@ def test_upload_via_mock_service_returns_id_and_link(tmp_path, monkeypatch):
     monkeypatch.setattr(dx, "libraries_present", lambda: True)
     monkeypatch.setattr(dx, "service_account_info",
                         lambda read_credential=None: {"type": "service_account"})
-    import googleapiclient.http as gh
+    # googleapiclient is the optional `drive` extra. Without this skip the test
+    # hard-fails on any checkout that did not install it, which trains everyone
+    # to ignore a red suite.
+    gh = pytest.importorskip(
+        "googleapiclient.http",
+        reason="optional 'drive' extra not installed (pip install kinematik[drive])")
     monkeypatch.setattr(gh, "MediaFileUpload",
                         lambda *a, **k: object())
 

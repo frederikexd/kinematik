@@ -30,7 +30,7 @@ there). Every solver returns plain numpy time-series arrays sized for direct
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 
@@ -83,8 +83,8 @@ def total_mass_from_ledger(ledger=None, *, driver_kg: float = 0.0,
     return (total if total > 1e-6 else float(fallback_kg)) + float(driver_kg)
 
 
-def publish_to_ledger(ledger, *, drive: "DrivetrainResult" = None,
-                      thermal: "ThermalResult" = None,
+def publish_to_ledger(ledger, *, drive: DrivetrainResult = None,
+                      thermal: ThermalResult = None,
                       updated_by: str = "powertrain.engine"):
     """Write headline results back into the live IntegrationLedger in place
     (powertrain: peak torque/power; cooling: heat rejected). No-op on plain
@@ -140,7 +140,7 @@ class MotorCurve:
 
     @classmethod
     def from_peak(cls, peak_torque_nm: float, peak_power_kw: float,
-                  redline_rpm: float, **kw) -> "MotorCurve":
+                  redline_rpm: float, **kw) -> MotorCurve:
         # Base speed where constant-torque meets constant-power: ω_b = P/T.
         w_base = (peak_power_kw * 1e3) / peak_torque_nm
         rpm_base = w_base * 60.0 / (2.0 * np.pi)
@@ -175,7 +175,7 @@ class DrivetrainParams:
     rot_inertia_factor: float = 1.05   # m_eff = factor·m (wheels/rotor spin-up)
 
     def with_ledger_mass(self, ledger, *, driver_kg: float = 68.0
-                         ) -> "DrivetrainParams":
+                         ) -> DrivetrainParams:
         """Return a copy whose mass is the live INTEGRATION-ledger total."""
         from dataclasses import replace
         return replace(self, mass_kg=total_mass_from_ledger(
@@ -341,7 +341,7 @@ class CoolantProps:
     k: float = 0.42          # W/(m·K)
 
     @classmethod
-    def water(cls) -> "CoolantProps":
+    def water(cls) -> CoolantProps:
         return cls(rho=983.0, cp=4185.0, mu=4.7e-4, k=0.654)  # ~60 °C
 
 
@@ -401,7 +401,7 @@ class YBranch:
         return (self.k0_branch + area_k) * (self.angle_deg / 45.0) ** 0.5
 
     def audit(self, q_in_m3s: float, branch_frac: float,
-              fl: CoolantProps) -> "JunctionAudit":
+              fl: CoolantProps) -> JunctionAudit:
         a_in = np.pi * self.d_in_m ** 2 / 4.0
         a_b = np.pi * self.d_branch_m ** 2 / 4.0
         q_b = q_in_m3s * float(np.clip(branch_frac, 0.0, 1.0))

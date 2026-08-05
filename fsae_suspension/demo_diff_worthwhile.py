@@ -8,7 +8,6 @@
 #
 #  Run:  python demo_diff_worthwhile.py
 # ============================================================================
-from dataclasses import replace
 
 from suspension.dynamics import VehicleParams
 from suspension import lapsim

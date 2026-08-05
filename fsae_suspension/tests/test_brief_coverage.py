@@ -40,14 +40,19 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from suspension.brief_coverage import (  # noqa: E402
-    BriefingTables, CoverageGap, GAP_KINDS, PROFICIENCIES,
+    BriefingTables, GAP_KINDS, PROFICIENCIES,
     audit, distinctive_tokens, effective_role_goals, extract_tables,
     load_tables_from_app, reachable_tools, resolve_feature_lines,
 )
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_APPS = [os.path.join(_ROOT, "streamlit_app.py"),
-         os.path.join(_ROOT, "suspension", "streamlit_app.py")]
+# CONSOLIDATED Aug 2026. The repo used to keep streamlit_app.py in two places
+# and pin them against each other here. There is now ONE app file; the package
+# copy was imported by nothing, exposed by no console script, and referenced in
+# no doc, so the duplication existed only to be policed. `_APPS` stays as a
+# single-element list so the parametrisation below keeps its shape rather than
+# being unpicked line by line.
+_APPS = [os.path.join(_ROOT, "streamlit_app.py")]
 
 
 @pytest.fixture(scope="module")
@@ -58,7 +63,7 @@ def tables():
 # --------------------------------------------------------------------------- #
 #  The headline contract
 # --------------------------------------------------------------------------- #
-@pytest.mark.parametrize("app_path", _APPS, ids=["root", "package"])
+@pytest.mark.parametrize("app_path", _APPS, ids=["root"])
 def test_briefing_coverage_has_no_gaps(app_path):
     """
     The whole point. Every tool reachable, briefed, glossed, tailored for every
@@ -421,7 +426,7 @@ def test_extract_tables_survives_a_module_without_them():
     assert t.tab_meta == {} and t.tool_ids == set()
 
 
-@pytest.mark.parametrize("app_path", _APPS, ids=["root", "package"])
+@pytest.mark.parametrize("app_path", _APPS, ids=["root"])
 def test_both_app_copies_carry_identical_briefing_tables(app_path, tables):
     """
     The two streamlit_app.py copies drift. A coverage fix applied to one and not

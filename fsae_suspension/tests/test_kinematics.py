@@ -114,7 +114,7 @@ def test_validation_rejects_2d_point():
     hp.upper_outer = _np.array([1.0, 2.0])
     try:
         SuspensionKinematics(hp)
-        assert False, "should reject 2D point"
+        raise AssertionError("should reject 2D point")
     except ValueError:
         pass
 
@@ -124,7 +124,7 @@ def test_validation_rejects_coincident_balljoints():
     hp.upper_outer = hp.lower_outer.copy()
     try:
         SuspensionKinematics(hp)
-        assert False, "should reject coincident ball joints"
+        raise AssertionError("should reject coincident ball joints")
     except ValueError:
         pass
 
@@ -135,7 +135,7 @@ def test_validation_rejects_nonfinite():
     hp.wheel_center = _np.array([_np.nan, 0.0, 0.0])
     try:
         SuspensionKinematics(hp)
-        assert False, "should reject non-finite"
+        raise AssertionError("should reject non-finite")
     except ValueError:
         pass
 

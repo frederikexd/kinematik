@@ -27,7 +27,6 @@ import shutil
 import openpyxl
 import pytest
 
-from suspension.interfaces import Severity
 from suspension import power_draw as pdw
 from suspension import track_sim_export as tse
 
@@ -1268,8 +1267,14 @@ def test_passes_run_in_dependency_order(tmp_path):
             < src.index("remap_stale_block_references"))
 
 
-def test_coverage_check_uses_the_formula_view(tmp_path):
+def test_coverage_check_reads_uncached_formulas_as_populated(tmp_path):
     """The trap that has now bitten three separate checks in this module.
+
+    NOTE: this test previously shared a name with the one further down this
+    file, so Python's module namespace silently discarded it and pytest never
+    ran it — a hole in exactly the regression area the docstring warns about.
+    Renamed to what it actually asserts: a freshly-written workbook whose cells
+    hold formulas with no cached value must not read as empty.
 
     openpyxl drops every cached value when it saves, and the portability pass
     saves. A data_only read of an already-processed workbook therefore reports

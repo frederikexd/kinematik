@@ -58,7 +58,7 @@ def test_mass_estimate_from_density():
 def test_load_part_rejects_sldprt():
     try:
         ig.load_part("model.sldprt")
-        assert False, "should have rejected sldprt"
+        raise AssertionError("should have rejected sldprt")
     except ValueError as e:
         assert "sldprt" in str(e).lower() or "step" in str(e).lower()
 
@@ -69,7 +69,7 @@ def test_load_part_rejects_tiny_metre_mesh():
     p = _os.path.join(tempfile.gettempdir(), "tiny_test.stl"); b.export(p)
     try:
         ig.load_part(p)
-        assert False, "should have flagged metre-scale mesh"
+        raise AssertionError("should have flagged metre-scale mesh")
     except ValueError as e:
         assert "metre" in str(e).lower() or "small" in str(e).lower()
     finally:

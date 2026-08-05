@@ -29,11 +29,26 @@ dependencies = [
 
 [project.optional-dependencies]
 # Each extra unlocks one lazily-imported feature; the app boots without them.
-excel = ["openpyxl>=3.1"]                  # ev_electrical_check, ev_excel_roundtrip
+excel = ["openpyxl>=3.1", "xlcalculator>=0.5"]  # ev_electrical_check, ev_excel_roundtrip
 cad = ["cascadio>=0.0.16", "fast_simplification>=0.1", "rtree>=1.0"]
 pdf = ["reportlab>=4.0"]                   # project.py: render_pdf
 cloud = ["supabase>=2.0"]                  # project sync, workspaces, analytics
-all = ["kinematik[excel,cad,pdf,cloud]"]
+# drive/voice were previously listed ONLY in requirements.txt, so `pip install
+# kinematik[all]` silently omitted them and tests/test_report.py hard-failed on
+# a clean checkout. pyproject is the source of truth; keep both in sync.
+drive = [                                  # drive_export.py, drive_oauth.py
+    "google-api-python-client>=2.0",
+    "google-auth>=2.0",
+    "google-auth-oauthlib>=1.0",
+]
+voice = [                                  # briefing TTS + voice memo STT
+    "gTTS>=2.5",
+    "piper-tts>=1.2",
+    "vosk>=0.3.45",
+    "faster-whisper>=1.0",
+    "imageio-ffmpeg>=0.4.9",
+]
+all = ["kinematik[excel,cad,pdf,cloud,drive,voice]"]
 dev = [
     "kinematik[all]",
     "pytest>=8",
@@ -41,25 +56,105 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["suspension", "suspension.aero", "suspension.myth_rules", "powertrain"]
+# `ui` holds the strangulation-boundary tab modules that streamlit_app.py
+# imports (`from ui import phantom_envelope`, etc.) — omitting it made every
+# new-style tab a broken import in an installed copy.
+packages = ["suspension", "suspension.aero", "suspension.myth_rules",
+            "powertrain", "ui"]
+# suspension/hardpoint_import.py does an unguarded `import coordinate_frames`.
+# That resolved only because Streamlit Cloud runs from the repo root and puts
+# cwd on sys.path; `pip install kinematik` produced an install that raised
+# ModuleNotFoundError on the hardpoint-import path. Ship the module.
+# (Longer term this is a layering violation — a packaged module should not
+# depend on a root-level script. Move coordinate_frames.py into suspension/.)
+py-modules = ["coordinate_frames"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# _attic holds quarantined duplicates, including a stale clone of this very
+# suite whose conftest inserted the wrong root at sys.path[0]. Never collect it.
+norecursedirs = ["_attic", ".git", "__pycache__", "*.egg-info"]
 addopts = "-q --strict-markers"
 filterwarnings = [
-    # surfaced by tests today; fix workspace.py utcnow() then promote to error
-    "default::DeprecationWarning",
+    # Promoted from "default" to "error" Aug 2026. The stale TODO here said
+    # "fix workspace.py utcnow() then promote to error" — the utcnow() calls
+    # were already gone (zero tree-wide), but nobody flipped the switch, so
+    # every deprecation in the tree stayed invisible.
+    # Verified against the FULL suite, not a sample: 2,702 passed with this
+    # set to error. A deprecation reaching main now fails CI instead of
+    # scrolling past, which is the whole point of having the filter.
+    "error::DeprecationWarning",
+    "error::PendingDeprecationWarning",
+    # Third-party deprecations are not ours to fix and must not gate our CI.
+    # Keep this list SHORT and justified — each entry is a blind spot.
+    "default::DeprecationWarning:streamlit.*",
+    "default::DeprecationWarning:google.*",
 ]
 
 [tool.ruff]
 line-length = 120
 target-version = "py312"
-extend-exclude = ["docs", "examples"]
+extend-exclude = ["docs", "examples", "_attic"]
 
 [tool.ruff.lint]
-# Start pragmatic: correctness classes only. Ratchet up (add "B", "UP", "SIM")
-# once the baseline is clean — never loosen.
-select = ["E9", "F63", "F7", "F82", "F401", "F811"]
+# Correctness classes only, and every rule here is at ZERO findings — the gate
+# is meaningless the moment it has a standing backlog, because a backlog trains
+# people to skim past the output. That is exactly how two live NameErrors and a
+# silently-shadowed test survived in this repo.
+#
+# Ratcheted Aug 2026 with the bug-catching half of flake8-bugbear:
+#   B009/B010  getattr/setattr with a constant  (3 fixed)
+#   B011       `assert False` — DELETED by `python -O`, so five negative-path
+#              tests would have passed without the exception ever raising
+#   B028       warnings.warn without stacklevel — blamed this module instead
+#              of the caller
+#   B033       duplicate item in a set literal — a hand-maintained vocabulary
+#              had a slot that was meant to hold a different token
+select = ["E9", "F63", "F7", "F82", "F401", "F811",
+          "B009", "B010", "B011", "B028", "B033",
+          # pyupgrade, ratcheted Aug 2026: 1,829 sites autofixed in one
+          # reviewed pass. Almost entirely type-annotation modernisation —
+          # Optional[X] -> X | None (1,095), List[x] -> list[x] (504),
+          # unquoting deferred annotations (159) — plus datetime.UTC and a
+          # handful of redundant open modes. requires-python is >=3.12, so
+          # none of it is conditional.
+          "UP"]
+
+# UP rules held back, with reasons:
+ignore = [
+    # UP031 (printf-style formatting) and UP035 (deprecated typing imports)
+    # WERE here. Both are now at zero and gated: 51 percent-format sites were
+    # converted — 49 by ruff's unsafe-fix pass, 2 by hand where the format
+    # string embedded a literal `%` that ruff would not touch — and the
+    # deprecated imports fell out with the main pyupgrade pass. Both
+    # conversions were checked for output equality on real values, not assumed.
+    #
+    # UP042 stays, and is NOT cosmetic. It rewrites `class X(str, Enum)` ->
+    # `StrEnum` at 31 sites. A str-Enum member formats as "Verdict.PASS" in an
+    # f-string; a StrEnum member formats as "pass". These values are serialised
+    # into manifests, reports and saved project files, so the switch would
+    # silently change persisted output and break round-tripping of existing
+    # saves. Do not enable this without a migration for stored data.
+    "UP042",
+]
+
+# Deliberately NOT enabled, with reasons — so the next person ratcheting does
+# not have to re-derive this:
+#   B023  33 findings, ALL false positives here. Every closure is invoked in
+#         the same iteration it is defined (`bilerp`, `_f`, `_g`, `fnum`);
+#         none escapes into a callback or a list. Checked by hand. Enabling it
+#         would mean 33 `noqa` comments buying nothing.
+#   B018  the "useless expressions" in tests/test_lazy_layer.py ARE the test —
+#         bare attribute access is what triggers the lazy loader.
+#   B008  2 findings, both `math.radians(...)` in a default argument. Evaluated
+#         once at def time, immutable result: harmless.
+#   B905  97 findings (zip without strict=). A real truncation risk and worth
+#         doing, but as its own reviewed pass, not folded into a cleanup.
+#   B007  54 findings, unused loop variables: style, not correctness.
+#   UP    1,829 autofixable. A mechanical rewrite of that size across a 33k-line
+#         monolith is an unreviewable diff, which REDUCES stability. Needs a
+#         deliberate decision and its own commit.
+#   S101  4,758 findings — `assert` in tests. That is what tests are.
 
 [tool.ruff.lint.per-file-ignores]
 # streamlit_app.py injects its module aliases via globals().update(_SUSP_MODULES)

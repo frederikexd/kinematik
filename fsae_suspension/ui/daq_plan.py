@@ -18,10 +18,9 @@ orchestrates and draws.
 
 from __future__ import annotations
 
-try:
-    import streamlit as st
-except Exception:                       # keeps the package importable headless
-    st = None
+#: Bound by render(). Per ui/__init__.py, streamlit is NOT imported at
+#: module scope — that keeps this file importable headless and cheap.
+st = None
 
 from suspension.interfaces import Severity
 from suspension import daq_plan as dp
@@ -103,8 +102,8 @@ def _spec_from_row(row: dict, base: dp.SensorSpec) -> dp.SensorSpec:
 #  main entry point
 # --------------------------------------------------------------------------- #
 def render():
-    if st is None:
-        raise RuntimeError("streamlit not available")
+    global st
+    import streamlit as st          # noqa: PLW0603 - see note above
     ss = st.session_state
 
     st.subheader("📡 Data Acquisition — the channel plan that checks itself")

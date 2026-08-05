@@ -26,7 +26,6 @@ Tests for the pedal-box packaging / balance-bar / travel module
     front/rear stroke mismatch.
 """
 
-import math
 
 import pytest
 
@@ -507,7 +506,6 @@ def test_provenance_names_what_is_safe_and_what_is_not():
 #  the app renders happily and just shows the wrong number.
 # =========================================================================== #
 import re as _re
-import suspension.pedal_box as _pbmod
 
 
 def _all_finding_messages():
