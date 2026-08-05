@@ -304,6 +304,72 @@ tab the user never opened              -> silent (asserted)
 
 **Tests** — `tests/test_handover_coverage.py`, 8 tests.
 
+---
+
+## Sixth pass — every feature documentable, verified feature by feature
+
+`render_feature_documentation()` has **no call site in the app**. It is appended
+centrally by `_TabOpenProxy.__exit__`, so every feature gets the panel with no
+per-tab edits — good design, but it means one hard-coded set decides which
+features can be documented at all, and nothing fails if that set is wrong.
+
+**It was wrong.** The skip set had grown to seven entries, three of which are
+real analysis tabs:
+
+| Tab | Was | Now |
+|---|---|---|
+| `registry` | skipped | documentable — the status board produces rule verdicts |
+| `model3d` | skipped | documentable — geometry output |
+| `weight` | skipped | documentable — the weight budget is core analysis |
+| `docs`, `integration`, `analytics`, `notes` | skipped | still skipped, each with a written reason |
+
+The set is now `_DOC_PANEL_SKIP`, a dict mapping tab to *why*. A bare set drifts;
+a set that has to justify itself does not.
+
+### A missing subsystem mapping, caught by the new test
+
+`daq` (Data Acquisition) was in `_TAB_META` with **no `_FEATURE_SUBSYS` entry**.
+It still committed, but `build_integration_document()` falls back to the
+"integration" bucket — so the DAQ plan filed itself under Integration instead of
+with the electrics work, in the one document a judge reads end to end. Mapped to
+`electrics`.
+
+### Glyph handling now reads the font instead of guessing
+
+The emoji stripper enumerated Unicode ranges that "look like emoji". That is a
+moving target, and it leaked: ⛓ (U+26D3, Fusebox) sits in a block that also holds
+⚠ and ℹ — symbols the report needs — so it survived and rendered as a tofu box in
+every Fusebox heading.
+
+`_font_coverage()` now asks the embedded font which codepoints it owns and drops
+the rest. It intersects **regular and bold**, because headings are bold and the
+bold face carries ~20 fewer glyphs, so a character present only in regular would
+still tofu in every heading. Variation selectors and ZWJ are dropped
+unconditionally — some fonts list them in their cmap, which left an invisible
+ghost character where a stripped emoji had been (`⛓️ Fusebox` → `" Fusebox"`).
+
+Result across all 40 headings: **40/40 clean**, was 39/40 with one silent ghost.
+
+### Verified by driving the real pipeline, not by inspection
+
+`tests/test_doc_coverage.py` (10 tests) asserts statically that every registered
+feature has a label, a subsystem, a tab container, and is either documentable or
+skipped with a reason — so a new feature cannot silently miss the panel.
+
+Separately, the actual capture → markdown → PDF pipeline was executed once per
+feature, using the functions extracted from the live monolith:
+
+```
+documentable features: 36 / 36
+explicitly skipped:    4 -> ['analytics', 'docs', 'integration', 'notes']
+FAILURES: none
+```
+
+Each of the 36 produced a results table, a verdict, an embedded figure, and a
+PDF over 20 KB — the same shape as the Kinematics report.
+`EXAMPLE_weight_report.pdf` is one of the three newly-enabled features, for
+side-by-side comparison with `EXAMPLE_kinematics_report.pdf`.
+
 ## Running tally — cross-cutting consumers audited
 
 | Consumer | Status |
@@ -314,19 +380,21 @@ tab the user never opened              -> silent (asserted)
 | Integration Ledger -> persistence | fixed — never saved, claimed success |
 | Handover | fixed — 2 unread producers, 1 fabricated value, missing figures |
 | Analytics | fixed — engage/complete covered 16-19 of 40 features |
+| Doc panel -> features | fixed — 3 analysis tabs excluded, 1 unmapped subsystem |
 
-**Six of six.** Every one was the same shape: a consumer silently seeing a
-subset of its producers, with no exception and no log — which is why 2,659
-tests never caught any of them.
+Every one was the same shape: a consumer silently seeing a subset of its
+producers, with no exception and no log — which is why 2,659 tests never caught
+any of them.
 
-### What to watch for next
+### The pattern, for next time
 
-The pattern is now yours to hunt. When you add a feature, ask what reads its
-output, and check that reader sees *every* way the feature can produce it. The
-specific traps found here, in order of how often they recurred:
+When you add a feature, ask what reads its output, and check that reader sees
+*every* way the feature can produce it. The specific traps found here, ranked by
+how often they recurred:
 
 1. A wrapper watching the framework's function while the app uses its own helper.
-2. Two hand-maintained field lists that drift (`as_json` vs `_payload`).
+2. Two hand-maintained lists that drift (`as_json` vs `_payload`; ranges vs the font's cmap).
 3. `.get(key, default)` where an absent key and an empty value mean different things.
 4. A failure coerced to a plausible default (`0.0`) instead of to "unknown".
 5. Setting an attribute nothing serializes, then reporting the save succeeded.
+6. A hard-coded allow/deny set that nothing validates against the real feature list.

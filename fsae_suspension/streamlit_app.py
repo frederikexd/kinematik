@@ -8644,6 +8644,26 @@ for _ck, _cem, _clab in _cats_nonempty:
 
 
 
+#: Tabs that do NOT get the "Document this feature" panel, each with the reason
+#: it is excluded. A set with no justification drifts: this one had grown to
+#: include `registry`, `model3d` and `weight` — three tabs that produce real
+#: analysis — so those features simply could not be documented or committed to
+#: the Integration Document, with nothing in the UI to say why.
+#:
+#: The bar is "does this tab produce engineering results about the car?" Not
+#: "is this tab useful". Every entry below is a tab whose output is either the
+#: documentation machinery itself or team coordination, never a calculation.
+#: tests/test_doc_coverage.py asserts every registered feature is either
+#: documentable or listed here, so a new feature cannot silently miss the panel.
+_DOC_PANEL_SKIP = {
+    "docs": "the documentation tab itself — nothing to document",
+    "integration": "the Integration hub; it exports the combined document",
+    "analytics": "usage telemetry about the tool, not results about the car",
+    "notes": "cross-team messages; already carried into the handover as "
+             "open items",
+}
+
+
 class _TabOpenProxy:
     """Wraps a Streamlit tab container so simply doing `with tab_X:` fires
     `ax.tab_open(feature)` automatically — the single point that makes EVERY
@@ -8727,10 +8747,8 @@ class _TabOpenProxy:
         try:
             _clean = not (exc and exc[0] is not None)
             _key = self._feature
-            _skip = {"notes", "registry", "docs", "integration", "analytics",
-                     "model3d", "weight"}
             _fn = globals().get("render_feature_documentation")
-            if (_clean and _fn is not None and _key not in _skip
+            if (_clean and _fn is not None and _key not in _DOC_PANEL_SKIP
                     and _key in _ax_active_ids):
                 _fn(_key)
         except Exception:
@@ -10054,6 +10072,11 @@ _FEATURE_SUBSYS = {
     "ev": "powertrain",
     # electrics
     "accum": "electrics", "pcb": "electrics", "tractive": "electrics",
+    # Data Acquisition had no mapping at all. An unmapped feature still commits,
+    # but build_integration_document() falls back to the "integration" bucket —
+    # so the DAQ plan appeared under Integration rather than with the electrics
+    # work it belongs to, in the one document a judge reads end to end.
+    "daq": "electrics",
     "fusebox": "electrics",
     # brakes
     "brakes": "brakes",

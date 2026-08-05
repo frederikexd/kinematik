@@ -1248,6 +1248,40 @@ FIGURE_SCHEME = "kinematik-fig:"
 #: and they carry the verdict marks the report exists to communicate.
 _EMOJI_RE = None
 _FONT_STATE = None              # cached (regular, bold) face names
+_FONT_COVERAGE = None           # cached set of codepoints the font can draw
+
+
+def _font_coverage():
+    """Codepoints the registered PDF font can actually draw, or None.
+
+    Ground truth beats guessing. The previous approach enumerated Unicode
+    ranges that "look like emoji", which is a moving target: it correctly
+    dropped 📐 and 📈 but let ⛓ (U+26D3, Fusebox) through to render as a tofu
+    box, because U+26D3 sits in a block that also contains ⚠ and ℹ — symbols
+    the font DOES have and the report needs. Asking the font which characters
+    it owns cannot drift when someone picks a new tab icon.
+
+    Intersects regular and bold: headings are bold, and the bold face carries
+    ~20 fewer glyphs, so a character present only in regular would still tofu
+    in every heading.
+    """
+    global _FONT_COVERAGE
+    if _FONT_COVERAGE is not None:
+        return _FONT_COVERAGE or None
+    _FONT_COVERAGE = set()
+    try:
+        from reportlab.pdfbase import pdfmetrics as _pm
+        faces = []
+        for name in _register_report_font():
+            f = _pm.getFont(name).face
+            cmap = getattr(f, "charToGlyph", None)
+            if cmap:
+                faces.append(set(cmap))
+        if faces:
+            _FONT_COVERAGE = set.intersection(*faces)
+    except Exception:
+        _FONT_COVERAGE = set()
+    return _FONT_COVERAGE or None
 
 #: Emoji that carry MEANING in a report get folded to a text-presentation
 #: equivalent instead of being deleted. ✅ (U+2705) and ❌ (U+274C) are
@@ -1317,18 +1351,31 @@ def _register_report_font():
 
 def strip_unprintable(text):
     """Make a line safe for the PDF fonts: fold meaningful emoji to text
-    equivalents, drop decorative ones, and tidy the space they leave behind."""
+    equivalents, drop anything the font cannot draw, tidy the leftover space."""
     global _EMOJI_RE
     import re as _re
-    if _EMOJI_RE is None:
-        _EMOJI_RE = _re.compile(
-            "[\U0001F000-\U0001FAFF\U0001F1E6-\U0001F1FF"
-            "\u2190-\u21FF\u2B00-\u2BFF\u2700-\u2710\uFE0F\u200D]")
     out = text or ""
     for src, dst in _GLYPH_FALLBACKS.items():
         if src in out:
             out = out.replace(src, dst)
-    out = _EMOJI_RE.sub("", out)
+    # Variation selectors and ZWJ are formatting, not characters. Some fonts
+    # list them in their cmap, so the coverage filter below would keep them —
+    # leaving an invisible codepoint where a stripped emoji used to be (⛓️
+    # Fusebox became " Fusebox", with a leading ghost). Drop them always.
+    out = out.replace("\ufe0f", "").replace("\ufe0e", "").replace("\u200d", "")
+
+    cov = _font_coverage()
+    if cov is not None:
+        # Ground truth: keep ASCII and whatever the embedded font owns.
+        out = "".join(c for c in out if ord(c) < 128 or ord(c) in cov)
+    else:
+        # No TTF registered (built-in Helvetica) — fall back to dropping the
+        # ranges that are pictographic emoji by construction.
+        if _EMOJI_RE is None:
+            _EMOJI_RE = _re.compile(
+                "[\U0001F000-\U0001FAFF\U0001F1E6-\U0001F1FF"
+                "\u2190-\u21FF\u2B00-\u2BFF\u2700-\u2710\uFE0F\u200D]")
+        out = _EMOJI_RE.sub("", out)
     return _re.sub(r"[ \t]{2,}", " ", out).strip()
 
 
