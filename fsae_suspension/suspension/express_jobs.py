@@ -33,9 +33,7 @@ Every job obeys the same three rules as the first tranche:
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
-from typing import Dict, List
 
 import numpy as np
 
@@ -64,7 +62,7 @@ def _veh(ctx: Ctx):
 
 
 # --- anti-dive / anti-squat -------------------------------------------------- #
-def _job_anti(ctx: Ctx) -> List[Artifact]:
+def _job_anti(ctx: Ctx) -> list[Artifact]:
     kin, p, _vd = _veh(ctx)
     bias = float(ctx.ask.param("brake_bias_front", 0.62))
     travels = np.linspace(-25.0, 25.0, 11)
@@ -116,7 +114,7 @@ register_job(Job("anti_geometry", "Anti-dive / anti-squat", "kinematics",
 
 
 # --- corner compliance ------------------------------------------------------- #
-def _job_compliance(ctx: Ctx) -> List[Artifact]:
+def _job_compliance(ctx: Ctx) -> list[Artifact]:
     from . import compliance as cp
     _kin, _p, vd = _veh(ctx)
     g_lat = float(ctx.ask.param("lateral_g", 1.4))
@@ -180,7 +178,7 @@ register_job(Job("compliance_corner", "Corner compliance and member loads",
 
 
 # --- lap / event times ------------------------------------------------------- #
-def _job_lap_events(ctx: Ctx) -> List[Artifact]:
+def _job_lap_events(ctx: Ctx) -> list[Artifact]:
     from . import lapsim
     _kin, p, vd = _veh(ctx)
     params = lapsim.LapSimParams(
@@ -234,7 +232,7 @@ register_job(Job("lap_events", "Skidpad / acceleration / autocross times",
 
 
 # --- g-g-v envelope ---------------------------------------------------------- #
-def _job_ggv(ctx: Ctx) -> List[Artifact]:
+def _job_ggv(ctx: Ctx) -> list[Artifact]:
     from . import ggv
     _kin, p, _vd = _veh(ctx)
     res = ggv.quick_ggv(mass=p.mass, cg_height=p.cg_height,
@@ -297,7 +295,7 @@ register_job(Job("ggv_envelope", "g-g-v envelope", "tire", _job_ggv))
 
 
 # --- EV energy and architecture --------------------------------------------- #
-def _job_ev(ctx: Ctx) -> List[Artifact]:
+def _job_ev(ctx: Ctx) -> list[Artifact]:
     from . import ev_powertrain as evp, lapsim
     _kin, p, vd = _veh(ctx)
     ev_params = evp.EVParams(pack_energy_kwh=float(
@@ -375,7 +373,7 @@ def _rulebook_footer() -> str:
             f"could and could not verify.")
 
 
-def _job_chassis_rules(ctx: Ctx) -> List[Artifact]:
+def _job_chassis_rules(ctx: Ctx) -> list[Artifact]:
     from . import tubeframe as tf
     driver = 77.0
     harness = tf.harness_attachment_loads(driver_mass_kg=driver)
@@ -428,7 +426,7 @@ register_job(Job("chassis_rules", "Harness and seat mounting loads",
 _DAMPERS = ("damper_fl", "damper_fr", "damper_rl", "damper_rr")
 
 
-def _job_damper_histogram(ctx: Ctx) -> List[Artifact]:
+def _job_damper_histogram(ctx: Ctx) -> list[Artifact]:
     """The damper-velocity histogram: the single most-read plot in paddock
     data analysis, and the one most often produced with the wrong sign
     convention. Bump is defined positive here and said so."""
@@ -511,7 +509,7 @@ register_job(Job("damper_histogram", "Damper velocity histogram", "setup",
 
 
 # --- measured roll gradient -------------------------------------------------- #
-def _job_roll_correlation(ctx: Ctx) -> List[Artifact]:
+def _job_roll_correlation(ctx: Ctx) -> list[Artifact]:
     """Measured roll gradient from the front damper pair against the model's.
 
     This is the cheapest correlation a team can run and almost nobody does,
@@ -632,7 +630,7 @@ def _bias_verdict(n_samples: int, delta: float) -> str:
             "hardware is doing what the spreadsheet says it does.")
 
 
-def _job_brake_bias(ctx: Ctx) -> List[Artifact]:
+def _job_brake_bias(ctx: Ctx) -> list[Artifact]:
     db = ctx.data
     pf = db.series["brake_front"]
     pr = db.series["brake_rear"]
@@ -684,7 +682,7 @@ register_job(Job("brake_bias_measured", "Measured brake bias", "brakes",
 
 
 # --- measured pack energy ---------------------------------------------------- #
-def _job_energy_from_log(ctx: Ctx) -> List[Artifact]:
+def _job_energy_from_log(ctx: Ctx) -> list[Artifact]:
     from . import earshot
     db = ctx.data
     ok = np.isfinite(db.series["time"])
@@ -782,7 +780,7 @@ register_job(Job("energy_from_log", "Measured pack energy and range", "ev",
 # =========================================================================== #
 
 # --- aero -------------------------------------------------------------------- #
-def _job_aero(ctx: Ctx) -> List[Artifact]:
+def _job_aero(ctx: Ctx) -> list[Artifact]:
     from .aero import AeroProvider
     _kin, p, _vd = _veh(ctx)
     prov = AeroProvider(reference_area_m2=1.0)
@@ -840,7 +838,7 @@ register_job(Job("aero_baseline", "Aero baseline vs speed", "aero",
 
 
 # --- DFMEA -------------------------------------------------------------------- #
-def _job_dfmea(ctx: Ctx) -> List[Artifact]:
+def _job_dfmea(ctx: Ctx) -> list[Artifact]:
     from . import dfmea
     records = dfmea.seed_rows()
     stats = dfmea.dashboard_stats(records)
@@ -889,7 +887,7 @@ register_job(Job("dfmea_register", "DFMEA risk register", "dfmea",
 
 
 # --- fusebox ------------------------------------------------------------------ #
-def _job_fusebox(ctx: Ctx) -> List[Artifact]:
+def _job_fusebox(ctx: Ctx) -> list[Artifact]:
     from . import fusebox
     paths = fusebox.seed_paths()
     audits = [fusebox.audit_path(p) for p in paths]
@@ -932,7 +930,7 @@ register_job(Job("fusebox_audit", "Fusebox overload-path audit", "fusebox",
 
 
 # --- PCB (data job: needs a board) -------------------------------------------- #
-def _job_pcb(ctx: Ctx) -> List[Artifact]:
+def _job_pcb(ctx: Ctx) -> list[Artifact]:
     from . import pcb_doctor as pd
     board = pd.parse_kicad_pcb(ctx.data.extras["kicad_pcb"])
     nets = getattr(board, "nets", {}) or {}
@@ -1014,7 +1012,7 @@ def _spread_note(spread_c: float) -> str:
             "full endurance run rather than one lap before calling it solved.")
 
 
-def _job_pack_thermal(ctx: Ctx) -> List[Artifact]:
+def _job_pack_thermal(ctx: Ctx) -> list[Artifact]:
     from . import pack_thermal as pt, lapsim
     _kin, p, vd = _veh(ctx)
     lp = lapsim.LapSimParams(
@@ -1061,7 +1059,7 @@ register_job(Job("pack_thermal", "Pack thermal over a lap", "thermal",
 
 
 # --- SimulForge (slow) -------------------------------------------------------- #
-def _job_simulforge(ctx: Ctx) -> List[Artifact]:
+def _job_simulforge(ctx: Ctx) -> list[Artifact]:
     from . import simulforge as sf
     _kin, _p, vd = _veh(ctx)
     res = sf.run_simulforge(vd, "step_steer")
@@ -1099,7 +1097,7 @@ register_job(Job("simulforge_step", "Transient step steer", "transient",
 
 
 # --- OmniCore (deep) ---------------------------------------------------------- #
-def _job_omnicore(ctx: Ctx) -> List[Artifact]:
+def _job_omnicore(ctx: Ctx) -> list[Artifact]:
     """The member's own sentence is already a mission brief — hand it over.
 
     OmniCore has its own deterministic mission grammar. Rather than
@@ -1172,12 +1170,12 @@ class GhostSweep:
     struggling at, which on an asymmetric car is frequently not the one a
     symmetric model would have picked.
     """
-    by_corner: Dict[str, object]
-    summaries: Dict[str, dict]
+    by_corner: dict[str, object]
+    summaries: dict[str, dict]
     worst_corner: str
     worst_audit: object
     load_source: str
-    notes: List[str]
+    notes: list[str]
 
 
 def _corner_histories(ctx: Ctx, n_max: int = 240):
@@ -1198,7 +1196,6 @@ def _corner_histories(ctx: Ctx, n_max: int = 240):
       are symmetric BY CONSTRUCTION. Any asymmetry a report finds on this
       path is arithmetic, not evidence, and the report says so.
     """
-    from .kinematics import SuspensionKinematics
     db = ctx.data
     kin, p, vd = _veh(ctx)
     ok = np.isfinite(db.series["time"])
@@ -1218,7 +1215,7 @@ def _corner_histories(ctx: Ctx, n_max: int = 240):
               "FR": w * p.weight_dist_front / 2.0,
               "RL": w * (1.0 - p.weight_dist_front) / 2.0,
               "RR": w * (1.0 - p.weight_dist_front) / 2.0}
-    notes: List[str] = []
+    notes: list[str] = []
 
     pots = [c for c in _CORNERS if _CORNER_POT[c] in db.series]
     if len(pots) == 4:
@@ -1305,7 +1302,7 @@ def _corner_histories(ctx: Ctx, n_max: int = 240):
     return hist, source, notes
 
 
-def _job_ghost(ctx: Ctx) -> List[Artifact]:
+def _job_ghost(ctx: Ctx) -> list[Artifact]:
     from . import compliance as cp, ghost_topology as gt
     hist, source, notes = _corner_histories(ctx)
     corner = cp.CompliantCorner.uniform_tube(ctx.hardpoints)
@@ -1494,7 +1491,7 @@ register_job(Job("ghost_topology", "Ghost topology — all four corners",
 
 
 # --- MorphMesh, reachable only through the ghost audit ------------------------ #
-def _job_morph(ctx: Ctx) -> List[Artifact]:
+def _job_morph(ctx: Ctx) -> list[Artifact]:
     """The legitimate route into topology optimisation.
 
     MorphMesh was left out of the express lane at first because it needs a
@@ -1577,7 +1574,7 @@ register_job(Job("morph_bracket", "MorphMesh from the ghost audit", "morph",
 # =========================================================================== #
 #  RULES — the car against the ruleset, with the ruleset's provenance attached
 # =========================================================================== #
-def _job_rules_declared(ctx: Ctx) -> List[Artifact]:
+def _job_rules_declared(ctx: Ctx) -> list[Artifact]:
     from . import rules_fsae as rf
     p = dict(ctx.ask.params)
     findings = rf.check_declared(p)
@@ -1651,7 +1648,7 @@ register_job(Job("rules_declared", "Rules check — declared numbers", "rules",
                  _job_rules_declared, cost_s=0.2))
 
 
-def _job_rules_measured(ctx: Ctx) -> List[Artifact]:
+def _job_rules_measured(ctx: Ctx) -> list[Artifact]:
     """Score the team's own log the way the event's Energy Meter scores it.
 
     This is the one that earns its place. The power limit is not "stay under
@@ -1781,7 +1778,7 @@ register_job(Job("rules_measured", "Rules check — measured from the log",
 # =========================================================================== #
 #  COOLING · PRINTED PARTS · POWERTRAIN · TRACTIVE SAFETY
 # =========================================================================== #
-def _job_printed_part(ctx: Ctx) -> List[Artifact]:
+def _job_printed_part(ctx: Ctx) -> list[Artifact]:
     """A forced filament substitution, priced instead of eyeballed."""
     from . import printed_parts as pp
     low = (ctx.ask.text or "").lower()
@@ -1903,7 +1900,7 @@ register_job(Job("printed_part_check", "Printed-part material substitution",
                  "printing", _job_printed_part, cost_s=0.2))
 
 
-def _job_cooling_loop(ctx: Ctx) -> List[Artifact]:
+def _job_cooling_loop(ctx: Ctx) -> list[Artifact]:
     from . import cooling as cl
     p_kw = float(ctx.ask.param("power_kw", 60.0))
     q_w, q_notes = cl.heat_load_w(p_kw * 1000.0)
@@ -1977,7 +1974,7 @@ register_job(Job("cooling_loop", "Cooling loop sizing", "cooling",
                  _job_cooling_loop, cost_s=0.2))
 
 
-def _job_cooling_rig(ctx: Ctx) -> List[Artifact]:
+def _job_cooling_rig(ctx: Ctx) -> list[Artifact]:
     """The question a cooling rig lives or dies on, asked before it is built.
 
     A rig measures heat rejection by computing it from a flow rate and two
@@ -2117,7 +2114,7 @@ register_job(Job("cooling_rig", "Cooling rig instrumentation budget",
                  "cooling", _job_cooling_rig, cost_s=0.3))
 
 
-def _job_gear_ratio(ctx: Ctx) -> List[Artifact]:
+def _job_gear_ratio(ctx: Ctx) -> list[Artifact]:
     """Gear ratio does not need the output shaft CAD.
 
     A ratio sweep needs the motor curve, the rolling radius and the mass. The
@@ -2209,7 +2206,7 @@ register_job(Job("gear_ratio", "Gear ratio sweep", "powertrain",
                  _job_gear_ratio, cost_s=1.0))
 
 
-def _job_tractive_safety(ctx: Ctx) -> List[Artifact]:
+def _job_tractive_safety(ctx: Ctx) -> list[Artifact]:
     from . import tractive_system as ts
     v = float(ctx.ask.param("pack_v_max", 400.0))
     pc = ts.PrechargeCircuit(pack_voltage_v=v, link_capacitance_f=250e-6,
@@ -2335,7 +2332,7 @@ def _gauge_line(pick, current_a: float, ambient_c: float,
             f"the right document")
 
 
-def _job_wiring(ctx: Ctx) -> List[Artifact]:
+def _job_wiring(ctx: Ctx) -> list[Artifact]:
     from . import wiring as wr
     a = ctx.ask
     p_kw = float(a.param("power_kw", 60.0))
@@ -2555,7 +2552,7 @@ register_job(Job("wiring_sizing", "Conductor sizing and fuse coordination",
                  "wiring", _job_wiring, cost_s=0.3))
 
 
-def _job_wiring_from_log(ctx: Ctx) -> List[Artifact]:
+def _job_wiring_from_log(ctx: Ctx) -> list[Artifact]:
     """Size the cable on the RMS the car actually draws.
 
     Ampacity is a continuous rating and a race car's current is anything but.
@@ -2663,7 +2660,7 @@ _OCCURRENCE = {"violation": 8, "watch": 5, "unknown": 5, "ok": 2}
 _DETECTION = {"measured": 2, "modelled": 5, "unchecked": 9}
 
 
-def _job_dfmea_autofill(ctx: Ctx) -> List[Artifact]:
+def _job_dfmea_autofill(ctx: Ctx) -> list[Artifact]:
     """The answer to 'are DFMEAs worth it for us'.
 
     They are worth it. They are just not worth *typing*. Every analysis in

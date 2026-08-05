@@ -18,7 +18,7 @@ not an accident. Nothing meshes or solves until `run()` is called.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from .cfd import CaseSpec, RunMatrix, SolverFidelity
 from .aeromap import AeroMap
@@ -57,7 +57,7 @@ class AeroOrchestrator:
                  reference_length_m: float = 1.55,
                  rho: float = 1.225,
                  fidelity: SolverFidelity = SolverFidelity.RANS,
-                 submitter: Optional[Submitter] = None):
+                 submitter: Submitter | None = None):
         self.backend = backend
         self.geometry_path = geometry_path
         self.reference_area_m2 = reference_area_m2
@@ -83,7 +83,7 @@ class AeroOrchestrator:
         return matrix.cost_summary(minutes_per_case, concurrent)
 
     def run(self, matrix: RunMatrix, workdir: str,
-            progress: Optional[Callable[[int, int, SubmitResult], None]] = None
+            progress: Callable[[int, int, SubmitResult], None] | None = None
             ) -> OrchestratorReport:
         specs = self.specs(matrix)
         results = self.submitter.submit_all(self.backend, specs, workdir, progress)

@@ -59,7 +59,6 @@ Honesty rules the rest of the codebase keeps, kept here too:
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 
 import numpy as np
 
@@ -182,7 +181,7 @@ class Trace:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "Trace":
+    def from_dict(d) -> Trace:
         d = dict(d)
         valid = Trace.__dataclass_fields__.keys()
         return Trace(**{k: v for k, v in d.items() if k in valid})
@@ -256,7 +255,7 @@ class DiffPair:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "DiffPair":
+    def from_dict(d) -> DiffPair:
         d = dict(d)
         if isinstance(d.get("path_mm"), list):
             d["path_mm"] = [tuple(p) for p in d["path_mm"]]
@@ -295,7 +294,7 @@ class Aggressor:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "Aggressor":
+    def from_dict(d) -> Aggressor:
         d = dict(d)
         if isinstance(d.get("path_mm"), list):
             d["path_mm"] = [tuple(p) for p in d["path_mm"]]
@@ -341,7 +340,7 @@ def _seg_seg_dist(p1, p2, q1, q2) -> float:
     return float(np.linalg.norm(cp1 - cp2))
 
 
-def min_parallel_distance_mm(a: np.ndarray, b: np.ndarray) -> Optional[float]:
+def min_parallel_distance_mm(a: np.ndarray, b: np.ndarray) -> float | None:
     """Closest approach (mm) between two routed polylines, or None if either empty."""
     if a.shape[0] < 2 or b.shape[0] < 2:
         return None
@@ -425,8 +424,8 @@ class BoardLedger:
         self.aggressors[a.name] = a
 
     # ---- copper survival check --------------------------------------------- #
-    def check_traces(self, currents: Optional[dict] = None,
-                     undeclared: Optional[dict] = None) -> list:
+    def check_traces(self, currents: dict | None = None,
+                     undeclared: dict | None = None) -> list:
         """
         For every trace, against the current it must carry, emit a Finding for:
           * fusing margin (does it physically melt under the worst load?),
@@ -704,7 +703,7 @@ class BoardLedger:
         )
 
     @staticmethod
-    def from_dict(d) -> "BoardLedger":
+    def from_dict(d) -> BoardLedger:
         d = d or {}
         bl = BoardLedger()
         for k, v in (d.get("traces") or {}).items():
@@ -725,7 +724,7 @@ class BoardLedger:
 #  Simultaneous-load roll-up — "what fires at once" from the integration ledger
 # --------------------------------------------------------------------------- #
 def worst_case_currents(board: BoardLedger,
-                        ledger: Optional[IntegrationLedger],
+                        ledger: IntegrationLedger | None,
                         scenario: dict) -> dict:
     """
     Build the worst-case current per trace for a named simultaneous-load scenario —
@@ -756,7 +755,7 @@ def worst_case_currents(board: BoardLedger,
 
 
 def net_currents(board: BoardLedger,
-                 ledger: Optional[IntegrationLedger],
+                 ledger: IntegrationLedger | None,
                  scenario: dict) -> dict:
     """
     Roll the per-TRACE scenario currents up to per-NET currents.
@@ -783,7 +782,7 @@ def net_currents(board: BoardLedger,
     return out
 
 
-def undeclared_loads(ledger: Optional[IntegrationLedger],
+def undeclared_loads(ledger: IntegrationLedger | None,
                      scenario: dict) -> dict:
     """
     For each trace in the scenario, return the subsystems the user selected that
@@ -829,8 +828,8 @@ class BoardCheckResult:
 
 
 def check_board(board: BoardLedger,
-                ledger: Optional[IntegrationLedger] = None,
-                scenario: Optional[dict] = None) -> BoardCheckResult:
+                ledger: IntegrationLedger | None = None,
+                scenario: dict | None = None) -> BoardCheckResult:
     """
     Run the full pre-fab board gate: roll up simultaneous loads from the integration
     ledger for the given scenario, run copper-survival on the traces and

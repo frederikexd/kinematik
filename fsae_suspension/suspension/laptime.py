@@ -46,7 +46,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 import numpy as np
 
@@ -83,8 +82,8 @@ class MotorMap:
     just peak torque/power/redline for when that's all the datasheet gives you; it is
     labelled representative, not measured.
     """
-    rpm: List[float]                 # motor speed sample points, rev/min
-    torque_nm: List[float]           # motor shaft torque at each rpm
+    rpm: list[float]                 # motor speed sample points, rev/min
+    torque_nm: list[float]           # motor shaft torque at each rpm
     final_drive: float = 3.5         # motor:wheel reduction (sprocket / gearbox)
     wheel_radius_m: float = 0.20     # loaded tyre radius
     source: str = "user"             # "user" | "datasheet" | "representative"
@@ -99,7 +98,7 @@ class MotorMap:
     @staticmethod
     def from_peak(peak_torque_nm: float, peak_power_kw: float,
                   redline_rpm: float, final_drive: float = 3.5,
-                  wheel_radius_m: float = 0.20) -> "MotorMap":
+                  wheel_radius_m: float = 0.20) -> MotorMap:
         """
         Build a REPRESENTATIVE curve from the three numbers a datasheet always
         gives: a flat torque plateau up to the base speed where it would exceed
@@ -168,7 +167,7 @@ class Powertrain:
     crr: float = 0.018               # rolling resistance coefficient
     drive: str = "rwd"               # "rwd" or "awd" — which axle loads cap traction
     brake_g_cap: float = 1.8         # mechanical brake ceiling (g), grip-limited below
-    motor_map: Optional[MotorMap] = None  # real curve; None => flat power cap
+    motor_map: MotorMap | None = None  # real curve; None => flat power cap
     combined_tire: object = None     # optional tiremodel.CombinedSlipTire for the
                                      # friction-ellipse coupling (Fx can exceed Fy
                                      # peak, tunable exponents). None => symmetric circle.
@@ -198,7 +197,7 @@ class Powertrain:
 class Segment:
     """One piece of track. A straight has radius=None; a corner has radius_m>0."""
     length_m: float
-    radius_m: Optional[float] = None   # None / <=0 => straight
+    radius_m: float | None = None   # None / <=0 => straight
 
     @property
     def is_corner(self) -> bool:
@@ -208,7 +207,7 @@ class Segment:
 @dataclass
 class Track:
     name: str
-    segments: List[Segment] = field(default_factory=list)
+    segments: list[Segment] = field(default_factory=list)
     ds: float = 1.0                    # integration step, m
 
     def total_length(self) -> float:
@@ -355,7 +354,7 @@ def _decel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
 # --------------------------------------------------------------------------- #
 #  Standing-start acceleration (the 75 m event)
 # --------------------------------------------------------------------------- #
-def acceleration_time(veh: VehicleDynamics, pt: Optional[Powertrain] = None,
+def acceleration_time(veh: VehicleDynamics, pt: Powertrain | None = None,
                       distance_m: float = 75.0, dv_steps: int = 4000) -> LapResult:
     """
     Time for a standing-start straight-line acceleration over `distance_m`.
@@ -417,7 +416,7 @@ SKIDPAD_RADIUS_M = 9.125
 SKIDPAD_CIRCUMFERENCE_M = 2.0 * math.pi * SKIDPAD_RADIUS_M
 
 
-def skidpad_time(veh: VehicleDynamics, pt: Optional[Powertrain] = None,
+def skidpad_time(veh: VehicleDynamics, pt: Powertrain | None = None,
                  radius_m: float = SKIDPAD_RADIUS_M) -> LapResult:
     """
     Predicted FSAE skidpad time for one timed circle, from the live grip model.
@@ -449,7 +448,7 @@ def skidpad_time(veh: VehicleDynamics, pt: Optional[Powertrain] = None,
 #  General QSS lap over an arbitrary track
 # --------------------------------------------------------------------------- #
 def simulate_lap(veh: VehicleDynamics, track: Track,
-                 pt: Optional[Powertrain] = None) -> LapResult:
+                 pt: Powertrain | None = None) -> LapResult:
     """
     Quasi-steady-state lap time over `track`. Three passes:
       1. corner limit speed at every station (vertical asymptote of grip),
@@ -661,7 +660,7 @@ def track_from_path(x, y, name: str = "Imported path", ds: float = 1.0,
             k = np.convolve(k, kernel, mode="same")
 
         ds_u = total / (n_samp - 1)
-        segs: List[Segment] = []
+        segs: list[Segment] = []
         for ki in k[:-1]:
             if ki <= 1.0 / straight_radius_m:
                 segs.append(Segment(ds_u, None))           # straight
@@ -783,7 +782,7 @@ def optimise_racing_line(x, y, track_width_m: float = 3.0, closed: bool = True,
 
 
 def compare_line_vs_centerline(veh, x, y, track_width_m: float = 3.0,
-                               pt: Optional[Powertrain] = None,
+                               pt: Powertrain | None = None,
                                ds: float = 1.0) -> dict:
     """
     Convenience: build the centreline track and the curvature-optimal racing-line

@@ -7,7 +7,7 @@ Most aero claims are about scaling laws (force ∝ v²), which are answerable
 without a CFD result; where a specific number is claimed, the rule checks it
 against declared coefficients and says when CFD/wind-tunnel data is needed."""
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any
 from ..mythbuster import CheckOutcome, ParsedClaim, Rule, Verdict, register
 
 
@@ -16,7 +16,7 @@ def _aero(context: Any) -> dict:
 
 
 # Downforce scales with v^2, not v
-def _r_downforce_linear(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_downforce_linear(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("downforce", "drag", "aero force") and
             claim.has("double", "twice", "linear", "proportional to speed",
                       "with speed")):
@@ -34,7 +34,7 @@ _r_downforce_linear.reference_claim = "Double the speed, double the downforce."
 
 
 # More downforce always = faster
-def _r_more_downforce_faster(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_more_downforce_faster(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("more downforce", "more aero", "bigger wing", "add downforce")
             and claim.has("faster", "quicker", "better", "lower lap")):
         return None
@@ -56,7 +56,7 @@ _r_more_downforce_faster.reference_claim = "More downforce always means a faster
 
 
 # Wing in ground effect / floor does nothing
-def _r_floor_vs_wing(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_floor_vs_wing(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("floor", "undertray", "diffuser", "ground effect") and
             claim.has("nothing", "useless", "wing is better", "doesn't", "no point")):
         return None

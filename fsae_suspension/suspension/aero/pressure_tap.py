@@ -81,7 +81,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -158,7 +158,7 @@ class TapCalibration:
     sensitivity_pa_per_v: float
     zero_offset_v: float = 0.0
     is_calibrated: bool = False
-    saturation_v: Optional[float] = None       # transducer rail; readings at it are clipped/garbage
+    saturation_v: float | None = None       # transducer rail; readings at it are clipped/garbage
     serial: str = ""
     notes: str = ""
 
@@ -207,13 +207,13 @@ class ScanProvenance:
     rho: float = 1.225                          # air density, kg/m^3
     speed_ms: float = 20.0                       # tunnel wind speed (sets q with rho)
     p_static_inf_pa: float = 0.0                 # freestream static reference (gauge)
-    p_total_inf_pa: Optional[float] = None       # freestream total/pitot (gauge); q if given
-    sample_rate_hz: Optional[float] = None
-    sample_seconds: Optional[float] = None       # averaging window per tap
+    p_total_inf_pa: float | None = None       # freestream total/pitot (gauge); q if given
+    sample_rate_hz: float | None = None
+    sample_seconds: float | None = None       # averaging window per tap
     ground_state: GroundState = GroundState.MOVING_BELT
     blockage_corrected: bool = True
-    blockage_ratio: Optional[float] = None
-    reynolds: Optional[float] = None
+    blockage_ratio: float | None = None
+    reynolds: float | None = None
     notes: str = ""
 
     def dynamic_pressure(self) -> float:
@@ -281,7 +281,7 @@ class RawPressureScan:
     volts: np.ndarray                            # (n_samples, n_taps)
     taps: Sequence[TapLocation]
     calibrations: dict                           # tap_id -> TapCalibration
-    attitude: Optional[Attitude] = None
+    attitude: Attitude | None = None
 
     def __post_init__(self):
         self.volts = np.asarray(self.volts, dtype=float)
@@ -328,7 +328,7 @@ class RawPressureScan:
                 out[tap.tap_id] = float(np.nanmean(p))
         return out
 
-    def to_cp(self, prov: ScanProvenance) -> "CpField":
+    def to_cp(self, prov: ScanProvenance) -> CpField:
         """
         The headline reduction: raw volts -> non-dimensional C_p, mapped onto the
         wing. For each tap, time-average the calibrated gauge pressure, subtract the
@@ -370,8 +370,8 @@ class CpField:
     """
     taps: Sequence[TapLocation]
     cp: dict                                    # tap_id -> C_p (may be NaN)
-    attitude: Optional[Attitude] = None
-    provenance: Optional[ScanProvenance] = None
+    attitude: Attitude | None = None
+    provenance: ScanProvenance | None = None
 
     def _tap_by_id(self) -> dict:
         return {t.tap_id: t for t in self.taps}
@@ -460,7 +460,7 @@ class CpField:
         return float(cp[i]), float(xc[i])
 
     def stall_indicator(self, element: str, span_tol_m: float = 1e9,
-                        recovery_slope_tol: float = 0.5) -> "StallVerdict":
+                        recovery_slope_tol: float = 0.5) -> StallVerdict:
         """
         Read the suction surface for the signature of separation. A healthy suction
         surface recovers pressure aft of the peak — C_p climbs back toward 0 as the
@@ -543,13 +543,13 @@ class CFDSurfaceCp:
     contract and refuses to pair a tap the CFD did not cover.
     """
     cp: dict                                    # tap_id -> C_p from CFD
-    attitude: Optional[Attitude] = None
+    attitude: Attitude | None = None
     backend: str = ""
     turbulence_model: str = ""
     notes: str = ""
 
     @classmethod
-    def from_pairs(cls, pairs, **kw) -> "CFDSurfaceCp":
+    def from_pairs(cls, pairs, **kw) -> CFDSurfaceCp:
         return cls(cp={str(k): float(v) for k, v in dict(pairs).items()}, **kw)
 
 
@@ -560,8 +560,8 @@ class CFDSurfaceCp:
 class TapResidual:
     """The C_p delta at ONE tap — measured vs CFD — for a per-tap error map."""
     tap: TapLocation
-    cp_phys: Optional[float]
-    cp_cfd: Optional[float]
+    cp_phys: float | None
+    cp_cfd: float | None
     paired: bool = False
     note: str = ""
 
@@ -605,7 +605,7 @@ class CpCorrelationReport:
     n_paired: int
     n_unpaired: int
     coverage: float                             # paired / total measured taps
-    worst: Optional[TapResidual]
+    worst: TapResidual | None
     residuals: list                             # list[TapResidual]
     within_tol: bool
     tolerances: dict
@@ -628,7 +628,7 @@ class CpCorrelationReport:
 
 
 def correlate_cp(phys: CpField, cfd: CFDSurfaceCp,
-                 tol: Optional[dict] = None) -> CpCorrelationReport:
+                 tol: dict | None = None) -> CpCorrelationReport:
     """
     Compute the RMSE between the measured surface C_p and the CFD surface C_p, tap
     for tap. Each measured tap is paired to the CFD C_p with the SAME tap_id — never

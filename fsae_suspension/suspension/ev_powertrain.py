@@ -59,7 +59,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 
@@ -165,7 +164,7 @@ class EVRunResult:
     warnings: list[str] = field(default_factory=list)
 
     @staticmethod
-    def failed(arch: Powertrain, warnings: list[str]) -> "EVRunResult":
+    def failed(arch: Powertrain, warnings: list[str]) -> EVRunResult:
         return EVRunResult(
             architecture=arch, ok=False,
             lap_result=LapResult.failed("ev", warnings),
@@ -186,7 +185,7 @@ class ArchitectureComparison:
     results: list[EVRunResult]
     warnings: list[str] = field(default_factory=list)
 
-    def best_on_time(self) -> Optional[EVRunResult]:
+    def best_on_time(self) -> EVRunResult | None:
         ok = [r for r in self.results if r.ok and np.isfinite(r.event_time)]
         return min(ok, key=lambda r: r.event_time) if ok else None
 
@@ -374,7 +373,7 @@ class EVLapSimulator:
 
     # ---- the headline: compare architectures ---------------------------- #
     def compare(self, track: Track,
-                architectures: Optional[list[Powertrain]] = None
+                architectures: list[Powertrain] | None = None
                 ) -> ArchitectureComparison:
         """Run every architecture on the same car/track and rank them."""
         archs = architectures or list(Powertrain)

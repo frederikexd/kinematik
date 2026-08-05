@@ -21,7 +21,6 @@ produces also indexes the aero — closing geometry -> attitude -> aero -> lap t
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from .cfd import Attitude
 from .aeromap import AeroMap
@@ -39,9 +38,9 @@ class AeroProvider:
     reference_area_m2: float
     fallback_cl_a: float = 2.5
     fallback_cd_a: float = 1.2
-    aero_map: Optional[AeroMap] = None
+    aero_map: AeroMap | None = None
 
-    def cla_cda(self, attitude: Optional[Attitude] = None) -> tuple[float, float]:
+    def cla_cda(self, attitude: Attitude | None = None) -> tuple[float, float]:
         """Return (cl_a, cd_a) for the lap sim at a given attitude."""
         if self.aero_map is None or attitude is None or len(self.aero_map) == 0:
             return self.fallback_cl_a, self.fallback_cd_a
@@ -88,7 +87,7 @@ def estimate_attitude(speed_ms: float, lat_g: float = 0.0, long_g: float = 0.0,
                     ride_height_mm=static_ride_mm, speed_ms=speed_ms)
 
 
-def _axle_wheel_rate(veh, axle: str) -> Optional[float]:
+def _axle_wheel_rate(veh, axle: str) -> float | None:
     """
     Vertical wheel-centre ride rate (N/mm) for one axle, from spring rate x MR^2 when
     the geometry is attached, mirroring dynamics._axle_roll_stiffness. Returns None
@@ -120,7 +119,7 @@ def attitude_from_dynamics(veh, lat_g: float, long_g: float, speed_ms: float,
                            yaw_deg: float = 0.0,
                            brake_bias_front: float = 0.65,
                            drive_bias_rear: float = 1.0,
-                           aero_provider: "Optional[AeroProvider]" = None,
+                           aero_provider: AeroProvider | None = None,
                            rho: float = 1.225) -> tuple[Attitude, dict]:
     """
     The real geometry -> attitude link. Reads roll, pitch and heave OFF the attached

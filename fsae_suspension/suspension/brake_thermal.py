@@ -794,7 +794,7 @@ class RotorCandidate:
 class OptimisationResult:
     candidates: list            # every RotorCandidate evaluated
     feasible: list              # subset that meet the constraint
-    best: "RotorCandidate | None"   # lightest feasible candidate
+    best: RotorCandidate | None   # lightest feasible candidate
     pareto: list                # non-dominated (min mass, min peak temp) front
     n_evaluated: int
     constraint_c: float

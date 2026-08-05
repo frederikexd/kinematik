@@ -128,7 +128,6 @@ import math
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 from statistics import NormalDist
-from typing import Optional
 
 from .proof_engine import EvidenceGrade, effective_rel_unc
 
@@ -190,7 +189,7 @@ class PathElement:
     label: str
     fos: float
     grade: EvidenceGrade = EvidenceGrade.ESTIMATE
-    severity: Optional[Severity] = None
+    severity: Severity | None = None
     replace_cost_usd: float = 0.0
     downtime_days: float = 0.0
     age_days: float = 0.0
@@ -219,7 +218,7 @@ class PathElement:
         return d
 
     @staticmethod
-    def from_dict(d: dict) -> "PathElement":
+    def from_dict(d: dict) -> PathElement:
         d = dict(d)
         d["grade"] = EvidenceGrade(d.get("grade", "estimate"))
         sev = d.get("severity")
@@ -237,7 +236,7 @@ class OverloadPath:
     elements: list[PathElement] = field(default_factory=list)
     designated_fuse_key: str = ""
 
-    def element(self, key: str) -> Optional[PathElement]:
+    def element(self, key: str) -> PathElement | None:
         for e in self.elements:
             if e.key == key:
                 return e
@@ -249,7 +248,7 @@ class OverloadPath:
                 "elements": [e.as_dict() for e in self.elements]}
 
     @staticmethod
-    def from_dict(d: dict) -> "OverloadPath":
+    def from_dict(d: dict) -> OverloadPath:
         return OverloadPath(
             key=d["key"], label=d.get("label", d["key"]),
             story=d.get("story", ""),
@@ -443,16 +442,16 @@ def audit_path(path: OverloadPath,
 class Prescription:
     rival_key: str
     pair_p_now: float            # P(fuse first vs this rival), pairwise
-    lower_fuse_fos_to: Optional[float]   # None ⇒ lever infeasible
+    lower_fuse_fos_to: float | None   # None ⇒ lever infeasible
     lower_fuse_note: str
-    raise_rival_fos_to: Optional[float]
+    raise_rival_fos_to: float | None
     raise_rival_note: str
-    sharpen_rival_to: Optional[EvidenceGrade]
+    sharpen_rival_to: EvidenceGrade | None
     sharpen_note: str
 
 
 def _solve_lower_fuse(mu_j: float, sig_j: float, r_f: float,
-                      z: float) -> Optional[float]:
+                      z: float) -> float | None:
     """Smallest-change fuse mean m < μ_j with Φ((μ_j−m)/√(r_f²m²+σ_j²)) = c.
 
     Squares to  m²(1−z²r_f²) − 2μ_j m + (μ_j² − z²σ_j²) = 0; smaller root.
@@ -466,7 +465,7 @@ def _solve_lower_fuse(mu_j: float, sig_j: float, r_f: float,
 
 
 def _solve_raise_rival(mu_f: float, sig_f: float, r_j: float,
-                       z: float) -> Optional[float]:
+                       z: float) -> float | None:
     """Smallest rival mean m > μ_f with Φ((m−μ_f)/√(σ_f²+r_j²m²)) = c.
 
     Squares to  m²(1−z²r_j²) − 2μ_f m + (μ_f² − z²σ_f²) = 0; larger root.
@@ -527,7 +526,7 @@ def prescribe(path: OverloadPath,
             hi_note = (f"stiffen '{e.label}' to FoS {m_hi:.2f}")
             m_hi_out = round(m_hi, 3)
         # (c) sharpen the rival's evidence grade — certainty instead of metal
-        sharpen_to: Optional[EvidenceGrade] = None
+        sharpen_to: EvidenceGrade | None = None
         for g in (EvidenceGrade.MODELLED, EvidenceGrade.MEASURED,
                   EvidenceGrade.VERIFIED):
             unc_g = effective_rel_unc(g, 0.0)
@@ -580,7 +579,7 @@ def create_charter(designations: dict[str, str],
         raise ValueError("forbidden_p must be in (0, 0.5)")
     ch = {"confidence": float(confidence), "forbidden_p": float(forbidden_p),
           "designations": dict(sorted(designations.items())),
-          "created_utc": _dt.datetime.now(_dt.timezone.utc)
+          "created_utc": _dt.datetime.now(_dt.UTC)
           .strftime("%Y-%m-%d %H:%M UTC"),
           "note": note}
     ch["seal"] = hashlib.sha256(_charter_payload(ch).encode()).hexdigest()
@@ -706,7 +705,7 @@ def seed_paths() -> list[OverloadPath]:
 #  Markdown export — the pinnable Fuse Map
 # --------------------------------------------------------------------------- #
 def render_fusebox_md(paths: list[OverloadPath], audits: list[PathAudit],
-                      charter: Optional[dict] = None,
+                      charter: dict | None = None,
                       frame_tag: str = "") -> str:
     lines = ["# ⛓️ Fusebox — the failure-order audit", ""]
     if charter and charter_intact(charter):

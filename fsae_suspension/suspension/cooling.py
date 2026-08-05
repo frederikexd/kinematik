@@ -54,9 +54,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field as _dcfield
-from typing import Dict, List, Optional, Tuple
 
-import numpy as np
 
 
 __all__ = ["Coolant", "COOLANTS", "coolant", "LoopSpec", "LoopResult",
@@ -78,7 +76,7 @@ class Coolant:
     note: str = ""
 
 
-COOLANTS: Dict[str, Coolant] = {
+COOLANTS: dict[str, Coolant] = {
     "water": Coolant("water", "Distilled water + inhibitor", 4180.0, 997.0,
                      100.0,
                      "The best coolant by a wide margin and usually banned "
@@ -108,7 +106,7 @@ def coolant(key: str) -> Coolant:
 
 def heat_load_w(shaft_power_w: float, motor_eff: float = 0.94,
                 inverter_eff: float = 0.97,
-                coolant_fraction: float = 0.85) -> Tuple[float, List[str]]:
+                coolant_fraction: float = 0.85) -> tuple[float, list[str]]:
     """Heat into the coolant from a given shaft power.
 
     Not all loss goes into the coolant: some radiates and convects off the
@@ -161,10 +159,10 @@ class LoopResult:
     time_to_limit_s: float
     boil_margin_c: float
     ok: bool
-    notes: List[str] = _dcfield(default_factory=list)
+    notes: list[str] = _dcfield(default_factory=list)
 
 
-def size_loop(spec: Optional[LoopSpec] = None) -> LoopResult:
+def size_loop(spec: LoopSpec | None = None) -> LoopResult:
     """Flow, temperature rise, radiator UA and how long you have."""
     s = spec or LoopSpec()
     c = coolant(s.coolant_key)
@@ -235,7 +233,7 @@ class TempSensor:
     note: str = ""
 
 
-TEMP_SENSORS: Dict[str, TempSensor] = {
+TEMP_SENSORS: dict[str, TempSensor] = {
     "type_k": TempSensor("type_k", "Type K thermocouple", 2.2, False,
                          "Cheap, fast, and hopeless for a ΔT measurement."),
     "pt100_b": TempSensor("pt100_b", "PT100 class B", 0.65, False,
@@ -263,7 +261,7 @@ class FlowMeter:
     note: str = ""
 
 
-FLOW_METERS: Dict[str, FlowMeter] = {
+FLOW_METERS: dict[str, FlowMeter] = {
     "paddle": FlowMeter("paddle", "Paddle-wheel", 0.05,
                         "±5 % of reading, and worse near the bottom of its "
                         "range."),
@@ -288,7 +286,7 @@ class RigResult:
     resolvable_w: float
     dominant: str
     verdict: str
-    notes: List[str] = _dcfield(default_factory=list)
+    notes: list[str] = _dcfield(default_factory=list)
 
 
 def rig_uncertainty(*, heat_w: float, flow_lpm: float, coolant_key: str,
@@ -365,7 +363,7 @@ def rig_uncertainty(*, heat_w: float, flow_lpm: float, coolant_key: str,
 
 def required_delta_t(*, temp_sensor: str, flow_meter: str,
                      target_resolution_rel: float = 0.10,
-                     cp_uncertainty_rel: float = 0.02) -> Optional[float]:
+                     cp_uncertainty_rel: float = 0.02) -> float | None:
     """Invert it: the ΔT the rig must be designed to produce.
 
     Returns None when the sensors cannot reach the target at ANY temperature

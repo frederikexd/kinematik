@@ -49,7 +49,6 @@ Public API
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 # --------------------------------------------------------------------------- #
@@ -110,14 +109,14 @@ _SUBJECTS: list[tuple[str, list[str]]] = [
 ]
 
 
-def _resolve_subject(lower: str, exclude: Optional[str] = None) -> Optional[tuple[str, int]]:
+def _resolve_subject(lower: str, exclude: str | None = None) -> tuple[str, int] | None:
     """Find the first subsystem phrase in ``lower``; return (id, position).
 
     ``exclude`` lets the caller find the SECOND distinct subject by skipping the
     id already found. Position is the index of the match so the caller can order
     the two subjects (A before B) the way the sentence reads.
     """
-    best: Optional[tuple[str, int]] = None
+    best: tuple[str, int] | None = None
     for sid, phrases in _SUBJECTS:
         if sid == exclude:
             continue
@@ -142,7 +141,7 @@ def _resolve_subject(lower: str, exclude: Optional[str] = None) -> Optional[tupl
 #                      at second order through mass/packaging).
 #   coupled = None  -> real but conditional/weak; answer DEPENDS.
 # ``path`` is the plain-language explanation of the mechanism.
-_EDGES: dict[frozenset, tuple[Optional[bool], str, str]] = {
+_EDGES: dict[frozenset, tuple[bool | None, str, str]] = {
     frozenset({"power", "suspension"}): (
         True, "suspension",
         "More power raises the longitudinal loads the suspension must react: "
@@ -291,7 +290,7 @@ _POS_AFFECT = [
 ]
 
 
-def _polarity(lower: str) -> Optional[str]:
+def _polarity(lower: str) -> str | None:
     """Return 'neg' if the claim asserts independence, 'pos' if it asserts a
     coupling, or None if it isn't an affects/independence claim at all."""
     if any(p in lower for p in _NEG_AFFECT):
@@ -304,7 +303,7 @@ def _polarity(lower: str) -> Optional[str]:
 # --------------------------------------------------------------------------- #
 #  Public entry                                                                #
 # --------------------------------------------------------------------------- #
-def assess_coupling(lower: str) -> Optional[CouplingVerdict]:
+def assess_coupling(lower: str) -> CouplingVerdict | None:
     """Reason about a cross-subsystem 'does A affect B' claim.
 
     Returns a CouplingVerdict when the claim is an affects/independence claim

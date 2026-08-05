@@ -52,10 +52,8 @@ actionable message rather than a stack trace.
 from __future__ import annotations
 
 import os
-import json
 import secrets as _secrets
 from dataclasses import dataclass
-from typing import Optional
 
 from .drive_export import DRIVE_SCOPES
 
@@ -74,7 +72,7 @@ class OAuthConfig:
         return bool(self.client_id and self.client_secret and self.redirect_uri)
 
 
-def load_oauth_config(read_credential=None) -> Optional[OAuthConfig]:
+def load_oauth_config(read_credential=None) -> OAuthConfig | None:
     """Pull the OAuth client config from secrets/env, or None if not configured.
 
     read_credential: optional callable(name)->str (the app's _read_credential).
@@ -129,7 +127,7 @@ def _client_config(cfg: OAuthConfig) -> dict:
 
 
 def build_auth_url(read_credential=None,
-                   state: Optional[str] = None) -> tuple[Optional[str], str]:
+                   state: str | None = None) -> tuple[str | None, str]:
     """Return (auth_url, state) to send the user to Google's consent screen.
 
     A random ``state`` is generated for CSRF protection if not supplied; the
@@ -153,7 +151,7 @@ def build_auth_url(read_credential=None,
 
 
 def exchange_code(code: str, expected_state: str, returned_state: str,
-                  read_credential=None) -> tuple[Optional[dict], str]:
+                  read_credential=None) -> tuple[dict | None, str]:
     """Swap an authorization ``code`` for a token dict, verifying CSRF state.
 
     Returns (token_dict, "") on success, or (None, reason) on failure. The token
@@ -192,7 +190,6 @@ def connected_account_email(token: dict) -> str:
     """Best-effort: return the connected Google account's email for display, or
     "" if it can't be fetched. Purely cosmetic ('Connected as ...')."""
     try:
-        from googleapiclient.discovery import build
         from suspension.drive_export import _service_from_oauth_token
         service = _service_from_oauth_token(token)
         about = service.about().get(fields="user(emailAddress)").execute()
@@ -201,7 +198,7 @@ def connected_account_email(token: dict) -> str:
         return ""
 
 
-def token_is_usable(token: Optional[dict]) -> bool:
+def token_is_usable(token: dict | None) -> bool:
     """True if the cached token at least has the fields needed to build creds and
     refresh. (Actual validity is proven on first API call, which auto-refreshes.)"""
     if not token:

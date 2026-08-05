@@ -109,11 +109,10 @@ import datetime as _dt
 import hashlib
 import json
 import math
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Optional
 
-from .proof_engine import EvidenceGrade, Quantity, effective_rel_unc
+from .proof_engine import EvidenceGrade
 from .phantom_car import phi, z_from_percentile
 
 
@@ -187,7 +186,7 @@ class ABDesign:
             return SWAMPED_LAP_LIMIT + 1
         return math.ceil(2.0 * (self._z_sum * self.noise_sigma / d) ** 2)
 
-    def mde(self, n_per_config: Optional[int] = None) -> float:
+    def mde(self, n_per_config: int | None = None) -> float:
         """Minimum detectable effect for a given session length."""
         n = self.laps_available_per_config if n_per_config is None else n_per_config
         if n <= 0:
@@ -345,8 +344,8 @@ class OrderingFinding:
 
 
 def audit_orderings(design: ABDesign,
-                    drifts: Optional[list[DriftSource]] = None,
-                    n_per_config: Optional[int] = None) -> list[OrderingFinding]:
+                    drifts: list[DriftSource] | None = None,
+                    n_per_config: int | None = None) -> list[OrderingFinding]:
     """
     Weigh every standard ordering against the session's own drift model and
     the effect being hunted. Verdict thresholds are stated, not tuned:
@@ -401,11 +400,11 @@ class DeliveredResolution:
     delivered_rel_unc: float      # fraction, e.g. 0.027 = ±2.7 %
     terms: dict                   # name -> rel-unc contribution (RSS members)
     earned_grade: EvidenceGrade
-    current_rel_unc: Optional[float] = None   # ledger band, for the verdict
-    verdict: Optional[ResolutionVerdict] = None
+    current_rel_unc: float | None = None   # ledger band, for the verdict
+    verdict: ResolutionVerdict | None = None
     note: str = ""
 
-    def judge_against(self, current_rel_unc: float) -> "DeliveredResolution":
+    def judge_against(self, current_rel_unc: float) -> DeliveredResolution:
         self.current_rel_unc = current_rel_unc
         if self.delivered_rel_unc < current_rel_unc:
             self.verdict = ResolutionVerdict.SHARPENS
@@ -547,10 +546,10 @@ class SessionSheet:
     created_utc: str = ""
     seal: str = ""
     # ---- result block (mutable after sealing) ----
-    mean_a: Optional[float] = None
-    mean_b: Optional[float] = None
-    laps_run_per_config: Optional[int] = None
-    judged_verdict: Optional[str] = None
+    mean_a: float | None = None
+    mean_b: float | None = None
+    laps_run_per_config: int | None = None
+    judged_verdict: str | None = None
     judged_note: str = ""
 
     _SEALED = ("title", "objective_label", "unit", "effect_predicted",
@@ -573,7 +572,7 @@ class SessionSheet:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d: dict) -> "SessionSheet":
+    def from_dict(d: dict) -> SessionSheet:
         return SessionSheet(**{k: v for k, v in d.items()
                                if k in SessionSheet.__dataclass_fields__})
 
@@ -581,7 +580,7 @@ class SessionSheet:
 def create_sheet(title: str, design: ABDesign, ordering: str,
                  objective_label: str = "lap time", unit: str = "s",
                  burn_in_laps: int = 3, sigma_grade: str = "estimate",
-                 drifts: Optional[list[DriftSource]] = None,
+                 drifts: list[DriftSource] | None = None,
                  abort_note: str = "") -> SessionSheet:
     n = design.laps_available_per_config
     bias = sum(ordering_bias(ordering, n, s.rate_per_lap)
@@ -593,7 +592,7 @@ def create_sheet(title: str, design: ABDesign, ordering: str,
         alpha=design.alpha, power=design.power, ordering=ordering.upper(),
         laps_per_config=n, burn_in_laps=int(burn_in_laps),
         mde=design.mde(n), drift_bias_declared=bias, abort_note=abort_note,
-        created_utc=_dt.datetime.now(_dt.timezone.utc)
+        created_utc=_dt.datetime.now(_dt.UTC)
                         .isoformat(timespec="seconds").replace("+00:00", "Z"))
     sheet.seal = sheet.compute_seal()
     return sheet
@@ -650,7 +649,7 @@ def judge_session(sheet: SessionSheet, mean_a: float, mean_b: float,
 #  Markdown export — the pinnable run sheet
 # --------------------------------------------------------------------------- #
 def render_session_md(sheet: SessionSheet,
-                      orderings: Optional[list[OrderingFinding]] = None,
+                      orderings: list[OrderingFinding] | None = None,
                       frame_note: str = "") -> str:
     seq = build_sequence(sheet.ordering, sheet.laps_per_config)
     lines = [

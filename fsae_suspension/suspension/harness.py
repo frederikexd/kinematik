@@ -71,7 +71,6 @@ integration board next to a melted trace and a suspension clash.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 
 import numpy as np
 
@@ -230,7 +229,7 @@ class Connector:
     cavities: int = 1
     part_number: str = ""
     strain_relief_mm: float = 25.0
-    mass_g: Optional[float] = None
+    mass_g: float | None = None
     is_estimate: bool = True
     set_by: str = ""
     notes: str = ""
@@ -242,7 +241,7 @@ class Connector:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "Connector":
+    def from_dict(d) -> Connector:
         d = dict(d)
         if isinstance(d.get("xyz_mm"), list):
             d["xyz_mm"] = tuple(d["xyz_mm"])
@@ -291,12 +290,12 @@ class WireRun:
     from_conn: str = ""
     to_conn: str = ""
     net: str = ""
-    od_mm: Optional[float] = None
+    od_mm: float | None = None
     bundle_min_radius_mult: float = 6.0
     service_loop_mm: float = 0.0
     strip_mm: float = 8.0
-    carries_current_a: Optional[float] = None
-    clamp_idx: Optional[list] = None
+    carries_current_a: float | None = None
+    clamp_idx: list | None = None
     is_estimate: bool = True
     set_by: str = ""
     notes: str = ""
@@ -439,7 +438,7 @@ class WireRun:
         ei_lo = E_CU_PA * i_solid / float(STRANDS_ASSUMED) + ei_jacket
         return ei_lo, ei_hi
 
-    def centroid_mm(self) -> Optional[np.ndarray]:
+    def centroid_mm(self) -> np.ndarray | None:
         """Length-weighted centroid of the taut route in car coordinates — the
         point the wire's mass acts through (uniform linear density)."""
         path = self.as_polyline()
@@ -456,7 +455,7 @@ class WireRun:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "WireRun":
+    def from_dict(d) -> WireRun:
         d = dict(d)
         if isinstance(d.get("path_mm"), list):
             d["path_mm"] = [tuple(p) for p in d["path_mm"]]
@@ -608,10 +607,10 @@ class SpanFlex:
     sag_beam_1g_hi_mm: float
     sag_total_lo_mm: float
     sag_total_hi_mm: float
-    f1_lo_hz: Optional[float]
-    f1_hi_hz: Optional[float]
+    f1_lo_hz: float | None
+    f1_hi_hz: float | None
     resonant: bool
-    dyn_sag_mm: Optional[float]
+    dyn_sag_mm: float | None
     beam_valid: bool
     mid_xyz_mm: list
 
@@ -635,7 +634,7 @@ def _span_mid_point(sub: np.ndarray) -> np.ndarray:
     return sub[-1].astype(float)
 
 
-def wire_span_flex(w: "WireRun", vib_g: float = 3.0,
+def wire_span_flex(w: WireRun, vib_g: float = 3.0,
                    band_hz: tuple = (20.0, 200.0)) -> list:
     """Solve every unsupported span of one wire. Returns [SpanFlex, ...].
 
@@ -704,8 +703,8 @@ def wire_span_flex(w: "WireRun", vib_g: float = 3.0,
     return out
 
 
-def sagged_polyline_mm(w: "WireRun", vib_g: float = 3.0,
-                       band_hz: tuple = (20.0, 200.0)) -> Optional[np.ndarray]:
+def sagged_polyline_mm(w: WireRun, vib_g: float = 3.0,
+                       band_hz: tuple = (20.0, 200.0)) -> np.ndarray | None:
     """The wire's route DRAPED: every unsupported span's points displaced down
     (−z) by the upper-bound sag at the declared vibration level, following the
     clamped-clamped shape 16·(s(1−s))² ·δ_max along the span's normalized arc
@@ -797,7 +796,7 @@ def _ang_diff(a: float, b: float) -> float:
 
 def _unfold_branch_2d(path3d: np.ndarray, origin2d: np.ndarray,
                       heading_deg: float,
-                      target_heading_deg: Optional[float] = None) -> np.ndarray:
+                      target_heading_deg: float | None = None) -> np.ndarray:
     """
     Unfold a 3-D centreline into a flat 2-D polyline that PRESERVES every segment
     length exactly. The branch launches along `heading_deg` and turns at each
@@ -859,7 +858,7 @@ class HarnessLedger:
     # otherwise. Tefzel (M22759/16, 150 °C) is what most FSAE teams actually run;
     # the termination is almost always the real limit, not the conductor.
     insulation: str = "tefzel"
-    termination_c: Optional[float] = 105.0             # crimp lug / boot rating
+    termination_c: float | None = 105.0             # crimp lug / boot rating
     clearance_warn_mm: float = 10.0                    # gap that triggers WARN
     clearance_fail_mm: float = 0.0                     # gap that triggers FAIL (touch/through)
     # ---- flex-solver environment (screening levels; every value editable) --
@@ -1000,7 +999,7 @@ class HarnessLedger:
         return out
 
     # ---- 3-D clearance vs keep-outs -------------------------------------- #
-    def check_clearance(self, keepouts: Optional[list] = None) -> list:
+    def check_clearance(self, keepouts: list | None = None) -> list:
         """
         Route every wire past the keep-out volumes the rest of the car reserves
         (the same AABB boxes the mount-point clash checks). A wire through a box is
@@ -1075,7 +1074,7 @@ class HarnessLedger:
             out += wire_span_flex(w, vib_g=self.vib_g, band_hz=band)
         return out
 
-    def check_flex(self, keepouts: Optional[list] = None) -> list:
+    def check_flex(self, keepouts: list | None = None) -> list:
         """The cable-flex gate. For every unsupported span between supports
         (connector ends + declared clamp points):
 
@@ -1458,7 +1457,7 @@ class HarnessLedger:
                          ties=ties)
 
     # ---- current resolution: inherit, don't re-type ----------------------- #
-    def bundle_size(self, w: "WireRun") -> int:
+    def bundle_size(self, w: WireRun) -> int:
         """
         How many conductors run alongside this one, for the NEC bundling derate.
 
@@ -1471,7 +1470,7 @@ class HarnessLedger:
         return max(1, sum(1 for o in self.wires.values()
                           if {o.from_conn, o.to_conn} == ends))
 
-    def resolve_currents(self, ledger=None, net_currents: Optional[dict] = None) -> dict:
+    def resolve_currents(self, ledger=None, net_currents: dict | None = None) -> dict:
         """
         Work out what each conductor actually has to carry, in precedence order:
 
@@ -1510,7 +1509,7 @@ class HarnessLedger:
         return out
 
     def check_ampacity(self, ledger=None,
-                       net_currents: Optional[dict] = None) -> list:
+                       net_currents: dict | None = None) -> list:
         """
         Can each conductor carry its resolved current where it is actually
         installed? Runs the NEC-based derate in `wiring.py` — ambient correction,
@@ -1615,7 +1614,7 @@ class HarnessLedger:
         )
 
     @staticmethod
-    def from_dict(d) -> "HarnessLedger":
+    def from_dict(d) -> HarnessLedger:
         d = d or {}
         hl = HarnessLedger()
         for k, v in (d.get("connectors") or {}).items():
@@ -1641,7 +1640,7 @@ class HarnessCheckResult:
     cut_list: list = field(default_factory=list)
     bom: dict = field(default_factory=dict)
     mass: dict = field(default_factory=dict)
-    formboard: Optional[Formboard] = None
+    formboard: Formboard | None = None
     flex: list = field(default_factory=list)     # [SpanFlex, ...] every span
 
     def has_hard_fail(self) -> bool:
@@ -1662,9 +1661,9 @@ class HarnessCheckResult:
 
 
 def check_harness(harness: HarnessLedger,
-                  keepouts: Optional[list] = None,
+                  keepouts: list | None = None,
                   ledger=None,
-                  net_currents: Optional[dict] = None) -> HarnessCheckResult:
+                  net_currents: dict | None = None) -> HarnessCheckResult:
     """
     Run the full pre-cut harness gate: bend-radius + strain-relief on every wire,
     3-D clearance against the supplied keep-out volumes (the same boxes the

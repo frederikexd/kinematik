@@ -70,7 +70,7 @@ import time
 import traceback
 import zipfile
 from dataclasses import dataclass, field as _dcfield, asdict
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
+from collections.abc import Callable, Iterable, Sequence
 
 import numpy as np
 
@@ -88,7 +88,7 @@ __all__ = [
 #  unit token → (dimension, factor to storage unit)
 #  storage units: length mm · mass kg · accel g · speed m/s · angle deg
 #                 stiffness N/mm · fraction 0..1 · money USD · time s
-_UNITS: Dict[str, Tuple[str, float]] = {
+_UNITS: dict[str, tuple[str, float]] = {
     # length → mm
     "mm": ("length", 1.0), "millimetre": ("length", 1.0),
     "millimeter": ("length", 1.0), "cm": ("length", 10.0),
@@ -175,22 +175,22 @@ class Quantity:
     """One number found in the prose, with where it was and what it meant."""
     raw: str
     value: float
-    unit: Optional[str]
-    dim: Optional[str]
+    unit: str | None
+    dim: str | None
     start: int
     end: int
-    claimed_by: Optional[str] = None
+    claimed_by: str | None = None
 
     @property
     def mid(self) -> float:
         return 0.5 * (self.start + self.end)
 
 
-def _scan_quantities(text: str) -> List[Quantity]:
+def _scan_quantities(text: str) -> list[Quantity]:
     """Every number-shaped thing in the text, with its unit and character
     span. Bare numbers are kept — a parameter word can still claim one, and
     the assumption gets receipted."""
-    out: List[Quantity] = []
+    out: list[Quantity] = []
     for m in _QTY_RE.finditer(text):
         raw_num = m.group("num")
         if raw_num is None:
@@ -211,7 +211,7 @@ def _scan_quantities(text: str) -> List[Quantity]:
     return out
 
 
-def _convert(q: Quantity, want_dim: str) -> Tuple[Optional[float], str]:
+def _convert(q: Quantity, want_dim: str) -> tuple[float | None, str]:
     """Value in the storage unit for `want_dim`, plus a receipt fragment.
     Returns (None, reason) when the quantity's dimension cannot be honoured."""
     if q.unit is None:
@@ -251,7 +251,7 @@ def _convert(q: Quantity, want_dim: str) -> Tuple[Optional[float], str]:
 # =========================================================================== #
 #  tool id → the words that ask for it. Ids match _TAB_META in the shell, so
 #  the README can name the tab to open when there IS time.
-_TOOL_WORDS: Dict[str, Tuple[str, ...]] = {
+_TOOL_WORDS: dict[str, tuple[str, ...]] = {
     "kinematics": ("kinematic", "bump steer", "bumpsteer", "camber",
                    "toe", "caster", "kpi", "scrub", "hardpoint", "geometry",
                    "pickup", "instant centre", "instant center"),
@@ -325,7 +325,7 @@ _TOOL_WORDS: Dict[str, Tuple[str, ...]] = {
 #  parameter → (storage field, dimension, default, the words that name it)
 #  Ordered: earlier entries claim their quantity first, so the more specific
 #  phrase ("front track") wins over the general one ("track").
-_PARAM_WORDS: List[Tuple[str, str, float, Tuple[str, ...]]] = [
+_PARAM_WORDS: list[tuple[str, str, float, tuple[str, ...]]] = [
     #  Module limits are per-module and the pack figure cannot satisfy them,
     #  so the module phrases must claim their quantity first.
     ("module_kwh", "energy", None, ("module energy", "per module",
@@ -406,7 +406,7 @@ _PARAM_WORDS: List[Tuple[str, str, float, Tuple[str, ...]]] = [
 
 #  dimension → the one parameter it can only be. Ambiguous dimensions are
 #  absent on purpose (see the unit-implied binding pass in parse_request).
-_UNIT_IMPLIES: Dict[str, str] = {
+_UNIT_IMPLIES: dict[str, str] = {
     "mass": "mass_kg",
     "stiffness": "spring_rate_N_per_mm",
     "money": "budget_usd",
@@ -418,7 +418,7 @@ _UNIT_IMPLIES: Dict[str, str] = {
 }
 
 #  deliverable words — what the member wants OUT. Absence means "everything".
-_DELIVERABLE_WORDS: Dict[str, Tuple[str, ...]] = {
+_DELIVERABLE_WORDS: dict[str, tuple[str, ...]] = {
     "md": ("report", "write-up", "writeup", "summary", "memo", "document"),
     "csv": ("csv", "table", "spreadsheet", "raw numbers", "data out"),
     "json": ("json", "machine readable", "api", "handover"),
@@ -467,7 +467,7 @@ def _find_word(low: str, phrase: str) -> int:
     return m.start() if m else -1
 
 
-_WORD_CACHE: Dict[str, "re.Pattern"] = {}
+_WORD_CACHE: dict[str, re.Pattern] = {}
 
 # =========================================================================== #
 #  1b · The time budget — the lane's promise, made explicit
@@ -479,7 +479,7 @@ _WORD_CACHE: Dict[str, "re.Pattern"] = {}
 #  can say otherwise in the same sentence as everything else.
 _DEFAULT_BUDGET_S = 90.0
 
-_BUDGET_PHRASES: List[Tuple[str, float]] = [
+_BUDGET_PHRASES: list[tuple[str, float]] = [
     ("overnight", 8 * 3600.0), ("all night", 8 * 3600.0),
     ("over lunch", 45 * 60.0), ("take your time", 30 * 60.0),
     ("no rush", 15 * 60.0), ("i can wait", 10 * 60.0),
@@ -493,7 +493,7 @@ _BUDGET_UNIT_S = {"hour": 3600.0, "hr": 3600.0, "minute": 60.0, "min": 60.0,
                   "second": 1.0, "sec": 1.0}
 
 
-def parse_budget(text: str) -> Tuple[float, Optional[str]]:
+def parse_budget(text: str) -> tuple[float, str | None]:
     """How long the member is willing to wait, and what said so.
 
     An explicit duration always beats a mood word: "I'm in a hurry but I can
@@ -516,7 +516,7 @@ def parse_budget(text: str) -> Tuple[float, Optional[str]]:
 #  Engines that are deliberately NOT in the lane, and the reason, by name.
 #  A missing tool with no explanation reads as an oversight; a missing tool
 #  with a reason reads as a decision. These are decisions.
-_NOT_IN_LANE: Dict[str, str] = {
+_NOT_IN_LANE: dict[str, str] = {
     "genesis": (
         "Inverse Genesis needs a **legal volume** — the keep-out boxes your "
         "packaging actually allows — before it can solve for hardpoints. Two "
@@ -534,7 +534,7 @@ _BIND_WINDOW = 45.0
 _UNITLESS_PENALTY = 12.0
 
 
-def _dims_of(q: "Quantity") -> set:
+def _dims_of(q: Quantity) -> set:
     """Every dimension a quantity could legitimately be.
 
     Normally one. For the genuinely ambiguous tokens ('g' = gram or gravity)
@@ -550,17 +550,17 @@ def _dims_of(q: "Quantity") -> set:
 class Ask:
     """The typed request + the parse receipt."""
     text: str
-    tools: List[str] = _dcfield(default_factory=list)
-    params: Dict[str, float] = _dcfield(default_factory=dict)
-    deliverables: List[str] = _dcfield(default_factory=list)
+    tools: list[str] = _dcfield(default_factory=list)
+    params: dict[str, float] = _dcfield(default_factory=dict)
+    deliverables: list[str] = _dcfield(default_factory=list)
     n_sentences: int = 0
     budget_s: float = _DEFAULT_BUDGET_S
-    budget_source: Optional[str] = None
-    consumed: List[str] = _dcfield(default_factory=list)
-    assumptions: List[str] = _dcfield(default_factory=list)
-    ignored: List[str] = _dcfield(default_factory=list)
+    budget_source: str | None = None
+    consumed: list[str] = _dcfield(default_factory=list)
+    assumptions: list[str] = _dcfield(default_factory=list)
+    ignored: list[str] = _dcfield(default_factory=list)
 
-    def param(self, key: str, fallback: Optional[float] = None) -> float:
+    def param(self, key: str, fallback: float | None = None) -> float:
         """A parameter the member gave, else the DECLARED default.
 
         The declared default always wins over a caller's fallback, because
@@ -579,12 +579,12 @@ class Ask:
         return {k: v for k, v in asdict(self).items() if k != "text"}
 
 
-def _sentences(text: str) -> List[str]:
+def _sentences(text: str) -> list[str]:
     return [s.strip() for s in re.split(r"(?<=[.!?])\s+|\n+", text or "")
             if s.strip()]
 
 
-def validate_param_table() -> List[str]:
+def validate_param_table() -> list[str]:
     """The parameter table's one ordering contract, checked instead of trusted.
 
     If a phrase belonging to an EARLIER entry matches inside a phrase
@@ -598,7 +598,7 @@ def validate_param_table() -> List[str]:
     Uses `_find_word` itself rather than a substring check, so the plural
     tolerance and word boundaries are exactly the ones the binder applies.
     """
-    problems: List[str] = []
+    problems: list[str] = []
     for i, (fi, _di, _vi, wi) in enumerate(_PARAM_WORDS):
         for j, (fj, _dj, _vj, wj) in enumerate(_PARAM_WORDS):
             if j <= i:
@@ -641,7 +641,7 @@ def parse_request(text: str) -> Ask:
         #  carrying the dimension the parameter wants gets a head start, a
         #  bare number pays a declared penalty, and a quantity of the WRONG
         #  dimension is not a candidate at all.
-        best: Optional[Quantity] = None
+        best: Quantity | None = None
         best_score = float("inf")
         for q in qtys:
             if q.claimed_by is not None:
@@ -782,7 +782,7 @@ def parse_request(text: str) -> Ask:
 #  2 · The sniffer — columns to canonical channels, scale inferred and printed
 # =========================================================================== #
 #  canonical → (label, storage unit, aliases…)
-_CHANNELS: Dict[str, Tuple[str, str, Tuple[str, ...]]] = {
+_CHANNELS: dict[str, tuple[str, str, tuple[str, ...]]] = {
     "time":        ("time", "s", ("time", "t", "timestamp", "elapsed",
                                   "secs", "seconds", "utc")),
     "distance":    ("distance", "m", ("distance", "dist", "lapdist",
@@ -838,7 +838,7 @@ _CHANNELS: Dict[str, Tuple[str, str, Tuple[str, ...]]] = {
 
 #  the brake-pressure aliases must beat the generic 'brake' word, and the
 #  per-corner damper aliases must beat 'damper'; longest alias wins.
-_ALIAS_INDEX: List[Tuple[str, str]] = sorted(
+_ALIAS_INDEX: list[tuple[str, str]] = sorted(
     ((alias, canon) for canon, (_l, _u, aliases) in _CHANNELS.items()
      for alias in aliases),
     key=lambda ac: len(ac[0]), reverse=True)
@@ -869,7 +869,7 @@ def _strip_filler(n: str) -> str:
     return "_".join(parts)
 
 
-def _lookup(n: str) -> Optional[str]:
+def _lookup(n: str) -> str | None:
     if not n:
         return None
     for alias, canon in _ALIAS_INDEX:
@@ -883,7 +883,7 @@ def _lookup(n: str) -> Optional[str]:
     return None
 
 
-def _match_channel(header: str) -> Optional[str]:
+def _match_channel(header: str) -> str | None:
     n = _norm_header(header)
     return _lookup(n) or _lookup(_strip_filler(n))
 
@@ -903,24 +903,24 @@ class Channel:
     std: float
     scale_note: str = ""
     source_file: str = ""
-    flags: List[str] = _dcfield(default_factory=list)
+    flags: list[str] = _dcfield(default_factory=list)
 
 
 @dataclass
 class DataBundle:
     """Everything the sniffer made of the upload."""
-    channels: Dict[str, Channel] = _dcfield(default_factory=dict)
-    series: Dict[str, np.ndarray] = _dcfield(default_factory=dict)
-    hardpoints: Optional[object] = None
+    channels: dict[str, Channel] = _dcfield(default_factory=dict)
+    series: dict[str, np.ndarray] = _dcfield(default_factory=dict)
+    hardpoints: object | None = None
     #  Uploads that are neither a table nor a hardpoint set, keyed by kind —
     #  a KiCad board, a DFMEA export. Jobs declare these via `needs_extra`.
-    extras: Dict[str, str] = _dcfield(default_factory=dict)
-    files: List[str] = _dcfield(default_factory=list)
-    unmatched: List[str] = _dcfield(default_factory=list)
-    sample_rate_hz: Optional[float] = None
-    duration_s: Optional[float] = None
-    receipts: List[str] = _dcfield(default_factory=list)
-    warnings: List[str] = _dcfield(default_factory=list)
+    extras: dict[str, str] = _dcfield(default_factory=dict)
+    files: list[str] = _dcfield(default_factory=list)
+    unmatched: list[str] = _dcfield(default_factory=list)
+    sample_rate_hz: float | None = None
+    duration_s: float | None = None
+    receipts: list[str] = _dcfield(default_factory=list)
+    warnings: list[str] = _dcfield(default_factory=list)
 
     def has(self, *canon: str) -> bool:
         return all(c in self.series for c in canon)
@@ -937,7 +937,7 @@ class DataBundle:
         }
 
 
-def _rescale(canon: str, arr: np.ndarray) -> Tuple[np.ndarray, str]:
+def _rescale(canon: str, arr: np.ndarray) -> tuple[np.ndarray, str]:
     """Infer the column's scale FROM THE DATA and disclose what was done.
 
     The header can lie about units; the numbers cannot lie about magnitude.
@@ -969,10 +969,10 @@ def _rescale(canon: str, arr: np.ndarray) -> Tuple[np.ndarray, str]:
     return arr, ""
 
 
-def _flag(canon: str, arr: np.ndarray) -> List[str]:
+def _flag(canon: str, arr: np.ndarray) -> list[str]:
     """Quality flags. A flatlined potentiometer is the single most expensive
     thing to discover AFTER the design review, so it is discovered here."""
-    flags: List[str] = []
+    flags: list[str] = []
     fin = arr[np.isfinite(arr)]
     n_nan = int(arr.size - fin.size)
     if n_nan:
@@ -988,7 +988,7 @@ def _flag(canon: str, arr: np.ndarray) -> List[str]:
     return flags
 
 
-def _read_table(name: str, blob: bytes) -> Tuple[List[str], List[List[str]], str]:
+def _read_table(name: str, blob: bytes) -> tuple[list[str], list[list[str]], str]:
     """Delimiter + header detection via the stdlib sniffer, with a declared
     fallback. Returns (header, rows, receipt)."""
     text = blob.decode("utf-8", errors="replace")
@@ -1023,7 +1023,7 @@ def _read_table(name: str, blob: bytes) -> Tuple[List[str], List[List[str]], str
     return header, body, f"{name}: {note}, {len(body)} data rows"
 
 
-def _as_float_col(body: List[List[str]], idx: int) -> np.ndarray:
+def _as_float_col(body: list[list[str]], idx: int) -> np.ndarray:
     out = np.full(len(body), np.nan, dtype=float)
     for i, row in enumerate(body):
         if idx < len(row):
@@ -1034,7 +1034,7 @@ def _as_float_col(body: List[List[str]], idx: int) -> np.ndarray:
     return out
 
 
-def sniff_files(files: Optional[Iterable[Tuple[str, bytes]]]) -> DataBundle:
+def sniff_files(files: Iterable[tuple[str, bytes]] | None) -> DataBundle:
     """Turn an arbitrary upload into canonical channels — or say why not.
 
     Accepts (name, bytes) pairs. CSV/TSV become channels; a JSON file holding
@@ -1104,7 +1104,7 @@ def sniff_files(files: Optional[Iterable[Tuple[str, bytes]]]) -> DataBundle:
     #  channels from any other length are unmerged and SAID SO rather than
     #  silently kept to blow up three jobs later.
     if db.channels:
-        by_file: Dict[str, List[str]] = {}
+        by_file: dict[str, list[str]] = {}
         for canon, ch in db.channels.items():
             by_file.setdefault(ch.source_file, []).append(canon)
         #  The primary MUST be whichever file supplied the timebase. Picking
@@ -1117,7 +1117,7 @@ def sniff_files(files: Optional[Iterable[Tuple[str, bytes]]]) -> DataBundle:
             primary = sorted(by_file, key=lambda f: (-len(by_file[f]), f))[0]
         n_primary = db.channels.get(
             "time", db.channels[by_file[primary][0]]).n
-        dropped: Dict[str, List[str]] = {}
+        dropped: dict[str, list[str]] = {}
         for canon in list(db.channels):
             ch = db.channels[canon]
             if ch.source_file != primary and ch.n != n_primary:
@@ -1163,7 +1163,7 @@ def sniff_files(files: Optional[Iterable[Tuple[str, bytes]]]) -> DataBundle:
     return db
 
 
-def _hardpoints_from_json(obj) -> Optional[object]:
+def _hardpoints_from_json(obj) -> object | None:
     """A hardpoint dict from any of the shapes the toolkit exports."""
     try:
         from .kinematics import Hardpoints
@@ -1214,11 +1214,11 @@ class Ctx:
     data: DataBundle
     hardpoints: object
     hp_source: str
-    results: Dict[str, object] = _dcfield(default_factory=dict)
+    results: dict[str, object] = _dcfield(default_factory=dict)
     #  Structured findings, raised by any job, harvested by the DFMEA job.
     #  This is the one piece of shared state that is deliberately open: a
     #  failure mode belongs to the car, not to the analysis that noticed it.
-    findings: List[dict] = _dcfield(default_factory=list)
+    findings: list[dict] = _dcfield(default_factory=list)
     #  Stamped by the runner so a finding knows which job raised it without
     #  every flag() call having to repeat itself.
     current_job: str = ""
@@ -1244,11 +1244,11 @@ class Job:
     jid: str
     title: str
     tool: str
-    fn: Callable[[Ctx], List[Artifact]]
-    needs_channels: Tuple[str, ...] = ()   # ALL of these
-    needs_any: Tuple[str, ...] = ()        # and at least ONE of these
-    needs_extra: Tuple[str, ...] = ()      # non-tabular uploads, by kind
-    needs_jobs: Tuple[str, ...] = ()       # other jobs whose output it uses
+    fn: Callable[[Ctx], list[Artifact]]
+    needs_channels: tuple[str, ...] = ()   # ALL of these
+    needs_any: tuple[str, ...] = ()        # and at least ONE of these
+    needs_extra: tuple[str, ...] = ()      # non-tabular uploads, by kind
+    needs_jobs: tuple[str, ...] = ()       # other jobs whose output it uses
     data_activated: bool = False           # runs on data alone, unasked
     cost_s: float = 0.5                    # DECLARED, measured once, not timed
     runs_last: bool = False                # harvests what other jobs raised
@@ -1262,7 +1262,7 @@ class Job:
         return "slow" if self.cost_s < 30.0 else "deep"
 
 
-JOBS: Dict[str, Job] = {}
+JOBS: dict[str, Job] = {}
 
 
 def register_job(job: Job) -> Job:
@@ -1274,11 +1274,11 @@ def register_job(job: Job) -> Job:
 class PlannedJob:
     job: Job
     reason: str                     # why it is in the plan
-    skipped: Optional[str] = None   # the named reason it CANNOT run
-    deferred: Optional[str] = None  # or the named reason it WOULD NOT FIT
+    skipped: str | None = None   # the named reason it CANNOT run
+    deferred: str | None = None  # or the named reason it WOULD NOT FIT
 
 
-def _order_by_dependency(planned: List[PlannedJob]) -> List[PlannedJob]:
+def _order_by_dependency(planned: list[PlannedJob]) -> list[PlannedJob]:
     """Stable topological sort: dependencies before dependents, cost order
     preserved everywhere it does not conflict. Cycles are impossible to
     express usefully here, so one is left in place and reported by the runner
@@ -1291,7 +1291,7 @@ def _order_by_dependency(planned: List[PlannedJob]) -> List[PlannedJob]:
     last = [p for p in runnable if p.job.runs_last]
     runnable = [p for p in runnable if not p.job.runs_last]
     done: set = set()
-    ordered: List[PlannedJob] = []
+    ordered: list[PlannedJob] = []
     pending = list(runnable)
     while pending:
         progressed = False
@@ -1308,7 +1308,7 @@ def _order_by_dependency(planned: List[PlannedJob]) -> List[PlannedJob]:
 
 
 def plan(ask: Ask, data: DataBundle,
-         budget_s: Optional[float] = None) -> List[PlannedJob]:
+         budget_s: float | None = None) -> list[PlannedJob]:
     """Which jobs run, which cannot, which would not fit — and why, by name.
 
     Three doors into the plan: the SENTENCE asked for the tool, the DATA
@@ -1328,7 +1328,7 @@ def plan(ask: Ask, data: DataBundle,
     measured time per job for the UI, so the estimates can be corrected in
     source rather than guessed at forever.
     """
-    out: List[PlannedJob] = []
+    out: list[PlannedJob] = []
     asked = set(ask.tools)
     budget = float(ask.budget_s if budget_s is None else budget_s)
     committed = 0.0
@@ -1422,7 +1422,7 @@ def plan(ask: Ask, data: DataBundle,
 # =========================================================================== #
 def _md(title: str, lines: Sequence[str]) -> bytes:
     body = "\n".join(lines).rstrip() + "\n"
-    return (f"# {title}\n\n{body}").encode("utf-8")
+    return (f"# {title}\n\n{body}").encode()
 
 
 def _csv_bytes(header: Sequence[str], rows: Iterable[Sequence]) -> bytes:
@@ -1443,7 +1443,7 @@ def _fnum(v, fmt="{:.4g}") -> str:
 
 
 # --- geometry baseline ------------------------------------------------------ #
-def _job_geometry(ctx: Ctx) -> List[Artifact]:
+def _job_geometry(ctx: Ctx) -> list[Artifact]:
     from .kinematics import SuspensionKinematics
     kin = SuspensionKinematics(ctx.hardpoints)
     tmax = float(ctx.ask.param("travel_mm", 25.0))
@@ -1506,7 +1506,7 @@ register_job(Job("geometry_baseline", "Geometry baseline sweep", "kinematics",
 
 
 # --- motion ratio / rates --------------------------------------------------- #
-def _job_rates(ctx: Ctx) -> List[Artifact]:
+def _job_rates(ctx: Ctx) -> list[Artifact]:
     from .kinematics import SuspensionKinematics
     from .damper import default_damper, damping_ratio
     kin = SuspensionKinematics(ctx.hardpoints)
@@ -1563,7 +1563,7 @@ register_job(Job("rates", "Motion ratio, wheel rate, damping", "setup",
 
 
 # --- load transfer ---------------------------------------------------------- #
-def _job_load_transfer(ctx: Ctx) -> List[Artifact]:
+def _job_load_transfer(ctx: Ctx) -> list[Artifact]:
     from .kinematics import SuspensionKinematics
     from .dynamics import VehicleDynamics, VehicleParams
     kin = SuspensionKinematics(ctx.hardpoints)
@@ -1634,7 +1634,7 @@ register_job(Job("load_transfer", "Lateral + longitudinal load transfer",
 
 
 # --- roll-centre migration --------------------------------------------------- #
-def _job_rc_migration(ctx: Ctx) -> List[Artifact]:
+def _job_rc_migration(ctx: Ctx) -> list[Artifact]:
     from .kinematics import SuspensionKinematics
     from .dynamics import VehicleDynamics, VehicleParams
     kin = SuspensionKinematics(ctx.hardpoints)
@@ -1673,7 +1673,7 @@ register_job(Job("rc_migration", "Roll-centre migration", "roll",
 
 
 # --- telemetry summary ------------------------------------------------------- #
-def _job_telemetry(ctx: Ctx) -> List[Artifact]:
+def _job_telemetry(ctx: Ctx) -> list[Artifact]:
     db = ctx.data
     rows = []
     for canon, ch in sorted(db.channels.items()):
@@ -1722,7 +1722,7 @@ register_job(Job("telemetry", "Telemetry channel summary", "daq",
 
 # --- event finder ------------------------------------------------------------ #
 def _segments(mask: np.ndarray, t: np.ndarray, min_s: float
-              ) -> List[Tuple[float, float, int, int]]:
+              ) -> list[tuple[float, float, int, int]]:
     """Contiguous True runs of at least `min_s` seconds."""
     out = []
     i = 0
@@ -1740,7 +1740,7 @@ def _segments(mask: np.ndarray, t: np.ndarray, min_s: float
     return out
 
 
-def _job_events(ctx: Ctx) -> List[Artifact]:
+def _job_events(ctx: Ctx) -> list[Artifact]:
     db = ctx.data
     t = db.series["time"]
     ok = np.isfinite(t)
@@ -1771,7 +1771,7 @@ def _job_events(ctx: Ctx) -> List[Artifact]:
             rows.append((name, round(t0, 3), round(t1, 3),
                          round(t1 - t0, 3), round(peak, 3), spd))
     rows.sort(key=lambda r: (r[1], r[0]))
-    by_kind: Dict[str, List] = {}
+    by_kind: dict[str, list] = {}
     for r in rows:
         by_kind.setdefault(r[0], []).append(r)
 
@@ -1803,7 +1803,7 @@ register_job(Job("events", "Braking / cornering event finder", "daq",
 
 
 # --- measured vs model ------------------------------------------------------- #
-def _job_measured_vs_model(ctx: Ctx) -> List[Artifact]:
+def _job_measured_vs_model(ctx: Ctx) -> list[Artifact]:
     from .kinematics import SuspensionKinematics
     from .dynamics import VehicleDynamics, VehicleParams
     db = ctx.data
@@ -1865,15 +1865,15 @@ register_job(Job("measured_vs_model", "Measured vs modelled grip",
 class ExpressRun:
     ask: Ask
     data: DataBundle
-    planned: List[PlannedJob]
-    artifacts: List[Artifact] = _dcfield(default_factory=list)
-    ran: List[str] = _dcfield(default_factory=list)
-    failed: List[Tuple[str, str]] = _dcfield(default_factory=list)
-    skipped: List[Tuple[str, str]] = _dcfield(default_factory=list)
-    deferred: List[Tuple[str, str]] = _dcfield(default_factory=list)
+    planned: list[PlannedJob]
+    artifacts: list[Artifact] = _dcfield(default_factory=list)
+    ran: list[str] = _dcfield(default_factory=list)
+    failed: list[tuple[str, str]] = _dcfield(default_factory=list)
+    skipped: list[tuple[str, str]] = _dcfield(default_factory=list)
+    deferred: list[tuple[str, str]] = _dcfield(default_factory=list)
     #  measured per job, for the UI and for correcting the DECLARED costs in
     #  source. Never enters the bundle — see the note in plan().
-    timings: Dict[str, float] = _dcfield(default_factory=dict)
+    timings: dict[str, float] = _dcfield(default_factory=dict)
     elapsed_s: float = 0.0
     hp_source: str = ""
 
@@ -1899,11 +1899,11 @@ class ExpressRun:
 
 
 def run_express(text: str,
-                files: Optional[Iterable[Tuple[str, bytes]]] = None,
+                files: Iterable[tuple[str, bytes]] | None = None,
                 *,
-                hardpoints: Optional[object] = None,
-                budget_s: Optional[float] = None,
-                progress: Optional[Callable[[str], None]] = None
+                hardpoints: object | None = None,
+                budget_s: float | None = None,
+                progress: Callable[[str], None] | None = None
                 ) -> ExpressRun:
     """Parse → sniff → plan → run. Never raises; failures become artifacts."""
     t0 = time.time()
@@ -1989,7 +1989,7 @@ _TAB_NAMES = {
 
 def render_readme(run: ExpressRun) -> bytes:
     ask, db = run.ask, run.data
-    L: List[str] = []
+    L: list[str] = []
     L.append("You asked for this in two sentences. Here is what was run, on "
              "what, and what every number is worth.")
     L.append("")
@@ -2183,8 +2183,8 @@ def bundle_zip(run: ExpressRun) -> bytes:
 
 
 def express(text: str,
-            files: Optional[Iterable[Tuple[str, bytes]]] = None,
-            **kw) -> Tuple[ExpressRun, bytes]:
+            files: Iterable[tuple[str, bytes]] | None = None,
+            **kw) -> tuple[ExpressRun, bytes]:
     """The whole lane in one call: sentences in, (run, zip bytes) out."""
     run = run_express(text, files, **kw)
     return run, bundle_zip(run)
@@ -2202,7 +2202,8 @@ try:
 except Exception as _jobs_err:                       # noqa: BLE001
     import warnings as _warnings
     _warnings.warn(f"express_jobs failed to load ({_jobs_err}) — the express "
-                   f"lane is running on its core jobs only", RuntimeWarning)
+                   f"lane is running on its core jobs only", RuntimeWarning,
+                   stacklevel=2)
 
 
 # =========================================================================== #
@@ -2311,7 +2312,7 @@ def _selftest() -> int:
     return 1 if fails else 0
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Command line: the same lane, without a browser.
 
         python3 -m suspension.express "245 kg car, roll numbers please" \

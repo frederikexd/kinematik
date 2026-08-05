@@ -63,7 +63,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -282,7 +282,7 @@ class PackThermalResult:
     warnings: list[str] = field(default_factory=list)
 
     @staticmethod
-    def failed(rows: int, cols: int, warnings: list[str]) -> "PackThermalResult":
+    def failed(rows: int, cols: int, warnings: list[str]) -> PackThermalResult:
         n = max(rows * cols, 1)
         z1 = np.full(1, float("nan"))
         zc = np.full(n, float("nan"))
@@ -415,9 +415,9 @@ class PackThermalModel:
     """
 
     def __init__(self,
-                 layout: Optional[PackLayout] = None,
-                 fans: Optional[Sequence[Fan]] = None,
-                 airflow: Optional[AirflowParams] = None,
+                 layout: PackLayout | None = None,
+                 fans: Sequence[Fan] | None = None,
+                 airflow: AirflowParams | None = None,
                  k_cell_cell: float = 0.35):
         self.layout = layout or PackLayout()
         self.fans = list(fans or [])
@@ -448,7 +448,7 @@ class PackThermalModel:
     def simulate(self,
                  time_s: np.ndarray,
                  pack_current_a: np.ndarray,
-                 init_temp_c: Optional[float] = None,
+                 init_temp_c: float | None = None,
                  n_laps: int = 1) -> PackThermalResult:
         """
         Integrate the pack temperature field over the supplied current history,
@@ -626,13 +626,13 @@ class PackThermalModel:
 # --------------------------------------------------------------------------- #
 def simulate_pack_thermal(lap,
                           lap_params,
-                          layout: Optional[PackLayout] = None,
-                          fans: Optional[Sequence[Fan]] = None,
-                          airflow: Optional[AirflowParams] = None,
-                          ev: Optional["EVParams"] = None,
+                          layout: PackLayout | None = None,
+                          fans: Sequence[Fan] | None = None,
+                          airflow: AirflowParams | None = None,
+                          ev: EVParams | None = None,
                           k_cell_cell: float = 0.35,
-                          init_temp_c: Optional[float] = None,
-                          n_laps: Optional[int] = None) -> PackThermalResult:
+                          init_temp_c: float | None = None,
+                          n_laps: int | None = None) -> PackThermalResult:
     """
     The headline: take a virtual lap (a QSS `LapResult`) and predict, cell by cell,
     how hot the pack gets and WHICH cells reach their limit first under the given
@@ -694,7 +694,7 @@ class FanPlacementStudy:
     warnings: list = field(default_factory=list)
 
     @property
-    def best(self) -> Optional[FanPlacementCandidate]:
+    def best(self) -> FanPlacementCandidate | None:
         return self.candidates[0] if self.candidates else None
 
     def summary(self) -> str:
@@ -717,11 +717,11 @@ class FanPlacementStudy:
 def optimize_fan_placement(lap,
                            lap_params,
                            candidate_fan_sets: Sequence[Sequence[Fan]],
-                           layout: Optional[PackLayout] = None,
-                           airflow: Optional[AirflowParams] = None,
-                           ev: Optional["EVParams"] = None,
+                           layout: PackLayout | None = None,
+                           airflow: AirflowParams | None = None,
+                           ev: EVParams | None = None,
                            k_cell_cell: float = 0.35,
-                           n_laps: Optional[int] = None) -> FanPlacementStudy:
+                           n_laps: int | None = None) -> FanPlacementStudy:
     """
     Script a set of candidate fan layouts and rank them by the peak cell
     temperature they produce on the SAME virtual lap — the "optimise cooling fan

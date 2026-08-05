@@ -26,7 +26,6 @@ from __future__ import annotations
 import csv
 import io
 from dataclasses import dataclass
-from typing import Optional
 
 from .cfd import Attitude, CoeffResult, CFDProvenance, SolverFidelity
 
@@ -37,10 +36,10 @@ _AXES = ("roll_deg", "pitch_deg", "yaw_deg", "ride_height_mm", "speed_ms")
 @dataclass
 class AeroQuery:
     """Result of querying the map: coefficients + whether they were extrapolated."""
-    c_lift: Optional[float]
-    c_drag: Optional[float]
-    c_side: Optional[float]
-    aero_balance_front: Optional[float]
+    c_lift: float | None
+    c_drag: float | None
+    c_side: float | None
+    aero_balance_front: float | None
     extrapolated: bool = False
     note: str = ""
 
@@ -54,7 +53,7 @@ class AeroMap:
 
     def __init__(self, reference_area_m2: float = 1.0,
                  reference_length_m: float = 1.55,
-                 provenance: Optional[CFDProvenance] = None):
+                 provenance: CFDProvenance | None = None):
         self.reference_area_m2 = reference_area_m2
         self.reference_length_m = reference_length_m
         self.provenance = provenance
@@ -72,7 +71,7 @@ class AeroMap:
 
     @classmethod
     def from_results(cls, results, reference_area_m2=1.0,
-                     reference_length_m=1.55) -> "AeroMap":
+                     reference_length_m=1.55) -> AeroMap:
         m = cls(reference_area_m2, reference_length_m)
         for r in results:
             m.add(r)
@@ -118,7 +117,7 @@ class AeroMap:
 
         # Channels: interpolate each independently; a channel missing anywhere in
         # the surrounding cell yields None for that channel (no fabrication).
-        def interp(channel: str) -> Optional[float]:
+        def interp(channel: str) -> float | None:
             return self._interp_channel(channel, q)
 
         return AeroQuery(
@@ -130,7 +129,7 @@ class AeroMap:
             note="clamped to solved envelope" if clamped else "",
         )
 
-    def _interp_channel(self, channel: str, q: dict) -> Optional[float]:
+    def _interp_channel(self, channel: str, q: dict) -> float | None:
         # Nearest-neighbour weighted multilinear over swept axes only. For a single
         # point this returns that point's value; for a full grid it does true
         # multilinear. Robust to non-perfect grids by inverse-distance fallback.
@@ -225,7 +224,7 @@ class AeroMap:
 
     @classmethod
     def from_csv(cls, text: str, reference_area_m2=1.0, reference_length_m=1.55,
-                 provenance: Optional[CFDProvenance] = None) -> "AeroMap":
+                 provenance: CFDProvenance | None = None) -> AeroMap:
         m = cls(reference_area_m2, reference_length_m, provenance)
         rdr = csv.DictReader(io.StringIO(text))
         for row in rdr:

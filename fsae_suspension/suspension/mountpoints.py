@@ -34,7 +34,6 @@ the single source of truth — so "move a point" and "recompute CG" can't drift 
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 
 import numpy as np
 
@@ -74,7 +73,7 @@ class MountPoint:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "MountPoint":
+    def from_dict(d) -> MountPoint:
         d = dict(d)
         if isinstance(d.get("xyz_mm"), list):
             d["xyz_mm"] = tuple(d["xyz_mm"])
@@ -127,7 +126,7 @@ class KeepOut:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "KeepOut":
+    def from_dict(d) -> KeepOut:
         d = dict(d)
         for k in ("lo_mm", "hi_mm"):
             if isinstance(d.get(k), list):
@@ -161,7 +160,7 @@ class GeometryLedger:
     def set_keepout(self, ko: KeepOut):
         self.keepouts[ko.name] = ko
 
-    def move_point(self, name: str, xyz_mm: tuple, set_by: str = "") -> "MountPoint":
+    def move_point(self, name: str, xyz_mm: tuple, set_by: str = "") -> MountPoint:
         """Move an existing point (the wing-mount drag). Returns the updated point."""
         mp = self.points[name]
         mp.xyz_mm = tuple(float(v) for v in xyz_mm)
@@ -234,7 +233,7 @@ class GeometryLedger:
                     keepouts={k: v.as_dict() for k, v in self.keepouts.items()})
 
     @staticmethod
-    def from_dict(d) -> "GeometryLedger":
+    def from_dict(d) -> GeometryLedger:
         d = d or {}
         gl = GeometryLedger()
         for k, v in (d.get("points") or {}).items():
@@ -253,9 +252,9 @@ class PropagationResult:
     moved_point: str
     new_xyz_mm: tuple
     clash_findings: list            # list[Finding] from the geometry check
-    cg_before_mm: Optional[tuple]
-    cg_after_mm: Optional[tuple]
-    cg_delta_mm: Optional[tuple]
+    cg_before_mm: tuple | None
+    cg_after_mm: tuple | None
+    cg_delta_mm: tuple | None
     mass_total_kg: float
     notes: list = field(default_factory=list)
 

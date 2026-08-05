@@ -4,12 +4,12 @@
 """Cooling myth rules. Context (optional): dict with pack/PCM/fan numbers.
 Ties to pack_thermal / pcm_cooling where sizing is asked."""
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any
 from ..mythbuster import CheckOutcome, ParsedClaim, Rule, Verdict, register
 
 
 # Bigger radiator/fan always cools better
-def _r_bigger_rad(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_bigger_rad(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("bigger radiator", "larger radiator", "bigger fan",
                       "more airflow", "bigger rad") and
             claim.has("cooler", "better cooling", "always", "colder", "more cooling")):
@@ -28,7 +28,7 @@ _r_bigger_rad.reference_claim = "A bigger radiator always cools better."
 
 
 # PCM / wax replaces the fan
-def _r_pcm_replaces_fan(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_pcm_replaces_fan(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("pcm", "phase change", "wax", "phase-change") and
             claim.has("no fan", "replace the fan", "instead of a fan", "no cooling",
                       "don't need", "without a fan")):
@@ -48,7 +48,7 @@ _r_pcm_replaces_fan.reference_claim = "Phase-change wax means we don't need a co
 
 
 # Cells all cook evenly
-def _r_even_cells(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_even_cells(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("cell", "cells", "pack") and
             claim.has("even", "uniform", "same temp", "all the same", "evenly")):
         return None

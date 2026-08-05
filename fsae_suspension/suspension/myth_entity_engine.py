@@ -67,7 +67,8 @@ import math
 import operator
 import re
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any
+from collections.abc import Callable
 
 # Reuse the existing parser so number/unit extraction stays identical and the
 # two engines never disagree on what a claim "contains".
@@ -201,7 +202,7 @@ class Entity:
     discipline: str = "shared"
     symbol: str = ""
     canonical_unit: str = ""
-    registry_key: Optional[str] = None
+    registry_key: str | None = None
     kind: str = ""           # coarse class for fallback laws (force/speed/...)
 
 
@@ -226,7 +227,7 @@ class Relationship:
     explanation: str
     discipline: str = "shared"
     bidirectional: bool = False
-    formula_slug: Optional[str] = None
+    formula_slug: str | None = None
     provenance: str = ""
     confidence_basis: str = "modeled"   # verified | modeled | judgement
     priority: int = 100
@@ -240,7 +241,7 @@ class FallbackLaw:
     effect: str
     verdict: str
     explanation: str
-    formula_slug: Optional[str] = None
+    formula_slug: str | None = None
 
 
 class KnowledgeSource:
@@ -483,7 +484,7 @@ class EntityVerdict:
     relationship: str = ""           # relationship slug (or 'fallback'/'none')
     provenance: str = ""
     discipline: str = ""
-    computed: Optional[float] = None  # the formula result, if one ran
+    computed: float | None = None  # the formula result, if one ran
     used_registry: bool = False
     inputs_used: dict = field(default_factory=dict)
 
@@ -515,7 +516,7 @@ class EntityMythEngine:
     """
 
     def __init__(self, source: KnowledgeSource,
-                 registry_lookup: Optional[Callable[[str], Optional[float]]] = None):
+                 registry_lookup: Callable[[str], float | None] | None = None):
         self.source = source
         self.registry_lookup = registry_lookup
         self._reload()
@@ -740,7 +741,7 @@ class EntityMythEngine:
         return None
 
     @staticmethod
-    def _fill(template: str, computed: Optional[float], inputs: dict) -> str:
+    def _fill(template: str, computed: float | None, inputs: dict) -> str:
         """Fill {ratio:.0f}-style placeholders in an explanation from the formula
         result and inputs. Missing keys are left as-is rather than raising, so a
         template is never broken by an unevaluated formula."""
@@ -777,7 +778,7 @@ def default_engine(registry_lookup=None) -> EntityMythEngine:
     return EntityMythEngine(default_local_knowledge(), registry_lookup)
 
 
-def supabase_engine(registry_lookup=None) -> Optional[EntityMythEngine]:
+def supabase_engine(registry_lookup=None) -> EntityMythEngine | None:
     """Build an engine from Supabase if credentials are configured, else None.
     Reuses KinematiK's credential resolver so no new config is introduced."""
     try:
@@ -856,7 +857,7 @@ class MythAuthor:
 
     # -- resolve an existing entity by phrase, or make a new-entity spec ---- #
     def _resolve_or_make_entity(self, phrase: str, existing: list[Entity],
-                                discipline: str) -> tuple[str, Optional[dict]]:
+                                discipline: str) -> tuple[str, dict | None]:
         """Return (slug, new_entity_dict_or_None). Matches an existing entity if
         the phrase clearly refers to one; otherwise mints a new entity spec.
 
@@ -886,7 +887,7 @@ class MythAuthor:
     def add_myth(self, *, source_phrase: str, target_phrase: str,
                  effect: str, verdict: str, explanation: str,
                  discipline: str = "shared",
-                 existing_entities: Optional[list[Entity]] = None,
+                 existing_entities: list[Entity] | None = None,
                  confidence_basis: str = "judgement",
                  author: str = "") -> dict:
         """Create the entities (if needed) and the relationship. Returns a small
@@ -974,7 +975,7 @@ class MythAuthor:
                 pass
         return {"entities": [], "relationships": []}
 
-    def load_user_rules(self) -> "LocalKnowledge":
+    def load_user_rules(self) -> LocalKnowledge:
         """Return a LocalKnowledge of just the user-authored rules (local backend).
         Merged into the engine's knowledge so locally-added myths answer offline."""
         d = self._read_local()
@@ -982,7 +983,7 @@ class MythAuthor:
 
 
 def merged_local_engine(registry_lookup=None,
-                        author: Optional[MythAuthor] = None) -> EntityMythEngine:
+                        author: MythAuthor | None = None) -> EntityMythEngine:
     """Engine over the bundled defaults PLUS any locally-authored rules, so myths
     a lead adds from the UI work even with no Supabase. Used as the offline path."""
     base = default_local_knowledge()

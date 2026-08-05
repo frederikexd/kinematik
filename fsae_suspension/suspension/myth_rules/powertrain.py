@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -35,11 +35,11 @@ class PowertrainContext:
     """What powertrain rules check against. ``env`` is the live MotorEnvelope;
     gearing is optional (some rules need it, and say so when it's missing)."""
     env: Any                              # MotorEnvelope (duck-typed to avoid heavy import)
-    gear_final_drive: Optional[float] = None
+    gear_final_drive: float | None = None
     wheel_r_m: float = 0.228
 
 
-def _as_ctx(context: Any) -> Optional[PowertrainContext]:
+def _as_ctx(context: Any) -> PowertrainContext | None:
     """Accept a PowertrainContext, a bare MotorEnvelope, or a dict; return a
     PowertrainContext or None if there's nothing usable."""
     if context is None:
@@ -72,7 +72,7 @@ _NO_ENV = CheckOutcome(
 # --------------------------------------------------------------------------- #
 #  RULE 1 — "power cap limits / sets RPM"                                      #
 # --------------------------------------------------------------------------- #
-def _r_power_caps_rpm(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_power_caps_rpm(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("cap", "limit", "restrict", "max", "ceiling", "cannot exceed",
                       "can't exceed", "can not exceed")
             and claim.has("rpm", "redline", "rev", "speed")
@@ -108,7 +108,7 @@ _r_power_caps_rpm.reference_claim = "Capping power to 80 kW means we can't rev p
 # --------------------------------------------------------------------------- #
 #  RULE 2 — continuous vs peak power                                          #
 # --------------------------------------------------------------------------- #
-def _r_continuous_vs_peak(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_continuous_vs_peak(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("continuous", "sustained", "steady") and claim.has("kw", "power")):
         return None
     ctx = _as_ctx(context)
@@ -149,7 +149,7 @@ _r_continuous_vs_peak.reference_claim = "Continuous power can be higher than pea
 # --------------------------------------------------------------------------- #
 #  RULE 3 — base speed / where peak power hits                                #
 # --------------------------------------------------------------------------- #
-def _r_base_speed(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_base_speed(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("base speed", "corner speed", "peak power", "max power",
                       "full power") and claim.has("rpm", "redline")):
         return None
@@ -194,7 +194,7 @@ _r_base_speed.reference_claim = "Peak power happens at redline."
 # --------------------------------------------------------------------------- #
 #  RULE 4 — top speed from redline + gearing                                  #
 # --------------------------------------------------------------------------- #
-def _r_top_speed(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_top_speed(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     # Only a genuine top-speed claim: an explicit speed phrase or a speed unit.
     # Bare "fast"/"faster" is too ambiguous (brakes, aero, "more power = faster")
     # and is handled by the more specific rules instead.
@@ -242,7 +242,7 @@ def _r_top_speed(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
 # --------------------------------------------------------------------------- #
 #  RULE 5 — torque at a specific RPM                                          #
 # --------------------------------------------------------------------------- #
-def _r_torque_at_rpm(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_torque_at_rpm(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("torque") and claim.num("rpm") and claim.num("nm")):
         return None
     ctx = _as_ctx(context)
@@ -275,7 +275,7 @@ def _r_torque_at_rpm(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]
 # --------------------------------------------------------------------------- #
 #  RULE 6 — FSAE cap compliance                                              #
 # --------------------------------------------------------------------------- #
-def _r_cap_compliance(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_cap_compliance(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not claim.has("80 kw", "80kw", "fsae cap", "fsae limit", "rule", "compliant",
                      "comply", "legal", "within the cap", "under the cap"):
         return None
@@ -303,7 +303,7 @@ _r_cap_compliance.reference_claim = "We're compliant with the 80 kW FSAE rule."
 # --------------------------------------------------------------------------- #
 #  RULE 7 — "more power = more speed"                                         #
 # --------------------------------------------------------------------------- #
-def _r_more_power_more_speed(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_more_power_more_speed(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("more power", "higher power", "increase power", "bigger motor",
                       "more kw", "higher kw")
             and claim.has("faster", "more speed", "higher speed", "quicker",

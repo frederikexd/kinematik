@@ -86,7 +86,6 @@ import io
 import math
 from dataclasses import dataclass
 from datetime import date
-from typing import Optional
 
 import numpy as np
 
@@ -104,7 +103,7 @@ from .flex import MATERIALS, Material
 class FatigueProps:
     S_ut: float               # ultimate tensile strength, MPa
     S_y: float                # 0.2 % yield strength, MPa
-    S_e: Optional[float]      # fully-reversed fatigue strength, MPa (None: n/a)
+    S_e: float | None      # fully-reversed fatigue strength, MPa (None: n/a)
     note: str = ""
 
 
@@ -137,7 +136,7 @@ class BladeSection:
     """
     width_mm: float
     t_root_mm: float
-    t_tip_mm: Optional[float] = None       # None -> uniform (= t_root)
+    t_tip_mm: float | None = None       # None -> uniform (= t_root)
 
     def __post_init__(self):
         if self.width_mm <= 0 or self.t_root_mm <= 0:
@@ -339,7 +338,7 @@ class PRBChain:
 
     # --------------------------------------------------------------- solving
     def solve(self, fx_n: float = 0.0, fy_n: float = 0.0, m_nmm: float = 0.0,
-              n_steps: int = 12, q0: Optional[np.ndarray] = None) -> BladeState:
+              n_steps: int = 12, q0: np.ndarray | None = None) -> BladeState:
         """Equilibrium under a tip load, by load-stepped damped Newton.
 
         Raises RuntimeError with an explicit message if no stable equilibrium
@@ -669,7 +668,7 @@ def flexgen_lint(blade: FlexureBlade, cases: list[BladeLoadCase],
 # --------------------------------------------------------------------------- #
 @dataclass
 class SynthesisResult:
-    blade: Optional[FlexureBlade]
+    blade: FlexureBlade | None
     mass_g: float
     findings: list[Finding]
     searched: int
@@ -695,7 +694,7 @@ def synthesize_blade(material_name: str, width_mm: float,
     mat = MATERIALS[material_name]
     cases = [BladeLoadCase(c.name, c.axial_n, c.shear_n, travel_mm)
              for c in cases]
-    best: Optional[FlexureBlade] = None
+    best: FlexureBlade | None = None
     best_mass = math.inf
     best_findings: list[Finding] = []
     tried = 0
@@ -921,7 +920,7 @@ def layup_map(blade: FlexureBlade, n_stations: int = 11,
 # --------------------------------------------------------------------------- #
 def render_flexgen_md(blade: FlexureBlade, spring: EquivalentSpring,
                       findings: list[Finding],
-                      downsize: Optional[dict] = None) -> str:
+                      downsize: dict | None = None) -> str:
     """One-page markdown summary for the design review / handover."""
     p_cr = PRBChain(blade).critical_axial_load_n()
     lines = [

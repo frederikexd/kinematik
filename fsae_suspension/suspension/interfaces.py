@@ -41,7 +41,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Optional
 
 
 # The eight subsystems (matching the team channels). 'chassis' and 'suspension' are
@@ -91,35 +90,35 @@ class SubsystemInterface:
     """
     name: str
     # --- mass & balance (applies to ALL; feeds the real physics) ---
-    mass_kg: Optional[float] = None
-    cg_x_mm: Optional[float] = None         # +rearward from front axle
-    cg_y_mm: Optional[float] = None         # +right of centreline
-    cg_z_mm: Optional[float] = None         # +up from ground
+    mass_kg: float | None = None
+    cg_x_mm: float | None = None         # +rearward from front axle
+    cg_y_mm: float | None = None         # +right of centreline
+    cg_z_mm: float | None = None         # +up from ground
     # --- spatial envelope this subsystem occupies / requires (a bounding box) ---
-    env_x_mm: Optional[float] = None        # length it needs
-    env_y_mm: Optional[float] = None        # width
-    env_z_mm: Optional[float] = None        # height
-    env_origin_mm: Optional[tuple] = None   # (x,y,z) of the box's reference corner
+    env_x_mm: float | None = None        # length it needs
+    env_y_mm: float | None = None        # width
+    env_z_mm: float | None = None        # height
+    env_origin_mm: tuple | None = None   # (x,y,z) of the box's reference corner
     # --- mechanical loads it imposes into its mounts (peak) ---
-    mount_load_n: Optional[float] = None    # peak force into the structure it bolts to
-    mount_points: Optional[int] = None
-    mounts_on: Optional[str] = None         # which subsystem carries it (e.g. "chassis")
+    mount_load_n: float | None = None    # peak force into the structure it bolts to
+    mount_points: int | None = None
+    mounts_on: str | None = None         # which subsystem carries it (e.g. "chassis")
     # --- electrical ---
-    power_draw_w: Optional[float] = None    # continuous electrical draw
-    peak_current_a: Optional[float] = None
-    voltage_v: Optional[float] = None
+    power_draw_w: float | None = None    # continuous electrical draw
+    peak_current_a: float | None = None
+    voltage_v: float | None = None
     # --- thermal ---
-    heat_reject_w: Optional[float] = None   # heat it dumps (needs cooling/airflow)
-    cooling_airflow_cms: Optional[float] = None  # airflow it REQUIRES (m^3/s)
-    max_temp_c: Optional[float] = None
+    heat_reject_w: float | None = None   # heat it dumps (needs cooling/airflow)
+    cooling_airflow_cms: float | None = None  # airflow it REQUIRES (m^3/s)
+    max_temp_c: float | None = None
     # --- powertrain / longitudinal ---
-    peak_torque_nm: Optional[float] = None
-    peak_power_kw: Optional[float] = None
+    peak_torque_nm: float | None = None
+    peak_power_kw: float | None = None
     # --- aero ---
-    downforce_n_at_v: Optional[tuple] = None  # (force_N, speed_m_s)
-    drag_n_at_v: Optional[tuple] = None
+    downforce_n_at_v: tuple | None = None  # (force_N, speed_m_s)
+    drag_n_at_v: tuple | None = None
     # --- brakes ---
-    brake_torque_nm: Optional[float] = None   # per corner, peak
+    brake_torque_nm: float | None = None   # per corner, peak
     # --- provenance & documentation ---
     is_estimate: bool = True
     rationale: str = ""          # WHY these numbers — the design justification judges ask for
@@ -142,7 +141,7 @@ class SubsystemInterface:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "SubsystemInterface":
+    def from_dict(d) -> SubsystemInterface:
         # tuples survive a JSON round-trip as lists; normalise back
         d = dict(d)
         for k in ("env_origin_mm", "downforce_n_at_v", "drag_n_at_v"):
@@ -182,16 +181,16 @@ class IntegrationLedger:
     # None = "same as ambient", which is the right default for a clean inlet.
     # Declaring it here means the pack-thermal and radiator sizing still resolve
     # to ONE number, without pretending a heated inlet is the same as ambient.
-    cooling_inlet_c: Optional[float] = None
-    chassis_envelope_mm: Optional[tuple] = None  # (x,y,z) interior the car offers
-    upright_design_load_n: Optional[float] = None  # what suspension designed mounts for
-    driveline_torque_limit_nm: Optional[float] = None  # what driveshaft/CV is rated for
+    cooling_inlet_c: float | None = None
+    chassis_envelope_mm: tuple | None = None  # (x,y,z) interior the car offers
+    upright_design_load_n: float | None = None  # what suspension designed mounts for
+    driveline_torque_limit_nm: float | None = None  # what driveshaft/CV is rated for
     interfaces: dict = field(default_factory=dict)
 
     def set(self, iface: SubsystemInterface):
         self.interfaces[iface.name] = iface
 
-    def get(self, name: str) -> Optional[SubsystemInterface]:
+    def get(self, name: str) -> SubsystemInterface | None:
         return self.interfaces.get(name)
 
     # ---- environment bridge: one ambient, many consumers -------------------- #
@@ -302,7 +301,7 @@ class IntegrationLedger:
         return d
 
     @staticmethod
-    def from_dict(d) -> "IntegrationLedger":
+    def from_dict(d) -> IntegrationLedger:
         d = dict(d)
         ifaces = d.pop("interfaces", {}) or {}
         for k in ("chassis_envelope_mm",):

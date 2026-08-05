@@ -82,7 +82,7 @@ class DamperCurve:
         return out if out.shape else float(out)
 
     @staticmethod
-    def from_dyno_points(v_ms, force_n, v_knee=0.05) -> "DamperCurve":
+    def from_dyno_points(v_ms, force_n, v_knee=0.05) -> DamperCurve:
         """
         Fit the bilinear law to measured dyno points (shaft velocity m/s, force N).
         Separately least-squares-fits the low- and high-speed slopes in bump and

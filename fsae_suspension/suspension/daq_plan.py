@@ -83,7 +83,6 @@ import io
 import math
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Optional
 
 from .interfaces import Severity, Finding
 
@@ -223,45 +222,45 @@ class SensorSpec:
     name: str
 
     # --- what and why -------------------------------------------------- #
-    measures: Optional[str] = None          # the physical quantity
-    unit: Optional[str] = None              # engineering unit ("degC", "L/min")
-    why: Optional[str] = None               # what decision this data feeds
+    measures: str | None = None          # the physical quantity
+    unit: str | None = None              # engineering unit ("degC", "L/min")
+    why: str | None = None               # what decision this data feeds
 
     # --- where ---------------------------------------------------------- #
-    location: Optional[str] = None          # key into LOCATION_SUBTEAMS
+    location: str | None = None          # key into LOCATION_SUBTEAMS
 
     # --- how it talks ---------------------------------------------------- #
-    output: Optional[OutputType] = None
+    output: OutputType | None = None
 
     # --- power ----------------------------------------------------------- #
-    supply_v: Optional[float] = None
-    current_ma: Optional[float] = None
-    supply_rail: Optional[str] = None       # key into the Rail table
+    supply_v: float | None = None
+    current_ma: float | None = None
+    supply_rail: str | None = None       # key into the Rail table
 
     # --- wiring ------------------------------------------------------------ #
-    connector: Optional[str] = None
-    conductors: Optional[int] = None        # core count incl. shield drain
+    connector: str | None = None
+    conductors: int | None = None        # core count incl. shield drain
 
     # --- signal chain ------------------------------------------------------ #
-    signal_bandwidth_hz: Optional[float] = None   # highest frequency of INTEREST
-    sample_rate_hz: Optional[float] = None
-    antialias_cutoff_hz: Optional[float] = None   # -3 dB of the filter in front
-    adc_bits: Optional[int] = None
-    range_min_eu: Optional[float] = None
-    range_max_eu: Optional[float] = None
-    accuracy_eu: Optional[float] = None           # +/- absolute, engineering units
-    resolution_needed_eu: Optional[float] = None  # the smallest change that matters
+    signal_bandwidth_hz: float | None = None   # highest frequency of INTEREST
+    sample_rate_hz: float | None = None
+    antialias_cutoff_hz: float | None = None   # -3 dB of the filter in front
+    adc_bits: int | None = None
+    range_min_eu: float | None = None
+    range_max_eu: float | None = None
+    accuracy_eu: float | None = None           # +/- absolute, engineering units
+    resolution_needed_eu: float | None = None  # the smallest change that matters
 
     # --- logging ------------------------------------------------------------ #
-    logged_to: Optional[str] = None         # "logger", "dash", "telemetry", ...
-    payload_bytes: Optional[int] = None     # bytes on the wire per sample
+    logged_to: str | None = None         # "logger", "dash", "telemetry", ...
+    payload_bytes: int | None = None     # bytes on the wire per sample
 
     # --- test ---------------------------------------------------------------- #
-    calibration: Optional[str] = None       # the actual procedure, not "TBD"
+    calibration: str | None = None       # the actual procedure, not "TBD"
 
     # --- safety / integration ------------------------------------------------ #
-    galvanic_isolation: Optional[bool] = None   # isolated from the TS side?
-    available_on_existing_bus: Optional[str] = None  # device already broadcasting it
+    galvanic_isolation: bool | None = None   # isolated from the TS side?
+    available_on_existing_bus: str | None = None  # device already broadcasting it
 
     # --- bookkeeping --------------------------------------------------------- #
     owner: str = ""
@@ -338,7 +337,7 @@ class SensorSpec:
     def on_tractive_system(self) -> bool:
         return (self.location or "") in TRACTIVE_SYSTEM_LOCATIONS
 
-    def span_eu(self) -> Optional[float]:
+    def span_eu(self) -> float | None:
         if self.range_min_eu is None or self.range_max_eu is None:
             return None
         return abs(self.range_max_eu - self.range_min_eu)
@@ -734,15 +733,15 @@ class DeltaTResult:
     delta_t_k: float
     sigma_delta_t_k: float
     relative_error: float           # sigma_dT / dT
-    heat_kw: Optional[float]
-    sigma_heat_kw: Optional[float]
-    heat_relative_error: Optional[float]
+    heat_kw: float | None
+    sigma_heat_kw: float | None
+    heat_relative_error: float | None
     findings: list = field(default_factory=list)
 
 
 def delta_t_budget(inlet: SensorSpec, outlet: SensorSpec,
                    *, expected_delta_t_k: float,
-                   flow_lpm: Optional[float] = None,
+                   flow_lpm: float | None = None,
                    flow_accuracy_frac: float = 0.03,
                    rho: float = COOLANT_RHO, cp: float = COOLANT_CP,
                    matched_pair: bool = False) -> DeltaTResult:
@@ -841,7 +840,7 @@ class Rail:
     name: str
     voltage_v: float
     capacity_ma: float              # what the regulator can actually deliver
-    fuse_a: Optional[float] = None
+    fuse_a: float | None = None
 
 
 @dataclass
@@ -1012,10 +1011,10 @@ class UartLink:
     """
     baud: int = 115_200
     data_bits: int = 8
-    parity: Optional[str] = None        # None, "even", "odd"
+    parity: str | None = None        # None, "even", "odd"
     stop_bits: int = 1
-    frame_bytes: Optional[int] = None   # bytes in one BMS message
-    frame_rate_hz: Optional[float] = None
+    frame_bytes: int | None = None   # bytes in one BMS message
+    frame_rate_hz: float | None = None
     #: Fraction of the raw baud you can actually plan on. Real links lose time
     #: to inter-byte gaps, resynchronisation and the host's turnaround.
     usable_fraction: float = 0.80
@@ -1026,12 +1025,12 @@ class UartLink:
     def byte_time_s(self) -> float:
         return self.bits_per_byte() / float(self.baud)
 
-    def frame_time_s(self) -> Optional[float]:
+    def frame_time_s(self) -> float | None:
         if self.frame_bytes is None:
             return None
         return self.frame_bytes * self.byte_time_s()
 
-    def utilisation(self) -> Optional[float]:
+    def utilisation(self) -> float | None:
         ft = self.frame_time_s()
         if ft is None or self.frame_rate_hz is None:
             return None
@@ -1046,7 +1045,7 @@ class BmsSignal:
     unit: str = ""
     scale: float = 1.0
     offset: float = 0.0
-    rate_hz: Optional[float] = None      # how often it needs to reach the bus
+    rate_hz: float | None = None      # how often it needs to reach the bus
     critical: bool = False               # shutdown-relevant (cell V, temp, current)
 
 
@@ -1055,8 +1054,8 @@ class BridgePlan:
     link: UartLink
     signals: list
     messages: list                       # CanMessage list produced
-    uart_utilisation: Optional[float]
-    latency_s: Optional[float]
+    uart_utilisation: float | None
+    latency_s: float | None
     refused: bool
     refusal_reason: str = ""
     findings: list = field(default_factory=list)
@@ -1116,8 +1115,8 @@ def pack_signals(signals: list[BmsSignal], *, base_id: int = 0x300,
 
 def plan_bms_bridge(link: UartLink, signals: list[BmsSignal], *,
                     base_id: int = 0x300, extended: bool = False,
-                    bus: Optional[BusSpec] = None,
-                    isolated: Optional[bool] = None,
+                    bus: BusSpec | None = None,
+                    isolated: bool | None = None,
                     parse_overhead_s: float = 0.0005) -> BridgePlan:
     """Design the UART-to-CAN bridge, or refuse to.
 
@@ -1361,7 +1360,7 @@ def integration_findings(s: SensorSpec) -> list[Finding]:
 #  8.  THE PLAN
 # ===================================================================== #
 def sensor_to_can(s: SensorSpec, can_id: int, *,
-                  extended: bool = False) -> Optional[CanMessage]:
+                  extended: bool = False) -> CanMessage | None:
     """The CAN message a sampled channel would produce, if it needs one.
 
     Bus-native sensors already have a message; they are not re-transmitted.
@@ -1386,15 +1385,15 @@ class Verdict(str, Enum):
 class DaqPlan:
     sensors: list
     bus: BusSpec
-    bus_result: Optional[BusLoadResult]
-    power: Optional[PowerResult]
-    storage: Optional[StorageResult]
-    bridge: Optional[BridgePlan]
+    bus_result: BusLoadResult | None
+    power: PowerResult | None
+    storage: StorageResult | None
+    bridge: BridgePlan | None
     findings: list
     verdict: Verdict
     completeness: float
     open_questions: dict            # sensor key -> [unanswered question labels]
-    delta_t: Optional[DeltaTResult] = None
+    delta_t: DeltaTResult | None = None
 
     # ------------------------------------------------------------------ #
     def by_severity(self, sev: Severity) -> list:
@@ -1512,7 +1511,7 @@ class DaqPlan:
 
 
 def find_coolant_pair(sensors: list[SensorSpec]
-                      ) -> Optional[tuple[SensorSpec, SensorSpec]]:
+                      ) -> tuple[SensorSpec, SensorSpec] | None:
     """Locate an inlet/outlet coolant temperature pair, if one is specified.
 
     A pair of temperature sensors in the coolant loop is almost never two
@@ -1533,14 +1532,14 @@ def find_coolant_pair(sensors: list[SensorSpec]
 
 
 def plan(sensors: list[SensorSpec], *,
-         bus: Optional[BusSpec] = None,
-         rails: Optional[dict] = None,
-         logger: Optional[LoggerSpec] = None,
-         bridge: Optional[BridgePlan] = None,
+         bus: BusSpec | None = None,
+         rails: dict | None = None,
+         logger: LoggerSpec | None = None,
+         bridge: BridgePlan | None = None,
          base_can_id: int = 0x400,
-         extra_messages: Optional[list] = None,
-         expected_delta_t_k: Optional[float] = None,
-         flow_lpm: Optional[float] = None,
+         extra_messages: list | None = None,
+         expected_delta_t_k: float | None = None,
+         flow_lpm: float | None = None,
          matched_pair: bool = False) -> DaqPlan:
     """Run every check and return the plan with an honest verdict.
 

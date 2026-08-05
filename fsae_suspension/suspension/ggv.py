@@ -96,7 +96,7 @@ class GGVParams:
     V_MAX: float = 60.0
 
     @staticmethod
-    def from_powertrain(pt) -> "GGVParams":
+    def from_powertrain(pt) -> GGVParams:
         """
         Build GGVParams from a `laptime.Powertrain` so the GGV and the lap sim
         share one source of truth. Maps drive 'rwd'/'awd' -> 'rear'/'all',

@@ -50,7 +50,6 @@ import os
 import shutil
 import subprocess
 import time
-from typing import Optional
 
 from .cfd import (
     Attitude, CaseSpec, CoeffResult, CFDProvenance, SolverFidelity,
@@ -202,9 +201,9 @@ class FluentVerificationSolver:
 
     def __init__(self,
                  fidelity: SolverFidelity = SolverFidelity.POTENTIAL,
-                 model: "Optional[ReferenceAeroModel]" = None,
+                 model: ReferenceAeroModel | None = None,
                  method: str = "auto",
-                 panel_params: "Optional[object]" = None):
+                 panel_params: object | None = None):
         if method not in ("auto", "panel", "analytic"):
             raise ValueError("method must be 'auto', 'panel' or 'analytic'")
         # The analytic surrogate, used directly ("analytic") or as the "auto"/panel
@@ -250,7 +249,7 @@ class FluentVerificationSolver:
 
     # -- the Fluent verification deck ------------------------------------- #
     def write_case(self, spec: CaseSpec, workdir: str,
-                   estimate: "Optional[CoeffResult]" = None) -> str:
+                   estimate: CoeffResult | None = None) -> str:
         """
         Write a RUNNABLE ANSYS Fluent validation journal for one case and return its
         path. The deck reads the team's meshed case, sets the freestream from the
@@ -270,7 +269,7 @@ class FluentVerificationSolver:
         return write_runnable_journal(spec, workdir, estimate=est)
 
     def _write_stub_case(self, spec: CaseSpec, workdir: str,
-                         estimate: "Optional[CoeffResult]" = None) -> str:
+                         estimate: CoeffResult | None = None) -> str:
         """
         The original header-only stub deck (kept for reference / fallback). Prints
         reference values and the in-house estimate but leaves the solve as TODOs;
@@ -442,7 +441,7 @@ class OpenFOAMSolver:
     def __init__(self, turbulence_model: str = "kOmegaSST",
                  fidelity: SolverFidelity = SolverFidelity.RANS,
                  application: str = "simpleFoam",
-                 mesh_params: "Optional[object]" = None):
+                 mesh_params: object | None = None):
         self.turbulence_model = turbulence_model
         self.fidelity = fidelity
         self.application = application
@@ -451,8 +450,8 @@ class OpenFOAMSolver:
         # team supplies their own mesh), preserving the original behaviour.
         self.mesh_params = mesh_params
 
-    def provenance(self, cell_count: Optional[int] = None,
-                   yplus: Optional[float] = None) -> CFDProvenance:
+    def provenance(self, cell_count: int | None = None,
+                   yplus: float | None = None) -> CFDProvenance:
         return CFDProvenance(
             backend=self.name,
             fidelity=self.fidelity,
@@ -623,7 +622,7 @@ functions
             f.write(text)
 
     @staticmethod
-    def _find_coeff_file(case: str) -> Optional[str]:
+    def _find_coeff_file(case: str) -> str | None:
         base = os.path.join(case, "postProcessing")
         if not os.path.isdir(base):
             return None
@@ -694,7 +693,7 @@ class StarCCMSolver:
     def __init__(self, fidelity: SolverFidelity = SolverFidelity.RANS):
         self.fidelity = fidelity
 
-    def provenance(self, cell_count: Optional[int] = None) -> CFDProvenance:
+    def provenance(self, cell_count: int | None = None) -> CFDProvenance:
         return CFDProvenance(
             backend=self.name, fidelity=self.fidelity, is_correlated=False,
             cell_count=cell_count,
@@ -763,7 +762,7 @@ class FluentSolver:
     def __init__(self, fidelity: SolverFidelity = SolverFidelity.RANS):
         self.fidelity = fidelity
 
-    def provenance(self, cell_count: Optional[int] = None) -> CFDProvenance:
+    def provenance(self, cell_count: int | None = None) -> CFDProvenance:
         return CFDProvenance(
             backend=self.name, fidelity=self.fidelity, is_correlated=False,
             cell_count=cell_count,
@@ -834,7 +833,7 @@ class TSAutoSolver:
         self.turbulence_model = turbulence_model
         self.fidelity = fidelity
 
-    def provenance(self, cell_count: Optional[int] = None) -> CFDProvenance:
+    def provenance(self, cell_count: int | None = None) -> CFDProvenance:
         return CFDProvenance(
             backend=self.name, fidelity=self.fidelity, is_correlated=False,
             turbulence_model=self.turbulence_model, cell_count=cell_count,

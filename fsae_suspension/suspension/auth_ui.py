@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 from .auth import AuthError, SupabaseAuth, Session, build_auth
 from .workspace import WorkspaceContext
@@ -30,7 +29,7 @@ _SS_CTX = "_kx_workspace_ctx"           # the active WorkspaceContext
 _SS_AUTH = "_kx_auth_client"            # cached SupabaseAuth instance
 
 
-def _get_auth(st) -> Optional[SupabaseAuth]:
+def _get_auth(st) -> SupabaseAuth | None:
     """Cache the SupabaseAuth client in session_state (constructing it makes a
     network client; no need to rebuild every rerun)."""
     auth = st.session_state.get(_SS_AUTH)
@@ -44,7 +43,7 @@ def _get_auth(st) -> Optional[SupabaseAuth]:
     return auth
 
 
-def _restore_session(st, auth: SupabaseAuth) -> Optional[Session]:
+def _restore_session(st, auth: SupabaseAuth) -> Session | None:
     """Rebuild a live Session from cached tokens across reruns, so the user
     isn't asked to log in on every interaction."""
     cached = st.session_state.get(_SS_SESSION)
@@ -89,7 +88,7 @@ def _render_sign_in(st, auth: SupabaseAuth) -> None:
 
 
 def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
-                             ) -> Optional[WorkspaceContext]:
+                             ) -> WorkspaceContext | None:
     # Signed in with an invite pending? Join first — the redeemed workspace
     # becomes the active one and shows up in the list below on the rerun.
     if redeem_pending_invite(st, auth, session):
@@ -251,7 +250,7 @@ def _sign_out(st, auth: SupabaseAuth) -> None:
         st.rerun()
 
 
-def current_session(st) -> Optional[Session]:
+def current_session(st) -> Session | None:
     """The live signed-in Session for this run, or None in local mode / signed
     out. Rebuilt from cached tokens; used by the members-admin panel."""
     auth = st.session_state.get(_SS_AUTH)
@@ -284,7 +283,7 @@ def build_join_url(token: str, base_url: str = "") -> str:
     return f"{base_url}/?join={tok}" if base_url else f"?join={tok}"
 
 
-def capture_join_token(st) -> Optional[str]:
+def capture_join_token(st) -> str | None:
     """Pull ?join=<token> off the URL into session_state so it SURVIVES the
     sign-in reruns (query params can be lost across st.rerun on some hosts).
     Call early, before the sign-in gate. Returns the pending token, if any."""
@@ -324,7 +323,7 @@ def redeem_pending_invite(st, auth: SupabaseAuth, session: Session) -> bool:
     return True
 
 
-def render_workspace_oversight(st, session: Optional[Session] = None) -> None:
+def render_workspace_oversight(st, session: Session | None = None) -> None:
     """
     Oversight panel for owners and project leads: EVERY workspace the signed-in
     user administers, each with how many people are using it, who the owner
@@ -757,7 +756,7 @@ def render_members_admin(st, ctx: WorkspaceContext) -> None:
                 st.error(str(e))
 
 
-def require_workspace(st) -> Optional[WorkspaceContext]:
+def require_workspace(st) -> WorkspaceContext | None:
     """
     The gate. Call at the top of the app, before rendering any tenant data.
 

@@ -600,8 +600,8 @@ def heat_color(t: float) -> str:
             r = round(a_c[0] + (b_c[0] - a_c[0]) * f)
             g = round(a_c[1] + (b_c[1] - a_c[1]) * f)
             b = round(a_c[2] + (b_c[2] - a_c[2]) * f)
-            return "#%02x%02x%02x" % (r, g, b)
-    return "#%02x%02x%02x" % _HEAT_RAMP[-1][1]
+            return f"#{r:02x}{g:02x}{b:02x}"
+    return "#{:02x}{:02x}{:02x}".format(*_HEAT_RAMP[-1][1])
 
 
 # Which subsystems carry a meaningful value for each metric, and the human label
@@ -1021,7 +1021,7 @@ def build_full_car_figure(
             # all four wheels can be drilled to a single corner. The shared key
             # above still frames all instances; this finer key frames just one.
             if corner:
-                part_pts.setdefault("%s#%s" % (part, corner), []).extend(arr)
+                part_pts.setdefault(f"{part}#{corner}", []).extend(arr)
 
     def seg(p, q, color, w=5, name=None, group=None, subsys=None, corner=None):
         if p is None or q is None:
@@ -1181,8 +1181,8 @@ def build_full_car_figure(
                       if brake_tq else radius * 0.62)
             dv, di, dj, dk = _cylinder(wc, axis, disc_r,
                                        max(8.0, tire_width_mm * 0.07), n=26)
-            hv = ("Brake disc · r≈%.0f mm" % disc_r
-                  + (" (sized from %.0f N·m)" % brake_tq if brake_tq else ""))
+            hv = (f"Brake disc · r≈{disc_r:.0f} mm"
+                  + (f" (sized from {brake_tq:.0f} N·m)" if brake_tq else ""))
             mesh(dv, di, dj, dk, COLORS["brake"], "Brake disc", "brakes",
                  base_op=0.9, hover=hv, corner=_corner_id)
 
@@ -1197,7 +1197,7 @@ def build_full_car_figure(
                 x=[_mT[0]], y=[_mT[1]], z=[_mT[2]],
                 mode="markers", marker=dict(size=4, color=COLORS["point"]),
                 opacity=edge_op("suspension"), showlegend=False,
-                hoverinfo="text", text="%s · %s" % (_mname, _corner_id),
+                hoverinfo="text", text=f"{_mname} · {_corner_id}",
                 customdata=[["suspension", _mname, _corner_id]]))
 
     # z-extent + tire radius derived from the extracted corners (any topology).
@@ -1322,7 +1322,7 @@ def build_full_car_figure(
 
         hv = "Spaceframe / welded tube frame"
         if _g(ch_it, "mass_kg"):
-            hv += " · %.1f kg" % _g(ch_it, "mass_kg")
+            hv += " · {:.1f} kg".format(_g(ch_it, "mass_kg"))
         mesh(np.vstack(_fv), np.array(_fi), np.array(_fj), np.array(_fk),
              COLORS["frame_tube"], "Spaceframe", "chassis",
              base_op=0.96, hover=hv)
@@ -1405,7 +1405,7 @@ def build_full_car_figure(
         fw_x = x_front + tire_r * 1.62
         fw_z = tire_r * 0.32
         n_fe = _elements(df_n)
-        hint_f = "Front wing" + (" (sized from %.0f N)" % df_n if df_n else "")
+        hint_f = "Front wing" + (f" (sized from {df_n:.0f} N)" if df_n else "")
         for e in range(n_fe):
             ex = fw_x - e * fw_chord * 0.42
             ez = fw_z + e * fw_chord * 0.22
@@ -1433,7 +1433,7 @@ def build_full_car_figure(
         rw_x = x_rear - tire_r * 1.55
         rw_z = z_hi + tire_r * 1.15
         n_re = _elements(df_n)
-        hint_r = "Rear wing" + (" (sized from %.0f N)" % df_n if df_n else "")
+        hint_r = "Rear wing" + (f" (sized from {df_n:.0f} N)" if df_n else "")
         for e in range(n_re):
             ex = rw_x + e * rw_chord * 0.4
             ez = rw_z + e * rw_chord * 0.34
@@ -1470,9 +1470,9 @@ def build_full_car_figure(
             v, i, j, k = _box(pod_x, pod_y, tire_r * 0.65, pod_len, pod_w, pod_h)
             hv = "Sidepod / radiator duct"
             if airflow:
-                hv += " (sized from %.2f m³/s)" % airflow
+                hv += f" (sized from {airflow:.2f} m³/s)"
             if heat:
-                hv += " · rejects %.0f W" % heat
+                hv += f" · rejects {heat:.0f} W"
             mesh(v, i, j, k, COLORS["sidepod"], "Sidepod (cooling)", "cooling", 0.7, hv)
             rv, ri, rj, rk = _box(pod_x + pod_len / 2, pod_y, tire_r * 0.65,
                                   8, pod_w * 0.8, pod_h * 0.8)
@@ -1495,12 +1495,12 @@ def build_full_car_figure(
             blk_l = wb * 0.16 * _clamp(f ** 0.4, 0.7, 1.4)
             blk_w = min(inner_y_r, 150) * 1.2
             blk_h = tire_r * 0.7 * _clamp(f ** 0.3, 0.8, 1.3)
-            sized = ("(sized from %.0f kW)" % pkw if pkw else "")
+            sized = (f"(sized from {pkw:.0f} kW)" if pkw else "")
         mot_x = x_rear + tire_r * 1.05
         # Traction motor: a cylinder lying across the car (EV motor, not a block).
         mc = _cylinder([mot_x, 0, tire_r * 0.8], [0, 1, 0],
                        radius=blk_h * 0.55, length=blk_w, n=22)
-        hv = "Traction motor " + sized + (" · %.0f N·m" % ptq if ptq else "")
+        hv = "Traction motor " + sized + (f" · {ptq:.0f} N·m" if ptq else "")
         mesh(mc[0], mc[1], mc[2], mc[3], COLORS["motor"], "Motor + inverter",
              "powertrain", 0.92, hv)
         # Inverter box sitting on top.
@@ -1526,7 +1526,7 @@ def build_full_car_figure(
         elif emass:
             side = (_clamp(emass, 2, 40) * 1.6e6) ** (1 / 3)
             bl, bw, bh = side * 1.4, side * 1.1, side * 0.7
-            sized = "(sized from %.1f kg)" % emass
+            sized = f"(sized from {emass:.1f} kg)"
         else:
             # Nothing declared yet: draw a nominal accumulator box so the part
             # is always present in the car and clickable, with a hint that it's
@@ -1536,14 +1536,14 @@ def build_full_car_figure(
         if bl:
             bx = x_rear + tire_r * 2.6
             v, i, j, k = _box(bx, 0, tire_r * 0.55, bl, bw, bh)
-            hv = "Accumulator / battery " + sized + (" · %.0f W" % pwr if pwr else "")
+            hv = "Accumulator / battery " + sized + (f" · {pwr:.0f} W" if pwr else "")
             mesh(v, i, j, k, COLORS["battery"], "Accumulator", "electrics", 0.85, hv)
 
     # ---- 7) data-acquisition: logger pod ------------------------------- #
     daq_it = _iface(ledger, "data-acquisition")
     _daq_mass = _g(daq_it, "mass_kg") if daq_it is not None else None
     v, i, j, k = _box(x_front - wb * 0.1, -tf * 0.18, tire_r * 1.05, 80, 60, 40)
-    _daq_hv = ("Data-acquisition logger · %.1f kg" % _daq_mass if _daq_mass
+    _daq_hv = (f"Data-acquisition logger · {_daq_mass:.1f} kg" if _daq_mass
                else "Data-acquisition logger (placeholder — declare mass in INTEGRATION)")
     mesh(v, i, j, k, COLORS["logger"], "Data logger", "data-acquisition", 0.85, _daq_hv)
 
@@ -1559,7 +1559,7 @@ def build_full_car_figure(
             if roll.get("cg_mm"):
                 gx, gy, gz = roll["cg_mm"]
                 cg_x, cg_y, cg_h = x_front - gx, gy, gz
-                cg_label = "CG (declared %.0f kg)" % roll["total_kg"]
+                cg_label = "CG (declared {:.0f} kg)".format(roll["total_kg"])
         except Exception:
             pass
     # Fold in any user-dropped custom parts that carry a mass, so a heavy
@@ -1599,7 +1599,7 @@ def build_full_car_figure(
             _sz += _pz * _m
         if _tot > 0:
             cg_x, cg_y, cg_h = _sx / _tot, _sy / _tot, _sz / _tot
-            cg_label = "CG (+%.1f kg parts)" % sum(m for m, *_ in _cp_masses)
+            cg_label = f"CG (+{sum(m for m, *_ in _cp_masses):.1f} kg parts)"
 
     if show_cg and cg_h > 0:
         # When a subsystem is spotlit, fade the CG marker too — it's a global
@@ -1659,8 +1659,7 @@ def build_full_car_figure(
                 col = cp.get("color") or COLORS["cg"]
                 base_op = 0.30
                 nm_draw = nm if nm.endswith("(awaiting CAD)") else nm + " (awaiting CAD)"
-                hov = "%s — PROVISIONAL stand-in, %.0f×%.0f×%.0f mm @ (x %.0f, y %.0f, z %.0f)" % (
-                    nm, l, w, h, cx, cy, cz)
+                hov = f"{nm} — PROVISIONAL stand-in, {l:.0f}×{w:.0f}×{h:.0f} mm @ (x {cx:.0f}, y {cy:.0f}, z {cz:.0f})"
             else:
                 # Imported CAD meshes always render neon blue so the real
                 # geometry stays visible on the dark scene (and any part saved
@@ -1673,8 +1672,8 @@ def build_full_car_figure(
                                                          COLORS["custom"])
                 base_op = 0.95 if has_mesh else 0.82
                 nm_draw = nm
-                _kind = "CAD mesh" if has_mesh else "%.0f×%.0f×%.0f mm" % (l, w, h)
-                hov = "%s — %s @ (x %.0f, y %.0f, z %.0f)" % (nm, _kind, cx, cy, cz)
+                _kind = "CAD mesh" if has_mesh else f"{l:.0f}×{w:.0f}×{h:.0f} mm"
+                hov = f"{nm} — {_kind} @ (x {cx:.0f}, y {cy:.0f}, z {cz:.0f})"
             shape = cp.get("shape", "box")
             # A `define_car` chassis is scaled + centred to fit the real car
             # (computed above), so it reads as one whole car with the wheels.
@@ -1740,10 +1739,10 @@ def build_full_car_figure(
     _focus_token = None
     if focus_part and part_pts.get(focus_part):
         _focus_pts = part_pts[focus_part]
-        _focus_token = "part:%s" % focus_part
+        _focus_token = f"part:{focus_part}"
     elif focus_subsystem and subsys_pts.get(focus_subsystem):
         _focus_pts = subsys_pts[focus_subsystem]
-        _focus_token = "focus:%s" % focus_subsystem
+        _focus_token = f"focus:{focus_subsystem}"
     if _focus_pts:
         camera_revision = _focus_token
         pts = np.asarray(_focus_pts, float)
@@ -2060,45 +2059,45 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
     aero = _iface(ledger, "aerodynamics")
     df = _g(aero, "downforce_n_at_v")
     add("aerodynamics", "sized" if df else "default",
-        ("%.0f N @ %.0f m/s → wing span/chord" % (df[0], df[1]))
+        (f"{df[0]:.0f} N @ {df[1]:.0f} m/s → wing span/chord")
         if isinstance(df, (tuple, list)) and df else "no downforce → nominal wings")
 
     pt = _iface(ledger, "powertrain")
     pkw = _g(pt, "peak_power_kw")
     add("powertrain", "sized" if (pkw or _g(pt, "env_x_mm")) else "default",
-        ("%.0f kW → motor + inverter size" % pkw) if pkw else "no power/envelope → nominal motor")
+        (f"{pkw:.0f} kW → motor + inverter size") if pkw else "no power/envelope → nominal motor")
 
     cool = _iface(ledger, "cooling")
     af = _g(cool, "cooling_airflow_cms")
     add("cooling", "sized" if af else "default",
-        ("%.2f m³/s → sidepod size" % af) if af else "no airflow → nominal sidepods")
+        (f"{af:.2f} m³/s → sidepod size") if af else "no airflow → nominal sidepods")
 
     el = _iface(ledger, "electrics")
     em, ee = _g(el, "mass_kg"), _g(el, "env_x_mm")
     add("electrics", "shown" if (em or ee) else "hidden",
         "declared envelope → battery box" if ee else
-        (("%.1f kg → battery box size" % em) if em else "no mass/envelope → not drawn"))
+        ((f"{em:.1f} kg → battery box size") if em else "no mass/envelope → not drawn"))
 
     br = _iface(ledger, "brakes")
     bt = _g(br, "brake_torque_nm")
     add("brakes", "sized" if bt else "default",
-        ("%.0f N·m → brake-disc diameter" % bt) if bt else "no torque → nominal discs")
+        (f"{bt:.0f} N·m → brake-disc diameter") if bt else "no torque → nominal discs")
 
     _arch = (topology_label + " · ") if topology_label else ""
     add("suspension", "live",
-        "%strack F/R %.0f/%.0f mm · wheelbase %.0f mm · spring %.0f N/mm" % (
+        "{}track F/R {:.0f}/{:.0f} mm · wheelbase {:.0f} mm · spring {:.0f} N/mm".format(
             _arch, getattr(vp, "track_front", 0), getattr(vp, "track_rear", 0),
             getattr(vp, "wheelbase", 0), getattr(vp, "spring_rate_front", 0)))
 
     ch = _iface(ledger, "chassis")
     cm = _g(ch, "mass_kg")
-    add("chassis", "live", ("%.1f kg monocoque" % cm) if cm else "monocoque (no mass declared)")
+    add("chassis", "live", (f"{cm:.1f} kg monocoque") if cm else "monocoque (no mass declared)")
 
     if ledger is not None:
         try:
             roll = ledger.mass_rollup()
             add("ALL", "rollup",
-                "declared %.1f kg vs target %.0f kg (Δ %+.1f kg)" % (
+                "declared {:.1f} kg vs target {:.0f} kg (Δ {:+.1f} kg)".format(
                     roll["total_kg"], roll["target_kg"], roll["delta_kg"])
                 + ("; CG live" if roll.get("cg_mm") else "; CG needs all masses+positions"))
         except Exception:
@@ -2154,11 +2153,11 @@ def custom_part_fit(vp, part: dict) -> dict:
     for where, mm in clr.items():
         if mm < 0:
             status = "over"
-            msgs.append("pokes out %s by %.0f mm" % (where, -mm))
+            msgs.append(f"pokes out {where} by {-mm:.0f} mm")
         elif mm < 25:
             if status != "over":
                 status = "tight"
-            msgs.append("only %.0f mm clear %s" % (mm, where))
+            msgs.append(f"only {mm:.0f} mm clear {where}")
     if not msgs:
         msgs.append("sits inside the wheelbase, track and hoop-height envelope")
     return dict(status=status, messages=msgs, clearances=clr)
@@ -2233,7 +2232,7 @@ def reconcile_part(guess: dict, real: dict, tol_mm: float = 8.0,
     msgs = []
     for ax, dv in zip(("L", "W", "H"), deltas):
         if abs(dv) > max(tol_mm, tol_frac * max(g[("L", "W", "H").index(ax)], 1.0)):
-            msgs.append("%s %+.0f mm" % (ax, dv))
+            msgs.append(f"{ax} {dv:+.0f} mm")
     return dict(status="resize", deltas=deltas,
                 messages=["Real part differs from your stand-in: "
                           + ", ".join(msgs) + ". Repackage around the real size."])

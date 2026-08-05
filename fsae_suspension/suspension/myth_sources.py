@@ -43,7 +43,6 @@ Public API
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 # --------------------------------------------------------------------------- #
@@ -212,7 +211,7 @@ _TOPIC_ROUTES: list[tuple[str, list[str]]] = [
 ]
 
 
-def guess_discipline(lower: str) -> Optional[str]:
+def guess_discipline(lower: str) -> str | None:
     """Best-effort discipline id from claim text, or None. Deterministic."""
     for disc, kws in _TOPIC_ROUTES:
         if any(k in lower for k in kws):
@@ -223,7 +222,7 @@ def guess_discipline(lower: str) -> Optional[str]:
 # --------------------------------------------------------------------------- #
 #  Public: pick and format sources                                            #
 # --------------------------------------------------------------------------- #
-def sources_for(lower: str, *, discipline: Optional[str] = None,
+def sources_for(lower: str, *, discipline: str | None = None,
                 limit: int = 4, domain_relevant: bool = True) -> list[Source]:
     """Return up to ``limit`` references most relevant to this claim.
 
@@ -274,7 +273,7 @@ def format_sources(sources: list[Source], *, heading: bool = True) -> str:
     return "\n".join(lines)
 
 
-def source_block(lower: str, *, discipline: Optional[str] = None,
+def source_block(lower: str, *, discipline: str | None = None,
                  limit: int = 4, domain_relevant: bool = True,
                  heading: bool = True) -> str:
     """One-call convenience: pick sources for the claim and format them."""

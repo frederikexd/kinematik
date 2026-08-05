@@ -58,8 +58,8 @@ on the Streamlit Cloud base image and stays unit-testable in isolation.
 from __future__ import annotations
 
 import numpy as np
-from dataclasses import dataclass, field, asdict
-from typing import Callable
+from dataclasses import dataclass, field
+from collections.abc import Callable
 
 from .kinematics import Hardpoints, SuspensionKinematics
 

@@ -62,7 +62,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Optional
 
 from .interfaces import Severity, Finding
 from .daq_plan import (
@@ -87,34 +86,34 @@ class GnssSpec:
     name: str
 
     # --- vendor-stated interface ------------------------------------------ #
-    position_rate_hz: Optional[float] = None
-    imu_rate_hz: Optional[float] = None
-    can_bitrate_bps: Optional[float] = None
-    can_extended_ids: Optional[bool] = None      # 2.0B == 29-bit identifiers
-    supply_v_min: Optional[float] = None
-    supply_v_max: Optional[float] = None
-    current_ma: Optional[float] = None
-    connector: Optional[str] = None
-    mating_connector: Optional[str] = None
-    external_antenna: Optional[bool] = None      # the doc's open question
-    cost_usd: Optional[float] = None
+    position_rate_hz: float | None = None
+    imu_rate_hz: float | None = None
+    can_bitrate_bps: float | None = None
+    can_extended_ids: bool | None = None      # 2.0B == 29-bit identifiers
+    supply_v_min: float | None = None
+    supply_v_max: float | None = None
+    current_ma: float | None = None
+    connector: str | None = None
+    mating_connector: str | None = None
+    external_antenna: bool | None = None      # the doc's open question
+    cost_usd: float | None = None
 
     # --- the measurement questions ---------------------------------------- #
-    velocity_accuracy_ms: Optional[float] = None
-    velocity_max_ms: Optional[float] = None
-    velocity_resolution_ms: Optional[float] = None
-    velocity_latency_s: Optional[float] = None
-    position_accuracy_m: Optional[float] = None
-    height_accuracy_m: Optional[float] = None
-    heading_accuracy_deg: Optional[float] = None
-    heading_resolution_deg: Optional[float] = None
+    velocity_accuracy_ms: float | None = None
+    velocity_max_ms: float | None = None
+    velocity_resolution_ms: float | None = None
+    velocity_latency_s: float | None = None
+    position_accuracy_m: float | None = None
+    height_accuracy_m: float | None = None
+    heading_accuracy_deg: float | None = None
+    heading_resolution_deg: float | None = None
 
     # --- installation ------------------------------------------------------ #
     #: Offset from the CG in vehicle axes, metres: x forward, y right, z up.
     #: None means not measured — which is the usual state, and the reason the
     #: lever-arm correction never gets applied.
-    offset_from_cg_m: Optional[tuple[float, float, float]] = None
-    calibration: Optional[str] = None
+    offset_from_cg_m: tuple[float, float, float] | None = None
+    calibration: str | None = None
     owner: str = ""
     source: str = ""
     notes: str = ""
@@ -142,7 +141,7 @@ class GnssSpec:
         n = len(self.MEASUREMENT_QUESTIONS)
         return (n - len(self.unanswered_measurements())) / n
 
-    def lever_arm_m(self) -> Optional[float]:
+    def lever_arm_m(self) -> float | None:
         if self.offset_from_cg_m is None:
             return None
         x, y, z = self.offset_from_cg_m
@@ -227,7 +226,7 @@ class Manoeuvre:
     """A representative event, for turning a mounting offset into a number."""
     name: str
     speed_ms: float
-    radius_m: Optional[float]        # None for straight-line
+    radius_m: float | None        # None for straight-line
     yaw_accel_rads2: float
     why: str
     derived: bool = False            # True when computed from a VehicleSpec
@@ -246,24 +245,24 @@ class VehicleSpec:
     point of this class is that the lever-arm result stops depending on numbers
     this module invented and starts depending on numbers the team declared.
     """
-    mass_kg: Optional[float] = None
-    wheelbase_m: Optional[float] = None
+    mass_kg: float | None = None
+    wheelbase_m: float | None = None
     #: Front axle to CG, metres. With wheelbase this gives the rear distance.
-    cg_to_front_m: Optional[float] = None
+    cg_to_front_m: float | None = None
     #: Peak lateral tyre coefficient actually achieved, not the datasheet peak.
-    mu_lat: Optional[float] = None
+    mu_lat: float | None = None
     #: Yaw inertia about the CG. If None, estimated — see `yaw_inertia_kgm2`.
-    yaw_inertia_kgm2: Optional[float] = None
+    yaw_inertia_kgm2: float | None = None
     #: Speeds at which to evaluate. Corner radii come from the grip limit.
     speeds_ms: tuple[float, ...] = (11.0, 15.0, 20.0)
     source: str = ""
 
-    def cg_to_rear_m(self) -> Optional[float]:
+    def cg_to_rear_m(self) -> float | None:
         if self.wheelbase_m is None or self.cg_to_front_m is None:
             return None
         return self.wheelbase_m - self.cg_to_front_m
 
-    def yaw_inertia_estimate_kgm2(self) -> Optional[float]:
+    def yaw_inertia_estimate_kgm2(self) -> float | None:
         """I_zz ~= m * a * b, the dynamic-index-one approximation.
 
         The dynamic index is k^2/(a*b), where k is the yaw radius of gyration.
@@ -277,10 +276,10 @@ class VehicleSpec:
             return None
         return self.mass_kg * self.cg_to_front_m * b
 
-    def yaw_inertia(self) -> Optional[float]:
+    def yaw_inertia(self) -> float | None:
         return self.yaw_inertia_kgm2 or self.yaw_inertia_estimate_kgm2()
 
-    def max_yaw_accel_rads2(self) -> Optional[float]:
+    def max_yaw_accel_rads2(self) -> float | None:
         """Peak yaw acceleration the tyres can produce, from the parameters.
 
         Bound the yaw moment by one axle saturated laterally while the other
@@ -306,7 +305,7 @@ class VehicleSpec:
         m_z = self.mu_lat * self.mass_kg * 9.80665 * (b / self.wheelbase_m) * a
         return m_z / I
 
-    def max_lat_accel_ms2(self) -> Optional[float]:
+    def max_lat_accel_ms2(self) -> float | None:
         if self.mu_lat is None:
             return None
         return self.mu_lat * 9.80665
@@ -316,7 +315,7 @@ class VehicleSpec:
                 "cg_to_front_m": self.cg_to_front_m, "mu_lat": self.mu_lat}
         return [k for k, v in need.items() if v is None]
 
-    def manoeuvres(self) -> Optional[tuple[Manoeuvre, ...]]:
+    def manoeuvres(self) -> tuple[Manoeuvre, ...] | None:
         """Derived manoeuvre set, or None if the car is not declared enough.
 
         Corner radius is not assumed either — it follows from the speed and the
@@ -365,8 +364,8 @@ MANOEUVRES: tuple[Manoeuvre, ...] = (
 
 def mounting_findings(spec: GnssSpec, *,
                       tolerance_g: float = 0.05,
-                      vehicle: Optional[VehicleSpec] = None,
-                      manoeuvres: Optional[tuple[Manoeuvre, ...]] = None
+                      vehicle: VehicleSpec | None = None,
+                      manoeuvres: tuple[Manoeuvre, ...] | None = None
                       ) -> list[Finding]:
     """Turn "as close to the CG as possible" into a pass or a fail.
 
@@ -434,7 +433,7 @@ def mounting_findings(spec: GnssSpec, *,
         return out
 
     r = spec.lever_arm_m()
-    worst: Optional[tuple[Manoeuvre, LeverArmResult]] = None
+    worst: tuple[Manoeuvre, LeverArmResult] | None = None
     for m in use:
         res = lever_arm_error(spec.offset_from_cg_m, m.yaw_rate_rads(),
                               m.yaw_accel_rads2)
@@ -796,7 +795,7 @@ class OptionComparison:
 
 
 def compare_options(cots: GnssSpec = ECUMASTER_GPS_TO_CAN_V2,
-                    diy: Optional[GnssSpec] = None) -> OptionComparison:
+                    diy: GnssSpec | None = None) -> OptionComparison:
     """Compare a bought node against a built one on the checklist, not on cost.
 
     The DIY option is not scored badly here for being DIY. It is scored on how
@@ -893,9 +892,9 @@ class GnssPlan:
 
 
 def plan_gnss(spec: GnssSpec = ECUMASTER_GPS_TO_CAN_V2, *,
-              bus: Optional[BusSpec] = None,
-              rails: Optional[dict] = None,
-              vehicle: Optional[VehicleSpec] = None,
+              bus: BusSpec | None = None,
+              rails: dict | None = None,
+              vehicle: VehicleSpec | None = None,
               base_id: int = 0x600,
               tolerance_g: float = 0.05,
               vehicle_bandwidth_hz: float = 15.0,

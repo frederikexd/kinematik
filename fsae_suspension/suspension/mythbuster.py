@@ -71,7 +71,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Iterable, Optional, Sequence
+from typing import Any
+from collections.abc import Callable, Iterable, Sequence
 
 
 # --------------------------------------------------------------------------- #
@@ -163,11 +164,11 @@ class ParsedClaim:
         """True if ALL of the phrases appear."""
         return all(p.lower() in self.lower for p in phrases)
 
-    def num(self, key: str, default: Optional[float] = None) -> Optional[float]:
+    def num(self, key: str, default: float | None = None) -> float | None:
         return self.numbers.get(key, default)
 
 
-def _to_float(s: str) -> Optional[float]:
+def _to_float(s: str) -> float | None:
     try:
         return float(s.replace(",", ""))
     except (ValueError, AttributeError):
@@ -263,7 +264,7 @@ class Rule:
     """
     name: str
     discipline: str
-    check: Callable[["ParsedClaim", Any], "Optional[CheckOutcome]"]
+    check: Callable[[ParsedClaim, Any], CheckOutcome | None]
     keywords_any: Sequence[str] = field(default_factory=tuple)
     keywords_all_of: Sequence[Sequence[str]] = field(default_factory=tuple)
     priority: int = 100          # lower fires first
@@ -299,7 +300,7 @@ def FunctionRule(name: str, discipline: str, *,
         def _rule(claim, ctx):
             return CheckOutcome(Verdict.DEPENDS, "...", provenance="...")
     """
-    def _wrap(fn: Callable[[ParsedClaim, Any], Optional[CheckOutcome]]) -> Rule:
+    def _wrap(fn: Callable[[ParsedClaim, Any], CheckOutcome | None]) -> Rule:
         return Rule(name=name, discipline=discipline, check=fn,
                     keywords_any=tuple(keywords_any),
                     keywords_all_of=tuple(tuple(g) for g in keywords_all_of),
@@ -336,7 +337,7 @@ class MythEngine:
         for r in rules:
             self.register(r)
 
-    def rules(self, discipline: Optional[str] = None) -> list[Rule]:
+    def rules(self, discipline: str | None = None) -> list[Rule]:
         rs = sorted(self._rules, key=lambda r: (r.priority, r.name))
         if discipline:
             rs = [r for r in rs if r.discipline == discipline]
@@ -381,7 +382,7 @@ class MythEngine:
             provenance="",
         )
 
-    def reference_myths(self, discipline: Optional[str] = None,
+    def reference_myths(self, discipline: str | None = None,
                         context: Any = None, limit: int = 8) -> list[MythResult]:
         """Return canned 'known myths' for a discipline, evaluated against the
         live context — the reference list the UI shows below the input box. A
@@ -409,7 +410,7 @@ def _context_for(rule: Rule, context: Any) -> Any:
     return context
 
 
-def _unknown_message(claim: ParsedClaim, engine: "MythEngine",
+def _unknown_message(claim: ParsedClaim, engine: MythEngine,
                      declined: list[str]) -> str:
     """The honest 'couldn't check that' message — never a dead end.
 
@@ -517,7 +518,7 @@ def check(text: str, context: Any = None) -> MythResult:
     )
 
 
-def reference_myths(discipline: Optional[str] = None, context: Any = None,
+def reference_myths(discipline: str | None = None, context: Any = None,
                     limit: int = 8) -> list[MythResult]:
     _ensure_rulesets_loaded()
     return DEFAULT_ENGINE.reference_myths(discipline, context, limit)
@@ -528,6 +529,6 @@ def disciplines() -> list[str]:
     return DEFAULT_ENGINE.disciplines()
 
 
-def all_rules(discipline: Optional[str] = None) -> list[Rule]:
+def all_rules(discipline: str | None = None) -> list[Rule]:
     _ensure_rulesets_loaded()
     return DEFAULT_ENGINE.rules(discipline)

@@ -69,7 +69,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 from .cfd import (
     Attitude, RunMatrix, CaseSpec, CoeffResult, CFDProvenance, SolverFidelity,
@@ -217,10 +217,10 @@ class TunnelProvenance:
     ground_state: GroundState = GroundState.MOVING_BELT
     model_scale: float = 1.0               # 1.0 = full scale; 0.5 = half-scale model
     blockage_corrected: bool = True        # solid+wake blockage applied to coeffs?
-    blockage_ratio: Optional[float] = None # model frontal area / test-section area
-    reynolds: Optional[float] = None       # chord/length Reynolds number of the run
-    reference_area_m2: Optional[float] = None
-    reference_length_m: Optional[float] = None
+    blockage_ratio: float | None = None # model frontal area / test-section area
+    reynolds: float | None = None       # chord/length Reynolds number of the run
+    reference_area_m2: float | None = None
+    reference_length_m: float | None = None
     notes: str = ""
 
     def to_cfd_provenance(self) -> CFDProvenance:
@@ -272,7 +272,7 @@ class PhysicalAeroMap(AeroMap):
     def __init__(self, tunnel: TunnelProvenance,
                  reference_area_m2: float = 1.0,
                  reference_length_m: float = 1.55,
-                 wheelbase_mm: Optional[float] = None):
+                 wheelbase_mm: float | None = None):
         super().__init__(reference_area_m2, reference_length_m,
                          provenance=tunnel.to_cfd_provenance())
         self.tunnel = tunnel
@@ -280,8 +280,8 @@ class PhysicalAeroMap(AeroMap):
                              else reference_length_m * 1000.0)
 
     def add_measurement(self, rh: RideHeights, c_lift: float, c_drag: float,
-                        aero_balance_front: Optional[float] = None,
-                        c_side: Optional[float] = None) -> bool:
+                        aero_balance_front: float | None = None,
+                        c_side: float | None = None) -> bool:
         """
         Record one measured operating point. Sign convention matches the CFD seam:
         c_lift NEGATIVE = downforce. A tunnel that logs positive-down downforce
@@ -345,12 +345,12 @@ def drag_to_cdrag(drag_N: float, rho: float, area_m2: float,
 class PointCorrelation:
     """C_d/C_l/balance comparison at ONE ride-height point — tunnel vs CFD."""
     ride_heights: RideHeights
-    cl_phys: Optional[float]
-    cl_cfd: Optional[float]
-    cd_phys: Optional[float]
-    cd_cfd: Optional[float]
-    bal_phys: Optional[float] = None
-    bal_cfd: Optional[float] = None
+    cl_phys: float | None
+    cl_cfd: float | None
+    cd_phys: float | None
+    cd_cfd: float | None
+    bal_phys: float | None = None
+    bal_cfd: float | None = None
     paired: bool = False
     note: str = ""
 
@@ -414,7 +414,7 @@ class TunnelCorrelationReport:
     cd_rms_pct: float
     cl_bias_pct: float                      # signed mean of (cfd-phys)/phys; +ve = CFD over-predicts downforce magnitude
     cd_bias_pct: float
-    worst_cl: Optional[PointCorrelation]
+    worst_cl: PointCorrelation | None
     overall_within_tol: bool
     tolerances: dict
     summary: str = ""
@@ -505,7 +505,7 @@ class VirtualWindTunnel:
 
     # -- correlate physical vs digital ------------------------------------ #
     def correlate(self, cfd_results: Sequence[CoeffResult],
-                  tol: Optional[dict] = None) -> TunnelCorrelationReport:
+                  tol: dict | None = None) -> TunnelCorrelationReport:
         """
         Pair each CFD result to the physical measurement at the SAME attitude key and
         report C_d/C_l/balance error per point and overall. CFD results whose

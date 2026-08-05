@@ -5,12 +5,12 @@
 compliance. Checks stiffness/strength/fatigue distinctions teams routinely
 conflate."""
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any
 from ..mythbuster import CheckOutcome, ParsedClaim, Rule, Verdict, register
 
 
 # Stronger = stiffer
-def _r_strong_vs_stiff(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_strong_vs_stiff(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("strong", "stronger", "strength") and
             claim.has("stiff", "stiffer", "stiffness", "rigid")):
         return None
@@ -29,7 +29,7 @@ _r_strong_vs_stiff.reference_claim = "A stronger chassis is a stiffer chassis."
 
 
 # More bolts / tighter = stronger joint
-def _r_more_torque_stronger(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_more_torque_stronger(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("bolt", "torque", "tighten", "tighter") and
             claim.has("stronger", "more torque", "tighter is better", "won't fail",
                       "more clamp", "always")):
@@ -48,7 +48,7 @@ _r_more_torque_stronger.reference_claim = "Tighter bolts always make a stronger 
 
 
 # Lighter = weaker / unsafe
-def _r_lighter_weaker(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_lighter_weaker(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("lighter", "lightweight", "remove material", "lighten") and
             claim.has("weaker", "unsafe", "break", "fail", "less safe", "dangerous")):
         return None

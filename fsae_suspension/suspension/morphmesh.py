@@ -119,7 +119,6 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass, field as _dcfield, asdict
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import scipy.sparse as sp
@@ -186,7 +185,7 @@ class LoadCase:
 class LoadFan:
     """The whole fan: cases + the plane they live in + what was dropped."""
     member: str
-    cases: List[LoadCase]
+    cases: list[LoadCase]
     e1: np.ndarray            # (3,) bracket-plane basis (SAE mm frame)
     e2: np.ndarray
     normal: np.ndarray
@@ -195,7 +194,7 @@ class LoadFan:
     n_instants: int
     peak_F_N: float
     reversal_share: float = 0.0   # exposure fraction opposing the dominant arrow
-    warnings: List[str] = _dcfield(default_factory=list)
+    warnings: list[str] = _dcfield(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -214,7 +213,7 @@ class LoadFan:
 
 def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
                         n_cases: int = 4,
-                        plane: Optional[Tuple[np.ndarray, np.ndarray]] = None
+                        plane: tuple[np.ndarray, np.ndarray] | None = None
                         ) -> LoadFan:
     """
     Read the per-instant force the member applies to its chassis tab straight
@@ -232,7 +231,7 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
     out-of-plane share is reported, never hidden.
     """
     member = str(member).upper()
-    warnings: List[str] = []
+    warnings: list[str] = []
     if member not in _MEMBER_OUTER:
         return LoadFan(member, [], np.eye(3)[0], np.eye(3)[1], np.eye(3)[2],
                        0.0, 0.0, 0, 0.0,
@@ -326,14 +325,14 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
     signs = (v2 @ dom_dir) >= 0.0
 
     def _group(vv: np.ndarray, mm_: np.ndarray, tt_: np.ndarray,
-               n_grp: int) -> List[LoadCase]:
+               n_grp: int) -> list[LoadCase]:
         th = np.degrees(np.angle(np.exp(1j * (np.arctan2(vv[:, 1], vv[:, 0])
                                               - theta0))))
         o = np.argsort(th)
         vv, mm_, tt_ = vv[o], mm_[o], tt_[o]
         cum = np.concatenate([[0.0], np.cumsum(mm_)])
         tot = cum[-1]
-        out: List[LoadCase] = []
+        out: list[LoadCase] = []
         lo = 0
         for k in range(n_grp):
             target = tot * (k + 1) / n_grp
@@ -356,7 +355,7 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
             lo = hi
         return out
 
-    cases: List[LoadCase] = []
+    cases: list[LoadCase] = []
     for lobe in (signs, ~signs):
         share = float(m2[lobe].sum() / (total or 1.0))
         if share < 0.02 or not lobe.any():
@@ -368,7 +367,7 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
     # merge cases whose directions the grouping split but the event didn't
     # (wrap-aware: −180° and +180° are the same arrow) — a direction-static
     # event honestly yields ONE arrow, not four clones
-    merged: List[LoadCase] = []
+    merged: list[LoadCase] = []
     for c in sorted(cases, key=lambda c: -c.weight):
         hit = next((i for i, p in enumerate(merged)
                     if abs(np.degrees(np.angle(np.exp(1j * np.radians(
@@ -448,7 +447,7 @@ class FabricationLimits:
 
     @staticmethod
     def from_shop(shop: str = "hand_weld", haz_factor: float = 1.6
-                  ) -> "FabricationLimits":
+                  ) -> FabricationLimits:
         if shop not in FabricationLimits._FLOORS:
             raise ValueError(f"Unknown shop class '{shop}'. Allowed: "
                              f"{', '.join(FabricationLimits._FLOORS)}.")
@@ -464,7 +463,7 @@ class FabricationLimits:
     @staticmethod
     def from_tolerance_field(fld, process: str = "declared field",
                              web_floor_mm: float = 2.0, haz_mm: float = 8.0,
-                             haz_factor: float = 1.6) -> "FabricationLimits":
+                             haz_factor: float = 1.6) -> FabricationLimits:
         """u = the largest per-axis half-span across the field's specs — the
         positional accuracy the shop itself declared it holds."""
         spans = []
@@ -514,8 +513,8 @@ class PlateDomain:
     material: str = "Steel 4130"
     yield_MPa: float = 460.0
     anchor: str = "bottom_edge"
-    anchor_bores: List[Tuple[float, float, float]] = _dcfield(default_factory=list)
-    load_bore: Tuple[float, float, float] = (30.0, 62.0, 5.0)
+    anchor_bores: list[tuple[float, float, float]] = _dcfield(default_factory=list)
+    load_bore: tuple[float, float, float] = (30.0, 62.0, 5.0)
     ring_mm: float = 4.0
     name: str = "chassis tab"
 
@@ -524,7 +523,7 @@ class PlateDomain:
     def chassis_tab(width_mm: float = 60.0, height_mm: float = 80.0,
                     bore_r_mm: float = 5.0, thickness_mm: float = 4.0,
                     material: str = "Steel 4130", yield_MPa: float = 460.0,
-                    h_mm: float = 1.0) -> "PlateDomain":
+                    h_mm: float = 1.0) -> PlateDomain:
         """The hand-welded chassis tab: weld line along the bottom, rod-end
         bore up top on the centreline."""
         return PlateDomain(
@@ -539,7 +538,7 @@ class PlateDomain:
                       pivot_r_mm: float = 6.0, bore_r_mm: float = 5.0,
                       thickness_mm: float = 5.0, material: str = "Aluminium 7075",
                       yield_MPa: float = 430.0, h_mm: float = 1.0
-                      ) -> "PlateDomain":
+                      ) -> PlateDomain:
         """The bellcrank-web idealisation: a fixed pivot bore, one loaded
         bore across the plate. Single-reaction plate — the scope note in the
         module docstring applies."""
@@ -560,7 +559,7 @@ class PlateDomain:
     def ny(self) -> int:
         return max(6, int(round(self.height_mm / self.h_mm)))
 
-    def cell_centers(self) -> Tuple[np.ndarray, np.ndarray]:
+    def cell_centers(self) -> tuple[np.ndarray, np.ndarray]:
         """(ny, nx) x and y coordinates of element centres, mm."""
         xs = (np.arange(self.nx) + 0.5) * self.h_mm
         ys = (np.arange(self.ny) + 0.5) * self.h_mm
@@ -571,7 +570,7 @@ class PlateDomain:
 # --------------------------------------------------------------------------- #
 #  The finite-element kernel — plane-stress Q4, derived by quadrature
 # --------------------------------------------------------------------------- #
-def _q4_ke_and_b(nu: float, h: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _q4_ke_and_b(nu: float, h: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Element stiffness (E=1, t=1) by 2×2 Gauss quadrature, plus the
     strain–displacement matrix at the centroid and the unit constitutive D.
     Node order: bottom-left, bottom-right, top-right, top-left (CCW).
@@ -646,7 +645,7 @@ class _PlateFE:
         self.active = ~(self.pass_void | self.pass_solid)
 
         # ---- anchors ------------------------------------------------------ #
-        fixed_nodes: List[int] = []
+        fixed_nodes: list[int] = []
         if dom.anchor == "bottom_edge":
             fixed_nodes = [ix * (ny + 1) + 0 for ix in range(nx + 1)]
         else:
@@ -704,8 +703,8 @@ class _PlateFE:
         return mask
 
     # ------------------------------------------------------------------ #
-    def solve_cases(self, x_phys: np.ndarray, cases: List[LoadCase],
-                    ) -> Tuple[List[np.ndarray], List[float]]:
+    def solve_cases(self, x_phys: np.ndarray, cases: list[LoadCase],
+                    ) -> tuple[list[np.ndarray], list[float]]:
         """One assembly + one factorisation, every case rides it."""
         t = self.dom.thickness_mm
         Ee = (self.Emin + (x_phys.ravel() ** 3) * (self.E0 - self.Emin)) * t
@@ -755,7 +754,7 @@ def _cone_kernel(r_el: float) -> np.ndarray:
 
 
 class _Filter:
-    def __init__(self, r_el: float, shape: Tuple[int, int]):
+    def __init__(self, r_el: float, shape: tuple[int, int]):
         self.w = _cone_kernel(r_el)
         self.Hs = ndi.convolve(np.ones(shape), self.w, mode="constant")
 
@@ -767,7 +766,7 @@ class _Filter:
 
 
 def _project(xf: np.ndarray, beta: float, eta: float = 0.5
-             ) -> Tuple[np.ndarray, np.ndarray]:
+             ) -> tuple[np.ndarray, np.ndarray]:
     den = math.tanh(beta * eta) + math.tanh(beta * (1.0 - eta))
     xb = (math.tanh(beta * eta) + np.tanh(beta * (xf - eta))) / den
     dxb = beta * (1.0 - np.tanh(beta * (xf - eta)) ** 2) / den
@@ -785,8 +784,8 @@ def _disk(r_px: int) -> np.ndarray:
 # --------------------------------------------------------------------------- #
 def fabrication_audit(solid: np.ndarray, h_mm: float,
                       limits: FabricationLimits,
-                      haz: Optional[np.ndarray] = None,
-                      protect: Optional[np.ndarray] = None) -> dict:
+                      haz: np.ndarray | None = None,
+                      protect: np.ndarray | None = None) -> dict:
     """
     Morphological-opening length-scale check of a binary shape.
 
@@ -862,25 +861,25 @@ class MorphRound:
 @dataclass
 class MorphResult:
     verdict: str
-    findings: List[dict]
-    fan: Optional[LoadFan]
+    findings: list[dict]
+    fan: LoadFan | None
     domain_name: str
     domain_meta: dict
     limits: FabricationLimits
-    rounds: List[MorphRound]
+    rounds: list[MorphRound]
     density: np.ndarray          # (ny, nx) final physical density
     solid: np.ndarray            # (ny, nx) bool, binarised at 0.5
     mass_g: float
-    compliance_history: List[float]
+    compliance_history: list[float]
     fos: float                   # worst von Mises FoS across cases (peak loads)
     fos_case_deg: float          # angle of the governing case
     vm_max_MPa: float
-    suggested_thickness_mm: Optional[float]
+    suggested_thickness_mm: float | None
     stress_dir: np.ndarray       # (ny, nx, 2) exposure-weighted principal dir
     stress_mag: np.ndarray       # (ny, nx) its magnitude, MPa
-    coarsen_premium: Optional[dict]   # {d_compliance_frac, d_filter_mm} when COARSENED
+    coarsen_premium: dict | None   # {d_compliance_frac, d_filter_mm} when COARSENED
     n_solves: int
-    warnings: List[str] = _dcfield(default_factory=list)
+    warnings: list[str] = _dcfield(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -924,12 +923,12 @@ class MorphResult:
                          f"{self.density[iy, ix]:.3f}")
         return "\n".join(lines)
 
-    def outline_segments(self, h_mm: float) -> List[Tuple[float, float, float, float]]:
+    def outline_segments(self, h_mm: float) -> list[tuple[float, float, float, float]]:
         """Solid/void cell-edge boundary as (x1,y1,x2,y2) mm segments — the
         pixel-exact outline a CAD seat can trace (staircase resolution h)."""
         S = self.solid
         ny, nx = S.shape
-        segs: List[Tuple[float, float, float, float]] = []
+        segs: list[tuple[float, float, float, float]] = []
         P = np.pad(S, 1, constant_values=False)
         for iy in range(ny):
             for ix in range(nx):
@@ -947,9 +946,9 @@ class MorphResult:
         return segs
 
 
-def _flagged(verdict: str, msg: str, fan=None, dom: Optional[PlateDomain] = None,
-             limits: Optional[FabricationLimits] = None,
-             warnings: Optional[List[str]] = None) -> MorphResult:
+def _flagged(verdict: str, msg: str, fan=None, dom: PlateDomain | None = None,
+             limits: FabricationLimits | None = None,
+             warnings: list[str] | None = None) -> MorphResult:
     ny = dom.ny if dom else 1
     nx = dom.nx if dom else 1
     z = np.zeros((ny, nx))
@@ -970,9 +969,9 @@ def _flagged(verdict: str, msg: str, fan=None, dom: Optional[PlateDomain] = None
 # --------------------------------------------------------------------------- #
 #  The engine
 # --------------------------------------------------------------------------- #
-def _simp_round(fe: _PlateFE, cases: List[LoadCase], volfrac: float,
-                r_mm: float, max_iter: int, betas: Tuple[float, ...],
-                tol: float) -> Tuple[np.ndarray, List[float], int]:
+def _simp_round(fe: _PlateFE, cases: list[LoadCase], volfrac: float,
+                r_mm: float, max_iter: int, betas: tuple[float, ...],
+                tol: float) -> tuple[np.ndarray, list[float], int]:
     """One SIMP growth at one enforced length scale. Returns the physical
     density field, the compliance history, and the FE solve count."""
     ny, nx = fe.ny, fe.nx
@@ -981,7 +980,7 @@ def _simp_round(fe: _PlateFE, cases: List[LoadCase], volfrac: float,
     x[fe.pass_void] = 0.0
     x[fe.pass_solid] = 1.0
     n_active = int(fe.active.sum()) or 1
-    hist: List[float] = []
+    hist: list[float] = []
     n_solves = 0
     p = 3.0
 
@@ -1039,18 +1038,18 @@ def _simp_round(fe: _PlateFE, cases: List[LoadCase], volfrac: float,
     return xb, hist, n_solves
 
 
-def morph_component(dom: PlateDomain, cases: List[LoadCase],
+def morph_component(dom: PlateDomain, cases: list[LoadCase],
                     limits: FabricationLimits, volfrac: float = 0.4,
-                    fan: Optional[LoadFan] = None,
+                    fan: LoadFan | None = None,
                     max_iter: int = 30,
-                    betas: Tuple[float, ...] = (1.0, 2.0, 4.0, 8.0),
+                    betas: tuple[float, ...] = (1.0, 2.0, 4.0, 8.0),
                     tol: float = 0.01, max_rounds: int = 4) -> MorphResult:
     """
     Grow the manufacturing-constrained topology. The whole pipeline:
     enforce → grow → binarise → MEASURE → accept or reject-and-coarsen.
     """
-    warnings: List[str] = list(fan.warnings) if fan is not None else []
-    findings: List[dict] = []
+    warnings: list[str] = list(fan.warnings) if fan is not None else []
+    findings: list[dict] = []
 
     if not cases:
         return _flagged("LOAD_STARVED",
@@ -1088,8 +1087,8 @@ def morph_component(dom: PlateDomain, cases: List[LoadCase],
 
     # length scale enforced from round 1: filter radius ≥ half the minimum rib
     r_mm = max(limits.min_rib_mm / 2.0, 1.5 * dom.h_mm)
-    rounds: List[MorphRound] = []
-    hist_all: List[float] = []
+    rounds: list[MorphRound] = []
+    hist_all: list[float] = []
     n_solves = 0
     density = None
 
@@ -1222,8 +1221,8 @@ def morph_component(dom: PlateDomain, cases: List[LoadCase],
 #  The one-call join
 # --------------------------------------------------------------------------- #
 def morph_from_audit(audit, hp: Hardpoints, member: str = "LF",
-                     dom: Optional[PlateDomain] = None,
-                     limits: Optional[FabricationLimits] = None,
+                     dom: PlateDomain | None = None,
+                     limits: FabricationLimits | None = None,
                      n_cases: int = 4, volfrac: float = 0.4,
                      **kw) -> MorphResult:
     """GhostAudit → load fan → manufacturing-constrained topology."""
@@ -1259,7 +1258,7 @@ _VERDICT_LINES = {
 
 def render_morph_md(res: MorphResult) -> str:
     s = res.summary()
-    L: List[str] = []
+    L: list[str] = []
     L.append(f"# 🕸️🔩 MorphMesh — {s['domain']}")
     L.append("")
     L.append(_VERDICT_LINES.get(res.verdict, res.verdict))

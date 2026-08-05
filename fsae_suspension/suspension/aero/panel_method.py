@@ -55,7 +55,6 @@ from __future__ import annotations
 import math
 import os
 from dataclasses import dataclass
-from typing import Optional
 
 from .cfd import (
     Attitude, CaseSpec, CoeffResult, CFDProvenance, SolverFidelity,
@@ -83,7 +82,7 @@ class PanelParams:
     min_panels        : below this many usable triangles the geometry is too coarse to
                         trust a solve, and the caller should fall back.
     """
-    max_panels: Optional[int] = 4000
+    max_panels: int | None = 4000
     ground_effect: bool = True
     road_plane_z_m: float = 0.0
     kin_viscosity: float = 1.5e-5
@@ -116,11 +115,11 @@ class PanelMethodModel:
     """
     name = "panel-method"
 
-    def __init__(self, params: Optional[PanelParams] = None):
+    def __init__(self, params: PanelParams | None = None):
         self.params = params or PanelParams()
 
     # -- provenance -------------------------------------------------------- #
-    def provenance(self, n_panels: Optional[int] = None) -> CFDProvenance:
+    def provenance(self, n_panels: int | None = None) -> CFDProvenance:
         note = (
             "In-house 3D source-panel (boundary-element) potential-flow solve on the "
             "actual STL, with a ground-image plane. Resolves the attached-flow "
@@ -350,7 +349,7 @@ class PanelMethodModel:
         return cf * wetted / max(aref, 1e-9)
 
     @staticmethod
-    def _aero_balance(centroids, cp, areas, normals) -> Optional[float]:
+    def _aero_balance(centroids, cp, areas, normals) -> float | None:
         """
         Fraction of vertical aero load carried ahead of the body mid-length. Uses the
         per-panel vertical pressure load (Cp · area · n_z); returns None if there is

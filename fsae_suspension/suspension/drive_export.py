@@ -53,11 +53,9 @@ deployment that hasn't installed them.
 from __future__ import annotations
 
 import os
-import io
 import json
 import datetime as _dt
 from dataclasses import dataclass
-from typing import Optional
 
 
 DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.file"]
@@ -94,7 +92,7 @@ def libraries_present() -> bool:
         return False
 
 
-def service_account_info(read_credential=None) -> Optional[dict]:
+def service_account_info(read_credential=None) -> dict | None:
     """Return the service-account JSON dict from secrets/env, or None.
 
     read_credential: optional callable(name)->str (e.g. the app's own
@@ -159,8 +157,8 @@ def _service_from_oauth_token(token: dict):
 # ===================================================================== #
 #  Folder handling — idempotent path creation
 # ===================================================================== #
-def _find_or_create_folder(service, name: str, parent_id: Optional[str],
-                           shared_drive_id: Optional[str] = None) -> str:
+def _find_or_create_folder(service, name: str, parent_id: str | None,
+                           shared_drive_id: str | None = None) -> str:
     """Return the id of a folder `name` under `parent_id`, creating it if absent.
     Idempotent: reuses an existing folder rather than duplicating."""
     safe = name.replace("'", "\\'")
@@ -187,8 +185,8 @@ def _find_or_create_folder(service, name: str, parent_id: Optional[str],
 
 
 def ensure_folder_path(service, path_parts: list[str],
-                       root_id: Optional[str] = None,
-                       shared_drive_id: Optional[str] = None) -> str:
+                       root_id: str | None = None,
+                       shared_drive_id: str | None = None) -> str:
     """Ensure a nested folder path exists (e.g. ['KinematiK Reports',
     'Suspension', '2026']) and return the deepest folder's id."""
     parent = root_id or shared_drive_id
@@ -218,10 +216,10 @@ def export_report(local_pdf_path: str,
                   team: str = "",
                   *,
                   read_credential=None,
-                  oauth_token: Optional[dict] = None,
+                  oauth_token: dict | None = None,
                   root_folder_name: str = "KinematiK Reports",
-                  shared_drive_id: Optional[str] = None,
-                  root_folder_id: Optional[str] = None) -> DriveResult:
+                  shared_drive_id: str | None = None,
+                  root_folder_id: str | None = None) -> DriveResult:
     """Export one stamped PDF into an organised Drive folder.
 
     Folder layout: <root_folder_name>/<Team>/<Year>/<file>. The folder path is

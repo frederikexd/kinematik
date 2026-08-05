@@ -33,7 +33,8 @@ Usage (called once, e.g. from streamlit_app or myth_rules/__init__):
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Any
+from collections.abc import Callable
 
 from .mythbuster import (
     CheckOutcome, ParsedClaim, Rule, Verdict, DEFAULT_ENGINE,
@@ -53,10 +54,10 @@ _VERDICT_MAP = {
 }
 
 _INSTALLED = False
-_ENGINE: Optional[_ee.EntityMythEngine] = None
+_ENGINE: _ee.EntityMythEngine | None = None
 
 
-def _build_engine(registry_lookup: Optional[Callable[[str], Optional[float]]]):
+def _build_engine(registry_lookup: Callable[[str], float | None] | None):
     """Prefer Supabase (live, lead-editable); fall back to the bundled defaults
     PLUS any locally-authored rules so myths a lead adds from the UI work even
     with no DB configured."""
@@ -67,11 +68,11 @@ def _build_engine(registry_lookup: Optional[Callable[[str], Optional[float]]]):
 
 
 # remember the lookup so a rebuild after authoring keeps the same registry wiring
-_REGISTRY_LOOKUP: Optional[Callable[[str], Optional[float]]] = None
+_REGISTRY_LOOKUP: Callable[[str], float | None] | None = None
 
 
 def install_entity_engine(
-        registry_lookup: Optional[Callable[[str], Optional[float]]] = None,
+        registry_lookup: Callable[[str], float | None] | None = None,
         engine=None) -> Rule:
     """Register the entity engine as a fallback rule on ``DEFAULT_ENGINE``.
 
@@ -126,7 +127,7 @@ def existing_entities():
     return []
 
 
-def _bridge_check(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _bridge_check(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     """The catch-all rule body. Runs the entity engine on the raw claim text and
     maps a confident result back into a ``CheckOutcome``; declines (returns None)
     on a manual-review / low-confidence result so the engine's honest UNKNOWN

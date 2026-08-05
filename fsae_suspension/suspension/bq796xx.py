@@ -70,12 +70,10 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 from .interfaces import Severity, Finding
 from .daq_plan import (
-    BmsSignal, CanMessage, UartLink, BusSpec,
-    SensorSpec, OutputType,
+    BmsSignal, CanMessage, UartLink, SensorSpec, OutputType,
 )
 
 
@@ -214,7 +212,7 @@ MAX_READ_BYTES = 128
 
 def build_write(reg: int, data: bytes | int, *,
                 cmd: Cmd = Cmd.BROADCAST_WRITE,
-                device: Optional[int] = None) -> bytes:
+                device: int | None = None) -> bytes:
     """A complete write frame: [init][addr?][reg hi][reg lo][data...][crc].
 
     THE INIT BYTE ENCODES THE PAYLOAD LENGTH. The low nibble is
@@ -252,7 +250,7 @@ def build_write(reg: int, data: bytes | int, *,
 
 def build_read(reg: int, n_bytes: int, *,
                cmd: Cmd = Cmd.BROADCAST_READ,
-               device: Optional[int] = None) -> bytes:
+               device: int | None = None) -> bytes:
     """A complete read frame. `n_bytes` is what you want; the wire carries n-1.
 
     The off-by-one is the device's, not ours, and it is the kind of detail that
@@ -431,7 +429,7 @@ class BqDevice:
     max_boards: int
     current_sense: bool          # integrated shunt ADC -> SOC/SOH without a
                                  # separate current sensor and its own channel
-    asil: Optional[str] = None
+    asil: str | None = None
     gpio: int = 8
     notes: str = ""
 
@@ -474,19 +472,19 @@ class StackSpec:
     """
     part: str = "BQ79616-Q1"
     boards: int = 1
-    cells_per_board: Optional[int] = None
+    cells_per_board: int | None = None
     #: Cell-balancing intent, only used for findings.
-    balancing: Optional[bool] = None
+    balancing: bool | None = None
     #: Is the serial link galvanically isolated from the GLV system?
-    isolated: Optional[bool] = None
+    isolated: bool | None = None
     #: Is NFAULT wired to a host interrupt-capable GPIO?
-    nfault_to_interrupt: Optional[bool] = None
+    nfault_to_interrupt: bool | None = None
     #: Thermistors actually populated on the GPIO channels.
-    thermistors_per_board: Optional[int] = None
+    thermistors_per_board: int | None = None
     #: MEASURED per-device response framing overhead, from
     #: `measure_response_overhead`. None means not measured, and the timing
     #: results are reported as a range rather than a number.
-    response_overhead_bytes: Optional[int] = None
+    response_overhead_bytes: int | None = None
 
     def device(self) -> BqDevice:
         if self.part not in DEVICES:
@@ -494,18 +492,18 @@ class StackSpec:
                            f"Known: {sorted(DEVICES)}")
         return DEVICES[self.part]
 
-    def total_cells(self) -> Optional[int]:
+    def total_cells(self) -> int | None:
         if self.cells_per_board is None:
             return None
         return self.cells_per_board * self.boards
 
-    def payload_bytes(self) -> Optional[int]:
+    def payload_bytes(self) -> int | None:
         """Cell-voltage payload for the whole chain — known exactly."""
         if self.cells_per_board is None:
             return None
         return self.cells_per_board * BYTES_PER_CELL * self.boards
 
-    def response_bounds(self) -> Optional[tuple[int, int]]:
+    def response_bounds(self) -> tuple[int, int] | None:
         """(min, max) bytes returned for one broadcast cell-voltage read.
 
         Collapses to a single value once the overhead has been measured.
@@ -519,7 +517,7 @@ class StackSpec:
         lo, hi = RESPONSE_OVERHEAD_BOUNDS
         return (payload + lo * self.boards, payload + hi * self.boards)
 
-    def response_bytes(self) -> Optional[int]:
+    def response_bytes(self) -> int | None:
         """Response length, but only when it is actually known.
 
         Returns None while the overhead is unmeasured, rather than a plausible
@@ -605,7 +603,7 @@ def reverse_direction_sequence(boards: int) -> list[tuple[bytes, str]]:
 def balancing_sequence(cells_per_board: int, *,
                        timer_code: int = 0x02,
                        duty_code: int = 0x01,
-                       done_thresh_code: Optional[int] = 0x08
+                       done_thresh_code: int | None = 0x08
                        ) -> list[tuple[bytes, str]]:
     """Start automatic passive balancing.
 
@@ -680,7 +678,7 @@ class PollBudget:
     settle_s: float
     parse_s: float
     measured: bool
-    requested_rate_hz: Optional[float] = None
+    requested_rate_hz: float | None = None
     findings: list = field(default_factory=list)
 
     @property
@@ -689,21 +687,21 @@ class PollBudget:
         return self.rate_ceiling_min_hz
 
     @property
-    def response_bytes(self) -> Optional[int]:
+    def response_bytes(self) -> int | None:
         return self.response_min if self.measured else None
 
     @property
-    def cycle_s(self) -> Optional[float]:
+    def cycle_s(self) -> float | None:
         return self.cycle_min_s if self.measured else None
 
-    def headroom(self) -> Optional[float]:
+    def headroom(self) -> float | None:
         if self.requested_rate_hz is None:
             return None
         return self.requested_rate_hz / self.rate_ceiling_min_hz
 
 
-def poll_budget(stack: StackSpec, link: Optional[UartLink] = None, *,
-                requested_rate_hz: Optional[float] = None,
+def poll_budget(stack: StackSpec, link: UartLink | None = None, *,
+                requested_rate_hz: float | None = None,
                 parse_s: float = 500e-6,
                 continuous_adc: bool = True) -> PollBudget:
     """How fast this stack can actually be polled over this UART.
@@ -958,7 +956,7 @@ def stack_findings(stack: StackSpec) -> list[Finding]:
 
 
 def resolution_findings(stack: StackSpec, *,
-                        resolution_needed_v: Optional[float] = None
+                        resolution_needed_v: float | None = None
                         ) -> list[Finding]:
     """Does the converter resolve what the balancing decision needs?"""
     out: list[Finding] = []
@@ -1000,7 +998,7 @@ def to_bms_signals(stack: StackSpec, *,
                    cell_rate_hz: float = 10.0,
                    temp_rate_hz: float = 2.0,
                    status_rate_hz: float = 10.0,
-                   include_current: Optional[bool] = None
+                   include_current: bool | None = None
                    ) -> list[BmsSignal]:
     """The declared signal list, derived from the stack as actually specified.
 
@@ -1137,7 +1135,7 @@ def to_sensor_specs(stack: StackSpec, *,
 class BqPlan:
     stack: StackSpec
     device: BqDevice
-    budget: Optional[PollBudget]
+    budget: PollBudget | None
     signals: list
     messages: list
     bring_up: list
@@ -1183,9 +1181,9 @@ class BqPlan:
 
 
 def plan_stack(stack: StackSpec, *,
-               link: Optional[UartLink] = None,
-               requested_rate_hz: Optional[float] = None,
-               resolution_needed_v: Optional[float] = None,
+               link: UartLink | None = None,
+               requested_rate_hz: float | None = None,
+               resolution_needed_v: float | None = None,
                base_id: int = 0x300,
                continuous_adc: bool = True) -> BqPlan:
     """Check the stack, budget the link, and emit the frames and the CAN map."""

@@ -76,7 +76,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Optional, Sequence, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -110,11 +111,11 @@ class BalanceAxis(str, Enum):
     MZ = "Mz"   # yaw moment
 
     @staticmethod
-    def forces() -> tuple["BalanceAxis", "BalanceAxis", "BalanceAxis"]:
+    def forces() -> tuple[BalanceAxis, BalanceAxis, BalanceAxis]:
         return (BalanceAxis.FX, BalanceAxis.FY, BalanceAxis.FZ)
 
     @staticmethod
-    def all_six() -> list["BalanceAxis"]:
+    def all_six() -> list[BalanceAxis]:
         return [BalanceAxis.FX, BalanceAxis.FY, BalanceAxis.FZ,
                 BalanceAxis.MX, BalanceAxis.MY, BalanceAxis.MZ]
 
@@ -149,10 +150,10 @@ class BalanceCalibration:
     forces, it produces holes (mirrors TapCalibration.is_calibrated exactly). A
     singular matrix is treated as uncalibrated — you cannot decouple through it.
     """
-    matrix: Optional[np.ndarray] = None          # (6, 6), loads per (volt - zero)
-    zero_volts: Optional[np.ndarray] = None      # (6,), wind-off tare per bridge
+    matrix: np.ndarray | None = None          # (6, 6), loads per (volt - zero)
+    zero_volts: np.ndarray | None = None      # (6,), wind-off tare per bridge
     is_calibrated: bool = False
-    saturation_v: Optional[float] = None         # bridge rail; |V| >= this is garbage
+    saturation_v: float | None = None         # bridge rail; |V| >= this is garbage
     serial: str = ""
     notes: str = ""
 
@@ -171,7 +172,7 @@ class BalanceCalibration:
 
     @staticmethod
     def identity(sensitivities_per_v: Sequence[float],
-                 **kw) -> "BalanceCalibration":
+                 **kw) -> BalanceCalibration:
         """
         A DIAGONAL-only calibration: each bridge scaled by its own sensitivity, zero
         cross-talk assumed. This is the deliberately naive balance — useful as a
@@ -347,7 +348,7 @@ class DAQChassis:
 @dataclass
 class VibrationFilterReport:
     """What the vibration filter actually did to one channel — auditable, not magic."""
-    fan_tone_hz: Optional[float]
+    fan_tone_hz: float | None
     harmonics_notched: list                      # [hz, ...] actually notched
     variance_removed_frac: float                 # fraction of raw variance removed
     tone_power_frac: float                       # fraction of raw variance that was in the notched bands
@@ -383,7 +384,7 @@ class VibrationFilter:
     operates per channel and reports what it removed.
     """
     sample_rate_hz: float
-    fan_blade_pass_hz: Optional[float] = None
+    fan_blade_pass_hz: float | None = None
     structural_hz: Sequence[float] = ()
     n_harmonics: int = 3
     aero_cutoff_hz: float = 30.0
@@ -571,7 +572,7 @@ class StreamingVibrationFilter:
     short.
     """
     sample_rate_hz: float
-    fan_blade_pass_hz: Optional[float] = None
+    fan_blade_pass_hz: float | None = None
     structural_hz: Sequence[float] = ()
     n_harmonics: int = 3
     aero_cutoff_hz: float = 30.0
@@ -706,12 +707,12 @@ class AcquisitionSpec:
     in the mean.
     """
     seconds: float = 10.0
-    attitude: Optional[Attitude] = None
+    attitude: Attitude | None = None
     speed_ms: float = 25.0
     rho: float = 1.225
     p_static_inf_pa: float = 0.0
-    p_total_inf_pa: Optional[float] = None
-    vibration: Optional[ChannelFilter] = None    # FFT or streaming-biquad; VI is agnostic
+    p_total_inf_pa: float | None = None
+    vibration: ChannelFilter | None = None    # FFT or streaming-biquad; VI is agnostic
 
     def n_samples(self, chassis: DAQChassis) -> int:
         return max(1, int(round(self.seconds * chassis.sample_rate_hz)))
@@ -775,8 +776,8 @@ class BalanceReading:
     forces_N: dict                               # axis.value -> mean load (Fx,Fy,Fz,...)
     stderr_N: dict                               # axis.value -> standard error of mean
     n_used: int                                  # finite samples that fed the mean
-    interaction_matrix: Optional[np.ndarray] = None   # the C that decoupled it
-    provenance: Optional[DAQProvenance] = None
+    interaction_matrix: np.ndarray | None = None   # the C that decoupled it
+    provenance: DAQProvenance | None = None
     notes: str = ""
 
     def value(self, axis: BalanceAxis) -> float:
@@ -830,9 +831,9 @@ class DAQBackend(Protocol):
     `read_scanner` -> (n_samples, n_channels) transducer volts, columns matching the
                       scanner's port order.
     """
-    def read_balance(self, spec: "AcquisitionSpec",
+    def read_balance(self, spec: AcquisitionSpec,
                      chassis: DAQChassis) -> np.ndarray: ...
-    def read_scanner(self, scanner: PressureScannerSpec, spec: "AcquisitionSpec",
+    def read_scanner(self, scanner: PressureScannerSpec, spec: AcquisitionSpec,
                      chassis: DAQChassis) -> np.ndarray: ...
     @property
     def name(self) -> str: ...
@@ -878,7 +879,7 @@ class SyntheticDAQ:
 
     def __init__(self, true_loads_N: dict, true_pressures_pa: dict, *,
                  fan_hz: float = 137.0, fan_amp_v: float = 0.05,
-                 turb_v: float = 0.01, balance_cal: Optional[BalanceCalibration] = None,
+                 turb_v: float = 0.01, balance_cal: BalanceCalibration | None = None,
                  seed: int = 0):
         self.true_loads = true_loads_N               # axis.value -> N
         self.true_pressures = true_pressures_pa       # tap_id -> Pa
@@ -946,9 +947,9 @@ class VirtualInstrument:
     """
 
     def __init__(self, *, facility: str, chassis: DAQChassis,
-                 balance: Optional[ForceBalanceSpec] = None,
+                 balance: ForceBalanceSpec | None = None,
                  scanners: Sequence[PressureScannerSpec] = (),
-                 backend: Optional[DAQBackend] = None,
+                 backend: DAQBackend | None = None,
                  ground_state: GroundState = GroundState.MOVING_BELT):
         self.facility = facility
         self.chassis = chassis

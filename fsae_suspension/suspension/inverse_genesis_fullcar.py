@@ -118,7 +118,6 @@ from __future__ import annotations
 import math
 import time as _time
 from dataclasses import dataclass, field as _dcfield
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -138,7 +137,7 @@ _PHI = (math.sqrt(5.0) - 1.0) / 2.0        # golden ratio step, deterministic
 
 def _trapz(y, x):
     """Trapezoidal integral, tolerant of the NumPy 2.x trapz→trapezoid rename."""
-    fn = getattr(np, "trapezoid", None) or getattr(np, "trapz")
+    fn = getattr(np, "trapezoid", None) or np.trapz
     return float(fn(y, x))
 
 
@@ -189,10 +188,10 @@ class RuleMatrix:
     endurance_km: float = 22.0           # endurance event distance
 
     def violations(self, series: int, parallel: int, cell: CellSpec,
-                   wheelbase_mm: float) -> List[str]:
+                   wheelbase_mm: float) -> list[str]:
         """Every rule this (series, parallel) configuration breaks, NAMED.
         An empty list is the only pass."""
-        out: List[str] = []
+        out: list[str] = []
         v_pack_max = series * cell.max_v
         if v_pack_max > self.max_ts_voltage + 1e-9:
             out.append(f"{series}s at {cell.max_v:.2f} V/cell = "
@@ -222,7 +221,7 @@ class RuleMatrix:
         return out
 
     def segments_needed(self, series: int, parallel: int,
-                        cell: CellSpec) -> Tuple[int, int]:
+                        cell: CellSpec) -> tuple[int, int]:
         """(n_segments, series_per_segment) for a legal split, both caps."""
         seg_series_v = max(int(self.max_segment_voltage / cell.max_v), 1)
         cell_j = cell.capacity_ah * cell.nominal_v * 3600.0
@@ -235,7 +234,7 @@ class RuleMatrix:
 # --------------------------------------------------------------------------- #
 #  The design space — what the engine is allowed to choose.
 # --------------------------------------------------------------------------- #
-_ARCHITECTURES: Tuple[str, ...] = ("single_diff", "twin_axle", "four_tv")
+_ARCHITECTURES: tuple[str, ...] = ("single_diff", "twin_axle", "four_tv")
 
 _ARCH_LABEL = {"single_diff": "1 motor + diff",
                "twin_axle":   "2 motors (axle split)",
@@ -263,11 +262,11 @@ class DesignSpace:
     candidate, which is the whole point: a bigger pack must pay for its own
     mass in every event before its energy shows a net gain.
     """
-    series_range: Tuple[int, int] = (84, 140)     # pack series count, inclusive
+    series_range: tuple[int, int] = (84, 140)     # pack series count, inclusive
     series_step: int = 4                          # enumerate every Nth count
-    parallel_range: Tuple[int, int] = (3, 7)      # cells per parallel group
-    final_drive_range: Tuple[float, float] = (2.6, 5.2)
-    architectures: Tuple[str, ...] = _ARCHITECTURES
+    parallel_range: tuple[int, int] = (3, 7)      # cells per parallel group
+    final_drive_range: tuple[float, float] = (2.6, 5.2)
+    architectures: tuple[str, ...] = _ARCHITECTURES
     cell: CellSpec = _dcfield(default_factory=CellSpec)
     # -- the fixed car around the choices ---------------------------------- #
     base_mass_kg: float = 215.0          # incl. driver, excl. cells & motors
@@ -296,12 +295,12 @@ class DesignSpace:
     cla: float = 2.6                     # downforce area Cl·A, m²
     cda: float = 1.1                     # drag area Cd·A, m²
 
-    def series_options(self) -> List[int]:
+    def series_options(self) -> list[int]:
         lo, hi = int(self.series_range[0]), int(self.series_range[1])
         step = max(int(self.series_step), 1)
         return list(range(lo, hi + 1, step))
 
-    def parallel_options(self) -> List[int]:
+    def parallel_options(self) -> list[int]:
         lo, hi = int(self.parallel_range[0]), int(self.parallel_range[1])
         return list(range(lo, hi + 1))
 
@@ -311,10 +310,10 @@ class PointsReference:
     """Declared event-best times (s) for ABSOLUTE points. Leave any as None
     and that event is scored RELATIVE to the best candidate in this search —
     stated in the report, because relative is all an undeclared best earns."""
-    accel_s: Optional[float] = None
-    skidpad_s: Optional[float] = None
-    autocross_s: Optional[float] = None
-    endurance_s: Optional[float] = None
+    accel_s: float | None = None
+    skidpad_s: float | None = None
+    autocross_s: float | None = None
+    endurance_s: float | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -329,7 +328,7 @@ class FullCarConfig:
     final_drive: float
 
     def derive(self, space: DesignSpace, rules: RuleMatrix
-               ) -> Dict[str, float]:
+               ) -> dict[str, float]:
         cell = space.cell
         n_cells = self.series * self.parallel
         cells_kg = n_cells * cell.mass_kg
@@ -387,7 +386,7 @@ class ConfigScore:
     verdict says whether the car it describes finishes the season."""
     config: FullCarConfig
     ok: bool
-    derived: Dict[str, float]
+    derived: dict[str, float]
     accel_s: float = float("nan")
     skidpad_s: float = float("nan")
     autocross_s: float = float("nan")
@@ -398,22 +397,22 @@ class ConfigScore:
     derate_penalty_s: float = 0.0          # per-lap, when energy runs short
     peak_lat_g: float = float("nan")
     tv_yaw_note: str = ""
-    points: Dict[str, float] = _dcfield(default_factory=dict)
+    points: dict[str, float] = _dcfield(default_factory=dict)
     total_points: float = 0.0
     # thermal (finalists only; nan/None = gate not yet run)
-    thermal: Optional[PackThermalResult] = None
-    overheat_lap: Optional[int] = None
+    thermal: PackThermalResult | None = None
+    overheat_lap: int | None = None
     verdict: str = ""                      # FEASIBLE | ENERGY_SHORT |
     #                                        THERMAL_DNF | RULE_KILLED | FAILED
-    kill_reasons: List[str] = _dcfield(default_factory=list)
-    warnings: List[str] = _dcfield(default_factory=list)
+    kill_reasons: list[str] = _dcfield(default_factory=list)
+    warnings: list[str] = _dcfield(default_factory=list)
 
 
 # --------------------------------------------------------------------------- #
 #  The forward evaluation — one consistent car through the whole chain.
 # --------------------------------------------------------------------------- #
 def _vehicle_for(cfg: FullCarConfig, space: DesignSpace,
-                 derived: Dict[str, float]) -> VehicleDynamics:
+                 derived: dict[str, float]) -> VehicleDynamics:
     """Build the VehicleDynamics for a candidate — the mass the pack actually
     weighs, the car's fixed geometry, the placeholder grip model. Geometry
     tabs would feed solved camber; here the fixed grip model is enough to
@@ -430,7 +429,7 @@ def _vehicle_for(cfg: FullCarConfig, space: DesignSpace,
 
 
 def _powertrain_for(cfg: FullCarConfig, space: DesignSpace,
-                    derived: Dict[str, float]) -> Powertrain:
+                    derived: dict[str, float]) -> Powertrain:
     mm = MotorMap.from_peak(
         peak_torque_nm=space.motor_peak_torque_nm,
         peak_power_kw=derived["power_kw"],
@@ -452,7 +451,7 @@ def _powertrain_for(cfg: FullCarConfig, space: DesignSpace,
 
 
 def _endurance_track(space: DesignSpace, rules: RuleMatrix
-                     ) -> Tuple[Track, int]:
+                     ) -> tuple[Track, int]:
     """One representative lap plus the integer lap count that covers the
     declared endurance distance."""
     base = default_autocross()
@@ -577,9 +576,9 @@ def evaluate_config(cfg: FullCarConfig, space: DesignSpace,
 
 
 def _thermal_gate(cfg: FullCarConfig, space: DesignSpace, rules: RuleMatrix,
-                  adapter: "_TraceAdapter", shim: "_LapParamsShim",
-                  derived: Dict[str, float], laps: int
-                  ) -> Tuple[Optional[PackThermalResult], Optional[int]]:
+                  adapter: _TraceAdapter, shim: _LapParamsShim,
+                  derived: dict[str, float], laps: int
+                  ) -> tuple[PackThermalResult | None, int | None]:
     """Full transient per-cell integration of the whole endurance stint.
     Returns (result, overheat_lap) — overheat_lap is the endurance lap on
     which the worst cell first crosses the rule limit, or None if it never
@@ -620,7 +619,7 @@ _EVENT_FAMILY = {"accel": "acceleration", "skidpad": "skidpad",
                  "autocross": "autocross", "endurance": "endurance"}
 
 
-def _score_field(scores: List[ConfigScore],
+def _score_field(scores: list[ConfigScore],
                  ref: PointsReference) -> None:
     """Assign points to every feasible-timed candidate, IN PLACE. Best time
     per event is the declared reference if given, else the best in the field
@@ -681,7 +680,7 @@ class SearchDiagnostics:
 
 def _gear_refine(cfg: FullCarConfig, space: DesignSpace, rules: RuleMatrix,
                  ref: PointsReference, diag: SearchDiagnostics,
-                 iters: int = 8) -> Tuple[FullCarConfig, ConfigScore]:
+                 iters: int = 8) -> tuple[FullCarConfig, ConfigScore]:
     """Golden-section search on final_drive for one integer config — the only
     continuous freedom, refined deterministically. Objective is the points
     total WITHOUT the thermal gate (cheap); the finalist re-runs with it."""
@@ -723,21 +722,21 @@ def _gear_refine(cfg: FullCarConfig, space: DesignSpace, rules: RuleMatrix,
 class FullCarResult:
     ok: bool
     reason: str
-    winner: Optional[ConfigScore]
-    finalists: List[ConfigScore]         # thermal-gated, best first
-    ranked: List[ConfigScore]            # all timed candidates, best first
-    rule_killed: List[ConfigScore]       # with their named killing rules
+    winner: ConfigScore | None
+    finalists: list[ConfigScore]         # thermal-gated, best first
+    ranked: list[ConfigScore]            # all timed candidates, best first
+    rule_killed: list[ConfigScore]       # with their named killing rules
     diagnostics: SearchDiagnostics
     space: DesignSpace
     rules: RuleMatrix
     points_ref: PointsReference
     relative_scoring: bool               # True ⇒ no declared bests
-    warnings: List[str] = _dcfield(default_factory=list)
+    warnings: list[str] = _dcfield(default_factory=list)
 
 
-def synthesize_fullcar(space: Optional[DesignSpace] = None,
-                       rules: Optional[RuleMatrix] = None,
-                       points_ref: Optional[PointsReference] = None,
+def synthesize_fullcar(space: DesignSpace | None = None,
+                       rules: RuleMatrix | None = None,
+                       points_ref: PointsReference | None = None,
                        *, n_finalists: int = 4,
                        gear_iters: int = 8) -> FullCarResult:
     """The engine: walk the design chain backwards from points to
@@ -755,18 +754,18 @@ def synthesize_fullcar(space: Optional[DesignSpace] = None,
                     ref.endurance_s))
     diag = SearchDiagnostics()
     t0 = _time.time()
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     # ---- stage 1: enumerate the integer grid, rule-gate first ------------ #
-    grid: List[FullCarConfig] = []
+    grid: list[FullCarConfig] = []
     for s in space.series_options():
         for p in space.parallel_options():
             for arch in space.architectures:
                 grid.append(FullCarConfig(s, p, arch, 0.0))
     diag.n_grid = len(grid)
 
-    rule_killed: List[ConfigScore] = []
-    survivors: List[FullCarConfig] = []
+    rule_killed: list[ConfigScore] = []
+    survivors: list[FullCarConfig] = []
     for cfg in grid:
         viol = rules.violations(cfg.series, cfg.parallel, space.cell,
                                 space.wheelbase_mm)
@@ -793,7 +792,7 @@ def synthesize_fullcar(space: Optional[DesignSpace] = None,
             relative_scoring=relative, warnings=warnings)
 
     # ---- stage 2: golden-section gear per survivor ----------------------- #
-    refined: List[ConfigScore] = []
+    refined: list[ConfigScore] = []
     for cfg in survivors:
         _, best = _gear_refine(cfg, space, rules, ref, diag,
                                iters=gear_iters)
@@ -816,7 +815,7 @@ def synthesize_fullcar(space: Optional[DesignSpace] = None,
             warnings=warnings)
 
     # ---- stage 4: the thermal gate on the top finalists ------------------ #
-    finalists: List[ConfigScore] = []
+    finalists: list[ConfigScore] = []
     for s in timed[:max(int(n_finalists), 1)]:
         gated = evaluate_config(s.config, space, rules, run_thermal=True)
         diag.n_thermal_gates += 1
@@ -843,7 +842,7 @@ def synthesize_fullcar(space: Optional[DesignSpace] = None,
     # rebuild the full ranked list: gated finalists override their grid twins
     gated_by_cfg = {(f.config.series, f.config.parallel,
                      f.config.architecture): f for f in finalists}
-    ranked: List[ConfigScore] = []
+    ranked: list[ConfigScore] = []
     for s in timed:
         key = (s.config.series, s.config.parallel, s.config.architecture)
         ranked.append(gated_by_cfg.get(key, s))
@@ -869,7 +868,7 @@ def synthesize_fullcar(space: Optional[DesignSpace] = None,
         relative_scoring=relative, warnings=warnings)
 
 
-def _winner_reason(w: ConfigScore, finalists: List[ConfigScore],
+def _winner_reason(w: ConfigScore, finalists: list[ConfigScore],
                    relative: bool) -> str:
     kind = "relative" if relative else "absolute"
     beaten = [f for f in finalists if f is not w
@@ -889,7 +888,7 @@ def _winner_reason(w: ConfigScore, finalists: List[ConfigScore],
             f"{w.thermal.hottest_peak_c:.0f} °C).{note}")
 
 
-def _no_survivor_reason(finalists: List[ConfigScore], rules: RuleMatrix,
+def _no_survivor_reason(finalists: list[ConfigScore], rules: RuleMatrix,
                         relative: bool) -> str:
     verdicts = {}
     for f in finalists:
@@ -911,9 +910,9 @@ def _no_survivor_reason(finalists: List[ConfigScore], rules: RuleMatrix,
 #  Stage: kinematic intent synthesis — the winning car's demands as curves.
 # --------------------------------------------------------------------------- #
 def kinematic_intent_for(score: ConfigScore, space: DesignSpace,
-                         hp: Optional[Hardpoints] = None,
-                         stations_mm: Optional[np.ndarray] = None
-                         ) -> "_ig.GenesisTargets":
+                         hp: Hardpoints | None = None,
+                         stations_mm: np.ndarray | None = None
+                         ) -> _ig.GenesisTargets:
     """Turn the winning car's dynamics into a drawn kinematic INTENT — a
     ``GenesisTargets`` in the corner engine's exact dialect, ready to hand to
     ``inverse_genesis`` for hardpoint synthesis.
@@ -962,9 +961,9 @@ def kinematic_intent_for(score: ConfigScore, space: DesignSpace,
 
 
 def synthesize_hardpoints(score: ConfigScore, space: DesignSpace,
-                          hp: Optional[Hardpoints] = None,
-                          volume: Optional["_ig.LegalVolume"] = None,
-                          fld=None, **genesis_kw) -> "_ig.GenesisResult":
+                          hp: Hardpoints | None = None,
+                          volume: _ig.LegalVolume | None = None,
+                          fld=None, **genesis_kw) -> _ig.GenesisResult:
     """Hand the winning car's derived kinematic intent to the EXISTING
     corner-level InverseGenesis and realise it as 3D hardpoints — same
     build-yield co-optimization, keep-out filter and honesty the corner
@@ -991,13 +990,13 @@ class LoadCase:
     axial forces — the literal table to hand the frame/FEA seat."""
     fz_n: float                          # vertical load on the outer tyre, N
     mu_lateral: float                    # lateral μ at the limit
-    member_forces: Dict[str, float]      # member → axial force (N, + tension)
+    member_forces: dict[str, float]      # member → axial force (N, + tension)
     condition: float                     # equilibrium-matrix condition number
     note: str
 
 
 def load_case_for(score: ConfigScore, space: DesignSpace,
-                  hp: Optional[Hardpoints] = None) -> LoadCase:
+                  hp: Hardpoints | None = None) -> LoadCase:
     """The worst-case outer-wheel load at peak lateral g, resolved through the
     (generated or nominal) linkage into member axial forces. This is the
     structural side of the inverse: the force vectors the frame must react,
@@ -1123,7 +1122,7 @@ def render_fullcar_md(res: FullCarResult,
     """The design-review page: verdict, the winning configuration, the
     candidate field, and the honesty ledger. Deterministic — byte-identical
     across runs for identical inputs."""
-    L: List[str] = ["# 🧬🏁 InverseGenesis-FullCar — full-vehicle synthesis", ""]
+    L: list[str] = ["# 🧬🏁 InverseGenesis-FullCar — full-vehicle synthesis", ""]
     L.append(("✅ " if res.ok else "❌ ") + res.reason)
     L.append("")
 

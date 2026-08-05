@@ -69,7 +69,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 from .interfaces import Severity, Finding
 
@@ -152,13 +151,13 @@ class WireSpec:
     in August is not at 20 degC.
     """
     label: str = "GLV feed"
-    awg: Optional[int] = 16
-    area_mm2: Optional[float] = None
+    awg: int | None = 16
+    area_mm2: float | None = None
     material: str = "copper"
     insulation: str = "TXL / GXL 125"
-    t_initial_c: Optional[float] = None
-    t_final_c: Optional[float] = None
-    continuous_rating_a: Optional[float] = None   # ampacity in its bundle
+    t_initial_c: float | None = None
+    t_final_c: float | None = None
+    continuous_rating_a: float | None = None   # ampacity in its bundle
 
     def area(self) -> float:
         if self.area_mm2 is not None:
@@ -223,11 +222,11 @@ class CurveAnchor:
 class FuseSpec:
     """A fuse, described only as well as its datasheet was actually read."""
     label: str = "main GLV fuse"
-    rating_a: Optional[float] = None
+    rating_a: float | None = None
     fuse_class: FuseClass = FuseClass.UNKNOWN
     anchors: list = field(default_factory=list)      # list[CurveAnchor]
     #: Manufacturer's clearing I²t, when the datasheet states one directly.
-    declared_i2t: Optional[float] = None
+    declared_i2t: float | None = None
     #: Blade fuses are rated in still air at 25 degC and must be derated for
     #: continuous duty in a hot, enclosed fusebox.
     continuous_derate: float = 0.75
@@ -239,7 +238,7 @@ class FuseSpec:
     def has_curve(self) -> bool:
         return self.rating_a is not None and len(self.anchors) >= 2
 
-    def power_law(self) -> Optional[tuple[float, float]]:
+    def power_law(self) -> tuple[float, float] | None:
         """Fit t = a * (I/I_rated)^(-b) through the declared anchors.
 
         Two anchors give an exact fit; more than two are least-squares fitted
@@ -259,14 +258,14 @@ class FuseSpec:
         slope = sxy / sxx
         return math.exp(my - slope * mx), -slope      # (a, b)
 
-    def anchor_range(self) -> Optional[tuple[float, float]]:
+    def anchor_range(self) -> tuple[float, float] | None:
         """(lowest, highest) current multiple the datasheet anchors cover."""
         if not self.anchors:
             return None
         ms = [a.current_mult for a in self.anchors]
         return min(ms), max(ms)
 
-    def blow_time_s(self, current_a: float) -> Optional[float]:
+    def blow_time_s(self, current_a: float) -> float | None:
         """Expected time to clear at `current_a`, or None with no curve.
 
         Above the fastest declared anchor the model switches from the fitted
@@ -300,11 +299,11 @@ class FuseSpec:
             return True
         return not (rng[0] <= current_a / self.rating_a <= rng[1])
 
-    def clearing_i2t(self, current_a: float) -> Optional[float]:
+    def clearing_i2t(self, current_a: float) -> float | None:
         t = self.blow_time_s(current_a)
         return None if t is None else current_a ** 2 * t
 
-    def continuous_limit_a(self) -> Optional[float]:
+    def continuous_limit_a(self) -> float | None:
         if self.rating_a is None:
             return None
         return self.rating_a * self.continuous_derate
@@ -317,8 +316,8 @@ class FuseSpec:
 class CoordinationResult:
     fuse: FuseSpec
     wire: WireSpec
-    protected: Optional[bool]           # None when it cannot be determined
-    crossover_a: Optional[float]        # current above which the wire loses
+    protected: bool | None           # None when it cannot be determined
+    crossover_a: float | None        # current above which the wire loses
     parallel_curves: bool               # b == 2: pure I²t comparison, no crossing
     margin_at: dict                     # current -> (t_fuse, t_wire, ratio)
     findings: list = field(default_factory=list)
@@ -330,7 +329,7 @@ _PROBE_MULTS = (1.5, 2.0, 3.0, 5.0, 10.0, 20.0)
 
 
 def coordinate(fuse: FuseSpec, wire: WireSpec,
-               *, prospective_fault_a: Optional[float] = None
+               *, prospective_fault_a: float | None = None
                ) -> CoordinationResult:
     """Does this fuse clear before this wire is damaged, and up to what current?
 
@@ -377,7 +376,7 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
     # ---- crossover ------------------------------------------------------- #
     parallel = abs(b - 2.0) < 1e-6
     crossover = None
-    protected: Optional[bool] = None
+    protected: bool | None = None
 
     if parallel:
         # Both curves go as I^-2; compare energies once and it holds everywhere.
@@ -513,9 +512,9 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
                               margin, findings)
 
 
-def nuisance_check(fuse: FuseSpec, *, continuous_load_a: Optional[float],
-                   inrush_a: Optional[float] = None,
-                   inrush_ms: Optional[float] = None,
+def nuisance_check(fuse: FuseSpec, *, continuous_load_a: float | None,
+                   inrush_a: float | None = None,
+                   inrush_ms: float | None = None,
                    ambient_c: float = 25.0) -> list[Finding]:
     """Will this fuse hold the load it is supposed to hold?
 
@@ -600,7 +599,7 @@ class Instrument:
     timer_resolution_s: float = 1e-3            # millis()
     detection_latency_s: float = 0.25           # human reaction
     latency_jitter_s: float = 0.08              # spread of that reaction
-    adc_sample_rate_hz: Optional[float] = None  # None = no automatic detection
+    adc_sample_rate_hz: float | None = None  # None = no automatic detection
     serial_in_timing_path: bool = True          # blocking prints between marks
     serial_baud: int = 9600
     serial_chars_in_path: int = 30
@@ -729,10 +728,10 @@ def instrument_findings(inst: Instrument,
 class TestPoint:
     current_mult: float
     current_a: float
-    expected_time_s: Optional[float]
+    expected_time_s: float | None
     samples: int
     measurable: bool
-    rel_uncertainty: Optional[float]
+    rel_uncertainty: float | None
 
 
 @dataclass
@@ -742,7 +741,7 @@ class TestPlan:
     points: list
     fuses_consumed: int
     estimated_cost: float
-    scatter: Optional[ScatterEstimate] = None
+    scatter: ScatterEstimate | None = None
     findings: list = field(default_factory=list)
 
     def measurable_points(self) -> list:
@@ -837,7 +836,7 @@ def prior_scatter(sigma_ln: float = PRIOR_LOG_SCATTER) -> ScatterEstimate:
                            source="module prior (not your fuses)")
 
 
-def pooled_log_scatter(measurements: list) -> Optional[ScatterEstimate]:
+def pooled_log_scatter(measurements: list) -> ScatterEstimate | None:
     """Pool the observed spread of ln(t) across current levels.
 
     Pooling across levels is the right move because the spread of a fuse
@@ -927,7 +926,7 @@ def recommended_pilot_n(target_rel_uncertainty: float = 0.25) -> int:
 
 def refine_from_pilot(measurements: list, *, rel_precision: float = 0.20,
                       confidence_z: float = 1.96,
-                      pilot_n: Optional[int] = None) -> dict:
+                      pilot_n: int | None = None) -> dict:
     """Two-stage sizing: what the pilot says the real test needs.
 
     The standard answer to "sigma is assumed" is to stop assuming it. Run a
@@ -1174,14 +1173,14 @@ class Measurement:
 
 @dataclass
 class FitResult:
-    a: Optional[float]
-    b: Optional[float]
+    a: float | None
+    b: float | None
     per_point: dict               # current -> {median, geo_sd, n, declared, ratio}
-    in_family: Optional[bool]
+    in_family: bool | None
     #: The unit-to-unit spread these very measurements imply. Feed it straight
     #: back into build_test_plan(log_scatter=...) so the next session is sized
     #: on your parts rather than on this module's prior.
-    scatter: Optional[ScatterEstimate] = None
+    scatter: ScatterEstimate | None = None
     findings: list = field(default_factory=list)
 
 

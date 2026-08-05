@@ -76,7 +76,6 @@ from __future__ import annotations
 import json
 import numpy as np
 from dataclasses import dataclass
-from typing import Optional
 
 
 # --------------------------------------------------------------------------- #
@@ -211,7 +210,7 @@ def _beam_local_K(E: float, G: float, A: float, Iy: float, Iz: float,
 
 
 def _element_transform(p1: np.ndarray, p2: np.ndarray, dofs: int,
-                       ref: Optional[np.ndarray] = None) -> tuple:
+                       ref: np.ndarray | None = None) -> tuple:
     """
     Direction-cosine transform T (block-diagonal R) and length for an element.
 
@@ -252,11 +251,11 @@ class FlexElement:
     kind: str = "beam"           # "beam" | "bar"
     material: str = "Steel 4130"
     # section: either tube (od/wall) or explicit (A, I, J)
-    od_mm: Optional[float] = None
-    wall_mm: Optional[float] = None
-    A: Optional[float] = None
-    I: Optional[float] = None
-    J: Optional[float] = None
+    od_mm: float | None = None
+    wall_mm: float | None = None
+    A: float | None = None
+    I: float | None = None
+    J: float | None = None
 
     def section_props(self) -> tuple:
         if self.A is not None and self.I is not None:
@@ -349,7 +348,7 @@ class FlexMesh:
             K[np.ix_(idx, idx)] += kg
         return K, node_index, dofs
 
-    def condense(self) -> "CondensedFlexBody":
+    def condense(self) -> CondensedFlexBody:
         """Assemble and Guyan-condense to the interface DOFs."""
         K, node_index, dofs = self.assemble()
         master_nodes = list(self.interface.values())
@@ -527,7 +526,7 @@ class CondensedFlexBody:
         }
 
     @staticmethod
-    def from_dict(d: dict) -> "CondensedFlexBody":
+    def from_dict(d: dict) -> CondensedFlexBody:
         iface = d["interface"]
         names = [r["name"] for r in iface]
         xyz = np.array([r["xyz"] for r in iface], float)
@@ -573,7 +572,7 @@ def load_flex_body(path_or_dict) -> CondensedFlexBody:
     Returns a CondensedFlexBody either way.
     """
     if isinstance(path_or_dict, (str, bytes)):
-        with open(path_or_dict, "r") as fh:
+        with open(path_or_dict) as fh:
             d = json.load(fh)
     else:
         d = dict(path_or_dict)
@@ -622,7 +621,7 @@ def read_mnf(path: str) -> CondensedFlexBody:
             "MNF this reader understands, and load that. The numbers are identical; "
             "only the packaging differs.")
     # ASCII path: accept JSON directly (the common, simplest portable form).
-    with open(path, "r") as fh:
+    with open(path) as fh:
         txt = fh.read()
     try:
         return load_flex_body(json.loads(txt))

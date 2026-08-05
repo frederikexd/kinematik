@@ -34,7 +34,6 @@ import io
 import math
 import re
 from dataclasses import dataclass, field
-from typing import Optional
 
 __all__ = [
     "RawPoint", "MappedPoint", "ImportResult",
@@ -113,7 +112,7 @@ _HDR_Z = re.compile(r"^\s*z\b|\bvert", re.I)
 _UNIT_IN_HDR = re.compile(r"\(([^)]*)\)|\[([^\]]*)\]")
 
 
-def _num(v) -> Optional[float]:
+def _num(v) -> float | None:
     if v is None or isinstance(v, bool):
         return None
     if isinstance(v, (int, float)):
@@ -128,7 +127,7 @@ def _num(v) -> Optional[float]:
         return None
 
 
-def _unit_from_header(cells) -> Optional[str]:
+def _unit_from_header(cells) -> str | None:
     for c in cells:
         for m in _UNIT_IN_HDR.finditer(str(c or "")):
             u = (m.group(1) or m.group(2) or "").strip().lower()
@@ -162,7 +161,7 @@ def _rows_from_xlsx(data: bytes) -> list[tuple[str, list]]:
     return out
 
 
-def parse_tabular(data: bytes, filename: str = "") -> tuple[list[RawPoint], Optional[str]]:
+def parse_tabular(data: bytes, filename: str = "") -> tuple[list[RawPoint], str | None]:
     """Extract (points, header_unit_hint) from a CSV or XLSX byte blob.
 
     Layout tolerance: finds a header row (name + X/Y/Z columns, in any order,
@@ -180,8 +179,8 @@ def parse_tabular(data: bytes, filename: str = "") -> tuple[list[RawPoint], Opti
         rows = _rows_from_xlsx(data) if data[:2] == b"PK" else _rows_from_csv(data)
 
     points: list[RawPoint] = []
-    unit_hint: Optional[str] = None
-    cols: Optional[dict] = None                  # {name: i, x: i, y: i, z: i}
+    unit_hint: str | None = None
+    cols: dict | None = None                  # {name: i, x: i, y: i, z: i}
     cur_sheet = None
 
     for rix, (sheet, row) in enumerate(rows):
@@ -307,8 +306,13 @@ _C = {
     "strut":  {"strut", "macpherson", "mac", "damperstrut", "strutmount"},
     "top":    {"top", "upper", "mount", "tower", "turret"},
     # Multi-link / five-link: individually named links, usually numbered.
+    # NOTE: "control" appeared twice in this set. A set dedupes, so behaviour
+    # was never wrong — but a duplicated entry in a hand-maintained vocabulary
+    # usually means a slot that was meant to hold a DIFFERENT token. If a
+    # multi-link alias is missing from recognition, this is where it was meant
+    # to go. Deliberately not guessed at.
     "link":   {"link", "arm", "rod", "control", "lateral", "camber", "toe",
-               "trace", "radius", "control"},
+               "trace", "radius"},
     # Trailing / semi-trailing arm: a fore-aft arm on a chassis pivot to a hub.
     "arm":    {"arm", "trailing", "semitrailing", "swing", "control"},
     "hub":    {"hub", "carrier", "knuckle", "upright", "spindle"},
@@ -360,7 +364,7 @@ def _has(toks: set, concept: str) -> bool:
     return bool(toks & _C[concept])
 
 
-def _ordinal_of(toks: set, name: str) -> Optional[int]:
+def _ordinal_of(toks: set, name: str) -> int | None:
     """Return the link index (1..6) named in a point, or None. Matches a bare
     ordinal token ("3", "iii") and fused forms ("link3", "l4", "arm2") via a
     trailing-digit scan on the normalised name."""
@@ -481,7 +485,7 @@ def map_names(points: list[RawPoint]
 _TO_MM = {"mm": 1.0, "m": 1000.0, "in": 25.4}
 
 
-def infer_units(points: list[RawPoint], header_hint: Optional[str] = None
+def infer_units(points: list[RawPoint], header_hint: str | None = None
                 ) -> tuple[str, str]:
     """Return (unit, basis). Header hint wins; else magnitude heuristic on the
     spread of coordinates (an FSAE corner spans ~0.6 m / ~600 mm / ~24 in)."""
@@ -542,10 +546,10 @@ _TOPOLOGY_LABEL = {
 
 def build_result(points: list[RawPoint], *,
                  frame_key: str = "iso8855",
-                 unit: Optional[str] = None,
-                 header_hint: Optional[str] = None,
+                 unit: str | None = None,
+                 header_hint: str | None = None,
                  corner: str = "",
-                 mirror: Optional[bool] = None,
+                 mirror: bool | None = None,
                  topology: str = "auto",
                  reorigin: bool = True) -> ImportResult:
     """Run the full pipeline on an already-corner-filtered point list.

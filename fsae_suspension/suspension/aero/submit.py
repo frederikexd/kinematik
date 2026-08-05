@@ -28,7 +28,8 @@ from __future__ import annotations
 import os
 import subprocess
 from dataclasses import dataclass, field
-from typing import Callable, Optional, Protocol
+from typing import Protocol
+from collections.abc import Callable
 
 from .cfd import CaseSpec, CoeffResult, SolverUnavailable
 
@@ -37,8 +38,8 @@ from .cfd import CaseSpec, CoeffResult, SolverUnavailable
 class SubmitResult:
     """Outcome of one case: either a CoeffResult, or an error captured (not raised)."""
     spec: CaseSpec
-    result: Optional[CoeffResult] = None
-    error: Optional[str] = None
+    result: CoeffResult | None = None
+    error: str | None = None
 
     @property
     def ok(self) -> bool:
@@ -47,7 +48,7 @@ class SubmitResult:
 
 class Submitter(Protocol):
     def submit_all(self, backend, specs: list[CaseSpec], workdir: str,
-                   progress: Optional[Callable[[int, int, SubmitResult], None]] = None
+                   progress: Callable[[int, int, SubmitResult], None] | None = None
                    ) -> list[SubmitResult]: ...
 
 

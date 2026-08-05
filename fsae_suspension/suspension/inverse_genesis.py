@@ -107,7 +107,7 @@ from __future__ import annotations
 
 import numpy as np
 from dataclasses import dataclass, field as _dcfield
-from typing import Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 from .kinematics import Hardpoints, SuspensionKinematics
 from .ghost_topology import _rc_height_mm
@@ -118,7 +118,7 @@ _AXES = ("x", "y", "z")
 # --------------------------------------------------------------------------- #
 #  The curve channels — the language the intent is drawn in.
 # --------------------------------------------------------------------------- #
-CHANNELS: Tuple[str, ...] = (
+CHANNELS: tuple[str, ...] = (
     "camber_deg",     # camber vs travel (the gain curve)
     "toe_deg",        # toe vs travel (bump steer, drawn as the whole curve)
     "rc_height_mm",   # roll-centre height vs travel (migration)
@@ -136,7 +136,7 @@ _CHANNEL_LABELS = {
 # centre / contact patch are excluded on purpose — they are the tyre's
 # geometry, not the linkage's; moving them changes the question, not the
 # answer.
-DESIGNABLE_POINTS: Tuple[str, ...] = (
+DESIGNABLE_POINTS: tuple[str, ...] = (
     "upper_front_inner", "upper_rear_inner",
     "lower_front_inner", "lower_rear_inner",
     "upper_outer", "lower_outer",
@@ -149,8 +149,8 @@ DESIGNABLE_POINTS: Tuple[str, ...] = (
 # --------------------------------------------------------------------------- #
 def curves_of(hp: Hardpoints, stations_mm: np.ndarray,
               track_mm: float = 1200.0,
-              n_sweep: Optional[int] = None
-              ) -> Tuple[Dict[str, np.ndarray], bool]:
+              n_sweep: int | None = None
+              ) -> tuple[dict[str, np.ndarray], bool]:
     """Every channel sampled at the requested travel stations.
 
     One dense warm-started sweep covers the station range; channels are
@@ -227,7 +227,7 @@ class TargetCurve:
 @dataclass
 class GenesisTargets:
     """The full drawn intent: one or more TargetCurves."""
-    curves: List[TargetCurve]
+    curves: list[TargetCurve]
     track_mm: float = 1200.0
 
     def __post_init__(self):
@@ -241,7 +241,7 @@ class GenesisTargets:
             seen.add(c.channel)
 
     # ---- residual layout: one row per (channel, station) ------------------ #
-    def rows(self) -> List[Tuple[str, float]]:
+    def rows(self) -> list[tuple[str, float]]:
         return [(c.channel, float(t)) for c in self.curves
                 for t in c.travel_mm]
 
@@ -254,7 +254,7 @@ class GenesisTargets:
     def band_vec(self) -> np.ndarray:
         return np.concatenate([c.band for c in self.curves])
 
-    def residual(self, hp: Hardpoints) -> Tuple[np.ndarray, bool]:
+    def residual(self, hp: Hardpoints) -> tuple[np.ndarray, bool]:
         """Band-weighted residual r: |r_i| ≤ 1 means station i is inside its
         band. NaNs (with ok=False) when the geometry doesn't solve."""
         vals, ok = curves_of(hp, self.stations(), track_mm=self.track_mm)
@@ -266,7 +266,7 @@ class GenesisTargets:
             parts.append((v - c.target) / c.band)
         return np.concatenate(parts), True
 
-    def row_labels(self) -> List[str]:
+    def row_labels(self) -> list[str]:
         return [f"{_CHANNEL_LABELS[ch]} @ {t:+.1f} mm" for ch, t in self.rows()]
 
 
@@ -321,8 +321,8 @@ class LegalVolume:
                        cover the physical tab/bracket, not just the pickup).
     min_clearance_mm : required skin gap to every obstacle.
     """
-    boxes: Dict[str, Tuple[np.ndarray, np.ndarray]]
-    keep_out: List[object] = _dcfield(default_factory=list)
+    boxes: dict[str, tuple[np.ndarray, np.ndarray]]
+    keep_out: list[object] = _dcfield(default_factory=list)
     probe_radius_mm: float = 0.0
     min_clearance_mm: float = 0.0
 
@@ -345,9 +345,9 @@ class LegalVolume:
         self.boxes = norm
 
     @staticmethod
-    def around(hp: Hardpoints, half_mm: Dict[str, float] | float,
-               points: Optional[Sequence[str]] = None,
-               **kw) -> "LegalVolume":
+    def around(hp: Hardpoints, half_mm: dict[str, float] | float,
+               points: Sequence[str] | None = None,
+               **kw) -> LegalVolume:
         """Boxes of ± half_mm around the nominal — the common declaration."""
         if points is None:
             points = list(half_mm) if isinstance(half_mm, dict) \
@@ -361,16 +361,16 @@ class LegalVolume:
         return LegalVolume(boxes=boxes, **kw)
 
     # ---- coordinate bookkeeping ------------------------------------------- #
-    def points(self) -> List[str]:
+    def points(self) -> list[str]:
         return sorted(self.boxes)
 
-    def coords(self) -> List[Tuple[str, int]]:
+    def coords(self) -> list[tuple[str, int]]:
         return [(p, a) for p in self.points() for a in range(3)]
 
-    def coord_labels(self) -> List[str]:
+    def coord_labels(self) -> list[str]:
         return [f"{p}.{_AXES[a]}" for p, a in self.coords()]
 
-    def bounds_vec(self, hp: Hardpoints) -> Tuple[np.ndarray, np.ndarray]:
+    def bounds_vec(self, hp: Hardpoints) -> tuple[np.ndarray, np.ndarray]:
         """Shift bounds (lo, hi) per flattened coordinate, RELATIVE to hp."""
         lo, hi = [], []
         for p in self.points():
@@ -381,7 +381,7 @@ class LegalVolume:
         return np.concatenate(lo), np.concatenate(hi)
 
     def clamp(self, hp: Hardpoints, shift: np.ndarray
-              ) -> Tuple[np.ndarray, List[str]]:
+              ) -> tuple[np.ndarray, list[str]]:
         """Clamp a flattened shift into the boxes; name clamped coordinates."""
         lo, hi = self.bounds_vec(hp)
         clamped = [lab for lab, s, l, h in
@@ -390,9 +390,9 @@ class LegalVolume:
         return np.clip(shift, lo, hi), clamped
 
     def keepout_violations(self, hp: Hardpoints
-                           ) -> List[Tuple[str, str, float]]:
+                           ) -> list[tuple[str, str, float]]:
         """(point, obstacle label, clearance) for every filtered violation."""
-        out: List[Tuple[str, str, float]] = []
+        out: list[tuple[str, str, float]] = []
         pts = np.array([np.asarray(getattr(hp, p), float)
                         for p in self.points()])
         for obs in self.keep_out:
@@ -408,9 +408,9 @@ class LegalVolume:
 # --------------------------------------------------------------------------- #
 #  Flatten / unflatten between the solver's vector and named point shifts.
 # --------------------------------------------------------------------------- #
-def _unflatten(vec: np.ndarray, coords: List[Tuple[str, int]]
-               ) -> Dict[str, np.ndarray]:
-    offs: Dict[str, np.ndarray] = {}
+def _unflatten(vec: np.ndarray, coords: list[tuple[str, int]]
+               ) -> dict[str, np.ndarray]:
+    offs: dict[str, np.ndarray] = {}
     for (p, a), v in zip(coords, vec):
         offs.setdefault(p, np.zeros(3))[a] = v
     return {p: v for p, v in offs.items()}
@@ -425,8 +425,8 @@ def _shifted(hp: Hardpoints, volume: LegalVolume,
 #  The reverse gradients — Jacobian of the weighted residual, by full solves.
 # --------------------------------------------------------------------------- #
 def _jacobian(hp: Hardpoints, targets: GenesisTargets,
-              coords: List[Tuple[str, int]],
-              step_mm: float = 0.25) -> Optional[np.ndarray]:
+              coords: list[tuple[str, int]],
+              step_mm: float = 0.25) -> np.ndarray | None:
     """Central-difference d(weighted residual)/d(coordinate). None when any
     probe fails to solve — the caller treats that as a cliff, not a number."""
     J = np.zeros((len(targets.rows()), len(coords)))
@@ -449,23 +449,23 @@ class Candidate:
     """One geometry the reverse solve produced, before/after yield pricing."""
     ok: bool
     hit: bool                       # every station inside its band
-    shifts: Dict[str, np.ndarray]   # point → shift from nominal, mm
+    shifts: dict[str, np.ndarray]   # point → shift from nominal, mm
     shift_vec: np.ndarray
     residual: np.ndarray            # band-weighted; |r| ≤ 1 is inside
     max_band_frac: float            # max |r| — the fit's worst station
     worst_row: str                  # which (channel, station) governs
     iterations: int
-    clamped: List[str]              # coordinates pinned to a box face
+    clamped: list[str]              # coordinates pinned to a box face
     keepout_rejections: int         # steps the boundary filter refused
     # co-optimizer stage:
-    yield_frac: Optional[float] = None
-    yield_warnings: List[str] = _dcfield(default_factory=list)
+    yield_frac: float | None = None
+    yield_warnings: list[str] = _dcfield(default_factory=list)
     verdict: str = ""               # RESILIENT | TEMPERED | KNIFE_EDGE | NO_FIT
 
 
 def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
                   volume: LegalVolume,
-                  start_shift: Optional[np.ndarray] = None,
+                  start_shift: np.ndarray | None = None,
                   max_iter: int = 30, step_mm: float = 0.25,
                   lam0: float = 1e-2) -> Candidate:
     """Pull the movable points until the curves land inside their bands.
@@ -496,7 +496,7 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
 
     cost = float(r @ r)
     lam = lam0
-    clamped_last: List[str] = []
+    clamped_last: list[str] = []
     rejections = 0
     it = 0
     for it in range(1, max_iter + 1):
@@ -566,7 +566,7 @@ class GenesisThresholds:
 def build_yield(hp_candidate: Hardpoints, targets: GenesisTargets,
                 fld: ToleranceField, r_fit: np.ndarray,
                 n: int = 4000, seed: int = 0, step_mm: float = 0.25
-                ) -> Tuple[Optional[float], List[str]]:
+                ) -> tuple[float | None, list[str]]:
     """P(as-built curves stay inside the bands), first order.
 
     The coupling that makes the co-optimizer honest: the candidate's own fit
@@ -574,7 +574,7 @@ def build_yield(hp_candidate: Hardpoints, targets: GenesisTargets,
     before judging — the fit has already spent part of the band, and only
     the headroom left absorbs the shop's error field.
     """
-    warns: List[str] = []
+    warns: list[str] = []
     J = _jacobian(hp_candidate, targets, fld.coords(), step_mm=step_mm)
     if J is None:
         return None, ["Sensitivity probes at the candidate fail to solve — "
@@ -589,8 +589,8 @@ def build_yield(hp_candidate: Hardpoints, targets: GenesisTargets,
 
 def _verify_yield_full(hp_candidate: Hardpoints, targets: GenesisTargets,
                        fld: ToleranceField, r_fit: np.ndarray,
-                       J: Optional[np.ndarray],
-                       n_verify: int, seed: int) -> Tuple[float, float]:
+                       J: np.ndarray | None,
+                       n_verify: int, seed: int) -> tuple[float, float]:
     """(full-solve yield, linear-vs-full pass/fail agreement) on a subsample.
 
     Perturbed geometries that fail to solve are charged as fails — the same
@@ -615,25 +615,25 @@ def _verify_yield_full(hp_candidate: Hardpoints, targets: GenesisTargets,
 class GenesisResult:
     ok: bool
     reason: str
-    candidates: List[Candidate]      # every distinct solve, best first
-    winner: Optional[Candidate]
-    winner_hp: Optional[Hardpoints]
-    best_fit: Optional[Candidate]    # the pure curve-fit optimum (may lose!)
-    resilience_premium: Optional[float]   # winner yield − best-fit yield
+    candidates: list[Candidate]      # every distinct solve, best first
+    winner: Candidate | None
+    winner_hp: Hardpoints | None
+    best_fit: Candidate | None    # the pure curve-fit optimum (may lose!)
+    resilience_premium: float | None   # winner yield − best-fit yield
     n_starts: int
     seed: int
-    verify_yield: Optional[float]    # full-solve check on the winner
-    verify_agreement: Optional[float]
+    verify_yield: float | None    # full-solve check on the winner
+    verify_agreement: float | None
     thresholds: GenesisThresholds
-    warnings: List[str]
+    warnings: list[str]
 
 
 def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
                     volume: LegalVolume,
-                    fld: Optional[ToleranceField] = None,
+                    fld: ToleranceField | None = None,
                     n_starts: int = 6, n_yield: int = 4000,
                     n_verify_full: int = 0, seed: int = 0,
-                    thresholds: Optional[GenesisThresholds] = None,
+                    thresholds: GenesisThresholds | None = None,
                     max_iter: int = 30, step_mm: float = 0.25
                     ) -> GenesisResult:
     """The full engine: multi-start reverse solve + build-yield co-optimizer.
@@ -647,7 +647,7 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
     says the buildability question went unasked.
     """
     th = thresholds or GenesisThresholds()
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     r0, ok0 = targets.residual(hp)
     if not ok0:
@@ -664,11 +664,11 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
     # ---- deterministic multi-start ---------------------------------------- #
     rng = np.random.default_rng(int(seed))
     lo, hi = volume.bounds_vec(hp)
-    starts: List[np.ndarray] = [np.zeros(len(lo))]
+    starts: list[np.ndarray] = [np.zeros(len(lo))]
     for _ in range(max(0, int(n_starts) - 1)):
         starts.append(rng.uniform(lo, hi))
 
-    cands: List[Candidate] = []
+    cands: list[Candidate] = []
     for s in starts:
         c = genesis_solve(hp, targets, volume, start_shift=s,
                           max_iter=max_iter, step_mm=step_mm)
@@ -830,9 +830,9 @@ _VERDICT_ICON = {"RESILIENT": "🟢", "TEMPERED": "🟡",
 
 
 def render_genesis_md(res: GenesisResult,
-                      targets: Optional[GenesisTargets] = None) -> str:
+                      targets: GenesisTargets | None = None) -> str:
     """The one-page markdown the design review reads."""
-    L: List[str] = ["# 🧬 InverseGenesis — stochastic inverse report", ""]
+    L: list[str] = ["# 🧬 InverseGenesis — stochastic inverse report", ""]
     L.append(("✅ " if res.ok else "❌ ") + res.reason)
     L.append("")
     if res.winner is not None:

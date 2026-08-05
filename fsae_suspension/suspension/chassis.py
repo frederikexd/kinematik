@@ -122,7 +122,7 @@ def _guess_unit_scale(size_mm) -> float:
     return 1.0                 # already hundreds -> millimetres
 
 
-def _decimate_mesh(mesh: "trimesh.Trimesh", max_faces: int) -> "trimesh.Trimesh":
+def _decimate_mesh(mesh: trimesh.Trimesh, max_faces: int) -> trimesh.Trimesh:
     """Reduce a mesh to roughly max_faces, degrading gracefully.
 
     1) try trimesh's quadric simplifier (needs `fast_simplification`),

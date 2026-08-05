@@ -103,7 +103,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 # --------------------------------------------------------------------------- #
@@ -167,8 +166,8 @@ class ScaleSpec:
     """
     ratio: float                     # scaled / full-size, 0 < ratio <= 1
     scaled_chord_mm: float           # streamwise reference length OF THE MODEL
-    scaled_height_mm: Optional[float] = None
-    scaled_width_mm: Optional[float] = None
+    scaled_height_mm: float | None = None
+    scaled_width_mm: float | None = None
     note: str = ""
 
     def __post_init__(self):
@@ -183,11 +182,11 @@ class ScaleSpec:
         return self.scaled_chord_mm / self.ratio
 
     @property
-    def full_height_mm(self) -> Optional[float]:
+    def full_height_mm(self) -> float | None:
         return None if self.scaled_height_mm is None else self.scaled_height_mm / self.ratio
 
     @property
-    def full_width_mm(self) -> Optional[float]:
+    def full_width_mm(self) -> float | None:
         return None if self.scaled_width_mm is None else self.scaled_width_mm / self.ratio
 
     @property
@@ -205,7 +204,7 @@ class ScaleSpec:
     def area_ratio(self) -> float:
         return self.ratio * self.ratio
 
-    def scaled_frontal_area_m2(self) -> Optional[float]:
+    def scaled_frontal_area_m2(self) -> float | None:
         if self.scaled_height_mm is None or self.scaled_width_mm is None:
             return None
         return (self.scaled_height_mm / 1000.0) * (self.scaled_width_mm / 1000.0)
@@ -256,8 +255,8 @@ class SimilitudePlan:
 
     @classmethod
     def match_reynolds(cls, spec: ScaleSpec, full_speed_ms: float,
-                       tunnel_max_speed_ms: Optional[float] = None,
-                       temp_c: float = 15.0) -> "SimilitudePlan":
+                       tunnel_max_speed_ms: float | None = None,
+                       temp_c: float = 15.0) -> SimilitudePlan:
         """
         Compute the matched-Reynolds tunnel speed for a scaled model.
 
@@ -374,7 +373,7 @@ class ToleranceBudget:
         self._contribs: list[_ToleranceContribution] = []
 
     # -- the standard deviation channels ----------------------------------- #
-    def add_chord_deviation_mm(self, dev_mm: float) -> "ToleranceBudget":
+    def add_chord_deviation_mm(self, dev_mm: float) -> ToleranceBudget:
         """
         Streamwise chord built long/short. To first order an aerofoil's lift and drag
         scale with chord (it sets the reference and the loaded area), so the
@@ -386,7 +385,7 @@ class ToleranceBudget:
             basis="fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d"))
         return self
 
-    def add_camber_deviation_mm(self, dev_mm: float) -> "ToleranceBudget":
+    def add_camber_deviation_mm(self, dev_mm: float) -> ToleranceBudget:
         """
         Camber / leading-edge profile off the CAD — the deviation that matters most on
         a moldless part with no female tool to copy the surface. Thin-aerofoil theory
@@ -400,7 +399,7 @@ class ToleranceBudget:
             basis="thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l"))
         return self
 
-    def add_span_deviation_mm(self, dev_mm: float, scaled_span_mm: float) -> "ToleranceBudget":
+    def add_span_deviation_mm(self, dev_mm: float, scaled_span_mm: float) -> ToleranceBudget:
         """
         Span built off-nominal. Lift scales with planform area, so a span error is a
         near-1:1 fraction of span onto C_l; second-order on C_d via aspect ratio.
@@ -413,7 +412,7 @@ class ToleranceBudget:
             basis="fractional span error, ~1:1 on C_l via planform area"))
         return self
 
-    def add_surface_waviness_mm(self, dev_mm: float) -> "ToleranceBudget":
+    def add_surface_waviness_mm(self, dev_mm: float) -> ToleranceBudget:
         """
         Surface waviness / print-layer steps / weave print-through — the texture a
         moldless or 3D-printed part has and a polished mold doesn't. It barely touches
@@ -427,7 +426,7 @@ class ToleranceBudget:
         return self
 
     def add_custom(self, source: str, cl_frac: float, cd_frac: float,
-                   basis: str, dev_mm: float = 0.0) -> "ToleranceBudget":
+                   basis: str, dev_mm: float = 0.0) -> ToleranceBudget:
         """Escape hatch for a team's own measured sensitivity. Honesty preserved: the basis is recorded."""
         self._contribs.append(_ToleranceContribution(source, dev_mm,
                                                       abs(cl_frac), abs(cd_frac), basis))

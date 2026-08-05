@@ -65,7 +65,6 @@ HONEST SCOPE (same contract as pack_thermal / tire_thermal)
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 
 import numpy as np
 
@@ -178,10 +177,10 @@ class PCMAllocation:
 class PCMResult:
     ok: bool
     # headline numbers
-    hold_time_s: Optional[float]            # time until the wax is fully melted
+    hold_time_s: float | None            # time until the wax is fully melted
                                             # (None ⇒ never melts out in the run)
-    peak_cell_c_with_pcm: Optional[float]
-    peak_cell_c_without_pcm: Optional[float]
+    peak_cell_c_with_pcm: float | None
+    peak_cell_c_without_pcm: float | None
     plateau_temp_c: float                   # ~T_melt, where the buffer holds
     fully_melted: bool
     latent_buffer_j_per_cell: float
@@ -192,7 +191,7 @@ class PCMResult:
     warnings: list = field(default_factory=list)
 
     @staticmethod
-    def failed(warnings: list) -> "PCMResult":
+    def failed(warnings: list) -> PCMResult:
         return PCMResult(
             ok=False, hold_time_s=None, peak_cell_c_with_pcm=None,
             peak_cell_c_without_pcm=None, plateau_temp_c=float("nan"),
@@ -216,7 +215,7 @@ def _provenance(cell_cal: bool, pcm_cal: bool) -> str:
 def evaluate_pcm_buffer(result: PackThermalResult,
                         layout: PackLayout,
                         alloc: PCMAllocation,
-                        material: Optional[PCMMaterial] = None) -> PCMResult:
+                        material: PCMMaterial | None = None) -> PCMResult:
     """
     Wrap a completed bare-cell `PackThermalResult` (no PCM) with the latent buffer
     and report the headline cooling-team numbers WITHOUT re-running the heavy

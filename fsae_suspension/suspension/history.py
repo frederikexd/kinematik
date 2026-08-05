@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import datetime as _dt
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 __all__ = [
     "Snapshot", "Change", "fetch_history", "diff_project", "restore",
@@ -52,7 +52,7 @@ class Snapshot:
     """One historical version of the project blob."""
     hist_id: int
     replaced_at: str            # when this version STOPPED being current
-    was_updated_at: Optional[str]
+    was_updated_at: str | None
     data: dict = field(repr=False, default_factory=dict)
 
     @property
@@ -77,7 +77,7 @@ class Change:
 # --------------------------------------------------------------------------- #
 #  Fetch
 # --------------------------------------------------------------------------- #
-def fetch_history(backend, limit: int = 20) -> tuple[list[Snapshot], Optional[str]]:
+def fetch_history(backend, limit: int = 20) -> tuple[list[Snapshot], str | None]:
     """Return (snapshots newest-first, reason) for the backend's project.
 
     ``reason`` is None on success, else a short human sentence for the panel

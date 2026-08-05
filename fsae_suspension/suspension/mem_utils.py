@@ -50,7 +50,7 @@ from __future__ import annotations
 
 import gc
 import os
-from typing import Any, Optional
+from typing import Any
 
 
 # --------------------------------------------------------------------------- #
@@ -77,7 +77,7 @@ ACTIVITY_MAX_PER_SUBSYSTEM = 60
 # --------------------------------------------------------------------------- #
 #  Lazy Streamlit handle (so this module imports cleanly headless / in tests)  #
 # --------------------------------------------------------------------------- #
-def _st() -> Optional[Any]:
+def _st() -> Any | None:
     try:
         import streamlit as st  # noqa: WPS433 (intentional lazy import)
         return st
@@ -88,7 +88,7 @@ def _st() -> Optional[Any]:
 # --------------------------------------------------------------------------- #
 #  Process RSS (no psutil needed)                                             #
 # --------------------------------------------------------------------------- #
-def rss_mb() -> Optional[float]:
+def rss_mb() -> float | None:
     """Resident set size of this process in MB, or None if unavailable.
 
     Reads ``/proc/self/statm`` on Linux (Community Cloud is Linux) and falls
@@ -96,7 +96,7 @@ def rss_mb() -> Optional[float]:
     """
     # /proc is the most accurate on Linux containers.
     try:
-        with open("/proc/self/statm", "r") as fh:
+        with open("/proc/self/statm") as fh:
             pages = int(fh.read().split()[1])          # resident pages
         page_size = os.sysconf("SC_PAGE_SIZE")          # bytes per page
         return pages * page_size / (1024 * 1024)
@@ -248,7 +248,7 @@ def drop_state(*keys: str) -> None:
 #  Memory guard: shed cache before the ceiling                                #
 # --------------------------------------------------------------------------- #
 def memory_guard(*, soft_mb: int = SOFT_LIMIT_MB,
-                 critical_mb: int = CRITICAL_MB) -> Optional[float]:
+                 critical_mb: int = CRITICAL_MB) -> float | None:
     """If RSS is nearing the limit, clear Streamlit's data cache to pull it back.
 
     Returns the measured RSS in MB (or None if it couldn't be read). Call once

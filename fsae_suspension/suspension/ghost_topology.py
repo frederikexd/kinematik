@@ -106,13 +106,12 @@ corner (x rear+, y right+, z up+), same as kinematics.py.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import dataclass, field
 
 import numpy as np
 
-from .kinematics import SuspensionKinematics, Hardpoints, CornerState
-from .compliance import CompliantCorner, MemberStiffness, CompliantResult
+from .kinematics import Hardpoints, CornerState
+from .compliance import CompliantCorner, CompliantResult
 from . import loadpath as lp
 from . import flex as flexmod
 
@@ -199,8 +198,8 @@ class MemberSection:
 
 def uniform_sections(od_mm: float = 19.05, wall_mm: float = 0.9,
                      material: str = "Steel 4130", yield_MPa: float = 460.0,
-                     tie_od_mm: Optional[float] = None,
-                     tie_wall_mm: Optional[float] = None) -> dict:
+                     tie_od_mm: float | None = None,
+                     tie_wall_mm: float | None = None) -> dict:
     """Every member the same tube (the common FSAE case); tie rod optionally its own."""
     out = {}
     for m in _MARGIN_MEMBERS:
@@ -244,7 +243,7 @@ class TireSensitivity:
     @staticmethod
     def representative(load: lp.WheelLoad,
                        camber_N_per_deg_per_kN: float = 45.0,
-                       toe_N_per_deg_per_kN: float = 300.0) -> "TireSensitivity":
+                       toe_N_per_deg_per_kN: float = 300.0) -> TireSensitivity:
         Fz_kN = max(load.Fz, 0.0) / 1000.0
         direction = -1.0 if load.Fy < 0 else (1.0 if load.Fy > 0 else 0.0)
         return TireSensitivity(
@@ -339,9 +338,9 @@ class GhostCorner:
     MemberSection map (the margin side).
     """
 
-    def __init__(self, cc: CompliantCorner, sections: Optional[dict] = None,
-                 wheel_rate_N_per_mm: Optional[float] = None,
-                 Fz_static_N: Optional[float] = None,
+    def __init__(self, cc: CompliantCorner, sections: dict | None = None,
+                 wheel_rate_N_per_mm: float | None = None,
+                 Fz_static_N: float | None = None,
                  track_mm: float = 1200.0):
         """
         cc        : the compliant corner (geometry + per-member stiffness).
@@ -367,10 +366,10 @@ class GhostCorner:
     def uniform_tube(hp: Hardpoints, material: str = "Steel 4130",
                      od_mm: float = 19.05, wall_mm: float = 0.9,
                      yield_MPa: float = 460.0,
-                     k_tab: Optional[float] = None,
-                     wheel_rate_N_per_mm: Optional[float] = None,
-                     Fz_static_N: Optional[float] = None,
-                     track_mm: float = 1200.0, **compliance_kw) -> "GhostCorner":
+                     k_tab: float | None = None,
+                     wheel_rate_N_per_mm: float | None = None,
+                     Fz_static_N: float | None = None,
+                     track_mm: float = 1200.0, **compliance_kw) -> GhostCorner:
         """The zero-FEA path: same tube everywhere, stiffness AND section from it."""
         cc = CompliantCorner.uniform_tube(hp, material=material, od_mm=od_mm,
                                           wall_mm=wall_mm, k_tab=k_tab,
@@ -400,7 +399,7 @@ class GhostCorner:
 
     # ------------------------------------------------------------------ #
     def solve_instant(self, load: lp.WheelLoad, t: float = 0.0,
-                      tire: Optional[TireSensitivity] = None,
+                      tire: TireSensitivity | None = None,
                       fos_limit: float = 1.5,
                       feedback_tol_N: float = 1.0,
                       max_feedback_iter: int = 8) -> GhostInstant:
@@ -628,8 +627,8 @@ def _pick_sample_indices(t: np.ndarray, Fx: np.ndarray, Fy: np.ndarray,
 def ghost_audit(gc: GhostCorner, t, Fx, Fy, Fz,
                 corner_label: str = "corner",
                 n_samples: int = 24,
-                tire: Optional[TireSensitivity] = None,
-                thresholds: Optional[GhostThresholds] = None,
+                tire: TireSensitivity | None = None,
+                thresholds: GhostThresholds | None = None,
                 cache_quantum_N: float = 25.0) -> GhostAudit:
     """
     Audit one corner's ghost topology through a transient load history.

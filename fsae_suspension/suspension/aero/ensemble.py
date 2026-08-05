@@ -62,7 +62,7 @@ from __future__ import annotations
 import os
 import statistics
 from dataclasses import dataclass
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 from .cfd import (
     CaseSpec, CoeffResult, CFDProvenance, SolverFidelity,
@@ -84,7 +84,7 @@ DEFAULT_MEMBER_NAMES = ("fluent",)
 
 
 def _default_members(turbulence_model: str, fidelity: SolverFidelity,
-                     mesh_params=None) -> "list":
+                     mesh_params=None) -> list:
     """
     Construct the default roster — a single in-house Fluent backend. `mesh_params`
     and `turbulence_model` are accepted for signature compatibility with the old
@@ -107,7 +107,7 @@ class MemberOutcome:
     codes voted and which were holes, and why.
     """
     backend: str
-    result: Optional[CoeffResult] = None
+    result: CoeffResult | None = None
     error: str = ""
 
     @property
@@ -168,7 +168,7 @@ def _spread_pct(values: Sequence[float]) -> float:
     return 100.0 * (max(vals) - min(vals)) / abs(mean)
 
 
-def _reduce(values: Sequence[float], how: str) -> Optional[float]:
+def _reduce(values: Sequence[float], how: str) -> float | None:
     vals = [v for v in values if v is not None]
     if not vals:
         return None
@@ -226,7 +226,7 @@ class EnsembleTunnelSolver:
                  turbulence_model: str = "kOmegaSST",
                  fidelity: SolverFidelity = SolverFidelity.RANS,
                  mesh_params=None,
-                 members: "Optional[list]" = None):
+                 members: list | None = None):
         if reduction not in ("mean", "median"):
             raise ValueError("reduction must be 'mean' or 'median'")
         self.reduction = reduction
@@ -243,9 +243,9 @@ class EnsembleTunnelSolver:
                               for i, m in enumerate(self.members)]
 
     # -- provenance ------------------------------------------------------- #
-    def provenance(self, n_voted: Optional[int] = None,
-                   spread_pct: Optional[float] = None,
-                   member_names: "Optional[list]" = None) -> CFDProvenance:
+    def provenance(self, n_voted: int | None = None,
+                   spread_pct: float | None = None,
+                   member_names: list | None = None) -> CFDProvenance:
         members = member_names if member_names is not None else self._member_names
         roster = "+".join(members)
         vote = "" if n_voted is None else f", {n_voted}/{len(members)} codes voted"
@@ -339,7 +339,7 @@ class EnsembleTunnelSolver:
         except Exception as e:                              # noqa: BLE001
             return MemberOutcome(backend=mname, error=f"{type(e).__name__}: {e}")
 
-    def _fuse(self, spec: CaseSpec, outcomes: "list") -> EnsembleResult:
+    def _fuse(self, spec: CaseSpec, outcomes: list) -> EnsembleResult:
         """
         Reduce the converged members into one consensus CoeffResult. ONLY usable
         members vote; the spread between them sets the converged verdict. Nothing is
@@ -431,8 +431,8 @@ class EnsembleTunnelSolver:
         return head + spr + verdict + hole_txt
 
     # -- batch convenience over a whole matched run ----------------------- #
-    def solve_matrix(self, specs: "Sequence[CaseSpec]", workdir: str,
-                     run: bool = True) -> "list":
+    def solve_matrix(self, specs: Sequence[CaseSpec], workdir: str,
+                     run: bool = True) -> list:
         """
         Drive + fuse a whole list of matched CaseSpecs (e.g. the output of
         `VirtualWindTunnel.case_specs()`), returning one EnsembleResult per point.
@@ -447,6 +447,6 @@ class EnsembleTunnelSolver:
         return out
 
 
-def fused_results(ensemble_results: "Sequence[EnsembleResult]") -> "list":
+def fused_results(ensemble_results: Sequence[EnsembleResult]) -> list:
     """Pull the fused CoeffResults out of a list of EnsembleResults (for correlate)."""
     return [er.fused for er in ensemble_results]

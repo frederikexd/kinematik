@@ -50,7 +50,7 @@ import atexit
 import threading
 import datetime as _dt
 import contextlib
-from typing import Any, Optional
+from typing import Any
 
 APP_VERSION = "0.11-cookie-identity"
 _LOCAL_BUFFER = os.path.join(os.getcwd(), "analytics_buffer.jsonl")
@@ -117,11 +117,11 @@ class _Sink:
     """Owns the queue + flush thread. One instance per process."""
 
     def __init__(self) -> None:
-        self._q: "queue.Queue[dict]" = queue.Queue(maxsize=10_000)
+        self._q: queue.Queue[dict] = queue.Queue(maxsize=10_000)
         self._client = None
         self._client_tried = False
         self._stop = threading.Event()
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._lock = threading.Lock()
 
     # -- supabase client (lazy; reuses KinematiK's credential resolver) --
@@ -185,7 +185,7 @@ class _Sink:
                 client.table(_TABLE).insert(batch).execute()
                 # record success so the dashboard can show write-health
                 _LAST_WRITE["ok"] = True
-                _LAST_WRITE["at"] = _dt.datetime.now(_dt.timezone.utc).isoformat()
+                _LAST_WRITE["at"] = _dt.datetime.now(_dt.UTC).isoformat()
                 _LAST_WRITE["error"] = None
                 _LAST_WRITE["sent"] = _LAST_WRITE.get("sent", 0) + len(batch)
                 return
@@ -194,7 +194,7 @@ class _Sink:
                 # through to the local buffer so the data is not lost; it will
                 # be replayed automatically on a later run when the DB is back.
                 _LAST_WRITE["ok"] = False
-                _LAST_WRITE["at"] = _dt.datetime.now(_dt.timezone.utc).isoformat()
+                _LAST_WRITE["at"] = _dt.datetime.now(_dt.UTC).isoformat()
                 _LAST_WRITE["error"] = str(_e)[:300]
                 _LAST_WRITE["buffered"] = _LAST_WRITE.get("buffered", 0) + len(batch)
         self._buffer_local(batch)
@@ -233,7 +233,7 @@ atexit.register(lambda: _SINK.flush_blocking())
 class _Session:
     enabled: bool = True
     session_id: str = ""
-    member: Optional[str] = None
+    member: str | None = None
     subteam: str = "unknown"
     is_new_member: bool = False
     started: bool = False
@@ -287,8 +287,8 @@ def _opted_out() -> bool:
     return False
 
 
-def init(member: Optional[str] = None, subteam: str = "unknown",
-         is_new_member: bool = False, source: Optional[str] = None) -> None:
+def init(member: str | None = None, subteam: str = "unknown",
+         is_new_member: bool = False, source: str | None = None) -> None:
     """Start (or update) the analytics session. Safe to call every rerun.
 
     Streamlit reruns the whole script constantly, so this is cheap and emits
@@ -362,10 +362,10 @@ def _resolve_session_id() -> str:
 # --------------------------------------------------------------------------- #
 #  Core emit                                                                   #
 # --------------------------------------------------------------------------- #
-def _emit(event_type: str, *, feature: Optional[str] = None,
-          action: Optional[str] = None, duration_ms: Optional[int] = None,
-          success: Optional[bool] = None, error_kind: Optional[str] = None,
-          value_payload: Optional[dict] = None,
+def _emit(event_type: str, *, feature: str | None = None,
+          action: str | None = None, duration_ms: int | None = None,
+          success: bool | None = None, error_kind: str | None = None,
+          value_payload: dict | None = None,
           is_new_member: bool = False) -> None:
     if not _sget("enabled", True):
         return
@@ -376,7 +376,7 @@ def _emit(event_type: str, *, feature: Optional[str] = None,
     try:
         sid = _resolve_session_id()
         event = {
-            "occurred_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+            "occurred_at": _dt.datetime.now(_dt.UTC).isoformat(),
             "session_id": sid,
             "visitor_id": _sget("visitor_id"),
             "member": _sget("member"),
@@ -404,14 +404,14 @@ def tab_open(feature: str) -> None:
     _emit("tab_open", feature=feature)
 
 
-def engage(feature: str, action: Optional[str] = None) -> None:
+def engage(feature: str, action: str | None = None) -> None:
     """User actually ran a workflow in a tab (pressed a button, ran a solve).
     Middle of the funnel; counts as individual use."""
     _emit("feature_engage", feature=feature, action=action, success=True)
 
 
-def complete(feature: str, action: Optional[str] = None,
-             payload: Optional[dict] = None) -> None:
+def complete(feature: str, action: str | None = None,
+             payload: dict | None = None) -> None:
     """A workflow produced a useful result. Bottom of the funnel AND the event
     the hours-saved ROI counts. Also marks first_result if none yet."""
     _emit("workflow_complete", feature=feature, action=action, success=True,
@@ -460,7 +460,7 @@ def has_opened(feature: str) -> bool:
     return False
 
 
-def auto_engage(feature: str, action: Optional[str] = None) -> bool:
+def auto_engage(feature: str, action: str | None = None) -> bool:
     """Fire ``feature_engage`` at most ONCE per session per feature.
 
     Intended for central/auto instrumentation: safe to call on every rerun
@@ -475,8 +475,8 @@ def auto_engage(feature: str, action: Optional[str] = None) -> bool:
     return True
 
 
-def auto_complete(feature: str, action: Optional[str] = None,
-                  payload: Optional[dict] = None,
+def auto_complete(feature: str, action: str | None = None,
+                  payload: dict | None = None,
                   require_engaged: bool = False) -> bool:
     """Fire ``workflow_complete`` at most ONCE per session per feature.
 
@@ -504,26 +504,26 @@ def auto_complete(feature: str, action: Optional[str] = None,
     return True
 
 
-def error(feature: str, exc: Any = None, kind: Optional[str] = None) -> None:
+def error(feature: str, exc: Any = None, kind: str | None = None) -> None:
     """A feature errored. Drives the reliability (error-rate) metric."""
     ek = kind or (type(exc).__name__ if exc is not None else "error")
     _emit("error", feature=feature, success=False, error_kind=ek)
 
 
-def render(feature: str, duration_ms: int, action: Optional[str] = None) -> None:
+def render(feature: str, duration_ms: int, action: str | None = None) -> None:
     """Record how long a render took (latency metric)."""
     _emit("render", feature=feature, action=action, duration_ms=duration_ms,
           success=True)
 
 
-def data_pull(feature: str, duration_ms: int, action: Optional[str] = None) -> None:
+def data_pull(feature: str, duration_ms: int, action: str | None = None) -> None:
     """Record how long a data fetch took (latency metric)."""
     _emit("data_pull", feature=feature, action=action, duration_ms=duration_ms,
           success=True)
 
 
 @contextlib.contextmanager
-def timed(feature: str, kind: str = "render", action: Optional[str] = None):
+def timed(feature: str, kind: str = "render", action: str | None = None):
     """Context manager that times a render or data pull and logs it, and logs an
     `error` if the block raises (then re-raises). One call covers both latency
     and reliability::

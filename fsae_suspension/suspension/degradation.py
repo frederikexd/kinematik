@@ -83,8 +83,7 @@ will show it — but it is reported, never assumed.
 from __future__ import annotations
 
 import numpy as np
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from .kinematics import Hardpoints, SuspensionKinematics
 from . import compliance as comp
@@ -169,9 +168,9 @@ class ThermalExpansionModel:
     gradient_len : mm decay length of the thermal gradient across the subframe.
     """
     material: str = "Steel 4130"
-    datum: Optional[np.ndarray] = None
+    datum: np.ndarray | None = None
     heated_points: tuple = tuple(_CHASSIS_POINTS)
-    heat_source: Optional[np.ndarray] = None
+    heat_source: np.ndarray | None = None
     gradient_len: float = 350.0
 
     def alpha(self) -> float:
@@ -433,7 +432,7 @@ class DegradationSolver:
             bumpsteer_nominal=bs0, bumpsteer_thermal=bs_th,
             grip_mult=grip, converged=conv)
 
-    def run(self) -> "DegradationCurve":
+    def run(self) -> DegradationCurve:
         ts = np.linspace(0.0, self.thermal.run_min, self.cfg.n_steps)
         states = [self._state_at(t) for t in ts]
         return DegradationCurve(states, self)

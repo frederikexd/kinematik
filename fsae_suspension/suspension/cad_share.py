@@ -24,7 +24,6 @@ import csv
 import io
 import datetime as _dt
 from dataclasses import dataclass
-from typing import Optional
 
 # Embed cap for the CAD library: files at or under this go into the project
 # document as base64; anything larger must be shared as a link (a full SLDASM
@@ -73,7 +72,7 @@ _HARDPOINT_KEYS = [
 ]
 
 
-def _as_xyz(v) -> Optional[tuple]:
+def _as_xyz(v) -> tuple | None:
     """Coerce a hardpoint value (np.ndarray | list | tuple) to (x, y, z) floats,
     or None if it isn't a usable 3-vector (e.g. an unset optional pickup)."""
     if v is None:
@@ -115,7 +114,7 @@ class LocatedPart:
     category: str = "part"     # "HV" | "LV" | "part" — SES cares about HV/LV most
 
 
-def ses_location_rows(hv=None, lv=None, placed: Optional[dict] = None
+def ses_location_rows(hv=None, lv=None, placed: dict | None = None
                       ) -> list[LocatedPart]:
     """
     Assemble the SES location list. `hv` and `lv` are optional (x, y, z) mm

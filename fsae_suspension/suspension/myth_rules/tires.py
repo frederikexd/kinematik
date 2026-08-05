@@ -13,7 +13,7 @@ Context: a ``PacejkaLateral`` tyre, or a dict ``{"tire": tyre, "Fz_N": load}``.
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from ..mythbuster import CheckOutcome, ParsedClaim, Rule, Verdict, register
 
@@ -43,7 +43,7 @@ def _need_tire():
 
 
 # --- RULE: load sensitivity ("twice the load = twice the grip") --------------
-def _r_load_sensitivity(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_load_sensitivity(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("load") and claim.has("grip", "friction", "mu", "lateral",
                                             "cornering force", "more grip")):
         return None
@@ -69,7 +69,7 @@ _r_load_sensitivity.reference_claim = "Twice the vertical load gives twice the g
 
 
 # --- RULE: camber always helps -----------------------------------------------
-def _r_more_camber(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_more_camber(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("camber") and claim.has("more grip", "always", "best",
                                               "maximi", "increase grip", "helps")):
         return None
@@ -90,7 +90,7 @@ _r_more_camber.reference_claim = "More negative camber always means more grip."
 
 
 # --- RULE: hot pressure = cold pressure (tyre pressure rises with temp) -------
-def _r_pressure_temp(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_pressure_temp(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("pressure") and claim.has("temp", "hot", "cold", "warm")):
         return None
     # This is a gas-law fact, answerable without a fitted model.
@@ -108,7 +108,7 @@ _r_pressure_temp.reference_claim = "Cold and hot tyre pressures are basically th
 
 
 # --- RULE: wider tyre always grips more --------------------------------------
-def _r_wider_more_grip(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_wider_more_grip(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("wider", "width", "bigger tyre", "bigger tire", "fatter")
             and claim.has("grip", "faster", "more grip", "better")):
         return None

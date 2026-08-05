@@ -162,7 +162,7 @@ class LapResult:
     meta: dict = field(default_factory=dict)
 
     @staticmethod
-    def failed(track_name: str, warnings: list[str]) -> "LapResult":
+    def failed(track_name: str, warnings: list[str]) -> LapResult:
         """A safe, inert result used when the sim cannot run at all."""
         z = np.zeros(1)
         return LapResult(

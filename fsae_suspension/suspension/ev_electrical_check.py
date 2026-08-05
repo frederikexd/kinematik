@@ -41,7 +41,7 @@ is usable in unit tests and in the Streamlit UI alike.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -87,7 +87,7 @@ class ElecParams:
 
     # ── Factory ──────────────────────────────────────────────────────────────
     @classmethod
-    def from_excel(cls, path: str) -> "ElecParams":
+    def from_excel(cls, path: str) -> ElecParams:
         """
         Parse an ElecParams from the electrics lead's Excel workbook.
 
@@ -177,7 +177,7 @@ class ElecParams:
         )
 
     @classmethod
-    def from_excel_bytes(cls, file_bytes: bytes) -> "ElecParams":
+    def from_excel_bytes(cls, file_bytes: bytes) -> ElecParams:
         """Parse from an in-memory file (e.g. st.file_uploader)."""
         import io
         try:

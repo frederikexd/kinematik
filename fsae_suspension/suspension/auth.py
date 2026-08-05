@@ -28,7 +28,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from .workspace import (
     Workspace,
@@ -502,13 +501,13 @@ class SupabaseAuth:
         return str(e)
 
     def context_for(self, session: Session, workspace_id: str,
-                    *, role: Optional[str] = None) -> WorkspaceContext:
+                    *, role: str | None = None) -> WorkspaceContext:
         """Build the WorkspaceContext workspace_store() consumes. If role is
         not supplied we resolve it from the user's memberships so writer/viewer
         gating is correct."""
         validate_workspace_id(workspace_id, require_uuid=True)
         resolved_role = role
-        ws_obj: Optional[Workspace] = None
+        ws_obj: Workspace | None = None
         for ws, r in self.list_workspaces(session):
             if ws.id == str(workspace_id):
                 ws_obj = ws
@@ -526,7 +525,7 @@ class SupabaseAuth:
         )
 
 
-def build_auth() -> Optional["SupabaseAuth"]:
+def build_auth() -> SupabaseAuth | None:
     """Construct a SupabaseAuth from configured credentials, or return None if
     Supabase isn't configured (local single-user / test mode). Mirrors the
     credential resolution used elsewhere: SUPABASE_ANON_KEY preferred, with a

@@ -71,7 +71,7 @@ import math
 import re
 import time
 from dataclasses import dataclass, field as _dcfield, asdict
-from typing import Callable, Dict, List, Optional, Tuple
+from collections.abc import Callable
 
 import numpy as np
 
@@ -125,14 +125,14 @@ class MissionSpec:
     text: str
     maneuver: str = "step_steer"
     drive: str = "unspecified"
-    budget_usd: Optional[float] = None
+    budget_usd: float | None = None
     weld_pull_mm: float = 0.0
-    shop_accuracy_mm: Optional[float] = None
+    shop_accuracy_mm: float | None = None
     shop: str = "hand_weld"                 # accuracy → class, worst-fit
-    priorities: Dict[str, float] = _dcfield(default_factory=dict)
-    consumed: List[str] = _dcfield(default_factory=list)   # token → meaning
-    assumptions: List[str] = _dcfield(default_factory=list)
-    ignored: List[str] = _dcfield(default_factory=list)
+    priorities: dict[str, float] = _dcfield(default_factory=dict)
+    consumed: list[str] = _dcfield(default_factory=list)   # token → meaning
+    assumptions: list[str] = _dcfield(default_factory=list)
+    ignored: list[str] = _dcfield(default_factory=list)
 
     def summary(self) -> dict:
         return {k: (round(v, 3) if isinstance(v, float) else v)
@@ -251,10 +251,10 @@ class OmniKnobs:
     """Everything the referee's arithmetic stands on. All of it printable,
     none of it hidden. Representative 2026 numbers, not quotes."""
     # lattice
-    actuator_scales: Dict[str, float] = _dcfield(
+    actuator_scales: dict[str, float] = _dcfield(
         default_factory=lambda: {"compact": 0.6, "standard": 1.0,
                                  "authority": 1.5})
-    volfracs: Tuple[float, ...] = (0.32, 0.45)
+    volfracs: tuple[float, ...] = (0.32, 0.45)
     compare_shops: bool = True            # mission shop + the next-better class
     # screening fidelity — printed on the result
     genesis_starts: int = 2
@@ -262,7 +262,7 @@ class OmniKnobs:
     genesis_max_iter: int = 8
     morph_h_mm: float = 2.5
     morph_max_iter: int = 10
-    morph_betas: Tuple[float, ...] = (1.0, 4.0)
+    morph_betas: tuple[float, ...] = (1.0, 4.0)
     morph_rounds: int = 2
     audit_samples: int = 10
     fan_cases: int = 3
@@ -280,10 +280,10 @@ class OmniKnobs:
     # cost model (USD)
     act_cost_base: float = 180.0
     act_cost_per_Nm: float = 0.55
-    tab_cost: Dict[str, float] = _dcfield(
+    tab_cost: dict[str, float] = _dcfield(
         default_factory=lambda: {"hand_weld": 18.0, "jig_weld": 26.0,
                                  "cnc": 45.0})
-    shop_capex: Dict[str, float] = _dcfield(
+    shop_capex: dict[str, float] = _dcfield(
         default_factory=lambda: {"hand_weld": 0.0, "jig_weld": 220.0,
                                  "cnc": 600.0})
     material_usd_per_kg: float = 9.0
@@ -303,7 +303,7 @@ class OmniKnobs:
 _SHOP_LADDER = ["hand_weld", "jig_weld", "cnc"]
 
 
-def _shops_for(mission: MissionSpec, knobs: OmniKnobs) -> List[str]:
+def _shops_for(mission: MissionSpec, knobs: OmniKnobs) -> list[str]:
     """The mission's implied class, plus the next-better one — so the front
     can price what a jig (or a machinist) is actually worth."""
     i = _SHOP_LADDER.index(mission.shop)
@@ -318,7 +318,7 @@ def _shops_for(mission: MissionSpec, knobs: OmniKnobs) -> List[str]:
 # --------------------------------------------------------------------------- #
 #  axis key → (label, unit, sense)  sense +1 = maximise, −1 = minimise
 #  axis key → (label, unit, sense, display format)
-AXES: Dict[str, Tuple[str, str, int, str]] = {
+AXES: dict[str, tuple[str, str, int, str]] = {
     "composure": ("event composure ∫|roll|dt", "deg·s", -1, "{:.3f}"),
     "laps":      ("endurance range", "laps", +1, "{:.2f}"),
     "mass":      ("grown structure mass", "kg", -1, "{:.2f}"),
@@ -338,20 +338,20 @@ class ConfigPoint:
     shop: str
     actuator: str
     volfrac: float
-    objectives: Dict[str, float] = _dcfield(default_factory=dict)
+    objectives: dict[str, float] = _dcfield(default_factory=dict)
     feasible: bool = True
-    vetoes: List[str] = _dcfield(default_factory=list)      # engine-named
-    flags: List[str] = _dcfield(default_factory=list)
-    detail: Dict[str, object] = _dcfield(default_factory=dict)
+    vetoes: list[str] = _dcfield(default_factory=list)      # engine-named
+    flags: list[str] = _dcfield(default_factory=list)
+    detail: dict[str, object] = _dcfield(default_factory=dict)
 
     @property
     def label(self) -> str:
         return f"#{self.cid} {self.shop}·{self.actuator}·vf{self.volfrac:g}"
 
 
-def pareto_mask(points: List[Dict[str, float]],
-                axes: Dict[str, Tuple[str, str, int, str]] = AXES
-                ) -> List[bool]:
+def pareto_mask(points: list[dict[str, float]],
+                axes: dict[str, tuple[str, str, int, str]] = AXES
+                ) -> list[bool]:
     """True where no other point is at-least-as-good on every axis and
     strictly better on one. Pure arithmetic, checkable by hand."""
     keys = list(axes)
@@ -369,8 +369,8 @@ def pareto_mask(points: List[Dict[str, float]],
     return keep
 
 
-def knee_pick(points: List[ConfigPoint], mission: MissionSpec
-              ) -> Optional[int]:
+def knee_pick(points: list[ConfigPoint], mission: MissionSpec
+              ) -> int | None:
     """The referee's pick: min priority-weighted normalised distance to the
     utopia point over the FEASIBLE set. One reading of the front — the front
     itself is the answer."""
@@ -390,7 +390,7 @@ def knee_pick(points: List[ConfigPoint], mission: MissionSpec
     return feas[int(np.argmin(score))].cid
 
 
-def dominance_receipts(points: List[ConfigPoint]) -> List[str]:
+def dominance_receipts(points: list[ConfigPoint]) -> list[str]:
     """For every dominated feasible configuration, name one that strictly
     beats it — the receipt that settles the meeting."""
     feas = [p for p in points if p.feasible]
@@ -417,13 +417,13 @@ def dominance_receipts(points: List[ConfigPoint]) -> List[str]:
 class OmniResult:
     mission: MissionSpec
     knobs: OmniKnobs
-    configs: List[ConfigPoint]
-    pareto_ids: List[int]
-    knee_id: Optional[int]
-    receipts: List[str]
-    ledger: Dict[str, int]                  # engine call counts
+    configs: list[ConfigPoint]
+    pareto_ids: list[int]
+    knee_id: int | None
+    receipts: list[str]
+    ledger: dict[str, int]                  # engine call counts
     elapsed_s: float
-    warnings: List[str] = _dcfield(default_factory=list)
+    warnings: list[str] = _dcfield(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -534,9 +534,9 @@ def _ghost_corner(hp: Hardpoints, corner: str) -> gt.GhostCorner:
                           track_mm=track)
 
 
-def run_omnicore(hp: Optional[Hardpoints], mission: MissionSpec,
-                 knobs: Optional[OmniKnobs] = None,
-                 progress: Optional[Callable[[str], None]] = None
+def run_omnicore(hp: Hardpoints | None, mission: MissionSpec,
+                 knobs: OmniKnobs | None = None,
+                 progress: Callable[[str], None] | None = None
                  ) -> OmniResult:
     """The whole referee. Shares sub-solves across the lattice on purpose:
     one genesis per shop class, one co-solve + audit per actuator size, one
@@ -546,14 +546,14 @@ def run_omnicore(hp: Optional[Hardpoints], mission: MissionSpec,
     hp = hp or Hardpoints.default()
     knobs = knobs or OmniKnobs()
     say = progress or (lambda s: None)
-    warnings: List[str] = []
+    warnings: list[str] = []
     ledger = {"genesis": 0, "simulforge": 0, "ghost_audits": 0, "morph": 0,
               "fe_solves": 0}
 
     shops = _shops_for(mission, knobs)
 
     # ---- InverseGenesis: one solve per shop class ------------------------- #
-    gen: Dict[str, Optional[ig.GenesisResult]] = {}
+    gen: dict[str, ig.GenesisResult | None] = {}
     try:
         targets = _terrain_targets(hp, mission, knobs)
         box = knobs.volume_box_mm
@@ -587,8 +587,8 @@ def run_omnicore(hp: Optional[Hardpoints], mission: MissionSpec,
                             f"({type(e).__name__}: {e}).")
 
     # ---- SimulForge + Ghost audit: one per actuator size ------------------ #
-    forge: Dict[str, Optional[sf.SimulForgeResult]] = {}
-    audits: Dict[str, Optional[gt.GhostAudit]] = {}
+    forge: dict[str, sf.SimulForgeResult | None] = {}
+    audits: dict[str, gt.GhostAudit | None] = {}
     for name, scale in knobs.actuator_scales.items():
         say(f"SimulForge — actuator '{name}' through "
             f"'{mission.maneuver}'…")
@@ -616,7 +616,7 @@ def run_omnicore(hp: Optional[Hardpoints], mission: MissionSpec,
                             f"({type(e).__name__}: {e}).")
 
     # ---- MorphMesh: one growth per (shop × actuator × volfrac) ------------ #
-    configs: List[ConfigPoint] = []
+    configs: list[ConfigPoint] = []
     cid = 0
     for shop in shops:
         g = gen.get(shop)
@@ -758,7 +758,7 @@ def run_omnicore(hp: Optional[Hardpoints], mission: MissionSpec,
 #  5 · The self-healing twin — drift, a named suspect, and arithmetic to heal
 # --------------------------------------------------------------------------- #
 #  channel key → (label, unit, default band)  band = "still nominal" half-width
-TWIN_CHANNELS: Dict[str, Tuple[str, str, float]] = {
+TWIN_CHANNELS: dict[str, tuple[str, str, float]] = {
     "v_min":           ("bus minimum voltage", "V", 0.5),
     "sag_peak_V":      ("peak bus sag", "V", 0.5),
     "i_peak":          ("peak bus draw", "A", 4.0),
@@ -769,7 +769,7 @@ TWIN_CHANNELS: Dict[str, Tuple[str, str, float]] = {
 }
 
 
-def _channel_vec(res: sf.SimulForgeResult) -> Dict[str, float]:
+def _channel_vec(res: sf.SimulForgeResult) -> dict[str, float]:
     s = res.elec.summary()
     out = {k: float(s[k]) for k in TWIN_CHANNELS if k in s}
     out["roll_peak_deg"] = res.roll_peak_deg()
@@ -779,8 +779,8 @@ def _channel_vec(res: sf.SimulForgeResult) -> Dict[str, float]:
 @dataclass
 class TwinBaseline:
     maneuver: str
-    channels: Dict[str, float]
-    bands: Dict[str, float]
+    channels: dict[str, float]
+    bands: dict[str, float]
 
     def summary(self) -> dict:
         return {"maneuver": self.maneuver,
@@ -794,17 +794,17 @@ class DefectSignature:
     key: str
     label: str
     story: str
-    dz: Dict[str, float]        # band-normalised predicted deviation
+    dz: dict[str, float]        # band-normalised predicted deviation
 
 
 @dataclass
 class TwinDiagnosis:
     baseline: TwinBaseline
-    measured: Dict[str, float]
-    z: Dict[str, float]                       # band-normalised deviation
-    channel_verdicts: Dict[str, str]          # NOMINAL / WATCH / DEGRADED
-    suspect: Optional[str]
-    suspect_label: Optional[str]
+    measured: dict[str, float]
+    z: dict[str, float]                       # band-normalised deviation
+    channel_verdicts: dict[str, str]          # NOMINAL / WATCH / DEGRADED
+    suspect: str | None
+    suspect_label: str | None
     cosine: float
     magnitude: float                          # ×(predicted signature)
     note: str
@@ -823,10 +823,10 @@ class TwinDiagnosis:
 
 
 def twin_baseline(maneuver: str,
-                  actuator: Optional[sf.ActuatorParams] = None,
-                  bus: Optional[sf.BusParams] = None,
-                  bands: Optional[Dict[str, float]] = None
-                  ) -> Tuple[TwinBaseline, sf.SimulForgeResult]:
+                  actuator: sf.ActuatorParams | None = None,
+                  bus: sf.BusParams | None = None,
+                  bands: dict[str, float] | None = None
+                  ) -> tuple[TwinBaseline, sf.SimulForgeResult]:
     """One nominal co-solve → the declared 'still healthy' envelope."""
     r = sf.run_simulforge(None, kind=maneuver, actuator=actuator, bus=bus)
     b = bands or {k: TWIN_CHANNELS[k][2] for k in TWIN_CHANNELS}
@@ -835,17 +835,17 @@ def twin_baseline(maneuver: str,
 
 
 def defect_signatures(baseline: TwinBaseline,
-                      actuator: Optional[sf.ActuatorParams] = None,
-                      bus: Optional[sf.BusParams] = None,
-                      presets: Optional[Dict[str, sf.Degradation]] = None,
-                      progress: Optional[Callable[[str], None]] = None
-                      ) -> List[DefectSignature]:
+                      actuator: sf.ActuatorParams | None = None,
+                      bus: sf.BusParams | None = None,
+                      presets: dict[str, sf.Degradation] | None = None,
+                      progress: Callable[[str], None] | None = None
+                      ) -> list[DefectSignature]:
     """Run the SAME manoeuvre once under every named Degradation preset and
     record the band-normalised deviation pattern each one predicts. The
     Saboteur's signature idea, pointed at the running car."""
     say = progress or (lambda s: None)
     presets = presets or sf.degradation_presets()
-    sigs: List[DefectSignature] = []
+    sigs: list[DefectSignature] = []
     for key, d in presets.items():
         if key == "nominal":
             continue
@@ -863,8 +863,8 @@ def defect_signatures(baseline: TwinBaseline,
 _MATCH_COS = 0.75      # below this, the honest verdict is "matches nothing"
 
 
-def diagnose(baseline: TwinBaseline, measured: Dict[str, float],
-             signatures: List[DefectSignature]) -> TwinDiagnosis:
+def diagnose(baseline: TwinBaseline, measured: dict[str, float],
+             signatures: list[DefectSignature]) -> TwinDiagnosis:
     """Band-normalise the measured deviation and cosine-match it against the
     predicted signatures. Deterministic, checkable by hand."""
     keys = [k for k in baseline.channels if k in measured]
@@ -910,13 +910,13 @@ def diagnose(baseline: TwinBaseline, measured: Dict[str, float],
 
 @dataclass
 class HealPlan:
-    gain_scale: Optional[float]
-    kp_new: Optional[float]
-    kd_new: Optional[float]
+    gain_scale: float | None
+    kp_new: float | None
+    kd_new: float | None
     gain_note: str
-    shim_mm: Optional[float]
+    shim_mm: float | None
     shim_note: str
-    cautions: List[str]
+    cautions: list[str]
 
     def summary(self) -> dict:
         return {"gain_scale": (round(self.gain_scale, 3)
@@ -945,7 +945,7 @@ def heal_plan(diag: TwinDiagnosis, forge_nominal: sf.SimulForgeResult,
       the Stochastic tab's Alignment Prescription runs, priced here as a
       3-D-printable first correction. Verify with a measured re-alignment.
     """
-    cautions: List[str] = []
+    cautions: list[str] = []
     act, bus = forge_nominal.actuator, forge_nominal.bus
     if diag.suspect is not None:
         d = sf.degradation_presets().get(diag.suspect)
@@ -1004,7 +1004,7 @@ def heal_plan(diag: TwinDiagnosis, forge_nominal: sf.SimulForgeResult,
 #  6 · Markdown reports
 # --------------------------------------------------------------------------- #
 def render_omni_md(res: OmniResult) -> str:
-    L: List[str] = []
+    L: list[str] = []
     L.append("# OmniCore — vehicle-synthesis referee")
     L.append("")
     L.append("## Mission receipt")
@@ -1059,9 +1059,9 @@ def render_omni_md(res: OmniResult) -> str:
     return "\n".join(L)
 
 
-def render_twin_md(diag: TwinDiagnosis, plan: Optional[HealPlan] = None
+def render_twin_md(diag: TwinDiagnosis, plan: HealPlan | None = None
                    ) -> str:
-    L: List[str] = []
+    L: list[str] = []
     L.append("# OmniCore twin — drift audit")
     L.append("")
     L.append("| channel | nominal | measured | z (bands) | verdict |")

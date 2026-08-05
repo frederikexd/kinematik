@@ -103,7 +103,7 @@ class Hardpoints:
             "rocker_pushrod", "rocker_spring", "spring_inner"))
 
     @staticmethod
-    def default() -> "Hardpoints":
+    def default() -> Hardpoints:
         """A sane FSAE front-corner geometry (right side). Roughly a 1.55 m track car.
 
         Includes a representative pushrod-actuated rocker (static motion ratio
@@ -147,7 +147,7 @@ class Hardpoints:
         return out
 
     @staticmethod
-    def from_dict(d) -> "Hardpoints":
+    def from_dict(d) -> Hardpoints:
         # Required outboard/inboard linkage points, always 3-vectors.
         vec_keys = {"upper_front_inner", "upper_rear_inner", "lower_front_inner",
                     "lower_rear_inner", "upper_outer", "lower_outer",
@@ -173,7 +173,7 @@ class Hardpoints:
                 kwargs[k] = v
         return Hardpoints(**kwargs)
 
-    def copy(self) -> "Hardpoints":
+    def copy(self) -> Hardpoints:
         return Hardpoints.from_dict(self.as_dict())
 
 
@@ -276,7 +276,7 @@ class SuspensionKinematics:
         self._cache_static()
 
     @staticmethod
-    def _validate(hp: "Hardpoints"):
+    def _validate(hp: Hardpoints):
         """Fail fast with a clear message rather than a cryptic solver error."""
         point_fields = [
             "upper_front_inner", "upper_rear_inner", "lower_front_inner",
@@ -619,7 +619,7 @@ class SuspensionKinematics:
                             method="lm", max_nfev=200, xtol=1e-12, ftol=1e-12)
         return float(sol.x[0]), float(abs(sol.fun[0]))
 
-    def spring_length_at(self, state: "CornerState", seed=0.0):
+    def spring_length_at(self, state: CornerState, seed=0.0):
         """
         Installed spring/damper length (mm) at a solved corner state, by driving
         the real pushrod→rocker→spring chain. Returns (length, rocker_angle, ok).

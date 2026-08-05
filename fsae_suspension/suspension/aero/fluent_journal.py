@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import math
 import os
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 
 def _inlet_velocity(speed_ms: float, yaw_deg: float, pitch_deg: float):
@@ -50,8 +50,8 @@ def write_runnable_journal(
     spec,
     workdir: str,
     *,
-    case_file: Optional[str] = None,
-    wall_zones: Optional[Sequence[str]] = None,
+    case_file: str | None = None,
+    wall_zones: Sequence[str] | None = None,
     inlet_zone: str = "inlet",
     iterations: int = 2000,
     convergence_abs: float = 1e-4,

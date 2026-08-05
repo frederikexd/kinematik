@@ -5,12 +5,12 @@
 Most claims here are about energy and thermal physics that hold regardless of
 the specific rotor, with honest pointers to the brake_thermal model for sizing."""
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any
 from ..mythbuster import CheckOutcome, ParsedClaim, Rule, Verdict, register
 
 
 # Bigger rotor = more braking force
-def _r_bigger_rotor_force(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_bigger_rotor_force(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("bigger rotor", "larger rotor", "bigger disc", "bigger disk",
                       "rotor size", "rotor")
             and claim.has("more braking", "stops faster", "stop faster", "more force",
@@ -29,7 +29,7 @@ _r_bigger_rotor_force.reference_claim = "A bigger brake rotor makes the car stop
 
 
 # Braking energy / heat
-def _r_brake_energy(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_brake_energy(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("brake", "braking") and
             claim.has("heat", "energy", "temperature", "thermal", "fade")):
         return None
@@ -48,7 +48,7 @@ _r_brake_energy.reference_claim = "Brake heat is about the same at any speed."
 
 
 # Brake bias
-def _r_brake_bias(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_brake_bias(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("brake bias", "brake balance", "bias") and
             claim.has("50", "even", "equal", "centre", "center", "middle")):
         return None
@@ -98,7 +98,7 @@ def _as_return_result(context: Any):
     return None
 
 
-def _r_throttle_sensor_is_spring(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_throttle_sensor_is_spring(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("sensor", "tps", "apps", "potentiometer")
             and claim.has("spring", "return")):
         return None
@@ -116,7 +116,7 @@ _r_throttle_sensor_is_spring.reference_claim = (
     "The throttle position sensor can count as one of the two required return springs.")
 
 
-def _r_throttle_identical_backup(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_throttle_identical_backup(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("spring", "throttle")
             and claim.has("identical", "backup", "back-up", "back up", "unhook",
                           "one fails", "spring fails", "one breaks", "other is fine",

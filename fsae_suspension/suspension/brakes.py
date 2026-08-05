@@ -80,7 +80,8 @@ import os
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Protocol, Sequence, runtime_checkable
+from typing import Protocol, runtime_checkable
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -183,7 +184,7 @@ class RotorCFDProvenance:
     is_correlated: bool = False          # True only when tied to a measured h_c / temp
     turbulence_model: str = ""
     rotating_wall: bool = False          # was the wheel actually spun? (MRF/sliding)
-    cell_count: Optional[int] = None
+    cell_count: int | None = None
     correlated_against: str = ""
     notes: str = ""
 
@@ -227,12 +228,12 @@ class ConvectiveResult:
     them. A `None` is "not computed", never zero, never a guess (cfd.py contract).
     """
     point: WheelTunnelPoint
-    h_face_w_m2k: Optional[float] = None     # convective coeff, rotor friction faces
-    h_vent_w_m2k: Optional[float] = None     # convective coeff, internal vent channels
-    mdot_barrel_kg_s: Optional[float] = None  # air mass flow through the wheel barrel
+    h_face_w_m2k: float | None = None     # convective coeff, rotor friction faces
+    h_vent_w_m2k: float | None = None     # convective coeff, internal vent channels
+    mdot_barrel_kg_s: float | None = None  # air mass flow through the wheel barrel
     converged: bool = False
-    wall_clock_s: Optional[float] = None
-    provenance: Optional[RotorCFDProvenance] = None
+    wall_clock_s: float | None = None
+    provenance: RotorCFDProvenance | None = None
     notes: str = ""
 
     def is_usable(self) -> bool:
@@ -353,7 +354,7 @@ class OpenFOAMRotorCFD:
         self.turbulence_model = turbulence_model
         self.fidelity = fidelity
 
-    def provenance(self, cell_count: Optional[int] = None) -> RotorCFDProvenance:
+    def provenance(self, cell_count: int | None = None) -> RotorCFDProvenance:
         return RotorCFDProvenance(
             backend=self.name, fidelity=self.fidelity, is_correlated=False,
             turbulence_model=self.turbulence_model, rotating_wall=True,
@@ -378,9 +379,9 @@ class OpenFOAMRotorCFD:
         self.write_case(pt, workdir)
         raise RotorSolverUnavailable(
             "OpenFOAM rotating-wheel solve not available in this environment. "
-            "A valid case was written to '%s'; run it on a machine with OpenFOAM "
+            f"A valid case was written to '{workdir}'; run it on a machine with OpenFOAM "
             "(simpleFoam + MRF or pimpleFoam + sliding mesh), then call "
-            "read_result()." % workdir)
+            "read_result().")
 
     def read_result(self, pt: WheelTunnelPoint, workdir: str) -> ConvectiveResult:
         raise RotorSolverUnavailable(
@@ -400,7 +401,7 @@ class ConvectiveMap:
     h_face: np.ndarray
     h_vent: np.ndarray
     mdot_barrel: np.ndarray
-    provenance: Optional[RotorCFDProvenance] = None
+    provenance: RotorCFDProvenance | None = None
     synthesized: bool = True
     warnings: list = field(default_factory=list)
 
@@ -416,8 +417,8 @@ class ConvectiveMap:
                          left=self.h_vent[0], right=self.h_vent[-1])
 
 
-def build_convective_map(solver: Optional[RotorCFDSolver] = None,
-                         speeds_ms: Optional[Sequence[float]] = None,
+def build_convective_map(solver: RotorCFDSolver | None = None,
+                         speeds_ms: Sequence[float] | None = None,
                          rolling_radius_m: float = 0.22,
                          rho: float = 1.225,
                          workdir: str = "/tmp/kinematik_wheeltunnel") -> ConvectiveMap:
@@ -493,7 +494,7 @@ class RotorGeometry:
     drill_radius_mm: float = 3.0
     hat_mass_kg: float = 0.35         # the hat/bell mass (separate lever)
     material: RotorMaterial = field(default_factory=RotorMaterial)
-    hat_material: Optional[RotorMaterial] = None   # None -> same as ring
+    hat_material: RotorMaterial | None = None   # None -> same as ring
 
     # --- derived geometry -------------------------------------------------- #
     def ring_solid_volume_m3(self) -> float:
@@ -689,7 +690,7 @@ class RotorThermalResult:
                 self.fluid_boil_c - self.peak_fluid_c)
 
     @staticmethod
-    def failed(msg: str) -> "RotorThermalResult":
+    def failed(msg: str) -> RotorThermalResult:
         z = np.full(1, np.nan)
         return RotorThermalResult(
             time_s=z.copy(), ring_temp_c=z.copy(), hat_temp_c=z.copy(),
@@ -720,9 +721,9 @@ class RotorThermalModel:
 
     def __init__(self, geom: RotorGeometry,
                  cmap: ConvectiveMap,
-                 params: Optional[RotorThermalParams] = None,
-                 pad: Optional[PadSpec] = None,
-                 fluid: Optional[BrakeFluid] = None,
+                 params: RotorThermalParams | None = None,
+                 pad: PadSpec | None = None,
+                 fluid: BrakeFluid | None = None,
                  use_wet_boil: bool = True):
         self.geom = geom
         self.cmap = cmap
@@ -879,17 +880,17 @@ class RotorThermalModel:
 #  Top-level convenience: lap -> cooling map -> transient rotor temperatures
 # --------------------------------------------------------------------------- #
 def simulate_rotor_thermal(lap, lap_params,
-                           geom: Optional[RotorGeometry] = None,
-                           cmap: Optional[ConvectiveMap] = None,
-                           cfd_solver: Optional[RotorCFDSolver] = None,
-                           params: Optional[RotorThermalParams] = None,
-                           pad: Optional[PadSpec] = None,
-                           fluid: Optional[BrakeFluid] = None,
+                           geom: RotorGeometry | None = None,
+                           cmap: ConvectiveMap | None = None,
+                           cfd_solver: RotorCFDSolver | None = None,
+                           params: RotorThermalParams | None = None,
+                           pad: PadSpec | None = None,
+                           fluid: BrakeFluid | None = None,
                            corner: str = "front",
                            front_bias: float = 0.62,
                            rolling_radius_m: float = 0.22,
                            use_wet_boil: bool = True,
-                           n_laps: Optional[int] = None) -> RotorThermalResult:
+                           n_laps: int | None = None) -> RotorThermalResult:
     """
     The headline: take a virtual lap and predict the TRANSIENT temperature of one
     brake rotor over it — friction ring, hat, caliper body and the fluid at the
@@ -942,7 +943,7 @@ class FluidBoilCheck:
 
 
 def fluid_boil_check(result: RotorThermalResult,
-                     fluid: Optional[BrakeFluid] = None,
+                     fluid: BrakeFluid | None = None,
                      using_wet: bool = True) -> FluidBoilCheck:
     """
     Reduce a transient rotor result to the single fluid-survival fact: did the
@@ -1003,7 +1004,7 @@ class RotorOptimization:
     warnings: list = field(default_factory=list)
 
     @property
-    def best(self) -> Optional[RotorCandidate]:
+    def best(self) -> RotorCandidate | None:
         return self.passing[0] if self.passing else None
 
     def summary(self) -> str:
@@ -1029,11 +1030,11 @@ class RotorOptimization:
 
 
 def rotor_candidate_grid(baseline: RotorGeometry,
-                         thickness_mm: Optional[Sequence[float]] = None,
-                         vent_fraction: Optional[Sequence[float]] = None,
-                         n_drillings: Optional[Sequence[int]] = None,
-                         hat_mass_kg: Optional[Sequence[float]] = None,
-                         vented: Optional[Sequence[bool]] = None) -> list[RotorGeometry]:
+                         thickness_mm: Sequence[float] | None = None,
+                         vent_fraction: Sequence[float] | None = None,
+                         n_drillings: Sequence[int] | None = None,
+                         hat_mass_kg: Sequence[float] | None = None,
+                         vented: Sequence[bool] | None = None) -> list[RotorGeometry]:
     """
     Build a factorial grid of trial rotor geometries off a baseline — the discrete
     stand-in for topology optimisation: each axis is a real manufacturing lever
@@ -1060,17 +1061,17 @@ def rotor_candidate_grid(baseline: RotorGeometry,
 
 def optimize_rotor(lap, lap_params,
                    candidates: Sequence[RotorGeometry],
-                   cmap: Optional[ConvectiveMap] = None,
-                   cfd_solver: Optional[RotorCFDSolver] = None,
-                   params: Optional[RotorThermalParams] = None,
-                   pad: Optional[PadSpec] = None,
-                   fluid: Optional[BrakeFluid] = None,
+                   cmap: ConvectiveMap | None = None,
+                   cfd_solver: RotorCFDSolver | None = None,
+                   params: RotorThermalParams | None = None,
+                   pad: PadSpec | None = None,
+                   fluid: BrakeFluid | None = None,
                    corner: str = "front",
                    front_bias: float = 0.62,
                    rolling_radius_m: float = 0.22,
                    use_wet_boil: bool = True,
-                   n_laps: Optional[int] = None,
-                   baseline: Optional[RotorGeometry] = None) -> RotorOptimization:
+                   n_laps: int | None = None,
+                   baseline: RotorGeometry | None = None) -> RotorOptimization:
     """
     Score every candidate rotor on the SAME lap and cooling map, and return the
     lightest one whose transient peak keeps the ring under pad fade AND the fluid

@@ -49,7 +49,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Callable, Optional
+from collections.abc import Callable
 
 # We depend only on the parsed-claim shape, not the engine, to avoid import
 # cycles. Verdict strings are duplicated as plain literals ("myth"/"true"/
@@ -91,7 +91,7 @@ class _Topic:
     """
     name: str
     any_of: list[list[str]]
-    respond: Callable[["object"], Optional[ReasonedVerdict]]
+    respond: Callable[[object], ReasonedVerdict | None]
     discipline: str = ""
     priority: int = 0
 
@@ -799,8 +799,8 @@ _FSAE_NOTE = (" \u26a0\ufe0f This touches an FSAE rules point. Encoded limits ar
               "relying on it.")
 
 
-def _attach_sources(out: "ReasonedVerdict", lower: str, *,
-                    domain_relevant: bool = True) -> "ReasonedVerdict":
+def _attach_sources(out: ReasonedVerdict, lower: str, *,
+                    domain_relevant: bool = True) -> ReasonedVerdict:
     """Append the 'where to check / read more' block to a verdict's explanation.
 
     Deterministic and idempotent: the block is only added once, and the sources
@@ -828,7 +828,7 @@ def _attach_sources(out: "ReasonedVerdict", lower: str, *,
     return out
 
 
-def assess(claim, *, discipline: Optional[str] = None) -> Optional[ReasonedVerdict]:
+def assess(claim, *, discipline: str | None = None) -> ReasonedVerdict | None:
     """Reason about a claim the registered rules couldn't match.
 
     Order of reasoning (all deterministic, all pure Python):

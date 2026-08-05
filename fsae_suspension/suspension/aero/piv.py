@@ -71,7 +71,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import numpy as np
 
@@ -154,7 +154,7 @@ class PIVProvenance:
     magnification_m_per_px: float             # image scale (metres per pixel)
     particle_diameter_um: float = 1.0         # oil-mist tracer diameter
     laser: str = "Nd:YAG double-pulse"
-    camera_fps: Optional[float] = None        # for time-resolved runs; None = frame-straddle
+    camera_fps: float | None = None        # for time-resolved runs; None = frame-straddle
     ground_state: GroundState = GroundState.MOVING_BELT
     freestream_ms: float = 20.0               # tunnel speed, for the timing sanity check
     window_px: int = 32                       # interrogation window side, pixels
@@ -162,7 +162,7 @@ class PIVProvenance:
 
     # -- physics sanity checks (the honest part) -------------------------- #
     def stokes_number(self, rho_p: float = 900.0, mu: float = 1.81e-5,
-                      flow_length_m: Optional[float] = None) -> float:
+                      flow_length_m: float | None = None) -> float:
         """
         Stokes number St = tau_p / tau_f: tracer relaxation time over a flow time
         scale. St << 1 means the mist follows the flow faithfully (good tracer); as
@@ -264,8 +264,8 @@ class VelocityField:
     u: np.ndarray                     # shape (ny, nx) — velocity along in-plane axis-1, m/s
     v: np.ndarray                     # shape (ny, nx) — velocity along in-plane axis-2, m/s
     valid: np.ndarray                 # shape (ny, nx) bool — trustworthy vector?
-    attitude: Optional[Attitude] = None
-    provenance: Optional[PIVProvenance] = None
+    attitude: Attitude | None = None
+    provenance: PIVProvenance | None = None
 
     def __post_init__(self):
         self.xs = np.asarray(self.xs, dtype=float)
@@ -411,7 +411,7 @@ class PIVProcessor:
     peak_ratio_min: float = 1.2
 
     def process(self, pair: FramePair, prov: PIVProvenance,
-                attitude: Optional[Attitude] = None,
+                attitude: Attitude | None = None,
                 origin_xy_m: tuple[float, float] = (0.0, 0.0)) -> VelocityField:
         """
         Cross-correlate `pair` into a physical velocity field on `prov.plane`.
@@ -575,7 +575,7 @@ class CFDFieldSlice:
     ys: np.ndarray
     u: np.ndarray
     v: np.ndarray
-    attitude: Optional[Attitude] = None
+    attitude: Attitude | None = None
 
     def __post_init__(self):
         self.xs = np.asarray(self.xs, dtype=float)
@@ -696,7 +696,7 @@ DEFAULT_FIELD_TOL = {
 
 
 def correlate_field(piv: VelocityField, cfd: CFDFieldSlice,
-                    tol: Optional[dict] = None) -> FieldCorrelationReport:
+                    tol: dict | None = None) -> FieldCorrelationReport:
     """
     Overlay a measured PIV field on a CFD slice of the SAME plane and report whether
     they agree — vector magnitudes, flow angles, and separation location. The CFD is

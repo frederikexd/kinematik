@@ -39,7 +39,6 @@ from __future__ import annotations
 
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Optional
 
 from .kinematics import SuspensionKinematics, Hardpoints, CornerState
 from . import loadpath as lp
@@ -95,16 +94,16 @@ class MemberStiffness:
     The link itself may be omitted (no k_direct/material/flex_body) to model a RIGID
     link whose only compliance is in its joints.
     """
-    k_direct: Optional[float] = None
-    material: Optional[str] = None
-    od_mm: Optional[float] = None
-    wall_mm: Optional[float] = None
-    flex_body: Optional[flexmod.CondensedFlexBody] = None
-    node_out: Optional[str] = None
-    node_in: Optional[str] = None
-    k_tab: Optional[float] = None
-    joint_in: Optional[JointCompliance] = None
-    joint_out: Optional[JointCompliance] = None
+    k_direct: float | None = None
+    material: str | None = None
+    od_mm: float | None = None
+    wall_mm: float | None = None
+    flex_body: flexmod.CondensedFlexBody | None = None
+    node_out: str | None = None
+    node_in: str | None = None
+    k_tab: float | None = None
+    joint_in: JointCompliance | None = None
+    joint_out: JointCompliance | None = None
 
     def _has_link(self) -> bool:
         return (self.flex_body is not None or self.k_direct is not None
@@ -259,14 +258,14 @@ class CompliantCorner:
     @staticmethod
     def uniform_tube(hp: Hardpoints, material: str = "Steel 4130",
                      od_mm: float = 19.05, wall_mm: float = 0.9,
-                     tie_od_mm: Optional[float] = None,
-                     tie_wall_mm: Optional[float] = None,
-                     k_tab: Optional[float] = None,
-                     bushing: Optional[JointCompliance] = None,
-                     rod_end: Optional[JointCompliance] = None,
-                     tie_bushing: Optional[JointCompliance] = None,
-                     tie_rod_end: Optional[JointCompliance] = None,
-                     ) -> "CompliantCorner":
+                     tie_od_mm: float | None = None,
+                     tie_wall_mm: float | None = None,
+                     k_tab: float | None = None,
+                     bushing: JointCompliance | None = None,
+                     rod_end: JointCompliance | None = None,
+                     tie_bushing: JointCompliance | None = None,
+                     tie_rod_end: JointCompliance | None = None,
+                     ) -> CompliantCorner:
         """
         Build a corner where every link is the same tube (the common FSAE case:
         '3/4 inch 4130, 0.9 mm wall'). The tie rod can be given its own size.
@@ -302,10 +301,10 @@ class CompliantCorner:
     @staticmethod
     def with_bushings(hp: Hardpoints,
                       bushing: JointCompliance,
-                      rod_end: Optional[JointCompliance] = None,
+                      rod_end: JointCompliance | None = None,
                       material: str = "Steel 4130",
                       od_mm: float = 19.05, wall_mm: float = 0.9,
-                      ) -> "CompliantCorner":
+                      ) -> CompliantCorner:
         """
         Convenience for the production-style layout: rubber/poly BUSHINGS on every
         inboard pickup (and the tie-rod inner), with optional rod ends outboard. The
@@ -408,7 +407,7 @@ class CompliantCorner:
 
     # ------------------------------------------------------------------ #
     def linearized_rates(self, load: lp.WheelLoad,
-                         freq_hz: Optional[float] = None,
+                         freq_hz: float | None = None,
                          **solve_kw) -> dict:
         """
         Operating-point linearisation for a DYNAMIC analysis: solve the static

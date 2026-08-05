@@ -93,7 +93,7 @@ import os
 import re
 import statistics
 from dataclasses import dataclass, field, asdict
-from typing import Iterable, Optional, Sequence
+from collections.abc import Iterable, Sequence
 
 __all__ = [
     # config / vocabulary
@@ -169,7 +169,7 @@ _WALL_TREATMENT_PATTERNS: tuple[tuple[str, str], ...] = (
 )
 
 
-def wall_treatment_for(viscous_model: Optional[str]) -> str:
+def wall_treatment_for(viscous_model: str | None) -> str:
     """
     Classify a turbulence-model string into its near-wall expectation.
 
@@ -205,7 +205,7 @@ _ORDER_PATTERNS: tuple[tuple[str, str], ...] = (
 )
 
 
-def discretisation_of(order_text: Optional[str]) -> str:
+def discretisation_of(order_text: str | None) -> str:
     """
     Classify the `Order` column.
 
@@ -244,7 +244,7 @@ def _normalise_setup_value(value) -> str:
     return re.sub(r"[^a-z0-9]+", "", text)
 
 
-def setup_signature(row: "RunRow") -> tuple:
+def setup_signature(row: RunRow) -> tuple:
     """
     The method a run was solved with, as a comparable tuple.
 
@@ -266,15 +266,15 @@ _SETUP_PART_LABELS = ("viscous model", "scheme", "discretisation order",
                       "initialization")
 
 
-def dynamic_pressure(speed_ms: Optional[float], rho: float = DEFAULT_RHO) -> Optional[float]:
+def dynamic_pressure(speed_ms: float | None, rho: float = DEFAULT_RHO) -> float | None:
     """q = 1/2 rho V^2, in Pa. None if the speed is missing or non-positive."""
     if speed_ms is None or speed_ms <= 0:
         return None
     return 0.5 * rho * speed_ms * speed_ms
 
 
-def implied_reference_area(force_N: Optional[float], coeff: Optional[float],
-                           q_Pa: Optional[float]) -> Optional[float]:
+def implied_reference_area(force_N: float | None, coeff: float | None,
+                           q_Pa: float | None) -> float | None:
     """
     Back out the reference area a row's own numbers imply: A = |F| / (q * |C|).
 
@@ -327,7 +327,7 @@ class ScreenConfig:
 
     # -- fluid / reference conditions ------------------------------------- #
     rho: float = DEFAULT_RHO
-    reference_area_m2: Optional[float] = None      # None => infer from the rows
+    reference_area_m2: float | None = None      # None => infer from the rows
 
     # -- y+ bands, per near-wall treatment (warn band, then reject band) --- #
     yplus_wf_warn: tuple = (30.0, 300.0)
@@ -434,8 +434,8 @@ class Flag:
     severity: str
     message: str
     channel: str = ""
-    value: Optional[float] = None
-    limit: Optional[float] = None
+    value: float | None = None
+    limit: float | None = None
 
     def __str__(self) -> str:
         return f"[{self.severity.upper()}] {self.code}: {self.message}"
@@ -511,35 +511,35 @@ class RunRow:
     """
     source_row: int = 0
     sheet: str = ""
-    contributor: Optional[str] = None
-    component: Optional[str] = None
-    ride_height_mm: Optional[float] = None
-    speed_ms: Optional[float] = None
-    desired_yplus: Optional[float] = None
-    avg_yplus: Optional[float] = None
-    min_surface_mesh: Optional[float] = None
-    max_surface_mesh: Optional[float] = None
-    first_layer_height_m: Optional[float] = None
-    n_layers: Optional[float] = None
-    min_ortho_quality: Optional[float] = None
-    max_skewness: Optional[float] = None
-    max_aspect_ratio: Optional[float] = None
-    viscous_model: Optional[str] = None
-    scheme: Optional[str] = None
-    order: Optional[str] = None
-    pseudo_time_step: Optional[str] = None
-    courant_number: Optional[float] = None
-    initialization: Optional[str] = None
-    lift_force_N: Optional[float] = None
-    lift_coeff: Optional[float] = None
-    drag_force_N: Optional[float] = None
-    drag_coeff: Optional[float] = None
-    max_pressure_Pa: Optional[float] = None
-    min_pressure_Pa: Optional[float] = None
-    mass_imbalance: Optional[float] = None
-    converged: Optional[bool] = None
-    iteration: Optional[float] = None
-    notes: Optional[str] = None
+    contributor: str | None = None
+    component: str | None = None
+    ride_height_mm: float | None = None
+    speed_ms: float | None = None
+    desired_yplus: float | None = None
+    avg_yplus: float | None = None
+    min_surface_mesh: float | None = None
+    max_surface_mesh: float | None = None
+    first_layer_height_m: float | None = None
+    n_layers: float | None = None
+    min_ortho_quality: float | None = None
+    max_skewness: float | None = None
+    max_aspect_ratio: float | None = None
+    viscous_model: str | None = None
+    scheme: str | None = None
+    order: str | None = None
+    pseudo_time_step: str | None = None
+    courant_number: float | None = None
+    initialization: str | None = None
+    lift_force_N: float | None = None
+    lift_coeff: float | None = None
+    drag_force_N: float | None = None
+    drag_coeff: float | None = None
+    max_pressure_Pa: float | None = None
+    min_pressure_Pa: float | None = None
+    mass_imbalance: float | None = None
+    converged: bool | None = None
+    iteration: float | None = None
+    notes: str | None = None
     raw: dict = field(default_factory=dict)
 
     def label(self) -> str:
@@ -560,26 +560,26 @@ class RunRow:
 @dataclass
 class Derived:
     """Quantities this module computed from a row, kept separate from reported data."""
-    q_Pa: Optional[float] = None
-    cp_max: Optional[float] = None
-    cp_min: Optional[float] = None
-    implied_area_lift_m2: Optional[float] = None
-    implied_area_drag_m2: Optional[float] = None
-    reference_area_used_m2: Optional[float] = None
-    lift_coeff_derived: Optional[float] = None
-    drag_coeff_derived: Optional[float] = None
+    q_Pa: float | None = None
+    cp_max: float | None = None
+    cp_min: float | None = None
+    implied_area_lift_m2: float | None = None
+    implied_area_drag_m2: float | None = None
+    reference_area_used_m2: float | None = None
+    lift_coeff_derived: float | None = None
+    drag_coeff_derived: float | None = None
     wall_treatment: str = WallTreatment.UNKNOWN
-    yplus_target_miss: Optional[float] = None
-    outlier_z: Optional[float] = None
+    yplus_target_miss: float | None = None
+    outlier_z: float | None = None
     discretisation: str = Discretisation.UNKNOWN
     setup_signature: tuple = ()
-    setup_matches_group: Optional[bool] = None     # None = not enough peers to tell
+    setup_matches_group: bool | None = None     # None = not enough peers to tell
 
-    def effective_lift_coeff(self, row: RunRow) -> Optional[float]:
+    def effective_lift_coeff(self, row: RunRow) -> float | None:
         """Reported Cl if present, else the derived one, else None."""
         return row.lift_coeff if row.lift_coeff is not None else self.lift_coeff_derived
 
-    def effective_drag_coeff(self, row: RunRow) -> Optional[float]:
+    def effective_drag_coeff(self, row: RunRow) -> float | None:
         return row.drag_coeff if row.drag_coeff is not None else self.drag_coeff_derived
 
 
@@ -589,7 +589,7 @@ class Verdict:
     row: RunRow
     flags: list = field(default_factory=list)          # list[Flag]
     derived: Derived = field(default_factory=Derived)
-    case: Optional["CaseKey"] = None
+    case: CaseKey | None = None
 
     @property
     def severity(self) -> str:
@@ -618,8 +618,8 @@ class Verdict:
 class CaseKey:
     """The operating point a run belongs to. Rows sharing a key get averaged."""
     component: str
-    ride_height_mm: Optional[float]
-    speed_ms: Optional[float]
+    ride_height_mm: float | None
+    speed_ms: float | None
 
     def label(self) -> str:
         rh = "?" if self.ride_height_mm is None else f"{self.ride_height_mm:g} mm"
@@ -657,23 +657,23 @@ class ConsolidatedCase:
     n_rejected: int = 0
     n_warned: int = 0
 
-    lift_coeff_mean: Optional[float] = None
-    lift_coeff_sd: Optional[float] = None
-    lift_coeff_min: Optional[float] = None
-    lift_coeff_max: Optional[float] = None
+    lift_coeff_mean: float | None = None
+    lift_coeff_sd: float | None = None
+    lift_coeff_min: float | None = None
+    lift_coeff_max: float | None = None
 
-    drag_coeff_mean: Optional[float] = None
-    drag_coeff_sd: Optional[float] = None
+    drag_coeff_mean: float | None = None
+    drag_coeff_sd: float | None = None
 
-    lift_force_mean_N: Optional[float] = None
-    lift_force_sd_N: Optional[float] = None
-    drag_force_mean_N: Optional[float] = None
-    drag_force_sd_N: Optional[float] = None
+    lift_force_mean_N: float | None = None
+    lift_force_sd_N: float | None = None
+    drag_force_mean_N: float | None = None
+    drag_force_sd_N: float | None = None
 
-    reference_area_m2: Optional[float] = None
+    reference_area_m2: float | None = None
     reference_area_basis: str = ""
-    lift_to_drag: Optional[float] = None
-    spread_pct: Optional[float] = None
+    lift_to_drag: float | None = None
+    spread_pct: float | None = None
 
     #: The METHOD behind the number. A consolidated coefficient is only
     #: meaningful alongside the setup that produced it, so it travels with it.
@@ -936,7 +936,7 @@ _HEADER_PATTERNS: tuple = (
 )
 
 
-def _match_header(text) -> Optional[str]:
+def _match_header(text) -> str | None:
     """Map one header cell to a canonical field name, or None if unrecognised."""
     key = _normalise_header(text)
     if not key:
@@ -954,7 +954,7 @@ _FALSEISH = {"n", "no", "false", "0", "not converged", "notconverged", "diverged
              "fail", "failed", "unconverged"}
 
 
-def _coerce_number(value) -> Optional[float]:
+def _coerce_number(value) -> float | None:
     """
     Best-effort numeric read. Handles the things spreadsheets actually contain:
     scientific notation as text, thousands separators, comma decimals, stray units,
@@ -987,7 +987,7 @@ def _coerce_number(value) -> Optional[float]:
     return num / 100.0 if percent else num
 
 
-def _coerce_bool(value) -> Optional[bool]:
+def _coerce_bool(value) -> bool | None:
     if value is None:
         return None
     if isinstance(value, bool):
@@ -1004,14 +1004,14 @@ def _coerce_bool(value) -> Optional[bool]:
     return None
 
 
-def _coerce_text(value) -> Optional[str]:
+def _coerce_text(value) -> str | None:
     if value is None:
         return None
     text = str(value).strip()
     return text or None
 
 
-def _load_grid(source, sheet: Optional[str] = None) -> tuple:
+def _load_grid(source, sheet: str | None = None) -> tuple:
     """
     Read any supported input into a rectangular grid of cell values.
 
@@ -1022,7 +1022,7 @@ def _load_grid(source, sheet: Optional[str] = None) -> tuple:
     if isinstance(source, list):
         return ([list(r) for r in source], sheet or "", "<in-memory>")
 
-    data: Optional[bytes] = None
+    data: bytes | None = None
     label = ""
     if isinstance(source, (bytes, bytearray)):
         data = bytes(source)
@@ -1085,7 +1085,7 @@ def _find_header_row(grid: Sequence[Sequence]) -> int:
 
 
 def parse_rows_from_grid(grid: Sequence[Sequence], sheet: str = "",
-                         header_row: Optional[int] = None) -> tuple:
+                         header_row: int | None = None) -> tuple:
     """
     Turn a raw grid into RunRows. Returns (rows, warnings, unmapped_headers).
 
@@ -1152,8 +1152,8 @@ def parse_rows_from_grid(grid: Sequence[Sequence], sheet: str = "",
     return (rows, warnings, unmapped)
 
 
-def parse_run_log(source, sheet: Optional[str] = None,
-                  header_row: Optional[int] = None) -> tuple:
+def parse_run_log(source, sheet: str | None = None,
+                  header_row: int | None = None) -> tuple:
     """
     Read an ANSYS run log from a path, bytes, stream or grid.
 
@@ -1169,7 +1169,7 @@ def parse_run_log(source, sheet: Optional[str] = None,
 # --------------------------------------------------------------------------- #
 #  2) SCREEN — judge each row, with a reason for every verdict
 # --------------------------------------------------------------------------- #
-def _looks_like_test_row(row: RunRow, patterns: Sequence[str]) -> Optional[str]:
+def _looks_like_test_row(row: RunRow, patterns: Sequence[str]) -> str | None:
     """Return the matched marker if the row is scratch data, else None."""
     haystacks = [row.contributor or "", row.notes or "", row.component or ""]
     text = " ".join(haystacks).lower()
@@ -1638,7 +1638,7 @@ def _resolve_reference_areas(verdicts: Sequence[Verdict], cfg: ScreenConfig) -> 
                     d.drag_coeff_derived = v.row.drag_force_N / (d.q_Pa * area)
 
 
-def _bucket(value: Optional[float], tol: float) -> Optional[float]:
+def _bucket(value: float | None, tol: float) -> float | None:
     """Round a value onto a tolerance grid so near-identical points group together."""
     if value is None:
         return None
@@ -1722,7 +1722,7 @@ def _screen_supersession(verdicts: Sequence[Verdict], cfg: ScreenConfig) -> None
                 "iteration"))
 
 
-def screen(rows: Sequence[RunRow], config: Optional[ScreenConfig] = None) -> list:
+def screen(rows: Sequence[RunRow], config: ScreenConfig | None = None) -> list:
     """
     Judge every row and return a Verdict for each, in input order.
 
@@ -1775,7 +1775,7 @@ def screen(rows: Sequence[RunRow], config: Optional[ScreenConfig] = None) -> lis
 #  3) CONSOLIDATE — average the survivors, per operating point
 # --------------------------------------------------------------------------- #
 def consolidate(verdicts: Sequence[Verdict],
-                config: Optional[ScreenConfig] = None) -> list:
+                config: ScreenConfig | None = None) -> list:
     """
     Group verdicts by operating point and average the accepted rows in each.
 
@@ -1890,9 +1890,9 @@ def consolidate(verdicts: Sequence[Verdict],
     return cases
 
 
-def process(source, config: Optional[ScreenConfig] = None,
-            sheet: Optional[str] = None,
-            header_row: Optional[int] = None) -> ConsolidationReport:
+def process(source, config: ScreenConfig | None = None,
+            sheet: str | None = None,
+            header_row: int | None = None) -> ConsolidationReport:
     """
     The whole pipeline in one call: parse -> screen -> consolidate.
 
@@ -1954,7 +1954,7 @@ def to_coeff_results(report: ConsolidationReport, reference_length_m: float = 1.
             force_monitor_range=c.spread_pct,
             provenance=prov,
             notes=(f"{c.case.component}; ref area "
-                   f"{('%.4f m2' % c.reference_area_m2) if c.reference_area_m2 else 'unknown'} "
+                   f"{(f'{c.reference_area_m2:.4f} m2') if c.reference_area_m2 else 'unknown'} "
                    f"({c.reference_area_basis}); " + "; ".join(c.notes)).strip("; "),
         ))
     return out

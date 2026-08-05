@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import io, math, os, re, tempfile
 from dataclasses import dataclass, field
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -937,14 +937,14 @@ def extract_params_from_excel(excel_bytes: bytes) -> dict:
 
 
 def lap_to_excel_roundtrip_from_db(
-    speed_ms:    "Sequence[float]",
-    time_s:      "Sequence[float]",
+    speed_ms:    Sequence[float],
+    time_s:      Sequence[float],
     ev_params:   dict,
     *,
     lap_time_s:   float = 0.0,
     top_speed_ms: float = 0.0,
     avg_speed_ms: float = 0.0,
-) -> "ExcelRoundTripResult":
+) -> ExcelRoundTripResult:
     """
     Run the full round-trip calculation using parameters stored in the project
     database (ev_params dict, as written by extract_params_from_excel), instead
@@ -1619,7 +1619,7 @@ def compute_minimum_feasible_pack(
 
 
 def build_enhanced_excel(
-    result:         "ExcelRoundTripResult",
+    result:         ExcelRoundTripResult,
     excel_bytes:    bytes,
     thermals:       dict,
     soc_data:       dict,
@@ -1666,7 +1666,7 @@ def build_enhanced_excel(
             b = int(192 - t * 2 * 192)
         else:
             # yellow → red
-            r = int(255)
+            r = 255
             g = int(200 - (t - 0.5) * 2 * 200)
             b = 0
         return f"FF{r:02X}{g:02X}{b:02X}"
@@ -2312,7 +2312,7 @@ def find_feasible_pack_sheet(excel_bytes: bytes) -> dict:
                      for v in row])
     wb.close()
     # Trim trailing all-empty rows
-    while rows and all((c == "" for c in rows[-1])):
+    while rows and all(c == "" for c in rows[-1]):
         rows.pop()
     return {"found": True, "sheet": target, "rows": rows}
 

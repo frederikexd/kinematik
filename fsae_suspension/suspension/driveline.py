@@ -89,7 +89,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, replace
-from typing import Optional
 
 import numpy as np
 
@@ -122,23 +121,23 @@ class DifferentialSpec:
     kind: str = HELICAL_ATB
     tbr: float = 1.0                        # torque bias ratio; 1.0 == open
     preload_nm: float = 0.0                 # static breakaway torque, N·m
-    mass_kg: Optional[float] = None
-    cost_usd: Optional[float] = None
+    mass_kg: float | None = None
+    cost_usd: float | None = None
     adjustable_preload: bool = False
     # packaging bounding box (mm) and CG in vehicle frame — feeds the ledger
-    env_x_mm: Optional[float] = None
-    env_y_mm: Optional[float] = None
-    env_z_mm: Optional[float] = None
-    cg_x_mm: Optional[float] = None
-    cg_y_mm: Optional[float] = None
-    cg_z_mm: Optional[float] = None
-    mount_points: Optional[int] = None
-    peak_torque_nm: Optional[float] = None  # rated input torque capacity
+    env_x_mm: float | None = None
+    env_y_mm: float | None = None
+    env_z_mm: float | None = None
+    cg_x_mm: float | None = None
+    cg_y_mm: float | None = None
+    cg_z_mm: float | None = None
+    mount_points: int | None = None
+    peak_torque_nm: float | None = None  # rated input torque capacity
     # what the listing does NOT include
     sprocket_adapter_included: bool = True
     extra_fab_hours: float = 0.0            # team labour to make it usable
     extra_parts_usd: float = 0.0            # carriers, mounts, chain, sprockets
-    lead_time_weeks: Optional[float] = None
+    lead_time_weeks: float | None = None
     is_estimate: bool = True
     source: str = ""                        # where these numbers came from
 
@@ -150,7 +149,7 @@ class DifferentialSpec:
             return float("inf")
         return max(1.0, float(self.tbr))
 
-    def total_acquisition_usd(self) -> Optional[float]:
+    def total_acquisition_usd(self) -> float | None:
         """Purchase price plus the parts you must buy to actually run it.
         Labour is reported separately — see ``extra_fab_hours`` — because team
         hours and dollars are different budgets with different scarcity."""
@@ -188,8 +187,8 @@ class ExitCondition:
     by construction and the comparison is meaningless. Set ``lateral_g`` only if
     you specifically want a fixed absolute condition.
     """
-    lateral_g_frac: Optional[float] = 0.70   # share of max_lateral_g being used
-    lateral_g: Optional[float] = None        # absolute override, g
+    lateral_g_frac: float | None = 0.70   # share of max_lateral_g being used
+    lateral_g: float | None = None        # absolute override, g
     speed_ms: float = 14.0          # m/s at that point
     r_wheel_m: float = 0.225        # loaded rolling radius (18" OD tyre)
     rear_aero_frac: float = 0.50    # share of total downforce on the rear axle

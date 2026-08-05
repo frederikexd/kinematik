@@ -70,7 +70,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, asdict
-from typing import Optional
 
 from .interfaces import Finding, Severity
 
@@ -123,11 +122,11 @@ class Fastener:
     """
     grade: str = "10.9"
     nominal_d_mm: float = 6.0
-    stress_area_mm2: Optional[float] = None
+    stress_area_mm2: float | None = None
     K_factor: float = 0.20
     # head/washer bearing geometry for the crush check:
-    head_dia_mm: Optional[float] = None     # outer bearing diameter of head or washer
-    hole_dia_mm: Optional[float] = None     # clearance hole the head bears around
+    head_dia_mm: float | None = None     # outer bearing diameter of head or washer
+    hole_dia_mm: float | None = None     # clearance hole the head bears around
 
     def stress_area(self) -> float:
         if self.stress_area_mm2 is not None:
@@ -139,7 +138,7 @@ class Fastener:
                 f"stress_area_mm2 explicitly. Known: {sorted(METRIC_COARSE)}")
         return METRIC_COARSE[key][1]
 
-    def bearing_area_mm2(self) -> Optional[float]:
+    def bearing_area_mm2(self) -> float | None:
         """Annular bearing area under the head/washer face, if geometry is given."""
         if self.head_dia_mm is None:
             return None
@@ -168,10 +167,10 @@ class ClampedStack:
     # bearing/crush limit of the SOFTER clamped face (the base). Conservatively the
     # material yield; many teams use a bearing allowance ~1.0–1.5× yield for ductile
     # alloys, so this is exposed too.
-    base_bearing_allow_MPa: Optional[float] = None
+    base_bearing_allow_MPa: float | None = None
     # explicit overrides (e.g. from flex.py condensation) — if given, used directly:
-    k_bolt_N_per_mm: Optional[float] = None
-    k_member_N_per_mm: Optional[float] = None
+    k_bolt_N_per_mm: float | None = None
+    k_member_N_per_mm: float | None = None
 
 
 @dataclass
@@ -186,9 +185,9 @@ class JointResult:
     F_sep: float                # external load at this bolt that opens the gap
     separation_safety: float    # F_sep / F_bolt_share  (>1 = stays closed)
     separated: bool
-    sigma_bearing: Optional[float]
-    bearing_allow: Optional[float]
-    bearing_yield: Optional[bool]
+    sigma_bearing: float | None
+    bearing_allow: float | None
+    bearing_yield: bool | None
     prying_factor: float
     is_estimate: bool
     notes: str = ""

@@ -60,7 +60,8 @@ from __future__ import annotations
 import itertools
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Protocol, Sequence, runtime_checkable
+from typing import Protocol, runtime_checkable
+from collections.abc import Sequence
 
 
 # --------------------------------------------------------------------------- #
@@ -86,8 +87,8 @@ class CFDProvenance:
     fidelity: SolverFidelity
     is_correlated: bool = False        # True only when tied to physical reference data
     turbulence_model: str = ""         # "kOmegaSST", "Spalart-Allmaras", ...
-    cell_count: Optional[int] = None   # mesh size actually run
-    yplus_mean: Optional[float] = None # wall-treatment sanity
+    cell_count: int | None = None   # mesh size actually run
+    yplus_mean: float | None = None # wall-treatment sanity
     correlated_against: str = ""       # "straightline coastdown", "MIRA tunnel", ...
     notes: str = ""
 
@@ -205,7 +206,7 @@ class CaseSpec:
     reference_length_m: float = 1.55        # wheelbase for moment coeff C_my
     rho: float = 1.225                      # air density
     target_yplus: float = 1.0               # wall-resolved vs wall-function intent
-    target_cells: Optional[int] = None      # mesh budget, if the mesher is driven
+    target_cells: int | None = None      # mesh budget, if the mesher is driven
     fidelity: SolverFidelity = SolverFidelity.RANS
     extra: dict = field(default_factory=dict)   # backend-specific escape hatch
 
@@ -232,15 +233,15 @@ class CoeffResult:
     unconverged force is not a force.
     """
     attitude: Attitude
-    c_lift: Optional[float] = None          # negative = downforce in this convention
-    c_drag: Optional[float] = None
-    c_side: Optional[float] = None          # side force, relevant under yaw
-    c_pitch: Optional[float] = None         # pitching moment coeff (aero balance)
-    aero_balance_front: Optional[float] = None  # fraction of downforce on the front axle
+    c_lift: float | None = None          # negative = downforce in this convention
+    c_drag: float | None = None
+    c_side: float | None = None          # side force, relevant under yaw
+    c_pitch: float | None = None         # pitching moment coeff (aero balance)
+    aero_balance_front: float | None = None  # fraction of downforce on the front axle
     converged: bool = False
-    force_monitor_range: Optional[float] = None  # last-N% spread of the C_L monitor
-    wall_clock_s: Optional[float] = None
-    provenance: Optional[CFDProvenance] = None
+    force_monitor_range: float | None = None  # last-N% spread of the C_L monitor
+    wall_clock_s: float | None = None
+    provenance: CFDProvenance | None = None
     notes: str = ""
 
     def is_usable(self) -> bool:
@@ -248,7 +249,7 @@ class CoeffResult:
         return (self.converged and self.c_lift is not None
                 and self.c_drag is not None)
 
-    def downforce_N(self, rho: float, area_m2: float, speed_ms: float) -> Optional[float]:
+    def downforce_N(self, rho: float, area_m2: float, speed_ms: float) -> float | None:
         """Dimensional downforce (positive up-force-removed) at a given speed."""
         if self.c_lift is None:
             return None

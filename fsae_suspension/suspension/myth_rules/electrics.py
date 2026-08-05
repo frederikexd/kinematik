@@ -4,12 +4,12 @@
 """Electrics myth rules (HV pack, wiring, tractive-system safety). Checks
 against gas-law/Ohm/IPC physics; ties to tractive_system, electronics, harness."""
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any
 from ..mythbuster import CheckOutcome, ParsedClaim, Rule, Verdict, register
 
 
 # Higher voltage = more power (at fixed cap)
-def _r_voltage_power(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_voltage_power(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("voltage", "higher voltage", "more volts", "raise voltage") and
             claim.has("more power", "faster", "more kw", "higher power")):
         return None
@@ -26,7 +26,7 @@ _r_voltage_power.reference_claim = "A higher-voltage pack gives us more power."
 
 
 # Thicker wire is always safer
-def _r_thicker_wire(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_thicker_wire(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("thicker wire", "bigger wire", "thicker gauge", "bigger gauge",
                       "heavier gauge", "thicker cable") and
             claim.has("safer", "always", "better", "cooler", "less resistance")):
@@ -45,7 +45,7 @@ _r_thicker_wire.reference_claim = "A thicker wire is always safer."
 
 
 # Precharge: just close the contactor
-def _r_precharge(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_precharge(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("precharge", "pre-charge", "contactor", "close the contactor") and
             claim.has("not needed", "skip", "just close", "don't need", "unnecessary",
                       "instant")):

@@ -44,7 +44,6 @@ import math
 import os
 import re
 from dataclasses import dataclass
-from typing import Optional
 
 from .cfd import Attitude, CaseSpec
 
@@ -117,7 +116,7 @@ class SnappyMesher:
     runner, and the attitude manifest. It returns the path to the Allmesh script.
     """
 
-    def __init__(self, mesh_params: Optional[MeshParams] = None):
+    def __init__(self, mesh_params: MeshParams | None = None):
         self.mp = mesh_params or MeshParams()
 
     # -- public ------------------------------------------------------------ #
@@ -363,7 +362,7 @@ echo "Mesh done. Inspect log.checkMesh for the REAL cell count before solving."
 # --------------------------------------------------------------------------- #
 #  Honest cell-count parsing — the REAL number, only after meshing
 # --------------------------------------------------------------------------- #
-def parse_checkmesh(case_dir: str) -> Optional[int]:
+def parse_checkmesh(case_dir: str) -> int | None:
     """
     Read the actual cell count from a checkMesh log, or None if no log exists yet.
     This is the ONLY trustworthy source of cell count — the recipe is a target, the

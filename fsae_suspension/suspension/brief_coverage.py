@@ -60,7 +60,7 @@ import ast
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Iterable, Optional, Sequence
+from collections.abc import Sequence
 
 __all__ = [
     "BriefingTables", "CoverageGap", "CoverageReport", "FeaturePlan",
@@ -155,7 +155,7 @@ def extract_tables(source: str) -> BriefingTables:
     )
 
 
-def load_tables_from_app(path: Optional[str] = None) -> BriefingTables:
+def load_tables_from_app(path: str | None = None) -> BriefingTables:
     """Extract the tables from streamlit_app.py (repo root by default)."""
     if path is None:
         here = os.path.dirname(os.path.abspath(__file__))
@@ -511,7 +511,7 @@ def resolve_feature_lines(tool_id: str,
 # --------------------------------------------------------------------------- #
 #  CLI — `python -m suspension.brief_coverage`
 # --------------------------------------------------------------------------- #
-def _main(argv: Optional[Sequence[str]] = None) -> int:
+def _main(argv: Sequence[str] | None = None) -> int:
     import argparse
     ap = argparse.ArgumentParser(
         description="Audit mission-briefing coverage across subsystem x goal x "

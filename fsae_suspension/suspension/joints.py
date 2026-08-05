@@ -59,7 +59,7 @@ from __future__ import annotations
 
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 try:                                # PCHIP gives a monotone tabular curve
     from scipy.interpolate import PchipInterpolator
@@ -104,8 +104,8 @@ class JointCompliance:
     lash: float = 0.0        # free-play half-width (mm), `freeplay`
     k_lash: float = 0.0      # in-band contact stiffness (N/mm), `freeplay`
     # tabular data (sorted, strictly increasing force)
-    table_disp: Optional[np.ndarray] = None
-    table_force: Optional[np.ndarray] = None
+    table_disp: np.ndarray | None = None
+    table_force: np.ndarray | None = None
     # damping
     c_viscous: float = 0.0   # viscous damping coefficient (N·s/mm)
     loss_factor: float = 0.0 # structural/hysteretic loss factor η (-)
@@ -119,7 +119,7 @@ class JointCompliance:
     # --------------------------------------------------------------------- #
     @staticmethod
     def linear(k: float, c_viscous: float = 0.0, loss_factor: float = 0.0,
-               label: str = "linear") -> "JointCompliance":
+               label: str = "linear") -> JointCompliance:
         """A plain linear joint: F = k·δ (k in N/mm). The degenerate baseline."""
         if not (np.isfinite(k) and k > 0):
             raise ValueError("linear joint needs a positive finite rate k (N/mm).")
@@ -129,7 +129,7 @@ class JointCompliance:
 
     @staticmethod
     def cubic(k1: float, k3: float, c_viscous: float = 0.0,
-              loss_factor: float = 0.0, label: str = "cubic") -> "JointCompliance":
+              loss_factor: float = 0.0, label: str = "cubic") -> JointCompliance:
         """
         Progressive (stiffening) rate: F = k1·δ + k3·δ³, with k1>0, k3≥0.
         The natural shape of a rubber/elastomer bushing — soft off-centre, firming
@@ -147,7 +147,7 @@ class JointCompliance:
 
     @staticmethod
     def bilinear(k1: float, k2: float, knee_mm: float, c_viscous: float = 0.0,
-                 loss_factor: float = 0.0, label: str = "bilinear") -> "JointCompliance":
+                 loss_factor: float = 0.0, label: str = "bilinear") -> JointCompliance:
         """
         Two-rate curve: rate k1 up to |δ| = knee_mm, then rate k2 (N/mm) beyond.
         Use k2 > k1 for a bushing that hits a bump-stop / packs out, or k2 < k1 for
@@ -165,7 +165,7 @@ class JointCompliance:
     @staticmethod
     def freeplay(lash_mm: float, k: float, k_lash: float = 0.0,
                  c_viscous: float = 0.0, loss_factor: float = 0.0,
-                 label: str = "freeplay") -> "JointCompliance":
+                 label: str = "freeplay") -> JointCompliance:
         """
         Free-play (lash) dead-band then a stiff rate — the spherical-bearing / rod-end
         micro-yield model. Within ±lash_mm the joint carries almost no load (an
@@ -187,7 +187,7 @@ class JointCompliance:
     @staticmethod
     def tabular(disp_mm: Sequence[float], force_N: Sequence[float],
                 c_viscous: float = 0.0, loss_factor: float = 0.0,
-                label: str = "tabular") -> "JointCompliance":
+                label: str = "tabular") -> JointCompliance:
         """
         An arbitrary measured curve. `disp_mm` and `force_N` are matched samples;
         both must be strictly increasing (a monotone joint) and span through the
@@ -213,7 +213,7 @@ class JointCompliance:
     @staticmethod
     def rubber_bushing(k_radial: float = 1500.0, hardening: float = 8.0,
                        loss_factor: float = 0.12, label: str = "rubber bushing"
-                       ) -> "JointCompliance":
+                       ) -> JointCompliance:
         """
         A representative rubber suspension bushing: soft off-centre radial rate
         `k_radial` (N/mm) with strong progressive hardening, and a high structural
@@ -227,7 +227,7 @@ class JointCompliance:
     @staticmethod
     def polyurethane_bushing(k_radial: float = 6000.0, hardening: float = 4.0,
                              loss_factor: float = 0.05,
-                             label: str = "polyurethane bushing") -> "JointCompliance":
+                             label: str = "polyurethane bushing") -> JointCompliance:
         """
         A polyurethane bushing: markedly stiffer than rubber, less progressive, and
         lower loss (poly is firmer and damps less). Defaults are representative.
@@ -238,7 +238,7 @@ class JointCompliance:
     @staticmethod
     def spherical_bearing(lash_mm: float = 0.05, k: float = 120000.0,
                           k_lash: float = 2000.0, loss_factor: float = 0.01,
-                          label: str = "spherical bearing") -> "JointCompliance":
+                          label: str = "spherical bearing") -> JointCompliance:
         """
         A spherical bearing / rod end: near-rigid engaged rate `k` (N/mm) with a
         small clearance `lash_mm` (typ. 0.02–0.10 mm of radial play, worn higher) and
@@ -359,7 +359,7 @@ class JointCompliance:
         return float(e_visc + e_struct)
 
     def linearize(self, about_force_N: float = 0.0,
-                  freq_hz: Optional[float] = None) -> dict:
+                  freq_hz: float | None = None) -> dict:
         """
         Operating-point linearisation for a dynamic (transient) analysis: the tangent
         stiffness at the current force and an EQUIVALENT viscous rate that folds in

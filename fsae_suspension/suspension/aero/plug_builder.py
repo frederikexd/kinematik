@@ -130,7 +130,7 @@ import csv
 import io
 import math
 from dataclasses import dataclass
-from typing import Callable, Optional, Sequence
+from collections.abc import Callable, Sequence
 
 from .scale_model import ScaleSpec, SimilitudePlan, ToleranceBudget
 
@@ -168,7 +168,7 @@ class NoseconeBody:
     section_exponent: float = 2.5
     note: str = ""
     # optional CAD-section override: callable z_mm -> closed outline [(x,y)...]
-    _outline_fn: Optional[Callable[[float], Sequence[tuple]]] = None
+    _outline_fn: Callable[[float], Sequence[tuple]] | None = None
 
     def __post_init__(self):
         if min(self.length_mm, self.base_width_mm, self.base_height_mm) <= 0:
@@ -227,7 +227,7 @@ class NoseconeBody:
     @staticmethod
     def from_sections(length_mm: float, base_width_mm: float, base_height_mm: float,
                       outline_fn: Callable[[float], Sequence[tuple]],
-                      note: str = "CAD sections") -> "NoseconeBody":
+                      note: str = "CAD sections") -> NoseconeBody:
         """
         Swap in real CAD-exported outlines: `outline_fn(z_mm)` returns the closed
         (x, y) outline at height z. Slicing, templates and BOM then run on the
@@ -401,13 +401,13 @@ class SlicePlan:
     template_alignment_tol_mm: float
     layers: tuple = ()
     top_trim_mm: float = 0.0          # sanded off the top layer to hit exact height
-    tolerance: Optional[StackTolerance] = None
+    tolerance: StackTolerance | None = None
 
     @classmethod
     def plan(cls, body: NoseconeBody, sheet: FoamSheet,
              bondline_mm: float = 0.3, bondline_tol_mm: float = 0.2,
              template_alignment_tol_mm: float = 1.0,
-             outline_pts: int = 80) -> "SlicePlan":
+             outline_pts: int = 80) -> SlicePlan:
         """
         Slice bottom-up. Layer pitch = sheet thickness + bondline; the count is
         the smallest stack that REACHES the crest (the surplus is sanded off the
@@ -482,7 +482,7 @@ class SlicePlan:
         return max(1, math.ceil(self.nesting_area_m2()
                                 / (self.sheet.area_m2() * packing_efficiency)))
 
-    def top_layer_sliver(self) -> Optional[float]:
+    def top_layer_sliver(self) -> float | None:
         """Effective loft thickness inside the top layer, if suspiciously thin.
         A <5 mm working sliver tears during shaping — flagged by the gate."""
         if not self.layers:
@@ -634,7 +634,7 @@ class MaterialsEstimate:
     @classmethod
     def compute(cls, body: NoseconeBody, plan: SlicePlan, recipe: LayupRecipe,
                 sheet: FoamSheet, crew_size: int = 6,
-                packing_efficiency: float = 0.75) -> "MaterialsEstimate":
+                packing_efficiency: float = 0.75) -> MaterialsEstimate:
         if crew_size < 1:
             raise ValueError("crew_size must be at least 1")
         area = body.shell_area_m2()
@@ -797,7 +797,7 @@ class BuildDaySchedule:
 
     @classmethod
     def plan(cls, steps: Sequence[BuildStep], day_start: str = "08:00",
-             day_end: str = "20:00") -> "BuildDaySchedule":
+             day_end: str = "20:00") -> BuildDaySchedule:
         def _mins(hhmm: str) -> int:
             h, m = hhmm.split(":")
             return int(h) * 60 + int(m)
@@ -902,9 +902,9 @@ class PreflightGate:
 
     @classmethod
     def check(cls, plan: SlicePlan, recipe: LayupRecipe,
-              schedule: Optional[BuildDaySchedule] = None,
-              similitude: Optional[SimilitudePlan] = None,
-              crew_size: int = 0) -> "PreflightGate":
+              schedule: BuildDaySchedule | None = None,
+              similitude: SimilitudePlan | None = None,
+              crew_size: int = 0) -> PreflightGate:
         items = []
         # 1. release barrier strictly before any layup (order in the schedule)
         if schedule is not None:
@@ -981,11 +981,11 @@ class PlugBuildPlan:
     recipe: LayupRecipe
     bom: MaterialsEstimate
     schedule: BuildDaySchedule
-    gate: Optional[PreflightGate] = None
-    scale_spec: Optional[ScaleSpec] = None
-    similitude: Optional[SimilitudePlan] = None
+    gate: PreflightGate | None = None
+    scale_spec: ScaleSpec | None = None
+    similitude: SimilitudePlan | None = None
 
-    def tolerance_budget(self) -> Optional[ToleranceBudget]:
+    def tolerance_budget(self) -> ToleranceBudget | None:
         """A ToleranceBudget pre-loaded with the BUILD METHOD's own stack-up
         error, ready for the as-built deviations to be added on top — the direct
         bridge into `scale_model` and the tunnel correlation downstream."""
@@ -1029,8 +1029,8 @@ class PlugBuildPlan:
 # --------------------------------------------------------------------------- #
 #  Streamlit panel — surfaced as an Aerodynamics-tab view; lazy-imports UI deps
 # --------------------------------------------------------------------------- #
-def render_streamlit_panel(scale_spec: Optional[ScaleSpec] = None,
-                           similitude: Optional[SimilitudePlan] = None) -> None:
+def render_streamlit_panel(scale_spec: ScaleSpec | None = None,
+                           similitude: SimilitudePlan | None = None) -> None:
     """The full plug & layup planner as a Streamlit view. Kept in this module so
     the 1 MB app file only carries a three-line hook; imports UI deps lazily so
     the package stays import-light and unit-testable without Streamlit."""

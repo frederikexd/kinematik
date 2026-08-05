@@ -87,7 +87,6 @@ from __future__ import annotations
 
 import numpy as np
 from dataclasses import dataclass, field as _dcfield
-from typing import Dict, List, Optional, Tuple
 
 from .kinematics import Hardpoints, SuspensionKinematics
 from .ghost_topology import _rc_height_mm
@@ -96,7 +95,7 @@ from .ghost_topology import _rc_height_mm
 # --------------------------------------------------------------------------- #
 #  The metric vector — the kinematic intent the yield is judged against.
 # --------------------------------------------------------------------------- #
-METRICS: Tuple[str, ...] = (
+METRICS: tuple[str, ...] = (
     "camber_bump_deg",   # camber at full bump travel (the tyre's loaded lean)
     "bump_steer_deg",    # toe change full droop → full bump (the wander)
     "rc_height_mm",      # roll-centre height at static ride
@@ -115,7 +114,7 @@ _METRIC_LABELS = {
 # The hardpoint fields a tolerance field may perturb. Wheel centre / contact
 # patch are excluded on purpose: they are located by the upright machining and
 # hub, not by shop-floor welds; include them by editing the field explicitly.
-PERTURBABLE_POINTS: Tuple[str, ...] = (
+PERTURBABLE_POINTS: tuple[str, ...] = (
     "upper_front_inner", "upper_rear_inner",
     "lower_front_inner", "lower_rear_inner",
     "upper_outer", "lower_outer",
@@ -126,7 +125,7 @@ _AXES = ("x", "y", "z")
 
 
 def metrics_of(hp: Hardpoints, travel_mm: float = 25.0,
-               n_travel: int = 5) -> Tuple[np.ndarray, bool]:
+               n_travel: int = 5) -> tuple[np.ndarray, bool]:
     """The metric vector for one geometry, plus a converged flag.
 
     A short warm-started sweep (droop → bump) keeps the solver on the correct
@@ -158,7 +157,7 @@ def metrics_of(hp: Hardpoints, travel_mm: float = 25.0,
     return vec, True
 
 
-def _perturbed(hp: Hardpoints, offsets: Dict[str, np.ndarray]) -> Hardpoints:
+def _perturbed(hp: Hardpoints, offsets: dict[str, np.ndarray]) -> Hardpoints:
     """A copy of hp with each named point shifted by its 3-vector offset."""
     new = hp.copy() if hasattr(hp, "copy") else Hardpoints(**{
         k: (np.asarray(v, float).copy() if isinstance(v, np.ndarray) else v)
@@ -195,7 +194,7 @@ class ToleranceSpec:
             raise ValueError(f"Unknown distribution '{self.dist}'.")
 
     @staticmethod
-    def symmetric(r_mm: float, dist: str = "uniform") -> "ToleranceSpec":
+    def symmetric(r_mm: float, dist: str = "uniform") -> ToleranceSpec:
         r = abs(float(r_mm))
         return ToleranceSpec(lo=np.full(3, -r), hi=np.full(3, r), dist=dist)
 
@@ -230,7 +229,7 @@ def _Phi(x: float) -> float:
 @dataclass
 class ToleranceField:
     """point name → ToleranceSpec. Only listed points are perturbed."""
-    specs: Dict[str, ToleranceSpec] = _dcfield(default_factory=dict)
+    specs: dict[str, ToleranceSpec] = _dcfield(default_factory=dict)
 
     def __post_init__(self):
         for name in self.specs:
@@ -243,7 +242,7 @@ class ToleranceField:
     @staticmethod
     def preset(shop: str = "hand_weld",
                weld_pull_mm: float = 0.0,
-               pull_axis: str = "x") -> "ToleranceField":
+               pull_axis: str = "x") -> ToleranceField:
         """Seed a field from a shop class.
 
         hand_weld : hand-welded tabs ±1.5 mm, machined outers ±0.2 mm
@@ -260,7 +259,7 @@ class ToleranceField:
             raise ValueError(f"Unknown shop preset '{shop}'.")
         outers = dict(hand_weld=0.2, jig_weld=0.15, cnc=0.05)[shop]
         ax = {"x": 0, "y": 1, "z": 2}[pull_axis]
-        specs: Dict[str, ToleranceSpec] = {}
+        specs: dict[str, ToleranceSpec] = {}
         for p in ("upper_front_inner", "upper_rear_inner",
                   "lower_front_inner", "lower_rear_inner"):
             spec = ToleranceSpec.symmetric(tabs)
@@ -277,7 +276,7 @@ class ToleranceField:
         return ToleranceField(specs)
 
     # ---- flattening for the linear algebra --------------------------------
-    def coords(self) -> List[Tuple[str, int]]:
+    def coords(self) -> list[tuple[str, int]]:
         """Deterministic (point, axis) coordinate order."""
         return [(p, a) for p in sorted(self.specs) for a in range(3)]
 
@@ -336,12 +335,12 @@ class StochasticThresholds:
 # --------------------------------------------------------------------------- #
 @dataclass
 class Sensitivity:
-    coords: List[Tuple[str, int]]      # (point, axis) per column
+    coords: list[tuple[str, int]]      # (point, axis) per column
     J: np.ndarray                      # (n_metrics, n_coords), unit per mm
     nominal: np.ndarray                # metric vector at the nominal geometry
     step_mm: float
 
-    def coord_labels(self) -> List[str]:
+    def coord_labels(self) -> list[str]:
         return [f"{p}.{_AXES[a]}" for p, a in self.coords]
 
 
@@ -387,15 +386,15 @@ class StochasticResult:
     attribution: np.ndarray         # (n_metrics, n_coords) variance share, linear
     sens: Sensitivity
     bands: np.ndarray
-    verify_agreement: Optional[float]       # linear mode only
-    verify_worst_err: Optional[np.ndarray]  # worst |linear−full| per metric
-    warnings: List[str]
+    verify_agreement: float | None       # linear mode only
+    verify_worst_err: np.ndarray | None  # worst |linear−full| per metric
+    warnings: list[str]
 
-    def worst_metric(self) -> Tuple[str, float]:
+    def worst_metric(self) -> tuple[str, float]:
         i = int(np.argmax(self.fail_frac_per_metric))
         return METRICS[i], float(self.fail_frac_per_metric[i])
 
-    def dominant_coord(self, metric: str) -> Tuple[str, float]:
+    def dominant_coord(self, metric: str) -> tuple[str, float]:
         i = METRICS.index(metric)
         j = int(np.argmax(self.attribution[i]))
         return self.sens.coord_labels()[j], float(self.attribution[i, j])
@@ -407,12 +406,12 @@ def _judge(deltas: np.ndarray, bands: np.ndarray) -> np.ndarray:
 
 
 def stochastic_sweep(hp: Hardpoints, fld: ToleranceField,
-                     yspec: Optional[YieldSpec] = None,
+                     yspec: YieldSpec | None = None,
                      n: int = 5000, seed: int = 0, mode: str = "linear",
                      n_verify: int = 120,
-                     thresholds: Optional[StochasticThresholds] = None,
-                     sens: Optional[Sensitivity] = None,
-                     target: Optional[np.ndarray] = None) -> StochasticResult:
+                     thresholds: StochasticThresholds | None = None,
+                     sens: Sensitivity | None = None,
+                     target: np.ndarray | None = None) -> StochasticResult:
     """Run the tolerance sweep and return the yield with its full anatomy.
 
     mode="linear": first-order propagation of ``n`` samples through J, plus
@@ -429,7 +428,7 @@ def stochastic_sweep(hp: Hardpoints, fld: ToleranceField,
     yspec = yspec or YieldSpec()
     th = thresholds or StochasticThresholds()
     bands = yspec.bands()
-    warnings: List[str] = []
+    warnings: list[str] = []
     if not fld.specs:
         raise ValueError("Empty tolerance field — declare at least one point.")
     if mode not in ("linear", "full"):
@@ -538,9 +537,9 @@ def stochastic_sweep(hp: Hardpoints, fld: ToleranceField,
         warnings=warnings)
 
 
-def _unflatten(vec: np.ndarray, coords: List[Tuple[str, int]]
-               ) -> Dict[str, np.ndarray]:
-    offs: Dict[str, np.ndarray] = {}
+def _unflatten(vec: np.ndarray, coords: list[tuple[str, int]]
+               ) -> dict[str, np.ndarray]:
+    offs: dict[str, np.ndarray] = {}
     for (p, a), v in zip(coords, vec):
         offs.setdefault(p, np.zeros(3))[a] = v
     return offs
@@ -553,16 +552,16 @@ def _unflatten(vec: np.ndarray, coords: List[Tuple[str, int]]
 class RobustNudge:
     ok: bool
     reason: str
-    shifts: Dict[str, np.ndarray]           # point -> nominal shift, mm
+    shifts: dict[str, np.ndarray]           # point -> nominal shift, mm
     predicted_yield: float                  # linear model, after the nudge
     baseline_yield: float                   # linear model, before
-    verified_yield: Optional[float]         # full-solve check on the nudged
-    clamped: List[str]                      # coordinates that hit the freedom box
+    verified_yield: float | None         # full-solve check on the nudged
+    clamped: list[str]                      # coordinates that hit the freedom box
 
 
 def robust_nudge(hp: Hardpoints, fld: ToleranceField,
                  res: StochasticResult,
-                 freedom_mm: float | Dict[str, float] = 3.0,
+                 freedom_mm: float | dict[str, float] = 3.0,
                  seed: int = 0, n_verify_full: int = 0) -> RobustNudge:
     """Re-centre the nominal against an asymmetric field.
 
@@ -601,7 +600,7 @@ def robust_nudge(hp: Hardpoints, fld: ToleranceField,
 
     # clamp to the freedom boxes, honestly listing clamped coordinates
     labels = res.sens.coord_labels()
-    clamped: List[str] = []
+    clamped: list[str] = []
     for j, (p, a) in enumerate(res.sens.coords):
         lim = abs(float(freedom_mm[p] if isinstance(freedom_mm, dict)
                         else freedom_mm))
@@ -681,15 +680,15 @@ class Adjuster:
 class Prescription:
     ok: bool
     verdict: str                    # RESTORED | PARTIAL | UNSHIMMABLE
-    moves_mm: List[float]           # per adjuster, rounded to its step
-    adjusters: List[Adjuster]
+    moves_mm: list[float]           # per adjuster, rounded to its step
+    adjusters: list[Adjuster]
     delta_before: np.ndarray        # as-built − nominal metrics
     delta_after: np.ndarray         # full-solve residual after the moves
     bands: np.ndarray
-    unreachable: List[str]          # metrics no declared adjuster can move
-    warnings: List[str]
+    unreachable: list[str]          # metrics no declared adjuster can move
+    warnings: list[str]
 
-    def lines(self) -> List[str]:
+    def lines(self) -> list[str]:
         out = []
         for adj, mv in zip(self.adjusters, self.moves_mm):
             if abs(mv) < 1e-9:
@@ -699,9 +698,9 @@ class Prescription:
 
 
 def alignment_prescription(hp_nominal: Hardpoints,
-                           as_built: Dict[str, np.ndarray],
-                           adjusters: List[Adjuster],
-                           yspec: Optional[YieldSpec] = None) -> Prescription:
+                           as_built: dict[str, np.ndarray],
+                           adjusters: list[Adjuster],
+                           yspec: YieldSpec | None = None) -> Prescription:
     """Turn measured as-built coordinates into a shim-pack prescription.
 
     1. The as-built geometry (nominal + measured shifts) is solved in FULL —
@@ -719,7 +718,7 @@ def alignment_prescription(hp_nominal: Hardpoints,
     """
     yspec = yspec or YieldSpec()
     bands = yspec.bands()
-    warnings: List[str] = []
+    warnings: list[str] = []
     for name in as_built:
         if not hasattr(hp_nominal, name) or getattr(hp_nominal, name) is None:
             raise ValueError(f"Measured point '{name}' is not a hardpoint.")
@@ -769,7 +768,7 @@ def alignment_prescription(hp_nominal: Hardpoints,
     W = 1.0 / np.where(bands > 0, bands, 1.0)
     x, *_ = np.linalg.lstsq(Ja * W[:, None], -(d0 * W), rcond=None)
 
-    moves: List[float] = []
+    moves: list[float] = []
     for j, adj in enumerate(adjusters):
         v = float(np.clip(x[j], adj.lo, adj.hi))
         if adj.step and adj.step > 0:
@@ -782,7 +781,7 @@ def alignment_prescription(hp_nominal: Hardpoints,
                    if reach[i] < 1e-6 and abs(d0[i]) > bands[i]]
 
     # verify with a full solve
-    move_offs: Dict[str, np.ndarray] = {}
+    move_offs: dict[str, np.ndarray] = {}
     for adj, mv in zip(adjusters, moves):
         move_offs[adj.point] = move_offs.get(adj.point, np.zeros(3)) \
             + adj.direction() * mv
@@ -813,9 +812,9 @@ def alignment_prescription(hp_nominal: Hardpoints,
 #  Markdown reports.
 # --------------------------------------------------------------------------- #
 def render_stochastic_md(res: StochasticResult,
-                         nudge: Optional[RobustNudge] = None,
+                         nudge: RobustNudge | None = None,
                          title: str = "corner") -> str:
-    L: List[str] = []
+    L: list[str] = []
     L.append(f"# 🎲🛡️ Stochastic Inversion — {title}")
     L.append("")
     L.append(f"**Verdict: {res.verdict}** — manufacturing yield "
@@ -865,7 +864,7 @@ def render_stochastic_md(res: StochasticResult,
 
 def render_prescription_md(rx: Prescription,
                            title: str = "corner") -> str:
-    L: List[str] = []
+    L: list[str] = []
     L.append(f"# 🔧 Alignment Prescription — {title}")
     L.append("")
     L.append(f"**Verdict: {rx.verdict}**")

@@ -22,7 +22,7 @@ import hashlib
 import json
 import math
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from collections.abc import Iterable, Sequence
 
 import numpy as np
 
@@ -44,7 +44,7 @@ TRUE_CAD = "TRUE_CAD"
 MISFIT = "MISFIT"
 QUARANTINED = "QUARANTINED"
 
-_FSM: Dict[Tuple[str, str], str] = {
+_FSM: dict[tuple[str, str], str] = {
     (DUMMY, "upload_start"): UPLOADING,
     (UPLOADING, "upload_ok"): REGISTERING,
     (UPLOADING, "upload_fail"): QUARANTINED,
@@ -93,9 +93,9 @@ class SlotDef:
     """
     slot_key: str
     subsystem: str
-    anchor_keys: Tuple[str, ...]
+    anchor_keys: tuple[str, ...]
     kind: str = "envelope"
-    axis_pair: Tuple[int, int] = (0, 1)
+    axis_pair: tuple[int, int] = (0, 1)
     secondary: int = 2
     margin_mm: float = DEFAULT_MARGIN_MM
     min_dim_mm: float = DEFAULT_MIN_DIM_MM
@@ -120,9 +120,9 @@ class SlotFit:
     center: np.ndarray            # (3,) world mm
     rotation: np.ndarray          # (3,3) orthonormal, det = +1
     size: np.ndarray              # (3,) dummy L,W,H (or r,r,ℓ for bridges)
-    flags: List[Flag] = field(default_factory=list)
+    flags: list[Flag] = field(default_factory=list)
 
-    def aabb(self) -> Tuple[np.ndarray, np.ndarray]:
+    def aabb(self) -> tuple[np.ndarray, np.ndarray]:
         """World axis-aligned bounds of the oriented box (broadphase)."""
         half = np.abs(self.rotation) @ (self.size / 2.0)
         return self.center - half, self.center + half
@@ -139,7 +139,7 @@ class SlotFit:
 #  §1.2 — slot frame from live anchors
 # --------------------------------------------------------------------------
 def slot_frame(anchors: np.ndarray, axis_pair=(0, 1), secondary=2
-               ) -> Tuple[np.ndarray, np.ndarray, Optional[str]]:
+               ) -> tuple[np.ndarray, np.ndarray, str | None]:
     """Derive (centroid, R) from world anchor vectors.
 
     Returns (c, R, err) where err is None or 'degenerate_frame'.  On a
@@ -172,7 +172,7 @@ def fit_envelope_dummy(anchors: np.ndarray, sd: SlotDef) -> SlotFit:
     """Case A: k>=3 anchors → oriented box sized to the anchor cloud."""
     a = np.asarray(anchors, float).reshape(-1, 3)
     c, R, err = slot_frame(a, sd.axis_pair, sd.secondary)
-    flags: List[Flag] = []
+    flags: list[Flag] = []
     if err:
         flags.append(Flag(sd.slot_key, "degenerate_frame", "warn",
                           {"n_anchors": int(len(a))}))
@@ -194,7 +194,7 @@ def fit_bridge_dummy(p0, p1, sd: SlotDef) -> SlotFit:
     p1 = np.asarray(p1, float)
     d = p1 - p0
     ell = float(np.linalg.norm(d))
-    flags: List[Flag] = []
+    flags: list[Flag] = []
     if ell < 1e-6:
         flags.append(Flag(sd.slot_key, "degenerate_frame", "warn",
                           {"reason": "coincident bridge anchors"}))
@@ -283,8 +283,8 @@ def register_part(connectors_local: np.ndarray, anchors_world: np.ndarray,
 
 
 def check_registration(reg: Registration, sd: SlotDef,
-                       anchor_names: Optional[Sequence[str]] = None
-                       ) -> Optional[Flag]:
+                       anchor_names: Sequence[str] | None = None
+                       ) -> Flag | None:
     """Level-1 interference check: residual vs the slot's τ_fit.  Returns a
     hardpoint_mismatch flag naming the worst anchor, or None if within tol.
     Called at upload (severity 'block' → QUARANTINED) and re-called on every
@@ -304,12 +304,12 @@ def check_registration(reg: Registration, sd: SlotDef,
 #  §4 — Level-2 broadphase interference (AABB sweep)
 # --------------------------------------------------------------------------
 def aabb_overlaps(fits: Sequence[SlotFit],
-                  allow_pairs: Iterable[Tuple[str, str]] = ()) -> List[Flag]:
+                  allow_pairs: Iterable[tuple[str, str]] = ()) -> list[Flag]:
     """Pairwise world-AABB overlap minus the intended-contact allow-list.
     O(n²) on a few hundred boxes — microseconds; run on every solve."""
     allowed = {frozenset(p) for p in allow_pairs}
     boxes = [(f.slot_key, *f.aabb()) for f in fits]
-    out: List[Flag] = []
+    out: list[Flag] = []
     for i in range(len(boxes)):
         ki, lo_i, hi_i = boxes[i]
         for j in range(i + 1, len(boxes)):
@@ -337,7 +337,7 @@ def assembly_completion_index(rows: Sequence[dict]) -> dict:
     """
     num = den = 0.0
     n_cad = 0
-    per_subsystem: Dict[str, List[float]] = {}
+    per_subsystem: dict[str, list[float]] = {}
     for r in rows:
         wv = float(r.get("criticality", 1.0)) * float(r.get("volume_mm3", 0.0))
         st = r.get("state", DUMMY)
@@ -368,7 +368,7 @@ def assembly_completion_index(rows: Sequence[dict]) -> dict:
     }
 
 
-def aci_from_part_boxes(part_boxes: Dict[str, dict],
+def aci_from_part_boxes(part_boxes: dict[str, dict],
                         custom_parts: Sequence[dict]) -> dict:
     """Bridge for the existing Streamlit app: compute the ACI from the boxes
     fullcar3d actually drew (fig._part_boxes: name → {centre, size}) plus
@@ -385,7 +385,7 @@ def aci_from_part_boxes(part_boxes: Dict[str, dict],
         for key in ("replaces_drawname", "replaces_dummy"):
             if p.get(key):
                 replaced.add(p[key])
-    rows: List[dict] = []
+    rows: list[dict] = []
     for name, box in (part_boxes or {}).items():
         if name in replaced:
             continue                          # its volume re-enters as CAD below
@@ -424,7 +424,7 @@ def commit_hash(entries: Sequence[dict]) -> str:
 # --------------------------------------------------------------------------
 #  Default FSAE suspension slot catalog (per corner, 15-key hardpoint set)
 # --------------------------------------------------------------------------
-def corner_slots(corner: str) -> List[SlotDef]:
+def corner_slots(corner: str) -> list[SlotDef]:
     """Slots for one corner ('fl','fr','rl','rr') over the standard hardpoint
     keys.  Envelope slots orient on real mechanical axes (upright: kingpin);
     bridges span exactly the gap their missing member must close."""
@@ -457,15 +457,15 @@ def corner_slots(corner: str) -> List[SlotDef]:
     ]
 
 
-def evaluate_corner(corner: str, points: Dict[str, Sequence[float]],
-                    slots: Optional[List[SlotDef]] = None
-                    ) -> Tuple[List[SlotFit], List[Flag]]:
+def evaluate_corner(corner: str, points: dict[str, Sequence[float]],
+                    slots: list[SlotDef] | None = None
+                    ) -> tuple[list[SlotFit], list[Flag]]:
     """Fit every slot of one corner against its solved world hardpoints.
     `points`: hardpoint key → (x,y,z) world mm (e.g. _solved_corner_points).
     Slots whose anchors are missing from `points` are skipped — a partial
     kinematics table degrades to a partial dummy set, never to an error."""
-    fits: List[SlotFit] = []
-    flags: List[Flag] = []
+    fits: list[SlotFit] = []
+    flags: list[Flag] = []
     for sd in (slots if slots is not None else corner_slots(corner)):
         try:
             a = np.array([points[k] for k in sd.anchor_keys], float)

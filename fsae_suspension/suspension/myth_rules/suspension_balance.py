@@ -5,7 +5,7 @@
 ``VehicleParams`` (or dict with mass/cg_height/track/etc). Checks against the
 real load-transfer relationships in ``dynamics`` where numbers are given."""
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any
 from ..mythbuster import CheckOutcome, ParsedClaim, Rule, Verdict, register
 
 
@@ -20,7 +20,7 @@ def _vp(context: Any):
 
 
 # Stiffer is always better / faster
-def _r_stiffer_better(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_stiffer_better(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("stiff", "stiffer", "harder spring", "stiffer spring",
                       "stiffer bar") and
             claim.has("faster", "better", "more grip", "always", "more responsive")):
@@ -40,7 +40,7 @@ _r_stiffer_better.reference_claim = "Stiffer springs always make the car faster.
 
 
 # Lower CG always helps (this one is essentially TRUE, and worth confirming)
-def _r_lower_cg(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_lower_cg(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("lower cg", "lower centre", "lower center", "cg height",
                       "low cg") and
             claim.has("better", "more grip", "helps", "faster", "less transfer")):
@@ -64,7 +64,7 @@ _r_lower_cg.reference_claim = "A lower centre of gravity helps almost everywhere
 
 
 # Anti-roll bar adds grip
-def _r_arb_adds_grip(claim: ParsedClaim, context: Any) -> Optional[CheckOutcome]:
+def _r_arb_adds_grip(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
     if not (claim.has("anti-roll", "antiroll", "arb", "sway bar", "roll bar") and
             claim.has("grip", "more grip", "adds grip", "increases grip")):
         return None

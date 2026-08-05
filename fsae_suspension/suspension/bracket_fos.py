@@ -76,7 +76,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 
 from .interfaces import Finding, Severity
 
@@ -198,7 +197,7 @@ class Bracket:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "Bracket":
+    def from_dict(d) -> Bracket:
         d = dict(d)
         valid = Bracket.__dataclass_fields__.keys()
         return Bracket(**{k: v for k, v in d.items() if k in valid})
@@ -286,8 +285,14 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
 
     area = w * t                       # gross cross-section, mm²
     modes: list = []
+    # Geometry findings raised during the mode sweep below land here; the
+    # verdict findings further down append to the same list.
+    findings: list = []
 
-    # 1) Direct stress on the gross section -------------------------------------
+    # 1) Direct stress on the GROSS section -------------------------------------
+    #    Kept as the headline section number. The net-section check below is the
+    #    one that governs a bolted tab; this stays so a member can still see the
+    #    unbolted section stress they may be comparing against by hand.
     direct = P / area
     if br.load_is_shear:
         modes.append(ModeResult("direct shear (section)", direct, Ssy, Ssy / direct
@@ -296,9 +301,40 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
         modes.append(ModeResult("direct tension (section)", direct, Sy, Sy / direct
                                 if direct > 0 else math.inf))
 
+    # 1b) Direct stress on the NET section ---------------------------------------
+    #     A bolt hole removes material from the load path. Screening a bolted tab
+    #     on its gross section is unconservative by exactly the ratio w/(w-d) —
+    #     for a 30 mm tab with an 8.4 mm hole that is 39% of stress hidden, on a
+    #     tool whose output feeds a 1.5 FoS gate.
+    #
+    #     This is added as an EXTRA mode rather than replacing the gross figure,
+    #     because min_fos takes the minimum across modes: the screen gets
+    #     stricter without deleting a number anyone was already reading. Errors
+    #     in a screening tool must only ever move in the conservative direction.
+    if br.hole_dia_mm and br.hole_dia_mm > 0:
+        net_w = w - float(br.hole_dia_mm)
+        if net_w <= 0:
+            findings.append(Finding(
+                "bracket-fos", Severity.FAIL,
+                f"Hole ⌀{br.hole_dia_mm:g} mm is as wide as or wider than the "
+                f"{w:g} mm tab — there is no net section left to carry load.",
+                subsystems=["chassis"]))
+        else:
+            net_area = net_w * t
+            net = P / net_area
+            if br.load_is_shear:
+                modes.append(ModeResult("direct shear (net section at hole)", net,
+                                        Ssy, Ssy / net if net > 0 else math.inf))
+            else:
+                modes.append(ModeResult("direct tension (net section at hole)", net,
+                                        Sy, Sy / net if net > 0 else math.inf))
+
     # 2) Bending of the cantilever foot, σ = M·c / I ----------------------------
-    #    Plate bending about its strong axis: I = w·t³/12 if the load bends it
-    #    across the thickness (typical thin tab), c = t/2.
+    #    I = w·t³/12 is bending about the WEAK axis — the load bends the tab
+    #    across its thickness, which is the governing case for a typical thin
+    #    tab and the conservative one. (The comment here previously said
+    #    "strong axis", which contradicts the formula and has a habit of being
+    #    copied into design-review slides.) c = t/2.
     if br.lever_arm_mm and br.lever_arm_mm > 0:
         M = P * float(br.lever_arm_mm)         # N·mm
         I = w * t**3 / 12.0                     # mm⁴
@@ -317,13 +353,31 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
                                 Sy / bearing if bearing > 0 else math.inf))
 
     # 4) Tear-out / shear-out between hole and free edge ------------------------
-    #    Two shear planes of length edge_dist through thickness t carry the load.
+    #    The two shear planes run from the EDGE OF THE HOLE to the free edge, so
+    #    their length is (e - d/2), not e. Measuring from the hole CENTRE counts
+    #    the hole itself as load-carrying material and overstates the shear area
+    #    by d/(2e - d) — for a ⌀8.4 hole at 12 mm edge distance that is 54% of
+    #    area that isn't there, in the unconservative direction.
+    #
+    #    This was a straight error rather than a convention choice: there is no
+    #    school of practice in which the material inside the hole resists
+    #    tear-out.
     if br.hole_dia_mm and br.hole_dia_mm > 0 and br.edge_dist_mm and br.edge_dist_mm > 0:
         nb = max(int(br.n_bolts), 1)
-        shear_area = 2.0 * br.edge_dist_mm * t      # two planes
-        tear = (P / nb) / shear_area
-        modes.append(ModeResult("hole tear-out (shear)", tear, Ssy,
-                                Ssy / tear if tear > 0 else math.inf))
+        plane_len = float(br.edge_dist_mm) - float(br.hole_dia_mm) / 2.0
+        if plane_len <= 0:
+            findings.append(Finding(
+                "bracket-fos", Severity.FAIL,
+                f"Edge distance {br.edge_dist_mm:g} mm is less than the hole "
+                f"radius ({br.hole_dia_mm / 2:g} mm) — the hole breaks out "
+                "through the free edge. There is no tear-out path to check; "
+                "fix the geometry before reading any factor of safety here.",
+                subsystems=["chassis"]))
+        else:
+            shear_area = 2.0 * plane_len * t        # two planes, hole edge → free edge
+            tear = (P / nb) / shear_area
+            modes.append(ModeResult("hole tear-out (shear)", tear, Ssy,
+                                    Ssy / tear if tear > 0 else math.inf))
 
     # 5) Fillet-weld throat shear (the "design for welding" check) --------------
     if br.weld_leg_mm and br.weld_leg_mm > 0 and br.weld_length_mm and br.weld_length_mm > 0:
@@ -363,7 +417,10 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
         verdict = "PASS"
 
     # ---- findings (owned by chassis, board-renderable) -----------------------
-    findings: list = []
+    #  NOTE: `findings` is initialised at the top of this function — geometry
+    #  problems found during the mode sweep (a hole wider than the tab, a hole
+    #  breaking out through the free edge) are already in it. Do NOT re-bind it
+    #  here; that silently discarded those.
     est_tag = " (estimated geometry/load)" if br.is_estimate else ""
     govlabel = gov.mode
     if verdict == "FAIL":
@@ -415,7 +472,7 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
 # --------------------------------------------------------------------------- #
 #  Material trade helper — the 1018 vs 4130 question, in numbers
 # --------------------------------------------------------------------------- #
-def compare_materials(br: Bracket, materials: Optional[list] = None,
+def compare_materials(br: Bracket, materials: list | None = None,
                       fos_target: float = 1.5) -> list:
     """Screen the SAME bracket across several materials so the 4130→1018 decision
     in the brief is a table of FoS numbers, not a hand-wave. Returns a list of
