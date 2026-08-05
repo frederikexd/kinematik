@@ -735,12 +735,17 @@ def _ax_store(feature, bucket):
     return _feat.setdefault(bucket, [])
 
 
-def capture_metric(label, value, *, feature=None, delta=None):
+def capture_metric(label, value, *, feature=None, delta=None, quality=None):
     """Record one headline number for a feature's documentation. Never raises.
 
     Deduped by label with last-value-wins, because a metric is re-rendered on
     every rerun and the report wants the CURRENT value, not a history of every
     intermediate one the user scrubbed through on a slider.
+
+    ``quality`` carries the card's own status class ("good" / "warn" / "bad")
+    where the call site had one. The app already colours these numbers on
+    screen; passing the class through means the report can show the same
+    judgement instead of flattening a failing number into a neutral one.
     """
     try:
         _f = feature or _ax_capture_feature()
@@ -750,16 +755,18 @@ def capture_metric(label, value, *, feature=None, delta=None):
         _val = str(value).strip()
         if not _lbl or not _val:
             return
+        _q = str(quality).strip().lower() if quality else ""
         _rows = _ax_store(_f, "metrics")
         for _r in _rows:
             if _r.get("label") == _lbl:
                 _r["value"] = _val
                 if delta:
                     _r["delta"] = str(delta)
+                _r["quality"] = _q
                 return
         if len(_rows) >= _MAX_CAPTURED_METRICS:
             return
-        _row = {"label": _lbl, "value": _val}
+        _row = {"label": _lbl, "value": _val, "quality": _q}
         if delta:
             _row["delta"] = str(delta)
         _rows.append(_row)
@@ -794,18 +801,28 @@ def capture_verdict(text, severity="info", *, feature=None):
         pass
 
 
-def capture_artifact(kind, title, detail="", *, feature=None):
+def capture_artifact(kind, title, detail="", *, feature=None, figure=None):
     """Record that a feature produced a chart / table / other visual result.
 
     Many features' real output is a plot or a table, not a metric — a lap-time
     trace, a GG-V envelope, a tyre curve, a BOM. Those documented as "Ran a
     calculation" and nothing else. This records WHAT was produced and its shape
     (axes, series, row/column counts), which is what a design-review reader needs
-    to know a plot exists and what it showed. The pixels themselves aren't
-    captured — a Markdown report can't hold them — but "Lap time vs corner radius,
-    3 series" is far better than silence.
+    to know a plot exists and what it showed.
 
-    Deduped on (kind, title): a chart re-renders on every rerun.
+    When a plotly ``figure`` is supplied we ALSO keep a compacted copy of its
+    spec, so the PDF can draw the actual chart rather than only naming it. What
+    is stored is a plain dict with long series decimated (see
+    report_figures.compact_spec) — not the live figure object, which would pin
+    numpy buffers alive for the session and could be mutated underneath us.
+
+    Rasterization is NOT done here. It happens once, lazily, when a member asks
+    for a PDF (report_figures.figure_png). Rendering on capture would put an
+    image encode on every rerun of every chart, which is the kind of always-on
+    cost that gets a documentation layer switched off.
+
+    Deduped on (kind, title): a chart re-renders on every rerun, and the report
+    wants the latest version of each chart, so a repeat refreshes the spec.
     """
     try:
         _f = feature or _ax_capture_feature()
@@ -814,18 +831,77 @@ def capture_artifact(kind, title, detail="", *, feature=None):
         _t = " ".join(str(title).split())[:160]
         if not _t:
             return
+        _spec = None
+        if figure is not None:
+            try:
+                from suspension import report_figures as _rfg
+                _spec = _rfg.compact_spec(figure)
+            except Exception:
+                _spec = None       # a chart with no spec still gets its name
         _rows = _ax_store(_f, "artifacts")
         for _r in _rows:
             if _r.get("kind") == kind and _r.get("title") == _t:
                 if detail:
                     _r["detail"] = str(detail)[:200]
+                if _spec is not None:
+                    _r["spec"] = _spec
                 return
         if len(_rows) >= _MAX_CAPTURED_ARTIFACTS:
             return
-        _rows.append({"kind": str(kind), "title": _t,
-                      "detail": str(detail)[:200] if detail else ""})
+        _row = {"kind": str(kind), "title": _t,
+                "detail": str(detail)[:200] if detail else ""}
+        if _spec is not None:
+            _row["spec"] = _spec
+        _rows.append(_row)
     except Exception:
         pass
+
+
+def figure_ref(feature, index):
+    """Stable Markdown target for one captured figure.
+
+    Kept free of spaces and parentheses so it survives the Markdown link
+    grammar, and prefixed with the feature id so refs from different features
+    can share one document (the Integration Document) without colliding.
+    """
+    return f"{str(feature).replace(' ', '_')}~{int(index)}"
+
+
+def collect_report_figures(features=None):
+    """``{ref: png_bytes}`` for every captured chart that can actually be drawn.
+
+    This is the expensive step, and it runs exactly once per PDF export — never
+    on a rerun. Charts that no renderer can handle (3-D models, the full-car
+    view) are simply absent from the mapping; render_pdf then prints an honest
+    "figure not exported" line rather than a gap.
+
+    ``features`` is an iterable of feature ids, or None for every feature that
+    captured something this session (what the Integration Document needs).
+    """
+    _out = {}
+    try:
+        from suspension import report_figures as _rfg
+    except Exception:
+        return _out
+    try:
+        _all = st.session_state.get(_FEATURE_RESULTS_KEY, {}) or {}
+        _feats = list(_all.keys()) if features is None else [
+            str(f) for f in features]
+        for _f in _feats:
+            _arts = (_all.get(_f) or {}).get("artifacts") or []
+            for _i, _r in enumerate(_arts):
+                _spec = _r.get("spec")
+                if not _spec:
+                    continue
+                try:
+                    _png = _rfg.figure_png(_spec)
+                except Exception:
+                    _png = None
+                if _png:
+                    _out[figure_ref(_f, _i)] = _png
+    except Exception:
+        pass
+    return _out
 
 
 def _ax_plot_summary(fig):
@@ -902,7 +978,7 @@ def _ax_wrap_chart(_orig):
                 # that work was done, so record it rather than dropping it.
                 if _title or _shape:
                     capture_artifact("chart", _title or "(untitled chart)",
-                                     _shape)
+                                     _shape, figure=_fig)
         except Exception:
             pass
         return _orig(*args, **kwargs)
@@ -1418,6 +1494,22 @@ def metric(label, value, unit="", cls=""):
     else:
         value = units_mod.convert_value_str(str(value), unit)
         unit = units_mod.label(unit)
+    # Feed the documentation capture layer.
+    #
+    # This is where every headline number in KinematiK actually comes from:
+    # ~500 call sites render their cards through here, and only two use
+    # Streamlit's native st.metric. The capture layer patches st.metric, so
+    # until now it saw essentially nothing — which is exactly why feature and
+    # subsystem reports came out as a list of chart titles with no figures in
+    # them. Capturing at the ONE point every card passes through fixes all 500
+    # sites at once and cannot drift when someone adds a tool.
+    #
+    # Post-conversion on purpose: the report must record the number the member
+    # was looking at, in the unit system they had selected.
+    try:
+        capture_metric(label, f"{value} {unit}".strip(), quality=cls or None)
+    except Exception:
+        pass       # documentation must never break a render
     return f"""<div class="metric"><span class="k">{label}</span>
     <span class="v {cls}">{value}<span class="u"> {unit}</span></span></div>"""
 
@@ -10212,7 +10304,9 @@ def render_feature_documentation(feature, *, key_prefix=None):
                     import tempfile as _tf, os as _os
                     _pp = _os.path.join(_tf.gettempdir(),
                                         f"elbee_feature_{_safe}.pdf")
-                    project_mod.render_pdf(_md, _pp)
+                    with st.spinner("Rendering charts into the PDF…"):
+                        project_mod.render_pdf(
+                            _md, _pp, figures=collect_report_figures([_feat]))
                     with open(_pp, "rb") as _pf:
                         _pdf_bytes = _pf.read()
                     _pdf_ok = True
@@ -10298,7 +10392,11 @@ def render_integration_document_panel(*, key_prefix="integration_doc"):
             import tempfile as _tf, os as _os
             _pp = _os.path.join(_tf.gettempdir(),
                                 "elbee_integration_document.pdf")
-            project_mod.render_pdf(_md, _pp)
+            # No feature filter: the Integration Document spans every committed
+            # feature, so it resolves figures from the whole session.
+            with st.spinner("Rendering charts into the PDF…"):
+                project_mod.render_pdf(_md, _pp,
+                                       figures=collect_report_figures())
             with open(_pp, "rb") as _pf:
                 _pdf_bytes = _pf.read()
             _pdf_ok = True
@@ -13013,7 +13111,13 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
       try:
           import tempfile as _tf3, os as _os3
           _pdf_path = _os3.path.join(_tf3.gettempdir(), f"elbee_{_safe}_report.pdf")
-          project_mod.render_pdf(_md, _pdf_path)
+          # Figures for every feature THIS subsystem owns — the same set whose
+          # captured sections _build_md() just wrote into the Markdown.
+          _sub_feats = [_f for _f, _s in _FEATURE_SUBSYS.items()
+                        if _s == str(subsystem_key)]
+          with st.spinner("Rendering charts into the PDF…"):
+              project_mod.render_pdf(
+                  _md, _pdf_path, figures=collect_report_figures(_sub_feats))
           with open(_pdf_path, "rb") as _pf:
               _pdf_bytes = _pf.read()
           _pdf_ok = True
@@ -13101,6 +13205,20 @@ def _mark_for(text, severity):
     return _SEVERITY_MARK.get(severity, "•")
 
 
+# Status class on a headline card -> the mark that goes in the report's results
+# table. The app already colours these numbers green/amber on screen; carrying
+# the same judgement into the document means a reader sees which numbers the
+# tool was unhappy about instead of a uniform wall of figures.
+_QUALITY_MARK = {"good": "ok", "warn": "⚠ check", "bad": "✗ fail",
+                 "": "", None: ""}
+
+# Markdown target scheme for captured figures. Must match
+# suspension.project.FIGURE_SCHEME — the constant is duplicated rather than
+# imported because project is a LAZY module here (see _SUSP_MODULES) and this
+# builder runs on paths that must not force it to load.
+_FIG_SCHEME = "kinematik-fig:"
+
+
 def _captured_result_sections(feature):
     """(heading, [lines]) built from one feature's captured metrics + verdicts.
 
@@ -13116,10 +13234,15 @@ def _captured_result_sections(feature):
     _label = _feature_label(feature)
     _out = []
     if _metrics:
-        _lines = []
+        # A TABLE, not a bullet list. These are the numbers a design-review
+        # reader scans and cross-checks against the rules, and render_pdf
+        # already lays Markdown tables out properly — a column of values you
+        # can run an eye down beats 20 bullets that all read the same.
+        _lines = ["| Result | Value | Status |", "|---|---|---|"]
         for _r in _metrics:
             _d = f" ({_r['delta']})" if _r.get("delta") else ""
-            _lines.append(f"- {_r['label']}: **{_r['value']}**{_d}")
+            _lines.append(f"| {_r['label']} | **{_r['value']}**{_d} "
+                          f"| {_QUALITY_MARK.get(_r.get('quality', ''), '')} |")
         _out.append((f"{_label} — results", _lines))
     if _verdicts:
         _lines = []
@@ -13128,15 +13251,23 @@ def _captured_result_sections(feature):
             _lines.append(f"- {_mark} {_r['text']}".replace("-  ", "- "))
         _out.append((f"{_label} — checks & verdicts", _lines))
     if _artifacts:
-        # For plenty of features the plot IS the result, so naming it and its
-        # shape is the difference between a document that reflects the work and
-        # one that looks empty.
+        # For plenty of features the plot IS the result. Where we captured the
+        # figure's spec, emit an image reference so the PDF draws the actual
+        # chart; render_pdf resolves it against the mapping built by
+        # collect_report_figures. Tables, and charts we could not capture, keep
+        # the text description — the document still records that they exist.
         _lines = []
-        for _r in _artifacts:
-            _mark = "📈" if _r.get("kind") == "chart" else "📋"
+        for _i, _r in enumerate(_artifacts):
+            _title = _r.get("title", "")
             _dtl = f" — {_r['detail']}" if _r.get("detail") else ""
-            _lines.append(f"- {_mark} {_r.get('title','')}{_dtl}")
-        _out.append((f"{_label} — charts & tables produced", _lines))
+            if _r.get("kind") == "chart" and _r.get("spec"):
+                _cap = f"{_title}{_dtl}".replace("]", ")").replace("[", "(")
+                _lines.append(f"![{_cap}]({_FIG_SCHEME}"
+                              f"{figure_ref(feature, _i)})")
+            else:
+                _mark = "📈" if _r.get("kind") == "chart" else "📋"
+                _lines.append(f"- {_mark} {_title}{_dtl}")
+        _out.append((f"{_label} — charts & tables", _lines))
     return _out
 
 

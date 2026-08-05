@@ -33,6 +33,18 @@ fast_simplification>=0.1   # faster CAD-part decimation for the 3D model (option
                            # falls back to built-in vertex clustering if absent)
 rtree>=1.0         # chassis/part collision queries via trimesh.proximity
 reportlab>=4.0     # PDF design-handover export         (project.py: render_pdf)
+matplotlib>=3.7    # renders the CAPTURED CHARTS into the report PDFs
+                   #  (suspension/report_figures.py). Pure wheel, no system
+                   #  package, no browser — which is why it is the default
+                   #  renderer rather than plotly's own kaleido. Kaleido v1+
+                   #  shells out to headless Chrome, which is not present on
+                   #  Streamlit Cloud and would need chromium in packages.txt
+                   #  (~300 MB and a much slower cold start). report_figures
+                   #  probes kaleido once and uses it when it really works
+                   #  (typically local dev, for pixel-exact export), otherwise
+                   #  re-plots the captured trace data here. Without matplotlib
+                   #  the reports still build — charts degrade to their text
+                   #  description, exactly as before this feature.
 gTTS>=2.5          # downloadable MP3 of the mission briefing (streamlit_app.py:
                    #  _briefing_mp3_bytes). Needs network at call time; the app
                    #  and the offline HTML/txt briefing downloads work without it.

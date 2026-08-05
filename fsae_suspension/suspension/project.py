@@ -1160,25 +1160,195 @@ def build_handover_markdown(store: ProjectStore,
     return "\n".join(L)
 
 
-def render_pdf(markdown_text: str, out_path: str):
-    """Render the handover Markdown to a clean PDF via reportlab."""
+#: Markdown image lines whose target uses this scheme are report FIGURES: the
+#: charts the app captured while the member worked. They are resolved from the
+#: ``figures`` mapping handed to :func:`render_pdf` rather than from disk, so
+#: the Markdown stays a plain portable string (it is also offered as a .md
+#: download, and persisted into the Integration Ledger) while the PDF still
+#: gets real pixels.
+FIGURE_SCHEME = "kinematik-fig:"
+
+#: Codepoints above the BMP are pictographic emoji (📐 📈 📋 ⬇ …). ReportLab's
+#: built-in Type-1 fonts have no glyph for them and neither does any TTF we can
+#: rely on shipping, so they render as a black tofu box — which is what the "■"
+#: at the start of every heading in the old reports actually was. The app's
+#: on-screen labels are full of them and should stay that way; they are stripped
+#: HERE, at the PDF boundary, and nowhere else.
+#:
+#: BMP symbols (✓ ✗ ⚠ ° · —) are deliberately NOT stripped: DejaVu covers them,
+#: and they carry the verdict marks the report exists to communicate.
+_EMOJI_RE = None
+_FONT_STATE = None              # cached (regular, bold) face names
+
+#: Emoji that carry MEANING in a report get folded to a text-presentation
+#: equivalent instead of being deleted. ✅ (U+2705) and ❌ (U+274C) are
+#: emoji-only codepoints that no embeddable text font covers, but they are the
+#: pass/fail marks on every captured verdict — dropping them would turn "✅
+#: bump steer in band" and "❌ bump steer out of band" into the same sentence.
+#: Their dingbat cousins ✓ and ✗ ARE in DejaVu and say the same thing.
+_GLYPH_FALLBACKS = {
+    "\u2705": "\u2713",         # ✅ -> ✓
+    "\u274c": "\u2717",         # ❌ -> ✗
+    "\u26d4": "\u2717",         # ⛔ -> ✗
+    "\U0001f6d1": "\u2717",     # 🛑 -> ✗
+    "\u2757": "!",              # ❗
+    "\u2049": "!?",             # ⁉
+}
+
+
+def _register_report_font():
+    """Register a Unicode TTF with ReportLab; return (regular, bold) face names.
+
+    Falls back to Helvetica when no suitable TTF is on the box, in which case
+    the PDF still builds — degree signs and check marks just lose fidelity.
+    DejaVu is tried first because matplotlib bundles it, and matplotlib is
+    already a dependency for rendering the report's figures, so on any install
+    that can draw a chart this font is guaranteed to be present.
+    """
+    global _FONT_STATE
+    if _FONT_STATE is not None:
+        return _FONT_STATE
+    _FONT_STATE = ("Helvetica", "Helvetica-Bold")
+    try:
+        import os as _os
+        from reportlab.pdfbase import pdfmetrics as _pm
+        from reportlab.pdfbase.ttfonts import TTFont as _TTF
+
+        candidates = []
+        try:
+            import matplotlib as _mpl
+            _fd = _os.path.join(_os.path.dirname(_mpl.__file__),
+                                "mpl-data", "fonts", "ttf")
+            candidates.append((_os.path.join(_fd, "DejaVuSans.ttf"),
+                               _os.path.join(_fd, "DejaVuSans-Bold.ttf")))
+        except Exception:
+            pass
+        candidates += [
+            ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+            ("/Library/Fonts/Arial Unicode.ttf",
+             "/Library/Fonts/Arial Unicode.ttf"),
+        ]
+        for reg, bold in candidates:
+            if not (_os.path.exists(reg) and _os.path.exists(bold)):
+                continue
+            _pm.registerFont(_TTF("KinematiK", reg))
+            _pm.registerFont(_TTF("KinematiK-Bold", bold))
+            from reportlab.lib.fonts import addMapping as _map
+            _map("KinematiK", 0, 0, "KinematiK")
+            _map("KinematiK", 1, 0, "KinematiK-Bold")
+            _map("KinematiK", 0, 1, "KinematiK")
+            _map("KinematiK", 1, 1, "KinematiK-Bold")
+            _FONT_STATE = ("KinematiK", "KinematiK-Bold")
+            break
+    except Exception:
+        pass
+    return _FONT_STATE
+
+
+def strip_unprintable(text):
+    """Make a line safe for the PDF fonts: fold meaningful emoji to text
+    equivalents, drop decorative ones, and tidy the space they leave behind."""
+    global _EMOJI_RE
+    import re as _re
+    if _EMOJI_RE is None:
+        _EMOJI_RE = _re.compile(
+            "[\U0001F000-\U0001FAFF\U0001F1E6-\U0001F1FF"
+            "\u2190-\u21FF\u2B00-\u2BFF\u2700-\u2710\uFE0F\u200D]")
+    out = text or ""
+    for src, dst in _GLYPH_FALLBACKS.items():
+        if src in out:
+            out = out.replace(src, dst)
+    out = _EMOJI_RE.sub("", out)
+    return _re.sub(r"[ \t]{2,}", " ", out).strip()
+
+
+def render_pdf(markdown_text: str, out_path: str, figures=None):
+    """Render the handover Markdown to a clean PDF via reportlab.
+
+    ``figures`` is an optional ``{ref: png_bytes}`` mapping. A Markdown line of
+    the form ``![Caption](kinematik-fig:REF)`` is replaced by the PNG for REF,
+    scaled to the text column and captioned. A ref with no bytes degrades to an
+    italic note naming the figure — never to silence, and never to a broken
+    image box, because a design-review reader has to be able to tell "this
+    chart was not exported" from "this chart does not exist".
+
+    The parameter is optional and keyword-friendly, so every existing
+    ``render_pdf(md, path)`` call keeps working unchanged.
+    """
     import re as _re
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import mm
     from reportlab.lib import colors
+    from reportlab.lib.utils import ImageReader
     from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
-                                    Table, TableStyle)
+                                    Table, TableStyle, Image, KeepTogether)
+
+    figures = figures or {}
+    fig_re = _re.compile(r'^!\[(?P<alt>.*?)\]\('
+                         + _re.escape(FIGURE_SCHEME)
+                         + r'(?P<ref>[^)]+)\)\s*$')
+
+    base_font, bold_font = _register_report_font()
+
+    # Usable text column: A4 width less the 18 mm margins set on the doc below.
+    _frame_w = A4[0] - 36 * mm
 
     styles = getSampleStyleSheet()
-    h1 = ParagraphStyle("h1", parent=styles["Heading1"], fontSize=18, spaceAfter=8)
+    h1 = ParagraphStyle("h1", parent=styles["Heading1"], fontSize=18, spaceAfter=8,
+                        fontName=bold_font)
     h2 = ParagraphStyle("h2", parent=styles["Heading2"], fontSize=13,
-                        textColor=colors.HexColor("#0f6e56"), spaceBefore=10, spaceAfter=4)
-    h3 = ParagraphStyle("h3", parent=styles["Heading3"], fontSize=11, spaceBefore=6)
-    body = ParagraphStyle("body", parent=styles["BodyText"], fontSize=9.5, leading=13)
+                        textColor=colors.HexColor("#0f6e56"), spaceBefore=10,
+                        spaceAfter=4, fontName=bold_font)
+    h3 = ParagraphStyle("h3", parent=styles["Heading3"], fontSize=11,
+                        spaceBefore=6, fontName=bold_font)
+    body = ParagraphStyle("body", parent=styles["BodyText"], fontSize=9.5,
+                          leading=13, fontName=base_font)
+    cell = ParagraphStyle("cell", parent=body, fontSize=8, leading=10.5,
+                          spaceBefore=0, spaceAfter=0)
+    cell_head = ParagraphStyle("cellhead", parent=cell, fontName=bold_font)
+    caption = ParagraphStyle("caption", parent=body, fontSize=8.5, leading=11,
+                             alignment=1,          # centred under the figure
+                             textColor=colors.HexColor("#4a5560"),
+                             spaceBefore=2, spaceAfter=8)
+    missing = ParagraphStyle("missing", parent=body, fontSize=9,
+                             textColor=colors.HexColor("#8a6d1f"))
 
     flow = []
     table_buf = []
+
+    def _figure_flowables(alt, ref):
+        """Image + caption for one captured chart, or an honest stand-in."""
+        png = figures.get(ref)
+        label = alt or ref
+        if not png:
+            return [Paragraph(
+                _md_to_rl(f"[figure not exported: {label}]"), missing),
+                Spacer(1, 4)]
+        try:
+            import io as _io
+            reader = ImageReader(_io.BytesIO(png))
+            iw, ih = reader.getSize()
+            if not iw or not ih:
+                raise ValueError("zero-sized image")
+            # Fit the text column, and cap the height so one tall chart cannot
+            # push the rest of a section onto its own page.
+            draw_w = min(float(_frame_w), float(iw))
+            draw_h = draw_w * (float(ih) / float(iw))
+            max_h = 105 * mm
+            if draw_h > max_h:
+                draw_h = max_h
+                draw_w = draw_h * (float(iw) / float(ih))
+            img = Image(_io.BytesIO(png), width=draw_w, height=draw_h)
+            img.hAlign = "CENTER"
+            # KeepTogether so a caption never orphans onto the following page.
+            return [KeepTogether([img, Paragraph(_md_to_rl(label), caption)])]
+        except Exception as exc:
+            return [Paragraph(
+                _md_to_rl(f"[figure could not be embedded: {label} "
+                          f"— {type(exc).__name__}]"), missing),
+                Spacer(1, 4)]
 
     def _md_to_rl(text: str) -> str:
         """Convert a single line of Markdown inline syntax to ReportLab XML.
@@ -1192,6 +1362,9 @@ def render_pdf(markdown_text: str, out_path: str):
              so underscores INSIDE words (e.g. kicad_pcb, file_name) are
              never mistaken for italic markers.
         """
+        # 0. Drop emoji no PDF font can draw, before anything else measures the
+        #    string — otherwise every heading opens with a tofu box.
+        text = strip_unprintable(text)
         # 1. Escape & first (must come before we introduce any & via entities)
         text = text.replace("&", "&amp;")
         # 2. Escape bare < and > (ReportLab's Paragraph parser chokes on them)
@@ -1208,12 +1381,25 @@ def render_pdf(markdown_text: str, out_path: str):
         nonlocal table_buf
         if not table_buf:
             return
-        rows = [[c.strip() for c in r.strip().strip("|").split("|")]
-                for r in table_buf if "---" not in r]
+        raw = [[c.strip() for c in r.strip().strip("|").split("|")]
+               for r in table_buf if "---" not in r]
+        # Cells go through the SAME inline-Markdown conversion as body text and
+        # become Paragraphs. Previously they were passed to Table as bare
+        # strings, so a cell reading "**-1.50 °**" printed its asterisks and a
+        # long cell ran off the page instead of wrapping. That was invisible
+        # while the reports only contained bullet lists; the results table puts
+        # bold values in every row.
+        rows = [[Paragraph(_md_to_rl(c), cell_head if i == 0 else cell)
+                 for c in r] for i, r in enumerate(raw)]
         if rows:
-            t = Table(rows, hAlign="LEFT")
+            ncols = max(len(r) for r in rows)
+            for r in rows:                      # pad ragged rows
+                r.extend(Paragraph("", cell) for _ in range(ncols - len(r)))
+            t = Table(rows, hAlign="LEFT",
+                      colWidths=[_frame_w / ncols] * ncols)
             t.setStyle(TableStyle([
                 ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e1f5ee")),
                 ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1),
@@ -1231,7 +1417,11 @@ def render_pdf(markdown_text: str, out_path: str):
             table_buf.append(s)
             continue
         flush_table()
-        if not s:
+        _fig = fig_re.match(s.strip()) if s.startswith("![") else None
+        if _fig:
+            flow.extend(_figure_flowables(_fig.group("alt"),
+                                          _fig.group("ref")))
+        elif not s:
             flow.append(Spacer(1, 4))
         elif s.startswith("# "):
             flow.append(Paragraph(_md_to_rl(s[2:]), h1))
