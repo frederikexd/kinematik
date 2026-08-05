@@ -102,3 +102,231 @@ tables, glyph handling. Existing `test_project.py` and `test_mission_briefing.py
 own August audit flagged for quarantine, and they carry their own `render_pdf`.
 I patched only the live files (root `streamlit_app.py`, `suspension/project.py`).
 Worth deleting the copies before someone patches the wrong one.
+
+---
+
+## Second pass — verdict chips (same defect class)
+
+`st.warning/error/success` are captured (292 call sites). But 21 findings render
+as `<span class="tag warn">…</span>` through `st.markdown` and were invisible to
+the capture layer — including *"linkage does not close over full travel"*, which
+is exactly the kind of finding a design-review PDF must not omit.
+
+`_ax_wrap_markdown` now wraps `st.markdown` and extracts them, guarded on a fast
+`'class="tag ' in body` substring test before any regex, because `st.markdown`
+runs thousands of times per rerun. Verified at 2,000 plain calls with no matches.
+Chips below the existing 12-character noise floor (e.g. the `CONFIRMED` badge)
+stay filtered as chrome.
+
+---
+
+## Third pass — Registry status board (`suspension/status_dashboard.py`)
+
+**The bug.** A rule's `param` and a component's spec keys are typed into two
+different free-text boxes, by two different people, weeks apart — then matched
+with a bare case-sensitive `specs.get(param)`. Declare `Mass`, write a rule for
+`mass`, and the check reports *"not declared yet"* forever with the number
+sitting in the same row. The board goes amber and stays amber, which at a design
+review reads as "this team didn't finish" rather than "two strings disagree
+about a capital letter."
+
+The quick-add templates made it likelier: they hard-code `Weight`, so a team
+that entered `Mass` got an unresolvable check the moment they used one.
+
+**Model fix** — `resolve_spec()` matches exact, then case/whitespace/separator
+insensitive (`wall_thickness` → `Wall thickness`), then offers the closest key
+as a suggestion. Three amber states are now distinguishable, which matters
+because a dead end and a ten-second fix should not read alike:
+
+| Situation | Message |
+|---|---|
+| Typo | *"Wieght" not declared — did you mean "Weight"?* |
+| Declared, non-numeric | *"Wall thickness" is declared as "TBD" — no number to check.* |
+| Genuinely absent | *"Torque" not declared yet — enter it to check.* |
+
+**What it deliberately will NOT do.** Substring and synonym matching are
+refused. `Wall thickness` does not resolve to `Min wall thickness`, and `Weight`
+does not resolve to `Mass` — those are different quantities, and silently
+checking the wrong number is worse than the amber it replaces. A close key is
+offered as a *suggestion*, never used as a match. Two tests pin this.
+
+**UI fix** — the rule Parameter is now a picker of the keys actually declared on
+that component, with a free-text escape (`➕ other`) for rules written before the
+number exists. The mismatch mostly can't be created by hand any more.
+
+**Tests** — `tests/test_status_keys.py`, 15 tests. Two of them failed on first
+run and both were *my tests* being wrong, not the code: I had asserted that a
+near-miss returns nothing (it correctly returns a suggestion), and that
+`Weight`/`Mass` should unify (it correctly refuses). Corrected to pin the real
+contract.
+
+See `TRIAGE.md` for the remaining cross-cutting consumers.
+
+---
+
+## Fourth pass — the Integration Document was never saved
+
+**This is the most serious one found so far, and it was reporting success.**
+
+`_persist_doc_ledger()` does:
+
+```python
+_s.integration_document = _led      # set an attribute
+return save_store(_s)               # -> store.save() -> True
+```
+
+`ProjectStore._payload()` never listed `integration_document`. So the attribute
+went nowhere, `save()` returned True, `_persist_doc_ledger()` returned True, and
+the app told the member:
+
+> "Kinematics committed to the Integration Document. See the full combined
+> document in the Integration tab."
+
+The commit was gone on restart, and no teammate ever saw it. The honest failure
+branch — *"committed for this session, but persisting team-wide failed (backend
+offline)"* — could never fire, because nothing had failed. A season-long
+cross-team deliverable was resetting every restart while claiming otherwise.
+
+Reproduced before fixing:
+
+```
+store.save() reported: True      <- what _persist_doc_ledger returns
+after reload, integration_document = None
+keys on disk: [board, cad_files, decisions, ev_excel_params, geometry,
+               harness, ledger, notes, reports, season, target_mass_kg,
+               team_name, updated, weights]        <- no integration_document
+```
+
+Fixed by listing it in `_payload()` and reading it back in `_apply()`.
+
+### Second bug in the same file: restoring a backup deleted your reports
+
+`as_json()` was a *second*, hand-maintained field list. It had drifted — it
+never learned about `reports`, `ev_excel_params` or `ledger` after those were
+added to `_payload()`. And `apply_project_bundle()` feeds `as_json()`'s output
+straight back through `_apply()`, which did:
+
+```python
+self.reports = _deserialize_reports_safe(d.get("reports", []))
+```
+
+Absent key → `[]` → **every stamped report deleted on restoring your own backup.**
+
+Two fixes:
+
+- `as_json()` now delegates to `_payload()` (dropping only `updated`, the
+  optimistic-locking baseline). One field list instead of two, so a field added
+  to persistence is in the export by construction. A test asserts the two shapes
+  are equal, so they cannot drift again.
+- `_apply()` guards newer fields on **key presence**, not `.get(k, default)`.
+  An absent key means "this payload doesn't carry the field"; an empty list
+  means "there genuinely are none." Collapsing those two is what caused the
+  data loss. An explicit `[]` still clears, so a genuine wipe stays possible.
+
+**Tests** — `tests/test_store_persistence.py`, 11 tests covering both bugs,
+the absent-vs-empty distinction in both directions, and a round-trip of the
+ordinary fields.
+
+### Now-more-visible known gap
+
+With commits finally surviving restart, the figure caveat from pass one matters
+more: the ledger persists Markdown with image *references*, and the PNGs resolve
+from the live session. Open the Integration Document in a fresh session and its
+charts render as `[figure not exported: <name>]` rather than images. Honest, but
+worth closing — it is a storage-budget decision (roughly 60 KB per chart), so
+it is still yours to make rather than mine to guess.
+
+---
+
+## Fifth pass — Handover and Analytics (the last two consumers)
+
+### Handover: two producers with no consumer, and one fabricated number
+
+**Stamped reports were never in the handover.** `ProjectStore.reports` carries
+signed-off calculation reports with content hashes — arguably the most valuable
+thing this tool produces for next year — and `build_handover_markdown()` never
+mentioned that any existed. Now a table: report, team, part, date, signed-off,
+hash.
+
+**Integration Document coverage was never in the handover.** Now that commits
+actually persist (pass four), the handover lists which features each subsystem
+committed, so next year knows the combined deliverable exists.
+
+**Unavailable geometry printed as a confident 0.00.** The caller's `_gf()`
+helper defaulted to `0.0` on *any* failure — unconverged solve, exotic topology,
+a shadowed module. So a handover could state `scrub_radius_mm: 0.00`: a
+plausible, checkable-looking number that nobody measured, in the one document
+whose whole purpose is to be trusted by people who cannot ask you about it.
+
+`_gf()` now returns `None` on failure and the builder prints *"not available —
+re-export with a converged solve to capture this"*. A test pins that a genuine
+`0.00` (static toe is often exactly zero) still prints as `0.00`, because the
+fix must not make a real zero unsayable.
+
+**The handover PDF had no charts.** My own miss from pass one — I wired the
+feature, subsystem and Integration exports to `collect_report_figures()` and
+missed the fourth. The document that outlives everyone who wrote it was the only
+PDF still shipping without its figures. Wired.
+
+### Analytics: the funnel said your features were dead
+
+`tab_open` is automatic for all 40 features via `_TabOpenProxy`. `engage` and
+`complete` were not — **16 and 19 hand-placed call sites for 40 features**. So
+most of the app reported as opened-but-never-used. Acting on that reading means
+cutting exactly the features the team relies on.
+
+**The tempting fix would have been wrong.** Firing engagement from the
+result-capture layer looks obvious and inflates the funnel in precisely the way
+`_TabOpenProxy`'s own comment warns about: every tab body executes on every
+script-run, so captures fire on a plain render too. That manufactures traffic
+for tabs nobody touched — worse than no data, because it looks real.
+
+What is honest is a **widget value changing between runs**. Nothing but a person
+moves a slider. `_ax_wrap_input` wraps the twelve value-returning widgets: first
+render sets a baseline and emits nothing, a later different value is an
+interaction, attributed to the tab actually rendering it. One dict lookup per
+widget.
+
+Completion then uses the guard the analytics API already provided for exactly
+this case — `auto_complete(..., require_engaged=True)` from `capture_artifact`.
+A chart produced by a feature the user genuinely interacted with is a completed
+workflow; one produced by a background render is not.
+
+Verified against the real extracted source:
+
+```
+run 1: first render, baseline          -> no events
+run 2: same value, user did nothing    -> no events
+run 3: user moves the slider           -> engage
+       a chart then renders            -> complete
+tab the user never opened              -> silent (asserted)
+```
+
+**Tests** — `tests/test_handover_coverage.py`, 8 tests.
+
+## Running tally — cross-cutting consumers audited
+
+| Consumer | Status |
+|---|---|
+| Metric capture -> reports | fixed — 503 call sites were invisible |
+| Verdict capture -> reports | fixed — 21 chips were invisible |
+| Registry -> status board | fixed — spec/rule key matching |
+| Integration Ledger -> persistence | fixed — never saved, claimed success |
+| Handover | fixed — 2 unread producers, 1 fabricated value, missing figures |
+| Analytics | fixed — engage/complete covered 16-19 of 40 features |
+
+**Six of six.** Every one was the same shape: a consumer silently seeing a
+subset of its producers, with no exception and no log — which is why 2,659
+tests never caught any of them.
+
+### What to watch for next
+
+The pattern is now yours to hunt. When you add a feature, ask what reads its
+output, and check that reader sees *every* way the feature can produce it. The
+specific traps found here, in order of how often they recurred:
+
+1. A wrapper watching the framework's function while the app uses its own helper.
+2. Two hand-maintained field lists that drift (`as_json` vs `_payload`).
+3. `.get(key, default)` where an absent key and an empty value mean different things.
+4. A failure coerced to a plausible default (`0.0`) instead of to "unknown".
+5. Setting an attribute nothing serializes, then reporting the save succeeded.

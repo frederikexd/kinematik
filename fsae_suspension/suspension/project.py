@@ -662,6 +662,17 @@ class ProjectStore:
             "reports": _serialize_reports_safe(getattr(self, "reports", [])),
             "ev_excel_params": getattr(self, "ev_excel_params", {}),
             "ledger": getattr(self, "ledger", {}) or {},
+            # The Integration Document ledger — every feature a member has
+            # committed, grouped by subsystem. streamlit_app's
+            # _persist_doc_ledger() sets this attribute and then calls save();
+            # until it was listed here, that attribute went nowhere. save()
+            # returned True, _persist_doc_ledger() returned True, and the app
+            # told the member "committed to the Integration Document... everyone
+            # in the workspace can see it" for a write that never happened. The
+            # season-long cross-team deliverable was reset by every restart, and
+            # the honest "persisting team-wide failed" branch could never fire
+            # because nothing had failed.
+            "integration_document": getattr(self, "integration_document", {}) or {},
             "updated": _dt.datetime.now().isoformat(timespec="seconds"),
         }
 
@@ -675,7 +686,16 @@ class ProjectStore:
         self.decisions = [Decision(**x) for x in d.get("decisions", [])]
         self.notes = [Note(**n) for n in d.get("notes", [])]
         self.cad_files = [CADFile(**c) for c in d.get("cad_files", [])]
-        self.reports = _deserialize_reports_safe(d.get("reports", []))
+        # KEY-PRESENCE guard, not `.get(k, [])`. An ABSENT key means the payload
+        # doesn't carry this field (an older bundle, an external tool); an
+        # EMPTY list means there genuinely are none. Collapsing the two is how
+        # restoring your own backup used to wipe every stamped report: as_json()
+        # had drifted and no longer emitted "reports", so _apply() faithfully
+        # set it to []. Newer fields go through this guard for that reason.
+        if "reports" in d:
+            self.reports = _deserialize_reports_safe(d.get("reports") or [])
+        if isinstance(d.get("integration_document"), dict):
+            self.integration_document = dict(d["integration_document"])
         geom = d.get("geometry")
         if geom:
             from .mountpoints import GeometryLedger
@@ -778,17 +798,22 @@ class ProjectStore:
         return None
 
     def as_json(self) -> str:
-        return json.dumps({
-            "team_name": self.team_name, "season": self.season,
-            "target_mass_kg": self.target_mass_kg,
-            "weights": [asdict(w) for w in self.weights],
-            "decisions": [asdict(x) for x in self.decisions],
-            "notes": [asdict(n) for n in self.notes],
-            "cad_files": [asdict(c) for c in self.cad_files],
-            "geometry": self.geometry.as_dict() if getattr(self, "geometry", None) else {},
-            "board": self.board.as_dict() if getattr(self, "board", None) else {},
-            "harness": self.harness.as_dict() if getattr(self, "harness", None) else {},
-        }, indent=2)
+        """The store as JSON — the SAME shape that gets persisted.
+
+        This used to be a second, hand-maintained field list, and it drifted:
+        it never learned about `reports`, `ev_excel_params` or `ledger` after
+        those were added to _payload(). Because apply_project_bundle() feeds
+        as_json()'s output straight back through _apply(), restoring your own
+        backup silently deleted every stamped report. Delegating to _payload()
+        means a field added to persistence is in the export by construction.
+
+        `updated` is dropped: it's the optimistic-locking baseline for the
+        backend, and carrying a stale one into a restore would confuse the
+        concurrency check.
+        """
+        payload = self._payload()
+        payload.pop("updated", None)
+        return json.dumps(payload, indent=2)
 
     # -------------------------- mutations ------------------------------ #
     def add_weight(self, item: WeightItem):
@@ -1114,10 +1139,54 @@ def build_handover_markdown(store: ProjectStore,
     if geometry:
         L.append("## Suspension design state\n")
         for k, v in geometry.items():
-            if isinstance(v, float):
+            # None means the caller could not read this value (unconverged
+            # solve, exotic topology, a module another tab shadowed). It is NOT
+            # zero. The caller used to coerce every failure to 0.0, so a report
+            # handed to next year's team could state "scrub_radius_mm: 0.00" —
+            # a plausible, checkable-looking number that nobody measured. Say
+            # so instead; an admitted gap costs an hour, a fabricated zero can
+            # cost a season.
+            if v is None:
+                L.append(f"- {k}: _not available — re-export with a converged "
+                         f"solve to capture this_")
+            elif isinstance(v, float):
                 L.append(f"- {k}: {v:.2f}")
             else:
                 L.append(f"- {k}: {v}")
+        L.append("")
+
+    # Stamped reports — produced by the report store, and until now read by
+    # nobody. A signed-off calculation report with a content hash is the single
+    # most valuable artifact this tool makes for next year, and the handover
+    # document existed without mentioning that any had been written.
+    _reports = getattr(store, "reports", None) or []
+    if _reports:
+        L.append("## Signed-off calculation reports\n")
+        L.append("_Stamped in KinematiK. The content hash identifies the exact "
+                 "inputs each conclusion was drawn from._\n")
+        L.append("| Report | Team | Part | Date | Signed off | Hash |")
+        L.append("|---|---|---|---|---|---|")
+        for r in _reports:
+            _h = str(getattr(r, "content_hash", "") or "")[:12]
+            _sig = "yes" if getattr(r, "signed_off", False) else "—"
+            L.append(f"| {getattr(r, 'title', '')} | {getattr(r, 'team', '')} "
+                     f"| {getattr(r, 'part', '')} | {getattr(r, 'date', '')} "
+                     f"| {_sig} | `{_h}` |")
+        L.append("")
+
+    # Integration Document — which subsystems have committed their work.
+    _idoc = getattr(store, "integration_document", None) or {}
+    if _idoc:
+        L.append("## Integration Document coverage\n")
+        L.append("_Features committed to the team-wide Integration Document. "
+                 "Open the Integration tab in KinematiK for the full combined "
+                 "deliverable._\n")
+        L.append("| Feature | Subsystem | Committed |")
+        L.append("|---|---|---|")
+        for _k in sorted(_idoc):
+            _e = _idoc.get(_k) or {}
+            L.append(f"| {_e.get('label', _k)} | {_e.get('subsystem', '—')} "
+                     f"| {_e.get('committed_on', '—')} |")
         L.append("")
 
     # Decision log

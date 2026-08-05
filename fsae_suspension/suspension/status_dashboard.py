@@ -85,6 +85,64 @@ def coerce_number(value: Any) -> float | None:
 
 
 # --------------------------------------------------------------------------- #
+#  Spec-key resolution                                                         #
+#                                                                              #
+#  A rule's ``param`` and a component's spec keys are typed into two different  #
+#  free-text boxes, by two different people, weeks apart. Matching them with a  #
+#  bare ``specs.get(param)`` means "Mass" and "mass" — or "Wall thickness" and  #
+#  "Wall Thickness" — never meet, and the rule reports "not declared yet"       #
+#  forever while the number sits right there in the row.                        #
+#                                                                              #
+#  That failure is invisible in the worst way: the board goes amber and STAYS   #
+#  amber, which at a design review reads as "this team didn't finish" rather    #
+#  than "these two strings disagree about a capital letter". The quick-add rule #
+#  templates make it likelier, not less: they hard-code "Weight", so a team     #
+#  that entered "Mass" gets a permanently unresolvable check the moment they    #
+#  use one.                                                                     #
+#                                                                              #
+#  So: match exactly, then case/whitespace-insensitively, then report the       #
+#  closest key as a suggestion. The suggestion matters as much as the match —   #
+#  "'Wieght' not declared; did you mean 'Weight'?" is a ten-second fix, and     #
+#  "'Wieght' not declared yet" is a dead end.                                   #
+# --------------------------------------------------------------------------- #
+def _norm_key(k: str) -> str:
+    """Case- and whitespace-insensitive form of a spec key."""
+    return re.sub(r"[\s_-]+", " ", str(k or "")).strip().lower()
+
+
+def resolve_spec(param: str, specs: dict):
+    """Find the spec entry a rule's ``param`` refers to.
+
+    Returns ``(value, matched_key, suggestion)``:
+      * exact or normalized hit -> (value, the real key, None)
+      * no hit, close key exists -> (None, None, that key)
+      * no hit at all            -> (None, None, None)
+
+    Deliberately does NOT match on substrings or synonyms. "Wall thickness"
+    resolving to "Min wall thickness" would silently check the wrong number,
+    which is worse than the amber it replaces — a validator may not guess.
+    """
+    specs = specs or {}
+    if param in specs:                                  # exact
+        return specs[param], param, None
+    want = _norm_key(param)
+    if not want:
+        return None, None, None
+    for k in specs:                                     # case / spacing
+        if _norm_key(k) == want:
+            return specs[k], k, None
+    try:                                                # near miss -> suggest
+        import difflib
+        pool = {_norm_key(k): k for k in specs}
+        hit = difflib.get_close_matches(want, list(pool), n=1, cutoff=0.82)
+        if hit:
+            return None, None, pool[hit[0]]
+    except Exception:
+        pass
+    return None, None, None
+
+
+# --------------------------------------------------------------------------- #
 #  A single rule and its evaluation                                            #
 # --------------------------------------------------------------------------- #
 _OPS = {
@@ -121,12 +179,22 @@ def evaluate_rule(rule: dict, specs: dict) -> RuleResult:
     target = rule.get("value")
     unit = rule.get("unit", "")
 
-    raw = specs.get(param)
+    raw, matched_key, suggestion = resolve_spec(param, specs)
     actual = coerce_number(raw)
 
     if actual is None:
-        return RuleResult(param, label, op, target, unit, None, AMBER,
-                          f"“{param}” not declared yet — enter it to check.")
+        if suggestion:
+            msg = (f"“{param}” not declared — did you mean “{suggestion}”? "
+                   f"Rename the rule or the spec so they match.")
+        elif matched_key is not None:
+            # The key resolved but its value has no number in it, e.g. the
+            # user typed "TBD" or "see drawing". That is a different problem
+            # from never declaring it, and saying so saves a hunt.
+            msg = (f"“{matched_key}” is declared as “{raw}” — no number to "
+                   f"check. Enter a value like “2.4 kg”.")
+        else:
+            msg = f"“{param}” not declared yet — enter it to check."
+        return RuleResult(param, label, op, target, unit, None, AMBER, msg)
 
     # between [lo, hi]
     if op == "between" and isinstance(target, (list, tuple)) and len(target) == 2:

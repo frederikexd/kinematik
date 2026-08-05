@@ -853,6 +853,16 @@ def capture_artifact(kind, title, detail="", *, feature=None, figure=None):
         if _spec is not None:
             _row["spec"] = _spec
         _rows.append(_row)
+        # A chart or table produced by a feature the user has actually
+        # interacted with is a completed workflow. `require_engaged=True` is
+        # the guard analytics already provides for exactly this: every tab body
+        # runs on every script-run, so without it a background render would
+        # fabricate a completion for a tab nobody touched. Engagement comes
+        # from _ax_wrap_input, i.e. a widget the user genuinely moved.
+        try:
+            _axn.auto_complete(_f, action=str(kind), require_engaged=True)
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -1095,6 +1105,83 @@ def _ax_wrap_alert(_orig, severity):
     return _wrapped
 
 
+# Custom status chips -> the same verdict store as st.warning/error/success.
+#
+# Same defect class as the metric() card leak: a findings banner rendered as
+# `<span class="tag warn">…</span>` through st.markdown is invisible to the
+# alert wrappers, so those verdicts never reached any report. 21 of them across
+# the app — including "linkage does not close over full travel", which is
+# exactly the kind of finding a design-review document must not omit.
+#
+# Patching st.markdown rather than adding a helper means call sites need no
+# edit and future chips are captured automatically. st.markdown runs thousands
+# of times per rerun, so the fast substring test comes first and the regex only
+# runs on the handful of strings that are actually chips.
+_AX_TAG_SEV = {"bad": "fail", "warn": "warning", "good": "ok"}
+_AX_TAG_RE = re.compile(
+    r'<span[^>]*class="tag\s+(bad|warn|good)"[^>]*>(.*?)</span>',
+    re.DOTALL | re.IGNORECASE)
+_AX_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _ax_wrap_markdown(_orig):
+    def _wrapped(*args, **kwargs):
+        try:
+            _a = _ax_positional_args(args)
+            _body = kwargs.get("body", _a[0] if _a else None)
+            if isinstance(_body, str) and 'class="tag ' in _body:
+                for _sev, _inner in _AX_TAG_RE.findall(_body):
+                    _txt = _AX_HTML_TAG_RE.sub("", _inner)
+                    capture_verdict(_txt, _AX_TAG_SEV.get(_sev, "info"))
+        except Exception:
+            pass
+        return _orig(*args, **kwargs)
+    return _wrapped
+
+
+# --------------------------------------------------------------------------- #
+#  Engagement telemetry, fired from real interaction                           #
+#                                                                              #
+#  `tab_open` is automatic for all 40 features (the _TabOpenProxy). `engage`    #
+#  and `complete` were not: 16 and 19 hand-placed call sites between them. So   #
+#  most of the app reported as opened-but-never-used, and the funnel said the   #
+#  team's features were dead when they were being used daily. Acting on that    #
+#  reading would mean cutting exactly the wrong things.                         #
+#                                                                              #
+#  The tempting fix — fire engagement from the result-capture layer — would be  #
+#  WRONG, and wrong in the specific way _TabOpenProxy's own comment warns       #
+#  about: every tab body executes on every script-run, so captures fire on a    #
+#  plain render too. That would manufacture engagement for tabs nobody touched  #
+#  and produce numbers that look like foot traffic but aren't.                  #
+#                                                                              #
+#  A widget's value CHANGING between runs is real: nothing but a person moves   #
+#  a slider. First render sets the baseline and emits nothing; a later          #
+#  different value is an interaction, attributed to the tab actually rendering  #
+#  it. Costs one dict lookup per widget.                                        #
+# --------------------------------------------------------------------------- #
+_AX_WIDGET_PREV = "_ax_widget_prev"
+
+
+def _ax_wrap_input(_orig):
+    def _wrapped(*args, **kwargs):
+        _val = _orig(*args, **kwargs)
+        try:
+            _key = kwargs.get("key")
+            _feat = _ax_capture_feature()
+            if _key and _feat:
+                _prev = st.session_state.setdefault(_AX_WIDGET_PREV, {})
+                _seen = _key in _prev
+                _before = _prev.get(_key)
+                _prev[_key] = _val
+                # Only a CHANGE counts. An unseen key is this run's baseline.
+                if _seen and _before != _val:
+                    _axn.auto_engage(_feat, action="input")
+        except Exception:
+            pass       # telemetry must never break a widget
+        return _val
+    return _wrapped
+
+
 if not getattr(st, "_ax_capture_patched", False):
     try:
         from streamlit.delta_generator import DeltaGenerator as _AxCapDG
@@ -1129,6 +1216,19 @@ if not getattr(st, "_ax_capture_patched", False):
                         _ax_wrap_table(getattr(_AxCapDG, _nm), _kind))
             if hasattr(st, _nm):
                 setattr(st, _nm, _ax_wrap_table(getattr(st, _nm), _kind))
+        # Custom status chips rendered through markdown (see _ax_wrap_markdown).
+        if hasattr(_AxCapDG, "markdown"):
+            _AxCapDG.markdown = _ax_wrap_markdown(_AxCapDG.markdown)
+        if hasattr(st, "markdown"):
+            st.markdown = _ax_wrap_markdown(st.markdown)
+        # Engagement telemetry from real interaction (see _ax_wrap_input).
+        for _nm in ("slider", "number_input", "selectbox", "text_input",
+                    "checkbox", "radio", "multiselect", "select_slider",
+                    "text_area", "toggle", "color_picker", "date_input"):
+            if hasattr(_AxCapDG, _nm):
+                setattr(_AxCapDG, _nm, _ax_wrap_input(getattr(_AxCapDG, _nm)))
+            if hasattr(st, _nm):
+                setattr(st, _nm, _ax_wrap_input(getattr(st, _nm)))
         st._ax_capture_patched = True
     except Exception:
         pass       # capture is best-effort; never block the app
@@ -27145,12 +27245,33 @@ with tab7:
       except Exception:
           _s_h = None
 
-      def _gf(obj, attr, default=0.0):
+      def _gf(obj, attr, default=None):
+          """Read a float, or None if it genuinely isn't available.
+
+          This used to default to 0.0, which meant an unconverged solve or a
+          missing attribute became a confident "0.00" in a document handed to
+          next year's team. A real zero and a failed read are not the same
+          claim; build_handover_markdown() prints None as "not available".
+          """
           try:
-              v = getattr(obj, attr, default)
+              v = getattr(obj, attr, None)
               return float(v) if v is not None else default
           except Exception:
               return default
+
+      def _mid(key):
+          v = mid.get(key) if isinstance(mid, dict) else None
+          try:
+              return float(v) if v is not None else None
+          except Exception:
+              return None
+
+      def _lat():
+          try:
+              return float(veh.max_lateral_g()) if hasattr(veh, "max_lateral_g") \
+                  else None
+          except Exception:
+              return None
 
       geo = {
           "static_camber_deg": _gf(_s_h, "camber"),
@@ -27158,9 +27279,9 @@ with tab7:
           "caster_deg": _gf(_s_h, "caster"),
           "kpi_deg": _gf(_s_h, "kpi"),
           "scrub_radius_mm": _gf(_s_h, "scrub_radius"),
-          "roll_centre_front_mm": mid.get("rc_front", 0.0) if isinstance(mid, dict) else 0.0,
-          "roll_centre_rear_mm": mid.get("rc_rear", 0.0) if isinstance(mid, dict) else 0.0,
-          "max_lateral_g": (veh.max_lateral_g() if hasattr(veh, "max_lateral_g") else 0.0),
+          "roll_centre_front_mm": _mid("rc_front"),
+          "roll_centre_rear_mm": _mid("rc_rear"),
+          "max_lateral_g": _lat(),
       }
       md = project_mod.build_handover_markdown(store, geometry=geo,
                                                frame_tag=_kk_frame_tag(long=True))
@@ -27172,7 +27293,12 @@ with tab7:
                             width='stretch')
       try:
           pdf_path = os.path.join(tempfile.gettempdir(), "elbee_handover.pdf")
-          project_mod.render_pdf(md, pdf_path)
+          # The fourth export path. The feature, subsystem and Integration
+          # exports were wired to the captured charts; this one was missed, so
+          # the handover — the document that outlives everyone who wrote it —
+          # was the only PDF still shipping without its figures.
+          project_mod.render_pdf(md, pdf_path,
+                                 figures=collect_report_figures())
           with open(pdf_path, "rb") as f:
               ec[2].download_button("⬇ Handover (.pdf)", f.read(),
                                     file_name="elbee_handover.pdf",
@@ -32420,10 +32546,33 @@ with tab_registry:
                         reg.save()
                         st.rerun()
                 # add a rule
+                #
+                # The Parameter used to be a bare text box, matched against the
+                # spec keys with an exact, case-sensitive lookup. Typing "mass"
+                # here when the spec says "Mass" produced a check that could
+                # never resolve — permanently amber, with the number sitting in
+                # the row above. Offer the declared keys instead, so the common
+                # path can't mistype; keep a free-text escape for rules written
+                # before the number exists.
+                _declared = sorted((_cur.specs or {}).keys()) if _cur else []
+                _NEW = "➕ other (type it)"
                 _rk1, _rk2, _rk3, _rk4 = st.columns([1.5, .9, 1.2, .7])
-                _param = _rk1.text_input("Parameter", key=f"rule_p_{_cid}",
-                                         placeholder="Weight",
-                                         label_visibility="collapsed")
+                if _declared:
+                    _pick = _rk1.selectbox(
+                        "Parameter", _declared + [_NEW],
+                        key=f"rule_pick_{_cid}", label_visibility="collapsed")
+                    _param = ("" if _pick == _NEW else _pick)
+                    if _pick == _NEW:
+                        _param = st.text_input(
+                            "Parameter name", key=f"rule_p_{_cid}",
+                            placeholder="Weight",
+                            help="No number declared for this yet — the check "
+                                 "stays amber until one is entered under "
+                                 "Declared numbers with this exact name.")
+                else:
+                    _param = _rk1.text_input("Parameter", key=f"rule_p_{_cid}",
+                                             placeholder="Weight",
+                                             label_visibility="collapsed")
                 _op = _rk2.selectbox("op", ["<=", "<", ">=", ">", "==", "between"],
                                      key=f"rule_op_{_cid}",
                                      label_visibility="collapsed")
