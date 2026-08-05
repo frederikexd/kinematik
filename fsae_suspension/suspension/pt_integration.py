@@ -40,7 +40,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -78,17 +78,17 @@ class GearCandidate:
     # usefulness flags
     grip_limited_launch: bool       # launch force exceeds tyre grip (good headroom)
     score: float = 0.0              # objective score (higher = better)
-    notes: List[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
 
 
 @dataclass
 class GearSweepResult:
     objective: GearObjective
-    candidates: List[GearCandidate]
-    best: Optional[GearCandidate]
-    warnings: List[str] = field(default_factory=list)
+    candidates: list[GearCandidate]
+    best: GearCandidate | None
+    warnings: list[str] = field(default_factory=list)
 
-    def as_table(self) -> List[dict]:
+    def as_table(self) -> list[dict]:
         out = []
         for c in self.candidates:
             out.append({
@@ -166,7 +166,7 @@ def _accel_0_75(motor_map, final_drive: float, wheel_r: float, eff: float,
 
 
 def _top_speed_kmh(motor_map, final_drive: float, wheel_r: float, eff: float,
-                   mass_kg: float, cda: float, crr: float) -> Tuple[float, bool]:
+                   mass_kg: float, cda: float, crr: float) -> tuple[float, bool]:
     """Highest sustainable speed: where motor force first falls to resistance,
     OR redline speed if that comes first. Returns (kmh, redline_limited).
 
@@ -215,8 +215,8 @@ class GearRatioSolver:
     def sweep(self, ratios: Sequence[float],
               objective: GearObjective = GearObjective.BALANCED
               ) -> GearSweepResult:
-        cands: List[GearCandidate] = []
-        warns: List[str] = []
+        cands: list[GearCandidate] = []
+        warns: list[str] = []
         grip_cap = self.mu * self.mass_kg * 9.81 * self.rear_frac
         for fd in ratios:
             fd = float(fd)
@@ -308,7 +308,7 @@ class SprocketDesign:
     chain_tension_n: float          # tight-side tension at peak torque
     tooth_force_n: float            # force on the engaged tooth (≈ chain tension)
     teeth_in_mesh: int              # approximate, on the driven sprocket
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 def _pitch_diameter_mm(teeth: int, pitch_mm: float) -> float:
@@ -394,14 +394,14 @@ class FanCurve:
     dp_pa: np.ndarray              # static pressure at each flow
 
     @staticmethod
-    def from_points(name: str, points: Sequence[Tuple[float, float]]) -> "FanCurve":
+    def from_points(name: str, points: Sequence[tuple[float, float]]) -> FanCurve:
         pts = sorted(points, key=lambda p: p[0])
         f = np.array([p[0] for p in pts], float)
         d = np.array([p[1] for p in pts], float)
         return FanCurve(name=name, flow_m3h=f, dp_pa=d)
 
     @staticmethod
-    def spal_default() -> "FanCurve":
+    def spal_default() -> FanCurve:
         return FanCurve.from_points(SPAL_VA14_AP11_C34A["name"],
                                     SPAL_VA14_AP11_C34A["curve"])
 
@@ -422,7 +422,7 @@ class CoolingOperatingPoint:
     margin_w: float                 # capacity - need (negative = under-cooled)
     adequate: bool
     design_delta_t_c: float
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 def cooling_operating_point(fan: FanCurve, system_k: float,
@@ -492,14 +492,14 @@ def system_k_from_point(flow_m3h: float, dp_pa: float) -> float:
 def powertrain_spec_sheet(*, architecture: str, power_kw: float,
                           peak_torque_nm: float, hv_voltage_v: float,
                           pack_kwh: float, final_drive: float,
-                          driven_teeth: Optional[int] = None,
-                          motor_teeth: Optional[int] = None,
-                          chain_tension_n: Optional[float] = None,
-                          driveline_torque_nm: Optional[float] = None,
-                          motor_mass_kg: Optional[float] = None,
-                          heat_reject_w: Optional[float] = None,
-                          cooling_flow_cms: Optional[float] = None,
-                          is_estimate: bool = True) -> List[dict]:
+                          driven_teeth: int | None = None,
+                          motor_teeth: int | None = None,
+                          chain_tension_n: float | None = None,
+                          driveline_torque_nm: float | None = None,
+                          motor_mass_kg: float | None = None,
+                          heat_reject_w: float | None = None,
+                          cooling_flow_cms: float | None = None,
+                          is_estimate: bool = True) -> list[dict]:
     """Assemble the live design spec sheet as a list of {Parameter, Value, Unit,
     Source} rows — generated from the values the team has actually committed, so it
     never goes stale the way a screenshot does."""
@@ -581,7 +581,7 @@ class MotorEnvelope:
     # rule compliance
     rule_cap_kw: float
     over_cap: bool                   # does declared peak exceed the FSAE cap?
-    notes: List[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
 
     def power_at_redline_kw(self) -> float:
         return float(self.power_kw[-1])
@@ -653,7 +653,7 @@ def motor_envelope(peak_torque_nm: float, peak_power_kw: float,
     cont_torque = (cont_power_kw * 1000.0) / max(omega_base, 1e-3)
     cont_torque = min(cont_torque, peak_torque_nm)
 
-    notes: List[str] = []
+    notes: list[str] = []
     if over_cap:
         notes.append(
             f"Declared peak {peak_power_kw:.0f} kW exceeds the FSAE "
@@ -685,11 +685,11 @@ class MythCheck:
 
 
 def power_rpm_myth_checks(env: MotorEnvelope, *,
-                          gear_final_drive: Optional[float] = None,
-                          wheel_r_m: float = 0.228) -> List[MythCheck]:
+                          gear_final_drive: float | None = None,
+                          wheel_r_m: float = 0.228) -> list[MythCheck]:
     """Return the canonical myth-busters for the power/rpm/continuous confusion,
     answered against THIS motor envelope so the numbers are concrete."""
-    checks: List[MythCheck] = []
+    checks: list[MythCheck] = []
 
     # Myth 1: capping power to 80 kW means limiting rpm to ~7k
     checks.append(MythCheck(
@@ -738,15 +738,15 @@ def power_rpm_myth_checks(env: MotorEnvelope, *,
 # computes the evidence (chain tension, cooling margin, mount load, output
 # torque), so it can pre-fill DFMEA rows with real numbers and the analysis that
 # already justifies them. A member then edits real rows instead of a blank sheet.
-def dfmea_rows_from_analysis(*, sprocket: Optional[SprocketDesign] = None,
-                             cooling: Optional[CoolingOperatingPoint] = None,
-                             output_torque_nm: Optional[float] = None,
-                             mount_load_n: Optional[float] = None,
-                             owner: str = "") -> List[dict]:
+def dfmea_rows_from_analysis(*, sprocket: SprocketDesign | None = None,
+                             cooling: CoolingOperatingPoint | None = None,
+                             output_torque_nm: float | None = None,
+                             mount_load_n: float | None = None,
+                             owner: str = "") -> list[dict]:
     """Build ready-to-edit DFMEA records (matching dfmea.DFMEARow.to_record keys)
     seeded from this tab's analysis, with the computed numbers written into the
     cause / detection / evidence fields so the row is defensible on creation."""
-    rows: List[dict] = []
+    rows: list[dict] = []
 
     def _row(**kw):
         base = dict(
@@ -893,7 +893,7 @@ def _contains(text: str, *phrases) -> bool:
 
 
 def check_assumption(text: str, env: MotorEnvelope, *,
-                     gear_final_drive: Optional[float] = None,
+                     gear_final_drive: float | None = None,
                      wheel_r_m: float = 0.228) -> AssumptionResult:
     """
     Check a free-text assumption against the live MotorEnvelope using

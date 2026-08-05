@@ -81,7 +81,7 @@ import json
 import math
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from .interfaces import IntegrationLedger
 
@@ -170,7 +170,7 @@ class Quantity:
     measured_on: str = ""    # ISO date the evidence was produced ("" = unknown)
     source: str = ""         # free text: "corner scales 2026-05-02", "guess"
 
-    def age_days(self, today: Optional[_dt.date] = None) -> float:
+    def age_days(self, today: _dt.date | None = None) -> float:
         if not self.measured_on:
             return 0.0
         try:
@@ -179,10 +179,10 @@ class Quantity:
             return 0.0
         return max(0.0, ((today or _dt.date.today()) - d).days)
 
-    def rel_unc(self, today: Optional[_dt.date] = None) -> float:
+    def rel_unc(self, today: _dt.date | None = None) -> float:
         return effective_rel_unc(self.grade, self.age_days(today))
 
-    def abs_unc(self, today: Optional[_dt.date] = None) -> float:
+    def abs_unc(self, today: _dt.date | None = None) -> float:
         # A zero value still deserves a nonzero band; fall back to unit-scale 1.
         scale = abs(self.value) if self.value else 1.0
         return scale * self.rel_unc(today)
@@ -193,7 +193,7 @@ class Quantity:
         return d
 
     @staticmethod
-    def from_dict(d: dict) -> "Quantity":
+    def from_dict(d: dict) -> Quantity:
         d = dict(d)
         d["grade"] = EvidenceGrade(d.get("grade", "estimate"))
         valid = Quantity.__dataclass_fields__.keys()
@@ -219,7 +219,7 @@ _CHANNEL_META = {
 
 
 def build_uncertainty_ledger(ledger: IntegrationLedger,
-                             overrides: Optional[dict] = None) -> list[Quantity]:
+                             overrides: dict | None = None) -> list[Quantity]:
     """
     Turn the IntegrationLedger into a list of Quantities with pedigrees.
 
@@ -404,7 +404,7 @@ class UncertaintyReport:
 
 
 def analyze_objective(objective: Objective, quantities: list[Quantity],
-                      today: Optional[_dt.date] = None) -> UncertaintyReport:
+                      today: _dt.date | None = None) -> UncertaintyReport:
     """
     One-at-a-time symmetric perturbation: each quantity is pushed to
     value ± its uncertainty, everything re-aggregated, the objective
@@ -551,8 +551,8 @@ class ProofPlan:
 
 
 def plan_proofs(objective: Objective, quantities: list[Quantity],
-                actions: Optional[list[EvidenceAction]] = None,
-                today: Optional[_dt.date] = None) -> ProofPlan:
+                actions: list[EvidenceAction] | None = None,
+                today: _dt.date | None = None) -> ProofPlan:
     """
     Value-of-information ranking. For each action: clone the quantity set,
     upgrade every channel the action covers to the action's resulting grade
@@ -638,7 +638,7 @@ class ValidationContract:
     seal: str = ""
     # ---- result block (filled by judge_result, never sealed) -------------- #
     status: str = Verdict.OPEN.value
-    result_value: Optional[float] = None
+    result_value: float | None = None
     judged_on: str = ""
     judgment_note: str = ""
 
@@ -661,7 +661,7 @@ class ValidationContract:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d: dict) -> "ValidationContract":
+    def from_dict(d: dict) -> ValidationContract:
         valid = ValidationContract.__dataclass_fields__.keys()
         return ValidationContract(**{k: v for k, v in d.items() if k in valid})
 
@@ -669,7 +669,7 @@ class ValidationContract:
 def create_contract(action: EvidenceAction, quantity: Quantity,
                     pass_lo: float, pass_hi: float,
                     criterion_note: str, author: str = "",
-                    today: Optional[_dt.date] = None,
+                    today: _dt.date | None = None,
                     contract_id: str = "") -> ValidationContract:
     """
     Seal a contract BEFORE the run. The plausibility envelope is computed from
@@ -702,7 +702,7 @@ def create_contract(action: EvidenceAction, quantity: Quantity,
 
 
 def judge_result(contract: ValidationContract, measured: float,
-                 today: Optional[_dt.date] = None) -> ValidationContract:
+                 today: _dt.date | None = None) -> ValidationContract:
     """
     Three-way verdict, checked in this order:
 
@@ -765,8 +765,8 @@ def render_proof_plan_md(plan: ProofPlan, report: UncertaintyReport,
     L.append("")
     L.append("## Where the uncertainty comes from")
     L.append("")
-    L.append("| Input | Grade | ± (input) | ± ({u}) | Share |"
-             .format(u=plan.unit))
+    L.append(f"| Input | Grade | ± (input) | ± ({plan.unit}) | Share |"
+             )
     L.append("|---|---|---|---|---|")
     for a in report.attributions[:12]:
         L.append(f"| {a.label} | {a.grade} | {a.input_unc:.3g} | "
@@ -774,8 +774,8 @@ def render_proof_plan_md(plan: ProofPlan, report: UncertaintyReport,
     L.append("")
     L.append("## What to prove next (ranked by certainty bought per hour)")
     L.append("")
-    L.append("| # | Action | Tool | Hours | ± retired ({u}) | per hour |"
-             .format(u=plan.unit))
+    L.append(f"| # | Action | Tool | Hours | ± retired ({plan.unit}) | per hour |"
+             )
     L.append("|---|---|---|---|---|---|")
     for i, it in enumerate(plan.items, 1):
         L.append(f"| {i} | {it.action_label} | {it.tool} | {it.hours:g} | "
@@ -788,7 +788,7 @@ def render_proof_plan_md(plan: ProofPlan, report: UncertaintyReport,
 
 
 def render_contract_brief_md(contract: ValidationContract,
-                             action: Optional[EvidenceAction] = None,
+                             action: EvidenceAction | None = None,
                              frame_note: str = "") -> str:
     """
     The sealed brief handed to whoever runs the sim or test. It states the

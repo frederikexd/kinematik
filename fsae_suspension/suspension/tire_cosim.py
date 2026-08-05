@@ -74,7 +74,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import numpy as np
 
@@ -103,7 +103,7 @@ class TireProvenance:
     backend: str                       # "reference-pacejka", "ftire", "cdtire"
     fidelity: TireFidelity
     is_calibrated: bool = False        # True only on a vendor file fitted to THIS tyre
-    parameter_file: Optional[str] = None   # the .tir / FTire / CDTire property file
+    parameter_file: str | None = None   # the .tir / FTire / CDTire property file
     fitted_to: str = ""                # what rig data the file was fitted to, if known
     notes: str = ""
 
@@ -147,11 +147,11 @@ class WheelState:
     zdot_wheel: float = 0.0            # wheel-centre vertical velocity, m/s
     # --- 3D road under the patch (structural / enveloping; None => flat) ---
     # shape (k,3): points (x,y,z) in the contact region, tyre frame, metres.
-    road_points: Optional[np.ndarray] = None
+    road_points: np.ndarray | None = None
     # --- environment (thermal backends) ---
     ambient_temp_c: float = 25.0
     track_temp_c: float = 30.0
-    inflation_pressure_pa: Optional[float] = None   # cold/set pressure; None => model default
+    inflation_pressure_pa: float | None = None   # cold/set pressure; None => model default
     dt: float = 1.0e-3                 # step the backend should advance over, s
 
 
@@ -176,16 +176,16 @@ class TireOutput:
     Mx: float = 0.0                    # overturning moment, N·m
     My: float = 0.0                    # rolling-resistance moment, N·m
     # --- structural channels (None unless the backend has a carcass model) ---
-    carcass_deflection_m: Optional[float] = None       # radial deflection at patch centre
-    contact_length_m: Optional[float] = None           # patch length
-    contact_width_m: Optional[float] = None             # patch width
-    pressure_distribution: Optional[np.ndarray] = None  # (ny,nx) patch pressure, Pa
-    effective_radius_m: Optional[float] = None
+    carcass_deflection_m: float | None = None       # radial deflection at patch centre
+    contact_length_m: float | None = None           # patch length
+    contact_width_m: float | None = None             # patch width
+    pressure_distribution: np.ndarray | None = None  # (ny,nx) patch pressure, Pa
+    effective_radius_m: float | None = None
     # --- thermal / pressure channels (None unless the backend has a thermal net) ---
-    tread_temp_c: Optional[np.ndarray] = None           # per-band tread temperature
-    carcass_temp_c: Optional[float] = None
-    gas_temp_c: Optional[float] = None
-    inflation_pressure_pa: Optional[float] = None       # current (hot) pressure
+    tread_temp_c: np.ndarray | None = None           # per-band tread temperature
+    carcass_temp_c: float | None = None
+    gas_temp_c: float | None = None
+    inflation_pressure_pa: float | None = None       # current (hot) pressure
     # --- provenance of THIS sample ---
     synthesized: list[str] = field(default_factory=list)
 
@@ -213,7 +213,7 @@ class StructuralTireModel(Protocol):
     never taken down by one pathological sample.
     """
     def provenance(self) -> TireProvenance: ...
-    def reset(self, state: Optional[WheelState] = None) -> None: ...
+    def reset(self, state: WheelState | None = None) -> None: ...
     def step(self, ws: WheelState) -> TireOutput: ...
     def warnings(self) -> list[str]: ...
 
@@ -244,7 +244,7 @@ class ReferenceTireModel:
     structural backend).
     """
 
-    def __init__(self, lateral: Optional[PacejkaLateral] = None,
+    def __init__(self, lateral: PacejkaLateral | None = None,
                  mu_x_ratio: float = 1.05, ell_kx: float = 2.0, ell_ky: float = 2.0):
         self.lateral = lateral or default_tire()
         self.mu_x_ratio = float(mu_x_ratio)
@@ -267,7 +267,7 @@ class ReferenceTireModel:
                   "structural or thermal channels — those are None by design, not "
                   "zero. Attach FTire/CDTire for those.")
 
-    def reset(self, state: Optional[WheelState] = None) -> None:
+    def reset(self, state: WheelState | None = None) -> None:
         self._alpha_lag = float(state.alpha) if state is not None else 0.0
         self._warnings = []
 
@@ -360,7 +360,7 @@ class _ExternalTireBackend:
         "returns forces, moments, and the evolved structural/thermal state "
         "(FTire: cosin co-sim interface or FMU; CDTire: FMU / C API)")
 
-    def __init__(self, parameter_file: str, library_path: Optional[str] = None,
+    def __init__(self, parameter_file: str, library_path: str | None = None,
                  binding=None, fitted_to: str = ""):
         self.parameter_file = parameter_file
         self.library_path = library_path
@@ -388,7 +388,7 @@ class _ExternalTireBackend:
             parameter_file=self.parameter_file,
             fitted_to=self._fitted_to)
 
-    def reset(self, state: Optional[WheelState] = None) -> None:
+    def reset(self, state: WheelState | None = None) -> None:
         if self._binding is None:
             return
         # a real wrapper initialises the vendor state here (carcass at rest, gas at

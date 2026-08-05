@@ -117,7 +117,7 @@ import hashlib
 import json
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from .proof_engine import (
     Objective, Quantity, aggregate, analyze_objective,
@@ -379,7 +379,7 @@ def wire_band(w: Tripwire, clean: float) -> float:
 
 
 def available_tripwires(quantities: list[Quantity],
-                        wires: Optional[list[Tripwire]] = None,
+                        wires: list[Tripwire] | None = None,
                         ) -> list[Tripwire]:
     """Wires whose every input channel is declared and whose clean value is
     finite. A wire that cannot be evaluated is not offered — an unreadable
@@ -409,7 +409,7 @@ class SabotageFinding:
     delta_objective: float         # objective shift the corruption causes
     objective_sigmas: float        # |shift| / objective 1-sigma band
     envelope_catches: bool         # Proof Engine plausibility would flag it
-    fakes_pass: Optional[bool]     # would land inside a given acceptance band
+    fakes_pass: bool | None     # would land inside a given acceptance band
     wire_sigmas: dict = field(default_factory=dict)   # wire key -> signed sigmas
     caught_by: list = field(default_factory=list)     # wires beyond _SIGMA
 
@@ -443,10 +443,10 @@ class SweepReport:
 
 
 def run_sweep(objective: Objective, quantities: list[Quantity],
-              mutations: Optional[list[Mutation]] = None,
-              wires: Optional[list[Tripwire]] = None,
-              pass_band: Optional[tuple] = None,
-              today: Optional[_dt.date] = None) -> SweepReport:
+              mutations: list[Mutation] | None = None,
+              wires: list[Tripwire] | None = None,
+              pass_band: tuple | None = None,
+              today: _dt.date | None = None) -> SweepReport:
     """
     The core loop. Deterministic: catalog order x quantity order, symmetric
     OAT bands, fixed 3-sigma threshold. Every number reproducible by hand.
@@ -517,7 +517,7 @@ def run_sweep(objective: Objective, quantities: list[Quantity],
 #  Sheet selection — the smallest set of checks that catches the most
 # --------------------------------------------------------------------------- #
 def select_tripwires(report: SweepReport,
-                     max_wires: Optional[int] = None) -> list[str]:
+                     max_wires: int | None = None) -> list[str]:
     """
     Greedy set cover over the SILENT killers (the envelope already owns the
     loud ones). Each round picks the wire that newly catches the most
@@ -599,14 +599,14 @@ class PreflightSheet:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d: dict) -> "PreflightSheet":
+    def from_dict(d: dict) -> PreflightSheet:
         valid = PreflightSheet.__dataclass_fields__.keys()
         return PreflightSheet(**{k: v for k, v in d.items() if k in valid})
 
 
 def build_sheet(report: SweepReport, author: str = "",
-                max_wires: Optional[int] = None,
-                today: Optional[_dt.date] = None) -> PreflightSheet:
+                max_wires: int | None = None,
+                today: _dt.date | None = None) -> PreflightSheet:
     """Select wires, compute honest coverage, seal. Deterministic."""
     chosen = select_tripwires(report, max_wires)
     n = len(report.findings)

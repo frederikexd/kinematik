@@ -38,7 +38,7 @@ from __future__ import annotations
 import datetime as _dt
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Any, Optional
+from typing import Any
 
 from .bolted_joint import BOLT_GRADES, METRIC_COARSE
 from .risk_engine import SlottedJointResult
@@ -61,7 +61,7 @@ class TorqueSpec:
     spec_torque_Nm: float = 0.0
     K: float = 0.20                   # catalogue K, or K_eff for slotted joints
     qty: int = 1
-    slotted: Optional[SlottedJointResult] = None
+    slotted: SlottedJointResult | None = None
     thread_locker: str = ""
     witness_required: bool = True
 
@@ -91,20 +91,20 @@ class GateInputs:
     # chassis — either a live FrameGraph (duck-typed) or precomputed audits
     frame: Any = None
     load_path_pairs: list = field(default_factory=list)   # [(from_node, to_node)]
-    chassis_quads: Optional[list] = None                   # precomputed override
-    chassis_loadpath_findings: Optional[list] = None       # precomputed override
+    chassis_quads: list | None = None                   # precomputed override
+    chassis_loadpath_findings: list | None = None       # precomputed override
     # cooling
     manifold_dp_kpa: dict = field(default_factory=dict)    # {segment: ΔP kPa}
     manifold_dp_limit_kpa: float = 35.0
-    pump_head_kpa: Optional[float] = None
+    pump_head_kpa: float | None = None
     pump_margin_frac: float = 0.15                         # ≥15% head in reserve
-    inlet_margin_kpa: Optional[float] = None
+    inlet_margin_kpa: float | None = None
     inlet_margin_min_kpa: float = 20.0
     # brakes
     brake_fos: dict = field(default_factory=dict)          # {component: fos}
     brake_fos_min: float = 1.6
-    pedal_joint: Optional[SlottedJointResult] = None
-    pedal_slip_demand_N: Optional[float] = None
+    pedal_joint: SlottedJointResult | None = None
+    pedal_slip_demand_N: float | None = None
     pedal_joint_mu: float = 0.35
     pedal_joint_fos_min: float = 1.2
     # torque specs
@@ -121,14 +121,14 @@ class GateInputs:
     elec_result: Any = None                                 # ElecCheckResult (duck-typed)
     pack_thermal_result: Any = None                         # PackThermalResult (duck-typed)
     # precomputed electrical overrides (used only when elec_result is None)
-    fuse_blown: Optional[bool] = None
-    cell_overcurrent: Optional[bool] = None
-    energy_empty: Optional[bool] = None
-    peak_current_a: Optional[float] = None
-    fuse_max_a: Optional[float] = None
+    fuse_blown: bool | None = None
+    cell_overcurrent: bool | None = None
+    energy_empty: bool | None = None
+    peak_current_a: float | None = None
+    fuse_max_a: float | None = None
     # precomputed thermal overrides (used only when pack_thermal_result is None)
-    pack_peak_cell_c: Optional[float] = None
-    pack_cells_over_limit: Optional[int] = None
+    pack_peak_cell_c: float | None = None
+    pack_cells_over_limit: int | None = None
     # limits (long-standing, conservative; teams may tighten, never silently loosen)
     cell_temp_limit_c: float = 60.0                        # FSAE-EV lithium abort ceiling
     cell_temp_margin_c: float = 5.0                        # require peak ≤ limit − margin

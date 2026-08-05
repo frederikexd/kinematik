@@ -86,7 +86,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 
@@ -194,7 +194,7 @@ class TransientParams:
 
     @staticmethod
     def from_vehicle(veh: VehicleDynamics | None,
-                     base: "TransientParams | None" = None) -> "TransientParams":
+                     base: TransientParams | None = None) -> TransientParams:
         """
         Build TransientParams consistent with a VehicleDynamics/VehicleParams.
         Pulls mass, geometry, weight distribution and — when geometry+spring-rate
@@ -369,7 +369,7 @@ class TransientResult:
     meta: dict = field(default_factory=dict)
 
     @staticmethod
-    def failed(warnings: list[str]) -> "TransientResult":
+    def failed(warnings: list[str]) -> TransientResult:
         z = np.zeros(1)
         z4 = np.zeros((1, 4))
         return TransientResult(

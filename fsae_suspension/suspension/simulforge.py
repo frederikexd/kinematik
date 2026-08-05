@@ -108,14 +108,12 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Callable, Optional
 
 import numpy as np
 
 from . import transient as tr
 from .transient import (TransientSolver, TransientParams, TransientResult,
-                        DriverInput, RoadInput, N_STATES, IU, IPHI, IPHID,
-                        FL, FR, RL, RR)
+                        DriverInput, RoadInput, IU, IPHI, IPHID)
 from . import ghost_topology as gt
 from . import fusebox as fb
 from . import earshot as es
@@ -698,12 +696,12 @@ class ForgeLint:
     nominal: SimulForgeResult
     degraded: SimulForgeResult
     thresholds: ForgeThresholds
-    ghost_nominal: Optional[gt.GhostAudit] = None
-    ghost_degraded: Optional[gt.GhostAudit] = None
-    path_audit_nominal: Optional[fb.PathAudit] = None
-    path_audit_degraded: Optional[fb.PathAudit] = None
-    session_before: Optional[dict] = None
-    session_after: Optional[dict] = None
+    ghost_nominal: gt.GhostAudit | None = None
+    ghost_degraded: gt.GhostAudit | None = None
+    path_audit_nominal: fb.PathAudit | None = None
+    path_audit_degraded: fb.PathAudit | None = None
+    session_before: dict | None = None
+    session_after: dict | None = None
     note: str = ""
 
     def summary(self) -> dict:
@@ -746,7 +744,7 @@ def electrical_path_elements(res: SimulForgeResult,
 
 
 def _mech_elements_from_ghost(audit: gt.GhostAudit,
-                              base: Optional[fb.OverloadPath]
+                              base: fb.OverloadPath | None
                               ) -> list[fb.PathElement]:
     """
     Per-member worst transient FoS from a ghost audit, as PathElements.
@@ -773,13 +771,13 @@ def _mech_elements_from_ghost(audit: gt.GhostAudit,
 
 
 def forge_lint(nominal: SimulForgeResult, degraded: SimulForgeResult,
-               gc: Optional[gt.GhostCorner] = None,
+               gc: gt.GhostCorner | None = None,
                corner: str = "FR",
-               base_path: Optional[fb.OverloadPath] = None,
+               base_path: fb.OverloadPath | None = None,
                designated_fuse_key: str = "branch_fuse",
-               ab_design: Optional[es.ABDesign] = None,
+               ab_design: es.ABDesign | None = None,
                laps_per_session_est: float = 20.0,
-               thresholds: Optional[ForgeThresholds] = None) -> ForgeLint:
+               thresholds: ForgeThresholds | None = None) -> ForgeLint:
     """
     Lint the pristine/degraded pair across every ledger the defect touches.
     Optional couplings — GhostCorner (structure), a base OverloadPath

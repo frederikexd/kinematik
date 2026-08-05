@@ -55,7 +55,7 @@ Pure Python + NumPy. Self-test: python3 -m suspension.rules_fsae
 from __future__ import annotations
 
 from dataclasses import dataclass, field as _dcfield
-from typing import Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -94,7 +94,7 @@ RULESET = Ruleset(
 )
 
 
-def banner() -> List[str]:
+def banner() -> list[str]:
     """The label that must appear on every artifact carrying a rules verdict.
 
     Not optional and not configurable. A rules check whose draft status can be
@@ -122,12 +122,12 @@ class Rule:
     section: str
     title: str
     requirement: str            # paraphrase — see the module docstring
-    limit: Optional[float] = None
+    limit: float | None = None
     unit: str = ""
     checkable: bool = False     # can this be checked from numbers we hold?
 
 
-RULES: Tuple[Rule, ...] = (
+RULES: tuple[Rule, ...] = (
     # ---- EV.3 Electrical Limitations ------------------------------------- #
     Rule("EV.3.3.1", "EV.3", "Maximum power",
          "Power measured by the event Energy Meter must stay at or below the "
@@ -234,17 +234,17 @@ RULES: Tuple[Rule, ...] = (
          "labelling and isolation requirements.", 60.0, "V DC", True),
 )
 
-_BY_ID: Dict[str, Rule] = {r.rid: r for r in RULES}
+_BY_ID: dict[str, Rule] = {r.rid: r for r in RULES}
 
 
-def rules_by_section() -> Dict[str, List[Rule]]:
-    out: Dict[str, List[Rule]] = {}
+def rules_by_section() -> dict[str, list[Rule]]:
+    out: dict[str, list[Rule]] = {}
     for r in RULES:
         out.setdefault(r.section, []).append(r)
     return out
 
 
-def limit(rid: str) -> Optional[float]:
+def limit(rid: str) -> float | None:
     r = _BY_ID.get(rid)
     return r.limit if r else None
 
@@ -257,16 +257,16 @@ class Finding:
     rid: str
     severity: str               # ok · watch · violation · unknown
     message: str
-    value: Optional[float] = None
-    limit: Optional[float] = None
+    value: float | None = None
+    limit: float | None = None
     unit: str = ""
 
     @property
-    def rule(self) -> Optional[Rule]:
+    def rule(self) -> Rule | None:
         return _BY_ID.get(self.rid)
 
 
-def _cmp(rid: str, value: Optional[float], *, at_most: bool = True,
+def _cmp(rid: str, value: float | None, *, at_most: bool = True,
          watch_frac: float = 0.95, what: str = "") -> Finding:
     """One numeric comparison, with a 'watch' band below the limit.
 
@@ -307,10 +307,10 @@ def _cmp(rid: str, value: Optional[float], *, at_most: bool = True,
 # =========================================================================== #
 #  Declared checks — the numbers a member typed
 # =========================================================================== #
-def check_declared(params: Dict[str, float]) -> List[Finding]:
+def check_declared(params: dict[str, float]) -> list[Finding]:
     """Check what the member stated. Absent values become `unknown`, never
     `ok` — an unchecked rule is not a passed rule."""
-    out: List[Finding] = []
+    out: list[Finding] = []
     out.append(_cmp("EV.3.3.1", params.get("power_kw"),
                     what="no motor power stated"))
     out.append(_cmp("EV.3.3.2", params.get("pack_v_max"),
@@ -354,9 +354,9 @@ def check_declared(params: Dict[str, float]) -> List[Finding]:
 #  Measured checks — the team's own log, scored the way the meter scores it
 # =========================================================================== #
 def _runs_over(mask: np.ndarray, t: np.ndarray, min_s: float
-               ) -> List[Tuple[float, float]]:
+               ) -> list[tuple[float, float]]:
     """Contiguous True runs lasting at least `min_s`."""
-    out: List[Tuple[float, float]] = []
+    out: list[tuple[float, float]] = []
     i, n = 0, int(mask.size)
     while i < n:
         if mask[i]:
@@ -380,12 +380,12 @@ def _moving_average(y: np.ndarray, win: int) -> np.ndarray:
 
 @dataclass
 class MeasuredResult:
-    findings: List[Finding] = _dcfield(default_factory=list)
-    power_events: List[Tuple[float, float, str]] = _dcfield(
+    findings: list[Finding] = _dcfield(default_factory=list)
+    power_events: list[tuple[float, float, str]] = _dcfield(
         default_factory=list)
-    voltage_events: List[Tuple[float, float, str]] = _dcfield(
+    voltage_events: list[tuple[float, float, str]] = _dcfield(
         default_factory=list)
-    regen_events: List[Tuple[float, float, str]] = _dcfield(
+    regen_events: list[tuple[float, float, str]] = _dcfield(
         default_factory=list)
     peak_kw: float = float("nan")
     peak_v: float = float("nan")
@@ -403,7 +403,7 @@ class MeasuredResult:
 
 def check_measured(t: Sequence[float], pack_v: Sequence[float],
                    pack_i: Sequence[float],
-                   speed_ms: Optional[Sequence[float]] = None
+                   speed_ms: Sequence[float] | None = None
                    ) -> MeasuredResult:
     """Score a log the way EV.3.4.1 defines a violation.
 
@@ -447,7 +447,7 @@ def check_measured(t: Sequence[float], pack_v: Sequence[float],
             ("voltage", v, v_lim, res.voltage_events)):
         cont = _runs_over(series > lim, t, dwell)
         avg = _runs_over(_moving_average(series, win_n) > lim, t, 0.0)
-        merged: List[Tuple[float, float, str]] = [
+        merged: list[tuple[float, float, str]] = [
             (a, b, f"continuous > {dwell*1000:.0f} ms") for a, b in cont]
         for a, b in avg:
             if not any(not (b < ea or a > eb) for ea, eb, _k in merged):
@@ -486,7 +486,7 @@ def check_measured(t: Sequence[float], pack_v: Sequence[float],
 # =========================================================================== #
 #  Coverage — what was NOT checked matters as much as what was
 # =========================================================================== #
-def coverage() -> Tuple[int, int]:
+def coverage() -> tuple[int, int]:
     """(checkable rules encoded, total rules encoded). Both are a fraction of
     the real rulebook, which is the point of printing them."""
     return sum(1 for r in RULES if r.checkable), len(RULES)

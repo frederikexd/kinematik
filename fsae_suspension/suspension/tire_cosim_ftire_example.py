@@ -33,7 +33,6 @@ with the structural/thermal channels populated:
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 import numpy as np
 
@@ -64,7 +63,7 @@ class _FakeStructuralBinding:
         self._tread_temp_c = np.full(5, 25.0)   # 5 tread bands
         self._pressure_pa = 83_000.0            # ~12 psi cold
 
-    def initialise(self, ws: Optional[WheelState]):
+    def initialise(self, ws: WheelState | None):
         amb = ws.ambient_temp_c if ws else 25.0
         self._gas_temp_c = amb
         self._tread_temp_c[:] = (ws.track_temp_c if ws else 30.0)
@@ -139,7 +138,7 @@ class ExampleStructuralBackend(_ExternalTireBackend):
                    "tread_temp_c", "carcass_temp_c", "gas_temp_c",
                    "inflation_pressure_pa"]
 
-    def __init__(self, lateral: Optional[PacejkaLateral] = None,
+    def __init__(self, lateral: PacejkaLateral | None = None,
                  parameter_file: str = "", fitted_to: str = ""):
         self._lateral = lateral or default_tire()
         # bind the (fake) vendor solver; a real wrapper passes the cosin/FMU handle
@@ -158,7 +157,7 @@ class ExampleStructuralBackend(_ExternalTireBackend):
                   "fabricated placeholders (see TireOutput.synthesized). Replace the "
                   "binding with cosin FTire / CDTire FMU to make them real.")
 
-    def reset(self, state: Optional[WheelState] = None) -> None:
+    def reset(self, state: WheelState | None = None) -> None:
         self._warnings = []
         try:
             self._binding.initialise(state)
@@ -198,7 +197,7 @@ class ExampleStructuralBackend(_ExternalTireBackend):
         return out
 
 
-def example_backend_factory(lateral: Optional[PacejkaLateral] = None):
+def example_backend_factory(lateral: PacejkaLateral | None = None):
     """A factory for CosimCornerSet / run_cosim_maneuver."""
     return lambda: ExampleStructuralBackend(lateral=lateral)
 

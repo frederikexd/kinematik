@@ -59,7 +59,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 
 from .interfaces import Finding, Severity
 from .throttle_return import ThrottleInertia
@@ -138,7 +137,7 @@ class ManifoldParams:
     T_ambient_K: float = 298.0
     engine_draw_kgps: float = 0.0
     Cd: float = 0.7
-    p_manifold0_Pa: Optional[float] = None
+    p_manifold0_Pa: float | None = None
 
     def as_dict(self):
         return asdict(self)
@@ -197,8 +196,8 @@ class CoupledResult:
 
 
 def simulate_coupled_return(springs: list,
-                            inertia: Optional[ThrottleInertia] = None,
-                            manifold: Optional[ManifoldParams] = None,
+                            inertia: ThrottleInertia | None = None,
+                            manifold: ManifoldParams | None = None,
                             resistance=None,
                             theta_open_deg: float = 90.0,
                             manifold_torque_coeff: float = 0.0,
@@ -334,7 +333,7 @@ class FlutterResult:
     damping_ratio: float            # effective zeta (>0 stable, <0 flutter)
     natural_freq_hz: float
     aero_modelled: bool             # was a real aero-damping coeff supplied?
-    onset_speed_ms: Optional[float] # speed where zeta crosses 0, if aero given
+    onset_speed_ms: float | None # speed where zeta crosses 0, if aero given
     is_screen: bool                 # ALWAYS True: this is a screen, not validation
     findings: list = field(default_factory=list)
 

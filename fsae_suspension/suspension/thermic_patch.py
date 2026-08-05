@@ -60,7 +60,6 @@ spike.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 
@@ -138,7 +137,7 @@ class ThermicResult:
     meta: dict = field(default_factory=dict)
 
     @staticmethod
-    def failed(msg: str) -> "ThermicResult":
+    def failed(msg: str) -> ThermicResult:
         z = np.zeros(1)
         z4 = np.zeros((1, 4))
         return ThermicResult(
@@ -213,7 +212,7 @@ class ThermicResult:
 # --------------------------------------------------------------------------- #
 def parabolic_mu_scale(T_core_c, tp: ThermalParams,
                        half_width_c: float = 35.0,
-                       floor: Optional[float] = None) -> np.ndarray:
+                       floor: float | None = None) -> np.ndarray:
     """
     Grip multiplier D(T)/D_opt as a parabola centred on `tp.T_opt_c`, equal to
     1.0 at the optimum and falling to `floor` at +/- `half_width_c`. Vectorised.
@@ -262,11 +261,11 @@ def _sliding_power_flux(Fx, Fy, alpha, u, tp: ThermalParams,
     return np.maximum(q, 0.0)
 
 
-def run_thermic_patch(res, tp: Optional[ThermalParams] = None,
-                      lp: Optional[LadderParams] = None,
+def run_thermic_patch(res, tp: ThermalParams | None = None,
+                      lp: LadderParams | None = None,
                       init_temp_c: float = 55.0,
                       ambient_c: float = 30.0,
-                      gas_c: Optional[float] = None,
+                      gas_c: float | None = None,
                       half_width_c: float = 35.0) -> ThermicResult:
     """
     March the 3-node radial ladder along a solved `TransientResult`.

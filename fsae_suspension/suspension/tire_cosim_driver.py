@@ -35,7 +35,6 @@ populated only when a real FTire/CDTire backend is bound.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 
@@ -57,9 +56,9 @@ class CosimTireHistory:
     Fz: np.ndarray
     # structural/thermal — arrays of None-or-value, kept as object arrays so an
     # absent channel (reference backend) is represented honestly, not as zero.
-    carcass_deflection_m: Optional[np.ndarray] = None
-    gas_temp_c: Optional[np.ndarray] = None
-    tread_temp_c: Optional[list] = None
+    carcass_deflection_m: np.ndarray | None = None
+    gas_temp_c: np.ndarray | None = None
+    tread_temp_c: list | None = None
     absent_channels: list = field(default_factory=list)
     backend_status: str = ""
     warnings: list = field(default_factory=list)
@@ -82,7 +81,7 @@ class CosimCornerSet:
         self._last: list[TireOutput] = [TireOutput() for _ in range(4)]
         self.warnings: list[str] = []
 
-    def reset(self, init: Optional[list[WheelState]] = None):
+    def reset(self, init: list[WheelState] | None = None):
         for i, c in enumerate(self.corners):
             try:
                 c.reset(init[i] if init else None)

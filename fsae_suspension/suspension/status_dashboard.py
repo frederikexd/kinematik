@@ -53,7 +53,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 # Verdict ranking so a car-level rollup can take the worst component.
 GREEN, AMBER, RED = "green", "amber", "red"
@@ -66,7 +66,7 @@ _RANK = {GREEN: 0, AMBER: 1, RED: 2}
 _NUM_RX = re.compile(r'-?\d[\d,]*\.?\d*')
 
 
-def coerce_number(value: Any) -> Optional[float]:
+def coerce_number(value: Any) -> float | None:
     """Best-effort float from a spec value. Returns None if there's no number
     (so the rule reports 'can't check' rather than guessing)."""
     if value is None:
@@ -104,7 +104,7 @@ class RuleResult:
     op: str
     target: Any
     unit: str
-    actual: Optional[float]
+    actual: float | None
     status: str          # green | amber | red
     message: str
 
@@ -235,7 +235,7 @@ class CarStatus:
         return self.overall == GREEN
 
 
-def roll_up(component_statuses: list, extra_flags: Optional[list] = None) -> CarStatus:
+def roll_up(component_statuses: list, extra_flags: list | None = None) -> CarStatus:
     """Combine every component status (plus any cross-system flags like failing
     myths or detected clashes) into the single front-page verdict."""
     extra_flags = list(extra_flags or [])

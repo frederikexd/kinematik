@@ -60,7 +60,7 @@ which constraint binds.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -68,7 +68,7 @@ from . import lapsim
 from .dynamics import VehicleParams, VehicleDynamics
 from .driveline import (
     DifferentialSpec, ExitCondition, axle_traction, apply_lock_derate,
-    LOCK_PENALTY_K_DEFAULT, LOCK_PENALTY_K_BAND, SPOOL, OPEN,
+    LOCK_PENALTY_K_DEFAULT, LOCK_PENALTY_K_BAND,
 )
 
 
@@ -109,7 +109,7 @@ class Option:
                                     # (mounts, chain, carrier) — signed, kg
     notes: str = ""
 
-    def acquisition_usd(self) -> Optional[float]:
+    def acquisition_usd(self) -> float | None:
         return self.spec.total_acquisition_usd()
 
     def fab_hours(self) -> float:
@@ -207,13 +207,13 @@ def evaluate_option(opt: Option, base_params: VehicleParams,
 @dataclass
 class OptionResult:
     label: str
-    delta_points_median: Optional[float]
-    delta_points_p05: Optional[float]
-    delta_points_p95: Optional[float]
+    delta_points_median: float | None
+    delta_points_p05: float | None
+    delta_points_p95: float | None
     sign_stable: bool                 # does the band stay on one side of zero?
-    acquisition_usd: Optional[float]
+    acquisition_usd: float | None
     fab_hours: float
-    usd_per_point: Optional[float]    # withheld unless sign_stable
+    usd_per_point: float | None    # withheld unless sign_stable
     nominal: dict = field(default_factory=dict)   # centre-of-band diagnostics
     notes: list = field(default_factory=list)
     actionable: bool = False          # sign-stable AND bigger than the floor
@@ -228,10 +228,10 @@ class TradeVerdict:
     resolution_points: float           # the width of the noise floor we found
     verdict_text: str
     pairwise: dict = field(default_factory=dict)   # (a,b) -> paired delta band
-    cost_event: Optional[dict] = None
+    cost_event: dict | None = None
     provenance: dict = field(default_factory=dict)
 
-    def best(self) -> Optional[OptionResult]:
+    def best(self) -> OptionResult | None:
         cand = [r for r in self.results if r.actionable
                 and r.delta_points_median is not None
                 and r.delta_points_median > 0]
@@ -406,9 +406,9 @@ def compare(options: Sequence[Option], baseline: Option,
 #  4.  The FSAE Cost event — the only place dollars become points
 # --------------------------------------------------------------------------- #
 def cost_event_points(your_cost_usd: float,
-                      min_cost_usd: Optional[float] = None,
-                      max_cost_usd: Optional[float] = None,
-                      pts_max: float = 100.0) -> Optional[float]:
+                      min_cost_usd: float | None = None,
+                      max_cost_usd: float | None = None,
+                      pts_max: float = 100.0) -> float | None:
     """Published-form cost score. Returns None when the reference costs are not
     supplied — WITHHELD rather than guessed, because the year's Cmin/Cmax are
     the whole scale and inventing them would invent the answer."""
@@ -421,9 +421,9 @@ def cost_event_points(your_cost_usd: float,
 
 
 def cost_event_delta(car_cost_usd: float, part_delta_usd: float,
-                     min_cost_usd: Optional[float] = None,
-                     max_cost_usd: Optional[float] = None,
-                     pts_max: float = 100.0) -> Optional[float]:
+                     min_cost_usd: float | None = None,
+                     max_cost_usd: float | None = None,
+                     pts_max: float = 100.0) -> float | None:
     """How many Cost-event points a price difference on ONE part moves. This is
     usually a fraction of a point, and seeing that is the point: it stops the
     Cost event being used to justify a decision it cannot carry."""

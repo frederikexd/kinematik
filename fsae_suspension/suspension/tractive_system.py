@@ -92,7 +92,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -164,9 +164,9 @@ class PrechargeCircuit:
     pack_voltage_v: float
     link_capacitance_f: float
     precharge_r_ohm: float
-    discharge_r_ohm: Optional[float] = None
-    resistor_power_rating_w: Optional[float] = None
-    resistor_energy_rating_j: Optional[float] = None
+    discharge_r_ohm: float | None = None
+    resistor_power_rating_w: float | None = None
+    resistor_energy_rating_j: float | None = None
     is_estimate: bool = True
     set_by: str = ""
     notes: str = ""
@@ -178,7 +178,7 @@ class PrechargeCircuit:
         return self.precharge_r_ohm * self.link_capacitance_f
 
     @property
-    def tau_discharge_s(self) -> Optional[float]:
+    def tau_discharge_s(self) -> float | None:
         if self.discharge_r_ohm is None:
             return None
         return self.discharge_r_ohm * self.link_capacitance_f
@@ -211,7 +211,7 @@ class PrechargeCircuit:
         f = min(max(frac, 1e-6), 1.0 - 1e-9)
         return -self.tau_precharge_s * math.log(1.0 - f)
 
-    def time_to_safe_s(self, safe_voltage_v: float) -> Optional[float]:
+    def time_to_safe_s(self, safe_voltage_v: float) -> float | None:
         """
         Closed-form discharge time for V_cap to fall from V_pack to
         `safe_voltage_v` through the discharge resistor. None if no bleed R.
@@ -232,7 +232,7 @@ class PrechargeCircuit:
         return d
 
     @staticmethod
-    def from_dict(d) -> "PrechargeCircuit":
+    def from_dict(d) -> PrechargeCircuit:
         keep = {k: d[k] for k in (
             "pack_voltage_v", "link_capacitance_f", "precharge_r_ohm",
             "discharge_r_ohm", "resistor_power_rating_w",
@@ -248,14 +248,14 @@ class PrechargeTrace:
     v_cap_v: np.ndarray
     i_a: np.ndarray
     p_resistor_w: np.ndarray
-    t_switch_s: Optional[float]
+    t_switch_s: float | None
     ok: bool = True
     warnings: list = field(default_factory=list)
 
 
 def simulate_precharge(pc: PrechargeCircuit,
-                       t_end_s: Optional[float] = None,
-                       t_switch_s: Optional[float] = None,
+                       t_end_s: float | None = None,
+                       t_switch_s: float | None = None,
                        n: int = 2000) -> PrechargeTrace:
     """
     Reproduce EXACTLY the slide-4/slide-5 experiment without SPICE:
@@ -314,7 +314,7 @@ def simulate_precharge(pc: PrechargeCircuit,
                               warnings=warns + [f"precharge sim crashed: {exc!r}"])
 
 
-def check_precharge(pc: PrechargeCircuit, rules: Optional[Rules] = None) -> list:
+def check_precharge(pc: PrechargeCircuit, rules: Rules | None = None) -> list:
     """
     Gate the precharge/discharge design against the rules. Emits typed Findings,
     each naming the electrics subsystem so it has an owner in the board.
@@ -475,7 +475,7 @@ class ShutdownChain:
 
 
 def check_shutdown_chain(chain: ShutdownChain,
-                         rules: Optional[Rules] = None,
+                         rules: Rules | None = None,
                          required: Sequence[str] = REQUIRED_SHUTDOWN_NODES) -> list:
     """
     Check the declared shutdown circuit is rule-complete and fail-safe, and that
@@ -569,7 +569,7 @@ class TSAL:
     is_estimate: bool = True
 
 
-def check_tsal(tsal: TSAL, rules: Optional[Rules] = None) -> list:
+def check_tsal(tsal: TSAL, rules: Rules | None = None) -> list:
     rules = rules or Rules()
     out: list[Finding] = []
     subs = ["electrics", "tractive"]
@@ -619,7 +619,7 @@ class BSPD:
                 tractive_power_w >= self.power_threshold_w)
 
 
-def check_bspd(bspd: BSPD, rules: Optional[Rules] = None) -> list:
+def check_bspd(bspd: BSPD, rules: Rules | None = None) -> list:
     rules = rules or Rules()
     out: list[Finding] = []
     subs = ["electrics", "tractive"]
@@ -669,11 +669,11 @@ class TractiveSafetyResult:
                 f"{len(self.findings)} tractive-safety checks")
 
 
-def check_tractive_system(precharge: Optional[PrechargeCircuit] = None,
-                          chain: Optional[ShutdownChain] = None,
-                          tsal: Optional[TSAL] = None,
-                          bspd: Optional[BSPD] = None,
-                          rules: Optional[Rules] = None) -> TractiveSafetyResult:
+def check_tractive_system(precharge: PrechargeCircuit | None = None,
+                          chain: ShutdownChain | None = None,
+                          tsal: TSAL | None = None,
+                          bspd: BSPD | None = None,
+                          rules: Rules | None = None) -> TractiveSafetyResult:
     """
     The single call an electrics student makes before tech inspection: run every
     declared part of the tractive-system safety layer (precharge/discharge,

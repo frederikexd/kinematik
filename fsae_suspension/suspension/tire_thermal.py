@@ -75,7 +75,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 
@@ -193,10 +192,10 @@ class ThermalTireModel:
     _THERMAL_CHANNELS = ("tread_temp_c", "carcass_temp_c", "gas_temp_c",
                          "inflation_pressure_pa")
 
-    def __init__(self, lateral: Optional[PacejkaLateral] = None,
-                 params: Optional[ThermalParams] = None,
-                 reference: Optional[ReferenceTireModel] = None,
-                 init_temp_c: Optional[float] = None):
+    def __init__(self, lateral: PacejkaLateral | None = None,
+                 params: ThermalParams | None = None,
+                 reference: ReferenceTireModel | None = None,
+                 init_temp_c: float | None = None):
         self.lateral = lateral or default_tire()
         self.params = params or default_thermal_params()
         # the force law lives in the reference backend so we don't duplicate the
@@ -207,7 +206,7 @@ class ThermalTireModel:
         self._init_thermal_state(init_temp_c)
 
     # ---- state init -------------------------------------------------------- #
-    def _init_thermal_state(self, init_temp_c: Optional[float]):
+    def _init_thermal_state(self, init_temp_c: float | None):
         p = self.params
         T0 = float(init_temp_c) if init_temp_c is not None else 25.0
         self.T_tread = np.full(int(max(p.n_bands, 1)), T0, dtype=float)
@@ -215,7 +214,7 @@ class ThermalTireModel:
         self.T_gas = T0
         self._mu_scale_last = 1.0
 
-    def reset(self, state: Optional[WheelState] = None) -> None:
+    def reset(self, state: WheelState | None = None) -> None:
         self._ref.reset(state)
         self._warnings = []
         if state is not None:
@@ -475,7 +474,7 @@ class ThermalRun:
         return self.tread_c.mean(axis=1)
 
 
-def simulate_warmup(model: Optional[ThermalTireModel] = None,
+def simulate_warmup(model: ThermalTireModel | None = None,
                     *,
                     alpha_deg: float = 3.0,
                     Fz: float = 1100.0,

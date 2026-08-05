@@ -108,7 +108,7 @@ from __future__ import annotations
 import datetime as _dt
 import math
 from dataclasses import dataclass, field
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 from .interfaces import Severity, Finding
 
@@ -156,7 +156,7 @@ def _numeric(value, where: str) -> float:
 
 
 def _label_map(ws, *, label_col: int = 1, value_col: int = 2,
-               max_row: Optional[int] = None) -> dict[str, tuple]:
+               max_row: int | None = None) -> dict[str, tuple]:
     """Map lowercased row label -> (value, coordinate).
 
     Reading by label rather than by hardcoded coordinate is the whole point:
@@ -200,7 +200,7 @@ class PackSpec:
     cell_resistance_ohm: float = 0.0128
     cell_weight_kg: float = 0.071
     fuse_max_a: float = 50.0
-    max_cells: Optional[int] = 560
+    max_cells: int | None = 560
     source: str = ""
 
     # --- topology --------------------------------------------------------- #
@@ -248,7 +248,7 @@ class PackSpec:
         i = self.fuse_max_a
         return i * (self.nominal_voltage_v() - i * self.resistance_ohm())
 
-    def current_for_power(self, p_elec_w: float) -> Optional[float]:
+    def current_for_power(self, p_elec_w: float) -> float | None:
         """Pack current needed to deliver `p_elec_w`, accounting for sag.
 
         Solves R*I^2 - V_oc*I + P = 0 and takes the low-current root. Returns
@@ -312,7 +312,7 @@ def read_pack_config(path: str) -> PackSpec:
 
 
 def assert_reader_sees_the_file(path: str, reader, *,
-                                probe: Optional[dict] = None) -> list[Finding]:
+                                probe: dict | None = None) -> list[Finding]:
     """Prove a reader actually reads the workbook instead of defaulting.
 
     Mutates a scratch copy of the pack topology and checks the reader's output
@@ -1032,7 +1032,6 @@ def to_bq_stack(pack: PackSpec, *, part: str = "BQ79616-Q1",
 
 def bms_findings(pack: PackSpec, *, cells_per_board: int = 16) -> list[Finding]:
     """What monitoring this pack actually requires."""
-    from . import bq796xx as bq
     out: list[Finding] = []
     stack = to_bq_stack(pack, cells_per_board=cells_per_board)
     dev = stack.device()
@@ -1061,7 +1060,7 @@ def part_name(dev) -> str:
 
 
 def to_interface(pack: PackSpec, *, name: str = "electrics",
-                 heat_reject_w: Optional[float] = None,
+                 heat_reject_w: float | None = None,
                  is_estimate: bool = False):
     """Project the workbook-derived pack onto a `SubsystemInterface`.
 
@@ -1101,7 +1100,7 @@ def to_interface(pack: PackSpec, *, name: str = "electrics",
 
 def sync_ledger(ledger, pack: PackSpec, *,
                 name: str = "electrics",
-                heat_reject_w: Optional[float] = None) -> list:
+                heat_reject_w: float | None = None) -> list:
     """Write the workbook's pack onto an IntegrationLedger and report what moved.
 
     Returns a list of Findings naming every field whose ledger value disagreed
@@ -1323,7 +1322,7 @@ def trace_findings(trace: PowerDrawTrace) -> list[Finding]:
 @dataclass
 class PowerDrawAudit:
     path: str
-    pack: Optional[PackSpec]
+    pack: PackSpec | None
     findings: list = field(default_factory=list)
 
     def blocking(self) -> list:
@@ -1361,13 +1360,13 @@ class PowerDrawAudit:
         return "\n".join(L)
 
 
-def audit(path: str, *, vehicle: Optional[VehicleSpec] = None,
-          drive: Optional[DriveSpec] = None,
+def audit(path: str, *, vehicle: VehicleSpec | None = None,
+          drive: DriveSpec | None = None,
           include_readers: bool = True) -> PowerDrawAudit:
     """Audit the workbook, its readers, and the design it describes."""
     import openpyxl
     findings: list[Finding] = []
-    pack: Optional[PackSpec] = None
+    pack: PackSpec | None = None
 
     try:
         pack = read_pack_config(path)

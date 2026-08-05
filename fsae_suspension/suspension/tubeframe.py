@@ -69,7 +69,6 @@ import io
 import csv
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -88,8 +87,8 @@ MIN_WALL_OTHER_MM = 1.2
 
 RULES_YEAR_TRANSCRIBED = "FSAE 2024-25 (F.3.2 baseline classes)"
 RULES_DISCLAIMER = (
-    "Size classes transcribed from the {yr} rulebook. Verify against the "
-    "rulebook year you compete under.".format(yr=RULES_YEAR_TRANSCRIBED))
+    f"Size classes transcribed from the {RULES_YEAR_TRANSCRIBED} rulebook. Verify against the "
+    "rulebook year you compete under.")
 
 
 # --------------------------------------------------------------------------- #
@@ -147,12 +146,12 @@ class TubeSpec:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "TubeSpec":
+    def from_dict(d) -> TubeSpec:
         valid = TubeSpec.__dataclass_fields__.keys()
         return TubeSpec(**{k: v for k, v in dict(d).items() if k in valid})
 
 
-def default_size_table() -> Dict[str, TubeSpec]:
+def default_size_table() -> dict[str, TubeSpec]:
     """The team's three size classes, priced from the 06/29 meeting.
 
     A = 25.4 × 2.4  (hoops / shoulder-harness bar class)
@@ -179,7 +178,7 @@ def default_size_table() -> Dict[str, TubeSpec]:
 
 # Member class -> minimum size-class key. Transcribed from the classic FSAE
 # steel-tube table; ALWAYS re-verify against the competition-year rulebook.
-MEMBER_CLASS_MIN_SIZE: Dict[str, str] = {
+MEMBER_CLASS_MIN_SIZE: dict[str, str] = {
     "main_hoop":                 "A",
     "front_hoop":                "A",
     "shoulder_harness_bar":      "A",
@@ -195,7 +194,7 @@ MEMBER_CLASS_MIN_SIZE: Dict[str, str] = {
                                         # C used as the practical minimum stock
 }
 
-MEMBER_CLASS_LABELS: Dict[str, str] = {
+MEMBER_CLASS_LABELS: dict[str, str] = {
     "main_hoop":                 "Main hoop",
     "front_hoop":                "Front hoop",
     "shoulder_harness_bar":      "Shoulder harness bar",
@@ -214,7 +213,7 @@ _HOOP_CLASSES = {"main_hoop", "front_hoop"}
 
 
 def size_meets_minimum(spec: TubeSpec, member_class: str,
-                       table: Optional[Dict[str, TubeSpec]] = None) -> bool:
+                       table: dict[str, TubeSpec] | None = None) -> bool:
     """True if `spec` is at or above the member class's minimum size class.
 
     Same-OD comparison: wall must not be thinner than the class minimum and OD
@@ -228,7 +227,7 @@ def size_meets_minimum(spec: TubeSpec, member_class: str,
 
 
 def equivalency_check(candidate: TubeSpec, member_class: str,
-                      table: Optional[Dict[str, TubeSpec]] = None) -> dict:
+                      table: dict[str, TubeSpec] | None = None) -> dict:
     """Screen an alternative OD × wall against the rules baseline for a class.
 
     Rulebook framing (alternative steel tubing): the candidate must have
@@ -275,7 +274,7 @@ def equivalency_check(candidate: TubeSpec, member_class: str,
 @dataclass
 class FrameNode:
     nid: str
-    xyz_mm: Tuple[float, float, float]
+    xyz_mm: tuple[float, float, float]
     label: str = ""
 
     def as_dict(self):
@@ -283,7 +282,7 @@ class FrameNode:
                 "label": self.label}
 
     @staticmethod
-    def from_dict(d) -> "FrameNode":
+    def from_dict(d) -> FrameNode:
         return FrameNode(str(d["nid"]), tuple(float(v) for v in d["xyz_mm"]),
                          str(d.get("label", "")))
 
@@ -301,7 +300,7 @@ class FrameTube:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d) -> "FrameTube":
+    def from_dict(d) -> FrameTube:
         valid = FrameTube.__dataclass_fields__.keys()
         return FrameTube(**{k: v for k, v in dict(d).items() if k in valid})
 
@@ -309,10 +308,10 @@ class FrameTube:
 class FrameGraph:
     """The space frame as nodes + tubes, with the audits the meeting asked for."""
 
-    def __init__(self, size_table: Optional[Dict[str, TubeSpec]] = None):
-        self.nodes: Dict[str, FrameNode] = {}
-        self.tubes: List[FrameTube] = []
-        self.size_table: Dict[str, TubeSpec] = size_table or default_size_table()
+    def __init__(self, size_table: dict[str, TubeSpec] | None = None):
+        self.nodes: dict[str, FrameNode] = {}
+        self.tubes: list[FrameTube] = []
+        self.size_table: dict[str, TubeSpec] = size_table or default_size_table()
 
     # ---- construction ---------------------------------------------------- #
     def add_node(self, nid: str, xyz_mm, label: str = "") -> FrameNode:
@@ -354,7 +353,7 @@ class FrameGraph:
         }
 
     @staticmethod
-    def from_dict(d) -> "FrameGraph":
+    def from_dict(d) -> FrameGraph:
         st = {k: TubeSpec.from_dict(v)
               for k, v in (d.get("size_table") or {}).items()}
         g = FrameGraph(size_table=st or None)
@@ -367,7 +366,7 @@ class FrameGraph:
 
     @staticmethod
     def from_csv(nodes_csv: str, tubes_csv: str,
-                 size_table: Optional[Dict[str, TubeSpec]] = None) -> "FrameGraph":
+                 size_table: dict[str, TubeSpec] | None = None) -> FrameGraph:
         """Build a frame from two CSV texts.
 
         nodes CSV columns: id, x, y, z[, label]
@@ -398,8 +397,8 @@ class FrameGraph:
         return g
 
     # ---- graph helpers ----------------------------------------------------- #
-    def _adjacency(self, primary_only: bool = True) -> Dict[str, set]:
-        adj: Dict[str, set] = {nid: set() for nid in self.nodes}
+    def _adjacency(self, primary_only: bool = True) -> dict[str, set]:
+        adj: dict[str, set] = {nid: set() for nid in self.nodes}
         for t in self.tubes:
             if primary_only and not t.is_primary:
                 continue
@@ -407,7 +406,7 @@ class FrameGraph:
             adj[t.b].add(t.a)
         return adj
 
-    def triangles(self, primary_only: bool = True) -> List[Tuple[str, str, str]]:
+    def triangles(self, primary_only: bool = True) -> list[tuple[str, str, str]]:
         """All 3-cycles of tubes (each triangle reported once, sorted)."""
         adj = self._adjacency(primary_only)
         tris = set()
@@ -428,7 +427,7 @@ class FrameGraph:
 
     # ---- audit 1: mid-span landings ---------------------------------------- #
     def midspan_landings(self, tol_mm: float = 8.0,
-                         exempt_hoop_hosts: bool = True) -> List[dict]:
+                         exempt_hoop_hosts: bool = True) -> list[dict]:
         """Tube ends that land on the INTERIOR of another tube, not at a node.
 
         This is the geometry behind "these tubes interrupting the load paths
@@ -441,7 +440,7 @@ class FrameGraph:
         properly-triangulated node.
         """
         node_pts = {nid: self.p(nid) for nid in self.nodes}
-        grouped: Dict[Tuple[str, str], dict] = {}
+        grouped: dict[tuple[str, str], dict] = {}
         for t in self.tubes:
             for end_node in (t.a, t.b):
                 pe = node_pts[end_node]
@@ -479,7 +478,7 @@ class FrameGraph:
 
     # ---- audit 2: untriangulated quads -------------------------------------- #
     def untriangulated_quads(self, planarity_tol_mm: float = 60.0,
-                             primary_only: bool = True) -> List[dict]:
+                             primary_only: bool = True) -> list[dict]:
         """4-node cycles of primary tubes with NO diagonal — the open bays.
 
         Near-planar quads only (an open bay you'd actually brace with one
@@ -489,7 +488,7 @@ class FrameGraph:
         strictest member class already touching the bay.
         """
         adj = self._adjacency(primary_only)
-        edge_class: Dict[frozenset, str] = {}
+        edge_class: dict[frozenset, str] = {}
         for t in self.tubes:
             if primary_only and not t.is_primary:
                 continue
@@ -580,7 +579,7 @@ class FrameGraph:
         # Dijkstra by physical length — the path load actually takes is short.
         import heapq
         dist = {from_node: 0.0}
-        prev: Dict[str, str] = {}
+        prev: dict[str, str] = {}
         pq = [(0.0, from_node)]
         seen = set()
         while pq:
@@ -613,7 +612,7 @@ class FrameGraph:
 
         tri_nodes = self.triangulated_nodes(primary_only=True)
         quads = self.untriangulated_quads()
-        quad_by_node: Dict[str, dict] = {}
+        quad_by_node: dict[str, dict] = {}
         for q in quads:
             for n in q["bay_nodes"]:
                 quad_by_node.setdefault(n, q)
@@ -663,7 +662,7 @@ class FrameGraph:
     # ---- BOM & the sourcing trade study -------------------------------------- #
     def bom_by_spec(self) -> dict:
         """Roll up length / mass / cost / tube count per size class."""
-        rows: Dict[str, dict] = {}
+        rows: dict[str, dict] = {}
         for t in self.tubes:
             spec = self.spec_of(t)
             L = self.length_mm(t)
@@ -751,7 +750,7 @@ class FrameGraph:
             return float("inf")
         return math.pi ** 2 * spec.EI_Nmm2 / (L ** 2) / 1000.0
 
-    def tube_table(self) -> List[dict]:
+    def tube_table(self) -> list[dict]:
         rows = []
         for t in self.tubes:
             spec = self.spec_of(t)
@@ -838,7 +837,7 @@ class PanelMaterial:
     rho_kg_m3: float
 
 
-PANEL_MATERIALS: Dict[str, PanelMaterial] = {
+PANEL_MATERIALS: dict[str, PanelMaterial] = {
     "Aluminium sheet (6061)":      PanelMaterial("Aluminium sheet (6061)", 69000.0, 2700.0),
     "Carbon laminate (quasi-iso)": PanelMaterial("Carbon laminate (quasi-iso)", 45000.0, 1550.0),
     "GFRP / fibreglass":           PanelMaterial("GFRP / fibreglass", 20000.0, 1850.0),
@@ -846,7 +845,7 @@ PANEL_MATERIALS: Dict[str, PanelMaterial] = {
     "Polycarbonate":               PanelMaterial("Polycarbonate", 2300.0, 1200.0),
 }
 
-PANEL_KIND_NOTES: Dict[str, str] = {
+PANEL_KIND_NOTES: dict[str, str] = {
     "aero": ("Aero panel / bodywork: no rules load case, but bodywork must "
              "stay attached and stable at top speed — the pitch answer below "
              "IS aero's 'how close together do the mounting points need to "
@@ -870,7 +869,7 @@ PANEL_KIND_NOTES: Dict[str, str] = {
 # Screening capacities for the fastener families the subteams shortlisted.
 # TYPICAL published single-fastener values — judgement figures. Confirm
 # against the vendor datasheet for the exact part before manufacture.
-FASTENER_OPTIONS: List[dict] = [
+FASTENER_OPTIONS: list[dict] = [
     {"name": "Quarter-turn (Dzus-type), steel",
      "shear_N": 1500.0, "tension_N": 900.0, "quick_release": True,
      "note": "The classic bodywork fastener; needs a spring + receptacle "
@@ -903,7 +902,7 @@ class PanelPlan:
     deflection_mm: float
     deflection_limit_mm: float
     max_pitch_mm: float
-    options: List[dict] = field(default_factory=list)
+    options: list[dict] = field(default_factory=list)
     verdict: str = "look closer"
     notes: str = ""
 
@@ -920,11 +919,11 @@ def dynamic_pressure_kPa(speed_kph: float, cp: float = 1.0,
 def plan_panel_attachment(kind: str, width_mm: float, height_mm: float,
                           thickness_mm: float, material: str,
                           pitch_mm: float,
-                          pressure_kPa: Optional[float] = None,
-                          speed_kph: Optional[float] = None,
+                          pressure_kPa: float | None = None,
+                          speed_kph: float | None = None,
                           cp: float = 1.2,
                           g_load: float = 3.0,
-                          deflection_limit_mm: Optional[float] = None,
+                          deflection_limit_mm: float | None = None,
                           fos_target: float = 3.0) -> PanelPlan:
     """Answer the aero-panels to-do with numbers, for any panel kind.
 

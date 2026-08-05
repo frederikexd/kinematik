@@ -31,7 +31,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from .dfmea import compute_rpn, classify_risk, RiskBand, COLUMNS
 from .bolted_joint import BOLT_GRADES, METRIC_COARSE, Fastener
@@ -268,7 +268,7 @@ class RiskReport:
         return sorted((r for r in self.risks if r.triggered),
                       key=lambda r: (-r.rpn, -r.severity, r.rule_id))
 
-    def worst(self) -> Optional[LiveRisk]:
+    def worst(self) -> LiveRisk | None:
         a = self.active()
         return a[0] if a else None
 
@@ -287,7 +287,7 @@ class RiskReport:
 class RiskEngine:
     """The matrix. Feed it Readings; get live, propagated, RPN-scored risk."""
 
-    def __init__(self, rules: Optional[list[RiskRule]] = None,
+    def __init__(self, rules: list[RiskRule] | None = None,
                  propagation: tuple[PropagationEdge, ...] = PROPAGATION):
         self.rules = list(rules) if rules is not None else default_rules()
         self.propagation = tuple(propagation)
@@ -358,8 +358,8 @@ class RiskEngine:
 #  per-segment ΔP figures into Readings the matrix understands.
 # --------------------------------------------------------------------------- #
 def manifold_readings(segments: dict[str, float], *,
-                      pump_head_kpa: Optional[float] = None,
-                      inlet_abs_kpa: Optional[float] = None,
+                      pump_head_kpa: float | None = None,
+                      inlet_abs_kpa: float | None = None,
                       vapor_pressure_kpa: float = 12.3,
                       source: str = "cooling-solver") -> list[Reading]:
     """
@@ -380,7 +380,7 @@ def manifold_readings(segments: dict[str, float], *,
     return out
 
 
-def network_readings(net, *, q_m3s: Optional[float] = None,
+def network_readings(net, *, q_m3s: float | None = None,
                      source: str = "powertrain.engine") -> list[Reading]:
     """Duck-typed bridge to powertrain.engine.CoolingNetwork: audits each
     PipeSegment at the operating point and emits per-segment ΔP readings."""
@@ -427,11 +427,11 @@ class SlottedJointResult:
     area_ratio: float
     r_head_full_mm: float
     r_head_eff_mm: float
-    F_clamp_at_torque_N: Optional[float]
-    torque_for_target_Nm: Optional[float]
-    F_target_N: Optional[float]
+    F_clamp_at_torque_N: float | None
+    torque_for_target_Nm: float | None
+    F_target_N: float | None
     F_bearing_cap_N: float
-    bearing_stress_MPa: Optional[float]
+    bearing_stress_MPa: float | None
     bearing_capped: bool
     is_estimate: bool
     notes: str
@@ -487,7 +487,7 @@ def _annulus(Ro: float, Ri: float):
 
 
 def analyze_slotted_joint(j: SlottedHoleJoint, *,
-                          assembly_torque_Nm: Optional[float] = None,
+                          assembly_torque_Nm: float | None = None,
                           target_preload_fraction_of_proof: float = 0.65,
                           bearing_safety: float = 1.5) -> SlottedJointResult:
     """

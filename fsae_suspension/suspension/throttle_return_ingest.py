@@ -53,7 +53,6 @@ import csv
 import io
 import re
 from dataclasses import dataclass, field
-from typing import Optional
 
 from .interfaces import Finding, Severity
 
@@ -98,7 +97,7 @@ def _norm(s: str) -> str:
     return re.sub(r"[^a-z0-9]", "", (s or "").strip().lower())
 
 
-def _pick_columns(header: list) -> "tuple[Optional[int], Optional[int], bool]":
+def _pick_columns(header: list) -> tuple[int | None, int | None, bool]:
     """Return (force_idx, defl_idx, defl_in_mm). Best-effort from column names."""
     normed = [_norm(h) for h in header]
     f_idx = d_idx = None
@@ -122,7 +121,7 @@ def _pick_columns(header: list) -> "tuple[Optional[int], Optional[int], bool]":
 
 
 def spring_rate_from_bench_log(csv_bytes: bytes,
-                               deflection_in_mm: Optional[bool] = None,
+                               deflection_in_mm: bool | None = None,
                                force_in_kgf: bool = False,
                                min_points: int = 3,
                                r2_floor: float = 0.98) -> BenchFit:
@@ -292,8 +291,8 @@ def spring_rate_from_bench_log(csv_bytes: bytes,
 class CadCrossCheck:
     """Result of validating typed pedal dims against the CAD model's envelope."""
     ok: bool                       # dims are consistent with the CAD (or no basis)
-    cad_units: Optional[str]
-    cad_max_coord_mm: Optional[float]
+    cad_units: str | None
+    cad_max_coord_mm: float | None
     findings: list = field(default_factory=list)
 
     def as_dict(self):
@@ -302,7 +301,7 @@ class CadCrossCheck:
                     findings=[f.as_dict() for f in self.findings])
 
 
-def _to_mm(value: float, units: Optional[str]) -> Optional[float]:
+def _to_mm(value: float, units: str | None) -> float | None:
     """Convert a CAD coordinate to mm using the IGES unit string."""
     if value is None:
         return None

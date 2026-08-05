@@ -63,7 +63,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Optional, Callable
+from collections.abc import Callable
 
 from .interfaces import (
     SubsystemInterface,
@@ -135,7 +135,7 @@ class Effect:
     severity_hint: Severity = Severity.INFO   # how loud to be on the board
     detail: dict = field(default_factory=dict)
     # quantified shift, when a solver or modelled edge produced one:
-    delta_value: Optional[float] = None
+    delta_value: float | None = None
     delta_unit: str = ""
 
     def as_dict(self):
@@ -227,7 +227,7 @@ class Coupling:
     dfmea_failure_modes: list = field(default_factory=list)
     severity_hint: Severity = Severity.INFO
     # optional: (ledger, old, new) -> (delta_value, delta_unit, override_dir|None)
-    solver: Optional[Callable] = None
+    solver: Callable | None = None
 
     def direction_for(self, old, new) -> Direction:
         try:
@@ -504,7 +504,7 @@ def propagate_change(ledger: IntegrationLedger,
 
 
 def propagate_interface_edit(ledger: IntegrationLedger,
-                             old_iface: Optional[SubsystemInterface],
+                             old_iface: SubsystemInterface | None,
                              new_iface: SubsystemInterface) -> PropagationReport:
     """Diff two snapshots of ONE subsystem's interface and propagate every
     changed channel. This is the function the app calls when a sub-team saves an

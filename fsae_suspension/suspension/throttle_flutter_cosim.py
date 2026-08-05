@@ -54,7 +54,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from .interfaces import Finding, Severity
 from .throttle_dynamics import FlutterParams
@@ -77,7 +77,7 @@ class FlutterProvenance:
     is_correlated: bool = False
     converged: bool = False
     turbulence_model: str = ""
-    cell_count: Optional[int] = None
+    cell_count: int | None = None
     correlated_against: str = ""       # "flow-rig forced oscillation", ...
     notes: str = ""
 
@@ -126,11 +126,11 @@ class FlutterDerivative:
                        for transparency — None if not computed.
     provenance       : where it came from and whether it's trustworthy.
     """
-    c_aero_Nms: Optional[float]
+    c_aero_Nms: float | None
     ref_speed_ms: float
-    in_phase_moment_Nm: Optional[float] = None
-    quad_moment_Nm: Optional[float] = None
-    provenance: Optional[FlutterProvenance] = None
+    in_phase_moment_Nm: float | None = None
+    quad_moment_Nm: float | None = None
+    provenance: FlutterProvenance | None = None
     findings: list = field(default_factory=list)
 
     def is_usable(self) -> bool:
@@ -486,7 +486,7 @@ REPORT BACK
 #  Convenience: run the seam and hand a ready FlutterParams back
 # --------------------------------------------------------------------------- #
 def extract_flutter_derivative(case: OscillationCase,
-                               backend: Optional[FlutterSolver] = None,
+                               backend: FlutterSolver | None = None,
                                workdir: str = "/tmp/kinematik_flutter") -> FlutterDerivative:
     """Run a backend through write→run and return the FlutterDerivative.
 

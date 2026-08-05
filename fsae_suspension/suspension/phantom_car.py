@@ -128,7 +128,6 @@ import hashlib
 import json
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 
 from .proof_engine import (
     Objective, Quantity, DEFAULT_OBJECTIVES, aggregate,
@@ -209,7 +208,7 @@ class CarQuantity:
 
 
 def car_quantities(quantities: list[Quantity],
-                   today: Optional[_dt.date] = None) -> dict[str, CarQuantity]:
+                   today: _dt.date | None = None) -> dict[str, CarQuantity]:
     """Build every car-level channel present in the deck, with priced σ."""
     base = aggregate(quantities)
     out: dict[str, CarQuantity] = {}
@@ -245,8 +244,8 @@ def car_quantities(quantities: list[Quantity],
 
 def resolve_quantity(key: str, quantities: list[Quantity],
                      cars: dict[str, CarQuantity],
-                     today: Optional[_dt.date] = None
-                     ) -> Optional[CarQuantity]:
+                     today: _dt.date | None = None
+                     ) -> CarQuantity | None:
     """
     A declaration may target a car-level aggregate ("car.mass_kg") or one
     subsystem's channel ("accumulator.mass_kg"). Both come back in the same
@@ -288,7 +287,7 @@ class MarginDeclaration:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d: dict) -> "MarginDeclaration":
+    def from_dict(d: dict) -> MarginDeclaration:
         valid = MarginDeclaration.__dataclass_fields__.keys()
         return MarginDeclaration(**{k: v for k, v in d.items() if k in valid})
 
@@ -320,7 +319,7 @@ DEFAULT_CONSUMPTION: list[tuple[str, str, str, str]] = [
 
 
 def seed_declarations(quantities: list[Quantity],
-                      today: Optional[_dt.date] = None
+                      today: _dt.date | None = None
                       ) -> list[MarginDeclaration]:
     """
     Seed the disclosure form from the consumption map — assumed values start
@@ -383,14 +382,14 @@ class MarginCharter:
         return asdict(self)
 
     @staticmethod
-    def from_dict(d: dict) -> "MarginCharter":
+    def from_dict(d: dict) -> MarginCharter:
         valid = MarginCharter.__dataclass_fields__.keys()
         return MarginCharter(**{k: v for k, v in d.items() if k in valid})
 
 
 def create_charter(percentile: float, note: str = "", author: str = "",
                    fos_rule: str = "once",
-                   today: Optional[_dt.date] = None) -> MarginCharter:
+                   today: _dt.date | None = None) -> MarginCharter:
     """Seal the charter BEFORE the audit — the percentile provably never
     moved to flatter a verdict."""
     c = MarginCharter(percentile=float(percentile), fos_rule=fos_rule,
@@ -564,8 +563,8 @@ def _as_car_delta(dec: MarginDeclaration, cq: CarQuantity,
 def audit(charter: MarginCharter,
           declarations: list[MarginDeclaration],
           quantities: list[Quantity],
-          objectives: Optional[list[Objective]] = None,
-          today: Optional[_dt.date] = None) -> MarginAudit:
+          objectives: list[Objective] | None = None,
+          today: _dt.date | None = None) -> MarginAudit:
     """
     The whole docket, deterministically: same charter + declarations + ledger
     in, same audit out. A charter with a broken seal refuses to judge — the
@@ -786,7 +785,7 @@ def render_docket_md(a: MarginAudit, frame_note: str = "") -> str:
 #  Demo declarations — the classic pathology, for the self-test and the UI
 # --------------------------------------------------------------------------- #
 def demo_declarations(quantities: list[Quantity],
-                      today: Optional[_dt.date] = None
+                      today: _dt.date | None = None
                       ) -> list[MarginDeclaration]:
     """
     The textbook failure set, built from whatever the deck declares:

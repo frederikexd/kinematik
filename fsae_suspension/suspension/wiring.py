@@ -66,7 +66,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field as _dcfield
-from typing import Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -91,12 +91,12 @@ class Conductor:
     awg: str
     area_mm2: float
     r_ohm_per_km_20c: float      # copper, 20 °C
-    a_60c: Optional[float]       # NM-B, UF-B
-    a_75c: Optional[float]       # THW, THWN, XHHW
-    a_90c: Optional[float]       # THHN, XHHW-2, THWN-2
+    a_60c: float | None       # NM-B, UF-B
+    a_75c: float | None       # THW, THWN, XHHW
+    a_90c: float | None       # THHN, XHHW-2, THWN-2
     in_nec_table: bool = True
 
-    def base(self, insulation_c: int) -> Optional[float]:
+    def base(self, insulation_c: int) -> float | None:
         return {60: self.a_60c, 75: self.a_75c, 90: self.a_90c}.get(
             insulation_c)
 
@@ -107,7 +107,7 @@ class Conductor:
 #  ampacity left as None rather than invented, because a made-up ampacity on
 #  a signal wire is exactly the kind of confident wrong number this toolkit
 #  exists to refuse.
-AWG: Dict[str, Conductor] = {
+AWG: dict[str, Conductor] = {
     "22":  Conductor("22", 0.326, 52.96, None, None, None, False),
     "20":  Conductor("20", 0.518, 33.31, None, None, None, False),
     "18":  Conductor("18", 0.823, 20.95, None, None, None, False),
@@ -134,7 +134,7 @@ _ORDER = ["22", "20", "18", "16", "14", "12", "10", "8", "6", "4", "3", "2",
 #  reference. They are not used to compute anything — see `correction_factor`,
 #  which derives them — and the self-test checks the derivation against every
 #  one of these 19 numbers.
-TEMP_CORRECTION: Dict[int, List[Tuple[float, float]]] = {
+TEMP_CORRECTION: dict[int, list[tuple[float, float]]] = {
     75: [(35, 0.94), (40, 0.88), (45, 0.82), (50, 0.75), (55, 0.67),
          (60, 0.58), (70, 0.33)],
     90: [(35, 0.96), (40, 0.91), (45, 0.87), (50, 0.82), (55, 0.76),
@@ -176,11 +176,11 @@ def correction_factor(rating_c: float, ambient_c: float, *,
 
 #  Published columns, richest first. A conductor rated above 90 °C is scaled
 #  FROM the 90 °C column, which is the highest the table publishes.
-_COLUMNS: List[Tuple[int, str]] = [(90, "a_90c"), (75, "a_75c"),
+_COLUMNS: list[tuple[int, str]] = [(90, "a_90c"), (75, "a_75c"),
                                    (60, "a_60c")]
 
 
-def _column_for(effective_rating_c: float) -> Tuple[int, str]:
+def _column_for(effective_rating_c: float) -> tuple[int, str]:
     """The published column an effective rating should be scaled from."""
     for col, attr in _COLUMNS:
         if effective_rating_c >= col:
@@ -190,7 +190,7 @@ def _column_for(effective_rating_c: float) -> Tuple[int, str]:
 
 def ampacity_scale(effective_rating_c: float, ambient_c: float, *,
                    include_resistance_shift: bool = True
-                   ) -> Tuple[float, int]:
+                   ) -> tuple[float, int]:
     """Scale factor from the appropriate published column, and which column.
 
     Same square-root law, but anchored on a REAL published number rather than
@@ -218,13 +218,13 @@ def ampacity_scale(effective_rating_c: float, ambient_c: float, *,
 
 #  NEC 310.15(C)(1) adjustment for current-carrying conductors bundled
 #  together. A car loom is squarely in the 10–20 band.
-BUNDLE_ADJUSTMENT: List[Tuple[int, float]] = [
+BUNDLE_ADJUSTMENT: list[tuple[int, float]] = [
     (3, 1.00), (6, 0.80), (9, 0.70), (20, 0.50), (30, 0.45), (40, 0.40),
     (999, 0.35),
 ]
 
 #  insulation key → (continuous conductor rating °C, note)
-INSULATIONS: Dict[str, Tuple[int, str]] = {
+INSULATIONS: dict[str, tuple[int, str]] = {
     "nmb":      (60,  "NM-B / UF-B building wire."),
     "thw":      (75,  "THW / THWN building wire."),
     "thhn":     (90,  "THHN / THWN-2 / XHHW-2 building wire — the column the "
@@ -240,7 +240,7 @@ INSULATIONS: Dict[str, Tuple[int, str]] = {
 
 #  Common termination temperature ratings. A conductor is only as good as
 #  what it lands in, and this is the limit that actually bites.
-TERMINATIONS: Dict[str, Tuple[int, str]] = {
+TERMINATIONS: dict[str, tuple[int, str]] = {
     "ring_lug_105":  (105, "Typical crimp ring lug / heat-shrink boot."),
     "connector_125": (125, "Deutsch DTM / Autosport-style contact."),
     "connector_150": (150, "High-temperature contact system."),
@@ -255,7 +255,7 @@ def conductor(awg: str) -> Conductor:
     raise KeyError(f"unknown gauge '{awg}' — have {', '.join(_ORDER)}")
 
 
-def _lookup(bands: Sequence[Tuple[float, float]], value: float) -> float:
+def _lookup(bands: Sequence[tuple[float, float]], value: float) -> float:
     for upper, factor in bands:
         if value <= upper:
             return factor
@@ -267,7 +267,7 @@ def rating_of(insulation: str) -> int:
 
 
 def ampacity(awg: str, insulation: str = "thhn",
-             ambient_c: float = _NEC_AMBIENT_C) -> Optional[float]:
+             ambient_c: float = _NEC_AMBIENT_C) -> float | None:
     """Single-conductor ampacity for any insulation rating and ambient.
 
     Anchored on the published 90 °C column and scaled by `correction_factor`.
@@ -290,11 +290,11 @@ class DerateResult:
     conductor: Conductor
     insulation: str
     rating_c: int
-    base_a: Optional[float]
+    base_a: float | None
     temp_factor: float
     bundle_factor: float
-    allowed_a: Optional[float]
-    notes: List[str] = _dcfield(default_factory=list)
+    allowed_a: float | None
+    notes: list[str] = _dcfield(default_factory=list)
 
     @property
     def total_factor(self) -> float:
@@ -303,7 +303,7 @@ class DerateResult:
 
 def derate(awg: str, *, insulation: str = "thhn", ambient_c: float = 30.0,
            n_bundled: int = 1,
-           termination_c: Optional[float] = None) -> DerateResult:
+           termination_c: float | None = None) -> DerateResult:
     """What the conductor may actually carry where you put it.
 
     Three independent limits, and the third is the one that bites:
@@ -388,22 +388,22 @@ class RunCheck:
     current_a: float
     length_m: float
     system_v: float
-    derated_a: Optional[float]
-    thermal_margin: Optional[float]
+    derated_a: float | None
+    thermal_margin: float | None
     resistance_ohm: float
     drop_v: float
     drop_pct: float
     loss_w: float
     governing: str
     ok: bool
-    notes: List[str] = _dcfield(default_factory=list)
+    notes: list[str] = _dcfield(default_factory=list)
 
 
 def check_run(awg: str, *, current_a: float, length_m: float,
               system_v: float, insulation: str = "thhn",
               ambient_c: float = 30.0, n_bundled: int = 1,
-              conductor_temp_c: Optional[float] = None,
-              termination_c: Optional[float] = None,
+              conductor_temp_c: float | None = None,
+              termination_c: float | None = None,
               max_drop_pct: float = 3.0) -> RunCheck:
     """Both failure modes, and which one governs.
 
@@ -470,7 +470,7 @@ def check_run(awg: str, *, current_a: float, length_m: float,
 
 def parallel_needed(current_a: float, *, insulation: str = "thhn",
                     ambient_c: float = 30.0, n_bundled: int = 1,
-                    awg: str = "4/0") -> Tuple[int, float]:
+                    awg: str = "4/0") -> tuple[int, float]:
     """How many conductors of `awg` in parallel would carry the current.
 
     When a single conductor cannot do the job, the answer is not a bigger
@@ -485,15 +485,15 @@ def parallel_needed(current_a: float, *, insulation: str = "thhn",
 
 def recommend_gauge(*, current_a: float, length_m: float, system_v: float,
                     insulation: str = "thhn", ambient_c: float = 30.0,
-                    n_bundled: int = 1, termination_c: Optional[float] = None,
+                    n_bundled: int = 1, termination_c: float | None = None,
                     max_drop_pct: float = 3.0,
-                    fos: float = 1.25) -> Tuple[Optional[str], List[RunCheck]]:
+                    fos: float = 1.25) -> tuple[str | None, list[RunCheck]]:
     """Smallest gauge that clears BOTH tests, plus the whole ladder.
 
     Returns None for the pick when nothing in the table clears it. That is a
     real answer — see `parallel_needed` — and it is emphatically not the same
     as the smallest gauge that raised no objection."""
-    ladder: List[RunCheck] = []
+    ladder: list[RunCheck] = []
     pick = None
     for awg in _ORDER:
         r = check_run(awg, current_a=current_a * fos, length_m=length_m,
@@ -512,7 +512,7 @@ def recommend_gauge(*, current_a: float, length_m: float, system_v: float,
 # =========================================================================== #
 def fuse_coordination(awg: str, fuse_a: float, *, insulation: str = "thhn",
                       ambient_c: float = 30.0, n_bundled: int = 1
-                      ) -> Tuple[str, str]:
+                      ) -> tuple[str, str]:
     """Does the fuse protect the conductor, or does the conductor protect the
     fuse? Returns (severity, message)."""
     d = derate(awg, insulation=insulation, ambient_c=ambient_c,
@@ -549,9 +549,9 @@ class LogSizing:
     mean_a: float
     crest: float
     duty_over_rms: float
-    recommended_awg: Optional[str]
-    peak_awg: Optional[str]
-    notes: List[str] = _dcfield(default_factory=list)
+    recommended_awg: str | None
+    peak_awg: str | None
+    notes: list[str] = _dcfield(default_factory=list)
 
 
 def size_from_log(current_a: Sequence[float], *, length_m: float,

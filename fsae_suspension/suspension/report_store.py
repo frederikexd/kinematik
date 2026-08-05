@@ -55,11 +55,8 @@ save it didn't perform. No supabase/google imports at module load — all lazy.
 from __future__ import annotations
 
 import os
-import base64
-import hashlib
 import datetime as _dt
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import dataclass, asdict
 
 
 DEFAULT_BUCKET = "kinematik-reports"
@@ -125,7 +122,7 @@ class ReportStore:
     """
 
     def __init__(self, project_store, supabase_client=None,
-                 bucket: str = DEFAULT_BUCKET, local_dir: Optional[str] = None):
+                 bucket: str = DEFAULT_BUCKET, local_dir: str | None = None):
         self.project = project_store
         self.client = supabase_client
         self.bucket = bucket
@@ -179,7 +176,7 @@ class ReportStore:
             f.write(pdf_bytes)
         return "local", path
 
-    def fetch_bytes(self, rec: ReportRecord) -> Optional[bytes]:
+    def fetch_bytes(self, rec: ReportRecord) -> bytes | None:
         """Read a stored report's PDF bytes back, from wherever they live."""
         if rec.storage_kind == "bucket" and self.client is not None:
             try:
@@ -228,7 +225,7 @@ class ReportStore:
 
     # ---- on-demand Drive export ----------------------------------------
     def export_to_drive(self, rec: ReportRecord, *, read_credential=None,
-                        oauth_token=None) -> "DriveExportOutcome":
+                        oauth_token=None) -> DriveExportOutcome:
         """Push ONE stored report to Google Drive. Reads the bytes from the store,
         writes a temp file, and hands it to drive_export. Records the resulting
         Drive id/link back onto the ReportRecord. Never raises."""

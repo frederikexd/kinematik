@@ -65,10 +65,8 @@ solved.
 from __future__ import annotations
 
 import numpy as np
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
-from . import interfaces as ifc
 from .interfaces import Severity, Finding, IntegrationLedger
 from .dynamics import VehicleParams, VehicleDynamics
 from . import lapsim
@@ -142,7 +140,7 @@ def check_assumptions(ledger: IntegrationLedger,
     return out
 
 
-def _largest_contributor(ledger: IntegrationLedger, field_name: str) -> Optional[str]:
+def _largest_contributor(ledger: IntegrationLedger, field_name: str) -> str | None:
     """For a mass/CG assumption miss, name the subsystem contributing most to it —
     so the finding has a concrete owner, not just a budget."""
     if not field_name.startswith(("total_mass", "cg_")):
@@ -198,13 +196,13 @@ class WorthwhileVerdict:
     buildable: bool                     # False => NO-GO, points withheld
     blocking: list                      # the FAIL findings that block the build
     findings: list                      # all integration + assumption findings
-    paper_points: Optional[dict]        # per-event points on optimistic baseline
-    real_points: Optional[dict]         # per-event points on reconciled build
-    points_delta: Optional[dict]        # real - paper, per event and total
+    paper_points: dict | None        # per-event points on optimistic baseline
+    real_points: dict | None         # per-event points on reconciled build
+    points_delta: dict | None        # real - paper, per event and total
     any_estimate: bool                  # reconciled numbers still contain estimates
     verdict_text: str
 
-    def total_delta(self) -> Optional[float]:
+    def total_delta(self) -> float | None:
         if self.points_delta is None:
             return None
         return self.points_delta.get("total")

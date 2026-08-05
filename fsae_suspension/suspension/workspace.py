@@ -31,7 +31,6 @@ import os
 import re
 import datetime as _dt
 from dataclasses import dataclass
-from typing import Optional
 
 _WS_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 _UUID_RE = re.compile(
@@ -59,7 +58,7 @@ def validate_workspace_id(workspace_id: str, *, require_uuid: bool = False) -> s
     return ws
 
 
-def _jwt_role(key: str) -> Optional[str]:
+def _jwt_role(key: str) -> str | None:
     """Best-effort decode of a Supabase key's JWT payload role claim (no
     signature verification needed — we only use it to REFUSE service keys)."""
     try:
@@ -248,7 +247,7 @@ class WorkspaceScopedSupabaseBackend:
             raise WorkspaceError(f"role {self.ctx.role!r} cannot write this workspace")
         assert_payload_scoped(payload, self.ctx.workspace_id)
         from .project import StaleWriteError   # lazy: keep module stdlib-only at import
-        now = _dt.datetime.now(_dt.timezone.utc).isoformat().replace("+00:00", "Z")
+        now = _dt.datetime.now(_dt.UTC).isoformat().replace("+00:00", "Z")
         # Audit stamp: who saved this version (shown in the Project history
         # panel). Copy-then-stamp so the caller's dict isn't mutated.
         payload = dict(payload)
@@ -349,7 +348,7 @@ class MemoryWorkspaceRegistry:
         assert_payload_scoped(data, ws_id)
         self._rows[(ws_id, table, row_id)] = json.loads(json.dumps(data))
 
-    def get(self, user_id: str, ws_id: str, table: str, row_id: str) -> Optional[dict]:
+    def get(self, user_id: str, ws_id: str, table: str, row_id: str) -> dict | None:
         self._gate(user_id, ws_id)
         return self._rows.get((ws_id, table, row_id))
 

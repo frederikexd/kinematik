@@ -54,9 +54,7 @@ Pure Python + NumPy. Self-test: python3 -m suspension.printed_parts
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field as _dcfield
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -87,7 +85,7 @@ class Material:
         return self.tensile_xy_mpa * self.z_factor
 
 
-MATERIALS: Dict[str, Material] = {
+MATERIALS: dict[str, Material] = {
     "onyx": Material(
         "onyx", "Markforged Onyx (micro-carbon-filled nylon)",
         tensile_xy_mpa=40.0, z_factor=0.45, modulus_gpa=2.4, hdt_c=145.0,
@@ -153,7 +151,7 @@ class Duty:
 
 
 #  --- the four knockdowns, each declared and each reported separately ------ #
-def _temp_factor(mat: Material, t_c: float) -> Tuple[float, str]:
+def _temp_factor(mat: Material, t_c: float) -> tuple[float, str]:
     """Strength retention against temperature.
 
     HDT is not a service limit. This uses a declared linear retention curve:
@@ -173,7 +171,7 @@ def _temp_factor(mat: Material, t_c: float) -> Tuple[float, str]:
                f"retention {f:.0%} on the declared linear curve")
 
 
-def _orientation_factor(mat: Material, across: bool) -> Tuple[float, str]:
+def _orientation_factor(mat: Material, across: bool) -> tuple[float, str]:
     if not across:
         return 1.0, "principal stress runs in-plane — full datasheet strength"
     return mat.z_factor, (
@@ -182,7 +180,7 @@ def _orientation_factor(mat: Material, across: bool) -> Tuple[float, str]:
 
 
 def _creep_factor(sustained: bool, t_c: float, mat: Material
-                  ) -> Tuple[float, str]:
+                  ) -> tuple[float, str]:
     if not sustained:
         return 1.0, "transient load — no sustained-load knockdown"
     hot = t_c > (mat.hdt_c - 90.0)
@@ -191,7 +189,7 @@ def _creep_factor(sustained: bool, t_c: float, mat: Material
                f"{f:.0%} to cover creep, which a static FEA does not see")
 
 
-def _moisture_factor(mat: Material, dried: bool) -> Tuple[float, str]:
+def _moisture_factor(mat: Material, dried: bool) -> tuple[float, str]:
     if not mat.hygroscopic:
         return 1.0, "not hygroscopic"
     if dried:
@@ -207,7 +205,7 @@ class Allowable:
     material: Material
     duty: Duty
     base_mpa: float
-    factors: List[Tuple[str, float, str]] = _dcfield(default_factory=list)
+    factors: list[tuple[str, float, str]] = _dcfield(default_factory=list)
     allowable_mpa: float = 0.0
     viable: bool = True
 
@@ -223,7 +221,7 @@ class Allowable:
         return self.allowable_mpa / max(self.duty.design_fos, 1e-6)
 
 
-def derate(mat_key: str, duty: Optional[Duty] = None) -> Allowable:
+def derate(mat_key: str, duty: Duty | None = None) -> Allowable:
     """Datasheet number → allowable stress, with every step shown."""
     mat = material(mat_key)
     d = duty or Duty()
@@ -249,11 +247,11 @@ class Substitution:
     got: Allowable
     ratio: float
     verdict: str
-    actions: List[str] = _dcfield(default_factory=list)
+    actions: list[str] = _dcfield(default_factory=list)
 
 
 def substitute(wanted_key: str, got_key: str,
-               duty: Optional[Duty] = None) -> Substitution:
+               duty: Duty | None = None) -> Substitution:
     """What a forced material swap actually costs, at THIS duty.
 
     The comparison is made after derating both, because two materials with a
@@ -264,7 +262,7 @@ def substitute(wanted_key: str, got_key: str,
     a, b = derate(wanted_key, d), derate(got_key, d)
     ratio = (b.allowable_mpa / a.allowable_mpa) if a.allowable_mpa > 0 \
         else float("nan")
-    actions: List[str] = []
+    actions: list[str] = []
     if not b.viable:
         verdict = ("NOT A SUBSTITUTION. The replacement has no strength left "
                    "at this service temperature.")
@@ -313,11 +311,11 @@ class ManifoldResult:
     fos: float
     min_wall_mm: float
     ok: bool
-    notes: List[str] = _dcfield(default_factory=list)
+    notes: list[str] = _dcfield(default_factory=list)
 
 
 def manifold_check(mat_key: str, *, inner_dia_mm: float, wall_mm: float,
-                   pressure_bar: float, duty: Optional[Duty] = None,
+                   pressure_bar: float, duty: Duty | None = None,
                    printed_upright: bool = True) -> ManifoldResult:
     """A printed coolant manifold as the pressure vessel it is.
 

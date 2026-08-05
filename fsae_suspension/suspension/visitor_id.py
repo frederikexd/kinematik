@@ -131,7 +131,7 @@ def resolve_visitor_id(st) -> tuple[str, str]:
             except Exception:
                 _ua = ""
             if _ip:
-                _fp = _hl.sha256(f"{_ip}|{_ua[:80]}".encode("utf-8")).hexdigest()
+                _fp = _hl.sha256(f"{_ip}|{_ua[:80]}".encode()).hexdigest()
                 vid, kind = "fp-" + _fp[:24], "ip+ua fingerprint"
         except Exception:
             pass

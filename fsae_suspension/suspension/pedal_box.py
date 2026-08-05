@@ -81,7 +81,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Optional, List
 
 from .interfaces import Finding, Severity
 
@@ -178,20 +177,20 @@ class StackSegment:
 @dataclass
 class StackUpResult:
     """The installed length, segment by segment, against the space available."""
-    segments: List[StackSegment]
+    segments: list[StackSegment]
     installed_mm: float
     available_mm: float
     deficit_mm: float             # >0 means it does NOT fit, by this much
     verdict: str                  # FITS / TIGHT / DOES NOT FIT
     is_estimate: bool
-    findings: List[Finding] = field(default_factory=list)
-    notes: List[str] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
 
     @property
     def fits(self) -> bool:
         return self.deficit_mm <= 0.0
 
-    def waterfall(self) -> List[dict]:
+    def waterfall(self) -> list[dict]:
         """Segments sorted longest-first -- the order to go hunting in."""
         return [s.as_dict() for s in
                 sorted(self.segments, key=lambda s: -s.length_mm)]
@@ -227,12 +226,12 @@ def stack_up(*,
              balance_bar_stack_mm: float = 38.0,
              pushrod_mm: float = 55.0,
              pushrod_thread_dia_mm: float = 8.0,
-             pushrod_engaged_mm: Optional[float] = None,
-             mc_body_mm: Optional[float] = None,
+             pushrod_engaged_mm: float | None = None,
+             mc_body_mm: float | None = None,
              mc_family: str = "standard racing",
              mc_body_measured: bool = False,
              mc_outlet: str = "straight fitting + hardline bend",
-             mc_outlet_mm: Optional[float] = None,
+             mc_outlet_mm: float | None = None,
              mount_plate_mm: float = 8.0,
              bulkhead_clearance_mm: float = 12.0,
              pedal_arc_clearance_mm: float = 10.0,
@@ -270,8 +269,8 @@ def stack_up(*,
     tilt = math.radians(max(float(tilt_deg), 0.0))
     cos_tilt = math.cos(tilt)
 
-    findings: List[Finding] = []
-    notes: List[str] = []
+    findings: list[Finding] = []
+    notes: list[str] = []
     is_estimate = False
 
     # --- pedal geometry ----------------------------------------------------
@@ -441,7 +440,7 @@ class ShortenOption:
     cost: str
     side_effects: dict = field(default_factory=dict)
     feasible: bool = True
-    requires_recheck: List[str] = field(default_factory=list)
+    requires_recheck: list[str] = field(default_factory=list)
 
     def as_dict(self):
         return asdict(self)
@@ -454,11 +453,11 @@ class ShortenOption:
 class ShortenPlan:
     """A combination of options that clears (or fails to clear) the deficit."""
     deficit_mm: float
-    chosen: List[ShortenOption]
+    chosen: list[ShortenOption]
     total_gain_mm: float
     remaining_mm: float           # >0 means still too long after everything chosen
     solved: bool
-    findings: List[Finding] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
 
     def as_dict(self):
         return dict(deficit_mm=self.deficit_mm,
@@ -491,13 +490,13 @@ def shorten_options(stack: StackUpResult, *,
                     pedal_rest_angle_deg: float = 25.0,
                     pedal_rest_angle_max_deg: float = 40.0,
                     mc_bore_mm: float = 15.875,
-                    mc_bore_up_mm: Optional[float] = None,
+                    mc_bore_up_mm: float | None = None,
                     mc_family: str = "standard racing",
                     mc_family_short: str = "compact racing (short body)",
                     mc_outlet: str = "straight fitting + hardline bend",
                     mc_outlet_alt: str = "90 deg banjo",
                     tilt_deg: float = 0.0,
-                    tilt_max_deg: float = 10.0) -> List[ShortenOption]:
+                    tilt_max_deg: float = 10.0) -> list[ShortenOption]:
     """Enumerate every lever that buys longitudinal length, quantified.
 
     Each option reports the millimetres it returns and, where the physics gives a
@@ -508,7 +507,7 @@ def shorten_options(stack: StackUpResult, *,
 
     Nothing here is applied automatically. It is a menu, priced.
     """
-    opts: List[ShortenOption] = []
+    opts: list[ShortenOption] = []
     seg = {s.name: s for s in stack.segments}
 
     # --- 0. free: adjustment you already own -------------------------------
@@ -697,7 +696,7 @@ def shorten_options(stack: StackUpResult, *,
 
 
 def plan_shortening(stack: StackUpResult,
-                    options: Optional[List[ShortenOption]] = None,
+                    options: list[ShortenOption] | None = None,
                     *, max_cost_rank: int = 2,
                     **option_kwargs) -> ShortenPlan:
     """Assemble the cheapest set of options that clears the stack-up deficit.
@@ -715,7 +714,7 @@ def plan_shortening(stack: StackUpResult,
         options = shorten_options(stack, **option_kwargs)
 
     deficit = max(stack.deficit_mm, 0.0)
-    findings: List[Finding] = []
+    findings: list[Finding] = []
 
     if deficit <= 0:
         return ShortenPlan(deficit_mm=0.0, chosen=[], total_gain_mm=0.0,
@@ -725,7 +724,7 @@ def plan_shortening(stack: StackUpResult,
                                message="Nothing to do -- the assembly already fits.",
                                subsystems=["brakes"])])
 
-    chosen: List[ShortenOption] = []
+    chosen: list[ShortenOption] = []
     total = 0.0
     for o in options:
         if total >= deficit:
@@ -832,7 +831,7 @@ class BalanceBarResult:
     torque_front_Nm: float
     torque_rear_Nm: float
     bias_front: float             # torque bias, 0-1
-    findings: List[Finding] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
 
     def as_dict(self):
         d = asdict(self)
@@ -865,7 +864,7 @@ def balance_bar_bias(*, pedal_force_N: float, pedal_ratio: float,
     a = L / 2.0 - e          # pivot -> front clevis
     b = L / 2.0 + e          # pivot -> rear clevis
 
-    findings: List[Finding] = []
+    findings: list[Finding] = []
     if a <= 0 or b <= 0:
         findings.append(Finding(
             check="balance_bar_offset", severity=Severity.FAIL,
@@ -919,13 +918,13 @@ class BiasAuthority:
     bias_min: float
     bias_max: float
     bias_at_centre: float
-    target_bias: Optional[float]
+    target_bias: float | None
     target_reachable: bool
-    offset_for_target_mm: Optional[float]
+    offset_for_target_mm: float | None
     bias_per_turn: float          # change in front bias per full turn of the adjuster
     thread_pitch_mm: float
-    sweep: List[dict] = field(default_factory=list)
-    findings: List[Finding] = field(default_factory=list)
+    sweep: list[dict] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
 
     def as_dict(self):
         d = asdict(self)
@@ -951,8 +950,8 @@ class BiasAuthority:
 def bias_authority(*, pedal_force_N: float, pedal_ratio: float,
                    front: CircuitSpec, rear: CircuitSpec,
                    bar_length_mm: float = 60.0,
-                   max_offset_mm: Optional[float] = None,
-                   target_bias: Optional[float] = None,
+                   max_offset_mm: float | None = None,
+                   target_bias: float | None = None,
                    thread_pitch_mm: float = 1.058,   # 3/8"-24 UNF
                    n: int = 41) -> BiasAuthority:
     """Sweep the bar through its travel: what bias CAN this hardware make?
@@ -987,9 +986,9 @@ def bias_authority(*, pedal_force_N: float, pedal_ratio: float,
                               front=front, rear=rear, bar_length_mm=L,
                               bar_offset_mm=0.0).bias_front
 
-    findings: List[Finding] = []
+    findings: list[Finding] = []
     reachable = False
-    e_target: Optional[float] = None
+    e_target: float | None = None
     if target_bias is not None:
         t = float(target_bias)
         reachable = (b_min - 1e-9) <= t <= (b_max + 1e-9)
@@ -1122,7 +1121,7 @@ class VolumeItem:
 @dataclass
 class TravelResult:
     """Fluid demand -> cylinder stroke -> travel at the pedal pad."""
-    items: List[VolumeItem]
+    items: list[VolumeItem]
     total_cc: float
     mc_stroke_mm: float
     pedal_travel_mm: float           # at the pad, including free play
@@ -1131,8 +1130,8 @@ class TravelResult:
     stroke_utilisation: float        # stroke demanded / stroke available
     verdict: str                     # PASS / TIGHT / FAIL
     is_estimate: bool
-    findings: List[Finding] = field(default_factory=list)
-    notes: List[str] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
 
     def as_dict(self):
         return dict(items=[i.as_dict() for i in self.items],
@@ -1145,7 +1144,7 @@ class TravelResult:
                     findings=[f.as_dict() for f in self.findings],
                     notes=list(self.notes))
 
-    def biggest(self, k: int = 3) -> List[VolumeItem]:
+    def biggest(self, k: int = 3) -> list[VolumeItem]:
         """The k largest consumers -- where to go if the pedal is long."""
         return sorted(self.items, key=lambda i: -i.volume_cc)[:k]
 
@@ -1177,7 +1176,7 @@ def pedal_travel(*, circuit: CircuitSpec,
                  hose_length_m: float = 0.6,
                  hardline_length_m: float = 1.8,
                  line_inner_dia_mm: float = 3.2,
-                 params: Optional[TravelParams] = None,
+                 params: TravelParams | None = None,
                  available_travel_mm: float = 60.0,
                  mc_stroke_limit_mm: float = 25.4,
                  tight_frac: float = 0.80) -> TravelResult:
@@ -1206,7 +1205,7 @@ def pedal_travel(*, circuit: CircuitSpec,
     P = max(float(line_pressure_bar), 0.0)
     n_cal = max(int(circuit.n_corners), 1)
 
-    items: List[VolumeItem] = []
+    items: list[VolumeItem] = []
 
     # --- geometric, pressure-independent ----------------------------------
     swept_mm2 = circuit.swept_area_mm2 * n_cal
@@ -1280,8 +1279,8 @@ def pedal_travel(*, circuit: CircuitSpec,
 
     util = stroke_mm / max(float(mc_stroke_limit_mm), 1e-9)
 
-    findings: List[Finding] = []
-    notes: List[str] = []
+    findings: list[Finding] = []
+    notes: list[str] = []
 
     if travel_mm > float(available_travel_mm) or util > 1.0:
         verdict = "FAIL"
@@ -1356,7 +1355,7 @@ def calibrate_travel_params(*, measured_pedal_travel_mm: float,
                             circuit: CircuitSpec,
                             line_pressure_bar: float,
                             pedal_ratio: float,
-                            base: Optional[TravelParams] = None,
+                            base: TravelParams | None = None,
                             fitted_to: str = "bench measurement",
                             **travel_kwargs) -> TravelParams:
     """Scale the compliance parameters so the model reproduces ONE real measurement.
@@ -1412,12 +1411,12 @@ TravelParams.from_measured_stroke = staticmethod(calibrate_travel_params)
 class PedalBoxStudy:
     """Packaging, bias and travel evaluated as ONE design, because they are one."""
     stack: StackUpResult
-    plan: Optional[ShortenPlan]
+    plan: ShortenPlan | None
     bias: BalanceBarResult
     authority: BiasAuthority
     travel_front: TravelResult
     travel_rear: TravelResult
-    findings: List[Finding] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
 
     @property
     def verdict(self) -> str:
@@ -1453,14 +1452,14 @@ def study(*, available_mm: float,
           pedal_force_N: float = 500.0,
           pedal_ratio: float = 5.0,
           pedal_lever_mm: float = 90.0,
-          target_bias: Optional[float] = 0.65,
+          target_bias: float | None = 0.65,
           bar_length_mm: float = 60.0,
           bar_offset_mm: float = 0.0,
-          travel_params: Optional[TravelParams] = None,
+          travel_params: TravelParams | None = None,
           available_travel_mm: float = 60.0,
           mc_stroke_limit_mm: float = 25.4,
-          stack_kwargs: Optional[dict] = None,
-          travel_kwargs: Optional[dict] = None) -> PedalBoxStudy:
+          stack_kwargs: dict | None = None,
+          travel_kwargs: dict | None = None) -> PedalBoxStudy:
     """Run packaging, bias authority and travel as one coupled study.
 
     This exists because the three fight each other and evaluating them in
@@ -1499,7 +1498,7 @@ def study(*, available_mm: float,
                       available_travel_mm=available_travel_mm,
                       mc_stroke_limit_mm=mc_stroke_limit_mm, **tk)
 
-    findings: List[Finding] = []
+    findings: list[Finding] = []
 
     # The coupling that catches teams out: the two circuits share ONE pedal, so
     # the pedal travel is set by the LONGER of the two. A rear circuit that needs

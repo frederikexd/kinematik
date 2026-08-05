@@ -57,7 +57,8 @@ import tempfile
 import zipfile
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Optional, Sequence
+from typing import Any
+from collections.abc import Sequence
 from xml.etree import ElementTree as ET
 
 __all__ = [
@@ -188,7 +189,7 @@ class _Parser:
         self.t = tokens
         self.i = 0
 
-    def peek(self) -> Optional[tuple]:
+    def peek(self) -> tuple | None:
         return self.t[self.i] if self.i < len(self.t) else None
 
     def take(self) -> tuple:
@@ -198,7 +199,7 @@ class _Parser:
         self.i += 1
         return tok
 
-    def expect(self, kind: str, text: Optional[str] = None) -> tuple:
+    def expect(self, kind: str, text: str | None = None) -> tuple:
         tok = self.take()
         if tok[0] != kind or (text is not None and tok[1] != text):
             raise FormulaError(f"expected {text or kind}, got {tok[1]!r}")
@@ -699,7 +700,7 @@ class _Evaluator:
         self.visited = 0
 
     # -- cell access -------------------------------------------------- #
-    def sheet(self, name: Optional[str], default: str):
+    def sheet(self, name: str | None, default: str):
         title = name if name is not None else default
         if title not in self.wb.sheetnames:
             raise _Bail(REF)
@@ -914,7 +915,7 @@ def _letters(n: int) -> str:
 # ===================================================================== #
 #  Public API
 # ===================================================================== #
-def evaluate_workbook(path: str, *, only_prefix: Optional[str] = None,
+def evaluate_workbook(path: str, *, only_prefix: str | None = None,
                       max_cells: int = 1_000_000) -> tuple:
     """Evaluate every formula this module understands.
 
@@ -992,7 +993,7 @@ def _sheet_xml_paths(zf: zipfile.ZipFile) -> dict:
     return out
 
 
-def _cached_repr(value: Any) -> Optional[tuple]:
+def _cached_repr(value: Any) -> tuple | None:
     """(type attribute, text) for a cached value, or None if unwritable."""
     if isinstance(value, XlError):
         return "e", value.text
@@ -1012,7 +1013,7 @@ def _cached_repr(value: Any) -> Optional[tuple]:
     return None
 
 
-def populate_cached_values(path: str, *, only_prefix: Optional[str] = None,
+def populate_cached_values(path: str, *, only_prefix: str | None = None,
                            max_cells: int = 1_000_000) -> dict:
     """Evaluate the workbook and write the results in as cached values.
 
@@ -1086,7 +1087,7 @@ def _inject(xml_bytes: bytes, cells: dict) -> tuple:
     """Add <v> to the formula cells we have values for. Returns (xml, count)."""
     written = 0
 
-    def replace(match: "re.Match") -> bytes:
+    def replace(match: re.Match) -> bytes:
         nonlocal written
         attrs = match.group("attrs") or b""
         inner = match.group("inner")

@@ -82,7 +82,7 @@ import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 from .interfaces import Severity, Finding
 from . import power_draw as pdw
@@ -170,7 +170,7 @@ _LINE_HEIGHT = 13.5
 
 
 def _note(ws, row: int, text: str, last_col: int, *, color="808080",
-          width_hint: Optional[float] = None) -> None:
+          width_hint: float | None = None) -> None:
     """A wrapped, merged block of explanatory text that actually renders."""
     from openpyxl.styles import Alignment
     ws.merge_cells(start_row=row, start_column=1,
@@ -269,11 +269,11 @@ class ExportSpec:
     #: writes these into column A and every derivative and integral is taken
     #: against them, so an uneven log is handled exactly rather than smeared
     #: over an average step. None means "assume uniform k*dt_s".
-    time_s: Optional[Sequence[float]] = None
-    lap_time_s: Optional[float] = None
+    time_s: Sequence[float] | None = None
+    lap_time_s: float | None = None
     reductions: Sequence[float] = tuple(range(1, 16))
     smooth_window: int = 11
-    endurance_km: Optional[float] = 22.0
+    endurance_km: float | None = 22.0
     #: Per-cell continuous discharge rating, in C. Used by the advisor to
     #: reject packs that meet the energy requirement and cannot supply the
     #: current. Datasheet figure; the default is a conservative 21700 value and
@@ -1383,9 +1383,9 @@ def _resample(values: Sequence[float], n: int) -> list:
 
 
 def rebuild_propulsion_blocks(path: str, speed_mph: Sequence[float],
-                              pack: "pdw.PackSpec",
-                              vehicle: "pdw.VehicleSpec",
-                              drive: "pdw.DriveSpec", *,
+                              pack: pdw.PackSpec,
+                              vehicle: pdw.VehicleSpec,
+                              drive: pdw.DriveSpec, *,
                               dt_s: float,
                               reductions: Sequence[float] = tuple(range(1, 16)),
                               smooth_window: int = 11,
@@ -1507,7 +1507,7 @@ def _recalculate_via_libreoffice(path: str, timeout: int) -> tuple[bool, str]:
 
 
 def recalculate(path: str, timeout: int = 180, *,
-                only_prefix: Optional[str] = SHEET_PREFIX
+                only_prefix: str | None = SHEET_PREFIX
                 ) -> tuple[bool, str]:
     """Populate cached values, so `data_only=True` readers see numbers.
 
@@ -1580,7 +1580,7 @@ def formula_errors(path: str) -> dict[str, list[str]]:
 class TrackSimExport:
     path: str
     sheets_added: list
-    trace: Optional[pdw.PowerDrawTrace] = None
+    trace: pdw.PowerDrawTrace | None = None
     recalculated: bool = False
     recalc_message: str = ""
     formula_errors: dict = field(default_factory=dict)
@@ -1596,14 +1596,14 @@ class TrackSimExport:
 
 def export_track_sim(source_path: str, out_path: str,
                      speed_mph: Sequence[float], dt_s: float, *,
-                     time_s: Optional[Sequence[float]] = None,
-                     pack: Optional[pdw.PackSpec] = None,
-                     vehicle: Optional[pdw.VehicleSpec] = None,
-                     drive: Optional[pdw.DriveSpec] = None,
-                     lap_time_s: Optional[float] = None,
+                     time_s: Sequence[float] | None = None,
+                     pack: pdw.PackSpec | None = None,
+                     vehicle: pdw.VehicleSpec | None = None,
+                     drive: pdw.DriveSpec | None = None,
+                     lap_time_s: float | None = None,
                      reductions: Sequence[float] = tuple(range(1, 16)),
                      smooth_window: int = 11,
-                     endurance_km: Optional[float] = None,
+                     endurance_km: float | None = None,
                      max_cell_c_rate: float = 10.0,
                      rebuild_propulsion: bool = True,
                      recalc: bool = True) -> TrackSimExport:
@@ -1852,17 +1852,17 @@ def export_track_sim(source_path: str, out_path: str,
 def export_track_sim_bytes(excel_bytes: bytes,
                            speed_ms: Sequence[float],
                            time_s: Sequence[float], *,
-                           pack: Optional[pdw.PackSpec] = None,
-                           vehicle: Optional[pdw.VehicleSpec] = None,
-                           drive: Optional[pdw.DriveSpec] = None,
-                           lap_time_s: Optional[float] = None,
+                           pack: pdw.PackSpec | None = None,
+                           vehicle: pdw.VehicleSpec | None = None,
+                           drive: pdw.DriveSpec | None = None,
+                           lap_time_s: float | None = None,
                            reductions: Sequence[float] = tuple(range(1, 16)),
                            smooth_window: int = 11,
-                           endurance_km: Optional[float] = None,
+                           endurance_km: float | None = None,
                            max_cell_c_rate: float = 10.0,
                            rebuild_propulsion: bool = True,
                            recalc: bool = True
-                           ) -> tuple[bytes, "TrackSimExport"]:
+                           ) -> tuple[bytes, TrackSimExport]:
     """Bytes in, bytes out — the shape a Streamlit download button needs.
 
     Takes the same `speed_ms` / `time_s` arrays as the old

@@ -29,7 +29,6 @@ falls back to ``"metric"`` so the module is import-safe outside Streamlit.
 from __future__ import annotations
 
 import re
-from typing import Tuple
 
 try:  # Streamlit is the runtime, but keep the module usable without it.
     import streamlit as st
@@ -139,7 +138,7 @@ def to_metric(value: float, unit: str) -> float:
     return (value - offset) / factor
 
 
-def display(value: float, unit: str) -> Tuple[float, str]:
+def display(value: float, unit: str) -> tuple[float, str]:
     """Return ``(converted_value, label)`` for a metric number."""
     return from_metric(value, unit), label(unit)
 
@@ -185,7 +184,7 @@ def convert_value_str(value_str: str, unit: str) -> str:
 # Compound / annotated labels that embed a metric unit (e.g. "°/10mm",
 # "N/mm @35"). These need bespoke handling so both the number and the unit
 # convert sensibly. Returns (converted_value_str, converted_unit_label).
-def convert_compound(value_str: str, unit: str) -> Tuple[str, str]:
+def convert_compound(value_str: str, unit: str) -> tuple[str, str]:
     if not is_us():
         return value_str, unit
 

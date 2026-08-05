@@ -53,7 +53,6 @@ import hashlib
 import json
 import datetime as _dt
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -151,7 +150,7 @@ class CalculationRecord:
         return d
 
     @staticmethod
-    def from_decision(decision, inputs=None, outputs=None, tool="") -> "CalculationRecord":
+    def from_decision(decision, inputs=None, outputs=None, tool="") -> CalculationRecord:
         """Build a record from the project's existing ``Decision`` sign-off, so a
         signed decision and its report share one source of truth."""
         return CalculationRecord(

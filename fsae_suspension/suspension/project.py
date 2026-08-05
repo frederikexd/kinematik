@@ -249,7 +249,7 @@ def _jwt_expiry(key: str):
         exp = claims.get("exp")
         if exp is None:
             return None
-        return _dt.datetime.fromtimestamp(int(exp), tz=_dt.timezone.utc)
+        return _dt.datetime.fromtimestamp(int(exp), tz=_dt.UTC)
     except Exception:
         return None
 
@@ -291,7 +291,7 @@ def diagnose_storage_error(exc, *, backend=None) -> str:
         if key:
             exp = _jwt_expiry(key)
         if exp:
-            now = _dt.datetime.now(_dt.timezone.utc)
+            now = _dt.datetime.now(_dt.UTC)
             ago = now - exp
             days = ago.days
             msg += (f" The key expired {exp:%Y-%m-%d %H:%M} UTC"
@@ -392,14 +392,14 @@ class SupabaseBackend:
         import datetime as _dt
         if self.key_expires_at is None:
             return False
-        return self.key_expires_at <= _dt.datetime.now(_dt.timezone.utc)
+        return self.key_expires_at <= _dt.datetime.now(_dt.UTC)
 
     def key_expires_within(self, days: int = 7) -> bool:
         """True if the key expires soon — worth saying before it bites."""
         import datetime as _dt
         if self.key_expires_at is None:
             return False
-        now = _dt.datetime.now(_dt.timezone.utc)
+        now = _dt.datetime.now(_dt.UTC)
         return now < self.key_expires_at <= now + _dt.timedelta(days=days)
 
     def read(self) -> dict:

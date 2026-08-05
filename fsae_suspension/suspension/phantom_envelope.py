@@ -100,13 +100,13 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Optional, Iterable
+from collections.abc import Iterable
 
 import numpy as np
 
 from .kinematics import Hardpoints, CornerState
 from .compliance import _MEMBER_ENDPOINTS
-from .ghost_topology import GhostCorner, GhostAudit, GhostInstant, _MARGIN_MEMBERS
+from .ghost_topology import GhostCorner, GhostAudit, _MARGIN_MEMBERS
 
 
 # The inboard (chassis-fixed) attribute on Hardpoints for each member, and the
@@ -176,7 +176,7 @@ class ClearanceResult:
     violates: bool
     nearest_member: str
     nearest_t_s: float           # event time of the governing instant
-    nearest_load_N: Optional[dict]   # the wheel load at that instant, if known
+    nearest_load_N: dict | None   # the wheel load at that instant, if known
     frame: str
 
     def summary(self) -> dict:
@@ -241,7 +241,7 @@ class PhantomEnvelope:
         """
         p = np.asarray(point, float)
         best_clear = math.inf
-        best_cap: Optional[Capsule] = None
+        best_cap: Capsule | None = None
         for cap in self.capsules:
             c = cap.signed_clearance(p) - probe_radius_mm
             if c < best_clear:
@@ -309,7 +309,7 @@ class PhantomEnvelope:
             "points_xyz_mm": self.boundary.round(3).tolist(),
         }
 
-    def to_json(self, indent: Optional[int] = None) -> str:
+    def to_json(self, indent: int | None = None) -> str:
         return json.dumps(self.to_point_cloud(), indent=indent)
 
     def to_csv(self) -> str:
@@ -398,10 +398,10 @@ def carve_from_states(hp: Hardpoints, states: list, times: list,
                       radius_mm: dict, members: tuple = _MARGIN_MEMBERS,
                       kind: str = "rigid",
                       frame: str = "corner",
-                      load_at_t: Optional[dict] = None,
+                      load_at_t: dict | None = None,
                       ring: int = 10, along: int = 6,
                       skin_mm: float = 0.05,
-                      excluded: Optional[list] = None,
+                      excluded: list | None = None,
                       note: str = "") -> PhantomEnvelope:
     """
     Carve a PhantomEnvelope from a list of solved CornerStates (one per instant).
@@ -552,7 +552,7 @@ class EnvelopeDelta:
     max_outward_growth_mm: float     # deepest a compliant point sits outside rigid
     growth_member: str
     growth_t_s: float
-    growth_load_N: Optional[dict]
+    growth_load_N: dict | None
     mean_growth_mm: float
     frac_points_grown: float         # share of compliant boundary outside rigid
     note: str = ""
@@ -611,8 +611,8 @@ def envelope_delta(rigid: PhantomEnvelope, compliant: PhantomEnvelope
 #  Markdown report — the sheet that goes to the powertrain / packaging lead
 # --------------------------------------------------------------------------- #
 def render_envelope_md(env: PhantomEnvelope,
-                       delta: Optional[EnvelopeDelta] = None,
-                       queries: Optional[list] = None) -> str:
+                       delta: EnvelopeDelta | None = None,
+                       queries: list | None = None) -> str:
     L: list[str] = []
     mn, mx = env.bbox
     L.append(f"# Phantom Envelope — {env.frame}")

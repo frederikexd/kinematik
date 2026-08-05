@@ -74,7 +74,7 @@ class Version:
     notes: str = ""
 
     @staticmethod
-    def from_dict(d: dict) -> "Version":
+    def from_dict(d: dict) -> Version:
         known = {f.name for f in _dc_fields(Version)}
         return Version(**{k: v for k, v in d.items() if k in known})
 
@@ -108,7 +108,7 @@ class Component:
         return [v for v in reversed(self.versions) if v.id != cur]
 
     @staticmethod
-    def from_dict(d: dict) -> "Component":
+    def from_dict(d: dict) -> Component:
         vers = [Version.from_dict(v) for v in d.get("versions", [])]
         known = {f.name for f in _dc_fields(Component)}
         base = {k: v for k, v in d.items() if k in known and k != "versions"}
@@ -141,7 +141,7 @@ class Registry:
     def load(self):
         if os.path.exists(self.path):
             try:
-                with open(self.path, "r") as f:
+                with open(self.path) as f:
                     raw = json.load(f)
                 self.components = [Component.from_dict(c)
                                    for c in raw.get("components", [])]
@@ -172,7 +172,7 @@ class Registry:
                 f.write(data)
         return dest
 
-    def blob_path(self, version: "Version") -> str | None:
+    def blob_path(self, version: Version) -> str | None:
         if not version.blob_sha:
             return None
         ext = os.path.splitext(version.blob_name or "")[1]

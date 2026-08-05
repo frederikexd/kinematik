@@ -87,7 +87,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 
 from .interfaces import Finding, Severity
 
@@ -150,7 +149,7 @@ def k_theta_from_torque(torque_Nm: float, angle_rad: float) -> float:
 def k_compression_spring(wire_dia_m: float, mean_coil_dia_m: float,
                          active_coils: float,
                          material: str = "music wire (ASTM A228)",
-                         shear_modulus_Pa: Optional[float] = None) -> float:
+                         shear_modulus_Pa: float | None = None) -> float:
     """Closed-form helical compression/extension spring rate (Shigley).
 
         k = G · d⁴ / (8 · D³ · Na)
@@ -212,7 +211,7 @@ class ReturnSpring:
     @staticmethod
     def from_linear_spring(name: str, k_N_per_m: float, moment_arm_m: float,
                            preload_stretch_m: float, travel_stretch_m: float,
-                           is_estimate: bool = False) -> "ReturnSpring":
+                           is_estimate: bool = False) -> ReturnSpring:
         """Build from a LINEAR spring pulling on a pedal arm.
 
         k_N_per_m        : the rate you measured/computed
@@ -230,7 +229,7 @@ class ReturnSpring:
     @staticmethod
     def from_torsion_spring(name: str, k_theta_Nm_per_rad: float,
                             preload_angle_rad: float, travel_angle_rad: float,
-                            is_estimate: bool = False) -> "ReturnSpring":
+                            is_estimate: bool = False) -> ReturnSpring:
         """Build from a TORSION spring wound about (or near) the pedal pivot.
 
         Torque = k_theta · wind-up angle. Closed torque uses the preload angle;
@@ -319,7 +318,7 @@ def _net_case(label: str, springs: list, resistance_Nm: float) -> ReturnCaseResu
 
 
 def check_return_redundancy(springs: list,
-                            resistance: Optional[ReturnResistance] = None,
+                            resistance: ReturnResistance | None = None,
                             margin_target: float = 1.0,
                             tight_band: float = 0.25) -> ReturnRedundancyResult:
     """Check the two-return-spring, single-fault-tolerant throttle rule.
@@ -527,11 +526,11 @@ BRAKE_PEDAL_RULE_LOAD_N = 2000.0
 def check_brake_pedal_2000N(width_mm: float, thickness_mm: float,
                             lever_arm_mm: float,
                             material: str = "Steel 1018 CR (cold-rolled)",
-                            pivot_bolt_dia_mm: Optional[float] = None,
-                            edge_dist_mm: Optional[float] = None,
+                            pivot_bolt_dia_mm: float | None = None,
+                            edge_dist_mm: float | None = None,
                             n_bolts: int = 1,
-                            weld_leg_mm: Optional[float] = None,
-                            weld_length_mm: Optional[float] = None,
+                            weld_leg_mm: float | None = None,
+                            weld_length_mm: float | None = None,
                             load_N: float = BRAKE_PEDAL_RULE_LOAD_N,
                             fos_target: float = 1.5,
                             is_estimate: bool = True):
@@ -774,7 +773,7 @@ class SnapModel:
     backlash_deg: float = 0.0
     backlash_spring_frac: float = 0.0
     # nonlinear cam
-    cam_profile: Optional[list] = None       # list[(angle_deg, multiplier)]
+    cam_profile: list | None = None       # list[(angle_deg, multiplier)]
     # aero
     aero_torque_coeff: float = 0.0
     aero_opens_plate: bool = True
@@ -795,7 +794,7 @@ class SnapModel:
         return asdict(self)
 
 
-def _cam_multiplier(theta_deg: float, profile: Optional[list]) -> float:
+def _cam_multiplier(theta_deg: float, profile: list | None) -> float:
     """Interpolate the cam torque-multiplier at a plate angle (deg). 1.0 if no cam."""
     if not profile:
         return 1.0
@@ -813,7 +812,7 @@ def _cam_multiplier(theta_deg: float, profile: Optional[list]) -> float:
     return 1.0
 
 
-def _aero_torque(model: Optional[SnapModel], theta, theta_open) -> float:
+def _aero_torque(model: SnapModel | None, theta, theta_open) -> float:
     """Aero torque on the plate (N·m). Positive = tends to OPEN (toward theta_open).
 
     T = coeff * q * A * r * f(theta), q = 1/2 rho V^2. f(theta) peaks near part-open
@@ -834,7 +833,7 @@ def _aero_torque(model: Optional[SnapModel], theta, theta_open) -> float:
     return mag if model.aero_opens_plate else -mag
 
 
-def _aero_unquantified_finding(model: "SnapModel") -> Finding:
+def _aero_unquantified_finding(model: SnapModel) -> Finding:
     """A loud WARN when aero was requested (a speed) but no coefficient was given."""
     return Finding(
         "throttle-snap-aero", Severity.WARN,
@@ -849,13 +848,13 @@ def _aero_unquantified_finding(model: "SnapModel") -> Finding:
 
 
 def simulate_return_snap(springs: list,
-                         inertia: Optional[ThrottleInertia] = None,
-                         resistance: Optional[ReturnResistance] = None,
+                         inertia: ThrottleInertia | None = None,
+                         resistance: ReturnResistance | None = None,
                          theta_open_deg: float = 90.0,
                          dt: float = 5.0e-4,
                          t_max: float = 2.0,
                          omega_stall: float = 1.0e-3,
-                         model: Optional[SnapModel] = None) -> SnapResult:
+                         model: SnapModel | None = None) -> SnapResult:
     """Integrate the throttle's return from wide-open to closed and time it.
 
     springs        : the return springs PRESENT for this run. To model "one spring
@@ -1028,8 +1027,8 @@ def simulate_return_snap(springs: list,
 
 
 def simulate_return_snap_single_failures(springs: list,
-                                         inertia: Optional[ThrottleInertia] = None,
-                                         resistance: Optional[ReturnResistance] = None,
+                                         inertia: ThrottleInertia | None = None,
+                                         resistance: ReturnResistance | None = None,
                                          theta_open_deg: float = 90.0,
                                          **kw) -> dict:
     """Run the snap sim for the all-healthy case AND each single-spring-removed case.
