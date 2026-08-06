@@ -1,0 +1,48 @@
+==========================================================================
+  KinematiK — sample DAQ channel plan (DEMO DATA, faults planted)
+==========================================================================
+
+Verdict     : BLOCKED
+Completeness: 98% of review questions answered
+Channels    : 14
+
+CAN bus     : 36% worst-case load, 40 messages on GLV CAN
+              !! 7 message(s) cannot meet their own period despite that load:
+                 coolant_temp_in, wheel_speed_fl, wheel_speed_fr, wheel_speed_rl, wheel_speed_rr, brake_pressure_f, ts_current
+
+Rail 5V     : 126 / 500 mA (25%)
+Rail 12V    : 80 / 2000 mA (4%)
+Storage     : 11.6 kB/s, 17 MB per session (0.2% of the card)
+Coolant dT  : 4 K +/- 1.41 K (35%) -> heat 2.8 +/- 1.0 kW
+
+Findings    : 11 fail, 3 missing, 12 warning, 30 info, 38 ok
+--------------------------------------------------------------------------
+[fail   ] Damper position, front left: sampling at 50 Hz a signal with content to 30 Hz (1.7x). Everything above 25 Hz folds down and appears as a lower frequency that is indistinguishable from real data. This is not noise you can filter out afterwards — the information is destroyed at the ADC. Sample at 150 Hz or above.
+[fail   ] Tractive system current mounts on the accumulator, which is on the tractive-system side of the isolation boundary. Its signal path into the grounded low-voltage system needs a galvanic barrier. This is not an EMC preference — an un-isolated sensor wire is a conductive path across the boundary, and it will be found at scrutineering if it is not found earlier.
+[fail   ] The BMS frame (204 bytes at 10 bits/byte) needs 212% of 9600 baud to sustain 10 Hz. The link physically cannot carry it. Either raise the baud rate or accept a lower update rate — and note that a BMS often will not let you do the first.
+[fail   ] 1 signal(s) are scheduled onto CAN faster than the BMS produces them (10 Hz): pack_current. The extra frames would repeat stale values, which looks like fresh data on a plot and is not.
+[fail   ] 'coolant_temp_in' cannot reliably complete transmission within its own period at this bus load. Its worst-case arbitration delay exceeds the interval before the next sample is due, so samples will be overwritten in the transmit buffer before they reach the bus.
+[fail   ] 'wheel_speed_fl' cannot reliably complete transmission within its own period at this bus load. Its worst-case arbitration delay exceeds the interval before the next sample is due, so samples will be overwritten in the transmit buffer before they reach the bus.
+[fail   ] 'wheel_speed_fr' cannot reliably complete transmission within its own period at this bus load. Its worst-case arbitration delay exceeds the interval before the next sample is due, so samples will be overwritten in the transmit buffer before they reach the bus.
+[fail   ] 'wheel_speed_rl' cannot reliably complete transmission within its own period at this bus load. Its worst-case arbitration delay exceeds the interval before the next sample is due, so samples will be overwritten in the transmit buffer before they reach the bus.
+[fail   ] 'wheel_speed_rr' cannot reliably complete transmission within its own period at this bus load. Its worst-case arbitration delay exceeds the interval before the next sample is due, so samples will be overwritten in the transmit buffer before they reach the bus.
+[fail   ] 'brake_pressure_f' cannot reliably complete transmission within its own period at this bus load. Its worst-case arbitration delay exceeds the interval before the next sample is due, so samples will be overwritten in the transmit buffer before they reach the bus.
+[fail   ] 'ts_current' cannot reliably complete transmission within its own period at this bus load. Its worst-case arbitration delay exceeds the interval before the next sample is due, so samples will be overwritten in the transmit buffer before they reach the bus.
+[missing] Motor stator temperature mounts on the motor, which is on the tractive-system side of the isolation boundary. Its signal path into the grounded low-voltage system needs a galvanic barrier. This is not an EMC preference — an un-isolated sensor wire is a conductive path across the boundary, and it will be found at scrutineering if it is not found earlier.
+[missing] Inverter / IGBT temperature mounts on the inverter, which is on the tractive-system side of the isolation boundary. Its signal path into the grounded low-voltage system needs a galvanic barrier. This is not an EMC preference — an un-isolated sensor wire is a conductive path across the boundary, and it will be found at scrutineering if it is not found earlier.
+[missing] Brake pressure, front circuit: 2 of 9 applicable review questions unanswered — What connector / wiring does it need?; How do we test / calibrate it?.
+[warning] Inverter / IGBT temperature duplicates a value the Cascadia PM100DX (0x0A2, 100 Hz) already broadcasts. Adding a physical sensor buys an independent reading, and costs a channel, a rail, a connector, a mount and a calibration. If the reason is redundancy or distrust of the device's own sensor, write that down as the justification — otherwise read the existing message and spend the effort elsewhere.
+[warning] Damper position, front left is an analog channel with no declared anti-alias filter. The filter is what makes the sample rate meaningful; without one, any interference above half the sample rate (switching noise, inverter carrier, RF) folds into the band you care about and cannot be separated from it afterwards.
+[warning] Wheel speed FL: 2.5x oversampling clears the theorem but not practice. Peaks land between samples and the trace shape is unreliable. 800 Hz would let you read this channel off a plot with confidence.
+[warning] Wheel speed FR: 2.5x oversampling clears the theorem but not practice. Peaks land between samples and the trace shape is unreliable. 800 Hz would let you read this channel off a plot with confidence.
+[warning] Wheel speed RL: 2.5x oversampling clears the theorem but not practice. Peaks land between samples and the trace shape is unreliable. 800 Hz would let you read this channel off a plot with confidence.
+[warning] Wheel speed RR: 2.5x oversampling clears the theorem but not practice. Peaks land between samples and the trace shape is unreliable. 800 Hz would let you read this channel off a plot with confidence.
+[warning] Brake pressure, front circuit is marked as estimated — the numbers are placeholders, not datasheet values, and every budget below inherits that.
+[warning] Brake pressure, front circuit has no part number or datasheet link. A specification with no source cannot be checked by the next person, and the next person is you in October.
+[warning] Brake pressure, front circuit has no owner. Unowned channels are the ones that arrive unmounted.
+[warning] GNSS position: 2.0x oversampling clears the theorem but not practice. Peaks land between samples and the trace shape is unreliable. 50 Hz would let you read this channel off a plot with confidence.
+[warning] Shutdown-relevant signals (cell_v_min, cell_v_max, cell_t_max) reach the bus 213 ms after the BMS measures them. That is fine for logging and too slow to be part of any protective action — the shutdown circuit must remain hardware, not a CAN message.
+[warning] Coolant delta-T is +/-1.41 K on 4 K (35%). Usable for trends, too coarse to size a radiator from. A matched-pair calibration would cut it roughly fourfold.
+--------------------------------------------------------------------------
+Everything above is DEMO data with faults planted on purpose.
+See the module docstring for which channel demonstrates what.

@@ -145,6 +145,33 @@ def _render_channels():
         "hand-maintained status column does."
     )
 
+    # ---- worked example --------------------------------------------------- #
+    # A new lead has no way to see what the checks DO until a plan is big
+    # enough and wrong enough to trip them. The starter cooling package is
+    # deliberately sane, so it demonstrates almost nothing. This loads a
+    # 14-channel plan with a fault planted for each check — aliasing, an
+    # unisolated TS channel, deadline misses at a load that still reads
+    # "fine", a sensor pair too coarse for the delta-T it was bought to
+    # measure. Everything it teaches, it teaches by failing.
+    with st.expander("New here? Load a worked example", expanded=False):
+        st.caption(
+            "A 14-channel plan with a deliberate fault on most channels, so "
+            "every check has something to say. **Demo data — do not build a "
+            "car from it.** Replacing your current list is the point; export "
+            "first if you have work in progress."
+        )
+        _sc1, _sc2 = st.columns([1, 2])
+        if _sc1.button("Load the sample plan", key="daq_load_sample",
+                       use_container_width=True):
+            from suspension import daq_sample as _dsam
+            ss["daq_sensors"] = _dsam.sample_sensors()
+            ss["daq_bridge"] = _dsam.sample_bridge()
+            ss["daq_sample_loaded"] = True
+            st.rerun()
+        if ss.get("daq_sample_loaded"):
+            _sc2.warning("Sample plan loaded — these are demo numbers with "
+                         "faults planted on purpose.", icon="⚠️")
+
     # ---- add from catalog / blank -------------------------------------- #
     c1, c2, c3 = st.columns([3, 2, 2])
     with c1:

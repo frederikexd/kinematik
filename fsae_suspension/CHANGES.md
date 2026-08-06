@@ -398,3 +398,64 @@ how often they recurred:
 4. A failure coerced to a plausible default (`0.0`) instead of to "unknown".
 5. Setting an attribute nothing serializes, then reporting the save succeeded.
 6. A hard-coded allow/deny set that nothing validates against the real feature list.
+
+---
+
+## Eighth pass — worked example for the Data Acquisition lead
+
+`suspension/daq_sample.py` — a 14-channel FSAE EV plan with a fault planted for
+each check, plus a **Load the sample plan** button in Data Acquisition →
+Channels, and a headless runner (`python3 -m suspension.daq_sample`).
+
+**Why not a clean plan.** The existing starter (`cooling_package()`) is
+deliberately sane, so it demonstrates almost nothing — a new lead has no way to
+see what the checks *do* until a plan is big enough and wrong enough to trip
+them. Everything this example teaches, it teaches by failing.
+
+| channel | fault it demonstrates |
+|---|---|
+| `damper_pot_fl` | **Aliasing** — 30 Hz content sampled at 50 Hz, no anti-alias filter declared. The only error here that cannot be undone in post. |
+| `coolant_temp_in` | **Oversampling** — 0.5 Hz signal at 200 Hz, burning bus and card. |
+| `coolant_temp_in/out` | **Resolution** — ±1.0 K pair against an expected 4 K rise → ±35% on heat rejection. |
+| `brake_pressure_f` | **Unanswered questions** — connector, conductors, calibration left blank, so the plan cannot report READY. |
+| `ts_current` | **Isolation** — accumulator-side channel with `galvanic_isolation=False`. |
+| `inverter_temp` | **The NA waiver** — already broadcast by the inverter, so its power/connector questions are waived rather than counted as debt. |
+| `wheel_speed_*` | **Bus schedulability** (below). |
+| BMS bridge | **UART link budget** — 204-byte frame at 10 Hz over 9600 baud needs 212% of the link. |
+
+**The most instructive result:** the bus sits at **36% worst-case load — which
+reads as fine on any dashboard — while seven messages cannot complete
+transmission within their own period.** Load and schedulability are different
+questions, and that is exactly the module's thesis. A test pins the load
+*below* the warn threshold, because if it ever goes red the example loses its
+point.
+
+Rails and storage are deliberately comfortable. An example where everything
+fails teaches nothing about what a passing check looks like.
+
+### Two things the module refused, correctly
+
+- A 1536-bit `cell_voltages_all` signal **raised** rather than reporting a
+  finding — a CAN 2.0 frame holds 64 bits and `daq_plan` won't pretend
+  otherwise. Remodelled as 24 multiplexed 4-cell blocks, which is how a real
+  BMS streams it.
+- The first draft left the UART frame undeclared, and the tool said
+  `uart-budget-uncheckable` instead of guessing. Declaring `frame_bytes` /
+  `frame_rate_hz` is what makes the budget computable.
+
+Both are the honesty rule from the module docstring working as designed —
+unanswered stays distinct from a value.
+
+### Files
+
+- `suspension/daq_sample.py` — the dataset, faults marked `# DEMO:` inline
+- `ui/daq_plan.py` — the *Load a worked example* expander
+- `samples/daq_sample_channels.csv` — 14 rows in the tool's own export schema
+- `samples/daq_sample_report.txt` — the headless report, for reading first
+- `tests/test_daq_sample.py` — 15 tests
+
+**Why the tests exist.** A demo dataset rots differently from production code:
+nothing breaks, it just quietly stops demonstrating the thing it was built for.
+Tighten a Nyquist threshold and the aliasing channel starts passing — the
+sample still loads, still looks fine, teaches nothing. Each test asserts a
+specific planted fault still fires.

@@ -8627,6 +8627,12 @@ if _hidden_ids:
 # outer "⋯ More tools" wrapper is ALSO the selected top tab. So we gate the
 # inner-tab .open readings on the wrapper being open.
 _ax_active_ids = set()
+# Timing harness (suspension/perf.py). Opened here because this is the last
+# point before any tab body executes, and closed at the very bottom of the
+# file. Off by default — toggle it in Analytics. When off, begin_run/enter/
+# exit/end_run are a dict lookup each and nothing is stored.
+from suspension import perf as _perf          # noqa: E402  (cheap, stdlib only)
+_perf.begin_run(st.session_state)
 # A tab is genuinely active only when BOTH its category tab is the selected
 # category AND it is the selected sub-tab within that category. This mirrors the
 # old "More tools wrapper must be open" gate, generalised to N categories.
@@ -8725,6 +8731,15 @@ class _TabOpenProxy:
             st.session_state["_ax_rendering_tab"] = _key
         except Exception:
             pass
+        # Timing harness. Off by default; one dict lookup when off. This is the
+        # only place it needs wiring — every tab passes through here, so all 40
+        # are instrumented without a single per-tab edit.
+        try:
+            object.__setattr__(self, "_perf_tok",
+                               _perf.enter(st.session_state, _key,
+                                           active=_is_active))
+        except Exception:
+            object.__setattr__(self, "_perf_tok", None)
         return self._container.__enter__()
 
     def __exit__(self, *exc):
@@ -8758,6 +8773,14 @@ class _TabOpenProxy:
         try:
             st.session_state["_ax_rendering_tab"] = getattr(
                 self, "_prev_render", None)
+        except Exception:
+            pass
+        # Close the timing frame. Deliberately AFTER the documentation panel:
+        # that panel is real work this tab causes, and hiding it from the
+        # measurement would be measuring a version of the app that doesn't
+        # exist. Passing a None token is a no-op when timing is off.
+        try:
+            _perf.exit(st.session_state, getattr(self, "_perf_tok", None))
         except Exception:
             pass
         return self._container.__exit__(*exc)
@@ -32895,6 +32918,70 @@ with tab_analytics:
     except Exception:
         _ax_debug_on = False
 
+    if _ax_debug_on:
+        with st.expander("⏱ Tab timing — where a rerun actually spends time",
+                         expanded=False):
+            st.caption(
+                "Off by default. When on, every tab body is timed via "
+                "`_TabOpenProxy`, and self time (excluding nested blocks) is "
+                "kept for the last 40 reruns. Turn it on, use the app "
+                "normally for a minute, then read the table.")
+            _pf_on = st.checkbox(
+                "Record tab timings", value=_perf.enabled(st.session_state),
+                key="_perf_toggle",
+                help="Adds one dict lookup per tab when off; a perf_counter "
+                     "pair per tab when on.")
+            if _pf_on != _perf.enabled(st.session_state):
+                _perf.set_enabled(st.session_state, _pf_on)
+                st.rerun()
+
+            _pf = _perf.summary(st.session_state)
+            if not _pf["runs"]:
+                st.info("No samples yet — switch between a few tabs and move "
+                        "a slider, then come back." if _pf_on else
+                        "Recording is off.")
+            else:
+                _m = st.columns(4)
+                _m[0].markdown(metric("Reruns sampled", f"{_pf['runs']}"),
+                               unsafe_allow_html=True)
+                _m[1].markdown(metric("Median rerun", f"{_pf['median_run_ms']:.0f}",
+                                      "ms"), unsafe_allow_html=True)
+                _m[2].markdown(metric("In tab bodies", f"{_pf['measured_ms']:.0f}",
+                                      "ms"), unsafe_allow_html=True)
+                # The number that decides whether lazy tabs are worth building.
+                # A big line count with a small background cost means the
+                # refactor buys nothing — better to learn that here than three
+                # weeks in.
+                _m[3].markdown(
+                    metric("Wasted on hidden tabs",
+                           f"{_pf['background_ms']:.0f}", "ms",
+                           "bad" if _pf["background_pct"] > 50 else
+                           "warn" if _pf["background_pct"] > 20 else "good"),
+                    unsafe_allow_html=True)
+                st.caption(
+                    f"**{_pf['background_pct']:.0f}%** of measured time is "
+                    f"spent in tabs nobody was looking at. Above ~40%, making "
+                    f"the top few tab bodies lazy is worth the risk; below "
+                    f"~15% the bottleneck is somewhere else and this refactor "
+                    f"would be churn.")
+                st.dataframe(
+                    [{"feature": _r["feature"],
+                      "median ms": round(_r["median_ms"], 1),
+                      "p95 ms": round(_r["p95_ms"], 1),
+                      "max ms": round(_r["max_ms"], 1),
+                      "hidden %": round(_r["background_pct"]),
+                      "blocks": _r["blocks"]} for _r in _pf["rows"]],
+                    width="stretch", hide_index=True)
+                _c1, _c2 = st.columns([1, 3])
+                if _c1.button("Reset samples", key="_perf_reset"):
+                    _perf.reset(st.session_state)
+                    st.rerun()
+                _c2.download_button(
+                    "⬇ timing report (.txt)",
+                    _perf.format_report(st.session_state),
+                    file_name="kinematik_tab_timing.txt", mime="text/plain",
+                    key="_perf_dl")
+
     st.markdown(
         '<div class="brand"><span class="mark">Analytics</span>'
         '<span class="sub">Usage · reliability · ROI</span></div>',
@@ -33162,3 +33249,9 @@ st.markdown('<p class="hint" style="padding-top:.4rem;">Open source · AGPL-3.0.
 # every click. See suspension/mem_utils.py for the thresholds.
 _mem.cap_session_log()
 _mem.maybe_collect()
+
+# Close the timing run. Last statement in the file on purpose: everything above
+# — every tab body, the sidebar, the memory pass — is inside the measured
+# window, so `median_run_ms` is the number the member actually waits for rather
+# than a flattering subset of it.
+_perf.end_run(st.session_state)
