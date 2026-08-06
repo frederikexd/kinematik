@@ -10680,7 +10680,7 @@ def _render_rationale_prompt(_feat, _lbl, _kp):
                 key=f"{_kp}_rat_intent")
             _author = _c2.text_input("Your name / initials",
                                      key=f"{_kp}_rat_author",
-                                     placeholder="e.g. M. Haddad")
+                                     placeholder="e.g. J. Doe")
             _detail = st.text_input(
                 "…specifically (optional)", key=f"{_kp}_rat_detail",
                 placeholder="e.g. front bump steer looked high after the "

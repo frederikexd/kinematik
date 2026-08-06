@@ -148,7 +148,7 @@ def sample_sensors() -> list[SensorSpec]:
         logged_to="logger", payload_bytes=2,
         calibration="dial gauge against the pot at 10 mm steps, both "
                     "directions, check hysteresis",
-        galvanic_isolation=True, owner="M. Haddad",
+        galvanic_isolation=True, owner="J. Doe",
         source="Penny+Giles SLS095/75"))
 
     s.append(SensorSpec(
@@ -166,12 +166,12 @@ def sample_sensors() -> list[SensorSpec]:
         logged_to="logger", payload_bytes=2,
         calibration="centre with the rack at mid-travel, then lock-to-lock "
                     "against a protractor on the hub",
-        galvanic_isolation=True, owner="M. Haddad",
+        galvanic_isolation=True, owner="J. Doe",
         source="Bourns 6639S-1-103"))
 
     # DEMO: four 200 Hz channels. This is what actually loads the bus.
-    for corner, own in (("fl", "M. Haddad"), ("fr", "M. Haddad"),
-                        ("rl", "S. Varga"), ("rr", "S. Varga")):
+    for corner, own in (("fl", "J. Doe"), ("fr", "J. Doe"),
+                        ("rl", "JJ. Doe"), ("rr", "JJ. Doe")):
         s.append(SensorSpec(
             key=f"wheel_speed_{corner}", name=f"Wheel speed {corner.upper()}",
             measures="wheel rotational speed", unit="rad/s",

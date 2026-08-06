@@ -200,7 +200,7 @@ def test_long_prose_cell_does_not_starve_other_columns():
     the per-column width is capped so a single long cell cannot take the frame."""
     long = "Sampling at 50 Hz a signal with content to 30 Hz folds down. " * 4
     md = ("# T\n\n| Channel | Finding | Owner |\n|---|---|---|\n"
-          f"| damper_pot_fl | {long} | M. Haddad |\n")
+          f"| damper_pot_fl | {long} | J. Doe |\n")
     magic, _ = _render(md)
     assert magic == b"%PDF"
 
