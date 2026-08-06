@@ -1511,8 +1511,34 @@ def render_pdf(markdown_text: str, out_path: str, figures=None):
             ncols = max(len(r) for r in rows)
             for r in rows:                      # pad ragged rows
                 r.extend(Paragraph("", cell) for _ in range(ncols - len(r)))
-            t = Table(rows, hAlign="LEFT",
-                      colWidths=[_frame_w / ncols] * ncols)
+            # Size columns to their CONTENT, not equally. Equal widths gave a
+            # 7-column CAN table 78 pt per column, so "coolant_temp_in" broke
+            # mid-word while the DLC column sat almost empty beside it.
+            #
+            # Padding is allocated FIRST, as a flat per-column constant, and
+            # only the remainder is split proportionally. Distributing the full
+            # frame proportionally looks right and isn't: reportlab's cell
+            # padding is a fixed cost per column, so it eats a trivial slice of
+            # a wide column and most of a narrow one — which is how a 39 pt "ID"
+            # column still wrapped "0x400" onto two lines.
+            _PAD = 3.0                                   # per side, set below
+            overhead = 2 * _PAD * ncols
+            widths = []
+            for c in range(ncols):
+                longest = 1
+                for r in raw:
+                    if c < len(r):
+                        longest = max(longest, len(r[c]))
+                widths.append(min(longest, 40))
+            total = float(sum(widths)) or 1.0
+            avail = max(_frame_w - overhead, _frame_w * 0.5)
+            # ~4.6 pt per character at 8 pt in a proportional face, so a column
+            # never gets less room than its own longest word needs.
+            colw = [2 * _PAD + max(w * 4.6, avail * w / total) for w in widths]
+            scale = _frame_w / max(sum(colw), 1e-6)
+            if scale < 1.0:                              # only ever shrink
+                colw = [w * scale for w in colw]
+            t = Table(rows, hAlign="LEFT", colWidths=colw)
             t.setStyle(TableStyle([
                 ("FONTSIZE", (0, 0), (-1, -1), 8),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
@@ -1522,6 +1548,10 @@ def render_pdf(markdown_text: str, out_path: str, figures=None):
                  [colors.white, colors.HexColor("#f6f6f6")]),
                 ("TOPPADDING", (0, 0), (-1, -1), 3),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                # Must match _PAD in the width calculation above, or narrow
+                # columns wrap despite the arithmetic saying they fit.
+                ("LEFTPADDING", (0, 0), (-1, -1), 3),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 3),
             ]))
             flow.append(t)
             flow.append(Spacer(1, 6))

@@ -10375,6 +10375,43 @@ def _feature_activity_sections(feature):
     return sections
 
 
+_BUILD_STAMP = None
+
+
+def _build_stamp():
+    """A short fingerprint of the running streamlit_app.py, for report headers.
+
+    Exists because a report that LOOKS out of date and a deployment that IS out
+    of date are indistinguishable from the PDF alone. A DAQ export arrived
+    showing the old "40 rows x 7 cols" table description after the fix had
+    shipped, and there was no way to tell from the document whether the fix was
+    broken or simply not deployed — those need very different responses, and
+    guessing wrong wastes a day either way.
+
+    Content hash, not a version constant: a constant is something you have to
+    remember to bump, and the whole point is to survive someone forgetting.
+    Falls back to the file's mtime, then to nothing at all — a missing stamp
+    must never cost anyone a report.
+    """
+    global _BUILD_STAMP
+    if _BUILD_STAMP is not None:
+        return _BUILD_STAMP
+    _BUILD_STAMP = ""
+    try:
+        import hashlib
+        _p = os.path.abspath(__file__)
+        with open(_p, "rb") as _fh:
+            _BUILD_STAMP = "build " + hashlib.sha256(
+                _fh.read()).hexdigest()[:8]
+    except Exception:
+        try:
+            _BUILD_STAMP = "build " + _dt.datetime.fromtimestamp(
+                os.path.getmtime(os.path.abspath(__file__))).strftime("%m%d-%H%M")
+        except Exception:
+            _BUILD_STAMP = ""
+    return _BUILD_STAMP
+
+
 def _feature_report_md(feature):
     """Full Markdown for ONE feature's document: header + this feature's
     captured calculations/simulations. Self-contained (no ledger interface
@@ -10385,8 +10422,8 @@ def _feature_report_md(feature):
     _sub = _feature_subsys(feature)
     _subname = _VC_LABEL.get(_sub, _sub.replace("-", " ").title())
     L = [f"# Elbee Racing — {_lbl} Feature Report",
-         f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK · "
-         f"{_subname} subsystem._", ""]
+         f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK "
+         f"{_build_stamp()} · {_subname} subsystem._", ""]
     _secs = _feature_activity_sections(feature)
     if not _secs:
         L.append(f"_No calculations or simulations captured in {_lbl} yet — "
@@ -13564,8 +13601,11 @@ def _captured_result_sections(feature):
                     # than one that admits it, because the reader cannot tell.
                     _lines.append(f"_Showing the first {len(_tbl['rows'])} of "
                                   f"{_tbl['total_rows']} rows._")
-                else:
-                    _lines.append(f"_{_title}_")
+                # When the table is complete, NO caption. The captured title is
+                # the shape line ("4 rows x 7 cols · Message, ID, DLC, …"),
+                # which was worth printing back when it was all the report had.
+                # Under the actual table it restates the column headers the
+                # reader is already looking at and counts rows they can see.
                 _lines.append("")
             else:
                 _mark = "📈" if _r.get("kind") == "chart" else "📋"

@@ -401,63 +401,45 @@ how often they recurred:
 
 ---
 
-## Ninth pass — tables carried their SHAPE, not their values
+## Tenth pass — table layout, from a deployed export
 
-Reported against a real DAQ export. The whole "charts & tables" section read:
+Confirmed working in your deployment: real values in the table, `###` gone from
+the verdicts. Two things the live PDF made obvious that my own test render had
+not.
+
+**Columns were sized equally, so content wrapped mid-word.** A 7-column CAN
+table gave every column ~78 pt, breaking `coolant_temp_in` into
+`coolant_temp_` / `in` while the DLC column sat nearly empty beside it. Widths
+are now proportional to the longest cell in each column, capped so one
+paragraph-length finding cannot starve the rest.
+
+The first attempt at that still wrapped `0x400` and `DLC`, because
+**reportlab's horizontal cell padding is a fixed cost per column** — a trivial
+slice of a wide column and most of a narrow one. Padding is now allocated first
+as a flat per-column constant, and only the remainder is split proportionally.
+`LEFTPADDING`/`RIGHTPADDING` are set explicitly to match the constant the
+arithmetic assumes, since the two silently disagreeing is what caused the
+second failure.
+
+**The shape caption under a complete table is gone.** `4 rows x 7 cols ·
+Message, ID, DLC, …` was worth printing when it was all the report had; under
+the actual table it restates the headers the reader is looking at and counts
+rows they can see. Truncated tables still say so.
+
+**Build stamp.** Report headers now carry a content hash of the running
+`streamlit_app.py`:
 
 ```
-• 4 rows x 7 cols · Message, ID, DLC, Rate (Hz), Bits, …
-• 40 rows x 7 cols · Message, ID, DLC, Rate (Hz), Bits, …
-• 12 rows x 7 cols · Message, ID, DLC, Rate (Hz), Bits, …
+Generated 2026-08-06 01:03 from KinematiK build c85c71ed · Electrics subsystem.
 ```
 
-Pass one taught the pipeline to embed **charts**, and stopped there. Tables
-still went through `_ax_table_summary`, which describes a table without ever
-reading it. Data Acquisition is the worst possible case for that: it draws no
-charts at all, so every one of its results is a table, and its report was a
-list of dimensions.
+Added because a report that LOOKS stale and a deployment that IS stale are
+indistinguishable from the PDF alone — an export arrived showing the old table
+description after the fix had shipped, and there was no way to tell whether the
+fix was broken or simply not deployed. Those need opposite responses. It is a
+content hash rather than a version constant, because a constant is something
+you have to remember to bump.
 
-**`_ax_table_rows()`** is the table analogue of `report_figures.compact_spec`:
-capture the answer, not a description of it. Handles what the app actually
-passes to `st.dataframe` / `st.table` — pandas DataFrames (duck-typed, so
-pandas is never imported for this), list-of-dicts, dict-of-lists,
-list-of-lists, flat lists. Capped at 60 rows x 12 columns, and **truncation is
-always stated** ("Showing the first 60 of 300 rows"), because a table silently
-showing a fifth of itself is worse than one that admits it.
-
-The DAQ report now carries the full 40-message CAN breakdown — ID, DLC, rate,
-bits, load, producer, per message. See `EXAMPLE_daq_report.pdf`.
-
-### Three more faults visible in the same export
-
-**`###` printed literally.** Banners are authored as Markdown for the screen,
-so their text arrives carrying `###` and `**`. The PDF showed
-`### BLOCKED — 11 hard failure(s)`. Stripped in `capture_verdict`.
-
-**Two contradictory verdicts on one plan.** The export carried both
-"BLOCKED — 11 hard failure(s)" and "BLOCKED — 2 hard failure(s)". A rolling
-summary banner changes its numbers as the plan changes, and exact-text dedup
-kept every historical version. Verdicts now dedupe on the text with digits
-masked, so a re-count replaces the old figure instead of accumulating beside it.
-
-**My own demo notice was captured as an engineering finding.** The "Sample plan
-loaded" banner I added last pass used `st.warning`, which the alert wrappers
-capture as a verdict — so it sat in the DAQ report between the aliasing failure
-and the isolation failure. It is a note about the tool, not a finding about the
-car. Changed to `st.caption`.
-
-### A bug the tests found by accident
-
-`_ax_cell` formatted floats with `",.4g"`. That renders a **115200 baud rate as
-"1.152e+05"** and a **500 kbit/s bus as "5e+05"** — four significant digits is
-too few for the round numbers that fill an engineering table. Integral floats
-now print as integers with separators (`115,200`), and scientific notation is
-reserved for values that genuinely need it.
-
-I found this because a test assertion I wrote was wrong about the expected
-output, and checking why exposed the formatter rather than the test.
-
-**Tests** — `tests/test_table_capture.py`, 15 tests: every input shape, the
-row/column caps, truncation honesty in both directions, pipes and newlines that
-would otherwise split a Markdown row, NaN and None rendering blank rather than
-leaking `nan`, and the float formatting above.
+**Tests** — 7 more in `tests/test_table_capture.py` (22 total): 2/7/12-column
+tables, a 40-row table, a paragraph-length cell, the padding accounting, and
+the absent redundant caption.

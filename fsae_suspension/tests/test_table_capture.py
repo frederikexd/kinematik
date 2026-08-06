@@ -148,3 +148,86 @@ def test_non_finite_floats_do_not_leak_python_repr(mod):
 def test_very_long_cell_is_clipped(mod):
     out = mod["_ax_cell"]("x" * 500)
     assert len(out) <= 60 and out.endswith("…")
+
+
+# --- build stamp ----------------------------------------------------------
+def test_report_header_carries_a_build_stamp():
+    """A report that LOOKS stale and a deployment that IS stale are
+    indistinguishable from the PDF alone. A DAQ export arrived showing the old
+    table description after the fix had shipped, and nothing in the document
+    said which code produced it."""
+    src = open(os.path.join(ROOT, "streamlit_app.py"), encoding="utf-8").read()
+    assert "_build_stamp()" in src
+    hdr = src[src.index("# Elbee Racing — {_lbl} Feature Report"):][:400]
+    assert "_build_stamp()" in hdr, "the feature report header is not stamped"
+
+
+def test_build_stamp_is_content_derived_not_a_constant():
+    """A version constant is something you have to remember to bump; the whole
+    point is to survive someone forgetting."""
+    src = open(os.path.join(ROOT, "streamlit_app.py"), encoding="utf-8").read()
+    fn = src[src.index("def _build_stamp("):]
+    fn = fn[:fn.index("\ndef ", 1)]
+    assert "hashlib" in fn and "sha256" in fn
+
+
+# --- PDF table layout ------------------------------------------------------
+def _render(md):
+    import tempfile
+    from suspension import project as pj
+    fd, path = tempfile.mkstemp(suffix=".pdf")
+    os.close(fd)
+    pj.render_pdf(md, path)
+    size = os.path.getsize(path)
+    with open(path, "rb") as fh:
+        magic = fh.read(4)
+    os.unlink(path)
+    return magic, size
+
+
+def test_wide_table_renders():
+    """7 columns is the DAQ CAN breakdown; 12 is the column cap."""
+    for n in (2, 7, 12):
+        hdr = "| " + " | ".join(f"c{i}" for i in range(n)) + " |"
+        row = "| " + " | ".join(str(i) for i in range(n)) + " |"
+        magic, size = _render(f"# T\n\n{hdr}\n|{'---|' * n}\n{row}\n")
+        assert magic == b"%PDF" and size > 0, n
+
+
+def test_long_prose_cell_does_not_starve_other_columns():
+    """One paragraph-length finding must not squeeze the ID column to nothing;
+    the per-column width is capped so a single long cell cannot take the frame."""
+    long = "Sampling at 50 Hz a signal with content to 30 Hz folds down. " * 4
+    md = ("# T\n\n| Channel | Finding | Owner |\n|---|---|---|\n"
+          f"| damper_pot_fl | {long} | M. Haddad |\n")
+    magic, _ = _render(md)
+    assert magic == b"%PDF"
+
+
+def test_forty_row_table_renders():
+    rows = "\n".join(f"| BMS_{i} | 0x3{i:02x} | 8 | 10 |" for i in range(40))
+    md = "# T\n\n| Message | ID | DLC | Rate |\n|---|---|---|---|\n" + rows
+    magic, _ = _render(md)
+    assert magic == b"%PDF"
+
+
+def test_column_widths_account_for_cell_padding():
+    """Reportlab's horizontal padding is a fixed cost per column, so it eats a
+    trivial slice of a wide column and most of a narrow one. Distributing the
+    whole frame proportionally is why a 39 pt 'ID' column still wrapped
+    '0x400' onto two lines."""
+    src = open(os.path.join(ROOT, "suspension", "project.py"),
+               encoding="utf-8").read()
+    fn = src[src.index("def render_pdf("):]
+    assert "overhead = 2 * _PAD * ncols" in fn
+    assert '("LEFTPADDING"' in fn and '("RIGHTPADDING"' in fn
+
+
+def test_complete_table_has_no_redundant_shape_caption():
+    """The captured title is the shape line. Printing it under the actual table
+    restates the headers the reader is looking at."""
+    src = open(os.path.join(ROOT, "streamlit_app.py"), encoding="utf-8").read()
+    i = src.index('_lines.append("| " + " | ".join(_tbl["header"]) + " |")')
+    block = src[i:i + 1400]
+    assert 'Showing the first' in block          # truncated case still speaks
+    assert '_lines.append(f"_{_title}_")' not in block
