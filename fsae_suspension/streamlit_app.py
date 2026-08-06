@@ -8694,7 +8694,11 @@ class _TabOpenProxy:
     they're already on (which would inflate "opens" into "every click while
     on this tab")."""
 
-    __slots__ = ("_container", "_feature", "_prev_render")
+    # NOTE: every attribute this class sets must be listed here. __slots__ is
+    # what makes the proxy cheap enough to wrap 40 tabs, and the cost of that
+    # is that object.__setattr__ raises AttributeError for anything undeclared
+    # — which takes down the whole app, since this runs before any tab body.
+    __slots__ = ("_container", "_feature", "_prev_render", "_perf_tok")
 
     def __init__(self, container, feature: str):
         object.__setattr__(self, "_container", container)
@@ -8734,12 +8738,19 @@ class _TabOpenProxy:
         # Timing harness. Off by default; one dict lookup when off. This is the
         # only place it needs wiring — every tab passes through here, so all 40
         # are instrumented without a single per-tab edit.
+        #
+        # The token is set FIRST and unconditionally, so the slot always exists
+        # before anything that can fail runs. The original version set it only
+        # inside a try, with the except branch repeating the same
+        # object.__setattr__ — which raised again for the same reason and took
+        # the app down at the first `with tab_...:`.
+        object.__setattr__(self, "_perf_tok", None)
         try:
             object.__setattr__(self, "_perf_tok",
                                _perf.enter(st.session_state, _key,
                                            active=_is_active))
         except Exception:
-            object.__setattr__(self, "_perf_tok", None)
+            pass
         return self._container.__enter__()
 
     def __exit__(self, *exc):

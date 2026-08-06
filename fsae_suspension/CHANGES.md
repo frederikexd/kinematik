@@ -401,61 +401,39 @@ how often they recurred:
 
 ---
 
-## Eighth pass — worked example for the Data Acquisition lead
+## HOTFIX — `AttributeError` on every load (introduced by pass seven)
 
-`suspension/daq_sample.py` — a 14-channel FSAE EV plan with a fault planted for
-each check, plus a **Load the sample plan** button in Data Acquisition →
-Channels, and a headless runner (`python3 -m suspension.daq_sample`).
+**Symptom.** The app died at the first `with tab_proof:` with a redacted
+`AttributeError`, traced to `object.__setattr__(self, "_perf_tok", None)` in
+`_TabOpenProxy.__enter__`.
 
-**Why not a clean plan.** The existing starter (`cooling_package()`) is
-deliberately sane, so it demonstrates almost nothing — a new lead has no way to
-see what the checks *do* until a plan is big enough and wrong enough to trip
-them. Everything this example teaches, it teaches by failing.
+**Cause, and it was mine.** `_TabOpenProxy` declares
+`__slots__ = ("_container", "_feature", "_prev_render")`. That is what makes
+the proxy cheap enough to wrap 40 tabs, and the cost is that assigning an
+undeclared attribute raises. The timing hook added `_perf_tok` without adding
+it to `__slots__`.
 
-| channel | fault it demonstrates |
-|---|---|
-| `damper_pot_fl` | **Aliasing** — 30 Hz content sampled at 50 Hz, no anti-alias filter declared. The only error here that cannot be undone in post. |
-| `coolant_temp_in` | **Oversampling** — 0.5 Hz signal at 200 Hz, burning bus and card. |
-| `coolant_temp_in/out` | **Resolution** — ±1.0 K pair against an expected 4 K rise → ±35% on heat rejection. |
-| `brake_pressure_f` | **Unanswered questions** — connector, conductors, calibration left blank, so the plan cannot report READY. |
-| `ts_current` | **Isolation** — accumulator-side channel with `galvanic_isolation=False`. |
-| `inverter_temp` | **The NA waiver** — already broadcast by the inverter, so its power/connector questions are waived rather than counted as debt. |
-| `wheel_speed_*` | **Bus schedulability** (below). |
-| BMS bridge | **UART link budget** — 204-byte frame at 10 Hz over 9600 baud needs 212% of the link. |
+It was made unrecoverable by a second mistake: the `except` branch handled the
+failure by **repeating the same `object.__setattr__`**, which raised
+identically. So the guard that was supposed to make telemetry unable to break a
+tab is exactly what propagated the error — and since `__enter__` runs before any
+tab body, it took the whole app down rather than one feature.
 
-**The most instructive result:** the bus sits at **36% worst-case load — which
-reads as fine on any dashboard — while seven messages cannot complete
-transmission within their own period.** Load and schedulability are different
-questions, and that is exactly the module's thesis. A test pins the load
-*below* the warn threshold, because if it ever goes red the example loses its
-point.
+**Fix.**
+- `_perf_tok` added to `__slots__`, with a comment saying why the list matters.
+- The token is now set unconditionally *before* the call that can fail, so the
+  slot always exists and the `except` branch has nothing left to do.
 
-Rails and storage are deliberately comfortable. An example where everything
-fails teaches nothing about what a passing check looks like.
+**Why nothing caught it.** Every verification this session extracted *functions*
+from the monolith and ran them. `_TabOpenProxy` is a *class*, and it was never
+instantiated — so `__slots__`, the one thing that could fail, was never
+exercised. Static analysis and function-level testing both passed a change that
+could not survive one `with` statement.
 
-### Two things the module refused, correctly
+**Tests added** (`tests/test_doc_coverage.py`):
+- every attribute the class assigns must appear in `__slots__`
+- the perf token must be initialised before the call that can raise
 
-- A 1536-bit `cell_voltages_all` signal **raised** rather than reporting a
-  finding — a CAN 2.0 frame holds 64 bits and `daq_plan` won't pretend
-  otherwise. Remodelled as 24 multiplexed 4-cell blocks, which is how a real
-  BMS streams it.
-- The first draft left the UART frame undeclared, and the tool said
-  `uart-budget-uncheckable` instead of guessing. Declaring `frame_bytes` /
-  `frame_rate_hz` is what makes the budget computable.
-
-Both are the honesty rule from the module docstring working as designed —
-unanswered stays distinct from a value.
-
-### Files
-
-- `suspension/daq_sample.py` — the dataset, faults marked `# DEMO:` inline
-- `ui/daq_plan.py` — the *Load a worked example* expander
-- `samples/daq_sample_channels.csv` — 14 rows in the tool's own export schema
-- `samples/daq_sample_report.txt` — the headless report, for reading first
-- `tests/test_daq_sample.py` — 15 tests
-
-**Why the tests exist.** A demo dataset rots differently from production code:
-nothing breaks, it just quietly stops demonstrating the thing it was built for.
-Tighten a Nyquist threshold and the aliasing channel starts passing — the
-sample still loads, still looks fine, teaches nothing. Each test asserts a
-specific planted fault still fires.
+Both were confirmed to FAIL when the bug is reintroduced and pass when it is
+not — a regression test that has never been seen to fail is not yet a
+regression test.

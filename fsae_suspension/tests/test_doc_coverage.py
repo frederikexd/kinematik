@@ -129,3 +129,42 @@ def test_all_four_pdf_exports_pass_figures(src):
     """Feature, subsystem, Integration Document and Handover. The handover was
     missed on the first pass; this pins all four."""
     assert src.count("figures=collect_report_figures") >= 4
+
+
+# --- _TabOpenProxy uses __slots__ -----------------------------------------
+def test_tab_proxy_declares_every_attribute_it_assigns(src):
+    """__slots__ is what makes the proxy cheap enough to wrap 40 tabs, and the
+    cost is that assigning an undeclared attribute raises AttributeError.
+
+    This shipped broken once: `_perf_tok` was added to __enter__ without being
+    added to __slots__, and since __enter__ runs before any tab body, the app
+    died on the first `with tab_...:` with a redacted AttributeError. Nothing
+    in the suite caught it because the tests exercised extracted FUNCTIONS and
+    never instantiated the class.
+    """
+    cls = next(n for n in ast.parse(src).body
+               if isinstance(n, ast.ClassDef) and n.name == "_TabOpenProxy")
+    body = ast.get_source_segment(src, cls)
+    declared = set(re.findall(r'__slots__\s*=\s*\((.*?)\)', body, re.S)[0]
+                   .replace('"', "").replace("'", "").replace(" ", "")
+                   .strip(",").split(","))
+    assigned = set(re.findall(
+        r'object\.__setattr__\(\s*self\s*,\s*["\'](\w+)["\']', body))
+    assigned |= set(re.findall(r'self\.(\w+)\s*=\s*[^=]', body))
+    missing = assigned - declared
+    assert not missing, (
+        f"{sorted(missing)} assigned but not in __slots__ — this raises "
+        f"AttributeError before any tab body runs and takes the app down")
+
+
+def test_tab_proxy_sets_the_perf_token_before_anything_that_can_fail(src):
+    """The original except-branch repeated the same object.__setattr__ that had
+    just raised, so the fallback failed identically. The token is now set
+    unconditionally first."""
+    cls = next(n for n in ast.parse(src).body
+               if isinstance(n, ast.ClassDef) and n.name == "_TabOpenProxy")
+    body = ast.get_source_segment(src, cls)
+    unconditional = body.index('object.__setattr__(self, "_perf_tok", None)')
+    inside_try = body.index("_perf.enter(")
+    assert unconditional < inside_try, \
+        "the perf slot must be initialised before the call that can raise"
