@@ -3,7 +3,7 @@ sub-team's Excel/screenshot workflow irrelevant.
 
 WHY THIS EXISTS
 ---------------
-Elbee Racing's powertrain sub-team still works the traditional way: a gear-ratio
+A powertrain sub-team typically works the traditional way: a gear-ratio
 spreadsheet ("Alec's sheet"), a DFMEA workbook, a screenshot "spec sheet", and
 placeholder CAD for the cooling package. Every other sub-team publishes their
 numbers to KinematiK's integration ledger so the cross-team physics checks fire;

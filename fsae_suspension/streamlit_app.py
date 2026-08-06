@@ -351,7 +351,16 @@ def _do_rerun():
 #  Wrapping is idempotent and fully guarded — telemetry can never break a
 #  widget or change its return value.
 # --------------------------------------------------------------------------- #
-def _ax_engage_cb(_feature, _user_cb, _user_args, _user_kwargs):
+def _ax_arg_label(args):
+    """First string positional — a Streamlit widget's label, when not by kwarg."""
+    for _a in args:
+        if isinstance(_a, str):
+            return _a
+    return None
+
+
+def _ax_engage_cb(_feature, _user_cb, _user_args, _user_kwargs,
+                  _widget_key=None, _label=None):
     """on_change/on_click handler: Streamlit calls this ONLY when the widget's
     value actually changes (a real user edit), not on every rerun — so it's an
     accurate engagement signal free of the cross-tab contamination that plagues
@@ -360,6 +369,28 @@ def _ax_engage_cb(_feature, _user_cb, _user_args, _user_kwargs):
     try:
         if _feature:
             _axn.auto_engage(_feature, action="input")
+    except Exception:
+        pass
+    # Record WHAT changed, for the rationale prompt. This is the only moment
+    # the old and new values both exist, and it is the reason the prompt can
+    # ask "why did you change ride height from 10 to 12 mm" instead of the
+    # useless "what did you change?" — a question the member has to do work to
+    # answer and the tool already knew.
+    try:
+        if _feature and _widget_key:
+            # Local import on purpose. Streamlit runs on_change callbacks
+            # BEFORE re-executing the script body, so a module-scope import
+            # further down this file is not guaranteed to have been bound on
+            # the path that reaches here first. The module is cached, so this
+            # costs a dict lookup.
+            from suspension import rationale as _rat_l
+            _prev = st.session_state.setdefault("_ax_widget_last", {})
+            _new = st.session_state.get(_widget_key)
+            _old = _prev.get(_widget_key)
+            _prev[_widget_key] = _new
+            if _old is not None and _old != _new:
+                _rat_l.record_change(st.session_state, _feature, _label,
+                                     _old, _new)
     except Exception:
         pass
     if _user_cb is not None:
@@ -390,7 +421,9 @@ def _ax_wrap_input(_orig):
                 _user_args = kwargs.get("args")
                 _user_kwargs = kwargs.get("kwargs")
                 kwargs["on_change"] = _ax_engage_cb
-                kwargs["args"] = (_af, _user_cb, _user_args, _user_kwargs)
+                kwargs["args"] = (_af, _user_cb, _user_args, _user_kwargs,
+                                  kwargs.get("key"),
+                                  kwargs.get("label") or _ax_arg_label(args))
                 kwargs["kwargs"] = None
         except Exception:
             pass
@@ -878,7 +911,8 @@ def capture_artifact(kind, title, detail="", *, feature=None, figure=None,
         # the guard analytics already provides for exactly this: every tab body
         # runs on every script-run, so without it a background render would
         # fabricate a completion for a tab nobody touched. Engagement comes
-        # from _ax_wrap_input, i.e. a widget the user genuinely moved.
+        # from _ax_engage_cb — the on_change callback the app already attaches
+        # to every input widget.
         try:
             _axn.auto_complete(_f, action=str(kind), require_engaged=True)
         except Exception:
@@ -1264,49 +1298,6 @@ def _ax_wrap_markdown(_orig):
     return _wrapped
 
 
-# --------------------------------------------------------------------------- #
-#  Engagement telemetry, fired from real interaction                           #
-#                                                                              #
-#  `tab_open` is automatic for all 40 features (the _TabOpenProxy). `engage`    #
-#  and `complete` were not: 16 and 19 hand-placed call sites between them. So   #
-#  most of the app reported as opened-but-never-used, and the funnel said the   #
-#  team's features were dead when they were being used daily. Acting on that    #
-#  reading would mean cutting exactly the wrong things.                         #
-#                                                                              #
-#  The tempting fix — fire engagement from the result-capture layer — would be  #
-#  WRONG, and wrong in the specific way _TabOpenProxy's own comment warns       #
-#  about: every tab body executes on every script-run, so captures fire on a    #
-#  plain render too. That would manufacture engagement for tabs nobody touched  #
-#  and produce numbers that look like foot traffic but aren't.                  #
-#                                                                              #
-#  A widget's value CHANGING between runs is real: nothing but a person moves   #
-#  a slider. First render sets the baseline and emits nothing; a later          #
-#  different value is an interaction, attributed to the tab actually rendering  #
-#  it. Costs one dict lookup per widget.                                        #
-# --------------------------------------------------------------------------- #
-_AX_WIDGET_PREV = "_ax_widget_prev"
-
-
-def _ax_wrap_input(_orig):
-    def _wrapped(*args, **kwargs):
-        _val = _orig(*args, **kwargs)
-        try:
-            _key = kwargs.get("key")
-            _feat = _ax_capture_feature()
-            if _key and _feat:
-                _prev = st.session_state.setdefault(_AX_WIDGET_PREV, {})
-                _seen = _key in _prev
-                _before = _prev.get(_key)
-                _prev[_key] = _val
-                # Only a CHANGE counts. An unseen key is this run's baseline.
-                if _seen and _before != _val:
-                    _axn.auto_engage(_feat, action="input")
-        except Exception:
-            pass       # telemetry must never break a widget
-        return _val
-    return _wrapped
-
-
 if not getattr(st, "_ax_capture_patched", False):
     try:
         from streamlit.delta_generator import DeltaGenerator as _AxCapDG
@@ -1346,14 +1337,6 @@ if not getattr(st, "_ax_capture_patched", False):
             _AxCapDG.markdown = _ax_wrap_markdown(_AxCapDG.markdown)
         if hasattr(st, "markdown"):
             st.markdown = _ax_wrap_markdown(st.markdown)
-        # Engagement telemetry from real interaction (see _ax_wrap_input).
-        for _nm in ("slider", "number_input", "selectbox", "text_input",
-                    "checkbox", "radio", "multiselect", "select_slider",
-                    "text_area", "toggle", "color_picker", "date_input"):
-            if hasattr(_AxCapDG, _nm):
-                setattr(_AxCapDG, _nm, _ax_wrap_input(getattr(_AxCapDG, _nm)))
-            if hasattr(st, _nm):
-                setattr(st, _nm, _ax_wrap_input(getattr(st, _nm)))
         st._ax_capture_patched = True
     except Exception:
         pass       # capture is best-effort; never block the app
@@ -8757,6 +8740,7 @@ _ax_active_ids = set()
 # file. Off by default — toggle it in Analytics. When off, begin_run/enter/
 # exit/end_run are a dict lookup each and nothing is stored.
 from suspension import perf as _perf          # noqa: E402  (cheap, stdlib only)
+from suspension import rationale as _rat    # noqa: E402  (stdlib only)
 _perf.begin_run(st.session_state)
 # A tab is genuinely active only when BOTH its category tab is the selected
 # category AND it is the selected sub-tab within that category. This mirrors the
@@ -10079,7 +10063,7 @@ def render_subsystem_documentation(subsystem_key, *, key_prefix,
 
     def _build_md():
         import datetime as _dt
-        L = [f"# Elbee Racing — {_name} Subsystem Report",
+        L = [_report_title(f"{_name} Subsystem Report"),
              f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._", ""]
         try:
             _led = interfaces_mod.IntegrationLedger.from_dict(
@@ -10148,7 +10132,7 @@ def render_subsystem_documentation(subsystem_key, *, key_prefix,
     try:
         import tempfile as _tf3
         import os as _os3
-        _pdf_path = _os3.path.join(_tf3.gettempdir(), f"elbee_{_safe}_report.pdf")
+        _pdf_path = _os3.path.join(_tf3.gettempdir(), f"{_report_slug()}_{_safe}_report.pdf")
         project_mod.render_pdf(_md, _pdf_path)
         with open(_pdf_path, "rb") as _pf:
             _pdf_bytes = _pf.read()
@@ -10159,11 +10143,11 @@ def render_subsystem_documentation(subsystem_key, *, key_prefix,
     if _pdf_ok:
         _cols[0].download_button(
             f"⬇ {_name} report (.pdf)", _pdf_bytes,
-            file_name=f"elbee_{_safe}_report.pdf", mime="application/pdf",
+            file_name=f"{_report_slug()}_{_safe}_report.pdf", mime="application/pdf",
             width='stretch', key=f"{key_prefix}_doc_pdf")
         _cols[1].download_button(
             f"⬇ {_name} report (.md)", _md.encode("utf-8"),
-            file_name=f"elbee_{_safe}_report.md", mime="text/markdown",
+            file_name=f"{_report_slug()}_{_safe}_report.md", mime="text/markdown",
             width='stretch', key=f"{key_prefix}_doc_md")
 
     if _mode.startswith("Create the PDF **and**"):
@@ -10412,6 +10396,85 @@ def _build_stamp():
     return _BUILD_STAMP
 
 
+#: Fallback when no workspace name and no team name are available. Blank, on
+#: purpose — an unnamed report is headed "Kinematics Feature Report", which is
+#: true, rather than a placeholder someone else's team has to notice and edit.
+_ORG_NAME_FALLBACK = ""
+
+#: Legacy default that used to be baked into ProjectStore. Treated as "unset"
+#: so an existing project.json created before this change does not keep
+#: stamping one team's name onto another team's documents.
+_LEGACY_TEAM_NAME = "Elbee Racing"
+
+
+def _report_org_name():
+    """The organisation name that heads every exported document.
+
+    Resolution order:
+
+      1. `store.team_name`, when the team has actually set one. This is the
+         "Team" box under Handover, and it is the more DELIBERATE answer — a
+         member typed it.
+      2. The active WORKSPACE name — correct without anyone configuring
+         anything, which is what makes the tool usable by a team that has just
+         signed up.
+      3. Nothing — the report is headed by its own title.
+
+    The order matters more than it looks. The Team box is SEEDED from the
+    workspace name, so on a fresh workspace both answers agree and (2) is what
+    a new team sees. But once someone edits that box, letting the workspace win
+    would silently discard their edit — the field would look broken, which is a
+    worse bug than the one this whole change is fixing.
+
+    This used to be the literal string "Elbee Racing" in four report builders.
+    That is fine for one team and fatal for every other: a Michigan team's
+    design-review PDF arrived headed with a California team's name, so the tool
+    could not be handed to anyone without its author in the loop.
+
+    Never raises: a report must not fail because a name could not be resolved.
+    """
+    try:
+        _tn = " ".join(str(get_store().team_name or "").split())
+        # The legacy baked-in default counts as unset, so an existing
+        # project.json from before this change does not keep stamping one
+        # team's name onto another team's documents.
+        if _tn and _tn != _LEGACY_TEAM_NAME:
+            return _tn
+    except Exception:
+        pass
+    try:
+        _ctx = _active_workspace_ctx()
+        _ws = getattr(getattr(_ctx, "workspace", None), "name", "") or ""
+        _ws = " ".join(str(_ws).split())
+        # "Personal"/"Sandbox" workspaces are plumbing, not an organisation.
+        if _ws and _ws.lower() not in ("personal", "sandbox", "default",
+                                       "my workspace", "untitled"):
+            return _ws
+    except Exception:
+        pass
+    return _ORG_NAME_FALLBACK
+
+
+def _report_title(suffix):
+    """A document H1: "<org> — <suffix>", or just "<suffix>" when unnamed."""
+    _org = _report_org_name()
+    return f"# {_org} — {suffix}" if _org else f"# {suffix}"
+
+
+def _report_slug():
+    """Filename prefix for exported documents, e.g. "long_beach_racing".
+
+    Downloads were named `elbee_feature_kinematics.pdf` regardless of who
+    exported them, so a judge's folder collected a dozen files under one
+    team's name. Falls back to "kinematik" rather than to any team's name.
+    """
+    try:
+        _s = re.sub(r"[^a-z0-9]+", "_", _report_org_name().lower()).strip("_")
+        return _s[:40] or "kinematik"
+    except Exception:
+        return "kinematik"
+
+
 def _feature_report_md(feature):
     """Full Markdown for ONE feature's document: header + this feature's
     captured calculations/simulations. Self-contained (no ledger interface
@@ -10421,7 +10484,7 @@ def _feature_report_md(feature):
     _lbl = _feature_label(feature)
     _sub = _feature_subsys(feature)
     _subname = _VC_LABEL.get(_sub, _sub.replace("-", " ").title())
-    L = [f"# Elbee Racing — {_lbl} Feature Report",
+    L = [_report_title(f"{_lbl} Feature Report"),
          f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK "
          f"{_build_stamp()} · {_subname} subsystem._", ""]
     _secs = _feature_activity_sections(feature)
@@ -10505,7 +10568,7 @@ def build_integration_document():
     import datetime as _dt
     _load_doc_ledger_from_store()
     _led = _doc_ledger()
-    L = ["# Elbee Racing — Integration Document",
+    L = [_report_title("Integration Document"),
          f"_Comprehensive cross-subsystem record · generated "
          f"{_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._", ""]
     if not _led:
@@ -10572,6 +10635,102 @@ def build_integration_document():
     return "\n".join(L)
 
 
+def _render_rationale_prompt(_feat, _lbl, _kp):
+    """The "why did you run this" prompt, shown inside every feature's panel.
+
+    Written as a sentence with blanks rather than a notes box. A blank textarea
+    gets nothing from a team at 2am before a design review; finishing someone
+    else's sentence is a far smaller act than composing your own.
+
+    Two things keep the friction near zero:
+      • The intent is a dropdown, so a valid entry costs one click.
+      • The "I changed …" clause is PREFILLED from the widgets the member
+        actually moved (see _ax_engage_cb). We never ask what the tool already
+        knows — that would spend the one question they were willing to answer
+        on something we could look up.
+
+    Never raises: this is a documentation convenience attached to all 36
+    feature tabs, and it must not be able to take one down.
+    """
+    try:
+        _ss = st.session_state
+        _existing = _rat.entries_for(_ss, _feat)
+        _auto = _rat.describe_changes(_ss, _feat)
+
+        _head = "✍️ Why did you run this?"
+        if _existing:
+            _head = f"✍️ Why did you run this? ({len(_existing)} note(s))"
+        elif _auto:
+            # Only nudge when they actually did something. A prompt on an
+            # untouched tab is nagging, and nagging is how a feature like this
+            # gets ignored everywhere including where it matters.
+            _head = "✍️ Why did you run this? — you changed inputs, add a line"
+
+        with st.expander(_head, expanded=False):
+            st.caption(
+                "One line now saves an hour in six months. The numbers survive "
+                "in the report; the reason they were run does not, unless you "
+                "write it here. Fill in as much or as little as you like — the "
+                "dropdown alone is a valid note."
+            )
+
+            _c1, _c2 = st.columns([3, 2])
+            _intent = _c1.selectbox(
+                f"I ran {_lbl} to…", ["—"] + _rat.INTENTS,
+                key=f"{_kp}_rat_intent")
+            _author = _c2.text_input("Your name / initials",
+                                     key=f"{_kp}_rat_author",
+                                     placeholder="e.g. M. Haddad")
+            _detail = st.text_input(
+                "…specifically (optional)", key=f"{_kp}_rat_detail",
+                placeholder="e.g. front bump steer looked high after the "
+                            "upright change")
+
+            if _auto:
+                st.caption(f"**You changed:** {_auto}")
+            _changed = st.text_input(
+                "I changed…", value=_auto, key=f"{_kp}_rat_changed",
+                help="Prefilled from the inputs you actually moved. Edit it if "
+                     "the interesting change was something else.")
+            _why = st.text_input(
+                "…because", key=f"{_kp}_rat_why",
+                placeholder="e.g. we wanted camber recovery back without "
+                            "raising the roll centre")
+            _outcome = st.selectbox("Where that leaves us",
+                                    ["—"] + _rat.OUTCOMES,
+                                    key=f"{_kp}_rat_outcome")
+
+            _b1, _b2 = st.columns([1, 3])
+            if _b1.button("Save this note", key=f"{_kp}_rat_save",
+                          use_container_width=True):
+                _e = _rat.add_entry(
+                    _ss, _feat,
+                    intent="" if _intent == "—" else _intent,
+                    detail=_detail, changed=_changed, why_changed=_why,
+                    outcome="" if _outcome == "—" else _outcome,
+                    author=_author)
+                if _e:
+                    # Changes are consumed by the note, so the next run's
+                    # prefill describes that run and not this one's leftovers.
+                    _rat.clear_changes(_ss, _feat)
+                    st.success("Saved — it's in this feature's report now.")
+                    st.rerun()
+                else:
+                    # An empty row would still count as an answer wherever
+                    # coverage is displayed, which turns the figure into a lie.
+                    _b2.warning("Nothing to save yet — pick a reason or write "
+                                "a line first.")
+
+            if _existing:
+                st.markdown("**Notes on this feature**")
+                for _e in reversed(_existing[-5:]):
+                    st.markdown(
+                        f"- `{_e.get('when','')}` **{_e.get('author') or 'unattributed'}** — "
+                        f"{_rat.sentence(_e, _lbl)}")
+    except Exception:
+        pass
+
+
 def render_feature_documentation(feature, *, key_prefix=None):
     """Compact per-feature documentation panel — the fork you asked for.
 
@@ -10605,6 +10764,8 @@ def render_feature_documentation(feature, *, key_prefix=None):
                            f"(committed {_doc_ledger()[_feat].get('committed_on','')}). "
                            "Re-commit to refresh it with your latest runs.")
 
+            _render_rationale_prompt(_feat, _lbl, _kp)
+
             with st.expander("Preview this feature's report", expanded=False):
                 st.markdown(_md)
 
@@ -10622,7 +10783,7 @@ def render_feature_documentation(feature, *, key_prefix=None):
                 try:
                     import tempfile as _tf, os as _os
                     _pp = _os.path.join(_tf.gettempdir(),
-                                        f"elbee_feature_{_safe}.pdf")
+                                        f"{_report_slug()}_feature_{_safe}.pdf")
                     with st.spinner("Rendering charts into the PDF…"):
                         project_mod.render_pdf(
                             _md, _pp, figures=collect_report_figures([_feat]))
@@ -10634,12 +10795,12 @@ def render_feature_documentation(feature, *, key_prefix=None):
                 if _pdf_ok:
                     _cols[0].download_button(
                         f"⬇ {_lbl} (.pdf)", _pdf_bytes,
-                        file_name=f"elbee_feature_{_safe}.pdf",
+                        file_name=f"{_report_slug()}_feature_{_safe}.pdf",
                         mime="application/pdf", width="stretch",
                         key=f"{_kp}_pdf", disabled=not _has_content)
                     _cols[1].download_button(
                         f"⬇ {_lbl} (.md)", _md.encode("utf-8"),
-                        file_name=f"elbee_feature_{_safe}.md",
+                        file_name=f"{_report_slug()}_feature_{_safe}.md",
                         mime="text/markdown", width="stretch",
                         key=f"{_kp}_dl_md", disabled=not _has_content)
                 if not _has_content:
@@ -10651,6 +10812,18 @@ def render_feature_documentation(feature, *, key_prefix=None):
                            "its subsystem. It joins every other committed "
                            "feature in one comprehensive, team-wide deliverable "
                            "that persists across sessions.")
+                # Nudge, never block. This is the moment of maximum leverage —
+                # the member has already decided this run is worth keeping, so
+                # the marginal cost of one sentence is at its lowest. Blocking
+                # the commit would just teach people to type "asdf", and a
+                # fabricated reason is worse than an absent one because it
+                # cannot be told from a real one.
+                if not _rat.has_rationale(st.session_state, _feat):
+                    st.warning(
+                        "No reason recorded for this run. The numbers will "
+                        "survive in the document; why you ran them will not. "
+                        "One line above takes ten seconds and is the part "
+                        "next year's team cannot reconstruct.", icon="✍️")
                 if st.button("✓ Commit this feature to the Integration Ledger",
                              key=f"{_kp}_commit", disabled=not _has_content,
                              width="stretch"):
@@ -10710,7 +10883,7 @@ def render_integration_document_panel(*, key_prefix="integration_doc"):
         try:
             import tempfile as _tf, os as _os
             _pp = _os.path.join(_tf.gettempdir(),
-                                "elbee_integration_document.pdf")
+                                f"{_report_slug()}_integration_document.pdf")
             # No feature filter: the Integration Document spans every committed
             # feature, so it resolves figures from the whole session.
             with st.spinner("Rendering charts into the PDF…"):
@@ -10724,12 +10897,12 @@ def render_integration_document_panel(*, key_prefix="integration_doc"):
         if _pdf_ok:
             _cols[0].download_button(
                 "⬇ Integration Document (.pdf)", _pdf_bytes,
-                file_name="elbee_integration_document.pdf",
+                file_name=f"{_report_slug()}_integration_document.pdf",
                 mime="application/pdf", width="stretch",
                 key=f"{key_prefix}_pdf")
             _cols[1].download_button(
                 "⬇ Integration Document (.md)", _md.encode("utf-8"),
-                file_name="elbee_integration_document.md",
+                file_name=f"{_report_slug()}_integration_document.md",
                 mime="text/markdown", width="stretch",
                 key=f"{key_prefix}_md")
         _vc_disclaimer("the Integration Document")
@@ -13363,7 +13536,7 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
 
       def _build_md():
           import datetime as _dt
-          L = [f"# Elbee Racing — {_name} Subsystem Report",
+          L = [_report_title(f"{_name} Subsystem Report"),
                f"_Generated {_dt.datetime.now():%Y-%m-%d %H:%M} from KinematiK._", ""]
           try:
               _led = interfaces_mod.IntegrationLedger.from_dict(
@@ -13429,7 +13602,7 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
       _pdf_ok = False
       try:
           import tempfile as _tf3, os as _os3
-          _pdf_path = _os3.path.join(_tf3.gettempdir(), f"elbee_{_safe}_report.pdf")
+          _pdf_path = _os3.path.join(_tf3.gettempdir(), f"{_report_slug()}_{_safe}_report.pdf")
           # Figures for every feature THIS subsystem owns — the same set whose
           # captured sections _build_md() just wrote into the Markdown.
           _sub_feats = [_f for _f, _s in _FEATURE_SUBSYS.items()
@@ -13446,11 +13619,11 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
       if _pdf_ok:
           _cols[0].download_button(
               f"⬇ {_name} report (.pdf)", _pdf_bytes,
-              file_name=f"elbee_{_safe}_report.pdf", mime="application/pdf",
+              file_name=f"{_report_slug()}_{_safe}_report.pdf", mime="application/pdf",
               width="stretch", key=f"{key_prefix}_doc_pdf")
           _cols[1].download_button(
               f"⬇ {_name} report (.md)", _md.encode("utf-8"),
-              file_name=f"elbee_{_safe}_report.md", mime="text/markdown",
+              file_name=f"{_report_slug()}_{_safe}_report.md", mime="text/markdown",
               width="stretch", key=f"{key_prefix}_doc_md")
 
       if _mode.startswith("Create the PDF **and**"):
@@ -13552,6 +13725,21 @@ def _captured_result_sections(feature):
         return []
     _label = _feature_label(feature)
     _out = []
+    # Rationale FIRST. A design-review reader wants to know why a run happened
+    # before they read what it produced, and putting it at the top is also the
+    # only honest place to say it is missing — buried at the bottom, an absent
+    # rationale reads as an afterthought rather than as the gap it is.
+    try:
+        _rl = _rat.report_lines(st.session_state, feature, _label)
+    except Exception:
+        _rl = []
+    if _rl:
+        _out.append((f"{_label} — why this was run", _rl))
+    elif _metrics or _verdicts or _artifacts:
+        _out.append((f"{_label} — why this was run", [
+            "_No rationale recorded. The numbers below are reproducible; the "
+            "reason they were produced is not — add a line in "
+            "**Document this feature → Why did you run this?**_"]))
     if _metrics:
         # A TABLE, not a bullet list. These are the numbers a design-review
         # reader scans and cross-checks against the rules, and render_pdf
@@ -27008,7 +27196,7 @@ with tab6:
       else:
           st.info("Enter both gusset legs above to unlock the chassis DXF export.")
 
-  st.markdown('<p class="hint">Any Elbee subteam: load the shared chassis once as '
+  st.markdown('<p class="hint">Any subteam in this workspace: load the shared chassis once as '
               'the reference, then load your part (caliper, radiator, battery box, '
               'wing mount, ECU tray — anything). You get the same collision / tight / '
               'clear verdict suspension gets. <b>If you can\'t out-spend another team, '
@@ -27306,7 +27494,15 @@ with tab7:
                        f"{type(_hist_e).__name__}: {_hist_e}")
 
     hcol1, hcol2, hcol3 = st.columns(3)
-    store.team_name = hcol1.text_input("Team", value=store.team_name)
+    # Seed from the active workspace so a new team's documents are correctly
+    # headed before anyone configures anything. Only ever a SEED: once the
+    # field holds a value it is the team's to edit, and this must not overwrite
+    # it on the next rerun.
+    _seed_team = store.team_name or _report_org_name()
+    store.team_name = hcol1.text_input(
+        "Team", value=_seed_team,
+        placeholder="e.g. Long Beach Racing",
+        help="Heads every exported PDF. Defaults to your workspace name.")
     store.season = hcol2.text_input("Season", value=store.season)
     store.target_mass_kg = hcol3.number_input("Target mass",
                                               value=float(store.target_mass_kg), step=5.0)
@@ -27529,13 +27725,13 @@ with tab7:
       md = project_mod.build_handover_markdown(store, geometry=geo,
                                                frame_tag=_kk_frame_tag(long=True))
       ec = st.columns(3)
-      ec[0].download_button("⬇ Handover (.md)", md, file_name="elbee_handover.md",
+      ec[0].download_button("⬇ Handover (.md)", md, file_name=f"{_report_slug()}_handover.md",
                             mime="text/markdown", width='stretch')
       ec[1].download_button("⬇ Project data (.json)", store.as_json(),
                             file_name="project.json", mime="application/json",
                             width='stretch')
       try:
-          pdf_path = os.path.join(tempfile.gettempdir(), "elbee_handover.pdf")
+          pdf_path = os.path.join(tempfile.gettempdir(), f"{_report_slug()}_handover.pdf")
           # The fourth export path. The feature, subsystem and Integration
           # exports were wired to the captured charts; this one was missed, so
           # the handover — the document that outlives everyone who wrote it —
@@ -27544,7 +27740,7 @@ with tab7:
                                  figures=collect_report_figures())
           with open(pdf_path, "rb") as f:
               ec[2].download_button("⬇ Handover (.pdf)", f.read(),
-                                    file_name="elbee_handover.pdf",
+                                    file_name=f"{_report_slug()}_handover.pdf",
                                     mime="application/pdf", width='stretch')
       except Exception as e:
           ec[2].markdown(f"<p class='hint'>PDF unavailable: {e}</p>", unsafe_allow_html=True)

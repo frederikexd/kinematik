@@ -366,13 +366,28 @@ class SupabaseBackend:
         data jsonb
     and these set in the environment / Streamlit secrets:
         SUPABASE_URL, SUPABASE_KEY
-    A single row keyed by `project_id` (default "elbee") holds the team's data.
-    Concurrency is last-write-wins, which is fine for a team of a few editors.
+    A single row keyed by `project_id` holds the team's data. Concurrency is
+    last-write-wins, which is fine for a team of a few editors.
+
+    NOTE on the default row key. It is the literal string "elbee" for one
+    reason only: it is the PRIMARY KEY of already-written rows in deployed
+    databases. It is never displayed anywhere, and it is not the team name —
+    that now comes from the workspace (see _report_org_name in streamlit_app).
+    Changing this default would silently point an existing deployment at a
+    different, empty row, i.e. look exactly like total data loss to the team
+    it happened to. Renaming it is a data migration, not an edit; pass
+    `project_id` explicitly for new deployments.
+
+    Multi-tenant deployments do not use this class at all — they go through
+    workspace.WorkspaceScopedSupabaseBackend, which keys on workspace_id.
     """
 
     TABLE = "kinematik_project"
 
-    def __init__(self, url: str, key: str, project_id: str = "elbee"):
+    #: See the class docstring: a legacy row key, never a display name.
+    LEGACY_ROW_KEY = "elbee"
+
+    def __init__(self, url: str, key: str, project_id: str = LEGACY_ROW_KEY):
         from supabase import create_client
         self.client = create_client(url, key)
         self.project_id = project_id
@@ -594,7 +609,12 @@ class ProjectStore:
 
     def __init__(self, path: str = DEFAULT_PROJECT, backend=None):
         self.path = path
-        self.team_name = "Elbee Racing"
+        # No default team name. It used to be one specific team's, which every
+        # report then carried until somebody noticed and edited it — and most
+        # people don't notice their own team's name being wrong on a document
+        # they wrote. Empty means the report headers omit the prefix and the
+        # UI shows an empty "Team" box asking to be filled.
+        self.team_name = ""
         self.season = str(_dt.date.today().year)
         self.target_mass_kg = 230.0
         self.weights: list[WeightItem] = []
@@ -1099,7 +1119,8 @@ def build_handover_markdown(store: ProjectStore,
     b = store.budget_status()
     today = _dt.date.today().isoformat()
     L = []
-    L.append(f"# {store.team_name} — Handover Report")
+    _org = " ".join(str(getattr(store, "team_name", "") or "").split())
+    L.append(f"# {_org} — Handover Report" if _org else "# Handover Report")
     L.append(f"_Season {store.season} · generated {today}_\n")
     L.append("This report is auto-generated from the KinematiK project file. It "
              "captures the car's design state, weight budget, and the reasoning behind "

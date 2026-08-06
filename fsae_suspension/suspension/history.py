@@ -335,7 +335,7 @@ def restore(store, blob: dict) -> tuple[bool, str]:
         # _apply() MERGES (absent keys keep current values) — right for load,
         # wrong for restore: reproducing the old version must also CLEAR what
         # didn't exist then. Reset the applied fields to their defaults first.
-        store.team_name = "Elbee Racing"
+        store.team_name = ""      # no default team; see ProjectStore.__init__
         store.season = str(_dt.date.today().year)
         store.target_mass_kg = 230.0
         store.weights, store.decisions = [], []

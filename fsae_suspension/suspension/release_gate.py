@@ -134,7 +134,7 @@ class GateInputs:
     cell_temp_margin_c: float = 5.0                        # require peak ≤ limit − margin
     tractive_current_margin_frac: float = 0.10             # peak ≤ fuse × (1 − margin)
     # identity for the clipboard
-    team: str = "Elbee Racing"
+    team: str = ""            # filled from the workspace/team name, not baked in
     car: str = ""
     event: str = ""
 

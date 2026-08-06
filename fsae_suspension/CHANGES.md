@@ -401,45 +401,55 @@ how often they recurred:
 
 ---
 
-## Tenth pass — table layout, from a deployed export
+## Twelfth pass — no team's name baked into the tool
 
-Confirmed working in your deployment: real values in the table, `###` gone from
-the verdicts. Two things the live PDF made obvious that my own test render had
-not.
+`# Elbee Racing — …` was a literal string in four report builders, every export
+was named `elbee_*.pdf`, and `ProjectStore.team_name` defaulted to it. Fine for
+one team; a blocker for every other, and the reason the tool could not be handed
+on without its author in the loop.
 
-**Columns were sized equally, so content wrapped mid-word.** A 7-column CAN
-table gave every column ~78 pt, breaking `coolant_temp_in` into
-`coolant_temp_` / `in` while the DLC column sat nearly empty beside it. Widths
-are now proportional to the longest cell in each column, capped so one
-paragraph-length finding cannot starve the rest.
+**`_report_org_name()`** resolves the name that heads every document:
 
-The first attempt at that still wrapped `0x400` and `DLC`, because
-**reportlab's horizontal cell padding is a fixed cost per column** — a trivial
-slice of a wide column and most of a narrow one. Padding is now allocated first
-as a flat per-column constant, and only the remainder is split proportionally.
-`LEFTPADDING`/`RIGHTPADDING` are set explicitly to match the constant the
-arithmetic assumes, since the two silently disagreeing is what caused the
-second failure.
+1. `store.team_name` when the team has set one — a member typed it, so it is
+   the deliberate answer.
+2. The active **workspace name** — correct with nothing configured, which is
+   what makes the tool usable by a team that just signed up.
+3. Nothing — the report is headed by its own title (`# Kinematics Feature
+   Report`), rather than a placeholder someone has to notice and edit.
 
-**The shape caption under a complete table is gone.** `4 rows x 7 cols ·
-Message, ID, DLC, …` was worth printing when it was all the report had; under
-the actual table it restates the headers the reader is looking at and counts
-rows they can see. Truncated tables still say so.
+**The order is not the obvious one, and that is deliberate.** The Team box is
+*seeded* from the workspace name, so on a fresh workspace both answers agree
+and (2) is what a new team sees. My first version put the workspace first —
+which would have meant editing that box silently did nothing. A field that
+looks broken is a worse bug than the one this change fixes.
 
-**Build stamp.** Report headers now carry a content hash of the running
-`streamlit_app.py`:
+`_report_slug()` does the same for filenames:
+`long_beach_racing_feature_kinematics.pdf`, falling back to `kinematik`, never
+to a team. Downloads previously arrived as `elbee_*.pdf` whoever exported them,
+so a judge's folder collected a dozen files under one team's name.
 
-```
-Generated 2026-08-06 01:03 from KinematiK build c85c71ed · Electrics subsystem.
-```
+**The legacy string is treated as unset.** An existing `project.json` carrying
+`"team_name": "Elbee Racing"` resolves to the workspace name instead, so a
+deployment that predates this change stops stamping one team's name onto
+another team's documents without anyone having to notice.
 
-Added because a report that LOOKS stale and a deployment that IS stale are
-indistinguishable from the PDF alone — an export arrived showing the old table
-description after the fix had shipped, and there was no way to tell whether the
-fix was broken or simply not deployed. Those need opposite responses. It is a
-content hash rather than a version constant, because a constant is something
-you have to remember to bump.
+### One thing deliberately NOT changed
 
-**Tests** — 7 more in `tests/test_table_capture.py` (22 total): 2/7/12-column
-tables, a 40-row table, a paragraph-length cell, the padding accounting, and
-the absent redundant caption.
+`SupabaseBackend`'s default row key is still the literal `"elbee"`. It is the
+PRIMARY KEY of rows already written in deployed databases, it is never
+displayed, and it is not a team name. Changing it would silently point an
+existing deployment at a different, empty row — indistinguishable from total
+data loss to the team it happened to. Renaming it is a migration, not an edit.
+Documented on the class, exempted in the test with the reason attached.
+
+### Also cleaned
+
+`history.py` restore default, `release_gate.py` identity field, and three
+module docstrings that described the tool as one team's ("every Elbee subteam",
+"Elbee Racing's powertrain sub-team"). Those are comments, but a new team
+reading the source should not find someone else's team in it.
+
+**Tests** — `tests/test_team_naming.py`, 17 tests. The two that scan for
+hardcoded names walk the **AST** and check string literals only, excluding
+docstrings — a raw text scan flags the comments explaining the old hardcoding,
+which would force deleting the history to make the test pass.

@@ -7,7 +7,7 @@
 """
 Multi-team integration: check ANY subteam's part against the chassis.
 
-This generalises the suspension chassis check so every Elbee subteam — aero,
+This generalises the suspension chassis check so every subteam — aero,
 brakes, cooling, data-acq, electrics, powertrain — can validate their part against
 the shared chassis before anyone manufactures. The workflow is identical no matter
 which team you're on:
@@ -38,7 +38,7 @@ import trimesh
 from dataclasses import dataclass
 
 
-# Elbee subteam registry — matches the Discord channels. Each team's parts get
+# Subteam registry — the standard FSAE split. Each team's parts get
 # tagged so a future packaging view can colour/group by team.
 TEAMS = {
     "aerodynamics":     {"color": "#ffd93b", "label": "Aerodynamics"},

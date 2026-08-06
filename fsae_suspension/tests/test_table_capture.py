@@ -158,8 +158,9 @@ def test_report_header_carries_a_build_stamp():
     said which code produced it."""
     src = open(os.path.join(ROOT, "streamlit_app.py"), encoding="utf-8").read()
     assert "_build_stamp()" in src
-    hdr = src[src.index("# Elbee Racing — {_lbl} Feature Report"):][:400]
-    assert "_build_stamp()" in hdr, "the feature report header is not stamped"
+    i = src.index('_report_title(f"{_lbl} Feature Report")')
+    assert "_build_stamp()" in src[i:i + 400], \
+        "the feature report header is not stamped"
 
 
 def test_build_stamp_is_content_derived_not_a_constant():
