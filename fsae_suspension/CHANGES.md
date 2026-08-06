@@ -401,39 +401,63 @@ how often they recurred:
 
 ---
 
-## HOTFIX — `AttributeError` on every load (introduced by pass seven)
+## Ninth pass — tables carried their SHAPE, not their values
 
-**Symptom.** The app died at the first `with tab_proof:` with a redacted
-`AttributeError`, traced to `object.__setattr__(self, "_perf_tok", None)` in
-`_TabOpenProxy.__enter__`.
+Reported against a real DAQ export. The whole "charts & tables" section read:
 
-**Cause, and it was mine.** `_TabOpenProxy` declares
-`__slots__ = ("_container", "_feature", "_prev_render")`. That is what makes
-the proxy cheap enough to wrap 40 tabs, and the cost is that assigning an
-undeclared attribute raises. The timing hook added `_perf_tok` without adding
-it to `__slots__`.
+```
+• 4 rows x 7 cols · Message, ID, DLC, Rate (Hz), Bits, …
+• 40 rows x 7 cols · Message, ID, DLC, Rate (Hz), Bits, …
+• 12 rows x 7 cols · Message, ID, DLC, Rate (Hz), Bits, …
+```
 
-It was made unrecoverable by a second mistake: the `except` branch handled the
-failure by **repeating the same `object.__setattr__`**, which raised
-identically. So the guard that was supposed to make telemetry unable to break a
-tab is exactly what propagated the error — and since `__enter__` runs before any
-tab body, it took the whole app down rather than one feature.
+Pass one taught the pipeline to embed **charts**, and stopped there. Tables
+still went through `_ax_table_summary`, which describes a table without ever
+reading it. Data Acquisition is the worst possible case for that: it draws no
+charts at all, so every one of its results is a table, and its report was a
+list of dimensions.
 
-**Fix.**
-- `_perf_tok` added to `__slots__`, with a comment saying why the list matters.
-- The token is now set unconditionally *before* the call that can fail, so the
-  slot always exists and the `except` branch has nothing left to do.
+**`_ax_table_rows()`** is the table analogue of `report_figures.compact_spec`:
+capture the answer, not a description of it. Handles what the app actually
+passes to `st.dataframe` / `st.table` — pandas DataFrames (duck-typed, so
+pandas is never imported for this), list-of-dicts, dict-of-lists,
+list-of-lists, flat lists. Capped at 60 rows x 12 columns, and **truncation is
+always stated** ("Showing the first 60 of 300 rows"), because a table silently
+showing a fifth of itself is worse than one that admits it.
 
-**Why nothing caught it.** Every verification this session extracted *functions*
-from the monolith and ran them. `_TabOpenProxy` is a *class*, and it was never
-instantiated — so `__slots__`, the one thing that could fail, was never
-exercised. Static analysis and function-level testing both passed a change that
-could not survive one `with` statement.
+The DAQ report now carries the full 40-message CAN breakdown — ID, DLC, rate,
+bits, load, producer, per message. See `EXAMPLE_daq_report.pdf`.
 
-**Tests added** (`tests/test_doc_coverage.py`):
-- every attribute the class assigns must appear in `__slots__`
-- the perf token must be initialised before the call that can raise
+### Three more faults visible in the same export
 
-Both were confirmed to FAIL when the bug is reintroduced and pass when it is
-not — a regression test that has never been seen to fail is not yet a
-regression test.
+**`###` printed literally.** Banners are authored as Markdown for the screen,
+so their text arrives carrying `###` and `**`. The PDF showed
+`### BLOCKED — 11 hard failure(s)`. Stripped in `capture_verdict`.
+
+**Two contradictory verdicts on one plan.** The export carried both
+"BLOCKED — 11 hard failure(s)" and "BLOCKED — 2 hard failure(s)". A rolling
+summary banner changes its numbers as the plan changes, and exact-text dedup
+kept every historical version. Verdicts now dedupe on the text with digits
+masked, so a re-count replaces the old figure instead of accumulating beside it.
+
+**My own demo notice was captured as an engineering finding.** The "Sample plan
+loaded" banner I added last pass used `st.warning`, which the alert wrappers
+capture as a verdict — so it sat in the DAQ report between the aliasing failure
+and the isolation failure. It is a note about the tool, not a finding about the
+car. Changed to `st.caption`.
+
+### A bug the tests found by accident
+
+`_ax_cell` formatted floats with `",.4g"`. That renders a **115200 baud rate as
+"1.152e+05"** and a **500 kbit/s bus as "5e+05"** — four significant digits is
+too few for the round numbers that fill an engineering table. Integral floats
+now print as integers with separators (`115,200`), and scientific notation is
+reserved for values that genuinely need it.
+
+I found this because a test assertion I wrote was wrong about the expected
+output, and checking why exposed the formatter rather than the test.
+
+**Tests** — `tests/test_table_capture.py`, 15 tests: every input shape, the
+row/column caps, truncation honesty in both directions, pipes and newlines that
+would otherwise split a Markdown row, NaN and None rendering blank rather than
+leaking `nan`, and the float formatting above.

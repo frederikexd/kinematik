@@ -169,8 +169,14 @@ def _render_channels():
             ss["daq_sample_loaded"] = True
             st.rerun()
         if ss.get("daq_sample_loaded"):
-            _sc2.warning("Sample plan loaded — these are demo numbers with "
-                         "faults planted on purpose.", icon="⚠️")
+            # st.caption, NOT st.warning: the alert wrappers capture warnings
+            # as engineering verdicts, and this is a note about the TOOL, not a
+            # finding about the car. It was landing in the DAQ report's
+            # "checks & verdicts" list beside the real aliasing and isolation
+            # failures, which is exactly the kind of noise that teaches a
+            # reader to skim past the section.
+            _sc2.caption("⚠️ Sample plan loaded — demo numbers with faults "
+                         "planted on purpose.")
 
     # ---- add from catalog / blank -------------------------------------- #
     c1, c2, c3 = st.columns([3, 2, 2])

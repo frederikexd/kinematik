@@ -785,23 +785,39 @@ def capture_verdict(text, severity="info", *, feature=None):
         if not _f:
             return
         _t = " ".join(str(text).split())
+        # Banners are authored as Markdown for the screen, so their text
+        # arrives carrying "### " and "**". Those render as literal characters
+        # in a PDF bullet — the reports showed "### BLOCKED — 11 hard
+        # failure(s)". Strip the syntax, keep the words.
+        _t = re.sub(r"(?:^|(?<=\s))#{1,6}\s+", "", _t)
+        _t = _t.replace("**", "").replace("__", "")
+        _t = " ".join(_t.split())
         if not (_VERDICT_MIN_CHARS <= len(_t) <= _VERDICT_MAX_CHARS):
             return
         if _t.startswith("<") or "</" in _t:      # raw HTML chrome, not a finding
             return
+        # A rolling summary banner ("BLOCKED — 11 hard failure(s)") changes its
+        # numbers as the plan changes, so exact-text dedup kept every historical
+        # version — one PDF carried both "11 hard failure(s)" and "2 hard
+        # failure(s)", which reads as two contradictory verdicts on one plan.
+        # Compare with digits masked so a re-count REPLACES the old figure.
+        _sig = re.sub(r"\d+([.,]\d+)?", "#", _t)
         _rows = _ax_store(_f, "verdicts")
         for _r in _rows:
-            if _r.get("text") == _t:
+            if _r.get("sig", _r.get("text")) == _sig:
+                _r["text"] = _t
+                _r["sig"] = _sig
                 _r["severity"] = str(severity)
                 return
         if len(_rows) >= _MAX_CAPTURED_VERDICTS:
             return
-        _rows.append({"text": _t, "severity": str(severity)})
+        _rows.append({"text": _t, "sig": _sig, "severity": str(severity)})
     except Exception:
         pass
 
 
-def capture_artifact(kind, title, detail="", *, feature=None, figure=None):
+def capture_artifact(kind, title, detail="", *, feature=None, figure=None,
+                     table=None):
     """Record that a feature produced a chart / table / other visual result.
 
     Many features' real output is a plot or a table, not a metric — a lap-time
@@ -845,6 +861,8 @@ def capture_artifact(kind, title, detail="", *, feature=None, figure=None):
                     _r["detail"] = str(detail)[:200]
                 if _spec is not None:
                     _r["spec"] = _spec
+                if table is not None:
+                    _r["table"] = table
                 return
         if len(_rows) >= _MAX_CAPTURED_ARTIFACTS:
             return
@@ -852,6 +870,8 @@ def capture_artifact(kind, title, detail="", *, feature=None, figure=None):
                 "detail": str(detail)[:200] if detail else ""}
         if _spec is not None:
             _row["spec"] = _spec
+        if table is not None:
+            _row["table"] = table
         _rows.append(_row)
         # A chart or table produced by a feature the user has actually
         # interacted with is a completed workflow. `require_engaged=True` is
@@ -1028,6 +1048,111 @@ def _ax_table_summary(data):
         return ""
 
 
+#: Caps on a captured table. A DAQ per-message breakdown is 40 rows; a BOM can
+#: be hundreds. Enough to be the actual answer, bounded enough that session
+#: state and the PDF stay sane. Truncation is always stated in the report —
+#: a table silently showing its first 60 of 300 rows is worse than one that
+#: says so, because the reader cannot tell.
+_MAX_TABLE_ROWS = 60
+_MAX_TABLE_COLS = 12
+
+
+def _ax_cell(v):
+    """One cell as report text: short, unambiguous, safe inside a MD table."""
+    try:
+        if v is None:
+            return ""
+        if isinstance(v, bool):
+            return "yes" if v else "no"
+        if isinstance(v, float):
+            if v != v:                                  # NaN
+                return ""
+            if v in (float("inf"), float("-inf")):
+                return "inf" if v > 0 else "-inf"
+            av = abs(v)
+            # Scientific only where it genuinely helps. The previous ",.4g"
+            # rendered a 115200 baud rate as "1.152e+05" and a 500000 bit/s
+            # bus as "5e+05" — four significant digits is simply too few for
+            # the round numbers that fill an engineering table.
+            if av and (av < 1e-4 or av >= 1e12):
+                return f"{v:.4g}"
+            if v == int(v):
+                return f"{int(v):,}"                    # 115200.0 -> 115,200
+            return f"{v:,.6g}"
+        s = str(v)
+        # Pipes would split the cell; newlines would break the row.
+        s = s.replace("|", "/").replace("\n", " ").replace("\r", " ")
+        return s if len(s) <= 60 else s[:57] + "…"
+    except Exception:
+        return ""
+
+
+def _ax_table_rows(data):
+    """Header + rows for a dataframe-ish object, or None.
+
+    This is the table analogue of report_figures.compact_spec: capture the
+    ANSWER, not a description of its shape. Reports used to say
+    "40 rows x 7 cols · Message, ID, DLC, …" — which tells a design-review
+    reader that a CAN message breakdown exists and nothing whatsoever about
+    what it said. For a table-heavy feature like Data Acquisition, whose entire
+    output is tables, that made the document close to worthless.
+
+    Handles what the app actually passes to st.dataframe / st.table: pandas
+    DataFrames, list-of-dicts, dict-of-lists, and list-of-lists.
+    """
+    try:
+        header, rows = None, None
+
+        # pandas DataFrame (duck-typed, so pandas is never imported for this)
+        if hasattr(data, "columns") and hasattr(data, "itertuples"):
+            header = [str(c) for c in list(data.columns)[:_MAX_TABLE_COLS]]
+            rows = []
+            for i, tup in enumerate(data.itertuples(index=False, name=None)):
+                if i >= _MAX_TABLE_ROWS:
+                    break
+                rows.append([_ax_cell(v) for v in tup[:_MAX_TABLE_COLS]])
+            total = len(data)
+
+        elif isinstance(data, dict):
+            # dict of column -> sequence
+            header = [str(c) for c in list(data)[:_MAX_TABLE_COLS]]
+            cols = [data[c] for c in list(data)[:_MAX_TABLE_COLS]]
+            total = max((len(c) for c in cols if hasattr(c, "__len__")),
+                        default=0)
+            rows = [[_ax_cell(c[r]) if hasattr(c, "__getitem__")
+                     and r < len(c) else "" for c in cols]
+                    for r in range(min(total, _MAX_TABLE_ROWS))]
+
+        elif isinstance(data, (list, tuple)) and data:
+            total = len(data)
+            if isinstance(data[0], dict):
+                seen = []
+                for r in data[:_MAX_TABLE_ROWS]:
+                    for k in r:
+                        if k not in seen:
+                            seen.append(k)
+                header = [str(k) for k in seen[:_MAX_TABLE_COLS]]
+                rows = [[_ax_cell(r.get(k)) for k in seen[:_MAX_TABLE_COLS]]
+                        for r in data[:_MAX_TABLE_ROWS]]
+            elif isinstance(data[0], (list, tuple)):
+                width = min(max(len(r) for r in data), _MAX_TABLE_COLS)
+                header = [f"col {i+1}" for i in range(width)]
+                rows = [[_ax_cell(v) for v in list(r)[:width]]
+                        for r in data[:_MAX_TABLE_ROWS]]
+            else:
+                header = ["value"]
+                rows = [[_ax_cell(v)] for v in data[:_MAX_TABLE_ROWS]]
+        else:
+            return None
+
+        if not header or not rows:
+            return None
+        return {"header": header, "rows": rows, "total_rows": int(total),
+                "truncated": int(total) > len(rows)}
+    except Exception:
+        return None
+
+
 def _ax_wrap_table(_orig, kind="table"):
     def _wrapped(*args, **kwargs):
         try:
@@ -1036,7 +1161,7 @@ def _ax_wrap_table(_orig, kind="table"):
             if _data is not None:
                 _sum = _ax_table_summary(_data)
                 if _sum:
-                    capture_artifact(kind, _sum)
+                    capture_artifact(kind, _sum, table=_ax_table_rows(_data))
         except Exception:
             pass
         return _orig(*args, **kwargs)
@@ -13408,19 +13533,40 @@ def _captured_result_sections(feature):
             _lines.append(f"- {_mark} {_r['text']}".replace("-  ", "- "))
         _out.append((f"{_label} — checks & verdicts", _lines))
     if _artifacts:
-        # For plenty of features the plot IS the result. Where we captured the
-        # figure's spec, emit an image reference so the PDF draws the actual
-        # chart; render_pdf resolves it against the mapping built by
-        # collect_report_figures. Tables, and charts we could not capture, keep
-        # the text description — the document still records that they exist.
+        # For plenty of features the plot or the table IS the result. Charts
+        # become embedded figures; tables become real Markdown tables carrying
+        # their actual values. Anything we could not capture keeps the text
+        # description so the document still records that it exists.
         _lines = []
         for _i, _r in enumerate(_artifacts):
             _title = _r.get("title", "")
             _dtl = f" — {_r['detail']}" if _r.get("detail") else ""
+            _tbl = _r.get("table")
             if _r.get("kind") == "chart" and _r.get("spec"):
                 _cap = f"{_title}{_dtl}".replace("]", ")").replace("[", "(")
                 _lines.append(f"![{_cap}]({_FIG_SCHEME}"
                               f"{figure_ref(feature, _i)})")
+            elif _tbl and _tbl.get("header") and _tbl.get("rows"):
+                # No heading above the table. The captured "title" for a table
+                # is its shape line ("40 rows x 7 cols · Message, ID, …"),
+                # which is a fine DESCRIPTION and a terrible heading to put
+                # directly above the same column names. It goes underneath as
+                # a caption, where it says what the reader can no longer see
+                # once the rows are truncated.
+                _lines.append("| " + " | ".join(_tbl["header"]) + " |")
+                _lines.append("|" + "---|" * len(_tbl["header"]))
+                _w = len(_tbl["header"])
+                for _row in _tbl["rows"]:
+                    _cells = (list(_row) + [""] * _w)[:_w]
+                    _lines.append("| " + " | ".join(_cells) + " |")
+                if _tbl.get("truncated"):
+                    # Say so. A table quietly showing 60 of 300 rows is worse
+                    # than one that admits it, because the reader cannot tell.
+                    _lines.append(f"_Showing the first {len(_tbl['rows'])} of "
+                                  f"{_tbl['total_rows']} rows._")
+                else:
+                    _lines.append(f"_{_title}_")
+                _lines.append("")
             else:
                 _mark = "📈" if _r.get("kind") == "chart" else "📋"
                 _lines.append(f"- {_mark} {_title}{_dtl}")
