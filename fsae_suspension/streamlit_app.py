@@ -8753,6 +8753,13 @@ for _ck, _cem, _clab in _cats_nonempty:
         if getattr(_id_to_container.get(_id), "open", None):
             _ax_active_ids.add(_id)
 
+# Reset the per-run doc-panel guard so each Streamlit script run starts clean.
+# The guard in _TabOpenProxy.__exit__ uses this set to prevent rendering the
+# "Document this feature" panel more than once per feature per run — which would
+# produce StreamlitDuplicateElementKey when a tab container is entered multiple
+# times (e.g. the 3D Model tab is split across three separate `with tab_car:` blocks).
+st.session_state["_doc_panel_rendered_this_run"] = set()
+
 # Map the stable ids back onto the legacy tab variable names the bodies below
 # already use, so not a single tab body needs to change.
 
@@ -8883,8 +8890,17 @@ class _TabOpenProxy:
             _clean = not (exc and exc[0] is not None)
             _key = self._feature
             _fn = globals().get("render_feature_documentation")
+            # Guard against duplicate doc panels when the same tab container is
+            # used as a context manager more than once in a single script run
+            # (e.g. tab_car / model3d spans three separate `with tab_car:` blocks).
+            # Without this guard every __exit__ call renders the panel again,
+            # producing identical Streamlit widget keys → StreamlitDuplicateElementKey.
+            _rendered_set = st.session_state.setdefault(
+                "_doc_panel_rendered_this_run", set())
             if (_clean and _fn is not None and _key not in _DOC_PANEL_SKIP
-                    and _key in _ax_active_ids):
+                    and _key in _ax_active_ids
+                    and _key not in _rendered_set):
+                _rendered_set.add(_key)
                 _fn(_key)
         except Exception:
             pass  # documentation must never break the tab
