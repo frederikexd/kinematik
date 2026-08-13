@@ -502,25 +502,44 @@ class ChannelFilter(Protocol):
 #     phase. (Run the cascade forward then backward for zero phase if a waveform,
 #     not a mean, is the deliverable — at the cost of being offline again.)
 def _rbj_notch(f0: float, fs: float, q: float) -> tuple[np.ndarray, np.ndarray]:
-    """RBJ cookbook notch biquad at f0. Returns (b, a) with a[0] normalised to 1."""
+    """RBJ cookbook notch biquad at f0. Returns (b, a) with a[0] normalised to 1.
+
+    NORMALISATION: the returned `a` must have a[0] == 1, and it is a0 = 1 + alpha
+    that everything is divided by — NOT a hard-coded 1.0. Writing a[0] = 1.0 and
+    then dividing the whole vector by a0 leaves a[0] = 1/(1+alpha), which is a
+    different filter: the transfer function picks up a spurious gain of (1+alpha)
+    at every frequency outside the feature.
+
+    It is not subtle in effect. A 50 Hz Q=10 notch measured |H| = 1.19 at DC
+    instead of 1.0, and the Q=0.707 low-pass measured |H| = 11.3 at DC instead of
+    1.0 — an order of magnitude of invented gain. This module says the quantity
+    that matters is "the time-AVERAGE the balance reading needs", and DC gain is
+    exactly what sets that average, so every filtered force reading was scaled by
+    a factor nobody chose.
+    """
     w0 = 2.0 * math.pi * f0 / fs
     alpha = math.sin(w0) / (2.0 * q)
     cosw = math.cos(w0)
     b = np.array([1.0, -2.0 * cosw, 1.0])
     a0 = 1.0 + alpha
-    a = np.array([1.0, -2.0 * cosw, 1.0 - alpha])
+    a = np.array([a0, -2.0 * cosw, 1.0 - alpha])
     return b / a0, a / a0
 
 
 def _rbj_lowpass(f0: float, fs: float, q: float) -> tuple[np.ndarray, np.ndarray]:
-    """RBJ cookbook low-pass biquad at f0 with quality q (sets the pair's damping)."""
+    """RBJ cookbook low-pass biquad at f0 with quality q (sets the pair's damping).
+
+    Same a[0] normalisation defect as _rbj_notch — see the note there. Here it was
+    worse: DC gain came out at 11.3 instead of 1.0 for the usual Q = 0.707, so an
+    anti-alias filtered channel read an order of magnitude high.
+    """
     w0 = 2.0 * math.pi * f0 / fs
     alpha = math.sin(w0) / (2.0 * q)
     cosw = math.cos(w0)
     b1 = 1.0 - cosw
     b = np.array([b1 / 2.0, b1, b1 / 2.0])
     a0 = 1.0 + alpha
-    a = np.array([1.0, -2.0 * cosw, 1.0 - alpha])
+    a = np.array([a0, -2.0 * cosw, 1.0 - alpha])
     return b / a0, a / a0
 
 

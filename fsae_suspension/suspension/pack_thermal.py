@@ -380,8 +380,15 @@ def pack_current_trace(lap,
                 p_batt = p_wheel / eff
                 cur[i] = p_batt / v_pack
             elif a < 0 and regen_enabled:               # regen (negative current)
-                a_regen = min(-a, regen_max_g * g)
-                f_regen = mass * a_regen
+                # Drag and rolling resistance are NOT recoverable — they slow the
+                # car for free, so the motor only ever resists the remainder.
+                # This mirrors the same correction in
+                # ev_powertrain._energy_from_trace; the docstring above promises
+                # these two integrate to the same energy, so they have to move
+                # together. Using the bare m*a here booked phantom regen current
+                # into the I^2R heating, understating pack temperature.
+                f_motor = mass * (-a) - f_drag - f_roll
+                f_regen = min(max(f_motor, 0.0), regen_max_g * mass * g)
                 p_regen = f_regen * vi * regen_eff
                 cur[i] = -(p_regen / v_pack)
             else:
@@ -426,6 +433,10 @@ class PackThermalModel:
         # contact + potting. A single representative number, documented & flagged.
         self.k_cc = float(k_cell_cell)
         self.warnings: list[str] = []
+        #  Set True when the explicit-Euler sub-step cap forces dt past its
+        #  stability bound. Callers must treat any result carrying this flag as
+        #  unusable rather than approximate — see the cap in solve().
+        self._stability_violated = False
 
     def _warn(self, m: str):
         if m and m not in self.warnings:
@@ -531,9 +542,29 @@ class PackThermalModel:
                 n_sub = max(int(math.ceil(dt_macro / dt_stable)), 1)
                 # guard against pathological explosion of sub-steps
                 if n_sub > 5000:
+                    #  UNSTABLE IS NOT "COARSE". The sub-step count comes from
+                    #  the explicit-Euler stability limit; capping it means dt
+                    #  now EXCEEDS that limit, and forward Euler past its limit
+                    #  does not degrade gracefully — it oscillates and diverges.
+                    #  The old wording ("results near that step are coarse")
+                    #  described an accuracy penalty for what is actually a
+                    #  numerical breakdown, so a user would reasonably have kept
+                    #  the answer and treated it as approximate.
+                    #
+                    #  The cap stays (an uncapped loop can hang), but it is now
+                    #  reported for what it is, and the result is marked
+                    #  unusable so nothing downstream averages a diverged field.
                     n_sub = 5000
-                    self._warn("Thermal sub-stepping capped at 5000/step; "
-                               "results near that step are coarse.")
+                    self._stability_violated = True
+                    self._warn(
+                        "UNSTABLE: this step needs more than 5000 sub-steps to "
+                        "satisfy the explicit-Euler stability limit, and has "
+                        "been capped there. The integrator is now running past "
+                        "its stability bound, so the temperature field will "
+                        "oscillate and diverge — these are not merely coarse "
+                        "results, they are wrong. Shorten the macro step, "
+                        "coarsen the cell grid, or use a smaller cell heat "
+                        "capacity.")
                 dt = dt_macro / n_sub
                 for _ in range(n_sub):
                     # Joule heat per cell (W). entropic optional.

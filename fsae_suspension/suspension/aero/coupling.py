@@ -89,9 +89,18 @@ def estimate_attitude(speed_ms: float, lat_g: float = 0.0, long_g: float = 0.0,
 
 def _axle_wheel_rate(veh, axle: str) -> float | None:
     """
-    Vertical wheel-centre ride rate (N/mm) for one axle, from spring rate x MR^2 when
-    the geometry is attached, mirroring dynamics._axle_roll_stiffness. Returns None
-    if it cannot be derived honestly (no spring rates / no geometry).
+    Vertical ride rate (N/mm) for ONE AXLE — i.e. both of its wheels acting
+    together — from spring rate x MR^2, mirroring dynamics._axle_roll_stiffness.
+    Returns None if it cannot be derived honestly (no spring rates / no geometry).
+
+    THE FACTOR OF TWO: this used to return `k_spring * mr**2`, which is the rate
+    at a SINGLE wheel, while the docstring said "for one axle" and both call
+    sites used it as one. Those call sites divide PER-AXLE loads by it —
+    `longitudinal_load_transfer` returns the whole axle's dW, and aero downforce
+    is a whole-car force — so every deflection came out 2x too large: pitch
+    under braking, and the aero heave that then sets the ride height fed back
+    into the aero map. Wrong ride height, wrong downforce, wrong attitude, on a
+    loop. The name and the docstring were right; the arithmetic was not.
     """
     p = getattr(veh, "p", None)
     if p is None:
@@ -111,7 +120,8 @@ def _axle_wheel_rate(veh, axle: str) -> float | None:
         return None
     if mr is None or not _np.isfinite(mr) or mr <= 0:
         return None
-    return float(k_spring) * mr * mr        # N/mm at the contact patch
+    # x2: an axle has two wheels, and callers divide per-axle loads by this.
+    return 2.0 * float(k_spring) * mr * mr   # N/mm at the axle (both wheels)
 
 
 def attitude_from_dynamics(veh, lat_g: float, long_g: float, speed_ms: float,
@@ -200,6 +210,8 @@ def attitude_from_dynamics(veh, lat_g: float, long_g: float, speed_ms: float,
                 speed_ms, roll_deg=roll_deg, pitch_deg=pitch_deg,
                 ride_height_mm=static_ride_mm)
             downforce_N = 0.5 * rho * cl_a * speed_ms * speed_ms   # cl_a already = -C_L*A
+            # kf + kr is now the whole car's heave rate (both axles, four wheels),
+            # which is what a whole-car downforce should be divided by.
             heave_mm = downforce_N / (kf + kr)      # N / (N/mm) = mm directly
             ride_mm = max(static_ride_mm - heave_mm, 1.0)
             info["ride_source"] = "static - aero heave"

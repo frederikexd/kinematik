@@ -144,16 +144,44 @@ def _resistance_n(v_ms: float, mass_kg: float, cda: float, crr: float,
 
 def _accel_0_75(motor_map, final_drive: float, wheel_r: float, eff: float,
                 mass_kg: float, mu: float, cda: float, crr: float,
-                rear_frac: float = 0.55, dist_m: float = 75.0) -> float:
+                rear_frac: float = 0.55, dist_m: float = 75.0,
+                cg_height_m: float = 0.30, wheelbase_m: float = 1.55) -> float:
     """Forward-Euler 0->dist time. Tractive force = min(motor force, tyre grip).
     Deliberately simple but ratio-sensitive: a too-tall gear starves launch, a
-    too-short gear hits redline before the line."""
+    too-short gear hits redline before the line.
+
+    LONGITUDINAL LOAD TRANSFER IS INCLUDED. The traction ceiling used the STATIC
+    rear weight fraction, which is the one place it is least defensible: a launch
+    is precisely where weight piles onto the driven axle. The transfer is
+    self-reinforcing (more grip -> more accel -> more transfer), so it has a
+    closed form rather than needing iteration:
+
+        F = mu*(m*g*rear_frac + F*h/L)  =>  F = mu*m*g*rear_frac / (1 - mu*h/L)
+
+    On a typical car (mu 1.4, h/L = 0.30/1.55) that is 2266 N against the static
+    2266/0.728 -> the ceiling was ~27% low, so the sim ran traction-limited when
+    the real car would not be.
+
+    That matters beyond the printed time. GearRatioSolver sweeps ratios through
+    this function, and a spuriously low traction ceiling makes short gears look
+    useless — their extra force gets clipped away — biasing the recommended final
+    drive TALLER than it should be. A wrong number here becomes a wrong part.
+
+    The denominator is guarded: mu*h/L >= 1 would mean the car wheelies before it
+    slips, at which point this quasi-static form stops applying.
+    """
     dt = 0.005
     v = 0.0
     s = 0.0
     t = 0.0
     g = 9.81
-    grip_cap = mu * mass_kg * g * rear_frac   # rear-driven traction ceiling
+    h_over_l = max(cg_height_m, 0.0) / max(wheelbase_m, 1e-6)
+    denom = 1.0 - mu * h_over_l
+    if denom <= 0.05:
+        # Wheelie-limited: cap at the load that just lifts the front axle.
+        grip_cap = mass_kg * g * (wheelbase_m / max(cg_height_m, 1e-6)) * 0.999
+    else:
+        grip_cap = mu * mass_kg * g * rear_frac / denom
     while s < dist_m and t < 30.0:
         f_motor = _motor_wheel_force(motor_map, v, final_drive, wheel_r, eff)
         f_drive = min(f_motor, grip_cap)

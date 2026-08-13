@@ -1631,6 +1631,33 @@ def _resolve_reference_areas(verdicts: Sequence[Verdict], cfg: ScreenConfig) -> 
                             f"group's {area:.4f} m2 by {dev * 100:.1f}%",
                             "lift_coeff", own, area))
 
+                # LIFT-vs-DRAG NORMALISATION CROSS-CHECK. The drag-implied area is
+                # computed above and was then never read — a diagnostic collected
+                # and discarded. It catches a failure the lift-only path cannot:
+                # a row whose lift and drag were normalised by DIFFERENT reference
+                # areas. That happens for real when Fluent's reference values are
+                # changed between report sections, and it is invisible to every
+                # other gate here, because the row is internally consistent in
+                # lift and internally consistent in drag — just not with itself.
+                own_d = d.implied_area_drag_m2
+                if own and own_d and own > 0:
+                    dev_ld = abs(own_d - own) / own
+                    if dev_ld > cfg.ref_area_reject_tolerance:
+                        v.flags.append(Flag(
+                            "REF_AREA_LIFT_DRAG_SPLIT", Severity.REJECT,
+                            f"this row's lift implies a reference area of "
+                            f"{own:.4f} m2 but its drag implies {own_d:.4f} m2 "
+                            f"({dev_ld * 100:.0f}% apart) — lift and drag were "
+                            f"normalised by different areas, so C_L and C_D from "
+                            f"this row do not describe the same body",
+                            "drag_coeff", own_d, own))
+                    elif dev_ld > cfg.ref_area_tolerance:
+                        v.flags.append(Flag(
+                            "REF_AREA_LIFT_DRAG_DRIFT", Severity.WARN,
+                            f"lift implies {own:.4f} m2, drag implies "
+                            f"{own_d:.4f} m2 ({dev_ld * 100:.1f}% apart)",
+                            "drag_coeff", own_d, own))
+
                 # Backfill missing coefficients — clearly labelled as derived.
                 if v.row.lift_coeff is None and v.row.lift_force_N is not None and d.q_Pa:
                     d.lift_coeff_derived = v.row.lift_force_N / (d.q_Pa * area)

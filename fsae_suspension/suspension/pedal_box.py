@@ -790,7 +790,12 @@ class CircuitSpec:
     opposed: bool = True
     pad_mu: float = 0.45
     rotor_dia_mm: float = 220.0
-    effective_radius_frac: float = 0.92   # r_eff as a fraction of the outer radius
+    #  r_eff as a fraction of the outer radius, used ONLY when the pad's inner
+    #  radius is unknown. See `r_eff_mm` for why this is 0.86 and not 0.92.
+    effective_radius_frac: float = 0.86
+    #  Inner radius of the PAD SWEPT BAND (mm). Give this and r_eff is computed
+    #  exactly instead of guessed from the fraction above.
+    pad_inner_radius_mm: float | None = None
     n_corners: int = 2                    # corners this circuit feeds
 
     @property
@@ -810,7 +815,29 @@ class CircuitSpec:
 
     @property
     def r_eff_mm(self) -> float:
-        return 0.5 * float(self.rotor_dia_mm) * float(self.effective_radius_frac)
+        """Effective (mean) radius at which pad friction acts, mm.
+
+        EXACT PATH: given the pad's inner radius, uniform-wear theory — the
+        standard automotive assumption — puts the effective radius at the mean of
+        the swept band, r_eff = (r_o + r_i) / 2. No guessing needed.
+
+        FALLBACK: without it, r_eff = frac * r_o. The default frac used to be
+        0.92, and that number does not describe an FSAE brake. Invert it:
+        frac = (r_o + r_i) / (2 r_o) = 0.92 implies r_i = 0.84 r_o, i.e. a pad
+        band only 17.6 mm tall on a 220 mm rotor. Real FSAE pads run 25-40 mm,
+        which puts the fraction at 0.84-0.89. So 0.92 overstated r_eff by about
+        8%, and brake torque with it — in the optimistic direction, on a number
+        teams size hardware and pass the brake test with. Default is now 0.86,
+        matching a ~31 mm band on a 220 mm rotor.
+
+        Supply `pad_inner_radius_mm` and none of this approximation applies.
+        """
+        r_o = 0.5 * float(self.rotor_dia_mm)
+        if self.pad_inner_radius_mm is not None:
+            r_i = float(self.pad_inner_radius_mm)
+            if 0.0 < r_i < r_o:
+                return 0.5 * (r_o + r_i)
+        return r_o * float(self.effective_radius_frac)
 
     def axle_torque_Nm(self, pressure_bar: float) -> float:
         """Brake torque this circuit's whole axle makes at a line pressure."""

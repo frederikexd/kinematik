@@ -88,12 +88,48 @@ class MeshParams:
 # --------------------------------------------------------------------------- #
 def _attitude_geometry_transform(att: Attitude) -> dict:
     """
-    The roll rotation (about +x, car frame) and ride-height translation applied to
-    the STL so the meshed car sits at the requested attitude. Pitch and yaw are NOT
-    applied here — they ride on the inlet velocity in the solver. Returned as plain
-    numbers so they can be written into snappy's transform block and audited.
+    The roll rotation (about +x), the PITCH rotation (about +y) and the ride-height
+    translation applied to the STL so the meshed car sits at the requested attitude.
+    Only YAW rides on the inlet velocity. Returned as plain numbers so they can be
+    written into snappy's transform block and audited.
+
+    PITCH MOVED HERE. This module already had the right test — geometry-side is for
+    anything that "moves the CAR relative to the ground plane, which the freestream
+    cannot represent" — and pitch passes that test as plainly as roll does: rake IS
+    the car's angle to the road. It was nonetheless left on the inlet, so every
+    meshed case ran at zero rake with a tilted freestream, and a rake sweep exported
+    to Fluent or OpenFOAM produced the same geometry every time.
+
+    Yaw stays on the inlet, correctly: the ground plane is symmetric about z, so
+    yawing the car and yawing the flow are equivalent even with the road present.
     """
     roll_rad = math.radians(att.roll_deg)
+    pitch_rad = math.radians(att.pitch_deg)
+
+    # snappyHexMesh's coordinateSystem carries ONE axisAngle rotation, so roll and
+    # pitch are composed into a single equivalent axis-angle: R = Ry(pitch)·Rx(roll),
+    # then converted. Emitting only one of the two (which is what happened while
+    # pitch lived on the inlet) silently drops the other.
+    cr, sr = math.cos(roll_rad), math.sin(roll_rad)
+    cp_, sp = math.cos(pitch_rad), math.sin(pitch_rad)
+    # Rx(roll)
+    Rx = ((1.0, 0.0, 0.0), (0.0, cr, -sr), (0.0, sr, cr))
+    # Ry(pitch)
+    Ry = ((cp_, 0.0, sp), (0.0, 1.0, 0.0), (-sp, 0.0, cp_))
+    R = tuple(tuple(sum(Ry[i][k] * Rx[k][j] for k in range(3)) for j in range(3))
+              for i in range(3))
+    trace = R[0][0] + R[1][1] + R[2][2]
+    ang = math.acos(max(-1.0, min(1.0, (trace - 1.0) / 2.0)))
+    if abs(ang) < 1e-12:
+        axis, ang_deg = (1.0, 0.0, 0.0), 0.0
+    else:
+        k = 1.0 / (2.0 * math.sin(ang))
+        axis = ((R[2][1] - R[1][2]) * k,
+                (R[0][2] - R[2][0]) * k,
+                (R[1][0] - R[0][1]) * k)
+        nrm = math.sqrt(sum(c * c for c in axis)) or 1.0
+        axis = tuple(c / nrm for c in axis)
+        ang_deg = math.degrees(ang)
     # ride height is a clearance in mm; translate the car vertically by the delta
     # from a nominal 30 mm so 30 mm => no shift, lower => car moves down toward road.
     dz_m = (att.ride_height_mm - 30.0) / 1000.0
@@ -101,8 +137,16 @@ def _attitude_geometry_transform(att: Attitude) -> dict:
         "roll_axis": "(1 0 0)",
         "roll_angle_deg": att.roll_deg,
         "roll_rad": roll_rad,
+        "combined_axis": f"({axis[0]:.8f} {axis[1]:.8f} {axis[2]:.8f})",
+        "combined_angle_deg": ang_deg,
+        "pitch_axis": "(0 1 0)",
+        "pitch_angle_deg": att.pitch_deg,
+        "pitch_rad": pitch_rad,
         "translate_m": f"(0 0 {dz_m:.5f})",
         "dz_m": dz_m,
+        "yaw_on_inlet_deg": att.yaw_deg,
+        "note": ("roll + pitch + ride height are geometry-side (they change the "
+                 "car's pose relative to the road); yaw is on the inlet."),
     }
 
 
@@ -215,15 +259,18 @@ geometry
     {{
         type triSurfaceMesh;
         name {mp.car_patch};
-        // ATTITUDE: roll {tf['roll_angle_deg']:+.2f} deg about {tf['roll_axis']}, ride
-        // shift {tf['translate_m']} m. Pitch/yaw ride on the inlet velocity, not here.
+        // ATTITUDE: roll {tf['roll_angle_deg']:+.2f} deg + pitch {tf['pitch_angle_deg']:+.2f} deg,
+        // composed into one axis-angle; ride shift {tf['translate_m']} m.
+        // Only YAW ({tf['yaw_on_inlet_deg']:+.2f} deg) rides on the inlet velocity —
+        // roll, pitch and ride height change the car's pose relative to the road,
+        // which a freestream rotation cannot represent.
         transform
         {{
             coordinateSystem
             {{
                 type        cartesian;
                 origin      (0 0 0);
-                rotation    {{ type axisAngle; axis {tf['roll_axis']}; angle {tf['roll_angle_deg']:.4f}; }}
+                rotation    {{ type axisAngle; axis {tf['combined_axis']}; angle {tf['combined_angle_deg']:.4f}; }}
             }}
         }}
     }}

@@ -234,12 +234,28 @@ class TransientParams:
         except Exception:
             pass
         # Solved roll-centre heights (m) as the roll moment arm reference.
+        #
+        # WEIGHTED AT THE CG's STATION, not a plain mean. The roll axis is the
+        # line joining the two roll centres, and the moment arm is its height
+        # where the CG sits — which is only the midpoint when the car is 50/50.
+        # The interpolation weight for the front roll centre is weight_dist_front
+        # itself: that fraction is the CG's distance from the REAR axle over the
+        # wheelbase, so it is what multiplies rc_FRONT.
+        #
+        # This mirrors the same fix in dynamics.lateral_load_transfer. The two
+        # modules were computing the same physical quantity two different ways,
+        # so a car could get one roll moment arm from the steady-state model and
+        # a different one from the transient model.
         try:
             rc_f = veh.roll_center_height(veh.front_kin, vp.track_front) if veh.front_kin else None
             rc_r = veh.roll_center_height(veh.rear_kin, vp.track_rear) if veh.rear_kin else None
-            heights = [h for h in (rc_f, rc_r) if h is not None and np.isfinite(h)]
-            if heights:
-                tp.roll_axis_height = float(np.mean(heights)) / 1000.0
+            ok_f = rc_f is not None and np.isfinite(rc_f)
+            ok_r = rc_r is not None and np.isfinite(rc_r)
+            if ok_f and ok_r:
+                wd_f = float(getattr(vp, "weight_dist_front", 0.5))
+                tp.roll_axis_height = (rc_f * wd_f + rc_r * (1.0 - wd_f)) / 1000.0
+            elif ok_f or ok_r:
+                tp.roll_axis_height = float(rc_f if ok_f else rc_r) / 1000.0
         except Exception:
             pass
         return tp
@@ -692,7 +708,12 @@ class TransientSolver:
         # roll axis swings OUTWARD (to the right), leaning the body right (phi<0
         # in the +left-down convention) and loading the outer (right) tyres.
         M_roll_susp = float(np.sum(-y_i * F_susp))
-        h_roll = max(p.cg_height - p.roll_axis_height, 0.0)
+        # SIGNED roll moment arm. This used to be clamped at 0, which silently
+        # deleted a real design case: a roll axis ABOVE the sprung CG reverses the
+        # roll moment, so the body leans INTO the corner. High-roll-centre cars do
+        # this, and it is exactly the behaviour someone would run a transient
+        # model to see. Clamping reported it as zero roll instead of negative.
+        h_roll = p.cg_height - p.roll_axis_height
         M_roll_inertia = -m_s * ay * h_roll
         phidd = (M_roll_susp + M_roll_inertia) / p.ixx
 

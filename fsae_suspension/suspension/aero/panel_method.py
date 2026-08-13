@@ -171,8 +171,39 @@ class PanelMethodModel:
         except np.linalg.LinAlgError as e:                  # noqa: BLE001
             raise PanelMethodUnavailable(f"panel linear solve failed: {e}")
 
+        # CONDITIONING GUARD. lstsq never raises on a near-degenerate system; it
+        # returns the minimum-norm answer to a problem that is no longer the one
+        # posed, and this class then reported converged=True regardless ("a
+        # direct solve, not an iteration"). That reasoning is wrong: a direct
+        # solve cannot fail to *terminate*, but it can absolutely fail to be
+        # meaningful.
+        #
+        # It is not theoretical. Sweeping rake on a subdivided box, pitch 0 deg
+        # and 3 deg give max|sigma| ~2.4 and ~3.0; pitch 1.5 deg gives 233, a
+        # hundredfold spurious mode, and C_L came back as -381. Non-monotone in
+        # pitch, so it is a near-degenerate panel configuration rather than any
+        # physical trend — and the sweep would have printed it as a data point.
+        #
+        # Flagged, not raised: the caller may still want the field for
+        # inspection. But converged goes False so nothing downstream averages a
+        # spurious point into an aero map.
+        cond = float(np.linalg.cond(A)) if len(A) < 2500 else float("nan")
+        sig_max = float(np.abs(sigma).max()) if sigma.size else 0.0
+        ill = (np.isfinite(cond) and cond > 5.0e3) or sig_max > 50.0
+        cond_note = ""
+        if ill:
+            cond_note = (f"  [WARNING: ill-conditioned panel system "
+                         f"(cond={cond:.1e}, max|sigma|={sig_max:.1f}) — the "
+                         f"least-squares answer is not trustworthy at this "
+                         f"attitude. Re-mesh or nudge the attitude; do NOT put "
+                         f"this point in an aero map.]")
+
         # Surface velocity = onset + induced; pressure from Bernoulli.
-        v_ind = self._induced_velocity(centroids, normals, areas, sigma)
+        # The ground image MUST be included here as well as in the influence
+        # matrix — see _induced_velocity.
+        v_ind = self._induced_velocity(centroids, normals, areas, sigma,
+                                       ground_effect=self.params.ground_effect,
+                                       road_plane_z_m=self.params.road_plane_z_m)
         v_surf = v_ind + vinf[None, :]
         # remove the normal component numerically (tangency is enforced only approx.)
         vn = np.einsum("ij,ij->i", v_surf, normals)
@@ -200,16 +231,21 @@ class PanelMethodModel:
         # panel x-centroids and their vertical load to split front/rear.
         front = self._aero_balance(centroids, cp, areas, normals)
 
+        # RESOLUTION GUARD — see _resolution_warning. Ground effect is the one
+        # thing this module is for, and it is also where the point-source
+        # approximation fails first.
+        res_warn = self._resolution_warning(centroids, areas)
+
         return CoeffResult(
             attitude=spec.attitude,
             c_lift=c_lift, c_drag=c_drag, c_side=c_side,
             c_pitch=None,
             aero_balance_front=front,
-            converged=True,                 # a direct solve, not an iteration
+            converged=not ill,              # direct solve; False only if ill-conditioned
             force_monitor_range=0.0,
             provenance=self.provenance(n_panels=n),
             notes=(f"panel solve: {n} panels, Cd(pressure)={c_drag_pressure:+.3f} "
-                   f"+ Cd(friction)={c_drag_friction:.3f}"),
+                   f"+ Cd(friction)={c_drag_friction:.3f}" + res_warn + cond_note),
         )
 
     # -- CFDSolver-shaped convenience (physics only; no deck) -------------- #
@@ -257,11 +293,37 @@ class PanelMethodModel:
                 # decimation is best-effort; if it fails we solve the full mesh
                 pass
 
-        # Place the body at attitude: roll about +x, then ride-height translate in z.
+        # Place the body at attitude: roll, then PITCH, then ride-height translate.
+        #
+        # PITCH MUST BE GEOMETRIC WHEN THERE IS A GROUND PLANE. It used to be
+        # folded into the onset flow vector along with yaw, on the free-air
+        # identity that tilting the body and tilting the flow are the same
+        # thing. That identity dies the moment a road exists: rotating the
+        # freestream leaves the car's relationship to the road untouched, so
+        # rake changed nothing about the underbody-to-road angle — and that
+        # angle IS the ground-effect mechanism. The module advertises "the
+        # downforce trend with rake and ride height"; ride height worked (it is
+        # the translation below), rake did not, because with ground_effect on
+        # the image system never saw it.
+        #
+        # Rake is the primary axis of every aero map. A sweep over it was
+        # returning only the small free-air incidence effect.
+        #
+        # Yaw stays in the onset flow: the road is symmetric about z, so
+        # rotating the body about z and rotating the flow about z ARE
+        # equivalent even with the ground present.
         a = spec.attitude
         T = trimesh.transformations
         roll = T.rotation_matrix(math.radians(a.roll_deg), [1.0, 0.0, 0.0])
         mesh.apply_transform(roll)
+        # +pitch = nose up. Rotate about +y (to the right); nose is -x here, so
+        # a positive rotation about +y lifts the nose. Pivot about the body
+        # centroid in x so pitch is rake, not a disguised heave.
+        if abs(a.pitch_deg) > 1e-9:
+            pivot = [float(mesh.centroid[0]), 0.0, 0.0]
+            pitch = T.rotation_matrix(math.radians(a.pitch_deg), [0.0, 1.0, 0.0],
+                                      pivot)
+            mesh.apply_transform(pitch)
         dz = (a.ride_height_mm - 30.0) / 1000.0            # 30 mm nominal, lower = down
         mesh.apply_translation([0.0, 0.0, dz])
 
@@ -320,14 +382,46 @@ class PanelMethodModel:
         return ndotd * inv * areas[None, :]
 
     @staticmethod
-    def _induced_velocity(centroids, normals, areas, sigma):
-        """Full induced velocity vector at each centroid (for the surface speed)."""
+    def _induced_velocity(centroids, normals, areas, sigma,
+                          ground_effect: bool = False,
+                          road_plane_z_m: float = 0.0):
+        """Full induced velocity vector at each centroid (for the surface speed).
+
+        GROUND IMAGE: this must mirror _influence_matrix exactly. It previously
+        did not — the image was included when solving for sigma (the tangency
+        condition saw the road) but omitted here, so the velocity field that
+        produces Cp, and therefore every force this module reports, was computed
+        as though the road were not there. The boundary condition knew about the
+        ground and the pressures did not.
+
+        That is not a small discrepancy in a module whose stated purpose is that
+        "ground effect emerges from the physics". Ground effect IS the image
+        system accelerating the flow under the floor; drop it from the velocity
+        and the downforce it is supposed to predict largely disappears.
+
+        The decisive check is the far-field limit: move the road away and a
+        ground-effect solve must converge on the free-air solve. It did not —
+        with the road 0.5 m from a 0.6 m body the old code still reported a
+        spurious C_L of ~9e-4 against a free-air 0.0, and at FSAE ride heights
+        it produced slight LIFT where the corrected solve produces downforce.
+        Pinned by test_panel_method_recovers_free_air_when_the_road_is_far.
+        """
         import numpy as np
         c = centroids
         diff = c[:, None, :] - c[None, :, :]
         r2 = np.einsum("ijk,ijk->ij", diff, diff) + 1e-9
         inv = (sigma * areas)[None, :] / (4.0 * math.pi * np.power(r2, 1.5))
         v = np.einsum("ij,ijk->ik", inv, diff)
+
+        if ground_effect:
+            # Image of every source reflected through the road plane, same
+            # strength (a source's image in a streamline plane is a source).
+            c_img = c.copy()
+            c_img[:, 2] = 2.0 * road_plane_z_m - c_img[:, 2]
+            d_img = c[:, None, :] - c_img[None, :, :]
+            r2i = np.einsum("ijk,ijk->ij", d_img, d_img) + 1e-9
+            invi = (sigma * areas)[None, :] / (4.0 * math.pi * np.power(r2i, 1.5))
+            v = v + np.einsum("ij,ijk->ik", invi, d_img)
         return v
 
     # ------------------------------------------------------------------ #
@@ -347,6 +441,49 @@ class PanelMethodModel:
         cf *= (1.0 - 0.85 * self.params.laminar_fraction)   # small transition discount
         wetted = float(np.sum(areas))
         return cf * wetted / max(aref, 1e-9)
+
+    def _resolution_warning(self, centroids, areas) -> str:
+        """Flag the mesh being too coarse for the ride height it is solving at.
+
+        Every panel is collapsed to a POINT SOURCE at its centroid. That is a
+        good approximation only when the distance to the field point is large
+        compared with the panel. Under a car in ground effect the field point of
+        interest is the road image, a distance of ~2x ride height away — so once
+        the panel size approaches the ride height, the single dominant term in
+        the whole ground-effect calculation is being evaluated where its own
+        approximation is invalid.
+
+        This is not hypothetical and it is not a small error. On a 12-panel box
+        (340 mm panels) the ground contribution at 30 mm ride height came out
+        SMALLER than at 100 mm — ride-height sensitivity inverted, which is the
+        one trend teams actually take from this module. Subdividing to 170 mm
+        panels restored monotone behaviour. The failure is silent: the solve
+        converges, the numbers look plausible, and the trend is backwards.
+
+        `max_panels` makes this worse, because decimating a fine STL to fit the
+        budget is exactly how a mesh becomes too coarse for its ride height.
+
+        Advisory only — it never blocks a solve, because the right call depends
+        on what the user is asking of the answer.
+        """
+        if not self.params.ground_effect:
+            return ""
+        import numpy as np
+        gap = float(np.min(centroids[:, 2])) - self.params.road_plane_z_m
+        if gap <= 0:
+            return "  [WARNING: geometry intersects the road plane]"
+        panel = float(np.sqrt(np.mean(areas)))
+        if panel > gap:
+            return (f"  [WARNING: mean panel size {panel * 1000:.0f} mm exceeds the "
+                    f"{gap * 1000:.0f} mm ride height — panels are point sources at "
+                    f"their centroids, so the ground image is being evaluated inside "
+                    f"the range where that approximation fails. Ride-height trends "
+                    f"can INVERT. Refine the mesh or raise max_panels.]")
+        if panel > 0.4 * gap:
+            return (f"  [note: mean panel size {panel * 1000:.0f} mm is a large "
+                    f"fraction of the {gap * 1000:.0f} mm ride height; treat the "
+                    f"ground-effect magnitude as indicative]")
+        return ""
 
     @staticmethod
     def _aero_balance(centroids, cp, areas, normals) -> float | None:
@@ -368,13 +505,20 @@ class PanelMethodModel:
 
 
 def _freestream_unit(att: Attitude):
-    """Unit onset-flow vector with yaw (about +z) and pitch (about +y) folded in."""
+    """Unit onset-flow vector with YAW ONLY folded in.
+
+    Pitch is deliberately NOT here any more — it is applied to the geometry in
+    _load_panels. Folding pitch into the flow and rotating the body are the same
+    thing only in free air; with a road they are not, because tilting the flow
+    leaves the underbody-to-road angle unchanged. Keeping pitch in both places
+    would double-count it, so this function must stay yaw-only for as long as
+    _load_panels rotates the mesh.
+
+    Yaw legitimately stays here: the ground plane is symmetric under rotation
+    about z, so yawing the body and yawing the flow remain equivalent.
+    """
     import numpy as np
     yaw = math.radians(att.yaw_deg)
-    pitch = math.radians(att.pitch_deg)
-    ux = math.cos(yaw) * math.cos(pitch)
-    uy = -math.sin(yaw)
-    uz = math.cos(yaw) * math.sin(pitch)
-    v = np.array([ux, uy, uz], dtype=float)
+    v = np.array([math.cos(yaw), -math.sin(yaw), 0.0], dtype=float)
     n = np.linalg.norm(v)
     return v / (n if n > 1e-12 else 1.0)

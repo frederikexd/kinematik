@@ -170,9 +170,26 @@ def size_loop(spec: LoopSpec | None = None) -> LoopResult:
     dT = s.heat_w / max(m_dot * c.cp_j_kgk, 1e-9)
 
     #  Radiator: UA needed to reject the load at the available air-side
-    #  temperature difference, using the coolant inlet as the driving temp.
+    #  temperature difference.
+    #
+    #  WHICH COOLANT TEMPERATURE DRIVES THE RADIATOR. `coolant_in_c` is the
+    #  MOTOR/inverter inlet, which is the radiator's OUTLET — the coldest point
+    #  in the loop. The coolant actually enters the radiator dT hotter than that,
+    #  so the true mean driving temperature is coolant_in_c + dT/2 and a proper
+    #  treatment would use the LMTD.
+    #
+    #  Driving off the cold end understates the available temperature difference,
+    #  which OVERSTATES the UA you need. That is the safe direction and it is
+    #  kept deliberately — a pre-validation screen should not talk you into a
+    #  smaller radiator. But "conservative" was not written down anywhere, and an
+    #  undocumented margin is indistinguishable from an error to the next reader,
+    #  so both numbers are now reported and the difference is named.
     drive_k = max(s.coolant_in_c - s.ambient_c, 1e-6)
     ua_req = s.heat_w / drive_k
+    #  Same load against the mean coolant temperature through the core: the
+    #  less conservative figure, for sizing against a real radiator curve.
+    drive_mean_k = max(s.coolant_in_c + 0.5 * dT - s.ambient_c, 1e-6)
+    ua_req_mean = s.heat_w / drive_mean_k
     margin = (s.radiator_ua_w_per_k / ua_req) if ua_req > 0 else float("inf")
     steady = s.ambient_c + s.heat_w / max(s.radiator_ua_w_per_k, 1e-9)
 
@@ -192,6 +209,10 @@ def size_loop(spec: LoopSpec | None = None) -> LoopResult:
         f"{c.note}",
         f"{s.flow_lpm:g} L/min → {m_dot:.4f} kg/s → **{dT:.1f} K rise** "
         f"across the load at {s.heat_w/1000:.2f} kW.",
+        f"Radiator UA needed against the MEAN core temperature "
+        f"({s.coolant_in_c + 0.5*dT:.1f} °C) is {ua_req_mean:.0f} W/K; the "
+        f"figure below drives off the cold end instead, which is conservative "
+        f"by design — it asks for a bigger radiator, never a smaller one.",
         f"Radiator needs **{ua_req:.0f} W/K** to hold {s.coolant_in_c:g} °C "
         f"against {s.ambient_c:g} °C ambient; you have "
         f"{s.radiator_ua_w_per_k:g} W/K ({margin:.2f}× margin).",

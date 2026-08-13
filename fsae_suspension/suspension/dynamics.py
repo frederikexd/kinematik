@@ -427,14 +427,38 @@ class VehicleDynamics:
         return corner.solve(load, **solve_kw)
 
     def max_lateral_g(self):
-        """Bisection for the steady-state lateral g the car can sustain."""
+        """Bisection for the steady-state lateral g the car can sustain.
+
+        LIMITED BY THE FIRST AXLE TO SATURATE, not by the sum of both. In steady
+        state there is no yaw acceleration, so moment balance about the CG fixes
+        the split: F_front = m*a_y*weight_dist_front and F_rear = m*a_y*(1-wd).
+        The demand on each axle is therefore locked to the weight distribution and
+        cannot be shifted. Once one axle is at its grip limit the car is done —
+        the other axle's spare grip is unreachable.
+
+        This used to test (F_f + F_r) / (m g) >= a_y, which credits that spare
+        grip and is only correct when both axles saturate together, i.e. when the
+        car is already perfectly balanced. On the near-neutral default that costs
+        0.05-0.3% and hides; on setups teams actually run it does not. A stiff
+        rear bar overstated grip by 4.7%, a rear-biased car with a big roll
+        stiffness split by 5.1% — and always upward, so the tool reported the most
+        grip exactly when the setup was most unbalanced.
+
+        `balance_index` in this same class already computes the per-axle
+        utilisations correctly; this now agrees with it.
+        """
+        p = self.p
+        w_f = p.mass * p.g * p.weight_dist_front
+        w_r = p.mass * p.g * (1.0 - p.weight_dist_front)
         lo, hi = 0.1, 3.0
         for _ in range(40):
             mid = 0.5 * (lo + hi)
             loads, _ = self.lateral_load_transfer(mid)
             Ff, Fr = self.axle_grip(loads)
-            capacity = (Ff + Fr) / (self.p.mass * self.p.g)
-            if capacity >= mid:
+            # capacity in g of each axle against its own fixed share of demand
+            cap_f = Ff / w_f if w_f > 0 else float("inf")
+            cap_r = Fr / w_r if w_r > 0 else float("inf")
+            if min(cap_f, cap_r) >= mid:
                 lo = mid
             else:
                 hi = mid

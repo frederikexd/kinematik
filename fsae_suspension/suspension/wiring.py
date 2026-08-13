@@ -162,16 +162,36 @@ def correction_factor(rating_c: float, ambient_c: float, *,
     tables are built from. `_selftest` checks it against all nineteen
     published factors and reproduces every one within 0.005, which is the
     rounding of the published table itself.
+
+    NO RESISTANCE SHIFT HERE — the parameter is refused rather than ignored.
+    Both endpoints of THIS ratio have the conductor sitting at the same rating
+    temperature (that is what a rating means); only the ambient differs. Copper
+    resistance is therefore identical top and bottom and cancels exactly. There
+    is nothing to correct.
+
+    The term used to be applied anyway, copied from `ampacity_scale` where it IS
+    right (there the two endpoints really are at different conductor
+    temperatures — a published column's rating versus the conductor's own). Here
+    it reduced to a function of rating_c alone, exactly 1.0 at 90 C and
+    increasingly wrong below it: against the published table it overshot by
+    0.048 at the 60 C column, ten times the accuracy this docstring claims. The
+    sign matters more than the size. Every error was POSITIVE, i.e. it said the
+    conductor could carry more current than the NEC allows, which is the one
+    direction an ampacity tool must never be wrong in.
+
+    Raising beats silently ignoring: a caller passing True believed they were
+    getting a refinement, and should find out they were not.
     """
     rise = float(rating_c) - float(ambient_c)
     base = float(rating_c) - _NEC_AMBIENT_C
     if rise <= 0 or base <= 0:
         return 0.0
-    f = math.sqrt(rise / base)
     if include_resistance_shift:
-        f *= math.sqrt((1.0 + _ALPHA_CU * (90.0 - 20.0))
-                       / (1.0 + _ALPHA_CU * (float(rating_c) - 20.0)))
-    return f
+        raise ValueError(
+            "correction_factor() has no resistance shift to apply — see the note "
+            "in its docstring. Use ampacity_scale() if you are scaling ACROSS "
+            "rating temperatures.")
+    return math.sqrt(rise / base)
 
 
 #  Published columns, richest first. A conductor rated above 90 °C is scaled

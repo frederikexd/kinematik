@@ -416,8 +416,37 @@ class CpField:
         return xc, cp, ids
 
     # -- the loading integral: where the downforce comes from ------------- #
+    def chord_coverage(self, element: str, span_tol_m: float = 1e9) -> float:
+        """Fraction of the chord over which BOTH surfaces are instrumented — i.e.
+        the fraction normal_load_coefficient can actually integrate over.
+
+        This exists because C_n is computed on the OVERLAP of the two surfaces'
+        instrumented ranges. If the pressure side only carries taps over
+        x/c 0.2-0.6 while the suction side spans 0.05-0.95, the integral covers
+        40% of the chord and the returned C_n is that fraction of the section's
+        real loading — with nothing in the return value saying so.
+
+        Everywhere else this module drops holes loudly ("a gap in the curve is a
+        real gap in the instrumentation"). The load integral quietly truncated
+        its own domain instead, which is the same class of error the rest of the
+        file is built to prevent. Returns 0.0 if either surface is unusable.
+        """
+        xs, _, _ = self.chordwise(element, WingSurface.SUCTION, span_tol_m)
+        xp, _, _ = self.chordwise(element, WingSurface.PRESSURE, span_tol_m)
+        if len(xs) < 2 or len(xp) < 2:
+            return 0.0
+        lo = max(xs.min(), xp.min())
+        hi = min(xs.max(), xp.max())
+        if hi <= lo:
+            return 0.0
+        full_lo = min(xs.min(), xp.min())
+        full_hi = max(xs.max(), xp.max())
+        span = full_hi - full_lo
+        return float((hi - lo) / span) if span > 0 else 0.0
+
     def normal_load_coefficient(self, element: str,
-                                span_tol_m: float = 1e9) -> float:
+                                span_tol_m: float = 1e9,
+                                min_chord_coverage: float = 0.0) -> float:
         """
         Integrate (C_p_pressure - C_p_suction) along the chord to get the element's
         sectional normal-force coefficient C_n — the chordwise integral of the
@@ -427,6 +456,12 @@ class CpField:
         local loading, and that is what reveals an over-loaded leading edge or an
         unloaded (stalled) tail. Requires both surfaces instrumented; returns NaN if
         either surface has fewer than two valid taps to integrate.
+
+        PARTIAL CHORDS: the integral runs over the OVERLAP of the two surfaces'
+        instrumented ranges, so a sparsely tapped pressure side silently shrinks
+        the domain and shrinks C_n with it. Call `chord_coverage()` alongside this,
+        or pass `min_chord_coverage` (e.g. 0.6) to get NaN rather than a number
+        quietly integrated over part of the section.
         """
         xs, cps_s, _ = self.chordwise(element, WingSurface.SUCTION, span_tol_m)
         xp, cpp, _ = self.chordwise(element, WingSurface.PRESSURE, span_tol_m)
@@ -437,6 +472,9 @@ class CpField:
         hi = min(xs.max(), xp.max())
         if hi <= lo:
             return float("nan")
+        if min_chord_coverage > 0.0:
+            if self.chord_coverage(element, span_tol_m) < min_chord_coverage:
+                return float("nan")
         grid = np.linspace(lo, hi, 50)
         cp_s = np.interp(grid, xs, cps_s)
         cp_p = np.interp(grid, xp, cpp)

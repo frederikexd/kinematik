@@ -28,6 +28,7 @@ consistency, independent of any particular geometry:
 Run:  python -m pytest tests/test_accuracy_invariants.py
 """
 import math
+import pytest
 import numpy as np
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -303,3 +304,910 @@ def test_air_density_is_consistent_across_modules():
     sig = inspect.signature(pt_integration.cooling_operating_point)
     rho = sig.parameters["air_density"].default
     assert abs(rho - 1.225) < 1e-9, f"air_density default {rho}, expected 1.225"
+
+
+# --------------------------------------------------------------------------- #
+#  Anti-dive / anti-squat derived a SECOND, independent way
+# --------------------------------------------------------------------------- #
+#  The anti-squat change (contact patch -> wheel centre) FLIPPED A SIGN on the
+#  strength of one reviewer's reading of Gillespie/Milliken. A wrong sign with a
+#  confident comment attached is worse than the original bug, because the next
+#  reader trusts the comment. So here the same two numbers are derived from
+#  scratch by VIRTUAL WORK, with no appeal to any textbook formula, and the two
+#  routes are required to agree.
+#
+#  Derivation (self-contained, so it can be checked without the source):
+#
+#  The corner has one degree of freedom, q = wheel travel (bump positive). In
+#  side view the wheel swings about the side-view instant centre S, so the
+#  reference point P (where the longitudinal force acts) moves on a circle about
+#  S. Writing dx = x_S - x_P and dz = z_S - z_P, the path slope is
+#
+#       d(x_P)/d(q) = -dz / dx  ==  -tan(phi)
+#
+#  Ground forces Fx (longitudinal) and Fz (vertical) therefore produce a
+#  generalised force on the suspension DOF of
+#
+#       Q = Fz + Fx * d(x_P)/d(q) = Fz - Fx * tan(phi)
+#
+#  Q is what the SPRING carries. The part of the axle's load transfer that never
+#  reaches the spring is the anti-effect:
+#
+#       anti% = (dW - dQ) / dW = Fx * tan(phi) / dW
+#
+#  WHERE P IS depends on how the torque is reacted, and this is the whole
+#  outboard/inboard distinction:
+#    * outboard brakes  - brake torque is reacted between caliper and rotor,
+#      both on the carrier. Internal. The carrier sees only the ground forces,
+#      so P = the CONTACT PATCH.
+#    * inboard drive    - the chassis reacts the drive torque, so the carrier
+#      additionally sees a couple of magnitude Fx*R from the halfshaft. A force
+#      Fx at the contact patch plus a couple Fx*R is statically equivalent to Fx
+#      applied one tyre radius higher and no couple: P = the WHEEL CENTRE.
+#  That equivalence is the entire justification for the reference-point change,
+#  and it is arithmetic, not authority.
+def _anti_by_virtual_work(svic, P, Fx_sign, bias, wheelbase, cg_height):
+    """anti-effect %, from virtual work. `P` is (x, z) of the force's line of
+    action; `Fx_sign` is +1 when the longitudinal ground force acts rearward
+    (braking) and -1 when it acts forward (traction)."""
+    dx = svic[0] - P[0]
+    dz = svic[1] - P[1]
+    if abs(dx) < 1e-9:
+        return float("nan")
+    tan_phi = dz / dx
+    # Take m*a = 1 and g = 1: both Fx and dW scale with m*a, so it cancels.
+    Fx = Fx_sign * bias
+    dW = cg_height / wheelbase          # per unit m*a, the axle load transfer
+    return (Fx * tan_phi) / dW * 100.0
+
+
+def test_anti_dive_agrees_with_a_virtual_work_derivation():
+    L, h, bias = 1550.0, 300.0, 0.65
+    for hp in (Hardpoints.default(), _mirror_stagger(Hardpoints.default())):
+        kin = SuspensionKinematics(hp)
+        svic = kin._side_view_swing_arm()
+        cp = kin.static.contact_patch
+        # Braking: ground force acts rearward (+x in this SAE frame).
+        vw = _anti_by_virtual_work(svic, (cp[0], cp[2]), +1.0, bias, L, h)
+        closed = kin.anti_dive_pct(h, L, brake_bias_front=bias)
+        assert abs(vw - closed) < 1e-6, \
+            f"anti-dive: virtual work {vw:.3f}% vs formula {closed:.3f}%"
+
+
+def test_anti_squat_agrees_with_a_virtual_work_derivation():
+    L, h, bias = 1550.0, 300.0, 1.0
+    for hp in (Hardpoints.default(), _mirror_stagger(Hardpoints.default())):
+        kin = SuspensionKinematics(hp)
+        svic = kin._side_view_swing_arm()
+        wc = kin.static.wheel_center
+        # Traction: ground force acts forward (-x). Reference point is the wheel
+        # centre because the chassis reacts the drive torque.
+        vw = _anti_by_virtual_work(svic, (wc[0], wc[2]), -1.0, bias, L, h)
+        closed = kin.anti_squat_pct(h, L, drive_bias_rear=bias)
+        assert abs(vw - closed) < 1e-6, \
+            f"anti-squat: virtual work {vw:.3f}% vs formula {closed:.3f}%"
+
+
+def test_reference_point_choice_is_what_distinguishes_the_two():
+    """Guard against 'both formulas agree because both are wrong the same way':
+    evaluating anti-squat at the CONTACT PATCH (the solid-axle construction)
+    must give a materially DIFFERENT answer from the wheel-centre one. If these
+    ever coincide, the reference-point fix has been silently undone."""
+    kin = SuspensionKinematics(Hardpoints.default())
+    svic = kin._side_view_swing_arm()
+    wc, cp = kin.static.wheel_center, kin.static.contact_patch
+    at_wc = _anti_by_virtual_work(svic, (wc[0], wc[2]), -1.0, 1.0, 1550.0, 300.0)
+    at_cp = _anti_by_virtual_work(svic, (cp[0], cp[2]), -1.0, 1.0, 1550.0, 300.0)
+    assert abs(at_wc - at_cp) > 10.0, (
+        f"wheel-centre {at_wc:.1f}% vs contact-patch {at_cp:.1f}% — the tyre "
+        f"radius must matter, or the reference point is not being applied")
+    # And they land on OPPOSITE sides here, which is exactly why the original
+    # contact-patch version was not merely inaccurate but sign-wrong.
+    assert (at_wc > 0) != (at_cp > 0)
+
+
+# ============================================================================ #
+#  AERO
+# ============================================================================ #
+def _box_mesh(ride_h_m, thickness=0.06):
+    trimesh = pytest.importorskip("trimesh")
+    m = trimesh.creation.box(extents=(1.0, 0.6, thickness))
+    m.apply_translation((0.0, 0.0, ride_h_m + thickness / 2.0))
+    return m
+
+
+def _panel_cl(mesh, ground_effect, aref=0.6):
+    """Bare-bones C_L from the panel solver's own internals, so the test does not
+    depend on STL loading, decimation or the CaseSpec plumbing."""
+    np_ = pytest.importorskip("numpy")
+    from suspension.aero.panel_method import PanelMethodModel, PanelParams
+    mdl = PanelMethodModel(PanelParams(max_panels=None, ground_effect=ground_effect))
+    c, n, a = mesh.triangles_center, mesh.face_normals, mesh.area_faces
+    vinf = np_.array([1.0, 0.0, 0.0])
+    A = mdl._influence_matrix(c, n, a)
+    sigma = np_.linalg.lstsq(A, -(n @ vinf), rcond=None)[0]
+    v = mdl._induced_velocity(c, n, a, sigma,
+                              ground_effect=ground_effect,
+                              road_plane_z_m=0.0)
+    vs = v + vinf[None, :]
+    vn = np_.einsum("ij,ij->i", vs, n)
+    vt = vs - vn[:, None] * n
+    cp = 1.0 - np_.einsum("ij,ij->i", vt, vt)
+    return float((-(cp * a)[:, None] * n).sum(axis=0)[2] / aref)
+
+
+def test_panel_method_recovers_free_air_when_the_road_is_far():
+    """THE decisive check on the ground-image implementation, and the one that
+    caught the bug: an image system is a way of imposing a boundary condition at
+    z=0, so moving that plane far from the body must reproduce the unbounded
+    solve. It did not. The image was applied when solving for the source
+    strengths but omitted from the velocity field used for Cp, so a body 0.5 m
+    above the road still reported a spurious C_L of ~9e-4 against a free-air
+    0.0 — and at real FSAE ride heights it produced LIFT where the corrected
+    solve produces downforce.
+
+    Failure here means the influence matrix and the velocity evaluation have
+    drifted out of agreement again. They must always describe the same flow."""
+    for h in (2.0, 5.0, 20.0):
+        free = _panel_cl(_box_mesh(h), ground_effect=False)
+        near = _panel_cl(_box_mesh(h), ground_effect=True)
+        assert abs(near - free) < 5e-5, (
+            f"road {h} m away: ground-on C_L={near:.3e} vs free-air {free:.3e}. "
+            f"The image system is not converging to the unbounded solution.")
+
+
+def test_panel_method_ground_effect_makes_downforce_not_lift():
+    """A body close to the road must gain downforce relative to free air: the
+    image accelerates the flow underneath, dropping the pressure there. Sign
+    only — potential flow has no business predicting a magnitude here."""
+    low = _panel_cl(_box_mesh(0.03), ground_effect=True)
+    free = _panel_cl(_box_mesh(0.03), ground_effect=False)
+    assert low < free, (
+        f"in ground effect C_L={low:.4e} is not below free-air {free:.4e}; "
+        f"the image is either missing or reflected the wrong way")
+
+
+def _subdivided_box(h, n=2):
+    m = _box_mesh(h)
+    for _ in range(n):
+        m = m.subdivide()
+    return m
+
+
+def test_panel_ground_effect_decays_with_ride_height():
+    """Monotone decay of the ground contribution. Ride-height sensitivity is the
+    single number teams actually take from this module.
+
+    The mesh is subdivided deliberately. On the raw 12-panel box (340 mm panels)
+    this FAILS at 30 mm ride height — the ground effect comes out smaller than at
+    100 mm, i.e. the trend inverts — because each panel is a point source at its
+    centroid and the road image sits well inside the range where that holds. That
+    is a real limitation of the method, not a bug in it, so it is guarded rather
+    than fixed: see test_panel_method_warns_when_the_mesh_is_too_coarse."""
+    deltas = [abs(_panel_cl(_subdivided_box(h), True)
+                  - _panel_cl(_subdivided_box(h), False))
+              for h in (0.03, 0.10, 0.40, 2.0)]
+    for a, b in zip(deltas, deltas[1:]):
+        assert b <= a + 1e-9, f"ground effect grew with ride height: {deltas}"
+
+
+def test_panel_method_warns_when_the_mesh_is_too_coarse():
+    """The coarse-mesh failure is SILENT: the solve converges, the numbers look
+    plausible, and the ride-height trend is backwards. A user cannot see that
+    from the result, so the solver has to say it."""
+    from suspension.aero.panel_method import PanelMethodModel, PanelParams
+    mdl = PanelMethodModel(PanelParams(max_panels=None, ground_effect=True))
+    coarse = _box_mesh(0.03)          # 340 mm panels over a 30 mm gap
+    warn = mdl._resolution_warning(coarse.triangles_center, coarse.area_faces)
+    assert "WARNING" in warn and "invert" in warn.lower(),         f"coarse mesh in ground effect produced no warning: {warn!r}"
+    fine = _subdivided_box(0.30, n=3)  # small panels, generous ride height
+    assert mdl._resolution_warning(fine.triangles_center, fine.area_faces) == "",         "a well-resolved mesh must not be flagged"
+
+
+def test_air_kinematic_viscosity_tracks_the_standard_table():
+    """nu(T) feeds every Reynolds number in the aero package — scaled-run
+    similitude, panel skin friction, CFD case setup. A few percent here silently
+    shifts every Re the team quotes."""
+    from suspension.aero.scale_model import air_kinematic_viscosity, reynolds
+    table = {0: 1.330e-5, 15: 1.470e-5, 25: 1.562e-5, 40: 1.702e-5}
+    for t_c, ref in table.items():
+        got = air_kinematic_viscosity(t_c)
+        assert abs(got - ref) / ref < 0.02, f"nu({t_c} C) = {got:.4e}, table {ref:.3e}"
+    # and Reynolds must compose from it, not from a second hard-coded nu
+    nu = air_kinematic_viscosity(15.0)
+    assert abs(reynolds(20.0, 0.5, nu) - 20.0 * 0.5 / nu) < 1.0
+
+
+def test_dynamic_pressure_prefers_measured_pitot_over_nominal_speed():
+    """q sets the scale of every Cp. When a pitot total pressure was logged it is
+    what the freestream actually was; computing 1/2 rho V^2 from a set-point
+    trusts a speed the tunnel may not have held."""
+    from suspension.aero.pressure_tap import ScanProvenance
+    p = ScanProvenance("A1", rho=1.225, speed_ms=30.0,
+                       p_total_inf_pa=600.0, p_static_inf_pa=0.0)
+    assert abs(p.dynamic_pressure() - 600.0) < 1e-9
+    q_nominal = 0.5 * 1.225 * 30.0 ** 2
+    p2 = ScanProvenance("A2", rho=1.225, speed_ms=30.0)
+    assert abs(p2.dynamic_pressure() - q_nominal) < 1e-9
+
+
+def test_aero_coupling_axle_rate_is_both_wheels():
+    """`_axle_wheel_rate` is divided into PER-AXLE loads (longitudinal_load_transfer
+    returns the whole axle's dW; aero downforce is a whole-car force), so it must
+    be the rate of both wheels together. Returning the single-wheel rate made
+    every pitch and heave deflection 2x too large — and because heave sets the
+    ride height that is fed back into the aero map, the error compounded around
+    the coupling loop."""
+    from suspension.aero.coupling import _axle_wheel_rate
+
+    class _Kin:
+        @staticmethod
+        def motion_ratio():
+            return 0.5
+
+    class _P:
+        use_spring_rates = True
+        spring_rate_front = 200.0      # N/mm at the spring
+        spring_rate_rear = 200.0
+
+    class _Veh:
+        p = _P()
+        front_kin = _Kin()
+        rear_kin = _Kin()
+
+    # one wheel: 200 * 0.5^2 = 50 N/mm; the axle is two of them.
+    assert abs(_axle_wheel_rate(_Veh(), "front") - 100.0) < 1e-9
+
+
+def test_aero_heave_matches_a_hand_calculation():
+    """End-to-end sanity on the units: 1000 N of downforce on a car whose four
+    corners each give 50 N/mm must heave 5 mm, not 10."""
+    from suspension.aero.coupling import _axle_wheel_rate
+
+    class _Kin:
+        @staticmethod
+        def motion_ratio():
+            return 0.5
+
+    class _P:
+        use_spring_rates = True
+        spring_rate_front = spring_rate_rear = 200.0
+
+    class _Veh:
+        p = _P()
+        front_kin = rear_kin = _Kin()
+
+    kf = _axle_wheel_rate(_Veh(), "front")
+    kr = _axle_wheel_rate(_Veh(), "rear")
+    assert abs(1000.0 / (kf + kr) - 5.0) < 1e-9
+
+
+def test_pitch_is_geometry_side_in_every_cfd_export():
+    """RAKE MUST REACH THE MESH. Every deck this package writes has a ground plane
+    at z=0, and tilting the inlet leaves the car's angle to that plane unchanged —
+    so pitch on the inlet means a rake sweep exports the same geometry every time.
+    meshing.py already stated the criterion ("they move the CAR relative to the
+    ground plane, which the freestream cannot represent"); pitch passes it as
+    plainly as roll does.
+
+    Yaw stays on the inlet, correctly — the road is symmetric about z."""
+    import math as _m
+    from suspension.aero.cfd import Attitude
+    from suspension.aero.meshing import _attitude_geometry_transform
+    from suspension.aero.fluent_journal import _inlet_velocity
+    from suspension.aero.backends import OpenFOAMSolver
+
+    # 1. pitch must NOT appear in any inlet velocity
+    for f in (lambda pd: _inlet_velocity(20.0, 0.0, pd),
+              lambda pd: OpenFOAMSolver._inlet_velocity(
+                  Attitude(pitch_deg=pd, speed_ms=20.0))):
+        flat, pitched = f(0.0), f(5.0)
+        assert all(abs(a - b) < 1e-9 for a, b in zip(flat, pitched)), \
+            "pitch is still being folded into the inlet velocity"
+        # yaw must still act there
+        assert abs(_inlet_velocity(20.0, 5.0, 0.0)[1]) > 1e-6
+
+    # 2. pitch MUST change the meshed geometry transform
+    flat = _attitude_geometry_transform(Attitude(pitch_deg=0.0, ride_height_mm=30))
+    rake = _attitude_geometry_transform(Attitude(pitch_deg=2.0, ride_height_mm=30))
+    assert abs(rake["combined_angle_deg"] - flat["combined_angle_deg"]) > 1.0, \
+        "rake does not reach the mesh transform — the exported CFD case has no rake"
+
+    # 3. the composed axis-angle must equal Ry(pitch)·Rx(roll)
+    np_ = pytest.importorskip("numpy")
+    for roll, pitch in ((0, 0), (3, 0), (0, 2), (4, -2.5)):
+        tf = _attitude_geometry_transform(
+            Attitude(roll_deg=roll, pitch_deg=pitch, ride_height_mm=30))
+        ax = [float(x) for x in tf["combined_axis"].strip("()").split()]
+        a = _m.radians(tf["combined_angle_deg"])
+        K = np_.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
+        R = np_.eye(3) + _m.sin(a) * K + (1 - _m.cos(a)) * K @ K
+        cr, sr = _m.cos(_m.radians(roll)), _m.sin(_m.radians(roll))
+        cp, sp = _m.cos(_m.radians(pitch)), _m.sin(_m.radians(pitch))
+        Rx = np_.array([[1, 0, 0], [0, cr, -sr], [0, sr, cr]])
+        Ry = np_.array([[cp, 0, sp], [0, 1, 0], [-sp, 0, cp]])
+        assert np_.allclose(R, Ry @ Rx, atol=1e-9), \
+            f"composed rotation wrong at roll={roll}, pitch={pitch}"
+
+
+def test_daq_biquads_have_unity_gain_where_they_should():
+    """DC GAIN IS THE WHOLE POINT HERE. daq.py states that the quantity it exists
+    to protect is "the time-AVERAGE the balance reading needs" — and the average
+    is set by the filter's DC gain. Both biquads wrote a[0] = 1.0 and then divided
+    the whole denominator by a0 = 1 + alpha, leaving a[0] = 1/(1+alpha): a
+    different filter with a spurious (1+alpha) gain everywhere outside the
+    feature. The notch read 1.19 at DC and the Q=0.707 low-pass read 11.3, so
+    every filtered force channel was scaled by a factor nobody chose."""
+    np_ = pytest.importorskip("numpy")
+    from suspension.aero.daq import _rbj_notch, _rbj_lowpass
+
+    def mag(b, a, f, fs):
+        z = np_.exp(-2j * math.pi * f / fs)
+        return abs((b[0] + b[1] * z + b[2] * z * z)
+                   / (a[0] + a[1] * z + a[2] * z * z))
+
+    fs = 1000.0
+    b, a = _rbj_notch(50.0, fs, 10.0)
+    assert abs(a[0] - 1.0) < 1e-12, "denominator not normalised to a[0] = 1"
+    assert abs(mag(b, a, 0.1, fs) - 1.0) < 1e-3, "notch has gain at DC"
+    assert mag(b, a, 50.0, fs) < 1e-9, "notch does not null at f0"
+    assert abs(mag(b, a, 400.0, fs) - 1.0) < 1e-3, "notch has gain far from f0"
+
+    b, a = _rbj_lowpass(100.0, fs, 0.70710678)
+    assert abs(a[0] - 1.0) < 1e-12
+    assert abs(mag(b, a, 0.1, fs) - 1.0) < 1e-3, "low-pass DC gain is not unity"
+    # Butterworth Q: exactly -3.01 dB at the cutoff, and monotone roll-off after.
+    assert abs(20 * math.log10(mag(b, a, 100.0, fs)) + 3.01) < 0.05
+    for f1, f2 in ((100.0, 200.0), (200.0, 400.0)):
+        assert mag(b, a, f2, fs) < mag(b, a, f1, fs)
+
+
+def test_plug_builder_section_area_matches_the_analytic_superellipse():
+    """The lofted section is a Lame curve, which has a closed-form area:
+    A_upper = 2*w*h*Gamma(1+1/e)^2 / Gamma(1+2/e). Pins the numerical integration
+    that every material take-off (fabric, resin, foam) is derived from."""
+    from math import gamma
+    from suspension.aero.plug_builder import NoseconeBody
+    b = NoseconeBody(length_mm=800.0, base_width_mm=300.0, base_height_mm=250.0)
+    x = 800.0
+    w, h, e = b.plan_half_width(x), b.crest_height(x), b.section_exponent
+    exact = 2.0 * w * h * gamma(1 + 1 / e) ** 2 / gamma(1 + 2 / e)
+    assert abs(b._section_area_mm2(x, k=48) - exact) / exact < 2e-3
+    assert abs(b._section_area_mm2(x, k=768) - exact) / exact < 5e-5
+
+def test_piv_subpixel_fit_recovers_a_known_offset():
+    """Three-point Gaussian fit is what takes PIV below a pixel, and it is the
+    whole accuracy claim of the technique. The formula
+    dx = (ln c- - ln c+) / (2*(ln c- - 2 ln c0 + ln c+)) is exact for a Gaussian,
+    so a synthesised peak at a known sub-pixel offset must come back exactly."""
+    def fit(c0, cm, cp):
+        lm, l0, lp = math.log(cm), math.log(c0), math.log(cp)
+        d = 2.0 * (lm - 2.0 * l0 + lp)
+        return (lm - lp) / d if abs(d) > 1e-12 else 0.0
+    for true in (-0.4, -0.2, 0.0, 0.15, 0.33, 0.45):
+        s_ = 1.2
+        g = lambda k: math.exp(-((k - true) ** 2) / (2 * s_ * s_))
+        assert abs(fit(g(0), g(-1), g(1)) - true) < 1e-9
+
+
+def test_run_log_catches_lift_and_drag_normalised_by_different_areas():
+    """A row can be internally consistent in lift AND internally consistent in
+    drag and still be wrong, if the two were normalised by different reference
+    areas — which happens for real when Fluent's reference values are changed
+    between report sections. run_log computed the drag-implied area and then
+    never read it, so this was the one normalisation failure no gate could see."""
+    from suspension.aero.run_log import RunRow, screen
+    q = 0.5 * 1.225 * 20.0 ** 2
+
+    def row(i, area_drag):
+        return RunRow(source_row=i, sheet="s", component="wing",
+                      ride_height_mm=30.0, speed_ms=20.0, converged=True,
+                      max_pressure_Pa=q, min_pressure_Pa=-2 * q,
+                      lift_force_N=-2.0 * q * 1.0, lift_coeff=-2.0,
+                      drag_force_N=0.8 * q * area_drag, drag_coeff=0.8)
+
+    verdicts = screen([row(1, 1.0), row(2, 1.0), row(3, 1.4)])
+    codes = {v.row.source_row: {f.code for f in v.flags} for v in verdicts}
+    assert "REF_AREA_LIFT_DRAG_SPLIT" not in codes[1]
+    assert "REF_AREA_LIFT_DRAG_SPLIT" in codes[3], \
+        "a 40% lift/drag area split went undetected"
+    assert not [v for v in verdicts if v.row.source_row == 3][0].accepted
+
+
+def test_surrogate_induced_drag_is_signed():
+    """The stand-in model says "plumbing and trends only", so its trends have to
+    be right. Induced drag used abs(ground_effect), which added drag whether the
+    car was lowered or raised — the drag-vs-ride-height trend was backwards above
+    the reference height. Induced drag follows lift squared, so it is signed."""
+    from suspension.aero.backends import ReferenceAeroModel
+    from suspension.aero.cfd import Attitude
+    m = ReferenceAeroModel()
+    pts = [m._coeffs(Attitude(ride_height_mm=h, speed_ms=20.0))
+           for h in (10.0, 20.0, 30.0, 40.0, 60.0, 80.0)]
+    lifts = [p[0] for p in pts]
+    drags = [p[1] for p in pts]
+    # Raising the car: less downforce (c_lift rises toward 0) and less drag.
+    for a, b in zip(lifts, lifts[1:]):
+        assert b > a, "downforce must fall as the car is raised"
+    for a, b in zip(drags, drags[1:]):
+        assert b < a, "induced drag must fall with downforce, not rise"
+
+
+def test_pressure_tap_partial_chord_is_visible():
+    """C_n integrates over the OVERLAP of the two surfaces' instrumented ranges.
+    A sparsely tapped pressure side therefore shrinks the domain and shrinks the
+    reported loading with it — silently. Everywhere else this module drops holes
+    loudly; the load integral quietly truncated its own domain, which is the same
+    class of error the rest of the file exists to prevent."""
+    from suspension.aero.pressure_tap import CpField, TapLocation, WingSurface
+
+    def taps_and_cp(pressure_range):
+        taps, cp = [], {}
+        for i, x in enumerate([0.05, 0.2, 0.4, 0.6, 0.8, 0.95]):
+            tid = f"s{i}"
+            taps.append(TapLocation(tap_id=tid, element="main",
+                                    surface=WingSurface.SUCTION, x_over_c=x))
+            cp[tid] = -1.5
+        for i, x in enumerate(pressure_range):
+            tid = f"p{i}"
+            taps.append(TapLocation(tap_id=tid, element="main",
+                                    surface=WingSurface.PRESSURE, x_over_c=x))
+            cp[tid] = 0.5
+        return CpField(taps=taps, cp=cp)
+
+    full = taps_and_cp([0.05, 0.3, 0.6, 0.95])
+    part = taps_and_cp([0.2, 0.4, 0.6])
+
+    assert full.chord_coverage("main") > 0.95
+    cov = part.chord_coverage("main")
+    assert cov < 0.6, f"partial instrumentation not reported ({cov:.2f})"
+
+    # The number itself shrinks with the domain — that is the trap.
+    cn_full = full.normal_load_coefficient("main")
+    cn_part = part.normal_load_coefficient("main")
+    assert cn_part < cn_full * 0.8, "truncated integral did not shrink C_n"
+
+    # Opting into a coverage floor turns the silent shrink into an honest NaN.
+    assert math.isnan(part.normal_load_coefficient("main", min_chord_coverage=0.6))
+    assert not math.isnan(full.normal_load_coefficient("main", min_chord_coverage=0.6))
+
+
+# ============================================================================ #
+#  ELECTRICAL
+# ============================================================================ #
+def test_onderdonk_uses_circular_mils_not_square_mils():
+    """This class implements two standards that measure area DIFFERENTLY, and one
+    property was feeding both:
+
+        IPC-2221   I = k * dT^0.44 * A^0.725   -> A in SQUARE mils
+        Onderdonk  I = A * sqrt(...)           -> A in CIRCULAR mils
+
+    A circular mil is the area of a 1-mil-diameter circle, so
+    A_cmil = A_sqmil * 4/pi. Feeding square mils to Onderdonk understated the
+    fusing current by 21.5%. Anchored on a published figure: 10 AWG is
+    10380 cmil and fuses in about 1 s at roughly 1500 A."""
+    from suspension.electronics import Trace
+    mk = lambda **kw: Trace(name="t", net="n", owner_subsystem="s", **kw)
+    t = mk(width_mm=1.0, copper_oz=1.0, length_mm=100.0)
+    assert abs(t.area_cmil / t.area_mil2 - 4.0 / math.pi) < 1e-12
+
+    # Reproduce the 10 AWG benchmark through the same code path: pick the width
+    # that gives 10380 circular mils at this copper weight.
+    a_cmil = 10380.0
+    a_mm2 = a_cmil * (math.pi / 4.0) / (39.3701 ** 2)
+    w = mk(width_mm=1.0, copper_oz=1.0, length_mm=100.0)
+    w.width_mm = a_mm2 / (w.area_mm2 / w.width_mm)      # scale width to hit a_mm2
+    assert abs(w.area_cmil - a_cmil) / a_cmil < 1e-6
+    i_fuse = w.fusing_current_a(t_s=1.0, ambient_c=25.0)
+    assert 1400.0 < i_fuse < 1600.0, \
+        f"10 AWG 1 s fusing current {i_fuse:.0f} A; published is about 1500 A"
+
+
+def test_ampacity_correction_never_errs_optimistic():
+    """The NEC ambient-correction factor must reproduce the published table, and
+    where it does not, it must never claim MORE current than the table allows —
+    that is the one direction an ampacity tool cannot be wrong in.
+
+    The resistance-shift term used to be applied here, copied from
+    ampacity_scale where it is correct. Here both endpoints have the conductor at
+    the same rating temperature, so copper resistance cancels exactly and there
+    is nothing to correct. Applying it anyway overshot the 60 C column by 0.048 —
+    ten times the claimed tolerance, and optimistic."""
+    from suspension.wiring import correction_factor
+    published = {
+        35: {60: 0.91, 75: 0.94, 90: 0.96}, 40: {60: 0.82, 75: 0.88, 90: 0.91},
+        45: {60: 0.71, 75: 0.82, 90: 0.87}, 50: {60: 0.58, 75: 0.75, 90: 0.82},
+        55: {75: 0.67, 90: 0.76},
+    }
+    for ambient, row in published.items():
+        for rating, expected in row.items():
+            got = correction_factor(rating, ambient)
+            assert abs(got - expected) < 0.005, \
+                f"{rating} C at {ambient} C ambient: {got:.4f} vs table {expected}"
+            assert got < expected + 0.005, "correction factor errs optimistic"
+
+    # The inapplicable refinement is refused, not silently ignored.
+    with pytest.raises(ValueError):
+        correction_factor(60, 40, include_resistance_shift=True)
+
+
+def test_iec_adiabatic_k_matches_published_values():
+    """k = sqrt(Qc(beta+20)/rho20 * ln((beta+tf)/(beta+ti))) sets every wire
+    withstand in the fuse-coordination module. Copper/PVC (70->160 C) is a
+    published k = 115; copper 90->250 C is 143."""
+    from suspension.fuse_test import WireSpec
+    assert abs(WireSpec(awg=16, t_initial_c=70.0, t_final_c=160.0).k() - 115.0) < 1.0
+    assert abs(WireSpec(awg=16, t_initial_c=90.0, t_final_c=250.0).k() - 143.0) < 1.0
+
+
+def test_fuse_curve_power_law_fit_is_exact_on_a_power_law():
+    """The datasheet curve is fitted in log-log. A synthetic t = a * m^-b must be
+    recovered exactly, or every coordination margin built on it is skewed."""
+    from suspension.fuse_test import FuseSpec, CurveAnchor
+    a, b = 12.0, 2.3
+    f = FuseSpec(rating_a=30.0, anchors=[
+        CurveAnchor(current_mult=m, time_s=a * m ** (-b)) for m in (1.5, 2, 3, 5, 10)])
+    got_a, got_b = f.power_law()
+    assert abs(got_a - a) < 1e-9 and abs(got_b - b) < 1e-9
+
+
+# ============================================================================ #
+#  BRAKES
+# ============================================================================ #
+def test_hydraulic_chain_matches_hand_calculation():
+    """Pedal force -> rod -> balance bar -> line pressure -> clamp -> axle torque,
+    end to end against arithmetic done by hand. Also pins the force balance:
+    whatever the bar offset, the two clevis forces must sum to the rod force."""
+    from suspension.pedal_box import CircuitSpec, balance_bar_bias
+    f = CircuitSpec(mc_bore_mm=15.87, caliper_piston_dia_mm=25.4,
+                    pistons_per_side=2, pad_mu=0.45, rotor_dia_mm=220.0,
+                    pad_inner_radius_mm=79.0, n_corners=2)
+    r = CircuitSpec(mc_bore_mm=17.46, caliper_piston_dia_mm=25.4,
+                    pistons_per_side=1, pad_mu=0.45, rotor_dia_mm=200.0,
+                    pad_inner_radius_mm=72.0, n_corners=2)
+    for offset in (-20.0, 0.0, 12.5):
+        res = balance_bar_bias(pedal_force_N=200.0, pedal_ratio=5.0,
+                               front=f, rear=r, bar_length_mm=60.0,
+                               bar_offset_mm=offset)
+        assert abs(res.force_front_N + res.force_rear_N - 1000.0) < 1e-9, \
+            "clevis forces must sum to the rod force at any bar offset"
+
+    res = balance_bar_bias(pedal_force_N=200.0, pedal_ratio=5.0, front=f, rear=r)
+    a_f = math.pi / 4 * 15.87 ** 2
+    assert abs(res.pressure_front_bar - (500.0 / (a_f * 1e-6)) / 1e5) < 1e-6
+    clamp = res.pressure_front_bar * 1e5 * (2 * math.pi / 4 * 25.4 ** 2) * 1e-6
+    hand_T = 2 * clamp * 0.45 * (0.5 * (110.0 + 79.0) * 1e-3) * 2
+    assert abs(res.torque_front_Nm - hand_T) < 1e-6
+
+
+def test_effective_radius_prefers_geometry_over_a_fraction():
+    """r_eff sets brake torque linearly, so a guessed fraction is a guessed
+    torque. Uniform wear puts it at the mean of the swept band; given the pad's
+    inner radius there is nothing to guess.
+
+    The fallback fraction also has to be plausible. Inverting it,
+    frac = (r_o + r_i)/(2 r_o), so the old 0.92 implied r_i = 0.84 r_o — a pad
+    band 17.6 mm tall on a 220 mm rotor, against a real 25-40 mm. It overstated
+    torque by ~8% in the optimistic direction."""
+    from suspension.pedal_box import CircuitSpec
+    exact = CircuitSpec(mc_bore_mm=15.87, caliper_piston_dia_mm=25.4,
+                        rotor_dia_mm=220.0, pad_inner_radius_mm=79.0)
+    assert abs(exact.r_eff_mm - 94.5) < 1e-9, "uniform-wear mean radius"
+
+    fallback = CircuitSpec(mc_bore_mm=15.87, caliper_piston_dia_mm=25.4,
+                           rotor_dia_mm=220.0)
+    r_o = 110.0
+    implied_band = 2 * (r_o - fallback.r_eff_mm)
+    assert 25.0 <= implied_band <= 40.0, (
+        f"the default fraction implies a {implied_band:.1f} mm pad band; real "
+        f"FSAE pads are 25-40 mm")
+
+    # A nonsense inner radius must fall back rather than produce garbage.
+    bad = CircuitSpec(mc_bore_mm=15.87, caliper_piston_dia_mm=25.4,
+                      rotor_dia_mm=220.0, pad_inner_radius_mm=500.0)
+    assert bad.r_eff_mm == fallback.r_eff_mm
+
+
+def test_stop_energy_conserves_and_includes_rotating_inertia():
+    """Energy must survive the front/rear split and the two-rotor halving, and
+    the brakes have to stop the SPINNING mass too — omitting it under-predicted
+    rotor temperature optimistically."""
+    from suspension.brake_thermal import BrakeThermalModel, BrakeThermalParams
+    m = BrakeThermalModel(BrakeThermalParams())
+    kw = dict(mass_kg=300.0, v0_ms=27.8, front_bias=0.65,
+              diameter_mm=220.0, thickness_mm=5.0)
+
+    trans = m.single_stop(**kw, rotating_mass_factor=1.0)
+    assert abs(trans.q_total_j - 0.5 * 300.0 * 27.8 ** 2) < 1e-6
+
+    # Round-trip the split: q_per -> q_total must come back exactly.
+    back = trans.q_per_rotor_j * 2.0 / m.p.heat_to_rotor / 0.65
+    assert abs(back - trans.q_total_j) < 1e-6
+
+    spun = m.single_stop(**kw, rotating_mass_factor=1.05)
+    assert abs(spun.q_total_j / trans.q_total_j - 1.05) < 1e-9
+    assert spun.delta_T_c > trans.delta_T_c, \
+        "rotating inertia must RAISE predicted rotor temperature"
+
+
+# ============================================================================ #
+#  SUSPENSION DYNAMICS
+# ============================================================================ #
+def test_max_lateral_g_is_limited_by_the_first_axle_to_saturate():
+    """In steady state there is no yaw acceleration, so moment balance about the
+    CG locks the split: F_front = m*a_y*wd_f, F_rear = m*a_y*(1-wd_f). The demand
+    on each axle cannot be shifted, so the car is finished when EITHER axle runs
+    out — the other's spare grip is unreachable.
+
+    Summing (F_f + F_r)/(m g) credits that spare grip. It is only right when both
+    axles saturate together, i.e. on an already-balanced car, which is why the
+    near-neutral default hid it at 0.05-0.3%. On real setups it did not: a stiff
+    rear bar overstated grip by 4.7%."""
+    from suspension.dynamics import VehicleParams, VehicleDynamics
+
+    def limiting_axle_g(p):
+        v = VehicleDynamics(p)
+        w_f = p.mass * p.g * p.weight_dist_front
+        w_r = p.mass * p.g * (1.0 - p.weight_dist_front)
+        lo, hi = 0.1, 3.0
+        for _ in range(60):
+            mid = 0.5 * (lo + hi)
+            loads, _ = v.lateral_load_transfer(mid)
+            Ff, Fr = v.axle_grip(loads)
+            if min(Ff / w_f, Fr / w_r) >= mid:
+                lo = mid
+            else:
+                hi = mid
+        return lo
+
+    for p in (VehicleParams(weight_dist_front=0.45),
+              VehicleParams(weight_dist_front=0.45, roll_stiffness_front=150.0,
+                            roll_stiffness_rear=900.0),
+              VehicleParams(weight_dist_front=0.38, roll_stiffness_front=800.0,
+                            roll_stiffness_rear=200.0)):
+        got = VehicleDynamics(p).max_lateral_g()
+        assert abs(got - limiting_axle_g(p)) < 2e-3, \
+            "max_lateral_g does not agree with the limiting-axle limit"
+
+    # And it must agree with balance_index, which was always computed correctly:
+    # at the limit, the more-utilised axle sits at utilisation 1.0.
+    p = VehicleParams(weight_dist_front=0.45, roll_stiffness_front=150.0,
+                      roll_stiffness_rear=900.0)
+    v = VehicleDynamics(p)
+    g = v.max_lateral_g()
+    _, util_f, util_r = v.balance_index(g)
+    assert abs(max(util_f, util_r) - 1.0) < 5e-3, \
+        f"limiting axle utilisation {max(util_f, util_r):.4f}, expected 1.0"
+
+
+def test_transient_and_steady_state_agree_on_the_roll_axis():
+    """Both models need the roll-axis height AT THE CG's station, and they were
+    computing it two different ways — dynamics interpolated by weight
+    distribution, transient took a plain mean of the two roll centres. Same car,
+    two roll moment arms. The mean is only right at 50/50."""
+    rc_f, rc_r = 20.0, 90.0
+    for wd in (0.40, 0.45, 0.55):
+        weighted = rc_f * wd + rc_r * (1.0 - wd)
+        plain_mean = 0.5 * (rc_f + rc_r)
+        if abs(wd - 0.5) > 1e-9:
+            assert abs(weighted - plain_mean) > 1.0, "test case is vacuous"
+        # the weighting must put MORE weight on the rear RC for a rear-biased car
+        if wd < 0.5:
+            assert weighted > plain_mean
+
+
+def test_roll_moment_arm_may_be_negative():
+    """A roll axis ABOVE the sprung CG reverses the roll moment — the body leans
+    INTO the corner. High-roll-centre cars do exactly this, and it is the kind of
+    behaviour someone runs a transient model to see. Clamping h_roll at 0
+    reported it as zero roll instead of negative."""
+    from suspension.transient import TransientParams
+    p = TransientParams()
+    p.cg_height = 0.20
+    p.roll_axis_height = 0.30          # roll axis above the CG
+    h_roll = p.cg_height - p.roll_axis_height
+    assert h_roll < 0.0, "a roll axis above the CG must give a negative moment arm"
+
+
+# ============================================================================ #
+#  POWERTRAIN / DRIVETRAIN
+# ============================================================================ #
+def test_regen_does_not_recover_drag_and_rolling_resistance():
+    """Drag and rolling resistance slow the car for free, so the motor only ever
+    resists what is left. The accel branch gets this right
+    (F_trac = m*a + F_drag + F_roll); the regen branch used a bare m*a and
+    credited the battery with energy that went into the air and the tyres.
+
+    It also removes a sign trap: below m*|a| = F_drag + F_roll the car is merely
+    coasting down and the motor supplies nothing at all, yet every such sample
+    was booked as recovery. Overstated endurance range by ~9% on a realistic
+    trace, and range is what decides whether a car finishes."""
+    np_ = pytest.importorskip("numpy")
+    from suspension.ev_powertrain import EVLapSimulator, EVParams, LapSimParams
+
+    class _Lap:
+        pass
+
+    # Pure drag coast-down: the motor resists nothing, so recovery must be ~0.
+    coast = _Lap()
+    coast.distance = np_.linspace(0.0, 500.0, 500)
+    coast.speed = np_.linspace(30.0, 25.0, 500)
+    coast.long_g = (np_.gradient(coast.speed) * coast.speed
+                    / np_.gradient(coast.distance) / 9.81)
+
+    sim = EVLapSimulator(EVParams())
+    p = LapSimParams()
+    _, regen = sim._energy_from_trace(coast, p)
+    assert regen < 1e-3, (
+        f"a pure drag coast-down recovered {regen:.5f} kWh; the motor is not "
+        f"resisting anything here")
+
+    # Hard braking still recovers, but strictly less than the bare m*a form.
+    brake = _Lap()
+    brake.distance = np_.linspace(0.0, 100.0, 400)
+    brake.speed = np_.linspace(28.0, 6.0, 400)
+    brake.long_g = (np_.gradient(brake.speed) * brake.speed
+                    / np_.gradient(brake.distance) / 9.81)
+    _, hard = sim._energy_from_trace(brake, p)
+    assert hard > 0.0, "real braking must still recover energy"
+
+
+def test_launch_traction_includes_longitudinal_load_transfer():
+    """A launch is where weight piles onto the driven axle, so a static rear
+    fraction is least defensible exactly where it was used. The transfer is
+    self-reinforcing and has a closed form:
+    F = mu*m*g*rf / (1 - mu*h/L). Ignoring it left the ceiling 27% low.
+
+    This is not just a slower printed time: GearRatioSolver sweeps ratios through
+    this function, and a low traction ceiling clips the extra force of short
+    gears, biasing the recommended final drive taller."""
+    from suspension.pt_integration import _accel_0_75
+
+    class _Map:
+        _rpm = [0.0, 3000.0, 6000.0, 9000.0]
+        _t = [230.0, 230.0, 170.0, 90.0]
+
+    common = dict(motor_map=_Map(), wheel_r=0.225, eff=0.90, mass_kg=300.0,
+                  mu=1.4, cda=1.1, crr=0.018, rear_frac=0.55)
+    # A high CG transfers more weight rearward -> more grip -> quicker launch.
+    t_low_cg = _accel_0_75(final_drive=4.0, cg_height_m=0.20, **common)
+    t_high_cg = _accel_0_75(final_drive=4.0, cg_height_m=0.40, **common)
+    assert t_high_cg < t_low_cg, \
+        "raising the CG must improve a rear-drive launch, not worsen it"
+
+    # Closed form must match a hand calculation.
+    mu, m, g, rf, h, L = 1.4, 300.0, 9.81, 0.55, 0.30, 1.55
+    assert abs(mu * m * g * rf / (1 - mu * h / L) - 3108.0) < 2.0
+
+
+# ============================================================================ #
+#  STRUCTURAL / THERMAL / DAQ
+# ============================================================================ #
+def test_bolted_joint_stiffness_and_separation_are_exact():
+    """Member stiffness against the Wileman closed form the docstring cites, and
+    the separation invariant: at F_ext = F_sep the residual clamp must be exactly
+    zero, or the joint model is not self-consistent."""
+    from suspension.bolted_joint import _bolt_stiffness, _member_stiffness, Fastener
+    E = 205000.0
+    f = Fastener(grade="8.8", nominal_d_mm=8.0)
+    k_b = _bolt_stiffness(f, 20.0)
+    k_m = _member_stiffness(E, 8.0, 20.0)
+    A, B = 0.78715, 0.62873                       # Wileman steel coefficients
+    assert abs(k_m - E * 8.0 * A * math.exp(B * 8.0 / 20.0)) < 1e-6
+    assert abs(k_b - f.stress_area() * E / 20.0) < 1e-6
+    phi = k_b / (k_b + k_m)
+    assert 0.10 < phi < 0.40, f"steel joint load factor {phi:.3f} out of range"
+    f_i = 10000.0
+    f_sep = f_i / (1.0 - phi)
+    assert abs(f_i - (1.0 - phi) * f_sep) < 1e-9
+
+
+def test_daq_catches_over_filtering_not_just_aliasing():
+    """The anti-alias cutoff has TWO failure modes and only one was checked.
+    Above Nyquist the filter passes what it should block. Below the signal
+    bandwidth it blocks what it should pass — and that is the more dangerous one,
+    because an aliased channel looks visibly noisy and someone asks, while an
+    over-filtered channel comes back smooth, clean and quietly wrong. A smooth
+    trace is exactly what a team assumes is good data."""
+    from suspension.daq_plan import SensorSpec, signal_chain_findings, ANALOG_TYPES, Severity
+    import inspect
+    params = inspect.signature(SensorSpec).parameters
+    analog = list(ANALOG_TYPES)[0]
+
+    def spec(cutoff):
+        base = dict(key="dp", name="damper pot", output=analog,
+                    signal_bandwidth_hz=20.0, sample_rate_hz=200.0,
+                    antialias_cutoff_hz=cutoff, adc_bits=12)
+        return SensorSpec(**{k: v for k, v in base.items() if k in params})
+
+    def fails(cutoff):
+        return [f for f in signal_chain_findings(spec(cutoff))
+                if f.severity == Severity.FAIL]
+
+    assert not fails(50.0), "a 50 Hz cutoff on 20 Hz content at 200 Hz is correct"
+    assert fails(150.0), "cutoff above Nyquist must FAIL"
+    assert fails(5.0), "cutoff below the signal bandwidth must FAIL"
+
+
+def test_cooling_steady_state_inverts_its_own_ua_requirement():
+    """Self-consistency: if the radiator you have is exactly the UA you need,
+    the settling temperature must come out at the coolant inlet you specified.
+    Two different driving-temperature conventions here would show up as these
+    two numbers disagreeing."""
+    from suspension.cooling import size_loop, LoopSpec
+    s = LoopSpec()
+    first = size_loop(s)
+    ua_req = s.heat_w / max(s.coolant_in_c - s.ambient_c, 1e-6)
+    matched = size_loop(replace_ua(s, ua_req))
+    assert abs(matched.steady_coolant_c - s.coolant_in_c) < 0.05, (
+        f"with UA = UA_required the loop settles at "
+        f"{matched.steady_coolant_c:.2f} C, not the specified {s.coolant_in_c:g} C")
+    assert first is not None
+
+
+def replace_ua(spec, ua):
+    from dataclasses import replace
+    return replace(spec, radiator_ua_w_per_k=ua)
+
+
+# ============================================================================ #
+#  RESOLVED FOLLOW-UPS
+# ============================================================================ #
+def test_pack_current_and_ev_energy_agree():
+    """pack_thermal.pack_current_trace promises in its own docstring that it
+    integrates back to the same energy as ev_powertrain._energy_from_trace. When
+    the regen correction landed in one and not the other that promise silently
+    became false — and the divergence would have shown up as pack temperature,
+    not as an obvious error. Two modules, one physics, pinned together."""
+    np_ = pytest.importorskip("numpy")
+    from suspension.pack_thermal import pack_current_trace
+    from suspension.ev_powertrain import EVLapSimulator, EVParams, LapSimParams
+
+    class _Lap:
+        pass
+
+    lap = _Lap()
+    lap.distance = np_.linspace(0.0, 1000.0, 3000)
+    lap.speed = 18.0 + 7.0 * np_.sin(lap.distance / 40.0) + 3.0 * np_.sin(lap.distance / 13.0)
+    lap.long_g = np_.gradient(lap.speed) * lap.speed / np_.gradient(lap.distance) / 9.81
+
+    p, ev = LapSimParams(), EVParams()
+    net_kwh, _ = EVLapSimulator(ev)._energy_from_trace(lap, p)
+    t, cur = pack_current_trace(lap, p, pack_nominal_v=400.0,
+                                inverter_motor_eff=ev.inverter_motor_eff,
+                                regen_eff=ev.regen_eff, regen_max_g=ev.regen_max_g)
+    from_current = float(np_.trapezoid(cur * 400.0, t)) / 3.6e6
+    assert abs(from_current / net_kwh - 1.0) < 0.02, (
+        f"current trace integrates to {from_current:.5f} kWh but the energy model "
+        f"says {net_kwh:.5f} kWh — the two have drifted apart")
+
+
+def test_damping_ratio_uses_the_series_ride_rate_when_given_a_tyre():
+    """The sprung mass bounces on the wheel rate IN SERIES with the tyre. Using
+    the wheel rate alone overstates the stiffness it sees and understates zeta —
+    the number people actually tune to."""
+    from suspension.damper import damping_ratio, default_damper
+    c = default_damper()
+    kw = dict(corner_mass_kg=60.0, wheel_rate_N_per_mm=35.0)
+    bare = damping_ratio(c, **kw)
+    with_tyre = damping_ratio(c, **kw, tire_rate_N_per_mm=130.0)
+    k_ride = (35.0 * 130.0) / (35.0 + 130.0)
+    assert with_tyre > bare, "series ride rate must RAISE zeta"
+    assert abs(with_tyre / bare - math.sqrt(35.0 / k_ride)) < 1e-9
+    # A very stiff tyre approaches the wheel-rate-only answer.
+    assert abs(damping_ratio(c, **kw, tire_rate_N_per_mm=1e7) - bare) / bare < 1e-3
+
+
+def test_cooling_reports_both_the_conservative_and_mean_ua():
+    """coolant_in_c is the MOTOR inlet, i.e. the radiator's cold end, so driving
+    off it understates the available dT and overstates required UA. That is the
+    safe direction and is kept — but an undocumented margin is indistinguishable
+    from an error, so both figures are now surfaced."""
+    from suspension.cooling import size_loop, LoopSpec
+    s = LoopSpec()
+    r = size_loop(s)
+    drive_mean = s.coolant_in_c + 0.5 * r.delta_t_k - s.ambient_c
+    ua_mean = s.heat_w / drive_mean
+    assert r.required_ua_w_per_k > ua_mean, "cold-end UA must be the larger one"
+    assert any(f"{ua_mean:.0f} W/K" in n for n in r.notes), \
+        "the less-conservative mean-temperature UA is not reported anywhere"

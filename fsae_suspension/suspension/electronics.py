@@ -60,6 +60,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
 
+import math
 import numpy as np
 
 from .interfaces import Finding, Severity, IntegrationLedger
@@ -121,8 +122,28 @@ class Trace:
 
     @property
     def area_mil2(self) -> float:
+        """Cross-section in SQUARE mils — the unit IPC-2221 wants."""
         # 1 mm = 39.3701 mil -> mm^2 to mil^2
         return self.area_mm2 * (39.3701 ** 2)
+
+    @property
+    def area_cmil(self) -> float:
+        """Cross-section in CIRCULAR mils — the unit Onderdonk wants.
+
+        These two properties exist because the two standards this class
+        implements disagree on how to measure area, and one property was being
+        used for both:
+
+          * IPC-2221  I = k * dT^0.44 * A^0.725   -> A in SQUARE mils
+          * Onderdonk I = A * sqrt(...)           -> A in CIRCULAR mils
+
+        A circular mil is the area of a 1-mil-diameter circle, so
+        1 cmil = (pi/4) sq mil and A_cmil = A_sqmil * 4/pi. Feeding square mils
+        to Onderdonk understates the fusing current by 21.5%. Checked against a
+        published figure: 10 AWG (10380 cmil) fuses in 1 s at about 1500 A; the
+        circular-mil form gives 1519 A, the square-mil form 1193 A.
+        """
+        return self.area_mil2 * 4.0 / math.pi
 
     # ---- DC electrical ------------------------------------------------------ #
     def resistance_ohm(self, temp_c: float = 20.0) -> float:
@@ -168,14 +189,19 @@ class Trace:
         `t_s` seconds from `ambient_c`. This is the "physically melt" limit the
         request asks for. Melting point of copper Tm = 1083 °C.
 
-            I = A_mil2 * sqrt( log10((Tm-Ta)/(234+Ta) + 1) / (33 * t) )
+            I = A_cmil * sqrt( log10((Tm-Ta)/(234+Ta) + 1) / (33 * t) )
+
+        NOTE THE AREA UNIT: Onderdonk is written for CIRCULAR mils, not the square
+        mils IPC-2221 uses. This used `area_mil2` (square), understating the
+        fusing current by 21.5% — conservative, but wrong, and wrong in a named
+        standard formula that someone will check against a table. See `area_cmil`.
         """
         Tm = 1083.0
         Ta = ambient_c
-        if t_s <= 0.0 or self.area_mil2 <= 0.0:
+        if t_s <= 0.0 or self.area_cmil <= 0.0:
             return float("inf")
         inner = np.log10((Tm - Ta) / (234.0 + Ta) + 1.0) / (33.0 * t_s)
-        return float(self.area_mil2 * np.sqrt(inner))
+        return float(self.area_cmil * np.sqrt(inner))
 
     def as_dict(self):
         return asdict(self)

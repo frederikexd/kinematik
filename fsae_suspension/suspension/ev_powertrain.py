@@ -279,8 +279,26 @@ class EVLapSimulator:
                         traction_J += (F_trac * ds) / max(ev.inverter_motor_eff, 1e-3)
                 elif a < 0:                           # braking: regen what we can
                     if ev.regen_enabled:
-                        a_regen = min(-a, ev.regen_max_g * p.g)  # decel captured
-                        F_regen = p.mass * a_regen
+                        # DRAG AND ROLLING RESISTANCE ARE NOT RECOVERABLE. They
+                        # are already slowing the car for free, so the motor only
+                        # ever resists what is left over. The accel branch above
+                        # gets this right (F_trac = m*a + F_drag + F_roll); the
+                        # regen branch used the bare m*a and so credited the
+                        # battery with energy that went into the air and the
+                        # tyres. At 20 m/s that is ~320 N of the braking force —
+                        # about 22% of a 0.5 g stop over-counted, and the error
+                        # grows as deceleration falls.
+                        #
+                        # It also fixes a sign trap. Below m*|a| = F_drag + F_roll
+                        # the car is merely coasting down; the motor is supplying
+                        # nothing and may still be pulling. The old form credited
+                        # regen for every one of those samples. Flooring the motor
+                        # force at zero removes that whole class of phantom
+                        # recovery.
+                        F_motor = p.mass * (-a) - F_drag - F_roll
+                        # regen_max_g caps what the driven axle can take; the rest
+                        # of the stop goes to the friction brakes.
+                        F_regen = min(max(F_motor, 0.0), ev.regen_max_g * p.mass * p.g)
                         regen_J += F_regen * ds * ev.regen_eff
             kwh = 1.0 / 3.6e6
             net = max(traction_J - (regen_J if ev.regen_enabled else 0.0), 0.0)

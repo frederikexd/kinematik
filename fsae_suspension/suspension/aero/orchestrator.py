@@ -43,9 +43,30 @@ class OrchestratorReport:
     def failures(self) -> list[SubmitResult]:
         return [r for r in self.results if not r.ok]
 
+    @property
+    def n_dropped_unusable(self) -> int:
+        """Cases that ran without error but were REFUSED by the map.
+
+        AeroMap.add() rejects anything failing is_usable() — non-converged, or
+        missing a coefficient. That is the correct behaviour, and since the panel
+        solver now sets converged=False on an ill-conditioned system it is how a
+        garbage attitude gets kept out of a sweep. But the rejection was silent:
+        `n_usable` counts cases that RAN, not cases that landed, so a sweep could
+        report "12/12 cases usable" over a map holding 9 points and the three
+        holes were invisible. A hole in an aero map is not a neutral absence —
+        whatever queries it will interpolate straight across the gap.
+        """
+        return max(self.n_usable - len(self.aero_map), 0)
+
     def summary(self) -> str:
         lines = [f"{self.n_usable}/{self.n_total} cases usable; map has "
                  f"{len(self.aero_map)} points."]
+        if self.n_dropped_unusable:
+            lines.append(
+                f"  WARNING: {self.n_dropped_unusable} case(s) ran but were "
+                f"refused by the map (not converged, or missing a coefficient). "
+                f"The map has holes at those attitudes and will interpolate "
+                f"across them — check the per-case notes before using it.")
         for f in self.failures:
             lines.append(f"  ✗ {f.spec.attitude.label()}: {f.error or 'unconverged'}")
         return "\n".join(lines)

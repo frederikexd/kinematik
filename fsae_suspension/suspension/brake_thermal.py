@@ -280,16 +280,31 @@ class BrakeThermalModel:
     def single_stop(self, *, mass_kg: float, v0_ms: float,
                     front_bias: float, diameter_mm: float,
                     thickness_mm: float, vented_fraction: float = 0.0,
-                    T_start_c: float | None = None) -> SingleStopResult:
+                    T_start_c: float | None = None,
+                    rotating_mass_factor: float = 1.05) -> SingleStopResult:
         """Bulk temperature rise of ONE front rotor in a single stop from v0.
 
         `front_bias` is the fraction of braking torque at the front axle (e.g.
         0.65). Energy is split front/rear by bias, then halved across the two
         front rotors.
+
+        ROTATING INERTIA. The energy the brakes absorb is not just 1/2 m v^2 —
+        the wheels, tyres, uprights, driveline and rotors are spinning, and all of
+        that has to be stopped too. This was omitted, which under-predicted rotor
+        temperature in the OPTIMISTIC direction on a number used to size brakes
+        and pass the brake test.
+
+        It is not negligible. A wheel-and-tyre assembly of about 0.25 kg.m^2 on a
+        230 mm rolling radius is an equivalent mass of I/r^2 = 4.7 kg; four of
+        them is ~19 kg, roughly 6% of a 300 kg car, before the driveline referred
+        through the final drive. `rotating_mass_factor` defaults to 1.05 as a
+        representative FSAE figure; set it to 1.0 to recover the old translational
+        -only number, or compute your own as 1 + sum(I_i / r^2) / m.
         """
         p = self.p
         T0 = self.p.T_ambient_c if T_start_c is None else float(T_start_c)
-        q_total = 0.5 * float(mass_kg) * float(v0_ms) ** 2
+        q_total = (0.5 * float(mass_kg) * float(v0_ms) ** 2
+                   * max(float(rotating_mass_factor), 1.0))
         q_front = q_total * float(front_bias) * p.heat_to_rotor
         q_per = q_front / 2.0                      # two front rotors
         m_rotor = rotor_mass_kg(diameter_mm, thickness_mm,

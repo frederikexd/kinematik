@@ -675,6 +675,28 @@ def signal_chain_findings(s: SensorSpec) -> list[Finding]:
                 f"the filter's own roll-off.",
                 subsystems=who,
                 detail={"cutoff": s.antialias_cutoff_hz, "nyquist": fs / 2.0}))
+        elif bw is not None and bw > 0 and s.antialias_cutoff_hz < bw:
+            #  THE MIRROR FAILURE, and the more dangerous one. A cutoff ABOVE
+            #  Nyquist passes what it should block; a cutoff BELOW the signal
+            #  bandwidth BLOCKS WHAT IT SHOULD PASS. Only the first was checked.
+            #
+            #  This one is worse precisely because it does not look wrong. An
+            #  aliased channel is visibly noisy and someone eventually asks. An
+            #  over-filtered channel comes back smooth, clean and plausible, with
+            #  the real content quietly attenuated — and a smooth trace is
+            #  exactly what a team assumes is good data.
+            out.append(Finding(
+                "antialias-too-low", Severity.FAIL,
+                f"{s.name}: anti-alias cutoff {s.antialias_cutoff_hz:g} Hz is "
+                f"BELOW the {bw:g} Hz of real signal content, so the filter is "
+                f"removing the measurement itself. At the -3 dB point you are "
+                f"already losing 30% of the amplitude, and it falls off fast "
+                f"above that. The channel will look clean and be wrong. Put the "
+                f"cutoff above {bw:g} Hz and at or below {fs/2:g} Hz — there is "
+                f"room here only if the sample rate leaves it, so raise fs if "
+                f"those two bounds cross.",
+                subsystems=who,
+                detail={"cutoff": s.antialias_cutoff_hz, "bandwidth": bw}))
 
     # ---- ADC resolution ---------------------------------------------------- #
     span = s.span_eu()

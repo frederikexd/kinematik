@@ -114,7 +114,14 @@ class ReferenceAeroModel:
         ground = -self.ride_ground_gain * dh
         ground = max(min(ground, 0.6), -0.6)          # saturate
         c_lift = self.cl0 + self.yaw_cl_loss_per_deg * ay + ground
-        c_drag = self.cd0 + self.yaw_cd_gain_per_deg * ay + 0.15 * abs(ground)
+        # Lift-induced drag, SIGNED. This was 0.15 * abs(ground), which added drag
+        # whether the car was lowered (more downforce) or raised (less) — so the
+        # drag-vs-ride-height trend was wrong above the reference height, in a
+        # model whose stated purpose is "plumbing and trends only". Induced drag
+        # follows lift SQUARED, so the increment is taken relative to the baseline
+        # and carries the right sign in both directions.
+        induced = 0.15 * (c_lift * c_lift - self.cl0 * self.cl0) / max(abs(self.cl0), 1e-6)
+        c_drag = max(self.cd0 + self.yaw_cd_gain_per_deg * ay + induced, 0.05)
         c_side = math.copysign(self.yaw_cside_per_deg * ay, a.yaw_deg)
         # pitch shifts aero balance fore/aft; clamp to a sane fraction
         front = self.baseline_front_balance + self.pitch_balance_per_deg * a.pitch_deg
@@ -465,10 +472,29 @@ class OpenFOAMSolver:
 
     @staticmethod
     def _inlet_velocity(a: Attitude) -> tuple[float, float, float]:
-        """Rotate the freestream by yaw (about z) and pitch (about y)."""
+        """Rotate the freestream by YAW ONLY.
+
+    PITCH IS GEOMETRY, NOT INLET DIRECTION. Rotating the freestream and rotating
+    the car are equivalent ONLY in free air. Every deck this package writes has a
+    ground plane at z=0, and tilting the inlet leaves the car's angle to that
+    plane unchanged — so rake, the primary axis of any aero map, simply does not
+    happen. meshing.py already states the right criterion ("they move the CAR
+    relative to the ground plane, which the freestream cannot represent") and
+    then applied it to roll and ride height but not to pitch, which moves the car
+    relative to the road exactly as much.
+
+    Pitch is now applied to the GEOMETRY (see meshing._attitude_geometry_transform)
+    and the inlet carries YAW ONLY. Yaw legitimately stays here: the road is
+    symmetric about z, so yawing the body and yawing the flow remain equivalent.
+
+    CONSEQUENCE FOR ANYONE MESHING OUTSIDE KINEMATIK: the mesh handed to this
+    deck MUST already be built at the pitched attitude. If you mesh elsewhere and
+    do not pitch the geometry, rake is lost — the deck can no longer put it back.
+    The attitude is written into the deck header so this is auditable.
+        """
         v = a.speed_ms
         yaw = math.radians(a.yaw_deg)
-        pitch = math.radians(a.pitch_deg)
+        pitch = 0.0                     # deliberately not used — see above
         ux = v * math.cos(yaw) * math.cos(pitch)
         uy = -v * math.sin(yaw)
         uz = v * math.cos(yaw) * math.sin(pitch)

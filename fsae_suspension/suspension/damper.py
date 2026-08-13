@@ -131,7 +131,8 @@ class DamperCurve:
 
 def damping_ratio(curve: DamperCurve, corner_mass_kg: float,
                   wheel_rate_N_per_mm: float, motion_ratio: float = 1.0,
-                  region: str = "bump") -> float:
+                  region: str = "bump",
+                  tire_rate_N_per_mm: float | None = None) -> float:
     """
     Approximate damping ratio ζ of the sprung corner, the number that actually
     guides damper tuning: ζ≈0.65-0.7 bump / higher rebound is a common FSAE target.
@@ -146,11 +147,27 @@ def damping_ratio(curve: DamperCurve, corner_mass_kg: float,
     Needs a calibrated curve to be quantitative; with the representative defaults it
     still shows the right ballpark and how a change moves ζ.
     """
-    k_wheel = max(wheel_rate_N_per_mm, 1e-6) * 1000.0          # N/m
+    k_w = max(wheel_rate_N_per_mm, 1e-6)
+    #  RIDE RATE, NOT WHEEL RATE. The sprung mass bounces on the wheel rate IN
+    #  SERIES WITH THE TYRE — the tyre is a spring too. Using the wheel rate
+    #  alone overstates the stiffness the mass sees, overstates critical damping,
+    #  and so UNDERSTATES zeta: 35 N/mm on a 130 N/mm tyre gives a ride rate of
+    #  27.6 N/mm and zeta comes out ~11% low.
+    #
+    #  Zeta is the number people tune to (0.6-0.7 typical), so an 11% systematic
+    #  bias is enough to send someone chasing a setup change the model is asking
+    #  for rather than the car. Pass tire_rate_N_per_mm for the series rate;
+    #  omit it and the wheel-rate-only behaviour is kept, because inventing a
+    #  tyre rate would be worse than being explicit about not having one.
+    if tire_rate_N_per_mm is not None and tire_rate_N_per_mm > 0:
+        k_t = float(tire_rate_N_per_mm)
+        k_ride = (k_w * k_t) / (k_w + k_t)
+    else:
+        k_ride = k_w
     m = max(corner_mass_kg, 1e-3)
     c_shaft = curve.c_bump_low if region == "bump" else curve.c_reb_low
     c_wheel = c_shaft * motion_ratio * motion_ratio
-    crit = 2.0 * np.sqrt(k_wheel * m)
+    crit = 2.0 * np.sqrt(k_ride * 1000.0 * m)
     return float(c_wheel / crit) if crit > 0 else float("nan")
 
 

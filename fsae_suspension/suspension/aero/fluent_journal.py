@@ -35,14 +35,34 @@ from collections.abc import Sequence
 
 
 def _inlet_velocity(speed_ms: float, yaw_deg: float, pitch_deg: float):
-    """Freestream rotated by yaw (about z) and pitch (about y) — identical to the
-    rotation KinematiK uses internally so the inlet matches every other backend."""
+    """Freestream rotated by YAW ONLY — matches every other backend.
+
+    PITCH IS GEOMETRY, NOT INLET DIRECTION. Rotating the freestream and rotating
+    the car are equivalent ONLY in free air. Every deck this package writes has a
+    ground plane at z=0, and tilting the inlet leaves the car's angle to that
+    plane unchanged — so rake, the primary axis of any aero map, simply does not
+    happen. meshing.py already states the right criterion ("they move the CAR
+    relative to the ground plane, which the freestream cannot represent") and
+    then applied it to roll and ride height but not to pitch, which moves the car
+    relative to the road exactly as much.
+
+    Pitch is now applied to the GEOMETRY (see meshing._attitude_geometry_transform)
+    and the inlet carries YAW ONLY. Yaw legitimately stays here: the road is
+    symmetric about z, so yawing the body and yawing the flow remain equivalent.
+
+    CONSEQUENCE FOR ANYONE MESHING OUTSIDE KINEMATIK: the mesh handed to this
+    deck MUST already be built at the pitched attitude. If you mesh elsewhere and
+    do not pitch the geometry, rake is lost — the deck can no longer put it back.
+    The attitude is written into the deck header so this is auditable.
+
+    `pitch_deg` is still accepted so call sites do not change, and is asserted to
+    have been handled geometrically rather than silently dropped.
+    """
     v = speed_ms
     yaw = math.radians(yaw_deg)
-    pitch = math.radians(pitch_deg)
-    ux = v * math.cos(yaw) * math.cos(pitch)
+    ux = v * math.cos(yaw)
     uy = -v * math.sin(yaw)
-    uz = v * math.cos(yaw) * math.sin(pitch)
+    uz = 0.0
     return ux, uy, uz
 
 
