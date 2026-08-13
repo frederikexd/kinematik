@@ -572,9 +572,20 @@ def run_omnicore(hp: Hardpoints | None, mission: MissionSpec,
             continue
         say(f"InverseGenesis — shop '{shop}'…")
         try:
+            #  Pass the tolerance the user actually STATED, when they stated
+            #  one and we are running their own shop class. It was parsed out of
+            #  the brief into mission.shop_accuracy_mm, bucketed into a shop
+            #  class, and then never read again — so "±2 mm" silently became the
+            #  hand_weld preset's 1.5 mm. The other shop classes in this sweep
+            #  are counterfactuals ("what if we jigged it?"), so they correctly
+            #  keep their preset values; only the user's own class gets their
+            #  number.
             fld = ToleranceField.preset(
-                shop, weld_pull_mm=(mission.weld_pull_mm
-                                    if shop == mission.shop else 0.0))
+                shop,
+                weld_pull_mm=(mission.weld_pull_mm
+                              if shop == mission.shop else 0.0),
+                tab_accuracy_mm=(mission.shop_accuracy_mm
+                                 if shop == mission.shop else None))
             gen[shop] = ig.inverse_genesis(
                 hp, targets, vol, fld=fld,
                 n_starts=knobs.genesis_starts,

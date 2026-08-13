@@ -150,7 +150,12 @@ def test_anti_dive_flips_sign_when_geometry_is_mirrored():
     ad_bad = bad.anti_dive_pct(300.0, 1550.0, brake_bias_front=0.65)
     assert ad_good > 0, f"default geometry should be anti-dive, got {ad_good}%"
     assert ad_bad < 0, f"mirrored geometry is pro-dive, got {ad_bad}%"
-    assert abs(ad_good + ad_bad) < 1.0, "mirroring should flip sign, not magnitude"
+    #  Near-equal, NOT exactly equal. The idealised wishbone-line construction was
+    #  perfectly antisymmetric under this mirror; the real solved linkage is not,
+    #  because flipping the pickup z-stagger leaves caster, kingpin and the outer
+    #  points untouched. 26.22 vs -25.18 is the linkage being asymmetric, which it
+    #  is. The SIGN is the invariant; the magnitude is only approximately mirrored.
+    assert abs(abs(ad_good) - abs(ad_bad)) / abs(ad_good) < 0.10
 
 
 def test_default_anti_dive_matches_its_documented_value():
@@ -188,8 +193,23 @@ def test_anti_features_are_zero_on_flat_pickups():
     for k in ("lower_front_inner", "lower_rear_inner"):
         getattr(hp, k)[2] = 120.0
     kin = SuspensionKinematics(hp)
-    assert abs(kin.anti_dive_pct(300.0, 1550.0)) < 1e-6
-    assert abs(kin.anti_squat_pct(300.0, 1550.0)) < 1e-6
+    #  SMALL, not exactly zero. Flat pickups make the classic side-view swing arm
+    #  infinite, which is where "zero anti-dive" comes from — but the real carrier
+    #  still pitches a little as it travels (caster and kingpin see to that), so
+    #  the contact patch keeps a small longitudinal path slope and the true
+    #  anti-dive is a fraction of a percent rather than a hard zero. Deriving from
+    #  the solved path instead of the idealised construction is what surfaced it.
+    assert abs(kin.anti_dive_pct(300.0, 1550.0)) < 2.0
+    #  Anti-SQUAT does not collapse the same way, and that is correct: it is
+    #  measured at the WHEEL CENTRE, which still swings fore/aft with the arms
+    #  when the side-view arm is infinite. Only the contact-patch slope goes to
+    #  ~0 with flat pickups. The idealised construction hid this by giving both
+    #  the same infinite swing arm.
+    assert abs(kin.anti_squat_pct(300.0, 1550.0)) < 10.0
+    staggered = SuspensionKinematics(Hardpoints.default())
+    assert abs(kin.anti_dive_pct(300.0, 1550.0)) < \
+        0.1 * abs(staggered.anti_dive_pct(300.0, 1550.0)), \
+        "flat pickups must give far less anti-dive than a staggered set"
 
 
 def test_swing_arm_length_sign_agrees_with_anti_dive():
@@ -346,64 +366,76 @@ def test_air_density_is_consistent_across_modules():
 #      applied one tyre radius higher and no couple: P = the WHEEL CENTRE.
 #  That equivalence is the entire justification for the reference-point change,
 #  and it is arithmetic, not authority.
-def _anti_by_virtual_work(svic, P, Fx_sign, bias, wheelbase, cg_height):
-    """anti-effect %, from virtual work. `P` is (x, z) of the force's line of
-    action; `Fx_sign` is +1 when the longitudinal ground force acts rearward
-    (braking) and -1 when it acts forward (traction)."""
-    dx = svic[0] - P[0]
-    dz = svic[1] - P[1]
-    if abs(dx) < 1e-9:
+def _anti_by_virtual_work(kin, point_name, fx_sign, bias, wheelbase, cg_height,
+                          d=0.5):
+    """anti-effect %, from virtual work on the SOLVED path — no formula reused
+    from the module under test.
+
+    Q = Fz + Fx*S with S = d(x_P)/d(q), so the part of the axle's load transfer
+    that never reaches the spring is  anti = -Fx*S/dW.  `fx_sign` is +1 when the
+    longitudinal ground force acts rearward (braking) and -1 forward (traction);
+    that sign flip is why anti-dive and anti-squat respond OPPOSITELY to the same
+    path slope."""
+    up = kin.solve_at_travel(+d)
+    dn = kin.solve_at_travel(-d)
+    pu, pd = getattr(up, point_name), getattr(dn, point_name)
+    dz = pu[2] - pd[2]
+    if abs(dz) < 1e-12:
         return float("nan")
-    tan_phi = dz / dx
-    # Take m*a = 1 and g = 1: both Fx and dW scale with m*a, so it cancels.
-    Fx = Fx_sign * bias
-    dW = cg_height / wheelbase          # per unit m*a, the axle load transfer
-    return (Fx * tan_phi) / dW * 100.0
+    slope = (pu[0] - pd[0]) / dz
+    fx = fx_sign * bias                 # per unit m*a
+    dw = cg_height / wheelbase          # per unit m*a
+    return -(fx * slope) / dw * 100.0
 
 
 def test_anti_dive_agrees_with_a_virtual_work_derivation():
     L, h, bias = 1550.0, 300.0, 0.65
     for hp in (Hardpoints.default(), _mirror_stagger(Hardpoints.default())):
         kin = SuspensionKinematics(hp)
-        svic = kin._side_view_swing_arm()
-        cp = kin.static.contact_patch
-        # Braking: ground force acts rearward (+x in this SAE frame).
-        vw = _anti_by_virtual_work(svic, (cp[0], cp[2]), +1.0, bias, L, h)
+        vw = _anti_by_virtual_work(kin, "contact_patch", +1.0, bias, L, h)
         closed = kin.anti_dive_pct(h, L, brake_bias_front=bias)
         assert abs(vw - closed) < 1e-6, \
-            f"anti-dive: virtual work {vw:.3f}% vs formula {closed:.3f}%"
+            f"anti-dive: virtual work {vw:.4f}% vs {closed:.4f}%"
 
 
 def test_anti_squat_agrees_with_a_virtual_work_derivation():
     L, h, bias = 1550.0, 300.0, 1.0
     for hp in (Hardpoints.default(), _mirror_stagger(Hardpoints.default())):
         kin = SuspensionKinematics(hp)
-        svic = kin._side_view_swing_arm()
-        wc = kin.static.wheel_center
-        # Traction: ground force acts forward (-x). Reference point is the wheel
-        # centre because the chassis reacts the drive torque.
-        vw = _anti_by_virtual_work(svic, (wc[0], wc[2]), -1.0, bias, L, h)
+        vw = _anti_by_virtual_work(kin, "wheel_center", -1.0, bias, L, h)
         closed = kin.anti_squat_pct(h, L, drive_bias_rear=bias)
         assert abs(vw - closed) < 1e-6, \
-            f"anti-squat: virtual work {vw:.3f}% vs formula {closed:.3f}%"
+            f"anti-squat: virtual work {vw:.4f}% vs {closed:.4f}%"
 
 
-def test_reference_point_choice_is_what_distinguishes_the_two():
-    """Guard against 'both formulas agree because both are wrong the same way':
-    evaluating anti-squat at the CONTACT PATCH (the solid-axle construction)
-    must give a materially DIFFERENT answer from the wheel-centre one. If these
-    ever coincide, the reference-point fix has been silently undone."""
+def test_native_and_generic_solvers_agree_on_the_same_car():
+    """adapter.GenericKinematics and SuspensionKinematics are two paths to one
+    number, and topologies.example('double_wishbone') is now literally
+    Hardpoints.default(). A user switching topology must not see the physics
+    change under them — they disagreed by 26% on anti-squat because each used a
+    different pair of carrier points to build a side-view instant centre that,
+    for a non-planar linkage, is not a shared object at all."""
+    from suspension.adapter import GenericKinematics
+    from suspension.topologies import example
+    n = SuspensionKinematics(Hardpoints.default())
+    g = GenericKinematics(example("double_wishbone"))
+    L, h = 1550.0, 300.0
+    assert abs(n.anti_dive_pct(h, L, 0.65) - g.anti_dive_pct(h, L, 0.65)) < 1e-3
+    assert abs(n.anti_squat_pct(h, L, 1.0) - g.anti_squat_pct(h, L, 1.0)) < 1e-3
+    assert abs(n.static.camber - g.static.camber) < 1e-6
+
+
+def test_anti_dive_and_anti_squat_respond_oppositely_to_path_slope():
+    """Not a convention: braking pushes the contact patch rearward and traction
+    pulls it forward, so the SAME path slope gives opposite anti-effects. If
+    these two ever share a sign convention, one of them is wrong."""
     kin = SuspensionKinematics(Hardpoints.default())
-    svic = kin._side_view_swing_arm()
-    wc, cp = kin.static.wheel_center, kin.static.contact_patch
-    at_wc = _anti_by_virtual_work(svic, (wc[0], wc[2]), -1.0, 1.0, 1550.0, 300.0)
-    at_cp = _anti_by_virtual_work(svic, (cp[0], cp[2]), -1.0, 1.0, 1550.0, 300.0)
-    assert abs(at_wc - at_cp) > 10.0, (
-        f"wheel-centre {at_wc:.1f}% vs contact-patch {at_cp:.1f}% — the tyre "
-        f"radius must matter, or the reference point is not being applied")
-    # And they land on OPPOSITE sides here, which is exactly why the original
-    # contact-patch version was not merely inaccurate but sign-wrong.
-    assert (at_wc > 0) != (at_cp > 0)
+    s_cp = kin._path_slope_xz("contact_patch")
+    s_wc = kin._path_slope_xz("wheel_center")
+    ad = kin.anti_dive_pct(300.0, 1550.0, 0.65)
+    asq = kin.anti_squat_pct(300.0, 1550.0, 1.0)
+    assert abs(ad - (-0.65 * s_cp * 1550.0 / 300.0 * 100.0)) < 1e-6
+    assert abs(asq - (+1.0 * s_wc * 1550.0 / 300.0 * 100.0)) < 1e-6
 
 
 # ============================================================================ #
@@ -1211,3 +1243,382 @@ def test_cooling_reports_both_the_conservative_and_mean_ua():
     assert r.required_ua_w_per_k > ua_mean, "cold-end UA must be the larger one"
     assert any(f"{ua_mean:.0f} W/K" in n for n in r.notes), \
         "the less-conservative mean-temperature UA is not reported anywhere"
+
+
+def test_a_stated_tolerance_beats_a_preset():
+    """omnicore parses a stated tolerance out of the brief ("±2 mm"), buckets it
+    into a shop CLASS, and nothing read the parsed number again — so a team that
+    told the tool ±2.0 mm had their Monte Carlo run at the hand_weld preset's
+    1.5 mm. Their own figure discarded in favour of a representative one, and in
+    the optimistic direction. A stated tolerance is better evidence than any
+    preset, so it wins, and the provenance has to say which one was used."""
+    from suspension.kinematik_stochastic import ToleranceField
+    preset = ToleranceField.preset("hand_weld")
+    stated = ToleranceField.preset("hand_weld", tab_accuracy_mm=2.0)
+    assert preset.specs["upper_front_inner"].hi[0] == pytest.approx(1.5)
+    assert stated.specs["upper_front_inner"].hi[0] == pytest.approx(2.0)
+    assert "preset" in preset.provenance.lower()
+    assert "stated" in stated.provenance.lower()
+    # The machined outers still come from the shop class — welding tolerance
+    # says nothing about how well the upright was cut.
+    assert stated.specs["upper_outer"].hi[0] == preset.specs["upper_outer"].hi[0]
+    # Neither is inspection data, and neither may claim to be.
+    assert not preset.calibrated and not stated.calibrated
+
+
+def test_both_roll_centre_implementations_agree_including_the_degenerate_case():
+    """dynamics.roll_center_height and ghost_topology._rc_height_mm are the same
+    formula written twice. They matched everywhere except the branch nobody
+    looks at: with the IC directly above the contact patch the line cp->IC is
+    vertical and never reaches the centreline, so the roll centre is at infinity.
+    ghost returned NaN; dynamics returned contact-patch height — roughly 0 mm,
+    which is not a degenerate marker but a popular design target, so it reads as
+    a real answer.
+
+    That mattered more than a cosmetic disagreement: lateral_load_transfer
+    already tests isfinite() on this value and falls back to a documented
+    default. A finite lie is the one thing that slips past a guard built for
+    exactly this case."""
+    np_ = pytest.importorskip("numpy")
+    from suspension.dynamics import VehicleDynamics, VehicleParams
+    from suspension.ghost_topology import _rc_height_mm
+    kin = SuspensionKinematics(Hardpoints.default())
+    veh = VehicleDynamics(VehicleParams())
+    for travel in (-25.0, -10.0, 0.0, 10.0, 25.0):
+        st = kin.solve_at_travel(travel)
+        assert abs(veh.roll_center_height(kin, 1200.0, state=st)
+                   - _rc_height_mm(st, 1200.0)) < 1e-9
+
+    class _Degenerate:
+        # IC directly above the contact patch -> vertical line -> RC at infinity
+        instant_center = np_.array([600.0, 400.0])
+        contact_patch = np_.array([0.0, 600.0, 0.0])
+        wheel_center = np_.array([0.0, 600.0, 228.0])
+        travel = 0.0
+
+    st = _Degenerate()
+    assert not np_.isfinite(veh.roll_center_height(kin, 1200.0, state=st)), \
+        "a vertical cp->IC line has no finite roll centre; it must not return 0"
+    assert not np_.isfinite(_rc_height_mm(st, 1200.0))
+
+
+def test_laptime_normalises_lateral_demand_by_the_limit_at_speed():
+    """Downforce raises what the car can corner at, so in a fast corner the
+    lateral demand legitimately EXCEEDS the aero-free grip. Dividing by the
+    aero-free figure gave frac_lat > 1, which clamps to 1.0 and zeroes the
+    longitudinal capability outright.
+
+    At 30 m/s and 80% of the car's real lateral limit this returned NEGATIVE
+    acceleration — only drag left — while the GGV offered +0.38 g. The lap solver
+    believed the car could neither accelerate nor brake in any fast corner."""
+    from suspension.dynamics import VehicleParams, VehicleDynamics
+    from suspension import laptime as lt
+
+    class _T:
+        ell_kx = ell_ky = 2.0
+        mu_x_ratio = 1.25
+
+    veh = VehicleDynamics(VehicleParams())
+    pt = lt.Powertrain()
+    pt.combined_tire = _T()
+    mu = lt._max_lat_g(veh)
+    m, g = veh.p.mass, 9.81
+
+    for v in (20.0, 30.0):
+        f_down = 0.5 * pt.rho * max(pt.cla, 0.0) * v * v
+        lat_lim = mu * (1.0 + f_down / (m * g))
+        assert lat_lim > mu, "test is vacuous without downforce"
+        # 80% of the REAL limit must leave real longitudinal capability
+        a = lt._accel_long(veh, v, pt, mu, 0.80 * lat_lim) / g
+        d = lt._decel_long(veh, v, pt, mu, 0.80 * lat_lim) / g
+        assert a > 0.0, f"accel at {v} m/s in a fast corner came out {a:.3f} g"
+        assert d > 0.0, f"braking at {v} m/s in a fast corner came out {d:.3f} g"
+        # and at the limit itself, longitudinal grip goes to zero, not negative
+        a_lim = lt._accel_long(veh, v, pt, mu, lat_lim) / g
+        assert a_lim <= a
+
+
+def test_power_limited_accel_does_not_shrink_with_lateral_demand():
+    """A friction ellipse constrains GRIP, not the motor. When the car is
+    power-limited the available tractive force does not fall because it is also
+    cornering — the correct combination is min(power, grip * ellipse), not
+    min(power, grip) * ellipse.
+
+    laptime gets this right: at 20 and 30 m/s its acceleration is flat against
+    lateral demand because power is binding. ggv.GGVGenerator applies the
+    superellipse to its already-min'd axis limit, so it double-penalises and
+    reads up to 43% low in the interior at high speed. This test pins the
+    correct behaviour and documents the remaining GGV discrepancy — the envelope
+    INTERIOR is still unreconciled, and validate_against_laptime only ever
+    compared the three axes."""
+    from suspension.dynamics import VehicleParams, VehicleDynamics
+    from suspension import laptime as lt
+    class _T:
+        ell_kx = ell_ky = 2.0
+        mu_x_ratio = 1.25
+
+    veh = VehicleDynamics(VehicleParams())
+    pt = lt.Powertrain()
+    #  The combined tyre lifts the grip ceiling above the power cap at these
+    #  speeds, which is what puts the car in the power-limited regime this test
+    #  is about. Without it the car is grip-limited and the ellipse SHOULD bite.
+    pt.combined_tire = _T()
+    mu = lt._max_lat_g(veh)
+    for v in (20.0, 30.0):
+        flat = [lt._accel_long(veh, v, pt, mu, f * mu) / 9.81 for f in (0.0, 0.3, 0.5)]
+        assert max(flat) - min(flat) < 1e-6, \
+            f"power-limited accel at {v} m/s varied with lateral demand: {flat}"
+
+    #  Control: grip-limited (no mu_x_ratio headroom) MUST fall with lateral use.
+    plain = lt.Powertrain()
+    grip_limited = [lt._accel_long(veh, 20.0, plain, mu, f * mu) / 9.81
+                    for f in (0.0, 0.3, 0.5)]
+    assert grip_limited[0] > grip_limited[-1], \
+        "grip-limited acceleration must fall as lateral demand rises"
+
+
+def test_ggv_and_laptime_agree_across_the_envelope_INTERIOR():
+    """The pre-existing validate_against_laptime compares the three AXES and
+    passed, while the two models disagreed by 43% two degrees off them. A
+    cross-check is only as good as the region it samples.
+
+    Two separate causes, both now fixed:
+      * the GGV applied the friction ellipse to its already-min'd axis limit, so
+        a power-limited car lost tractive force for cornering. An ellipse
+        constrains GRIP; the motor and the brake ceiling are unaffected. Correct
+        form is min(cap, grip * ellipse), not min(cap, grip) * ellipse.
+      * laptime scaled the lateral limit linearly with downforce. Tyre mu falls
+        with load, so that overstates it — 4.9% at 30 m/s. laptime now asks the
+        same load-sensitive routine the GGV uses.
+    """
+    np_ = pytest.importorskip("numpy")
+    from suspension.dynamics import VehicleParams, VehicleDynamics
+    from suspension import laptime as lt
+    from suspension.ggv import GGVGenerator, GGVParams
+
+    class _T:
+        ell_kx = ell_ky = 2.0
+        mu_x_ratio = 1.25
+
+    veh = VehicleDynamics(VehicleParams())
+    pt = lt.Powertrain()
+    pt.combined_tire = _T()
+    gp = GGVParams.from_powertrain(pt)
+    gp.combined_tire = _T()
+    speeds = [10.0, 20.0, 30.0]
+    res = GGVGenerator(veh, gp).generate(speeds=speeds, n_dir=361)
+    mu = lt._max_lat_g(veh)
+
+    worst = 0.0
+    for i, v in enumerate(speeds):
+        forward = [j for j in range(len(res.theta)) if res.long_g[i][j] > 0]
+        for frac in (0.3, 0.5, 0.8, 0.95):
+            target = frac * res.max_lat_g[i]
+            j = min(forward, key=lambda j: abs(res.lat_g[i][j] - target))
+            lon, lat = res.long_g[i][j], res.lat_g[i][j]
+            lap = lt._accel_long(veh, v, pt, mu, lat) / 9.81
+            assert lap > 0.0, (
+                f"laptime gives no forward capability at {v} m/s, {lat:.3f} g "
+                f"lateral — inside the car's own envelope")
+            worst = max(worst, abs(lon / lap - 1.0))
+    assert worst < 0.01, f"envelope interior disagrees by {worst * 100:.1f}%"
+
+
+# ============================================================================ #
+#  PREVIOUSLY UNAUDITED: flex (beam FE), lapsim (third lap solver)
+# ============================================================================ #
+def test_beam_element_reproduces_every_closed_form():
+    """flex._beam_local_K is the structural core, and a 12-DOF Euler-Bernoulli
+    element has four exact closed forms plus two structural invariants. Either it
+    matches all six or it is not a beam element."""
+    np_ = pytest.importorskip("numpy")
+    from suspension.flex import _beam_local_K
+    E, G = 205000.0, 79000.0
+    A, Iy, Iz, L = 147.03, 10136.7, 10136.7, 500.0
+    J = 2.0 * Iz
+    K = _beam_local_K(E, G, A, Iy, Iz, J, L)
+
+    assert K.shape == (12, 12)
+    assert np_.allclose(K, K.T, atol=1e-9), "stiffness matrix must be symmetric"
+    w = np_.linalg.eigvalsh(K)
+    n_zero = int(np_.sum(np_.abs(w) < 1e-6 * max(abs(w))))
+    assert n_zero == 6, (
+        f"a free beam element has exactly 6 rigid-body modes, found {n_zero} — "
+        f"fewer means a spurious constraint, more means a mechanism")
+
+    free = list(range(6, 12))                     # cantilever: fix node 1
+    Kff = K[np_.ix_(free, free)]
+    P = 1000.0
+
+    def tip(dof):
+        f = np_.zeros(6)
+        f[dof] = P
+        return np_.linalg.solve(Kff, f)[dof]
+
+    assert abs(tip(2) - P * L ** 3 / (3 * E * Iy)) < 1e-9   # bending, PL^3/3EI
+    assert abs(tip(1) - P * L ** 3 / (3 * E * Iz)) < 1e-9
+    assert abs(tip(0) - P * L / (A * E)) < 1e-12            # axial, PL/AE
+    assert abs(tip(3) - P * L / (G * J)) < 1e-14            # torsion, TL/GJ
+
+
+def test_lapsim_brake_cap_is_a_cap_not_a_grip_coefficient():
+    """`brake_g` is defined as "max decel the brakes+tires can sustain" — a
+    ceiling. Multiplying it by the downforce factor (1 + Fz_aero/mg), which is
+    what you do to a GRIP limit, walks straight through the ceiling it exists to
+    impose: 1.6 g became 2.35 g at 30 m/s, 2.57 g with drag and rolling. FSAE
+    cars brake at 1.5-1.8 g.
+
+    Grip scales with downforce; a mechanical ceiling does not. Same shape as the
+    GGV interior defect."""
+    from suspension.lapsim import LapSimulator, LapSimParams
+    p = LapSimParams()
+    sim = LapSimulator(p)
+    for v in (5.0, 15.0, 25.0, 35.0):
+        a_g = sim._braking_decel(v) / p.g
+        f_down = 0.5 * p.rho * p.cl_a * v * v
+        drag_g = (0.5 * p.rho * p.cd_a * v * v) / p.mass / p.g
+        ceiling = p.brake_g + drag_g + p.rolling_g
+        assert a_g <= ceiling + 1e-6, (
+            f"{a_g:.3f} g at {v} m/s exceeds the {p.brake_g} g brake ceiling "
+            f"plus drag and rolling ({ceiling:.3f} g)")
+        assert a_g > 0.0
+    # Downforce must still help via drag, so decel rises with speed.
+    assert sim._braking_decel(35.0) > sim._braking_decel(5.0)
+
+
+def test_throttle_compressible_flow_matches_the_textbook_choked_form():
+    """Isentropic flow through the plate sets everything downstream in the
+    throttle-response model. Two exact checks: the choked mass flow has a closed
+    form, and past the critical pressure ratio the flow must PLATEAU rather than
+    keep rising — the classic error is forgetting to clamp at the critical
+    ratio, which makes flow grow without bound as manifold pressure falls."""
+    from suspension.throttle_dynamics import compressible_mass_flow, GAMMA, R_AIR
+    p_up, T, A, cd = 101325.0, 293.0, 0.002, 0.75
+    ref = (cd * A * p_up * math.sqrt(GAMMA / (R_AIR * T))
+           * (2.0 / (GAMMA + 1.0)) ** ((GAMMA + 1.0) / (2.0 * (GAMMA - 1.0))))
+    assert abs(compressible_mass_flow(A, p_up, 1000.0, T, cd) / ref - 1.0) < 1e-9
+
+    crit = (2.0 / (GAMMA + 1.0)) ** (GAMMA / (GAMMA - 1.0))
+    plateau = [compressible_mass_flow(A, p_up, f * p_up, T, cd)
+               for f in (crit, 0.4, 0.2, 0.05)]
+    assert max(plateau) - min(plateau) < 1e-12, "flow must plateau once choked"
+    rising = [compressible_mass_flow(A, p_up, f * p_up, T, cd)
+              for f in (0.99, 0.9, 0.7, 0.6)]
+    assert all(b > a for a, b in zip(rising, rising[1:])), \
+        "below choking, flow must rise as downstream pressure falls"
+    assert compressible_mass_flow(A, p_up, p_up, T, cd) == 0.0
+
+
+def test_pcm_effective_cp_conserves_latent_heat():
+    """The enthalpy method smears latent heat into an effective specific heat
+    across the melt window. Integrating that bump back out must return the
+    declared latent heat — otherwise the PCM silently absorbs more or less energy
+    than the material datasheet says it can, which is the entire point of
+    fitting one."""
+    np_ = pytest.importorskip("numpy")
+    from suspension.pcm_cooling import PCMMaterial
+    m = PCMMaterial()
+    lo = m.t_melt_c - 0.5 * m.melt_window_c
+    hi = m.t_melt_c + 0.5 * m.melt_window_c
+    T = np_.linspace(lo, hi, 200001)
+    cp = np_.array([m.effective_cp_j_per_gk(t) for t in T])
+    sensible = 0.5 * (m.cp_solid_j_per_gk + m.cp_liquid_j_per_gk)
+    recovered = float(np_.trapezoid(cp - sensible, T))
+    assert abs(recovered / m.latent_heat_j_per_g - 1.0) < 1e-3, (
+        f"cp curve integrates to {recovered:.2f} J/g against a declared "
+        f"{m.latent_heat_j_per_g:.2f} J/g")
+    # Outside the window it must fall back to the plain sensible values.
+    assert abs(m.effective_cp_j_per_gk(lo - 20.0) - m.cp_solid_j_per_gk) < 1e-9
+    assert abs(m.effective_cp_j_per_gk(hi + 20.0) - m.cp_liquid_j_per_gk) < 1e-9
+
+
+# ============================================================================ #
+#  PROVENANCE PROPAGATION
+# ============================================================================ #
+def test_objective_grade_is_weakest_load_bearing_input():
+    """`aggregate()` combined values and dropped grades, so an objective came
+    out as a bare float: the uncertainty BAND survived but the pedigree did not.
+    Those answer different questions — a band says how far the answer might
+    move, a grade says whether anything measured is behind it at all. A lap time
+    built from a guessed mass is not a modelled lap time with a wide band, it is
+    a guess.
+
+    Two properties have to hold together, and they pull against each other:
+      * weakest link — good evidence must not launder bad, so a channel is only
+        as good as its worst contributor;
+      * load-bearing only — a badly-known input the objective never reads must
+        NOT downgrade it, or every output ends up stamped GUESS and the badge
+        stops carrying information.
+    """
+    import suspension.proof_engine as pe
+    from suspension.proof_engine import Quantity as Q, EvidenceGrade as G
+
+    obj = [o for o in pe.DEFAULT_OBJECTIVES if "lap" in o.key][0]
+
+    def build(pt_grade, cla_grade=G.GUESS):
+        return [
+            Q("m_chassis", "chassis", "mass_kg", "Chassis", 32.0, "kg", G.MEASURED),
+            Q("m_pt", "powertrain", "mass_kg", "Powertrain", 58.0, "kg", pt_grade),
+            Q("m_driver", "driver", "mass_kg", "Driver", 68.0, "kg", G.VERIFIED),
+            Q("cla", "aero", "cl_a", "ClA", 2.4, "m2", cla_grade),
+        ]
+
+    # 1. the answer tracks the weakest LOAD-BEARING input, monotonically
+    seen = []
+    for g in (G.VERIFIED, G.MEASURED, G.MODELLED, G.ESTIMATE, G.GUESS):
+        rep = pe.analyze_objective(obj, build(g))
+        seen.append(rep.grade.rank)
+        assert "mass_kg" in rep.limited_by
+    assert seen == sorted(seen, reverse=True), \
+        f"answer grade must fall as the input grade falls, got {seen}"
+
+    # 2. mass is summed across subsystems: one GUESS contributor makes the whole
+    #    channel a guess, however good the others are. No laundering.
+    grades = pe.aggregate_grades(build(G.GUESS))
+    assert grades["mass_kg"] == G.GUESS
+
+    # 3. a GUESS the objective is insensitive to must NOT downgrade the answer
+    rep = pe.analyze_objective(obj, build(G.MEASURED, cla_grade=G.GUESS))
+    assert rep.grade == G.MEASURED, (
+        "a guessed input with no influence on the objective downgraded it; the "
+        "badge stops meaning anything if everything reads GUESS")
+
+    # 4. every report carries a grade — it cannot be forgotten
+    assert isinstance(rep.grade, G) and rep.limited_by
+
+
+def test_grade_never_launders_through_aggregation():
+    """The specific dishonesty guarded against: averaging grades would let three
+    measured subsystems carry a guessed fourth."""
+    import suspension.proof_engine as pe
+    from suspension.proof_engine import Quantity as Q, EvidenceGrade as G
+    qs = [Q(f"m{i}", f"s{i}", "mass_kg", f"S{i}", 20.0, "kg", g)
+          for i, g in enumerate((G.VERIFIED, G.MEASURED, G.MEASURED, G.GUESS))]
+    assert pe.aggregate_grades(qs)["mass_kg"] == G.GUESS
+
+
+def test_proof_plan_headline_carries_its_grade():
+    """The current-answer line is the one sentence a reader quotes out of the
+    proof plan. It used to print identically whether every input was measured on
+    the car or guessed in a meeting. It now carries the grade AND the limiting
+    channel, because the limiting channel is the actionable half."""
+    import suspension.proof_engine as pe
+    from suspension.proof_engine import Quantity as Q, EvidenceGrade as G
+
+    obj = [o for o in pe.DEFAULT_OBJECTIVES if "lap" in o.key][0]
+
+    def plan_line(pt_grade):
+        qs = [Q("m_chassis", "chassis", "mass_kg", "Chassis", 32.0, "kg", G.MEASURED),
+              Q("m_pt", "powertrain", "mass_kg", "Powertrain", 58.0, "kg", pt_grade),
+              Q("m_driver", "driver", "mass_kg", "Driver", 68.0, "kg", G.VERIFIED)]
+        rep = pe.analyze_objective(obj, qs)
+        plan = pe.plan_proofs(obj, qs)
+        return pe.render_proof_plan_md(plan, rep)
+
+    weak = plan_line(G.GUESS)
+    strong = plan_line(G.MEASURED)
+    assert "guess" in weak and "limited by mass_kg" in weak
+    assert "measured" in strong
+    assert weak != strong, "the headline must change when the evidence changes"
+    # The uncertainty band and the grade are separate signals and both must show.
+    assert "±" in weak

@@ -303,14 +303,33 @@ class LapSimulator:
             self._warn("Tractive-accel evaluation failed at a point; used 0 there.")
             return 0.0
 
-    def _braking_decel(self, v: float) -> float:
-        """Max decel (positive m/s^2) at speed v, aided by aero drag+downforce."""
+    def _braking_decel(self, v: float, mu: float | None = None) -> float:
+        """Max decel (positive m/s^2) at speed v, aided by aero drag+downforce.
+
+        BRAKE_G IS A CAP, NOT A GRIP COEFFICIENT. Its own definition says "max
+        decel the brakes+tires can sustain" — a ceiling. It used to be MULTIPLIED
+        by the downforce factor (1 + Fz_aero/mg), which is what you would do to a
+        grip limit, and that walks straight through the ceiling it exists to
+        impose: at 30 m/s with ClA 2.5 the factor is 1.47, turning 1.6 g into
+        2.35 g and, with drag and rolling added, 2.57 g total. FSAE cars brake at
+        about 1.5-1.8 g. The solver was handing itself decel no brake system on
+        the car could produce, at exactly the speeds where braking dominates lap
+        time.
+
+        Same shape as the GGV interior defect: a load-dependent scale applied to
+        a limit that is not load-dependent. Grip scales with downforce; a
+        mechanical ceiling does not. So they are computed separately and the
+        lesser wins — min(cap, grip) — which is what laptime._decel_long does.
+        """
         p = self.p
         try:
             v = max(v, p.V_MIN)
             Fz_aero = 0.5 * p.rho * p.cl_a * v * v
-            # tire braking limited by brake_g scaled by downforce-augmented load
-            a_tire = p.brake_g * p.g * (1.0 + Fz_aero / max(p.mass * p.g, 1.0))
+            # grip-limited decel DOES rise with downforce...
+            mu_eff = float(mu) if (mu is not None and mu > 0) else p.brake_g
+            a_grip = mu_eff * p.g * (1.0 + Fz_aero / max(p.mass * p.g, 1.0))
+            # ...the mechanical ceiling does NOT.
+            a_tire = min(a_grip, p.brake_g * p.g)
             F_drag = 0.5 * p.rho * p.cd_a * v * v
             a = a_tire + F_drag / p.mass + p.rolling_g * p.g
             return float(a if np.isfinite(a) and a > 0 else p.brake_g * p.g)
@@ -377,13 +396,13 @@ class LapSimulator:
             for _wrap in range(2 if track.closed else 1):
                 for i in rng:
                     ds = max(dist[i + 1] - dist[i], 1e-6)
-                    a = self._braking_decel(v_bwd[i + 1])
+                    a = self._braking_decel(v_bwd[i + 1], mu_local[i + 1])
                     v_prev = math.sqrt(max(v_bwd[i + 1] ** 2 + 2.0 * a * ds, 0.0))
                     v_bwd[i] = min(v_bwd[i], v_prev, v_cap[i])
                 if track.closed:
                     # couple lap end to lap start
                     ds = max(dist[1] - dist[0], 1e-6)
-                    a = self._braking_decel(v_bwd[0])
+                    a = self._braking_decel(v_bwd[0], mu_local[0])
                     wrap_v = math.sqrt(max(v_bwd[0] ** 2 + 2.0 * a * ds, 0.0))
                     v_bwd[-1] = min(v_bwd[-1], wrap_v)
 

@@ -216,7 +216,23 @@ class VehicleDynamics:
         dy = ic[0] - cp_y
         dz = ic[1] - cp_z
         if abs(dy) < 1e-9:
-            return cp_z
+            #  DEGENERATE, NOT ZERO. With the IC directly above the contact patch
+            #  the line cp->IC is vertical at y = cp_y, and a vertical line never
+            #  reaches the centreline unless the patch is already on it. The roll
+            #  centre is at infinity; there is no finite answer.
+            #
+            #  Returning cp_z instead reported it as contact-patch height — call
+            #  it 0 mm — which is not a degenerate marker, it is a legitimate and
+            #  popular design target. A team would have read "0 mm roll centre"
+            #  and believed it. Worse, lateral_load_transfer already tests
+            #  isfinite() on this value and falls back to a documented default,
+            #  so a finite lie is the one thing that slips past the guard that
+            #  exists for exactly this case.
+            #
+            #  ghost_topology.roll_center_height_from_state — the other copy of
+            #  this formula — returned NaN here all along. The two disagreed only
+            #  in the degenerate branch, which is precisely where nobody looks.
+            return np.nan
         slope = dz / dy
         rc_z = cp_z + slope * (0.0 - cp_y)
         return float(rc_z)

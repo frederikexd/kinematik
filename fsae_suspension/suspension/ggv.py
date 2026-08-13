@@ -310,10 +310,42 @@ class GGVGenerator:
             F_drag = self._aero_drag(v)
             F_roll = gg.rolling_resist * (W + df)
             a = (F_drive - F_drag - F_roll) / p.mass
+            #  Stash the two limits separately for the combined-slip sweep. A
+            #  friction ellipse constrains GRIP, not the motor, so the interior of
+            #  the envelope needs them apart: see _combined_long_g.
+            self._last_accel_parts = (F_traction, F_power, F_drag, F_roll)
             return float(max(a, 0.0) / gg.g)
         except Exception:
             self._warn("Accel-g evaluation failed at a point; used 0 there.")
             return 0.0
+
+    def _combined_long_g(self, parts, mass, g, ellipse_frac: float) -> float:
+        """Longitudinal g still available with `ellipse_frac` of the grip budget
+        left after lateral use.
+
+        THE ELLIPSE CONSTRAINS GRIP, NOT THE MOTOR — and not the brake ceiling
+        either. The available longitudinal force is
+
+            F = min(power_or_cap, grip * ellipse_frac) - drag - rolling
+
+        not  min(power_or_cap, grip) * ellipse_frac,  which is what the ray sweep
+        used to do by scaling the already-min'd axis limit. Those differ exactly
+        when the axis limit is set by something other than grip: a power-limited
+        car does not lose tractive force because it is also cornering, and a
+        brake-ceiling-limited car does not lose brake torque either.
+
+        It read up to 43% low in the interior at 30 m/s, where an FSAE car is
+        firmly power-limited, while laptime._accel_long had it right — flat
+        against lateral demand once power binds. The two models agreed on the
+        three axes that validate_against_laptime samples and diverged two degrees
+        off them, which is why the existing cross-check never saw it.
+
+        Drag and rolling resistance are subtracted AFTER the min, since they act
+        regardless of how the longitudinal force was limited.
+        """
+        f_grip, f_cap, f_drag, f_roll = parts
+        f_long = min(f_cap, f_grip * max(ellipse_frac, 0.0))
+        return float(max(f_long - f_drag - f_roll, 0.0) / mass / g)
 
     def _max_brake_g_at_speed(self, v: float, mu_lat: float) -> float:
         """
@@ -332,14 +364,20 @@ class GGVGenerator:
             W = p.mass * p.g
             Fz_total = W + df
             mu_long = mu_lat * self._mu_x_ratio()
-            F_tire = mu_long * Fz_total
+            F_grip = mu_long * Fz_total
             # mechanical brake ceiling (grip-limited below it), like Powertrain
-            F_tire = min(F_tire, gg.brake_g_cap * W)
+            F_cap = gg.brake_g_cap * W
+            F_tire = min(F_grip, F_cap)
             F_drag = self._aero_drag(v)
             # Match laptime._decel_long: braking decel is (tire + drag)/m. Rolling
             # resistance is omitted on the brake side there (it's a second-order
             # help), so we omit it too to keep the two models consistent.
             a = (F_tire + F_drag) / p.mass
+            #  Grip and the mechanical ceiling kept apart for the combined-slip
+            #  sweep: the ellipse eats grip, never the brake ceiling. Drag is
+            #  stored NEGATED because on the brake side it helps. Rolling
+            #  resistance is deliberately absent, matching laptime._decel_long.
+            self._last_brake_parts = (F_grip, F_cap, -F_drag, 0.0)
             return float(max(a, 0.0) / gg.g)
         except Exception:
             self._warn("Brake-g evaluation failed at a point; used 0 there.")
@@ -397,6 +435,7 @@ class GGVGenerator:
         """
         self.warnings = []
         gg = self.g
+        p = self.p          # needed by the interior sweep's _combined_long_g call
         if speeds is None:
             top = min(gg.V_MAX, 38.0)
             speeds = np.linspace(5.0, top, 12)
@@ -409,6 +448,11 @@ class GGVGenerator:
         max_lat = np.zeros(S)
         max_acc = np.zeros(S)
         max_brk = np.zeros(S)
+
+        #  Cleared per build: these are filled by the axis-limit calls below and
+        #  read by the interior sweep. Stale values would silently mix speeds.
+        self._last_accel_parts = (0.0, 0.0, 0.0, 0.0)
+        self._last_brake_parts = (0.0, 0.0, 0.0, 0.0)
 
         # combined-slip ellipse exponents from the calibrated tire (2 = circle)
         ct = gg.combined_tire
@@ -457,8 +501,18 @@ class GGVGenerator:
                 else:
                     # f(r) = a_term*r^kx + b_term*r^ky - 1 = 0, monotone in r>0
                     r = self._solve_superellipse_radius(a_term, b_term, kx, ky)
-                lon = r * c
                 lat = abs(r * s)             # symmetric L/R
+                #  The ray solve gives the FRACTION of the grip budget left for
+                #  longitudinal use; converting it to a g figure has to respect
+                #  which limit is actually binding. Scaling the axis limit
+                #  directly (lon = r * c) silently applied the friction ellipse
+                #  to the power cap and the brake ceiling as well as to grip.
+                #  See _combined_long_g.
+                frac = abs(c) * r / lon_lim if lon_lim > 1e-6 else 0.0
+                parts = (self._last_accel_parts if c >= 0
+                         else self._last_brake_parts)
+                mag = self._combined_long_g(parts, p.mass, gg.g, frac)
+                lon = mag if c >= 0 else -mag
                 long_g[i, j] = lon
                 lat_g[i, j] = lat
 

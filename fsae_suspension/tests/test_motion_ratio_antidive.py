@@ -93,7 +93,18 @@ def test_flat_pickups_give_zero_anti_dive():
     for k in ("lower_front_inner", "lower_rear_inner"):
         getattr(hp, k)[2] = 120.0
     kin = SuspensionKinematics(hp)
-    assert abs(kin.anti_dive_pct(300.0, 1550.0)) < 1e-6
+    #  Near zero, not exactly zero. This asserted 1e-6 against the idealised
+    #  wishbone-line construction, where flat pickups make the side-view swing
+    #  arm infinite by definition. anti_dive_pct now comes from the contact
+    #  patch's SOLVED path, and the real carrier still pitches slightly as it
+    #  travels (caster, kingpin), leaving a few tenths of a percent. The
+    #  invariant that matters is that flat pickups give an order of magnitude
+    #  less anti-dive than a staggered set.
+    flat = abs(kin.anti_dive_pct(300.0, 1550.0))
+    staggered = abs(SuspensionKinematics(Hardpoints.default())
+                    .anti_dive_pct(300.0, 1550.0))
+    assert flat < 2.0
+    assert flat < 0.1 * staggered
 
 
 def test_anti_dive_scales_with_brake_bias():

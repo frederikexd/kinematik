@@ -262,6 +262,42 @@ def _safe_lap(distance=0.0, warning="calculation unavailable") -> LapResult:
 _FALLBACK_LAT_G = 1.4
 
 
+def _lat_limit_at_speed(veh: VehicleDynamics, pt, v: float,
+                        max_lat_g: float) -> float:
+    """Peak lateral g available at speed v, with aero downforce included.
+
+    Delegates to ggv.GGVGenerator._max_lateral_g_at_speed, which bisects the REAL
+    load-transfer + tyre chain with the downforce folded into vertical load. That
+    matters because tyre mu FALLS with load: doubling Fz does not double grip, so
+    the naive linear scale  mu * (1 + F_down/mg)  overstates the limit — by 2.8%
+    at 20 m/s and 4.9% at 30 m/s on the default car, and more with a bigger wing.
+
+    Getting this right is what makes the lap sim and the GGV agree in the
+    ENVELOPE INTERIOR rather than only on its three axes. Falls back to the
+    linear scale if the GGV cannot be built, since a slightly optimistic limit
+    beats no aero effect at all.
+    """
+    try:
+        from .ggv import GGVGenerator, GGVParams
+        gen = _lat_limit_at_speed._cache.get(id(veh))
+        if gen is None:
+            gp = GGVParams.from_powertrain(pt)
+            gp.combined_tire = getattr(pt, "combined_tire", None)
+            gen = GGVGenerator(veh, gp)
+            _lat_limit_at_speed._cache[id(veh)] = gen
+        out = float(gen._max_lateral_g_at_speed(max(v, 0.1)))
+        if math.isfinite(out) and out > 0.0:
+            return out
+    except Exception:
+        pass
+    m, g = max(veh.p.mass, 1.0), 9.81
+    f_down = 0.5 * pt.rho * max(pt.cla, 0.0) * v * v
+    return max(max_lat_g, 1e-6) * (1.0 + f_down / max(m * g, 1e-6))
+
+
+_lat_limit_at_speed._cache = {}
+
+
 def _max_lat_g_flagged(veh: VehicleDynamics) -> tuple[float, bool]:
     """(lateral g, used_fallback) from the live dynamics model, guarded."""
     try:
@@ -325,7 +361,23 @@ def _accel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
     F_grip = mu * N_drive
     # friction circle: subtract lateral usage. If a combined-slip tyre is supplied,
     # use its (possibly asymmetric, calibrated) ellipse; else the symmetric circle.
-    frac_lat = min(lat_used_g / max(max_lat_g, 1e-6), 1.0)
+    #  NORMALISE LATERAL DEMAND BY THE LATERAL LIMIT AT THIS SPEED, not by the
+    #  aero-free grip. Downforce raises what the car can corner at, so in a fast
+    #  corner `lat_used_g` legitimately EXCEEDS max_lat_g — and dividing by the
+    #  aero-free figure then gave frac_lat > 1, which clamps to 1.0 and zeroes
+    #  the longitudinal capability entirely.
+    #
+    #  The result was not a small bias. At 30 m/s and 80% of the car's real
+    #  lateral limit this returned NEGATIVE acceleration (only drag left) while
+    #  the GGV, normalising against the speed-dependent limit, offered +0.38 g.
+    #  In effect the lap solver believed the car could neither accelerate nor
+    #  brake in any fast corner, and had to coast through it.
+    #
+    #  The GGV was right and this is now the same normalisation, so the two
+    #  agree across the ENVELOPE INTERIOR and not merely on its three axes —
+    #  which is all validate_against_laptime had ever compared.
+    lat_lim = _lat_limit_at_speed(veh, pt, v, max_lat_g)
+    frac_lat = min(lat_used_g / max(lat_lim, 1e-6), 1.0)
     ct = getattr(pt, "combined_tire", None)
     if ct is not None:
         try:
@@ -371,7 +423,23 @@ def _decel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
     F_down = 0.5 * pt.rho * max(pt.cla, 0.0) * v * v
     mu = max(max_lat_g, 0.3)
     F_grip = mu * (m * g + F_down)          # all four tyres brake
-    frac_lat = min(lat_used_g / max(max_lat_g, 1e-6), 1.0)
+    #  NORMALISE LATERAL DEMAND BY THE LATERAL LIMIT AT THIS SPEED, not by the
+    #  aero-free grip. Downforce raises what the car can corner at, so in a fast
+    #  corner `lat_used_g` legitimately EXCEEDS max_lat_g — and dividing by the
+    #  aero-free figure then gave frac_lat > 1, which clamps to 1.0 and zeroes
+    #  the longitudinal capability entirely.
+    #
+    #  The result was not a small bias. At 30 m/s and 80% of the car's real
+    #  lateral limit this returned NEGATIVE acceleration (only drag left) while
+    #  the GGV, normalising against the speed-dependent limit, offered +0.38 g.
+    #  In effect the lap solver believed the car could neither accelerate nor
+    #  brake in any fast corner, and had to coast through it.
+    #
+    #  The GGV was right and this is now the same normalisation, so the two
+    #  agree across the ENVELOPE INTERIOR and not merely on its three axes —
+    #  which is all validate_against_laptime had ever compared.
+    lat_lim = _lat_limit_at_speed(veh, pt, v, max_lat_g)
+    frac_lat = min(lat_used_g / max(lat_lim, 1e-6), 1.0)
     ct = getattr(pt, "combined_tire", None)
     if ct is not None:
         try:

@@ -60,6 +60,30 @@ def _sources():
                     continue
 
 
+def _ui_sources():
+    """The app files, read only to answer "is this attribute consumed anywhere?".
+    They are excluded from every other check because 1.8 MB of UI glue would bury
+    real findings, but they are where display-only fields get read."""
+    for name in ("streamlit_app.py",):
+        path = os.path.join(_ROOT, name)
+        if os.path.exists(path):
+            try:
+                with open(path, encoding="utf-8", errors="replace") as fh:
+                    yield fh.read()
+            except OSError:
+                continue
+    ui_dir = os.path.join(_ROOT, "ui")
+    if os.path.isdir(ui_dir):
+        for fn in os.listdir(ui_dir):
+            if fn.endswith(".py"):
+                try:
+                    with open(os.path.join(ui_dir, fn), encoding="utf-8",
+                              errors="replace") as fh:
+                        yield fh.read()
+                except OSError:
+                    continue
+
+
 def _report(findings, what):
     lines = [f"  {loc}: {detail}" for loc, detail in sorted(findings)]
     return (f"{len(findings)} {what}:\n" + "\n".join(lines))
@@ -129,8 +153,13 @@ _ABS_ALLOW = {
         # Magnitudes here are correct: lengths and rates, not lever arms.
         "wheel_disp", "spring_disp", "wd", "mr", "d",
         # Lsva: only inside the `< 1e-9` degeneracy guard. The physics divisions
-        # on lines 880/931 use the SIGNED value — reviewed 2026-08.
+        # use the SIGNED value — reviewed 2026-08.
         "Lsva",
+        # dz in _path_slope_xz: `abs(dz) < 1e-12` guards a divide-by-zero at a
+        # travel where the point does not move vertically. The slope returned
+        # immediately below is (dx / dz) with BOTH signed, which is the whole
+        # point of that helper. Reviewed 2026-08.
+        "dz",
     },
     "suspension/adapter.py": {
         # Same: guard only; the divisions use the signed offset. Reviewed
@@ -389,3 +418,283 @@ def test_public_physics_functions_state_their_units():
         f"Worst modules:\n{detail}\n\n"
         "Mixed mm/m, deg/rad and N/mm vs N/m are the commonest silent errors in "
         "this domain. Document the units, then lower LIMIT.")
+
+
+# --------------------------------------------------------------------------- #
+#  7. Diagnostics that are computed and then never read
+# --------------------------------------------------------------------------- #
+#  run_log computed `implied_area_drag_m2` for every row, stored it on the
+#  derived record, and read it nowhere. It was the only signal that could catch
+#  a row whose lift and drag were normalised by DIFFERENT reference areas — a
+#  failure invisible to every other gate, because the row is internally
+#  consistent in lift and internally consistent in drag, just not with itself.
+#
+#  A field that is only ever written is either dead weight or, as there, a check
+#  someone built and forgot to wire up. Both are worth surfacing; the second is
+#  worth surfacing loudly.
+_ASSIGN = re.compile(r"^\s*(?:self\.|[a-z_]+\.)?(\w+)\s*=\s*[^=]", re.M)
+
+#: field -> reason it is legitimately write-only (serialised out, part of a
+#: public dataclass consumed elsewhere, set for a caller rather than for us).
+_WRITE_ONLY_ALLOW = {
+    # Populated for callers/serialisation, not for this module's own logic.
+    "notes", "warnings", "findings", "provenance", "flags", "detail",
+    "source", "label", "name", "note", "reason", "summary", "status",
+}
+
+
+def test_no_diagnostic_is_computed_and_never_read():
+    suspects = []
+    for rel, src in _sources():
+        if "/test" in rel:
+            continue
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            continue
+        # Attribute names WRITTEN on a dataclass-like target.
+        written = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                for tgt in node.targets:
+                    if isinstance(tgt, ast.Attribute):
+                        written.setdefault(tgt.attr, node.lineno)
+        if not written:
+            continue
+        # Attribute names READ anywhere in the file.
+        read = {n.attr for n in ast.walk(tree)
+                if isinstance(n, ast.Attribute) and isinstance(n.ctx, ast.Load)}
+        for attr, line in written.items():
+            if attr in _WRITE_ONLY_ALLOW or attr.startswith("_"):
+                continue
+            if attr in read:
+                continue
+            # Only flag names that look like a measurement or a check result —
+            # plain data carriers are expected to be write-only here.
+            if not re.search(r"(implied|ratio|margin|residual|deviation|error|"
+                             r"check|coverage|_pct|_frac|_m2|_mm|_hz|_c$)", attr):
+                continue
+            # It may be read in another module; only flag if nothing else
+            # reads it either. This MUST include the UI, which is skipped by
+            # every other check here: a field parsed for display is consumed
+            # only in streamlit_app.py, and not looking there reported three
+            # perfectly live fields as dead. A checker that cries wolf gets
+            # switched off, which costs more than the check is worth.
+            if any(f".{attr}" in other for orel, other in _sources()
+                   if orel != rel):
+                continue
+            if any(f".{attr}" in ui for ui in _ui_sources()):
+                continue
+            suspects.append((f"{rel}:{line}", f"`{attr}` is written and never read"))
+    assert not suspects, (
+        _report(suspects, "diagnostic(s) computed but never consumed") +
+        "\n\nEither wire it into a check or delete it. A half-built gate is worse "
+        "than no gate: it looks like coverage that does not exist.")
+
+
+# --------------------------------------------------------------------------- #
+#  8. Branches of one calculation that disagree with each other
+# --------------------------------------------------------------------------- #
+#  Two of the powertrain defects had the same shape: one branch of a calculation
+#  accounted for something and the sibling branch did not. The accel branch used
+#  `m*a + F_drag + F_roll`; the regen branch used a bare `m*a`. Neither is a
+#  wrong formula — the second is a correct formula that stops halfway.
+#
+#  This cannot be fully checked mechanically, so it is a curated regression list:
+#  each entry is a pair of expressions that MUST both appear, in the same file.
+#  Add to it whenever an asymmetry is found and fixed.
+_PAIRED_TERMS = [
+    ("suspension/ev_powertrain.py", "F_drag - F_roll", "F_drag + F_roll",
+     "regen must subtract the resistance the accel branch adds"),
+    ("suspension/pack_thermal.py", "f_drag - f_roll", "f_drag + f_roll",
+     "the current trace must match ev_powertrain's energy accounting"),
+]
+
+
+@pytest.mark.parametrize("rel,a,b,why", _PAIRED_TERMS)
+def test_paired_branches_stay_symmetric(rel, a, b, why):
+    path = os.path.join(_ROOT, rel)
+    if not os.path.exists(path):
+        pytest.skip(f"{rel} not present")
+    with open(path, encoding="utf-8") as fh:
+        src = fh.read()
+    assert a in src and b in src, (
+        f"{rel}: expected both `{a}` and `{b}` — {why}.\n"
+        f"One branch of this calculation has stopped accounting for something "
+        f"its sibling accounts for.")
+
+
+# --------------------------------------------------------------------------- #
+#  9. The provenance vocabulary must stay singular
+# --------------------------------------------------------------------------- #
+#  While building the grade-propagation work I started writing a SECOND grade
+#  enum before noticing proof_engine.EvidenceGrade already existed. That is the
+#  same duplicate-implementation defect this audit found four times in the
+#  physics (anti-dive in two solvers, roll centre in two, regen in two, the
+#  reference geometry in two) — and a second grade vocabulary would be worse
+#  than a second formula, because the whole value of a badge is that it means
+#  one thing everywhere.
+_GRADE_ENUM_HINT = re.compile(
+    r"class\s+\w*(Grade|Confidence|Provenance|Evidence)\w*\s*\(", re.I)
+
+#: The canonical definitions. Anything else defining a grade vocabulary is a fork.
+_GRADE_OWNERS = {
+    "suspension/proof_engine.py",       # EvidenceGrade — the single source
+    #  risk_propagation.Confidence classifies how an EDGE was derived, which is
+    #  a different axis from evidence level. It is allowed to exist ONLY because
+    #  it now exposes `.evidence_grade`, mapping every tier onto EvidenceGrade —
+    #  so the two can never drift into meaning different things again. Its
+    #  ceiling is MODELLED, because no propagated edge has touched hardware.
+    #  Enforced by test_edge_confidence_maps_onto_the_one_vocabulary below.
+    "suspension/risk_propagation.py",
+}
+
+
+def test_only_one_evidence_grade_vocabulary():
+    forks = []
+    for rel, src in _sources():
+        if rel in _GRADE_OWNERS or "/test" in rel:
+            continue
+        for m in _GRADE_ENUM_HINT.finditer(src):
+            line = src[:m.start()].count("\n") + 1
+            forks.append((f"{rel}:{line}", m.group(0).strip()))
+    assert not forks, (
+        _report(forks, "competing evidence-grade vocabulary/vocabularies") +
+        "\n\nUse proof_engine.EvidenceGrade. A badge is only worth rendering if "
+        "it means the same thing in every tool that renders it.")
+
+
+# --------------------------------------------------------------------------- #
+#  10. Weakest link, never an average
+# --------------------------------------------------------------------------- #
+def test_grade_combination_is_never_averaged():
+    """Averaging grades lets good evidence launder bad: three measured
+    subsystems carrying a guessed fourth. Every combination site must take the
+    minimum. Checked by behaviour rather than by reading the code, so a
+    reimplementation elsewhere still has to obey it."""
+    from suspension.proof_engine import aggregate_grades, Quantity, EvidenceGrade as G
+    from suspension.provenance import worst_grade
+
+    qs = [Quantity(f"m{i}", f"s{i}", "mass_kg", f"S{i}", 20.0, "kg", g)
+          for i, g in enumerate((G.VERIFIED, G.MEASURED, G.MEASURED, G.GUESS))]
+    assert aggregate_grades(qs)["mass_kg"] == G.GUESS
+    assert worst_grade("verified", "measured", "measured", "guess") == "guess"
+    # order must not matter
+    assert worst_grade("guess", "verified") == worst_grade("verified", "guess")
+
+
+# --------------------------------------------------------------------------- #
+#  11. Graded numbers cannot be rendered bare
+# --------------------------------------------------------------------------- #
+def test_graded_formatter_requires_a_grade():
+    """`graded()` takes the grade positionally and required, so forgetting it is
+    a TypeError at the call site rather than a silently unbadged number. This is
+    the whole mechanism: the failure being prevented is a placeholder tyre
+    coefficient and a hand-verified bolt stress area formatting identically."""
+    import inspect
+    from suspension.provenance import graded
+    sig = inspect.signature(graded)
+    assert sig.parameters["grade"].default is inspect.Parameter.empty, \
+        "grade must stay REQUIRED; a default makes the badge optional"
+    with pytest.raises(TypeError):
+        graded(1.23)                       # type: ignore[call-arg]
+    out = graded(1.4666, "guess", "g", limited_by="tyre mu_peak")
+    assert "guess" in out and "tyre mu_peak" in out and "1.467" in out
+
+
+def test_edge_confidence_maps_onto_the_one_vocabulary():
+    """risk_propagation.Confidence is allowed to be a separate axis (how an edge
+    was derived) only while every tier maps onto EvidenceGrade. It used the word
+    MEASURED for "a solver produced this", which in EvidenceGrade terms is
+    MODELLED — the same badge claiming hardware where there was none, and the
+    more flattering of the two readings. A propagated edge can never exceed
+    MODELLED, and the mapping has to keep saying so."""
+    from suspension.risk_propagation import Confidence
+    from suspension.proof_engine import EvidenceGrade
+    for c in Confidence:
+        g = c.evidence_grade
+        assert isinstance(g, EvidenceGrade)
+        assert g.rank <= EvidenceGrade.MODELLED.rank, (
+            f"edge confidence {c.value!r} claims {g.value}; no propagated edge "
+            f"has touched hardware, so MODELLED is the ceiling")
+        assert "measurement" not in c.label or "not a measurement" in c.label
+
+
+# --------------------------------------------------------------------------- #
+#  12. Provenance adoption ratchet
+# --------------------------------------------------------------------------- #
+#  suspension/provenance.py is well built and well tested, and at the time this
+#  check was written NOTHING imported it outside its own test file. The render
+#  layer existed and was never wired in — which is the most expensive kind of
+#  unfinished work, because it looks finished from the inside.
+#
+#  685 numeric renders across the app and ui/ formatted a physics number with a
+#  bare f-string, so a PLACEHOLDER tyre coefficient and a hand-verified bolt
+#  stress area printed identically. That is the exact failure the badge system
+#  was built to prevent, and it was live everywhere.
+#
+#  Retrofitting all of them by hand is neither realistic nor wise — most are
+#  labels, counts and IDs that need no grade. So this is a RATCHET, like the
+#  units check: the count of ungated numeric renders may only go DOWN. Lower the
+#  bound whenever a batch is converted, and it can never quietly climb.
+_NUMFMT = re.compile(r'f"[^"]*\{[^}]*:[.,]\d*[fge][^"]*"')
+
+
+def _render_surfaces():
+    yield "streamlit_app.py", os.path.join(_ROOT, "streamlit_app.py")
+    ui = os.path.join(_ROOT, "ui")
+    if os.path.isdir(ui):
+        for fn in sorted(os.listdir(ui)):
+            if fn.endswith(".py"):
+                yield f"ui/{fn}", os.path.join(ui, fn)
+
+
+def test_ungated_numeric_renders_only_decrease():
+    total, per_file = 0, {}
+    for rel, path in _render_surfaces():
+        if not os.path.exists(path):
+            continue
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                src = fh.read()
+        except OSError:
+            continue
+        n = len(_NUMFMT.findall(src))
+        if n:
+            per_file[rel] = n
+            total += n
+
+    LIMIT = 685    # measured 2026-08. RATCHET: lower it, never raise it.
+    worst = "\n".join(f"  {k}: {v}" for k, v in
+                      sorted(per_file.items(), key=lambda kv: -kv[1])[:8])
+    assert total <= LIMIT, (
+        f"{total} numeric renders are not going through provenance.graded() "
+        f"(budget {LIMIT}).\nWorst files:\n{worst}\n\n"
+        "Convert a batch and lower LIMIT. Start with the numbers a team would "
+        "put in a design report — those are the ones where a missing badge "
+        "actually costs something.")
+
+
+def test_provenance_helpers_are_actually_used_somewhere():
+    """A ratchet on the ungated count is only half the signal: it would happily
+    sit at its bound forever with adoption at zero. This asserts the other
+    direction — the helpers must have real call sites outside their own tests,
+    so the pattern is established rather than merely available."""
+    users = set()
+    for rel, src in _sources():
+        if "provenance.py" in rel or "/test" in rel or rel.endswith("_test.py"):
+            continue
+        if re.search(r"\b(graded|provenance_tag|confidence_note|"
+                     r"render_report_value|worst_grade)\s*\(", src):
+            users.add(rel)
+    for rel, path in _render_surfaces():
+        if not os.path.exists(path):
+            continue
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            if re.search(r"\b(graded|provenance_tag|confidence_note|"
+                         r"render_report_value)\s*\(", fh.read()):
+                users.add(rel)
+    assert users, (
+        "provenance.py has no call sites outside its own tests. The render "
+        "layer exists and is not wired in, which is the most expensive kind of "
+        "unfinished work — it looks done from the inside.")

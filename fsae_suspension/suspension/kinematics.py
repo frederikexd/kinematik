@@ -798,38 +798,98 @@ class SuspensionKinematics:
     # ===================================================================== #
     #  Anti-dive / anti-squat  (side-view geometry)
     # ===================================================================== #
+    def _path_slope_xz(self, point_name: str, state=None, d: float = 0.5) -> float:
+        """d(x)/d(z) of a named carrier point as the wheel travels — the SIGNED
+        side-view path slope, from the real solver.
+
+        THIS, NOT A SHARED "SIDE-VIEW INSTANT CENTRE", IS WHAT ANTI-DIVE AND
+        ANTI-SQUAT ACTUALLY NEED. The two are the same thing only for a planar
+        linkage, and a double wishbone is not planar: the carrier steers and
+        cambers as it travels, so its x-z PROJECTED motion is not a pure planar
+        rotation and different points on it project to different apparent
+        centres. That is not an approximation error, it is the projection being
+        ill-defined.
+
+        It is measurable. On the default geometry the classic wishbone-line
+        construction gives a side-view centre at x = 1908.6 mm, while the
+        contact patch's own converged motion gives 2050.4 mm — 7.4% apart, 26% on
+        anti-squat. Both are "the" side-view instant centre; they just belong to
+        different points. adapter.py's generic solver used the contact-patch/
+        wheel-centre pair and this module used the wishbone lines, so the same car
+        gave two different anti-squat numbers depending on which solver you were
+        in, with no way to tell which was right.
+
+        The virtual-work derivation settles it. The anti-effect is
+        Fx * tan(phi) / dW, where tan(phi) = -d(x_P)/d(q) for the point P at which
+        the longitudinal force acts — the contact patch for outboard brakes, the
+        wheel centre for inboard drive. It is that point's OWN path that does the
+        work, so it is that point's own slope that matters. No shared centre is
+        needed and none is well-defined.
+
+        Central difference on the solved poses: exact to the solver, and verified
+        converged (2 mm, 0.5 mm and 0.1 mm steps agree to 7 significant figures).
+        """
+        base = state.travel if state is not None else 0.0
+        up = self.solve_at_travel(base + d)
+        dn = self.solve_at_travel(base - d)
+        pu, pd = getattr(up, point_name), getattr(dn, point_name)
+        dz = pu[2] - pd[2]
+        if abs(dz) < 1e-12:
+            return float("nan")
+        return float((pu[0] - pd[0]) / dz)
+
     def _side_view_swing_arm(self, state=None):
         """
         Side-view (x–z plane) instant centre of the wishbone linkage — the point
         about which the wheel swings fore/aft, which sets anti-dive/anti-squat.
 
-        Construction (textbook, e.g. Milliken): in side view each wishbone is the
-        line through its outboard ball joint with the slope of that wishbone's
-        CHASSIS PIVOT AXIS (the line through its front and rear inner pickups)
-        projected into x–z. The pivot-axis slope is what the wheel actually
-        articulates about longitudinally; using it — rather than the line to the
-        averaged inner pickup — is what makes anti-dive depend on the front/rear
-        pickup-height stagger, as it physically does. The two pivot-axis lines are
-        intersected to give the side-view instant centre (x, z). Returns NaNs when
-        the lines are parallel in side view (infinite swing arm => zero anti-dive).
+        Built from the EXACT motion of the two ball joints, the same way
+        _instant_center builds the front view: each joint rotates about its
+        wishbone's chassis pivot axis, so its velocity is axis x (joint - point on
+        axis). Project into x-z and the instant centre is where the perpendiculars
+        to the two projected velocities meet.
+
+        WHY NOT THE TEXTBOOK CONSTRUCTION. The hand method draws each wishbone in
+        side view as the line through its ball joint with the slope of its pivot
+        axis, and intersects the two. That is exact only when the linkage is
+        planar enough in x-z for the ball joint's real (three-dimensional,
+        circular) path to project onto that line — the same assumption that made
+        the old front-view midpoint construction wrong once the pickups were
+        staggered.
+
+        It was measurably wrong here. On the default geometry the hand
+        construction put the swing-arm length at 1908.6 mm and the velocity
+        construction at 2050.4 mm — 7.4% apart, which is 26% on anti-squat. The
+        generic-topology solver in adapter.py already used the velocity form, so
+        the same car gave two different anti-squat numbers depending on which
+        solver a user happened to be in. They now agree, and they agree on the
+        exact answer rather than meeting in the middle.
+
+        Returns NaNs when the perpendiculars are parallel (infinite swing arm =>
+        zero anti-dive), which is the correct degenerate case.
         """
         hp = self.hp
         st = state if state is not None else getattr(self, "static", None)
         uo = st.upper_outer if st is not None else hp.upper_outer
         lo = st.lower_outer if st is not None else hp.lower_outer
 
-        def axis_slope_xz(front_inner, rear_inner):
-            d = np.asarray(rear_inner, float) - np.asarray(front_inner, float)
-            # side-view direction = (dx, dz); if the pivot axis is purely lateral
-            # (dx==0) the wishbone is flat in side view => horizontal line.
-            if abs(d[0]) < 1e-9:
-                return np.array([1.0, 0.0])
-            return np.array([d[0], d[2]])
+        def sv_perp(joint, front_inner, rear_inner):
+            """Side-view line (point, direction) through `joint` on which the
+            instant centre must lie: perpendicular to its projected velocity."""
+            axis = np.asarray(rear_inner, float) - np.asarray(front_inner, float)
+            r = np.asarray(joint, float) - np.asarray(front_inner, float)
+            v = np.cross(axis, r)
+            vx, vz = v[0], v[2]
+            if abs(vx) < 1e-12 and abs(vz) < 1e-12:
+                return None
+            return np.array([joint[0], joint[2]]), np.array([-vz, vx])
 
-        d1 = axis_slope_xz(hp.upper_front_inner, hp.upper_rear_inner)
-        d2 = axis_slope_xz(hp.lower_front_inner, hp.lower_rear_inner)
-        p1 = np.array([uo[0], uo[2]])
-        p2 = np.array([lo[0], lo[2]])
+        up = sv_perp(uo, hp.upper_front_inner, hp.upper_rear_inner)
+        lw = sv_perp(lo, hp.lower_front_inner, hp.lower_rear_inner)
+        if up is None or lw is None:
+            return np.array([np.nan, np.nan])
+        p1, d1 = up
+        p2, d2 = lw
         A = np.column_stack([d1, -d2])
         if abs(np.linalg.det(A)) < 1e-9:
             return np.array([np.nan, np.nan])
@@ -866,18 +926,14 @@ class SuspensionKinematics:
         the offset reported that geometry as positive anti-dive, so a car built
         with the stagger backwards was told it had the anti-dive it did not have.
         """
-        svic = self._side_view_swing_arm(state)
-        if not np.all(np.isfinite(svic)):
-            return 0.0  # parallel wishbones in side view => zero anti-dive
-        st = state if state is not None else self.static
-        cp = st.contact_patch
         # Outboard front brakes: the brake torque is reacted by the upright, so
-        # the force line runs from the CONTACT PATCH to the SVIC.
-        Lsva = svic[0] - cp[0]        # +x is rearward; > 0 => SVIC behind patch
-        hsva = svic[1] - cp[2]
-        if abs(Lsva) < 1e-9:
-            return np.nan
-        tan_phi = hsva / Lsva         # SIGNED — see note above
+        # the force acts at the CONTACT PATCH and it is the contact patch's own
+        # path that does the virtual work. See _path_slope_xz for why a shared
+        # side-view instant centre is the wrong object here.
+        slope = self._path_slope_xz("contact_patch", state)
+        if not np.isfinite(slope):
+            return 0.0
+        tan_phi = -slope              # SIGNED — see note above
         return float(tan_phi * (wheelbase / cg_height) * brake_bias_front * 100.0)
 
     def anti_squat_pct(self, cg_height: float, wheelbase: float,
@@ -917,16 +973,22 @@ class SuspensionKinematics:
         would use the contact-patch line; that is out of scope here and would
         mislead, so it is not approximated.
         """
-        svic = self._side_view_swing_arm(state)
-        if not np.all(np.isfinite(svic)):
+        # Inboard drive: the chassis reacts the torque, so the tractive force
+        # passes through the linkage at WHEEL-CENTRE height and it is the wheel
+        # centre's own path that does the virtual work.
+        slope = self._path_slope_xz("wheel_center", state)
+        if not np.isfinite(slope):
             return 0.0
-        st = state if state is not None else self.static
-        wc = st.wheel_center
-        Lsva = wc[0] - svic[0]        # > 0 => SVIC forward of the wheel centre
-        hsva = svic[1] - wc[2]        # > 0 => SVIC above the wheel centre
-        if abs(Lsva) < 1e-9:
-            return np.nan
-        tan_phi = hsva / Lsva         # SIGNED — see note above
+        #  SIGN OPPOSITE TO ANTI-DIVE, and this is not a convention choice.
+        #  Virtual work gives anti = -Fx*S/dW with S = d(x_P)/d(q). Braking puts
+        #  Fx REARWARD (+x) and traction puts it FORWARD (-x), so the same path
+        #  slope produces opposite anti-effects:
+        #      anti_dive  = -bias * S * L/h
+        #      anti_squat = +bias * S * L/h
+        #  Reusing anti-dive's -S here flipped anti-squat's sign — caught because
+        #  it disagreed with adapter.py's generic solver by exactly a sign while
+        #  matching in magnitude.
+        tan_phi = slope
         return float(tan_phi * (wheelbase / cg_height) * drive_bias_rear * 100.0)
 
     def side_view_swing_arm_length(self, state=None) -> float:

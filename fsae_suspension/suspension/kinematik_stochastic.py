@@ -251,7 +251,8 @@ class ToleranceField:
     @staticmethod
     def preset(shop: str = "hand_weld",
                weld_pull_mm: float = 0.0,
-               pull_axis: str = "x") -> ToleranceField:
+               pull_axis: str = "x",
+               tab_accuracy_mm: float | None = None) -> ToleranceField:
         """Seed a field from a shop class.
 
         hand_weld : hand-welded tabs ±1.5 mm, machined outers ±0.2 mm
@@ -266,9 +267,26 @@ class ToleranceField:
         tabs = dict(hand_weld=1.5, jig_weld=0.5, cnc=0.05).get(shop)
         if tabs is None:
             raise ValueError(f"Unknown shop preset '{shop}'.")
-        _prov = (f"shop preset '{shop}' — REPRESENTATIVE tolerances, not "
-                 f"measured on your parts. Replace with inspection data before "
-                 f"quoting these spreads as your build's real scatter.")
+        #  USE THE NUMBER IF THE USER GAVE ONE. omnicore parses a stated
+        #  tolerance out of the brief ("±2 mm"), buckets it into a shop CLASS,
+        #  and then nothing ever reads the parsed value again — so someone who
+        #  told the tool ±2.0 mm had their Monte Carlo run at the hand_weld
+        #  preset's 1.5 mm instead. Their own measurement, discarded in favour
+        #  of a representative one, silently and in the optimistic direction.
+        #
+        #  A stated tolerance is better evidence than any preset, so it wins,
+        #  and the provenance says so rather than claiming the preset's caveat.
+        if tab_accuracy_mm is not None and float(tab_accuracy_mm) > 0:
+            tabs = float(tab_accuracy_mm)
+            _prov = (f"stated tab tolerance ±{tabs:g} mm (shop class '{shop}' "
+                     f"used only for the machined outers). This came from your "
+                     f"brief, not from a preset — but it is still a stated "
+                     f"figure, not inspection data.")
+        else:
+            _prov = (f"shop preset '{shop}' — REPRESENTATIVE tolerances, not "
+                     f"measured on your parts. Replace with inspection data "
+                     f"before quoting these spreads as your build's real "
+                     f"scatter.")
         outers = dict(hand_weld=0.2, jig_weld=0.15, cnc=0.05)[shop]
         ax = {"x": 0, "y": 1, "z": 2}[pull_axis]
         specs: dict[str, ToleranceSpec] = {}

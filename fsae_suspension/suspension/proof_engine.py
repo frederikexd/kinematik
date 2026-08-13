@@ -292,6 +292,75 @@ def aggregate(quantities: list[Quantity]) -> dict:
     return car
 
 
+def aggregate_grades(quantities: list[Quantity]) -> dict:
+    """Per-channel evidence grade, by WEAKEST LINK.
+
+    `aggregate()` combines the values and drops the grades, so by the time an
+    objective is evaluated its inputs' pedigree is gone and the answer is a bare
+    float. The uncertainty BAND survives (analyze_objective perturbs each
+    quantity), but the GRADE does not — and those answer different questions.
+    A band says how far the number might move; a grade says whether anything
+    about the real car is behind it at all. A lap time built from a GUESS mass
+    is not a modelled lap time with a wide band, it is a guess.
+
+    Weakest link, not average: a channel summed from four subsystems where three
+    are MEASURED and one is a GUESS is a guess. Averaging would let good
+    evidence launder bad, which is the specific dishonesty this whole module
+    exists to prevent.
+    """
+    out: dict = {}
+    for ch in _SUM_CHANNELS | _MAX_CHANNELS | _MIN_CHANNELS | _MASS_WEIGHTED:
+        grades = [q.grade for q in quantities if q.channel == ch]
+        if grades:
+            out[ch] = min(grades, key=lambda g: g.rank)
+    return out
+
+
+def objective_grade(objective: Objective, quantities: list[Quantity],
+                    report: "UncertaintyReport | None" = None,
+                    share_floor: float = 0.01,
+                    today: _dt.date | None = None) -> tuple[EvidenceGrade, list[str]]:
+    """(grade, limiting channel keys) for an objective's VALUE.
+
+    The grade is the weakest among the channels the objective ACTUALLY DEPENDS
+    ON — not the weakest overall. That distinction is what keeps the signal
+    usable: a guessed number the objective never reads must not drag it down, or
+    every output ends up stamped GUESS and the badge stops meaning anything.
+
+    Dependence is measured, not declared: analyze_objective already perturbs
+    each quantity and records its share of output variance, so any channel with
+    a share above `share_floor` is one the answer rests on. Channels the
+    objective is insensitive to are ignored however badly they are known — which
+    is also the honest engineering statement.
+
+    Returns the limiting channels too, because that is the actionable half:
+    "MODELLED, limited by cg_height_mm" tells a team what to go measure, whereas
+    "MODELLED" alone tells them only to worry.
+    """
+    rep = report if report is not None else analyze_objective(objective, quantities, today)
+    per_channel = aggregate_grades(quantities)
+    by_key = {q.key: q for q in quantities}
+
+    load_bearing: set = set()
+    for a in rep.attributions:
+        if a.share >= share_floor:
+            q = by_key.get(a.quantity_key)
+            if q is not None:
+                load_bearing.add(q.channel)
+
+    if not load_bearing:
+        # Nothing moved the objective (flat, or a single-point evaluation):
+        # fall back to every channel rather than silently claiming VERIFIED.
+        load_bearing = set(per_channel)
+
+    grades = {ch: per_channel[ch] for ch in load_bearing if ch in per_channel}
+    if not grades:
+        return EvidenceGrade.GUESS, []
+    worst = min(grades.values(), key=lambda g: g.rank)
+    limiting = sorted(ch for ch, g in grades.items() if g.rank == worst.rank)
+    return worst, limiting
+
+
 @dataclass
 class Objective:
     """
@@ -401,6 +470,11 @@ class UncertaintyReport:
     total_unc: float           # ± (1-sigma-equivalent, root-sum-square)
     confidence: str            # evaluator class, honestly restated
     attributions: list = field(default_factory=list)   # sorted, largest first
+    #  Evidence grade of `nominal` itself, and the channels that set it. Filled
+    #  by analyze_objective. Distinct from total_unc: the band says how far the
+    #  answer might move, the grade says whether anything measured is behind it.
+    grade: EvidenceGrade = EvidenceGrade.MODELLED
+    limited_by: list = field(default_factory=list)
 
 
 def analyze_objective(objective: Objective, quantities: list[Quantity],
@@ -434,8 +508,26 @@ def analyze_objective(objective: Objective, quantities: list[Quantity],
     for a in attrs:
         a.share = (a.delta_out ** 2 / total_var) if total_var > 0 else 0.0
     attrs.sort(key=lambda a: a.delta_out, reverse=True)
-    return UncertaintyReport(objective.key, objective.label, objective.unit,
-                             nominal, total, objective.confidence, attrs)
+    rep = UncertaintyReport(objective.key, objective.label, objective.unit,
+                            nominal, total, objective.confidence, attrs)
+    #  Grade the ANSWER, not just band it. Computed here (rather than left to
+    #  the caller) so a report cannot exist without one — the failure this whole
+    #  module targets is a number rendered with more authority than its evidence
+    #  supports, and an optional field would be optional exactly when someone is
+    #  in a hurry.
+    per_channel = aggregate_grades(quantities)
+    by_key = {q.key: q for q in quantities}
+    load_bearing = {by_key[a.quantity_key].channel for a in attrs
+                    if a.share >= 0.01 and a.quantity_key in by_key}
+    if not load_bearing:
+        load_bearing = set(per_channel)
+    grades = {ch: per_channel[ch] for ch in load_bearing if ch in per_channel}
+    if grades:
+        worst = min(grades.values(), key=lambda g: g.rank)
+        rep.grade = worst
+        rep.limited_by = sorted(ch for ch, g in grades.items()
+                                if g.rank == worst.rank)
+    return rep
 
 
 # --------------------------------------------------------------------------- #
@@ -756,8 +848,18 @@ def render_proof_plan_md(plan: ProofPlan, report: UncertaintyReport,
     L: list[str] = []
     L.append(f"# Proof Plan — {plan.objective_label}")
     L.append("")
-    L.append(f"**Current answer:** {plan.nominal:.3g} ± {plan.unc_now:.3g} "
-             f"{plan.unit}  (evaluator class: {report.confidence})")
+    #  The headline number goes through provenance.graded() rather than a bare
+    #  f-string. This is the one line of the whole document a reader quotes, and
+    #  it used to print with the same authority whether every input was measured
+    #  on the car or guessed in a meeting. The grade and the limiting input now
+    #  travel with it — the limiting input especially, because that is the
+    #  actionable half: "modelled, limited by cg_height_mm" is a work order.
+    from .provenance import graded
+    _lim = ", ".join(getattr(report, "limited_by", []) or [])
+    L.append(f"**Current answer:** "
+             f"{graded(plan.nominal, report.grade, plan.unit, digits=3, limited_by=_lim)}"
+             f"  ± {plan.unc_now:.3g} {plan.unit}"
+             f"  (evaluator class: {report.confidence})")
     L.append(f"**Floor if every action below is done:** ± {plan.unc_floor:.3g} "
              f"{plan.unit}")
     if frame_note:

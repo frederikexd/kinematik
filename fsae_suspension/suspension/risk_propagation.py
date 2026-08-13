@@ -79,16 +79,43 @@ from .dfmea import compute_rpn, classify_risk
 #  measured it, and a judgement edge is never shown as if it were modelled.
 # --------------------------------------------------------------------------- #
 class Confidence(str, Enum):
-    MEASURED = "measured"     # a real KinematiK solver produced this number
+    """How a propagated EDGE was derived. This is an edge-provenance axis, NOT
+    an evidence grade — see `evidence_grade` for the mapping onto the one
+    vocabulary the rest of the toolkit speaks.
+
+    THE WORD "MEASURED" HERE DOES NOT MEAN AN INSTRUMENT TOUCHED ANYTHING. It
+    means a KinematiK solver produced the number, which in
+    proof_engine.EvidenceGrade terms is MODELLED. The two modules used the same
+    word for different things, and this was the more flattering of the two: a
+    reader seeing "measured" on a risk edge would reasonably conclude hardware
+    was involved. That is precisely the over-claim the badge system exists to
+    prevent, so the enum VALUES are kept (they are serialised in saved projects)
+    while the labels now say what they actually mean.
+    """
+    MEASURED = "measured"     # solver-derived — MODELLED in EvidenceGrade terms
     COUPLED = "coupled"       # a modelled physical edge (closed-form, directional)
     JUDGEMENT = "judgement"   # engineering-judgement coupling, no backing physics
 
     @property
     def label(self) -> str:
         return {
-            "measured": "measured (KinematiK solver)",
+            "measured": "solver-derived (KinematiK model, not a measurement)",
             "coupled": "coupled (modelled edge)",
             "judgement": "engineering judgement",
+        }[self.value]
+
+    @property
+    def evidence_grade(self):
+        """This edge's tier in proof_engine.EvidenceGrade — the single
+        vocabulary. Nothing here can reach MEASURED or VERIFIED, because no
+        propagated edge has ever touched hardware; the ceiling is MODELLED and
+        saying so out loud is the point.
+        """
+        from .proof_engine import EvidenceGrade
+        return {
+            "measured": EvidenceGrade.MODELLED,
+            "coupled": EvidenceGrade.MODELLED,
+            "judgement": EvidenceGrade.GUESS,
         }[self.value]
 
 

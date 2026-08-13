@@ -95,3 +95,76 @@ def confidence_note(container, grade, *, calibrated: bool = True, extra: str = "
                 "a measured number, not an indicative one.")
     except Exception:
         pass
+
+
+# --------------------------------------------------------------------------- #
+#  The gate: a number cannot reach a reader without its grade
+# --------------------------------------------------------------------------- #
+#  The helpers above are good and nothing forces anyone to call them. That is
+#  the whole remaining gap: a placeholder tyre coefficient and a hand-verified
+#  bolt stress area still format identically if someone writes f"{x:.2f}".
+#
+#  `graded()` is the single formatter the report and metric paths should use. It
+#  takes the grade as a REQUIRED argument, so omitting provenance becomes a
+#  TypeError at the call site rather than a judgement call nobody makes at 2am.
+#  Pair it with test_repo_accuracy_audit's report-path check, which fails CI on
+#  a bare float in a graded context.
+
+_GRADE_ORDER = ["guess", "estimate", "modelled", "measured", "verified"]
+
+
+def graded(value, grade, unit: str = "", *, digits: int = 4,
+           calibrated: bool = True, limited_by: str = "") -> str:
+    """Format a number together with its evidence grade. Never bare.
+
+    `grade` is positional and required — that is the point. A number rendered
+    through this function carries its pedigree; a number rendered through an
+    f-string does not, and the reader cannot tell the two apart afterwards.
+
+    `limited_by` names the input that set the grade, which is the actionable
+    half: "MODELLED, limited by cg_height" is a work order, "MODELLED" alone is
+    only a worry.
+    """
+    key = grade_key(grade)
+    emoji, tag, band = _GRADE_BADGE[key]
+    try:
+        v = f"{float(value):.{digits}g}"
+    except (TypeError, ValueError):
+        v = str(value)
+    u = f" {unit}" if unit else ""
+    suffix = tag if calibrated else f"{tag}, uncalibrated"
+    out = f"{v}{u} {emoji} {suffix} · {band if calibrated else 'trust the delta'}"
+    if limited_by:
+        out += f" (limited by {limited_by})"
+    return out
+
+
+def worst_grade(*grades) -> str:
+    """Weakest-link grade key over any mix of grades, enums or strings.
+
+    Mirrors proof_engine.aggregate_grades for code that has only strings to
+    hand. Averaging would let good evidence launder bad — three measured inputs
+    do not rescue a guessed fourth — so this takes the minimum, always.
+    """
+    keys = [grade_key(g) for g in grades] or ["estimate"]
+    return min(keys, key=lambda k: _GRADE_ORDER.index(k))
+
+
+def render_report_value(container, label: str, value, grade, unit: str = "",
+                        *, calibrated: bool = True, limited_by: str = "",
+                        calibrate_with: str = "") -> None:
+    """Emit one labelled, graded number plus its upgrade path, if any.
+
+    The upgrade path is the product promise in one line: this tool's job is to
+    say what to go measure or simulate next, so a weak number should always
+    arrive with the single action that strengthens it.
+    """
+    if container is None:
+        return
+    try:
+        container.markdown(
+            f"**{label}:** {graded(value, grade, unit, calibrated=calibrated, limited_by=limited_by)}")
+        if calibrate_with and (not calibrated or grade_key(grade) in ("guess", "estimate")):
+            container.caption(f"↑ Upgrade with {calibrate_with}.")
+    except Exception:
+        pass
