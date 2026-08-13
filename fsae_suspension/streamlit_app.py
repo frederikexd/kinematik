@@ -33551,24 +33551,32 @@ with tab_analytics:
 
     # ===== ROW 1: LIVE (measured, current window) ========================== #
     # Header shows a FIXED cycle-start anchor (the 2026-07-10 purge, from the
-    # baseline's as_of) so people know when this counting cycle began — PLUS an
-    # honest note that the live tiles count a rolling 30-day window, since the
-    # hard cap trims older events. The two together are truthful: a fixed anchor
-    # for context, and a clear statement of what the number actually covers.
+    # baseline's as_of) so people know when this counting cycle began — PLUS the
+    # bounds of the rolling 30-day window the tiles actually cover.
+    #
+    # The window is computed in SQL by analytics_window_start() (= current_date
+    # - 29), so it slides forward one day every day on its own. It used to be
+    # inferred from min(occurred_at) — i.e. from whatever rows had not yet been
+    # deleted — which froze the start date on the cycle-start date because the
+    # 30-day purge was never actually scheduled. See analytics_rolling_window.sql.
     _cycle_start = _base_as_of or "2026-07-10"   # fixed anchor: when tracking reset
-    _win_note = ""
-    if _win_start:
-        _win_note = (f" · live tiles below count the current window "
-                     f"({_win_start} – {_win_end or 'today'})")
+    # Fall back to a locally-computed boundary if the deployed view predates
+    # analytics_rolling_window.sql and exposes no bounds — better a correct
+    # rolling label than a silently missing one.
+    if not _win_start:
+        from datetime import date as _date, timedelta as _timedelta
+        _win_start = (_date.today() - _timedelta(days=29)).isoformat()
+    _win_note = (f" · live tiles below count the rolling 30-day window "
+                 f"({_win_start} – {_win_end or 'today'})")
     st.markdown(
         '<div class="k" style="opacity:.75;margin:.2rem 0 .4rem;">'
         f'Live · measured from event data · <b>counting cycle started '
         f'{_cycle_start}</b>{_win_note}</div>',
         unsafe_allow_html=True)
     st.caption("The cycle started on the fixed date above (when tracking was "
-               "reset). The live figures show a rolling 30-day window — older "
-               "events are trimmed to keep the database small — so they reflect "
-               "recent activity, not the whole cycle since that date.")
+               "reset). The live figures cover a rolling 30-day window that "
+               "advances by one day every day, so they reflect recent activity, "
+               "not the whole cycle since that date.")
     _c1, _c2, _c3, _c4 = st.columns(4)
 
     if _have_retention:
