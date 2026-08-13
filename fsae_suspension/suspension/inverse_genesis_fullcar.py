@@ -504,7 +504,7 @@ def evaluate_config(cfg: FullCarConfig, space: DesignSpace,
 
         # energy per lap from the current trace (integrates to lap energy)
         shim = _LapParamsShim(mass=derived["mass_kg"], cd_a=space.cda,
-                              rho=1.2)
+                              rho=1.225)   # canonical ISA sea-level density
         adapter = _TraceAdapter(end_lap)
         t_arr, cur = pack_current_trace(
             adapter, shim, pack_nominal_v=derived["pack_nominal_v"],

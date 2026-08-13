@@ -68,7 +68,13 @@ class PacejkaLateral:
         Fz = np.maximum(np.asarray(Fz, float), 1e-6)
         s = self.scaling
         dfz = (Fz - self.FNOMIN) / self.FNOMIN          # normalised load increment
-        g = gamma                                       # camber, rad
+        # MF5.2 scales camber before it enters ANY of the camber-dependent terms
+        # (Dy, Ey, Ky, Shy, Svy) — gamma_y = gamma * LGAY. LGAY used to be applied
+        # to Svy alone, so setting it to anything other than 1.0 scaled the camber
+        # thrust but left the camber's effect on peak mu, curvature, cornering
+        # stiffness and the horizontal shift untouched. That made the factor mean
+        # something different from what the standard says it means.
+        g = gamma * s["LGAY"]                           # camber, rad (scaled)
 
         # Shape factor
         Cy = self._C("PCY1") * s["LCY"]
@@ -76,21 +82,26 @@ class PacejkaLateral:
         mu_y = (self._C("PDY1") + self._C("PDY2") * dfz) \
             * (1.0 - self._C("PDY3") * g * g) * s["LMUY"]
         Dy = mu_y * Fz
+        # Horizontal shift — computed BEFORE Ey because MF5.2's curvature term
+        # keys off the sign of the SHIFTED slip angle alpha_y = alpha + Shy, not
+        # of the raw alpha. Using the raw alpha put the asymmetry break in the
+        # wrong place whenever Shy != 0 (i.e. on any real fit with ply-steer or
+        # conicity), giving a small discontinuity on the wrong side of zero.
+        Shy = (self._C("PHY1") + self._C("PHY2") * dfz) * s["LHY"] + self._C("PHY3") * g
+        ax = alpha + Shy
         # Curvature
         Ey = (self._C("PEY1") + self._C("PEY2") * dfz) \
-            * (1.0 - (self._C("PEY3") + self._C("PEY4") * g) * np.sign(alpha)) * s["LEY"]
+            * (1.0 - (self._C("PEY3") + self._C("PEY4") * g) * np.sign(ax)) * s["LEY"]
         Ey = np.minimum(Ey, 1.0)
         # Cornering stiffness -> B
         Ky = self._C("PKY1") * self.FNOMIN \
             * np.sin(2.0 * np.arctan(Fz / (self._C("PKY2") * self.FNOMIN * s["LFZO"]))) \
             * (1.0 - self._C("PKY3") * abs(g)) * s["LKY"]
         By = Ky / (Cy * Dy + 1e-9)
-        # Horizontal/vertical shifts
-        Shy = (self._C("PHY1") + self._C("PHY2") * dfz) * s["LHY"] + self._C("PHY3") * g
+        # Vertical shift
         Svy = Fz * ((self._C("PVY1") + self._C("PVY2") * dfz) * s["LVY"]
-                    + (self._C("PVY3") + self._C("PVY4") * dfz) * g) * s["LGAY"]
+                    + (self._C("PVY3") + self._C("PVY4") * dfz) * g)
 
-        ax = alpha + Shy
         Fy = Dy * np.sin(Cy * np.arctan(By * ax - Ey * (By * ax - np.arctan(By * ax)))) + Svy
         return Fy
 

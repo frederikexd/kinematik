@@ -235,7 +235,7 @@ def test_evaluate_corner_full_and_partial():
 def test_units_axis_cfg_metric_vs_imperial(monkeypatch):
     from suspension import fullcar3d as fc
     from suspension import units
-    import streamlit as st
+    st = pytest.importorskip("streamlit")   # optional dep: skip, do not fail
 
     st.session_state["unit_system"] = units.METRIC
     m = fc._units_axis_cfg("x (rear ←→ front)", 0.0, 3000.0)

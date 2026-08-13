@@ -163,7 +163,11 @@ class Powertrain:
     drivetrain_eff: float = 0.90     # wheel power / battery power
     cda: float = 1.10                # drag area Cd*A, m^2
     cla: float = 2.60                # downforce area Cl*A, m^2 (aero pkg; 0 if none)
-    rho: float = 1.20                # air density, kg/m^3
+    rho: float = 1.225               # air density, kg/m^3 (ISA sea level;
+                                     # matches every other module — the lap
+                                     # sim used 1.20, making its drag and
+                                     # downforce 2% low against the GGV and
+                                     # aero stack it is cross-checked with)
     crr: float = 0.018               # rolling resistance coefficient
     drive: str = "rwd"               # "rwd" or "awd" — which axle loads cap traction
     brake_g_cap: float = 1.8         # mechanical brake ceiling (g), grip-limited below
@@ -249,15 +253,29 @@ def _safe_lap(distance=0.0, warning="calculation unavailable") -> LapResult:
 # --------------------------------------------------------------------------- #
 #  Core grip lookups (wrapped so a bad geometry never throws)
 # --------------------------------------------------------------------------- #
-def _max_lat_g(veh: VehicleDynamics) -> float:
-    """Steady-state lateral g from the live dynamics model, guarded."""
+#  Fallback lateral grip used when the dynamics model can't produce a number.
+#  Callers must NOT detect the fallback by comparing the returned value to this
+#  constant: a perfectly good geometry can legitimately solve to exactly 1.4 g,
+#  in which case a float-equality check cries wolf, and a change to this constant
+#  silently breaks every call site. `_max_lat_g_flagged` returns the fact
+#  alongside the number so the two can never disagree.
+_FALLBACK_LAT_G = 1.4
+
+
+def _max_lat_g_flagged(veh: VehicleDynamics) -> tuple[float, bool]:
+    """(lateral g, used_fallback) from the live dynamics model, guarded."""
     try:
         g = float(veh.max_lateral_g())
         if not math.isfinite(g) or g <= 0.0:
-            return 1.4  # safe representative fallback, flagged by caller
-        return g
+            return _FALLBACK_LAT_G, True
+        return g, False
     except Exception:
-        return 1.4
+        return _FALLBACK_LAT_G, True
+
+
+def _max_lat_g(veh: VehicleDynamics) -> float:
+    """Steady-state lateral g from the live dynamics model, guarded."""
+    return _max_lat_g_flagged(veh)[0]
 
 
 def _corner_limit_speed(veh: VehicleDynamics, radius_m: float, pt: Powertrain,
@@ -335,6 +353,17 @@ def _decel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
     """
     Available braking deceleration (m/s^2, positive number) at speed v under the
     same friction-circle coupling. Drag and downforce *help* braking.
+
+    COMBINED-SLIP CONSISTENCY: braking is longitudinal, so it gets the same
+    friction envelope as acceleration — the combined tyre's calibrated ellipse
+    (ell_kx / ell_ky) and its mu_x_ratio — instead of the plain symmetric circle
+    at the bare lateral mu. This branch previously existed only in _accel_long,
+    which made the model asymmetric in a way no tyre is: with a combined tyre
+    whose mu_x_ratio > 1, the same rubber was credited with extra longitudinal
+    grip under power and denied it under brakes. ggv.py's validate_against_laptime
+    already flagged this as the sole source of GGV/laptime divergence on the brake
+    axis and named the laptime side as the one in the wrong; this closes it, so
+    the two engines now agree by construction rather than by disclaimer.
     """
     g = 9.81
     m = max(veh.p.mass, 1.0)
@@ -343,8 +372,18 @@ def _decel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
     mu = max(max_lat_g, 0.3)
     F_grip = mu * (m * g + F_down)          # all four tyres brake
     frac_lat = min(lat_used_g / max(max_lat_g, 1e-6), 1.0)
-    long_grip_frac = math.sqrt(max(1.0 - frac_lat * frac_lat, 0.0))
-    F_grip *= long_grip_frac
+    ct = getattr(pt, "combined_tire", None)
+    if ct is not None:
+        try:
+            ky = max(ct.ell_ky, 1e-3); kx = max(ct.ell_kx, 1e-3)
+            long_grip_frac = max(1.0 - frac_lat ** ky, 0.0) ** (1.0 / kx)
+            F_grip *= ct.mu_x_ratio * long_grip_frac
+        except Exception:
+            long_grip_frac = math.sqrt(max(1.0 - frac_lat * frac_lat, 0.0))
+            F_grip *= long_grip_frac
+    else:
+        long_grip_frac = math.sqrt(max(1.0 - frac_lat * frac_lat, 0.0))
+        F_grip *= long_grip_frac
     F_brake = min(F_grip, pt.brake_g_cap * m * g)
     F_drag = 0.5 * pt.rho * pt.cda * v * v
     a = (F_brake + F_drag) / m
@@ -371,7 +410,7 @@ def acceleration_time(veh: VehicleDynamics, pt: Powertrain | None = None,
         pt = pt or Powertrain()
         if not (math.isfinite(distance_m) and distance_m > 0):
             return _safe_lap(warning="acceleration distance invalid; check inputs")
-        max_lat_g = _max_lat_g(veh)          # only used as the grip ceiling
+        max_lat_g, grip_is_fallback = _max_lat_g_flagged(veh)          # only used as the grip ceiling
         s = 0.0
         v = 0.1                               # tiny seed to avoid F_power = P/0
         t = 0.0
@@ -394,8 +433,8 @@ def acceleration_time(veh: VehicleDynamics, pt: Powertrain | None = None,
         if guard >= max_iter:
             return _safe_lap(warning="acceleration sim did not reach the line — "
                                      "car barely accelerates; check power/grip inputs")
-        warning = ("grip fell back to default 1.4 g — verify tire/geometry"
-                   if max_lat_g == 1.4 else "")
+        warning = ("grip fell back to the default lateral-g value — verify tire/geometry"
+                   if grip_is_fallback else "")
         return LapResult(lap_time_s=float(t),
                          avg_speed_ms=float(distance_m / t) if t > 0 else 0.0,
                          top_speed_ms=float(v), min_speed_ms=0.0,
@@ -428,7 +467,7 @@ def skidpad_time(veh: VehicleDynamics, pt: Powertrain | None = None,
         pt = pt or Powertrain()
         if radius_m <= 0 or not math.isfinite(radius_m):
             return _safe_lap(warning="skidpad radius invalid; check inputs")
-        max_lat_g = _max_lat_g(veh)
+        max_lat_g, grip_is_fallback = _max_lat_g_flagged(veh)
         v = _corner_limit_speed(veh, radius_m, pt, max_lat_g)
         if not math.isfinite(v) or v <= 0.0:
             return _safe_lap(warning="grip model returned no usable speed; "
@@ -438,8 +477,8 @@ def skidpad_time(veh: VehicleDynamics, pt: Powertrain | None = None,
         return LapResult(lap_time_s=t, avg_speed_ms=v, top_speed_ms=v,
                          min_speed_ms=v, distance_m=circ,
                          s=[0.0, circ], v=[v, v], ok=True,
-                         warning="" if max_lat_g != 1.4 else
-                                 "grip fell back to default 1.4 g — verify tire/geometry")
+                         warning=("grip fell back to the default lateral-g value — verify tire/geometry"
+                                  if grip_is_fallback else ""))
     except Exception as e:                       # never crash the session
         return _safe_lap(warning=f"skidpad sim failed safely: {e}")
 
@@ -463,7 +502,7 @@ def simulate_lap(veh: VehicleDynamics, track: Track,
             return _safe_lap(warning="track is empty; add at least one segment")
 
         ds = track.ds if track.ds and track.ds > 0 else 1.0
-        max_lat_g = _max_lat_g(veh)
+        max_lat_g, grip_is_fallback = _max_lat_g_flagged(veh)
 
         # Build station list: position s, local radius (inf for straight)
         s_pts, radii = [], []
@@ -530,8 +569,8 @@ def simulate_lap(veh: VehicleDynamics, track: Track,
 
         dist = s_pts[-1]
         warning = ""
-        if max_lat_g == 1.4:
-            warning = "grip fell back to default 1.4 g — verify tire/geometry"
+        if grip_is_fallback:
+            warning = "grip fell back to the default lateral-g value — verify tire/geometry"
         return LapResult(
             lap_time_s=float(t),
             avg_speed_ms=float(dist / t) if t > 0 else 0.0,

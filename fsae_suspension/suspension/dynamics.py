@@ -280,8 +280,26 @@ class VehicleDynamics:
             rc_r = 60.0
 
         a_lat = lateral_g * p.g
-        # Sprung CG roll moment about the roll axis
-        roll_axis_at_cg = rc_f + (rc_r - rc_f) * p.weight_dist_front
+        # CG roll moment about the roll axis.
+        #
+        # Roll-axis height AT THE CG's longitudinal station. The interpolation
+        # weight is the CG's distance from the FRONT axle as a fraction of the
+        # wheelbase — and that fraction is (1 - weight_dist_front), not
+        # weight_dist_front: weight_dist_front is the share of weight carried by
+        # the front axle, which by moments is the CG's distance from the REAR
+        # axle. The two were swapped here, which tilted the roll axis the wrong
+        # way whenever rc_f != rc_r.
+        #
+        # The give-away is a first-principles invariant: total lateral load
+        # transfer must satisfy  dWf*t_f + dWr*t_r = m*a*h_cg,  regardless of how
+        # it splits. With the weights the right way round the elastic and
+        # geometric terms sum to exactly that; swapped, they did not. The error
+        # vanished on the symmetric default (rc_f ~ rc_r) and grew with the
+        # front/rear RC split teams actually use to tune balance — ~2.7% of total
+        # transfer at a 0/80 mm split, quietly biasing every grip, balance and
+        # max-g number downstream of it.
+        wd_f = p.weight_dist_front
+        roll_axis_at_cg = rc_f * wd_f + rc_r * (1.0 - wd_f)
         h_roll = p.cg_height - roll_axis_at_cg          # roll moment arm, mm
         M_roll = p.mass * a_lat * (h_roll / 1000.0)     # N·m
 

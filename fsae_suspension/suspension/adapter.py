@@ -225,7 +225,19 @@ class GenericKinematics:
     # ------------------------------------------------------------------ #
     #  anti-features & swing-arm length (same formulae as the wishbone)
     # ------------------------------------------------------------------ #
+    #  CONVENTIONS: these must match kinematics.SuspensionKinematics exactly —
+    #  the generic adapter and the native wishbone solver are two paths to the
+    #  same number, and a user switching topology must not see the physics
+    #  change under them. All three methods here carried the same defects the
+    #  native solver did (magnitude instead of signed offset; contact-patch
+    #  reference for inboard-drive anti-squat; inverted swing-arm sign), because
+    #  they were written as a copy of it. Fixed in step with kinematics.py; see
+    #  the long-form derivations there.
     def anti_dive_pct(self, cg_height, wheelbase, brake_bias_front=0.65, state=None):
+        """Front anti-dive (%), outboard brakes: contact-patch reference, SIGNED
+        horizontal offset. Positive only when the SVIC lies rearward of the
+        contact patch and above ground; an SVIC ahead of it is pro-dive and
+        reads negative."""
         svic = self._side_view_swing_arm(state)
         if not np.all(np.isfinite(svic)):
             return 0.0
@@ -234,25 +246,30 @@ class GenericKinematics:
         Lsva = svic[0] - cp[0]; hsva = svic[1] - cp[2]
         if abs(Lsva) < 1e-9:
             return np.nan
-        return float((hsva / abs(Lsva)) * (wheelbase / cg_height) * brake_bias_front * 100.0)
+        return float((hsva / Lsva) * (wheelbase / cg_height) * brake_bias_front * 100.0)
 
     def anti_squat_pct(self, cg_height, wheelbase, drive_bias_rear=1.0, state=None):
+        """Rear anti-squat (%), inboard drive: WHEEL-CENTRE reference (the
+        chassis reacts the drive torque, so only tractive force passes through
+        the links, at wheel-centre height), SIGNED offsets."""
         svic = self._side_view_swing_arm(state)
         if not np.all(np.isfinite(svic)):
             return 0.0
         st = state if state is not None else self.static
-        cp = st.contact_patch
-        Lsva = svic[0] - cp[0]; hsva = svic[1] - cp[2]
+        wc = st.wheel_center
+        Lsva = wc[0] - svic[0]; hsva = svic[1] - wc[2]
         if abs(Lsva) < 1e-9:
             return np.nan
-        return float((hsva / abs(Lsva)) * (wheelbase / cg_height) * drive_bias_rear * 100.0)
+        return float((hsva / Lsva) * (wheelbase / cg_height) * drive_bias_rear * 100.0)
 
     def side_view_swing_arm_length(self, state=None):
+        """Signed side-view swing-arm length (mm), positive REARWARD of the
+        contact patch so the sign agrees with anti_dive_pct."""
         svic = self._side_view_swing_arm(state)
         if not np.all(np.isfinite(svic)):
             return np.inf
         st = state if state is not None else self.static
-        return float(-(svic[0] - st.contact_patch[0]))
+        return float(svic[0] - st.contact_patch[0])
 
     # ------------------------------------------------------------------ #
     #  motion ratio (generic: spring travel / wheel travel when a spring pair

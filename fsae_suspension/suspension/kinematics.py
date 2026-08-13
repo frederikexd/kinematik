@@ -110,12 +110,22 @@ class Hardpoints:
         ~0.52, spring/wheel) and a deliberate front-pickup stagger giving a mild
         ~26% anti-dive, so the side-view tools return sensible numbers out of the
         box rather than a degenerate (flat-pickup) zero.
+
+        PICKUP STAGGER — corrected. The z-stagger used to run the other way: the
+        upper axis rose toward the rear and the lower axis fell, putting the
+        side-view instant centre ~1891 mm AHEAD of the contact patch. That is
+        pro-dive geometry. It read as +26% anti-dive only because anti_dive_pct()
+        took the magnitude of the horizontal offset and so could not tell the two
+        apart. With the sign fixed, the stagger is flipped to match this
+        docstring's stated intent: the upper axis now falls toward the rear and
+        the lower axis rises, putting the SVIC ~1909 mm BEHIND the patch for a
+        genuine +26% anti-dive. Same magnitude, correct side of the car.
         """
         return Hardpoints(
-            upper_front_inner=np.array([-100.0, 240.0, 280.8]),
-            upper_rear_inner=np.array([130.0, 240.0, 299.2]),
-            lower_front_inner=np.array([-110.0, 200.0, 122.5]),
-            lower_rear_inner=np.array([140.0, 200.0, 117.5]),
+            upper_front_inner=np.array([-100.0, 240.0, 299.2]),
+            upper_rear_inner=np.array([130.0, 240.0, 280.8]),
+            lower_front_inner=np.array([-110.0, 200.0, 117.5]),
+            lower_rear_inner=np.array([140.0, 200.0, 122.5]),
             upper_outer=np.array([12.0, 540.0, 300.0]),
             lower_outer=np.array([-5.0, 575.0, 110.0]),
             tie_rod_inner=np.array([100.0, 230.0, 160.0]),
@@ -537,18 +547,55 @@ class SuspensionKinematics:
         return float(cp[1] - ground[1])
 
     def _instant_center(self, uo, lo):
-        """Front-view instant centre (y,z) from the two wishbone projections."""
+        """
+        Front-view instant centre (y, z) of the upright, from the EXACT motion of
+        the two ball joints.
+
+        Each ball joint rotates about its wishbone's chassis pivot axis, so its
+        velocity is  v = axis x (joint - point_on_axis)  (up to a scalar rate we
+        don't need — only the direction matters). Projected into the y-z plane,
+        the front-view IC is where the perpendiculars to the two projected
+        velocities meet. That is the definition of an instant centre, and it is
+        exact for any pivot-axis orientation.
+
+        This replaces the older construction, which drew each arm as the line
+        from the ball joint to the MIDPOINT of its two inner pickups. That
+        midpoint is only the correct front-view pivot when the axis is parallel
+        to x. The moment the axis is staggered in x-z — which is exactly what
+        anti-dive geometry does, and what Hardpoints.default() deliberately
+        builds in — the ball joint's path tilts out of the y-z plane and the
+        midpoint line is no longer perpendicular to its front-view velocity. On
+        the default geometry that error moved the IC by ~96 mm and the roll
+        centre by ~1.3 mm; it grows with pickup stagger, and it fed straight into
+        roll-centre height, RC migration and the lateral load-transfer split.
+
+        The two constructions agree exactly when both axes are parallel to x, so
+        flat-pickup geometries are unaffected.
+        """
         hp = self.hp
-        # upper arm line in y-z (use mean of front/rear inner pickups)
-        u_in = 0.5 * (hp.upper_front_inner + hp.upper_rear_inner)
-        l_in = 0.5 * (hp.lower_front_inner + hp.lower_rear_inner)
-        # upper line: through uo and u_in (in y-z)
-        p1, d1 = np.array([uo[1], uo[2]]), np.array([u_in[1] - uo[1], u_in[2] - uo[2]])
-        p2, d2 = np.array([lo[1], lo[2]]), np.array([l_in[1] - lo[1], l_in[2] - lo[2]])
+
+        def fv_perp(joint, front_inner, rear_inner):
+            """Front-view line (point, direction) through `joint` on which the
+            IC must lie: perpendicular to the joint's projected velocity."""
+            axis = np.asarray(rear_inner, float) - np.asarray(front_inner, float)
+            r = np.asarray(joint, float) - np.asarray(front_inner, float)
+            v = np.cross(axis, r)                 # velocity direction, 3D
+            vy, vz = v[1], v[2]                   # project into the front view
+            if abs(vy) < 1e-12 and abs(vz) < 1e-12:
+                return None                       # degenerate: joint on the axis
+            # perpendicular to (vy, vz) in the y-z plane
+            return np.array([joint[1], joint[2]]), np.array([-vz, vy])
+
+        up = fv_perp(uo, hp.upper_front_inner, hp.upper_rear_inner)
+        lw = fv_perp(lo, hp.lower_front_inner, hp.lower_rear_inner)
+        if up is None or lw is None:
+            return np.array([np.nan, np.nan])
+        p1, d1 = up
+        p2, d2 = lw
         # solve p1 + t d1 = p2 + s d2
         A = np.column_stack([d1, -d2])
         if abs(np.linalg.det(A)) < 1e-9:
-            return np.array([np.nan, np.nan])
+            return np.array([np.nan, np.nan])     # parallel arms => IC at infinity
         ts = np.linalg.solve(A, p2 - p1)
         ic = p1 + ts[0] * d1
         return ic
@@ -809,17 +856,28 @@ class SuspensionKinematics:
         axle. 100% anti-dive fully cancels front-end pitch from braking; FSAE
         cars typically run 0–30% to keep braking feel and tyre-load sensitivity.
         Returns NaN if the SVIC is at infinity (zero anti-dive geometry).
+
+        SIGN (this is the part that used to be wrong): tan(phi) is built from the
+        SIGNED horizontal offset, not its magnitude. Anti-dive is positive only
+        when the SVIC lies REARWARD of the front contact patch and above ground —
+        the trailing-link sense, where the braking force's reaction through the
+        links pushes the front of the chassis UP. An SVIC ahead of the patch (a
+        leading-arm effect) is PRO-dive and must read negative. Taking abs() of
+        the offset reported that geometry as positive anti-dive, so a car built
+        with the stagger backwards was told it had the anti-dive it did not have.
         """
         svic = self._side_view_swing_arm(state)
         if not np.all(np.isfinite(svic)):
             return 0.0  # parallel wishbones in side view => zero anti-dive
         st = state if state is not None else self.static
         cp = st.contact_patch
-        Lsva = svic[0] - cp[0]        # +x is rearward; SVIC ahead of patch => negative
+        # Outboard front brakes: the brake torque is reacted by the upright, so
+        # the force line runs from the CONTACT PATCH to the SVIC.
+        Lsva = svic[0] - cp[0]        # +x is rearward; > 0 => SVIC behind patch
         hsva = svic[1] - cp[2]
         if abs(Lsva) < 1e-9:
             return np.nan
-        tan_phi = hsva / abs(Lsva)
+        tan_phi = hsva / Lsva         # SIGNED — see note above
         return float(tan_phi * (wheelbase / cg_height) * brake_bias_front * 100.0)
 
     def anti_squat_pct(self, cg_height: float, wheelbase: float,
@@ -832,35 +890,56 @@ class SuspensionKinematics:
 
             anti-squat%  =  tan(phi) * (wheelbase / cg_height) * drive_bias_rear * 100
 
-        with tan(phi) = hsva / Lsva from the rear corner's side-view instant
-        centre relative to the rear contact patch. `drive_bias_rear` is the
-        fraction of tractive force at this axle (1.0 for a RWD FSAE car). 100%
-        anti-squat fully cancels acceleration squat. Returns NaN if undefined.
+        `drive_bias_rear` is the fraction of tractive force at this axle (1.0 for
+        a RWD FSAE car). 100% anti-squat fully cancels acceleration squat.
+        Returns NaN if undefined.
 
-        NOTE: this is the geometry for an inboard-brake/inboard-drive layout
-        (the usual FSAE rear). A solid axle or outboard drive would use a
-        different reaction path; that is out of scope here and would mislead, so
-        it is not approximated.
+        REFERENCE POINT — this is what makes inboard drive different from a solid
+        axle, and it used to be wrong here. With a CHASSIS-MOUNTED final drive
+        the drive torque is reacted by the chassis, not by the suspension links;
+        only the tractive force passes through the linkage, and it does so at
+        WHEEL-CENTRE height. So the anti-squat line runs from the WHEEL CENTRE to
+        the SVIC (Gillespie §7, Milliken §17) — not from the contact patch, which
+        is the solid-axle/outboard-drive construction. Measuring from the patch
+        instead adds the whole tyre radius (~228 mm on an FSAE car) to the
+        vertical offset, which does not just inflate the number, it routinely
+        flips its sign.
+
+            tan(phi) = (z_svic - z_wc) / (x_wc - x_svic)
+
+        SIGN: positive anti-squat needs the SVIC FORWARD of the rear wheel centre
+        and ABOVE it, so the tractive reaction through the links lifts the rear.
+        The offsets are signed; an SVIC on the wrong side is pro-squat and reads
+        negative, as it should.
+
+        NOTE: this is the inboard-brake/inboard-drive layout (the usual FSAE
+        rear). A solid axle or outboard drive reacts torque through the links and
+        would use the contact-patch line; that is out of scope here and would
+        mislead, so it is not approximated.
         """
         svic = self._side_view_swing_arm(state)
         if not np.all(np.isfinite(svic)):
             return 0.0
         st = state if state is not None else self.static
-        cp = st.contact_patch
-        Lsva = svic[0] - cp[0]
-        hsva = svic[1] - cp[2]
+        wc = st.wheel_center
+        Lsva = wc[0] - svic[0]        # > 0 => SVIC forward of the wheel centre
+        hsva = svic[1] - wc[2]        # > 0 => SVIC above the wheel centre
         if abs(Lsva) < 1e-9:
             return np.nan
-        tan_phi = hsva / abs(Lsva)
+        tan_phi = hsva / Lsva         # SIGNED — see note above
         return float(tan_phi * (wheelbase / cg_height) * drive_bias_rear * 100.0)
 
     def side_view_swing_arm_length(self, state=None) -> float:
         """Horizontal distance (mm) from contact patch to the side-view instant
         centre — the side-view swing-arm length. Long arm => little pitch
-        coupling; short arm => lots. Sign: positive when the SVIC is ahead of the
-        contact patch (forward), the usual anti-dive sense for a front corner."""
+        coupling; short arm => lots.
+
+        Sign matches anti_dive_pct: POSITIVE when the SVIC is REARWARD of the
+        contact patch, which is the anti-dive sense for a front corner. (It was
+        previously documented and returned the other way round, contradicting the
+        anti-dive convention it exists to explain.)"""
         svic = self._side_view_swing_arm(state)
         if not np.all(np.isfinite(svic)):
             return np.inf
         st = state if state is not None else self.static
-        return float(-(svic[0] - st.contact_patch[0]))
+        return float(svic[0] - st.contact_patch[0])

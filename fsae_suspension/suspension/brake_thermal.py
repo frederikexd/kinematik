@@ -110,16 +110,27 @@ def h_rotating_disc(diameter_mm: float, v_car_ms: float,
     Nu=0.015·Re^0.8) and the car's forward speed forcing air across it
     (flat-plate Nu=0.037·Re^0.8·Pr^(1/3)). `duct_gain` credits a brake-cooling
     duct that raises local airflow (1.0 = unducted, 2-3 = a good duct).
+
+    LENGTH SCALES: each correlation is reduced to an h with ITS OWN
+    characteristic length before the two are combined, and the quadrature is
+    taken on h rather than on Nu. The rotating-disc form is radius-based
+    (Nu_r = h·r/k, Re_r = ω·r²/ν); the flat-plate form is diameter-based. The
+    previous version computed the radius-based Reynolds but then divided the
+    combined Nusselt by the DIAMETER, which understated the rotational term by a
+    factor of two. Cross-flow dominates at racing speeds so the net effect on h
+    is only ~9%, but mixing length scales inside one correlation is wrong
+    regardless of how much it happens to move the answer.
     """
     D = max(diameter_mm, 1.0) / 1000.0
     r = D / 2.0
     omega = max(abs(v_car_ms), 0.0) / max(r, 1e-3)       # rotor spins with wheel
     Re_rot = omega * r * r / _AIR_NU
     Nu_rot = 0.015 * max(Re_rot, 1.0) ** 0.8
+    h_rot = Nu_rot * _AIR_K / max(r, 1e-3)               # radius-based
     Re_x = max(abs(v_car_ms), 0.0) * D / _AIR_NU
     Nu_x = 0.037 * max(Re_x, 1.0) ** 0.8 * _AIR_PR ** (1.0 / 3.0)
-    Nu = (Nu_rot ** 2 + Nu_x ** 2) ** 0.5
-    h = Nu * _AIR_K / max(D, 1e-3)
+    h_x = Nu_x * _AIR_K / max(D, 1e-3)                   # diameter-based
+    h = (h_rot ** 2 + h_x ** 2) ** 0.5
     return float(max(h * max(duct_gain, 0.1), 12.0))
 
 

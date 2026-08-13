@@ -137,7 +137,7 @@ def _speed_at_redline_kmh(motor_map, final_drive: float, wheel_r: float) -> floa
 
 
 def _resistance_n(v_ms: float, mass_kg: float, cda: float, crr: float,
-                  rho: float = 1.2, g: float = 9.81) -> float:
+                  rho: float = 1.225, g: float = 9.81) -> float:
     """Aero drag + rolling resistance at speed v."""
     return 0.5 * rho * cda * v_ms * v_ms + crr * mass_kg * g
 
@@ -428,7 +428,7 @@ class CoolingOperatingPoint:
 def cooling_operating_point(fan: FanCurve, system_k: float,
                             *, heat_to_reject_w: float = 0.0,
                             air_delta_t_c: float = 20.0,
-                            air_density: float = 1.2,
+                            air_density: float = 1.225,
                             air_cp: float = 1005.0) -> CoolingOperatingPoint:
     """Intersect the fan curve with a quadratic system resistance dp = k·Q²
     (Q in m³/h) to find the operating airflow, then check whether that airflow can

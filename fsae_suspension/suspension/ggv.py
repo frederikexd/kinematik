@@ -680,13 +680,16 @@ def validate_against_laptime(veh: VehicleDynamics, pt, speeds=None,
 
     out["ok"] = all_ok
     out["rel_tol"] = rel_tol
-    # Known, located model difference worth surfacing rather than hiding: laptime's
-    # _decel_long applies the plain lateral mu on the brake side (no mu_x_ratio and
-    # no combined-tire branch — that branch is only in _accel_long). So with a
-    # combined tire whose mu_x_ratio > 1, the GGV's braking limit will read higher
-    # than laptime's until both clip at brake_g_cap. The GGV is the physically
-    # consistent one (braking is longitudinal too); the divergence is laptime's
-    # brake side, not a GGV error.
+    # HISTORICAL NOTE (kept because the check below still earns its keep):
+    # laptime._decel_long used to apply the plain lateral mu on the brake side —
+    # no mu_x_ratio, no combined-tire ellipse, since that branch existed only in
+    # _accel_long. With a combined tire whose mu_x_ratio > 1 the GGV's braking
+    # limit therefore read higher than laptime's until both clipped at
+    # brake_g_cap, and this function's job was to surface that rather than hide
+    # it. _decel_long now uses the same envelope as _accel_long, so the two
+    # engines agree on the brake axis by construction. The detection below stays
+    # as a regression tripwire: if brake-only divergence ever reappears, it means
+    # the two longitudinal models have drifted apart again.
     ct = getattr(pt, "combined_tire", None)
     mxr = getattr(ct, "mu_x_ratio", 1.0) if ct is not None else 1.0
     if (not all_ok) and mxr > 1.0:
@@ -695,10 +698,11 @@ def validate_against_laptime(veh: VehicleDynamics, pt, speeds=None,
             for i in range(len(out["speeds"])))
         if brake_only:
             out["note"] = (
-                "Lateral and accel agree; the only divergence is braking, because "
-                "laptime._decel_long does not apply the combined tire's mu_x_ratio "
-                "on the brake side. The GGV does (braking is longitudinal). This is "
-                "a laptime brake-side simplification, not a GGV error.")
+                "REGRESSION: lateral and accel agree; the only divergence is "
+                "braking. laptime._decel_long and _accel_long are supposed to "
+                "share one combined-slip envelope (ellipse + mu_x_ratio). They "
+                "have drifted apart — fix the longitudinal models, do not widen "
+                "this tolerance.")
     out["max_reldiff"] = float(max(
         [x for x in out["lat_reldiff"] + out["accel_reldiff"] + out["brake_reldiff"]
          if np.isfinite(x)] or [float("nan")]))

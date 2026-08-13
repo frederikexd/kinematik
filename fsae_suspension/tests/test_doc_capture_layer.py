@@ -35,7 +35,12 @@ What is pinned here:
     markdown for a used one.
 """
 
+import datetime
+import json
+import math
 import os
+import re
+import time
 import types
 
 import pytest
@@ -77,7 +82,19 @@ def cap():
     st = types.SimpleNamespace()
     st.session_state = {}
 
-    ns = {"st": st, "DeltaGenerator": _FakeDG}
+    # The slices below are real source lifted out of streamlit_app.py, so they
+    # run with whatever the app has imported at module scope — NOT with this
+    # test module's imports. `exec` into a bare dict gives them builtins and
+    # nothing else, so the first slice that touched `re` died with
+    # "NameError: name 're' is not defined" and took all 56 tests in this file
+    # down with it. That is a harness gap, not a bug in the capture layer: the
+    # shipped code imports re at the top of the app and is fine in production.
+    # Seed the namespace with the stdlib modules the sliced regions use.
+    ns = {
+        "st": st, "DeltaGenerator": _FakeDG,
+        "re": re, "os": os, "json": json, "math": math, "time": time,
+        "types": types, "datetime": datetime,
+    }
 
     # The capture layer itself: constants through get_feature_results.
     ns_src = _extract(src, "_FEATURE_RESULTS_KEY = ",
@@ -130,7 +147,12 @@ def test_metric_is_captured_for_the_rendering_feature(cap):
     _open_feature(cap, "brakes")
     cap["capture_metric"]("Installed length", "374.9 mm")
     got = cap["get_feature_results"]("brakes")["metrics"]
-    assert got == [{"label": "Installed length", "value": "374.9 mm"}]
+    # Assert on the fields this test is about rather than exact dict equality:
+    # captured metrics have since gained a `quality` field, and a whole-dict
+    # comparison turns every additive schema change into a false failure.
+    assert len(got) == 1
+    assert got[0]["label"] == "Installed length"
+    assert got[0]["value"] == "374.9 mm"
 
 
 def test_metric_dedupes_by_label_last_value_wins(cap):
@@ -235,10 +257,27 @@ def test_metric_cap_holds(cap):
 
 def test_verdict_cap_holds(cap):
     _open_feature(cap, "brakes")
+    # Each verdict must be genuinely distinct. The capture layer dedupes by a
+    # SIGNATURE that normalises digits to '#', so 200 findings differing only by
+    # a number collapse to one and the cap is never reached — this test used to
+    # pass a numbered string and was therefore measuring dedup, not the cap.
+    words = ("alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf",
+             "hotel", "india", "juliet")
     for i in range(200):
-        cap["capture_verdict"](f"A finding number {i} worth recording.", "warning")
+        a, b = words[i % 10], words[(i // 10) % 10]
+        cap["capture_verdict"](f"The {a} {b} check number {i} needs review.",
+                               "warning")
     assert len(cap["get_feature_results"]("brakes")["verdicts"]) \
         == cap["_MAX_CAPTURED_VERDICTS"]
+
+
+def test_verdicts_dedupe_on_signature(cap):
+    """Companion to the cap test: findings that differ only in their numbers
+    are the SAME finding and must collapse to one line in the report."""
+    _open_feature(cap, "brakes")
+    for i in range(20):
+        cap["capture_verdict"](f"A finding number {i} worth recording.", "warning")
+    assert len(cap["get_feature_results"]("brakes")["verdicts"]) == 1
 
 
 def test_overlong_verdict_is_skipped(cap):
@@ -284,7 +323,12 @@ def test_sections_carry_the_numbers_and_the_verdicts(cap):
     cap["capture_metric"]("Available", "290.0 mm")
     cap["capture_verdict"]("The assembly is 84.9 mm too long.", "fail")
     secs = cap["_captured_result_sections"]("brakes")
-    assert len(secs) == 2
+    # A "why this was run" rationale section now leads the results and verdicts
+    # sections. Assert the content is present rather than pinning a section
+    # count, which breaks every time the report gains a block.
+    heads = [h.lower() for h, _ in secs]
+    assert any("results" in h for h in heads)
+    assert any("verdict" in h for h in heads)
     body = "\n".join(l for _, lines in secs for l in lines)
     assert "374.9 mm" in body and "290.0 mm" in body
     assert "84.9 mm too long" in body
@@ -295,9 +339,12 @@ def test_metrics_section_precedes_verdicts(cap):
     _open_feature(cap, "brakes")
     cap["capture_metric"]("A", "1")
     cap["capture_verdict"]("A finding worth reporting here.", "ok")
-    heads = [h for h, _ in cap["_captured_result_sections"]("brakes")]
-    assert "results" in heads[0]
-    assert "verdicts" in heads[1]
+    heads = [h.lower() for h, _ in cap["_captured_result_sections"]("brakes")]
+    # Ordering is the contract, not absolute position: the rationale section
+    # sits ahead of both, so compare indices instead of indexing [0] and [1].
+    i_res = next(i for i, h in enumerate(heads) if "results" in h)
+    i_ver = next(i for i, h in enumerate(heads) if "verdict" in h)
+    assert i_res < i_ver, f"metrics must precede verdicts, got {heads}"
 
 
 def test_subsystem_rollup_gathers_every_owned_feature(cap):

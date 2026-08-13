@@ -230,6 +230,15 @@ def _Phi(x: float) -> float:
 class ToleranceField:
     """point name → ToleranceSpec. Only listed points are perturbed."""
     specs: dict[str, ToleranceSpec] = _dcfield(default_factory=dict)
+    #: Where these tolerances came from. The shop presets below are
+    #: REPRESENTATIVE, not measured, and a Monte Carlo run on them produces a
+    #: distribution that looks exactly as authoritative as one built from a
+    #: team's own inspection data. The caveat used to live in a code comment the
+    #: user never saw; carrying it on the object means it travels to the report.
+    #: Set `calibrated=True` (and say what you measured) once these come from
+    #: real inspection of your own parts.
+    provenance: str = "not specified"
+    calibrated: bool = False
 
     def __post_init__(self):
         for name in self.specs:
@@ -257,6 +266,9 @@ class ToleranceField:
         tabs = dict(hand_weld=1.5, jig_weld=0.5, cnc=0.05).get(shop)
         if tabs is None:
             raise ValueError(f"Unknown shop preset '{shop}'.")
+        _prov = (f"shop preset '{shop}' — REPRESENTATIVE tolerances, not "
+                 f"measured on your parts. Replace with inspection data before "
+                 f"quoting these spreads as your build's real scatter.")
         outers = dict(hand_weld=0.2, jig_weld=0.15, cnc=0.05)[shop]
         ax = {"x": 0, "y": 1, "z": 2}[pull_axis]
         specs: dict[str, ToleranceSpec] = {}
@@ -273,7 +285,7 @@ class ToleranceField:
         for p in ("tie_rod_inner", "upper_outer", "lower_outer",
                   "tie_rod_outer"):
             specs[p] = ToleranceSpec.symmetric(outers)
-        return ToleranceField(specs)
+        return ToleranceField(specs, provenance=_prov, calibrated=False)
 
     # ---- flattening for the linear algebra --------------------------------
     def coords(self) -> list[tuple[str, int]]:

@@ -484,10 +484,23 @@ def example(name: str) -> Mechanism:
     'load a starting geometry' menu and for tests.
     """
     if name == "double_wishbone":
+        # SINGLE SOURCE OF TRUTH: read the hardpoints from Hardpoints.default()
+        # rather than repeating them here. This example used to be a duplicated
+        # literal copy of that geometry, so the two silently diverged the moment
+        # either was edited — and test_generic_matches_native_double_wishbone,
+        # which exists precisely to prove the generic kernel reproduces the
+        # native wishbone solver, would then be comparing two DIFFERENT cars and
+        # reporting a solver disagreement that was really a data mismatch.
+        # Imported locally: kinematics.py has no dependency on this module, so
+        # there is no import cycle, but keeping it lazy costs nothing.
+        from .kinematics import Hardpoints
+        _hp = Hardpoints.default()
         return double_wishbone(
-            [-100, 240, 280.8], [130, 240, 299.2], [-110, 200, 122.5],
-            [140, 200, 117.5], [12, 540, 300], [-5, 575, 110],
-            [100, 230, 160], [90, 560, 150], [0, 600, 228], [0, 605, 0])
+            list(_hp.upper_front_inner), list(_hp.upper_rear_inner),
+            list(_hp.lower_front_inner), list(_hp.lower_rear_inner),
+            list(_hp.upper_outer), list(_hp.lower_outer),
+            list(_hp.tie_rod_inner), list(_hp.tie_rod_outer),
+            list(_hp.wheel_center), list(_hp.contact_patch))
     if name == "macpherson_strut":
         return macpherson_strut(
             strut_top=[10, 520, 620], lower_front_inner=[-110, 200, 122.5],
