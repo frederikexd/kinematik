@@ -15168,10 +15168,21 @@ def _render_rotor_thermal(_bt, _mass, kin):
         _odm = st.columns(4)
         _surf_delta = units_mod.from_metric_delta(
             _od.T_surface_peak_c - _trace.T_rotor_peak_c, "°C")
+        #  SIGNED delta, not a hardcoded "+". The friction face must run hotter
+        #  than the bulk — that is the whole reason this panel exists. While the
+        #  1-D model was shedding heat twice it came out 79 C COLDER, and this
+        #  line rendered it as "+-79 vs bulk" directly beneath a help string
+        #  promising the face was hotter. A visible contradiction that nobody
+        #  caught, because the hardcoded plus made it read as a formatting
+        #  oddity rather than a physics failure. Now it prints its own sign, and
+        #  says so out loud if it ever goes negative again.
+        _surf_warn = "" if _surf_delta >= 0 else "  ⚠ cooler than bulk — check the model"
         umetric(_odm[0], "Surface peak", _od.T_surface_peak_c, "°C",
-                delta=f"+{_surf_delta:.0f} vs bulk",
+                delta=f"{_surf_delta:+.0f} vs bulk{_surf_warn}",
                 help="The friction face runs this much hotter than the average "
-                "the lumped model reports.")
+                "the lumped model reports. A NEGATIVE value here is not "
+                "physical: heat enters at the face, so it cannot be cooler "
+                "than the through-thickness mean.")
         # Peak gradient is a temperature DIFFERENCE — convert factor-only.
         _grad_disp = units_mod.from_metric_delta(_od.dT_gradient_peak_c, "°C")
         _odm[1].metric("Peak gradient", f"{_grad_disp:.0f} {units_mod.label('°C')}",

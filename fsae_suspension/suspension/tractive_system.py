@@ -133,6 +133,23 @@ class Rules:
     tsal_flash_hz_max: float = 5.0
     bspd_reaction_max_s: float = 0.5
 
+    def __post_init__(self):
+        #  A window with its lower bound above its upper is a typo, and nothing
+        #  downstream can behave sensibly on it: every value is simultaneously
+        #  above the max and below the min, so the checks either double-flag
+        #  everything or pass nothing. There is no legitimate inverted case for
+        #  any of these, so it is refused at construction rather than left to
+        #  produce confident nonsense.
+        if self.precharge_min_time_s > self.precharge_max_time_s:
+            raise ValueError(
+                f"precharge_min_time_s ({self.precharge_min_time_s}) is above "
+                f"precharge_max_time_s ({self.precharge_max_time_s}); no "
+                f"precharge duration could ever pass.")
+        if self.tsal_flash_hz_min > self.tsal_flash_hz_max:
+            raise ValueError(
+                f"tsal_flash_hz_min ({self.tsal_flash_hz_min}) is above "
+                f"tsal_flash_hz_max ({self.tsal_flash_hz_max}).")
+
     def as_dict(self):
         return asdict(self)
 

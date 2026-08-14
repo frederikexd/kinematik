@@ -414,6 +414,19 @@ class ScreenConfig:
     #: chronological, which the sheet does not actually promise.
     prefer_latest_per_contributor: bool = False
 
+    def __post_init__(self):
+        #  A window with its lower bound above its upper is a typo, and nothing
+        #  downstream can behave sensibly on it: every value is simultaneously
+        #  above the max and below the min, so the checks either double-flag
+        #  everything or pass nothing. There is no legitimate inverted case for
+        #  any of these, so it is refused at construction rather than left to
+        #  produce confident nonsense.
+        if self.courant_warn_min > self.courant_warn_max:
+            raise ValueError(
+                f"courant_warn_min ({self.courant_warn_min}) is above "
+                f"courant_warn_max ({self.courant_warn_max}); every run would "
+                f"be flagged both too high and too low.")
+
     def as_rows(self) -> list[tuple]:
         """Flatten to (setting, value) pairs for the Config sheet."""
         out = []

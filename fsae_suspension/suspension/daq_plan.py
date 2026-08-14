@@ -288,6 +288,22 @@ class SensorSpec:
             na.update({"power", "wiring"})
         return na
 
+    def __post_init__(self):
+        #  A declared range with min above max is not a sensor, and every check
+        #  downstream inherits the nonsense: span goes negative, so the LSB and
+        #  the effective bit depth do too, and the resolution finding comes back
+        #  clean. The signal-chain checks validate the CHAIN and never validated
+        #  the sensor's own declaration, so an inverted range scored OK on every
+        #  gate. Garbage in, confidently graded garbage out — the exact failure a
+        #  pre-validation tool exists to prevent.
+        _lo, _hi = self.range_min_eu, self.range_max_eu
+        if _lo is not None and _hi is not None and _lo > _hi:
+            raise ValueError(
+                f"{self.name}: range_min_eu ({_lo}) is above range_max_eu "
+                f"({_hi}). Swap them, or if the transducer really is inverted "
+                f"(a pull-to-close pot) declare the physical span and handle the "
+                f"sign in calibration.")
+
     def answered(self) -> dict[str, bool]:
         """Which checklist questions have every field they need.
 

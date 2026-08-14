@@ -1619,6 +1619,24 @@ def export_track_sim(source_path: str, out_path: str,
     warnings: list[str] = []
     findings: list[Finding] = []
 
+    #  Validate the speed trace BEFORE it seeds every derived column. This
+    #  export lands in a workbook rather than a solver deck, so a NaN is at
+    #  least visible to the user as #NUM! — but it is visible in the OUTPUT,
+    #  after propagating through the propulsion rebuild, the current trace and
+    #  the C-rate check, by which point the user is debugging a spreadsheet
+    #  instead of a bad input sample. Same principle as the CFD export guard:
+    #  stop it at the boundary, and name what went wrong.
+    _bad = [i for i, v in enumerate(speed_mph)
+            if v is None or not math.isfinite(float(v))]
+    if _bad:
+        raise ValueError(
+            f"speed_mph contains {len(_bad)} non-finite sample(s) "
+            f"(first at index {_bad[0]}). Every propulsion, current and C-rate "
+            f"column is derived from this trace, so exporting it would fill the "
+            f"workbook with #NUM! and hide the one bad sample that caused it.")
+    if not math.isfinite(float(dt_s)) or float(dt_s) <= 0.0:
+        raise ValueError(f"dt_s must be finite and positive, got {dt_s}.")
+
     if pack is None:
         try:
             pack = pdw.read_pack_config(source_path)

@@ -636,12 +636,29 @@ class OneDRotor:
                     if j == 0:
                         # SURFACE node: conduction inward + incoming flux − losses
                         cond = self.alpha * (T[1] - T[0]) / (self.dx * self.dx)
-                        # convective/radiative loss per unit FACE area, scaled by
-                        # the area_factor so a vented rotor's extra wetted area
-                        # cools the surface the same way it does in the lumped
-                        # model (keeps the two models' energy budgets consistent).
-                        loss = p.area_factor * h * (T[0] - Tamb)
-                        rad = (p.area_factor * p.emissivity * p._SIGMA
+                        # Convective/radiative loss per unit FACE area.
+                        #
+                        # HALF the area_factor, because this model solves HALF
+                        # the thickness. area_factor (2.4) is the multiplier on
+                        # the annulus that covers BOTH faces plus vanes and
+                        # edges — A_conv = face_area * area_factor for the whole
+                        # rotor. Applying the full factor to this one face and
+                        # then implying the other half by symmetry sheds it
+                        # twice, which is exactly what the comment here used to
+                        # claim it was preventing.
+                        #
+                        # This is required by this model's OWN energy budget,
+                        # not tuned to match the lumped one: it takes half the
+                        # heat (q_rotor / 2 above), so it must shed half the
+                        # loss. Against the 2-node model it moves the endpoint
+                        # from -28.8% to +14.8%; the remaining +14.8% is a real
+                        # scope difference, not an error — the 2-node conducts
+                        # into a pad node and sheds from it, and this model has
+                        # no pad. Remove the pad path from the 2-node and the
+                        # two agree to 4.0%, which is the discretisation and the
+                        # surface-vs-bulk definition.
+                        loss = 0.5 * p.area_factor * h * (T[0] - Tamb)
+                        rad = (0.5 * p.area_factor * p.emissivity * p._SIGMA
                                * ((T[0] + 273.15) ** 4 - Tamb_k ** 4)) \
                             if p.enable_radiation else 0.0
                         src = (q_surf_flux - loss - rad) / (self.dx / 2.0) / rho_cp

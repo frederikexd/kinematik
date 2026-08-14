@@ -297,3 +297,47 @@ class SolverUnavailable(RuntimeError):
     binary, no cluster). Carries an actionable message — exactly which binary /
     license / parameter is missing — never a silent fallback to a fake number.
     """
+
+
+# --------------------------------------------------------------------------- #
+#  Export-boundary guard
+# --------------------------------------------------------------------------- #
+def require_finite_export(**values) -> None:
+    """Refuse to write a non-finite number into an external tool's input deck.
+
+    THE EXPORT BOUNDARY IS WHERE A DEFECT STOPS BEING OURS. Everything written
+    into a snappyHexMesh dict, a Fluent journal or an OpenFOAM case leaves this
+    repo and is executed somewhere else, so a bad value surfaces hours later, on
+    a cluster, in the wrong tool, to someone who cannot see this code. That makes
+    these the most expensive errors the toolkit can make and the cheapest ones to
+    stop.
+
+    Auditing the four export writers found ZERO finite-checks between them, and
+    three live escapes on an attitude carrying a NaN or an inf:
+
+      * a NaN roll was swallowed by the axis-angle extraction and emitted as
+        "angle 0.0" — the requested attitude SILENTLY DISCARDED and the car
+        meshed flat. Worse than a crash: the run completes, looks clean, and
+        answers a question nobody asked.
+      * an infinite ride height wrote "(0 0 inf)" into the snappy transform.
+      * a NaN yaw wrote "(nan, nan, 0.0)" as the Fluent inlet velocity.
+
+    None of these is hypothetical. This package deliberately returns NaN for
+    genuinely undefined geometry — a degenerate roll centre, a parallel-link
+    swing arm — which is the honest thing to do, and it means NaN is a value
+    that really travels. Honest NaNs upstream require a hard stop at the edge.
+
+    Raises ValueError naming the offending field, because a caller three layers
+    up needs to know WHICH number went bad, not merely that one did.
+    """
+    import math as _math
+    bad = {k: v for k, v in values.items()
+           if v is None or not _math.isfinite(float(v))}
+    if bad:
+        detail = ", ".join(f"{k}={v}" for k, v in sorted(bad.items()))
+        raise ValueError(
+            f"refusing to write a non-finite value into an external tool's "
+            f"input deck: {detail}. This would leave the repo and fail (or "
+            f"quietly succeed at the wrong attitude) inside the solver. Fix the "
+            f"upstream value — a NaN here usually means a degenerate geometry "
+            f"that returned NaN honestly further up.")

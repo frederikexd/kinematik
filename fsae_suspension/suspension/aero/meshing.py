@@ -75,6 +75,24 @@ class MeshParams:
     car_patch: str = "car"                   # patch name the solver's forceCoeffs reads
     n_subdomains: int = 64                   # decomposition for parallel snappy+solve
 
+    def __post_init__(self):
+        #  A window with its lower bound above its upper is a typo, and nothing
+        #  downstream can behave sensibly on it: every value is simultaneously
+        #  above the max and below the min, so the checks either double-flag
+        #  everything or pass nothing. There is no legitimate inverted case for
+        #  any of these, so it is refused at construction rather than left to
+        #  produce confident nonsense.
+        #  This pair is written STRAIGHT INTO the snappyHexMesh deck as
+        #  "level (min max)", so an inverted pair leaves the repo and becomes a
+        #  broken external mesh run — the failure lands in OpenFOAM, hours later,
+        #  where it is far more expensive to diagnose than here.
+        if self.surface_min_level > self.surface_max_level:
+            raise ValueError(
+                f"surface_min_level ({self.surface_min_level}) is above "
+                f"surface_max_level ({self.surface_max_level}); snappy would "
+                f"receive 'level ({self.surface_min_level} "
+                f"{self.surface_max_level})' and refine unpredictably.")
+
     def estimate_note(self) -> str:
         """Honest disclaimer: a budget is not a count."""
         return (f"target mesh: base {self.base_cell_m*1000:.0f} mm, surface L"
@@ -103,6 +121,12 @@ def _attitude_geometry_transform(att: Attitude) -> dict:
     Yaw stays on the inlet, correctly: the ground plane is symmetric about z, so
     yawing the car and yawing the flow are equivalent even with the road present.
     """
+    #  Guard BEFORE any arithmetic: a NaN here is swallowed by the axis-angle
+    #  extraction below and emitted as "angle 0.0", silently discarding the
+    #  requested attitude and meshing the car flat.
+    from .cfd import require_finite_export
+    require_finite_export(roll_deg=att.roll_deg, pitch_deg=att.pitch_deg,
+                          yaw_deg=att.yaw_deg, ride_height_mm=att.ride_height_mm)
     roll_rad = math.radians(att.roll_deg)
     pitch_rad = math.radians(att.pitch_deg)
 

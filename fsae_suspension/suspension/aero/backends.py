@@ -492,6 +492,16 @@ class OpenFOAMSolver:
     do not pitch the geometry, rake is lost — the deck can no longer put it back.
     The attitude is written into the deck header so this is auditable.
         """
+        #  SINGLE CHOKEPOINT for every backend: all five write_case()
+        #  implementations (OpenFOAM, the stub, and the three others) call this
+        #  one method for their inlet triple, so guarding here covers the whole
+        #  package. A non-finite attitude otherwise reaches the deck as
+        #  "internalField uniform (nan nan 0.00000)" and fails on a cluster,
+        #  hours later, in a tool that cannot show the user this code.
+        from .cfd import require_finite_export
+        require_finite_export(speed_ms=a.speed_ms, yaw_deg=a.yaw_deg,
+                              pitch_deg=a.pitch_deg, roll_deg=a.roll_deg,
+                              ride_height_mm=a.ride_height_mm)
         v = a.speed_ms
         yaw = math.radians(a.yaw_deg)
         pitch = 0.0                     # deliberately not used — see above

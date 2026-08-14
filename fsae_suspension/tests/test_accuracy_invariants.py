@@ -1622,3 +1622,284 @@ def test_proof_plan_headline_carries_its_grade():
     assert weak != strong, "the headline must change when the evidence changes"
     # The uncertainty band and the grade are separate signals and both must show.
     assert "±" in weak
+
+
+def test_anti_squat_shortcut_error_is_bounded():
+    """The wheel-centre reference point, checked by STATIC EQUILIBRIUM rather
+    than by citation — solving the upright as a rigid body (6 equations, 6 link
+    unknowns) and reading the pushrod force directly. No path slope, no tan(phi),
+    no sign convention from the module under test.
+
+    Three load cases on the default geometry:
+        solid axle, force at the contact patch     -40.3 %
+        inboard drive, halfshaft torque modelled   +16.1 %
+        wheel-centre shortcut                      +17.1 %
+
+    Two conclusions. The reference point is not cosmetic — patch versus wheel
+    centre is a 56-point swing that changes the SIGN, so the fix was both real
+    and large. And the shortcut is exact only at zero camber and zero scrub,
+    because it puts the whole couple (wc-cp) x Fx onto the linkage while
+    physically only the spin-axis component is driveline-reacted; the rest goes
+    to the bearings and the tie rod. That leaves ~1 pp of optimism here.
+
+    This test pins the bound. If it widens, the geometry has drifted somewhere
+    the shortcut no longer holds and the exact static form is needed.
+    """
+    np_ = pytest.importorskip("numpy")
+
+    def _basis(a, b, o):
+        u = np_.asarray(a, float) - np_.asarray(o, float)
+        v = np_.asarray(b, float) - np_.asarray(o, float)
+        return u / np_.linalg.norm(u), v / np_.linalg.norm(v)
+
+    def pushrod(hp, st, apps, couples=()):
+        uo, lo, tro, pro = st.upper_outer, st.lower_outer, st.tie_rod_outer, st.pushrod_outer
+        u1, u2 = _basis(hp.upper_front_inner, hp.upper_rear_inner, uo)
+        l1, l2 = _basis(hp.lower_front_inner, hp.lower_rear_inner, lo)
+        tr = np_.asarray(hp.tie_rod_inner, float) - np_.asarray(tro, float)
+        tr /= np_.linalg.norm(tr)
+        pr = np_.asarray(hp.rocker_pushrod, float) - np_.asarray(pro, float)
+        pr /= np_.linalg.norm(pr)
+        A = np_.zeros((6, 6))
+        for j, (d, p) in enumerate([(u1, uo), (u2, uo), (l1, lo), (l2, lo),
+                                    (tr, tro), (pr, pro)]):
+            A[0:3, j] = d
+            A[3:6, j] = np_.cross(np_.asarray(p, float), d)
+        F = np_.zeros(3)
+        M = np_.zeros(3)
+        for f, p in apps:
+            F = F + np_.asarray(f, float)
+            M = M + np_.cross(np_.asarray(p, float), np_.asarray(f, float))
+        for c in couples:
+            M = M + np_.asarray(c, float)
+        return float(np_.linalg.solve(A, np_.concatenate([-F, -M]))[5])
+
+    hp = Hardpoints.default()
+    st = SuspensionKinematics(hp).static
+    cp = np_.asarray(st.contact_patch, float)
+    wc = np_.asarray(st.wheel_center, float)
+    m, g, L, h = 300.0, 9.81, 1550.0, 300.0
+    d_fz = m * g * h / L / 2.0
+    fx = np_.array([-m * g / 2.0, 0.0, 0.0])          # traction, forward
+    p0 = pushrod(hp, st, [([0, 0, d_fz], cp)])
+
+    at_patch = 100.0 * (1 - pushrod(hp, st, [(fx, cp), ([0, 0, d_fz], cp)]) / p0)
+    at_wc = 100.0 * (1 - pushrod(hp, st, [(fx, wc), ([0, 0, d_fz], cp)]) / p0)
+
+    cam = math.radians(st.camber)
+    axis = np_.array([0.0, math.cos(cam), math.sin(cam)])
+    full = np_.cross(wc - cp, fx)
+    torque_path = 100.0 * (1 - pushrod(
+        hp, st, [(fx, cp), ([0, 0, d_fz], cp)],
+        couples=[float(np_.dot(full, axis)) * axis]) / p0)
+
+    # the reference point changes the SIGN — it is not a refinement
+    assert at_patch < 0 < at_wc
+    assert abs(at_wc - at_patch) > 40.0
+    # the module agrees with the wheel-centre statics
+    assert abs(SuspensionKinematics(hp).anti_squat_pct(h, L, 1.0) - at_wc) < 0.5
+    # and the shortcut sits within ~1.5 pp of the modelled torque path
+    assert abs(at_wc - torque_path) < 1.5, (
+        f"shortcut {at_wc:.2f}% vs torque path {torque_path:.2f}% — the "
+        f"zero-camber/zero-scrub assumption no longer holds for this geometry")
+
+
+# ============================================================================ #
+#  PHYSICALLY REQUIRED ORDERINGS
+# ============================================================================ #
+#  The 1-D rotor bug was displayed in the app for however long it shipped: the
+#  panel showed the friction face 79 C COOLER than the through-thickness mean,
+#  directly beneath a help string saying it runs hotter. Heat enters at the
+#  face; that ordering cannot invert. Nobody checked, because nothing asserted
+#  it — the number was merely printed.
+#
+#  These are the cheapest tests in the file. Each states a relationship that
+#  holds by construction of the physics, independent of any parameter value, so
+#  none of them can be wrong in a way the author also believed. Add one wherever
+#  two quantities are shown together with an ordering that must hold.
+def test_rotor_surface_is_never_cooler_than_its_core():
+    """Heat enters at the friction face. A surface below the core, or a
+    negative gradient, means the surface node is shedding more than it receives
+    — which is exactly what a doubled convective area does."""
+    np_ = pytest.importorskip("numpy")
+    from suspension.brake_thermal import OneDRotor, TwoNodeRotorPad, TwoNodeParams
+    dt, n = 0.02, 3000
+    power = np_.zeros(n)
+    for i in range(0, n, 250):
+        power[i:i + 40] = 45000.0
+    speed = np_.full(n, 20.0)
+    one = OneDRotor(TwoNodeParams(), n_nodes=12).simulate(power, dt, speed)
+    two = TwoNodeRotorPad(TwoNodeParams()).simulate(power, dt, speed)
+
+    assert one.dT_gradient_peak_c >= 0.0
+    assert max(one.T_surface_c) >= max(one.T_core_c)
+    # and the resolved face must exceed the lumped MEAN, which is the exact
+    # comparison the UI puts on screen
+    assert one.T_surface_peak_c > two.T_rotor_peak_c, (
+        f"surface peak {one.T_surface_peak_c:.0f} C is below the lumped bulk "
+        f"{two.T_rotor_peak_c:.0f} C — not physical, and it is what the app "
+        f"renders as its 'vs bulk' delta")
+
+
+def test_a_trace_peak_is_never_below_its_final_value():
+    np_ = pytest.importorskip("numpy")
+    from suspension.brake_thermal import TwoNodeRotorPad, TwoNodeParams
+    dt, n = 0.02, 3000
+    power = np_.zeros(n)
+    for i in range(0, n, 250):
+        power[i:i + 40] = 45000.0
+    tr = TwoNodeRotorPad(TwoNodeParams()).simulate(power, dt, np_.full(n, 20.0))
+    assert tr.T_rotor_peak_c >= tr.T_rotor_final_c
+    assert tr.T_pad_peak_c >= min(tr.T_pad_c)
+
+
+def test_outer_wheels_gain_load_and_no_wheel_goes_negative():
+    """Under lateral acceleration the outer pair must gain and the inner pair
+    lose, by the same amount per axle. A negative wheel load means the model has
+    lifted a wheel and kept computing grip from it."""
+    from suspension.dynamics import VehicleDynamics, VehicleParams
+    p = VehicleParams()
+    veh = VehicleDynamics(p)
+    static_corner = {"f": p.mass * p.g * p.weight_dist_front / 2.0,
+                     "r": p.mass * p.g * (1 - p.weight_dist_front) / 2.0}
+    for g in (0.5, 1.0, 1.5):
+        loads, _ = veh.lateral_load_transfer(g)
+        assert loads.fr > loads.fl and loads.rr > loads.rl, \
+            f"at {g}g the outer wheels did not gain load"
+        assert min(loads.as_tuple()) >= 0.0, \
+            f"at {g}g a wheel load went negative ({min(loads.as_tuple()):.0f} N)"
+        # the axle total is conserved: transfer moves load, it does not create it
+        assert abs((loads.fl + loads.fr) - 2 * static_corner["f"]) < 1e-6
+        assert abs((loads.rl + loads.rr) - 2 * static_corner["r"]) < 1e-6
+
+
+def test_downforce_can_only_help_lateral_grip():
+    from suspension.dynamics import VehicleDynamics, VehicleParams
+    from suspension.ggv import GGVGenerator, GGVParams
+    from suspension import laptime as lt
+    gen = GGVGenerator(VehicleDynamics(VehicleParams()),
+                       GGVParams.from_powertrain(lt.Powertrain()))
+    seq = [gen._max_lateral_g_at_speed(v) for v in (5.0, 15.0, 25.0, 35.0)]
+    for a, b in zip(seq, seq[1:]):
+        assert b >= a - 1e-9, f"lateral limit fell with speed: {seq}"
+
+
+def test_coolant_never_settles_below_ambient():
+    from suspension.cooling import size_loop, LoopSpec
+    for heat in (1000.0, 4000.0, 9000.0):
+        s = LoopSpec(heat_w=heat)
+        assert size_loop(s).steady_coolant_c >= s.ambient_c - 1e-9
+
+
+def test_declared_min_max_bounds_cannot_be_inverted():
+    """A min above its max is not a configuration, it is a typo — and every
+    check downstream inherits the nonsense. An inverted SensorSpec range gives a
+    negative span, so the LSB and effective bit depth go negative and the
+    resolution finding comes back CLEAN. It scored OK on every gate in the DAQ
+    planner, because those validate the signal CHAIN and nothing validated the
+    sensor's own declaration.
+
+    Found by enumerating every result/config dataclass in the package for
+    orderable field pairs (peak/final, max/min, surface/core) — 19 of them — and
+    then asking which could be constructed the wrong way round. Four could."""
+    from suspension.daq_plan import SensorSpec, ANALOG_TYPES
+    import inspect
+    params = inspect.signature(SensorSpec).parameters
+    analog = list(ANALOG_TYPES)[0]
+
+    def spec(lo, hi):
+        base = dict(key="s", name="damper pot", output=analog,
+                    range_min_eu=lo, range_max_eu=hi, adc_bits=12)
+        return SensorSpec(**{k: v for k, v in base.items() if k in params})
+
+    spec(0.0, 100.0)                       # sane: must construct
+    spec(-50.0, 50.0)                      # signed range: also fine
+    with pytest.raises(ValueError):
+        spec(100.0, 0.0)
+
+    #  The other three found by the same enumeration. MeshParams matters most:
+    #  its pair is written straight into the snappyHexMesh deck as
+    #  "level (min max)", so an inverted pair leaves the repo and the failure
+    #  lands in OpenFOAM hours later, where it costs far more to diagnose.
+    from suspension.tractive_system import Rules
+    from suspension.aero.meshing import MeshParams
+    from suspension.aero.run_log import ScreenConfig
+    for cls, kwargs in (
+        (Rules, dict(precharge_min_time_s=10.0, precharge_max_time_s=1.0)),
+        (Rules, dict(tsal_flash_hz_min=8.0, tsal_flash_hz_max=2.0)),
+        (MeshParams, dict(surface_min_level=8, surface_max_level=2)),
+        (ScreenConfig, dict(courant_warn_min=50.0, courant_warn_max=1.0)),
+    ):
+        cls()                              # defaults must still build
+        with pytest.raises(ValueError):
+            cls(**kwargs)
+
+
+def test_result_peaks_dominate_their_series():
+    """Generic form of the rotor check: any *_peak field must actually be the
+    peak of the series it summarises. An off-by-one or a reset inside the loop
+    breaks this silently, and the summary is what gets quoted."""
+    np_ = pytest.importorskip("numpy")
+    from suspension.brake_thermal import (TwoNodeRotorPad, OneDRotor, TwoNodeParams)
+    dt, n = 0.02, 3000
+    power = np_.zeros(n)
+    for i in range(0, n, 250):
+        power[i:i + 40] = 45000.0
+    speed = np_.full(n, 20.0)
+
+    two = TwoNodeRotorPad(TwoNodeParams()).simulate(power, dt, speed)
+    one = OneDRotor(TwoNodeParams(), n_nodes=12).simulate(power, dt, speed)
+    for peak, series, label in (
+        (two.T_rotor_peak_c, two.T_rotor_c, "rotor"),
+        (two.T_pad_peak_c, two.T_pad_c, "pad"),
+        (one.T_surface_peak_c, one.T_surface_c, "surface"),
+        (one.dT_gradient_peak_c, one.dT_gradient_c, "gradient"),
+        (one.sigma_peak_mpa, one.sigma_mpa, "thermal stress"),
+    ):
+        assert abs(peak - max(series)) < 1e-6, \
+            f"{label}: reported peak {peak:.3f} != series max {max(series):.3f}"
+
+
+def test_nothing_non_finite_escapes_into_an_external_deck():
+    """THE EXPORT BOUNDARY. Everything written into a snappyHexMesh dict or a
+    Fluent journal leaves this repo and executes elsewhere, so a bad value
+    surfaces hours later, on a cluster, in the wrong tool, to someone who cannot
+    see this code. Auditing the four export writers found ZERO finite-checks
+    between them and three live escapes:
+
+      * a NaN roll was swallowed by the axis-angle extraction and written as
+        "angle 0.0" — the requested attitude SILENTLY DISCARDED and the car
+        meshed flat. Worse than a crash: the run completes and looks clean.
+      * an infinite ride height wrote "(0 0 inf)" into the snappy transform.
+      * a NaN yaw wrote "(nan, nan, 0.0)" as the Fluent inlet velocity.
+
+    Not hypothetical: this package deliberately returns NaN for genuinely
+    undefined geometry (degenerate roll centre, parallel-link swing arm), which
+    is the honest thing to do upstream and precisely why the edge needs a hard
+    stop."""
+    from suspension.aero.cfd import Attitude
+    from suspension.aero.meshing import _attitude_geometry_transform
+    from suspension.aero.fluent_journal import _inlet_velocity
+
+    good = Attitude(roll_deg=1.0, pitch_deg=2.0, ride_height_mm=30.0, speed_ms=20.0)
+    _attitude_geometry_transform(good)          # must still work
+    _inlet_velocity(20.0, 3.0, 0.0)
+
+    base = dict(roll_deg=0.0, pitch_deg=0.0, ride_height_mm=30.0, speed_ms=20.0)
+    for field in ("roll_deg", "pitch_deg", "ride_height_mm"):
+        for bad in (float("nan"), float("inf")):
+            att = Attitude(**{**base, field: bad})
+            with pytest.raises(ValueError):
+                _attitude_geometry_transform(att)
+
+    for args in ((float("nan"), 0.0, 0.0), (20.0, float("nan"), 0.0),
+                 (float("inf"), 0.0, 0.0)):
+        with pytest.raises(ValueError):
+            _inlet_velocity(*args)
+
+    # the guard must name the offending field — a caller three layers up needs
+    # to know WHICH number went bad, not merely that one did
+    try:
+        _attitude_geometry_transform(Attitude(**{**base, "roll_deg": float("nan")}))
+    except ValueError as exc:
+        assert "roll_deg" in str(exc)

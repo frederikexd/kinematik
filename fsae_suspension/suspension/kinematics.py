@@ -968,6 +968,30 @@ class SuspensionKinematics:
         The offsets are signed; an SVIC on the wrong side is pro-squat and reads
         negative, as it should.
 
+        ACCURACY OF THE WHEEL-CENTRE SHORTCUT — verified by static equilibrium,
+        not by citation. Solving the upright as a rigid body (6 equations, 6 link
+        unknowns) and comparing three load cases on the default geometry:
+
+            solid axle, force at the contact patch      -40.3 %
+            inboard drive, halfshaft torque modelled    +16.1 %
+            wheel-centre shortcut (what this returns)   +17.1 %
+
+        The shortcut is right to about 1 percentage point and the reference
+        point is emphatically not cosmetic — patch versus wheel centre is a
+        56-point swing that changes the sign. But the shortcut is EXACT only for
+        a wheel with zero camber and zero scrub, because it moves the whole
+        couple (wc - cp) x Fx onto the linkage, while physically only the
+        component along the SPIN AXIS is reacted by the driveline. The rest is
+        taken by the wheel bearings (camber term, 4.8% of the couple here) and
+        by the tie rod (scrub term). At -1.5 deg camber and 9.7 mm scrub that
+        leaves the shortcut ~1 pp optimistic, or about 6% relative.
+
+        Left as the shortcut deliberately: it is the standard construction, the
+        residual is small against the tyre data uncertainty this feeds, and the
+        exact form needs a static solve rather than a kinematic one. Quantified
+        here so nobody has to rediscover it, and pinned by
+        test_anti_squat_shortcut_error_is_bounded.
+
         NOTE: this is the inboard-brake/inboard-drive layout (the usual FSAE
         rear). A solid axle or outboard drive reacts torque through the links and
         would use the contact-patch line; that is out of scope here and would

@@ -58,6 +58,8 @@ def _inlet_velocity(speed_ms: float, yaw_deg: float, pitch_deg: float):
     `pitch_deg` is still accepted so call sites do not change, and is asserted to
     have been handled geometrically rather than silently dropped.
     """
+    from .cfd import require_finite_export
+    require_finite_export(speed_ms=speed_ms, yaw_deg=yaw_deg, pitch_deg=pitch_deg)
     v = speed_ms
     yaw = math.radians(yaw_deg)
     ux = v * math.cos(yaw)
