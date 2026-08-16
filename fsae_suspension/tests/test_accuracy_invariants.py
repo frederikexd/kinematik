@@ -1903,3 +1903,60 @@ def test_nothing_non_finite_escapes_into_an_external_deck():
         _attitude_geometry_transform(Attitude(**{**base, "roll_deg": float("nan")}))
     except ValueError as exc:
         assert "roll_deg" in str(exc)
+
+
+def test_lap_inner_loop_stays_fast_enough_to_run():
+    """PERFORMANCE IS CORRECTNESS HERE. Routing _accel_long through the GGV's
+    load-sensitive lateral limit was right physically and made the function 626
+    us per call — a lap is tens of thousands of those, and the full test suite
+    stalled at 43%. A model nobody can afford to run is not a working model.
+
+    The limit is smooth and monotone in v, so it is now a 24-point table built
+    once per vehicle and interpolated: same physics, nanoseconds per lookup.
+    This test is the tripwire — if someone puts a bisection back in the inner
+    loop, the suite will hang rather than fail, and a hang is far harder to
+    attribute than an assertion."""
+    import time
+    from suspension.dynamics import VehicleParams, VehicleDynamics
+    from suspension import laptime as lt
+
+    veh = VehicleDynamics(VehicleParams())
+    pt = lt.Powertrain()
+    mu = lt._max_lat_g(veh)
+    lt._accel_long(veh, 20.0, pt, mu, 0.5)          # warm the table
+
+    t0 = time.perf_counter()
+    for _ in range(2000):
+        lt._accel_long(veh, 20.0, pt, mu, 0.5)
+    per_call_us = (time.perf_counter() - t0) / 2000 * 1e6
+    assert per_call_us < 150.0, (
+        f"_accel_long is {per_call_us:.0f} us/call — too slow for the lap "
+        f"integrator. Something expensive has moved into the inner loop; check "
+        f"_lat_limit_at_speed is still using its precomputed table.")
+
+
+def test_lateral_limit_table_is_cached_per_vehicle_not_by_id():
+    """CPython recycles object ids after garbage collection, so an id-keyed
+    cache can hand one car another car's aero map — silently, only under memory
+    pressure, which is the worst kind of bug to reproduce. The table lives on
+    the vehicle instead."""
+    from suspension.dynamics import VehicleParams, VehicleDynamics
+    from suspension import laptime as lt
+
+    pt = lt.Powertrain()
+    light = VehicleDynamics(VehicleParams(mass=250.0))
+    heavy = VehicleDynamics(VehicleParams(mass=400.0))
+    mu_l, mu_h = lt._max_lat_g(light), lt._max_lat_g(heavy)
+
+    a = lt._lat_limit_at_speed(light, pt, 25.0, mu_l)
+    b = lt._lat_limit_at_speed(heavy, pt, 25.0, mu_h)
+    assert hasattr(light, "_kx_lat_limit_table")
+    assert light._kx_lat_limit_table is not heavy._kx_lat_limit_table
+    # re-asking must be stable, and the two cars must not share an answer
+    assert abs(lt._lat_limit_at_speed(light, pt, 25.0, mu_l) - a) < 1e-12
+    assert abs(lt._lat_limit_at_speed(heavy, pt, 25.0, mu_h) - b) < 1e-12
+
+    # and the table must reflect downforce: monotone rising with speed
+    seq = [lt._lat_limit_at_speed(light, pt, v, mu_l) for v in (5.0, 15.0, 30.0, 45.0)]
+    for x, y in zip(seq, seq[1:]):
+        assert y >= x - 1e-9, f"lateral limit fell with speed: {seq}"

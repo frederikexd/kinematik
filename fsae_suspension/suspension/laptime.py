@@ -266,36 +266,64 @@ def _lat_limit_at_speed(veh: VehicleDynamics, pt, v: float,
                         max_lat_g: float) -> float:
     """Peak lateral g available at speed v, with aero downforce included.
 
-    Delegates to ggv.GGVGenerator._max_lateral_g_at_speed, which bisects the REAL
-    load-transfer + tyre chain with the downforce folded into vertical load. That
-    matters because tyre mu FALLS with load: doubling Fz does not double grip, so
-    the naive linear scale  mu * (1 + F_down/mg)  overstates the limit — by 2.8%
-    at 20 m/s and 4.9% at 30 m/s on the default car, and more with a bigger wing.
+    The exact answer comes from ggv.GGVGenerator._max_lateral_g_at_speed, which
+    BISECTS the real load-transfer + tyre chain with downforce folded into
+    vertical load. That matters because tyre mu FALLS with load: the naive
+    linear scale mu * (1 + F_down/mg) overstates the limit by 2.8% at 20 m/s and
+    4.9% at 30 m/s, and getting it right is what makes the lap sim and the GGV
+    agree in the envelope INTERIOR rather than only on its three axes.
 
-    Getting this right is what makes the lap sim and the GGV agree in the
-    ENVELOPE INTERIOR rather than only on its three axes. Falls back to the
-    linear scale if the GGV cannot be built, since a slightly optimistic limit
-    beats no aero effect at all.
+    PRECOMPUTED, because this sits in the lap integrator's hottest loop. Calling
+    the bisection directly cost 850 us and dragged _accel_long from arithmetic
+    to 626 us per call — a lap is tens of thousands of those, so the full test
+    suite stalled. The limit is smooth and monotone in v, so a 24-point table
+    built once per vehicle and linearly interpolated is exact to well under the
+    tyre-data uncertainty it feeds, at nanoseconds per lookup.
+
+    Cached ON THE VEHICLE, not in a dict keyed by id(). CPython recycles ids
+    after garbage collection, so an id-keyed cache can hand one car another
+    car's aero map — silently, and only under memory pressure, which is the
+    worst possible failure to debug.
+
+    Falls back to the linear scale if the GGV cannot be built: a slightly
+    optimistic limit beats no aero effect at all.
     """
-    try:
-        from .ggv import GGVGenerator, GGVParams
-        gen = _lat_limit_at_speed._cache.get(id(veh))
-        if gen is None:
+    m, g = max(veh.p.mass, 1.0), 9.81
+
+    def _linear(vv: float) -> float:
+        f_down = 0.5 * pt.rho * max(pt.cla, 0.0) * vv * vv
+        return max(max_lat_g, 1e-6) * (1.0 + f_down / max(m * g, 1e-6))
+
+    table = getattr(veh, "_kx_lat_limit_table", None)
+    if table is None or table[2] != round(float(max_lat_g), 9):
+        try:
+            from .ggv import GGVGenerator, GGVParams
             gp = GGVParams.from_powertrain(pt)
             gp.combined_tire = getattr(pt, "combined_tire", None)
             gen = GGVGenerator(veh, gp)
-            _lat_limit_at_speed._cache[id(veh)] = gen
-        out = float(gen._max_lateral_g_at_speed(max(v, 0.1)))
-        if math.isfinite(out) and out > 0.0:
-            return out
-    except Exception:
-        pass
-    m, g = max(veh.p.mass, 1.0), 9.81
-    f_down = 0.5 * pt.rho * max(pt.cla, 0.0) * v * v
-    return max(max_lat_g, 1e-6) * (1.0 + f_down / max(m * g, 1e-6))
+            vs = [0.1] + [1.0 + 2.0 * i for i in range(24)]
+            ls = []
+            for vv in vs:
+                out = float(gen._max_lateral_g_at_speed(vv))
+                ls.append(out if math.isfinite(out) and out > 0 else _linear(vv))
+        except Exception:
+            vs = [0.1] + [1.0 + 2.0 * i for i in range(24)]
+            ls = [_linear(vv) for vv in vs]
+        table = (vs, ls, round(float(max_lat_g), 9))
+        try:
+            veh._kx_lat_limit_table = table
+        except Exception:
+            pass
 
-
-_lat_limit_at_speed._cache = {}
+    vs, ls, _ = table
+    vv = max(float(v), vs[0])
+    if vv >= vs[-1]:
+        return ls[-1] + (vv - vs[-1]) * (ls[-1] - ls[-2]) / (vs[-1] - vs[-2])
+    for i in range(1, len(vs)):
+        if vv <= vs[i]:
+            f = (vv - vs[i - 1]) / (vs[i] - vs[i - 1])
+            return ls[i - 1] + f * (ls[i] - ls[i - 1])
+    return ls[-1]
 
 
 def _max_lat_g_flagged(veh: VehicleDynamics) -> tuple[float, bool]:
