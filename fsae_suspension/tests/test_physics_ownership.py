@@ -334,3 +334,158 @@ def test_rotor_over_temperature_flag_responds_to_the_corrected_shedding():
     # the gradient screen is independent of that fix and must stay put
     assert 35.0 < r.dT_gradient_peak_c < 50.0
     assert 60.0 < r.sigma_peak_mpa < 80.0
+
+
+# --------------------------------------------------------------------------- #
+#  Mythbuster rules are physics ASSERTIONS — bind them to the models
+# --------------------------------------------------------------------------- #
+#  The mythbuster issues VERDICTS on engineering claims, which makes it the
+#  highest-stakes accuracy surface in the product: a wrong rule confidently
+#  tells a team their correct belief is a myth, and unlike a number nobody
+#  sanity-checks a sentence. Every rule restates physics that this repo also
+#  COMPUTES — so it is the duplication class again, with prose on one side.
+#
+#  Demonstrated live: adding rotating inertia to brake_thermal.single_stop left
+#  the brake-heat rule still saying "1/2 m v^2", 5% adrift from the model it
+#  points the reader at. Nothing flagged it.
+def test_mythbuster_verdicts_match_the_models_they_cite():
+    from suspension.dynamics import VehicleDynamics, VehicleParams
+    import suspension.mythbuster as mb
+    import suspension.myth_rules  # noqa: F401  (registers the rules)
+
+    # "stiffer front -> more understeer"
+    def balance(k_front):
+        p = VehicleParams(roll_stiffness_front=k_front, roll_stiffness_rear=400.0)
+        v = VehicleDynamics(p)
+        return v.balance_index(v.max_lateral_g())[0]
+
+    seq = [balance(k) for k in (150.0, 400.0, 900.0)]
+    assert seq == sorted(seq), f"stiffening the front did not move toward understeer: {seq}"
+    assert mb.check("stiffer springs always make the car faster").verdict == mb.Verdict.MYTH
+
+    # "an ARB redistributes transfer, it does not change the total"
+    totals, shares = [], []
+    for k in (150.0, 400.0, 900.0):
+        p = VehicleParams(roll_stiffness_front=k, roll_stiffness_rear=400.0)
+        _, info = VehicleDynamics(p).lateral_load_transfer(1.0)
+        totals.append(info["ltd_front"] * p.track_front / 1000.0
+                      + info["ltd_rear"] * p.track_rear / 1000.0)
+        shares.append(info["ltd_front"] / (info["ltd_front"] + info["ltd_rear"]))
+    assert max(totals) - min(totals) < 1e-6, \
+        f"total transfer moment changed with ARB: {totals} — the rule says it cannot"
+    assert max(shares) - min(shares) > 0.2, "ARB did not redistribute; test is vacuous"
+    assert mb.check("a stiffer anti-roll bar adds grip").verdict == mb.Verdict.MYTH
+
+    # "lateral transfer is proportional to CG height"
+    ratios = []
+    for h in (250.0, 300.0, 360.0):
+        v = VehicleDynamics(VehicleParams(cg_height=h))
+        _, info = v.lateral_load_transfer(1.0)
+        ratios.append((info["ltd_front"] + info["ltd_rear"]) / h)
+    assert (max(ratios) - min(ratios)) / max(ratios) < 5e-3, \
+        f"transfer is not proportional to CG height: {ratios}"
+
+    # "brake heat is MORE than 1/2 m v^2" — the rule must track the model that
+    # now includes rotating inertia, not the textbook shorthand it used to quote
+    heat = mb.check("does brake heat depend on speed")
+    assert heat.verdict == mb.Verdict.DEPENDS
+    assert "rotating" in heat.explanation.lower(), (
+        "the brake-heat rule still quotes bare 1/2 m v^2 while brake_thermal "
+        "includes rotating inertia — the prose has drifted from the model")
+
+
+def test_every_confident_verdict_is_grounded():
+    """A MYTH or TRUE verdict must say where it came from, or not be issued.
+
+    This feature is the highest-stakes accuracy surface in the product. Every
+    other output is a number a user might sanity-check; this one issues a
+    VERDICT, and nobody sanity-checks a sentence. A wrong rule does not get
+    caught — it wins the argument.
+
+    So a confident verdict has to be one of:
+      "computed"  a model in this repo was run on the user's context
+      "physics"   a first-principles relationship, stated in the explanation
+      "asserted"  judgement or convention — permitted ONLY with sources
+
+    That last clause is the point. An asserted MYTH with no citation is an
+    opinion wearing the same clothes as a computed result, and the honest form
+    of an unsettled answer is "yes / no / maybe — and here is where to look",
+    never a bare confident verdict. Verdict.UNVERIFIED exists so a rule can
+    decline rather than bluff.
+
+    Enforced here rather than in CheckOutcome.__post_init__ on purpose: raising
+    at construction would crash the app for a user whose only sin is asking a
+    question an untriaged rule happens to match. Fail the build, not the person.
+    """
+    import suspension.myth_rules  # noqa: F401  (registers the rules)
+    import suspension.mythbuster as mb
+
+    engine = mb.DEFAULT_ENGINE
+    rules = engine.rules() if callable(getattr(engine, "rules", None)) \
+        else getattr(engine, "_rules", [])
+    assert len(rules) > 20, f"only {len(rules)} rules registered; import failed?"
+
+    ungrounded, unreachable = [], []
+    for rule in rules:
+        claim = getattr(rule.check, "reference_claim", None)
+        if not claim:
+            continue
+        res = mb.check(claim)
+        #  Reachability is about which RULE answered, not which verdict it gave.
+        #  A rule that matches and returns UNKNOWN ("I need the live motor
+        #  envelope — open the EV Powertrain tab") is working exactly as
+        #  intended: it recognised the claim and refused to guess without data.
+        #  Treating that as unreachable, as this test first did, would push
+        #  authors toward guessing rather than asking.
+        if res.matched_rule != rule.name:
+            unreachable.append(f"{rule.name} (answered by {res.matched_rule})")
+            continue
+        if res.verdict is mb.Verdict.UNKNOWN:
+            continue                      # honest "I need data" — fine
+        if res.verdict in (mb.Verdict.MYTH, mb.Verdict.TRUE):
+            grounding = getattr(res, "grounding", "asserted")
+            if grounding == "asserted" and not getattr(res, "sources", ()):
+                ungrounded.append(f"{rule.name} -> {res.verdict.value}")
+
+    assert not ungrounded, (
+        "confident verdicts with no grounding and no sources:\n  "
+        + "\n  ".join(ungrounded)
+        + "\n\nMark it grounding='physics' if the explanation carries the "
+          "derivation, 'computed' if it runs a model, or cite sources. If none "
+          "of those is honest, return Verdict.UNVERIFIED — 'maybe, check these' "
+          "is a better answer than a confident guess.")
+    #  Rules that need a live model (motor envelope, fitted tyre) DECLINE when
+    #  called with no context, and the fallback answers instead. That is correct
+    #  — the alternative is a curated rule guessing without its data. What must
+    #  hold is that the fallback never issues a confident ungrounded verdict in
+    #  their place, which is the property the demotion above enforces and the
+    #  reason this list is reported rather than failed.
+    if unreachable:
+        for entry in unreachable:
+            name = entry.split(" ")[0]
+            rule = next(r for r in rules if r.name == name)
+            res = mb.check(rule.check.reference_claim)
+            #  RESOLVED. Context-needing rules now answer QUALITATIVELY via
+            #  mythbuster.preliminary() instead of refusing, so the fallback no
+            #  longer substitutes a guess for a reviewed rule. The gate below is
+            #  therefore enforced rather than excepted.
+            assert res.verdict in (mb.Verdict.UNVERIFIED, mb.Verdict.DEPENDS,
+                                   mb.Verdict.UNKNOWN) or res.grounding != "asserted", (
+                f"{name} declined for want of context and the fallback answered "
+                f"{res.verdict.value} on nothing — that is the exact substitution "
+                f"this gate exists to prevent")
+
+
+def test_unverified_is_available_and_distinct_from_unknown():
+    """UNKNOWN means nothing matched. UNVERIFIED means a rule matched, has
+    something useful to say, and is declining to adjudicate. Collapsing them
+    would hide the difference between 'we have no rule' and 'we will not
+    guess'."""
+    import suspension.mythbuster as mb
+    assert mb.Verdict.UNVERIFIED != mb.Verdict.UNKNOWN
+    assert mb.Verdict.UNVERIFIED == "unverified"
+    out = mb.CheckOutcome(mb.Verdict.UNVERIFIED, "maybe — depends on your tyre data",
+                          sources=("TTC round 9 dataset",))
+    assert out.grounding == "asserted" and out.sources
+    with pytest.raises(ValueError):
+        mb.CheckOutcome(mb.Verdict.MYTH, "x", grounding="vibes")

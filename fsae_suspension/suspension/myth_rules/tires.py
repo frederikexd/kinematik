@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..mythbuster import CheckOutcome, ParsedClaim, Rule, Verdict, register
+from ..mythbuster import preliminary, CheckOutcome, ParsedClaim, Rule, Verdict, register
 
 
 def _tire_and_load(context: Any):
@@ -34,12 +34,12 @@ def _tire_and_load(context: Any):
     return tire, Fz, None
 
 
-def _need_tire():
-    return CheckOutcome(
-        Verdict.UNKNOWN,
-        "I need a tyre model to check that. Load your TTC-fitted tyre (or use the "
-        "shipped FSAE default) so the grip curve is defined, then ask again.",
-        provenance="no tyre model in context")
+#  Each tyre rule now answers QUALITATIVELY without a fitted tyre instead of
+#  refusing. Load sensitivity and the camber/grip trade-off are universal tyre
+#  behaviour; what the fitted model adds is the magnitude for YOUR compound.
+_NEED_TIRE = ("No fitted tyre is loaded, so these are the general shapes rather "
+              "than your compound's numbers \u2014 load your TTC fit (or the "
+              "shipped FSAE default) for the actual curve.")
 
 
 # --- RULE: load sensitivity ("twice the load = twice the grip") --------------
@@ -49,7 +49,16 @@ def _r_load_sensitivity(claim: ParsedClaim, context: Any) -> CheckOutcome | None
         return None
     tire, Fz, _ = _tire_and_load(context)
     if tire is None:
-        return _need_tire()
+        return preliminary(
+            Verdict.MYTH,
+            ("Tyre grip is LOAD SENSITIVE: the friction coefficient falls as "
+             "vertical load rises, so doubling the load buys noticeably less "
+             "than double the lateral force \u2014 typically more like "
+             "1.7-1.8x on a racing tyre. This is the whole reason weight "
+             "transfer costs grip: the loaded tyre gains less than the "
+             "unloaded one gives up, so the axle nets out worse. It is also "
+             "why lower CG and managing transfer matter at all."),
+            need=_NEED_TIRE)
     mu_nom = tire.mu_peak(tire.FNOMIN)
     mu_2x = tire.mu_peak(2.0 * tire.FNOMIN)
     # grip force ratio at 2x load vs linear expectation
@@ -64,6 +73,14 @@ def _r_load_sensitivity(claim: ParsedClaim, context: Any) -> CheckOutcome | None
          f"~{fy_ratio:.2f}\u00d7 the lateral force, not 2\u00d7. This is exactly why "
          f"weight transfer costs you grip on the loaded tyre \u2014 and why lower CG "
          f"and managing load transfer matter."),
+        #  COMPUTED: this quotes mu at FNOMIN and 2*FNOMIN from the live tyre
+        #  model rather than restating a general truth, so the verdict moves if
+        #  the model or the fit moves. The sources say where the underlying
+        #  load-sensitivity data comes from, because the MODEL is only as good
+        #  as the coefficients behind it.
+        grounding="computed",
+        sources=("Tire Test Consortium (TTC) data — verify for YOUR compound",
+                 "Milliken, Race Car Vehicle Dynamics, ch. 2"),
         provenance=f"\u03bc({tire.FNOMIN:.0f}N)={mu_nom:.2f}, \u03bc({2*tire.FNOMIN:.0f}N)={mu_2x:.2f}")
 _r_load_sensitivity.reference_claim = "Twice the vertical load gives twice the grip."
 
@@ -75,7 +92,16 @@ def _r_more_camber(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
         return None
     tire, Fz, _ = _tire_and_load(context)
     if tire is None:
-        return _need_tire()
+        return preliminary(
+            Verdict.DEPENDS,
+            ("More negative camber is a trade, not a gain. It puts the tyre "
+             "flatter on the road once the body rolls and the tyre deflects, "
+             "which raises PEAK lateral grip up to a point \u2014 past that "
+             "point you are standing the contact patch on its inner edge, "
+             "losing grip, and giving away straight-line braking and traction "
+             "as well. There is an optimum per compound and it is found on "
+             "track or in tyre data, not by adding more."),
+            need=_NEED_TIRE)
     opt_cam, _ = tire.optimal_camber(Fz or tire.FNOMIN)
     return CheckOutcome(
         Verdict.MYTH,
@@ -85,6 +111,7 @@ def _r_more_camber(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          f"worsens and lateral grip falls again, while straight-line braking/"
          f"traction and tyre temperature also suffer. Tune toward "
          f"{opt_cam:.1f}\u00b0, then verify with your own thermal and TTC data."),
+        grounding="physics",
         provenance=f"optimal camber \u2248 {opt_cam:.1f}\u00b0 @ {(Fz or tire.FNOMIN):.0f} N")
 _r_more_camber.reference_claim = "More negative camber always means more grip."
 
@@ -103,6 +130,7 @@ def _r_pressure_temp(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "pressures to land on your hot target; chasing a hot number directly will "
          "leave you cold-overinflated. Confirm the rise with your own tyre-temp "
          "logger."),
+        grounding="physics",
         provenance="Gay-Lussac P/T; 293K\u219253K \u2248 +20% abs pressure")
 _r_pressure_temp.reference_claim = "Cold and hot tyre pressures are basically the same."
 
@@ -121,6 +149,7 @@ def _r_wider_more_grip(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "can run cold and grip LESS, while adding unsprung mass, inertia and drag. "
          "The decision is a tyre-temperature and load-sensitivity trade, not a width "
          "contest \u2014 check it against your thermal model and TTC data."),
+        grounding="physics",
         provenance="load-sensitivity + thermal trade-off; needs tyre-temp data")
 _r_wider_more_grip.reference_claim = "A wider tyre always gives more grip."
 

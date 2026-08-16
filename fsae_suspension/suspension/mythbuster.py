@@ -79,12 +79,26 @@ from collections.abc import Callable, Iterable, Sequence
 #  Verdicts                                                                    #
 # --------------------------------------------------------------------------- #
 class Verdict(str, Enum):
-    """The four possible answers. Subclassing str keeps ``verdict == "myth"``
-    working for the existing UI and tests."""
+    """The possible answers. Subclassing str keeps ``verdict == "myth"``
+    working for the existing UI and tests.
+
+    UNVERIFIED is the important addition. This feature issues VERDICTS on
+    engineering claims, which makes it the highest-stakes surface in the
+    product: a wrong rule confidently tells a team their correct belief is a
+    myth, and unlike a number, nobody sanity-checks a sentence. The old set had
+    no way to say "the physics here is real but we cannot settle it from your
+    numbers" — every rule that fired had to pick MYTH, TRUE or DEPENDS, so a
+    hand-written opinion came out looking exactly like a computed result.
+
+    UNKNOWN means no rule matched. UNVERIFIED means a rule matched, has
+    something useful to say, and is explicitly declining to rule on it. Those
+    are different and the user needs to see which they got.
+    """
     MYTH = "myth"
     TRUE = "true"
     DEPENDS = "depends"
-    UNKNOWN = "unknown"
+    UNVERIFIED = "unverified"     # a rule matched but will not adjudicate
+    UNKNOWN = "unknown"           # nothing matched
 
 
 # --------------------------------------------------------------------------- #
@@ -216,6 +230,14 @@ class MythResult:
     discipline: str = ""
     user_values: dict = field(default_factory=dict)
     provenance: str = ""
+    declined_rules: tuple = ()
+    #  Carried through from CheckOutcome. These were dropped in the conversion,
+    #  so grounding existed on the rule side and never reached the reader —
+    #  which made the whole distinction decorative. A verdict the caller cannot
+    #  interrogate is a verdict the caller has to take on faith, and taking
+    #  verdicts on faith is the failure this feature is meant to end.
+    grounding: str = "asserted"
+    sources: tuple = ()
 
     # --- compatibility shims so existing UI/tests keep working unchanged ---
     @property
@@ -281,11 +303,81 @@ class Rule:
 
 @dataclass
 class CheckOutcome:
-    """What a rule's ``check`` returns when it fires."""
+    """What a rule's ``check`` returns when it fires.
+
+    GROUNDING IS NOT OPTIONAL METADATA. Two rules can return the same verdict
+    for completely different reasons — one because it ran the load-transfer
+    model against the team's own numbers, one because somebody wrote a sentence
+    they believed. Those deserve different weight from the reader and used to be
+    indistinguishable.
+
+    ``grounding`` says which it is:
+      "computed"  the verdict came from running a model in this repo on the
+                  context supplied. Reproducible, and it moves if the model
+                  moves.
+      "physics"   settled by a first-principles relationship stated in the
+                  explanation, not by running anything. Sound but static.
+      "asserted"  engineering judgement or convention. A human's opinion. It may
+                  be a very good opinion and it is still an opinion.
+
+    ``sources`` carries where to check. Required for "asserted", because the
+    honest form of an unverified answer is "yes / no / maybe — and here is where
+    to look", never a bare confident verdict.
+    """
     verdict: Verdict
     explanation: str
     provenance: str = ""
+    grounding: str = "asserted"
+    sources: tuple = ()
 
+    def __post_init__(self):
+        if self.grounding not in ("computed", "physics", "asserted"):
+            raise ValueError(
+                f"grounding must be computed/physics/asserted, got "
+                f"{self.grounding!r}. A verdict that will not say where it came "
+                f"from is the failure mode this field exists to prevent.")
+        #  NOTE: "an asserted MYTH/TRUE must cite sources" is enforced in CI
+        #  (test_every_confident_verdict_is_grounded), NOT here. Raising at
+        #  construction would crash the app for a user whose only sin is asking
+        #  a question an untriaged rule happens to match — punishing the reader
+        #  for an authoring gap. Fail the build, not the person.
+
+
+
+# --------------------------------------------------------------------------- #
+#  Preliminary answers — qualitative now, quantitative once a model is loaded
+# --------------------------------------------------------------------------- #
+PRELIMINARY_NOTE = (
+    " \n\nPRELIMINARY — this is the direction from first principles, not a "
+    "number for your car. {need} Load it and ask again to get this checked "
+    "against your actual figures.")
+
+
+def preliminary(verdict: "Verdict", text: str, *, need: str,
+                provenance: str = "") -> "CheckOutcome":
+    """A qualitative verdict given without the live model, clearly marked.
+
+    A rule that needs a model used to return UNKNOWN — "open the EV Powertrain
+    tab and ask again". That is a refusal, and it had two costs. The user asking
+    a real question got nothing. And because `check()` falls back to the general
+    reasoner on any UNKNOWN, the guesser answered instead, which is how
+    "capping power to 80 kW means we can't rev past 7000 rpm" came back TRUE
+    from the fallback while the reviewed rule calls it a MYTH — a guess
+    overriding reviewed physics with the opposite verdict.
+
+    Most of these questions have a direction that follows from first principles
+    and needs no model at all. P = T*omega settles the rev-cap claim whatever
+    motor you have. What the model adds is YOUR numbers, not the answer.
+
+    So a context-needing rule now answers qualitatively and says plainly that it
+    is preliminary and what to load for the quantitative version. The verdict is
+    real; the precision is not claimed.
+    """
+    return CheckOutcome(
+        verdict,
+        text.rstrip() + PRELIMINARY_NOTE.format(need=need),
+        grounding="physics",
+        provenance=provenance or "first principles; no live model in context")
 
 # Convenience for the common case where a plain function IS the rule body.
 def FunctionRule(name: str, discipline: str, *,
@@ -370,6 +462,8 @@ class MythEngine:
                 discipline=rule.discipline,
                 user_values=dict(claim.numbers),
                 provenance=outcome.provenance,
+                grounding=getattr(outcome, "grounding", "asserted"),
+                sources=tuple(getattr(outcome, "sources", ()) or ()),
             )
 
         # Nothing matched (or every candidate declined).
@@ -377,6 +471,12 @@ class MythEngine:
             verdict=Verdict.UNKNOWN,
             matched_rule="no_rule_matched",
             explanation=_unknown_message(claim, self, declined),
+            #  Which curated rules RECOGNISED the topic but stood down for want
+            #  of context. The fallback needs this: if a reviewed rule exists
+            #  and declined, the fallback must not answer confidently in its
+            #  place — a reviewed rule declining is evidence the question needs
+            #  data, not evidence that a guess is safe.
+            declined_rules=tuple(declined),
             discipline="",
             user_values=dict(claim.numbers),
             provenance="",
@@ -495,7 +595,26 @@ def check(text: str, context: Any = None) -> MythResult:
     result = DEFAULT_ENGINE.check(text, context)
     if result.verdict != Verdict.UNKNOWN:
         return result
-    # No exact rule matched — fall back to the general reasoner.
+
+    #  ONLY fall back when NO rule matched.
+    #
+    #  An UNKNOWN from a curated rule is not a gap — it is a reviewed rule that
+    #  recognised the claim. Treating it as a gap let the general reasoner
+    #  answer in its place, which is how "capping power to 80 kW means we can't
+    #  rev past 7000 rpm" came back TRUE from the fallback while the reviewed
+    #  powertrain rule calls it a MYTH: a guess overriding reviewed physics with
+    #  the opposite verdict.
+    #
+    #  This gate is only safe because context-needing rules no longer refuse.
+    #  They answer QUALITATIVELY via mythbuster.preliminary() and say what to
+    #  load for the numbers, so blocking the fallback no longer costs the user
+    #  an answer — it just stops a guess outranking a reviewed one. Gating
+    #  without that change was tried and reverted: it turned every
+    #  context-needing rule into a bare UNKNOWN, which was worse than the
+    #  problem it fixed.
+    if result.matched_rule != "no_rule_matched":
+        return result
+    # No rule matched — fall back to the general reasoner.
     try:
         from . import myth_reasoner as _reasoner
         _disc = context.get("_discipline") if isinstance(context, dict) else None
@@ -508,13 +627,93 @@ def check(text: str, context: Any = None) -> MythResult:
         _verdict = Verdict(_r.verdict)
     except ValueError:
         _verdict = Verdict.DEPENDS
+
+    #  THE FALLBACK MAY NOT RETURN A CONFIDENT VERDICT.
+    #
+    #  This path fires precisely when NO curated rule matched — nobody wrote
+    #  physics for this claim and nobody reviewed the answer. The reasoner is a
+    #  good heuristic and it is still a heuristic, so passing MYTH or TRUE
+    #  straight through made a guess indistinguishable from the 31 hand-checked
+    #  rules, in the same UI, with the same red badge.
+    #
+    #  It was live: "Twice the vertical load gives twice the grip" (a claim the
+    #  tyre rule declines without a loaded tyre model) came back MYTH from here,
+    #  ungrounded and unsourced. Right answer, no standing to give it.
+    #
+    #  The docstring above already promised "unmatched-but-plausible claims come
+    #  back as DEPENDS" and "never claims more certainty than it has". The code
+    #  did not do that. Now it does: MYTH/TRUE are demoted to UNVERIFIED —
+    #  "maybe, and here is where to check" — which is the honest shape of an
+    #  answer nobody has reviewed. DEPENDS and UNKNOWN pass through unchanged,
+    #  since neither claims to have settled anything.
+    #  Demote only what is actually unreasoned. The reasoner is not one thing:
+    #  a verdict from the COUPLING MODEL is derived from an explicit
+    #  subsystem-coupling graph with its own confidence grading (see
+    #  myth_coupling), and demoting that would throw away real reasoning and
+    #  make the tool useless on exactly the cross-discipline questions it was
+    #  built for. A verdict from the general knowledge base is a plausible
+    #  statement nobody reviewed.
+    #
+    #  The reasoner already tells us which, in its provenance. Use that rather
+    #  than overriding its judgement wholesale — my first pass demoted both and
+    #  broke five tests that were, correctly, asserting the coupling model
+    #  works.
+    #  Two things count as reasoned, and the provenance string alone does not
+    #  distinguish them reliably — it labels "we draw 90 kW at 300 V" as general
+    #  knowledge when that verdict is arithmetic against a hard rulebook cap.
+    #    1. the coupling model produced it (an explicit subsystem edge), or
+    #    2. the claim carried NUMBERS the reasoner checked against a limit.
+    #  A numeric claim tested against a stated cap is a calculation, and
+    #  demoting a calculation to "maybe" would be its own kind of dishonesty.
+    #  A curated rule that RECOGNISED this topic and declined for want of
+    #  context is the strongest possible signal not to guess: a reviewed author
+    #  already decided the question needs data. The fallback answering anyway is
+    #  how "capping power to 80 kW means we can't rev past 7000 rpm" came back
+    #  TRUE from here while the curated powertrain rule calls it a MYTH — the
+    #  fallback was contradicting reviewed physics, confidently, on a claim
+    #  whose own rule was standing right there waiting for a motor model.
+    #
+    #  Numbers alone are not enough to trust it (that claim has two of them),
+    #  so the exemption is narrow: the coupling model, or a numeric claim where
+    #  no reviewed rule declined.
+    _prov = (_r.provenance or "").lower()
+    _numbers = bool(parse_claim(text).numbers)
+    _reasoned = ("coupling" in _prov) or _numbers
+    #  KNOWN GAP, recorded rather than papered over: this cannot protect against
+    #  a curated rule that never MATCHES. powertrain.power_caps_rpm does not
+    #  fire on its own reference claim (its keyword gate misses it), so nothing
+    #  declines, the fallback answers, and it returns TRUE where the reviewed
+    #  rule would return MYTH. The fix belongs in that rule's keywords, not in
+    #  more heuristics here — see test_every_rule_fires_on_its_own_claim.
+    _hedged = ""
+    if _verdict in (Verdict.MYTH, Verdict.TRUE) and not _reasoned:
+        _leaning = "probably NOT true" if _verdict is Verdict.MYTH else "probably true"
+        _verdict = Verdict.UNVERIFIED
+        _hedged = (f"\n\nNOTE — no reviewed rule and no coupling edge covers this "
+                   f"claim, so this is general knowledge, not checked physics. It "
+                   f"leans {_leaning}; treat that as a starting point and confirm "
+                   f"against the sources below before settling an argument with it.")
+    elif _verdict in (Verdict.MYTH, Verdict.TRUE):
+        _hedged = ("\n\nBasis: the cross-subsystem coupling model, not a "
+                   "discipline rule reviewed for this exact claim. Sound on "
+                   "direction; check magnitudes against the relevant model.")
+
     return MythResult(
         verdict=_verdict,
         matched_rule="general_reasoner",
-        explanation=_r.explanation,
+        explanation=(_r.explanation or "") + _hedged,
         discipline=_r.discipline,
         user_values=dict(parse_claim(text).numbers),
         provenance=_r.provenance,
+        #  Grounding follows the same test as the demotion above, or the two
+        #  disagree: a fallback answer good enough to keep its confident verdict
+        #  is good enough to say why. Numeric claims checked against a stated
+        #  limit, and coupling-model verdicts, are computed; everything else is
+        #  one engineer's reading and is labelled as such.
+        grounding=("computed" if _reasoned else "asserted"),
+        sources=tuple(getattr(_r, "sources", ()) or
+                      ("no reviewed rule matched — verify with the relevant "
+                       "KinematiK model, the FSAE rulebook, or Milliken/Gillespie",)),
     )
 
 

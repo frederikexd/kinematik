@@ -29,6 +29,7 @@ def _r_downforce_linear(claim: ParsedClaim, context: Any) -> CheckOutcome | None
          "slow ones, and why a part that helps at 100 km/h does almost nothing in a "
          "30 km/h hairpin. Evaluate aero gains at the speeds your track actually "
          "spends time at (from the lap sim), not peak speed."),
+        grounding="physics",
         provenance="F = \u00bd\u03c1V\u00b2CA \u2192 force \u221d V\u00b2")
 _r_downforce_linear.reference_claim = "Double the speed, double the downforce."
 
@@ -51,6 +52,7 @@ def _r_more_downforce_faster(claim: ParsedClaim, context: Any) -> CheckOutcome |
          "trade, track-dependent: downforce wins on tight, twisty autocross and can "
          "LOSE on a high-speed track or an energy-limited endurance run." + extra +
          " Resolve it in the lap sim with your real aero map, not by intuition."),
+        grounding="physics",
         provenance=("L/D from declared coeffs" if extra else "needs aero map + lap sim"))
 _r_more_downforce_faster.reference_claim = "More downforce always means a faster lap."
 
@@ -67,6 +69,8 @@ def _r_floor_vs_wing(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "works by accelerating flow under a sealed undertray rather than turning "
          "air. Dismissing it gives up the best L/D device you have. Quantify it with "
          "a CFD run or wind-tunnel map before ruling it out."),
+        grounding="asserted",
+        sources=('Katz, Race Car Aerodynamics, ch. 7 (ground effect)', 'FSAE aero papers vary widely by package — verify on YOUR car',),
         provenance="floor L/D >> wing L/D; verify with CFD/tunnel")
 _r_floor_vs_wing.reference_claim = "The floor does nothing; only the wings make downforce."
 

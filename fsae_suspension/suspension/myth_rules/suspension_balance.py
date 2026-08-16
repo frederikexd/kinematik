@@ -35,6 +35,7 @@ def _r_stiffer_better(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "costing mechanical grip on bumps and kerbs. There's an optimum, and it's a "
          "balance lever, not a 'more = better' knob. Tune it in the GGV/lap sim and "
          "confirm on track."),
+        grounding="physics",
         provenance="tyre load-sensitivity \u2192 stiffer end loses grip share")
 _r_stiffer_better.reference_claim = "Stiffer springs always make the car faster."
 
@@ -58,6 +59,7 @@ def _r_lower_cg(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "tyre loses grip as it's loaded, less transfer = more total axle grip." +
          extra + " Lower the CG wherever the packaging lets you \u2014 battery and "
          "driver mass dominate it on an EV."),
+        grounding="physics",
         provenance=("transfer \u221d h/t; uses your params" if extra
                     else "transfer \u221d CG_height/track"))
 _r_lower_cg.reference_claim = "A lower centre of gravity helps almost everywhere."
@@ -75,6 +77,7 @@ def _r_arb_adds_grip(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "front bar moves grip from front to rear (more understeer) and vice versa. "
          "It's a balance tool. Total grip comes from tyres, CG height, track and "
          "downforce; the bar just decides which end runs out first."),
+        grounding="physics",
         provenance="ARB shifts transfer distribution, not total grip")
 _r_arb_adds_grip.reference_claim = "A stiffer anti-roll bar adds grip."
 

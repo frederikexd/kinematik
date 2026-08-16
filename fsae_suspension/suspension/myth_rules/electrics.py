@@ -21,6 +21,7 @@ def _r_voltage_power(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "I\u00b2R loss and heating, smaller contactors, and staying under the motor/"
          "inverter current limit. Choose voltage for current/efficiency and packaging "
          "within the rules, not to chase power you're not allowed to use."),
+        grounding="physics",
         provenance="P=VI capped at 80 kW; higher V \u2192 lower I, less I\u00b2R loss")
 _r_voltage_power.reference_claim = "A higher-voltage pack gives us more power."
 
@@ -40,6 +41,7 @@ def _r_thicker_wire(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "connectors and bundle derating, not the wire cross-section. Size each run "
          "from its actual current (IPC-2221 / ampacity) with the harness model, then "
          "stop. Bigger isn't safer once you've cleared the current with margin."),
+        grounding="physics",
         provenance="ampacity sizing per run; needs harness current map")
 _r_thicker_wire.reference_claim = "A thicker wire is always safer."
 
@@ -59,6 +61,8 @@ def _r_precharge(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "resistor limits that inrush until the link is charged (the 'R-C on a DC "
          "source, switch shorts R after ~2s' experiment). It's mandatory and rules-"
          "checked \u2014 validate it with the tractive-system precharge model."),
+        grounding="asserted",
+        sources=('FSAE Rules EV.5 (precharge & discharge circuits)',),
         provenance="capacitor inrush I=C\u00b7dV/dt; precharge required + rules-checked")
 _r_precharge.reference_claim = "We can just close the main contactor without precharge."
 

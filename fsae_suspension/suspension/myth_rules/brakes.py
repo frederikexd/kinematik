@@ -24,6 +24,7 @@ def _r_bigger_rotor_force(claim: ParsedClaim, context: Any) -> CheckOutcome | No
          "and area to absorb and reject heat over repeated stops without fade. So size "
          "rotors for the endurance heat load (use the brake-thermal model), not for "
          "peak deceleration, which your tyres already cap."),
+        grounding="physics",
         provenance="decel capped by tyre \u03bc; rotor size = thermal capacity")
 _r_bigger_rotor_force.reference_claim = "A bigger brake rotor makes the car stop faster."
 
@@ -35,14 +36,19 @@ def _r_brake_energy(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
         return None
     return CheckOutcome(
         Verdict.DEPENDS,
-        ("Braking converts the car's kinetic energy (\u00bdmv\u00b2) to heat in the "
-         "rotors each stop \u2014 so heat scales with the SQUARE of entry speed and "
-         "linearly with mass. The sizing question (will it fade over an endurance "
+        ("Braking converts the car's kinetic energy to heat in the rotors each "
+         "stop \u2014 so heat scales with the SQUARE of entry speed and linearly "
+         "with mass. It is a little MORE than \u00bdmv\u00b2: the wheels, tyres, "
+         "uprights and driveline are spinning too and the brakes have to stop "
+         "those as well, which adds roughly 5% on an FSAE car "
+         "(brake_thermal uses rotating_mass_factor for exactly this). "
+         "The sizing question (will it fade over an endurance "
          "stint?) depends on rotor mass, area, cooling and stop frequency, which is "
          "exactly what the brake-thermal model computes. On a regen-braking EV, "
          "energy the motor recovers never reaches the rotors \u2014 size for the heat "
          "that remains AFTER regen, not total. Run the thermal model with your stop "
          "schedule."),
+        grounding="physics",
         provenance="Q = \u00bdmv\u00b2 per stop; needs brake_thermal sizing")
 _r_brake_energy.reference_claim = "Brake heat is about the same at any speed."
 
@@ -60,6 +66,7 @@ def _r_brake_bias(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "exact split depends on CG height, wheelbase and decel (the same load-"
          "transfer physics as cornering). Set it from your weight distribution and "
          "transfer, then fine-tune so front and rear approach lock together."),
+        grounding="physics",
         provenance="forward load transfer \u2192 front-biased; ~60-70% front typical")
 _r_brake_bias.reference_claim = "Brake bias should be 50/50 front to rear."
 
@@ -111,6 +118,8 @@ def _r_throttle_sensor_is_spring(claim: ParsedClaim, context: Any) -> CheckOutco
          "redundancy rule exists so the throttle still closes with any single spring "
          "failed; only a device that produces closing torque on its own satisfies it. "
          "Fit two real springs and run check_return_redundancy with each one removed."),
+        grounding="asserted",
+        sources=('FSAE Rules T.8 / EV.4 (throttle actuation & return)',),
         provenance="sensor provides zero closing torque; may add detent drag")
 _r_throttle_sensor_is_spring.reference_claim = (
     "The throttle position sensor can count as one of the two required return springs.")
@@ -136,6 +145,7 @@ def _r_throttle_identical_backup(claim: ParsedClaim, context: Any) -> CheckOutco
                  f"the required margin (worst margin {margin:.2f}). 'They're identical' "
                  f"is not a redundancy argument — redundancy is proven per single-fault "
                  f"case, and this configuration fails one."),
+                grounding="physics",
                 provenance=f"live check_return_redundancy: FAIL, worst case {worst}")
         if v == "PASS":
             return CheckOutcome(
@@ -145,6 +155,7 @@ def _r_throttle_identical_backup(claim: ParsedClaim, context: Any) -> CheckOutco
                  f"(worst single-failure margin {margin:.2f}, case {worst}), not "
                  f"because the springs are 'identical'. If either spring's real torque "
                  f"drifts, re-run the single-fault check."),
+                grounding="physics",
                 provenance=f"live check_return_redundancy: PASS, worst case {worst}")
         if v == "TIGHT":
             return CheckOutcome(
@@ -153,6 +164,7 @@ def _r_throttle_identical_backup(claim: ParsedClaim, context: Any) -> CheckOutco
                  f"the worst case ({worst}) has only {margin:.2f} margin over "
                  f"friction/stiction — a sticky pivot in the car could hang it. Add "
                  f"spring authority or reduce resistance before calling this safe."),
+                grounding="physics",
                 provenance=f"live check_return_redundancy: TIGHT, worst case {worst}")
         # INVALID or unrecognised → fall through to the physics answer below.
 
@@ -165,6 +177,7 @@ def _r_throttle_identical_backup(claim: ParsedClaim, context: Any) -> CheckOutco
          "margin, at both closed and wide-open. Run check_return_redundancy with your "
          "measured spring torques and resistance; two nominally identical springs can "
          "still both be too weak alone."),
+        grounding="physics",
         provenance="redundancy is proven per single-fault case, not by symmetry")
 _r_throttle_identical_backup.reference_claim = (
     "The two throttle return springs are identical, so if one fails the other is fine.")

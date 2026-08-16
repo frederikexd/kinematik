@@ -23,6 +23,7 @@ def _r_bigger_rad(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "for little gain. Size it against the real heat load (motor + pack) and the "
          "duct's achievable airflow, which the pack-thermal / cooling model captures. "
          "Past the point where the duct or flow caps you, bigger does nothing."),
+        grounding="physics",
         provenance="rejection limited by full path; needs duct airflow + heat load")
 _r_bigger_rad.reference_claim = "A bigger radiator always cools better."
 
@@ -43,6 +44,7 @@ def _r_pcm_replaces_fan(claim: ParsedClaim, context: Any) -> CheckOutcome | None
          "answers: enough latent heat to hold the cells for the stint, or do you "
          "still need active airflow? Run size_pcm_for_hold with your lap/current "
          "trace before betting on wax alone."),
+        grounding="physics",
         provenance="PCM = latent buffer, not a heat sink; needs pcm_cooling sizing")
 _r_pcm_replaces_fan.reference_claim = "Phase-change wax means we don't need a cooling fan."
 
@@ -60,6 +62,7 @@ def _r_even_cells(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "ages fastest. That's why fan placement matters and why a single average "
          "temperature hides the problem. Use the per-cell pack-thermal map to find "
          "which cell cooks first and put the airflow there."),
+        grounding="physics",
         provenance="lumped per-cell network \u2192 non-uniform; hottest cell governs")
 _r_even_cells.reference_claim = "All the cells in the pack heat up evenly."
 

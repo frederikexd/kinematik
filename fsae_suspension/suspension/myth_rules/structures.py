@@ -24,6 +24,7 @@ def _r_strong_vs_stiff(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "a stronger alloy; you change the geometry (tube diameter, triangulation) or "
          "the material family. Size stiffness with the flex/compliance model and "
          "strength with the FoS check \u2014 they're separate requirements."),
+        grounding="physics",
         provenance="stiffness\u221dE,geometry; strength\u221d\u03c3_yield; E~const for steels")
 _r_strong_vs_stiff.reference_claim = "A stronger chassis is a stiffer chassis."
 
@@ -43,6 +44,7 @@ def _r_more_torque_stronger(claim: ParsedClaim, context: Any) -> CheckOutcome | 
          "carries most of it), which is why correct preload \u2014 not maximum torque "
          "\u2014 prevents fatigue. Compute the target from bolt grade and the clamped "
          "stack with the bolted-joint model; don't just 'crank it tighter'."),
+        grounding="physics",
         provenance="preload target ~75% proof; over-torque yields/loses clamp")
 _r_more_torque_stronger.reference_claim = "Tighter bolts always make a stronger joint."
 
@@ -61,6 +63,7 @@ def _r_lighter_weaker(claim: ParsedClaim, context: Any) -> CheckOutcome | None:
          "the stress/FoS map (bracket-FoS, load-path) and remove mass only where the "
          "margin is large. Blind lightening IS dangerous; targeted lightening guided "
          "by the FoS check is how you get light AND safe."),
+        grounding="physics",
         provenance="FoS-guided mass removal; needs bracket_fos / loadpath")
 _r_lighter_weaker.reference_claim = "Making a part lighter always makes it weaker."
 
