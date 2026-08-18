@@ -115,7 +115,8 @@ def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
     # fall back to a safe snapshot instead of crashing the whole app here.
     _lead_default = {"is_lead": False, "workspace_count": 0,
                      "workspace_cap": 10, "can_create": False,
-                     "is_owner": False, "_resolved": False}
+                     "is_owner": False, "can_self_register": True,
+                     "_resolved": False}
     _pls = getattr(auth, "project_lead_status", None)
     if callable(_pls):
         try:

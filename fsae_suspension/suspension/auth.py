@@ -307,7 +307,8 @@ class SupabaseAuth:
         missing (e.g. project_leads.sql not yet applied)."""
         _fallback = {"is_lead": False, "workspace_count": 0,
                      "workspace_cap": 10, "can_create": False,
-                     "is_owner": False, "_resolved": False}
+                     "is_owner": False, "can_self_register": False,
+                     "_resolved": False}
         if not session.is_valid():
             return _fallback
         try:
@@ -324,6 +325,12 @@ class SupabaseAuth:
                 "workspace_cap": int(row.get("workspace_cap", 10) or 10),
                 "can_create": bool(row.get("can_create", False)),
                 "is_owner": bool(row.get("is_owner", False)),
+                #  Absent on a deployment that has not applied
+                #  project_leads_selfserve.sql yet. Default TRUE so the UI still
+                #  offers the button — the server is the authority and will
+                #  refuse if it must. Defaulting False would reinstate the dead
+                #  end this whole change exists to remove.
+                "can_self_register": bool(row.get("can_self_register", True)),
                 "_resolved": True,
             }
         except Exception:
