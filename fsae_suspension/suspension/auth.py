@@ -27,6 +27,8 @@
 
 from __future__ import annotations
 
+import re
+
 from dataclasses import dataclass
 
 from .workspace import (
@@ -35,6 +37,40 @@ from .workspace import (
     refuse_service_role,
     validate_workspace_id,
 )
+
+
+
+def _friendly_pg_error(exc: Exception, prefix: str) -> str:
+    """Turn a PostgREST error into a sentence a person can act on.
+
+    The raw exception stringifies as the whole response dict, so a first-time
+    user who could not create a workspace was shown:
+
+        Could not register as project lead: {'message': 'only the project owner
+        can register project leads — ask the owner to appoint you, or join via
+        an invite link', 'code': '42501', 'hint': None, 'details': None}
+
+    The useful sentence is in there, wrapped in JSON punctuation and a code that
+    means nothing to them. On the very first screen of the product. Pull the
+    message out and drop the rest; if it does not parse, fall back to the raw
+    text rather than swallowing it, because an unreadable error still beats a
+    silent failure.
+    """
+    msg = ""
+    for attr in ("message", "msg"):
+        val = getattr(exc, attr, None)
+        if isinstance(val, str) and val.strip():
+            msg = val.strip()
+            break
+    if not msg:
+        raw = str(exc)
+        m = re.search(r"['\"]message['\"]\s*:\s*['\"](.+?)['\"]\s*[,}]", raw)
+        msg = m.group(1).strip() if m else raw.strip()
+    if not msg:
+        return prefix + "."
+    #  Server messages here are already written for humans; do not double up
+    #  the prefix when the message stands on its own.
+    return f"{prefix}: {msg}" if len(msg) < 60 else msg
 
 
 class AuthError(RuntimeError):
@@ -261,7 +297,8 @@ class SupabaseAuth:
         try:
             self._user_client(session).rpc("register_project_lead", {}).execute()
         except Exception as e:
-            raise AuthError(f"Could not register as project lead: {e}") from e
+            raise AuthError(_friendly_pg_error(
+                e, "Could not create your workspace")) from e
 
     def project_lead_status(self, session: Session) -> dict:
         """Snapshot the picker renders to reflect who is a registered lead:
