@@ -145,20 +145,57 @@ def _render_workspace_picker(st, auth: SupabaseAuth, session: Session
                 st.session_state["_kx_ws_id"] = ws.id
                 st.rerun()
         else:
-            st.info("You're **not** a member of any workspace yet. If a project "
-                    "lead sent you an invite link, open it while signed in and "
-                    "you'll land in their workspace.")
-            if lead.get("is_owner"):
-                st.divider()
-                st.caption("You're the project **owner**. Register yourself as a "
-                           "lead to create and run workspaces.")
-                if st.button("Enable workspace creation", key="_kx_reg_lead"):
+            #  NEVER LEAVE A NEW ACCOUNT WITH NOWHERE TO GO.
+            #
+            #  This branch used to render the invite text and, unless the user
+            #  happened to be the project owner, nothing else — no button, no
+            #  path, no next step. Every person who signed up without an invite
+            #  landed on a wall. That is most of them: someone who hears about
+            #  KinematiK and signs up to look at it is, by definition, not
+            #  holding an invite link, and is usually the exact project lead the
+            #  tool is for.
+            #
+            #  Whether they may create a workspace is a SERVER decision. The
+            #  register_project_lead RPC re-checks policy and will refuse if it
+            #  should, so offering the button costs nothing and withholding it
+            #  costs the user their entire first session. Worst case they see an
+            #  error explaining why; best case they are running in ten seconds.
+            st.info("You're **not** in a workspace yet. Two ways in:")
+
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("**Start your own**")
+                st.caption("If you're a project lead — or just want to try it on "
+                           "your own numbers — create a workspace and invite your "
+                           "team in later.")
+                if st.button("Create my workspace", key="_kx_selfserve_lead",
+                             type="primary"):
                     try:
                         auth.register_as_project_lead(session)
                     except AuthError as e:
+                        #  Registration refused is a real answer, not a crash.
+                        #  Show it and keep the invite route visible.
                         st.error(str(e))
+                        st.caption("If your team already has a workspace, ask "
+                                   "your project lead for an invite link instead.")
                         return None
                     st.rerun()
+            with c2:
+                st.markdown("**Join an existing one**")
+                st.caption("If a project lead sent you an invite link, open it "
+                           "while signed in and you'll land straight in their "
+                           "workspace.")
+
+            if not lead.get("_resolved", False):
+                #  HONEST ABOUT NOT KNOWING. project_lead_status() falls back to
+                #  a non-lead snapshot when the RPC is missing or errors, and the
+                #  UI then treated that indistinguishably from a confirmed "no".
+                #  A backend hiccup therefore locked out every user, including
+                #  real leads, while looking like a deliberate policy decision.
+                #  Say which it is.
+                st.caption("⚠️ Couldn't confirm your account permissions just "
+                           "now — the button above will still work if your "
+                           "account allows it, and will tell you if it doesn't.")
         return None
 
     labels = {f"{ws.name}  ·  {role}": ws.id for ws, role in workspaces}
