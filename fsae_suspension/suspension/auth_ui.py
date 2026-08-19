@@ -590,13 +590,24 @@ def render_invite_admin(st, ctx: WorkspaceContext) -> None:
     revoke. Lives inside the Members panel."""
     auth = st.session_state.get(_SS_AUTH)
     session = current_session(st)
-    if auth is None or session is None or ctx.role not in ("owner", "lead"):
+    #  ANY MEMBER can invite, not just owner/lead. Viewers cannot: read-only
+    #  access is deliberate and minting member links would let them grant more
+    #  than they hold. Mirrors create_workspace_invite() server-side, which is
+    #  the actual authority — this gate only keeps the UI honest.
+    if auth is None or session is None:
+        return
+    #  Stated as an EXCLUSION, not an allow-list. The roles are owner / lead /
+    #  member / viewer (workspace_isolation.sql), and an allow-list silently
+    #  locks out any role added later — which is how "only leads can invite"
+    #  became true by accident in the first place. Only viewers are excluded,
+    #  and that is a deliberate rule with a reason.
+    if ctx.role == "viewer":
         return
 
     st.markdown("**Invite link**")
-    st.caption("One link for the whole team chat. Links only ever grant "
-               "member/viewer (promote people explicitly), always expire, "
-               "and can be revoked here at any time.")
+    st.caption("One link for the whole team chat. Anyone on the team can make "
+               "one. Links only ever grant member/viewer (promote people "
+               "explicitly), always expire, and can be revoked here at any time.")
     c = st.columns([1, 1, 1])
     inv_role = c[0].selectbox("Role", ["member", "viewer"], key="_kx_inv_role")
     inv_days = c[1].selectbox("Expires in", [1, 3, 7, 14, 30], index=2,

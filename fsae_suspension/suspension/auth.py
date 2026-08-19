@@ -469,7 +469,15 @@ class SupabaseAuth:
     def create_invite(self, session: Session, workspace_id: str,
                       role: str = "member", ttl_hours: int = 168,
                       max_uses: int = 30) -> str:
-        """Mint an invite token for the workspace (caller must be owner/lead).
+        """Mint an invite token for the workspace.
+
+        ANY MEMBER may do this, not just owner/lead — the person who knows a
+        new member needs adding is usually whoever is sitting next to them, and
+        routing every addition through one lead makes onboarding wait on that
+        lead being awake. Viewers are excluded: read-only access is deliberate,
+        and letting a viewer mint member links would let them grant more than
+        they hold. The server enforces both; this is the client half.
+
         Returns the token string; build the shareable URL with
         auth_ui.build_join_url()."""
         if role not in ("member", "viewer"):
