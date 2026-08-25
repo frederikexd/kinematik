@@ -10,18 +10,37 @@ name the component, prescribe the fix, and re-trace it in place.
 
 The board-ledger in `electronics.py` checks the traces the team *declares*.
 This module closes the other half of the loop the electrical members actually
-live in: the board already exists as a KiCad `.kicad_pcb` file, it passed DRC,
-it "works theoretically" — and then it browns out on track, a via desolders
-itself, or the CAN bus drops frames next to the inverter. The schematic was
-never the problem; the *copper* was.
+live in: the board already exists as a routed file, it passed DRC, it "works
+theoretically" — and then it browns out on track, a via desolders itself, or
+the CAN bus drops frames next to the inverter. The schematic was never the
+problem; the *copper* was.
+
+**Both EDAs, one Doctor.** Half the grid routes in KiCad and half in Altium,
+and none of these failure modes care which tool drew the copper. Two readers
+feed one `PcbBoard` model — KiCad `.kicad_pcb` (v5–9) and Altium/Protel
+**ASCII** PCB (`.PcbDoc` saved as ASCII, `.pcb`) — so every check, the viewer,
+the fix engine and the report exist once and behave identically on both. Layer
+names are normalised to the KiCad vocabulary on import (Altium `MID3` →
+`In3.Cu`) because the physics only needs to know outer from inner, and the
+file's own names are kept for display. `parse_board()` is the one door;
+`sniff_format()` identifies a file from its content, not its extension.
+
+The native *binary* `.PcbDoc` — what Altium saves by default — is **read** too,
+by `pcb_altium_binary`, but never written: a binary board carries
+`patchable = False` and `apply_fixes()` refuses it outright. A mis-parse on read
+is recoverable (it shows up as absurd geometry, and the reader refuses the file
+rather than reporting on it); a mistake on write corrupts a board a team is
+about to pay to fabricate. The one-click re-trace therefore still needs the
+ASCII export, and `pcb_altium.ALTIUM_BINARY_HELP` explains how to get it.
 
 PCB Doctor does four things, all analytic, all dependency-free beyond numpy:
 
-  1. **Parse the real board.** A native s-expression reader for KiCad 5/6/7/8/9
-     `.kicad_pcb` files extracts every copper segment (width, layer, net),
-     every via (drill, size, layers), every footprint (reference, value, pads)
-     and every zone — with the exact character span of each token, so the file
-     can later be patched surgically instead of regenerated.
+  1. **Parse the real board.** Span-preserving readers extract every copper
+     segment (width, layer, net), every routed arc (chorded, so connectivity
+     is never broken), every via (drill, size, layers), every footprint
+     (reference, value, pads) and every pour — recording the exact character
+     span of each width token, so the file can later be patched surgically
+     instead of regenerated.
 
   2. **Diagnose real-life failure modes DRC never sees.** DRC checks geometry
      against *rules*; the Doctor checks copper against *physics* and against
@@ -48,9 +67,10 @@ PCB Doctor does four things, all analytic, all dependency-free beyond numpy:
 
   3. **Fix the traces on the existing board.** For every under-sized power
      segment the Doctor computes the exact IPC-2221 width the assigned current
-     needs and rewrites the `(width …)` token of that segment *in the original
-     file* — nothing else in the file is touched, so it re-opens in KiCad with
-     the routing intact. Differential-pair members are deliberately **not**
+     needs and rewrites that segment's width token *in the original file* —
+     KiCad's `(width …)`, Altium's `WIDTH=…`, in the file's own units — and
+     nothing else in the file is touched, so it re-opens in the EDA it came
+     from with the routing intact. Differential-pair members are **not**
      auto-widened (width sets impedance); they get a prescription instead.
      After patching, the HV clearance check re-runs on the patched geometry so
      a widened trace that now crowds a neighbour is reported, not hidden.
@@ -191,10 +211,25 @@ class PcbSegment:
     start: tuple          # (x, y) mm
     end: tuple
     width_span: tuple = (0, 0)   # (char_start, char_end) of the width token
+    # How the width token is *written* in the source file, so a patch can put
+    # the number back in the file's own units instead of silently converting
+    # the board to millimetres. KiCad stores bare mm → scale 1, no suffix.
+    # Altium ASCII stores e.g. `WIDTH=11.811mil` → scale 0.0254, suffix "mil".
+    width_scale_mm: float = 1.0
+    width_unit: str = ""
+    # Arcs are tessellated into several PcbSegments that all share one width
+    # token in the file; the patcher de-duplicates on the span so the same
+    # token is never rewritten twice.
+    from_arc: bool = False
 
     @property
     def length_mm(self) -> float:
         return math.hypot(self.end[0] - self.start[0], self.end[1] - self.start[1])
+
+    def width_token(self, mm: float) -> str:
+        """Render `mm` the way this segment's width is written in the file."""
+        val = mm / (self.width_scale_mm or 1.0)
+        return f"{val:g}{self.width_unit}"
 
 
 @dataclass
@@ -214,6 +249,13 @@ class PcbPad:
     at: tuple             # absolute board coords, mm
     size: tuple = (1.0, 1.0)
     through: bool = False
+    # Which copper side this pad is actually on. KiCad pads inherit their
+    # footprint's side, so its reader leaves this empty and the footprint
+    # decides. Altium states the layer on the pad record itself — including
+    # for free pads that belong to no component at all, where there is no
+    # footprint to inherit from. Getting this wrong makes a bottom-side pad
+    # invisible to the top-side copper graph and fakes a "copper open".
+    layer: str = ""
 
 
 @dataclass
@@ -226,18 +268,88 @@ class PcbFootprint:
 
 
 @dataclass
+class PcbZone:
+    """A copper pour: its net, its layer, and its outline in board mm.
+
+    Only the *outline* is kept. The pour is used to answer "is this pad joined
+    to the rest of its net", never "how much resistance does it add" — see
+    `analyze_net` for why that asymmetry is deliberate.
+    """
+    net: int
+    layer: str
+    outline: list = field(default_factory=list)     # [(x, y), ...]
+
+    def contains(self, pt, tol: float = 0.0) -> bool:
+        """Ray-cast point-in-polygon, with an optional outward tolerance so a
+        pad sitting exactly on the pour edge still counts as inside."""
+        pts = self.outline
+        n = len(pts)
+        if n < 3:
+            return False
+        x, y = pt
+        inside = False
+        j = n - 1
+        for i in range(n):
+            xi, yi = pts[i]
+            xj, yj = pts[j]
+            if (yi > y) != (yj > y):
+                xc = xi + (y - yi) * (xj - xi) / ((yj - yi) or 1e-12)
+                if x < xc:
+                    inside = not inside
+            j = i
+        if inside or tol <= 0:
+            return inside
+        j = n - 1
+        for i in range(n):
+            if _pt_seg_dist(pt, pts[i], pts[j]) <= tol:
+                return True
+            j = i
+        return False
+
+
+@dataclass
 class PcbBoard:
-    """Everything the Doctor needs from a .kicad_pcb, plus the raw text for
-    surgical width patches."""
+    """Everything the Doctor needs from a routed board file, plus the raw text
+    for surgical width patches. One model, two front-ends: KiCad s-expression
+    and Altium/Protel ASCII both land here, so every physics check, the viewer
+    and the patcher are written once and are EDA-agnostic. Layer names are
+    normalised to the KiCad vocabulary (F.Cu / In*.Cu / B.Cu) on import —
+    `native_layers` keeps the file's own names for round-trip display."""
     text: str = ""
     nets: dict = field(default_factory=dict)            # id -> name
     segments: list = field(default_factory=list)        # [PcbSegment]
     vias: list = field(default_factory=list)            # [PcbVia]
     footprints: list = field(default_factory=list)      # [PcbFootprint]
     zone_nets: set = field(default_factory=set)         # net ids with pours
+    zones: list = field(default_factory=list)           # [PcbZone] with outlines
     copper_layers: list = field(default_factory=list)   # ["F.Cu", "In1.Cu", ...]
     board_thickness_mm: float = DEFAULT_BOARD_THICKNESS_MM
     copper_oz: float = 1.0                              # finished outer weight
+    # ---- provenance: which EDA this came out of, and what we had to assume -- #
+    fmt: str = "kicad"            # "kicad" | "altium" | "altium_binary"
+    #  Can the source file be surgically re-written? True for the text formats,
+    #  where a width is one token at a known character span. False for a native
+    #  binary .PcbDoc: it is read for diagnosis only, because a mis-placed byte
+    #  in a binary board corrupts a file that is about to go to a fab.
+    patchable: bool = True
+    length_unit: str = "mm"                             # unit the file writes in
+    native_layers: dict = field(default_factory=dict)   # canonical -> file name
+    notes: list = field(default_factory=list)           # import caveats, shown
+
+    @property
+    def fmt_label(self) -> str:
+        return {"kicad": "KiCad", "altium": "Altium / Protel ASCII",
+                "altium_binary": "Altium (native binary)"}.get(
+            self.fmt, self.fmt)
+
+    @property
+    def file_suffix(self) -> str:
+        """Extension a patched copy of this board should carry."""
+        return {"kicad": ".kicad_pcb", "altium": ".PcbDoc",
+                "altium_binary": ".PcbDoc"}.get(self.fmt, ".txt")
+
+    def native_layer(self, canonical: str) -> str:
+        return self.native_layers.get(canonical, canonical)
 
     # ---- convenience -------------------------------------------------------- #
     def net_id(self, name: str):
@@ -280,6 +392,154 @@ class PcbBoard:
         return (min(xs), min(ys), max(xs), max(ys))
 
 
+# --------------------------------------------------------------------------- #
+#  Which EDA drew this? — one door for both formats
+# --------------------------------------------------------------------------- #
+SUPPORTED_SUFFIXES = (".kicad_pcb", ".pcbdoc", ".pcb", ".txt")
+
+
+def sniff_format(data, filename: str = "") -> str:
+    """Identify a dropped board file from its *content* first and its name only
+    as a tie-break — teams rename exports constantly, and an Altium ASCII board
+    saved as `board.txt` should still just work.
+
+    Returns "kicad", "altium", "altium_binary", or "unknown".
+    """
+    from . import pcb_altium as _alt
+    if isinstance(data, (bytes, bytearray, memoryview)):
+        if _alt.is_altium_binary(data):
+            return "altium_binary"
+        head = bytes(data)[:20000].decode("utf-8", errors="replace")
+    else:
+        head = data[:20000]
+        if _alt.is_altium_binary(head):
+            return "altium_binary"
+    if re.search(r"\|RECORD=", head, re.I):
+        return "altium"
+    if "kicad_pcb" in head or re.match(r"\s*\(\s*(kicad_pcb|pcb)\b", head):
+        return "kicad"
+    low = (filename or "").lower()
+    if low.endswith(".kicad_pcb"):
+        return "kicad"
+    if low.endswith((".pcbdoc", ".pcb")):
+        return "altium"
+    return "unknown"
+
+
+def parse_board(data, filename: str = "") -> PcbBoard:
+    """Parse a routed board from **either** EDA into the one `PcbBoard` model.
+
+    Everything downstream — the ampacity mesh, the nodal IR-drop solve, the
+    clearance table, the viewer, the patcher, the report — is written against
+    that model, so adding Altium added a reader, not a second Doctor. Accepts
+    bytes or text; raises ValueError with something actionable in it, since
+    "couldn't parse" is useless to someone holding a board file.
+    """
+    from . import pcb_altium as _alt
+    fmt = sniff_format(data, filename)
+    if fmt == "altium_binary":
+        #  Altium saves binary by default, so this is the file a member
+        #  actually has. Read it if we can; the ASCII instructions are the
+        #  fallback, not the first answer.
+        from . import pcb_altium_binary as _bin
+        if isinstance(data, str):
+            data = data.encode("latin-1", errors="replace")
+        try:
+            return _bin.parse_altium_binary(bytes(data))
+        except _bin.AltiumBinaryUnavailable as exc:
+            raise ValueError(f"{exc}\n\n{_alt.ALTIUM_BINARY_HELP}") from exc
+        except ValueError as exc:
+            # The reader's own sanity failures already carry the way out; a
+            # ValueError from the OLE layer does not, and "bytes length not a
+            # multiple of item size" helps nobody holding a board file.
+            msg = str(exc)
+            if "ASCII" not in msg:
+                msg = f"{msg}\n\n{_alt.ALTIUM_BINARY_HELP}"
+            raise ValueError(msg) from exc
+        except Exception as exc:                    # noqa: BLE001
+            raise ValueError(
+                f"this native .PcbDoc could not be read ({type(exc).__name__}: "
+                f"{exc}).\n\n{_alt.ALTIUM_BINARY_HELP}") from exc
+    text = (bytes(data).decode("utf-8", errors="replace")
+            if isinstance(data, (bytes, bytearray, memoryview)) else data)
+    if fmt == "altium":
+        return _alt.parse_altium_ascii(text)
+    if fmt == "kicad":
+        return parse_kicad_pcb(text)
+    raise ValueError(
+        "unrecognised board file — the Doctor reads KiCad `.kicad_pcb` "
+        "(v5–9) and Altium/Protel **ASCII** PCB (`.PcbDoc` saved as ASCII). "
+        "A native binary Altium `.PcbDoc` needs File ▸ Save As ▸ *PCB ASCII "
+        "File* first. Gerbers, ODB++ and IPC-2581 are not read: they carry "
+        "copper but not the net names and component references every finding "
+        "here is written in terms of.")
+
+
+# --------------------------------------------------------------------------- #
+#  Arc tessellation (shared by both readers)
+# --------------------------------------------------------------------------- #
+#  Routed arcs are copper. Dropping them does not merely lose a little length —
+#  it breaks the connectivity graph, and the "copper open / rats-nest missed"
+#  check would then flag a perfectly connected net as dead on arrival. Both
+#  front-ends therefore chord every arc into short straight segments that share
+#  one width token in the file.
+#
+#  Chords cut the corner, so a tessellated arc reads very slightly *shorter*
+#  than the copper really is — i.e. slightly optimistic on resistance, the
+#  wrong direction for a screening tool. 10° keeps that under 0.15% of the
+#  arc's length, far inside the error already carried by the assigned current.
+_ARC_MAX_STEP_DEG = 10.0
+
+
+def _arc_points_center(cx: float, cy: float, r: float,
+                       a0_deg: float, a1_deg: float) -> list:
+    """Points along an arc given centre/radius/angles (degrees, CCW)."""
+    sweep = a1_deg - a0_deg
+    while sweep <= 0:
+        sweep += 360.0
+    while sweep > 360.0:
+        sweep -= 360.0
+    n = max(2, int(math.ceil(sweep / _ARC_MAX_STEP_DEG)) + 1)
+    return [(cx + r * math.cos(math.radians(a0_deg + sweep * i / (n - 1))),
+             cy + r * math.sin(math.radians(a0_deg + sweep * i / (n - 1))))
+            for i in range(n)]
+
+
+def _arc_points_3pt(p0, pm, p1) -> list:
+    """Points along the arc start→mid→end (KiCad's representation). Falls back
+    to the straight chord if the three points are collinear."""
+    (x0, y0), (xm, ym), (x1, y1) = p0, pm, p1
+    d = 2.0 * (x0 * (ym - y1) + xm * (y1 - y0) + x1 * (y0 - ym))
+    if abs(d) < 1e-12:
+        return [p0, p1]
+    ux = ((x0 ** 2 + y0 ** 2) * (ym - y1) + (xm ** 2 + ym ** 2) * (y1 - y0)
+          + (x1 ** 2 + y1 ** 2) * (y0 - ym)) / d
+    uy = ((x0 ** 2 + y0 ** 2) * (x1 - xm) + (xm ** 2 + ym ** 2) * (x0 - x1)
+          + (x1 ** 2 + y1 ** 2) * (xm - x0)) / d
+    r = math.hypot(x0 - ux, y0 - uy)
+    if not (r > 0) or r > 1e6:
+        return [p0, p1]
+    a0 = math.degrees(math.atan2(y0 - uy, x0 - ux))
+    am = math.degrees(math.atan2(ym - uy, xm - ux))
+    a1 = math.degrees(math.atan2(y1 - uy, x1 - ux))
+    ccw = ((am - a0) % 360.0) < ((a1 - a0) % 360.0)
+    pts = (_arc_points_center(ux, uy, r, a0, a1) if ccw
+           else list(reversed(_arc_points_center(ux, uy, r, a1, a0))))
+    # pin the endpoints exactly, so the node keys match the touching segments
+    pts[0], pts[-1] = p0, p1
+    return pts
+
+
+def _chord_segments(pts: list, **seg_kw) -> list:
+    """Turn a polyline into PcbSegments, all sharing the arc's width token."""
+    out = []
+    for a, b in zip(pts, pts[1:]):
+        if math.hypot(b[0] - a[0], b[1] - a[1]) < 1e-9:
+            continue
+        out.append(PcbSegment(start=a, end=b, from_arc=True, **seg_kw))
+    return out
+
+
 def parse_kicad_pcb(text: str) -> PcbBoard:
     """Parse a KiCad 5–9 .kicad_pcb file into a PcbBoard. Tolerant: anything
     it does not recognise is skipped, never fatal."""
@@ -309,6 +569,36 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
             if v:
                 board.board_thickness_mm = v[0]
 
+    # KiCad 10 dropped numeric net IDs: where v5-9 wrote `(net 2 "VCC")` and
+    # declared every net up front, v10 writes `(net "VCC")` on each object and
+    # declares nothing. Parsing only the numeric form does not fail loudly on a
+    # v10 board — it drops EVERY segment and reports a board with no copper and
+    # no nets, which looks like an empty file rather than a bug. So a net
+    # reference is resolved either way, and names met for the first time are
+    # interned into the same id space the rest of the Doctor already uses.
+    _by_name = {}
+
+    def _net_ref(nt) -> int:
+        """Net id from `(net 2 "VCC")` (v5-9) or `(net "VCC")` (v10)."""
+        if not nt:
+            return 0
+        ats = _atoms(nt)
+        if not ats:
+            return 0
+        raw = ats[0].value
+        try:
+            return int(float(raw))
+        except (TypeError, ValueError):
+            pass
+        name = str(raw).strip().strip('"')
+        if not name:
+            return 0
+        if name not in _by_name:
+            nid = (max(board.nets) + 1) if board.nets else 1
+            board.nets[nid] = name
+            _by_name[name] = nid
+        return _by_name[name]
+
     for node in root[1:]:
         if not isinstance(node, list):
             continue
@@ -329,12 +619,33 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
             w_atom = next((a for a in wd[1:] if isinstance(a, Atom)), None)
             try:
                 seg = PcbSegment(
-                    net=int(float(_atoms(nt)[0].value)),
+                    net=_net_ref(nt),
                     layer=_atoms(ly)[0].value if ly and _atoms(ly) else "F.Cu",
                     width_mm=float(w_atom.value),
                     start=tuple(_floats(st_, 2)), end=tuple(_floats(en_, 2)),
                     width_span=(w_atom.start, w_atom.end))
                 board.segments.append(seg)
+            except (ValueError, IndexError, AttributeError):
+                continue
+        elif nm == "arc":
+            # A *routed* arc (KiCad ≥6). `gr_arc` is graphics and is not copper,
+            # so the exact name match above matters.
+            st_, md_, en_, wd, ly, nt = (_child(node, k) for k in
+                                         ("start", "mid", "end", "width",
+                                          "layer", "net"))
+            if not (st_ and md_ and en_ and wd and nt):
+                continue
+            w_atom = next((a for a in wd[1:] if isinstance(a, Atom)), None)
+            try:
+                pts = _arc_points_3pt(tuple(_floats(st_, 2)),
+                                      tuple(_floats(md_, 2)),
+                                      tuple(_floats(en_, 2)))
+                board.segments.extend(_chord_segments(
+                    pts,
+                    net=_net_ref(nt),
+                    layer=_atoms(ly)[0].value if ly and _atoms(ly) else "F.Cu",
+                    width_mm=float(w_atom.value),
+                    width_span=(w_atom.start, w_atom.end)))
             except (ValueError, IndexError, AttributeError):
                 continue
         elif nm == "via":
@@ -345,7 +656,7 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
             try:
                 layers = tuple(a.value for a in _atoms(ly)) if ly else ("F.Cu", "B.Cu")
                 board.vias.append(PcbVia(
-                    net=int(float(_atoms(nt)[0].value)),
+                    net=_net_ref(nt),
                     at=tuple(_floats(at, 2)),
                     size_mm=_floats(sz)[0] if sz and _floats(sz) else 0.6,
                     drill_mm=_floats(dr)[0] if dr and _floats(dr) else 0.3,
@@ -353,18 +664,46 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
             except (ValueError, IndexError):
                 continue
         elif nm in ("footprint", "module"):
-            board.footprints.append(_parse_footprint(node))
+            board.footprints.append(_parse_footprint(node, _net_ref))
         elif nm == "zone":
             nt = _child(node, "net")
-            if nt and _atoms(nt):
-                try:
-                    board.zone_nets.add(int(float(_atoms(nt)[0].value)))
-                except ValueError:
-                    pass
+            if not (nt and _atoms(nt)):
+                continue
+            try:
+                znid = _net_ref(nt)
+            except ValueError:
+                continue
+            board.zone_nets.add(znid)
+            # Outlines, so the pour can join pads that nothing else reaches.
+            # `filled_polygon` is the copper KiCad actually poured (it respects
+            # clearances and islands); the `polygon` outline is only the region
+            # the user drew, so prefer the former and fall back to the latter
+            # for a zone that has never been filled.
+            zl = _child(node, "layer") or _child(node, "layers")
+            zlayers = [str(a.value).strip('"') for a in _atoms(zl)] if zl else []
+            zlayers = [l for l in zlayers if l.endswith(".Cu")] or ["F.Cu"]
+            filled = _children(node, "filled_polygon")
+            for poly in (filled or _children(node, "polygon")):
+                pts_node = _child(poly, "pts")
+                if not pts_node:
+                    continue
+                pts = [tuple(_floats(xy, 2)) for xy in _children(pts_node, "xy")]
+                pts = [q for q in pts if len(q) == 2]
+                if len(pts) < 3:
+                    continue
+                players = zlayers
+                pl = _child(poly, "layer")
+                if pl and _atoms(pl):
+                    nm_ = str(_atoms(pl)[0].value).strip('"')
+                    if nm_.endswith(".Cu"):
+                        players = [nm_]
+                for lay in players:
+                    board.zones.append(
+                        PcbZone(net=znid, layer=lay, outline=pts))
     return board
 
 
-def _parse_footprint(node) -> PcbFootprint:
+def _parse_footprint(node, net_ref=None) -> PcbFootprint:
     at = _child(node, "at")
     fx, fy, frot = (_floats(at, 3) if at else [0.0, 0.0, 0.0])
     ly = _child(node, "layer")
@@ -392,7 +731,23 @@ def _parse_footprint(node) -> PcbFootprint:
     for pd in _children(node, "pad"):
         ats = _atoms(pd)
         number = ats[0].value if ats else "?"
-        through = any(a.value == "thru_hole" for a in ats)
+        through = any(a.value in ("thru_hole", "np_thru_hole") for a in ats)
+        # Which copper side is this pad on? NOT necessarily its footprint's.
+        # A PCI edge connector is one footprint placed on the top whose fingers
+        # sit on both sides; plenty of designs also put an SMD pad on the far
+        # side of a top-side part. Inheriting the footprint's layer puts those
+        # pads on the wrong copper, the trace that reaches them is invisible to
+        # the connectivity graph, and a perfectly routed net is reported as
+        # "copper open" — this was the single largest false-alarm source on a
+        # real 4-layer board. KiCad states it on the pad: (layers "B.Cu" ...).
+        pad_cu = [str(a.value).strip('"') for a in _atoms(_child(pd, "layers") or [])
+                  if str(a.value).strip('"').endswith(".Cu")
+                  or str(a.value).strip('"') in ("*.Cu",)]
+        if any(l == "*.Cu" for l in pad_cu) or len(pad_cu) > 1:
+            through = True          # spans sides: reachable from either
+            pad_layer = ""
+        else:
+            pad_layer = pad_cu[0] if pad_cu else ""
         pat = _child(pd, "at")
         px, py = (_floats(pat, 2) if pat else [0.0, 0.0])
         # pad offset is in footprint frame; rotate into board frame.
@@ -405,14 +760,22 @@ def _parse_footprint(node) -> PcbFootprint:
         pnet, pname = 0, ""
         pnt = _child(pd, "net")
         if pnt and _atoms(pnt):
-            try:
-                pnet = int(float(_atoms(pnt)[0].value))
-            except ValueError:
-                pnet = 0
             a2 = _atoms(pnt)
-            pname = a2[1].value if len(a2) > 1 else ""
+            if net_ref is not None:
+                pnet = net_ref(pnt)          # handles both KiCad dialects
+            else:
+                try:
+                    pnet = int(float(a2[0].value))
+                except (TypeError, ValueError):
+                    pnet = 0
+            # v5-9: (net 2 "VCC"); v10: (net "VCC")
+            pname = (a2[1].value if len(a2) > 1
+                     else str(a2[0].value).strip().strip('"'))
+            if pname.lstrip("-").isdigit():
+                pname = ""
         fp.pads.append(PcbPad(number=number, net=pnet, net_name=pname,
-                              at=(ax, ay), size=size, through=through))
+                              at=(ax, ay), size=size, through=through,
+                              layer=pad_layer))
     return fp
 
 
@@ -434,6 +797,21 @@ def required_width_mm(current_a: float, dT_c: float, copper_oz: float,
     a_mm2 = required_area_mil2(current_a, dT_c, external) / MM2_TO_MIL2
     t_mm = copper_oz * OZ_TO_UM / 1000.0
     return a_mm2 / t_mm if t_mm > 0 else float("inf")
+
+
+def trace_ampacity_a(width_mm: float, dT_c: float, copper_oz: float,
+                     external: bool) -> float:
+    """The forward IPC-2221 question: what current does *this* copper carry at
+    a given rise? `required_width_mm` answers the reverse. Both directions are
+    needed, because when no current is declared the only honest thing to report
+    is the capacity the trace already has — a fact about the board — rather
+    than a verdict against a current nobody stated."""
+    t_mm = copper_oz * OZ_TO_UM / 1000.0
+    a_mil2 = max(width_mm, 0.0) * t_mm * MM2_TO_MIL2
+    if a_mil2 <= 0 or dT_c <= 0:
+        return 0.0
+    k = 0.048 if external else 0.024
+    return k * (dT_c ** 0.44) * (a_mil2 ** 0.725)
 
 
 def via_ampacity_a(drill_mm: float, dT_c: float,
@@ -498,8 +876,74 @@ def prescribe_trace(current_a: float, dT_c: float = 20.0,
 _MAX_NODAL_NODES = 900   # pinv is O(n³); above this, honesty > guessing
 
 
+#  Two copper endpoints this close are the same electrical point. Real boards
+#  are full of them: routers emit coordinates that disagree in the last micron,
+#  and rounding to a fixed grid then drops the two sides of a joint into
+#  different buckets — measured 11 um apart on a real 4-layer board, splitting
+#  a fully routed net into three islands and reporting it "copper open".
+#
+#  50 um is chosen to be unambiguous rather than generous: routed traces are
+#  100-500 um wide, so endpoints 50 um apart physically overlap in copper and
+#  cannot be an intentional break, while a genuine unrouted connection is a
+#  rats-nest line measured in millimetres. Widening this further would start
+#  welding real gaps shut, which is the one error direction this tool must not
+#  have — so it stays at the smallest value that fixes the observed failure.
+NODE_WELD_MM = 0.05
+
+#: The one-way contract every connectivity tolerance in this module keeps.
+#:
+#: PCB Doctor is allowed to cry wolf. It is not allowed to wave a bad board
+#: through. Concretely: an error that reports a *connected* net as open wastes
+#: a member's afternoon, while an error that reports an *open* net as connected
+#: sends a dead board to a fab. Every knob below is therefore set to the
+#: smallest value that fixes an observed, measured failure — never to the value
+#: that makes a complaint go away.
+#:
+#: If you are reading this because someone reported a false "copper open" and
+#: you are about to widen NODE_WELD_MM: don't. Find the physical reason two
+#: pieces of copper touch, the way the via-annulus rule did — that rule reaches
+#: much further than 50 um, and is *safer*, because the distance comes from the
+#: via's own diameter in the file rather than from a number someone picked.
+#: A tolerance justified by geometry can be as large as the geometry says.
+#: A tolerance justified by "it made the warnings stop" cannot be any size.
+#:
+#: `tests/test_pcb_doctor.py` pins this. If one of those tests is failing,
+#: the assertion is not the thing that is wrong.
+SAFETY_CONTRACT = "false alarms are acceptable; false all-clears are not"
+
+
 def _node_key(layer: str, pt) -> tuple:
     return (layer, round(pt[0], 2), round(pt[1], 2))
+
+
+def _weld_nodes(node_fn, keyed: dict, tol: float = NODE_WELD_MM) -> list:
+    """Return zero-ohm edges joining copper nodes that are within `tol` of each
+    other on the same layer.
+
+    A spatial hash keyed on `tol`-sized cells keeps this linear: each node only
+    compares against the nine cells around it, so a 51k-segment board costs the
+    same per node as a ten-segment one.
+    """
+    cells: dict = {}
+    for key, pt in keyed.items():
+        layer = key[0]
+        cx, cy = int(pt[0] // tol), int(pt[1] // tol)
+        cells.setdefault((layer, cx, cy), []).append((key, pt))
+    out, seen = [], set()
+    for (layer, cx, cy), items in cells.items():
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for okey, opt in cells.get((layer, cx + dx, cy + dy), ()):
+                    for key, pt in items:
+                        if key == okey:
+                            continue
+                        pair = (key, okey) if key < okey else (okey, key)
+                        if pair in seen:
+                            continue
+                        if math.hypot(pt[0] - opt[0], pt[1] - opt[1]) <= tol:
+                            seen.add(pair)
+                            out.append((node_fn(key), node_fn(okey), 1e-9))
+    return out
 
 
 def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
@@ -511,7 +955,26 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     segs = board.segments_of(nid)
     vias = board.vias_of(nid)
     pads = board.pads_of(nid)
+    #  A net with a pour is exempted from the open check. Pour outlines are now
+    #  parsed and DO join pads (see the conn_edges block below), but they are
+    #  deliberately not trusted to prove the negative — that a pad the outline
+    #  misses is really unreached.
+    #
+    #  The reason is thermal relief. KiCad's `filled_polygon` is the copper
+    #  actually poured, so it has a clearance hole punched around every pad and
+    #  the pad is joined across it by spokes; the pad centre therefore sits
+    #  geometrically OUTSIDE the fill while being perfectly connected. Altium's
+    #  polygon outline has the mirror problem — it is the region the user drew,
+    #  which may cover copper that was never poured. Measured on the corpus,
+    #  trusting containment to declare a net open pushed false alarms from 4.4%
+    #  to 5.1%: precisely the wrong direction, and for a reason that is a
+    #  property of pour rendering rather than of the boards.
+    #
+    #  So containment is used only to CONNECT (it can clear a false open, never
+    #  create one), and the blanket exemption stays until spoke geometry is read
+    #  too. Both halves fail safe.
     has_zone = nid in board.zone_nets
+    has_zone_no_geom = has_zone
 
     # --- adjacency ----------------------------------------------------------- #
     nodes: dict = {}
@@ -521,10 +984,14 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         return nodes[key]
 
     edges = []   # (i, j, ohm)
+    keyed: dict = {}          # node key -> exact point, for welding below
+    via_hubs: list = []       # (hub node, via, layers) for annulus attachment
     temp = ambient_c + 20.0
     for s in segs:
-        a = node(_node_key(s.layer, s.start))
-        b = node(_node_key(s.layer, s.end))
+        ka, kb = _node_key(s.layer, s.start), _node_key(s.layer, s.end)
+        keyed.setdefault(ka, s.start)
+        keyed.setdefault(kb, s.end)
+        a, b = node(ka), node(kb)
         tr = Trace(name="s", net="s", owner_subsystem="e",
                    width_mm=max(s.width_mm, 1e-4), copper_oz=board.copper_oz,
                    length_mm=max(s.length_mm, 1e-3),
@@ -536,7 +1003,33 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         span = v.layers if len(v.layers) >= 2 else ("F.Cu", "B.Cu")
         layers = board.copper_layers if set(span) >= {"F.Cu", "B.Cu"} else span
         for ly in layers:
-            edges.append((hub, node(_node_key(ly, v.at)), r / 2.0))
+            kv = _node_key(ly, v.at)
+            keyed.setdefault(kv, v.at)
+            edges.append((hub, node(kv), r / 2.0))
+        via_hubs.append((hub, v, set(layers)))
+    # Weld coincident-but-not-identical endpoints before the pads are attached,
+    # so a pad reaching either side of a joint reaches the whole net.
+    edges.extend(_weld_nodes(node, keyed))
+
+    #  A track does not have to hit a via's exact centre to be connected to it.
+    #  A via is an annulus of copper, and routers habitually end a track a little
+    #  short of the middle: measured on a real 4-layer board, an inner-layer
+    #  track stopped 97 um from a 350 um via — landing squarely ON the via pad,
+    #  yet outside the 50 um endpoint weld, so the net split across layers and
+    #  reported "copper open" while being perfectly routed. This was the single
+    #  cause behind 49 of the corpus's remaining false alarms.
+    #
+    #  The rule is the same physical one the pads already use: anything within
+    #  the via's own copper radius overlaps it. That radius is a fact from the
+    #  file, not a tolerance to tune, so this cannot quietly weld a real gap —
+    #  a track ending a via-radius away is touching the via.
+    for hub, v, vlayers in via_hubs:
+        reach_v = max(v.size_mm, v.drill_mm) / 2.0 + NODE_WELD_MM
+        for k, idx in list(nodes.items()):
+            if k[0] in ("via", "pad", "zone") or k[0] not in vlayers:
+                continue
+            if math.hypot(k[1] - v.at[0], k[2] - v.at[1]) <= reach_v:
+                edges.append((hub, idx, 1e-5))
 
     # pads: connect to any node on the pad's copper within its own footprint
     pad_nodes = []
@@ -545,7 +1038,7 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         key = ("pad", fp.ref, p.number)
         pn = node(key)
         reach = max(p.size) / 2.0 + 0.06
-        pad_layer = "B.Cu" if fp.layer == "B.Cu" else "F.Cu"
+        pad_layer = p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")
         hit = False
         for k, idx in list(nodes.items()):
             if k[0] in ("pad",):
@@ -557,6 +1050,26 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
                 if k[0] == "via" or p.through or k[0] == pad_layer:
                     edges.append((pn, idx, 1e-5))
                     hit = True
+        # A pad does not have to land on a trace *endpoint*. Routing very often
+        # runs a track straight across a pad and carries on — the pad sits
+        # mid-segment, touching real copper, with no node anywhere near it. The
+        # endpoint-only test above misses exactly that case and then reports the
+        # net as "copper open", which on real boards was the single largest
+        # source of false alarms. So: if no endpoint was in reach, test the pad
+        # against each segment *body* on its own layer, and join it to that
+        # segment's nearer end — topologically the correct connection, since the
+        # trace either side of the pad is one continuous piece of copper.
+        if not hit:
+            for sg in segs:
+                if not (p.through or sg.layer == pad_layer):
+                    continue
+                if _pt_seg_dist(p.at, sg.start, sg.end) > reach:
+                    continue
+                near = (sg.start
+                        if math.dist(p.at, sg.start) <= math.dist(p.at, sg.end)
+                        else sg.end)
+                edges.append((pn, node(_node_key(sg.layer, near)), 1e-5))
+                hit = True
         pad_nodes.append((fp.ref, p.number, pn, hit))
 
     # Two pads of the SAME footprint on the SAME net (a fuse, shunt, net-tie or
@@ -571,6 +1084,44 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         for _a, _b in zip(_pns, _pns[1:]):
             edges.append((_a, _b, 0.010))
 
+    # --- copper pours: connectivity ONLY, never resistance --------------------- #
+    #  A pour is real copper and really does join pads — ignoring it is why a
+    #  net poured to ground reads as a fistful of islands. But a pour is also a
+    #  sheet, and any resistance the Doctor invented for it would be a guess
+    #  that makes the IR drop look *smaller* than trace-only does. Small is the
+    #  dangerous direction: it under-reports brown-out.
+    #
+    #  So pour edges live in their own list. `conn_edges` decides whether a net
+    #  is open; `edges` — untouched here — remains the trace-only mesh the nodal
+    #  solve uses, so every resistance the Doctor reports is still an
+    #  upper bound on the real thing.
+    conn_edges = list(edges)
+    for zi, z in enumerate(getattr(board, "zones", ()) or ()):
+        if z.net != nid or len(z.outline) < 3:
+            continue
+        zhub = node(("zone", nid, zi))
+        x0 = min(p_[0] for p_ in z.outline); x1 = max(p_[0] for p_ in z.outline)
+        y0 = min(p_[1] for p_ in z.outline); y1 = max(p_[1] for p_ in z.outline)
+        for k, idx in list(nodes.items()):
+            if k[0] == "zone":
+                continue
+            if k[0] == "pad":
+                fp_, p_ = next(((f2, q) for f2, q in pads
+                                if f2.ref == k[1] and q.number == k[2]),
+                               (None, None))
+                if p_ is None:
+                    continue
+                pt = p_.at
+                on_layer = p_.through or (p_.layer or
+                    ("B.Cu" if fp_.layer == "B.Cu" else "F.Cu")) == z.layer
+            else:
+                pt = (k[1], k[2])
+                on_layer = (k[0] == "via") or (k[0] == z.layer)
+            if not on_layer or not (x0 <= pt[0] <= x1 and y0 <= pt[1] <= y1):
+                continue
+            if z.contains(pt, tol=NODE_WELD_MM):
+                conn_edges.append((zhub, idx, 0.0))
+
     # --- connected components ------------------------------------------------- #
     parent = list(range(len(nodes)))
     def find(x):
@@ -581,7 +1132,7 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         ra, rb = find(a), find(b)
         if ra != rb:
             parent[ra] = rb
-    for a, b, _ in edges:
+    for a, b, _ in conn_edges:
         union(a, b)
     pad_comps = {}
     for ref, num, pn, hit in pad_nodes:
@@ -626,7 +1177,7 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         "segments": len(segs), "vias": len(vias), "pads": len(pads),
         "has_zone": has_zone, "per_layer": per_layer,
         "bottleneck": bottleneck, "layer_transitions": max(layer_transitions, 0),
-        "open_groups": open_groups if not has_zone else [],
+        "open_groups": open_groups if not has_zone_no_geom else [],
         "worst_r_ohm": worst_r, "worst_pair": worst_pair,
         "nodal_skipped": len(nodes) > _MAX_NODAL_NODES,
     }
@@ -693,22 +1244,93 @@ def auto_assign_net_currents(board: PcbBoard, ledger=None) -> dict:
             src = "signal net by name — assumed 50 mA (edit me)"
             if _HV_NAME.search(name):
                 volt = 400.0
-            out[nid] = {"net": name, "current_a": cur, "voltage_v": volt,
-                        "source": src}
+            out[nid] = NetAssignment(net=name, voltage_v=volt).assume(cur, src)
             continue
         cur, volt, src = 1.0, 5.0, "assumed 1 A (no ledger match — edit me)"
+        assumed = True
         for pat, sub in _NET_HINTS:
             if re.search(pat, name, re.I):
                 if sub in peaks:
                     cur = peaks[sub]
                     src = f"ledger: {sub} declared peak {cur:g} A"
+                    assumed = False          # a real declared number
                 else:
                     src = f"name matches {sub} but no ledger peak declared — assumed 1 A"
                 break
         if _HV_NAME.search(name):
             volt = 400.0
-        out[nid] = {"net": name, "current_a": cur, "voltage_v": volt, "source": src}
+        a = NetAssignment(net=name, voltage_v=volt)
+        if assumed:
+            a.assume(cur, src)               # a guess, and labelled as one
+        else:
+            a["current_a"], a["source"] = cur, src
+        out[nid] = a
     return out
+
+
+class NetAssignment(dict):
+    """One net's electrical inputs, which knows whether its current was
+    *declared* or merely *assumed*.
+
+    This is a dict subclass rather than a plain dict for one reason: the
+    distinction has to survive being written to carelessly. The Doctor reports
+    MISSING (and offers no re-trace) for a net whose current it guessed, so if
+    a caller sets `a["current_a"] = 8.0` and the `assumed` flag stays True, the
+    net keeps reporting "current not declared" while visibly holding the number
+    the user just gave it. That is a confusing bug that no amount of
+    documentation reliably prevents, so setting a current here *is* declaring
+    it — the two cannot drift apart.
+
+    A plain dict built by hand elsewhere still works and counts as declared,
+    because `assumed` is absent and absence means "someone stated this".
+    """
+
+    _CURRENT_KEYS = ("current_a",)
+
+    def __setitem__(self, key, value):
+        if key in self._CURRENT_KEYS:
+            super().__setitem__("assumed", False)
+        super().__setitem__(key, value)
+
+    def update(self, *args, **kw):           # dict.update bypasses __setitem__
+        for k, v in dict(*args, **kw).items():
+            self[k] = v
+
+    def setdefault(self, key, default=None):
+        if key not in self:
+            self[key] = default
+        return self[key]
+
+    @property
+    def declared(self) -> bool:
+        return not self.get("assumed", False)
+
+    def assume(self, current_a: float, source: str):
+        """Record a *guessed* current — the only way to set one without
+        promoting it to a declaration. Used by the auto-assigner."""
+        dict.__setitem__(self, "current_a", float(current_a))
+        dict.__setitem__(self, "source", source)
+        dict.__setitem__(self, "assumed", True)
+        return self
+
+
+def declare_net_current(assignments: dict, nid: int, current_a: float,
+                        voltage_v=None, source: str = "declared by hand"):
+    """State a net's peak current, turning a guess into an input.
+
+    The explicit form, and the one to reach for when the intent matters. It is
+    no longer the *only* safe form: `assignments[nid]["current_a"] = 8.0` now
+    declares the net too, because `NetAssignment` clears `assumed` on any write
+    to the current. Both roads lead to the same place, which is the point —
+    correctness here should not depend on remembering which helper to call."""
+    a = assignments.get(nid)
+    if a is None:
+        a = assignments[nid] = NetAssignment(net="", voltage_v=5.0)
+    a["current_a"] = float(current_a)        # clears `assumed` by construction
+    if voltage_v is not None:
+        a["voltage_v"] = float(voltage_v)
+    a["source"] = source
+    return a
 
 
 # --------------------------------------------------------------------------- #
@@ -723,6 +1345,17 @@ def clearance_required_mm(voltage_v: float) -> float:
         if voltage_v <= vmax:
             return c
     return 2.5 + 0.005 * (voltage_v - 500.0)
+
+
+def _pt_seg_dist(p, a, b) -> float:
+    """Distance from a point to a line segment (not to its endpoints)."""
+    ax, ay = a; bx, by = b; px, py = p
+    dx, dy = bx - ax, by - ay
+    L2 = dx * dx + dy * dy
+    if L2 <= 0:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / L2))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
 
 
 def _seg_seg_dist_2d(p1, p2, q1, q2) -> float:
@@ -835,9 +1468,33 @@ def diagnose(board: PcbBoard, assignments: dict,
                          f"the schematic both look fine; in real life the circuit "
                          f"is simply open and the board does nothing. FIX: route "
                          f"the missing connection between those pad groups (the "
-                         f"rats-nest line KiCad is still showing).")))
+                         f"rats-nest line your EDA is still showing).")))
 
         if cur <= 0:
+            continue
+
+        # -- no declared current? then there is no verdict to give ---------------- #
+        #  Assigning a default and then failing the net against that default is a
+        #  guess wearing the costume of a finding. On a real board most nets are
+        #  unmatched, so it buries the three findings that are real under twenty
+        #  that are invented — and a member who sees a working board come back
+        #  covered in FAILs learns to close the tab. MISSING says the true thing:
+        #  the board may be fine, the *input* is absent. Geometry-only checks
+        #  (copper open, clearance, diff-pair) ran above and still stand, because
+        #  they do not depend on the current at all.
+        if a.get("assumed"):
+            bn_a = min(segs, key=lambda sg: sg.width_mm)
+            F.append(Finding(
+                check=f"current not declared — {name}", severity=Severity.MISSING,
+                subsystems=["electrics"],
+                message=(f"No peak current is declared for '{name}', so its copper "
+                         f"cannot be judged: its narrowest segment is "
+                         f"{bn_a.width_mm:.2f} mm on {bn_a.layer}, which is fine "
+                         f"for {trace_ampacity_a(bn_a.width_mm, dT_budget_c, board.copper_oz, bn_a.layer in ('F.Cu', 'B.Cu')):.2f} A "
+                         f"and not fine above it. FIX: declare this net's peak in "
+                         f"the integration ledger, or type its current into the "
+                         f"table above — the Doctor will not guess a number and "
+                         f"then fail your board against its own guess."))) 
             continue
 
         # -- ampacity at the bottleneck segment ---------------------------------- #
@@ -881,8 +1538,7 @@ def diagnose(board: PcbBoard, assignments: dict,
                          f"≥{req_w:.2f} mm (IPC-2221 heating + Onderdonk fusing "
                          f"at {fuse_sf:g}×, {board.copper_oz:g} oz) or move the "
                          f"net to 2 oz copper "
-                         f"(≥{_req_w(bn.layer in ('F.Cu','B.Cu'), 2.0):.2f} mm).",
-                         ),
+                         f"(≥{_req_w(bn.layer in ('F.Cu','B.Cu'), 2.0):.2f} mm)."),
                 detail={"required_width_mm": req_w, "run_temp_c": t_run}))
             # widen ALL under-width segments of this net, not just the bottleneck
             for i, s in enumerate(board.segments):
@@ -1156,18 +1812,41 @@ def diagnose(board: PcbBoard, assignments: dict,
 # --------------------------------------------------------------------------- #
 def apply_fixes(board: PcbBoard, fixes: list) -> tuple:
     """Return (patched_text, applied_fixes). Only auto=True fixes are applied;
-    each rewrites exactly the `(width x)` token of its segment — the rest of the
-    file is byte-identical, so KiCad reopens it with everything intact."""
-    edits = []
+    each rewrites exactly the one width token of its segment — KiCad's
+    `(width x)` or Altium's `WIDTH=x` — and nothing else in the file moves, so
+    the board reopens in its own EDA with the routing intact.
+
+    Two things the naive version gets wrong and this one does not:
+      * **Units.** The number goes back in the file's own units (mm for KiCad,
+        whatever the Altium export used, mil or mm), so a patched Altium board
+        does not quietly become a millimetre board.
+      * **Shared tokens.** A tessellated arc is many segments behind one
+        `WIDTH=` token; two fixes on the same span would splice the file twice
+        at overlapping offsets and corrupt it. Edits are collapsed per span,
+        keeping the widest requirement.
+    """
+    if not getattr(board, "patchable", True):
+        raise ValueError(
+            f"this {board.fmt_label} board is read for diagnosis only — the "
+            f"Doctor will not rewrite widths inside a binary file it might "
+            f"corrupt. Re-save from Altium as 'PCB ASCII File' and re-run to "
+            f"get the one-click re-trace; every finding above still applies.")
+    per_span = {}          # span -> (width_mm, segment)
     applied = []
     for fx in fixes:
         if not fx.auto:
             continue
         seg = board.segments[fx.seg_index]
-        a, b = seg.width_span
-        edits.append((a, b, f"{fx.new_width_mm:g}"))
+        span = tuple(seg.width_span)
+        if span == (0, 0):
+            continue       # nothing to patch (synthetic segment)
+        prev = per_span.get(span)
+        if prev is None or fx.new_width_mm > prev[0]:
+            per_span[span] = (fx.new_width_mm, seg)
         applied.append(fx)
-    edits.sort(key=lambda e: e[0], reverse=True)
+    edits = sorted(((s[0], s[1], seg.width_token(w))
+                    for s, (w, seg) in per_span.items()),
+                   key=lambda e: e[0], reverse=True)
     text = board.text
     for a, b, rep in edits:
         text = text[:a] + rep + text[b:]
@@ -1179,9 +1858,17 @@ def fix_report_md(board: PcbBoard, report: DoctorReport, applied: list,
     """A hand-off document: what was wrong, why it fails in real life, what was
     changed automatically, what still needs a human."""
     order = {"fail": 0, "warning": 1, "missing": 2, "info": 3, "ok": 4}
+    eda = board.fmt_label
     lines = ["# PCB Doctor — fix report", "",
-             f"Nets diagnosed: {len(assignments)} · {report.summary()}", "",
-             "## Findings (why it fails in real life)"]
+             f"Source board: **{eda}** · "
+             f"{len(board.segments)} copper segments · {len(board.vias)} vias · "
+             f"{len(board.footprints)} components", "",
+             f"Nets diagnosed: {len(assignments)} · {report.summary()}", ""]
+    if board.notes:
+        lines += ["## What the import had to assume"]
+        lines += [f"- {n}" for n in board.notes]
+        lines.append("")
+    lines.append("## Findings (why it fails in real life)")
     for f in sorted(report.findings, key=lambda x: order[x.severity.value]):
         lines.append(f"- **{f.severity.value.upper()} — {f.check}**: {f.message}")
     lines += ["", "## Widths rewritten in the patched file"]

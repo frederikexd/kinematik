@@ -71,6 +71,8 @@ _SUBMODULES = (
     "mountpoints",
     "pack_thermal",
     "power_draw",
+    "pcb_altium",
+    "pcb_altium_binary",
     "pcb_doctor",
     "pcm_cooling",
     "process_library",

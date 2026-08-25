@@ -579,9 +579,32 @@ def test_a_kicad_board_activates_the_pcb_job():
              "  (segment (start 10 10) (end 40 10) (width 0.25) "
              "(layer \"F.Cu\") (net 1))\n)")
     db = ex.sniff_files([("main.kicad_pcb", board.encode())])
-    assert "kicad_pcb" in db.extras
+    assert "board_file" in db.extras
     planned = {p.job.jid: p for p in ex.plan(ex.parse_request(""), db)}
     assert "pcb_check" in planned and planned["pcb_check"].skipped is None
+
+
+def test_an_altium_ascii_board_activates_the_same_pcb_job():
+    """Same job, same artefacts, other EDA — the express lane must not care
+    which tool drew the copper."""
+    board = ("|RECORD=Board|FILENAME=main.PcbDoc|\n"
+             "|RECORD=Net|ID=0|NAME=VBAT|\n"
+             "|RECORD=Track|LAYER=TOP|NET=0|X1=0mil|Y1=0mil|"
+             "X2=1000mil|Y2=0mil|WIDTH=10mil|\n")
+    db = ex.sniff_files([("main.PcbDoc", board.encode())])
+    assert "board_file" in db.extras
+    assert any("Altium" in r for r in db.receipts), db.receipts
+    planned = {p.job.jid: p for p in ex.plan(ex.parse_request(""), db)}
+    assert "pcb_check" in planned and planned["pcb_check"].skipped is None
+
+
+def test_binary_altium_board_is_named_not_silently_stored():
+    """A native binary .PcbDoc is refused at ingest with the way out, rather
+    than stored as mojibake for the PCB job to choke on later."""
+    blob = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 512
+    db = ex.sniff_files([("main.PcbDoc", blob)])
+    assert "board_file" not in db.extras
+    assert any("ASCII" in r for r in db.receipts), db.receipts
 
 
 def test_pcb_job_skips_with_a_named_reason_without_a_board():
@@ -589,7 +612,7 @@ def test_pcb_job_skips_with_a_named_reason_without_a_board():
                for p in ex.plan(ex.parse_request("check the pcb traces"),
                                 ex.sniff_files(None))}
     assert planned["pcb_check"].skipped
-    assert "kicad_pcb" in planned["pcb_check"].skipped
+    assert "board_file" in planned["pcb_check"].skipped
 
 
 def test_commentary_answers_the_number_not_the_topic():

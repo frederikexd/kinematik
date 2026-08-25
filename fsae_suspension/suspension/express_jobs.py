@@ -932,7 +932,9 @@ register_job(Job("fusebox_audit", "Fusebox overload-path audit", "fusebox",
 # --- PCB (data job: needs a board) -------------------------------------------- #
 def _job_pcb(ctx: Ctx) -> list[Artifact]:
     from . import pcb_doctor as pd
-    board = pd.parse_kicad_pcb(ctx.data.extras["kicad_pcb"])
+    # One door for both EDAs: KiCad .kicad_pcb and Altium/Protel ASCII PCB
+    # land in the same board model, so this job is written once.
+    board = pd.parse_board(ctx.data.extras["board_file"])
     nets = getattr(board, "nets", {}) or {}
     rows, findings = [], []
     for nid in sorted(nets)[:200]:
@@ -951,8 +953,8 @@ def _job_pcb(ctx: Ctx) -> list[Artifact]:
              if np.isfinite(r[3]) and np.isfinite(r[4]) and r[3] < r[4]]
 
     md = _md("PCB Doctor — trace widths against their current", [
-        f"Board parsed: **{len(nets)} nets**, "
-        f"{len(getattr(board, 'segments', []))} segments, "
+        f"Board parsed (**{board.fmt_label}**): **{len(nets)} nets**, "
+        f"{len(getattr(board, 'segments', []))} copper segments, "
         f"{len(getattr(board, 'vias', []))} vias.",
         "",
         f"**{len(tight)} nets carry a trace narrower than the current "
@@ -964,6 +966,9 @@ def _job_pcb(ctx: Ctx) -> list[Artifact]:
         "|---|---|---|---|---|---|",
     ] + [f"| {a} | {b} | {_fnum(c)} | {_fnum(d)} | {_fnum(e)} | {f} |"
          for a, b, c, d, e, f in (tight or rows)[:25]] + [
+        "",
+    ] + ([""] + [f"*Import note: {n}*" for n in getattr(board, "notes", [])]
+         if getattr(board, "notes", None) else []) + [
         "",
         "Currents are **assigned, not measured** — from the integration "
         "ledger where one exists and from defaults where it does not. A net "
@@ -982,7 +987,7 @@ def _job_pcb(ctx: Ctx) -> list[Artifact]:
 
 
 register_job(Job("pcb_check", "PCB trace-width check", "pcb", _job_pcb,
-                 needs_extra=("kicad_pcb",), data_activated=True,
+                 needs_extra=("board_file",), data_activated=True,
                  cost_s=1.5))
 
 

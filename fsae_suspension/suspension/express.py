@@ -301,8 +301,8 @@ _TOOL_WORDS: dict[str, tuple[str, ...]] = {
               "occurrence", "detection"),
     "fusebox": ("fusebox", "fuse", "overload path", "sacrificial",
                 "first failure", "breaks first", "weak link"),
-    "pcb": ("pcb", "board", "kicad", "trace", "via", "copper", "net",
-            "layout"),
+    "pcb": ("pcb", "board", "kicad", "altium", "pcbdoc", "trace", "via",
+            "copper", "net", "layout"),
     "electronics": ("electronics", "wiring", "loom", "connector", "ecu",
                     "integration ledger", "lv", "grounding"),
     "thermal": ("thermal", "temperature", "cooling", "overheat", "fan",
@@ -913,7 +913,8 @@ class DataBundle:
     series: dict[str, np.ndarray] = _dcfield(default_factory=dict)
     hardpoints: object | None = None
     #  Uploads that are neither a table nor a hardpoint set, keyed by kind —
-    #  a KiCad board, a DFMEA export. Jobs declare these via `needs_extra`.
+    #  a routed board ("board_file", KiCad or Altium ASCII), a DFMEA export.
+    #  Jobs declare these via `needs_extra`.
     extras: dict[str, str] = _dcfield(default_factory=dict)
     files: list[str] = _dcfield(default_factory=list)
     unmatched: list[str] = _dcfield(default_factory=list)
@@ -1057,10 +1058,33 @@ def sniff_files(files: Iterable[tuple[str, bytes]] | None) -> DataBundle:
                         f"{name}: JSON read, but no hardpoint keys found "
                         f"— ignored")
                 continue
-            if low.endswith(".kicad_pcb"):
-                db.extras["kicad_pcb"] = blob.decode("utf-8",
-                                                     errors="replace")
-                db.receipts.append(f"{name}: read as a KiCad board")
+            if low.endswith((".kicad_pcb", ".pcbdoc", ".pcb")):
+                text = blob.decode("utf-8", errors="replace")
+                # Identify by content, not extension: an Altium ASCII export
+                # renamed to .txt is still an Altium board, and a *binary*
+                # .PcbDoc is not readable at all — say which, rather than
+                # storing bytes the PCB job will choke on later.
+                try:
+                    from .pcb_doctor import sniff_format as _sniff
+                    kind = _sniff(blob, name)
+                except Exception:                            # noqa: BLE001
+                    kind = "unknown"
+                if kind == "altium_binary":
+                    db.receipts.append(
+                        f"{name}: native binary Altium .PcbDoc — not readable. "
+                        f"Re-save it from Altium as 'PCB ASCII File' and "
+                        f"re-drop it.")
+                    continue
+                if kind == "unknown":
+                    db.receipts.append(
+                        f"{name}: not recognised as a KiCad or Altium ASCII "
+                        f"board — ignored")
+                    continue
+                db.extras["board_file"] = text
+                db.receipts.append(
+                    f"{name}: read as "
+                    f"{'a KiCad' if kind == 'kicad' else 'an Altium ASCII'} "
+                    f"board")
                 continue
             if low.endswith((".csv", ".tsv", ".txt", ".dat", ".log")):
                 header, body, note = _read_table(name, blob)

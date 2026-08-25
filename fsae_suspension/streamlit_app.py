@@ -1368,7 +1368,7 @@ def _cached_thermal_warmup(coeffs, fnomin, enable_mu, cold_pa,
         track_c=float(track_c), duration_s=float(duration_s), dt=float(dt))
 
 
-# A .kicad_pcb can be multi-MB, and parsing it into the segment/via/footprint
+# A routed board file can be multi-MB, and parsing it into the segment/via/footprint
 # mesh is the expensive part. Keying the parse on the *text itself* means the
 # whole process shares one parsed board per unique file: if three people open
 # the same board (or one person triggers ten reruns) it is parsed once and the
@@ -1377,14 +1377,87 @@ def _cached_thermal_warmup(coeffs, fnomin, enable_mu, cold_pa,
 # LRU; ttl lets stale boards fall out. The hard size guard below keeps a single
 # pathological upload from being parsed at all. Text is the cache key (hashable),
 # so this is a module-level function, never a closure over a widget.
-_PCB_MAX_BYTES = 24 * 1024 * 1024      # 24 MB — larger than any real FSAE board
+#  Sizing note, measured rather than assumed: a native binary Altium .PcbDoc is
+#  an order of magnitude larger than the same board as text, because the OLE
+#  container carries the whole design database, not just copper. A real
+#  open-source 4-layer board (artiq-kasli: 51k segments, 3.1k pads) is 27 MB on
+#  disk, so the old 24 MB ceiling — written when only text formats were read,
+#  and commented "larger than any real FSAE board" — would have rejected a file
+#  this tool parses correctly in under four seconds. 64 MB clears every board in
+#  the validation corpus with room to spare while still stopping a pathological
+#  upload from being parsed at all.
+_PCB_MAX_BYTES = 64 * 1024 * 1024      # 64 MB — see the sizing note above
+
+@st.cache_data(show_spinner=False, ttl=600, max_entries=4)
+def _cached_parse_board_bytes(blob: bytes, filename: str = ""):
+    """Same as `_cached_parse_board` for a native binary .PcbDoc, which cannot
+    be decoded to text without destroying it."""
+    from suspension import pcb_doctor as _pdr
+    return _pdr.parse_board(blob, filename)
+
+
+#  Streamlit reruns the whole script on every widget interaction, so anything
+#  called at module scope in a panel runs again on every checkbox tick. Parsing
+#  was already cached; diagnosing and drawing were not, and on a small board
+#  nobody noticed. Measured on the largest real board in the validation corpus
+#  (51k segments): parse 3.6 s, diagnose 8.1 s, viewer 1.5 s. Uncached, that is
+#  ~10 s of dead UI *per click* — the panel is unusable at that size while being
+#  perfectly snappy on the ~2k-segment boards it was developed against.
+#
+#  Both are keyed on a fingerprint of everything the result depends on, never on
+#  the PcbBoard object (unhashable, and Streamlit would deep-copy it).
+@st.cache_data(show_spinner=False, ttl=600, max_entries=8)
+def _cached_diagnose(_board, fp: str, _assign, knobs: tuple):
+    """Diagnose once per (board, currents, knobs). `_board`/`_assign` are
+    underscore-prefixed so Streamlit does not try to hash them; `fp` and
+    `knobs` carry the real cache identity."""
+    from suspension import pcb_doctor as _pdr
+    rail, brown, amb, tmax, sf = knobs
+    return _pdr.diagnose(_board, _assign, rail_v=rail, brownout_v=brown,
+                         ambient_c=amb, max_temp_c=tmax, fuse_sf=sf)
+
+
+@st.cache_data(show_spinner=False, ttl=600, max_entries=4)
+def _cached_board_svg(_board, _report, fp: str, layers: tuple):
+    from suspension import pcb_doctor as _pdr
+    return _pdr.board_svg(_board, report=_report,
+                          show_layers=list(layers) or None)
+
+
+def _pcb_fingerprint(board, assign=None, extra=()) -> str:
+    """Cheap, total identity for a parsed board plus its assigned currents.
+    Cheap matters: this runs on every rerun, so it must not walk 51k segments.
+    Counts plus the assignment values are enough — the board object itself is
+    immutable between parses, and the parse is separately cached."""
+    import hashlib
+    parts = [board.fmt, str(len(board.segments)), str(len(board.vias)),
+             str(len(board.footprints)), f"{board.copper_oz:g}",
+             f"{board.board_thickness_mm:g}"]
+    if assign is not None:
+        for nid in sorted(assign):
+            a = assign[nid]
+            parts.append(f"{nid}:{a.get('current_a')}:{a.get('voltage_v')}:"
+                         f"{int(bool(a.get('assumed')))}")
+    parts.extend(str(e) for e in extra)
+    return hashlib.md5("|".join(parts).encode()).hexdigest()
+
+
+#  Above this many copper segments the inline SVG stops being a diagram and
+#  starts being a denial-of-service on the browser: the largest real board
+#  produces 6.6 MB of markup, which most tabs will not survive. The viewer is a
+#  convenience, not a finding, so it degrades to a note rather than taking the
+#  whole panel down with it.
+_PCB_SVG_MAX_SEGMENTS = 6000
+
 
 @st.cache_data(show_spinner=False, ttl=600, max_entries=6)
-def _cached_parse_kicad(text: str):
-    """Parse once per unique board text, shared across sessions. Returns the
+def _cached_parse_board(text: str, filename: str = ""):
+    """Parse once per unique board text, shared across sessions. Handles both
+    EDAs — KiCad `.kicad_pcb` and Altium/Protel ASCII — via one dispatcher, so
+    the cache, the size guard and the error path are written once. Returns the
     PcbBoard, or raises ValueError (surfaced to the user) on a bad file."""
     from suspension import pcb_doctor as _pdr
-    return _pdr.parse_kicad_pcb(text)
+    return _pdr.parse_board(text, filename)
 
 
 # Frame Planner: the triangulation / load-path audit walks every bay of the
@@ -4102,8 +4175,8 @@ _BRIEF_TOOLS = {
         "budget as a floor, because an undeclared channel adds load to the "
         "real car and nothing to your estimate."),
     "pcb": (
-        "Copper survival, signal integrity, HV/LV checks — import a real "
-        ".kicad_pcb and get the guilty component named.",
+        "Copper survival, signal integrity, HV/LV checks — import the real "
+        "board (KiCad or Altium) and get the guilty component named.",
         "One undersized trace can end the car's competition. You need this to "
         "catch board-killers before fabrication, when the fix is still free.",
         "SPICE won't tell you a trace is undersized for stall current. This "
@@ -5125,7 +5198,8 @@ _BRIEF_GOAL_FEATURES = {
     ],
 
     ("el_pcb", "pcb"): [
-        "Copper survival check: import a real `.kicad_pcb` and the tool "
+        "Copper survival check: import the real board — KiCad `.kicad_pcb` "
+        "or Altium ASCII `.PcbDoc`, same diagnosis either way — and the tool "
         "identifies every trace, flags those undersized for their declared "
         "current per IPC-2221A, and names the guilty net.",
         "Trace prescriber: undersized traces are re-routed to the minimum "
@@ -6221,8 +6295,8 @@ _BRIEF_TOOL_FEATURES = {
         "cannot drift the way a hand-maintained one does.",
     ],
     "pcb": [
-        "Import a real .kicad_pcb and get the guilty trace and net named — the "
-        "cause, not just the symptom.",
+        "Import the real routed board — KiCad or Altium — and get the guilty "
+        "trace and net named: the cause, not just the symptom.",
         "Copper survival is checked against stall current, catching an "
         "undersized trace before fabrication when the fix is still free.",
         "HV/LV checks and signal-integrity screening run on the same imported "
@@ -6654,9 +6728,10 @@ _FREETEXT_KEYWORDS: list[tuple[list[str], str, str]] = [
      "so you can rehearse it before the scrutineers see the car."),
     (["pcb", "board", "trace", "wiring", "harness", "burn"],
      "pcb",
-     "Your note mentions PCB or wiring — the PCB Doctor imports a real "
-     ".kicad_pcb and names the guilty trace and net, not just the symptom; "
-     "one-click re-trace replaces undersized copper immediately."),
+     "Your note mentions PCB or wiring — the PCB Doctor imports the real "
+     "board (KiCad or Altium) and names the guilty trace and net, not just "
+     "the symptom; one-click re-trace replaces undersized copper "
+     "immediately, in the file's own format."),
     # --- chassis ---
     (["triangl", "triangle", "frame", "node", "tube"],
      "teamfit",
@@ -24788,11 +24863,16 @@ def render_pcb_board():
 
 def render_pcb_doctor():
     """
-    PCB Doctor — drop the *real* .kicad_pcb in, get the real-life failure list
-    (with the guilty component named and the numeric fix attached), then let it
-    re-trace the under-sized copper in place and hand back a patched board file
-    that reopens in KiCad with the routing intact. Also carries the multi-layer
+    PCB Doctor — drop the *real* board file in (KiCad `.kicad_pcb` or Altium /
+    Protel **ASCII** `.PcbDoc`), get the real-life failure list with the guilty
+    component named and the numeric fix attached, then let it re-trace the
+    under-sized copper in place and hand back a patched file that reopens in
+    the EDA it came from with the routing intact. Also carries the multi-layer
     Trace Prescriber for boards that don't exist yet.
+
+    Both formats run the *same* diagnosis: the readers differ, everything after
+    the parse is one code path, so a KiCad team and an Altium team get the same
+    findings on the same board.
     """
     from suspension import pcb_doctor as pdr_mod
 
@@ -24800,9 +24880,11 @@ def render_pcb_doctor():
     st.markdown("### 🩺 PCB Doctor — import the real board, fix the traces on it")
     st.markdown(
         '<p class="hint">The panel above checks the traces you <i>declare</i>. '
-        'This one checks the board you already <i>routed</i>: drop the '
-        '<b>.kicad_pcb</b> straight in and the Doctor reads every copper '
-        'segment, via, footprint and pour, assigns each net its current from '
+        'This one checks the board you already <i>routed</i>: drop a '
+        '<b>KiCad .kicad_pcb</b> or an <b>Altium / Protel ASCII .PcbDoc</b> '
+        'straight in — same diagnosis either way — and the Doctor reads every '
+        'copper segment, routed arc, via, footprint and pour, assigns each '
+        'net its current from '
         'the <b>integration ledger</b> (every guess labelled and editable), and '
         'runs the physics DRC never sees — IPC-2221 heating at the bottleneck '
         'segment, Onderdonk fusing, the <b>via that chokes a wide trace</b>, '
@@ -24813,9 +24895,11 @@ def render_pcb_doctor():
         'hot copper, the fuse rated under its own net). Every finding says why '
         'the board fails <i>on the car</i> even though it simulated fine, names '
         'the component, and carries the exact numeric fix — then one click '
-        '<b>re-traces the existing board</b>: only the under-sized '
-        '<code>(width …)</code> tokens are rewritten, byte-for-byte otherwise, '
-        'so the patched file reopens in KiCad with everything intact. Analytic '
+        '<b>re-traces the existing board</b>: only the under-sized width '
+        'tokens are rewritten — KiCad\'s <code>(width …)</code>, Altium\'s '
+        '<code>WIDTH=…</code>, in the file\'s own units — byte-for-byte '
+        'otherwise, so the patched file reopens in the EDA it came from with '
+        'everything intact. Analytic '
         'screening on the file you drop in — not a field solver, not a DRC '
         'replacement; anything needing one is reported as <i>not computed</i>, '
         'never invented.</p>',
@@ -24826,19 +24910,37 @@ def render_pcb_doctor():
     led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
 
     # ---------------- load: drag a file or one-click demo -------------------- #
-    lc = st.columns([3, 1])
-    up = lc[0].file_uploader("Drop a KiCad board file (.kicad_pcb)",
-                             type=["kicad_pcb"], key="pdr_up",
-                             help="KiCad 5–9. The file is only read in this "
-                                  "session; nothing is uploaded anywhere.")
-    if lc[1].button("Load demo board", key="pdr_demo",
+    def _pdr_reset():
+        for k in ("pdr_assign", "pdr_assign_fp", "pdr_assign_edits"):
+            st.session_state.pop(k, None)
+
+    lc = st.columns([3, 1, 1])
+    up = lc[0].file_uploader(
+        "Drop a routed board file — KiCad .kicad_pcb or Altium ASCII .PcbDoc",
+        type=["kicad_pcb", "pcbdoc", "pcb", "txt"], key="pdr_up",
+        help="KiCad 5–9, or an Altium / Protel board saved as ASCII "
+             "(File ▸ Save As ▸ 'PCB ASCII File'). The format is detected "
+             "from the contents, so a renamed export still works. The file is "
+             "only read in this session; nothing is uploaded anywhere.")
+    # Two demo boards describing the *same* ECU with the same three planted
+    # failures, one per format — so a team can see their own file format go
+    # through the whole loop before they trust it with a real board.
+    if lc[1].button("Demo · KiCad", key="pdr_demo",
                     help="A small ECU board with three planted real-life "
                          "failures — see the whole loop in one click."):
         st.session_state["pdr_text"] = pdr_mod.demo_kicad_pcb()
         st.session_state["pdr_name"] = "demo_ecu_board.kicad_pcb"
-        st.session_state.pop("pdr_assign", None)
-        st.session_state.pop("pdr_assign_fp", None)
-        st.session_state.pop("pdr_assign_edits", None)
+        st.session_state["pdr_bytes"] = None
+        _pdr_reset()
+    if lc[2].button("Demo · Altium", key="pdr_demo_alt",
+                    help="The identical board as an Altium ASCII export — "
+                         "same geometry, same three failures, so you can see "
+                         "the diagnosis is the same across both EDAs."):
+        from suspension import pcb_altium as _alt
+        st.session_state["pdr_text"] = _alt.demo_altium_pcb()
+        st.session_state["pdr_name"] = "demo_ecu_board.PcbDoc"
+        st.session_state["pdr_bytes"] = None
+        _pdr_reset()
     if up is not None:
         raw_bytes = up.getvalue()
         # Guard before decode/parse so one giant upload can't spike RAM for
@@ -24846,20 +24948,33 @@ def render_pcb_doctor():
         if len(raw_bytes) > _PCB_MAX_BYTES:
             st.error(
                 f"That file is {len(raw_bytes) / 1e6:.1f} MB — over the "
-                f"{_PCB_MAX_BYTES // (1024 * 1024)} MB Doctor limit. Real FSAE "
-                "boards are well under this; if yours is genuinely this large, "
-                "export just the copper layers or split the board.")
+                f"{_PCB_MAX_BYTES // (1024 * 1024)} MB Doctor limit. Even a "
+                f"dense 4-layer board saved as native binary Altium comes in "
+                f"under half of this, so a file this large is usually a backup "
+                f"bundle or a corrupted save rather than one board.")
+        # A native binary .PcbDoc is what Altium saves by default, so it is the
+        # most likely file to be dropped here. It is read directly (diagnosis
+        # only, never patched); the bytes are kept as-is because decoding a
+        # binary board to text would destroy it.
+        elif pdr_mod.sniff_format(raw_bytes, up.name) == "altium_binary":
+            if raw_bytes != st.session_state.get("pdr_bytes"):
+                st.session_state["pdr_bytes"] = raw_bytes
+                st.session_state["pdr_text"] = None
+                st.session_state["pdr_name"] = up.name
+                _pdr_reset()
         else:
             raw = raw_bytes.decode("utf-8", errors="replace")
             if raw != st.session_state.get("pdr_text"):
                 st.session_state["pdr_text"] = raw
+                st.session_state["pdr_bytes"] = None
                 st.session_state["pdr_name"] = up.name
-                st.session_state.pop("pdr_assign", None)
-                st.session_state.pop("pdr_assign_fp", None)
-                st.session_state.pop("pdr_assign_edits", None)
+                _pdr_reset()
 
     text = st.session_state.get("pdr_text")
-    if not text:
+    _blob = st.session_state.get("pdr_bytes")
+    # A native binary board lives in `pdr_bytes` and has no text form at all,
+    # so the "nothing loaded yet" gate has to consider both.
+    if not text and not _blob:
         # the Prescriber works with no board at all — never gate it on a file
         _render_trace_prescriber(pdr_mod, board_ctx)
         return
@@ -24868,20 +24983,58 @@ def render_pcb_doctor():
     # Shared across sessions: the same board opened by several people is parsed
     # once. The cache copies its return, so the board this session then patches
     # in "Re-trace" is its own object, never the shared cached instance.
+    _pdr_fname = st.session_state.get("pdr_name", "board")
     try:
-        pboard = _cached_parse_kicad(text)
+        pboard = (_cached_parse_board_bytes(_blob, _pdr_fname) if not text
+                  else _cached_parse_board(text, _pdr_fname))
     except ValueError as err:
-        st.error(f"Couldn't read that as a KiCad board: {err}")
+        # Bare `return` here used to take the Trace Prescriber down with it, so
+        # dropping the wrong file cost the member the one tool that needs no
+        # file at all — the worst moment to remove it, since they are already
+        # holding something the Doctor could not read.
+        st.error(f"Couldn't read that board file: {err}")
+        _render_trace_prescriber(pdr_mod, board_ctx)
         return
 
+    # Altium layers are normalised to KiCad names for the physics; show the
+    # names the Altium user actually sees in their own stackup, so nobody has
+    # to translate "In3.Cu" back to "Mid Layer 3" in their head.
+    #  The caption is a one-glance sanity check ("is this the board I meant?"),
+    #  so it has to stay one glance. Spelling out every layer with its Altium
+    #  name is fine on a 2-layer board and 294 characters of wall on a 5-layer
+    #  one — nearly double the KiCad caption for the same information density.
+    #  Past four layers the names move to the hover text, where they are still
+    #  one gesture away and the viewer's layer picker lists them anyway.
+    _layer_names = [
+        (f"{l} ({pboard.native_layer(l)})" if pboard.fmt != "kicad"
+         and pboard.native_layer(l) != l else l)
+        for l in pboard.copper_layers]
+    _inline = len(_layer_names) <= 4
+    _arcs = sum(1 for sg in pboard.segments if sg.from_arc)
     st.caption(
-        f"**{st.session_state.get('pdr_name','board')}** — "
-        f"{len(pboard.segments)} trace segments · {len(pboard.vias)} vias · "
-        f"{len(pboard.footprints)} components · "
-        f"{len(pboard.routed_net_ids())} routed nets · "
-        f"{len(pboard.copper_layers)} copper layers "
-        f"({', '.join(pboard.copper_layers)}) · "
-        f"{pboard.board_thickness_mm:g} mm thick")
+        f"**{_pdr_fname}** · read as **{pboard.fmt_label}** — "
+        f"{len(pboard.segments):,} trace segments"
+        + (f" ({_arcs:,} from chorded arcs)" if _arcs else "") + " · "
+        f"{len(pboard.vias):,} vias · "
+        f"{len(pboard.footprints):,} components · "
+        f"{len(pboard.routed_net_ids()):,} routed nets · "
+        f"{len(pboard.copper_layers)} copper layers"
+        + (f" ({', '.join(_layer_names)})" if _inline else "") + " · "
+        f"{pboard.board_thickness_mm:g} mm thick",
+        help=(None if _inline else
+              "Copper layers: " + ", ".join(_layer_names)))
+
+    # Import caveats, printed rather than buried. An Altium export carries a
+    # couple of unavoidable assumptions (unit for bare numbers, net indexing);
+    # a wrong one would mean a confident diagnosis of the wrong nets, so the
+    # member gets told what to sanity-check before trusting any of it.
+    if pboard.notes:
+        with st.expander(f"ℹ️ What this import had to assume "
+                         f"({len(pboard.notes)}) — worth 20 seconds",
+                         expanded=False):
+            for _n in pboard.notes:
+                st.markdown(f'<p class="hint">• {_n}</p>',
+                            unsafe_allow_html=True)
 
     # ---------------- per-net current/voltage assignments --------------------- #
     # The diagnosis below reads its ambient off board_ctx. Resolve that from the
@@ -24938,12 +25091,18 @@ def render_pcb_doctor():
                 continue
             # Remember what the user overrode, so a later ledger change refreshes
             # the rows they never touched without discarding the ones they did.
+            # Write ONLY on a real edit. Writing the same number back on every
+            # rerun would promote every guessed current to a declaration the
+            # moment the table rendered, and the whole board would get real
+            # verdicts computed from numbers nobody ever supplied.
             if (_cur != float(assign[n]["current_a"])
                     or _vol != float(assign[n]["voltage_v"])):
                 _edits[n] = {"current_a": _cur, "voltage_v": _vol}
-                assign[n]["source"] = "edited by hand — not from the ledger"
-            assign[n]["current_a"] = _cur
-            assign[n]["voltage_v"] = _vol
+                # A number the user typed is a declaration, not a guess:
+                # assigning the current clears `assumed` on its own.
+                pdr_mod.declare_net_current(
+                    assign, n, _cur, voltage_v=_vol,
+                    source="edited by hand — not from the ledger")
         if _edits:
             st.caption(
                 f"{len(_edits)} net(s) edited by hand — these no longer follow "
@@ -24962,14 +25121,12 @@ def render_pcb_doctor():
              "fuse-safety numbers come from ⚙️ Board context above — one source "
              "of truth for both panels.")
     pboard.copper_oz = float(copper_oz)
+    _knobs = (float(board_ctx.rail_nominal_v), float(board_ctx.ecu_brownout_v),
+              float(board_ctx.ambient_c), float(board_ctx.max_trace_temp_c),
+              float(board_ctx.fuse_safety_factor))
+    _fp = _pcb_fingerprint(pboard, assign, _knobs)
     with st.spinner("Diagnosing the routed copper…"):
-        rep = pdr_mod.diagnose(
-            pboard, assign,
-            rail_v=float(board_ctx.rail_nominal_v),
-            brownout_v=float(board_ctx.ecu_brownout_v),
-            ambient_c=float(board_ctx.ambient_c),
-            max_temp_c=float(board_ctx.max_trace_temp_c),
-            fuse_sf=float(board_ctx.fuse_safety_factor))
+        rep = _cached_diagnose(pboard, _fp, assign, _knobs)
 
     counts = rep.counts()
     st.markdown(f'<p class="hint"><b>{rep.summary()}</b></p>',
@@ -24996,9 +25153,19 @@ def render_pcb_doctor():
                      "widen glow red)", expanded=False):
         show = st.multiselect("Layers", pboard.copper_layers,
                               default=pboard.copper_layers, key="pdr_layers")
-        st.markdown(pdr_mod.board_svg(pboard, report=rep,
-                                      show_layers=show or None),
-                    unsafe_allow_html=True)
+        _shown = [s_ for s_ in pboard.segments
+                  if not show or s_.layer in show]
+        if len(_shown) > _PCB_SVG_MAX_SEGMENTS:
+            st.info(
+                f"This board has {len(_shown):,} copper segments on the "
+                f"selected layers — too many to draw inline without hanging "
+                f"the browser (the limit is {_PCB_SVG_MAX_SEGMENTS:,}). Pick "
+                f"fewer layers to see them, or work from the findings and the "
+                f"fix report above, which cover the whole board either way.")
+        else:
+            st.markdown(
+                _cached_board_svg(pboard, rep, _fp, tuple(show or ())),
+                unsafe_allow_html=True)
 
     # ---------------- re-trace the existing board ------------------------------ #
     auto_n = sum(1 for fx in rep.fixes if fx.auto)
@@ -25019,10 +25186,20 @@ def render_pcb_doctor():
         else:
             st.caption("No under-sized copper at the assigned currents — "
                        "nothing to rewrite.")
-        if auto_n:
+        if auto_n and not pboard.patchable:
+            # Every prescription above still stands — only the automatic
+            # rewrite is withheld, because writing widths into a binary board
+            # risks corrupting a file that is about to go to a fab.
+            st.info(
+                f"These {auto_n} width fix(es) are computed but **not applied**: "
+                f"a native binary .PcbDoc is read for diagnosis only. To get "
+                f"the one-click re-trace, re-save from Altium as **File ▸ Save "
+                f"As ▸ PCB ASCII File** and drop that in — the findings will be "
+                f"the same, and the patched file will reopen in Altium.")
+        elif auto_n:
             patched, applied = pdr_mod.apply_fixes(pboard, rep.fixes)
             try:
-                board2 = pdr_mod.parse_kicad_pcb(patched)
+                board2 = pdr_mod.parse_board(patched, _pdr_fname)
                 board2.copper_oz = pboard.copper_oz
                 rep2 = pdr_mod.diagnose(
                     board2, assign,
@@ -25037,7 +25214,8 @@ def render_pcb_doctor():
                     f'<b>{counts["fail"]} → {c2["fail"]} FAIL</b>, '
                     f'{counts["warning"]} → {c2["warning"]} WARN. Only the '
                     f'width tokens changed — nets, routing and everything else '
-                    f'are byte-identical. Re-run KiCad DRC on it: a widened '
+                    f'are byte-identical, in the file\'s own units. Re-run '
+                    f'{pboard.fmt_label.split(" /")[0]} DRC on it: a widened '
                     f'trace can newly crowd an LV neighbour.</p>',
                     unsafe_allow_html=True)
             except ValueError:
@@ -25045,12 +25223,18 @@ def render_pcb_doctor():
                            "download. Please report this board.")
                 patched = None
             if patched:
-                base = (st.session_state.get("pdr_name", "board.kicad_pcb")
-                        .replace(".kicad_pcb", ""))
+                # Hand the file back with the extension it arrived with, so it
+                # re-opens by double-click in the EDA that made it.
+                _sfx = pboard.file_suffix
+                base = _pdr_fname
+                for _e in (".kicad_pcb", ".PcbDoc", ".pcbdoc", ".pcb", ".txt"):
+                    if base.lower().endswith(_e.lower()):
+                        base = base[: -len(_e)]
+                        break
                 dl = st.columns(2)
                 dl[0].download_button(
                     f"⬇ Patched board ({auto_n} traces re-sized)",
-                    data=patched, file_name=f"{base}_doctored.kicad_pcb",
+                    data=patched, file_name=f"{base}_doctored{_sfx}",
                     mime="text/plain", key="pdr_dl_board")
                 dl[1].download_button(
                     "⬇ Fix report (hand-off .md)",
