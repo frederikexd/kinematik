@@ -29,7 +29,7 @@ import streamlit as st
 
 # First Streamlit command — the page frame (title, layout, sidebar chrome) is
 # on screen before ANY engineering package is evaluated.
-st.set_page_config(page_title="KinematiK · FSAE Vehicle Design Studio",
+st.set_page_config(page_title="KinematiK · FSAE Vehile Design Studio",
                    page_icon="◢", layout="wide",
                    initial_sidebar_state="expanded")
 
@@ -8484,6 +8484,24 @@ with _pctl:
             _axn.set_visitor_id(_vid)
             st.session_state["_ax_resolved_vid"] = _vid
             st.session_state["_ax_resolved_vid_kind"] = _vid_kind
+
+        #  Bind events to the active workspace. Re-asserted on every rerun
+        #  rather than set once, because a user can switch teams mid-session
+        #  and events after the switch belong to the new workspace. Wrapped
+        #  because analytics must never be able to break a render: a failure
+        #  here should cost a row of telemetry, not the app.
+        try:
+            #  The active WorkspaceContext lives under "_kx_workspace_ctx"
+            #  (auth_ui._SS_CTX); "_kx_ws_id" is the plain id kept alongside it.
+            #  Read the context first and fall back to the id, so this keeps
+            #  working if either is set without the other.
+            _ax_ctx = st.session_state.get("_kx_workspace_ctx")
+            _ax_ws = (getattr(getattr(_ax_ctx, "workspace", None), "id", None)
+                      if _ax_ctx is not None else None) \
+                     or st.session_state.get("_kx_ws_id")
+            _axn.set_workspace(_ax_ws)
+        except Exception:
+            pass
 
         _ax_subteam = (_roles[0] if _roles and _roles != ["everyone"]
                        else "unknown")
