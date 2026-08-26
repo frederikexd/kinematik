@@ -349,6 +349,16 @@ def set_visitor_id(visitor_id: str) -> None:
         pass
 
 
+def set_workspace(workspace_id: str | None) -> None:
+    """Bind subsequent events to a workspace, or clear on sign-out.
+
+    Called whenever the active workspace changes. Idempotent and cheap: it only
+    writes to session state, so calling it on every rerun is fine and is in
+    fact how it stays correct when a user switches teams mid-session.
+    """
+    _sset("workspace_id", str(workspace_id) if workspace_id else None)
+
+
 def _resolve_session_id() -> str:
     """Return this session's id, minting one if needed. Per browser session in
     Streamlit; per process otherwise."""
@@ -390,6 +400,13 @@ def _emit(event_type: str, *, feature: str | None = None,
             "error_kind": error_kind,
             "value_payload": value_payload or {},
             "app_version": APP_VERSION,
+            #  WHICH TEAM. Individuals stay anonymous — this is the workspace,
+            #  not the person — but without it every event from nine teams sums
+            #  into one number, and a single team using the tool properly is
+            #  indistinguishable from nine teams looking once. Stays None until
+            #  the user is inside a workspace (sign-in, workspace picker), which
+            #  is correct: those events genuinely belong to no team.
+            "workspace_id": _sget("workspace_id"),
         }
         _SINK.enqueue(event)
     except Exception:
