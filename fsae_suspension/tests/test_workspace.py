@@ -127,6 +127,78 @@ check("viewer context cannot write", not ctx.can_write())
 check("member context can write", W.WorkspaceContext(
     W.Workspace("ws-a", "Elbee"), role="member").can_write())
 
+
+# --------------------------------------------------------------------------- #
+#  Hosted deployments must REFUSE the local fallback.
+#
+#  LocalWorkspaceBackend separates tenants by directory. That is a boundary on
+#  a laptop and none at all on Streamlit Cloud, where one container and one
+#  filesystem serve every visitor. These cases pin the refusal so a future
+#  "just fall back so it never crashes" edit fails loudly here instead of
+#  quietly weakening isolation for every team at once.
+# --------------------------------------------------------------------------- #
+def _hosted_env(**overrides):
+    """Context manager: run with a clean, explicitly-set backend environment."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def _cm():
+        keys = ("SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_KEY",
+                "KINEMATIK_HOSTED", "STREAMLIT_SERVER_HEADLESS_RUNTIME",
+                "STREAMLIT_SHARING_MODE", "STREAMLIT_RUNTIME_ENV")
+        saved = {k: os.environ.get(k) for k in keys}
+        for k in keys:
+            os.environ.pop(k, None)
+        os.environ.update({k: v for k, v in overrides.items() if v is not None})
+        try:
+            yield
+        finally:
+            for k in keys:
+                os.environ.pop(k, None)
+                if saved[k] is not None:
+                    os.environ[k] = saved[k]
+    return _cm()
+
+
+_TEST_WS_UUID = "123e4567-e89b-12d3-a456-426614174000"
+_ANON_JWT = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.sig"
+
+
+def _ctx():
+    return W.WorkspaceContext(workspace=W.Workspace(id=_TEST_WS_UUID, name="A"),
+                              user_id="u1", access_token="tok",
+                              role="owner", email="a@b.c")
+
+
+_tmp = tempfile.mkdtemp()
+
+with _hosted_env():
+    check("laptop, no creds -> local backend (unchanged)",
+          isinstance(W.workspace_backend(_ctx(), root=_tmp), W.LocalWorkspaceBackend))
+    check("laptop is not hosted", W.is_hosted() is False)
+
+with _hosted_env(KINEMATIK_HOSTED="1"):
+    check("hosted + no creds -> refuse, never local",
+          raises(W.TenantBackendUnavailable,
+                 lambda: W.workspace_backend(_ctx(), root=_tmp)))
+
+with _hosted_env(KINEMATIK_HOSTED="1", SUPABASE_URL="https://nope.invalid",
+                 SUPABASE_ANON_KEY=_ANON_JWT):
+    check("hosted + unreachable backend -> refuse, never local",
+          raises(W.TenantBackendUnavailable,
+                 lambda: W.workspace_backend(_ctx(), root=_tmp)))
+
+with _hosted_env(SUPABASE_URL="https://nope.invalid", SUPABASE_ANON_KEY=_ANON_JWT):
+    _b = W.workspace_backend(_ctx(), root=_tmp)
+    check("laptop + unreachable backend -> degraded local, reason set",
+          isinstance(_b, W.LocalWorkspaceBackend) and bool(_b.degraded_reason))
+
+with _hosted_env(STREAMLIT_RUNTIME_ENV="cloud"):
+    check("streamlit cloud marker implies hosted", W.is_hosted() is True)
+
+with _hosted_env(STREAMLIT_RUNTIME_ENV="cloud", KINEMATIK_HOSTED="0"):
+    check("explicit KINEMATIK_HOSTED=0 overrides the marker", W.is_hosted() is False)
+
 print(f"\n{len(_PASS)} passed, {len(_FAIL)} failed")
 
 

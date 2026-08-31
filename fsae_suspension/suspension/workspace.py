@@ -280,27 +280,88 @@ class WorkspaceScopedSupabaseBackend:
 
 
 # --------------------------------------------------------------------------- #
+#  Hosted-mode detection
+# --------------------------------------------------------------------------- #
+class TenantBackendUnavailable(WorkspaceError):
+    """The tenant database is unreachable and no isolation-preserving fallback
+    exists on this deployment. Distinct from CrossWorkspaceViolation: nothing
+    leaked, we refused to proceed. Callers should surface this to the user, not
+    swallow it — a silent catch here re-creates the hole this class closes."""
+
+
+def is_hosted() -> bool:
+    """True when this process serves more than one tenant from one machine.
+
+    LocalWorkspaceBackend separates tenants by DIRECTORY, which is a real
+    boundary on a laptop (one OS user, one team) and no boundary at all on a
+    shared host: Streamlit Community Cloud runs every visitor in one container
+    against one filesystem, so a directory-per-workspace layout degrades the
+    guarantee from "the database refuses you" to "you have to know the
+    workspace id". That is not the guarantee this module promises, so on a
+    hosted deployment the local path must never be reachable.
+
+    Set KINEMATIK_HOSTED=1 (env var, or the Streamlit secrets TOML box) on any
+    deployment serving more than one team. The Streamlit Cloud markers below
+    are a safety net for the case where that is forgotten, not a substitute for
+    setting it: they are undocumented and may change without notice.
+    """
+    from .project import _read_credential
+    flag = (_read_credential("KINEMATIK_HOSTED") or "").strip().lower()
+    if flag in ("1", "true", "yes", "on"):
+        return True
+    if flag in ("0", "false", "no", "off"):
+        return False       # explicit opt-out wins over the heuristics below
+    return any(os.environ.get(m) for m in (
+        "STREAMLIT_SERVER_HEADLESS_RUNTIME",
+        "STREAMLIT_SHARING_MODE",
+        "STREAMLIT_RUNTIME_ENV",
+    ))
+
+
+# --------------------------------------------------------------------------- #
 #  Factory — mirrors project._auto_backend but tenant-aware
 # --------------------------------------------------------------------------- #
 def workspace_backend(ctx: WorkspaceContext, *, root: str = "."):
     """Supabase-scoped if credentials exist (never silently on failure — the
     degraded_reason contract from project._auto_backend is preserved),
-    else per-workspace local JSON."""
+    else per-workspace local JSON.
+
+    On a hosted deployment (is_hosted()) the local path is REFUSED rather than
+    degraded to: see is_hosted() for why a shared filesystem cannot carry the
+    tenant boundary. Failing closed with a readable error beats silently
+    weakening isolation for every team at once.
+    """
     from .project import _read_credential
     url, key = _read_credential("SUPABASE_URL"), _read_credential("SUPABASE_ANON_KEY") \
         or _read_credential("SUPABASE_KEY")
+    hosted = is_hosted()
     if url and key:
         try:
             return WorkspaceScopedSupabaseBackend(url, key, ctx)
         except WorkspaceError:
             raise      # a refused service key is a config error, not a fallback case
         except Exception as e:
+            if hosted:
+                raise TenantBackendUnavailable(
+                    "The tenant database is unreachable "
+                    f"({type(e).__name__}: {e}). Local storage is disabled on this "
+                    "deployment because one shared filesystem cannot isolate "
+                    "workspaces. Nothing was read or written. Retry shortly; if it "
+                    "persists, check the Supabase project status and the "
+                    "SUPABASE_URL / SUPABASE_ANON_KEY secrets.") from e
             fb = LocalWorkspaceBackend(ctx.workspace_id, root=root)
             fb.degraded_reason = (
                 "Supabase credentials are set but the tenant backend failed "
                 f"({type(e).__name__}: {e}). Falling back to LOCAL per-workspace "
                 "storage — data will NOT sync until this is fixed.")
             return fb
+    if hosted:
+        raise TenantBackendUnavailable(
+            "SUPABASE_URL / SUPABASE_ANON_KEY are not configured, so there is no "
+            "tenant database to isolate workspaces. Refusing to serve a shared "
+            "deployment from local storage. Set both in the Streamlit secrets TOML "
+            "box (Settings -> Secrets), or set KINEMATIK_HOSTED=0 if this really is "
+            "a single-user instance.")
     return LocalWorkspaceBackend(ctx.workspace_id, root=root)
 
 
