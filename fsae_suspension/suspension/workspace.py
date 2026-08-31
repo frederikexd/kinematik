@@ -279,6 +279,43 @@ class WorkspaceScopedSupabaseBackend:
          .execute())
 
 
+class EphemeralWorkspaceBackend:
+    """In-memory, per-instance store. Touches no shared disk and no database.
+
+    This exists for one situation: a hosted deployment where the session has no
+    workspace bound yet (signed out, sign-in gate not passed, session state lost
+    on a container restart). The old behaviour there was ProjectStore(
+    PROJECT_PATH) — one file on the container's filesystem, shared by every
+    visitor. Refusing outright would be safe but crashes the app at import,
+    because streamlit_app.py constructs stores at module scope and Streamlit
+    re-executes the whole script on every rerun.
+
+    So: hand back a store that is real enough to render an empty UI and cannot
+    reach another tenant's data. Nothing here survives the session, which is
+    correct — a session with no workspace owns no data.
+    """
+
+    def __init__(self):
+        self.workspace_id = None
+        self._data: dict = {}
+        self.degraded_reason = (
+            "No workspace is bound to this session, so this is a scratch "
+            "workspace held in memory only. Sign in and select a workspace to "
+            "load and save real project data.")
+
+    def read(self) -> dict:
+        return json.loads(json.dumps(self._data)) if self._data else {}
+
+    def read_version(self):
+        return (self._data or {}).get("updated")
+
+    def write(self, payload: dict, expected_version=None):
+        body = dict(payload)
+        body["_ephemeral"] = True
+        body["_written_at"] = _dt.datetime.now().isoformat(timespec="seconds")
+        self._data = json.loads(json.dumps(body))
+
+
 # --------------------------------------------------------------------------- #
 #  Hosted-mode detection
 # --------------------------------------------------------------------------- #

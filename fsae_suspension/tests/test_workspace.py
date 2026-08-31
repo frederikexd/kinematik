@@ -199,6 +199,15 @@ with _hosted_env(STREAMLIT_RUNTIME_ENV="cloud"):
 with _hosted_env(STREAMLIT_RUNTIME_ENV="cloud", KINEMATIK_HOSTED="0"):
     check("explicit KINEMATIK_HOSTED=0 overrides the marker", W.is_hosted() is False)
 
+with _hosted_env(KINEMATIK_HOSTED="1"):
+    _eph = W.EphemeralWorkspaceBackend()
+    _eph.write({"a": 1})
+    check("ephemeral backend round-trips in memory", _eph.read().get("a") == 1)
+    check("ephemeral backend is marked as such", _eph.read().get("_ephemeral") is True)
+    check("ephemeral backend touches no shared path", not hasattr(_eph, "path"))
+    check("ephemeral backend has no workspace bound", _eph.workspace_id is None)
+    check("ephemeral backend explains itself", bool(_eph.degraded_reason))
+
 print(f"\n{len(_PASS)} passed, {len(_FAIL)} failed")
 
 

@@ -2194,14 +2194,16 @@ def _make_store():
     # shared PROJECT_PATH is correct. On a hosted deployment it is NOT: one
     # container serves every visitor, so PROJECT_PATH is a single file shared by
     # all of them, and an unauthenticated session would read and overwrite other
-    # teams' data. Refuse instead — a signed-out session has no business holding
-    # a store at all.
-    from suspension.workspace import is_hosted, TenantBackendUnavailable
+    # teams' data.
+    #
+    # We hand back an in-memory scratch store rather than raising, because this
+    # function is called at module scope in ~37 places and Streamlit re-executes
+    # the whole script on every rerun — raising here would crash the app for
+    # every signed-out visitor instead of showing them the sign-in gate. The
+    # ephemeral store reaches no shared disk and no other tenant.
+    from suspension.workspace import is_hosted, EphemeralWorkspaceBackend
     if is_hosted():
-        raise TenantBackendUnavailable(
-            "No workspace is bound to this session, and the single-user local "
-            "store is disabled on this deployment because it is shared across "
-            "every visitor. Sign in and select a workspace to continue.")
+        return project_mod.ProjectStore(backend=EphemeralWorkspaceBackend())
     return project_mod.ProjectStore(PROJECT_PATH)
 
 
