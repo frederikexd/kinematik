@@ -150,6 +150,43 @@ class _Sink:
                 target=self._run, name="kinematik-analytics", daemon=True)
             self._thread.start()
 
+    def backfill_workspace(self, session_id, workspace_id) -> int:
+        """Stamp queued events from `session_id` that have no workspace yet.
+
+        Only events from the SAME session are touched, so this is safe in a
+        process serving several browsers at once. Returns how many were
+        stamped, which the tests assert on.
+
+        Draining and re-queuing is the only way to reach items inside a
+        queue.Queue, and it is cheap here: the queue holds at most a handful of
+        events between flushes. Anything that arrives mid-drain is simply
+        appended after and keeps its own (already correct) workspace.
+        """
+        if not session_id or not workspace_id:
+            return 0
+        stamped = 0
+        try:
+            with self._lock:
+                held = []
+                while True:
+                    try:
+                        held.append(self._q.get_nowait())
+                    except queue.Empty:
+                        break
+                for ev in held:
+                    if (ev.get("workspace_id") is None
+                            and ev.get("session_id") == session_id):
+                        ev["workspace_id"] = workspace_id
+                        stamped += 1
+                for ev in held:
+                    try:
+                        self._q.put_nowait(ev)
+                    except queue.Full:
+                        break          # same drop policy as enqueue()
+        except Exception:              # telemetry must never break a render
+            return stamped
+        return stamped
+
     def enqueue(self, event: dict):
         try:
             self._q.put_nowait(event)
@@ -350,13 +387,36 @@ def set_visitor_id(visitor_id: str) -> None:
 
 
 def set_workspace(workspace_id: str | None) -> None:
-    """Bind subsequent events to a workspace, or clear on sign-out.
+    """Bind events to a workspace — including ones already emitted this run.
 
     Called whenever the active workspace changes. Idempotent and cheap: it only
-    writes to session state, so calling it on every rerun is fine and is in
-    fact how it stays correct when a user switches teams mid-session.
+    touches session state and the in-memory queue, so calling it on every rerun
+    is fine and is how it stays correct when a user switches teams mid-session.
+
+    WHY IT BACK-FILLS. Streamlit executes the script top to bottom, and the
+    analytics init that calls this sits well below the central widget
+    instrumentation: `auto_complete` and `tab_open` fire from wrappers near the
+    top of the file, several thousand lines before the workspace is resolved.
+    So the feature events of a run are emitted BEFORE this is called, and were
+    going out with workspace_id = None while `session_start` — emitted from the
+    init block itself — carried it correctly.
+
+    Measured on production data before the fix: session_start 30/32 attributed,
+    workflow_complete 3/53. Every unattributed completion had a timestamp
+    0.2-0.5 s EARLIER than its own session_start, which is what gave the
+    ordering away.
+
+    Rather than chase the emit sites up the file — fragile, and one new call
+    site above the init silently reintroduces it — this stamps the events still
+    sitting in the queue. They are microseconds old and have not been flushed,
+    so in practice they are all still there. Matching on session_id means a
+    process serving several users can never stamp one team's event with
+    another's workspace.
     """
-    _sset("workspace_id", str(workspace_id) if workspace_id else None)
+    wid = str(workspace_id) if workspace_id else None
+    _sset("workspace_id", wid)
+    if wid:
+        _SINK.backfill_workspace(_sget("session_id"), wid)
 
 
 def _resolve_session_id() -> str:
