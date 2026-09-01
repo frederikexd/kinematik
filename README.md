@@ -20,44 +20,242 @@ license: agpl-3.0
 
 **KinematiK gets you to the right question. ANSYS gives you the right answer.**
 
-The engineering operating system for Formula SAE and Formula EV teams.
+Open-source full-car pre-validation platform for Formula SAE and Formula EV teams.
+Born as a suspension kinematics tool. Now the engineering operating system for an entire formula car.
 
-> *"Our brakes lead called it a saving grace. The numbers match ANSYS and MATLAB."*
+> *"Our brakes lead called it a saving grace."*
 > — CSULB SAE
 
 ---
 
-## The problem it solves
+## What it is
 
-The most expensive error in motorsport engineering isn't a bad simulation. It's garbage inputs reaching a simulation tool and producing garbage outputs that nobody catches until manufacturing.
+KinematiK is **not** ADAMS. It is **not** ANSYS. It is the hour before them.
 
-Your team runs eight subsystems. Each one lives in its own spreadsheet, maintained by a different person, with sign conventions nobody has fully verified and assumptions that silently contradict each other across subteams. The suspension lead tunes to a weight that doesn't match what the chassis lead declared. The accumulator thermal model uses a cooling capacity the cooling subteam revised three weeks ago. Nobody is wrong. The system has no single source of truth.
+The most expensive class of error in motorsport engineering isn't a bad simulation — it's garbage inputs reaching a simulation tool and producing garbage outputs. Teams spend days debugging solvers that were never the problem. The problem was the spreadsheet three steps earlier: disconnected, unvalidated, passed around the team for years, with sign conventions nobody has verified and assumptions that silently contradict each other across subsystems.
 
-KinematiK fixes the step before simulation. Every subsystem decision lives in one connected environment. When the suspension lead changes a parameter that affects brake bias, the brakes lead sees it. When powertrain output shifts weight distribution, aero and suspension know. When any number changes, KinematiK walks it through a coupling graph and shows — unprompted — which other subsystems just moved.
+KinematiK fixes the step before simulation. Every subsystem decision — suspension geometry, brake bias, accumulator topology, cooling sizing, BOM cost — lives in one connected environment. When the suspension lead changes a parameter that affects brake bias, the brakes lead sees it. When the powertrain output shifts weight distribution, the aero and suspension leads know. The decisions that used to live in disconnected spreadsheets and get lost between meetings now have a single source of truth.
 
-When you commit to an ANSYS run, you are confident the inputs are right. You are not burning simulation time finding a fault that was in the spreadsheet three steps earlier.
+When you commit to an ANSYS run, you are confident the inputs are right. You are not burning a $50,000/seat simulation licence finding a fault that was in the spreadsheet three steps earlier.
 
-> ⚠️ **Always validate outputs with ANSYS, ADAMS, or MATLAB before manufacturing.** KinematiK is a pre-validation tool, not a replacement for full simulation. The tool itself will tell you this.
+> ⚠️ **Always validate outputs with ANSYS, ADAMS, or MATLAB before manufacturing.** KinematiK is a pre-validation tool, not a replacement for full simulation. Every output is a starting point, not a final answer. The tool itself will tell you this.
 
 ---
 
-## What it covers
+## New: 🧭 Frames & Datums — one convention, whole team, zero ambiguity
+
+Every formula team has had this exact Discord argument:
+
+> *"should i change my model to sae coordinates? … honestly it might be a full redo cause i have a lot of measurements that are plane-specific"*
+> *"I was asking how something affected packaging in x and y and someone was like: wait, what are we defining as x and y"*
+> *"we won't rly know the center of gravity until the master assembly is completely put together… the chassis changes length sometimes, so relativity to the front axle changes too"*
+> *"Idk if judges prefer it"*
+
+Four distinct failures hide in that thread — no declared convention, migration priced as a full redo, origins that drift as the design converges, and nobody able to defend the choice at design judging. **Frames & Datums** (✅ Checks & Integration, shared spine — every subteam sees it) fixes all four:
+
+- **Team convention charter.** Declare one frame — ISO 8855, SAE J670, ISO 4130, the KinematiK internal frame, a typical SolidWorks setup, or a custom frame built from direction words (+z is derived from x × y, so declaring a left-handed frame is mathematically impossible). Saving logs a Decision in the Registry so next year's cohort inherits *why*, and exports a **judge-ready one-page charter**: axis triad, rotation senses, phrasebook, and a one-line answer for the design judge.
+- **Floating datum watch.** Front axle, rear axle, mid-wheelbase and CG datums resolve **live** from the vehicle parameters. When the wheelbase stretches or the CG moves, the tab reports exactly how many millimetres each datum drifted since the charter was saved — CG-relative dimensions can't silently rot, so you *can* base designs on a datum that moves, because you're told when it moved.
+- **Rosetta.** One point or free vector, shown in every convention simultaneously plus plain English ("585 mm left of centreline, 310 mm above ground"). Paste the *words* into chat, not the bare numbers. Free-vector mode shows the classic sign trap live: a +Z tyre load in SAE J670 is −Z in ISO 8855.
+- **Migration wizard — the "full redo" killer.** Convert the live hardpoint set or any `name,x,y,z` CSV between frames *and* datums in one pass, with a per-point audit and a **SolidWorks Curve-Through-XYZ export** so every migrated point lands back in CAD as a sketchable reference. Days of retyping becomes two minutes.
+- **Sign-convention linter.** Per-defect findings with fixes: below-ground points (a Z-down import), mirror-pair asymmetry (a Y-left/Y-right flip), metres imported as millimetres, wrong-datum envelope violations.
+- **Frame tags on everything leaving the platform.** Every DXF's annotation block, the handover report, and the Integration ledger banner carry the declared convention — a section opened in CAD months later still says which way x/y/z point. If no convention is declared, the handover says **UNDECLARED** out loud instead of silently omitting it.
+
+Rotation senses are *computed* from the frame basis via the right-hand rule, never memorised — which is how the tool knows, and shows, that SAE +yaw is nose-right while ISO +yaw is nose-left, and SAE +pitch is nose-up while ISO's is nose-down. (The hardpoint editor's own header used to mislabel its x-rear/y-right/**z-up** frame as "SAE" — SAE J670 is Z-*down*. Fixed: it's ISO 4130-style, and it says so.)
+
+All frame maths lives in `coordinate_frames.py` — pure Python, importable without Streamlit, self-tested with exact identities (`python3 coordinate_frames.py`). See `FRAMES_DATUMS_USAGE.md`.
+
+---
+
+## New: 🎯 Proof Engine — certainty as a budget, pass criteria sealed before the run
+
+No CAE, PLM, or requirements tool answers the two questions that actually govern the week before ANSYS: *which validation is worth doing first*, and *what counts as a pass, decided before the result exists*. The Proof Engine (✅ Checks & Integration, shared spine) answers both:
+
+- **Quantified uncertainty ledger.** Every declared number carries a ± from a five-step evidence grade — guess ±40 %, estimate ±20 %, modelled ±10 %, measured ±3 %, verified ±1 % — and the band **inflates with age** (a measurement's uncertainty doubles at its staleness half-life, capped at guess). A checkbox can never claim *measured*; only a dated claim with a source can.
+- **Variance attribution.** Deterministic one-at-a-time perturbation propagates every band to the objective you pick (lap time, endurance energy, pack thermal margin, mass) and shows which inputs dominate: *"±1.9 s on lap time; 61 % of it is a CG height nobody has measured."* Reproducible by hand — same ledger in, same numbers out, always.
+- **The ranked proof plan.** A catalog of evidence actions — corner scales, tilt-test CG, coast-down, dyno pull, flow bench, pack thermal log, strain-gauged mount, an ANSYS study — ranked by **uncertainty retired per hour**. Corner scales can outrank ANSYS, and the arithmetic shows exactly why. The plan exports as a pinnable one-page markdown with the frame charter stamped on it. This is value-of-information planning: the literal list of questions worth asking the expensive tools.
+- **🔏 Pre-registered validation contracts.** Borrowed from experimental science and never before shipped in an engineering tool: the acceptance band and criterion are fixed and **sha256-sealed before the run**. Judging fills a result block and never touches sealed fields; edit the band afterward and the seal breaks — and a broken seal refuses judgment out loud. "FoS 1.05 is probably fine" can never be decided after seeing the result.
+- **The three-way verdict.** Every contract carries a plausibility envelope (prediction ± 3σ from the ledger — computed, not chosen). PASS inside the band. FAIL outside the band but plausible — a design finding, caught before the first cut. **DISCREPANT** outside the envelope — the run and the ledger disagree about reality, so neither number is acted on until units, frame, BCs, and geometry version are audited. A failed design and a garbage run finally stop looking the same.
+
+All of it lives in `suspension/proof_engine.py` — pure Python, headless, self-tested (`python3 -m suspension.proof_engine`), with the UI in `ui/proof_planner.py` as the first tab under the new `ui/` module pattern. See `docs/BOTTLENECKS.md` for the full prevalidation bottleneck map this feature closes.
+
+---
+
+## New: 🧨 Saboteur — mutation testing for the input deck. Which errors would you fail to notice?
+
+The Proof Engine's DISCREPANT verdict catches the garbage run that looks *impossible*. That leaves the deadliest class untouched: **the garbage that looks fine**. A pounds-into-kg slip on one subsystem, the kilo prefix slipping on a heat load, a Z-down hardpoint sheet in a Z-up deck, one subsystem silently missing from the mass roll-up — each can move the answer by an amount that sits comfortably inside the plausibility envelope. The run comes back, the number is believable, the sealed contract says PASS, and the team acts on it. Nobody audits a result that confirms what they expected.
+
+Software engineering solved the mirror-image problem decades ago: **mutation testing** — deliberately inject known bug classes, see which ones the test suite fails to notice, and you know exactly where its holes are. No CAE, PLM, or requirements tool has ever pointed that idea at an engineering input deck. The Saboteur (✅ Checks & Integration, shared spine) does:
+
+- **The sabotage sweep.** Ten catalogued corruption classes — each one a documented, real failure from the bottleneck map (unit thousandfold slips, inches-into-mm, lb-into-kg, lb·ft-into-N·m, frame Z flips, dropped and double-counted roll-up terms) — are injected one at a time into a shadow copy of the uncertainty ledger. For every (corruption, target) pair the sweep asks: *would anyone notice?* On a representative FSAE-EV deck, the answer is brutal: **only ~8 % of catalogued corruptions push the result outside its own 3σ envelope.** The other 92 % would come home from ANSYS wearing a plausible face.
+- **Tripwires chosen by arithmetic, not folklore.** A tripwire is a cheap checksum recorded *alongside* the run — rolled-up mass from the mesher's printout, CG height sign, torque-per-power (implied motor base speed), implied pack voltage, heat-loss fraction. The distinction that makes them work: a tripwire compares the run against **the deck**, not against reality. However uncertain the declared numbers are about the real car, a solver that consumed the declared deck must reproduce the deck's own arithmetic to a tight consistency tolerance — so the wires stay sharp precisely when the deck is most uncertain, which is when garbage is most likely. A greedy set-cover picks the fewest wires that expose the most silent corruptions; four wires typically take detection from ~8 % to **100 %** of the catalog.
+- **Sealed like a contract.** The wire set, expected values, and bands are sha256-sealed before the run. A skipped tripwire is not a passed one; an edited sheet refuses to judge.
+- **The garbage names itself.** When readings come back and a wire trips, the deviation pattern is matched against every predicted corruption signature (cosine similarity on band-normalised deviations — deterministic, checkable by hand). The verdict is not "something is wrong" but *"this signature matches pounds-into-kg on the accumulator mass, magnitude 1.0× predicted."* The audit that used to eat an evening starts with a named suspect. A pattern matching *nothing* in the catalog says so honestly instead of naming a false suspect.
+- **Honest blind spots.** Any corruption invisible to the result *and* to every available wire is listed out loud, with the only remaining defence named (measure that input directly) — and the coverage number charges for it. A cap-shortened sheet charges its truncation victims the same way. No unearned green boards, including this tab's own.
+
+Why no one has built it: a tool that tells you which of a solver's answers would be undetectably wrong is a tool no solver vendor will ever ship. And it costs the team **zero new data entry** — it reuses the exact uncertainty ledger the Proof Engine already maintains.
+
+All of it lives in `suspension/saboteur.py` — pure Python, headless, self-tested (`python3 -m suspension.saboteur`), UI in `ui/saboteur.py`. See bottleneck **#12** in `docs/BOTTLENECKS.md`.
+
+---
+
+## New: 👻 Phantom Car — the margin audit. Nobody has ever added your conservatism up.
+
+The Proof Engine prices what the team doesn't know. The Saboteur catches a deck that lies. That leaves the third failure mode — the one that makes formula cars fat and DNFs endurance anyway: **every subsystem hedges the same uncertainty separately, in secret, and nobody adds it up.** The brakes lead quietly sizes for the car "if it comes in heavy." The structures lead takes a worst-case load *and* stacks FoS 1.5 on top — margin on margin, on a number whose evidence grade was GUESS, so the bracket is defending a 4σ statistical event and the mass bill for defending that impossible car lands on the real one. Meanwhile the energy budget — the number that actually ends an endurance — consumes the *same mass* at its optimistic target value, naked. The deck now describes at least two mutually exclusive cars, everyone believes they were prudent, and the total conservatism of the design has never once been a number. Aerospace primes run staffed margin-management processes for exactly this; no CAE, PLM, or requirements tool computes it, and nothing a student team can afford even names it. The Phantom Car (✅ Checks & Integration, shared spine) does:
+
+- **Disclosure, not new work.** Each consumer of a deck number states the design value its sizing *actually uses* — a number that already lives in its spreadsheet — plus any factor applied on top. A built-in FSAE-EV consumption map seeds the form; seeds start at nominal on purpose, so a fresh audit says NAKED where nobody has disclosed cover instead of fabricating prudence.
+- **Every hedge priced in the deck's own currency.** "Assumes 250 kg" is opinion; "hedged **+2.1σ** on an *estimate*-grade mass" is arithmetic. The σ pricing every hedge is the exact evidence-graded, staleness-inflated band the Proof Engine already maintains — one ledger, third consumer, zero new physics.
+- **One sealed Margin Charter.** The team declares a single design percentile for the whole car — *we design to the 95th-percentile car* — sha256-sealed like a validation contract. Every disclosure is judged against it: **ALIGNED**, **STACKED** (the excess priced as releasable envelope in the quantity's own units), **UNDER-COVERED**, **NAKED** (naming the evidence grade it's naked on), **ANTI-HEDGED** (designing to a car the ledger says doesn't exist — called out even when a fat FoS papers over it). Edit the sealed percentile afterward and the audit refuses to judge, out loud.
+- **The two-cars detector.** Assumed design values more than 1σ apart on the same quantity mean the deck provably describes more than one car — brakes stopping 250 kg while the energy budget feeds 228 — and the audit names both consumers and the width of the disagreement. The contradiction the Integration ledger kills for *values*, applied for the first time to *assumptions*.
+- **β — the improbability each load case defends against.** A consumer stacking worst cases on several inputs is designing to their joint worst case; β = √(Σz²) is the same first-order reliability index (FORM) professional reliability engineering uses, computed from the σ your evidence grades already imply, odds in English: *"this bracket load case is a 1-in-2,300,000 car."*
+- **The three cars.** Per objective — lap time, endurance energy, thermal margin, mass — the audit evaluates the **nominal** car, the **coherent** charter-percentile car, and the **phantom**: every channel at the most adverse value any consumer assumed, the union of everyone's private fears. The gap is the design envelope currently spent defending cars the deck's own σ says are statistically impossible — reported honestly as *envelope*, never as promised savings, because releasing it is a design decision and pricing it is this tab's job. Undisclosed consumers are listed as unaudited blind spots, never absorbed into a green board.
+
+Why no one has built it: margin stacking is invisible to every tool in the chain *by construction* — a solver sees one load case at a time and cannot know it was hedged upstream, PLM sees files, requirements tools see targets. The information needed to add margins up (the numbers, their σ, and who consumes them) has never lived in one system before. In KinematiK it already does, so the feature is a join, not a data-entry burden.
+
+All of it lives in `suspension/phantom_car.py` — pure Python, headless, self-tested (`python3 -m suspension.phantom_car`), UI in `ui/phantom_car.py`. See bottleneck **#13** in `docs/BOTTLENECKS.md`.
+
+---
+
+## New: 🎙️ Earshot — the test-day power audit. Can the session even hear the answer?
+
+The Proof Engine says *which* test is worth doing. The Saboteur guards the deck it feeds. The Phantom Car audits the hedges around it. Earshot asks the question every one of them skips — the one clinical trials have refused to start without for fifty years and no engineering tool has ever asked of a test day: **as planned, is the answer within earshot?**
+
+Three ways a team's scarcest resource dies quietly, all three lived by every team:
+
+- **The deaf A-B test.** The predicted wing gain is 0.3 s; the driver's lap-to-lap σ is 0.8 s. Detecting that at 80 % power needs **112 laps per configuration** — the arithmetic is two lines, and nobody runs it. The pack holds 40 laps. The session was dead at breakfast, and the inevitable "inconclusive" gets read as *"the wing doesn't work"* — a real gain, falsely buried, which is worse than not testing. Earshot computes laps-needed, the **minimum detectable effect** of the session actually booked ("20 laps per config can hear 0.71 s, not your 0.30 s"), and the miss probability if you run it anyway — with the lap budget derived from the pack itself (usable kWh over kWh-per-lap: the EV test plan is spent in the same currency the race is). Verdicts: **RESOLVABLE / UNDERPOWERED / SWAMPED**.
+- **The confounded run order.** Tires wear, the track rubbers in, the pack sags. Run all the A laps then all the B laps — one wing swap, so it's what tired teams do — and a 0.03 s/lap tire drift plants a **0.6 s bias** in the comparison: twice the hunted effect. The ordering audit computes the exact bias a linear drift injects into AABB / ABAB / ABBA (mean lap index of A minus B, times drift — checkable on a napkin) next to the swap cost each ordering pays, declares **CONFOUNDED** when drift alone rivals the effect, and reserves burn-in laps that count for nobody, because driver learning is the steepest drift of all.
+- **The measurement that teaches nothing.** A tilt test at 8° with a half-degree protractor puts ±6 % on CG height from the angle term alone — the 1/(sin θ·cos θ) partial says so, and shows why 20° works where 8° can't. Instrument propagation states the band each parameter test will *actually deliver* — and therefore the evidence grade it **EARNS**: the Proof Engine's promised MEASURED ±3 % is now earned by arithmetic, never claimed by a checkbox. A plan whose delivered band can't beat the ledger's current band is called **MOOT** before anyone loads the trailer, with the dominant error term named so the plan can be fixed instead of abandoned.
+- **The sealed session sheet.** δ, σ (with σ's own evidence grade stated), α, power, run order, laps, burn-in, abort criterion, and the MDE — sha256-sealed before the trailer loads, exactly like a validation contract. A shortened session judges **VOID** instead of quietly widening its own goalposts; a **NOT-DETECTED** comes back carrying the sealed probability that a real effect hid — absence of evidence, priced, never shrugged. The sheet exports as a pinnable markdown run order (`ABBAABBA…`) with the frame charter stamped on it.
+
+Why no one has built it: the power analysis lives in statistics packages that have never heard of a car; datalogger vendors profit from sessions run, not sessions cancelled; CAE vendors sell solver hours. The a-priori question needs the predicted effect, the driver's noise floor, the pack's lap budget, and the current uncertainty bands **in one place** — in KinematiK they already are, so Earshot is a join, not a data-entry burden: one new number (driver σ, itself measurable from ten baseline laps) buys the whole audit.
+
+All of it lives in `suspension/earshot.py` — pure Python, headless, self-tested (`python3 -m suspension.earshot`), UI in `ui/earshot.py`. See bottleneck **#14** in `docs/BOTTLENECKS.md`.
+
+---
+
+## New: ⛓️ Fusebox — the failure-order audit. When something must break, does the car choose what?
+
+The Proof Engine prices what you don't know. The Saboteur catches a deck that lies. The Phantom Car totals the hedges. Earshot checks the test can hear. Fusebox asks the first question about the **physical** car that none of them — and no tool in the industry — has ever asked: a big enough hit *will* break something on every load chain; **which element goes first, and did anyone choose it?**
+
+Electrical engineering made choosing the victim a design act 150 years ago: the fuse — cheap, sacrificial, stocked in the box — is *designed* to die so nothing expensive does. Mechanical load paths on a formula car choose by accident, and worse: under the deck's own evidence-graded σ, the order isn't even determined. A MODELLED FoS 1.35 tie rod against a GUESS-grade FoS 1.8 upright is not "tie rod first" — price both capacities with the bands the Proof Engine already maintains and **the upright loses the race roughly one curb strike in four**, silently swapping a $45 rod-end afternoon for a $900, six-week, competition-ending billet part. On an EV it escalates from lead time to safety: the accumulator container and cell restraint must be *last* in every ordering — a claim believed by construction and verified by nobody. Fusebox (✅ Checks & Integration, shared spine) makes the ordering a computed, sealed, judged design object:
+
+- **The pecking order.** Each declared overload chain (curb strike, wing/cone strike, tow yank, side load into the accumulator bay — four seeded archetypes, fully editable) gets P(fails first) per element from the first-order statistics of the minimum of independent normal capacities: mean = the element's FoS at the load *it* sees, σ = FoS × the exact evidence-graded, staleness-inflated band law the Proof Engine assigns that grade — one pedigree law, **fifth consumer**, zero new physics. Deterministic fixed-grid quadrature; for two elements it collapses to Φ((μⱼ−μᵢ)/√(σᵢ²+σⱼ²)), checkable on a napkin.
+- **Verdicts against a sealed Fuse Charter.** The team designates the intended fuse per path and one confidence for the car, sha256-sealed. Each path judges **FUSED** / **COIN-FLIP** (the ordering is undetermined at the deck's own σ — the contenders are named with their odds) / **INVERTED** (a structural part is the likely victim, priced in $ and days against the intended fuse) / **UNFUSED** (no fuse-grade element exists on the chain at all) / **BREACH-RISK** — any forbidden (S3) element carrying more first-failure probability than the sealed tolerance, and this verdict outranks every other.
+- **Fix arithmetic, not fix folklore.** For every rival threatening the designated fuse, three levers solved *exactly* from the pairwise formula: soften the fuse to the printed FoS (floored at 1.10 — a fuse that pops at 1.0 pops in normal driving), stiffen the rival to the printed FoS, or **sharpen the rival's evidence grade** — the lever no redesign meeting ever tables. A strain-gauged pull test on the upright can buy the same ordering certainty as three weeks of re-machining, because half the coin flip was never mechanics — it was a GUESS-grade band doing the flipping. When a rival's band grows as fast as any FoS you add, the tool says so: *no amount of metal fixes an unknown.*
+- **The overload bill.** Conditional on the hit landing: Σ P(first) × cost, and the same in days of downtime, next to the bill of the intended fuse. The gap is the price of the unmanaged pecking order — an expected value, stated as conditional on the event, never a promised saving.
+- **Incident judging — the free datum.** When something actually breaks, the sealed charter judges **AS-DESIGNED / SURPRISE / BREACH**, and every verdict banks the one consolation prize of a breakage: reality just measured that element's capacity — re-grade it and the whole pecking order sharpens at zero cost. An edited charter refuses to judge, out loud.
+
+Why no one has built it: fuse coordination is a solved discipline in electrical protection and a staffed frangibility process at aerospace primes, and it exists in no tool a student team can afford — because the ordering needs every element's capacity, the σ its evidence quality implies, its cost and lead time, and the map of which elements share a path, *joined*. A solver sees one part per run by construction. In KinematiK the σ law, the costs, and the chain already live together, so Fusebox is a join plus one honest declaration per path.
+
+All of it lives in `suspension/fusebox.py` — pure Python, headless, self-tested (`python3 -m suspension.fusebox`), UI in `ui/fusebox.py`. See bottleneck **#15** in `docs/BOTTLENECKS.md`.
+
+---
+
+## New: 👻🔩 Ghost Topology — the geometry the car actually has mid-event, and whether it's sabotaging the geometry you drew
+
+Every kinematics solver in the industry runs the links **rigid**, exports one hand-picked static load case to FEA, and stops. Nobody closes the loop where the deflected part changes the geometry, the changed geometry changes the tyre force, and the changed force changes the deflection — because closing it the honest way means co-simulating nonlinear FEA against multibody dynamics, an enterprise licence and a workstation that melts. So a student team throws a safety factor at one static case and never sees that **the geometry the tyre operates on at the load peak is not the geometry anyone designed.** KinematiK already owns every piece of that loop as a tested standalone part — the rigid corner solver, the member load-path resolver, the quasi-static compliance coupling, the 1.5-on-yield screen, and a transient integrator producing per-corner load histories at millisecond resolution. Ghost Topology (✅ Design & Sizing) is the **join**: it walks a transient overload and, at each audited instant, solves the deformed suspension state under that instant's loads and reports the three things the siloed workflow structurally cannot see.
+
+- **Geometry drift vs rigid intent.** Camber, toe, instant-centre, roll-centre height and contact-patch, ghost minus the rigid design value *at that instant's travel*, sampled through the event. Soft enough links don't just erode the intent — they **invert** it: a designed-negative outer wheel driven positive while it's loaded, the grip-losing sign flip that a static spreadsheet cannot show. `COMPLIANCE_INVERTED` is its own headline verdict.
+- **Load-path migration.** The same wheel load reacted through the rigid geometry vs the ghost geometry lands on different force lines, so the FoS FEA screened at the static case is not the FoS the part sees mid-event. The tab shows the member-by-member share shift at the worst instant — the redistribution the export-one-case workflow throws away.
+- **Transient structural margin, traced.** Every member's FoS on yield in tension and yield **and** pinned-pinned Euler buckling in compression (the honest column for a spherical-jointed two-force member — same screen as the bracket audit and the tube frame), evaluated through the whole event instead of at one hand-picked case, against the team's standing 1.5 rule. The dip a static check can't see becomes the exact load case — *which instant of which event* — to hand the FEA seat, with the pass criterion attached.
+
+And it closes the loop the siloed tools cannot: the **tyre-force feedback**. Compliance camber and compliance steer move the tyre's operating point, which moves the lateral force, which moves the deflection. Per instant that's a scalar fixed point, and its contraction ratio is **measured**, not assumed — `loop_gain = d(feedback force)/d(applied force)`. |gain| < 1 is a contraction: the closed-loop force is the geometric-series sum, and the gain *is* the reported stability margin. |gain| ≥ 1 is `FEEDBACK_DIVERGENT` — compliance-induced instability, no quasi-static equilibrium on that branch — said out loud instead of printing a fixed point that doesn't exist.
+
+Why no supercomputer: **time-scale separation, stated and priced.** A link's structural modes live at hundreds of Hz to kHz; the chassis dynamics live at ~1–20 Hz. Across that gap the structure tracks its load quasi-statically, so the co-simulation collapses to the already-tested compliance solve evaluated *algebraically* along the load history — a few corner solves per audited instant, cached across near-identical loads. Laptop arithmetic. The same statement prices the limit: sub-5 ms load edges (a curb-strike impact) break the separation, and those instants are **flagged per instant** as a structural-dynamics question the tool refuses to answer, rather than quietly answering anyway. A member past yield voids the elastic geometry beyond that instant instead of plotting through it. Honest scope — quasi-static, one corner at a time, no plasticity — is in the module docstring and the report footer.
+
+All of it lives in `suspension/ghost_topology.py` — pure Python, headless, self-tested (`python3 -m suspension.ghost_topology`), UI in `ui/ghost_topology.py`. See bottleneck **#16** in `docs/BOTTLENECKS.md`.
+
+---
+
+## New: 🎲🛡️ Stochastic Inversion — the car the welder will actually build, and the shim stack that saves it
+
+Every tool in the chain — including this repo's own kinematics tab until now — takes hardpoints as **exact** coordinates. Tolerance lives in a drawing note that nothing downstream ever simulates. On the floor the car is a random draw from a cloud around the design: hand welds pull tabs 1–2 mm and pull them *toward the bead* — a **bias**, not just a scatter — jig errors stack, rod ends carry play. So the deck describes one car, the welder builds another, and a geometry optimised to a knife-edge peak ships fragile: the season's tuning was tuning a car that was never going to exist, and the first anyone learns of it is the tyre stickers coming back wrong at a test day nobody can afford to repeat. Stochastic Inversion (✅ Design & Sizing) makes buildability a computed number and closes the metrology loop back to a shim stack:
+
+- **The manufacturing yield.** Declare the *asymmetric* per-point, per-axis error field the shop actually holds — three presets seed it (hand-welded tabs, jig-welded, CNC/machined, plus a weld-pull bias on any axis; welded wishbone inners get the weld class, tie-rod and outboard joints get the machining class, every bound editable) — and the kinematic acceptance bands (camber, bump steer, RC height, scrub, caster). Thousands of buildable cars sweep through the forward solver and the yield is the fraction that stay in-band. Verdicts: **ROBUST / MARGINAL / FRAGILE / SOLVER_LIMITED** — that last one names a nominal sitting near a kinematic singularity, a fragility no shim fixes.
+- **The linearisation that prices itself.** The honest trick is one central-difference sensitivity matrix (40 corner solves) that propagates the whole cloud in microseconds — and every linear-mode yield ships with a verification subsample of *full nonlinear solves* whose pass/fail agreement is printed next to the number. Below 98 % agreement the result demotes itself and tells you to run full mode. Never a fast answer without its price tag.
+- **The anatomy of the failures.** Per-metric fail fractions name which band kills the yield, and first-order variance attribution names which tab's tolerance drives that metric — so "build a jig for the upper rear inner" comes out of arithmetic, not a meeting.
+- **The robust nudge.** An asymmetric field means E[Δmetric] = J·μ ≠ 0: the *expected* as-built car is off-intent before the first cut. The nudge solves the nominal shift that re-centres the whole cloud inside the bands — aim up-wind of the weld pull — clamped to declared per-point freedom, verified by full solves judged against the **original** intent so the goalposts cannot quietly move. A centred field gets the honest sentence (no nominal shift can raise a linear yield around a centred cloud — jig the tabs or widen the bands) instead of a fabricated optimum.
+- **The Alignment Prescription.** Once the chassis *is* welded: paste the CMM / caliper as-built coordinates (a >25 mm shift is refused as a units-or-frame slip — the Saboteur lesson — never shimmed), declare the adjusters the car really has (point, axis, range, shim step), and the prescription solves, quantises to the shim step, clamps to the ranges, and then **re-solves the shimmed geometry in full** — the residual printed is the one the real car will carry. A metric in the null space of the declared adjusters is named **unreachable** instead of rounded away. Verdicts: **RESTORED / PARTIAL / UNSHIMMABLE**. Alignment day becomes arithmetic instead of folklore.
+
+Scope, honestly: independent per-point errors (a jig shifting a whole cluster together is a nominal move, not a field), links built-to-fit (manufacturing error only — Ghost Topology owns the loaded deflection), kinematic intent only. The surviving population is exactly what Ghost Topology, Phantom Envelope and ThermicPatch should receive: a distribution instead of a point.
+
+All of it lives in `suspension/kinematik_stochastic.py` — pure Python, headless, deterministic, self-tested (`python3 -m suspension.kinematik_stochastic`), UI in `ui/kinematik_stochastic.py`. See bottleneck **#17** in `docs/BOTTLENECKS.md`.
+
+---
+
+## New: 🧬 InverseGenesis — draw the curves; the engine generates the geometry
+
+Every kinematics tool on earth — this repo's included, until now — runs the design loop in the one direction nobody wants: guess coordinates, solve, read the curves, wince, guess again. The intent was never coordinates; it was *"~1° of camber gain, dead bump steer, a roll centre that doesn't dive"* — and engineers burn days of the season translating that into x/y/z millimetres by hand. The few inverse routines industry has make it worse in a subtler way: they optimise to the target *exactly*, which parks the answer on a sensitivity knife-edge, and every one of them assumes a perfect machinist — so the "optimal" geometry is precisely the fragile car Stochastic Inversion exists to catch, generated on purpose. And none of them knows where the headers are. InverseGenesis (🛠️ Design & Sizing) runs the loop backwards, inside the packaging reality, with the shop holding a veto:
+
+- **Draw the intent, not the coordinates.** Target kinematic curves over wheel travel — camber, toe, roll-centre height, scrub — each station inside an acceptance band you set. The band is a design decision *and* a currency: fit residual spends it first, and only the leftover headroom absorbs weld scatter, so the fit and the buildability are priced in one unit.
+- **The physics-informed boundary filter.** Candidates are never free points in space: every search step is clamped to a per-point **legal volume** box, and every geometry is screened against keep-out volumes queried through the exact Phantom Envelope capsule dialect — a carved envelope of a *neighbouring* assembly, or a declared box for "the header lives here." A coordinate that hits the curves from inside an exhaust primary is unrepresentable, not merely penalised — the filter is a wall.
+- **Deterministic reverse gradients.** Each iteration builds the Jacobian of the band-weighted curve residual through the full nonlinear corner solver (central differences — the exact reverse sensitivities backpropagation would produce, computed honestly because the forward solver is fast enough to differentiate) and takes a damped Gauss–Newton step: linearise, step, clamp, reject on keep-out contact, adapt. No black-box optimiser, no population magic; the same seed gives byte-identical geometry every run, and every step is checkable arithmetic.
+- **The Build-Yield Co-Optimizer.** The stage no textbook inverse routine has. Multiple deterministic starts yield a family of curve-hitting candidates, and each is charged for its manufacturing fragility against the Stochastic Inversion error field — the asymmetric per-point weld/jig tolerances the shop actually holds — through the candidate's own sensitivity matrix. A geometry that nails the target dead-centre but collapses when a welder pulls a tab 1.5 mm is verdicted **KNIFE_EDGE and rejected** in favour of the slightly-off-centre candidate the shop can hold, and the **resilience premium** — the yield the winner bought by moving off the knife edge — is printed. The engine optimises for the car that gets built, not the car on screen.
+- **The linearisation, priced; the impossibility, named.** The winning yield ships with a full-nonlinear verification subsample and its pass/fail agreement, self-demoting below the honesty floor — the Stochastic Inversion doctrine, inherited whole. And when the bands, the boxes and the field are *jointly* unsatisfiable, the engine says exactly that — naming the binding band, the clamped box face, or the violated keep-out — and offers the closest legal car instead of fabricating an optimum. "Your targets and your shop disagree" is a result, not a failure.
+
+Verdicts: **RESILIENT / TEMPERED / KNIFE_EDGE / NO_FIT**. Scope, honestly: the rigid corner solver (take the generated geometry straight to Ghost Topology), independent per-point errors, and keep-out screening of each pickup as a probe sphere — inflate it to cover the bracket, and never feed the engine this corner's own envelope, whose capsule endpoints would always violate.
+
+All of it lives in `suspension/inverse_genesis.py` — pure Python, headless, deterministic, self-tested (`python3 -m suspension.inverse_genesis`), UI in `ui/inverse_genesis.py`. See bottleneck **#18** in `docs/BOTTLENECKS.md`.
+
+---
+
+## New: 🕸️🔩 MorphMesh — the bracket that grows itself, and the shop floor that vetoes the growth
+
+Generative design is the industry's shiniest demo and its most reliable scrap-bin filler. The commercial tools grow a beautiful organic part against **one static load arrow** — but a transient event never loads a chassis tab from one direction; the force line *migrates* as the car takes the curb, and the sign flips as the wishbone swings from tension to compression. Then the grown part meets the floor: a hand welder cannot hold a 1.5 mm rib next to a bead, a router cannot cut what its accuracy cannot place, and the "optimal" topology gets redrawn by eye into the same rectangular tab the team would have made anyway — the optimisation run was theatre. MorphMesh (🛠️ Design & Sizing) closes both gaps at once, because both halves already live in this repo: the shifting load history comes from Ghost Topology's transient audit, and the shop's honest limits come from the same class names Stochastic Inversion declares.
+
+- **The load fan.** The per-instant member force from a Ghost Topology transient audit — magnitude *and* the deformed link line it acts along — is condensed into ≤ N exposure-weighted load cases: every distinct direction the force sweeps through, weighted by its share of the event's load exposure, with wrap-safe angles and sign reversals kept as **opposing arrows** (a tension↔compression flip legitimately loads the tab both ways; a vector mean would cancel it away, so each sign lobe keeps its own case, and the reversal is named). A direction-static event collapses to one arrow on its own; the fan's out-of-plane share is reported, never hidden.
+- **Dynamic stress-path generative topology.** A multi-case SIMP growth (density filter → smoothed Heaviside projection with β-continuation, optimality-criteria update on the *physical* volume) minimises exposure-weighted compliance against **the whole fan at once** — so the shape ribs along the migrating load paths and strips the metal no case ever stresses, instead of over-serving one hand-picked arrow. The result ships with the exposure-weighted **stress-path map** (principal direction × magnitude per cell) so a reviewer can see *why* every rib exists.
+- **The manufacturing-constrained mesh — the shop's veto.** After every growth the binarised shape is **measured**, by morphological opening, against the declared fabrication limits: minimum rib = web floor + 2× positional accuracy (each cut edge lands within ±u), with a stricter rule inside the heat-affected zone by the weld anchor (a stated screening heuristic, not a welding simulation). The three shop classes carry the same names as Stochastic Inversion's presets — **hand_weld / jig_weld / cnc** — or read a declared `ToleranceField` directly, so the shop's own error cloud *is* the veto. A shape with ribs the floor can't hold is **REJECTED** — not smoothed, not warned about — and the growth re-runs at a coarser enforced feature size, up to four rounds.
+- **The premium of buildability, priced.** When a rejection forces coarsening, the result prints exactly what buildability cost: the compliance given up versus the first (unbuildable) growth and the feature size gained. That one number is the argument for buying a jig — or the receipt for keeping the hand welder. When *no* shape inside the volume budget satisfies the declared shop, the verdict is **UNBUILDABLE**, said out loud, instead of a shape that will be scrap.
+- **The structural screen and the deliverables.** The surviving shape is re-solved at the fan's **peak** amplitudes and screened by plane-stress von Mises against the standing 1.5-on-yield rule (the ghost/bracket doctrine); a failing screen prints the linear thickness fix and points at the FEA queue. Exports: cells CSV, a pixel-exact outline the CAD seat traces, the JSON audit summary, and a markdown report with the full rejection ledger — every round, what the opening measured, who signed.
+
+Verdicts: **FORGEABLE / COARSENED / UNBUILDABLE / LOAD_STARVED / SOLVER_LIMITED**. Scope, honestly: a 2D plate idealisation of tabs and webs (the fan's dropped out-of-plane share is reported; a genuinely 3D fan earns a warning, not silence), a screening FoS, and a morphological length-scale audit — the shape is the *input* to the FEA queue and the CAD seat, not their replacement.
+
+All of it lives in `suspension/morphmesh.py` — pure Python + scipy, headless, deterministic, self-tested (`python3 -m suspension.morphmesh`), UI in `ui/morphmesh.py`, demo in `demo_morphmesh.py`.
+
+---
+
+## New: 🪐 OmniCore — one mission sentence in, a refereed Pareto front out, and a twin that heals the car it predicted
+
+"AI designs you a car" is the industry's favourite demo and its least accountable one: a prompt goes into a black box, a render comes out, and nobody can say which trade-off was made, who vetoed the alternatives, or what the words in the prompt actually did. Meanwhile the honest version of the problem already lives in this repo, in three engines that quietly disagree about the same car: the geometry InverseGenesis loves for build-yield starves the actuator SimulForge sized, and the bracket MorphMesh grows to survive the shop pays a mass premium nobody priced against the battery. OmniCore (🛠️ Design & Sizing) is the referee — not a fourth oracle, a **chairperson with receipts**.
+
+- **The mission grammar — a receipt, not a language model.** One plain-language mission sentence (*"a lightweight 4WD electric vehicle for high-frequency bumpy terrain, $15,000 budget, a ±2 mm weld-pull shop floor"*) is parsed by a **deterministic grammar**: the budget regex takes the largest money-looking number (and refuses to read `±2 mm` as money), the stated tolerance maps to the worst shop class whose declared accuracy still covers it, terrain words pick the transient manoeuvre, priority words weight the knee pick, drive words are disclosed as carried-not-varied. Same text in, same spec out, forever — and the receipt prints **every token consumed (with its meaning), every default assumed, and every word ignored**. No embedding, no temperature, no vibes: the parse is an argument you can check by reading it.
+- **The shared-subsolve lattice.** The mission fans out over shop class × actuator size × structure volume budget — sharing sub-solves on purpose (one InverseGenesis run per shop, one SimulForge co-solve + Ghost transient audit per actuator, one MorphMesh growth per full triple) so a 12-configuration sweep costs engine-calls in the single digits, with the exact call ledger printed. Every engine keeps its own verdicts unchanged: OmniCore reuses RESILIENT/KNIFE_EDGE, brownout counts and authority, FORGEABLE/COARSENED/UNBUILDABLE — it never re-litigates physics it didn't run.
+- **The refereed front.** Survivors land on a Pareto front over five axes — event composure (∫|roll|dt), endurance range in laps (pack energy against per-lap event draw), grown-structure mass, decision-scope cost, and Monte-Carlo build yield — with the dominance test as plain arithmetic you can check by hand. A priority-weighted **knee pick** gives the referee's one reading of the front (the front itself remains the answer), and every dominated configuration carries a **dominance receipt** naming the exact configuration that beats it on every axis at once — the receipt that settles the design meeting.
+- **Every veto is named.** A dead configuration is never a blank: it says *who* killed it — `InverseGenesis: NO_FIT`, `SimulForge: 2 bus brownout(s) mid-event`, `MorphMesh: UNBUILDABLE at this shop's limits`, or `Mission budget: overshoots $15,000 by $412`. A broken engine vetoes its configurations by name instead of raising — flagged, never raised, end to end.
+- **The self-healing digital twin.** A nominal co-solve declares the healthy telemetry envelope (bus V_min, sag, peak draw, response lag, event energy, delivered authority, peak roll — each with a declared "still nominal" band). The same manoeuvre is then re-run once under every catalogued Degradation preset — the Saboteur's signature idea, pointed at the running car — and the **measured** drift is cosine-matched against the predicted patterns: a match names a suspect (*"tired pack at cosine 0.94, 1.3× the predicted magnitude — a named suspect for the audit, not a certified root cause"*); a pattern matching nothing says so **honestly** instead of inventing one. The heal is arithmetic, not vibes: a **gain de-rate** from the steady-state deliverable moment at the measured sagged voltage (I = duty·V/R, M = Kt·gear·eff·I, capped — the controller stops asking for torque the electrics cannot deliver, restoring predictability, not performance), and a **3-D-printable camber shim** from t = s·tan|θ| — the Stochastic tab's Alignment Prescription arithmetic, priced as a first correction and told to verify with a re-alignment.
+
+Scope, honestly: a **screening-fidelity** sweep (the reduced iteration budgets are printed on the result), one driveline in the transient model (a `4wd` token is disclosed, not varied), cost and mass models that price the *decision scope* (actuators + grown tabs + shop capex over a declared base vehicle), and a twin that corrects toward the declared nominal — whose own evidence grade lives in the Proof Engine ledger. The front is where full-fidelity runs should be **spent**, not a certificate that they were.
+
+All of it lives in `suspension/omnicore.py` — pure Python + NumPy over the engines already in the repo, headless, deterministic, self-tested (`python3 -m suspension.omnicore`), UI in `ui/omnicore.py`.
+
+---
+
+## Coverage
 
 One environment. Every subsystem. The entire car.
 
 | Subsystem | What KinematiK does |
 |---|---|
 | **Suspension / Dynamics** | 3D constraint solver, camber gain, bump steer, roll centre migration, load transfer, grip balance, compliance, setup optimiser, GGV, transient, upright mount-plate DXF |
-| **Aerodynamics** | Downforce & ground effect, wing/diffuser sizing, aero map, virtual wind tunnel, wing-section DXF |
+| **Aerodynamics** | Downforce & ground effect, wing/diffuser sizing, aero map, virtual wind tunnel, wing-section (airfoil) DXF |
 | **EV Powertrain** | Motor architecture comparison, energy budget, regen, lap time, torque vectoring, motor-flange DXF |
 | **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model, electrical feasibility gate, segment-box DXF |
-| **Brakes** | Bias & lock-up, hydraulic sizing, bolt & bracket FoS, rotor thermal, fade test, rotor optimiser, rotor DXF + caliper-bracket DXF |
-| **Chassis / Frame** | 3D model, team fit, weight & CG ledger, handover export, node-gusset DXF |
+| **Brakes** | Bias & lock-up, hydraulic sizing, bolt & bracket FoS, rotor thermal, fade test, rotor optimiser + rotor DXF export, caliper-bracket DXF |
+| **Chassis / Frame** | 3D model, team fit, weight & CG ledger, handover export, node-gusset DXF, **Frame Planner** (node/tube frame graph with 3D wireframe, triangulation & load-path audit with per-defect fixes, Size C→B sourcing trade study, alternative-tubing equivalency screen, panel & attachment planner for seat/harness/floor/firewall/aero panels) |
 | **Cooling** | Thermal sizing, heatmap, cross-subsystem heat propagation, radiator-core DXF |
-| **Electronics** | PCB copper survival, signal integrity, HV/LV checks, sensor/PCB-bracket DXF |
+| **Electronics** | PCB copper survival, signal integrity, HV/LV checks, **PCB Doctor** (import a real routed board — KiCad `.kicad_pcb` v5–v10, Altium/Protel ASCII, or a native binary `.PcbDoc` with no export step — diagnose real failures with the guilty trace named, one-click re-trace of under-sized copper on the text formats, multi-layer Trace Prescriber), sensor/PCB-bracket DXF |
 | **Data Acquisition** | Integration with car-level electrical budget, DAQ-bracket DXF |
 | **Cost & BOM** | FSAE Cost event, auto-seeded from Integration ledger, CSV export |
-| **Integration** | Cross-subsystem ledger, coupling graph, risk propagation, manufacturing-release gate, Verdict Center |
+| **Integration** | Cross-subsystem ledger, coupling graph, risk propagation, manufacturing-release gate, **Verdict Center** (per-subsystem works / look-closer / attention) |
+| **Frames & Datums** | Team coordinate convention charter, live floating datums with drift watch, frame Rosetta, migration wizard with SolidWorks XYZ export, sign-convention linter, judge-ready charter export, frame tags on every DXF / handover / ledger |
+| **Proof Engine** | Quantified evidence grades with staleness decay, deterministic uncertainty attribution to lap time / energy / thermal / mass, evidence actions ranked by uncertainty retired per hour, sha256-sealed pre-registered validation contracts, PASS / FAIL / DISCREPANT verdicts |
+| **Saboteur** | Mutation testing for the input deck: ten catalogued corruption classes injected into a shadow ledger, silent-killer detection, tripwire checksums picked by deterministic detectability set-cover, sha256-sealed pre-flight sheets, corruption fingerprinting that names the garbage class from the tripped pattern |
+| **Phantom Car** | The margin audit: disclosed design assumptions priced in σ of the evidence-graded ledger, a sha256-sealed team design percentile, ALIGNED/STACKED/NAKED/ANTI-HEDGED verdicts with releasable envelope and exposure priced, a two-cars contradiction detector, FORM reliability index β per load case, and a nominal / coherent / phantom comparison per objective |
+| **Earshot** | The test-day power audit: laps-per-config and minimum detectable effect from the two-sample power formula with the lap budget set by the pack, exact linear-drift bias per AABB/ABAB/ABBA run order with swap costs, instrument-propagated delivered bands that decide the evidence grade a test earns (SHARPENS/MOOT), sha256-sealed session sheets with DETECTED / NOT-DETECTED (miss probability priced) / VOID verdicts |
+| **Fusebox** | The failure-order audit: P(fails first) per element of every declared overload chain from evidence-graded capacity bands (deterministic quadrature, napkin-checkable pairwise form), FUSED/COIN-FLIP/INVERTED/UNFUSED/BREACH-RISK verdicts against a sha256-sealed Fuse Charter, three exact fixes per rival including evidence-grade sharpening, expected overload bill in $ and days, AS-DESIGNED/SURPRISE/BREACH incident judging with the free capacity datum |
+| **Stochastic Inversion** | The manufacturing-yield audit: asymmetric per-point per-axis tolerance fields (shop presets + weld-pull bias, every bound editable), Monte Carlo yield through a self-pricing sensitivity linearisation verified by full-solve subsamples, ROBUST/MARGINAL/FRAGILE/SOLVER_LIMITED verdicts, per-metric fail anatomy and variance attribution, a robust nominal nudge that re-centres the cloud (verified against the original intent), and a metrology-fed Alignment Prescription that quantises to real shim steps, re-solves the shimmed car in full, and names unreachable metrics — RESTORED/PARTIAL/UNSHIMMABLE |
+| **InverseGenesis** | The stochastic inverse engine: target kinematic curves drawn inside acceptance bands, per-point legal-volume boxes plus keep-out screening through the Phantom Envelope capsule dialect (wall, not penalty), deterministic damped Gauss–Newton reverse gradients through the full nonlinear solver, a multi-start build-yield co-optimizer over the Stochastic Inversion error fields with RESILIENT/TEMPERED/KNIFE_EDGE/NO_FIT verdicts, the resilience premium priced, full-solve verification of the winning yield, and named binding constraints when the intent is jointly unsatisfiable |
+| **OmniCore** | The vehicle-synthesis referee: a deterministic mission-prompt grammar with a full consumed/assumed/ignored parse receipt, a shared-subsolve lattice (shop × actuator × volume budget) run through InverseGenesis, SimulForge + the Ghost audit and MorphMesh with each engine's verdicts reused unchanged, a five-axis Pareto front (composure, laps, mass, cost, yield) with a priority-weighted knee pick, per-config dominance receipts naming the strict dominator, every veto named by the engine (or the mission budget) that issued it, and a self-healing digital twin: banded telemetry baseline, Degradation-preset defect signatures cosine-matched against measured drift (an honest "matches nothing" below threshold), deliverable-moment gain de-rate, and a printable t = s·tan θ camber shim |
 | **DFMEA** | Live failure mode analysis, pre-seeded rows, RPN recompute, action tracker |
 | **Registry** | Component source of truth, version history, sign-off, CAD provenance parsing |
 
@@ -67,68 +265,105 @@ One environment. Every subsystem. The entire car.
 
 **One car, not eight tools.**
 
-Every subsystem declares what it weighs, draws, rejects, and provides into a single Integration ledger. That one source feeds the 3D model, the lap sim, the heatmap, and the cost BOM. Declare a number once and it propagates everywhere — the eight "we're approximately 12 kg" estimates can't quietly sum to 18 kg over the car the suspension was tuned to.
+Every subsystem declares what it weighs, draws, rejects and provides into a single **Integration ledger**. That one source feeds the 3D model, the lap sim, the heatmap and the cost BOM. Declare a number once and it propagates everywhere — the eight "we're ~12 kg" estimates can't quietly sum to 18 kg over the number suspension tuned to.
 
-Every propagated effect carries an honest confidence tag: **measured** (a solver ran), **coupled** (a modelled physical edge), or **judgement** (engineering judgement, no backing physics). A measured edge is demoted if the data behind it is still an estimate. A green board never overstates what is known.
+And now every declared number carries a **frame tag**: the Integration ledger banner states the team's coordinate convention (or nags until one is declared), because a number without a frame is exactly the kind of unvalidated input this whole platform exists to prevent.
 
-Before a part goes to manufacture, the **manufacturing-release gate** gives a literal go/no-go. It blocks any part still resting on an estimate or an unconfirmed load. No part leaves without a clean board.
-
----
-
-## Get a build-ready DXF in three clicks
-
-Every subsystem exports the real 2-D section it takes into CAD — a wing airfoil, a mount plate with bolt holes, a radiator core face — built from your computed numbers, not redrawn from memory.
-
-In your subsystem tab, open the **📐 mesh & DXF export** panel, pick a section, and download. In SolidWorks: **File ▸ Open ▸ DXF ▸ import as 2D sketch**, extrude, then mesh in ANSYS.
-
-Units are embedded. Every profile is checked to import as one clean closed contour. The geometry that came out of the solver goes directly into CAD. No retyping. No redrawing. No transcription errors.
+When any subsystem saves an interface edit, KinematiK walks the change through a coupling graph and shows — unprompted — which other subsystems' risk just moved. Bump the motor torque and you immediately see it load the upright and heat the cooling loop. Every effect carries an honest confidence tag: **measured** (a solver ran), **coupled** (a modelled physical edge), or **judgement** (engineering judgement, no backing physics). A measured edge is demoted if the data behind it is still an estimate. A green board never overstates what is known.
 
 ---
 
-## Where it sits
+## Four moves to start
+
+0. **Answer the mission briefing.** The landing screen asks five one-tap questions — *what subteam(s) are you on? what are you using KinematiK for? what's the goal? are you a visual thinker? how much FSAE experience do you have?* — plus an optional free-text box ("our rear bump steer is a mess", "pack overheats in endurance") that pulls in tools the tapped answers alone would have missed — and compiles a personal plan: exactly which tools to open, in what order, why you need each one, and why to do it here first so ANSYS / MATLAB / OptimumK only ever **validate** your design instead of debugging your inputs. Every question has a sensible default, so a complete beginner can tap through in seconds, and everything is skippable. Visual thinkers (and anyone brand new) get a live, physically accurate concept graph or 3D render under each recommended tool; newcomers also get a plain-English line per tool. Answering also picks your subteam, so you then see only your tabs plus the shared spine (Integration, Frames & Datums, Validation, Analytics, Registry, Notes, 3D Model), grouped into five simple categories (Testing, Design, Checks, Docs, Data) — never all 40 at once. Skipped or dismissed the briefing? A one-tap **🧭 Get my mission briefing** button brings it back any time.
+1. **Declare your coordinate convention.** In **Checks → 🧭 Frames & Datums**, pick the team frame and master datum (30 seconds). Every DXF, handover and ledger number is stamped with it from that moment; the migration wizard converts anything you already have.
+2. **Declare your interface.** In **Integration**, fill what your subteam owns (mass, CG, torque, heat, current, downforce) and untick *estimate* once a number is real. Everything downstream uses it.
+3. **Watch it ripple, then clear the cut.** KinematiK walks your change through the coupling graph and flags which other subsystems' risk just moved. Before a part goes to manufacture, run the **manufacturing-release gate** — a literal go/no-go that blocks any part still resting on an estimate or an unconfirmed load.
+
+### Get a build-ready DXF (no CAD needed to start)
+
+Every subsystem exports the real 2-D section it takes into CAD — a wing airfoil, a mount/flange plate with bolt holes, a radiator core face — built from *your* computed numbers. In your subsystem tab, open its own **"📐 … — mesh & DXF export"** panel (it sits just below the documentation panel, mirroring the Brakes tab's inline rotor export), pick a section, and download. In SolidWorks: **File ▸ Open ▸ DXF ▸ import as 2D sketch**, extrude, then mesh in ANSYS. Units are embedded, every profile is checked to import as one clean closed contour, and the annotation block states the team's declared coordinate convention.
+
+---
+
+## What it does not do, and what is not yet proven
+
+Stated here rather than discovered later. Everything below is either a
+deliberate design decision or a known gap.
+
+**The physics has not been validated against a measured car.** IPC-2221,
+Onderdonk, the nodal resistance solve and the panel-method aero solver are
+verified against each other and against closed-form cases — not against an
+instrumented vehicle. The *parsers* are validated against fifteen real boards;
+the numbers coming out the other end are not. Treat every output as a starting
+point to correlate against your own test day, which is what the tool says on
+every screen.
+
+**The panel-method solver is inviscid and assumes attached flow.** No
+separation, no wake, no stall, no vortex shedding — precisely what your CFD run
+exists to check. Trust deltas between geometries far more than absolute levels.
+Every result is tagged POTENTIAL fidelity and uncorrelated so the caveat travels
+with the number.
+
+**A native binary `.PcbDoc` is read but never written.** Binary boards carry
+`patchable = False` and `apply_fixes()` refuses them, so the one-click re-trace
+still needs Altium's ASCII export. A mis-parse on read is recoverable — it shows
+up as absurd geometry and the reader refuses the file rather than reporting on
+it. A mistake on write corrupts a board a team is about to pay to fabricate.
+
+**Copper pours join the connectivity graph but never the resistance solve.**
+Any sheet resistance invented for them would make IR drop look *smaller* than
+trace-only does, and small is the direction that under-reports brown-out.
+Containment can clear a false open, never create one: letting geometry replace
+the blanket "has a pour so never open" exemption was measured at 4.4% → 5.1%
+false alarms and reverted, because a thermally-relieved pad sits geometrically
+outside the fill while being perfectly connected.
+
+**Copper-open findings run at 1.3% of routed nets** across the fifteen-board
+corpus (down from 8.0%). Those are false *alarms*. The safety contract is stated
+in `suspension/pcb_doctor.py` and enforced by tests: false alarms are
+acceptable, false all-clears are not. Every connectivity tolerance is the
+smallest value that fixes a measured failure, never the value that makes a
+complaint stop.
+
+**The Streamlit panel has element-tree coverage only.**
+`tests/test_ui_pcb_doctor.py` runs the real app headless and asserts each board
+format renders without raising, but it cannot see pixels and cannot drive a
+second rerun on this app, so click handlers are verified by construction rather
+than by clicking.
+
+**There is no autonomous or controls subteam** in the mission briefing yet.
+Pick the closest and use the free-text box; the plan adapts to it.
+
+---
+
+## Positioning
+
+KinematiK sits between your team's engineering decisions and your simulation budget.
 
 ```
 Team decisions → KinematiK (pre-validation) → ANSYS / ADAMS / MATLAB (verification) → Manufacturing
 ```
 
-KinematiK does not replace simulation. It makes simulation more valuable by ensuring the inputs that reach it are organised, connected, and already checked. The sim becomes a verification of a number you already trust — not the place you discover it.
+It does not replace simulation. It makes simulation more valuable by ensuring the inputs that reach it are organised, connected, and pre-validated. The sim becomes a verification of a number you already trust — not the place you discover it.
 
 ---
 
-## Three moves to start
-
-1. **Pick your subteam.** Nothing opens until you choose who you are. You see only your subteam's tabs plus the shared spine — never all 25 at once.
-2. **Declare your interface.** In Integration, fill what your subteam owns and untick *estimate* once a number is real. Everything downstream uses it.
-3. **Watch it ripple.** KinematiK walks your change through the coupling graph and flags which other subsystems just moved.
-
----
-
-
-
-## Access
+## Pricing
 
 **Free for students and FSAE / Formula Student teams. Always.**
 
-The student community is not the revenue model — it is the distribution model. Every FSAE graduate who used KinematiK and joins a professional team carries that workflow with them.
+KinematiK is free for any student or university team, permanently. The student community is not the revenue model — it is the distribution model. Every FSAE graduate who used KinematiK and joins a professional team is a warm introduction to that team, not a lost customer.
 
-**For professional teams, consultancies, and enterprises:**
-
-KinematiK is not yet commercially available. If your organisation is interested in the pre-simulation validation workflow — cross-subsystem integration, coupled risk propagation, geometry-to-CAD DXF export — this is an open letter of intent. Serious enquiries from professional motorsport and engineering organisations are noted and will be the first conversations when commercial availability opens.
-
-Nothing is for sale today. That is a deliberate decision, not an oversight.
+Professional teams, consultancies, and enterprises: contact for pricing.
 
 ---
 
-## Adoption
+## Usage stats
 
-Used across Formula SAE, Formula EV, and FSAE Baja teams. Spread organically through the SAE Discord without onboarding, documentation campaigns, or retention mechanisms.
+Usage numbers live in one place: the in-app **Analytics** tab, computed live from the database as *lifetime = pre-purge baseline snapshot + current 30-day window*. They are deliberately not hand-copied into this README — a stat printed here goes stale the moment it's written, and two documents disagreeing about the same metric is exactly the class of error this platform exists to prevent.
 
-- **567 total users** across SAE student teams
-- **51% return rate** — 291 of 567 came back without being asked
-- **11 seconds** to first result for a new member
-- **18 days** of recorded traffic
-
-The brakes subsystem at CSULB SAE ran KinematiK outputs against ANSYS and MATLAB in parallel and confirmed the numbers match. That was not a requested validation. They trusted it enough to check.
+No retention figure is quoted here on purpose. Per-workspace attribution only began working on 1 September 2026 — before that, feature events were recorded without a workspace, so any earlier per-team number would be an artefact of the instrumentation rather than a measurement. The Analytics tab shows the live figures; treat anything from before that date as unattributed.
 
 ---
 
@@ -140,21 +375,189 @@ The brakes subsystem at CSULB SAE ran KinematiK outputs against ANSYS and MATLAB
 
 **Vehicle dynamics layer** — roll-centre migration, anti-dive/anti-squat, load transfer, grip balance, all topology-independent via `GenericKinematics` adapter (`suspension/adapter.py`).
 
-**Analytics** (`suspension/analytics.py`) — privacy-respecting usage tracking. Durable identity via IP+UA fingerprint. All tracking is anonymous. No personal data stored.
+**Coordinate frames** (`coordinate_frames.py`) — pure-Python frame registry and transform core. Every conversion routes `frame A → world → frame B` through one auditable path; all frames are proper rotations (det = +1), so points, forces, moments and angular rates share one transform and only points shift by the datum. Rotation senses are derived from the basis via the right-hand rule. Datums resolve live from the vehicle parameters (`a = L·(1 − weight_dist_front)` from static axle-load balance). Self-tested with exact identities, no fuzz: `python3 coordinate_frames.py`.
+
+**Analytics** (`suspension/analytics.py`) — privacy-respecting usage tracking. Identity is a random per-session UUID (plus a browser cookie for return-visit counting); no IP addresses or device fingerprints are collected or stored. A member name is recorded only if the user types one in (opt-in). Telemetry never blocks the UI and a telemetry failure can never crash the app. Only three event types are written (session start, workflow complete, error); raw events are purged after 30 days.
+
+Events also carry a `workspace_id` so usage is answerable per team rather than summed across all of them. Attribution is at the workspace level only — individuals stay as anonymous as they were. Because Streamlit runs the script top to bottom and the analytics init sits below the widget instrumentation, a run's feature events are emitted *before* the workspace is resolved; `set_workspace()` therefore back-fills events still in the queue, matching on session_id so a process serving several browsers can never stamp one team's event with another's workspace.
 
 ---
 
 ## Database setup
 
-Run `suspension/analytics_hardening.sql` in Supabase once. Safe to re-run (idempotent). Creates all analytics views including `v_retention` and `v_time_to_first_result`.
+Run `suspension/analytics_hardening.sql` in Supabase once. Safe to re-run (drop-then-create, idempotent grants). This creates the analytics views.
+
+Then run these four, in this order. All are idempotent.
+
+| # | File | What it fixes |
+|---|---|---|
+| 1 | `fix_null_role_guard.sql` | **Security.** Every admin guard read `if workspace_role(ws) not in ('owner','lead') then raise`. For a non-member `workspace_role()` returns NULL, and `NULL not in (...)` is NULL rather than TRUE — so the branch never fired and the guard passed. It rejected members and viewers correctly while letting a non-member through. Reproduced end to end: a non-member could mint an invite to a workspace they were not in, redeem it, and join. Run this first. |
+| 2 | `fix_invite_permission.sql` | Members could not create invite links — the rule was widened on the client only, so the button showed and the server refused with a raw Postgres error. |
+| 3 | `fix_feature_allowlist.sql` | 16 of 40 tabs were discarding every analytics event: `ae_feature_fk` requires each feature to exist in `known_features` and only 24 were seeded. Inserts batch atomically, so one bad row failed the whole batch. A trigger now auto-registers unknown features. |
+| 4 | `add_workspace_analytics.sql` | Adds `workspace_id` plus the per-team views `v_workspace_weekly`, `v_workspace_adoption` and `v_feature_traction`. Ships with `suspension/analytics.py` — the column stays NULL until the app change deploys, and historical events cannot be back-filled because the link never existed. |
 
 ---
 
 ## Deploy order
 
-1. Push `streamlit_app.py` and `suspension/analytics.py` together — matched pair.
-2. Run `suspension/analytics_hardening.sql` in Supabase.
-3. Confirm build stamp reads `0.12-analytics-hardened` and streamlit runtime `>= 1.58.0`.
+1. Push `streamlit_app.py`, `project.py` and `coordinate_frames.py` together — the handover builder gained a `frame_tag` parameter that the app passes, so they are a matched set.
+2. Push `suspension/analytics.py` with `streamlit_app.py` as before — still a matched pair.
+3. Run `suspension/analytics_hardening.sql` in Supabase.
+4. Push `suspension/pcb_doctor.py`, `suspension/pcb_altium.py` and `suspension/pcb_altium_binary.py` together — `parse_board()` dispatches to both readers, so they are a matched set. `olefile` must be in `requirements.txt` for the binary reader; without it a native `.PcbDoc` falls back to the ASCII export instructions rather than raising.
+5. Confirm the build stamp in the Usage section matches the version at the top of this file, and the Streamlit runtime reads `>= 1.58.0`.
+
+---
+
+## What changed in this build (`0.33.0-dual-eda`)
+
+**PCB Doctor reads three formats.** KiCad `.kicad_pcb` (v5–v10), Altium/Protel
+ASCII, and native binary `.PcbDoc` with no export step — which matters because
+Altium saves binary by default, so it is the file a member actually has. One
+`PcbBoard` model behind all three, so every check, the viewer, the fix engine
+and the report stay written once. Binary is read-only on purpose.
+
+**Seven silent wrong-answer bugs fixed**, none of which raised an error and none
+findable without real files: Altium net IDs numbering from 0 in some exports and
+1 in others; KiCad 10 dropping numeric net IDs, so v10 boards parsed as zero
+segments and read as empty files; teardrops faking pours and suppressing real
+copper-open findings; pads inheriting the wrong copper side; endpoints 11 µm
+apart splitting a routed net into islands; tracks landing on a via's annulus
+rather than its centre; and a `raise warning '%s'` printing "feature pcb**s**".
+
+**Copper-open false alarms 8.0% → 1.3%** across fifteen real boards, in measured
+steps with no board regressing: endpoint welding at 50 µm, mid-trace pad
+attachment, and via-annulus attachment using the via's own radius from the file
+rather than a tuned tolerance.
+
+**Undeclared currents report MISSING** instead of being assigned a default and
+failed against it. A working commercial board previously came back 12 FAIL /
+10 WARN, none of it actionable.
+
+**Per-team analytics.** Events carry a `workspace_id`, with back-fill for events
+emitted before the workspace resolves. New views: `v_workspace_weekly`,
+`v_workspace_adoption`, `v_feature_traction`.
+
+**Three database fixes**, one of them a cross-workspace access hole — see
+Database setup above, and run them in the order given.
+
+**UI.** Dual-format upload identified by content rather than extension;
+`diagnose()` and `board_svg()` cached on a fingerprint (≈10 s of dead UI per
+click on the largest board, now 0.7 ms); viewer suppressed above 6000 segments
+because the largest real board emits 6.6 MB of inline SVG; upload ceiling 24 →
+64 MB after a real 27 MB board was rejected; an unreadable file no longer hides
+the Trace Prescriber. Architecture Synthesis Pareto chart now plots the same
+deduplicated rows as its own table — it was drawing the raw front, so three
+table rows became six markers with every label doubled and clipped.
+
+---
+
+## What changed in this build (`0.32.0-omnicore`)
+
+**🪐 OmniCore — new tab (Design & Sizing)**
+- New `suspension/omnicore.py`: the vehicle-synthesis referee. `parse_mission` is a deterministic grammar over the mission sentence — budget regex taking the largest money-looking number (a `±2 mm` tolerance is not money), stated tolerance → the worst shop class whose declared accuracy still covers it (`±2 mm` → hand_weld, with `weld…pull` context read as systematic tab pull), terrain words → the transient manoeuvre, priority words → knee weights, drive words disclosed as carried-not-varied — with a full receipt of every token consumed (and what it meant), every default assumed, and every word ignored; same text in, same spec out, forever. `run_omnicore` fans the mission over shop × actuator × volume-fraction sharing sub-solves on purpose (one InverseGenesis per shop with the mission's weld pull in that shop's `ToleranceField`; one SimulForge co-solve + Ghost transient audit per actuator; one MorphMesh growth per triple, at printed screening fidelity), reuses every engine's own verdicts unchanged (KNIFE_EDGE and authority become flags; NO_FIT, brownouts, UNBUILDABLE and the mission budget become **named vetoes**), assembles the five-axis scorecard (∫|roll|dt composure, pack-vs-event-draw laps, structure mass, decision-scope cost, Monte-Carlo build yield), and referees it: hand-checkable `pareto_mask`, priority-weighted `knee_pick` over the feasible set, and `dominance_receipts` naming the exact configuration that beats every dominated one on all axes at once. Engine failures veto by name — flagged, never raised — and the engine-call ledger is printed. The self-healing twin: `twin_baseline` declares the banded healthy telemetry envelope (V_min, sag, peak draw, lag, event energy, authority, peak roll), `defect_signatures` re-runs the manoeuvre once per Degradation preset (the Saboteur's signature idea pointed at the running car), `diagnose` band-normalises measured drift and cosine-matches it (≥ 0.75 names a suspect with magnitude, below it says "matches nothing" honestly; inside-band drift names nobody), and `heal_plan` is closed-form arithmetic: gain de-rate from the deliverable moment at the measured sagged bus (I = duty·V/R, M = Kt·gear·eff·I capped, gains scaled so the peak nominal command fits — predictability, not performance, and a hardware de-rate is called out as unfixable by gains), plus a printable camber shim t = s·tan|θ| pointing at the Stochastic tab's verified Alignment Prescription. Markdown reports for both halves. Pure Python + NumPy over the engines already in the repo, headless, deterministic, self-tested (`python3 -m suspension.omnicore`).
+- New `ui/omnicore.py` under the `ui/` strangulation pattern: the mission text box with the flagship prompt as placeholder, the parse receipt (consumed / assumed / ignored) shown before anything runs, sweep knobs (compare shops, tab count, events per lap, base cost, bands), live progress through the lattice, the front figure (cost × composure, marker size = mass, colour = laps, Pareto ring, knee star, vetoed configs greyed with their veto on hover), the full scorecard table, named vetoes and flags per configuration, dominance receipts, the engine-call ledger, JSON + markdown downloads, and the twin panel: build baseline + signatures, type the measured channels, get the banded verdicts, the named suspect (or the honest miss), and the heal plan with new gains and the shim spec. Reads the live hardpoints when the Kinematics tab has set them — one geometry, every engine, one referee, on purpose.
+- Registered in the lazy public-API facade (`suspension/__init__.py`): `omnicore` submodule plus `MissionSpec`, `parse_mission`, `OmniKnobs`, `OmniResult`, `run_omnicore`, `render_omni_md`, `twin_baseline`, `defect_signatures`, `twin_diagnose`, `heal_plan`, `render_twin_md` — the lazy-init sync test stays green.
+- Wired into the shell (tab meta, the Design & Sizing category next to MorphMesh, the suspension / electrics / chassis role tabs, both description maps, the new `vg_referee` verify-goal, the feature bullets, and the render container) following the strangulation pattern; a broken tab is isolated in `try/except` and can never take the studio down.
+- `tests/test_omnicore.py`: 28 tests pinning the grammar (flagship prompt field-by-field, determinism, the receipt accounting for every word class, an empty prompt disclosing every default, tolerance-is-not-money, `$15k`, the accuracy → shop-class boundaries, unknown words landing in `ignored`), the Pareto arithmetic on hand cases (strict domination, trade-offs keeping both, ties surviving, axis senses respected), the knee actually listening to mission priorities, dominance receipts naming the dominator and staying silent on a clean front, the twin (a 0.8×-scaled copy of a signature matched at cosine ≈ 1 with the magnitude read back, inside-band drift naming nobody, orthogonal drift matching nothing honestly, the NOMINAL/WATCH/DEGRADED band ladder), the heal algebra against its closed forms (t = s·tan|θ| both signs, the gain de-rate from first principles, the screening caution always printed), the flagged-not-raised doctrine with every engine broken on purpose (vetoes by name, no exception, an empty front warned not thrown), and one coarse end-to-end sweep with rendered reports.
+
+*(Previous build `0.31.0-morphmesh` below.)*
+
+## What changed in this build (`0.31.0-morphmesh`)
+
+**🕸️🔩 MorphMesh — new tab (Design & Sizing)**
+- New `suspension/morphmesh.py`: the structural auto-synthesizer. `load_fan_from_audit` reads the per-instant member force straight off a Ghost Topology transient audit — magnitude *and* the deformed link line it acts along — and compresses it into ≤ N exposure-weighted `LoadCase` arrows on the chassis tab: exposure-weighted best-fit bracket plane (dropped out-of-plane share reported, never hidden), wrap-safe angles (the fan is rotated so the exposure-weighted mean direction sits at 0°, so a fan hugging the ±180° branch cut cannot read as a 360° span), and sign-partitioned grouping so a tension↔compression flip keeps its own opposing arrow with the reversal named — a direction-static event collapses to one case on its own. `FabricationLimits` derives the shop's veto from the same class names Stochastic Inversion presets carry (hand_weld / jig_weld / cnc: minimum rib = web floor + 2× positional accuracy, a stricter stated-heuristic rule inside the HAZ band) or reads a declared `ToleranceField`'s own half-span as the accuracy. `PlateDomain` declares the sheet (chassis-tab and pivot-bracket presets: anchors, load bore, keep-in boss ring — a boss thinner than the minimum rib is grown and the finding named). `morph_component` runs the enforce → grow → binarise → **measure** → accept-or-reject-and-coarsen loop: a multi-case SIMP growth (Q4 plane-stress elements derived by quadrature, density filter → smoothed-Heaviside projection with β-continuation, OC update bisected on the *physical* volume, one factorisation shared by all cases per solve) minimises exposure-weighted compliance against the whole fan at once; the binarised shape is then measured by morphological opening (edge-replicated padding so an anchor-flush weld foot is never falsely eaten) against the declared limits, and a shape with ribs the floor can't hold is **REJECTED** and re-grown coarser, up to four rounds, with the **premium of buildability** (compliance given up, feature size gained) printed when coarsening was forced. The survivor is re-solved at peak fan amplitudes and screened by von Mises against the standing 1.5-on-yield rule (a failing screen prints the linear thickness fix), and ships with the exposure-weighted stress-path map, mass, cells CSV, a pixel-exact outline for the CAD seat, JSON summary, and a markdown report carrying the full rejection ledger. Verdicts FORGEABLE / COARSENED / UNBUILDABLE / LOAD_STARVED / SOLVER_LIMITED — flagged, never raised. Pure Python + scipy, headless, deterministic, self-tested (`python3 -m suspension.morphmesh`).
+- New `ui/morphmesh.py` under the `ui/` strangulation pattern: event / corner / member selectors, plate-domain presets with editable dimensions and mesh size, the shop-veto editor seeded from the shop class with every number a knob, growth-budget controls, verdict banner with the per-verdict blurb, metrics (mass, worst FoS with its governing case, shop rejections, FE solves), the premium-of-buildability callout, the grown-shape figure (density field, pixel-exact outline, stress-path whiskers, anchors + HAZ band, the load fan drawn at the bore), the fan table, the shop's rejection ledger, findings, and four downloads (cells CSV, outline CSV, JSON, report). Builds the `GhostCorner` exactly as the Phantom Envelope tab does and reads the live hardpoints when the Kinematics tab has set them — one geometry, another consumer, on purpose.
+- New `demo_morphmesh.py`: the end-to-end story — a curb strike audited, the fan condensed, the tab grown for the hand shop (a real round-1 rejection and the printed premium), the same tab re-grown for a CNC shop with the compliance delta named, and the deliverables.
+- Registered in the lazy public-API facade (`suspension/__init__.py`): `morphmesh` submodule plus `LoadCase`, `LoadFan`, `load_fan_from_audit`, `FabricationLimits`, `PlateDomain`, `fabrication_audit`, `MorphRound`, `MorphResult`, `morph_component`, `morph_from_audit`, `render_morph_md` — the lazy-init sync test stays green.
+- Wired into the shell (tab meta, the Design & Sizing category next to InverseGenesis, the suspension and chassis role tabs, both description maps, the vg_build verify-goal next to Stochastic Inversion, the feature bullets, and the render container) following the strangulation pattern; a broken tab is isolated in `try/except` and can never take the studio down.
+- `tests/test_morphmesh.py`: 20 tests pinning the Q4 element (symmetry, exactly three rigid-body modes, stiffer-deflects-less), the fabrication audit as a measurement (thick passes / thin fails, the edge-flush weld foot not falsely eaten, the HAZ disk stricter and localised, bosses protected), the shop-class arithmetic and the ToleranceField-declared accuracy, the fan's fidelity to the deformed link line, the wrap fix, the sign reversal keeping its own named arrow, out-of-plane and starved audits flagged not raised, the forgeable growth respecting bores, the reject-and-coarsen contract and its priced premium, UNBUILDABLE naming the binding constraint, the structural screen pricing the thickness fix, a multi-case shape serving both arrows, the end-to-end join, and export round-trips.
+
+*(Previous build `0.29.0-genesis` below.)*
+
+## What changed in this build (`0.29.0-genesis`)
+
+**🧬 InverseGenesis — new tab (Design & Sizing)**
+- New `suspension/inverse_genesis.py`: the stochastic inverse engine. `GenesisTargets`/`TargetCurve` state the intent as curves over travel with per-station acceptance bands (zero bands refused out loud — they ask for a probability-zero car); `curves_of` samples every channel from one dense warm-started sweep, failing whole geometries the solver can't follow. `LegalVolume` is the physics-informed boundary filter: per-point boxes (clamped coordinates named), plus keep-out volumes speaking the Phantom Envelope `clearances(points, probe)` dialect — carved envelopes of neighbouring assemblies or the new `KeepOutBox` (exact signed AABB distance) — enforced as a wall: a violating step is rejected, never penalised. `genesis_solve` is the deterministic reverse-gradient core: damped Gauss–Newton on the band-weighted residual, each iteration one central-difference Jacobian through the full nonlinear corner solver, λ-adapted, clamped, keep-out-screened. `inverse_genesis` runs multi-start (deterministic, seeded, deduped by basin) and the build-yield co-optimizer: every curve-hitting candidate priced for yield against a Stochastic Inversion `ToleranceField` through its own sensitivity matrix, with the candidate's fit residual spending band headroom before scatter — knife-edge optima rejected, the resilience premium printed, the winning yield verified by full nonlinear solves with the pass/fail agreement (self-demoting below the floor). Jointly unsatisfiable declarations return the binding band/box/keep-out by name and the closest legal car, never a fabricated optimum. Verdicts RESILIENT / TEMPERED / KNIFE_EDGE / NO_FIT. Pure Python, headless, deterministic, self-tested (`python3 -m suspension.inverse_genesis`).
+- New `ui/inverse_genesis.py` under the `ui/` strangulation pattern: per-channel curve editors seeded from the live nominal's own curves (the sheet solves before the first edit) with band floors, movable-point and freedom controls, a keep-out box editor with probe radius and clearance, Stochastic Inversion shop presets for the field, verdict banner with resilience-premium metric, winner shift table, per-channel nominal/generated/band overlay charts, the candidate family table ("what a point of yield costs in fit"), markdown handover, and an apply button that writes the generated `Hardpoints` back to the live session — one geometry, another consumer *and the first producer*, on purpose.
+- Registered in the lazy public-API facade (`suspension/__init__.py`): `inverse_genesis` submodule plus `TargetCurve`, `GenesisTargets`, `KeepOutBox`, `LegalVolume`, `GenesisThresholds`, `Candidate`, `GenesisResult`, `curves_of`, `genesis_solve`, `build_yield`, `inverse_genesis_run`, `render_genesis_md` — the lazy-init sync test stays green.
+- Wired into the shell (tab meta, the Design & Sizing category next to Stochastic Inversion, the suspension role tabs, both description maps, the susp_geo goal routing with feature bullets, and the render container) following the strangulation pattern; a broken tab is isolated in `try/except` and can never take the studio down.
+- `tests/test_inverse_genesis.py`: 24 tests pinning the forward map against the direct solver, intent validation (zero band, duplicate channel, unknown channel refused), box clamps named, `KeepOutBox` signed distance inside/outside/probed, the keep-out wall (a walled-off truth position still returns a violation-free geometry), hidden-geometry recovery, determinism of the solve and byte-identical reports, no-shift on an already-satisfied nominal, yield bounds, the winner never out-yielded by another hit, the fit-residual/headroom coupling (a worse fit can only cost yield), the CNC-out-yields-hand-weld control case, verification pricing, the named unsatisfiable verdict, and the honest fit-only degradation when no field is declared.
+- `docs/BOTTLENECKS.md` gains bottleneck **#18 — the design loop that only runs forward**, the first inverse engine to give the packaging reality a wall and the shop a veto.
+
+*(Previous build `0.28.0-stochastic` below.)*
+
+## What changed in this build (`0.28.0-stochastic`)
+
+**🎲🛡️ Stochastic Inversion — new tab (Design & Sizing)**
+- New `suspension/kinematik_stochastic.py`: the manufacturing-yield audit and the metrology feedback loop. Asymmetric per-point, per-axis tolerance fields (`ToleranceSpec` lo/hi bounds, uniform or truncated-normal, closed-form mean/variance; shop presets hand-weld / jig-weld / CNC with a directional weld-pull bias applied to the welded wishbone inners only — tie-rod inner and all outboard joints are machining-class, a physics distinction, not a convenience). One central-difference sensitivity matrix (40 corner solves, refused if the nominal itself won't solve) propagates thousands of sampled cars in microseconds, and every linear-mode yield is **priced live** by a full-nonlinear verification subsample whose pass/fail agreement prints with the result — below 98 % it demotes itself with a warning. Verdicts ROBUST / MARGINAL / FRAGILE / SOLVER_LIMITED (perturbed geometries that fail to solve mean the nominal sits near a kinematic singularity). Per-metric fail fractions, expected bias E[Δ] = J·μ, p05/p95 spreads, first-order variance attribution naming the tab that drives each metric. `robust_nudge` solves the band-weighted least-squares nominal shift that re-centres an asymmetric cloud, clamps to declared per-point freedom (clamps named), honestly refuses a centred field, and verifies with full solves judged against the **original** design intent via an explicit target — so the re-centred nominal cannot quietly move the goalposts. `alignment_prescription` takes pasted as-built coordinates (a >25 mm shift is refused as a units/frame slip and never shimmed), the real adjusters (point, axis, range, shim step), solves at the as-built geometry, quantises and clamps the moves, then **re-solves the shimmed car in full** so the printed residual is the one the car will carry; metrics outside the adjusters' reach are named unreachable. RESTORED / PARTIAL / UNSHIMMABLE. Pure Python, headless, deterministic (seeded), self-tested (`python3 -m suspension.kinematik_stochastic`).
+- New `ui/kinematik_stochastic.py` under the `ui/` strangulation pattern: shop-preset + weld-pull error-field editor with every per-point bound editable, acceptance-band and engine controls, verdict banner with per-verdict blurb, four metrics (yield, verification agreement, worst metric, solver failures), and four sub-tabs — per-metric spread, variance attribution, the robust nudge with freedom and verification controls plus a markdown handover, and the Alignment Prescription with a CSV as-built parser, adjuster editor, verified shim table and download.
+- Registered in the lazy public-API facade (`suspension/__init__.py`): `kinematik_stochastic` submodule plus `ToleranceSpec`, `ToleranceField`, `YieldSpec`, `StochasticThresholds`, `StochasticResult`, `Sensitivity`, `sensitivity`, `stochastic_sweep`, `RobustNudge`, `robust_nudge`, `Adjuster`, `Prescription`, `alignment_prescription`, `render_stochastic_md`, `render_prescription_md` — guarded by the existing lazy-init and public-API export tests, still green.
+- Wired into the shell (tab meta, the Design & Sizing category, the suspension role tabs, both description maps, the verify-goal list, and the render container) following the strangulation pattern; a broken tab is isolated in `try/except` and can never take the studio down.
+- `tests/test_kinematik_stochastic.py`: 28 tests pinning the field moments and bounds, sampler determinism, preset physics (tie-rod inner is machining-class), the Jacobian against direct solves and the bump-steer↔tie-rod coupling, byte-identical reports across runs, yield monotonicity in field size, the linearisation's printed price and its agreement with full mode, attribution normalisation, every verdict boundary, the centred-field refusal, the nudge's bias re-centring and the goalpost fix (verified-vs-original ≈ predicted), freedom clamps named, the prescription restoring an injected 1.4 mm weld error to RESTORED, shim quantisation and clamping, an unreachable metric named, the metres-as-mm refusal, and adjuster axis normalisation.
+- `docs/BOTTLENECKS.md` gains bottleneck **#17 — the car nobody welds**, the first audit to treat hardpoints as the distribution the shop actually delivers and to close the metrology loop back to a shim stack.
+
+*(Previous build `0.27.0-ghost` below.)*
+
+## What changed in this build (`0.27.0-ghost`)
+
+**👻🔩 Ghost Topology — new tab (Design & Sizing)**
+- New `suspension/ghost_topology.py`: the deformed-geometry audit — the join that closes the tyre-compliance loop the siloed rigid-kinematics → static-FEA workflow leaves open. Walks a transient overload and solves the ghost topology at each audited instant: geometry drift vs rigid intent at that instant's travel (camber, toe, instant-centre, roll-centre height, contact patch), member load-path migration (same wheel load through rigid vs ghost geometry, share shift summing to zero), transient FoS per member on yield **and** pinned-pinned Euler buckling (the honest column for a spherical-jointed two-force member), and the tyre-force feedback loop gain **measured** by contraction — |g| < 1 gives the geometric-series closed-loop force with the gain reported as the stability margin, |g| ≥ 1 is flagged divergent with open-loop values, no fabricated fixed point. Verdicts worst-first: FEEDBACK_DIVERGENT / COMPLIANCE_INVERTED / MARGIN_BREACHED / COMPLIANCE_DEGRADED / RIGID_FAITHFUL. The zero-FEA trick is time-scale separation, stated and priced: the quasi-static compliance solve evaluated algebraically along the load history, 25 N-quantized solve cache, a few solves per event. It prices its own limits — sub-5 ms load edges flagged per instant as a structural-dynamics question it refuses to answer, a member past yield voiding the elastic geometry beyond that instant. The body→corner sign mapping is applied once, documented, and a failed transient is refused rather than audited as zeros. Pure Python, headless, deterministic, self-tested (`python3 -m suspension.ghost_topology`).
+- New `ui/ghost_topology.py` under the `ui/` strangulation pattern (physics stays in `suspension/`, this only orchestrates and draws): manoeuvre picker (step steer / snap oversteer / brake→throttle / curb strike), corner picker with the sign-mapping help, audited-instants slider, link tube / material / yield and chassis-tab-stiffness editor, tyre-sensitivity overrides, the verdict banner with per-verdict blurb, four metrics (worst FoS, peak Δcamber, Δtoe, loop gain with the margin-to-instability delta), the findings list, and four sub-tabs (geometry vs intent, transient margins vs the 1.5/1.0 lines, load-path shift at the worst instant, the instant table) plus a markdown handover export. Reads the live hardpoints when the Kinematics tab has set them.
+- Registered in the lazy public-API facade (`suspension/__init__.py`): `ghost_topology` submodule plus `GhostCorner`, `ghost_audit`, `ghost_audit_transient`, `MemberSection`, `TireSensitivity`, `GhostThresholds`, `GhostAudit`, `GhostInstant`, `render_ghost_md`, `uniform_sections` — guarded by the existing lazy-init and public-API export tests, still green.
+- Wired into the shell (tab meta, the Design & Sizing category, the render container) following the strangulation pattern; a broken tab is isolated in `try/except` and can never take the studio down.
+- `tests/test_ghost_topology.py`: 24 tests pinning the closed forms (Euler Pcr, yield FoS, buckling-governed compression), the roll-centre construction, the feedback sign paths, the fixed-point self-consistency and the measured-divergence flag, stiffness monotonicity, load-path bookkeeping, the travel baseline and its clamp, every verdict boundary (stock corner RIGID_FAITHFUL, soft corner MARGIN_BREACHED at the load peak, very-soft corner COMPLIANCE_INVERTED outranking margin), the solve cache with per-instant timestamps, the fast-edge quasi-static flag, the transient sign mapping, failed-transient refusal, and the markdown report.
+- `docs/BOTTLENECKS.md` gains bottleneck **#16 — the rigid lie under load**, the first audit to close the tyre-compliance feedback loop.
+
+*(Previous build `0.26.0-fusebox` below.)*
+
+## What changed in this build (`0.26.0-fusebox`)
+
+**⛓️ Fusebox — new shared-spine tab (Checks & Integration)**
+- New `suspension/fusebox.py`: the failure-order audit. Overload chains as ordered element lists (FoS at the element's own load share, evidence grade + staleness pricing σ via the exact Proof Engine band law — one pedigree law, fifth consumer), first-failure probabilities from deterministic fixed-grid quadrature of the minimum of independent normals with the pairwise closed-form printed for napkin checks, verdicts FUSED / COIN-FLIP / INVERTED / UNFUSED / BREACH-RISK against a sha256-sealed Fuse Charter (one confidence, one forbidden-first tolerance, designations per path), three exact fix levers per rival (soften-the-fuse floored at FoS 1.10, stiffen-the-rival, sharpen-the-grade — with honest infeasibility messages when z·r ≥ 1 means no metal can fix an unknown), the probability-weighted overload bill in $ and days, incident judging (AS-DESIGNED / SURPRISE / BREACH, every break banking the free capacity datum; a tampered charter refuses to judge), four seeded FSAE-EV archetypes whose grades tell the true story, and a pinnable markdown Fuse Map. Pure stdlib, deterministic end to end, self-tested (`python3 -m suspension.fusebox`).
+- New `ui/fusebox.py` under the `ui/` strangulation pattern: pecking-order board with per-path expected bills, path & element editor (seeds resettable), fix-arithmetic panel, charter sealing + incident judging.
+- Wired into all seven shell registries (tab meta, category grouping, shared spine, both description maps, the how-it-works bullets, and the render container); a broken tab is isolated in `try/except` and can never take the studio down.
+- `tests/test_fusebox.py`: 27 tests pinning the quadrature against the closed form, determinism (byte-identical probabilities and markdown), the flagship 27 % coin flip, every verdict at its documented constants (BREACH-RISK outranking all, empty paths and missing severities as blind spots never passes), fix roots satisfying the pairwise equation to display precision, the fuse floor, the no-metal-fixes-an-unknown infeasibility, seal tamper-refusal, and incident verdicts with the free datum.
+- `docs/BOTTLENECKS.md` gains bottleneck **#15 — the failure order nobody chose**, the first physical-consequence audit alongside the four epistemic ones.
+
+*(Previous build `0.25.0-phantom` below.)*
+
+## What changed in this build (`0.25.0-phantom`)
+
+**👻 Phantom Car — new shared-spine tab (Checks & Integration)**
+- New `suspension/phantom_car.py`: the margin audit. Each consumer *discloses* the design value its sizing actually uses (a built-in FSAE-EV consumption map seeds the form at nominal on purpose); every hedge is priced in σ of that quantity's own evidence-graded, staleness-inflated band — the exact Proof Engine ledger, third consumer, zero new physics. One sha256-sealed Margin Charter percentile judges the lot: **ALIGNED / STACKED** (excess priced as releasable envelope in the quantity's own units) **/ UNDER-COVERED / NAKED** (naming the evidence grade it's naked on) **/ ANTI-HEDGED**. The **two-cars detector** flags assumed values >1σ apart on the same quantity (the Integration contradiction check, applied to *assumptions* for the first time); **β = √(Σz²)** is the FORM reliability index, stating the odds each stacked load case defends against; and the **three-cars comparison** (nominal / coherent-percentile / phantom) prices, per objective, the design envelope currently spent defending cars the deck's own σ says cannot exist — reported honestly as envelope, never as promised savings. A charter with a broken seal refuses to judge, out loud. Pure stdlib, deterministic end to end, self-tested (`python3 -m suspension.phantom_car`).
+- New `ui/phantom_car.py` under the `ui/` strangulation pattern: sealed-charter panel, disclosure editor (seed / demo / hand-edit), verdict board with releasable-and-exposed pricing, the two-cars detector, β per consumer, the three-cars table per objective, honest blind-spot and unresolved-key reporting, and a pinnable Margin Docket markdown export. Shares the `proof_pedigree` session map with the Proof Planner and the Saboteur — one pedigree, three consumers, on purpose.
+- Wired into all seven shell registries (tab meta, category grouping, shared spine, the two description maps, the how-it-works bullets, and the render container) following the strangulation pattern; a broken tab is isolated in `try/except` and can never take the studio down.
+- `tests/test_phantom_car.py`: 22 tests pinning determinism (audit and docket byte-identical), the verdict thresholds at their documented constants (ALIGNED at the charter percentile, NAKED at nominal, STACKED with releasable envelope, ANTI-HEDGED on a favourable value), the two-cars detector (contradiction named with both consumers, quiet within 1σ), β = √(Σz²) over stacked worst cases only, the phantom as the union of adverse extremes, seal tamper-evidence (an edited charter refuses to judge and computes nothing else), and honesty (unresolved keys and unaudited consumers reported, seeds never fabricating prudence).
+- `docs/BOTTLENECKS.md` gains bottleneck **#13 — the margin nobody adds up**, the conservatism mirror-image of #12, closing the triangle with the Proof Engine and the Saboteur.
+
+*(Previous build `0.24.0-saboteur` below.)*
+
+## What changed in this build (`0.24.0-saboteur`)
+
+**🧨 Saboteur — new shared-spine tab (Checks & Integration)**
+- New `suspension/saboteur.py`: mutation catalog (thousandfold/imperial unit slips, frame Z flip, kilo-prefix slips, dropped & double-counted roll-up terms, each with its real-world story), sabotage sweep over a shadow copy of the uncertainty ledger, silent-killer classification against the objective's own 3σ envelope, tripwire catalog with per-wire deck-consistency tolerances and real-world read instructions, greedy detectability set-cover (runs until nothing catchable remains; a caller-imposed cap charges its victims to the blind-spot list), sha256-sealed pre-flight sheets, cosine fingerprinting of tripped patterns against predicted corruption signatures, honest-blind-spot reporting, markdown export. Pure stdlib, deterministic end to end, self-tested.
+- New `ui/saboteur.py` under the `ui/` strangulation pattern: kill board, coverage before/after, sheet sealing, judge-a-run panel with named suspects. Shares the `proof_pedigree` session map with the Proof Planner — one pedigree, two consumers, on purpose. Can optionally judge the sweep against an open validation contract's acceptance band, answering: *could garbage hand you a PASS?*
+- `tests/test_saboteur.py`: 22 tests pinning determinism, per-class detection (z-flip caught by the CG wire, lb·ft by torque-per-power, dropped terms by rolled-up mass), honesty (blind spots reported and charged, unavailable wires never offered, verified pedigrees never shrink tripwire tolerances), seal tampering refused, fingerprint correctness (injected corruption identified at cosine > 0.99, magnitude 1.0×), and uncatalogued errors admitted rather than misattributed.
+- `docs/BOTTLENECKS.md` gains bottleneck **#12 — the garbage that flatters the envelope**, closing the residual #8 left open.
+
+*(Previous build `0.23.0-frames` below.)*
+
+## What changed in build (`0.23.0-frames`)
+
+**🧭 Frames & Datums — new shared-spine tab (Checks & Integration)**
+- New `coordinate_frames.py`: frame registry (ISO 8855, SAE J670, ISO 4130, KinematiK internal, SolidWorks-typical, custom-from-words with derived +z guaranteeing right-handedness), exact point/vector/rotation-sense transforms via one `frame → world → frame` path, floating datums resolved live from wheelbase / weight split / CG height, datum-drift detection, CSV + SolidWorks Curve-Through-XYZ I/O, sign-convention linter (below-ground / mirror asymmetry / unit sniff / envelope), judge-ready charter markdown. Pure Python, streamlit only imported inside `render()`, exact-identity self-tests.
+- Tab body wired with hard isolation (`try/except`) so the convention tool can never take the studio down; live hardpoint provider filters the session hardpoint dict to 3-vectors and maps keys to human labels.
+- Declaring a charter logs a Decision (`team=integration`, tags `coordinates,standard`) so the convention and its rationale survive into the Registry and next season's handover.
+
+**Frame tags on everything leaving the platform**
+- `_generic_dxf_bytes` annotation block now stamps the declared convention onto every generic DXF (aero sections, mount plates, radiator faces, brackets, gussets); the brake-rotor DXF (which builds its own R12 file) stamps the same line.
+- `project.build_handover_markdown` gained `frame_tag=""` and renders a **Coordinate convention** section before the weight budget; the app passes the long-form tag, which explicitly reads **UNDECLARED** when no charter exists — formal documents never silently omit the convention.
+- Integration tab banner states the declared convention above the ledger, or nudges to declare one.
+
+**Hardpoint editor mislabel fixed**
+- The editor header claimed "SAE x-rear y-right z-up". SAE J670 is Z-**down**; the internal frame is ISO 4130-style. Header corrected and now points to Frames & Datums for conversion — the tool no longer commits the exact mislabel the tab was built to end.
+
+*(Previous build `0.22.0-unified` — team CAD library ⇄ 3D model quick-assembly preview, mission briefing onboarding, `v_retention` two-phase identity rewrite, `v_time_to_first_result` anchor fix, visitor identity fixes, `session_start` deferral — see Git history for the full notes.)*
 
 ---
 
@@ -162,7 +565,7 @@ Run `suspension/analytics_hardening.sql` in Supabase once. Safe to re-run (idemp
 
 KinematiK is the original work of Frederik Thio, developed independently as a personal project. Development history is timestamped in the Git commit log.
 
-All outputs are for design direction. Always validate with full simulation before manufacturing. This is not a suggestion — it is the entire point of the tool.
+All outputs are for design direction. Always validate with full simulation (ANSYS, ADAMS, MATLAB) before manufacturing. This is not a suggestion — it is the entire point of the tool.
 
 ---
 
