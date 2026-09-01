@@ -29,7 +29,7 @@ import streamlit as st
 
 # First Streamlit command — the page frame (title, layout, sidebar chrome) is
 # on screen before ANY engineering package is evaluated.
-st.set_page_config(page_title="KinematiK · FSAE Vehile Design Studio",
+st.set_page_config(page_title="KinematiK · FSAE Vehicle Design Studio",
                    page_icon="◢", layout="wide",
                    initial_sidebar_state="expanded")
 
