@@ -19188,7 +19188,9 @@ with tab_aero:
         #  tab already normalises by, so a coefficient from here and one from
         #  the map cannot silently disagree about area.
         from ui import panel_solver as _panel_mod
-        _panel_mod.render(st, _aero_area, float(veh.wheelbase_m))
+        #  VehicleParams.wheelbase is in MILLIMETRES; CaseSpec wants metres
+        #  for the pitching-moment reference length.
+        _panel_mod.render(st, _aero_area, float(veh.p.wheelbase) / 1000.0)
 
     elif _view == "ANSYS run-log consolidation":
         # EXTRACTED to ui/run_log.py (Aug 2026) — the first slice moved under
