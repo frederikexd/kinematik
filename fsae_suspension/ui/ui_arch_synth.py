@@ -151,20 +151,72 @@ def render(base_hp: Hardpoints | None = None):
     # scatter: the actual trade surface
     try:
         import plotly.graph_objects as go
-        tbl = tradeoff_table(res)
+
+        #  Plot the SAME rows as the table above, not the raw Pareto front.
+        #
+        #  tradeoff_table() returns every point on the front, which includes
+        #  several continuous-geometry realisations of the same discrete
+        #  architecture. Plotting those put two or three markers on top of each
+        #  other, each carrying an identical label, so every caption rendered
+        #  doubled and offset by a few pixels — it read as a font bug rather
+        #  than as duplicate data. Worse, the chart silently disagreed with the
+        #  table directly above it: three rows, six points.
+        #
+        #  compare_architectures() is the deduplicated view — one row per
+        #  discrete architecture, showing its best continuous realisation. That
+        #  is what the table shows and what the caption promises, so it is what
+        #  the chart should show too.
+        tbl = rows if rows else tradeoff_table(res)
         xs = [r["mass_kg"] for r in tbl]
         ys = [r["points"] for r in tbl]
         txt = [f"{r['wheel_in']}\"·{r['motors']}mot·{r['pack_v']}V·{r['damper']}"
                for r in tbl]
+
+        #  Label every point only while the labels can actually fit. A caption
+        #  like 10"·2mot·400V·outboard is ~22 characters and is drawn centred
+        #  above a marker, so past a handful of architectures they overlap each
+        #  other horizontally no matter how the axes are padded — and an
+        #  unreadable pile of overlapping text is worse than no text, because it
+        #  looks broken rather than dense. Above the threshold the labels move
+        #  to hover, where they are always legible and never collide.
+        LABEL_LIMIT = 6
+        labelled = len(xs) <= LABEL_LIMIT
+
         fig = go.Figure(go.Scatter(
-            x=xs, y=ys, mode="markers+text", text=txt, textposition="top center",
-            marker=dict(size=11)))
+            x=xs, y=ys,
+            mode="markers+text" if labelled else "markers",
+            text=txt,                      # kept either way — hover reads it
+            textposition="top center", textfont=dict(size=11),
+            marker=dict(size=11),
+            hovertemplate="%{text}<br>mass %{x:.1f} kg · "
+                          "points %{y:.1f}<extra></extra>"))
+
+        #  Labels are drawn centred above their marker and are far wider than
+        #  it, so with the old 10 px side margins the outermost captions ran off
+        #  the plotting area and were clipped mid-word. Padding the DATA range
+        #  rather than the margins keeps them inside the axes wherever the points
+        #  happen to fall; the wider margins then stop the axis titles crowding
+        #  them. Padding only exists to make room for text, so when the labels
+        #  move to hover the points get the full plot area back.
+        if xs and ys:
+            xpad = (max(xs) - min(xs) or 1.0) * (0.18 if labelled else 0.06)
+            ypad = (max(ys) - min(ys) or 1.0) * (0.22 if labelled else 0.08)
+            fig.update_xaxes(range=[min(xs) - xpad, max(xs) + xpad])
+            #  extra headroom at the top only when a label sits above the marker
+            fig.update_yaxes(range=[min(ys) - ypad,
+                                    max(ys) + ypad * (1.6 if labelled else 1.0)])
+
         fig.update_layout(
             xaxis_title="~Mass (kg) — parametric",
             yaxis_title="~Est. points — parametric",
             title="Pareto front (lower-left dominated; up-left preferred)",
-            height=440, margin=dict(l=10, r=10, t=40, b=10))
+            height=460, margin=dict(l=70, r=60, t=50, b=55),
+            showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
+        if not labelled:
+            st.caption(f"{len(xs)} architectures on the front — hover a point "
+                       f"for its configuration. Labels are drawn inline at "
+                       f"{LABEL_LIMIT} or fewer.")
     except Exception as e:
         st.caption(f"(plot unavailable: {e})")
 

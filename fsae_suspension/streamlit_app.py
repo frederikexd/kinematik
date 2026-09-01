@@ -2189,21 +2189,6 @@ def _make_store():
     if ctx is not None:
         from suspension.workspace import workspace_store
         return workspace_store(ctx, root=os.getcwd())
-
-    # No workspace context. On a laptop that is legacy single-user mode and the
-    # shared PROJECT_PATH is correct. On a hosted deployment it is NOT: one
-    # container serves every visitor, so PROJECT_PATH is a single file shared by
-    # all of them, and an unauthenticated session would read and overwrite other
-    # teams' data.
-    #
-    # We hand back an in-memory scratch store rather than raising, because this
-    # function is called at module scope in ~37 places and Streamlit re-executes
-    # the whole script on every rerun — raising here would crash the app for
-    # every signed-out visitor instead of showing them the sign-in gate. The
-    # ephemeral store reaches no shared disk and no other tenant.
-    from suspension.workspace import is_hosted, EphemeralWorkspaceBackend
-    if is_hosted():
-        return project_mod.ProjectStore(backend=EphemeralWorkspaceBackend())
     return project_mod.ProjectStore(PROJECT_PATH)
 
 
@@ -2382,20 +2367,12 @@ def _make_shared_store():
     scope can't be resolved, so nothing can crash on the fallback path."""
     _ctx = _shared_workspace_ctx()
     if _ctx is not None:
-        from suspension.workspace import (
-            workspace_store, CrossWorkspaceViolation, TenantBackendUnavailable)
         try:
+            from suspension.workspace import workspace_store
             _s = workspace_store(_ctx, root=os.getcwd())
             _s._kx_shared_scope = True
             return _s
-        except (CrossWorkspaceViolation, TenantBackendUnavailable):
-            # Never degrade a tenant-isolation failure into a quiet fallback:
-            # that is precisely how a shared-scope miss turns into one team
-            # writing through another's store. Let it reach the user.
-            raise
         except Exception:
-            # Shared scope genuinely unavailable (not an isolation problem) —
-            # fall back to the caller's own per-workspace store as documented.
             pass
     return _make_store()
 
