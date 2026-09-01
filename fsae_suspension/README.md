@@ -243,7 +243,7 @@ One environment. Every subsystem. The entire car.
 | **Brakes** | Bias & lock-up, hydraulic sizing, bolt & bracket FoS, rotor thermal, fade test, rotor optimiser + rotor DXF export, caliper-bracket DXF |
 | **Chassis / Frame** | 3D model, team fit, weight & CG ledger, handover export, node-gusset DXF, **Frame Planner** (node/tube frame graph with 3D wireframe, triangulation & load-path audit with per-defect fixes, Size C→B sourcing trade study, alternative-tubing equivalency screen, panel & attachment planner for seat/harness/floor/firewall/aero panels) |
 | **Cooling** | Thermal sizing, heatmap, cross-subsystem heat propagation, radiator-core DXF |
-| **Electronics** | PCB copper survival, signal integrity, HV/LV checks, **PCB Doctor** (import a real `.kicad_pcb`, diagnose real-life failures with the guilty component named, one-click re-trace of under-sized copper, multi-layer Trace Prescriber), sensor/PCB-bracket DXF |
+| **Electronics** | PCB copper survival, signal integrity, HV/LV checks, **PCB Doctor** (import a real routed board — KiCad `.kicad_pcb` v5–v10, Altium/Protel ASCII, or a native binary `.PcbDoc` with no export step — diagnose real failures with the guilty trace named, one-click re-trace of under-sized copper on the text formats, multi-layer Trace Prescriber), sensor/PCB-bracket DXF |
 | **Data Acquisition** | Integration with car-level electrical budget, DAQ-bracket DXF |
 | **Cost & BOM** | FSAE Cost event, auto-seeded from Integration ledger, CSV export |
 | **Integration** | Cross-subsystem ledger, coupling graph, risk propagation, manufacturing-release gate, **Verdict Center** (per-subsystem works / look-closer / attention) |
@@ -275,7 +275,7 @@ When any subsystem saves an interface edit, KinematiK walks the change through a
 
 ## Four moves to start
 
-0. **Answer the mission briefing.** The landing screen asks four one-tap questions — *what subteam(s) are you on? what are you using KinematiK for? what's the goal? are you a visual thinker?* — and compiles a personal plan: exactly which tools to open, in what order, why you need each one, and why to do it here first so ANSYS / MATLAB / OptimumK only ever **validate** your design instead of debugging your inputs. Every question has a sensible default, so a complete beginner can tap through in seconds, and everything is skippable. Visual thinkers (and anyone brand new) get a live, physically accurate concept graph or 3D render under each recommended tool; newcomers also get a plain-English line per tool. Answering also picks your subteam, so you then see only your tabs plus the shared spine (Integration, Frames & Datums, Validation, Analytics, Registry, Notes, 3D Model), grouped into five simple categories (Testing, Design, Checks, Docs, Data) — never all 25 at once. Skipped or dismissed the briefing? A one-tap **🧭 Get my mission briefing** button brings it back any time.
+0. **Answer the mission briefing.** The landing screen asks five one-tap questions — *what subteam(s) are you on? what are you using KinematiK for? what's the goal? are you a visual thinker? how much FSAE experience do you have?* — plus an optional free-text box ("our rear bump steer is a mess", "pack overheats in endurance") that pulls in tools the tapped answers alone would have missed — and compiles a personal plan: exactly which tools to open, in what order, why you need each one, and why to do it here first so ANSYS / MATLAB / OptimumK only ever **validate** your design instead of debugging your inputs. Every question has a sensible default, so a complete beginner can tap through in seconds, and everything is skippable. Visual thinkers (and anyone brand new) get a live, physically accurate concept graph or 3D render under each recommended tool; newcomers also get a plain-English line per tool. Answering also picks your subteam, so you then see only your tabs plus the shared spine (Integration, Frames & Datums, Validation, Analytics, Registry, Notes, 3D Model), grouped into five simple categories (Testing, Design, Checks, Docs, Data) — never all 40 at once. Skipped or dismissed the briefing? A one-tap **🧭 Get my mission briefing** button brings it back any time.
 1. **Declare your coordinate convention.** In **Checks → 🧭 Frames & Datums**, pick the team frame and master datum (30 seconds). Every DXF, handover and ledger number is stamped with it from that moment; the migration wizard converts anything you already have.
 2. **Declare your interface.** In **Integration**, fill what your subteam owns (mass, CG, torque, heat, current, downforce) and untick *estimate* once a number is real. Everything downstream uses it.
 3. **Watch it ripple, then clear the cut.** KinematiK walks your change through the coupling graph and flags which other subsystems' risk just moved. Before a part goes to manufacture, run the **manufacturing-release gate** — a literal go/no-go that blocks any part still resting on an estimate or an unconfirmed load.
@@ -283,6 +283,57 @@ When any subsystem saves an interface edit, KinematiK walks the change through a
 ### Get a build-ready DXF (no CAD needed to start)
 
 Every subsystem exports the real 2-D section it takes into CAD — a wing airfoil, a mount/flange plate with bolt holes, a radiator core face — built from *your* computed numbers. In your subsystem tab, open its own **"📐 … — mesh & DXF export"** panel (it sits just below the documentation panel, mirroring the Brakes tab's inline rotor export), pick a section, and download. In SolidWorks: **File ▸ Open ▸ DXF ▸ import as 2D sketch**, extrude, then mesh in ANSYS. Units are embedded, every profile is checked to import as one clean closed contour, and the annotation block states the team's declared coordinate convention.
+
+---
+
+## What it does not do, and what is not yet proven
+
+Stated here rather than discovered later. Everything below is either a
+deliberate design decision or a known gap.
+
+**The physics has not been validated against a measured car.** IPC-2221,
+Onderdonk, the nodal resistance solve and the panel-method aero solver are
+verified against each other and against closed-form cases — not against an
+instrumented vehicle. The *parsers* are validated against fifteen real boards;
+the numbers coming out the other end are not. Treat every output as a starting
+point to correlate against your own test day, which is what the tool says on
+every screen.
+
+**The panel-method solver is inviscid and assumes attached flow.** No
+separation, no wake, no stall, no vortex shedding — precisely what your CFD run
+exists to check. Trust deltas between geometries far more than absolute levels.
+Every result is tagged POTENTIAL fidelity and uncorrelated so the caveat travels
+with the number.
+
+**A native binary `.PcbDoc` is read but never written.** Binary boards carry
+`patchable = False` and `apply_fixes()` refuses them, so the one-click re-trace
+still needs Altium's ASCII export. A mis-parse on read is recoverable — it shows
+up as absurd geometry and the reader refuses the file rather than reporting on
+it. A mistake on write corrupts a board a team is about to pay to fabricate.
+
+**Copper pours join the connectivity graph but never the resistance solve.**
+Any sheet resistance invented for them would make IR drop look *smaller* than
+trace-only does, and small is the direction that under-reports brown-out.
+Containment can clear a false open, never create one: letting geometry replace
+the blanket "has a pour so never open" exemption was measured at 4.4% → 5.1%
+false alarms and reverted, because a thermally-relieved pad sits geometrically
+outside the fill while being perfectly connected.
+
+**Copper-open findings run at 1.3% of routed nets** across the fifteen-board
+corpus (down from 8.0%). Those are false *alarms*. The safety contract is stated
+in `suspension/pcb_doctor.py` and enforced by tests: false alarms are
+acceptable, false all-clears are not. Every connectivity tolerance is the
+smallest value that fixes a measured failure, never the value that makes a
+complaint stop.
+
+**The Streamlit panel has element-tree coverage only.**
+`tests/test_ui_pcb_doctor.py` runs the real app headless and asserts each board
+format renders without raising, but it cannot see pixels and cannot drive a
+second rerun on this app, so click handlers are verified by construction rather
+than by clicking.
+
+**There is no autonomous or controls subteam** in the mission briefing yet.
+Pick the closest and use the free-text box; the plan adapts to it.
 
 ---
 
@@ -312,7 +363,7 @@ Professional teams, consultancies, and enterprises: contact for pricing.
 
 Usage numbers live in one place: the in-app **Analytics** tab, computed live from the database as *lifetime = pre-purge baseline snapshot + current 30-day window*. They are deliberately not hand-copied into this README — a stat printed here goes stale the moment it's written, and two documents disagreeing about the same metric is exactly the class of error this platform exists to prevent.
 
-The one number worth stating in prose: roughly **half of all users come back** without any retention mechanism, reminder emails, or onboarding. Students are brutally honest users. If it is not useful, they close the tab and never return.
+No retention figure is quoted here on purpose. Per-workspace attribution only began working on 1 September 2026 — before that, feature events were recorded without a workspace, so any earlier per-team number would be an artefact of the instrumentation rather than a measurement. The Analytics tab shows the live figures; treat anything from before that date as unattributed.
 
 ---
 
@@ -328,13 +379,22 @@ The one number worth stating in prose: roughly **half of all users come back** w
 
 **Analytics** (`suspension/analytics.py`) — privacy-respecting usage tracking. Identity is a random per-session UUID (plus a browser cookie for return-visit counting); no IP addresses or device fingerprints are collected or stored. A member name is recorded only if the user types one in (opt-in). Telemetry never blocks the UI and a telemetry failure can never crash the app. Only three event types are written (session start, workflow complete, error); raw events are purged after 30 days.
 
+Events also carry a `workspace_id` so usage is answerable per team rather than summed across all of them. Attribution is at the workspace level only — individuals stay as anonymous as they were. Because Streamlit runs the script top to bottom and the analytics init sits below the widget instrumentation, a run's feature events are emitted *before* the workspace is resolved; `set_workspace()` therefore back-fills events still in the queue, matching on session_id so a process serving several browsers can never stamp one team's event with another's workspace.
+
 ---
 
 ## Database setup
 
-Run `suspension/analytics_hardening.sql` in Supabase once. Safe to re-run (drop-then-create, idempotent grants). This creates all analytics views including the fixed `v_retention` and `v_time_to_first_result`.
+Run `suspension/analytics_hardening.sql` in Supabase once. Safe to re-run (drop-then-create, idempotent grants). This creates the analytics views.
 
-For the per-feature funnel fix only, run `fix_feature_funnel.sql` standalone.
+Then run these four, in this order. All are idempotent.
+
+| # | File | What it fixes |
+|---|---|---|
+| 1 | `fix_null_role_guard.sql` | **Security.** Every admin guard read `if workspace_role(ws) not in ('owner','lead') then raise`. For a non-member `workspace_role()` returns NULL, and `NULL not in (...)` is NULL rather than TRUE — so the branch never fired and the guard passed. It rejected members and viewers correctly while letting a non-member through. Reproduced end to end: a non-member could mint an invite to a workspace they were not in, redeem it, and join. Run this first. |
+| 2 | `fix_invite_permission.sql` | Members could not create invite links — the rule was widened on the client only, so the button showed and the server refused with a raw Postgres error. |
+| 3 | `fix_feature_allowlist.sql` | 16 of 40 tabs were discarding every analytics event: `ae_feature_fk` requires each feature to exist in `known_features` and only 24 were seeded. Inserts batch atomically, so one bad row failed the whole batch. A trigger now auto-registers unknown features. |
+| 4 | `add_workspace_analytics.sql` | Adds `workspace_id` plus the per-team views `v_workspace_weekly`, `v_workspace_adoption` and `v_feature_traction`. Ships with `suspension/analytics.py` — the column stays NULL until the app change deploys, and historical events cannot be back-filled because the link never existed. |
 
 ---
 
@@ -343,7 +403,51 @@ For the per-feature funnel fix only, run `fix_feature_funnel.sql` standalone.
 1. Push `streamlit_app.py`, `project.py` and `coordinate_frames.py` together — the handover builder gained a `frame_tag` parameter that the app passes, so they are a matched set.
 2. Push `suspension/analytics.py` with `streamlit_app.py` as before — still a matched pair.
 3. Run `suspension/analytics_hardening.sql` in Supabase.
-4. Confirm build stamp in the Usage section reads `0.26.0-fusebox` and streamlit runtime reads `>= 1.58.0`.
+4. Push `suspension/pcb_doctor.py`, `suspension/pcb_altium.py` and `suspension/pcb_altium_binary.py` together — `parse_board()` dispatches to both readers, so they are a matched set. `olefile` must be in `requirements.txt` for the binary reader; without it a native `.PcbDoc` falls back to the ASCII export instructions rather than raising.
+5. Confirm the build stamp in the Usage section matches the version at the top of this file, and the Streamlit runtime reads `>= 1.58.0`.
+
+---
+
+## What changed in this build (`0.33.0-dual-eda`)
+
+**PCB Doctor reads three formats.** KiCad `.kicad_pcb` (v5–v10), Altium/Protel
+ASCII, and native binary `.PcbDoc` with no export step — which matters because
+Altium saves binary by default, so it is the file a member actually has. One
+`PcbBoard` model behind all three, so every check, the viewer, the fix engine
+and the report stay written once. Binary is read-only on purpose.
+
+**Seven silent wrong-answer bugs fixed**, none of which raised an error and none
+findable without real files: Altium net IDs numbering from 0 in some exports and
+1 in others; KiCad 10 dropping numeric net IDs, so v10 boards parsed as zero
+segments and read as empty files; teardrops faking pours and suppressing real
+copper-open findings; pads inheriting the wrong copper side; endpoints 11 µm
+apart splitting a routed net into islands; tracks landing on a via's annulus
+rather than its centre; and a `raise warning '%s'` printing "feature pcb**s**".
+
+**Copper-open false alarms 8.0% → 1.3%** across fifteen real boards, in measured
+steps with no board regressing: endpoint welding at 50 µm, mid-trace pad
+attachment, and via-annulus attachment using the via's own radius from the file
+rather than a tuned tolerance.
+
+**Undeclared currents report MISSING** instead of being assigned a default and
+failed against it. A working commercial board previously came back 12 FAIL /
+10 WARN, none of it actionable.
+
+**Per-team analytics.** Events carry a `workspace_id`, with back-fill for events
+emitted before the workspace resolves. New views: `v_workspace_weekly`,
+`v_workspace_adoption`, `v_feature_traction`.
+
+**Three database fixes**, one of them a cross-workspace access hole — see
+Database setup above, and run them in the order given.
+
+**UI.** Dual-format upload identified by content rather than extension;
+`diagnose()` and `board_svg()` cached on a fingerprint (≈10 s of dead UI per
+click on the largest board, now 0.7 ms); viewer suppressed above 6000 segments
+because the largest real board emits 6.6 MB of inline SVG; upload ceiling 24 →
+64 MB after a real 27 MB board was rejected; an unreadable file no longer hides
+the Trace Prescriber. Architecture Synthesis Pareto chart now plots the same
+deduplicated rows as its own table — it was drawing the raw front, so three
+table rows became six markers with every label doubled and clipped.
 
 ---
 
