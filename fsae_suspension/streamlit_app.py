@@ -18937,7 +18937,8 @@ with tab_aero:
 
     _view = feature_menu("aerodynamics",
         ["Downforce & ground effect", "Wing & diffuser sizing",
-         "Aero map (attitude sweep)", "ANSYS run-log consolidation",
+         "Aero map (attitude sweep)", "Panel-method solver (your STL)",
+         "ANSYS run-log consolidation",
          "Scale model planning",
          "Plug & layup build planner", "Mounting & bonding designer"],
         title="Aerodynamics tools",
@@ -18945,6 +18946,8 @@ with tab_aero:
             "Downforce & ground effect": "Downforce, drag, L/D at attitude",
             "Wing & diffuser sizing": "Element sizing & diffuser geometry",
             "Aero map (attitude sweep)": "Ride/yaw attitude sweep map",
+            "Panel-method solver (your STL)":
+                "Solve the real flow on your own geometry, ground image and all",
             "ANSYS run-log consolidation":
                 "Screen the Fluent run sheet & average the runs worth keeping",
             "Scale model planning": "Wind-tunnel scale + full-size chord (DXF source)",
@@ -19162,10 +19165,11 @@ with tab_aero:
         st.markdown(
             '<p class="hint">The white × is your current attitude. Watch downforce fall '
             'and drag rise toward higher yaw — that\u2019s the car stalling in sideslip — '
-            'and downforce build toward lower ride height. To go further, run the same '
-            'attitude grid through the <b>panel-method solver on your STL</b> (it solves '
-            'the real flow, ground image and all) and correlate it against the virtual '
-            'wind tunnel + Fluent deck — all already in KinematiK.</p>',
+            'and downforce build toward lower ride height. This map is the analytic '
+            'surrogate — for the real flow on your own geometry, use '
+            '<b>Panel-method solver (your STL)</b> in the tool menu above, then '
+            'correlate it against your Fluent runs with <b>ANSYS run-log '
+            'consolidation</b>.</p>',
             unsafe_allow_html=True)
 
     # -------------------------------------------------- VIEW: ANSYS RUN LOG #
@@ -19176,6 +19180,16 @@ with tab_aero:
     #  as-is produces a confident number built on runs nobody would defend.
     #  Engine: suspension/aero/run_log.py (pure, tested, no Streamlit).
     #  This view is the shell: upload, thresholds, verdicts, downloads, handoff.
+    elif _view == "Panel-method solver (your STL)":
+        #  The engine has been complete and tested for a while; it was simply
+        #  never wired to a control, so the README and the mission briefing
+        #  promised a tool nobody could reach. Extracted view, same pattern as
+        #  the run-log slice: the shell hands over the reference values the aero
+        #  tab already normalises by, so a coefficient from here and one from
+        #  the map cannot silently disagree about area.
+        from ui import panel_solver as _panel_mod
+        _panel_mod.render(st, _aero_area, float(veh.wheelbase_m))
+
     elif _view == "ANSYS run-log consolidation":
         # EXTRACTED to ui/run_log.py (Aug 2026) — the first slice moved under
         # the strangulation plan in ui/__init__.py. 317 lines left this file.
