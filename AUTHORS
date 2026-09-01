@@ -3,8 +3,8 @@ KinematiK
 
 Copyright (C) 2026 Frederik Thio.
 
-KinematiK was created by Frederik Thio, who is its original author and, at the
-time of writing, the sole copyright holder in the work as a whole.
+KinematiK was created by Frederik Thio, who is its original author and the sole
+copyright holder in the work as a whole.
 
 
 Licence
@@ -22,7 +22,7 @@ details.
 You should have received a copy of the GNU Affero General Public License along
 with KinematiK.  If not, see <https://www.gnu.org/licenses/agpl-3.0.html>.
 
-The full license text is in the file LICENSE at the root of this repository.
+The full licence text is in the file LICENSE at the root of this repository.
 
 
 Network use
@@ -30,14 +30,14 @@ Network use
 
 Section 13 of the AGPL applies to this project and is the reason it was chosen
 over the GPL.  If you modify KinematiK and make it available to users over a
-network — including by hosting it as a web application — you must offer those
+network - including by hosting it as a web application - you must offer those
 users access to the Corresponding Source of your modified version, at no
 charge, through a network server.
 
 The Corresponding Source of the version hosted by the original author is
 available at:
 
-    <REPOSITORY URL>
+    https://github.com/frederikthio/kinematik
 
 
 Attribution (additional term under AGPL section 7(b))
@@ -46,7 +46,7 @@ Attribution (additional term under AGPL section 7(b))
 As permitted by section 7(b) of the GNU Affero General Public License, the
 following additional term applies to KinematiK:
 
-    You must preserve the author attribution "KinematiK, created by
+    You must preserve the author attribution "KinematiK - created by
     Frederik Thio" in the Appropriate Legal Notices displayed by any work
     containing this material, and in any modified version you convey or make
     available to users over a network.
@@ -54,21 +54,34 @@ following additional term applies to KinematiK:
 This term requires only that existing attribution be preserved.  It grants no
 additional rights to the original author and imposes no restriction on the
 freedoms the AGPL gives you: you remain free to run, study, modify,
-redistribute and host KinematiK, including commercially.
+redistribute and host KinematiK, including commercially, subject to the terms
+of the licence.
 
-Under section 7, a recipient may remove this additional term from material
-they convey, but the underlying copyright notices required by sections 4 and 5
-of the licence must be retained regardless.
+Under section 7, a recipient may remove this additional term from material they
+convey.  The copyright notices required by sections 4 and 5 of the licence must
+be retained regardless.
+
+
+Other licensing
+---------------
+
+KinematiK is available under the AGPL as set out above.  Separate commercial
+terms - including terms without the section 13 network-source obligation - can
+be arranged with the copyright holder.  Enquiries: <CONTACT>.
+
+Formula SAE and Formula Student teams have free use of KinematiK, and that will
+not change.
 
 
 Authors
 -------
 
-Frederik Thio — original author and creator; design and implementation.
+Frederik Thio - original author and creator; design and implementation.
 
-Contributors who submit changes retain copyright in their own contributions and
-license them under the same terms.  Contributors are listed below in the order
-their contributions were merged.
+Contributors are listed below in the order their contributions were merged.
+Because the project is offered under more than one set of terms, contributions
+are accepted only under the Contributor Licence Agreement in CONTRIBUTING.md,
+which assigns copyright in the contribution to the copyright holder.  See that
+file before opening a pull request.
 
     (none yet)
-
