@@ -42,13 +42,26 @@ import tempfile
 import time
 
 
-#  The solve is dense and O(N^2) in memory, so panel count is the cost lever.
-#  These bands are chosen so a single case stays interactive and a sweep stays
-#  under a coffee: measured ~0.4-0.6 s per case at 768 panels.
+#  The solve is dense and O(N^2) in MEMORY as well as time, and the app runs in
+#  roughly 1 GB. Measured peak RSS on a real solve:
+#
+#        800 panels   167 MB    0.6 s
+#       1200 panels   252 MB    1.9 s
+#       1600 panels   363 MB    3.3 s
+#       2400 panels   638 MB   11.9 s
+#       4000 panels   OOM-killed
+#
+#  So 1600 is the ceiling offered here: it leaves headroom for Streamlit, the
+#  session and a second user, and a ride-height sweep multiplies the time but
+#  not the peak memory. 4000 took the app down in production and is gone.
+#
+#  This mattered more than it looks: the budget used to have no effect at all,
+#  because decimation was calling trimesh with the wrong argument inside a bare
+#  `except: pass`. Every solve ran the full mesh whatever was selected here.
 _PANEL_BANDS = {
     "Fast (800 panels)": 800,
-    "Balanced (2000 panels)": 2000,
-    "Fine (4000 panels — slow)": 4000,
+    "Balanced (1200 panels)": 1200,
+    "Fine (1600 panels — slower)": 1600,
 }
 
 _MAX_STL_MB = 60
@@ -121,9 +134,34 @@ def render(st, default_area_m2: float = 1.0,
     raw = up.getvalue()
     if len(raw) > _MAX_STL_MB * 1024 * 1024:
         st.error(f"{up.name} is {len(raw)/1e6:.0f} MB — over the "
-                 f"{_MAX_STL_MB} MB limit. Decimate it in SolidWorks or "
-                 f"export a coarser STL; the solve decimates anyway.")
+                 f"{_MAX_STL_MB} MB limit. Export a coarser STL; the solve "
+                 f"decimates to the panel budget anyway, so the extra "
+                 f"triangles are discarded.")
         return
+
+    #  Reading a very large STL is itself the memory risk, before any solve.
+    #  trimesh holds the full vertex and face arrays, and the app has about a
+    #  gigabyte for everything. Say so with the actual number rather than
+    #  letting the process get OOM-killed, which is what took the app down
+    #  when a real wing arrived at tens of thousands of triangles.
+    _tris = None
+    try:
+        import trimesh as _tm, io as _io
+        _probe = _tm.load(_io.BytesIO(raw), file_type="stl", force="mesh")
+        _tris = 0 if _probe is None else len(_probe.faces)
+    except Exception:                                       # noqa: BLE001
+        pass
+    if _tris is not None and _tris > 400_000:
+        st.error(
+            f"{up.name} has {_tris:,} triangles, which is too large to load "
+            f"here. Export a coarser STL from SolidWorks — under about "
+            f"100,000 is comfortable, and it makes no difference to the "
+            f"result because the mesh is decimated to at most "
+            f"{max(_PANEL_BANDS.values()):,} panels before solving.")
+        return
+    if _tris:
+        st.caption(f"{_tris:,} triangles in, decimated to the panel budget "
+                   f"below before solving.")
 
     # ------------------------------------------------------------- controls --
     c = st.columns([1, 1, 1, 1])
@@ -145,10 +183,12 @@ def render(st, default_area_m2: float = 1.0,
                                 help="Wheelbase, for the pitching-moment "
                                      "coefficient.")
     band = c2[2].selectbox("Panel budget", list(_PANEL_BANDS),
-                           index=1, key="pm_band",
-                           help="The linear system is dense, so this is the "
-                                "cost lever. More panels resolve more of the "
-                                "surface and take longer.")
+                           index=0, key="pm_band",
+                           help="The linear system is dense in both time and "
+                                "memory, so this is the cost lever. Your STL is "
+                                "decimated to this many panels before solving — "
+                                "exporting a finer mesh does not give a finer "
+                                "solve, it just gets discarded.")
 
     mode = st.radio("Run", ["Single attitude", "Ride-height sweep"],
                     horizontal=True, key="pm_mode")

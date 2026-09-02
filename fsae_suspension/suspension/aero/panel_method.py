@@ -336,11 +336,59 @@ class PanelMethodModel:
         # Decimate to the panel budget to keep the dense solve interactive.
         mp = self.params
         if mp.max_panels and len(mesh.faces) > mp.max_panels:
+            #  DECIMATION MUST ACTUALLY HAPPEN, AND MUST NOT FAIL SILENTLY.
+            #
+            #  This used to be `simplify_quadric_decimation(mp.max_panels)`
+            #  inside a bare `except: pass`. Two faults, both invisible:
+            #  trimesh's first positional argument is `percent`, not a face
+            #  count, and the call needs the optional `fast_simplification`
+            #  package which is not a dependency. So it raised
+            #  ModuleNotFoundError on every call and the handler swallowed it,
+            #  meaning the panel budget never did anything and every solve ran
+            #  the full mesh.
+            #
+            #  That is what made the solver unusable on real geometry: a wing
+            #  exported from SolidWorks arrives with tens of thousands of
+            #  triangles, the dense N x N image system is O(N^2) in memory, and
+            #  the app was OOM-killed. The measured symptom was memory, runtime
+            #  and results all identical across 800/2000/4000 panels — the
+            #  budget control was inert.
+            #
+            #  The fallback is deterministic area-weighted face sampling: keep
+            #  the largest faces, which carry most of the surface. Cruder than
+            #  quadric decimation but it has no optional dependency, cannot
+            #  raise, and preserves the shape well enough for a potential
+            #  solve. If fast_simplification IS present we use it, because it
+            #  is better.
+            _n0 = len(mesh.faces)
+            _done = False
             try:
-                mesh = mesh.simplify_quadric_decimation(mp.max_panels)
+                mesh = mesh.simplify_quadric_decimation(
+                    face_count=int(mp.max_panels))
+                _done = len(mesh.faces) <= _n0
             except Exception:                              # noqa: BLE001
-                # decimation is best-effort; if it fails we solve the full mesh
-                pass
+                _done = False
+            if not _done or len(mesh.faces) > mp.max_panels:
+                try:
+                    import numpy as _np
+                    import trimesh as _tm
+                    _areas = mesh.area_faces
+                    #  Keep the max_panels largest faces. Deterministic, so two
+                    #  runs on the same STL give the same lattice.
+                    _keep = _np.argsort(-_areas)[:int(mp.max_panels)]
+                    _keep.sort()
+                    mesh = _tm.Trimesh(vertices=mesh.vertices,
+                                       faces=mesh.faces[_keep],
+                                       process=False)
+                except Exception:                          # noqa: BLE001
+                    #  Truly cannot reduce it. Refuse rather than attempt a
+                    #  solve that will exhaust memory and take the app down.
+                    raise PanelMethodUnavailable(
+                        f"this mesh has {_n0} triangles and could not be "
+                        f"reduced to the {mp.max_panels}-panel budget. The "
+                        f"dense solve is O(N^2) in memory and would exhaust "
+                        f"the server. Export a coarser STL — a few thousand "
+                        f"triangles is plenty for a potential solve.")
 
         # Place the body at attitude: roll, then PITCH, then ride-height translate.
         #

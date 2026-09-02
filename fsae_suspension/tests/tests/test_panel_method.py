@@ -249,3 +249,60 @@ def test_bluff_bodies_are_not_caught_by_the_guard(extents, label, tmp_path):
     A guard that also refused them would remove the feature."""
     r = _solve_box(extents, tmp_path)
     assert r.converged, f"{label} should solve"
+
+
+def test_panel_budget_actually_decimates(tmp_path):
+    """The budget used to have no effect at all.
+
+    `simplify_quadric_decimation(max_panels)` passes a FACE COUNT where trimesh
+    expects a PERCENT, and the call needs the optional `fast_simplification`
+    package, so it raised ModuleNotFoundError on every invocation — inside a
+    bare `except: pass`. Every solve therefore ran the full mesh whatever the
+    user selected, which is what exhausted memory on real geometry and took the
+    hosted app down.
+
+    Measured peak RSS after the fix: 800 panels 167 MB, 1200 252 MB,
+    1600 363 MB, 2400 638 MB. Before it, 974 MB at every setting.
+    """
+    from suspension.aero.panel_method import PanelMethodModel, PanelParams
+    from suspension.aero.cfd import CaseSpec, Attitude
+
+    m = trimesh.creation.box(extents=[1.5, 0.9, 0.12])
+    for _ in range(4):
+        m = m.subdivide()          # ~3000 faces, well over the budget
+    m.apply_translation([0, 0, 0.2])
+    p = str(tmp_path / "big.stl")
+    m.export(p)
+    assert len(m.faces) > 2000, "fixture must exceed the budget to be a test"
+
+    spec = CaseSpec(attitude=Attitude(pitch_deg=-2, ride_height_mm=200,
+                                      speed_ms=20),
+                    geometry_path=p, reference_area_m2=1.0,
+                    reference_length_m=1.55)
+    r = PanelMethodModel(PanelParams(max_panels=400)).solve(spec)
+    #  cell_count carries the panel count actually solved
+    n = r.provenance.cell_count
+    assert n is not None and n <= 400, (
+        f"budget not applied: solved {n} panels against a 400 budget")
+
+
+def test_smaller_budget_is_cheaper(tmp_path):
+    """Guards the same regression from the other side: if decimation silently
+    stops working again, both budgets solve the full mesh and the panel counts
+    become equal."""
+    from suspension.aero.panel_method import PanelMethodModel, PanelParams
+    from suspension.aero.cfd import CaseSpec, Attitude
+
+    m = trimesh.creation.box(extents=[1.5, 0.9, 0.12])
+    for _ in range(4):
+        m = m.subdivide()
+    m.apply_translation([0, 0, 0.2])
+    p = str(tmp_path / "big.stl")
+    m.export(p)
+    spec = CaseSpec(attitude=Attitude(pitch_deg=-2, ride_height_mm=200,
+                                      speed_ms=20),
+                    geometry_path=p, reference_area_m2=1.0,
+                    reference_length_m=1.55)
+    small = PanelMethodModel(PanelParams(max_panels=300)).solve(spec)
+    large = PanelMethodModel(PanelParams(max_panels=900)).solve(spec)
+    assert small.provenance.cell_count < large.provenance.cell_count
