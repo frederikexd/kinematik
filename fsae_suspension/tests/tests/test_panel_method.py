@@ -197,3 +197,55 @@ def test_fluent_deck_written_for_panel_mode_with_geometry():
     b.run_case(spec, wd)
     jou = os.path.join(wd, spec.case_name() + ".jou")
     assert os.path.isfile(jou)
+
+
+def _box_stl(extents, path, sub=3, lift=0.2):
+    """A subdivided box at a given size, placed above the road."""
+    m = trimesh.creation.box(extents=extents)
+    for _ in range(sub):
+        m = m.subdivide()
+    m.apply_translation([0, 0, lift])
+    m.export(path)
+    return path
+
+
+def _solve_box(extents, tmp_path, panels=1500):
+    from suspension.aero.panel_method import PanelMethodModel, PanelParams
+    from suspension.aero.cfd import CaseSpec, Attitude
+    p = _box_stl(extents, str(tmp_path / "g.stl"))
+    return PanelMethodModel(PanelParams(max_panels=panels)).solve(
+        CaseSpec(attitude=Attitude(pitch_deg=-3, ride_height_mm=200,
+                                   speed_ms=20),
+                 geometry_path=p, reference_area_m2=0.5,
+                 reference_length_m=1.55))
+
+
+def test_thin_lifting_surface_is_refused_with_the_reason(tmp_path):
+    """A source-panel method carries no circulation, so it cannot produce
+    trustworthy lift on a wing. That is the wrong method rather than a hard
+    case, and refining the mesh does not help.
+
+    A user dropped in a rear wing, got a non-converged result, and set out to
+    troubleshoot his own setup — the solver had no way to tell him the geometry
+    was the problem. Measured on a 300 x 1200 mm test wing: 20 mm thickness
+    gives cond = 1.4e4 with max|sigma| = 112, 8 mm is no better, 40 mm
+    converges, and 800 / 2000 / 4000 panels give identical results.
+    """
+    from suspension.aero.panel_method import PanelMethodUnavailable
+    with pytest.raises(PanelMethodUnavailable) as exc:
+        _solve_box([0.30, 1.20, 0.020], tmp_path)
+    msg = str(exc.value).lower()
+    assert "circulation" in msg, "must name the cause, not just decline"
+    assert "wing" in msg
+
+
+@pytest.mark.parametrize("extents,label", [
+    ([1.50, 0.90, 0.060], "undertray"),
+    ([0.70, 0.30, 0.180], "sidepod"),
+    ([2.80, 1.40, 0.90], "full car"),
+])
+def test_bluff_bodies_are_not_caught_by_the_guard(extents, label, tmp_path):
+    """Floors, undertrays, sidepods and full cars are what this method is for.
+    A guard that also refused them would remove the feature."""
+    r = _solve_box(extents, tmp_path)
+    assert r.converged, f"{label} should solve"

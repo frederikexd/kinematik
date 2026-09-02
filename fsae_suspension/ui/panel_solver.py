@@ -76,7 +76,17 @@ def render(st, default_area_m2: float = 1.0,
         'and a RANS solve: it captures attached-flow pressure, ground effect '
         'and the downforce trend with rake, and it does <b>not</b> capture '
         'separation, wake, stall or vortex shedding \u2014 which is what your '
-        'Fluent deck is for.</p>',
+        'Fluent deck is for.</p>'
+        '<p class="hint"><b>Bluff bodies, not wings.</b> This is a '
+        'source-panel method with no circulation (no doublets, no Kutta '
+        'condition). It models displacement \u2014 thickness, ground effect, '
+        'attached-flow pressure \u2014 but cannot produce trustworthy lift on '
+        'an isolated lifting surface, and the linear system goes '
+        'ill-conditioned as the upper and lower surfaces approach. Floors, '
+        'undertrays, sidepods, noses and full cars are what it is for. A wing '
+        'is refused up front rather than returning a number you would have to '
+        'distrust \u2014 size wings with a method that models '
+        'circulation.</p>',
         unsafe_allow_html=True)
 
     # ---------------------------------------------------------------- deps --
@@ -95,7 +105,7 @@ def render(st, default_area_m2: float = 1.0,
 
     # ------------------------------------------------------------ geometry --
     up = st.file_uploader(
-        "Surface geometry (.stl) — the wing, the floor, or the whole car",
+        "Surface geometry (.stl) — the floor, undertray, sidepods or the whole car",
         type=["stl"], key="pm_stl",
         help="Export from SolidWorks: File ▸ Save As ▸ STL. Fine resolution "
              "is not needed; the mesh is decimated to the panel budget below. "

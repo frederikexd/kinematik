@@ -284,6 +284,55 @@ class PanelMethodModel:
         if mesh is None or getattr(mesh, "faces", None) is None or len(mesh.faces) == 0:
             raise PanelMethodUnavailable(f"geometry '{path}' has no triangles to solve")
 
+        #  REFUSE A THIN LIFTING SURFACE BEFORE SOLVING IT.
+        #
+        #  This is a SOURCE-only formulation: no doublets, no vortex lattice, no
+        #  Kutta condition. Source panels model displacement — thickness, ground
+        #  effect, the pressure field of attached flow — but they carry no
+        #  circulation, and circulation is what generates lift on a wing. So an
+        #  isolated wing is not a hard case for this method, it is the wrong
+        #  method, and no amount of mesh refinement changes that.
+        #
+        #  Two symptoms, both measured on a 300 x 1200 mm test wing:
+        #
+        #    * The system goes ill-conditioned as the upper and lower surfaces
+        #      approach each other and their influence coefficients converge.
+        #      At 20 mm thickness, cond = 1.4e4 with a spurious source strength
+        #      of 112; at 8 mm no better; at 40 mm it converges. Panel budget is
+        #      irrelevant — 800, 2000 and 4000 give bit-identical results.
+        #    * Even where it converges, the lift is wrong. The test wing returns
+        #      POSITIVE lift at -4 deg.
+        #
+        #  A real user hit exactly this: dropped in a rear wing, got a
+        #  non-converged result, and set out to troubleshoot his own setup. The
+        #  solver had no way to tell him the geometry was the problem, so it let
+        #  him spend his evening on a case that cannot work. Refusing up front,
+        #  with the reason, is the only honest behaviour.
+        #
+        #  The threshold is deliberately generous: 25 mm catches wings and
+        #  aerofoil sections while passing floors, undertrays, sidepods, noses
+        #  and full cars, which are what this method is for.
+        try:
+            _ext = mesh.bounding_box.extents          # (dx, dy, dz) in metres
+            _thin_mm = float(min(_ext)) * 1000.0
+            _long_mm = float(max(_ext)) * 1000.0
+            if _thin_mm < 25.0 and _long_mm > 6.0 * _thin_mm:
+                raise PanelMethodUnavailable(
+                    f"this geometry is {_thin_mm:.0f} mm across its thinnest "
+                    f"axis, which makes it a thin lifting surface — a wing or "
+                    f"an aerofoil section. This is a source-panel method with "
+                    f"no circulation (no doublets, no Kutta condition), so it "
+                    f"cannot produce trustworthy lift on one, and the linear "
+                    f"system goes ill-conditioned as the surfaces approach. "
+                    f"Refining the mesh does not help. Use it on the floor, "
+                    f"undertray, sidepods or the full car, where displacement "
+                    f"and the ground image carry the physics; size wings with "
+                    f"a method that models circulation.")
+        except PanelMethodUnavailable:
+            raise
+        except Exception:                                   # noqa: BLE001
+            pass          # a bounding box we cannot read is not a reason to stop
+
         # Decimate to the panel budget to keep the dense solve interactive.
         mp = self.params
         if mp.max_panels and len(mesh.faces) > mp.max_panels:
