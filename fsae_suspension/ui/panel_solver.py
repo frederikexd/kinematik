@@ -255,8 +255,18 @@ def render(st, default_area_m2: float = 1.0,
     # -------------------------------------------------------------- output --
     ok = [r for r in rows if r["converged"]]
     if not ok:
-        st.error("No case converged. The geometry is probably too coarse or "
-                 "self-intersecting — try a finer STL export.")
+        st.error(
+            "No case converged. Most often this is one of three things:\n\n"
+            "- **The panel budget is too coarse for the ride height.** Panels "
+            "act as point sources at their centroids, so once the mean panel "
+            "is bigger than the gap to the road the ground image breaks down. "
+            "Raise the budget or raise the ride height.\n"
+            "- **The geometry intersects the road plane** — the road is z = 0 "
+            "in the STL's own coordinates, so check where your model sits.\n"
+            "- **The surface is self-intersecting or not closed.** Re-export "
+            "from CAD rather than repairing by hand.")
+        if first_note:
+            st.info(first_note)
         return
 
     best = ok[0]
@@ -300,6 +310,32 @@ def render(st, default_area_m2: float = 1.0,
 
     st.caption(f"{len(heights)} case(s) in {elapsed:.1f} s at "
                f"{_PANEL_BANDS[band]} panels.")
+
+    #  SURFACE THE GRID WARNING INSTEAD OF BURYING IT.
+    #
+    #  The solver already detects when the mean panel is large relative to the
+    #  gap to the road, and says so — but only inside the notes string, which
+    #  sat in a collapsed expander. So a user could sweep ride height, watch
+    #  C_L move, and never learn the number was not grid-converged. On the
+    #  sample undertray at 30 mm ride height, C_L reads -0.020 at 800 panels
+    #  and -0.074 at 1600: a factor of three, purely from resolution.
+    #
+    #  Deltas between geometries at a FIXED budget are still usable. A single
+    #  absolute value at a coarse budget is not, and the user has to be told
+    #  which of the two they are looking at.
+    _note = (first_note or "")
+    if "WARNING" in _note:
+        st.warning(
+            "**This result is not grid-converged.** " + _note.split("[", 1)[-1]
+            .rstrip("]") + "\n\nRaise the panel budget, or compare geometries "
+            "at a fixed budget rather than quoting the absolute value.")
+    elif "large fraction" in _note:
+        st.info(
+            "**Treat the absolute level as indicative.** " +
+            _note.split("[", 1)[-1].rstrip("]") + "\n\nDeltas between "
+            "geometries at the same budget are still meaningful; a single "
+            "absolute C_L at this resolution is not. If you need the level, "
+            "raise the budget until it stops moving.")
 
     #  Provenance and the honest caveat sit WITH the number, not in a footnote.
     with st.expander("What these numbers are, and what they are not",
