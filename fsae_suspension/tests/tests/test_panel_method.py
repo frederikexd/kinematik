@@ -448,3 +448,168 @@ def test_vlm_is_fast_enough_to_sweep(tmp_path):
     t = time.time()
     _vlm(p, -4.0, 250, 0.72)
     assert time.time() - t < 2.0, "vortex lattice solve got slow again"
+
+
+# ===========================================================================
+#  VALIDATION AGAINST A CLOSED-FORM ANSWER
+#
+#  Everything above pins behaviour — that the solver refuses what it should,
+#  labels itself honestly, trends the right way. None of it checks that the
+#  numbers are RIGHT, because until now there was no case with a known answer
+#  to check them against.
+#
+#  A sphere in unbounded potential flow has one: the surface speed is
+#  1.5*V*sin(theta), so Cp = 1 - 2.25*sin^2(theta) exactly, and by symmetry
+#  every force coefficient is zero. That exercises the whole chain — influence
+#  matrix, linear solve, induced velocity, Cp, force integration — against
+#  arithmetic rather than against itself.
+# ===========================================================================
+import math
+
+import numpy as np
+
+_SPHERE_R = 0.30
+
+
+def _sphere_fields(subdivisions, tmp_path):
+    """Solve a sphere in free air and return (cp_solved, cp_exact, areas,
+    normals) at the panel centroids."""
+    cap = {}
+    orig = PanelMethodModel._induced_velocity
+
+    def spy(c, n, a, sigma, ground_effect=False, road_plane_z_m=0.0, tris=None):
+        v = orig(c, n, a, sigma, ground_effect, road_plane_z_m, tris)
+        cap.update(c=np.asarray(c), n=np.asarray(n), a=np.asarray(a), v=v)
+        return v
+
+    PanelMethodModel._induced_velocity = staticmethod(spy)
+    try:
+        m = trimesh.creation.icosphere(subdivisions=subdivisions,
+                                       radius=_SPHERE_R)
+        p = str(tmp_path / f"sphere{subdivisions}.stl")
+        m.export(p)
+        aref = math.pi * _SPHERE_R ** 2
+        res = PanelMethodModel(
+            PanelParams(max_panels=40000, ground_effect=False)
+        ).solve(CaseSpec(attitude=Attitude(ride_height_mm=3000.0, speed_ms=20.0),
+                         geometry_path=p, reference_area_m2=aref,
+                         reference_length_m=2 * _SPHERE_R))
+    finally:
+        PanelMethodModel._induced_velocity = staticmethod(orig)
+
+    c, n, a, v = cap["c"], cap["n"], cap["a"], cap["v"]
+    rel = c - c.mean(axis=0)
+    cos_theta = rel[:, 0] / np.linalg.norm(rel, axis=1)      # +x is the onset
+    v_surf = v + np.array([1.0, 0.0, 0.0])
+    v_tan = v_surf - np.einsum("ij,ij->i", v_surf, n)[:, None] * n
+    cp = 1.0 - np.einsum("ij,ij->i", v_tan, v_tan)
+    cp_exact = 1.0 - 2.25 * (1.0 - cos_theta ** 2)
+    return res, cp, cp_exact, a, n
+
+
+def test_sphere_pressure_matches_the_closed_form_and_improves_with_mesh(tmp_path):
+    """Cp on a sphere against 1 - 2.25 sin^2(theta), the exact potential-flow
+    answer. Cp spans 2.25 here (+1 at the stagnation point to -1.25 at the
+    equator), so the tolerance below is well under one percent of range."""
+    errs = []
+    for sub in (2, 3):
+        _, cp, cp_exact, a, _ = _sphere_fields(sub, tmp_path)
+        errs.append(math.sqrt(float((((cp - cp_exact) ** 2) * a).sum() / a.sum())))
+    assert errs[0] < 0.02, f"coarse sphere Cp RMS error {errs[0]:.4f}"
+    assert errs[1] < errs[0], f"refining made Cp worse: {errs}"
+    assert errs[1] < 0.012, f"fine sphere Cp RMS error {errs[1]:.4f}"
+
+
+def test_sphere_carries_no_net_force(tmp_path):
+    """Symmetry gives zero lift and zero side force, and d'Alembert gives zero
+    PRESSURE drag. Total C_d stays positive because friction is added on top —
+    the pressure part is what must vanish."""
+    res, cp, _, a, n = _sphere_fields(3, tmp_path)
+    aref = math.pi * _SPHERE_R ** 2
+    force = (-(cp * a)[:, None] * n).sum(axis=0) / aref
+    assert abs(force[0]) < 1e-3, f"pressure drag {force[0]:+.5f}, expected 0"
+    assert abs(res.c_lift) < 1e-4, f"sphere lift {res.c_lift:+.5f}"
+    assert abs(res.c_side) < 1e-4, f"sphere side force {res.c_side:+.5f}"
+    assert res.c_drag > 0.0, "total drag must stay positive once friction is in"
+
+
+def test_coefficients_do_not_depend_on_speed(tmp_path):
+    """A coefficient that moves with speed is a coefficient computed wrong.
+    The force behind it must scale exactly with V^2."""
+    p = _plate_stl()
+    slow = PanelMethodModel(PanelParams(max_panels=4000)).solve(
+        _spec(p, h=60.0, v=20.0))
+    fast = PanelMethodModel(PanelParams(max_panels=4000)).solve(
+        _spec(p, h=60.0, v=40.0))
+    assert slow.c_lift == pytest.approx(fast.c_lift, rel=1e-6)
+    d_slow = slow.downforce_N(1.225, 1.0, 20.0)
+    d_fast = fast.downforce_N(1.225, 1.0, 40.0)
+    assert d_fast / d_slow == pytest.approx(4.0, rel=1e-6)
+
+
+def test_cambered_floor_grid_converges(tmp_path):
+    """REGRESSION: the near-field fix in _influence_matrix / _induced_velocity.
+
+    Panels were modelled as point sources at their centroids, which is exact in
+    the far field and O(1) wrong for immediate neighbours however fine the
+    mesh. On a flat body those errors cancel; on a cambered one they are
+    one-signed and accumulate, and because a closed body's pressure integral
+    almost entirely cancels, the residue landed straight in C_L. Measured on
+    this shape before the fix, C_L ran -0.0147 -> -0.0191 -> -0.0243 over three
+    refinements: growing with panel count, which is divergence, not
+    convergence. Camber is the whole reason an undertray makes downforce, so
+    this was the case that mattered.
+    """
+    def slab(nx, ny, camber=0.030, thick=0.040, length=1.20, width=0.70):
+        xs = np.linspace(0.0, length, nx)
+        ys = np.linspace(-width / 2.0, width / 2.0, ny)
+        X, Y = np.meshgrid(xs, ys, indexing="ij")
+        Z = -camber * np.sin(np.pi * (X / length) ** 0.85)
+        top = np.stack([X, Y, Z + thick / 2], -1).reshape(-1, 3)
+        bot = np.stack([X, Y, Z - thick / 2], -1).reshape(-1, 3)
+        n = nx * ny
+
+        def v(i, j, low=False):
+            return i * ny + j + (n if low else 0)
+
+        f = []
+        for i in range(nx - 1):
+            for j in range(ny - 1):
+                f += [[v(i, j), v(i + 1, j), v(i + 1, j + 1)],
+                      [v(i, j), v(i + 1, j + 1), v(i, j + 1)],
+                      [v(i, j, 1), v(i + 1, j + 1, 1), v(i + 1, j, 1)],
+                      [v(i, j, 1), v(i, j + 1, 1), v(i + 1, j + 1, 1)]]
+        for i in range(nx - 1):
+            for j in (0, ny - 1):
+                a, b, c_, d = v(i, j), v(i + 1, j), v(i, j, 1), v(i + 1, j, 1)
+                f += ([[a, c_, d], [a, d, b]] if j == 0 else
+                      [[a, d, c_], [a, b, d]])
+        for j in range(ny - 1):
+            for i in (0, nx - 1):
+                a, b, c_, d = v(i, j), v(i, j + 1), v(i, j, 1), v(i, j + 1, 1)
+                f += ([[a, d, c_], [a, b, d]] if i == 0 else
+                      [[a, c_, d], [a, d, b]])
+        m = trimesh.Trimesh(vertices=np.vstack([top, bot]),
+                            faces=np.array(f), process=True)
+        m.update_faces(m.nondegenerate_faces())
+        m.remove_unreferenced_vertices()
+        m.fix_normals()
+        m.apply_translation([0.0, 0.0, -m.bounds[0][2]])     # rest on z = 0
+        return m
+
+    cls = []
+    for nx, ny in ((21, 15), (29, 20), (37, 26)):
+        m = slab(nx, ny)
+        assert m.is_watertight
+        p = str(tmp_path / f"slab{nx}.stl")
+        m.export(p)
+        r = PanelMethodModel(PanelParams(max_panels=12000)).solve(
+            CaseSpec(attitude=Attitude(ride_height_mm=150.0, speed_ms=20.0),
+                     geometry_path=p, reference_area_m2=1.20 * 0.70,
+                     reference_length_m=1.20))
+        assert r.c_lift < 0.0, "a floor bowed toward the road must make downforce"
+        cls.append(r.c_lift)
+
+    steps = [abs(b - a) / max(abs(a), abs(b)) for a, b in zip(cls, cls[1:])]
+    assert max(steps) < 0.15, (
+        f"cambered floor is not grid-converged: C_L {cls}, steps {steps}")
