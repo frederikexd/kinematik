@@ -10840,6 +10840,18 @@ def _render_rationale_prompt(_feat, _lbl, _kp):
         pass
 
 
+def _hashlib_sig(payload: bytes) -> str:
+    """Short content signature for cached export artefacts.
+
+    Used to invalidate a cached feature PDF when the underlying report
+    markdown changes, so a member never downloads a stale document. blake2b
+    with a small digest is stdlib and costs microseconds on report-sized
+    payloads; hashlib itself is already imported all over this file.
+    """
+    import hashlib as _hl
+    return _hl.blake2b(payload, digest_size=8).hexdigest()
+
+
 def render_feature_documentation(feature, *, key_prefix=None):
     """Compact per-feature documentation panel — the fork you asked for.
 
@@ -10888,30 +10900,64 @@ def render_feature_documentation(feature, *, key_prefix=None):
             _safe = _feat.replace("-", "_")
             if _mode.startswith("Download the PDF"):
                 _cols = st.columns([2, 3])
-                _pdf_ok = False
-                try:
-                    import tempfile as _tf, os as _os
-                    _pp = _os.path.join(_tf.gettempdir(),
-                                        f"{_report_slug()}_feature_{_safe}.pdf")
-                    with st.spinner("Rendering charts into the PDF…"):
-                        project_mod.render_pdf(
-                            _md, _pp, figures=collect_report_figures([_feat]))
-                    with open(_pp, "rb") as _pf:
-                        _pdf_bytes = _pf.read()
-                    _pdf_ok = True
-                except Exception as _pe:
-                    _cols[0].warning(f"PDF unavailable: {_pe}")
-                if _pdf_ok:
+                # BUILD ON DEMAND, NOT ON EVERY RUN.
+                #
+                # This block used to call render_pdf(...) unconditionally, so
+                # the active tab rendered a complete PDF — with matplotlib
+                # figures inside it — on EVERY script run, before anyone
+                # clicked download. That is what pulled reportlab (36 MB) and
+                # matplotlib (36 MB) into the process on the first run past the
+                # subteam gate, and re-paid the CPU on every widget interaction.
+                # Measured: the PDF is thrown away unread on the overwhelming
+                # majority of runs, because a member has to open the expander,
+                # keep the default radio option AND click the button to want it.
+                #
+                # Now the bytes are built only when the member asks, and cached
+                # in session_state against a hash of the report markdown, so
+                # re-runs reuse them and a changed report invalidates them.
+                _md_bytes = _md.encode("utf-8")
+                _pdf_sig = _hashlib_sig(_md_bytes)
+                _pdf_slot = f"_featpdf_{_safe}"
+                _cached = st.session_state.get(_pdf_slot)
+                _pdf_bytes = (_cached[1] if _cached and _cached[0] == _pdf_sig
+                              else None)
+
+                if _pdf_bytes is None:
+                    if _cols[0].button(
+                            f"🖨 Build {_lbl} PDF", width="stretch",
+                            key=f"{_kp}_pdf_build", disabled=not _has_content,
+                            help="Renders the charts into a PDF. Takes a "
+                                 "moment; the download appears here when it's "
+                                 "ready."):
+                        try:
+                            import tempfile as _tf, os as _os
+                            _pp = _os.path.join(
+                                _tf.gettempdir(),
+                                f"{_report_slug()}_feature_{_safe}.pdf")
+                            with st.spinner("Rendering charts into the PDF…"):
+                                project_mod.render_pdf(
+                                    _md, _pp,
+                                    figures=collect_report_figures([_feat]))
+                            with open(_pp, "rb") as _pf:
+                                st.session_state[_pdf_slot] = (_pdf_sig,
+                                                               _pf.read())
+                            st.rerun()
+                        except Exception as _pe:
+                            _cols[0].warning(f"PDF unavailable: {_pe}")
+                else:
                     _cols[0].download_button(
                         f"⬇ {_lbl} (.pdf)", _pdf_bytes,
                         file_name=f"{_report_slug()}_feature_{_safe}.pdf",
                         mime="application/pdf", width="stretch",
                         key=f"{_kp}_pdf", disabled=not _has_content)
-                    _cols[1].download_button(
-                        f"⬇ {_lbl} (.md)", _md.encode("utf-8"),
-                        file_name=f"{_report_slug()}_feature_{_safe}.md",
-                        mime="text/markdown", width="stretch",
-                        key=f"{_kp}_dl_md", disabled=not _has_content)
+
+                # The markdown export costs nothing to offer, so it is always
+                # available — it never depended on the PDF being built.
+                _cols[1].download_button(
+                    f"⬇ {_lbl} (.md)", _md_bytes,
+                    file_name=f"{_report_slug()}_feature_{_safe}.md",
+                    mime="text/markdown", width="stretch",
+                    key=f"{_kp}_dl_md", disabled=not _has_content)
                 if not _has_content:
                     st.caption("Nothing captured yet — the buttons light up "
                                "once you've run something here.")
@@ -13708,32 +13754,50 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
           key=f"{key_prefix}_doc_mode")
 
       _cols = st.columns([2, 3])
-      _pdf_ok = False
-      try:
-          import tempfile as _tf3, os as _os3
-          _pdf_path = _os3.path.join(_tf3.gettempdir(), f"{_report_slug()}_{_safe}_report.pdf")
-          # Figures for every feature THIS subsystem owns — the same set whose
-          # captured sections _build_md() just wrote into the Markdown.
-          _sub_feats = [_f for _f, _s in _FEATURE_SUBSYS.items()
-                        if _s == str(subsystem_key)]
-          with st.spinner("Rendering charts into the PDF…"):
-              project_mod.render_pdf(
-                  _md, _pdf_path, figures=collect_report_figures(_sub_feats))
-          with open(_pdf_path, "rb") as _pf:
-              _pdf_bytes = _pf.read()
-          _pdf_ok = True
-      except Exception as _pe:
-          _cols[0].warning(f"PDF unavailable: {_pe}")
+      # BUILD ON DEMAND, NOT ON EVERY RUN. This panel is reached from a
+      # module-scope tab body, so rendering the PDF here ran reportlab and
+      # matplotlib on every script-run for a document almost nobody downloads
+      # on any given run. Cached against a hash of the markdown, so reruns
+      # reuse the bytes and an edited report invalidates them.
+      _doc_sig = _hashlib_sig(_md.encode("utf-8"))
+      _doc_slot = f"_subsyspdf_{_safe}"
+      _doc_cached = st.session_state.get(_doc_slot)
+      _pdf_bytes = (_doc_cached[1] if _doc_cached and _doc_cached[0] == _doc_sig
+                    else None)
 
-      if _pdf_ok:
+      if _pdf_bytes is None:
+          if _cols[0].button(f"🖨 Build {_name} report PDF", width="stretch",
+                             key=f"{key_prefix}_doc_pdf_build",
+                             help="Renders the subsystem's captured charts "
+                                  "into a PDF. The download appears here when "
+                                  "it's ready."):
+              try:
+                  import tempfile as _tf3, os as _os3
+                  _pdf_path = _os3.path.join(_tf3.gettempdir(), f"{_report_slug()}_{_safe}_report.pdf")
+                  # Figures for every feature THIS subsystem owns — the same set whose
+                  # captured sections _build_md() just wrote into the Markdown.
+                  _sub_feats = [_f for _f, _s in _FEATURE_SUBSYS.items()
+                                if _s == str(subsystem_key)]
+                  with st.spinner("Rendering charts into the PDF…"):
+                      project_mod.render_pdf(
+                          _md, _pdf_path, figures=collect_report_figures(_sub_feats))
+                  with open(_pdf_path, "rb") as _pf:
+                      st.session_state[_doc_slot] = (_doc_sig, _pf.read())
+                  st.rerun()
+              except Exception as _pe:
+                  _cols[0].warning(f"PDF unavailable: {_pe}")
+      else:
           _cols[0].download_button(
               f"⬇ {_name} report (.pdf)", _pdf_bytes,
               file_name=f"{_report_slug()}_{_safe}_report.pdf", mime="application/pdf",
               width="stretch", key=f"{key_prefix}_doc_pdf")
-          _cols[1].download_button(
-              f"⬇ {_name} report (.md)", _md.encode("utf-8"),
-              file_name=f"{_report_slug()}_{_safe}_report.md", mime="text/markdown",
-              width="stretch", key=f"{key_prefix}_doc_md")
+
+      # Markdown costs nothing to render, so it is always offered — it never
+      # needed the PDF to have been built first.
+      _cols[1].download_button(
+          f"⬇ {_name} report (.md)", _md.encode("utf-8"),
+          file_name=f"{_report_slug()}_{_safe}_report.md", mime="text/markdown",
+          width="stretch", key=f"{key_prefix}_doc_md")
 
       if _mode.startswith("Create the PDF **and**"):
           if st.button("✓ Record this report in the Handover",
@@ -27975,20 +28039,43 @@ with tab7:
       ec[1].download_button("⬇ Project data (.json)", store.as_json(),
                             file_name="project.json", mime="application/json",
                             width='stretch')
-      try:
-          pdf_path = os.path.join(tempfile.gettempdir(), f"{_report_slug()}_handover.pdf")
-          # The fourth export path. The feature, subsystem and Integration
-          # exports were wired to the captured charts; this one was missed, so
-          # the handover — the document that outlives everyone who wrote it —
-          # was the only PDF still shipping without its figures.
-          project_mod.render_pdf(md, pdf_path,
-                                 figures=collect_report_figures())
-          with open(pdf_path, "rb") as f:
-              ec[2].download_button("⬇ Handover (.pdf)", f.read(),
-                                    file_name=f"{_report_slug()}_handover.pdf",
-                                    mime="application/pdf", width='stretch')
-      except Exception as e:
-          ec[2].markdown(f"<p class='hint'>PDF unavailable: {e}</p>", unsafe_allow_html=True)
+      # BUILD ON DEMAND, NOT ON EVERY RUN. This is a module-scope tab body, so
+      # it executes on every Streamlit script-run — and it used to render the
+      # whole handover PDF, figures included, before anyone asked for it. That
+      # single call was what pulled reportlab and matplotlib into the process.
+      # The .md and .json exports above are free and stay eager; only the PDF
+      # waits for a click. Cached against a hash of the markdown so a rerun
+      # reuses the bytes and an edited handover invalidates them.
+      _hv_sig = _hashlib_sig(md.encode("utf-8"))
+      _hv_cached = st.session_state.get("_handover_pdf")
+      _hv_bytes = (_hv_cached[1] if _hv_cached and _hv_cached[0] == _hv_sig
+                   else None)
+      if _hv_bytes is None:
+          if ec[2].button("🖨 Build handover PDF", width='stretch',
+                          key="handover_pdf_build",
+                          help="Renders the captured charts into the PDF. "
+                               "The download appears here when it's ready."):
+              try:
+                  pdf_path = os.path.join(tempfile.gettempdir(),
+                                          f"{_report_slug()}_handover.pdf")
+                  # The fourth export path. The feature, subsystem and
+                  # Integration exports were wired to the captured charts; this
+                  # one was missed, so the handover — the document that
+                  # outlives everyone who wrote it — was the only PDF still
+                  # shipping without its figures.
+                  with st.spinner("Rendering charts into the handover PDF…"):
+                      project_mod.render_pdf(md, pdf_path,
+                                             figures=collect_report_figures())
+                  with open(pdf_path, "rb") as f:
+                      st.session_state["_handover_pdf"] = (_hv_sig, f.read())
+                  st.rerun()
+              except Exception as e:
+                  ec[2].markdown(f"<p class='hint'>PDF unavailable: {e}</p>",
+                                 unsafe_allow_html=True)
+      else:
+          ec[2].download_button("⬇ Handover (.pdf)", _hv_bytes,
+                                file_name=f"{_report_slug()}_handover.pdf",
+                                mime="application/pdf", width='stretch')
 
 # ----------------------------- TAB 8 --------------------------------------- #
 with tab8:

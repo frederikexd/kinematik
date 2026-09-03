@@ -325,3 +325,126 @@ def test_grid_convergence_on_a_native_mesh(tmp_path):
     assert all(v < 0 for v in vals), f"sign should be stable, got {vals}"
     assert abs(vals[1] - vals[0]) / abs(vals[0]) < 0.20, (
         f"refinement should move the answer by well under 20%, got {vals}")
+
+
+# --------------------------------------------------------------------------- #
+#  Vortex lattice — the lifting-surface solver
+# --------------------------------------------------------------------------- #
+
+def _wing_stl(path, span=2.40, chord=0.30, thick=0.030, nc=40, ns=40):
+    """A closed rectangular wing with an elliptical thickness distribution."""
+    import numpy as np
+    xs = np.linspace(0, chord, nc)
+    ys = np.linspace(-span / 2, span / 2, ns)
+
+    def t(x):
+        return thick * np.sqrt(np.clip(1 - ((x / chord - 0.5) / 0.5) ** 2, 0, 1))
+
+    V, F, U, L = [], [], [], []
+
+    def add(x, y, z):
+        V.append((x, y, z))
+        return len(V) - 1
+
+    for x in xs:
+        U.append([add(x, y, +t(x) / 2) for y in ys])
+        L.append([add(x, y, -t(x) / 2) for y in ys])
+
+    def q(a, b, c, d):
+        F.append([a, b, c])
+        F.append([a, c, d])
+
+    for i in range(nc - 1):
+        for j in range(ns - 1):
+            q(U[i][j], U[i + 1][j], U[i + 1][j + 1], U[i][j + 1])
+            q(L[i][j], L[i][j + 1], L[i + 1][j + 1], L[i + 1][j])
+    for i in range(nc - 1):
+        q(U[i][0], L[i][0], L[i + 1][0], U[i + 1][0])
+        q(U[i][ns - 1], U[i + 1][ns - 1], L[i + 1][ns - 1], L[i][ns - 1])
+
+    m = trimesh.Trimesh(vertices=np.array(V), faces=np.array(F), process=True)
+    m.fix_normals()
+    m.export(path)
+    return m
+
+
+def _vlm(path, alpha, h_mm, area):
+    from suspension.aero.vortex_lattice import VortexLatticeModel
+    from suspension.aero.cfd import CaseSpec, Attitude
+    return VortexLatticeModel(n_span=24, n_chord=6).solve(
+        CaseSpec(attitude=Attitude(pitch_deg=alpha, ride_height_mm=h_mm,
+                                   speed_ms=20),
+                 geometry_path=path, reference_area_m2=area,
+                 reference_length_m=1.55))
+
+
+def test_vlm_matches_lifting_line_and_is_linear(tmp_path):
+    """C_L should be a constant fraction of lifting-line theory across alpha.
+
+    Lifting-line assumes elliptic loading, which a rectangular planform does not
+    have, so ~89% is the expected shortfall — what matters is that the ratio is
+    the SAME at every incidence, i.e. the solve is linear as potential flow must
+    be.
+    """
+    import math
+    p = str(tmp_path / "ar8.stl")
+    _wing_stl(p)
+    AR, area = 8.0, 2.40 * 0.30
+    ratios = []
+    for al in (-2.0, -5.0, -8.0):
+        r = _vlm(p, al, 3000, area)
+        ll = 2 * math.pi * math.radians(abs(al)) * AR / (AR + 2)
+        ratios.append(abs(r.c_lift) / ll)
+    assert all(0.80 < x < 1.00 for x in ratios), ratios
+    assert max(ratios) - min(ratios) < 0.02, f"not linear in alpha: {ratios}"
+
+
+def test_vlm_induced_drag_is_physical(tmp_path):
+    """Span efficiency against the ideal C_Di = C_L^2/(pi*AR).
+
+    The drag comes from the downwash the lattice induces on its own bound
+    vortices, not from C_L^2/(pi AR e) with a fitted e — so e falling out near
+    unity is a check on the physics rather than a tautology.
+    """
+    import math
+    p = str(tmp_path / "ar8.stl")
+    _wing_stl(p)
+    AR, area = 8.0, 2.40 * 0.30
+    r = _vlm(p, -5.0, 3000, area)
+    e = (r.c_lift ** 2) / (math.pi * AR * abs(r.c_drag))
+    assert 0.85 < e < 1.10, f"span efficiency {e:.3f} is not physical"
+
+
+def test_vlm_ground_effect_is_monotone(tmp_path):
+    """Downforce must build as the wing approaches the road, and it must come
+    from the image system rather than a tuned gain."""
+    p = str(tmp_path / "ar8.stl")
+    _wing_stl(p)
+    area = 2.40 * 0.30
+    vals = [_vlm(p, -4.0, h, area).c_lift for h in (2000, 600, 300, 150)]
+    assert all(v < 0 for v in vals), f"should be downforce throughout: {vals}"
+    assert all(vals[i + 1] < vals[i] for i in range(len(vals) - 1)), (
+        f"ground effect not monotone: {vals}")
+
+
+def test_vlm_zero_lift_at_zero_incidence(tmp_path):
+    """A symmetric section at zero alpha must produce no lift. This is the
+    check that caught a wrong image plane: reflecting through z = 0 instead of
+    through the road a distance h below the lattice gave C_L = -0.997 here."""
+    p = str(tmp_path / "ar8.stl")
+    _wing_stl(p)
+    r = _vlm(p, 0.0, 300, 2.40 * 0.30)
+    assert abs(r.c_lift) < 1e-3, f"expected ~0, got {r.c_lift}"
+
+
+def test_vlm_is_fast_enough_to_sweep(tmp_path):
+    """The scalar form took 7.9 s per case — 228,528 np.cross calls on
+    3-vectors, with 11.8 of 18.9 s inside numpy's dispatch overhead. Vectorised
+    it is ~0.09 s. A ride-height sweep has to stay interactive."""
+    import time
+    p = str(tmp_path / "ar8.stl")
+    _wing_stl(p)
+    _vlm(p, -4.0, 300, 0.72)                       # warm any import cost
+    t = time.time()
+    _vlm(p, -4.0, 250, 0.72)
+    assert time.time() - t < 2.0, "vortex lattice solve got slow again"

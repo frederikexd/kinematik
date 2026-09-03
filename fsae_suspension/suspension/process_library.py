@@ -48,7 +48,36 @@ from __future__ import annotations
 import os
 import datetime as _dt
 
-import pandas as pd
+
+class _LazyPandas:
+    """Import pandas on first attribute access, not at module import.
+
+    `render_process_library()` is called unconditionally at the top of six tab
+    bodies, and every tab body executes on every Streamlit script-run — so a
+    module-level `import pandas` here is paid on every run whether or not
+    anyone opens the library, reads a workbook or adds a row. pandas is 90 MB
+    and ~9.5 s on the deploy box.
+
+    A proxy rather than an import inside each function because `pd` is only
+    ever used by attribute access (`pd.DataFrame`, `pd.read_excel`,
+    `pd.ExcelWriter`, `pd.concat`, `pd.read_csv`); every existing call site
+    keeps its exact spelling and the first one pays the cost.
+    """
+    __slots__ = ("_m",)
+
+    def __init__(self):
+        object.__setattr__(self, "_m", None)
+
+    def __getattr__(self, item):
+        m = object.__getattribute__(self, "_m")
+        if m is None:
+            import importlib
+            m = importlib.import_module("pandas")
+            object.__setattr__(self, "_m", m)
+        return getattr(m, item)
+
+
+pd = _LazyPandas()
 
 # Canonical column order for the workbook.
 COLUMNS = ["Component", "Process", "Subsystem", "Summary", "Link", "Tags", "AddedBy"]

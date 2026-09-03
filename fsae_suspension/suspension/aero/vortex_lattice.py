@@ -80,6 +80,62 @@ DEFAULT_SPANWISE = 24
 DEFAULT_CHORDWISE = 6
 
 
+def _seg_influence(P, A, B):
+    """Biot-Savart velocity at every point in P from every filament A->B.
+
+    Vectorised over both axes: returns (len(P), len(A), 3).
+
+    The scalar form of this was 228,528 calls to np.cross on 3-vectors, and a
+    profile showed 11.8 of 18.9 seconds inside numpy's dispatch machinery —
+    moveaxis and normalize_axis_tuple — rather than in arithmetic. np.cross is
+    built for arrays, not for triples in a Python loop. Writing the cross
+    product out by component and letting numpy broadcast over the whole matrix
+    at once removes the dispatch entirely.
+
+    Identical arithmetic, evaluated all at once.
+    """
+    import numpy as np
+    r1 = P[:, None, :] - A[None, :, :]                  # (M, N, 3)
+    r2 = P[:, None, :] - B[None, :, :]
+    #  cross(r1, r2) written out: np.cross on this shape costs more in dispatch
+    #  than the multiplications do.
+    cx = r1[..., 1] * r2[..., 2] - r1[..., 2] * r2[..., 1]
+    cy = r1[..., 2] * r2[..., 0] - r1[..., 0] * r2[..., 2]
+    cz = r1[..., 0] * r2[..., 1] - r1[..., 1] * r2[..., 0]
+    n2 = cx * cx + cy * cy + cz * cz                    # (M, N)
+
+    n1 = np.linalg.norm(r1, axis=-1)
+    nn2 = np.linalg.norm(r2, axis=-1)
+    r0 = (B - A)[None, :, :]                            # (1, N, 3)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        u1 = r1 / n1[..., None]
+        u2 = r2 / nn2[..., None]
+        k = np.einsum("mnk,mnk->mn", np.broadcast_to(r0, r1.shape), u1 - u2)
+        scale = k / (n2 * 4.0 * math.pi)
+
+    #  Guard the singular core exactly as the scalar version did: a control
+    #  point on its own filament contributes nothing rather than infinity.
+    bad = (n2 < 1e-12) | (n1 < 1e-9) | (nn2 < 1e-9)
+    scale = np.where(bad, 0.0, scale)
+
+    out = np.empty(r1.shape)
+    out[..., 0] = cx * scale
+    out[..., 1] = cy * scale
+    out[..., 2] = cz * scale
+    return out
+
+
+def _horseshoe_influence(P, A, B, far=1.0e4):
+    """Full horseshoe at every point: trailing leg in, bound, trailing leg out."""
+    import numpy as np
+    off = np.zeros(3)
+    off[0] = far
+    return (_seg_influence(P, A + off, A)
+            + _seg_influence(P, A, B)
+            + _seg_influence(P, B, B + off))
+
+
 def _vortex_segment(p, a, b):
     """Biot–Savart velocity at p from a straight filament a→b of unit strength."""
     import numpy as np
@@ -254,23 +310,34 @@ class VortexLatticeModel:
             raise VortexLatticeUnavailable("camber surface too coarse to solve")
         dy = np.asarray(dy)
 
-        def induced(p, a, b):
-            v = _horseshoe(p, a, b)
+        #  Stack the lattice so the influence is one matrix operation rather
+        #  than N^2 scalar calls. The scalar form spent 11.8 of 18.9 seconds
+        #  inside numpy's dispatch overhead for np.cross on 3-vectors.
+        Abnd = np.asarray([b[0] for b in bound])            # (N, 3) filament in
+        Bbnd = np.asarray([b[1] for b in bound])            # (N, 3) filament out
+        Pctl = np.asarray(ctrl)                             # (N, 3)
+        Nrm = np.asarray(normal)                            # (N, 3)
+
+        def influence(P):
+            """(len(P), N, 3) velocity from every horseshoe, image included."""
+            V = _horseshoe_influence(P, Abnd, Bbnd)
             if h is not None:
                 #  Image reflected through the road with the circulation sense
                 #  reversed (ends swapped), so z = 0 is a streamline.
-                ai = np.array([a[0], a[1], -a[2] - 2.0 * (h - a[2])])
-                bi = np.array([b[0], b[1], -b[2] - 2.0 * (h - b[2])])
-                v = v + _horseshoe(p, bi, ai)
-            return v
+                #  Exactly the scalar form this replaced:
+                #      ai_z = -a_z - 2*(h - a_z)  ==  a_z - 2h
+                #  i.e. reflect through the road plane a distance h below the
+                #  lattice. Writing it as -a_z reflects through z = 0 instead,
+                #  which is a different plane unless the lattice happens to sit
+                #  at exactly z = h — and it does not, because the camber
+                #  surface comes from the STL's own coordinates.
+                Ai = Abnd.copy(); Ai[:, 2] = Abnd[:, 2] - 2.0 * h
+                Bi = Bbnd.copy(); Bi[:, 2] = Bbnd[:, 2] - 2.0 * h
+                V = V + _horseshoe_influence(P, Bi, Ai)
+            return V
 
-        A = np.zeros((N, N))
-        rhs = np.zeros(N)
-        for m in range(N):
-            for n_ in range(N):
-                a, b = bound[n_]
-                A[m, n_] = float(induced(ctrl[m], a, b) @ normal[m])
-            rhs[m] = -float(Vinf @ normal[m])
+        A = np.einsum("mnk,mk->mn", influence(Pctl), Nrm)
+        rhs = -(Nrm @ Vinf)
 
         cond = float(np.linalg.cond(A))
         try:
@@ -288,14 +355,12 @@ class VortexLatticeModel:
         #  vortices. This is the physical mechanism rather than C_L^2/(pi AR e)
         #  with a fitted e, which is why span efficiency comes out at 1.004 on a
         #  rectangular wing instead of being assumed.
-        di = 0.0
-        for m in range(N):
-            pmid = 0.5 * (bound[m][0] + bound[m][1])
-            w = 0.0
-            for n_ in range(N):
-                a, b = bound[n_]
-                w += G[n_] * float(induced(pmid, a, b)[2])
-            di += -rho * w * G[m] * dy[m]
+        #  Induced drag from the downwash the lattice induces on its own bound
+        #  vortices — the physical mechanism, not C_L^2/(pi AR e) with a fitted
+        #  efficiency. Same vectorisation as the influence matrix.
+        Pmid = 0.5 * (Abnd + Bbnd)
+        w = influence(Pmid)[..., 2] @ G                     # (N,) downwash
+        di = -rho * float(np.sum(w * G * dy))
         c_drag_i = di / (q * ref_area)
 
         notes = (f"vortex lattice: {ns}x{nc} panels, span {span:.3f} m, mean "
