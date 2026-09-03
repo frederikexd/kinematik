@@ -150,7 +150,7 @@ class PanelMethodModel:
         """
         import numpy as np
 
-        centroids, normals, areas, length_ref = self._load_panels(spec)
+        centroids, normals, areas, length_ref, tris = self._load_panels(spec)
         n = len(areas)
 
         # Onset flow: yaw about +z, pitch about +y, unit magnitude (coeffs are
@@ -160,7 +160,7 @@ class PanelMethodModel:
         # Influence matrix: normal velocity at panel i induced by unit source on
         # panel j (plus its ground image), in a point-source approximation evaluated
         # at panel centroids. A[i,j] = n_i · (u_ij + u_image_ij).
-        A = self._influence_matrix(centroids, normals, areas)
+        A = self._influence_matrix(centroids, normals, areas, tris)
 
         # RHS: cancel the onset normal velocity on every panel (flow tangency).
         rhs = -(normals @ vinf)
@@ -222,7 +222,8 @@ class PanelMethodModel:
         # matrix — see _induced_velocity.
         v_ind = self._induced_velocity(centroids, normals, areas, sigma,
                                        ground_effect=self.params.ground_effect,
-                                       road_plane_z_m=self.params.road_plane_z_m)
+                                       road_plane_z_m=self.params.road_plane_z_m,
+                                       tris=tris)
         v_surf = v_ind + vinf[None, :]
         # remove the normal component numerically (tangency is enforced only approx.)
         vn = np.einsum("ij,ij->i", v_surf, normals)
@@ -422,10 +423,16 @@ class PanelMethodModel:
         centroids = np.asarray(mesh.triangles_center, dtype=float)
         normals = np.asarray(mesh.face_normals, dtype=float)
         areas = np.asarray(mesh.area_faces, dtype=float)
+        #  The triangles themselves, in the SAME placed frame as the centroids,
+        #  are needed for the near-field quadrature. Taken here rather than
+        #  re-loading the STL so they cannot drift out of step with the
+        #  attitude transform applied above.
+        tris = np.asarray(mesh.triangles, dtype=float)
 
         # Drop degenerate panels (zero area / nan normal).
         good = (areas > 1e-12) & np.isfinite(normals).all(axis=1)
         centroids, normals, areas = centroids[good], normals[good], areas[good]
+        tris = tris[good]
         if len(areas) < mp.min_panels:
             raise PanelMethodUnavailable(
                 f"only {len(areas)} usable panels (< {mp.min_panels}); surface too "
@@ -433,12 +440,149 @@ class PanelMethodModel:
 
         length_ref = float(spec.reference_length_m) if spec.reference_length_m else \
             float(centroids[:, 0].ptp() or 1.0)
-        return centroids, normals, areas, length_ref
+        return centroids, normals, areas, length_ref, tris
 
     # ------------------------------------------------------------------ #
     #  Source-panel influence (point-source approx + ground image)
     # ------------------------------------------------------------------ #
-    def _influence_matrix(self, centroids, normals, areas):
+    #: Sub-element quadrature stencil, built once. 2 levels = 16 congruent
+    #: sub-triangles; 1 level was not enough to flatten the drift and 3 costs
+    #: 4x for no measurable gain.
+    _SUB_W = None            # filled in below the class body
+
+    #: A pair counts as "near" when the centroid separation is under
+    #: _NEAR_R * sqrt(area_j). 2.5 catches about 27 neighbours per panel and
+    #: took the cambered step-to-step drift from 37/23/21/15% to 8/5/6/7%.
+    #: 4.0 catches ~70 and gives the same answer, so 2.5 is the cheaper choice.
+    _NEAR_R = 2.5
+
+    # ------------------------------------------------------------------ #
+    #  Near-field quadrature
+    #
+    #  WHY THIS EXISTS. Every panel is modelled as a POINT source at its
+    #  centroid carrying the panel's area. For two panels separated by many
+    #  panel widths that is accurate to second order. For immediate neighbours
+    #  the separation IS the panel width, so the relative error stays O(1) no
+    #  matter how fine the mesh — refining shrinks the panels and their spacing
+    #  together and the near-field error never goes away.
+    #
+    #  On a FLAT body those errors sit symmetrically around each panel and
+    #  cancel in the n-weighted pressure integral. On a CURVED one the surface
+    #  bends the same way everywhere locally, the errors are one-signed, and
+    #  they accumulate. Because a closed body's pressure integral is a near
+    #  total cancellation (d'Alembert; the ground image is the only thing
+    #  breaking it), that residue lands directly in C_L — and grows with panel
+    #  count instead of shrinking.
+    #
+    #  Measured on a 1.2 x 0.7 m undertray at 150 mm, varying only camber:
+    #
+    #      faces    flat      camber 30 mm (before)   camber 30 mm (after)
+    #       1256   -0.00576        -0.01470                -0.02009
+    #       2316   -0.00527        -0.01908                -0.02114
+    #       3844   -0.00521        -0.02430                -0.02251
+    #       6200   -0.00522        -0.02854                -0.02424
+    #      step Δ      0%          37/23/21/15%              8/5/6/7%
+    #
+    #  Flat always converged, which is why this went unnoticed: the box in the
+    #  convergence table is flat. Camber is the entire reason an undertray
+    #  makes downforce, so the shapes that matter were the ones that diverged.
+    #
+    #  The fix is to integrate the source over the actual triangle instead of
+    #  collapsing it to its centroid, for near pairs only. Far pairs keep the
+    #  cheap point form, so the cost is O(N * k) with k about 27 neighbours,
+    #  not O(N^2).
+    # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _sub_centroid_weights(levels: int = 2):
+        """Barycentric centroids of the sub-triangles after `levels` rounds of
+        midpoint subdivision. All 4**levels pieces are congruent, so each
+        carries area/4**levels and only the positions are needed."""
+        import numpy as np
+        tris = [np.eye(3)]
+        for _ in range(levels):
+            out = []
+            for t in tris:
+                a, b, c = t
+                ab, bc, ca = (a + b) / 2.0, (b + c) / 2.0, (c + a) / 2.0
+                out += [np.array([a, ab, ca]), np.array([ab, b, bc]),
+                        np.array([ca, bc, c]), np.array([ab, bc, ca])]
+            tris = out
+        return np.array([t.mean(axis=0) for t in tris])
+
+    @staticmethod
+    def _near_pairs(centroids, areas, radius_factor, block: int = 256):
+        """(i, j) pairs, i != j, with |c_i - c_j| < radius_factor*sqrt(area_j).
+
+        Blocked so the transient is (block, N) rather than (N, N) — the same
+        reason the influence matrix is assembled in row blocks.
+        """
+        import numpy as np
+        n = len(centroids)
+        thresh = radius_factor * np.sqrt(areas)
+        ii, jj = [], []
+        for lo in range(0, n, block):
+            hi = min(lo + block, n)
+            d = np.linalg.norm(
+                centroids[lo:hi, None, :] - centroids[None, :, :], axis=2)
+            m = d < thresh[None, :]
+            m[np.arange(hi - lo), np.arange(lo, hi)] = False      # never self
+            a, b = np.nonzero(m)
+            ii.append(a + lo)
+            jj.append(b)
+        return np.concatenate(ii), np.concatenate(jj)
+
+    @classmethod
+    def _quad_normal_vel(cls, field_pts, field_normals, tris_j, areas_j,
+                         chunk: int = 20000):
+        """n_i . u from a constant source spread over triangle j."""
+        import numpy as np
+        w = cls._SUB_W
+        k = w.shape[0]
+        out = np.empty(len(field_pts), dtype=float)
+        for lo in range(0, len(field_pts), chunk):
+            hi = min(lo + chunk, len(field_pts))
+            sub = np.einsum("kb,pbd->pkd", w, tris_j[lo:hi])
+            diff = field_pts[lo:hi, None, :] - sub
+            r2 = np.einsum("pkd,pkd->pk", diff, diff) + 1e-14
+            inv = 1.0 / (4.0 * math.pi * np.power(r2, 1.5))
+            ndot = np.einsum("pd,pkd->pk", field_normals[lo:hi], diff)
+            out[lo:hi] = (ndot * inv).sum(axis=1) * areas_j[lo:hi] / k
+        return out
+
+    @classmethod
+    def _quad_velocity(cls, field_pts, tris_j, sa_j, chunk: int = 20000):
+        """Induced velocity VECTOR from a constant source over triangle j.
+
+        This is the half that actually moves C_L: Cp is built from the surface
+        velocity, so a per-panel velocity error survives straight into the
+        force integral.
+        """
+        import numpy as np
+        w = cls._SUB_W
+        k = w.shape[0]
+        out = np.empty((len(field_pts), 3), dtype=float)
+        for lo in range(0, len(field_pts), chunk):
+            hi = min(lo + chunk, len(field_pts))
+            sub = np.einsum("kb,pbd->pkd", w, tris_j[lo:hi])
+            diff = field_pts[lo:hi, None, :] - sub
+            r2 = np.einsum("pkd,pkd->pk", diff, diff) + 1e-14
+            inv = 1.0 / (4.0 * math.pi * np.power(r2, 1.5))
+            out[lo:hi] = np.einsum("pk,pkd->pd", inv, diff) * (
+                sa_j[lo:hi, None] / k)
+        return out
+
+    @staticmethod
+    def _point_velocity(field_pts, src_pts, sa_j):
+        """The single-point form, so the near-field fix can be applied as
+        (quadrature - point) on top of the already-assembled far field."""
+        import numpy as np
+        diff = field_pts - src_pts
+        r2 = np.einsum("pd,pd->p", diff, diff) + 1e-9
+        inv = sa_j / (4.0 * math.pi * np.power(r2, 1.5))
+        return diff * inv[:, None]
+
+    def _influence_matrix(self, centroids, normals, areas, tris=None):
         """
         A[i,j] = normal velocity at panel i from a unit constant source on panel j
         (area-weighted point source at its centroid), plus the contribution of j's
@@ -523,6 +667,17 @@ class PanelMethodModel:
             r2 = np.einsum("ij,ij->i", d_self, d_self) + 1e-12
             inv = 1.0 / (4.0 * math.pi * np.power(r2, 1.5))
             A[_diag, _diag] += np.einsum("ij,ij->i", normals, d_self) * inv * areas
+
+        #  NEAR-FIELD CORRECTION. Overwrite the point-source entry for close
+        #  pairs with the sub-element quadrature of the real triangle. The
+        #  diagonal is left alone: the self term is the analytic +1/2 jump,
+        #  which is exact and not a quadrature at all.
+        if tris is not None and len(centroids) > 1:
+            _ii, _jj = self._near_pairs(centroids, areas, self._NEAR_R)
+            if len(_ii):
+                A[_ii, _jj] = self._quad_normal_vel(
+                    centroids[_ii], normals[_ii], tris[_jj],
+                    areas[_jj]).astype(A.dtype, copy=False)
         return A
 
     @staticmethod
@@ -538,7 +693,8 @@ class PanelMethodModel:
     @staticmethod
     def _induced_velocity(centroids, normals, areas, sigma,
                           ground_effect: bool = False,
-                          road_plane_z_m: float = 0.0):
+                          road_plane_z_m: float = 0.0,
+                          tris=None):
         """Full induced velocity vector at each centroid (for the surface speed).
 
         GROUND IMAGE: this must mirror _influence_matrix exactly. It previously
@@ -593,6 +749,25 @@ class PanelMethodModel:
                 v[lo:hi] += np.einsum("ij,ijk->ik", invi, d_img)
                 del d_img, r2i, invi
             del diff, r2, inv
+
+        #  NEAR-FIELD CORRECTION, applied as (quadrature - point) on top of the
+        #  far field already summed above. This half is the one that moves the
+        #  answer: Cp comes from this velocity, and the pressure integral over
+        #  a closed body cancels almost exactly, so a per-panel velocity error
+        #  that does not shrink with refinement is what C_L ends up reporting.
+        #
+        #  Direct sources only. A panel's IMAGE sits at least twice the ride
+        #  height away — hundreds of millimetres against panel sizes of tens —
+        #  so it is far field by construction and the point form is accurate
+        #  there. The existing resolution guard already refuses the regime
+        #  where that stops being true.
+        if tris is not None and n > 1:
+            cls = PanelMethodModel
+            _ii, _jj = cls._near_pairs(c, areas, cls._NEAR_R)
+            if len(_ii):
+                _corr = (cls._quad_velocity(c[_ii], tris[_jj], sa[_jj])
+                         - cls._point_velocity(c[_ii], c[_jj], sa[_jj]))
+                np.add.at(v, _ii, _corr)
         return v
 
     # ------------------------------------------------------------------ #
@@ -693,3 +868,8 @@ def _freestream_unit(att: Attitude):
     v = np.array([math.cos(yaw), -math.sin(yaw), 0.0], dtype=float)
     n = np.linalg.norm(v)
     return v / (n if n > 1e-12 else 1.0)
+
+
+#  Built once at import: the quadrature stencil is a fixed 16x3 array of
+#  barycentric weights and does not depend on the mesh.
+PanelMethodModel._SUB_W = PanelMethodModel._sub_centroid_weights(2)
