@@ -328,6 +328,11 @@ def render(st, default_area_m2: float = 1.0,
             model = PanelMethodModel(PanelParams(max_panels=_PANEL_BANDS[band]))
 
         rows, first_note, prov = [], "", None
+        #  Grid-check outcome per row, kept alongside `rows` rather than in it
+        #  so it never reaches the displayed table. None means THE CHECK COULD
+        #  NOT RUN — which is not the same as the check failing, and used to be
+        #  reported as though it were. See the banner logic below.
+        _gcis = []
         prog = st.progress(0.0, text="Solving…")
         t0 = time.time()
 
@@ -368,7 +373,9 @@ def render(st, default_area_m2: float = 1.0,
             }
             if not use_vlm:
                 row["grid Δ"] = "—" if _gci is None else f"{100*_gci:.0f}%"
-                row["resolved"] = (_gci is not None and _gci < 0.15)
+                #  None, not False: an unrun check is unknown, not failed.
+                row["resolved"] = None if _gci is None else (_gci < 0.15)
+                _gcis.append(_gci)
             rows.append(row)
             first_note = first_note or (r.notes or "")
             prov = prov or r.provenance
@@ -382,10 +389,23 @@ def render(st, default_area_m2: float = 1.0,
 
     # -------------------------------------------------------------- output --
     ok = [r for r in rows if r["converged"]]
+    #  TWO DIFFERENT OUTCOMES, TWO DIFFERENT MESSAGES.
+    #
+    #  The coarse re-solve runs at half the selected cap. Since decimation was
+    #  removed, a cap is a REFUSAL threshold, not a target: any mesh larger
+    #  than half the cap makes the coarse solve raise, and _gci comes back
+    #  None. That is "we could not check", but it used to fall into the same
+    #  bucket as "we checked and it moved 40%", so every mesh between half the
+    #  cap and the cap was told its numbers had shifted by more than 15% when
+    #  nothing had been compared at all — with an empty `grid Δ` cell as the
+    #  only hint. Separate them.
     if not use_vlm:
-        _unresolved = [r for r in rows if r["converged"] and not r.get("resolved")]
+        _unresolved = [r for r, g in zip(rows, _gcis)
+                       if r["converged"] and g is not None and g >= 0.15]
+        _unchecked = [r for r, g in zip(rows, _gcis)
+                      if r["converged"] and g is None]
     else:
-        _unresolved = []
+        _unresolved, _unchecked = [], []
 
     if not ok:
         if use_vlm:
@@ -438,6 +458,20 @@ def render(st, default_area_m2: float = 1.0,
             f"Raise the panel budget until the column settles, run at a higher "
             f"ride height, or solve a smaller part. A result that shifts with "
             f"resolution is telling you about the mesh, not about the car.")
+
+    if _unchecked:
+        st.warning(
+            f"**Grid convergence not checked** for {len(_unchecked)} of "
+            f"{len(rows)} case(s) — the numbers above are unverified, not "
+            f"wrong. The check re-solves at half the mesh size limit, and this "
+            f"mesh is larger than half, so the coarse solve was refused rather "
+            f"than run. Nothing was compared; the `grid Δ` column is empty for "
+            f"those rows.\n\n"
+            f"To check it properly, export the same part from CAD at a coarser "
+            f"tolerance and solve that too — if C_L holds to a few percent, "
+            f"the fine mesh is resolving the flow. Decimating here is not an "
+            f"option; it corrupts closed thin-walled surfaces, which is why "
+            f"the coarse solve refuses instead of shrinking the mesh.")
 
     import pandas as pd
     df = pd.DataFrame(rows)
