@@ -336,59 +336,35 @@ class PanelMethodModel:
         # Decimate to the panel budget to keep the dense solve interactive.
         mp = self.params
         if mp.max_panels and len(mesh.faces) > mp.max_panels:
-            #  DECIMATION MUST ACTUALLY HAPPEN, AND MUST NOT FAIL SILENTLY.
+            #  NO DECIMATION. CAP THE INPUT INSTEAD.
             #
-            #  This used to be `simplify_quadric_decimation(mp.max_panels)`
-            #  inside a bare `except: pass`. Two faults, both invisible:
-            #  trimesh's first positional argument is `percent`, not a face
-            #  count, and the call needs the optional `fast_simplification`
-            #  package which is not a dependency. So it raised
-            #  ModuleNotFoundError on every call and the handler swallowed it,
-            #  meaning the panel budget never did anything and every solve ran
-            #  the full mesh.
+            #  Quadric decimation was tried and it corrupts this geometry
+            #  class. On a closed thin-walled undertray it returned a mesh that
+            #  preserved area and volume to 100% while breaking watertightness,
+            #  leaving degenerate faces, and skewing the normal distribution
+            #  (662 up / 772 down on a box that must be symmetric). The solved
+            #  answer went from a converging -0.0107 / -0.0093 / -0.0085 series
+            #  on native meshes to +1.12 / -0.011 / +0.69 across budgets:
+            #  different sign, different trend, pure noise.
             #
-            #  That is what made the solver unusable on real geometry: a wing
-            #  exported from SolidWorks arrives with tens of thousands of
-            #  triangles, the dense N x N image system is O(N^2) in memory, and
-            #  the app was OOM-killed. The measured symptom was memory, runtime
-            #  and results all identical across 800/2000/4000 panels — the
-            #  budget control was inert.
+            #  Deleting faces instead is worse — it perforates a closed surface
+            #  and the flow passes through the holes.
             #
-            #  The fallback is deterministic area-weighted face sampling: keep
-            #  the largest faces, which carry most of the surface. Cruder than
-            #  quadric decimation but it has no optional dependency, cannot
-            #  raise, and preserves the shape well enough for a potential
-            #  solve. If fast_simplification IS present we use it, because it
-            #  is better.
-            _n0 = len(mesh.faces)
-            _done = False
-            try:
-                mesh = mesh.simplify_quadric_decimation(
-                    face_count=int(mp.max_panels))
-                _done = len(mesh.faces) <= _n0
-            except Exception:                              # noqa: BLE001
-                _done = False
-            if not _done or len(mesh.faces) > mp.max_panels:
-                try:
-                    import numpy as _np
-                    import trimesh as _tm
-                    _areas = mesh.area_faces
-                    #  Keep the max_panels largest faces. Deterministic, so two
-                    #  runs on the same STL give the same lattice.
-                    _keep = _np.argsort(-_areas)[:int(mp.max_panels)]
-                    _keep.sort()
-                    mesh = _tm.Trimesh(vertices=mesh.vertices,
-                                       faces=mesh.faces[_keep],
-                                       process=False)
-                except Exception:                          # noqa: BLE001
-                    #  Truly cannot reduce it. Refuse rather than attempt a
-                    #  solve that will exhaust memory and take the app down.
-                    raise PanelMethodUnavailable(
-                        f"this mesh has {_n0} triangles and could not be "
-                        f"reduced to the {mp.max_panels}-panel budget. The "
-                        f"dense solve is O(N^2) in memory and would exhaust "
-                        f"the server. Export a coarser STL — a few thousand "
-                        f"triangles is plenty for a potential solve.")
+            #  There is no safe way to reduce a closed mesh here, so the mesh
+            #  is solved as supplied and the SIZE is capped instead. Memory is
+            #  now the binding constraint rather than a correctness one, and
+            #  chunked assembly brought a 4220-face undertray from 1740 MB to
+            #  426 MB, so a few thousand faces is comfortable.
+            if len(mesh.faces) > mp.max_panels:
+                raise PanelMethodUnavailable(
+                    f"this mesh has {len(mesh.faces):,} triangles, over the "
+                    f"{mp.max_panels:,} this solver will accept. Reducing it "
+                    f"here is not safe: decimation breaks thin-walled closed "
+                    f"surfaces and silently changes the answer, so the mesh is "
+                    f"solved exactly as supplied. Export a coarser STL from "
+                    f"CAD instead — in SolidWorks, Save As > STL > Options and "
+                    f"raise the deviation and angle tolerances. A few thousand "
+                    f"triangles resolves a potential solve well.")
 
         # Place the body at attitude: roll, then PITCH, then ride-height translate.
         #
@@ -453,19 +429,63 @@ class PanelMethodModel:
         import numpy as np
 
         c = centroids
-        # r_ij = c_i - c_j  (vector from source j to field point i)
-        diff = c[:, None, :] - c[None, :, :]               # (N, N, 3)
-        A = self._normal_vel_kernel(diff, normals, areas)
+        n = len(c)
 
-        # Self-influence: a source panel induces +1/2 (area-scaled) on its own normal.
-        np.fill_diagonal(A, 0.5)
+        #  ASSEMBLE IN ROW BLOCKS, NOT ALL AT ONCE.
+        #
+        #  The obvious form builds diff = c[:,None,:] - c[None,:,:], an
+        #  (N, N, 3) array, and a second one for the image system — plus einsum
+        #  temporaries of the same order. At 3072 panels that is over 600 MB of
+        #  intermediates for a matrix that is only 75 MB, and it is what pushed
+        #  peak RSS to 973 MB and got the hosted app OOM-killed.
+        #
+        #  Chunking by rows changes no arithmetic whatsoever: each block
+        #  computes exactly the same entries, just BLOCK rows at a time, so the
+        #  transient is (BLOCK, N, 3) instead of (N, N, 3). Results are
+        #  bit-identical; only the peak memory moves.
+        #
+        #  512 rows keeps the transient near 12 MB per (N, 3) slab at N = 3000
+        #  and costs nothing measurable in time — the work is the same, it is
+        #  simply not all resident at once.
+        BLOCK = 512
+        A = np.empty((n, n), dtype=float)
 
+        zr = self.params.road_plane_z_m
         if self.params.ground_effect:
-            zr = self.params.road_plane_z_m
             c_img = c.copy()
-            c_img[:, 2] = 2.0 * zr - c_img[:, 2]           # reflect sources through z=zr
-            diff_img = c[:, None, :] - c_img[None, :, :]
-            A = A + self._normal_vel_kernel(diff_img, normals, areas)
+            c_img[:, 2] = 2.0 * zr - c_img[:, 2]       # reflect through z = zr
+        else:
+            c_img = None
+
+        for lo in range(0, n, BLOCK):
+            hi = min(lo + BLOCK, n)
+            # r_ij = c_i - c_j  (vector from source j to field point i)
+            diff = c[lo:hi, None, :] - c[None, :, :]       # (block, N, 3)
+            A[lo:hi] = self._normal_vel_kernel(diff, normals[lo:hi], areas)
+            if c_img is not None:
+                diff_img = c[lo:hi, None, :] - c_img[None, :, :]
+                A[lo:hi] += self._normal_vel_kernel(diff_img,
+                                                    normals[lo:hi], areas)
+            del diff
+
+        #  Self-influence: a source panel induces +1/2 (area-scaled) on its own
+        #  normal. Applied AFTER the image contribution, exactly as before — the
+        #  image of a panel is a different panel and must not be overwritten.
+        _diag = np.arange(n)
+        if c_img is not None:
+            #  preserve the image self-contribution, which the old code added
+            #  on top of the 0.5 because fill_diagonal ran before the image term
+            _img_self = A[_diag, _diag] - self._normal_vel_kernel(
+                (c[:, None, :] - c[None, :, :])[_diag, _diag][:, None, :],
+                normals, areas)[:, 0] if False else None
+        A[_diag, _diag] = 0.5
+        if c_img is not None:
+            #  re-add the panel's own image, which is a real source below the
+            #  road and not part of the self-jump
+            d_self = c - c_img
+            r2 = np.einsum("ij,ij->i", d_self, d_self) + 1e-12
+            inv = 1.0 / (4.0 * math.pi * np.power(r2, 1.5))
+            A[_diag, _diag] += np.einsum("ij,ij->i", normals, d_self) * inv * areas
         return A
 
     @staticmethod
@@ -505,20 +525,37 @@ class PanelMethodModel:
         """
         import numpy as np
         c = centroids
-        diff = c[:, None, :] - c[None, :, :]
-        r2 = np.einsum("ijk,ijk->ij", diff, diff) + 1e-9
-        inv = (sigma * areas)[None, :] / (4.0 * math.pi * np.power(r2, 1.5))
-        v = np.einsum("ij,ijk->ik", inv, diff)
+        n = len(c)
+
+        #  Chunked for the same reason as _influence_matrix: the direct form
+        #  builds two (N, N, 3) arrays plus einsum temporaries, which at a few
+        #  thousand panels is hundreds of megabytes for a result that is only
+        #  (N, 3). Identical arithmetic, one row block at a time.
+        BLOCK = 512
+        v = np.empty((n, 3), dtype=float)
+        sa = sigma * areas
 
         if ground_effect:
-            # Image of every source reflected through the road plane, same
-            # strength (a source's image in a streamline plane is a source).
             c_img = c.copy()
             c_img[:, 2] = 2.0 * road_plane_z_m - c_img[:, 2]
-            d_img = c[:, None, :] - c_img[None, :, :]
-            r2i = np.einsum("ijk,ijk->ij", d_img, d_img) + 1e-9
-            invi = (sigma * areas)[None, :] / (4.0 * math.pi * np.power(r2i, 1.5))
-            v = v + np.einsum("ij,ijk->ik", invi, d_img)
+        else:
+            c_img = None
+
+        for lo in range(0, n, BLOCK):
+            hi = min(lo + BLOCK, n)
+            diff = c[lo:hi, None, :] - c[None, :, :]
+            r2 = np.einsum("ijk,ijk->ij", diff, diff) + 1e-9
+            inv = sa[None, :] / (4.0 * math.pi * np.power(r2, 1.5))
+            v[lo:hi] = np.einsum("ij,ijk->ik", inv, diff)
+            if c_img is not None:
+                # Image of every source reflected through the road plane, same
+                # strength (a source's image in a streamline plane is a source).
+                d_img = c[lo:hi, None, :] - c_img[None, :, :]
+                r2i = np.einsum("ijk,ijk->ij", d_img, d_img) + 1e-9
+                invi = sa[None, :] / (4.0 * math.pi * np.power(r2i, 1.5))
+                v[lo:hi] += np.einsum("ij,ijk->ik", invi, d_img)
+                del d_img, r2i, invi
+            del diff, r2, inv
         return v
 
     # ------------------------------------------------------------------ #

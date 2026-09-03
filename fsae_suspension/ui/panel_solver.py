@@ -58,10 +58,22 @@ import time
 #  This mattered more than it looks: the budget used to have no effect at all,
 #  because decimation was calling trimesh with the wrong argument inside a bare
 #  `except: pass`. Every solve ran the full mesh whatever was selected here.
+#  A CAP, NOT A TARGET. The mesh is solved exactly as supplied — see
+#  panel_method.py for why decimation was removed. This is the largest mesh the
+#  solver will accept, and the memory is what sets it. Measured peak RSS after
+#  chunked assembly:
+#
+#        768 faces    166 MB     0.6 s
+#       3072 faces    313 MB    10.1 s
+#       4220 faces    426 MB    24.5 s
+#
+#  Before chunking, 3072 faces cost 973 MB and the app was OOM-killed. 5000 is
+#  the ceiling offered here: it leaves room for Streamlit, the session and a
+#  second user.
 _PANEL_BANDS = {
-    "Fast (800 panels)": 800,
-    "Balanced (1200 panels)": 1200,
-    "Fine (1600 panels — slower)": 1600,
+    "Up to 1,500 triangles (fast)": 1500,
+    "Up to 3,000 triangles": 3000,
+    "Up to 5,000 triangles (slow)": 5000,
 }
 
 _MAX_STL_MB = 60
@@ -160,8 +172,7 @@ def render(st, default_area_m2: float = 1.0,
             f"{max(_PANEL_BANDS.values()):,} panels before solving.")
         return
     if _tris:
-        st.caption(f"{_tris:,} triangles in, decimated to the panel budget "
-                   f"below before solving.")
+        st.caption(f"{_tris:,} triangles — solved as supplied, nothing decimated.")
 
     # ------------------------------------------------------------- controls --
     c = st.columns([1, 1, 1, 1])
@@ -182,13 +193,15 @@ def render(st, default_area_m2: float = 1.0,
                                 float(default_length_m), 0.05, key="pm_len",
                                 help="Wheelbase, for the pitching-moment "
                                      "coefficient.")
-    band = c2[2].selectbox("Panel budget", list(_PANEL_BANDS),
+    band = c2[2].selectbox("Mesh size limit", list(_PANEL_BANDS),
                            index=0, key="pm_band",
-                           help="The linear system is dense in both time and "
-                                "memory, so this is the cost lever. Your STL is "
-                                "decimated to this many panels before solving — "
-                                "exporting a finer mesh does not give a finer "
-                                "solve, it just gets discarded.")
+                           help="Your mesh is solved exactly as supplied — "
+                                "nothing is decimated, because reducing a "
+                                "closed thin-walled surface corrupts the "
+                                "answer. This is the largest mesh accepted; a "
+                                "bigger STL is refused rather than altered. "
+                                "The solve is dense in time and memory, so a "
+                                "finer mesh costs both.")
 
     mode = st.radio("Run", ["Single attitude", "Ride-height sweep"],
                     horizontal=True, key="pm_mode")
@@ -203,6 +216,48 @@ def render(st, default_area_m2: float = 1.0,
         lo, hi = min(h0, h1), max(h0, h1)
         heights = [lo + (hi - lo) * i / (n - 1) for i in range(n)]
         st.caption(f"{n} solves at roughly half a second each.")
+
+    #  TELL THEM BEFORE THEY SPEND THE TIME.
+    #
+    #  Panels are point sources at their centroids, so the ground image only
+    #  holds while the mean panel is small against the gap to the road. Mean
+    #  panel size is ~sqrt(area / N), which means the usable ride height scales
+    #  with the SIZE of the part and the budget — and for a full-size undertray
+    #  at a realistic 40 mm, the arithmetic asks for roughly 9000 panels, which
+    #  does not fit in the memory this app has.
+    #
+    #  That was previously discovered only by running it: the solve completed,
+    #  reported non-convergence, and the reason sat inside a notes string. A
+    #  user reasonably concluded their STL was broken. Estimating it up front
+    #  from the mesh area costs nothing and turns a dead end into a choice.
+    _lo_h = min(heights)
+    try:
+        import math as _math
+        _area = float(_probe.area) if _tris else None
+    except Exception:                                       # noqa: BLE001
+        _area = None
+    if _area:
+        _panel_mm = _math.sqrt(_area / _PANEL_BANDS[band]) * 1000.0
+        _min_h = _panel_mm / 0.4
+        if _lo_h < _min_h:
+            _need = int(_area / ((0.4 * _lo_h / 1000.0) ** 2))
+            _fits = _need <= max(_PANEL_BANDS.values())
+            st.warning(
+                f"**This will not resolve at {_lo_h:.0f} mm ride height.** At "
+                f"{_PANEL_BANDS[band]:,} panels the mean panel is about "
+                f"{_panel_mm:.0f} mm, and the ground image needs panels well "
+                f"under the gap to the road — so this budget is trustworthy "
+                f"only above roughly **{_min_h:.0f} mm**.\n\n"
+                + (f"Raise the budget to about {_need:,} panels, or run at a "
+                   f"higher ride height."
+                   if _fits else
+                   f"Resolving {_lo_h:.0f} mm on a part this size would take "
+                   f"about **{_need:,} panels**, which is beyond what this "
+                   f"solver can hold in memory. Either run this part at a "
+                   f"higher ride height to see the trend, or solve a smaller "
+                   f"piece of it \u2014 a floor section or a sidepod resolves "
+                   f"down to realistic ride heights at this budget.")
+                + "\n\nYou can still run it; the result will be flagged.")
 
     if not st.button("Run panel solve", type="primary", key="pm_run"):
         return
@@ -229,6 +284,32 @@ def render(st, default_area_m2: float = 1.0,
                 reference_length_m=length)
             try:
                 r = model.solve(spec)
+                #  GRID CONVERGENCE: SOLVE TWICE, AND BELIEVE NEITHER ALONE.
+                #
+                #  A single solve reports a number with no indication of
+                #  whether it is resolved. On a real undertray this is not a
+                #  subtlety: at 1600 / 2400 / 3200 panels the same geometry at
+                #  150 mm gave +1.07, -0.07 and +0.03 — three different signs
+                #  and three different ride-height trends. The conditioning
+                #  guard flagged only the worst two, so the others were
+                #  presented as trustworthy.
+                #
+                #  Re-solving at half the budget and comparing is the standard
+                #  check, and it costs about a third more time because the
+                #  coarse solve is much cheaper than the fine one. If the two
+                #  disagree, the mesh is not resolving the physics and the
+                #  number must not be quoted, whatever the residual says.
+                _coarse = None
+                try:
+                    _coarse = PanelMethodModel(
+                        PanelParams(max_panels=max(200, _PANEL_BANDS[band] // 2))
+                    ).solve(spec)
+                except Exception:                          # noqa: BLE001
+                    pass
+                _gci = None
+                if _coarse is not None and _coarse.converged:
+                    _den = max(abs(r.c_lift), abs(_coarse.c_lift), 1e-6)
+                    _gci = abs(r.c_lift - _coarse.c_lift) / _den
             except PanelMethodUnavailable as exc:
                 #  A specific, reportable reason — coarse surface, unreadable
                 #  geometry. Say which, rather than "solve failed".
@@ -236,6 +317,8 @@ def render(st, default_area_m2: float = 1.0,
                 return
             rows.append({
                 "ride height (mm)": round(h, 1),
+                "grid Δ": ("—" if _gci is None else f"{100*_gci:.0f}%"),
+                "resolved": (_gci is not None and _gci < 0.15),
                 "C_L": r.c_lift, "C_D": r.c_drag,
                 "C_side": r.c_side, "C_pitch": r.c_pitch,
                 "aero balance (front)": r.aero_balance_front,
@@ -253,7 +336,11 @@ def render(st, default_area_m2: float = 1.0,
             os.remove(tmp)
 
     # -------------------------------------------------------------- output --
+    #  "converged" from the solver means the linear system was well-posed.
+    #  "resolved" means the answer stops changing when the mesh is refined.
+    #  A number needs both, and they are not the same thing.
     ok = [r for r in rows if r["converged"]]
+    _unresolved = [r for r in rows if r["converged"] and not r["resolved"]]
     if not ok:
         st.error(
             "No case converged. Most often this is one of three things:\n\n"
@@ -279,6 +366,17 @@ def render(st, default_area_m2: float = 1.0,
                 else f"{best['downforce (N)']:.0f} N")
     m[3].metric("L/D",
                 "—" if not best["C_D"] else f"{abs(best['C_L'])/best['C_D']:.2f}")
+
+    if _unresolved:
+        st.error(
+            f"**Not grid-converged — do not quote these numbers.** "
+            f"{len(_unresolved)} of {len(rows)} case(s) changed by more than "
+            f"15% when re-solved at half the panel budget, which means the "
+            f"mesh is not resolving the flow. The `grid Δ` column shows how "
+            f"much each moved.\n\n"
+            f"Raise the panel budget until the column settles, run at a higher "
+            f"ride height, or solve a smaller part. A result that shifts with "
+            f"resolution is telling you about the mesh, not about the car.")
 
     import pandas as pd
     df = pd.DataFrame(rows)

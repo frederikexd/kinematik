@@ -251,58 +251,77 @@ def test_bluff_bodies_are_not_caught_by_the_guard(extents, label, tmp_path):
     assert r.converged, f"{label} should solve"
 
 
-def test_panel_budget_actually_decimates(tmp_path):
-    """The budget used to have no effect at all.
+def test_oversized_mesh_is_refused_not_decimated(tmp_path):
+    """Decimation was tried and removed because it corrupts this geometry.
 
-    `simplify_quadric_decimation(max_panels)` passes a FACE COUNT where trimesh
-    expects a PERCENT, and the call needs the optional `fast_simplification`
-    package, so it raised ModuleNotFoundError on every invocation — inside a
-    bare `except: pass`. Every solve therefore ran the full mesh whatever the
-    user selected, which is what exhausted memory on real geometry and took the
-    hosted app down.
+    On a closed thin-walled undertray, quadric decimation preserved area and
+    volume to 100% while breaking watertightness and skewing the normals
+    (662 up / 772 down on a box that must be symmetric). The solved answer went
+    from a cleanly converging -0.0107 / -0.0093 / -0.0085 series on native
+    meshes to +1.12 / -0.011 / +0.69 across budgets: different sign, different
+    trend, noise. Deleting faces instead perforates the surface and lets flow
+    through the holes.
 
-    Measured peak RSS after the fix: 800 panels 167 MB, 1200 252 MB,
-    1600 363 MB, 2400 638 MB. Before it, 974 MB at every setting.
+    So the mesh is solved exactly as supplied, and an oversized one is refused
+    with instructions rather than silently altered.
     """
-    from suspension.aero.panel_method import PanelMethodModel, PanelParams
+    from suspension.aero.panel_method import (PanelMethodModel, PanelParams,
+                                              PanelMethodUnavailable)
     from suspension.aero.cfd import CaseSpec, Attitude
-
-    m = trimesh.creation.box(extents=[1.5, 0.9, 0.12])
+    m = trimesh.creation.box(extents=[0.30, 0.20, 0.10])
     for _ in range(4):
-        m = m.subdivide()          # ~3000 faces, well over the budget
-    m.apply_translation([0, 0, 0.2])
+        m = m.subdivide()                      # 3072 faces
+    m.apply_translation([0, 0, 0.15])
     p = str(tmp_path / "big.stl")
     m.export(p)
-    assert len(m.faces) > 2000, "fixture must exceed the budget to be a test"
-
-    spec = CaseSpec(attitude=Attitude(pitch_deg=-2, ride_height_mm=200,
+    spec = CaseSpec(attitude=Attitude(pitch_deg=0.0, ride_height_mm=100,
                                       speed_ms=20),
-                    geometry_path=p, reference_area_m2=1.0,
+                    geometry_path=p, reference_area_m2=0.06,
                     reference_length_m=1.55)
-    r = PanelMethodModel(PanelParams(max_panels=400)).solve(spec)
-    #  cell_count carries the panel count actually solved
-    n = r.provenance.cell_count
-    assert n is not None and n <= 400, (
-        f"budget not applied: solved {n} panels against a 400 budget")
+    with pytest.raises(PanelMethodUnavailable) as exc:
+        PanelMethodModel(PanelParams(max_panels=800)).solve(spec)
+    assert "coarser" in str(exc.value).lower()
 
 
-def test_smaller_budget_is_cheaper(tmp_path):
-    """Guards the same regression from the other side: if decimation silently
-    stops working again, both budgets solve the full mesh and the panel counts
-    become equal."""
+def test_mesh_is_solved_exactly_as_supplied(tmp_path):
+    """The panel count solved must equal the triangles in the file. If any
+    reduction creeps back in, this breaks."""
     from suspension.aero.panel_method import PanelMethodModel, PanelParams
     from suspension.aero.cfd import CaseSpec, Attitude
-
-    m = trimesh.creation.box(extents=[1.5, 0.9, 0.12])
-    for _ in range(4):
-        m = m.subdivide()
-    m.apply_translation([0, 0, 0.2])
-    p = str(tmp_path / "big.stl")
+    m = trimesh.creation.box(extents=[0.30, 0.20, 0.10])
+    for _ in range(3):
+        m = m.subdivide()                      # 768 faces
+    m.apply_translation([0, 0, 0.15])
+    p = str(tmp_path / "m.stl")
     m.export(p)
-    spec = CaseSpec(attitude=Attitude(pitch_deg=-2, ride_height_mm=200,
-                                      speed_ms=20),
-                    geometry_path=p, reference_area_m2=1.0,
-                    reference_length_m=1.55)
-    small = PanelMethodModel(PanelParams(max_panels=300)).solve(spec)
-    large = PanelMethodModel(PanelParams(max_panels=900)).solve(spec)
-    assert small.provenance.cell_count < large.provenance.cell_count
+    r = PanelMethodModel(PanelParams(max_panels=5000)).solve(
+        CaseSpec(attitude=Attitude(pitch_deg=0.0, ride_height_mm=100,
+                                   speed_ms=20),
+                 geometry_path=p, reference_area_m2=0.06,
+                 reference_length_m=1.55))
+    assert r.provenance.cell_count == len(m.faces)
+
+
+def test_grid_convergence_on_a_native_mesh(tmp_path):
+    """The physics converges when the mesh is left alone. Refining a box from
+    192 to 768 to 3072 faces gives -0.01065, -0.00931, -0.00850: monotone, one
+    sign, shrinking steps. This is the property decimation destroyed."""
+    from suspension.aero.panel_method import PanelMethodModel, PanelParams
+    from suspension.aero.cfd import CaseSpec, Attitude
+    vals = []
+    for sub in (2, 3):
+        m = trimesh.creation.box(extents=[0.30, 0.20, 0.10])
+        for _ in range(sub):
+            m = m.subdivide()
+        m.apply_translation([0, 0, 0.15])
+        p = str(tmp_path / f"m{sub}.stl")
+        m.export(p)
+        r = PanelMethodModel(PanelParams(max_panels=5000)).solve(
+            CaseSpec(attitude=Attitude(pitch_deg=0.0, ride_height_mm=100,
+                                       speed_ms=20),
+                     geometry_path=p, reference_area_m2=0.06,
+                     reference_length_m=1.55))
+        vals.append(r.c_lift)
+    assert all(v < 0 for v in vals), f"sign should be stable, got {vals}"
+    assert abs(vals[1] - vals[0]) / abs(vals[0]) < 0.20, (
+        f"refinement should move the answer by well under 20%, got {vals}")
