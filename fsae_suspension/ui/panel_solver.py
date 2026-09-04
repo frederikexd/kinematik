@@ -98,8 +98,12 @@ import time
 #  labelled with what it costs. The memory guard in panel_method refuses before
 #  the allocation rather than letting the container OOM mid-solve.
 #
-#  On Streamlit Community Cloud the deploy box is slower by roughly 15–20x
-#  (measured: 60–70 s for a 2,316-face mesh at 2,500 panels). Any mesh above
+#  RELABELLED against the deploy box itself. The old figures came from an
+#  early run — 60–70 s for a 2,316-face mesh — and were measured BEFORE the
+#  near-field pair search stopped being O(N^2). Real numbers now, from a
+#  5,996-triangle floor at the 6,000 band: a single attitude with its grid
+#  check took 33.6 s (two solves) and a 5-point sweep took 94.7 s (six solves).
+#  That is about 16–17 s per solve, not minutes. Any mesh above
 #  ~800 faces at a 1,000-panel limit will be refused, so members who upload a
 #  real part will almost always land on 2,500 or higher and wait minutes.
 #
@@ -108,11 +112,11 @@ import time
 #  a few hundred faces. Only push higher if the warning says the panels are too
 #  coarse to trust.
 _PANEL_BANDS = {
-    "Up to 800 triangles (~2 s)": 800,
-    "Up to 1,500 triangles (~10 s)": 1500,
-    "Up to 2,500 triangles (~30 s)": 2500,
-    "Up to 5,000 triangles (~4 min, ~600 MB)": 5000,
-    "Up to 6,000 triangles (~6 min, ~870 MB)": 6000,
+    "Up to 800 triangles (<1 s)": 800,
+    "Up to 1,500 triangles (~1 s)": 1500,
+    "Up to 2,500 triangles (~3 s)": 2500,
+    "Up to 5,000 triangles (~10 s, ~600 MB)": 5000,
+    "Up to 6,000 triangles (~17 s, ~870 MB)": 6000,
 }
 
 _MAX_STL_MB = 60
@@ -405,7 +409,8 @@ def render(st, default_area_m2: float = 1.0,
             st.caption(f"{n} lattice solves — fast, well under a second each.")
         else:
             st.caption(
-                f"{n} solves at {_PANEL_BANDS[band]:,} panels. On Streamlit "
+                f"{n} solves plus one for the grid check at "
+                f"{_PANEL_BANDS[band]:,} panels. On Streamlit "
                 f"Cloud expect roughly {_PANEL_BANDS[band]//80:.0f}–"
                 f"{_PANEL_BANDS[band]//60:.0f} s per solve, so "
                 f"~{n*_PANEL_BANDS[band]//80//60:.0f}–"
@@ -584,9 +589,12 @@ def render(st, default_area_m2: float = 1.0,
         with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as fh:
             fh.write(raw)
             tmp = fh.name
+        _coarse_same = False
         if up_coarse is not None:
+            _cb = up_coarse.getvalue()
+            _coarse_same = (_cb == raw)
             with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as fh:
-                fh.write(up_coarse.getvalue())
+                fh.write(_cb)
                 tmp_coarse = fh.name
 
         if use_vlm:
@@ -652,7 +660,19 @@ def render(st, default_area_m2: float = 1.0,
                     #  mistake with better manners.
                     _coarse = None
                     try:
-                        if tmp_coarse is not None:
+                        if (tmp_coarse is not None and _coarse_same):
+                            #  SAME FILE TWICE IS NOT A GRID CHECK.
+                            #
+                            #  Dropping the fine STL into the coarse slot makes
+                            #  both solves identical and the column reports 0%
+                            #  — the most reassuring output the check has, from
+                            #  the one input that proves nothing. Byte-identical
+                            #  uploads are refused rather than flattered.
+                            _why = ("the coarse slot holds the same file as "
+                                    "the fine one, so both solves would use "
+                                    "identical triangles. Export the part "
+                                    "again at a looser STL tolerance")
+                        elif tmp_coarse is not None:
                             #  Same case, same attitude, the OTHER export. This
                             #  is a real second discretisation of the geometry,
                             #  which is the only honest way to do this once
@@ -661,6 +681,28 @@ def render(st, default_area_m2: float = 1.0,
                             _coarse = PanelMethodModel(
                                 PanelParams(max_panels=_PANEL_BANDS[band])
                             ).solve(_cspec)
+                        elif _tris and _tris <= max(200, _PANEL_BANDS[band] // 2):
+                            #  THE TAUTOLOGY CASE.
+                            #
+                            #  The coarse solve runs at half the mesh size
+                            #  limit, but the limit is a REFUSAL threshold —
+                            #  nothing is decimated. So when the mesh already
+                            #  fits under half, both solves use the IDENTICAL
+                            #  triangles and return the identical C_L, and the
+                            #  column proudly reports 0%. That is a mesh
+                            #  compared with itself, not a convergence check,
+                            #  and 0% is the most reassuring thing the column
+                            #  can say — so it was the worst possible lie.
+                            #
+                            #  Refuse to report a number rather than report a
+                            #  meaningless one. The second uploader is the only
+                            #  way to check a mesh this size.
+                            _why = (f"this mesh has {_tris:,} triangles and the "
+                                    f"check re-solves at "
+                                    f"{max(200, _PANEL_BANDS[band] // 2):,}, so "
+                                    f"the coarse pass would use the very same "
+                                    f"triangles and return the very same "
+                                    f"answer. Nothing would be compared")
                         else:
                             _coarse = PanelMethodModel(
                                 PanelParams(max_panels=max(200, _PANEL_BANDS[band] // 2))
