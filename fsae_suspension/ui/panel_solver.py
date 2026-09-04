@@ -86,7 +86,15 @@ import time
 #
 #      triangles    solve time      memory
 #        768          0.4 s         ~100 MB
-#      3,072          3   s         ~300 MB
+#      3,072          3.3 s         ~300 MB
+#     12,288         57   s        ~3,000 MB
+#
+#  Interpolating the measured points, 5,000 triangles is about 14 s and 800 MB
+#  HERE, so roughly four minutes on the deploy box — and 800 MB of peak on top
+#  of the app's ~250 MB baseline is over the 690 MB Streamlit Community Cloud
+#  guarantees. The 5,000 band exists because it was asked for, and it is
+#  labelled with what it costs. The memory guard in panel_method refuses before
+#  the allocation rather than letting the container OOM mid-solve.
 #
 #  On Streamlit Community Cloud the deploy box is slower by roughly 15–20x
 #  (measured: 60–70 s for a 2,316-face mesh at 2,500 panels). Any mesh above
@@ -101,6 +109,7 @@ _PANEL_BANDS = {
     "Up to 800 triangles (~2 s)": 800,
     "Up to 1,500 triangles (~10 s)": 1500,
     "Up to 2,500 triangles (~30 s)": 2500,
+    "Up to 5,000 triangles (~4 min, ~800 MB)": 5000,
 }
 
 _MAX_STL_MB = 60

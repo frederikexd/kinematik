@@ -111,6 +111,13 @@ class PanelParams:
     """
 
 
+#: Peak the panel solve may allocate. Streamlit Community Cloud guarantees
+#: 690 MB and the app's own baseline is around 250 MB, so this leaves headroom
+#: for one solve without putting the container at risk of an OOM kill that
+#: would drop every concurrent viewer.
+_MEMORY_BUDGET_MB = 900.0
+
+
 class PanelMethodUnavailable(RuntimeError):
     """
     Raised when the panel solve cannot run for a SPECIFIC, reportable reason —
@@ -181,6 +188,23 @@ class PanelMethodModel:
         # Influence matrix: normal velocity at panel i induced by unit source on
         # panel j (plus its ground image), in a point-source approximation evaluated
         # at panel centroids. A[i,j] = n_i · (u_ij + u_image_ij).
+        #  REFUSE BEFORE ALLOCATING, NOT AFTER.
+        #
+        #  The influence matrix is N x N float32 and the assembly needs a few
+        #  row blocks of workspace on top. Measured peaks: 3,072 panels 303 MB,
+        #  12,288 panels 3,046 MB — clean N^2. An OOM kill inside a Streamlit
+        #  script run takes the whole app down for every viewer, not just the
+        #  one who asked, so a refusal with a number is strictly better than
+        #  finding out by dying.
+        _need_mb = (n * n * 4) / 1048576.0 * 2.6            # matrix + workspace
+        if _need_mb > _MEMORY_BUDGET_MB:
+            raise PanelMethodUnavailable(
+                f"this solve needs about {_need_mb:.0f} MB for a {n:,}-panel "
+                f"influence matrix, over the {_MEMORY_BUDGET_MB:.0f} MB this "
+                f"app can safely use. Pick a smaller mesh size limit, or "
+                f"export a coarser STL — the cost is quadratic in panel count, "
+                f"so dropping to {int(n * 0.7):,} panels roughly halves it.")
+
         A = self._influence_matrix(centroids, normals, areas, tris)
 
         # RHS: cancel the onset normal velocity on every panel (flow tangency).
