@@ -196,7 +196,13 @@ class PanelMethodModel:
         #  script run takes the whole app down for every viewer, not just the
         #  one who asked, so a refusal with a number is strictly better than
         #  finding out by dying.
-        _need_mb = (n * n * 4) / 1048576.0 * 2.6            # matrix + workspace
+        #  Multiplier calibrated, not guessed. A 5,120-panel solve peaks at
+        #  630 MB against a 100 MB float32 matrix — a ratio of 6.3, because the
+        #  assembly holds row blocks, the near-field pair arrays and LAPACK's
+        #  own workspace alongside it. The first cut of this guard used 2.6 and
+        #  would have waved through a 6,000-panel solve that actually needs
+        #  ~860 MB.
+        _need_mb = (n * n * 4) / 1048576.0 * 6.3            # matrix + workspace
         if _need_mb > _MEMORY_BUDGET_MB:
             raise PanelMethodUnavailable(
                 f"this solve needs about {_need_mb:.0f} MB for a {n:,}-panel "

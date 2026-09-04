@@ -87,6 +87,8 @@ import time
 #      triangles    solve time      memory
 #        768          0.4 s         ~100 MB
 #      3,072          3.3 s         ~300 MB
+#      5,120          7.0 s         630 MB
+#      5,912         10.7 s         801 MB
 #     12,288         57   s        ~3,000 MB
 #
 #  Interpolating the measured points, 5,000 triangles is about 14 s and 800 MB
@@ -109,7 +111,8 @@ _PANEL_BANDS = {
     "Up to 800 triangles (~2 s)": 800,
     "Up to 1,500 triangles (~10 s)": 1500,
     "Up to 2,500 triangles (~30 s)": 2500,
-    "Up to 5,000 triangles (~4 min, ~800 MB)": 5000,
+    "Up to 5,000 triangles (~4 min, ~600 MB)": 5000,
+    "Up to 6,000 triangles (~6 min, ~870 MB)": 6000,
 }
 
 _MAX_STL_MB = 60
@@ -164,6 +167,7 @@ def render(st, default_area_m2: float = 1.0,
     use_vlm = solver.startswith("Vortex")
     use_duct = solver.startswith("Underfloor")
 
+
     if use_vlm:
         st.markdown(
             '<p class="hint">Horseshoe vortex-lattice solve over the mean '
@@ -214,6 +218,14 @@ def render(st, default_area_m2: float = 1.0,
               "SolidWorks: File ▸ Save As ▸ STL. Solved exactly as supplied — "
               "never decimated, so keep it under the panel budget below. The "
               "road is z = 0 in the STL's own coordinates."))
+
+    #  Drop the latched duct result when the part or the solver changes —
+    #  otherwise a member swaps STLs and reads the previous floor's numbers
+    #  under the new filename.
+    _ctx = (solver, getattr(up, "name", None), getattr(up, "size", None))
+    if st.session_state.get("_duct_ctx") != _ctx:
+        st.session_state["_duct_ctx"] = _ctx
+        st.session_state.pop("_duct_ran", None)
 
     #  SECOND EXPORT FOR THE GRID CHECK.
     #
@@ -433,9 +445,30 @@ def render(st, default_area_m2: float = 1.0,
 
     btn_label = ("Run underfloor solve" if use_duct else
                  "Run vortex-lattice solve" if use_vlm else "Run panel solve")
-    if not st.button(btn_label, type="primary",
-                     key="duct_run" if use_duct else
-                     ("vlm_run" if use_vlm else "pm_run")):
+    _pressed = st.button(btn_label, type="primary",
+                         key="duct_run" if use_duct else
+                         ("vlm_run" if use_vlm else "pm_run"))
+
+    #  A BUTTON IS TRUE FOR ONE RUN ONLY, WHICH BROKE THE WHAT-IF SLIDERS.
+    #
+    #  Everything below used to be gated on the button directly. Streamlit
+    #  reruns the whole script on any widget change, and on that rerun the
+    #  button reads False — so moving a slider inside the what-if expander
+    #  returned early and wiped the results that contained the slider. From the
+    #  member's side the page just reloaded and nothing they touched had any
+    #  effect.
+    #
+    #  The duct solve is milliseconds, so it re-runs freely once started: latch
+    #  a flag on the press and render whenever it is set. The two panel solvers
+    #  stay gated on the press itself — they take tens of seconds, and having
+    #  them re-fire on every stray widget change is exactly the behaviour that
+    #  got the app throttled.
+    if use_duct:
+        if _pressed:
+            st.session_state["_duct_ran"] = True
+        if not st.session_state.get("_duct_ran"):
+            return
+    elif not _pressed:
         return
 
     # ------------------------------------------------------ underfloor duct --
@@ -463,16 +496,32 @@ def render(st, default_area_m2: float = 1.0,
             else:
                 st.caption(_res.notes)
 
-            _hs = [h for h in (80, 60, 50, 40, 30, 25, 20) if h <= 1.6 * _ride0]
+            #  THE ROW YOU ASKED FOR MUST BE IN THE TABLE.
+            #
+            #  This was a fixed ladder of 80/60/50/40/30/25/20 mm, so a member
+            #  who typed 130 saw a headline for 130 and a table starting at 80
+            #  — their own setting absent from a table that looked like it
+            #  contained it. Put the requested height in as the first row,
+            #  mark it, and show the standard ladder below it as what lowering
+            #  the car buys.
+            _ride_i = int(round(_ride0))
+            _hs = [_ride_i] + [h for h in (80, 60, 50, 40, 30, 25, 20)
+                               if h < _ride_i]
             if len(_hs) > 2:
                 _rows = []
                 for _h in _hs:
                     _r = _uf.solve(_tmp_d, float(_h), speed, area)
-                    _rows.append({"ride height (mm)": _h,
-                                  "C_L": round(_r.c_lift, 4),
-                                  "downforce (N)": round(_r.downforce_N, 1),
-                                  "inlet/throat": round(_r.area_ratio, 2)})
+                    _rows.append({
+                        "ride height (mm)": (f"{_h}  ← set"
+                                             if _h == _ride_i else str(_h)),
+                        "C_L": round(_r.c_lift, 4),
+                        "downforce (N)": round(_r.downforce_N, 1),
+                        "inlet/throat": round(_r.area_ratio, 2)})
                 st.dataframe(_rows, width="stretch", hide_index=True)
+                st.caption(
+                    f"First row is the {_ride_i} mm you set above and matches "
+                    f"the headline; the rest is what lowering the car buys at "
+                    f"this geometry.")
             # ---- parametric what-if -------------------------------------
             #  The duct solve is ~0.1 ms, so a 2-D grid costs nothing and
             #  answers the question a team actually has: not "what does this
