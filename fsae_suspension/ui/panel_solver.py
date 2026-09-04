@@ -480,23 +480,25 @@ def render(st, default_area_m2: float = 1.0,
             f"resolution is telling you about the mesh, not about the car.")
 
     if _unchecked:
-        _reasons = ("\n\n" + "\n\n".join(f"- {w}" for w in _unchecked_why)
-                    if _unchecked_why else "")
+        #  SAY IT ONCE.
+        #
+        #  The solver's own refusal message already carries the remedy —
+        #  export a coarser STL, here is where the setting lives, decimating
+        #  is unsafe. Restating that underneath it produced a banner that gave
+        #  the same instruction twice and buried the one thing the reader did
+        #  not already know: that nothing was compared. So the closing
+        #  paragraph is only added when there is no solver message to defer
+        #  to; when there is one, it speaks for itself.
+        _why_txt = "\n".join(f"- {w}" for w in _unchecked_why)
         st.warning(
             f"**Grid convergence not checked** for {len(_unchecked)} of "
-            f"{len(rows)} case(s) — the numbers above are unverified, not "
-            f"wrong. The check re-solves the same case at half the mesh size "
-            f"limit and compares C_L; that second solve did not produce "
-            f"anything to compare against, so nothing was compared and the "
-            f"`grid Δ` column is empty for those rows."
-            + (f"\n\nWhat the coarse solve reported:{_reasons}" if _reasons
-               else "")
-            + f"\n\nTo check it properly, export the same part from CAD at a "
-              f"coarser tolerance and solve that too — if C_L holds to a few "
-              f"percent, the fine mesh is resolving the flow. Decimating here "
-              f"is not an option; it corrupts closed thin-walled surfaces, "
-              f"which is why the coarse solve refuses instead of shrinking "
-              f"the mesh.")
+            f"{len(rows)} case(s) — unverified, not wrong. The check re-solves "
+            f"at half the mesh size limit and compares C_L; that second solve "
+            f"produced nothing to compare against, so `grid Δ` is empty.\n\n"
+            + (_why_txt if _unchecked_why else
+               "Export the same part from CAD at a coarser tolerance and solve "
+               "that too — if C_L holds to a few percent, the fine mesh is "
+               "resolving the flow."))
 
     import pandas as pd
     df = pd.DataFrame(rows)

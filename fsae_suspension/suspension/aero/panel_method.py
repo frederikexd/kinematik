@@ -875,8 +875,26 @@ class PanelMethodModel:
         if abs(total) < 1e-9:
             return None
         front = float(np.sum(load[x > x_mid]))             # +x is nose-forward
-        frac = front / total
-        return float(min(max(frac, 0.0), 1.0))
+        rear = total - front
+
+        #  A BALANCE IS ONLY A BALANCE WHEN BOTH ENDS PUSH THE SAME WAY.
+        #
+        #  front/total was returned clamped to [0, 1]. When one end makes
+        #  downforce and the other makes lift, `total` is the small difference
+        #  of two opposing loads and the ratio blows up — it came back exactly
+        #  1.000 on one geometry and 0.094 on a near-identical one, both of
+        #  them the clamp firing rather than a measurement. Clamping turned a
+        #  meaningless number into a plausible-looking one, which is worse than
+        #  returning nothing.
+        #
+        #  Report the split only when the ends agree in sign and the net is a
+        #  real fraction of what each end carries. Otherwise None, which the UI
+        #  already renders as an honest blank.
+        if front * rear <= 0.0:
+            return None
+        if abs(total) < 0.2 * (abs(front) + abs(rear)):
+            return None
+        return float(min(max(front / total, 0.0), 1.0))
 
 
 def _freestream_unit(att: Attitude):

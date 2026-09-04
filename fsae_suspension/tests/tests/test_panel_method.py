@@ -708,3 +708,27 @@ def test_vortex_lattice_zero_is_explained_not_silent(tmp_path):
     # ...and the same flat plate must still respond to incidence.
     assert solve(-2.0).c_lift < -1e-3
     assert solve(-4.0).c_lift < solve(-2.0).c_lift
+
+
+def test_aero_balance_is_none_when_the_ends_oppose_each_other(tmp_path):
+    """REGRESSION: front/total was returned clamped to [0, 1].
+
+    When one end makes downforce and the other makes lift, `total` is the small
+    difference of two opposing loads and the ratio blows up. The clamp turned
+    that into exactly 1.000 or something near 0 — plausible-looking numbers
+    that were really the clamp firing, not a measurement. A symmetric flat
+    plate must still read about 50/50; a rake case where the ends oppose must
+    read None rather than a clamped value.
+    """
+    p = _plate_stl()
+    def bal(pitch, h):
+        return PanelMethodModel(PanelParams(max_panels=4000)).solve(
+            _spec(p, h=h, pitch=pitch)).aero_balance_front
+
+    flat = bal(0.0, 60.0)
+    assert flat is not None and 0.35 < flat < 0.65, (
+        f"a symmetric plate should split near 50/50, got {flat}")
+    for pitch in (-2.0, 2.0):
+        b = bal(pitch, 60.0)
+        assert b is None or 0.0 < b < 1.0, (
+            f"pitch {pitch}: balance {b} is a clamp, not a measurement")
