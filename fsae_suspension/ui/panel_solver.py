@@ -126,6 +126,73 @@ _PANEL_BANDS = {
 _MAX_STL_MB = 60
 
 
+def _log_runs(kind, settings, rows):
+    """Append every solve to a session run log, once each.
+
+    WHY THIS EXISTS. Documentation capture is generic — it picks up whatever
+    tables and figures happen to be on screen when a feature is open. That
+    works for the run you are looking at and loses every run before it: change
+    a ride height, solve again, and the previous result is gone from the page
+    and therefore gone from the document. A team that swept five geometries
+    could document one.
+
+    So the runs are recorded deliberately rather than incidentally. Every solve
+    appends here with its full settings, and the log renders inside the
+    Aerodynamics body, which is what the capture layer then picks up. The
+    document ends up with the whole session's work instead of its last minute.
+
+    Deduplicated on a signature of settings plus results: Streamlit re-runs the
+    script on any widget change, and the duct solver deliberately re-solves on
+    those re-runs, so the same run arrives many times. Identical inputs AND
+    identical outputs mean it is the same run being re-rendered, not a new one.
+    """
+    import datetime as _dt
+
+    log = st.session_state.setdefault("_aero_run_log", [])
+    seen = {r["_sig"] for r in log}
+    stamp = _dt.datetime.now().strftime("%H:%M:%S")
+    added = 0
+    for row in rows:
+        sig = repr((kind, sorted(settings.items()),
+                    sorted((k, v) for k, v in row.items()
+                           if not k.startswith("_"))))
+        if sig in seen:
+            continue
+        seen.add(sig)
+        log.append({"_sig": sig, "time": stamp, "solver": kind,
+                    **settings, **row})
+        added += 1
+    #  A session log is unbounded by nature and a member can sweep for an hour.
+    #  Keep the most recent 200: enough for any realistic session, small enough
+    #  that it never becomes the reason a document is too big to build.
+    if len(log) > 200:
+        del log[:-200]
+    return added
+
+
+def _render_run_log():
+    """Show the session's runs so the documentation capture can see them."""
+    log = st.session_state.get("_aero_run_log") or []
+    if not log:
+        return
+    with st.expander(f"Run log — {len(log)} solve(s) this session",
+                     expanded=False):
+        import pandas as pd
+        df = pd.DataFrame([{k: v for k, v in r.items()
+                            if not k.startswith("_")} for r in log])
+        df = df.dropna(axis=1, how="all")
+        st.dataframe(df, width="stretch", hide_index=True)
+        st.caption(
+            "Every solve this session, newest last. This table is what the "
+            "Aerodynamics document captures — without it only the run "
+            "currently on screen would be recorded, and everything you tried "
+            "before it would be lost.")
+        st.download_button(
+            "Download run log (.csv)", df.to_csv(index=False).encode("utf-8"),
+            file_name="aero_run_log.csv", mime="text/csv",
+            key="aero_runlog_csv")
+
+
 def _grid_remedy(tris, band, two_file):
     """What to actually DO about a failed grid check, for this exact case.
 
@@ -582,6 +649,9 @@ def render(st, default_area_m2: float = 1.0,
                         "downforce (N)": round(_r.downforce_N, 1),
                         "inlet/throat": round(_r.area_ratio, 2)})
                 st.dataframe(_rows, width="stretch", hide_index=True)
+                _log_runs("underfloor duct",
+                          {"speed (m/s)": speed, "ref area (m2)": area},
+                          _rows)
                 st.caption(
                     f"First row is the {_ride_i} mm you set above and matches "
                     f"the headline; the rest is what lowering the car buys at "
@@ -639,6 +709,7 @@ def render(st, default_area_m2: float = 1.0,
         finally:
             if _tmp_d and os.path.exists(_tmp_d):
                 os.remove(_tmp_d)
+        _render_run_log()
         return
 
     # ----------------------------------------------------------------- run --
@@ -1022,6 +1093,16 @@ def render(st, default_area_m2: float = 1.0,
                                  or (df[_c].fillna(0) == 0).all()):
             df = df.drop(columns=[_c])
     st.dataframe(df, width="stretch", hide_index=True)
+
+    _log_runs("vortex lattice" if use_vlm else "panel method",
+              {"speed (m/s)": speed, "pitch (deg)": pitch, "yaw (deg)": yaw,
+               "roll (deg)": roll, "ref area (m2)": area,
+               "ref length (m)": length,
+               "mesh limit": (f"lattice {n_span}x{n_chord}" if use_vlm
+                              else f"{_PANEL_BANDS[band]:,} panels"),
+               "triangles": _tris},
+              rows)
+    _render_run_log()
 
     if len(ok) > 1:
         import plotly.graph_objects as go
