@@ -77,7 +77,14 @@ class VortexLatticeUnavailable(RuntimeError):
 #  Chosen from the convergence study above: 24x6 sits inside the converged
 #  region and solves a dense 144x144 system in well under a second.
 DEFAULT_SPANWISE = 24
-DEFAULT_CHORDWISE = 6
+#: Raised from 6 after measuring against a case with a known answer. A
+#: rectangular AR = 8 wing with 2% circular-arc camber should make C_L ≈ 0.201
+#: by thin-aerofoil plus lifting-line; the lattice returned 0.155 at 6
+#: chordwise panels (77%), 0.167 at 10 (83%) and 0.176 at 24 (88%). Six panels
+#: cannot resolve a parabolic camber line, and the lift it misses is the lift
+#: the camber was there to make. Twelve costs nothing measurable — the solve is
+#: ~0.2 s either way — and recovers most of the gap.
+DEFAULT_CHORDWISE = 12
 
 
 def _seg_influence(P, A, B):
