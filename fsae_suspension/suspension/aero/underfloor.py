@@ -53,7 +53,14 @@ DEFAULT_DISCHARGE = 0.75
 #: spills around the car instead of going under it. The throat suction draws
 #: the streamtube in, so some over-capture is real; without a ceiling a large
 #: diffuser would pump an unphysical amount through a small inlet.
-SPILL_LIMIT = 1.45
+#:
+#: Cut from 1.45 to 1.15 when the discharge coefficient stopped multiplying
+#: into the velocity. Those two were compensating for each other: 0.75 x 1.45
+#: is 1.09, so the old pair behaved like an inlet capturing 9% over its area.
+#: With discharge moved onto the suction where it belongs, 1.45 alone put the
+#: floor at 657 N at 40 mm, which is most of a whole car's package from the
+#: floor alone. 1.15 is a defensible over-capture and lands at 376 N.
+SPILL_LIMIT = 1.15
 
 
 @dataclass
@@ -127,9 +134,23 @@ def _solve_channel(xs_l, area_l, width_l, speed_ms, ref_area_m2, rho,
     #  not without limit: past roughly SPILL_LIMIT the air goes around the car
     #  instead. Whichever of the two binds, binds.
     a_exit = float(area_l[-1])
-    a_flow = min(discharge * a_exit, SPILL_LIMIT * discharge * a_in)
+    a_flow = min(a_exit, SPILL_LIMIT * a_in)
     v_ratio = a_flow / np.maximum(area_l, 1e-9)
-    cp = 1.0 - v_ratio ** 2                             # Bernoulli, incompressible
+
+    #  DISCHARGE SCALES THE SUCTION, IT DOES NOT SLOW THE FLOW.
+    #
+    #  It used to multiply into the velocity ratio, which broke the one limit
+    #  the model has to get right: a duct of constant area must produce no
+    #  force. With discharge = 0.75 and an inlet/throat ratio of 1.26, the
+    #  product is 0.945 — under one — so the model decided the air under the
+    #  car was moving SLOWER than freestream, put the pressure above ambient
+    #  and reported LIFT. A floor at 110 mm read +0.065 C_L, and the sign only
+    #  flipped to downforce below 60 mm where the ratio finally beat 1/0.75.
+    #
+    #  Continuity sets the velocity and geometry alone decides it. The
+    #  discharge coefficient is a loss factor on the resulting suction, so a
+    #  uniform duct now gives Cp = 0 exactly at any value of it.
+    cp = discharge * (1.0 - v_ratio ** 2)
 
     #  PRESSURE RECOVERY IS LIMITED, AND THE EXIT IS NOT A PLENUM.
     #

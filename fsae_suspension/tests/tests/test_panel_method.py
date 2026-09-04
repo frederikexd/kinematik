@@ -1002,3 +1002,19 @@ def test_bluff_body_gets_no_spurious_circulation(tmp_path):
                  reference_length_m=0.60))
     assert abs(r.c_lift) < 1e-3, f"spurious lift on a sphere: {r.c_lift}"
     assert "no circulation added" in r.notes
+
+
+def test_underfloor_never_reports_lift_on_a_floor(tmp_path):
+    """REGRESSION: the discharge coefficient multiplied into the VELOCITY
+    ratio, so at a modest inlet/throat ratio the product fell under one, the
+    model decided the air under the car was slower than freestream, and it
+    reported LIFT — +0.065 C_L at 110 mm on a real floor, only flipping to
+    downforce below 60 mm. Discharge is a loss on the suction, not a brake on
+    the flow: a duct of constant area must give exactly zero at any value of
+    it, and a converging one must always give downforce."""
+    from suspension.aero import underfloor as uf
+    p = _floor_stl(tmp_path)
+    for h in (300.0, 200.0, 110.0, 80.0, 60.0, 40.0):
+        r = uf.solve(p, h, 20.0, 1.24)
+        assert r.c_lift < 0.0, f"lift at {h} mm: C_L={r.c_lift:+.4f}"
+        assert r.downforce_N > 0.0
