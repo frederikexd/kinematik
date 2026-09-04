@@ -150,7 +150,7 @@ class PanelMethodModel:
         """
         import numpy as np
 
-        centroids, normals, areas, length_ref, tris = self._load_panels(spec)
+        centroids, normals, areas, length_ref, tris, ride_gap = self._load_panels(spec)
         n = len(areas)
 
         # Onset flow: yaw about +z, pitch about +y, unit magnitude (coeffs are
@@ -254,7 +254,7 @@ class PanelMethodModel:
         # RESOLUTION GUARD — see _resolution_warning. Ground effect is the one
         # thing this module is for, and it is also where the point-source
         # approximation fails first.
-        res_warn = self._resolution_warning(centroids, areas)
+        res_warn = self._resolution_warning(centroids, areas, ride_gap)
 
         return CoeffResult(
             attitude=spec.attitude,
@@ -417,8 +417,32 @@ class PanelMethodModel:
             pitch = T.rotation_matrix(math.radians(a.pitch_deg), [0.0, 1.0, 0.0],
                                       pivot)
             mesh.apply_transform(pitch)
-        dz = (a.ride_height_mm - 30.0) / 1000.0            # 30 mm nominal, lower = down
-        mesh.apply_translation([0.0, 0.0, dz])
+        #  PLACE THE BODY AT THE RIDE HEIGHT IT WAS ASKED FOR.
+        #
+        #  This used to be `dz = (ride_height_mm - 30)/1000`, a fixed offset
+        #  that silently assumed every STL was authored with exactly 30 mm of
+        #  clearance already built in. Nothing enforced that, so the clearance
+        #  the solver actually used was (ride_height - 30 + whatever the STL's
+        #  own lowest point happened to be). On a part exported resting on
+        #  z = 0 — the natural way to export a floor — asking for 70 mm gave
+        #  40 mm. The UI reported the request, the resolution guard measured
+        #  the reality, and the two disagreed on screen: "70 mm" in the table
+        #  next to "the 40 mm ride height" in the note.
+        #
+        #  Worse than the cosmetic mismatch, every ride-height sweep was
+        #  offset by an unknown constant, so absolute C_L was attributed to the
+        #  wrong clearance and two differently-authored STLs were not
+        #  comparable at the same nominal height.
+        #
+        #  Measure the body and put it where it belongs. Taken AFTER roll and
+        #  pitch, because both change which point is lowest — with rake applied
+        #  the clearance must still mean the real gap to the road.
+        gap_target = self.params.road_plane_z_m + a.ride_height_mm / 1000.0
+        mesh.apply_translation([0.0, 0.0, gap_target - float(mesh.bounds[0][2])])
+        #  The achieved gap is now the requested one by construction; carried
+        #  out so the resolution guard reports the same number the UI shows
+        #  rather than measuring its own.
+        ride_gap = a.ride_height_mm / 1000.0
 
         centroids = np.asarray(mesh.triangles_center, dtype=float)
         normals = np.asarray(mesh.face_normals, dtype=float)
@@ -440,7 +464,7 @@ class PanelMethodModel:
 
         length_ref = float(spec.reference_length_m) if spec.reference_length_m else \
             float(centroids[:, 0].ptp() or 1.0)
-        return centroids, normals, areas, length_ref, tris
+        return centroids, normals, areas, length_ref, tris, ride_gap
 
     # ------------------------------------------------------------------ #
     #  Source-panel influence (point-source approx + ground image)
@@ -788,7 +812,7 @@ class PanelMethodModel:
         wetted = float(np.sum(areas))
         return cf * wetted / max(aref, 1e-9)
 
-    def _resolution_warning(self, centroids, areas) -> str:
+    def _resolution_warning(self, centroids, areas, ride_gap=None) -> str:
         """Flag the mesh being too coarse for the ride height it is solving at.
 
         Every panel is collapsed to a POINT SOURCE at its centroid. That is a
@@ -815,7 +839,12 @@ class PanelMethodModel:
         if not self.params.ground_effect:
             return ""
         import numpy as np
-        gap = float(np.min(centroids[:, 2])) - self.params.road_plane_z_m
+        #  Use the gap the body was actually placed at, not the minimum
+        #  CENTROID height — a centroid sits half a panel above the surface, so
+        #  measuring it here reported a clearance that disagreed with the one
+        #  the user typed by a mesh-dependent amount.
+        gap = (float(ride_gap) if ride_gap is not None
+               else float(np.min(centroids[:, 2])) - self.params.road_plane_z_m)
         if gap <= 0:
             return "  [WARNING: geometry intersects the road plane]"
         panel = float(np.sqrt(np.mean(areas)))

@@ -613,3 +613,98 @@ def test_cambered_floor_grid_converges(tmp_path):
     steps = [abs(b - a) / max(abs(a), abs(b)) for a, b in zip(cls, cls[1:])]
     assert max(steps) < 0.15, (
         f"cambered floor is not grid-converged: C_L {cls}, steps {steps}")
+
+
+# ===========================================================================
+#  VORTEX LATTICE — axis convention
+# ===========================================================================
+def _vlm_slab(tmp_path, camber, name):
+    """Closed slab, 1.20 m streamwise (x) by 0.70 m spanwise (y). CHORD IS
+    LONGER THAN SPAN, which is the case the extractor used to get wrong."""
+    nx, ny, thick, length, width = 29, 20, 0.040, 1.20, 0.70
+    xs = np.linspace(0.0, length, nx)
+    ys = np.linspace(-width / 2, width / 2, ny)
+    X, Y = np.meshgrid(xs, ys, indexing="ij")
+    Z = -camber * np.sin(np.pi * (X / length) ** 0.85)
+    top = np.stack([X, Y, Z + thick / 2], -1).reshape(-1, 3)
+    bot = np.stack([X, Y, Z - thick / 2], -1).reshape(-1, 3)
+    n = nx * ny
+
+    def v(i, j, low=False):
+        return i * ny + j + (n if low else 0)
+
+    f = []
+    for i in range(nx - 1):
+        for j in range(ny - 1):
+            f += [[v(i, j), v(i + 1, j), v(i + 1, j + 1)],
+                  [v(i, j), v(i + 1, j + 1), v(i, j + 1)],
+                  [v(i, j, 1), v(i + 1, j + 1, 1), v(i + 1, j, 1)],
+                  [v(i, j, 1), v(i, j + 1, 1), v(i + 1, j + 1, 1)]]
+    for i in range(nx - 1):
+        for j in (0, ny - 1):
+            a, b, c_, d = v(i, j), v(i + 1, j), v(i, j, 1), v(i + 1, j, 1)
+            f += ([[a, c_, d], [a, d, b]] if j == 0 else [[a, d, c_], [a, b, d]])
+    for j in range(ny - 1):
+        for i in (0, nx - 1):
+            a, b, c_, d = v(i, j), v(i, j + 1), v(i, j, 1), v(i, j + 1, 1)
+            f += ([[a, d, c_], [a, b, d]] if i == 0 else [[a, c_, d], [a, d, b]])
+    m = trimesh.Trimesh(vertices=np.vstack([top, bot]), faces=np.array(f),
+                        process=True)
+    m.update_faces(m.nondegenerate_faces())
+    m.remove_unreferenced_vertices()
+    m.fix_normals()
+    m.apply_translation([0.0, 0.0, -m.bounds[0][2]])
+    p = str(tmp_path / name)
+    m.export(p)
+    return p
+
+
+def test_vortex_lattice_finds_camber_when_chord_exceeds_span(tmp_path):
+    """REGRESSION: span used to be taken as the LONGEST bounding-box axis.
+
+    On any part whose chord beats its span — a low-aspect-ratio wing element,
+    an undertray — that sliced along the streamwise axis instead of the
+    spanwise one. Each section then ran across the span, where upper and lower
+    surfaces sit at the same height, so every midpoint matched, the camber line
+    came out perfectly flat, and C_L returned exactly +0.000000 with no error.
+    Axes are now fixed by the module's own convention: x streamwise, y span,
+    z lift.
+    """
+    from suspension.aero.vortex_lattice import (VortexLatticeModel,
+                                                camber_surface_from_stl)
+    p = _vlm_slab(tmp_path, 0.030, "cambered.stl")
+    _, span, chord, _ = camber_surface_from_stl(p)
+    assert span == pytest.approx(0.70, abs=0.05), f"span read as {span:.3f}"
+    assert chord == pytest.approx(1.20, abs=0.10), f"chord read as {chord:.3f}"
+
+    heights = [250.0, 150.0, 100.0, 70.0]
+    cls = [VortexLatticeModel().solve(
+        CaseSpec(attitude=Attitude(ride_height_mm=h, speed_ms=20.0),
+                 geometry_path=p, reference_area_m2=0.84,
+                 reference_length_m=1.20)).c_lift for h in heights]
+    assert all(c < -1e-3 for c in cls), f"camber produced no downforce: {cls}"
+    assert all(b < a for a, b in zip(cls, cls[1:])), (
+        f"downforce must grow as the floor nears the road: {cls}")
+
+
+def test_vortex_lattice_zero_is_explained_not_silent(tmp_path):
+    """A flat plate at zero incidence genuinely carries no circulation. The
+    result is allowed to be zero — it is not allowed to be zero without saying
+    why, because that is exactly what the bug above looked like."""
+    from suspension.aero.vortex_lattice import VortexLatticeModel
+    p = _vlm_slab(tmp_path, 0.0, "flat.stl")
+
+    def solve(pitch):
+        return VortexLatticeModel().solve(
+            CaseSpec(attitude=Attitude(ride_height_mm=150.0, speed_ms=20.0,
+                                       pitch_deg=pitch),
+                     geometry_path=p, reference_area_m2=0.84,
+                     reference_length_m=1.20))
+
+    flat = solve(0.0)
+    assert flat.c_lift == pytest.approx(0.0, abs=1e-9)
+    assert "flat" in flat.notes and "circulation" in flat.notes
+
+    # ...and the same flat plate must still respond to incidence.
+    assert solve(-2.0).c_lift < -1e-3
+    assert solve(-4.0).c_lift < solve(-2.0).c_lift

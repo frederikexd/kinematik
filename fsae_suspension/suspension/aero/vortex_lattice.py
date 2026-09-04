@@ -198,11 +198,25 @@ def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
         raise VortexLatticeUnavailable("geometry has no triangles")
 
     ext = mesh.bounding_box.extents
-    #  Span is the longest axis, chord the next. A wing is long in span and
-    #  thin in thickness; if the two smallest axes are comparable this is not a
-    #  wing and the caller should use the panel method instead.
-    order = list(np.argsort(-np.asarray(ext)))
-    i_span, i_chord, i_thick = order[0], order[1], order[2]
+    #  AXES ARE FIXED BY THE COORDINATE CONVENTION, NOT GUESSED FROM EXTENTS.
+    #
+    #  This used to be `order = argsort(-ext)` — span the longest axis, chord
+    #  the next. That silently assumed span > chord, which is false for plenty
+    #  of real parts: a low-aspect-ratio rear wing element, a single front-wing
+    #  element, an undertray. When it was wrong the extractor sliced along the
+    #  STREAMWISE axis instead of the spanwise one, so each "section" ran
+    #  across the span, where upper and lower surfaces are the same height. The
+    #  midpoints came out identical at every station, the camber line was
+    #  perfectly flat, circulation was zero and C_L came back exactly +0.000000
+    #  with no error raised. A silent zero is the worst possible failure here,
+    #  because zero is a plausible-looking number.
+    #
+    #  There is nothing to infer. The rest of the module already fixes the
+    #  frame: the onset flow is along +x, lift is measured along +z, and the
+    #  ground image is reflected through the z plane. Span is therefore y, by
+    #  construction, and a part that does not follow that convention will not
+    #  solve correctly anywhere else either.
+    i_chord, i_span, i_thick = 0, 1, 2
     if ext[i_thick] > 0.5 * ext[i_chord]:
         raise VortexLatticeUnavailable(
             f"this geometry is {ext[i_thick]*1000:.0f} mm thick against a "
@@ -372,6 +386,28 @@ class VortexLatticeModel:
             converged = False
             notes += (" WARNING: ill-conditioned lattice; treat the result as "
                       "unreliable.")
+        #  A ZERO IS A RESULT, SO SAY WHY IT IS ZERO.
+        #
+        #  A flat surface at zero incidence carries no circulation, so C_L is
+        #  exactly 0.000000 and that is correct physics, not a failure. But an
+        #  unexplained 0.000000 is indistinguishable from the axis-assignment
+        #  bug that used to produce one — so state the cause instead of leaving
+        #  the reader to guess which they are looking at.
+        _pts = np.asarray(grid)
+        _le, _te = _pts[:, 0, 2], _pts[:, -1, 2]
+        _straight = np.linspace(_le, _te, _pts.shape[1]).T
+        _camber = float(np.abs(_pts[:, :, 2] - _straight).max())
+        _incidence = abs(float(getattr(spec.attitude, "pitch_deg", 0.0) or 0.0))
+        if _camber < 1e-4 * chord and _incidence < 1e-6:
+            notes += (f" C_L is exactly zero because the extracted camber "
+                      f"surface is flat ({_camber*1000:.2f} mm of camber over a "
+                      f"{chord*1000:.0f} mm chord) and the incidence is zero. A "
+                      f"flat plate aligned with the flow carries no "
+                      f"circulation, so this is the right answer, not a failed "
+                      f"solve. Give it camber, pitch it, or use the panel "
+                      f"method if the part works by displacement rather than "
+                      f"by lift.")
+
         if h is not None and h < 0.5 * chord:
             notes += (f" Ride height {h*1000:.0f} mm is under half the mean "
                       f"chord: ground effect is strong here and a thin-surface "
