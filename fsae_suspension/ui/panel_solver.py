@@ -126,7 +126,7 @@ _PANEL_BANDS = {
 _MAX_STL_MB = 60
 
 
-def _log_runs(kind, settings, rows):
+def _log_runs(st, kind, settings, rows):
     """Append every solve to a session run log, once each.
 
     WHY THIS EXISTS. Documentation capture is generic — it picks up whatever
@@ -170,8 +170,14 @@ def _log_runs(kind, settings, rows):
     return added
 
 
-def _render_run_log():
-    """Show the session's runs so the documentation capture can see them."""
+def _render_run_log(st):
+    """Show the session's runs so the documentation capture can see them.
+
+    `st` is threaded in rather than imported: this module never imports
+    streamlit at module scope — `render(st, ...)` receives it — so a helper
+    that closed over a global `st` raised "name 'st' is not defined" the moment
+    it ran, and the aero workspace failed to build.
+    """
     log = st.session_state.get("_aero_run_log") or []
     if not log:
         return
@@ -649,7 +655,7 @@ def render(st, default_area_m2: float = 1.0,
                         "downforce (N)": round(_r.downforce_N, 1),
                         "inlet/throat": round(_r.area_ratio, 2)})
                 st.dataframe(_rows, width="stretch", hide_index=True)
-                _log_runs("underfloor duct",
+                _log_runs(st, "underfloor duct",
                           {"speed (m/s)": speed, "ref area (m2)": area},
                           _rows)
                 st.caption(
@@ -709,7 +715,7 @@ def render(st, default_area_m2: float = 1.0,
         finally:
             if _tmp_d and os.path.exists(_tmp_d):
                 os.remove(_tmp_d)
-        _render_run_log()
+        _render_run_log(st)
         return
 
     # ----------------------------------------------------------------- run --
@@ -1094,7 +1100,7 @@ def render(st, default_area_m2: float = 1.0,
             df = df.drop(columns=[_c])
     st.dataframe(df, width="stretch", hide_index=True)
 
-    _log_runs("vortex lattice" if use_vlm else "panel method",
+    _log_runs(st, "vortex lattice" if use_vlm else "panel method",
               {"speed (m/s)": speed, "pitch (deg)": pitch, "yaw (deg)": yaw,
                "roll (deg)": roll, "ref area (m2)": area,
                "ref length (m)": length,
@@ -1102,7 +1108,7 @@ def render(st, default_area_m2: float = 1.0,
                               else f"{_PANEL_BANDS[band]:,} panels"),
                "triangles": _tris},
               rows)
-    _render_run_log()
+    _render_run_log(st)
 
     if len(ok) > 1:
         import plotly.graph_objects as go
