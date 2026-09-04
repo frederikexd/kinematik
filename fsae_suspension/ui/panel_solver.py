@@ -333,6 +333,9 @@ def render(st, default_area_m2: float = 1.0,
         #  NOT RUN — which is not the same as the check failing, and used to be
         #  reported as though it were. See the banner logic below.
         _gcis = []
+        #  Why each unrun check did not run, so the banner can quote the
+        #  solver's own words instead of assuming a cause.
+        _gci_why = []
         prog = st.progress(0.0, text="Solving…")
         t0 = time.time()
 
@@ -345,16 +348,30 @@ def render(st, default_area_m2: float = 1.0,
             try:
                 r = model.solve(spec)
 
-                _gci = None
+                _gci, _why = None, None
                 if not use_vlm:
                     #  GRID CONVERGENCE: SOLVE TWICE, AND BELIEVE NEITHER ALONE.
+                    #
+                    #  Record WHY the check did not run, rather than inferring
+                    #  it later. There is more than one way to get here — the
+                    #  coarse budget refusing an oversized mesh is the common
+                    #  one, but the coarse solve can also come back
+                    #  ill-conditioned, or fail for a reason particular to the
+                    #  geometry. Guessing a single cause in the banner is how
+                    #  the old "changed by more than 15%" message came to be
+                    #  wrong; stating a different single cause would repeat the
+                    #  mistake with better manners.
                     _coarse = None
                     try:
                         _coarse = PanelMethodModel(
                             PanelParams(max_panels=max(200, _PANEL_BANDS[band] // 2))
                         ).solve(spec)
-                    except Exception:                      # noqa: BLE001
-                        pass
+                    except Exception as _ce:               # noqa: BLE001
+                        _why = str(_ce).strip() or type(_ce).__name__
+                    if _coarse is not None and not _coarse.converged:
+                        _why = ("the coarse solve ran but came back "
+                                "ill-conditioned, so its C_L is not worth "
+                                "comparing against")
                     if _coarse is not None and _coarse.converged:
                         _den = max(abs(r.c_lift), abs(_coarse.c_lift), 1e-6)
                         _gci = abs(r.c_lift - _coarse.c_lift) / _den
@@ -376,6 +393,7 @@ def render(st, default_area_m2: float = 1.0,
                 #  None, not False: an unrun check is unknown, not failed.
                 row["resolved"] = None if _gci is None else (_gci < 0.15)
                 _gcis.append(_gci)
+                _gci_why.append(_why)
             rows.append(row)
             first_note = first_note or (r.notes or "")
             prov = prov or r.provenance
@@ -404,8 +422,10 @@ def render(st, default_area_m2: float = 1.0,
                        if r["converged"] and g is not None and g >= 0.15]
         _unchecked = [r for r, g in zip(rows, _gcis)
                       if r["converged"] and g is None]
+        _unchecked_why = sorted({w for r, g, w in zip(rows, _gcis, _gci_why)
+                                 if r["converged"] and g is None and w})
     else:
-        _unresolved, _unchecked = [], []
+        _unresolved, _unchecked, _unchecked_why = [], [], []
 
     if not ok:
         if use_vlm:
@@ -460,18 +480,23 @@ def render(st, default_area_m2: float = 1.0,
             f"resolution is telling you about the mesh, not about the car.")
 
     if _unchecked:
+        _reasons = ("\n\n" + "\n\n".join(f"- {w}" for w in _unchecked_why)
+                    if _unchecked_why else "")
         st.warning(
             f"**Grid convergence not checked** for {len(_unchecked)} of "
             f"{len(rows)} case(s) — the numbers above are unverified, not "
-            f"wrong. The check re-solves at half the mesh size limit, and this "
-            f"mesh is larger than half, so the coarse solve was refused rather "
-            f"than run. Nothing was compared; the `grid Δ` column is empty for "
-            f"those rows.\n\n"
-            f"To check it properly, export the same part from CAD at a coarser "
-            f"tolerance and solve that too — if C_L holds to a few percent, "
-            f"the fine mesh is resolving the flow. Decimating here is not an "
-            f"option; it corrupts closed thin-walled surfaces, which is why "
-            f"the coarse solve refuses instead of shrinking the mesh.")
+            f"wrong. The check re-solves the same case at half the mesh size "
+            f"limit and compares C_L; that second solve did not produce "
+            f"anything to compare against, so nothing was compared and the "
+            f"`grid Δ` column is empty for those rows."
+            + (f"\n\nWhat the coarse solve reported:{_reasons}" if _reasons
+               else "")
+            + f"\n\nTo check it properly, export the same part from CAD at a "
+              f"coarser tolerance and solve that too — if C_L holds to a few "
+              f"percent, the fine mesh is resolving the flow. Decimating here "
+              f"is not an option; it corrupts closed thin-walled surfaces, "
+              f"which is why the coarse solve refuses instead of shrinking "
+              f"the mesh.")
 
     import pandas as pd
     df = pd.DataFrame(rows)
