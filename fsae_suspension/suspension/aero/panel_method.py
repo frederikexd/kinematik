@@ -102,6 +102,44 @@ class PanelMethodUnavailable(RuntimeError):
 # --------------------------------------------------------------------------- #
 #  The solver
 # --------------------------------------------------------------------------- #
+#  THE LIMIT THAT DECIDES WHETHER A NUMBER FROM HERE IS USABLE.
+#
+#  This is a SOURCE panel method. Sources model displacement — the flow going
+#  around a solid object — and nothing else. Lift needs circulation, and a
+#  source distribution has none: on a closed body in free air the pressure
+#  integral cancels to machine zero by d'Alembert, which the sphere test
+#  asserts on purpose. Every newton this solver reports on a floor therefore
+#  comes from ground-image asymmetry alone, NOT from the venturi-and-diffuser
+#  mechanism that actually makes an undertray work.
+#
+#  Measured on a representative FSAE floor (1.55 x 0.80 m, throat at 45% chord,
+#  diffuser ramp, fenced edges), at 20 m/s over a 1.24 m^2 planform:
+#
+#      ride height   this solver      vortex lattice
+#          60 mm        13 N              293 N
+#          50 mm        14 N            1,043 N
+#          40 mm        14 N            2,941 N  (past its own guard)
+#
+#  Two things to read off that. The magnitude is ~20x low where the lattice is
+#  still trustworthy. And this solver barely moves with ride height at all —
+#  13 to 14 N across a 30 mm change — which for a ground-effect device is the
+#  tell that the governing mechanism is missing entirely, not merely damped.
+#
+#  Fixing it properly means adding a doublet/vortex distribution with a Kutta
+#  condition on a designated trailing edge, plus a wake sheet. That is a real
+#  piece of work and finding the trailing edge on an arbitrary STL is its own
+#  problem. Until then the honest scope is: bluff bodies, where displacement IS
+#  the mechanism — a nose cone, a rollhoop, a sidepod's drag. For anything that
+#  works by lift, including every floor and every wing, use the lattice.
+_NO_CIRCULATION = (
+    "  [SOURCE PANELS — NO CIRCULATION. This solver models displacement only, "
+    "so lift from camber, incidence or a diffuser is not represented. On a "
+    "representative FSAE floor it reported 14 N where the vortex lattice "
+    "reported 1,043 N at the same attitude, and it moved by 1 N across a 30 mm "
+    "ride-height change. Use it for bluff bodies (nose, rollhoop, sidepod "
+    "drag). For a floor or a wing, use the vortex lattice.]")
+
+
 class PanelMethodModel:
     """
     A 3D constant-source-panel potential-flow model with a ground image, evaluated on
@@ -265,7 +303,8 @@ class PanelMethodModel:
             force_monitor_range=0.0,
             provenance=self.provenance(n_panels=n),
             notes=(f"panel solve: {n} panels, Cd(pressure)={c_drag_pressure:+.3f} "
-                   f"+ Cd(friction)={c_drag_friction:.3f}" + res_warn + cond_note),
+                   f"+ Cd(friction)={c_drag_friction:.3f}" + _NO_CIRCULATION
+                   + res_warn + cond_note),
         )
 
     # -- CFDSolver-shaped convenience (physics only; no deck) -------------- #
@@ -510,6 +549,22 @@ class PanelMethodModel:
     #  Flat always converged, which is why this went unnoticed: the box in the
     #  convergence table is flat. Camber is the entire reason an undertray
     #  makes downforce, so the shapes that matter were the ones that diverged.
+    #
+    #  WHAT REMAINS. The fix leaves a slow drift on cambered bodies — about 7%
+    #  per refinement step, and it does not flatten with more quadrature levels
+    #  or a wider near radius, so it is the flat-panel representation of a
+    #  curved surface rather than the near field. The absolute level on a
+    #  cambered part is therefore not a converged number. The RATIO between two
+    #  geometries at matched mesh density is:
+    #
+    #      faces   C_L 20mm camber   C_L 30mm camber   ratio
+    #       1256      -0.01320          -0.01791       1.356
+    #       2316      -0.01401          -0.01910       1.364
+    #       3844      -0.01471          -0.02047       1.392
+    #       6200      -0.01580          -0.02212       1.401
+    #
+    #  20% drift in the levels, 35% in the difference, 3% in the ratio over a
+    #  5x refinement. That is the screening use this solver actually supports.
     #
     #  The fix is to integrate the source over the actual triangle instead of
     #  collapsing it to its centroid, for near pairs only. Far pairs keep the

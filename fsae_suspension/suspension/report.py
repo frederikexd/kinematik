@@ -54,25 +54,65 @@ import json
 import datetime as _dt
 from dataclasses import dataclass, field, asdict
 
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable)
+#  reportlab is imported by the functions that draw, not at module scope.
+#
+#  It costs ~36 MB and several seconds, and this module sits in the app's
+#  import graph (ui/report.py pulls it at module scope), so importing it here
+#  made every session pay for a PDF library whether or not anyone built a PDF.
+#  Nothing above the drawing functions needs it: the dataclasses, hashing and
+#  provenance logic are pure Python.
+_RL = None
+_GRADE_COLOR_CACHE = None
+
+
+def _pick(names):
+    """Pull several cached reportlab names at once, for the local unpack each
+    drawing function does on its first line."""
+    _m = _rl()
+    return tuple(_m[n] for n in names)
+
+
+def _rl():
+    """Import the reportlab names on first use and cache them."""
+    global _RL
+    if _RL is None:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import mm
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import (
+            SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+            HRFlowable)
+        _RL = dict(A4=A4, mm=mm, colors=colors,
+                   getSampleStyleSheet=getSampleStyleSheet,
+                   ParagraphStyle=ParagraphStyle,
+                   SimpleDocTemplate=SimpleDocTemplate, Paragraph=Paragraph,
+                   Spacer=Spacer, Table=Table, TableStyle=TableStyle,
+                   HRFlowable=HRFlowable)
+    return _RL
+
+
+def _grade_colors():
+    """Built on first use: HexColor is a reportlab call, so building this map
+    at import time was on its own enough to drag the whole library in."""
+    global _GRADE_COLOR_CACHE
+    if _GRADE_COLOR_CACHE is None:
+        _c = _rl()["colors"]
+        _GRADE_COLOR_CACHE = {
+            "guess":    _c.HexColor("#9e9e9e"),
+            "estimate": _c.HexColor("#e6a700"),
+            "modelled": _c.HexColor("#2f6fdb"),
+            "measured": _c.HexColor("#2e9e4b"),
+            "verified": _c.HexColor("#1f7a34"),
+        }
+    return _GRADE_COLOR_CACHE
 
 from .provenance import grade_key, _GRADE_BADGE
 
 
 # Map each grade to a table cell colour so provenance is visible at a glance,
 # mirroring the emoji badges the UI uses (which don't render in base PDF fonts).
-_GRADE_COLOR = {
-    "guess":    colors.HexColor("#9e9e9e"),
-    "estimate": colors.HexColor("#e6a700"),
-    "modelled": colors.HexColor("#2f6fdb"),
-    "measured": colors.HexColor("#2e9e4b"),
-    "verified": colors.HexColor("#1f7a34"),
-}
+
 
 
 def _hx(color) -> str:
@@ -171,6 +211,7 @@ class CalculationRecord:
 #  2.  THE PDF BUILDER
 # ===================================================================== #
 def _styles():
+    ParagraphStyle, colors, getSampleStyleSheet = _pick(['ParagraphStyle', 'colors', 'getSampleStyleSheet'])
     ss = getSampleStyleSheet()
     ss.add(ParagraphStyle("KTitle", parent=ss["Title"], fontSize=18,
                           spaceAfter=2, textColor=colors.HexColor("#1a1a1a")))
@@ -186,6 +227,7 @@ def _styles():
 
 
 def _signoff_banner(rec: CalculationRecord, ss) -> Table:
+    Paragraph, Table, TableStyle, colors, mm = _pick(['Paragraph', 'Table', 'TableStyle', 'colors', 'mm'])
     status = ("SIGNED OFF" if rec.signed_off else "DRAFT — NOT SIGNED OFF")
     status_col = (colors.HexColor("#2e9e4b") if rec.signed_off
                   else colors.HexColor("#c0392b"))
@@ -212,6 +254,7 @@ def _signoff_banner(rec: CalculationRecord, ss) -> Table:
 
 
 def _inputs_table(rec: CalculationRecord, ss) -> Table:
+    Paragraph, Table, TableStyle, colors, mm = _pick(['Paragraph', 'Table', 'TableStyle', 'colors', 'mm'])
     rows = [[Paragraph("<b>Input</b>", ss["KCell"]),
              Paragraph("<b>Value</b>", ss["KCell"])]]
     for k, v in rec.inputs.items():
@@ -230,6 +273,7 @@ def _inputs_table(rec: CalculationRecord, ss) -> Table:
 
 
 def _outputs_table(rec: CalculationRecord, ss) -> Table:
+    Paragraph, Table, TableStyle, colors, mm = _pick(['Paragraph', 'Table', 'TableStyle', 'colors', 'mm'])
     rows = [[Paragraph("<b>Output</b>", ss["KCell"]),
              Paragraph("<b>Value</b>", ss["KCell"]),
              Paragraph("<b>Provenance</b>", ss["KCell"]),
@@ -258,17 +302,18 @@ def _outputs_table(rec: CalculationRecord, ss) -> Table:
     ]
     # colour the provenance cell per grade so it reads at a glance
     for i, gk in enumerate(grade_rows, start=1):
-        style.append(("TEXTCOLOR", (2, i), (2, i), _GRADE_COLOR.get(gk, colors.black)))
+        style.append(("TEXTCOLOR", (2, i), (2, i), _grade_colors().get(gk, colors.black)))
         style.append(("FONTNAME", (2, i), (2, i), "Helvetica-Bold"))
     t.setStyle(TableStyle(style))
     return t
 
 
 def _provenance_legend(ss) -> Paragraph:
+    (Paragraph,) = _pick(['Paragraph'])
     parts = []
     for key in ("guess", "estimate", "modelled", "measured", "verified"):
         _, tag, band = _GRADE_BADGE[key]
-        col = _hx(_GRADE_COLOR[key])
+        col = _hx(_grade_colors()[key])
         parts.append(f'<font color="{col}"><b>{tag}</b></font> {band}')
     return Paragraph("Provenance scale: " + " &nbsp;·&nbsp; ".join(parts),
                      ss["KSub"])
@@ -282,6 +327,7 @@ def build_report(rec: CalculationRecord, out_path: str) -> str:
     does not cover). Never raises on empty inputs/outputs — it stamps 'none
     recorded' rather than failing, so a thin calc still gets an honest report.
     """
+    A4, HRFlowable, Paragraph, SimpleDocTemplate, Spacer, colors, mm = _pick(['A4', 'HRFlowable', 'Paragraph', 'SimpleDocTemplate', 'Spacer', 'colors', 'mm'])
     ss = _styles()
     story = []
     chash = rec.content_hash()

@@ -198,27 +198,21 @@ def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
     if mesh is None or faces is None or len(faces) == 0:
         raise VortexLatticeUnavailable("geometry has no triangles")
 
-    #  ROLL AND PITCH ROTATE THE BODY, THEY DO NOT TILT THE FLOW.
+    #  NO ROTATION HERE. Roll and pitch are applied to the extracted camber
+    #  GRID in solve(), not to the mesh before slicing.
     #
-    #  Roll was accepted by the UI and then used by nothing at all: +3 deg and
-    #  -3 deg returned identical C_L to six decimals. Pitch was folded into the
-    #  onset flow, which is only equivalent to rotating the body in FREE AIR —
-    #  with a road present, tilting the flow leaves the surface-to-road angle
-    #  unchanged, so the ground-effect mechanism never saw it. The panel method
-    #  already moved pitch onto the geometry for exactly this reason; this is
-    #  the same fix. Yaw stays in the flow, because the road is symmetric about
-    #  z and rotating body or flow about z are genuinely equivalent.
-    if abs(float(roll_deg)) > 1e-9 or abs(float(pitch_deg)) > 1e-9:
-        _T = trimesh.transformations
-        if abs(float(roll_deg)) > 1e-9:
-            mesh.apply_transform(
-                _T.rotation_matrix(math.radians(float(roll_deg)), [1.0, 0, 0]))
-        if abs(float(pitch_deg)) > 1e-9:
-            _pv = [float(mesh.centroid[0]), 0.0, 0.0]
-            mesh.apply_transform(
-                _T.rotation_matrix(math.radians(float(pitch_deg)),
-                                   [0.0, 1.0, 0.0], _pv))
-
+    #  Rotating the mesh first was wrong and got worse the harder you looked at
+    #  it. This extractor slices at constant span and takes the camber as the
+    #  midpoint of the outline's crossings at constant GLOBAL x, with thickness
+    #  read along GLOBAL z. Rake tilts the body out of that frame, so near the
+    #  ends the crossings start picking up the blunt end faces instead of the
+    #  upper and lower surfaces. Refining chordwise put more stations in
+    #  exactly that region, so C_L at +/-0.5 deg rake drifted from -0.051 at 6
+    #  chordwise panels to +0.007 at 24 while the zero-rake case sat still at
+    #  -0.103 — a discontinuity at zero that grew with resolution.
+    #
+    #  The camber surface is a property of the BODY. Extract it in the body
+    #  frame where this method is valid, then rotate the resulting grid.
     ext = mesh.bounding_box.extents
     #  AXES ARE FIXED BY THE COORDINATE CONVENTION, NOT GUESSED FROM EXTENTS.
     #
@@ -359,8 +353,7 @@ class VortexLatticeModel:
 
         grid, span, chord, area = camber_surface_from_stl(
             spec.geometry_path, self.n_span, self.n_chord,
-            roll_deg=float(spec.attitude.roll_deg or 0.0),
-            pitch_deg=float(spec.attitude.pitch_deg or 0.0))
+)
 
         rho = 1.225
         V = float(spec.attitude.speed_ms or 20.0)
@@ -369,6 +362,32 @@ class VortexLatticeModel:
         #  camber_surface_from_stl — see the note there. Keeping them here too
         #  would double-count them.
         Vinf = V * np.array([math.cos(beta), -math.sin(beta), 0.0])
+
+        #  Attitude applied to the extracted surface, in this order: roll
+        #  about the streamwise axis, then pitch about the spanwise axis
+        #  through the surface's own mid-chord, then the ride-height placement
+        #  below. Yaw stays in the onset flow.
+        _roll = math.radians(float(spec.attitude.roll_deg or 0.0))
+        _pitch = math.radians(float(spec.attitude.pitch_deg or 0.0))
+        if abs(_roll) > 1e-12 or abs(_pitch) > 1e-12:
+            _g = np.asarray(grid, dtype=float)
+            _shape = _g.shape
+            _pts = _g.reshape(-1, 3)
+            if abs(_roll) > 1e-12:
+                _c, _s = math.cos(_roll), math.sin(_roll)
+                _y = _pts[:, 1].copy(); _z = _pts[:, 2].copy()
+                _pts[:, 1] = _c * _y - _s * _z
+                _pts[:, 2] = _s * _y + _c * _z
+            if abs(_pitch) > 1e-12:
+                #  +pitch = nose up. The nose is the low-x end, so rotating
+                #  about +y through mid-chord lifts it.
+                _x0 = 0.5 * (_pts[:, 0].min() + _pts[:, 0].max())
+                _c, _s = math.cos(_pitch), math.sin(_pitch)
+                _x = _pts[:, 0].copy() - _x0; _z = _pts[:, 2].copy()
+                _pts[:, 0] = _c * _x + _s * _z + _x0
+                _pts[:, 2] = -_s * _x + _c * _z
+            grid = [[_pts.reshape(_shape)[i, j] for j in range(_shape[1])]
+                    for i in range(_shape[0])]
 
         h = spec.attitude.ride_height_mm
         h = (float(h) / 1000.0) if h else None
@@ -507,21 +526,6 @@ class VortexLatticeModel:
                       f"solve. Give it camber, pitch it, or use the panel "
                       f"method if the part works by displacement rather than "
                       f"by lift.")
-
-        #  KNOWN LIMIT, STATED RATHER THAN HIDDEN.
-        #
-        #  The rake response is smooth and monotone away from zero but has a
-        #  local dip within about a degree of it, so small-rake comparisons are
-        #  not trustworthy. Ride-height sweeps and geometry-vs-geometry deltas
-        #  at a FIXED attitude are unaffected, and those are what a
-        #  prevalidation screen is for.
-        _pd = abs(float(getattr(spec.attitude, "pitch_deg", 0.0) or 0.0))
-        if 0.0 < _pd < 1.5:
-            notes += (f" Rake of {_pd:.1f} deg is inside the band where this "
-                      f"solver's pitch response is unreliable (a spurious dip "
-                      f"sits within ~1 deg of zero). Compare geometries at a "
-                      f"fixed attitude, or sweep rake beyond +/-1.5 deg, "
-                      f"rather than reading small-rake differences.")
 
         #  CALIBRATED, NOT A BLANKET.
         #

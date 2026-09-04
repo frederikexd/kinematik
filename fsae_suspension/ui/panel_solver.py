@@ -122,16 +122,20 @@ def render(st, default_area_m2: float = 1.0,
     # -------------------------------------------------------- solver picker --
     solver = st.radio(
         "Solver",
-        ["Panel method (bluff bodies — floors, undertrays, full car)",
-         "Vortex lattice (lifting surfaces — wings, dive planes)"],
+        ["Underfloor channel (floors, undertrays — ground effect)",
+         "Vortex lattice (lifting surfaces — wings, dive planes)",
+         "Panel method (bluff bodies — nose, rollhoop, sidepod drag)"],
         horizontal=True, key="aero_solver",
-        help="The panel method models displacement with source panels: "
-             "ground effect, attached-flow pressure, bluff bodies. It carries "
-             "no circulation and cannot resolve an isolated wing. The vortex "
-             "lattice solves a horseshoe lattice over the mean camber surface "
-             "with the Kutta condition enforced geometrically — use it for "
-             "wings and other lifting surfaces.")
+        help="Pick by MECHANISM, not by part. The underfloor model treats the "
+             "gap between the floor and the road as a duct and solves "
+             "continuity plus Bernoulli — that is how a floor makes "
+             "downforce. The vortex lattice carries circulation, which is how "
+             "a wing makes lift. The panel method has neither: source panels "
+             "model displacement only, so use it where displacement IS the "
+             "mechanism. The old label pointed floors at the panel method, "
+             "which is why it reported 14 N on a floor making a few hundred.")
     use_vlm = solver.startswith("Vortex")
+    use_duct = solver.startswith("Underfloor")
 
     if use_vlm:
         st.markdown(
@@ -397,9 +401,101 @@ def render(st, default_area_m2: float = 1.0,
                        f"down to realistic ride heights at this budget.")
                     + "\n\nYou can still run it; the result will be flagged.")
 
-    btn_label = "Run vortex-lattice solve" if use_vlm else "Run panel solve"
+    btn_label = ("Run underfloor solve" if use_duct else
+                 "Run vortex-lattice solve" if use_vlm else "Run panel solve")
     if not st.button(btn_label, type="primary",
-                     key="vlm_run" if use_vlm else "pm_run"):
+                     key="duct_run" if use_duct else
+                     ("vlm_run" if use_vlm else "pm_run")):
+        return
+
+    # ------------------------------------------------------ underfloor duct --
+    #  Self-contained: the duct model answers a different question from the two
+    #  panel solvers and returns a different shape of result, so it renders its
+    #  own compact view rather than being forced through the coefficient table.
+    if use_duct:
+        _tmp_d = None
+        try:
+            from suspension.aero import underfloor as _uf
+            with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as _f:
+                _f.write(raw)
+                _tmp_d = _f.name
+            _ride0 = float(heights[0]) if heights else 40.0
+            _res = _uf.solve(_tmp_d, _ride0, speed, area)
+            _c = st.columns(4)
+            _c[0].metric("C_L", f"{_res.c_lift:+.3f}")
+            _c[1].metric(f"Downforce at {speed:.0f} m/s",
+                         f"{_res.downforce_N:.0f} N")
+            _c[2].metric("Inlet / throat area", f"{_res.area_ratio:.2f}")
+            _c[3].metric("Diffuser half-angle",
+                         f"{_res.diffuser_angle_deg:.1f}°")
+            if not _res.attached:
+                st.warning(_res.notes)
+            else:
+                st.caption(_res.notes)
+
+            _hs = [h for h in (80, 60, 50, 40, 30, 25, 20) if h <= 1.6 * _ride0]
+            if len(_hs) > 2:
+                _rows = []
+                for _h in _hs:
+                    _r = _uf.solve(_tmp_d, float(_h), speed, area)
+                    _rows.append({"ride height (mm)": _h,
+                                  "C_L": round(_r.c_lift, 4),
+                                  "downforce (N)": round(_r.downforce_N, 1),
+                                  "inlet/throat": round(_r.area_ratio, 2)})
+                st.dataframe(_rows, width="stretch", hide_index=True)
+            # ---- parametric what-if -------------------------------------
+            #  The duct solve is ~0.1 ms, so a 2-D grid costs nothing and
+            #  answers the question a team actually has: not "what does this
+            #  floor do" but "which way should I move". Re-exporting an STL
+            #  per idea is slow enough that people stop asking.
+            with st.expander("What-if sweep — throat position vs ride height",
+                             expanded=False):
+                _sa, _sb = st.columns(2)
+                _inl = _sa.slider("Inlet height above throat (mm)",
+                                  0, 120, 55, 5, key="uf_inl")
+                _exi = _sb.slider("Diffuser exit above throat (mm)",
+                                  0, 250, 115, 5, key="uf_exi")
+                _tfs = [0.25, 0.35, 0.45, 0.55, 0.65]
+                _hs2 = [h for h in (60, 50, 40, 30, 25, 20)]
+                _grid = _uf.sweep("throat_frac", _tfs, "ride_height_mm",
+                                  [float(h) for h in _hs2],
+                                  speed_ms=speed, ref_area_m2=area,
+                                  inlet_rise_mm=float(_inl),
+                                  exit_rise_mm=float(_exi),
+                                  baseline={"throat_frac": 0.45,
+                                            "ride_height_mm": 40.0})
+                _tbl = []
+                for _h in _hs2:
+                    _r = {"ride height (mm)": _h}
+                    for _t in _tfs:
+                        _m = next((g for g in _grid
+                                   if g["throat_frac"] == _t
+                                   and g["ride_height_mm"] == float(_h)), None)
+                        _r[f"throat {int(_t*100)}%"] = (
+                            f"{_m['vs_baseline_pct']:+.0f}%"
+                            + ("" if _m["attached"] else " ⚠")) if _m else "—"
+                    _tbl.append(_r)
+                st.dataframe(_tbl, width="stretch", hide_index=True)
+                st.caption(
+                    "**Change against the 45% / 40 mm cell**, not absolute "
+                    "force — the parametric duct is an idealisation of your "
+                    "meshed one and runs about 1.5x its magnitude, so the two "
+                    "are comparable in direction and ranking but not in "
+                    "newtons. For absolute numbers, solve the STL above. ⚠ "
+                    "marks a diffuser past the 7° attachment limit, where the "
+                    "figure is an upper bound.")
+
+            st.caption(
+                "**Screening model.** One-dimensional: no spanwise variation, "
+                "no edge vortices, no yaw. It assumes the diffuser stays "
+                "attached, which is the assumption most likely to be wrong on "
+                "a real car — the angle above is the check. Compare floors "
+                "against each other; correlate before quoting absolutes.")
+        except Exception as _de:                        # noqa: BLE001
+            st.error(f"Underfloor solve failed: {_de}")
+        finally:
+            if _tmp_d and os.path.exists(_tmp_d):
+                os.remove(_tmp_d)
         return
 
     # ----------------------------------------------------------------- run --
@@ -593,10 +689,23 @@ def render(st, default_area_m2: float = 1.0,
     #  at the same settings largely do not, because the error is systematic.
     #  That is the screening use, and saying so once beats every caveat further
     #  down being read as boilerplate.
-    st.caption(
-        "**Screening tool.** Compare geometries at identical settings and "
-        "trust the ranking; treat any single absolute number as indicative. "
-        "Potential flow — no separation, wake or profile drag.")
+    if use_vlm:
+        st.caption(
+            "**Screening tool.** Compare geometries at identical settings and "
+            "matched mesh density, and read the RATIO between them — that "
+            "holds to a few percent under refinement, absolute levels do not. "
+            "Inviscid: no separation, no wake, no profile drag, so a diffuser "
+            "is assumed to stay attached.")
+    else:
+        st.warning(
+            "**Source panels model displacement, not lift.** There is no "
+            "circulation in this solver, so downforce from camber, incidence "
+            "or a diffuser is not represented. On a representative FSAE floor "
+            "it returned **14 N** where the vortex lattice returned **1,043 N** "
+            "at the same attitude, and it changed by 1 N across a 30 mm "
+            "ride-height sweep. Use it for bluff bodies — nose cone, rollhoop, "
+            "sidepod drag. **For a floor or a wing, switch to the vortex "
+            "lattice above.**")
 
     best = ok[0]
     m = st.columns(4)

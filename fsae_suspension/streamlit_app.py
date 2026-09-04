@@ -8846,6 +8846,36 @@ for _ck, _cem, _clab in _cats_nonempty:
         if getattr(_id_to_container.get(_id), "open", None):
             _ax_active_ids.add(_id)
 
+def _tab_should_run(feature: str, seeds=()) -> bool:
+    """Should this tab body execute on this script-run?
+
+    Streamlit runs every tab body on every rerun while the member can see
+    exactly one, and measurement says three of the forty account for most of
+    it: tire 5.36 s, thermic 4.98 s, tractive 1.29 s out of 14.3 s of tab-body
+    time in a 17.3 s run. The other thirty-seven together cost 2.7 s, so they
+    are left alone — gating them would add risk across every feature in the app
+    to recover a fifth of the saving.
+
+    `_ax_active_ids` is the real "the member is looking at this tab" signal,
+    already computed above from each container's `.open`.
+
+    `seeds` is the escape hatch for state a skipped tab would otherwise never
+    create. Widget keys are not the problem for these three — none of their
+    keys is read outside its own tab — but the tire tab WRITES tire_coeffs,
+    tire_fnomin, tire_source and tire_is_default, and the track tab and several
+    helpers read them. Skipping it on a later rerun leaves those values stale,
+    which is fine; skipping it before it has ever run would leave them absent,
+    which is not. So the body runs whenever any seed key is still missing, and
+    only then starts honouring the gate.
+    """
+    if feature in _ax_active_ids:
+        return True
+    for _k in seeds:
+        if _k not in st.session_state:
+            return True
+    return False
+
+
 # Reset the per-run doc-panel guard so each Streamlit script run starts clean.
 # The guard in _TabOpenProxy.__exit__ uses this set to prevent rendering the
 # "Document this feature" panel more than once per feature per run — which would
@@ -16164,11 +16194,12 @@ with tab_phantom_env:
 # ui/thermic_patch.py. Reads no live hardpoints — it consumes the transient
 # force/slip history and scales Pacejka grip by core temperature per instant.
 with tab_thermic:
-    try:
-        from ui import thermic_patch as _thermic_mod
-        _thermic_mod.render()
-    except Exception as _tp_err:            # noqa: BLE001 — a broken tab must
-        st.error(f"ThermicPatch failed to render: {_tp_err}")  # not kill app
+    if _tab_should_run("thermic"):
+        try:
+            from ui import thermic_patch as _thermic_mod
+            _thermic_mod.render()
+        except Exception as _tp_err:            # noqa: BLE001 — a broken tab must
+            st.error(f"ThermicPatch failed to render: {_tp_err}")  # not kill app
 
 # --- 🎲🛡️ Stochastic Inversion — manufacturing yield, same ui/ pattern. ----- #
 # All physics lives in suspension/kinematik_stochastic.py (a Monte Carlo /
@@ -28439,462 +28470,463 @@ with tab_docs:
 # extracting every bit of truth from your tire data and running the whole grip/
 # balance stack on it instead of a guess.
 with tab9:
-  try:
-    render_process_library("suspension", key_prefix="tire_pl")
-  except Exception:
-    pass
-  st.markdown('<p class="hint"><b>Maximize the use of your tires</b>. The way '
-              'you beat a team that can test rubber all year is to make every '
-              'geometry and setup call against <b>your actual tire</b> before you '
-              'commit it. This tab is where your tire lives — load a TTC-fitted '
-              'model and the GRIP BALANCE and SETUP OPTIMISER tabs run on measured '
-              'data, not a placeholder.</p>', unsafe_allow_html=True)
+    if _tab_should_run("tire", seeds=('tire_coeffs', 'tire_fnomin', 'tire_source', 'tire_is_default')):
+      try:
+        render_process_library("suspension", key_prefix="tire_pl")
+      except Exception:
+        pass
+      st.markdown('<p class="hint"><b>Maximize the use of your tires</b>. The way '
+                  'you beat a team that can test rubber all year is to make every '
+                  'geometry and setup call against <b>your actual tire</b> before you '
+                  'commit it. This tab is where your tire lives — load a TTC-fitted '
+                  'model and the GRIP BALANCE and SETUP OPTIMISER tabs run on measured '
+                  'data, not a placeholder.</p>', unsafe_allow_html=True)
 
-  _is_default = st.session_state.get("tire_is_default", True)
-  badge_cls = "warn" if _is_default else "good"
-  st.markdown(
-      f"<div style='margin:.2rem 0 .8rem;'><span class='tag {badge_cls}'>"
-      f"Active tire: {st.session_state.tire_source}</span></div>",
-      unsafe_allow_html=True)
+      _is_default = st.session_state.get("tire_is_default", True)
+      badge_cls = "warn" if _is_default else "good"
+      st.markdown(
+          f"<div style='margin:.2rem 0 .8rem;'><span class='tag {badge_cls}'>"
+          f"Active tire: {st.session_state.tire_source}</span></div>",
+          unsafe_allow_html=True)
 
-  live_tire = tire_mod.PacejkaLateral(coeffs=dict(st.session_state.tire_coeffs),
-                                      FNOMIN=st.session_state.tire_fnomin)
-  desc = tire_mod.describe(live_tire)
-  m = st.columns(5)
-  m[0].markdown(metric("μ @ nominal", f"{desc['mu_at_nominal']:.2f}", ""), unsafe_allow_html=True)
-  m[1].markdown(metric("μ light load", f"{desc['mu_light_load']:.2f}", ""), unsafe_allow_html=True)
-  m[2].markdown(metric("μ heavy load", f"{desc['mu_heavy_load']:.2f}", ""), unsafe_allow_html=True)
-  m[3].markdown(metric("Peak slip", f"{desc['alpha_peak_deg']:.1f}", "°"), unsafe_allow_html=True)
-  m[4].markdown(metric("Best camber", f"{desc['optimal_camber_deg']:.1f}", "°"), unsafe_allow_html=True)
+      live_tire = tire_mod.PacejkaLateral(coeffs=dict(st.session_state.tire_coeffs),
+                                          FNOMIN=st.session_state.tire_fnomin)
+      desc = tire_mod.describe(live_tire)
+      m = st.columns(5)
+      m[0].markdown(metric("μ @ nominal", f"{desc['mu_at_nominal']:.2f}", ""), unsafe_allow_html=True)
+      m[1].markdown(metric("μ light load", f"{desc['mu_light_load']:.2f}", ""), unsafe_allow_html=True)
+      m[2].markdown(metric("μ heavy load", f"{desc['mu_heavy_load']:.2f}", ""), unsafe_allow_html=True)
+      m[3].markdown(metric("Peak slip", f"{desc['alpha_peak_deg']:.1f}", "°"), unsafe_allow_html=True)
+      m[4].markdown(metric("Best camber", f"{desc['optimal_camber_deg']:.1f}", "°"), unsafe_allow_html=True)
 
-  # ---- grip curves ----------------------------------------------------- #
-  cc1, cc2 = st.columns(2)
-  Fz = np.linspace(150, 2200, 60)
-  mu = [live_tire.mu_peak(f) for f in Fz]
-  figG = go.Figure()
-  figG.add_trace(go.Scatter(x=[units_mod.from_metric(f, "N") for f in Fz],
-                            y=mu, mode="lines", line=dict(color=CYAN, width=3)))
-  figG.update_layout(**PLOT_LAYOUT, title="Load sensitivity — peak μ vs vertical load",
-                     xaxis_title=units_mod.ulabel("vertical load (N)"),
-                     yaxis_title="peak μ", height=320)
-  cc1.plotly_chart(figG, width='stretch')
+      # ---- grip curves ----------------------------------------------------- #
+      cc1, cc2 = st.columns(2)
+      Fz = np.linspace(150, 2200, 60)
+      mu = [live_tire.mu_peak(f) for f in Fz]
+      figG = go.Figure()
+      figG.add_trace(go.Scatter(x=[units_mod.from_metric(f, "N") for f in Fz],
+                                y=mu, mode="lines", line=dict(color=CYAN, width=3)))
+      figG.update_layout(**PLOT_LAYOUT, title="Load sensitivity — peak μ vs vertical load",
+                         xaxis_title=units_mod.ulabel("vertical load (N)"),
+                         yaxis_title="peak μ", height=320)
+      cc1.plotly_chart(figG, width='stretch')
 
-  cam = np.linspace(0, 5, 40)
-  mu_c = [live_tire.mu_peak(live_tire.FNOMIN, np.radians(c)) for c in cam]
-  figC = go.Figure()
-  figC.add_trace(go.Scatter(x=cam, y=mu_c, mode="lines", line=dict(color=AMBER, width=3)))
-  figC.update_layout(**PLOT_LAYOUT, title="Camber sensitivity — peak μ vs inclination",
-                     xaxis_title="inclination (°)", yaxis_title="peak μ @ nominal load",
-                     height=320)
-  cc2.plotly_chart(figC, width='stretch')
-  st.markdown('<p class="hint">Left: how fast grip falls as the tire is loaded — '
-              'this is what makes load transfer cost you grip, and why a lower CG and '
-              'softer springs help. Right: the camber the tire wants. The peak of '
-              'this curve is free grip you set with geometry, not money — target it '
-              'with your static camber and camber-gain.</p>', unsafe_allow_html=True)
+      cam = np.linspace(0, 5, 40)
+      mu_c = [live_tire.mu_peak(live_tire.FNOMIN, np.radians(c)) for c in cam]
+      figC = go.Figure()
+      figC.add_trace(go.Scatter(x=cam, y=mu_c, mode="lines", line=dict(color=AMBER, width=3)))
+      figC.update_layout(**PLOT_LAYOUT, title="Camber sensitivity — peak μ vs inclination",
+                         xaxis_title="inclination (°)", yaxis_title="peak μ @ nominal load",
+                         height=320)
+      cc2.plotly_chart(figC, width='stretch')
+      st.markdown('<p class="hint">Left: how fast grip falls as the tire is loaded — '
+                  'this is what makes load transfer cost you grip, and why a lower CG and '
+                  'softer springs help. Right: the camber the tire wants. The peak of '
+                  'this curve is free grip you set with geometry, not money — target it '
+                  'with your static camber and camber-gain.</p>', unsafe_allow_html=True)
 
-  # Grip Balance — merged in from its old standalone tab. It reads the live tire
-  # loaded on this tab, so the balance/limit-grip numbers move with your rubber.
-  with st.expander("🪀 Grip balance — limit grip & understeer/oversteer",
-                   expanded=False):
-    render_grip_balance()
+      # Grip Balance — merged in from its old standalone tab. It reads the live tire
+      # loaded on this tab, so the balance/limit-grip numbers move with your rubber.
+      with st.expander("🪀 Grip balance — limit grip & understeer/oversteer",
+                       expanded=False):
+        render_grip_balance()
 
-  st.markdown("---")
-  with st.expander("🟢 Load YOUR fitted tire (from TTC data)", expanded=True):
-    st.markdown('<p class="hint">Two ways in: upload an already-fitted '
-                '<code>my_tire.json</code> below, or drop a raw '
-                '<code>.mat</code>/<code>.csv</code> cornering file in the '
-                '<b>"Fit from raw TTC data"</b> section beneath and let the app fit it '
-                'for you. (The JSON is what <code>python process_ttc.py your_cornering.mat '
-                'my_tire.json</code> produces — the in-app fitter runs the same chain.) '
-                'Either way it loads into the live engine immediately. '
-                '<b>Both are TTC-derived — keep them out of git.</b></p>',
-                unsafe_allow_html=True)
-    up = st.file_uploader("Fitted tire JSON", type=["json"], key="tire_json")
-    lc1, lc2 = st.columns([1, 1])
-    if up is not None:
-        try:
-            import json as _json
-            d = _json.load(up)
-            new_coeffs = d["coeffs"]
-            new_fnom = float(d.get("FNOMIN", 1100.0))
-            # validate it builds
-            _t = tire_mod.PacejkaLateral(coeffs=new_coeffs, FNOMIN=new_fnom)
-            _t.mu_peak(new_fnom)
-            if lc1.button("✓ Use this tire", width='stretch'):
-                st.session_state.tire_coeffs = dict(new_coeffs)
-                st.session_state.tire_fnomin = new_fnom
-                st.session_state.tire_source = f"TTC-fitted ({up.name})"
-                st.session_state.tire_is_default = False
-                log_decision_now("suspension", f"Loaded fitted tire {up.name}",
-                                 "Grip/balance now run on measured TTC tire data.")
-                st.rerun()
-        except Exception as e:
-            st.markdown(f"<p class='hint'>Couldn't read that tire file: {e}</p>",
-                        unsafe_allow_html=True)
-    if not _is_default:
-        if lc2.button("↺ Revert to generic default", width='stretch'):
-            dt = tire_mod.default_tire()
-            st.session_state.tire_coeffs = dict(dt.coeffs)
-            st.session_state.tire_fnomin = dt.FNOMIN
-            st.session_state.tire_source = "Generic FSAE default (not your tire)"
-            st.session_state.tire_is_default = True
-            st.rerun()
-
-    st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
-                'The generic default is hand-built to behave sensibly (load sensitivity, '
-                'a camber optimum) but it is <b>not your tire</b> — use it for relative '
-                'comparisons until you fit yours. Absolute grip numbers only become '
-                'trustworthy once the tire above says "TTC-fitted".</p>',
-                unsafe_allow_html=True)
-
-    # ---- Fit straight from RAW TTC data (.mat / .csv) in-app -------------- #
-    # Same fit chain as process_ttc.py, but no terminal round-trip: drop the raw
-    # cornering file here, the app cleans it, fits the MF5.2 lateral model, and
-    # lets you apply it live and/or download the private JSON to keep locally.
-    with st.expander("Fit from raw TTC data (.mat / .csv) — no terminal needed",
-                     expanded=False):
-        st.markdown(
-            '<p class="hint">Upload a raw <b>cornering</b> file straight from the rig. '
-            'Needs lateral force, vertical load and slip angle — channel names <code>FY '
-            '/ FZ / SA</code> (camber <code>IA</code> optional). For CSV, the first row '
-            'must be the channel headers. The app trims warmup, drops airborne samples, '
-            'and fits a full Magic Formula here. '
-            '<b>The fit is TTC-derived — download it and keep it out of git.</b></p>',
-            unsafe_allow_html=True)
-
-        raw_up = st.file_uploader("Raw TTC cornering file",
-                                  type=["mat", "csv"], key="tire_raw")
-
-        # Channel-name aliases, matching process_ttc.py so .mat files behave the same.
-        _ALIASES = {
-            "FY": ["FY", "Fy", "fy"], "FZ": ["FZ", "Fz", "fz"],
-            "SA": ["SA", "Sa", "sa", "slip_angle", "SLIP_ANGLE"],
-            "IA": ["IA", "Ia", "ia", "camber", "CAMBER", "inclination"],
-            "P":  ["P", "PRESS", "pressure"], "V": ["V", "speed"],
-            "FX": ["FX", "Fx", "fx"],
-        }
-
-        def _channels_from_mat(file_obj):
-            import scipy.io as _sio
-            raw = _sio.loadmat(file_obj)
-            raw = {k: v for k, v in raw.items() if not k.startswith("__")}
-            chans = {}
-            for canon, names in _ALIASES.items():
-                for nm in names:
-                    if nm in raw:
-                        chans[canon] = np.asarray(raw[nm], float).ravel()
-                        break
-            return chans, sorted(raw.keys())
-
-        def _channels_from_csv(file_obj):
-            import pandas as _pd
-            df = _pd.read_csv(file_obj)
-            # Some TTC CSV exports carry a units row directly under the header;
-            # coerce to numeric and drop rows that won't parse.
-            df = df.apply(_pd.to_numeric, errors="coerce")
-            cols = {c.strip(): c for c in df.columns}
-            chans = {}
-            for canon, names in _ALIASES.items():
-                for nm in names:
-                    if nm in cols:
-                        chans[canon] = df[cols[nm]].to_numpy(float).ravel()
-                        break
-            return chans, list(df.columns)
-
-        def _clean_channels(chans, drop_warmup_frac=0.05):
-            if "FZ" not in chans:
-                return chans
-            n = len(chans["FZ"])
-            start = int(n * drop_warmup_frac)
-            out = {k: v[start:] for k, v in chans.items()}
-            fz_mag = np.abs(out["FZ"])
-            good = np.isfinite(fz_mag) & (fz_mag > 100.0)
-            m = len(good)
-            for k in list(out):
-                v = out[k]
-                if len(v) == m:
-                    out[k] = v[good]
-            # truncate to common length (rig files can differ by a sample or two)
-            ln = min(len(v) for v in out.values()) if out else 0
-            return {k: v[:ln] for k, v in out.items()}
-
-        if raw_up is not None:
+      st.markdown("---")
+      with st.expander("🟢 Load YOUR fitted tire (from TTC data)", expanded=True):
+        st.markdown('<p class="hint">Two ways in: upload an already-fitted '
+                    '<code>my_tire.json</code> below, or drop a raw '
+                    '<code>.mat</code>/<code>.csv</code> cornering file in the '
+                    '<b>"Fit from raw TTC data"</b> section beneath and let the app fit it '
+                    'for you. (The JSON is what <code>python process_ttc.py your_cornering.mat '
+                    'my_tire.json</code> produces — the in-app fitter runs the same chain.) '
+                    'Either way it loads into the live engine immediately. '
+                    '<b>Both are TTC-derived — keep them out of git.</b></p>',
+                    unsafe_allow_html=True)
+        up = st.file_uploader("Fitted tire JSON", type=["json"], key="tire_json")
+        lc1, lc2 = st.columns([1, 1])
+        if up is not None:
             try:
-                if raw_up.name.lower().endswith(".mat"):
-                    chans, raw_keys = _channels_from_mat(raw_up)
-                else:
-                    chans, raw_keys = _channels_from_csv(raw_up)
+                import json as _json
+                d = _json.load(up)
+                new_coeffs = d["coeffs"]
+                new_fnom = float(d.get("FNOMIN", 1100.0))
+                # validate it builds
+                _t = tire_mod.PacejkaLateral(coeffs=new_coeffs, FNOMIN=new_fnom)
+                _t.mu_peak(new_fnom)
+                if lc1.button("✓ Use this tire", width='stretch'):
+                    st.session_state.tire_coeffs = dict(new_coeffs)
+                    st.session_state.tire_fnomin = new_fnom
+                    st.session_state.tire_source = f"TTC-fitted ({up.name})"
+                    st.session_state.tire_is_default = False
+                    log_decision_now("suspension", f"Loaded fitted tire {up.name}",
+                                     "Grip/balance now run on measured TTC tire data.")
+                    st.rerun()
             except Exception as e:
-                chans, raw_keys = {}, []
-                st.markdown(f"<p class='hint'>Couldn't read that file: {e}</p>",
+                st.markdown(f"<p class='hint'>Couldn't read that tire file: {e}</p>",
                             unsafe_allow_html=True)
-
-            found = sorted(chans.keys())
-            missing = [c for c in ("FY", "FZ", "SA") if c not in chans]
-            st.markdown(
-                f"<p class='hint'>Channels found: <code>{', '.join(found) or '—'}</code>"
-                + (f" &nbsp;·&nbsp; raw columns: <code>"
-                   f"{', '.join(str(k) for k in raw_keys[:12])}</code>"
-                   if raw_keys else "")
-                + "</p>", unsafe_allow_html=True)
-
-            if missing:
-                st.warning(
-                    "⚠ Missing essential channel(s) " + ", ".join(missing)
-                    + ". A lateral fit needs FY, FZ and SA. If this is a drive/brake "
-                    "file, load a cornering sweep instead; if the names differ, rename "
-                    "the columns to FY / FZ / SA (and optionally IA).")
-            else:
-                cln = _clean_channels(chans)
-                npts = len(cln.get("FZ", []))
-                st.markdown(f"<p class='hint'>Usable samples after cleanup: "
-                            f"<b>{npts}</b></p>", unsafe_allow_html=True)
-                if st.button("⚙ Fit Magic Formula to this data",
-                             key="tire_raw_fit_btn"):
-                    with st.spinner("Fitting MF5.2 lateral model…"):
-                        try:
-                            from suspension.tirefit import fit_from_ttc_channels
-                            res = fit_from_ttc_channels(cln, verbose=False)
-                            st.session_state["_tire_raw_fit"] = res
-                            st.session_state["_tire_raw_name"] = raw_up.name
-                        except Exception as e:
-                            st.session_state.pop("_tire_raw_fit", None)
-                            st.error(f"Fit failed: {e}")
-
-        # Show the fit result + apply / download controls (persists across reruns).
-        _fit = st.session_state.get("_tire_raw_fit")
-        if _fit is not None:
-            r2 = float(_fit.get("r2", float("nan")))
-            _q = "good" if r2 >= 0.9 else "warn"
-            fcols = st.columns(3)
-            fcols[0].markdown(metric("Fit R²", f"{r2:.3f}", "", _q),
-                              unsafe_allow_html=True)
-            fcols[1].markdown(metric("RMSE", f"{_fit['rmse_N']:.0f}", "N"),
-                              unsafe_allow_html=True)
-            fcols[2].markdown(metric("Points fit", f"{_fit['n']}", ""),
-                              unsafe_allow_html=True)
-            if r2 < 0.9:
-                st.markdown(
-                    '<p class="hint">R² below 0.9 — the fit is loose. Check the file is '
-                    'a clean cornering sweep with a good spread of load and slip, and '
-                    'that warmup was trimmed. A loose fit means loose grip numbers '
-                    'downstream.</p>', unsafe_allow_html=True)
-
-            import json as _json
-            _payload = _json.dumps(
-                {"coeffs": _fit["coeffs"], "FNOMIN": _fit["FNOMIN"]}, indent=2)
-            ac1, ac2 = st.columns([1, 1])
-            if ac1.button("✓ Use this fitted tire", key="tire_raw_use_btn",
-                          width='stretch'):
-                st.session_state.tire_coeffs = dict(_fit["coeffs"])
-                st.session_state.tire_fnomin = float(_fit["FNOMIN"])
-                _src = st.session_state.get("_tire_raw_name", "raw TTC")
-                st.session_state.tire_source = f"TTC-fitted (in-app: {_src})"
-                st.session_state.tire_is_default = False
-                log_decision_now("suspension",
-                                 f"Fitted tire in-app from {_src}",
-                                 "Grip/balance now run on a Magic Formula fitted to "
-                                 "raw TTC data inside the app.")
+        if not _is_default:
+            if lc2.button("↺ Revert to generic default", width='stretch'):
+                dt = tire_mod.default_tire()
+                st.session_state.tire_coeffs = dict(dt.coeffs)
+                st.session_state.tire_fnomin = dt.FNOMIN
+                st.session_state.tire_source = "Generic FSAE default (not your tire)"
+                st.session_state.tire_is_default = True
                 st.rerun()
-            ac2.download_button(
-                "⬇ Download fitted tire JSON", data=_payload,
-                file_name="my_tire.json", mime="application/json",
-                key="tire_raw_dl_btn", width='stretch',
-                help="TTC-derived — store privately, keep it out of git.")
 
-  # ---- Combined slip (friction ellipse) -------------------------------- #
-  with st.expander("⚙️ Combined slip", expanded=False):
-    st.markdown('<p class="hint">How much lateral grip is left while you brake or put '
-                'power down. Built on the lateral tire above with friction-ellipse '
-                'coupling. <b>Uncalibrated</b> until you fit it to drive/brake TTC data '
-                '— the coupling shape is real physics; the exact exponents need your '
-                'Fx data to be quantitative.</p>', unsafe_allow_html=True)
-    try:
-        _live_tire_cs = tire_mod.PacejkaLateral(
-            coeffs=dict(st.session_state.tire_coeffs),
-            FNOMIN=st.session_state.tire_fnomin)
-        _ct = tire_mod.CombinedSlipTire(lateral=_live_tire_cs)
-        _Fz_demo = float(st.session_state.tire_fnomin)
-        fx_e, fy_e = _ct.friction_circle(_Fz_demo)
-        _uFc = units_mod.label("N")
-        figFE = go.Figure()
-        figFE.add_trace(go.Scatter(
-            x=[units_mod.from_metric(v, "N") for v in fx_e],
-            y=[units_mod.from_metric(v, "N") for v in fy_e], mode="lines",
-            line=dict(color=CYAN, width=2.5),
-            name="grip limit"))
-        figFE.update_layout(**PLOT_LAYOUT,
-                            title=f"Combined grip envelope at Fz="
-                            f"{units_mod.from_metric(_Fz_demo, 'N'):.0f} {_uFc}",
-                            xaxis_title=f"longitudinal force Fx ({_uFc})",
-                            yaxis_title=f"lateral force Fy ({_uFc})", height=340)
-        figFE.update_yaxes(scaleanchor="x", scaleratio=1)
-        st.plotly_chart(figFE, width='stretch')
-        st.markdown(f'<span class="tag warn">{_ct.status()}</span>',
+        st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
+                    'The generic default is hand-built to behave sensibly (load sensitivity, '
+                    'a camber optimum) but it is <b>not your tire</b> — use it for relative '
+                    'comparisons until you fit yours. Absolute grip numbers only become '
+                    'trustworthy once the tire above says "TTC-fitted".</p>',
                     unsafe_allow_html=True)
-    except Exception as e:
-        st.info(f"Combined-slip preview unavailable: {e}")
 
-  # ---- Tire thermal channel (lumped tread/carcass/gas network) --------- #
-  with st.expander("⚙️ Tire thermal channel", expanded=False):
-    st.markdown('<p class="hint">A true tire temperature cannot be computed without '
-                '<b>empirical, temperature-swept tire data</b> — so this channel is '
-                'built honestly: a 3-node lumped energy balance (tread / carcass / '
-                'inflation gas) heated by frictional sliding and rolling hysteresis, '
-                'cooled by convection to air and conduction to the track. The '
-                '<b>equations are textbook physics</b>; the masses, heat-transfer '
-                'coefficients and the grip-vs-temperature law are '
-                '<b>representative defaults, NOT your tire</b>. Read the shape — '
-                'warm-up time, the front/rear and across-width split, the pressure '
-                'rise — not the absolute degrees. Every temperature here is flagged '
-                'synthesized until you calibrate it to swept data.</p>',
+        # ---- Fit straight from RAW TTC data (.mat / .csv) in-app -------------- #
+        # Same fit chain as process_ttc.py, but no terminal round-trip: drop the raw
+        # cornering file here, the app cleans it, fits the MF5.2 lateral model, and
+        # lets you apply it live and/or download the private JSON to keep locally.
+        with st.expander("Fit from raw TTC data (.mat / .csv) — no terminal needed",
+                         expanded=False):
+            st.markdown(
+                '<p class="hint">Upload a raw <b>cornering</b> file straight from the rig. '
+                'Needs lateral force, vertical load and slip angle — channel names <code>FY '
+                '/ FZ / SA</code> (camber <code>IA</code> optional). For CSV, the first row '
+                'must be the channel headers. The app trims warmup, drops airborne samples, '
+                'and fits a full Magic Formula here. '
+                '<b>The fit is TTC-derived — download it and keep it out of git.</b></p>',
                 unsafe_allow_html=True)
-    try:
-        tcol = st.columns(4)
-        _t_alpha = tcol[0].number_input("Slip angle (°)", 0.0, 12.0, value=4.0,
-                                        step=0.5, key="therm_alpha")
-        _t_fz = tcol[1].number_input("Vertical load", 200.0, 3000.0,
-                                     value=1300.0, step=50.0, key="therm_fz")
-        _t_v = tcol[2].number_input("Speed", 3.0, 45.0, value=20.0,
-                                    step=1.0, key="therm_v")
-        _t_dur = tcol[3].number_input("Run length (s)", 20.0, 600.0, value=150.0,
-                                      step=10.0, key="therm_dur")
-        tcol2 = st.columns(4)
-        _t_cam = tcol2[0].number_input("Camber (°)", 0.0, 6.0, value=1.5,
-                                       step=0.5, key="therm_cam")
-        _t_amb = tcol2[1].number_input("Ambient", -5.0, 50.0, value=25.0,
-                                       step=1.0, key="therm_amb")
-        _t_trk = tcol2[2].number_input("Track surface", 0.0, 70.0, value=34.0,
-                                       step=1.0, key="therm_trk")
-        _t_mu = tcol2[3].checkbox("Couple grip to temp (μ(T))", value=False,
-                                  key="therm_mu",
-                                  help="Let the modelled tread temperature scale "
-                                       "Pacejka grip. OFF by default — the μ(T) curve "
-                                       "is the most data-hungry part and is flagged "
-                                       "synthesized when on.")
 
-        _t_cold_bar = unum(tcol[0], "Cold set pressure (bar)",
-                           6.0 / 14.503773773, 35.0 / 14.503773773,
-                           12.0 / 14.503773773, "bar", step=0.5 / 14.503773773,
-                           fmt="%.2f", key="therm_psi")
-        _t_cold_psi = _t_cold_bar * 14.503773773
+            raw_up = st.file_uploader("Raw TTC cornering file",
+                                      type=["mat", "csv"], key="tire_raw")
 
-        _trun = _cached_thermal_warmup(
-            coeffs=tuple(sorted(dict(st.session_state.tire_coeffs).items())),
-            fnomin=st.session_state.tire_fnomin,
-            enable_mu=bool(_t_mu),
-            cold_pa=float(_t_cold_psi) * 6894.757,
-            alpha_deg=float(_t_alpha), Fz=float(_t_fz), v_x=float(_t_v),
-            gamma_deg=float(_t_cam), ambient_c=float(_t_amb), track_c=float(_t_trk),
-            duration_s=float(_t_dur), dt=5.0e-3)
+            # Channel-name aliases, matching process_ttc.py so .mat files behave the same.
+            _ALIASES = {
+                "FY": ["FY", "Fy", "fy"], "FZ": ["FZ", "Fz", "fz"],
+                "SA": ["SA", "Sa", "sa", "slip_angle", "SLIP_ANGLE"],
+                "IA": ["IA", "Ia", "ia", "camber", "CAMBER", "inclination"],
+                "P":  ["P", "PRESS", "pressure"], "V": ["V", "speed"],
+                "FX": ["FX", "Fx", "fx"],
+            }
 
-        _mean = _trun.tread_mean_c()
-        tm_cols = st.columns(4)
-        tm_cols[0].markdown(metric("Tread (plateau)", f"{_mean[-1]:.0f}", "°C"),
-                            unsafe_allow_html=True)
-        tm_cols[1].markdown(metric("Carcass", f"{_trun.carcass_c[-1]:.0f}", "°C"),
-                            unsafe_allow_html=True)
-        tm_cols[2].markdown(metric("Hot pressure", f"{thermal_mod.psi(_trun.pressure_pa[-1]):.1f}", "psi"),
-                            unsafe_allow_html=True)
-        # time to reach 90% of the plateau rise — a "warm-up time" proxy
-        _rise = _mean - _mean[0]
-        _target = 0.9 * _rise[-1] if abs(_rise[-1]) > 1e-6 else 0.0
-        _idx = int(np.argmax(_rise >= _target)) if _target > 0 else 0
-        _warm_s = _trun.t[_idx] if _target > 0 else 0.0
-        tm_cols[3].markdown(metric("Warm-up (90%)", f"{_warm_s:.0f}", "s"),
-                            unsafe_allow_html=True)
+            def _channels_from_mat(file_obj):
+                import scipy.io as _sio
+                raw = _sio.loadmat(file_obj)
+                raw = {k: v for k, v in raw.items() if not k.startswith("__")}
+                chans = {}
+                for canon, names in _ALIASES.items():
+                    for nm in names:
+                        if nm in raw:
+                            chans[canon] = np.asarray(raw[nm], float).ravel()
+                            break
+                return chans, sorted(raw.keys())
 
-        # temperature traces
-        _cT = lambda arr: [units_mod.from_metric(float(v), "°C") for v in arr]
-        figT = go.Figure()
-        figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_mean), mode="lines",
-                                  line=dict(color=CYAN, width=3), name="tread (mean)"))
-        figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.carcass_c), mode="lines",
-                                  line=dict(color=AMBER, width=2), name="carcass"))
-        figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.gas_c), mode="lines",
-                                  line=dict(color=DIM, width=2, dash="dot"), name="gas"))
-        # across-width band spread (inner/mid/outer) at the plateau
-        if _trun.tread_c.shape[1] > 1:
-            figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.tread_c[:, 0]), mode="lines",
-                                      line=dict(color=CYAN, width=1, dash="dot"),
-                                      name="tread inner", opacity=0.5))
-            figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.tread_c[:, -1]), mode="lines",
-                                      line=dict(color=RED, width=1, dash="dot"),
-                                      name="tread outer", opacity=0.5))
-        figT.update_layout(**PLOT_LAYOUT, title="Tire warm-up — lumped thermal network",
-                           xaxis_title="time (s)",
-                           yaxis_title=units_mod.ulabel("temperature (°C)"),
-                           height=360)
-        st.plotly_chart(figT, width='stretch')
+            def _channels_from_csv(file_obj):
+                import pandas as _pd
+                df = _pd.read_csv(file_obj)
+                # Some TTC CSV exports carry a units row directly under the header;
+                # coerce to numeric and drop rows that won't parse.
+                df = df.apply(_pd.to_numeric, errors="coerce")
+                cols = {c.strip(): c for c in df.columns}
+                chans = {}
+                for canon, names in _ALIASES.items():
+                    for nm in names:
+                        if nm in cols:
+                            chans[canon] = df[cols[nm]].to_numpy(float).ravel()
+                            break
+                return chans, list(df.columns)
 
-        if bool(_t_mu):
-            figMu = go.Figure()
-            figMu.add_trace(go.Scatter(x=_trun.t, y=_trun.mu_scale, mode="lines",
-                                       line=dict(color=RED, width=2.5)))
-            figMu.update_layout(**PLOT_LAYOUT,
-                                title="Grip multiplier μ(T) over the run "
-                                      "(SYNTHESIZED — needs swept data)",
-                                xaxis_title="time (s)",
-                                yaxis_title="grip scale vs optimum", height=260)
-            st.plotly_chart(figMu, width='stretch')
+            def _clean_channels(chans, drop_warmup_frac=0.05):
+                if "FZ" not in chans:
+                    return chans
+                n = len(chans["FZ"])
+                start = int(n * drop_warmup_frac)
+                out = {k: v[start:] for k, v in chans.items()}
+                fz_mag = np.abs(out["FZ"])
+                good = np.isfinite(fz_mag) & (fz_mag > 100.0)
+                m = len(good)
+                for k in list(out):
+                    v = out[k]
+                    if len(v) == m:
+                        out[k] = v[good]
+                # truncate to common length (rig files can differ by a sample or two)
+                ln = min(len(v) for v in out.values()) if out else 0
+                return {k: v[:ln] for k, v in out.items()}
 
-        st.markdown(f'<span class="tag warn">{_trun.status}</span>',
+            if raw_up is not None:
+                try:
+                    if raw_up.name.lower().endswith(".mat"):
+                        chans, raw_keys = _channels_from_mat(raw_up)
+                    else:
+                        chans, raw_keys = _channels_from_csv(raw_up)
+                except Exception as e:
+                    chans, raw_keys = {}, []
+                    st.markdown(f"<p class='hint'>Couldn't read that file: {e}</p>",
+                                unsafe_allow_html=True)
+
+                found = sorted(chans.keys())
+                missing = [c for c in ("FY", "FZ", "SA") if c not in chans]
+                st.markdown(
+                    f"<p class='hint'>Channels found: <code>{', '.join(found) or '—'}</code>"
+                    + (f" &nbsp;·&nbsp; raw columns: <code>"
+                       f"{', '.join(str(k) for k in raw_keys[:12])}</code>"
+                       if raw_keys else "")
+                    + "</p>", unsafe_allow_html=True)
+
+                if missing:
+                    st.warning(
+                        "⚠ Missing essential channel(s) " + ", ".join(missing)
+                        + ". A lateral fit needs FY, FZ and SA. If this is a drive/brake "
+                        "file, load a cornering sweep instead; if the names differ, rename "
+                        "the columns to FY / FZ / SA (and optionally IA).")
+                else:
+                    cln = _clean_channels(chans)
+                    npts = len(cln.get("FZ", []))
+                    st.markdown(f"<p class='hint'>Usable samples after cleanup: "
+                                f"<b>{npts}</b></p>", unsafe_allow_html=True)
+                    if st.button("⚙ Fit Magic Formula to this data",
+                                 key="tire_raw_fit_btn"):
+                        with st.spinner("Fitting MF5.2 lateral model…"):
+                            try:
+                                from suspension.tirefit import fit_from_ttc_channels
+                                res = fit_from_ttc_channels(cln, verbose=False)
+                                st.session_state["_tire_raw_fit"] = res
+                                st.session_state["_tire_raw_name"] = raw_up.name
+                            except Exception as e:
+                                st.session_state.pop("_tire_raw_fit", None)
+                                st.error(f"Fit failed: {e}")
+
+            # Show the fit result + apply / download controls (persists across reruns).
+            _fit = st.session_state.get("_tire_raw_fit")
+            if _fit is not None:
+                r2 = float(_fit.get("r2", float("nan")))
+                _q = "good" if r2 >= 0.9 else "warn"
+                fcols = st.columns(3)
+                fcols[0].markdown(metric("Fit R²", f"{r2:.3f}", "", _q),
+                                  unsafe_allow_html=True)
+                fcols[1].markdown(metric("RMSE", f"{_fit['rmse_N']:.0f}", "N"),
+                                  unsafe_allow_html=True)
+                fcols[2].markdown(metric("Points fit", f"{_fit['n']}", ""),
+                                  unsafe_allow_html=True)
+                if r2 < 0.9:
+                    st.markdown(
+                        '<p class="hint">R² below 0.9 — the fit is loose. Check the file is '
+                        'a clean cornering sweep with a good spread of load and slip, and '
+                        'that warmup was trimmed. A loose fit means loose grip numbers '
+                        'downstream.</p>', unsafe_allow_html=True)
+
+                import json as _json
+                _payload = _json.dumps(
+                    {"coeffs": _fit["coeffs"], "FNOMIN": _fit["FNOMIN"]}, indent=2)
+                ac1, ac2 = st.columns([1, 1])
+                if ac1.button("✓ Use this fitted tire", key="tire_raw_use_btn",
+                              width='stretch'):
+                    st.session_state.tire_coeffs = dict(_fit["coeffs"])
+                    st.session_state.tire_fnomin = float(_fit["FNOMIN"])
+                    _src = st.session_state.get("_tire_raw_name", "raw TTC")
+                    st.session_state.tire_source = f"TTC-fitted (in-app: {_src})"
+                    st.session_state.tire_is_default = False
+                    log_decision_now("suspension",
+                                     f"Fitted tire in-app from {_src}",
+                                     "Grip/balance now run on a Magic Formula fitted to "
+                                     "raw TTC data inside the app.")
+                    st.rerun()
+                ac2.download_button(
+                    "⬇ Download fitted tire JSON", data=_payload,
+                    file_name="my_tire.json", mime="application/json",
+                    key="tire_raw_dl_btn", width='stretch',
+                    help="TTC-derived — store privately, keep it out of git.")
+
+      # ---- Combined slip (friction ellipse) -------------------------------- #
+      with st.expander("⚙️ Combined slip", expanded=False):
+        st.markdown('<p class="hint">How much lateral grip is left while you brake or put '
+                    'power down. Built on the lateral tire above with friction-ellipse '
+                    'coupling. <b>Uncalibrated</b> until you fit it to drive/brake TTC data '
+                    '— the coupling shape is real physics; the exact exponents need your '
+                    'Fx data to be quantitative.</p>', unsafe_allow_html=True)
+        try:
+            _live_tire_cs = tire_mod.PacejkaLateral(
+                coeffs=dict(st.session_state.tire_coeffs),
+                FNOMIN=st.session_state.tire_fnomin)
+            _ct = tire_mod.CombinedSlipTire(lateral=_live_tire_cs)
+            _Fz_demo = float(st.session_state.tire_fnomin)
+            fx_e, fy_e = _ct.friction_circle(_Fz_demo)
+            _uFc = units_mod.label("N")
+            figFE = go.Figure()
+            figFE.add_trace(go.Scatter(
+                x=[units_mod.from_metric(v, "N") for v in fx_e],
+                y=[units_mod.from_metric(v, "N") for v in fy_e], mode="lines",
+                line=dict(color=CYAN, width=2.5),
+                name="grip limit"))
+            figFE.update_layout(**PLOT_LAYOUT,
+                                title=f"Combined grip envelope at Fz="
+                                f"{units_mod.from_metric(_Fz_demo, 'N'):.0f} {_uFc}",
+                                xaxis_title=f"longitudinal force Fx ({_uFc})",
+                                yaxis_title=f"lateral force Fy ({_uFc})", height=340)
+            figFE.update_yaxes(scaleanchor="x", scaleratio=1)
+            st.plotly_chart(figFE, width='stretch')
+            st.markdown(f'<span class="tag warn">{_ct.status()}</span>',
+                        unsafe_allow_html=True)
+        except Exception as e:
+            st.info(f"Combined-slip preview unavailable: {e}")
+
+      # ---- Tire thermal channel (lumped tread/carcass/gas network) --------- #
+      with st.expander("⚙️ Tire thermal channel", expanded=False):
+        st.markdown('<p class="hint">A true tire temperature cannot be computed without '
+                    '<b>empirical, temperature-swept tire data</b> — so this channel is '
+                    'built honestly: a 3-node lumped energy balance (tread / carcass / '
+                    'inflation gas) heated by frictional sliding and rolling hysteresis, '
+                    'cooled by convection to air and conduction to the track. The '
+                    '<b>equations are textbook physics</b>; the masses, heat-transfer '
+                    'coefficients and the grip-vs-temperature law are '
+                    '<b>representative defaults, NOT your tire</b>. Read the shape — '
+                    'warm-up time, the front/rear and across-width split, the pressure '
+                    'rise — not the absolute degrees. Every temperature here is flagged '
+                    'synthesized until you calibrate it to swept data.</p>',
                     unsafe_allow_html=True)
-        st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
-                    'padding-left:10px;">The across-width split (inner vs outer band) '
-                    'is the same thing a tire pyrometer reads after a run — use it to '
-                    'reason about camber, and the front/rear plateau split to reason '
-                    'about balance late in a stint. The numbers are a physically-'
-                    'shaped guess until the active tire above is calibrated to '
-                    'temperature-swept data; then set <code>ThermalParams.calibrated'
-                    '</code> and they stop being flagged.</p>',
-                    unsafe_allow_html=True)
-    except Exception as e:
-        st.info(f"Thermal channel unavailable: {e}")
+        try:
+            tcol = st.columns(4)
+            _t_alpha = tcol[0].number_input("Slip angle (°)", 0.0, 12.0, value=4.0,
+                                            step=0.5, key="therm_alpha")
+            _t_fz = tcol[1].number_input("Vertical load", 200.0, 3000.0,
+                                         value=1300.0, step=50.0, key="therm_fz")
+            _t_v = tcol[2].number_input("Speed", 3.0, 45.0, value=20.0,
+                                        step=1.0, key="therm_v")
+            _t_dur = tcol[3].number_input("Run length (s)", 20.0, 600.0, value=150.0,
+                                          step=10.0, key="therm_dur")
+            tcol2 = st.columns(4)
+            _t_cam = tcol2[0].number_input("Camber (°)", 0.0, 6.0, value=1.5,
+                                           step=0.5, key="therm_cam")
+            _t_amb = tcol2[1].number_input("Ambient", -5.0, 50.0, value=25.0,
+                                           step=1.0, key="therm_amb")
+            _t_trk = tcol2[2].number_input("Track surface", 0.0, 70.0, value=34.0,
+                                           step=1.0, key="therm_trk")
+            _t_mu = tcol2[3].checkbox("Couple grip to temp (μ(T))", value=False,
+                                      key="therm_mu",
+                                      help="Let the modelled tread temperature scale "
+                                           "Pacejka grip. OFF by default — the μ(T) curve "
+                                           "is the most data-hungry part and is flagged "
+                                           "synthesized when on.")
 
-  # ---- Damper force-velocity ------------------------------------------- #
-  with st.expander("⚙️ Damper force–velocity (transient building block)", expanded=False):
-    st.markdown('<p class="hint">Real bilinear-digressive damper law. <b>Uncalibrated</b> '
-                'representative magnitudes until you load your dyno curve; the force law '
-                'and the damping-ratio diagnostic are real. This is the primitive the '
-                'transient (turn-in / pitch) model on the roadmap is built on.</p>',
-                unsafe_allow_html=True)
-    dmp_cols = st.columns(4)
-    _cbl = unum(dmp_cols[0], "Bump low (N·s/m)", 0.0, 30000.0, 6000.0, "N·s/m", step=250.0)
-    _crl = unum(dmp_cols[1], "Rebound low (N·s/m)", 0.0, 30000.0, 9000.0, "N·s/m", step=250.0)
-    _cbh = unum(dmp_cols[2], "Bump high (N·s/m)", 0.0, 15000.0, 2000.0, "N·s/m", step=100.0)
-    _crh = unum(dmp_cols[3], "Rebound high (N·s/m)", 0.0, 15000.0, 3000.0, "N·s/m", step=100.0)
-    _dc = damper_mod.DamperCurve(c_bump_low=_cbl, c_reb_low=_crl,
-                                 c_bump_high=_cbh, c_reb_high=_crh)
-    _vv, _ff = _dc.curve_points(v_max=0.4)
-    figD = go.Figure()
-    figD.add_trace(go.Scatter(
-        x=[units_mod.from_metric(v, "m/s") for v in _vv],
-        y=[units_mod.from_metric(v, "N") for v in _ff], mode="lines",
-        line=dict(color=AMBER, width=2.5), name="damper"))
-    figD.update_layout(**PLOT_LAYOUT, title="Damper force vs shaft velocity",
-                       xaxis_title=units_mod.ulabel("shaft velocity (m/s)  +bump / −rebound"),
-                       yaxis_title=units_mod.ulabel("force (N)"), height=320)
-    st.plotly_chart(figD, width='stretch')
-    try:
-        _mr_demo = kin.motion_ratio() if kin.motion_ratio_is_real() else 1.0
-        _corner_m = float(st.session_state.vp.get("mass", 300)) * 0.25
-        _wr_demo = kin.wheel_rate(float(st.session_state.vp.get("spring_rate_front", 35.0))) \
-            if kin.motion_ratio_is_real() else 30.0
-        _zb = damper_mod.damping_ratio(_dc, _corner_m, _wr_demo, _mr_demo, "bump")
-        _zr = damper_mod.damping_ratio(_dc, _corner_m, _wr_demo, _mr_demo, "rebound")
-        zc = st.columns(2)
-        zc[0].markdown(metric("Damping ratio ζ (bump)", f"{_zb:.2f}", "",
-                              "good" if 0.5 <= _zb <= 0.8 else "warn"),
-                       unsafe_allow_html=True)
-        zc[1].markdown(metric("Damping ratio ζ (rebound)", f"{_zr:.2f}", "",
-                              "good" if 0.6 <= _zr <= 1.1 else "warn"),
-                       unsafe_allow_html=True)
-        st.markdown(f'<span class="tag warn">{_dc.status()}</span>',
+            _t_cold_bar = unum(tcol[0], "Cold set pressure (bar)",
+                               6.0 / 14.503773773, 35.0 / 14.503773773,
+                               12.0 / 14.503773773, "bar", step=0.5 / 14.503773773,
+                               fmt="%.2f", key="therm_psi")
+            _t_cold_psi = _t_cold_bar * 14.503773773
+
+            _trun = _cached_thermal_warmup(
+                coeffs=tuple(sorted(dict(st.session_state.tire_coeffs).items())),
+                fnomin=st.session_state.tire_fnomin,
+                enable_mu=bool(_t_mu),
+                cold_pa=float(_t_cold_psi) * 6894.757,
+                alpha_deg=float(_t_alpha), Fz=float(_t_fz), v_x=float(_t_v),
+                gamma_deg=float(_t_cam), ambient_c=float(_t_amb), track_c=float(_t_trk),
+                duration_s=float(_t_dur), dt=5.0e-3)
+
+            _mean = _trun.tread_mean_c()
+            tm_cols = st.columns(4)
+            tm_cols[0].markdown(metric("Tread (plateau)", f"{_mean[-1]:.0f}", "°C"),
+                                unsafe_allow_html=True)
+            tm_cols[1].markdown(metric("Carcass", f"{_trun.carcass_c[-1]:.0f}", "°C"),
+                                unsafe_allow_html=True)
+            tm_cols[2].markdown(metric("Hot pressure", f"{thermal_mod.psi(_trun.pressure_pa[-1]):.1f}", "psi"),
+                                unsafe_allow_html=True)
+            # time to reach 90% of the plateau rise — a "warm-up time" proxy
+            _rise = _mean - _mean[0]
+            _target = 0.9 * _rise[-1] if abs(_rise[-1]) > 1e-6 else 0.0
+            _idx = int(np.argmax(_rise >= _target)) if _target > 0 else 0
+            _warm_s = _trun.t[_idx] if _target > 0 else 0.0
+            tm_cols[3].markdown(metric("Warm-up (90%)", f"{_warm_s:.0f}", "s"),
+                                unsafe_allow_html=True)
+
+            # temperature traces
+            _cT = lambda arr: [units_mod.from_metric(float(v), "°C") for v in arr]
+            figT = go.Figure()
+            figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_mean), mode="lines",
+                                      line=dict(color=CYAN, width=3), name="tread (mean)"))
+            figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.carcass_c), mode="lines",
+                                      line=dict(color=AMBER, width=2), name="carcass"))
+            figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.gas_c), mode="lines",
+                                      line=dict(color=DIM, width=2, dash="dot"), name="gas"))
+            # across-width band spread (inner/mid/outer) at the plateau
+            if _trun.tread_c.shape[1] > 1:
+                figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.tread_c[:, 0]), mode="lines",
+                                          line=dict(color=CYAN, width=1, dash="dot"),
+                                          name="tread inner", opacity=0.5))
+                figT.add_trace(go.Scatter(x=_trun.t, y=_cT(_trun.tread_c[:, -1]), mode="lines",
+                                          line=dict(color=RED, width=1, dash="dot"),
+                                          name="tread outer", opacity=0.5))
+            figT.update_layout(**PLOT_LAYOUT, title="Tire warm-up — lumped thermal network",
+                               xaxis_title="time (s)",
+                               yaxis_title=units_mod.ulabel("temperature (°C)"),
+                               height=360)
+            st.plotly_chart(figT, width='stretch')
+
+            if bool(_t_mu):
+                figMu = go.Figure()
+                figMu.add_trace(go.Scatter(x=_trun.t, y=_trun.mu_scale, mode="lines",
+                                           line=dict(color=RED, width=2.5)))
+                figMu.update_layout(**PLOT_LAYOUT,
+                                    title="Grip multiplier μ(T) over the run "
+                                          "(SYNTHESIZED — needs swept data)",
+                                    xaxis_title="time (s)",
+                                    yaxis_title="grip scale vs optimum", height=260)
+                st.plotly_chart(figMu, width='stretch')
+
+            st.markdown(f'<span class="tag warn">{_trun.status}</span>',
+                        unsafe_allow_html=True)
+            st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
+                        'padding-left:10px;">The across-width split (inner vs outer band) '
+                        'is the same thing a tire pyrometer reads after a run — use it to '
+                        'reason about camber, and the front/rear plateau split to reason '
+                        'about balance late in a stint. The numbers are a physically-'
+                        'shaped guess until the active tire above is calibrated to '
+                        'temperature-swept data; then set <code>ThermalParams.calibrated'
+                        '</code> and they stop being flagged.</p>',
+                        unsafe_allow_html=True)
+        except Exception as e:
+            st.info(f"Thermal channel unavailable: {e}")
+
+      # ---- Damper force-velocity ------------------------------------------- #
+      with st.expander("⚙️ Damper force–velocity (transient building block)", expanded=False):
+        st.markdown('<p class="hint">Real bilinear-digressive damper law. <b>Uncalibrated</b> '
+                    'representative magnitudes until you load your dyno curve; the force law '
+                    'and the damping-ratio diagnostic are real. This is the primitive the '
+                    'transient (turn-in / pitch) model on the roadmap is built on.</p>',
                     unsafe_allow_html=True)
-    except Exception as e:
-        st.info(f"Damping-ratio diagnostic unavailable: {e}")
+        dmp_cols = st.columns(4)
+        _cbl = unum(dmp_cols[0], "Bump low (N·s/m)", 0.0, 30000.0, 6000.0, "N·s/m", step=250.0)
+        _crl = unum(dmp_cols[1], "Rebound low (N·s/m)", 0.0, 30000.0, 9000.0, "N·s/m", step=250.0)
+        _cbh = unum(dmp_cols[2], "Bump high (N·s/m)", 0.0, 15000.0, 2000.0, "N·s/m", step=100.0)
+        _crh = unum(dmp_cols[3], "Rebound high (N·s/m)", 0.0, 15000.0, 3000.0, "N·s/m", step=100.0)
+        _dc = damper_mod.DamperCurve(c_bump_low=_cbl, c_reb_low=_crl,
+                                     c_bump_high=_cbh, c_reb_high=_crh)
+        _vv, _ff = _dc.curve_points(v_max=0.4)
+        figD = go.Figure()
+        figD.add_trace(go.Scatter(
+            x=[units_mod.from_metric(v, "m/s") for v in _vv],
+            y=[units_mod.from_metric(v, "N") for v in _ff], mode="lines",
+            line=dict(color=AMBER, width=2.5), name="damper"))
+        figD.update_layout(**PLOT_LAYOUT, title="Damper force vs shaft velocity",
+                           xaxis_title=units_mod.ulabel("shaft velocity (m/s)  +bump / −rebound"),
+                           yaxis_title=units_mod.ulabel("force (N)"), height=320)
+        st.plotly_chart(figD, width='stretch')
+        try:
+            _mr_demo = kin.motion_ratio() if kin.motion_ratio_is_real() else 1.0
+            _corner_m = float(st.session_state.vp.get("mass", 300)) * 0.25
+            _wr_demo = kin.wheel_rate(float(st.session_state.vp.get("spring_rate_front", 35.0))) \
+                if kin.motion_ratio_is_real() else 30.0
+            _zb = damper_mod.damping_ratio(_dc, _corner_m, _wr_demo, _mr_demo, "bump")
+            _zr = damper_mod.damping_ratio(_dc, _corner_m, _wr_demo, _mr_demo, "rebound")
+            zc = st.columns(2)
+            zc[0].markdown(metric("Damping ratio ζ (bump)", f"{_zb:.2f}", "",
+                                  "good" if 0.5 <= _zb <= 0.8 else "warn"),
+                           unsafe_allow_html=True)
+            zc[1].markdown(metric("Damping ratio ζ (rebound)", f"{_zr:.2f}", "",
+                                  "good" if 0.6 <= _zr <= 1.1 else "warn"),
+                           unsafe_allow_html=True)
+            st.markdown(f'<span class="tag warn">{_dc.status()}</span>',
+                        unsafe_allow_html=True)
+        except Exception as e:
+            st.info(f"Damping-ratio diagnostic unavailable: {e}")
 
 # ----------------------------- TAB 10 -------------------------------------- #
 # SETUP OPTIMISER — spend the one tire set wisely. Rank the levers by grip
@@ -32609,219 +32641,220 @@ with tab_pcb:
 
 # --------------------------- TAB TRACTIVE SAFETY --------------------------- #
 with tab_tractive:
-  try:
-    render_process_library("electrics", key_prefix="tractive_pl")
-  except Exception:
-    pass
-  st.header("⚡ Tractive-System Safety & PCM Cooling")
-  st.caption("The pre-tech gate: precharge/discharge, the shutdown chain "
-             "(TSAL · BSPD · AMS · IMD · MSD), and the PCM wax buffer — checked "
-             "against the season's rules, no SPICE required.")
-
-  def _render_findings(findings):
-      """Render typed Findings with the same severity vocabulary as the board."""
-      _icon = {"ok": "✅", "info": "ℹ️", "warning": "⚠️",
-               "fail": "❌", "missing": "◻️"}
-      for f in findings:
-          sev = f.severity.value if hasattr(f.severity, "value") else str(f.severity)
-          who = (" · " + ", ".join(f.subsystems)) if f.subsystems else ""
-          st.markdown(f"{_icon.get(sev,'•')} **{f.check}**{who} — {f.message}")
-
-  # season/series rule limits (editable — they move year to year)
-  with st.expander("Rule limits for this season/series", expanded=False):
-      _rc = st.columns(4)
-      _safe_v = _rc[0].number_input("Safe-to-touch voltage (V)", 1.0, 600.0,
-                                    60.0, key="tr_safe_v")
-      _disc_t = _rc[1].number_input("Discharge time limit (s)", 0.1, 60.0,
-                                    5.0, key="tr_disc_t")
-      _pre_frac = _rc[2].number_input("Precharge fraction", 0.5, 0.99,
-                                      0.90, key="tr_pre_frac")
-      _pre_t = _rc[3].number_input("Precharge time limit (s)", 0.1, 30.0,
-                                   5.0, key="tr_pre_t")
-      _rules = tract_mod.Rules(safe_voltage_v=_safe_v, discharge_time_s=_disc_t,
-                               precharge_fraction=_pre_frac,
-                               precharge_max_time_s=_pre_t)
-
-  _t_pre, _t_shut, _t_pcm = st.tabs(
-      ["🔌 Precharge / Discharge", "🛑 Shutdown chain · TSAL · BSPD",
-       "🧊 PCM cooling buffer"])
-
-  # ---- PRECHARGE / DISCHARGE (slides 4 & 5) ----------------------------- #
-  with _t_pre:
-      st.markdown("**The slide-5 experiment, solved in closed form.** Declare "
-                  "the R-C and (optionally) the instant a switch shorts the "
-                  "precharge resistor; read V_cap, inrush and resistor energy.")
-      _pc1 = st.columns(4)
-      _vpack = _pc1[0].number_input("Pack voltage (V)", 1.0, 600.0, 400.0,
-                                    key="pc_v")
-      _clink_uf = _pc1[1].number_input("DC-link capacitance (µF)", 1.0, 1e5,
-                                       600.0, key="pc_c")
-      _rpre = _pc1[2].number_input("Precharge R (Ω)", 0.1, 1e5, 30.0,
-                                   key="pc_rpre")
-      _rdis = _pc1[3].number_input("Discharge R (Ω, 0 = none)", 0.0, 1e7,
-                                   15000.0, key="pc_rdis")
-      _pc2 = st.columns(3)
-      _e_rate = unum(_pc2[0], "Resistor energy rating (J, 0 = unknown)", 0.0, 1e5, 100.0, 'J', key="pc_erate")
-      _tsw = _pc2[1].number_input("Switch shorts R at t = (s, 0 = never)",
-                                  0.0, 30.0, 2.0, key="pc_tsw")
-
-      pc = tract_mod.PrechargeCircuit(
-          pack_voltage_v=_vpack, link_capacitance_f=_clink_uf * 1e-6,
-          precharge_r_ohm=_rpre,
-          discharge_r_ohm=(_rdis if _rdis > 0 else None),
-          resistor_energy_rating_j=(_e_rate if _e_rate > 0 else None),
-          set_by="electrics", is_estimate=False)
-
-      _m = st.columns(4)
-      _m[0].metric("τ precharge", f"{pc.tau_precharge_s*1000:.1f} ms")
-      _m[1].metric("Peak inrush", f"{pc.peak_inrush_a:.0f} A")
-      _m[2].metric("Pulse energy ½CV²", f"{pc.precharge_pulse_energy_j:.1f} J")
-      _tts = pc.time_to_safe_s(_safe_v)
-      _m[3].metric(f"Bleed to {_safe_v:.0f} V",
-                   "—" if _tts is None else f"{_tts:.2f} s")
-
-      tr = tract_mod.simulate_precharge(
-          pc, t_switch_s=(_tsw if _tsw > 0 else None))
-      if tr.ok:
-          try:
-              import plotly.graph_objects as _go
-              _fig = _go.Figure()
-              _fig.add_trace(_go.Scatter(x=tr.time_s, y=tr.v_cap_v,
-                                         name="V_cap (V)", mode="lines"))
-              _fig.add_trace(_go.Scatter(x=tr.time_s, y=tr.i_a,
-                                         name="I_resistor (A)", mode="lines",
-                                         yaxis="y2"))
-              if _tsw > 0:
-                  _fig.add_vline(x=_tsw, line_dash="dash",
-                                 annotation_text="switch shorts R")
-              _fig.update_layout(
-                  height=320, margin=dict(l=10, r=10, t=30, b=10),
-                  yaxis=dict(title="V_cap (V)"),
-                  yaxis2=dict(title="I (A)", overlaying="y", side="right"),
-                  legend=dict(orientation="h", y=1.15))
-              st.plotly_chart(_fig, use_container_width=True)
-          except Exception:
-              st.line_chart({"V_cap (V)": tr.v_cap_v}, x=None)
-      for _w in tr.warnings:
-          st.caption("⚠ " + _w)
-
-      st.divider()
-      _render_findings(tract_mod.check_precharge(pc, _rules))
-
-  # ---- SHUTDOWN CHAIN + TSAL + BSPD (slides 3 & 8) ---------------------- #
-  with _t_shut:
-      st.markdown("**The series safety loop, checked for rule-completeness and "
-                  "fail-safe wiring.** Tick the nodes your shutdown circuit "
-                  "actually has (MSD/accumulator/inverter interlocks included).")
-      _present = {}
-      _cc = st.columns(4)
-      _labels = {
-          "master_switch": "Master switch(es)", "bspd": "BSPD",
-          "ams": "AMS / BMS", "imd": "IMD",
-          "interlock": "HV interlocks (MSD/accum/inverter)",
-          "inertia": "Inertia / crash switch", "estop": "E-stops (cockpit + sides)"}
-      for _i, (_k, _lab) in enumerate(_labels.items()):
-          _present[_k] = _cc[_i % 4].checkbox(_lab, value=True, key=f"sd_{_k}")
-      _nc = st.checkbox("All nodes wired normally-CLOSED (open-to-trip)",
-                        value=True, key="sd_nc")
-
-      _chain = tract_mod.ShutdownChain()
-      for _k, _on in _present.items():
-          if _on:
-              _chain.add(tract_mod.ShutdownNode(
-                  name=_k, kind=_k, normally_closed=_nc,
-                  set_by="glv", is_estimate=False))
-      _render_findings(tract_mod.check_shutdown_chain(_chain, _rules))
-
-      st.divider()
-      _tc = st.columns(2)
-      with _tc[0]:
-          st.markdown("**TSAL**")
-          _flash = st.number_input("Flash rate (Hz)", 0.1, 20.0, 3.0,
-                                   key="tsal_hz")
-          _tsal_v = st.number_input("Indicates 'safe' below (V)", 1.0, 600.0,
-                                    55.0, key="tsal_v")
-          _render_findings(tract_mod.check_tsal(
-              tract_mod.TSAL(flash_hz=_flash, safe_threshold_v=_tsal_v), _rules))
-      with _tc[1]:
-          st.markdown("**BSPD**")
-          _react = st.number_input("Reaction time (ms)", 1.0, 2000.0, 300.0,
-                                   key="bspd_ms")
-          _bp = unum(st, "Trip power threshold (W)", 0.0, 1e5, 5000.0, 'W', key="bspd_w")
-          _render_findings(tract_mod.check_bspd(
-              tract_mod.BSPD(brake_threshold=10.0, power_threshold_w=_bp,
-                             reaction_time_s=_react / 1000.0), _rules))
-
-  # ---- PCM COOLING BUFFER (slides 3 & 7) ------------------------------- #
-  with _t_pcm:
-      st.markdown("**The 'liquid wax' buffer — how long it holds the cells, and "
-                  "how much you need.** Latent heat flattens the corner-exit "
-                  "spikes; this tells you when the wax runs out and the fan has "
-                  "to take over.")
-      _wc = st.columns(4)
-      _series = _wc[0].number_input("Series (s)", 1, 400, 140, key="pcm_s")
-      _par = _wc[1].number_input("Parallel (p)", 1, 50, 3, key="pcm_p")
-      _mass_g = _wc[2].number_input("Wax per cell (g)", 0.0, 500.0, 15.0,
-                                    key="pcm_g")
-      _ambient = unum(_wc[3], "Inlet air (°C)", 0.0, 60.0, 35.0, '°C', key="pcm_amb")
-      _wc2 = st.columns(4)
-      _tmelt = unum(_wc2[0], "Wax melt temp (°C)", 20.0, 90.0, 45.0, '°C', key="pcm_tm")
-      _lheat = unum(_wc2[1], "Latent heat (J/g)", 50.0, 400.0, 200.0, 'J/g', key="pcm_l")
-      _stint = _wc2[2].number_input("Endurance stint (s)", 60.0, 3000.0, 1500.0,
-                                    key="pcm_stint")
-      _peakA = _wc2[3].number_input("Pack current peak (A)", 10.0, 800.0, 300.0,
-                                    key="pcm_a")
-
-      _ncells = int(_series) * int(_par)
-      # square-ish packaging grid for the n cells
-      _rows = max(int(round(_ncells ** 0.5)), 1)
-      _cols = max(int(round(_ncells / _rows)), 1)
+    if _tab_should_run("tractive"):
       try:
-          _cell = pack_mod.default_cell_params()
-          _layout = pack_mod.PackLayout(rows=_rows, cols=_cols,
-                                        series=int(_series), parallel=int(_par),
-                                        cell=_cell, ambient_c=_ambient)
-          _t = np.linspace(0, 120, 800)
-          _cur = 0.4 * _peakA + _peakA * np.clip(np.sin(2 * np.pi * _t / 8), 0, 1)
-          _model = pack_mod.PackThermalModel(layout=_layout, fans=[],
-                                             airflow=pack_mod.AirflowParams())
-          _res = _model.simulate(_t, _cur, n_laps=3)
-          _mat = pcm_mod.PCMMaterial(t_melt_c=_tmelt, latent_heat_j_per_g=_lheat)
-          _alloc = pcm_mod.PCMAllocation(material=_mat, mass_per_cell_g=_mass_g,
-                                         set_by="cooling")
-          _pr = pcm_mod.evaluate_pcm_buffer(_res, _layout, _alloc)
+        render_process_library("electrics", key_prefix="tractive_pl")
+      except Exception:
+        pass
+      st.header("⚡ Tractive-System Safety & PCM Cooling")
+      st.caption("The pre-tech gate: precharge/discharge, the shutdown chain "
+                 "(TSAL · BSPD · AMS · IMD · MSD), and the PCM wax buffer — checked "
+                 "against the season's rules, no SPICE required.")
 
-          _mm = st.columns(4)
-          _mm[0].metric("Cells (grid)", f"{_layout.n_cells}")
-          _hold = ("holds full stint" if _pr.hold_time_s is None
-                   else f"{_pr.hold_time_s:.0f} s")
-          _mm[1].metric("Wax hold time", _hold)
-          _mm[2].metric("Pack wax mass", f"{_pr.total_pcm_mass_kg:.1f} kg")
-          _mm[3].metric("Pack wax volume", f"{_pr.total_pcm_volume_cc:.0f} cc")
+      def _render_findings(findings):
+          """Render typed Findings with the same severity vocabulary as the board."""
+          _icon = {"ok": "✅", "info": "ℹ️", "warning": "⚠️",
+                   "fail": "❌", "missing": "◻️"}
+          for f in findings:
+              sev = f.severity.value if hasattr(f.severity, "value") else str(f.severity)
+              who = (" · " + ", ".join(f.subsystems)) if f.subsystems else ""
+              st.markdown(f"{_icon.get(sev,'•')} **{f.check}**{who} — {f.message}")
 
-          _render_findings(pcm_mod.check_pcm(_pr, endurance_time_s=_stint))
+      # season/series rule limits (editable — they move year to year)
+      with st.expander("Rule limits for this season/series", expanded=False):
+          _rc = st.columns(4)
+          _safe_v = _rc[0].number_input("Safe-to-touch voltage (V)", 1.0, 600.0,
+                                        60.0, key="tr_safe_v")
+          _disc_t = _rc[1].number_input("Discharge time limit (s)", 0.1, 60.0,
+                                        5.0, key="tr_disc_t")
+          _pre_frac = _rc[2].number_input("Precharge fraction", 0.5, 0.99,
+                                          0.90, key="tr_pre_frac")
+          _pre_t = _rc[3].number_input("Precharge time limit (s)", 0.1, 30.0,
+                                       5.0, key="tr_pre_t")
+          _rules = tract_mod.Rules(safe_voltage_v=_safe_v, discharge_time_s=_disc_t,
+                                   precharge_fraction=_pre_frac,
+                                   precharge_max_time_s=_pre_t)
+
+      _t_pre, _t_shut, _t_pcm = st.tabs(
+          ["🔌 Precharge / Discharge", "🛑 Shutdown chain · TSAL · BSPD",
+           "🧊 PCM cooling buffer"])
+
+      # ---- PRECHARGE / DISCHARGE (slides 4 & 5) ----------------------------- #
+      with _t_pre:
+          st.markdown("**The slide-5 experiment, solved in closed form.** Declare "
+                      "the R-C and (optionally) the instant a switch shorts the "
+                      "precharge resistor; read V_cap, inrush and resistor energy.")
+          _pc1 = st.columns(4)
+          _vpack = _pc1[0].number_input("Pack voltage (V)", 1.0, 600.0, 400.0,
+                                        key="pc_v")
+          _clink_uf = _pc1[1].number_input("DC-link capacitance (µF)", 1.0, 1e5,
+                                           600.0, key="pc_c")
+          _rpre = _pc1[2].number_input("Precharge R (Ω)", 0.1, 1e5, 30.0,
+                                       key="pc_rpre")
+          _rdis = _pc1[3].number_input("Discharge R (Ω, 0 = none)", 0.0, 1e7,
+                                       15000.0, key="pc_rdis")
+          _pc2 = st.columns(3)
+          _e_rate = unum(_pc2[0], "Resistor energy rating (J, 0 = unknown)", 0.0, 1e5, 100.0, 'J', key="pc_erate")
+          _tsw = _pc2[1].number_input("Switch shorts R at t = (s, 0 = never)",
+                                      0.0, 30.0, 2.0, key="pc_tsw")
+
+          pc = tract_mod.PrechargeCircuit(
+              pack_voltage_v=_vpack, link_capacitance_f=_clink_uf * 1e-6,
+              precharge_r_ohm=_rpre,
+              discharge_r_ohm=(_rdis if _rdis > 0 else None),
+              resistor_energy_rating_j=(_e_rate if _e_rate > 0 else None),
+              set_by="electrics", is_estimate=False)
+
+          _m = st.columns(4)
+          _m[0].metric("τ precharge", f"{pc.tau_precharge_s*1000:.1f} ms")
+          _m[1].metric("Peak inrush", f"{pc.peak_inrush_a:.0f} A")
+          _m[2].metric("Pulse energy ½CV²", f"{pc.precharge_pulse_energy_j:.1f} J")
+          _tts = pc.time_to_safe_s(_safe_v)
+          _m[3].metric(f"Bleed to {_safe_v:.0f} V",
+                       "—" if _tts is None else f"{_tts:.2f} s")
+
+          tr = tract_mod.simulate_precharge(
+              pc, t_switch_s=(_tsw if _tsw > 0 else None))
+          if tr.ok:
+              try:
+                  import plotly.graph_objects as _go
+                  _fig = _go.Figure()
+                  _fig.add_trace(_go.Scatter(x=tr.time_s, y=tr.v_cap_v,
+                                             name="V_cap (V)", mode="lines"))
+                  _fig.add_trace(_go.Scatter(x=tr.time_s, y=tr.i_a,
+                                             name="I_resistor (A)", mode="lines",
+                                             yaxis="y2"))
+                  if _tsw > 0:
+                      _fig.add_vline(x=_tsw, line_dash="dash",
+                                     annotation_text="switch shorts R")
+                  _fig.update_layout(
+                      height=320, margin=dict(l=10, r=10, t=30, b=10),
+                      yaxis=dict(title="V_cap (V)"),
+                      yaxis2=dict(title="I (A)", overlaying="y", side="right"),
+                      legend=dict(orientation="h", y=1.15))
+                  st.plotly_chart(_fig, use_container_width=True)
+              except Exception:
+                  st.line_chart({"V_cap (V)": tr.v_cap_v}, x=None)
+          for _w in tr.warnings:
+              st.caption("⚠ " + _w)
 
           st.divider()
-          st.markdown("**Inverse sizing** — wax needed to hold the full stint:")
-          _sz = pcm_mod.size_pcm_for_hold(_res, _layout, _mat, hold_time_s=_stint)
-          if _sz.get("ok"):
-              _sc = st.columns(3)
-              _sc[0].metric("Per cell", f"{_sz['pcm_mass_per_cell_g']:.0f} g")
-              _sc[1].metric("Pack mass", f"{_sz['pack_pcm_mass_kg']:.1f} kg")
-              _sc[2].metric("Pack volume", f"{_sz['pack_pcm_volume_cc']:.0f} cc")
-              if _sz["pack_pcm_mass_kg"] > 10:
-                  st.caption("⚠ That much wax to hold the *whole* stint on "
-                             "latent heat alone is impractical — the honest read "
-                             "is: PCM buffers the spikes, the fan carries the "
-                             "steady load. Size the wax for the burst, not the "
-                             "stint.")
-          if _pr.synthesized:
-              st.caption("⚠ Synthesized: energy balances are exact, but cell and "
-                         "wax properties are representative (uncalibrated). Use "
-                         "for ranking layouts and finding where the wax runs out; "
-                         "confirm absolute °C in Ansys.")
-      except Exception as _e:
-          st.error(f"PCM model couldn't run: {_e}")
+          _render_findings(tract_mod.check_precharge(pc, _rules))
+
+      # ---- SHUTDOWN CHAIN + TSAL + BSPD (slides 3 & 8) ---------------------- #
+      with _t_shut:
+          st.markdown("**The series safety loop, checked for rule-completeness and "
+                      "fail-safe wiring.** Tick the nodes your shutdown circuit "
+                      "actually has (MSD/accumulator/inverter interlocks included).")
+          _present = {}
+          _cc = st.columns(4)
+          _labels = {
+              "master_switch": "Master switch(es)", "bspd": "BSPD",
+              "ams": "AMS / BMS", "imd": "IMD",
+              "interlock": "HV interlocks (MSD/accum/inverter)",
+              "inertia": "Inertia / crash switch", "estop": "E-stops (cockpit + sides)"}
+          for _i, (_k, _lab) in enumerate(_labels.items()):
+              _present[_k] = _cc[_i % 4].checkbox(_lab, value=True, key=f"sd_{_k}")
+          _nc = st.checkbox("All nodes wired normally-CLOSED (open-to-trip)",
+                            value=True, key="sd_nc")
+
+          _chain = tract_mod.ShutdownChain()
+          for _k, _on in _present.items():
+              if _on:
+                  _chain.add(tract_mod.ShutdownNode(
+                      name=_k, kind=_k, normally_closed=_nc,
+                      set_by="glv", is_estimate=False))
+          _render_findings(tract_mod.check_shutdown_chain(_chain, _rules))
+
+          st.divider()
+          _tc = st.columns(2)
+          with _tc[0]:
+              st.markdown("**TSAL**")
+              _flash = st.number_input("Flash rate (Hz)", 0.1, 20.0, 3.0,
+                                       key="tsal_hz")
+              _tsal_v = st.number_input("Indicates 'safe' below (V)", 1.0, 600.0,
+                                        55.0, key="tsal_v")
+              _render_findings(tract_mod.check_tsal(
+                  tract_mod.TSAL(flash_hz=_flash, safe_threshold_v=_tsal_v), _rules))
+          with _tc[1]:
+              st.markdown("**BSPD**")
+              _react = st.number_input("Reaction time (ms)", 1.0, 2000.0, 300.0,
+                                       key="bspd_ms")
+              _bp = unum(st, "Trip power threshold (W)", 0.0, 1e5, 5000.0, 'W', key="bspd_w")
+              _render_findings(tract_mod.check_bspd(
+                  tract_mod.BSPD(brake_threshold=10.0, power_threshold_w=_bp,
+                                 reaction_time_s=_react / 1000.0), _rules))
+
+      # ---- PCM COOLING BUFFER (slides 3 & 7) ------------------------------- #
+      with _t_pcm:
+          st.markdown("**The 'liquid wax' buffer — how long it holds the cells, and "
+                      "how much you need.** Latent heat flattens the corner-exit "
+                      "spikes; this tells you when the wax runs out and the fan has "
+                      "to take over.")
+          _wc = st.columns(4)
+          _series = _wc[0].number_input("Series (s)", 1, 400, 140, key="pcm_s")
+          _par = _wc[1].number_input("Parallel (p)", 1, 50, 3, key="pcm_p")
+          _mass_g = _wc[2].number_input("Wax per cell (g)", 0.0, 500.0, 15.0,
+                                        key="pcm_g")
+          _ambient = unum(_wc[3], "Inlet air (°C)", 0.0, 60.0, 35.0, '°C', key="pcm_amb")
+          _wc2 = st.columns(4)
+          _tmelt = unum(_wc2[0], "Wax melt temp (°C)", 20.0, 90.0, 45.0, '°C', key="pcm_tm")
+          _lheat = unum(_wc2[1], "Latent heat (J/g)", 50.0, 400.0, 200.0, 'J/g', key="pcm_l")
+          _stint = _wc2[2].number_input("Endurance stint (s)", 60.0, 3000.0, 1500.0,
+                                        key="pcm_stint")
+          _peakA = _wc2[3].number_input("Pack current peak (A)", 10.0, 800.0, 300.0,
+                                        key="pcm_a")
+
+          _ncells = int(_series) * int(_par)
+          # square-ish packaging grid for the n cells
+          _rows = max(int(round(_ncells ** 0.5)), 1)
+          _cols = max(int(round(_ncells / _rows)), 1)
+          try:
+              _cell = pack_mod.default_cell_params()
+              _layout = pack_mod.PackLayout(rows=_rows, cols=_cols,
+                                            series=int(_series), parallel=int(_par),
+                                            cell=_cell, ambient_c=_ambient)
+              _t = np.linspace(0, 120, 800)
+              _cur = 0.4 * _peakA + _peakA * np.clip(np.sin(2 * np.pi * _t / 8), 0, 1)
+              _model = pack_mod.PackThermalModel(layout=_layout, fans=[],
+                                                 airflow=pack_mod.AirflowParams())
+              _res = _model.simulate(_t, _cur, n_laps=3)
+              _mat = pcm_mod.PCMMaterial(t_melt_c=_tmelt, latent_heat_j_per_g=_lheat)
+              _alloc = pcm_mod.PCMAllocation(material=_mat, mass_per_cell_g=_mass_g,
+                                             set_by="cooling")
+              _pr = pcm_mod.evaluate_pcm_buffer(_res, _layout, _alloc)
+
+              _mm = st.columns(4)
+              _mm[0].metric("Cells (grid)", f"{_layout.n_cells}")
+              _hold = ("holds full stint" if _pr.hold_time_s is None
+                       else f"{_pr.hold_time_s:.0f} s")
+              _mm[1].metric("Wax hold time", _hold)
+              _mm[2].metric("Pack wax mass", f"{_pr.total_pcm_mass_kg:.1f} kg")
+              _mm[3].metric("Pack wax volume", f"{_pr.total_pcm_volume_cc:.0f} cc")
+
+              _render_findings(pcm_mod.check_pcm(_pr, endurance_time_s=_stint))
+
+              st.divider()
+              st.markdown("**Inverse sizing** — wax needed to hold the full stint:")
+              _sz = pcm_mod.size_pcm_for_hold(_res, _layout, _mat, hold_time_s=_stint)
+              if _sz.get("ok"):
+                  _sc = st.columns(3)
+                  _sc[0].metric("Per cell", f"{_sz['pcm_mass_per_cell_g']:.0f} g")
+                  _sc[1].metric("Pack mass", f"{_sz['pack_pcm_mass_kg']:.1f} kg")
+                  _sc[2].metric("Pack volume", f"{_sz['pack_pcm_volume_cc']:.0f} cc")
+                  if _sz["pack_pcm_mass_kg"] > 10:
+                      st.caption("⚠ That much wax to hold the *whole* stint on "
+                                 "latent heat alone is impractical — the honest read "
+                                 "is: PCM buffers the spikes, the fan carries the "
+                                 "steady load. Size the wax for the burst, not the "
+                                 "stint.")
+              if _pr.synthesized:
+                  st.caption("⚠ Synthesized: energy balances are exact, but cell and "
+                             "wax properties are representative (uncalibrated). Use "
+                             "for ranking layouts and finding where the wax runs out; "
+                             "confirm absolute °C in Ansys.")
+          except Exception as _e:
+              st.error(f"PCM model couldn't run: {_e}")
 
 
 

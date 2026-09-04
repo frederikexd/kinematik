@@ -618,10 +618,16 @@ def test_cambered_floor_grid_converges(tmp_path):
 # ===========================================================================
 #  VORTEX LATTICE — axis convention
 # ===========================================================================
-def _vlm_slab(tmp_path, camber, name):
+def _vlm_slab_camber(tmp_path, camber, nx, ny, name):
+    """Same slab, with the grid density exposed so a refinement study can be
+    run on identical geometry at several mesh sizes."""
+    return _vlm_slab(tmp_path, camber, name, nx=nx, ny=ny)
+
+
+def _vlm_slab(tmp_path, camber, name, nx=29, ny=20):
     """Closed slab, 1.20 m streamwise (x) by 0.70 m spanwise (y). CHORD IS
     LONGER THAN SPAN, which is the case the extractor used to get wrong."""
-    nx, ny, thick, length, width = 29, 20, 0.040, 1.20, 0.70
+    thick, length, width = 0.040, 1.20, 0.70
     xs = np.linspace(0.0, length, nx)
     ys = np.linspace(-width / 2, width / 2, ny)
     X, Y = np.meshgrid(xs, ys, indexing="ij")
@@ -803,3 +809,161 @@ def test_vortex_lattice_ground_warning_is_calibrated_not_blanket(tmp_path):
     assert "WARNING" not in notes(250.0) and "indicative" not in notes(250.0)
     assert "indicative" in notes(80.0) and "WARNING" not in notes(80.0)
     assert "WARNING" in notes(40.0)
+
+
+def test_geometry_ratio_survives_refinement_even_though_levels_do_not(tmp_path):
+    """The claim the screening use rests on.
+
+    Absolute C_L on a cambered body still drifts with mesh density — that is a
+    flat-panel-versus-curved-surface limit, not the near-field error the
+    quadrature already fixed. What must hold for the tool to be worth anything
+    is that comparing two geometries at MATCHED density gives a stable answer.
+    Measured over a 5x refinement: levels drift 20%, differences 35%, the ratio
+    3%.
+    """
+    ratios = []
+    for nx, ny in ((21, 15), (29, 20), (37, 26)):
+        cls = []
+        for camber in (0.020, 0.030):
+            m = _vlm_slab_camber(tmp_path, camber, nx, ny,
+                                 f"r{camber}{nx}.stl")
+            cls.append(PanelMethodModel(PanelParams(max_panels=12000)).solve(
+                CaseSpec(attitude=Attitude(ride_height_mm=150.0, speed_ms=20.0),
+                         geometry_path=m, reference_area_m2=0.84,
+                         reference_length_m=1.20)).c_lift)
+        assert cls[1] < cls[0], "more camber must make more downforce"
+        ratios.append(cls[1] / cls[0])
+    spread = (max(ratios) - min(ratios)) / min(ratios)
+    assert spread < 0.08, f"ratio is not refinement-stable: {ratios}"
+
+
+# ===========================================================================
+#  UNDERFLOOR DUCT MODEL
+# ===========================================================================
+def _floor_stl(tmp_path, throat_depth=0.055, name="floor.stl"):
+    """Floor with an inlet ramp, a throat at 45% chord and a diffuser."""
+    L, W, T = 1.55, 0.80, 0.030
+    xs = np.linspace(0, L, 41)
+    ys = np.linspace(-W / 2, W / 2, 23)
+    X, Y = np.meshgrid(xs, ys, indexing="ij")
+    xf = X / L
+    Zl = np.zeros_like(xf)
+    a, b = xf < 0.12, (xf >= 0.12) & (xf < 0.45)
+    Zl[a] = -throat_depth * (xf[a] / 0.12)
+    Zl[b] = -throat_depth
+    c = xf >= 0.45
+    Zl[c] = -throat_depth + 2.1 * throat_depth * ((xf[c] - 0.45) / 0.55) ** 1.35
+    Zl = Zl * (1.0 - 0.55 * (np.abs(Y) / (W / 2)) ** 4)
+    n = X.size
+    verts = np.vstack([np.stack([X, Y, Zl + T], -1).reshape(-1, 3),
+                       np.stack([X, Y, Zl], -1).reshape(-1, 3)])
+    ny = len(ys)
+
+    def v(i, j, low=False):
+        return i * ny + j + (n if low else 0)
+
+    f = []
+    for i in range(len(xs) - 1):
+        for j in range(ny - 1):
+            f += [[v(i, j), v(i + 1, j), v(i + 1, j + 1)],
+                  [v(i, j), v(i + 1, j + 1), v(i, j + 1)],
+                  [v(i, j, 1), v(i + 1, j + 1, 1), v(i + 1, j, 1)],
+                  [v(i, j, 1), v(i, j + 1, 1), v(i + 1, j + 1, 1)]]
+    for i in range(len(xs) - 1):
+        for j in (0, ny - 1):
+            a_, b_, c_, d_ = v(i, j), v(i + 1, j), v(i, j, 1), v(i + 1, j, 1)
+            f += ([[a_, c_, d_], [a_, d_, b_]] if j == 0
+                  else [[a_, d_, c_], [a_, b_, d_]])
+    for j in range(ny - 1):
+        for i in (0, len(xs) - 1):
+            a_, b_, c_, d_ = v(i, j), v(i, j + 1), v(i, j, 1), v(i, j + 1, 1)
+            f += ([[a_, d_, c_], [a_, b_, d_]] if i == 0
+                  else [[a_, c_, d_], [a_, d_, b_]])
+    m = trimesh.Trimesh(vertices=verts, faces=np.array(f), process=True)
+    m.update_faces(m.nondegenerate_faces())
+    m.remove_unreferenced_vertices()
+    m.fix_normals()
+    m.apply_translation([0, 0, -m.bounds[0][2]])
+    p = str(tmp_path / name)
+    m.export(p)
+    return p
+
+
+def test_underfloor_makes_downforce_and_grows_smoothly_as_it_lowers(tmp_path):
+    """The behaviour the other two solvers could not deliver at real ride
+    heights: the panel method barely moved (13 N at 60 mm, 14 N at 30 mm) and
+    the lattice ran away (293 N, 1043 N, 2941 N over three 10 mm steps). A duct
+    model saturates instead, because inlet and throat shrink together and it is
+    their RATIO that sets the suction."""
+    from suspension.aero import underfloor as uf
+    p = _floor_stl(tmp_path)
+    hs = [60.0, 50.0, 40.0, 30.0, 25.0, 20.0]
+    res = [uf.solve(p, h, 20.0, 1.24) for h in hs]
+    cls = [r.c_lift for r in res]
+
+    assert all(c < 0 for c in cls), f"a floor must make downforce: {cls}"
+    assert all(b < a for a, b in zip(cls, cls[1:])), f"not monotone: {cls}"
+    #  Successive ratios must not blow up the way the lattice did (it hit 3.5x
+    #  per 10 mm step). Steady growth, no singularity.
+    steps = [cls[i + 1] / cls[i] for i in range(len(cls) - 1)]
+    assert max(steps) < 2.0, f"suction is running away: {steps}"
+    #  And the magnitude has to be in the range a floor actually operates in.
+    assert 50.0 < res[2].downforce_N < 600.0, res[2].downforce_N
+
+
+def test_underfloor_flags_a_diffuser_that_will_separate(tmp_path):
+    """The attachment assumption is the one most likely to be wrong on a real
+    car, so a ramp past the limit must say so rather than quietly returning the
+    optimistic number."""
+    from suspension.aero import underfloor as uf
+    shallow = uf.solve(_floor_stl(tmp_path, 0.055, "a.stl"), 40.0, 20.0, 1.24)
+    steep = uf.solve(_floor_stl(tmp_path, 0.30, "b.stl"), 40.0, 20.0, 1.24)
+    assert shallow.attached and "inside" in shallow.notes
+    assert steep.diffuser_angle_deg > shallow.diffuser_angle_deg
+    if not steep.attached:
+        assert "WARNING" in steep.notes and "upper bound" in steep.notes
+
+
+def test_underfloor_ranks_a_real_floor_above_a_bent_sheet(tmp_path):
+    """The screening use, stated as a test: a floor with a throat and diffuser
+    must come out clearly ahead of one without."""
+    from suspension.aero import underfloor as uf
+    real = uf.solve(_floor_stl(tmp_path, 0.055, "real.stl"), 40.0, 20.0, 1.24)
+    weak = uf.solve(_floor_stl(tmp_path, 0.012, "weak.stl"), 40.0, 20.0, 1.24)
+    assert real.c_lift < weak.c_lift
+    assert real.area_ratio > weak.area_ratio
+
+
+def test_underfloor_parametric_matches_the_stl_path_in_behaviour(tmp_path):
+    """The sweep and the file solve must be the same physics. They share
+    _solve_channel precisely so a what-if grid cannot drift away from the
+    geometry it is meant to be exploring."""
+    from suspension.aero import underfloor as uf
+    hs = [60.0, 40.0, 25.0]
+    par = [uf.solve_parametric(ride_height_mm=h).c_lift for h in hs]
+    stl = [uf.solve(_floor_stl(tmp_path), h, 20.0, 1.24).c_lift for h in hs]
+    assert all(c < 0 for c in par)
+    assert all(b < a for a, b in zip(par, par[1:])), par
+    #  Same trend, not the same number: the parametric duct is an idealisation
+    #  of the meshed one, so the ratio across a ride-height change is what has
+    #  to agree.
+    assert (par[2] / par[0]) == pytest.approx(stl[2] / stl[0], rel=0.35)
+
+
+def test_underfloor_sweep_reports_attachment_alongside_force(tmp_path):
+    """The best cell in any sweep is the steepest diffuser, which is also the
+    one most likely to separate. A grid that reported only newtons would steer
+    every team into the same wrong corner."""
+    from suspension.aero import underfloor as uf
+    rows = uf.sweep("throat_frac", [0.25, 0.45, 0.65],
+                    "ride_height_mm", [60.0, 40.0, 25.0],
+                    inlet_rise_mm=55.0, exit_rise_mm=115.0)
+    assert len(rows) == 9
+    assert all("attached" in r and "downforce_N" in r for r in rows)
+    #  Relative, because absolute magnitude does not transfer between the
+    #  parametric duct and a meshed one — see the note in sweep().
+    assert all("vs_baseline_pct" in r for r in rows)
+    #  Later throat = longer inlet ramp, steeper diffuser: the flag must fire
+    #  somewhere in the grid rather than being decorative.
+    assert any(not r["attached"] for r in rows)
+    assert any(r["attached"] for r in rows)
