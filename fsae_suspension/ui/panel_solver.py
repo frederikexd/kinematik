@@ -781,13 +781,25 @@ def render(st, default_area_m2: float = 1.0,
                 st.error(f"Could not solve at {h:.0f} mm: {exc}")
                 return
 
+            #  A NUMBER YOU MUST NOT USE SHOULD NOT BE PRINTED.
+            #
+            #  A diverged case used to sit in the table looking like data with
+            #  only an unticked box against it: a floor at 15 mm showed
+            #  C_L +5.0414 and downforce -333 N — the sign inverted, three
+            #  hundred newtons of lift on a part that makes downforce — and
+            #  nothing but an empty checkbox said so. Someone reads the row,
+            #  not the checkbox. Blank the values instead and say why below.
+            _ok = bool(r.converged)
             row = {
                 "ride height (mm)": round(h, 1),
-                "C_L": r.c_lift, "C_D": r.c_drag,
-                "C_side": r.c_side, "C_pitch": r.c_pitch,
-                "aero balance (front)": r.aero_balance_front,
-                "downforce (N)": r.downforce_N(1.225, area, speed),
-                "solver ok": r.converged,
+                "C_L": r.c_lift if _ok else None,
+                "C_D": r.c_drag if _ok else None,
+                "C_side": r.c_side if _ok else None,
+                "C_pitch": r.c_pitch if _ok else None,
+                "aero balance (front)": (r.aero_balance_front if _ok else None),
+                "downforce (N)": (r.downforce_N(1.225, area, speed)
+                                  if _ok else None),
+                "solver ok": _ok,
             }
             if not use_vlm:
                 row["grid Δ"] = "—" if _gci is None else f"{100*_gci:.0f}%"
@@ -930,6 +942,22 @@ def render(st, default_area_m2: float = 1.0,
             "`aero balance (front)` is blank where one end lifts and the other "
             "pushes down — the ratio is meaningless there. The headline figure "
             "above is the analytic model, not this solve.")
+
+    #  Every solver reaches this, unlike the grid banners below which are
+    #  panel-method only. A lattice that diverges near the road produced no
+    #  message at all before this.
+    _bad = [r for r in rows if not r["solver ok"]]
+    if _bad:
+        _hs_bad = ", ".join(f"{r['ride height (mm)']:g} mm" for r in _bad)
+        st.error(
+            f"**{len(_bad)} of {len(rows)} case(s) did not converge and have "
+            f"been blanked** ({_hs_bad}). The solver ran but the answer is not "
+            f"physical — near the road an inviscid method with a ground image "
+            f"diverges, and the first sign is usually C_L changing sign or "
+            f"jumping by an order of magnitude.\n\n"
+            f"Raise the ride height until the values return, and read the "
+            f"remaining rows. The blanked cases are not a smaller version of "
+            f"the right answer; they are not an answer.")
 
     if _unresolved:
         _worst = max((100.0 * g for r, g in zip(rows, _gcis)
