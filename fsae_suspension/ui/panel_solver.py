@@ -122,6 +122,61 @@ _PANEL_BANDS = {
 _MAX_STL_MB = 60
 
 
+def _grid_remedy(tris, band, two_file):
+    """What to actually DO about a failed grid check, for this exact case.
+
+    The old text said "raise the panel budget until the column settles", which
+    is useless advice to someone already on the largest band — and that is
+    where a 6,000-triangle part necessarily is. Work out which lever is still
+    available and name it, with the numbers.
+
+    Verified that refining is the right lever when it IS available: on a clean
+    floor at 70 mm, C_L across 1,088 / 2,104 / 3,768 / 5,912 faces moves 1%,
+    1%, 0%. A mesh that keeps moving instead is telling you something about
+    the tessellation, not about resolution — which is why the two-file case
+    gets different advice.
+    """
+    cap = _PANEL_BANDS[band]
+    biggest = max(_PANEL_BANDS.values())
+    lines = []
+
+    if two_file:
+        lines.append(
+            "**This delta came from your two uploads**, so it measures the "
+            "difference between two CAD exports — not resolution alone. Check "
+            "first that both are the same part in the same position; a "
+            "re-export that moved or changed shape shows up here as a huge "
+            "delta and no amount of refining will fix it.")
+        lines.append(
+            "If they are the same part, bring the coarse export CLOSER to the "
+            "fine one — halving the triangles is plenty. A very coarse "
+            "comparison mesh fails the check on its own roughness rather than "
+            "on the fine mesh being wrong.")
+    elif tris and tris <= cap // 2:
+        lines.append(
+            f"Your mesh is {tris:,} triangles and the check re-solves at "
+            f"{cap // 2:,}, so it had nothing coarser to compare against. Use "
+            f"the second uploader: export the part again at a looser STL "
+            f"tolerance, around {max(200, tris // 2):,} triangles.")
+    elif cap < biggest:
+        lines.append(
+            f"You are on the {cap:,}-triangle band. Export a finer STL and "
+            f"move up to the {biggest:,} band — refining is the lever that "
+            f"works when the mesh really is too coarse, and it costs seconds, "
+            f"not minutes.")
+    else:
+        lines.append(
+            f"You are already on the largest band ({cap:,}), so refining "
+            f"further is not available — the memory guard stops the solve "
+            f"above roughly 6,000 panels. Three things still help: run at a "
+            f"higher ride height (the mesh has to resolve a bigger gap, which "
+            f"is easier), cut the part down to just the surface you care "
+            f"about so the same triangles cover less area, or accept the "
+            f"result as a TREND only and compare it against another geometry "
+            f"solved identically.")
+    return "\n\n".join(lines)
+
+
 def _fmt(v, nd=4):
     return "—" if v is None else f"{v:+.{nd}f}"
 
@@ -732,7 +787,7 @@ def render(st, default_area_m2: float = 1.0,
                 "C_side": r.c_side, "C_pitch": r.c_pitch,
                 "aero balance (front)": r.aero_balance_front,
                 "downforce (N)": r.downforce_N(1.225, area, speed),
-                "converged": r.converged,
+                "solver ok": r.converged,
             }
             if not use_vlm:
                 row["grid Δ"] = "—" if _gci is None else f"{100*_gci:.0f}%"
@@ -754,7 +809,7 @@ def render(st, default_area_m2: float = 1.0,
             os.remove(tmp_coarse)
 
     # -------------------------------------------------------------- output --
-    ok = [r for r in rows if r["converged"]]
+    ok = [r for r in rows if r["solver ok"]]
     #  TWO DIFFERENT OUTCOMES, TWO DIFFERENT MESSAGES.
     #
     #  The coarse re-solve runs at half the selected cap. Since decimation was
@@ -767,11 +822,11 @@ def render(st, default_area_m2: float = 1.0,
     #  only hint. Separate them.
     if not use_vlm:
         _unresolved = [r for r, g in zip(rows, _gcis)
-                       if r["converged"] and g is not None and g >= 0.15]
+                       if r["solver ok"] and g is not None and g >= 0.15]
         _unchecked = [r for r, g in zip(rows, _gcis)
-                      if r["converged"] and g is None]
+                      if r["solver ok"] and g is None]
         _unchecked_why = sorted({w for r, g, w in zip(rows, _gcis, _gci_why)
-                                 if r["converged"] and g is None and w})
+                                 if r["solver ok"] and g is None and w})
     else:
         _unresolved, _unchecked, _unchecked_why = [], [], []
 
@@ -877,15 +932,29 @@ def render(st, default_area_m2: float = 1.0,
             "above is the analytic model, not this solve.")
 
     if _unresolved:
+        _worst = max((100.0 * g for r, g in zip(rows, _gcis)
+                      if g is not None), default=0.0)
         st.error(
-            f"**Not grid-converged — do not quote these numbers.** "
-            f"{len(_unresolved)} of {len(rows)} case(s) changed by more than "
-            f"15% when re-solved at half the panel budget, which means the "
-            f"mesh is not resolving the flow. The `grid Δ` column shows how "
-            f"much each moved.\n\n"
-            f"Raise the panel budget until the column settles, run at a higher "
-            f"ride height, or solve a smaller part. A result that shifts with "
-            f"resolution is telling you about the mesh, not about the car.")
+            #  TWO DIFFERENT WORDS FOR TWO DIFFERENT THINGS.
+            #
+            #  The table's tick meant the LINEAR SOLVE succeeded; this banner
+            #  means the MESH does not resolve the flow. Both said
+            #  "converged", so the page appeared to contradict itself — ticks
+            #  all the way down a column next to a red box saying not
+            #  converged. The column is now "solver ok" and this banner only
+            #  ever talks about the grid.
+            f"**Mesh not resolving the flow — do not quote these numbers.** "
+            f"The linear solve succeeded (that is the `solver ok` column); "
+            f"what failed is the grid check. {len(_unresolved)} of "
+            f"{len(rows)} case(s) moved more than 15% when re-solved on a "
+            f"coarser mesh, at {_worst:.0f}% for the worst.\n\n"
+            + ("Marginal — a few points over the line, so the trend across "
+               "ride heights is probably still telling you something even "
+               "though the absolute level is not settled. "
+               if _worst < 25.0 else
+               "Well over the line, so neither the level nor the trend is "
+               "safe to read. ")
+            + _grid_remedy(_tris, band, tmp_coarse is not None))
 
     if _unchecked:
         #  SAY IT ONCE.
