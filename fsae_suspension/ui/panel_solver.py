@@ -1005,6 +1005,18 @@ def render(st, default_area_m2: float = 1.0,
 
     import pandas as pd
     df = pd.DataFrame(rows)
+
+    #  DROP COLUMNS THIS SOLVER DOES NOT PRODUCE.
+    #
+    #  The lattice returns no side force, no pitching moment and no aero
+    #  balance, so those columns rendered as a wall of 0 and None. A hardcoded
+    #  zero in a results table reads as a measurement — "no side force at 5
+    #  degrees of yaw" is a claim, and this solver never made it. An absent
+    #  column says nothing, which is the truth here.
+    for _c in ("C_side", "C_pitch", "aero balance (front)"):
+        if _c in df.columns and (df[_c].isna().all()
+                                 or (df[_c].fillna(0) == 0).all()):
+            df = df.drop(columns=[_c])
     st.dataframe(df, width="stretch", hide_index=True)
 
     if len(ok) > 1:
