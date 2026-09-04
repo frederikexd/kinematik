@@ -43,6 +43,7 @@ from __future__ import annotations
 import io
 import os
 import tempfile
+from dataclasses import replace
 import time
 
 
@@ -179,9 +180,33 @@ def render(st, default_area_m2: float = 1.0,
               "at each station — it does not need a clean camber surface from "
               "you. The road is at z = 0 in the STL's own coordinates."
               if use_vlm else
-              "Export from SolidWorks: File ▸ Save As ▸ STL. Fine resolution "
-              "is not needed; the mesh is decimated to the panel budget below. "
-              "The road is at z = 0 in the STL's own coordinates."))
+              "SolidWorks: File ▸ Save As ▸ STL. Solved exactly as supplied — "
+              "never decimated, so keep it under the panel budget below. The "
+              "road is z = 0 in the STL's own coordinates."))
+
+    #  SECOND EXPORT FOR THE GRID CHECK.
+    #
+    #  The grid check needs the same part at two mesh densities. It used to try
+    #  to make the coarse one itself by halving the panel budget, but since
+    #  decimation was removed a budget is a REFUSAL threshold, not a target —
+    #  so for any mesh bigger than half the budget the coarse solve was refused
+    #  and the check silently never ran. The banner then told the member to
+    #  "export a coarser STL and solve that too", which the UI gave them no way
+    #  to do: one uploader, one file.
+    #
+    #  So take the second file. Optional — leave it empty and the old
+    #  half-budget attempt still runs, which works when the mesh is small
+    #  enough for it.
+    up_coarse = None
+    if not use_vlm and up is not None:
+        up_coarse = st.file_uploader(
+            "Coarser export of the SAME part (.stl) — optional, enables the "
+            "grid-convergence check",
+            type=["stl"], key="pm_stl_coarse",
+            help=("Same part, roughly half the triangles (Save As ▸ STL ▸ "
+                  "Options, raise the tolerances). Both are solved and their "
+                  "C_L compared — agreement within a few percent means the "
+                  "fine mesh is resolving the flow."))
 
     if up is None:
         st.info(
@@ -225,18 +250,71 @@ def render(st, default_area_m2: float = 1.0,
     roll  = c[3].number_input("Roll (°)", -8.0, 8.0, 0.0, 0.5,
                               key="vlm_roll" if use_vlm else "pm_roll")
 
+    #  MEASURE THE PLANFORM BEFORE ASKING FOR IT.
+    #
+    #  The lattice extracts span and mean chord from the STL to build itself,
+    #  so it already knows the planform area. It then normalised C_L by
+    #  `spec.reference_area_m2` — a box that defaulted to the panel method's
+    #  whole-car 1.00 m². On a part whose measured planform is 0.84 m² that is
+    #  a silent 16% error in every coefficient, with nothing on screen hinting
+    #  the two numbers were different.
+    #
+    #  Measure it, show it, and default to it. Overriding is still allowed —
+    #  matching the rest of the aero map matters more than being locally
+    #  correct — but now it is a choice rather than an accident.
+    _vlm_planform = None
+    if use_vlm:
+        _pp = None
+        try:
+            from suspension.aero.vortex_lattice import camber_surface_from_stl
+            with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as _fh:
+                _fh.write(raw)
+                _pp = _fh.name
+            _vs, _vc, _va = camber_surface_from_stl(_pp)[1:4]
+            _vlm_planform = (_vs, _vc, _va)
+        except Exception:                                   # noqa: BLE001
+            #  Extraction failing here is not an error worth surfacing: the
+            #  solve below will raise VortexLatticeUnavailable with the real
+            #  reason. Fall back to the manual defaults and say nothing.
+            _vlm_planform = None
+        finally:
+            if _pp and os.path.exists(_pp):
+                os.remove(_pp)
+
     c2 = st.columns([1, 1, 1])
+    _area_default = (float(_vlm_planform[2]) if _vlm_planform
+                     else float(default_area_m2))
     area = c2[0].number_input("Reference area A (m²)", 0.05, 5.0,
-                              float(default_area_m2), 0.01,
+                              _area_default, 0.01,
                               key="vlm_area" if use_vlm else "pm_area",
-                              help="Must match what the rest of the aero tab "
-                                   "normalises by, or the coefficients are "
-                                   "silently inconsistent with the map.")
-    length = c2[1].number_input("Reference length (m)", 0.5, 4.0,
-                                float(default_length_m), 0.05,
-                                key="vlm_len" if use_vlm else "pm_len",
-                                help="Wheelbase, for the pitching-moment "
-                                     "coefficient.")
+                              help=("Measured off your STL. Change it only to "
+                                    "match what the rest of the aero tab "
+                                    "normalises by."
+                                    if _vlm_planform else
+                                    "Must match what the rest of the aero tab "
+                                    "normalises by, or the coefficients are "
+                                    "silently inconsistent with the map."))
+    if use_vlm:
+        #  The lattice never reads reference_length_m — it reports no pitching
+        #  moment. Showing a box that does nothing invited exactly the
+        #  confusion above, so show the measured mean chord instead, which is
+        #  the number that actually characterises the section.
+        length = float(_vlm_planform[1]) if _vlm_planform else float(default_length_m)
+        c2[1].metric("Mean chord (measured)",
+                     f"{length:.3f} m" if _vlm_planform else "—")
+    else:
+        length = c2[1].number_input("Reference length (m)", 0.5, 4.0,
+                                    float(default_length_m), 0.05,
+                                    key="pm_len",
+                                    help="Wheelbase, for the pitching-moment "
+                                         "coefficient.")
+
+    if _vlm_planform:
+        st.caption(
+            f"Measured from the STL: span {_vlm_planform[0]:.3f} m x mean "
+            f"chord {_vlm_planform[1]:.3f} m = {_vlm_planform[2]:.3f} m² "
+            f"planform, aspect ratio "
+            f"{_vlm_planform[0] / max(_vlm_planform[1], 1e-9):.2f}.")
 
     if use_vlm:
         n_span = int(c2[2].number_input(
@@ -253,13 +331,10 @@ def render(st, default_area_m2: float = 1.0,
     else:
         band = c2[2].selectbox("Mesh size limit", list(_PANEL_BANDS),
                                index=0, key="pm_band",
-                               help="Your mesh is solved exactly as supplied — "
-                                    "nothing is decimated, because reducing a "
-                                    "closed thin-walled surface corrupts the "
-                                    "answer. This is the largest mesh accepted; a "
-                                    "bigger STL is refused rather than altered. "
-                                    "The solve is dense in time and memory, so a "
-                                    "finer mesh costs both.")
+                               help="Largest mesh accepted. Bigger STLs are "
+                                    "refused, not decimated — reducing a closed "
+                                    "thin-walled surface corrupts the answer. "
+                                    "Time and memory scale steeply with this.")
 
     mode = st.radio("Run", ["Single attitude", "Ride-height sweep"],
                     horizontal=True,
@@ -277,7 +352,19 @@ def render(st, default_area_m2: float = 1.0,
                                    key="vlm_hn" if use_vlm else "pm_hn"))
         lo, hi = min(h0, h1), max(h0, h1)
         heights = [lo + (hi - lo) * i / (n - 1) for i in range(n)]
-        st.caption(f"{n} solves at roughly half a second each.")
+        #  The caption used to read "roughly half a second each". That was
+        #  true of the analytic surrogate and has never been true of the panel
+        #  method: a few thousand panels is a dense O(N^3) solve that runs for
+        #  tens of seconds on the deploy box. A member reading "half a second"
+        #  reasonably set 12 points, which is how a sweep became a twenty
+        #  minute run that took the app over its resource limit.
+        if use_vlm:
+            st.caption(f"{n} lattice solves — fast, well under a second each.")
+        else:
+            st.caption(
+                f"{n} solves at {_PANEL_BANDS[band]:,} panels — tens of "
+                f"seconds each, so minutes total. Cost scales with the cube of "
+                f"the panel count: halving the budget is ~8x faster.")
 
     if not use_vlm:
         #  TELL THEM BEFORE THEY SPEND THE TIME.
@@ -317,10 +404,15 @@ def render(st, default_area_m2: float = 1.0,
 
     # ----------------------------------------------------------------- run --
     tmp = None
+    tmp_coarse = None
     try:
         with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as fh:
             fh.write(raw)
             tmp = fh.name
+        if up_coarse is not None:
+            with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as fh:
+                fh.write(up_coarse.getvalue())
+                tmp_coarse = fh.name
 
         if use_vlm:
             model = VortexLatticeModel(n_span=n_span, n_chord=n_chord)
@@ -336,6 +428,9 @@ def render(st, default_area_m2: float = 1.0,
         #  Why each unrun check did not run, so the banner can quote the
         #  solver's own words instead of assuming a cause.
         _gci_why = []
+        #  The single mesh verdict, computed at the tightest ride height and
+        #  reused by every other row in the sweep.
+        _sweep_gci, _sweep_why = None, None
         prog = st.progress(0.0, text="Solving…")
         t0 = time.time()
 
@@ -349,7 +444,26 @@ def render(st, default_area_m2: float = 1.0,
                 r = model.solve(spec)
 
                 _gci, _why = None, None
-                if not use_vlm:
+                #  ONCE PER SWEEP, NOT ONCE PER HEIGHT.
+                #
+                #  Grid convergence is a property of the MESH — whether the
+                #  triangles resolve the flow — not of the attitude. Running it
+                #  inside this loop doubled every sweep: a 12-point sweep did
+                #  24 dense solves to answer one question 12 times with the
+                #  same mesh. At tens of seconds per solve that is what put the
+                #  app over its resource limit.
+                #
+                #  Check at the LOWEST height, where the gap is smallest and
+                #  the mesh is most stretched, then carry the verdict across
+                #  the sweep. If it resolves at the tightest ride height it
+                #  resolves at the looser ones.
+                #  First case only. It has to be the first rather than the
+                #  lowest, because every later row inherits the verdict and
+                #  cannot inherit one that has not been computed yet. The
+                #  sweep is built from the low end up, so the first case is
+                #  also the tightest gap — the strictest place to check.
+                _check_here = (i == 0)
+                if not use_vlm and _check_here:
                     #  GRID CONVERGENCE: SOLVE TWICE, AND BELIEVE NEITHER ALONE.
                     #
                     #  Record WHY the check did not run, rather than inferring
@@ -363,9 +477,19 @@ def render(st, default_area_m2: float = 1.0,
                     #  mistake with better manners.
                     _coarse = None
                     try:
-                        _coarse = PanelMethodModel(
-                            PanelParams(max_panels=max(200, _PANEL_BANDS[band] // 2))
-                        ).solve(spec)
+                        if tmp_coarse is not None:
+                            #  Same case, same attitude, the OTHER export. This
+                            #  is a real second discretisation of the geometry,
+                            #  which is the only honest way to do this once
+                            #  decimation is off the table.
+                            _cspec = replace(spec, geometry_path=tmp_coarse)
+                            _coarse = PanelMethodModel(
+                                PanelParams(max_panels=_PANEL_BANDS[band])
+                            ).solve(_cspec)
+                        else:
+                            _coarse = PanelMethodModel(
+                                PanelParams(max_panels=max(200, _PANEL_BANDS[band] // 2))
+                            ).solve(spec)
                     except Exception as _ce:               # noqa: BLE001
                         _why = str(_ce).strip() or type(_ce).__name__
                     if _coarse is not None and not _coarse.converged:
@@ -375,6 +499,11 @@ def render(st, default_area_m2: float = 1.0,
                     if _coarse is not None and _coarse.converged:
                         _den = max(abs(r.c_lift), abs(_coarse.c_lift), 1e-6)
                         _gci = abs(r.c_lift - _coarse.c_lift) / _den
+                    _sweep_gci, _sweep_why = _gci, _why
+                elif not use_vlm:
+                    #  Inherit the one verdict, so every row is labelled and
+                    #  none of them pays for it again.
+                    _gci, _why = _sweep_gci, _sweep_why
 
             except (PanelMethodUnavailable, VortexLatticeUnavailable) as exc:
                 st.error(f"Could not solve at {h:.0f} mm: {exc}")
@@ -404,6 +533,8 @@ def render(st, default_area_m2: float = 1.0,
     finally:
         if tmp and os.path.exists(tmp):
             os.remove(tmp)
+        if tmp_coarse and os.path.exists(tmp_coarse):
+            os.remove(tmp_coarse)
 
     # -------------------------------------------------------------- output --
     ok = [r for r in rows if r["converged"]]
@@ -455,6 +586,18 @@ def render(st, default_area_m2: float = 1.0,
             st.info(first_note)
         return
 
+    #  WHAT THIS IS FOR, IN ONE LINE, WHERE THE NUMBERS ARE.
+    #
+    #  Both solvers are potential-flow: no separation, no wake, no profile
+    #  drag. Absolute levels carry real error; differences between geometries
+    #  at the same settings largely do not, because the error is systematic.
+    #  That is the screening use, and saying so once beats every caveat further
+    #  down being read as boilerplate.
+    st.caption(
+        "**Screening tool.** Compare geometries at identical settings and "
+        "trust the ranking; treat any single absolute number as indicative. "
+        "Potential flow — no separation, wake or profile drag.")
+
     best = ok[0]
     m = st.columns(4)
     m[0].metric("C_L", _fmt(best["C_L"]),
@@ -467,6 +610,15 @@ def render(st, default_area_m2: float = 1.0,
                 else f"{best['downforce (N)']:.0f} N")
     m[3].metric("L/D",
                 "—" if not best["C_D"] else f"{abs(best['C_L'])/best['C_D']:.2f}")
+
+    #  A blank balance column is a result, not a missing value, and the
+    #  headline row above this view always shows one — so name the difference
+    #  here too rather than leaving the reader to reconcile them.
+    if not use_vlm and any(r.get("aero balance (front)") is None for r in rows):
+        st.caption(
+            "`aero balance (front)` is blank where one end lifts and the other "
+            "pushes down — the ratio is meaningless there. The headline figure "
+            "above is the analytic model, not this solve.")
 
     if _unresolved:
         st.error(
@@ -491,14 +643,12 @@ def render(st, default_area_m2: float = 1.0,
         #  to; when there is one, it speaks for itself.
         _why_txt = "\n".join(f"- {w}" for w in _unchecked_why)
         st.warning(
-            f"**Grid convergence not checked** for {len(_unchecked)} of "
-            f"{len(rows)} case(s) — unverified, not wrong. The check re-solves "
-            f"at half the mesh size limit and compares C_L; that second solve "
-            f"produced nothing to compare against, so `grid Δ` is empty.\n\n"
-            + (_why_txt if _unchecked_why else
-               "Export the same part from CAD at a coarser tolerance and solve "
-               "that too — if C_L holds to a few percent, the fine mesh is "
-               "resolving the flow."))
+            f"**Grid convergence not checked** — unverified, not wrong. "
+            f"`grid Δ` is empty for {len(_unchecked)} of {len(rows)} case(s): "
+            f"the check needs a second, coarser mesh and none was available.\n\n"
+            + ("Drop a coarser export of the same part into the second "
+               "uploader above." if tmp_coarse is None else
+               "The coarse export you supplied did not solve:\n\n" + _why_txt))
 
     import pandas as pd
     df = pd.DataFrame(rows)

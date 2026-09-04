@@ -19032,6 +19032,24 @@ with tab_aero:
       mcol[3].metric("Aero balance", f"{_fb*100:.0f}% front",
                      help="Share of downforce on the front axle. ~45% front is a typical FSAE target.")
 
+      #  SAY WHICH MODEL THESE CAME FROM.
+      #
+      #  This row is the ANALYTIC REFERENCE MODEL evaluated at the tab's own
+      #  attitude sliders. It knows nothing about any STL. Sitting directly
+      #  above the panel-method view it read as a summary of the solve below,
+      #  which it is not — and the two disagree on purpose: the surrogate
+      #  always produces an aero balance, while the panel method returns a
+      #  blank whenever the front and rear loads oppose each other and the
+      #  split is not a real measurement. A member seeing "9% front" in the
+      #  table and "45% front" in the headline had no way to know they were
+      #  reading two different models.
+      _hdr_note = ("Reference model at this tab's attitude — a generic FSAE "
+                   "car, not your geometry.")
+      if _view == "Panel-method solver (your STL)":
+          _hdr_note += (" **The solve below uses your STL; where they "
+                        "disagree, believe the solve.**")
+      st.caption(_hdr_note)
+
       try:
         record_activity(
             "aerodynamics", "condition",

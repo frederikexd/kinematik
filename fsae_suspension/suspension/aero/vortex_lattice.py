@@ -166,7 +166,8 @@ def _horseshoe(p, a, b, far=1.0e4):
 
 
 def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
-                            n_chord=DEFAULT_CHORDWISE):
+                            n_chord=DEFAULT_CHORDWISE,
+                            roll_deg=0.0, pitch_deg=0.0):
     """Extract the mean camber surface of a wing from a closed STL.
 
     A vortex lattice needs the camber SURFACE, but a team exports a closed
@@ -196,6 +197,27 @@ def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
     faces = getattr(mesh, "faces", None)
     if mesh is None or faces is None or len(faces) == 0:
         raise VortexLatticeUnavailable("geometry has no triangles")
+
+    #  ROLL AND PITCH ROTATE THE BODY, THEY DO NOT TILT THE FLOW.
+    #
+    #  Roll was accepted by the UI and then used by nothing at all: +3 deg and
+    #  -3 deg returned identical C_L to six decimals. Pitch was folded into the
+    #  onset flow, which is only equivalent to rotating the body in FREE AIR —
+    #  with a road present, tilting the flow leaves the surface-to-road angle
+    #  unchanged, so the ground-effect mechanism never saw it. The panel method
+    #  already moved pitch onto the geometry for exactly this reason; this is
+    #  the same fix. Yaw stays in the flow, because the road is symmetric about
+    #  z and rotating body or flow about z are genuinely equivalent.
+    if abs(float(roll_deg)) > 1e-9 or abs(float(pitch_deg)) > 1e-9:
+        _T = trimesh.transformations
+        if abs(float(roll_deg)) > 1e-9:
+            mesh.apply_transform(
+                _T.rotation_matrix(math.radians(float(roll_deg)), [1.0, 0, 0]))
+        if abs(float(pitch_deg)) > 1e-9:
+            _pv = [float(mesh.centroid[0]), 0.0, 0.0]
+            mesh.apply_transform(
+                _T.rotation_matrix(math.radians(float(pitch_deg)),
+                                   [0.0, 1.0, 0.0], _pv))
 
     ext = mesh.bounding_box.extents
     #  AXES ARE FIXED BY THE COORDINATE CONVENTION, NOT GUESSED FROM EXTENTS.
@@ -247,17 +269,68 @@ def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
         c = x1 - x0
         if c <= 1e-6:
             continue
+
+        #  EXACT CROSSINGS, NOT A BAND OF NEARBY VERTICES.
+        #
+        #  This used to gather every section vertex within 2% of the chordwise
+        #  station and take the midpoint of their highest and lowest z. Which
+        #  vertices fall in that band depends on how finely the STL happens to
+        #  be triangulated, so the camber line moved when the mesh did:
+        #  subdividing the SAME part — which changes no geometry at all —
+        #  shifted C_L by 3.6%. A solver must not care how many triangles were
+        #  used to describe a surface it re-samples anyway.
+        #
+        #  Intersect the section outline with the vertical line x = xq instead.
+        #  Linear interpolation along each segment gives the surface height
+        #  exactly, at any vertex density.
+        try:
+            _loops = [np.asarray(d) for d in sec.discrete]
+        except Exception:                                   # noqa: BLE001
+            _loops = []
+
+        def _crossings(xq):
+            zs_at = []
+            for loop in _loops:
+                if loop.ndim != 2 or len(loop) < 2:
+                    continue
+                lx, lz = loop[:, i_chord], loop[:, i_thick]
+                a, b = lx[:-1], lx[1:]
+                za, zb = lz[:-1], lz[1:]
+                straddle = ((a - xq) * (b - xq)) <= 0.0
+                span_ = b - a
+                ok = straddle & (np.abs(span_) > 1e-12)
+                if ok.any():
+                    t = (xq - a[ok]) / span_[ok]
+                    zs_at.extend((za[ok] + t * (zb[ok] - za[ok])).tolist())
+                # a segment lying exactly on the station contributes both ends
+                flat = straddle & (np.abs(span_) <= 1e-12)
+                if flat.any():
+                    zs_at.extend(za[flat].tolist())
+                    zs_at.extend(zb[flat].tolist())
+            return zs_at
+
         row = []
         for f in np.linspace(0.0, 1.0, n_chord + 1):
             xq = x0 + f * c
-            #  Pair the surfaces in a band around this chordwise station.
-            band = np.abs(xs_ - xq) <= max(0.02 * c, 1e-4)
-            if not band.any():
-                band = np.abs(xs_ - xq) <= 0.06 * c
-            if not band.any():
-                row = []
-                break
-            zc = 0.5 * (float(zs_[band].max()) + float(zs_[band].min()))
+            #  Nudge off the exact leading/trailing edge, where the outline is
+            #  tangent to the station line and crossings degenerate to a point.
+            if f <= 0.0:
+                xq = x0 + 1e-4 * c
+            elif f >= 1.0:
+                xq = x1 - 1e-4 * c
+            _zc_pts = _crossings(xq)
+            if len(_zc_pts) >= 2:
+                zc = 0.5 * (max(_zc_pts) + min(_zc_pts))
+            else:
+                #  No clean crossing (open or malformed section): fall back to
+                #  the old band so a usable surface is still produced.
+                band = np.abs(xs_ - xq) <= max(0.02 * c, 1e-4)
+                if not band.any():
+                    band = np.abs(xs_ - xq) <= 0.06 * c
+                if not band.any():
+                    row = []
+                    break
+                zc = 0.5 * (float(zs_[band].max()) + float(zs_[band].min()))
             p = np.zeros(3)
             p[i_chord], p[i_span], p[i_thick] = xq, y, zc
             row.append(p)
@@ -285,20 +358,45 @@ class VortexLatticeModel:
         import numpy as np
 
         grid, span, chord, area = camber_surface_from_stl(
-            spec.geometry_path, self.n_span, self.n_chord)
+            spec.geometry_path, self.n_span, self.n_chord,
+            roll_deg=float(spec.attitude.roll_deg or 0.0),
+            pitch_deg=float(spec.attitude.pitch_deg or 0.0))
 
         rho = 1.225
         V = float(spec.attitude.speed_ms or 20.0)
-        alpha = math.radians(float(spec.attitude.pitch_deg or 0.0))
         beta = math.radians(float(spec.attitude.yaw_deg or 0.0))
-        #  Attitude folds into the onset flow, as in the panel method, so the
-        #  lattice itself never has to be rotated.
-        Vinf = V * np.array([math.cos(alpha) * math.cos(beta),
-                             -math.cos(alpha) * math.sin(beta),
-                             math.sin(alpha)])
+        #  YAW ONLY. Roll and pitch are applied to the geometry in
+        #  camber_surface_from_stl — see the note there. Keeping them here too
+        #  would double-count them.
+        Vinf = V * np.array([math.cos(beta), -math.sin(beta), 0.0])
 
         h = spec.attitude.ride_height_mm
         h = (float(h) / 1000.0) if h else None
+        if h is not None:
+            #  PUT THE SURFACE AT THE RIDE HEIGHT IT WAS ASKED FOR.
+            #
+            #  The image used to be placed at z - 2h, which reflects through a
+            #  plane a distance h below EACH point. On a flat surface that is
+            #  the road; on a cambered or rolled one every panel gets its own
+            #  private road plane, which is why results drifted in ways no
+            #  physical road would produce. Translate the lattice so its lowest
+            #  point sits h above z = 0, exactly as the panel method places its
+            #  mesh, and the road becomes one plane for the whole body.
+            #  Reference the LEADING EDGE, not the lowest point anywhere on
+            #  the surface. Attitude documents ride height as the front
+            #  reference clearance, and using the global minimum instead made
+            #  the part HEAVE as it was raked: on a bowed floor the lowest
+            #  point sits at mid-chord near zero pitch and jumps to an end once
+            #  the rake ramp beats the bow, so the translation changed
+            #  discontinuously. That put a spurious dip and peak either side of
+            #  zero rake in every pitch sweep — the one axis a rake study is
+            #  for. The leading edge is a single well-defined point at every
+            #  angle, so the placement stays smooth.
+            _g = np.asarray(grid, dtype=float)
+            _le_z = float(_g[:, 0, 2].mean())
+            _g[:, :, 2] += h - _le_z
+            grid = [[_g[i, j] for j in range(_g.shape[1])]
+                    for i in range(_g.shape[0])]
 
         bound, ctrl, normal, dy = [], [], [], []
         ns, nc = len(grid) - 1, self.n_chord
@@ -345,8 +443,10 @@ class VortexLatticeModel:
                 #  which is a different plane unless the lattice happens to sit
                 #  at exactly z = h — and it does not, because the camber
                 #  surface comes from the STL's own coordinates.
-                Ai = Abnd.copy(); Ai[:, 2] = Abnd[:, 2] - 2.0 * h
-                Bi = Bbnd.copy(); Bi[:, 2] = Bbnd[:, 2] - 2.0 * h
+                #  One road plane, at z = 0, now that the lattice is placed
+                #  against it. Straight reflection.
+                Ai = Abnd.copy(); Ai[:, 2] = -Abnd[:, 2]
+                Bi = Bbnd.copy(); Bi[:, 2] = -Bbnd[:, 2]
                 V = V + _horseshoe_influence(P, Bi, Ai)
             return V
 
@@ -408,10 +508,50 @@ class VortexLatticeModel:
                       f"method if the part works by displacement rather than "
                       f"by lift.")
 
-        if h is not None and h < 0.5 * chord:
-            notes += (f" Ride height {h*1000:.0f} mm is under half the mean "
-                      f"chord: ground effect is strong here and a thin-surface "
-                      f"method is at the edge of its validity.")
+        #  KNOWN LIMIT, STATED RATHER THAN HIDDEN.
+        #
+        #  The rake response is smooth and monotone away from zero but has a
+        #  local dip within about a degree of it, so small-rake comparisons are
+        #  not trustworthy. Ride-height sweeps and geometry-vs-geometry deltas
+        #  at a FIXED attitude are unaffected, and those are what a
+        #  prevalidation screen is for.
+        _pd = abs(float(getattr(spec.attitude, "pitch_deg", 0.0) or 0.0))
+        if 0.0 < _pd < 1.5:
+            notes += (f" Rake of {_pd:.1f} deg is inside the band where this "
+                      f"solver's pitch response is unreliable (a spurious dip "
+                      f"sits within ~1 deg of zero). Compare geometries at a "
+                      f"fixed attitude, or sweep rake beyond +/-1.5 deg, "
+                      f"rather than reading small-rake differences.")
+
+        #  CALIBRATED, NOT A BLANKET.
+        #
+        #  This used to fire whenever h was under HALF the mean chord, which on
+        #  any floor is every case ever run — a 1.2 m chord put the threshold at
+        #  600 mm. A warning that is always on carries no information and
+        #  trains people to scroll past the ones that matter.
+        #
+        #  Measured on a cambered floor, the log-slope d(ln|C_L|)/d(ln h):
+        #      h/chord   0.25  0.13  0.10  0.083 0.067 0.050 0.033 0.025
+        #      slope    -0.25 -0.45 -0.60 -0.74 -1.00 -1.41 -2.55 -6.87
+        #  Real ground effect steepens gently. Past about h/chord = 0.05 the
+        #  slope runs away — the image vortex is close enough to dominate and a
+        #  thin-surface method has nothing left to say. Warn there, note the
+        #  approach to it, and stay quiet above it.
+        if h is not None and chord > 1e-9:
+            _hc = h / chord
+            if _hc < 0.05:
+                converged = False
+                notes += (f" WARNING: ride height {h*1000:.0f} mm is {_hc:.3f} "
+                          f"of the mean chord. Below about 0.05 the ground "
+                          f"image dominates and |C_L| runs away with falling "
+                          f"ride height — the magnitude here is a numerical "
+                          f"artefact, not downforce. Do not quote it, and do "
+                          f"not compare geometries at this clearance.")
+            elif _hc < 0.10:
+                notes += (f" Ride height {h*1000:.0f} mm is {_hc:.3f} of the "
+                          f"mean chord: ground effect is strong and the "
+                          f"absolute level is indicative. Deltas between "
+                          f"geometries at this same attitude are still usable.")
 
         return CoeffResult(
             attitude=spec.attitude,

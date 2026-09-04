@@ -705,9 +705,16 @@ def test_vortex_lattice_zero_is_explained_not_silent(tmp_path):
     assert flat.c_lift == pytest.approx(0.0, abs=1e-9)
     assert "flat" in flat.notes and "circulation" in flat.notes
 
-    # ...and the same flat plate must still respond to incidence.
-    assert solve(-2.0).c_lift < -1e-3
-    assert solve(-4.0).c_lift < solve(-2.0).c_lift
+    #  ...and the same flat plate must still RESPOND to incidence. The sign is
+    #  deliberately not asserted: pitch rotates the geometry now rather than
+    #  tilting the onset flow, so near the road a plate at incidence sits in a
+    #  converging or diverging gap and the ground image, not the incidence
+    #  alone, decides which way the force goes. What must hold is that the
+    #  control does something and that the two signs are not the same.
+    up, down = solve(2.0).c_lift, solve(-2.0).c_lift
+    assert abs(up - flat.c_lift) > 1e-4, "pitch has no effect"
+    assert abs(down - flat.c_lift) > 1e-4, "pitch has no effect"
+    assert abs(up - down) > 1e-4, "pitch is not signed"
 
 
 def test_aero_balance_is_none_when_the_ends_oppose_each_other(tmp_path):
@@ -732,3 +739,67 @@ def test_aero_balance_is_none_when_the_ends_oppose_each_other(tmp_path):
         b = bal(pitch, 60.0)
         assert b is None or 0.0 < b < 1.0, (
             f"pitch {pitch}: balance {b} is a clamp, not a measurement")
+
+
+def test_vortex_lattice_ignores_stl_triangle_density(tmp_path):
+    """REGRESSION: the camber extractor gathered section vertices within a band
+    of each chordwise station and took the midpoint of their extremes, so which
+    vertices landed in the band depended on how finely the part was
+    triangulated. Subdividing the SAME geometry — which changes no surface at
+    all — moved C_L by 3.6%. It now intersects the section outline exactly."""
+    from suspension.aero.vortex_lattice import VortexLatticeModel
+    base = trimesh.load(_vlm_slab(tmp_path, 0.030, "dens.stl"),
+                        force="mesh")
+
+    def cl(mesh, name):
+        p = str(tmp_path / name)
+        mesh.export(p)
+        return VortexLatticeModel().solve(
+            CaseSpec(attitude=Attitude(ride_height_mm=110.0, speed_ms=20.0),
+                     geometry_path=p, reference_area_m2=0.84,
+                     reference_length_m=1.20)).c_lift
+
+    coarse = cl(base, "d1.stl")
+    fine = cl(base.subdivide(), "d2.stl")
+    assert fine == pytest.approx(coarse, rel=1e-4), (
+        f"triangle count changed the answer: {coarse} vs {fine}")
+
+
+def test_vortex_lattice_responds_to_roll_symmetrically(tmp_path):
+    """REGRESSION: roll was accepted by the UI and used by nothing — +3 and -3
+    returned the zero-roll answer to six decimals. It is applied to the
+    geometry now, so it must change the result, and on a laterally symmetric
+    part the two signs must agree with each other."""
+    from suspension.aero.vortex_lattice import VortexLatticeModel
+    p = _vlm_slab(tmp_path, 0.030, "roll.stl")
+
+    def cl(roll):
+        return VortexLatticeModel().solve(
+            CaseSpec(attitude=Attitude(ride_height_mm=110.0, speed_ms=20.0,
+                                       roll_deg=roll),
+                     geometry_path=p, reference_area_m2=0.84,
+                     reference_length_m=1.20)).c_lift
+
+    flat, pos, neg = cl(0.0), cl(3.0), cl(-3.0)
+    assert pos == pytest.approx(neg, rel=1e-4), "roll is not symmetric"
+    assert abs(pos - flat) > 1e-4, "roll still has no effect"
+
+
+def test_vortex_lattice_ground_warning_is_calibrated_not_blanket(tmp_path):
+    """REGRESSION: the strong-ground-effect warning fired whenever ride height
+    was under HALF the mean chord, which on any floor is every case ever run.
+    An always-on warning carries no information. It is now pinned to where the
+    image actually runs away (h/chord below ~0.05), with a milder note on the
+    approach and silence above it."""
+    from suspension.aero.vortex_lattice import VortexLatticeModel
+    p = _vlm_slab(tmp_path, 0.030, "gw.stl")
+
+    def notes(h):
+        return VortexLatticeModel().solve(
+            CaseSpec(attitude=Attitude(ride_height_mm=h, speed_ms=20.0),
+                     geometry_path=p, reference_area_m2=0.84,
+                     reference_length_m=1.20)).notes
+
+    assert "WARNING" not in notes(250.0) and "indicative" not in notes(250.0)
+    assert "indicative" in notes(80.0) and "WARNING" not in notes(80.0)
+    assert "WARNING" in notes(40.0)
