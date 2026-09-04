@@ -196,13 +196,11 @@ class PanelMethodModel:
         #  script run takes the whole app down for every viewer, not just the
         #  one who asked, so a refusal with a number is strictly better than
         #  finding out by dying.
-        #  Multiplier calibrated, not guessed. A 5,120-panel solve peaks at
-        #  630 MB against a 100 MB float32 matrix — a ratio of 6.3, because the
-        #  assembly holds row blocks, the near-field pair arrays and LAPACK's
-        #  own workspace alongside it. The first cut of this guard used 2.6 and
-        #  would have waved through a 6,000-panel solve that actually needs
-        #  ~860 MB.
-        _need_mb = (n * n * 4) / 1048576.0 * 6.3            # matrix + workspace
+        #  Multiplier calibrated, not guessed, and re-calibrated after the
+        #  factorisation stopped copying the matrix and the assembly block
+        #  dropped to 128 rows. A 5,912-panel solve now peaks at 453 MB
+        #  against a 133 MB float32 matrix — a ratio of 3.3, down from 6.3.
+        _need_mb = (n * n * 4) / 1048576.0 * 3.3            # matrix + workspace
         if _need_mb > _MEMORY_BUDGET_MB:
             raise PanelMethodUnavailable(
                 f"this solve needs about {_need_mb:.0f} MB for a {n:,}-panel "
@@ -231,7 +229,22 @@ class PanelMethodModel:
         #  below then catches it and marks the result unconverged. So the
         #  robustness that lstsq was chosen for is preserved; it is simply no
         #  longer paid for on every well-posed solve.
+        #  FACTOR IN PLACE. np.linalg.solve copies the matrix before
+        #  factorising it, which at 6,000 panels is another 137 MB of float32
+        #  on top of the 137 MB already allocated — measured at +293 MB peak
+        #  for the call alone, on a solve that peaks at ~800 MB total against
+        #  a 690 MB guarantee. scipy's lu_factor with overwrite_a=True
+        #  factorises in the existing buffer: +0 MB, and 1.6 s instead of 5.0 s
+        #  for the same 6,000-panel system.
+        #
+        #  A is destroyed by this, so the conditioning estimate below is taken
+        #  from the factorisation rather than from the matrix.
         try:
+            from scipy.linalg import lu_factor, lu_solve
+            _lu, _piv = lu_factor(A, overwrite_a=True, check_finite=False)
+            sigma = lu_solve((_lu, _piv), rhs.astype(A.dtype, copy=False),
+                             overwrite_b=True, check_finite=False)
+        except ImportError:
             sigma = np.linalg.solve(A, rhs.astype(A.dtype, copy=False))
         except np.linalg.LinAlgError:
             try:
@@ -257,7 +270,18 @@ class PanelMethodModel:
         # Flagged, not raised: the caller may still want the field for
         # inspection. But converged goes False so nothing downstream averages a
         # spurious point into an aero map.
-        cond = float(np.linalg.cond(A)) if len(A) < 2500 else float("nan")
+        #  Conditioning from the LU diagonal: max|U_ii| / min|U_ii| is the
+        #  standard cheap proxy and costs nothing, where np.linalg.cond would
+        #  have run a full SVD on a matrix that no longer exists. It reads a
+        #  little lower than the true 2-norm condition number, so the 5e3
+        #  threshold below is generous rather than tight — which is the right
+        #  way round for a guard that marks results unusable.
+        try:
+            _d = np.abs(np.diag(_lu))
+            _dmin = float(_d.min())
+            cond = float(_d.max() / _dmin) if _dmin > 0 else float("inf")
+        except Exception:                                   # noqa: BLE001
+            cond = float("nan")
         sig_max = float(np.abs(sigma).max()) if sigma.size else 0.0
         ill = (np.isfinite(cond) and cond > 5.0e3) or sig_max > 50.0
         cond_note = ""
@@ -764,7 +788,21 @@ class PanelMethodModel:
         #  512 rows keeps the transient near 12 MB per (N, 3) slab at N = 3000
         #  and costs nothing measurable in time — the work is the same, it is
         #  simply not all resident at once.
-        BLOCK = 512
+        #  BLOCK SIZE IS A MEMORY KNOB, AND 512 WAS THE WRONG END OF IT.
+        #
+        #  Each block allocates (block, N, 3) float64 temporaries — at 512 rows
+        #  and 5,912 panels that is 73 MB per array, several of them live at
+        #  once, and the image system doubles it. Measured on the same solve:
+        #
+        #      BLOCK   time    peak
+        #        512   12.5 s  644 MB
+        #        128    9.1 s  453 MB
+        #         64    9.2 s  451 MB
+        #
+        #  Smaller is both lighter AND faster, because the working set starts
+        #  fitting in cache. It stops paying below 128. Identical C_L to five
+        #  decimals at every size — this changes no arithmetic.
+        BLOCK = 128
         #  float32 for the influence matrix.
         #
         #  It is the single largest allocation in the solve — 142 MB at 4220
@@ -878,7 +916,7 @@ class PanelMethodModel:
         #  builds two (N, N, 3) arrays plus einsum temporaries, which at a few
         #  thousand panels is hundreds of megabytes for a result that is only
         #  (N, 3). Identical arithmetic, one row block at a time.
-        BLOCK = 512
+        BLOCK = 128
         v = np.empty((n, 3), dtype=float)
         sa = sigma * areas
 

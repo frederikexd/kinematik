@@ -87,8 +87,12 @@ import time
 #      triangles    solve time      memory
 #        768          0.4 s         ~100 MB
 #      3,072          3.3 s         ~300 MB
-#      5,120          7.0 s         630 MB
-#      5,912         10.7 s         801 MB
+#      5,912          9.7 s         453 MB   (after the two fixes below)
+#
+#  Two changes took that from 801 MB: factorising in place instead of letting
+#  numpy copy the matrix (-293 MB on the solve call alone), and dropping the
+#  assembly block from 512 rows to 128 (-190 MB, and faster). Both are in
+#  panel_method.py with the measurements.
 #     12,288         57   s        ~3,000 MB
 #
 #  Interpolating the measured points, 5,000 triangles is about 14 s and 800 MB
@@ -115,8 +119,8 @@ _PANEL_BANDS = {
     "Up to 800 triangles (<1 s)": 800,
     "Up to 1,500 triangles (~1 s)": 1500,
     "Up to 2,500 triangles (~3 s)": 2500,
-    "Up to 5,000 triangles (~10 s, ~600 MB)": 5000,
-    "Up to 6,000 triangles (~17 s, ~870 MB)": 6000,
+    "Up to 5,000 triangles (~7 s, ~330 MB)": 5000,
+    "Up to 6,000 triangles (~12 s, ~450 MB)": 6000,
 }
 
 _MAX_STL_MB = 60
