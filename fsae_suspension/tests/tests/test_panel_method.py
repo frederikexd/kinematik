@@ -967,3 +967,38 @@ def test_underfloor_sweep_reports_attachment_alongside_force(tmp_path):
     #  somewhere in the grid rather than being decorative.
     assert any(not r["attached"] for r in rows)
     assert any(r["attached"] for r in rows)
+
+
+def test_panel_method_now_produces_lift_on_a_wing(tmp_path):
+    """REGRESSION: source panels carry no circulation, so the panel method
+    returned essentially nothing on a lifting surface — C_L = -0.013 on a wing
+    whose lifting-line value is -0.201. A vortex lattice on the extracted mean
+    camber surface is now superposed on the source solve: thickness and
+    blockage from the panels, lift from the circulation, which is the same
+    decomposition thin-aerofoil theory rests on."""
+    from suspension.aero.panel_method import PanelParams as PP
+    p = _vlm_slab(tmp_path, 0.030, "liftwing.stl")
+    spec = CaseSpec(attitude=Attitude(ride_height_mm=800.0, speed_ms=20.0),
+                    geometry_path=p, reference_area_m2=0.84,
+                    reference_length_m=1.20)
+    plain = PanelMethodModel(PP(max_panels=6000, lifting=False)).solve(spec)
+    lifting = PanelMethodModel(PP(max_panels=6000, lifting=True)).solve(spec)
+    assert abs(lifting.c_lift) > 4.0 * abs(plain.c_lift), (
+        f"circulation added nothing: {plain.c_lift} -> {lifting.c_lift}")
+    assert lifting.c_lift < 0.0, "a cambered surface must make downforce"
+    assert "circulation" in lifting.notes
+
+
+def test_bluff_body_gets_no_spurious_circulation(tmp_path):
+    """A sphere has no camber surface to find, so the lattice must decline and
+    the answer must stay at the d'Alembert zero the sphere test pins. Adding
+    lift to a bluff body would be worse than the bug this fixes."""
+    m = trimesh.creation.icosphere(subdivisions=3, radius=0.30)
+    p = str(tmp_path / "sph_lift.stl")
+    m.export(p)
+    r = PanelMethodModel(PanelParams(max_panels=6000)).solve(
+        CaseSpec(attitude=Attitude(ride_height_mm=3000.0, speed_ms=20.0),
+                 geometry_path=p, reference_area_m2=math.pi * 0.09,
+                 reference_length_m=0.60))
+    assert abs(r.c_lift) < 1e-3, f"spurious lift on a sphere: {r.c_lift}"
+    assert "no circulation added" in r.notes

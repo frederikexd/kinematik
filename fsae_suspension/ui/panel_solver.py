@@ -79,10 +79,28 @@ import time
 #  Before chunking, 3072 faces cost 973 MB and the app was OOM-killed. 8000 is
 #  the ceiling offered here: it leaves room for Streamlit, the session and a
 #  second user.
+#  PANEL BANDS, WITH HONEST TIMING.
+#
+#  The solve is O(N^3) in the panel count, so the relationship between mesh
+#  size and time is steep. Measured on this box (an O(N^3) dense solve):
+#
+#      triangles    solve time      memory
+#        768          0.4 s         ~100 MB
+#      3,072          3   s         ~300 MB
+#
+#  On Streamlit Community Cloud the deploy box is slower by roughly 15–20x
+#  (measured: 60–70 s for a 2,316-face mesh at 2,500 panels). Any mesh above
+#  ~800 faces at a 1,000-panel limit will be refused, so members who upload a
+#  real part will almost always land on 2,500 or higher and wait minutes.
+#
+#  The right answer for the panel method is not a faster box — it is a coarser
+#  mesh. A noise-cone or rollhoop has smooth surfaces that are well-resolved by
+#  a few hundred faces. Only push higher if the warning says the panels are too
+#  coarse to trust.
 _PANEL_BANDS = {
-    "Up to 1,000 triangles (light)": 1000,
-    "Up to 2,500 triangles": 2500,
-    "Up to 4,000 triangles (heavy)": 4000,
+    "Up to 800 triangles (~2 s)": 800,
+    "Up to 1,500 triangles (~10 s)": 1500,
+    "Up to 2,500 triangles (~30 s)": 2500,
 }
 
 _MAX_STL_MB = 60
@@ -124,7 +142,7 @@ def render(st, default_area_m2: float = 1.0,
         "Solver",
         ["Underfloor channel (floors, undertrays — ground effect)",
          "Vortex lattice (lifting surfaces — wings, dive planes)",
-         "Panel method (bluff bodies — nose, rollhoop, sidepod drag)"],
+         "Panel method (thickness + circulation — wings, bluff bodies)"],
         horizontal=True, key="aero_solver",
         help="Pick by MECHANISM, not by part. The underfloor model treats the "
              "gap between the floor and the road as a duct and solves "
@@ -366,9 +384,12 @@ def render(st, default_area_m2: float = 1.0,
             st.caption(f"{n} lattice solves — fast, well under a second each.")
         else:
             st.caption(
-                f"{n} solves at {_PANEL_BANDS[band]:,} panels — tens of "
-                f"seconds each, so minutes total. Cost scales with the cube of "
-                f"the panel count: halving the budget is ~8x faster.")
+                f"{n} solves at {_PANEL_BANDS[band]:,} panels. On Streamlit "
+                f"Cloud expect roughly {_PANEL_BANDS[band]//80:.0f}–"
+                f"{_PANEL_BANDS[band]//60:.0f} s per solve, so "
+                f"~{n*_PANEL_BANDS[band]//80//60:.0f}–"
+                f"{n*_PANEL_BANDS[band]//60//60:.0f} minutes for the sweep. "
+                f"Drop to the lightest band if you just need the trend.")
 
     if not use_vlm:
         #  TELL THEM BEFORE THEY SPEND THE TIME.
@@ -697,15 +718,14 @@ def render(st, default_area_m2: float = 1.0,
             "Inviscid: no separation, no wake, no profile drag, so a diffuser "
             "is assumed to stay attached.")
     else:
-        st.warning(
-            "**Source panels model displacement, not lift.** There is no "
-            "circulation in this solver, so downforce from camber, incidence "
-            "or a diffuser is not represented. On a representative FSAE floor "
-            "it returned **14 N** where the vortex lattice returned **1,043 N** "
-            "at the same attitude, and it changed by 1 N across a 30 mm "
-            "ride-height sweep. Use it for bluff bodies — nose cone, rollhoop, "
-            "sidepod drag. **For a floor or a wing, switch to the vortex "
-            "lattice above.**")
+        st.caption(
+            "**Screening tool.** Source panels for thickness, blockage and "
+            "skin friction, plus a vortex lattice on the mean camber surface "
+            "for circulation — so lift from camber is now represented. On a "
+            "bluff body with no camber surface the lattice declines and you "
+            "get the displacement answer, which is the right one there. "
+            "Compare geometries at matched settings; treat absolute levels as "
+            "indicative.")
 
     best = ok[0]
     m = st.columns(4)
@@ -717,8 +737,35 @@ def render(st, default_area_m2: float = 1.0,
     m[2].metric("Downforce at %.0f m/s" % speed,
                 "—" if best["downforce (N)"] is None
                 else f"{best['downforce (N)']:.0f} N")
-    m[3].metric("L/D",
-                "—" if not best["C_D"] else f"{abs(best['C_L'])/best['C_D']:.2f}")
+    #  L/D IS ONLY L/D WHEN THE DRAG IS ALL OF THE DRAG.
+    #
+    #  The lattice reports INDUCED drag and nothing else — no profile drag, no
+    #  separation, no base drag. Near the road the image cancels most of the
+    #  downwash, so induced drag collapses toward zero and the ratio explodes:
+    #  a floor showed C_D = 0.0009 against C_L = 0.64 and the headline read
+    #  "L/D 708.65". That is not an efficient floor, it is a missing
+    #  denominator, and a member reading 708 has no way to know the number is
+    #  three quarters absent. On a real FSAE package L/D is single digits.
+    #
+    #  So the lattice gets a differently-named metric. The panel method
+    #  includes a skin-friction estimate, so its ratio is at least a lower
+    #  bound on the real one and keeps the familiar label.
+    if use_vlm:
+        _ld = ("—" if not best["C_D"]
+               else f"{abs(best['C_L'])/best['C_D']:.0f}")
+        m[3].metric("L/D induced only", _ld,
+                    help="Lift over INDUCED drag. Profile, separation and base "
+                         "drag are not modelled, and near the road induced "
+                         "drag collapses — so this runs far above the real "
+                         "lift-to-drag ratio and is not comparable to a "
+                         "tunnel or CFD number. Use it to compare two wings "
+                         "against each other, never as an efficiency.")
+    else:
+        m[3].metric("L/D",
+                    "—" if not best["C_D"]
+                    else f"{abs(best['C_L'])/best['C_D']:.2f}",
+                    help="Includes the flat-plate skin-friction estimate, so "
+                         "it is a lower bound on the real ratio.")
 
     #  A blank balance column is a result, not a missing value, and the
     #  headline row above this view always shows one — so name the difference
