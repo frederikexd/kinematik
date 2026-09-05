@@ -63,8 +63,7 @@ def _render_sign_in(st, auth: SupabaseAuth) -> None:
     if st.session_state.get(_SS_JOIN):
         st.info("You've been invited to a team workspace. Sign in — or create "
                 "an account — and you'll join automatically.")
-    st.caption("Your project data is isolated per workspace. Sign in to continue.")
-    st.caption("Please use your official university or team name for your workspace. Workspaces with inappropriate titles will be automatically removed.")
+    st.caption("Your project data is isolated per workspace. Sign in to continue. Disclaimer: Please use your official university or team name for your workspace. Workspaces with inappropriate titles will be automatically removed.")
     mode = st.radio("mode", ["Sign in", "Create account"],
                     horizontal=True, label_visibility="collapsed")
     email = st.text_input("Email", key="_kx_email")
