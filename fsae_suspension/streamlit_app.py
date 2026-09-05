@@ -10971,7 +10971,20 @@ def render_feature_documentation(feature, *, key_prefix=None):
                             with open(_pp, "rb") as _pf:
                                 st.session_state[_pdf_slot] = (_pdf_sig,
                                                                _pf.read())
-                            st.rerun()
+                            _pdf_bytes = st.session_state[_pdf_slot][1]
+                            #  Offer it immediately, in this same pass.
+                            _cols[0].download_button(
+                                f"⬇ {_lbl} (.pdf)", _pdf_bytes,
+                                file_name=f"{_report_slug()}_feature_"
+                                          f"{_safe}.pdf",
+                                mime="application/pdf", width="stretch",
+                                key=f"{_kp}_pdf_now")
+                            #  NO RERUN. Building the PDF used to end with st.rerun() so the download
+                            #  button would appear on the next pass. That pass re-executes the WHOLE
+                            #  script — every tab body, every solve — which on this app is seconds of work
+                            #  and, for the aero solvers, wipes results that were gated on a button press.
+                            #  Asking for a PDF should not cost a full re-render. Streamlit repaints after
+                            #  the callback anyway, so the bytes are simply used in this same run.
                         except Exception as _pe:
                             _cols[0].warning(f"PDF unavailable: {_pe}")
                 else:
@@ -13813,7 +13826,18 @@ def render_documentation_center(subsystem_key, *, key_prefix, title_name=None,
                           _md, _pdf_path, figures=collect_report_figures(_sub_feats))
                   with open(_pdf_path, "rb") as _pf:
                       st.session_state[_doc_slot] = (_doc_sig, _pf.read())
-                  st.rerun()
+                  _pdf_bytes = st.session_state[_doc_slot][1]
+                  _cols[0].download_button(
+                      f"⬇ {_name} report (.pdf)", _pdf_bytes,
+                      file_name=f"{_report_slug()}_{_safe}_report.pdf",
+                      mime="application/pdf", width="stretch",
+                      key=f"{key_prefix}_doc_pdf_now")
+                  #  NO RERUN. Building the PDF used to end with st.rerun() so the download
+                  #  button would appear on the next pass. That pass re-executes the WHOLE
+                  #  script — every tab body, every solve — which on this app is seconds of work
+                  #  and, for the aero solvers, wipes results that were gated on a button press.
+                  #  Asking for a PDF should not cost a full re-render. Streamlit repaints after
+                  #  the callback anyway, so the bytes are simply used in this same run.
               except Exception as _pe:
                   _cols[0].warning(f"PDF unavailable: {_pe}")
       else:
@@ -28117,7 +28141,18 @@ with tab7:
                                              figures=collect_report_figures())
                   with open(pdf_path, "rb") as f:
                       st.session_state["_handover_pdf"] = (_hv_sig, f.read())
-                  st.rerun()
+                  _hv_bytes = st.session_state["_handover_pdf"][1]
+                  ec[2].download_button(
+                      "⬇ Handover (.pdf)", _hv_bytes,
+                      file_name=f"{_report_slug()}_handover.pdf",
+                      mime="application/pdf", width='stretch',
+                      key="handover_pdf_now")
+                  #  NO RERUN. Building the PDF used to end with st.rerun() so the download
+                  #  button would appear on the next pass. That pass re-executes the WHOLE
+                  #  script — every tab body, every solve — which on this app is seconds of work
+                  #  and, for the aero solvers, wipes results that were gated on a button press.
+                  #  Asking for a PDF should not cost a full re-render. Streamlit repaints after
+                  #  the callback anyway, so the bytes are simply used in this same run.
               except Exception as e:
                   ec[2].markdown(f"<p class='hint'>PDF unavailable: {e}</p>",
                                  unsafe_allow_html=True)
