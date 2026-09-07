@@ -6,9 +6,6 @@
 # KinematiK 
 
 ![tests](https://github.com/frederikexd/kinematik/actions/workflows/tests.yml/badge.svg)
-![AI Assisted, Human Directed](https://img.shields.io/badge/AI%20assisted-human%20directed-blue)
-![Not AI Slop](https://img.shields.io/badge/not%20AI%20slop-verified-brightgreen)
-![1578 Tests](https://img.shields.io/badge/physics-1578%20tests%20passing-brightgreen)
 
 Design tools for Formula SAE and Formula SAE EV teams. Suspension kinematics,
 aero, brakes, accumulator, chassis, cooling, electrics and powertrain in one place, sharing
