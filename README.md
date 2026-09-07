@@ -41,7 +41,7 @@ them, so the two concepts you take to a real solver are the two worth the hours.
 
 Most tabs export a build-ready DXF you can open in SolidWorks as a 2D sketch.
 
-Full list: **[EATURES.md](FEATURES.md)**
+Full list: **[FEATURES.md](FEATURES.md)**
 
 ## Aero example
 
