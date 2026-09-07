@@ -96,7 +96,7 @@ case.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome.
-Deployment and database notes are in [docs/DEPLOY.md](docs/DEPLOY.md); release
+Deployment and database notes are in [DEPLOY.md](DEPLOY.md); release
 history is in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
