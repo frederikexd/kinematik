@@ -1,12 +1,6 @@
 # Teams Using KinematiK
 
-KinematiK is currently in active use by FSAE teams across three continents.
-
-| Team | Institution | Region |
-|------|------------|--------|
-| FSAE Team | Universidad de Buenos Aires (FIUBA) | South America |
-| FSAE Team | University of Southern California (USC) | North America |
-| FSAE Team | Indian Institute of Technology Bombay (IIT Bombay) | Asia |
+KinematiK is currently being trialled by members from 31 FSAE teams across six continents.
 
 These teams use KinematiK for suspension geometry analysis, vehicle dynamics,
 and lap simulation as part of their active build cycles.
