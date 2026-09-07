@@ -10,7 +10,7 @@
 ![Not AI Slop](https://img.shields.io/badge/not%20AI%20slop-verified-brightgreen)
 ![1578 Tests](https://img.shields.io/badge/physics-1578%20tests%20passing-brightgreen)
 
-Design tools for Formula SAE and Formula Student teams. Suspension kinematics,
+Design tools for Formula SAE and Formula SAE EV teams. Suspension kinematics,
 aero, brakes, accumulator, chassis, cooling, electrics, in one place, sharing
 one set of numbers.
 
