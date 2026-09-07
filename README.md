@@ -13,6 +13,7 @@ one set of numbers.
 
 **[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · Free for student teams · No install needed
 
+The physics and mathematics behind every module are documented in PHYSICS.md, including the derivations and their test coverage. If you find an error in the math, open an issue.
 ---
 
 ## What it's for
