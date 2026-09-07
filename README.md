@@ -16,8 +16,6 @@ one set of numbers.
 
 **[Open the app](https://kinematik.streamlit.app)** · Free for student teams · No install needed
 
-![Aero screening: ride-height sweep and what-if grid](docs/img/aero.png)
-
 ---
 
 ## What it's for
@@ -48,8 +46,6 @@ Full list: **[docs/FEATURES.md](docs/FEATURES.md)**
 ## Aero example
 
 Upload an STL, pick a solver, get a ride-height sweep:
-
-![Ride-height sweep](docs/img/sweep.png)
 
 The what-if grid solves 30 combinations of throat position and ride height in
 milliseconds, with the diffuser separation limit marked:
