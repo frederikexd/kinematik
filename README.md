@@ -36,7 +36,8 @@ them, so the two concepts you take to a real solver are the two worth the hours.
 | **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. |
 | **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. |
 | **Chassis** | Frame graph with triangulation and load-path audit, weight and CG ledger. |
-| **Electronics** | Import a real routed board (KiCad, Altium) and check copper survival and signal integrity. |
+| **Electrics** | Import a real routed board (KiCad, Altium) and check copper survival and signal integrity. |
+| **Powertrain** | Iterate motor architecture, check which one finishes fastest and which configuration blows a fuse. |
 | **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. |
 
 Most tabs export a build-ready DXF you can open in SolidWorks as a 2D sketch.
