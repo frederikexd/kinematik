@@ -5,7 +5,7 @@
 
 # KinematiK 
 
-![tests](https://github.com/frederikexd/kinematik/actions/workflows/tests.yml/badge.svg)
+[![CI](https://github.com/frederikexd/kinematik/actions/workflows/WORKFLOW_FILE.yml/badge.svg)](https://github.com/frederikexd/kinematik/actions/workflows/WORKFLOW_FILE.yml)
 
 Design tools for Formula SAE and Formula SAE EV teams. Suspension kinematics,
 aero, brakes, accumulator, chassis, cooling, electrics and powertrain in one place, sharing
