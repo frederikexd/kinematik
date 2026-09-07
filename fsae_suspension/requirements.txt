@@ -1,0 +1,71 @@
+# KinematiK — Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+# Open source. Original author: Frederik Thio, creator of KinematiK.
+
+# KinematiK — Python dependencies for the Streamlit deployment.
+#
+# Why this file exists: Streamlit Cloud only installs `streamlit` plus whatever is
+# listed here. With no requirements file the app crashes at startup with a redacted
+# ImportError on `from suspension import (...)`, because importing the `suspension`
+# package immediately pulls in scipy (kinematics.py), trimesh (chassis.py /
+# integration.py) and the app also imports plotly — none of which are in the base
+# image. Listing them fixes the boot.
+#
+# Place this file at the REPOSITORY ROOT (next to the folder that holds
+# streamlit_app.py), which is where Streamlit Cloud looks for it.
+
+# --- core: imported at package-init time; the app will NOT start without these ---
+streamlit>=1.49,<2
+numpy>=1.26
+scipy>=1.11
+plotly>=5.18
+trimesh>=4.0
+
+# Note: the cross-discipline risk-propagation + manufacturing-release-gate feature
+# (suspension/risk_propagation.py, surfaced in the Integration & DFMEA tabs) adds
+# NO new dependency — it uses only the standard library plus KinematiK's own
+# interfaces.py and dfmea.py, so it stays import-light and unit-testable in isolation.
+
+# --- optional features: imported lazily, only when the feature is used ---
+# The app boots fine without these; each one just unlocks its feature.
+openpyxl>=3.1      # Excel workbook read/write           (ev_electrical_check.py, ev_excel_roundtrip.py)
+cascadio>=0.0.16; python_version < "3.13"   # STEP/STP chassis import (chassis.py, integration.py). No 3.13/3.14 wheel; STEP importer degrades gracefully when absent. Pin Python to 3.12 to keep STEP import working.
+fast_simplification>=0.1   # faster CAD-part decimation for the 3D model (optional;
+                           # falls back to built-in vertex clustering if absent)
+rtree>=1.0         # chassis/part collision queries via trimesh.proximity
+reportlab>=4.0     # PDF design-handover export         (project.py: render_pdf)
+matplotlib>=3.7    # renders the CAPTURED CHARTS into the report PDFs
+                   #  (suspension/report_figures.py). Pure wheel, no system
+                   #  package, no browser — which is why it is the default
+                   #  renderer rather than plotly's own kaleido. Kaleido v1+
+                   #  shells out to headless Chrome, which is not present on
+                   #  Streamlit Cloud and would need chromium in packages.txt
+                   #  (~300 MB and a much slower cold start). report_figures
+                   #  probes kaleido once and uses it when it really works
+                   #  (typically local dev, for pixel-exact export), otherwise
+                   #  re-plots the captured trace data here. Without matplotlib
+                   #  the reports still build — charts degrade to their text
+                   #  description, exactly as before this feature.
+gTTS>=2.5          # downloadable MP3 of the mission briefing (streamlit_app.py:
+                   #  _briefing_mp3_bytes). Needs network at call time; the app
+                   #  and the offline HTML/txt briefing downloads work without it.
+piper-tts>=1.2     # PREFERRED offline TTS for the briefing audio file
+                   #  (streamlit_app.py: _briefing_local_audio). Fully local at
+                   #  synthesis time — no network, no rate limit. On Streamlit
+                   #  Cloud the filesystem is ephemeral, so COMMIT a voice model
+                   #  under models/ (see models/README.md) rather than relying on
+                   #  the one-time runtime download, which would re-fetch on every
+                   #  cold start. Falls back to gTTS, then to the offline HTML
+                   #  player, when absent. ffmpeg (present on Streamlit Cloud)
+                   #  transcodes its WAV to MP3; without ffmpeg you get WAV.
+supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseStore;
+                   #  workspace.py: tenant-scoped backend — run workspace_isolation.sql)
+
+
+vosk>=0.3.45
+imageio-ffmpeg>=0.4.9
+faster-whisper>=1.0  # speech-to-text (faster than openai-whisper, no model download needed)
+google-api-python-client>=2.0   # Google Drive export of stamped reports (drive_export.py)
+google-auth>=2.0                # service-account / OAuth credentials for Drive
+google-auth-oauthlib>=1.0       # per-user OAuth consent flow for Drive export
+xlcalculator>=0.5
+olefile>=0.46        # read native binary Altium .PcbDoc (PCB Doctor)

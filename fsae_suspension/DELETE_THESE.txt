@@ -1,0 +1,13 @@
+Delete these two files from kinematik-main — nothing imports either.
+
+  fsae_suspension/suspension/streamlit_app.py   1.8 MB   stale copy of the app
+  fsae_suspension/project.py                     44 KB   stale copy; the live
+                                                         one is suspension/project.py
+                                                         (the alias table at
+                                                         streamlit_app.py:192
+                                                         prefixes every name
+                                                         with "suspension.")
+
+Verified dead: grep finds no import of either. The risk is not size, it is
+editing the wrong file — the stale project.py still has the old render_pdf
+without the figures= parameter.

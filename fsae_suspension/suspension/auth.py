@@ -1,0 +1,590 @@
+# ============================================================================
+#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
+#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+#  Open source. Original author: Frederik Thio, creator of KinematiK.
+#
+#  Module: auth — sign a user in against Supabase Auth and resolve the
+#  WorkspaceContext (user_id + JWT + workspace + role) that workspace.py needs.
+#
+#  This is the missing link for the "Option B" tenant-isolation path:
+#    workspace.py  already knows how to persist a project scoped to a
+#                  WorkspaceContext (JWT-bound PostgREST + RLS).
+#    auth.py       (here) turns an email/password login into that context by
+#                  (a) getting a user JWT from Supabase Auth, and
+#                  (b) reading the caller's workspace memberships THROUGH RLS
+#                      (so the same wall that guards project rows guards this).
+#
+#  SECURITY NOTES
+#    * We use the anon/publishable key ONLY. The user's JWT is what gives
+#      auth.uid() an identity; RLS does the rest. The service_role key is
+#      never accepted here (workspace.refuse_service_role guards the backend).
+#    * Membership is read via the user-bound client, so a user can only ever
+#      see workspaces they actually belong to — no server-side admin listing.
+#
+#  supabase-py is imported lazily so this module stays importable in tests
+#  and plain scripts that never sign in.
+# ============================================================================
+
+from __future__ import annotations
+
+import re
+
+from dataclasses import dataclass
+
+from .workspace import (
+    Workspace,
+    WorkspaceContext,
+    refuse_service_role,
+    validate_workspace_id,
+)
+
+
+
+def _friendly_pg_error(exc: Exception, prefix: str) -> str:
+    """Turn a PostgREST error into a sentence a person can act on.
+
+    The raw exception stringifies as the whole response dict, so a first-time
+    user who could not create a workspace was shown:
+
+        Could not register as project lead: {'message': 'only the project owner
+        can register project leads — ask the owner to appoint you, or join via
+        an invite link', 'code': '42501', 'hint': None, 'details': None}
+
+    The useful sentence is in there, wrapped in JSON punctuation and a code that
+    means nothing to them. On the very first screen of the product. Pull the
+    message out and drop the rest; if it does not parse, fall back to the raw
+    text rather than swallowing it, because an unreadable error still beats a
+    silent failure.
+    """
+    msg = ""
+    for attr in ("message", "msg"):
+        val = getattr(exc, attr, None)
+        if isinstance(val, str) and val.strip():
+            msg = val.strip()
+            break
+    if not msg:
+        raw = str(exc)
+        m = re.search(r"['\"]message['\"]\s*:\s*['\"](.+?)['\"]\s*[,}]", raw)
+        msg = m.group(1).strip() if m else raw.strip()
+    if not msg:
+        return prefix + "."
+    #  Server messages here are already written for humans; do not double up
+    #  the prefix when the message stands on its own.
+    return f"{prefix}: {msg}" if len(msg) < 60 else msg
+
+
+class AuthError(RuntimeError):
+    """Sign-in failed, or the signed-in user has no usable workspace."""
+
+
+@dataclass
+class Session:
+    """A signed-in user's identity, independent of any single workspace.
+    One sign-in yields one Session; the user may belong to several workspaces,
+    each of which becomes its own WorkspaceContext via context_for()."""
+    user_id: str
+    email: str
+    access_token: str
+    refresh_token: str = ""
+
+    def is_valid(self) -> bool:
+        return bool(self.user_id and self.access_token)
+
+
+class SupabaseAuth:
+    """
+    Thin wrapper over supabase-py's auth + a user-bound PostgREST client.
+
+    Lifecycle:
+        auth = SupabaseAuth(url, anon_key)
+        session = auth.sign_in(email, password)      # or sign_up(...)
+        workspaces = auth.list_workspaces(session)   # [(Workspace, role), ...]
+        ctx = auth.context_for(session, workspace_id)
+        store = workspace_store(ctx)                 # from suspension.workspace
+    """
+
+    def __init__(self, url: str, anon_key: str):
+        if not url or not anon_key:
+            raise AuthError("Supabase URL and anon key are required for sign-in.")
+        # Never let a service_role key reach the auth path either: it would let
+        # the app impersonate anyone and sidestep the tenant wall entirely.
+        refuse_service_role(anon_key)
+        self._url = url
+        self._anon_key = anon_key
+        from supabase import create_client
+        self._client = create_client(url, anon_key)
+
+    # ------------------------------------------------------------------ #
+    #  Identity
+    # ------------------------------------------------------------------ #
+    def sign_in(self, email: str, password: str) -> Session:
+        try:
+            resp = self._client.auth.sign_in_with_password(
+                {"email": email, "password": password})
+        except Exception as e:
+            raise AuthError(f"Sign-in failed: {e}") from e
+        return self._session_from_resp(resp)
+
+    def sign_up(self, email: str, password: str) -> Session:
+        """Create an account. On projects with email-confirmation enabled this
+        returns a session only after confirmation; we surface that clearly
+        rather than pretending the user is signed in."""
+        try:
+            resp = self._client.auth.sign_up(
+                {"email": email, "password": password})
+        except Exception as e:
+            raise AuthError(f"Sign-up failed: {e}") from e
+        if getattr(resp, "session", None) is None:
+            raise AuthError(
+                "Account created — check your email to confirm it, then sign in.")
+        return self._session_from_resp(resp)
+
+    def restore(self, access_token: str, refresh_token: str = "") -> Session:
+        """Rebuild a Session from cached tokens (e.g. Streamlit session_state)
+        without a fresh password round-trip. Verifies the token is still good
+        by asking Supabase who it belongs to."""
+        try:
+            self._client.auth.set_session(access_token, refresh_token or access_token)
+            user = self._client.auth.get_user(access_token)
+        except Exception as e:
+            raise AuthError(f"Session expired, please sign in again: {e}") from e
+        u = getattr(user, "user", None) or getattr(user, "data", None)
+        if u is None:
+            raise AuthError("Session expired, please sign in again.")
+        return Session(
+            user_id=str(getattr(u, "id", "")),
+            email=str(getattr(u, "email", "") or ""),
+            access_token=access_token,
+            refresh_token=refresh_token,
+        )
+
+    def sign_out(self):
+        try:
+            self._client.auth.sign_out()
+        except Exception:
+            pass
+
+    def _session_from_resp(self, resp) -> Session:
+        sess = getattr(resp, "session", None)
+        user = getattr(resp, "user", None) or getattr(sess, "user", None)
+        if sess is None or user is None:
+            raise AuthError("Sign-in returned no session. Check your credentials.")
+        s = Session(
+            user_id=str(getattr(user, "id", "")),
+            email=str(getattr(user, "email", "") or ""),
+            access_token=str(getattr(sess, "access_token", "") or ""),
+            refresh_token=str(getattr(sess, "refresh_token", "") or ""),
+        )
+        if not s.is_valid():
+            raise AuthError("Sign-in returned an incomplete session.")
+        return s
+
+    # ------------------------------------------------------------------ #
+    #  Workspace resolution (all reads pass through RLS as the user)
+    # ------------------------------------------------------------------ #
+    def _user_client(self, session: Session):
+        """A PostgREST client bound to the user's JWT, so auth.uid() inside the
+        database is this human and RLS returns only their rows.
+        
+        supabase-py 2.x builds postgrest lazily from self.options.headers.
+        We must update options.headers AND reset _postgrest BEFORE accessing
+        client.postgrest, otherwise it rebuilds with the anon key."""
+        from supabase import create_client
+        token = session.access_token
+        if not token:
+            raise AuthError("Session has no access token — please sign in again.")
+        client = create_client(self._url, self._anon_key)
+        auth_header = f"Bearer {token}"
+        # 1. Update the options dict that _init_postgrest_client reads
+        client.options.headers["Authorization"] = auth_header
+        # 2. Update the auth sub-client headers too (used by some RPC paths)
+        client.auth._headers["Authorization"] = auth_header
+        # 3. Force postgrest to rebuild with the new options.headers
+        client._postgrest = None
+        # 4. Trigger rebuild — postgrest.session.headers now has the user JWT
+        _ = client.postgrest
+        return client
+
+    def list_workspaces(self, session: Session) -> list[tuple[Workspace, str]]:
+        """Return [(Workspace, role), ...] the user belongs to. RLS on
+        workspace_members guarantees this is exactly their memberships — a
+        non-member's rows are invisible, not merely filtered client-side."""
+        if not session.is_valid():
+            raise AuthError("Not signed in.")
+        client = self._user_client(session)
+        try:
+            memb = (client.table("workspace_members")
+                    .select("workspace_id, role")
+                    .eq("user_id", session.user_id).execute())
+            member_rows = memb.data or []
+            if not member_rows:
+                return []
+            ids = [r["workspace_id"] for r in member_rows]
+            role_by_id = {str(r["workspace_id"]): r.get("role", "member")
+                          for r in member_rows}
+            # The ecosystem's shared-scope workspace (Lead Notes / Integration
+            # ledger / Team CAD library) is provisioned server-side and every
+            # ecosystem member is auto-enrolled in it — but it is NOT a place
+            # users work: its three surfaces are surfaced transparently inside
+            # the real workspaces. So keep it out of the picker entirely. We
+            # request is_shared_scope defensively: on a deployment that hasn't
+            # run shared_scope.sql the column doesn't exist, so we retry without
+            # it and simply show every membership (nothing to hide there).
+            try:
+                ws = (client.table("workspaces")
+                      .select("id, name, kind, is_shared_scope")
+                      .in_("id", ids).execute())
+            except Exception:
+                ws = (client.table("workspaces")
+                      .select("id, name, kind")
+                      .in_("id", ids).execute())
+            out: list[tuple[Workspace, str]] = []
+            for row in (ws.data or []):
+                if row.get("is_shared_scope"):
+                    continue   # hidden ecosystem shared scope — never a pickable workspace
+                wid = str(row["id"])
+                out.append((
+                    Workspace(id=wid, name=row.get("name", wid),
+                              kind=row.get("kind", "team")),
+                    role_by_id.get(wid, "member"),
+                ))
+            out.sort(key=lambda t: t[0].name.lower())
+            return out
+        except Exception as e:
+            raise AuthError(f"Could not read your workspaces: {e}") from e
+
+    def create_workspace(self, session: Session, name: str,
+                         kind: str = "team") -> Workspace:
+        """Create a workspace owned by the signed-in user. The DB trigger
+        (_ws_owner_bootstrap in workspace_isolation.sql) self-enrolls the
+        creator as 'owner', so no second call is needed."""
+        if not session.is_valid():
+            raise AuthError("Not signed in.")
+        if not (name or "").strip():
+            raise AuthError("Workspace name cannot be empty.")
+        client = self._user_client(session)
+        try:
+            # Use a SECURITY DEFINER RPC so the insert bypasses RLS correctly
+            # and auth.uid() is always resolved server-side.
+            resp = client.rpc("create_workspace", {
+                "ws_name": name.strip(),
+                "ws_kind": kind,
+            }).execute()
+            row = resp.data
+            if isinstance(row, list):
+                row = row[0] if row else None
+            if isinstance(row, str):
+                import json as _json
+                row = _json.loads(row)
+            if not row:
+                raise AuthError("Workspace insert returned no row.")
+            return Workspace(id=str(row["id"]), name=row["name"],
+                             kind=row.get("kind", kind))
+        except AuthError:
+            raise
+        except Exception as e:
+            raise AuthError(f"Could not create workspace: {e}") from e
+
+    # ------------------------------------------------------------------ #
+    #  Project-lead gating (see project_leads.sql). Only registered project
+    #  leads may create workspaces; everyone else joins via invite. These
+    #  wrap the SECURITY DEFINER RPCs so the UI can show/enforce lead status.
+    # ------------------------------------------------------------------ #
+    def register_as_project_lead(self, session: Session) -> None:
+        """Opt the signed-in user in as a project lead. Idempotent."""
+        if not session.is_valid():
+            raise AuthError("Not signed in.")
+        try:
+            self._user_client(session).rpc("register_project_lead", {}).execute()
+        except Exception as e:
+            raise AuthError(_friendly_pg_error(
+                e, "Could not create your workspace")) from e
+
+    def project_lead_status(self, session: Session) -> dict:
+        """Snapshot the picker renders to reflect who is a registered lead:
+        {is_lead, workspace_count, workspace_cap, can_create}. Fails soft to a
+        conservative non-lead snapshot so the UI never crashes if the RPC is
+        missing (e.g. project_leads.sql not yet applied)."""
+        _fallback = {"is_lead": False, "workspace_count": 0,
+                     "workspace_cap": 10, "can_create": False,
+                     "is_owner": False, "can_self_register": False,
+                     "_resolved": False}
+        if not session.is_valid():
+            return _fallback
+        try:
+            resp = self._user_client(session).rpc(
+                "project_lead_status", {}).execute()
+            row = resp.data
+            if isinstance(row, list):
+                row = row[0] if row else None
+            if not isinstance(row, dict):
+                return _fallback
+            return {
+                "is_lead": bool(row.get("is_lead", False)),
+                "workspace_count": int(row.get("workspace_count", 0) or 0),
+                "workspace_cap": int(row.get("workspace_cap", 10) or 10),
+                "can_create": bool(row.get("can_create", False)),
+                "is_owner": bool(row.get("is_owner", False)),
+                #  Absent on a deployment that has not applied
+                #  project_leads_selfserve.sql yet. Default TRUE so the UI still
+                #  offers the button — the server is the authority and will
+                #  refuse if it must. Defaulting False would reinstate the dead
+                #  end this whole change exists to remove.
+                "can_self_register": bool(row.get("can_self_register", True)),
+                "_resolved": True,
+            }
+        except Exception:
+            return _fallback
+
+    def promote_project_lead(self, session: Session, email: str) -> None:
+        """Owner (or an existing lead) appoints another account, by email, as a
+        project lead so they too can create workspaces. The target must already
+        have a KinematiK account. Permission is re-checked server-side; a
+        non-owner/non-lead caller gets a permission error surfaced as AuthError.
+        """
+        if not session.is_valid():
+            raise AuthError("Not signed in.")
+        if not (email or "").strip():
+            raise AuthError("Enter an email address.")
+        try:
+            self._user_client(session).rpc(
+                "promote_project_lead",
+                {"lead_email": email.strip()}).execute()
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    # ------------------------------------------------------------------ #
+    #  Member administration (via SECURITY DEFINER RPCs, see
+    #  workspace_members_rpc.sql). Permission is enforced inside each RPC
+    #  with the same owner/lead rules as RLS; we surface failures as AuthError.
+    # ------------------------------------------------------------------ #
+    def list_members(self, session: Session, workspace_id: str
+                     ) -> list[dict]:
+        """Roster for a workspace: [{user_id, email, role, added_at}, ...].
+        Any member may read it."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("list_workspace_members",
+                              {"ws": str(workspace_id)}).execute()
+            return list(resp.data or [])
+        except Exception as e:
+            raise AuthError(f"Could not list members: {self._rpc_msg(e)}") from e
+
+    def add_member(self, session: Session, workspace_id: str, email: str,
+                   role: str = "member") -> str:
+        """Add (or re-role) a member by email. Caller must be owner/lead; the
+        target must already have an account. Returns the target's user id."""
+        if not (email or "").strip():
+            raise AuthError("Enter an email address.")
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("add_workspace_member",
+                              {"ws": str(workspace_id),
+                               "member_email": email.strip(),
+                               "member_role": role}).execute()
+            return str(resp.data) if resp.data is not None else ""
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    # ------------------------------------------------------------------ #
+    #  Oversight (workspace_oversight.sql). Owner/lead visibility layer:
+    #  every workspace the caller administers, with usage counts, the full
+    #  roster split by role, and the recent save trail. Both RPCs re-check
+    #  the caller's role server-side, so nothing here trusts the client.
+    # ------------------------------------------------------------------ #
+    def workspace_overview(self, session: Session) -> list[dict]:
+        """One dict per workspace where the caller is owner or lead:
+        {workspace_id, name, kind, my_role, member_count, owner_email,
+         lead_emails, member_emails, viewer_emails, last_activity,
+         last_saved_by, saves_7d}. A plain member gets an empty list —
+        oversight is an admin surface, not a directory."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("workspace_overview", {}).execute()
+            return list(resp.data or [])
+        except Exception as e:
+            raise AuthError(
+                f"Could not load workspace overview: {self._rpc_msg(e)}") from e
+
+    def workspace_activity(self, session: Session, workspace_id: str,
+                           limit: int = 25) -> list[dict]:
+        """Recent save events for ONE workspace (owner/lead only), newest
+        first: [{happened_at, saved_by, project_id, event}, ...] where event
+        is 'current' (the live blob) or 'snapshot' (a prior version captured
+        by the history trigger)."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("workspace_activity",
+                              {"ws": str(workspace_id),
+                               "lim": int(limit)}).execute()
+            return list(resp.data or [])
+        except Exception as e:
+            raise AuthError(
+                f"Could not load workspace activity: {self._rpc_msg(e)}") from e
+
+    def workspace_roster_status(self, session: Session,
+                                workspace_id: str) -> list[dict]:
+        """Per-member sign-up / activity status for ONE workspace (owner/lead
+        only): [{user_id, email, role, signed_up, last_sign_in_at, joined_at,
+        last_saved_at, active}, ...]. 'signed_up' means the account has ever
+        signed in; 'active' means signed in AND has at least one save here.
+        Returns [] (not an error) if the roster-status RPC isn't installed, so
+        the oversight panel degrades gracefully on older deployments."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("workspace_roster_status",
+                              {"ws": str(workspace_id)}).execute()
+            return list(resp.data or [])
+        except Exception:
+            return []
+
+    def set_member_role(self, session: Session, workspace_id: str,
+                        target_user_id: str, role: str) -> None:
+        client = self._user_client(session)
+        try:
+            client.rpc("set_workspace_member_role",
+                       {"ws": str(workspace_id),
+                        "target_user": str(target_user_id),
+                        "new_role": role}).execute()
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    def remove_member(self, session: Session, workspace_id: str,
+                      target_user_id: str) -> None:
+        client = self._user_client(session)
+        try:
+            client.rpc("remove_workspace_member",
+                       {"ws": str(workspace_id),
+                        "target_user": str(target_user_id)}).execute()
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    # ------------------------------------------------------------------ #
+    #  Invite links (self-serve team onboarding — workspace_invites.sql).
+    #  A lead mints one link, pastes it in the team chat, and teammates
+    #  join with the right role. Links can only grant member/viewer, always
+    #  expire, have a use cap, and are revocable — see the SQL for the
+    #  trust properties; this layer only routes and surfaces errors.
+    # ------------------------------------------------------------------ #
+    def create_invite(self, session: Session, workspace_id: str,
+                      role: str = "member", ttl_hours: int = 168,
+                      max_uses: int = 30) -> str:
+        """Mint an invite token for the workspace.
+
+        ANY MEMBER may do this, not just owner/lead — the person who knows a
+        new member needs adding is usually whoever is sitting next to them, and
+        routing every addition through one lead makes onboarding wait on that
+        lead being awake. Viewers are excluded: read-only access is deliberate,
+        and letting a viewer mint member links would let them grant more than
+        they hold. The server enforces both; this is the client half.
+
+        Returns the token string; build the shareable URL with
+        auth_ui.build_join_url()."""
+        if role not in ("member", "viewer"):
+            raise AuthError("Invite links can only grant member or viewer — "
+                            "promote people explicitly in the Members panel.")
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("create_workspace_invite",
+                              {"ws": str(workspace_id), "invite_role": role,
+                               "ttl_hours": int(ttl_hours),
+                               "uses": int(max_uses)}).execute()
+            tok = resp.data
+            if not tok:
+                raise AuthError("Invite RPC returned no token.")
+            return str(tok)
+        except AuthError:
+            raise
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    def redeem_invite(self, session: Session, token: str
+                      ) -> tuple[Workspace, str]:
+        """Join the workspace behind `token`. Idempotent: an existing member
+        keeps their (possibly higher) role. Returns (workspace, role)."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("redeem_workspace_invite",
+                              {"invite_token": str(token).strip()}).execute()
+            rows = resp.data or []
+            if not rows:
+                raise AuthError("Invite redemption returned nothing — "
+                                "the link may be invalid.")
+            row = rows[0]
+            ws = Workspace(id=str(row["workspace_id"]),
+                           name=str(row.get("workspace_name") or "workspace"))
+            return ws, str(row.get("granted_role") or "member")
+        except AuthError:
+            raise
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    def list_invites(self, session: Session, workspace_id: str) -> list[dict]:
+        """Live (unexpired, unrevoked) invite links for the workspace —
+        owner/lead only. For the revoke UI."""
+        client = self._user_client(session)
+        try:
+            resp = client.rpc("list_workspace_invites",
+                              {"ws": str(workspace_id)}).execute()
+            return list(resp.data or [])
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    def revoke_invite(self, session: Session, token: str) -> None:
+        client = self._user_client(session)
+        try:
+            client.rpc("revoke_workspace_invite",
+                       {"invite_token": str(token).strip()}).execute()
+        except Exception as e:
+            raise AuthError(self._rpc_msg(e)) from e
+
+    @staticmethod
+    def _rpc_msg(e: Exception) -> str:
+        """Pull the human-readable message out of a PostgREST/RPC error so the
+        UI shows 'no user with email …' rather than a raw exception repr."""
+        for attr in ("message", "details", "hint"):
+            v = getattr(e, attr, None)
+            if v:
+                return str(v)
+        # supabase-py often wraps the Postgres error as a dict in args[0].
+        arg = e.args[0] if getattr(e, "args", None) else None
+        if isinstance(arg, dict):
+            return str(arg.get("message") or arg.get("details") or arg)
+        return str(e)
+
+    def context_for(self, session: Session, workspace_id: str,
+                    *, role: str | None = None) -> WorkspaceContext:
+        """Build the WorkspaceContext workspace_store() consumes. If role is
+        not supplied we resolve it from the user's memberships so writer/viewer
+        gating is correct."""
+        validate_workspace_id(workspace_id, require_uuid=True)
+        resolved_role = role
+        ws_obj: Workspace | None = None
+        for ws, r in self.list_workspaces(session):
+            if ws.id == str(workspace_id):
+                ws_obj = ws
+                resolved_role = resolved_role or r
+                break
+        if ws_obj is None:
+            raise AuthError(
+                "You are not a member of that workspace (or it does not exist).")
+        return WorkspaceContext(
+            workspace=ws_obj,
+            user_id=session.user_id,
+            access_token=session.access_token,
+            role=resolved_role or "member",
+            email=getattr(session, "email", "") or "",
+        )
+
+
+def build_auth() -> SupabaseAuth | None:
+    """Construct a SupabaseAuth from configured credentials, or return None if
+    Supabase isn't configured (local single-user / test mode). Mirrors the
+    credential resolution used elsewhere: SUPABASE_ANON_KEY preferred, with a
+    fallback to the legacy SUPABASE_KEY name."""
+    from .project import _read_credential
+    url = _read_credential("SUPABASE_URL")
+    key = _read_credential("SUPABASE_ANON_KEY") or _read_credential("SUPABASE_KEY")
+    if not (url and key):
+        return None
+    return SupabaseAuth(url, key)

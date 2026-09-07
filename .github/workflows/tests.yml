@@ -1,0 +1,28 @@
+name: tests
+
+on: [push, pull_request]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt pytest pytest-xdist rtree>=1.0
+      - name: Mirror suspension package into tests directory
+        run: |
+          mkdir -p fsae_suspension/tests/suspension
+          cp -r fsae_suspension/suspension/* fsae_suspension/tests/suspension/
+          cp fsae_suspension/streamlit_app.py fsae_suspension/tests/streamlit_app.py
+      - name: Install local package and run tests
+        run: |
+          pip install -e ./fsae_suspension
+          pytest fsae_suspension/tests/tests/ \
+            --ignore=fsae_suspension/tests/tests/test_voice_memo.py \
+            -n auto -v --tb=short
+        env:
+          PYTHONPATH: ${{ github.workspace }}/fsae_suspension
