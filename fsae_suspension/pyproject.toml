@@ -21,7 +21,7 @@ keywords = ["fsae", "formula-student", "suspension", "kinematics", "vehicle-dyna
 # Core: imported at package-init time; the app will not start without these.
 dependencies = [
     "streamlit>=1.49,<2",
-    "numpy>=1.26",
+    "numpy>=2.0",
     "scipy>=1.11",
     "plotly>=5.18",
     "trimesh>=4.0",
@@ -29,7 +29,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # Each extra unlocks one lazily-imported feature; the app boots without them.
-excel = ["openpyxl>=3.1", "xlcalculator>=0.5"]  # ev_electrical_check, ev_excel_roundtrip
+excel = ["openpyxl>=3.1"]  # xlcalculator dropped: unused, pinned numpy<2  # ev_electrical_check, ev_excel_roundtrip
 cad = ["cascadio>=0.0.16", "fast_simplification>=0.1", "rtree>=1.0"]
 pdf = ["reportlab>=4.0"]                   # project.py: render_pdf
 cloud = ["supabase>=2.0"]                  # project sync, workspaces, analytics

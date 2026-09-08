@@ -15,7 +15,7 @@
 
 # --- core: imported at package-init time; the app will NOT start without these ---
 streamlit>=1.49,<2
-numpy>=1.26
+numpy>=2.0          # np.trapezoid requires numpy 2.0+
 scipy>=1.11
 plotly>=5.18
 trimesh>=4.0

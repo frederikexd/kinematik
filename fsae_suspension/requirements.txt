@@ -15,7 +15,7 @@
 
 # --- core: imported at package-init time; the app will NOT start without these ---
 streamlit>=1.49,<2
-numpy>=1.26
+numpy>=2.0          # np.trapezoid requires numpy 2.0+
 scipy>=1.11
 plotly>=5.18
 trimesh>=4.0
@@ -67,5 +67,4 @@ faster-whisper>=1.0  # speech-to-text (faster than openai-whisper, no model down
 google-api-python-client>=2.0   # Google Drive export of stamped reports (drive_export.py)
 google-auth>=2.0                # service-account / OAuth credentials for Drive
 google-auth-oauthlib>=1.0       # per-user OAuth consent flow for Drive export
-xlcalculator>=0.5
 olefile>=0.46        # read native binary Altium .PcbDoc (PCB Doctor)
