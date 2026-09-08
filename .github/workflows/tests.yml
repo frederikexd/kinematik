@@ -12,12 +12,12 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt pytest pytest-xdist
+          pip install -r requirements.txt pytest pytest-xdist pypdf
       - name: Install local package and run tests
         run: |
           pip install -e './fsae_suspension[excel,cad,pdf,cloud,drive]'
           pytest fsae_suspension/tests/ \
             --ignore=fsae_suspension/tests/test_voice_memo.py \
-            -n auto -v --tb=short
+            -n auto -v -ra --tb=short
         env:
           PYTHONPATH: ${{ github.workspace }}/fsae_suspension
