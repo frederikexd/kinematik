@@ -986,3 +986,4 @@ if __name__ == "__main__":   # pragma: no cover
     print("  " + res_no.reason.split(".")[0] + ".")
     print()
     print("self-test passed ✓")
+
