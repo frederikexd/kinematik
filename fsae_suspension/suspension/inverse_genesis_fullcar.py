@@ -3,1251 +3,987 @@
 #  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 #
-#  suspension/inverse_genesis_fullcar.py — 🧬🏁 InverseGenesis-FullCar:
-#  deterministic full-vehicle inverse synthesis. State the objective (points
-#  on this track under this rulebook) and the engine walks the design chain
-#  BACKWARDS — points → configuration → kinematic intent → hardpoints → load
-#  cases — through staged deterministic gates, each of which names its kills.
+#  suspension/inverse_genesis.py — 🧬 InverseGenesis: the stochastic inverse
+#  engine. Draw the kinematic curves you want inside acceptance bands, declare
+#  the legal volume each hardpoint may occupy, and the engine generates the
+#  geometry — then rejects every knife-edge optimum the shop can't hold,
+#  keeping the coordinates that survive the Stochastic Inversion error field.
 # ============================================================================
 """
-InverseGenesis-FullCar — the season's first hour, run in the honest direction.
+InverseGenesis — the curves are the anchor; the points get pulled into place.
 
 WHY THIS MODULE EXISTS
 ----------------------
-The corner-level InverseGenesis (bottleneck #18) reversed ONE loop: curves in,
-hardpoints out. But the season's biggest loop still runs forward: a team picks
-a battery configuration, a gear ratio and an architecture by committee vibes
-in September, simulates in January, and discovers in April that the pack
-overheats on lap 11 of Endurance. The design chain — rulebook → configuration
-→ vehicle → kinematics → structure — is only ever walked left to right, and
-every walk costs a season's worth of guessing.
+Every kinematics tool in the chain — this repo's own forward solver included —
+runs the design loop in the one direction nobody actually wants: guess
+coordinates, solve, read the curves, wince, guess again. Engineers spend days
+of that loop translating "I want ~1° of camber gain and dead bump steer" into
+x/y/z millimetres by hand, because the tools only speak coordinates.
 
-This module walks it right to left. You declare:
+This module runs the loop backwards. The engineer states the INTENT — target
+kinematic curves over wheel travel, each with an acceptance band ("camber at
+full bump: −2.4° ± 0.25°") — plus the LEGAL VOLUME each movable hardpoint may
+physically occupy (a per-point box, optionally minus the keep-out volumes the
+headers, mounts and bodywork already claim). The engine treats the curves as
+the fixed anchor and pulls the coordinates into alignment. Three stages:
 
-  * THE TRACK      — the lap the events run on (the built-in representative
-                     autocross layout, or your own segment list / imported
-                     centreline via ``lapsim.Track``-style segments).
-  * THE RULE MATRIX — the FSAE-EV constraint bounds (power cap, TS voltage
-                     cap, segment voltage/energy caps, minimum wheelbase,
-                     cell temperature limit, endurance distance). Seeded with
-                     representative numbers, every one editable, and NONE of
-                     them is the rulebook: verify against your competition
-                     year before trusting a single bound.
-  * THE OBJECTIVE  — maximum total points across Acceleration, Skidpad,
-                     Autocross and Endurance, on the repo's own event-points
-                     model.
+  1. THE PHYSICS-INFORMED BOUNDARY FILTER — candidates are never free points
+     in space. Every step of the search is clamped to the declared per-point
+     legal boxes, and every accepted geometry is screened against keep-out
+     volumes queried through the exact Phantom Envelope capsule arithmetic
+     (any object exposing ``clearances(points, probe_radius_mm)`` works: a
+     carved PhantomEnvelope of a neighbouring assembly, or the KeepOutBox
+     declared here for "the header lives in this box"). A coordinate that
+     hits the curves from inside an exhaust primary is not a solution; the
+     filter makes it unrepresentable rather than merely penalised.
 
-and the engine synthesizes, in order:
+  2. THE DETERMINISTIC REVERSE GRADIENTS — the inverse solve itself. Each
+     iteration builds the Jacobian of the band-weighted curve residual with
+     respect to the free hardpoint coordinates (central differences through
+     the full nonlinear corner solver — the exact same reverse sensitivities
+     backpropagation would produce, computed honestly, because the forward
+     solver is fast enough to differentiate numerically) and takes a damped
+     Gauss–Newton step: solve (JᵀJ + λD)Δx = −Jᵀr, clamp to the legal boxes,
+     reject on keep-out contact, adapt λ on failure. A fast linear model
+     proposes; the full nonlinear solver disposes. Every step is checkable
+     arithmetic — no stochastic optimiser, no population magic, and the same
+     seed gives byte-identical geometry every run.
 
-  1. THE CONFIGURATION — battery series/parallel count, drive architecture
-     (single+diff / twin axle / four-motor TV) and final-drive ratio, chosen
-     by staged deterministic search (below) with every infeasible candidate's
-     killing constraint NAMED, never silently dropped.
-  2. THE KINEMATIC INTENT — from the winning car's own solved peak lateral g
-     and roll gradient, per-axle target curves (roll-cancelling camber gain,
-     dead bump steer) with acceptance bands: a ``GenesisTargets`` in the
-     corner engine's exact dialect.
-  3. THE HARDPOINTS — when you also declare a legal volume (and optionally a
-     shop error field), the intent is handed to the EXISTING corner-level
-     ``inverse_genesis`` and realised as 3D coordinates with the same
-     build-yield co-optimization it always runs. One engine, now fed by the
-     car's own demands instead of a hand-typed intent.
-  4. THE LOAD CASES — the peak-cornering outer-wheel load resolved into
-     per-member axial forces through the (generated or nominal) linkage:
-     the literal load table to hand the frame/FEA seat.
-  5. THE FLASH CONSTANTS — the derived control calibration (power limit,
-     pack current limits, regen bounds, per-wheel drive-grip ceilings for a
-     TV allocator, BMS temperature thresholds) exported as a C header and a
-     Python constants module.
+  3. THE BUILD-YIELD CO-OPTIMIZER — the stage that separates this from every
+     textbook inverse-kinematics routine, all of which assume the machinist
+     is perfect. Multiple deterministic starts inside the legal volume yield
+     a family of curve-hitting candidates, and each is then charged for its
+     manufacturing fragility: the Stochastic Inversion error field (the
+     asymmetric per-point per-axis weld/jig tolerances the shop actually
+     holds) is propagated through the candidate's own sensitivity matrix,
+     and the BUILD YIELD — the fraction of as-built cars still inside the
+     SAME acceptance bands — is computed per candidate. The coupling is the
+     point: a candidate's curve-fit residual consumes band width, and only
+     the leftover headroom is available to absorb weld scatter. A geometry
+     that nails the target dead-centre but sits on a sensitivity knife-edge
+     (yield collapses when a welder pulls a tab 1.5 mm) is verdicted
+     KNIFE_EDGE and REJECTED in favour of a slightly-off-centre candidate
+     the shop can actually hold. The engine optimises for the car that gets
+     built, not the car on screen.
 
-THE MARKETING CLAIM, CONFRONTED
--------------------------------
-The pitch for tools like this says "millions of coupled candidate states per
-second." This engine does not do that, and neither does anything else that is
-telling the truth. What it actually does, priced:
-
-  * The integer configuration grid (series × parallel × architecture) is
-    ENUMERATED EXHAUSTIVELY — typically a few hundred candidates — because a
-    grid that small deserves certainty, not a metaheuristic.
-  * The continuous gear ratio is refined by DETERMINISTIC golden-section
-    search per finalist — no population, no restarts, no seed sensitivity.
-  * Each evaluation is a handful of QSS event sims (the repo's own verified
-    ``laptime`` chain) plus, for finalists only, a full transient per-cell
-    pack-thermal integration of the entire endurance stint through the
-    repo's own ``pack_thermal`` network.
-  * The whole search is a few hundred to a few thousand lap sims: SECONDS on
-    a laptop, and the exact evaluation count is printed in the report. The
-    inverse structure is real; the "millions per second" is not, here or
-    anywhere.
-
-The coupling the pitch promises IS here, honestly: pack size sets mass, mass
-sets lap time AND lap energy AND cell current, cell current sets temperature,
-temperature sets whether Endurance finishes — one candidate, one consistent
-car, evaluated through one chain. A configuration that wins Acceleration and
-cooks its cells on lap 9 of Endurance is verdicted THERMAL_DNF with the lap
-number computed from the cell's own time-to-limit, not guessed.
+THE HONEST TRICK, STATED AND PRICED
+-----------------------------------
+The yield per candidate is first-order propagation through one sensitivity
+matrix — thousands of sampled cars in microseconds — exactly the priced
+linearisation Stochastic Inversion ships. The price is MEASURED here the same
+way: the winning candidate's linear yield is verified by a subsample of full
+nonlinear re-solves and the pass/fail agreement is printed with the result;
+below the honesty threshold the result demotes itself and says to rerun in
+full. And when the declared bands, boxes and error field are JOINTLY
+unsatisfiable — every curve-hitting geometry is knife-edge, or no legal
+geometry reaches the curves at all — the engine says exactly that, names the
+binding constraint (the limiting band, the clamped box face, the violated
+keep-out), and refuses to fabricate an optimum. "Your targets and your shop
+disagree" is a result, not a failure.
 
 SCOPE, HONESTLY
 ---------------
-* Event times come from the QSS ``laptime`` chain (point-mass + live grip
-  model): relative comparisons between configurations are its strength;
-  absolute times inherit every placeholder the chain documents. The winner is
-  the best car IN THIS MODEL — validate it in the higher-fidelity tabs next.
-* The battery model is the ``pack_thermal`` lumped network with its own
-  `calibrated` honesty flag; uncalibrated cells make every temperature a
-  physically-shaped estimate and the report says so.
-* Structure synthesis emits LOAD CASES (per-member axial forces at the
-  audited operating point), not a spaceframe. Topology belongs to the frame
-  tools and the FEA seat; this module writes their input, not their output.
-* CAD export is the hardpoint coordinate table in the repo's own dialect
-  (CSV/JSON), not STEP — KinematiK carries no CAD kernel and will not
-  pretend to. Firmware export is CALIBRATION CONSTANTS, not a control stack.
-* With no declared event-best times, points are scored RELATIVE to the best
-  candidate in this very search — which is exactly what a design comparison
-  needs and all it can honestly claim. Declare real event bests to score in
-  absolute points.
-* Deterministic end to end: same inputs, byte-identical winner, table and
-  markdown. The only randomness lives inside the corner-level geometry
-  stage, where it is seeded.
+* One corner, the rigid double-wishbone solver. Compliance under load is
+  Ghost Topology's job; the generated geometry should be fed there next.
+* Channels are interpolated from a dense warm-started travel sweep; station
+  spacing finer than the sweep grid buys nothing (the grid density is set
+  from the station count and reported).
+* Keep-out screening tests the HARDPOINT (a sphere of ``probe_radius_mm``
+  at the pickup), not the bracket around it — inflate the probe to cover
+  the tab. And if the keep-out object is this corner's OWN envelope, the
+  points that are endpoints of its capsules will always violate; carve the
+  obstacle envelope from the neighbouring assemblies, not from the corner
+  being designed. Stated here and in the report footer.
+* The error field is Stochastic Inversion's, with its scope: independent
+  per-point errors, build-to-fit links.
+* Deterministic end to end: fixed seeds drive the multi-start sampler and
+  the yield sampler, so the same inputs give byte-identical geometry,
+  yields and markdown.
 
-Self-test: ``python3 -m suspension.inverse_genesis_fullcar``
+Self-test: ``python3 -m suspension.inverse_genesis``
 """
 
 from __future__ import annotations
 
-import math
-import time as _time
-from dataclasses import dataclass, field as _dcfield
-
 import numpy as np
+from dataclasses import dataclass, field as _dcfield
+from collections.abc import Sequence
 
-from .dynamics import VehicleDynamics, VehicleParams
-from .laptime import (MotorMap, Powertrain, Track, LapResult,
-                      acceleration_time, skidpad_time, simulate_lap,
-                      default_autocross, event_points_estimate)
-from .pack_thermal import (CellParams, PackLayout, PackThermalModel,
-                           PackThermalResult, pack_current_trace,
-                           default_cell_params)
 from .kinematics import Hardpoints, SuspensionKinematics
-from .loadpath import WheelLoad, solve_member_forces, wheel_load_from_corner
-from . import inverse_genesis as _ig
+from .ghost_topology import _rc_height_mm
+from .kinematik_stochastic import ToleranceField, _perturbed
 
-_PHI = (math.sqrt(5.0) - 1.0) / 2.0        # golden ratio step, deterministic
+_AXES = ("x", "y", "z")
 
+# --------------------------------------------------------------------------- #
+#  The curve channels — the language the intent is drawn in.
+# --------------------------------------------------------------------------- #
+CHANNELS: tuple[str, ...] = (
+    "camber_deg",     # camber vs travel (the gain curve)
+    "toe_deg",        # toe vs travel (bump steer, drawn as the whole curve)
+    "rc_height_mm",   # roll-centre height vs travel (migration)
+    "scrub_mm",       # scrub radius vs travel
+)
 
-def _trapz(y, x):
-    """Trapezoidal integral, tolerant of the NumPy 2.x trapz→trapezoid rename."""
-    fn = getattr(np, "trapezoid", None) or np.trapz
-    return float(fn(y, x))
+_CHANNEL_LABELS = {
+    "camber_deg":   "camber (°)",
+    "toe_deg":      "toe (°)",
+    "rc_height_mm": "roll-centre height (mm)",
+    "scrub_mm":     "scrub radius (mm)",
+}
+
+# The hardpoints the engine is allowed to treat as design freedoms. Wheel
+# centre / contact patch are excluded on purpose — they are the tyre's
+# geometry, not the linkage's; moving them changes the question, not the
+# answer.
+DESIGNABLE_POINTS: tuple[str, ...] = (
+    "upper_front_inner", "upper_rear_inner",
+    "lower_front_inner", "lower_rear_inner",
+    "upper_outer", "lower_outer",
+    "tie_rod_inner", "tie_rod_outer",
+)
 
 
 # --------------------------------------------------------------------------- #
-#  The cell — the electrical identity the thermal CellParams doesn't carry.
+#  The forward map: geometry → curve samples at the declared stations.
+# --------------------------------------------------------------------------- #
+def curves_of(hp: Hardpoints, stations_mm: np.ndarray,
+              track_mm: float = 1200.0,
+              n_sweep: int | None = None
+              ) -> tuple[dict[str, np.ndarray], bool]:
+    """Every channel sampled at the requested travel stations.
+
+    One dense warm-started sweep covers the station range; channels are
+    linearly interpolated onto the stations. A single non-converged state
+    anywhere in the sweep fails the whole geometry — a corner the solver
+    cannot follow is not a candidate, it's a cliff.
+    """
+    stations = np.asarray(stations_mm, float)
+    lo, hi = float(stations.min()), float(stations.max())
+    if hi - lo < 1e-9:                       # single station: give it width
+        lo, hi = lo - 1.0, hi + 1.0
+    n = n_sweep or max(15, 3 * len(stations) + 1)
+    try:
+        kin = SuspensionKinematics(hp)
+        states = kin.sweep(travel_min=lo, travel_max=hi, n=n)
+    except Exception:
+        return {}, False
+    if not states or any(not getattr(s, "converged", True) for s in states):
+        return {}, False
+    tr = np.array([s.travel for s in states])
+    raw = {
+        "camber_deg":   np.array([s.camber for s in states]),
+        "toe_deg":      np.array([s.toe for s in states]),
+        "rc_height_mm": np.array([_rc_height_mm(s, track_mm=track_mm)
+                                  for s in states]),
+        "scrub_mm":     np.array([s.scrub_radius for s in states]),
+    }
+    if not all(np.all(np.isfinite(v)) for v in raw.values()):
+        return {}, False
+    out = {ch: np.interp(stations, tr, v) for ch, v in raw.items()}
+    return out, True
+
+
+# --------------------------------------------------------------------------- #
+#  The intent — target curves drawn inside acceptance bands.
 # --------------------------------------------------------------------------- #
 @dataclass
-class CellSpec:
-    """One cell's ELECTRICAL identity (capacity, voltage window, current
-    ceiling) layered beside ``pack_thermal.CellParams`` (its thermal lump).
+class TargetCurve:
+    """One drawn curve: channel values at travel stations, each ± a band.
 
-    Defaults are REPRESENTATIVE of a 21700 NMC cell — shapes, not a
-    datasheet. Replace every number with your actual cell's before trusting
-    an absolute energy or current figure, and set ``thermal.calibrated``
-    the way ``pack_thermal`` documents.
+    ``band`` is the acceptance HALF-WIDTH per station (same units as the
+    channel, > 0). The engine's definition of success is every station of
+    every curve inside its band — and the band is also the currency the
+    build-yield spends: fit residual consumes it, weld scatter must fit in
+    what's left.
     """
-    capacity_ah: float = 4.5             # rated capacity, Ah
-    nominal_v: float = 3.6               # nominal voltage, V
-    max_v: float = 4.2                   # charge-limit voltage, V (sets S max)
-    mass_kg: float = 0.070               # cell mass, kg
-    max_discharge_a: float = 45.0        # sustained per-cell discharge, A
-    thermal: CellParams = _dcfield(default_factory=default_cell_params)
+    channel: str
+    travel_mm: np.ndarray
+    target: np.ndarray
+    band: np.ndarray
 
-    def energy_kwh(self) -> float:
-        return self.capacity_ah * self.nominal_v / 1000.0
+    def __post_init__(self):
+        if self.channel not in CHANNELS:
+            raise ValueError(f"Unknown channel '{self.channel}'. "
+                             f"Channels: {', '.join(CHANNELS)}.")
+        self.travel_mm = np.asarray(self.travel_mm, float).ravel()
+        self.target = np.asarray(self.target, float).ravel()
+        self.band = np.asarray(self.band, float).ravel()
+        if not (len(self.travel_mm) == len(self.target) == len(self.band)):
+            raise ValueError(f"TargetCurve '{self.channel}': travel, target "
+                             "and band must have equal length.")
+        if len(self.travel_mm) == 0:
+            raise ValueError(f"TargetCurve '{self.channel}' is empty.")
+        if np.any(self.band <= 0):
+            raise ValueError(f"TargetCurve '{self.channel}': every band must "
+                             "be > 0 — a zero band asks for a probability-zero "
+                             "car and the yield would honestly be 0.")
+        order = np.argsort(self.travel_mm)
+        self.travel_mm = self.travel_mm[order]
+        self.target = self.target[order]
+        self.band = self.band[order]
+
+
+@dataclass
+class GenesisTargets:
+    """The full drawn intent: one or more TargetCurves."""
+    curves: list[TargetCurve]
+    track_mm: float = 1200.0
+
+    def __post_init__(self):
+        if not self.curves:
+            raise ValueError("GenesisTargets needs at least one TargetCurve.")
+        seen = set()
+        for c in self.curves:
+            if c.channel in seen:
+                raise ValueError(f"Channel '{c.channel}' declared twice — "
+                                 "merge its stations into one curve.")
+            seen.add(c.channel)
+
+    # ---- residual layout: one row per (channel, station) ------------------ #
+    def rows(self) -> list[tuple[str, float]]:
+        return [(c.channel, float(t)) for c in self.curves
+                for t in c.travel_mm]
+
+    def stations(self) -> np.ndarray:
+        return np.unique(np.concatenate([c.travel_mm for c in self.curves]))
+
+    def target_vec(self) -> np.ndarray:
+        return np.concatenate([c.target for c in self.curves])
+
+    def band_vec(self) -> np.ndarray:
+        return np.concatenate([c.band for c in self.curves])
+
+    def residual(self, hp: Hardpoints) -> tuple[np.ndarray, bool]:
+        """Band-weighted residual r: |r_i| ≤ 1 means station i is inside its
+        band. NaNs (with ok=False) when the geometry doesn't solve."""
+        vals, ok = curves_of(hp, self.stations(), track_mm=self.track_mm)
+        if not ok:
+            return np.full(len(self.rows()), np.nan), False
+        parts = []
+        for c in self.curves:
+            v = np.interp(c.travel_mm, self.stations(), vals[c.channel])
+            parts.append((v - c.target) / c.band)
+        return np.concatenate(parts), True
+
+    def row_labels(self) -> list[str]:
+        return [f"{_CHANNEL_LABELS[ch]} @ {t:+.1f} mm" for ch, t in self.rows()]
 
 
 # --------------------------------------------------------------------------- #
-#  The rule matrix — the Dynamic Constraint Matrix, every bound named.
+#  The physics-informed boundary filter — legal volume + keep-out.
 # --------------------------------------------------------------------------- #
 @dataclass
-class RuleMatrix:
-    """FSAE-EV constraint bounds the search may not cross.
+class KeepOutBox:
+    """An axis-aligned obstacle in corner axes (mm) — "the header lives here".
 
-    SEEDED WITH REPRESENTATIVE NUMBERS, NOT THE RULEBOOK. The FS/FSAE rules
-    change yearly and differ by competition; every bound below is editable
-    and every one must be verified against the year's published rules before
-    a design review treats a verdict from this matrix as compliance. This
-    object is a constraint matrix that HAPPENS to be seeded near the common
-    EV rules — it is not, and will never claim to be, scrutineering.
+    Speaks the same query dialect as PhantomEnvelope: ``clearances(points,
+    probe_radius_mm)`` returns signed skin clearance, + clear / − penetrating,
+    so the boundary filter treats a hand-declared box and a carved envelope
+    identically.
     """
-    max_power_kw: float = 80.0           # tractive-system power cap
-    max_ts_voltage: float = 600.0        # max tractive-system voltage, VDC
-    max_segment_voltage: float = 120.0   # max accumulator-segment voltage, VDC
-    max_segment_energy_mj: float = 6.0   # max energy per segment, MJ
-    min_wheelbase_mm: float = 1525.0     # minimum wheelbase
-    cell_temp_limit_c: float = 60.0      # max allowed cell temperature, °C
-    endurance_km: float = 22.0           # endurance event distance
+    lo: np.ndarray
+    hi: np.ndarray
+    label: str = "keep-out box"
 
-    def violations(self, series: int, parallel: int, cell: CellSpec,
-                   wheelbase_mm: float) -> list[str]:
-        """Every rule this (series, parallel) configuration breaks, NAMED.
-        An empty list is the only pass."""
-        out: list[str] = []
-        v_pack_max = series * cell.max_v
-        if v_pack_max > self.max_ts_voltage + 1e-9:
-            out.append(f"{series}s at {cell.max_v:.2f} V/cell = "
-                       f"{v_pack_max:.0f} V max pack > TS voltage cap "
-                       f"{self.max_ts_voltage:.0f} V")
-        # segment feasibility: the pack must split into segments each within
-        # BOTH the voltage cap and the energy cap. Voltage caps the series
-        # count per segment; energy caps (seg_series × parallel) × cell Wh.
-        seg_series_v = int(self.max_segment_voltage / cell.max_v)
-        if seg_series_v < 1:
-            out.append(f"one cell at {cell.max_v:.2f} V already exceeds the "
-                       f"{self.max_segment_voltage:.0f} V segment cap")
-            return out
-        cell_j = cell.capacity_ah * cell.nominal_v * 3600.0
-        seg_series_e = int((self.max_segment_energy_mj * 1e6)
-                           / max(cell_j * parallel, 1e-9))
-        seg_series = min(seg_series_v, seg_series_e)
-        if seg_series < 1:
-            out.append(f"{parallel}p groups carry "
-                       f"{cell_j * parallel / 1e6:.2f} MJ per series row — a "
-                       f"single row already exceeds the "
-                       f"{self.max_segment_energy_mj:.0f} MJ segment cap; "
-                       "reduce parallel count")
-        if wheelbase_mm < self.min_wheelbase_mm - 1e-9:
-            out.append(f"wheelbase {wheelbase_mm:.0f} mm < rule minimum "
-                       f"{self.min_wheelbase_mm:.0f} mm")
+    def __post_init__(self):
+        self.lo = np.asarray(self.lo, float).reshape(3)
+        self.hi = np.asarray(self.hi, float).reshape(3)
+        if np.any(self.hi <= self.lo):
+            raise ValueError(f"KeepOutBox '{self.label}': hi must exceed lo "
+                             "on every axis.")
+
+    def clearances(self, points, probe_radius_mm: float = 0.0) -> np.ndarray:
+        pts = np.asarray(points, float)
+        if pts.ndim == 1:
+            pts = pts[None, :]
+        # outside: Euclidean distance to the box; inside: −(distance to the
+        # nearest face). The standard signed AABB distance, closed form.
+        d_out = np.maximum(np.maximum(self.lo - pts, pts - self.hi), 0.0)
+        outside = np.linalg.norm(d_out, axis=1)
+        d_in = np.minimum(pts - self.lo, self.hi - pts).min(axis=1)
+        inside = np.where(np.all((pts >= self.lo) & (pts <= self.hi), axis=1),
+                          -d_in, 0.0)
+        return outside + inside - probe_radius_mm
+
+
+@dataclass
+class LegalVolume:
+    """Where each movable hardpoint is ALLOWED to exist.
+
+    boxes            : point name → (lo, hi) absolute corner-frame bounds, mm.
+                       Only listed points are design freedoms; everything
+                       else stays welded to its nominal.
+    keep_out         : obstacle volumes — PhantomEnvelope instances (carved
+                       from NEIGHBOURING assemblies) and/or KeepOutBoxes.
+                       Queried through ``clearances(points, probe)``.
+    probe_radius_mm  : the sphere tested at each movable point (inflate to
+                       cover the physical tab/bracket, not just the pickup).
+    min_clearance_mm : required skin gap to every obstacle.
+    """
+    boxes: dict[str, tuple[np.ndarray, np.ndarray]]
+    keep_out: list[object] = _dcfield(default_factory=list)
+    probe_radius_mm: float = 0.0
+    min_clearance_mm: float = 0.0
+
+    def __post_init__(self):
+        if not self.boxes:
+            raise ValueError("LegalVolume: declare at least one movable "
+                             "point's box — with zero freedoms there is "
+                             "nothing to generate.")
+        norm = {}
+        for name, (lo, hi) in self.boxes.items():
+            if name not in DESIGNABLE_POINTS:
+                raise ValueError(
+                    f"'{name}' is not a designable hardpoint. Allowed: "
+                    f"{', '.join(DESIGNABLE_POINTS)}.")
+            lo = np.asarray(lo, float).reshape(3)
+            hi = np.asarray(hi, float).reshape(3)
+            if np.any(hi < lo):
+                raise ValueError(f"LegalVolume box for '{name}': hi < lo.")
+            norm[name] = (lo, hi)
+        self.boxes = norm
+
+    @staticmethod
+    def around(hp: Hardpoints, half_mm: dict[str, float] | float,
+               points: Sequence[str] | None = None,
+               **kw) -> LegalVolume:
+        """Boxes of ± half_mm around the nominal — the common declaration."""
+        if points is None:
+            points = list(half_mm) if isinstance(half_mm, dict) \
+                else list(DESIGNABLE_POINTS)
+        boxes = {}
+        for p in points:
+            h = abs(float(half_mm[p] if isinstance(half_mm, dict)
+                          else half_mm))
+            c = np.asarray(getattr(hp, p), float)
+            boxes[p] = (c - h, c + h)
+        return LegalVolume(boxes=boxes, **kw)
+
+    # ---- coordinate bookkeeping ------------------------------------------- #
+    def points(self) -> list[str]:
+        return sorted(self.boxes)
+
+    def coords(self) -> list[tuple[str, int]]:
+        return [(p, a) for p in self.points() for a in range(3)]
+
+    def coord_labels(self) -> list[str]:
+        return [f"{p}.{_AXES[a]}" for p, a in self.coords()]
+
+    def bounds_vec(self, hp: Hardpoints) -> tuple[np.ndarray, np.ndarray]:
+        """Shift bounds (lo, hi) per flattened coordinate, RELATIVE to hp."""
+        lo, hi = [], []
+        for p in self.points():
+            c = np.asarray(getattr(hp, p), float)
+            blo, bhi = self.boxes[p]
+            lo.append(blo - c)
+            hi.append(bhi - c)
+        return np.concatenate(lo), np.concatenate(hi)
+
+    def clamp(self, hp: Hardpoints, shift: np.ndarray
+              ) -> tuple[np.ndarray, list[str]]:
+        """Clamp a flattened shift into the boxes; name clamped coordinates."""
+        lo, hi = self.bounds_vec(hp)
+        clamped = [lab for lab, s, l, h in
+                   zip(self.coord_labels(), shift, lo, hi)
+                   if s < l - 1e-12 or s > h + 1e-12]
+        return np.clip(shift, lo, hi), clamped
+
+    def keepout_violations(self, hp: Hardpoints
+                           ) -> list[tuple[str, str, float]]:
+        """(point, obstacle label, clearance) for every filtered violation."""
+        out: list[tuple[str, str, float]] = []
+        pts = np.array([np.asarray(getattr(hp, p), float)
+                        for p in self.points()])
+        for obs in self.keep_out:
+            cl = np.asarray(obs.clearances(pts, self.probe_radius_mm), float)
+            lab = getattr(obs, "label", None) or \
+                getattr(obs, "kind", None) or obs.__class__.__name__
+            for p, c in zip(self.points(), cl):
+                if c < self.min_clearance_mm - 1e-12:
+                    out.append((p, str(lab), float(c)))
         return out
 
-    def segments_needed(self, series: int, parallel: int,
-                        cell: CellSpec) -> tuple[int, int]:
-        """(n_segments, series_per_segment) for a legal split, both caps."""
-        seg_series_v = max(int(self.max_segment_voltage / cell.max_v), 1)
-        cell_j = cell.capacity_ah * cell.nominal_v * 3600.0
-        seg_series_e = max(int((self.max_segment_energy_mj * 1e6)
-                               / max(cell_j * parallel, 1e-9)), 1)
-        seg_series = max(min(seg_series_v, seg_series_e), 1)
-        return int(math.ceil(series / seg_series)), seg_series
+
+# --------------------------------------------------------------------------- #
+#  Flatten / unflatten between the solver's vector and named point shifts.
+# --------------------------------------------------------------------------- #
+def _unflatten(vec: np.ndarray, coords: list[tuple[str, int]]
+               ) -> dict[str, np.ndarray]:
+    offs: dict[str, np.ndarray] = {}
+    for (p, a), v in zip(coords, vec):
+        offs.setdefault(p, np.zeros(3))[a] = v
+    return {p: v for p, v in offs.items()}
+
+
+def _shifted(hp: Hardpoints, volume: LegalVolume,
+             shift: np.ndarray) -> Hardpoints:
+    return _perturbed(hp, _unflatten(shift, volume.coords()))
 
 
 # --------------------------------------------------------------------------- #
-#  The design space — what the engine is allowed to choose.
+#  The reverse gradients — Jacobian of the weighted residual, by full solves.
 # --------------------------------------------------------------------------- #
-_ARCHITECTURES: tuple[str, ...] = ("single_diff", "twin_axle", "four_tv")
-
-_ARCH_LABEL = {"single_diff": "1 motor + diff",
-               "twin_axle":   "2 motors (axle split)",
-               "four_tv":     "4 motors (torque vectoring)"}
-
-# Per-architecture curb-mass delta and drive layout — the same defensible
-# planning numbers ev_powertrain.EVParams documents, restated here so the two
-# layers agree by construction.
-_ARCH_MASS_KG = {"single_diff": 0.0, "twin_axle": 7.0, "four_tv": 16.0}
-_ARCH_DRIVE = {"single_diff": "rwd", "twin_axle": "awd", "four_tv": "awd"}
-# Fraction of driven-axle grip each architecture can DEPLOY on corner exit
-# (open diff inside-wheel limited; TV recovers most of it) — ev_powertrain's
-# numbers, applied here as a tractive-force multiplier.
-_ARCH_GRIP_FRAC = {"single_diff": 0.78, "twin_axle": 0.88, "four_tv": 0.98}
-# Upper-bound TV yaw benefit, reported SEPARATELY, never folded into a time.
-_ARCH_TV_YAW_FRAC = {"single_diff": 0.0, "twin_axle": 0.0, "four_tv": 0.015}
-
-
-@dataclass
-class DesignSpace:
-    """The choices the engine may make, and the fixed car around them.
-
-    ``base_mass_kg`` is the car INCLUDING driver but EXCLUDING accumulator
-    cells and the per-architecture motor delta — the search adds those per
-    candidate, which is the whole point: a bigger pack must pay for its own
-    mass in every event before its energy shows a net gain.
-    """
-    series_range: tuple[int, int] = (84, 140)     # pack series count, inclusive
-    series_step: int = 4                          # enumerate every Nth count
-    parallel_range: tuple[int, int] = (3, 7)      # cells per parallel group
-    final_drive_range: tuple[float, float] = (2.6, 5.2)
-    architectures: tuple[str, ...] = _ARCHITECTURES
-    cell: CellSpec = _dcfield(default_factory=CellSpec)
-    # -- the fixed car around the choices ---------------------------------- #
-    base_mass_kg: float = 215.0          # incl. driver, excl. cells & motors
-    pack_overhead_frac: float = 0.45     # enclosure/busbar/BMS kg per kg cells
-    motor_peak_torque_nm: float = 140.0  # combined motor-shaft peak torque
-    motor_redline_rpm: float = 6500.0
-    wheel_radius_m: float = 0.20
-    pack_usable_frac: float = 0.92       # usable fraction of nameplate energy
-    inverter_motor_eff: float = 0.90
-    regen_eff: float = 0.55
-    regen_max_g: float = 0.35
-    # thermal-module grid the pack_thermal network visualises (one module)
-    thermal_rows: int = 6
-    thermal_cols: int = 14
-    ambient_c: float = 30.0
-    # Feeds pack_thermal, so this is cooling-air INLET temperature, inherited
-    # from the ledger's 'cooling_inlet' channel. Set ambient_is_local = True to
-    # sweep a temperature the car has not declared.
-    ambient_is_local: bool = False
-    ENV_CHANNEL = "cooling_inlet"
-    # -- fixed vehicle geometry & aero (the search does not move these) ---- #
-    wheelbase_mm: float = 1550.0
-    track_mm: float = 1200.0
-    cg_height_mm: float = 300.0
-    weight_dist_front: float = 0.47
-    cla: float = 2.6                     # downforce area Cl·A, m²
-    cda: float = 1.1                     # drag area Cd·A, m²
-
-    def series_options(self) -> list[int]:
-        lo, hi = int(self.series_range[0]), int(self.series_range[1])
-        step = max(int(self.series_step), 1)
-        return list(range(lo, hi + 1, step))
-
-    def parallel_options(self) -> list[int]:
-        lo, hi = int(self.parallel_range[0]), int(self.parallel_range[1])
-        return list(range(lo, hi + 1))
-
-
-@dataclass
-class PointsReference:
-    """Declared event-best times (s) for ABSOLUTE points. Leave any as None
-    and that event is scored RELATIVE to the best candidate in this search —
-    stated in the report, because relative is all an undeclared best earns."""
-    accel_s: float | None = None
-    skidpad_s: float | None = None
-    autocross_s: float | None = None
-    endurance_s: float | None = None
+def _jacobian(hp: Hardpoints, targets: GenesisTargets,
+              coords: list[tuple[str, int]],
+              step_mm: float = 0.25) -> np.ndarray | None:
+    """Central-difference d(weighted residual)/d(coordinate). None when any
+    probe fails to solve — the caller treats that as a cliff, not a number."""
+    J = np.zeros((len(targets.rows()), len(coords)))
+    for j, (p, a) in enumerate(coords):
+        off = np.zeros(3)
+        off[a] = step_mm
+        rp, okp = targets.residual(_perturbed(hp, {p: off}))
+        rm, okm = targets.residual(_perturbed(hp, {p: -off}))
+        if not (okp and okm):
+            return None
+        J[:, j] = (rp - rm) / (2.0 * step_mm)
+    return J
 
 
 # --------------------------------------------------------------------------- #
-#  One candidate and its full forward evaluation.
+#  One inverse solve — damped Gauss–Newton inside the boundary filter.
 # --------------------------------------------------------------------------- #
 @dataclass
-class FullCarConfig:
-    """One point in the design space, with its derived physical identity."""
-    series: int
-    parallel: int
-    architecture: str
-    final_drive: float
-
-    def derive(self, space: DesignSpace, rules: RuleMatrix
-               ) -> dict[str, float]:
-        cell = space.cell
-        n_cells = self.series * self.parallel
-        cells_kg = n_cells * cell.mass_kg
-        pack_kg = cells_kg * (1.0 + space.pack_overhead_frac)
-        mass = space.base_mass_kg + pack_kg + _ARCH_MASS_KG[self.architecture]
-        v_nom = self.series * cell.nominal_v
-        e_kwh = n_cells * cell.energy_kwh()
-        p_pack_kw = v_nom * self.parallel * cell.max_discharge_a / 1000.0
-        p_kw = min(rules.max_power_kw, p_pack_kw)
-        n_seg, seg_s = rules.segments_needed(self.series, self.parallel, cell)
-        return dict(n_cells=n_cells, pack_mass_kg=pack_kg, mass_kg=mass,
-                    pack_nominal_v=v_nom, pack_energy_kwh=e_kwh,
-                    usable_kwh=e_kwh * space.pack_usable_frac,
-                    pack_power_cap_kw=p_pack_kw, power_kw=p_kw,
-                    n_segments=n_seg, segment_series=seg_s)
-
-    def label(self) -> str:
-        return (f"{self.series}s{self.parallel}p · "
-                f"{_ARCH_LABEL[self.architecture]} · "
-                f"drive {self.final_drive:.2f}:1")
-
-
-class _TraceAdapter:
-    """Duck-typed lap trace for pack_current_trace: laptime's (s, v) arrays
-    plus longitudinal g recovered as a = v·dv/ds — the QSS identity, so the
-    current integrates back to the same energy the speed trace implies."""
-    def __init__(self, lap: LapResult, g: float = 9.81):
-        s = np.asarray(lap.s, float)
-        v = np.asarray(lap.v, float)
-        if s.size < 2:
-            s = np.array([0.0, 1.0])
-            v = np.array([0.0, 0.0])
-        self.distance = s
-        self.speed = v
-        dv = np.gradient(v, np.maximum(s, 1e-9), edge_order=1)
-        self.long_g = np.nan_to_num(v * dv / g, nan=0.0,
-                                    posinf=0.0, neginf=0.0)
-
-
-class _LapParamsShim:
-    """The attribute bag pack_current_trace duck-reads (lapsim dialect)."""
-    def __init__(self, mass: float, cd_a: float, rho: float,
-                 rolling_g: float = 0.015):
-        self.mass = mass
-        self.cd_a = cd_a
-        self.rho = rho
-        self.rolling_g = rolling_g
-        self.g = 9.81
-        self.V_MIN = 0.5
-
-
-@dataclass
-class ConfigScore:
-    """One candidate, fully evaluated. ``ok`` means it produced times; the
-    verdict says whether the car it describes finishes the season."""
-    config: FullCarConfig
+class Candidate:
+    """One geometry the reverse solve produced, before/after yield pricing."""
     ok: bool
-    derived: dict[str, float]
-    accel_s: float = float("nan")
-    skidpad_s: float = float("nan")
-    autocross_s: float = float("nan")
-    endurance_laps: int = 0
-    endurance_s: float = float("nan")
-    energy_event_kwh: float = float("nan")
-    energy_margin_kwh: float = float("nan")
-    derate_penalty_s: float = 0.0          # per-lap, when energy runs short
-    peak_lat_g: float = float("nan")
-    tv_yaw_note: str = ""
-    points: dict[str, float] = _dcfield(default_factory=dict)
-    total_points: float = 0.0
-    # thermal (finalists only; nan/None = gate not yet run)
-    thermal: PackThermalResult | None = None
-    overheat_lap: int | None = None
-    verdict: str = ""                      # FEASIBLE | ENERGY_SHORT |
-    #                                        THERMAL_DNF | RULE_KILLED | FAILED
-    kill_reasons: list[str] = _dcfield(default_factory=list)
-    warnings: list[str] = _dcfield(default_factory=list)
+    hit: bool                       # every station inside its band
+    shifts: dict[str, np.ndarray]   # point → shift from nominal, mm
+    shift_vec: np.ndarray
+    residual: np.ndarray            # band-weighted; |r| ≤ 1 is inside
+    max_band_frac: float            # max |r| — the fit's worst station
+    worst_row: str                  # which (channel, station) governs
+    iterations: int
+    clamped: list[str]              # coordinates pinned to a box face
+    keepout_rejections: int         # steps the boundary filter refused
+    # co-optimizer stage:
+    yield_frac: float | None = None
+    yield_warnings: list[str] = _dcfield(default_factory=list)
+    verdict: str = ""               # RESILIENT | TEMPERED | KNIFE_EDGE | NO_FIT
+
+
+def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
+                  volume: LegalVolume,
+                  start_shift: np.ndarray | None = None,
+                  max_iter: int = 30, step_mm: float = 0.25,
+                  lam0: float = 1e-2) -> Candidate:
+    """Pull the movable points until the curves land inside their bands.
+
+    Levenberg-damped Gauss–Newton on the band-weighted residual: solve
+    (JᵀJ + λ·diag(JᵀJ))Δx = −Jᵀr, clamp Δx into the legal boxes, reject the
+    step outright if any moved point violates a keep-out volume (raise λ and
+    retry — the filter is a constraint, not a penalty), accept on cost
+    decrease. Deterministic: no randomness anywhere in this function.
+    """
+    coords = volume.coords()
+    x, _ = volume.clamp(hp, np.zeros(len(coords))
+                        if start_shift is None
+                        else np.asarray(start_shift, float))
+    hp_x = _shifted(hp, volume, x)
+    r, ok = targets.residual(hp_x)
+    if not ok:
+        # a start the solver can't follow is discarded honestly
+        return Candidate(ok=False, hit=False, shifts={}, shift_vec=x,
+                         residual=r, max_band_frac=float("inf"),
+                         worst_row="(nominal/start does not solve)",
+                         iterations=0, clamped=[], keepout_rejections=0)
+    if volume.keepout_violations(hp_x):
+        return Candidate(ok=False, hit=False, shifts={}, shift_vec=x,
+                         residual=r, max_band_frac=float(np.max(np.abs(r))),
+                         worst_row="(start violates a keep-out volume)",
+                         iterations=0, clamped=[], keepout_rejections=1)
+
+    cost = float(r @ r)
+    lam = lam0
+    clamped_last: list[str] = []
+    rejections = 0
+    it = 0
+    for it in range(1, max_iter + 1):
+        if np.max(np.abs(r)) <= 1.0:        # every station inside its band
+            break
+        J = _jacobian(hp_x, targets, coords, step_mm=step_mm)
+        if J is None:                        # sitting at a solver cliff
+            break
+        JtJ = J.T @ J
+        diag = np.diag(np.maximum(np.diag(JtJ), 1e-12))
+        g = J.T @ r
+        stepped = False
+        for _ in range(8):                   # λ ladder within one iteration
+            try:
+                dx = np.linalg.solve(JtJ + lam * diag, -g)
+            except np.linalg.LinAlgError:
+                lam *= 10.0
+                continue
+            x_try, clamped = volume.clamp(hp, x + dx)
+            hp_try = _shifted(hp, volume, x_try)
+            vio = volume.keepout_violations(hp_try)
+            if vio:
+                rejections += 1
+                lam *= 10.0                  # shorter step, away from the wall
+                continue
+            r_try, ok_try = targets.residual(hp_try)
+            if not ok_try:
+                lam *= 10.0
+                continue
+            c_try = float(r_try @ r_try)
+            if c_try < cost - 1e-12 or np.max(np.abs(r_try)) <= 1.0:
+                x, hp_x, r, cost = x_try, hp_try, r_try, c_try
+                clamped_last = clamped
+                lam = max(lam / 3.0, 1e-6)
+                stepped = True
+                break
+            lam *= 10.0
+        if not stepped:
+            break                            # stalled: best legal point stands
+
+    worst = int(np.argmax(np.abs(r)))
+    return Candidate(
+        ok=True,
+        hit=bool(np.max(np.abs(r)) <= 1.0),
+        shifts={p: v for p, v in _unflatten(x, coords).items()
+                if np.any(np.abs(v) > 1e-9)},
+        shift_vec=x,
+        residual=r,
+        max_band_frac=float(np.max(np.abs(r))),
+        worst_row=targets.row_labels()[worst],
+        iterations=it,
+        clamped=clamped_last,
+        keepout_rejections=rejections,
+    )
 
 
 # --------------------------------------------------------------------------- #
-#  The forward evaluation — one consistent car through the whole chain.
+#  The build-yield co-optimizer.
 # --------------------------------------------------------------------------- #
-def _vehicle_for(cfg: FullCarConfig, space: DesignSpace,
-                 derived: dict[str, float]) -> VehicleDynamics:
-    """Build the VehicleDynamics for a candidate — the mass the pack actually
-    weighs, the car's fixed geometry, the placeholder grip model. Geometry
-    tabs would feed solved camber; here the fixed grip model is enough to
-    RANK configurations, which is all this stage claims."""
-    vp = VehicleParams(
-        mass=derived["mass_kg"],
-        cg_height=space.cg_height_mm,
-        wheelbase=space.wheelbase_mm,
-        track_front=space.track_mm,
-        track_rear=space.track_mm * 0.98,
-        weight_dist_front=space.weight_dist_front,
-    )
-    return VehicleDynamics(vp)
+@dataclass
+class GenesisThresholds:
+    resilient_yield: float = 0.95    # ≥ this → RESILIENT
+    tempered_yield: float = 0.80     # ≥ this → TEMPERED, below → KNIFE_EDGE
+    verify_agreement: float = 0.98   # linear-vs-full pass/fail honesty floor
 
 
-def _powertrain_for(cfg: FullCarConfig, space: DesignSpace,
-                    derived: dict[str, float]) -> Powertrain:
-    mm = MotorMap.from_peak(
-        peak_torque_nm=space.motor_peak_torque_nm,
-        peak_power_kw=derived["power_kw"],
-        redline_rpm=space.motor_redline_rpm,
-        final_drive=cfg.final_drive,
-        wheel_radius_m=space.wheel_radius_m,
-    )
-    pt = Powertrain(
-        power_kw=derived["power_kw"],
-        drivetrain_eff=space.inverter_motor_eff,
-        cda=space.cda, cla=space.cla,
-        drive=_ARCH_DRIVE[cfg.architecture],
-        motor_map=mm,
-    )
-    # architecture deploys a fraction of driven-axle grip on exit; fold it in
-    # as a tractive ceiling shave so twin/TV genuinely out-accelerate a diff.
-    pt.max_tractive_n = 1.0e9   # motor map governs; keep the flat cap inert
-    return pt
+def build_yield(hp_candidate: Hardpoints, targets: GenesisTargets,
+                fld: ToleranceField, r_fit: np.ndarray,
+                n: int = 4000, seed: int = 0, step_mm: float = 0.25
+                ) -> tuple[float | None, list[str]]:
+    """P(as-built curves stay inside the bands), first order.
+
+    The coupling that makes the co-optimizer honest: the candidate's own fit
+    residual ``r_fit`` (band units) is added to the propagated weld scatter
+    before judging — the fit has already spent part of the band, and only
+    the headroom left absorbs the shop's error field.
+    """
+    warns: list[str] = []
+    J = _jacobian(hp_candidate, targets, fld.coords(), step_mm=step_mm)
+    if J is None:
+        return None, ["Sensitivity probes at the candidate fail to solve — "
+                      "the geometry sits near a kinematic singularity; its "
+                      "yield is not a number this model owns (treated as "
+                      "knife-edge)."]
+    samples = fld.sample(n, seed=seed)          # (n, coords) mm
+    dr = samples @ J.T                          # (n, rows), band units
+    passed = np.all(np.abs(r_fit[None, :] + dr) <= 1.0, axis=1)
+    return float(np.mean(passed)), warns
 
 
-def _endurance_track(space: DesignSpace, rules: RuleMatrix
-                     ) -> tuple[Track, int]:
-    """One representative lap plus the integer lap count that covers the
-    declared endurance distance."""
-    base = default_autocross()
-    lap_len = max(base.total_length(), 1.0)
-    laps = max(int(math.ceil(rules.endurance_km * 1000.0 / lap_len)), 1)
-    return base, laps
+def _verify_yield_full(hp_candidate: Hardpoints, targets: GenesisTargets,
+                       fld: ToleranceField, r_fit: np.ndarray,
+                       J: np.ndarray | None,
+                       n_verify: int, seed: int) -> tuple[float, float]:
+    """(full-solve yield, linear-vs-full pass/fail agreement) on a subsample.
 
-
-def evaluate_config(cfg: FullCarConfig, space: DesignSpace,
-                    rules: RuleMatrix, *, run_thermal: bool = False
-                    ) -> ConfigScore:
-    """The full forward pass for one candidate — every event, the energy
-    integral, and (finalists only) the transient pack thermal. Never raises:
-    a crash returns a FAILED score carrying its reason."""
-    derived = cfg.derive(space, rules)
-    sc = ConfigScore(config=cfg, ok=False, derived=derived)
-
-    # ---- hard rule gate first: an illegal car is not evaluated ----------- #
-    viol = rules.violations(cfg.series, cfg.parallel, space.cell,
-                            space.wheelbase_mm)
-    if viol:
-        sc.verdict = "RULE_KILLED"
-        sc.kill_reasons = viol
-        return sc
-
-    try:
-        veh = _vehicle_for(cfg, space, derived)
-        pt = _powertrain_for(cfg, space, derived)
-        grip_frac = _ARCH_GRIP_FRAC[cfg.architecture]
-
-        sc.peak_lat_g = float(veh.max_lateral_g())
-
-        # --- the three sprint events -------------------------------------- #
-        accel = acceleration_time(veh, pt, distance_m=75.0)
-        skid = skidpad_time(veh, pt)
-        autox = simulate_lap(veh, default_autocross(), pt)
-        for r, nm in ((accel, "accel"), (skid, "skidpad"), (autox, "autocross")):
-            if not r.ok:
-                sc.warnings.append(f"{nm}: {r.warning}")
-        sc.accel_s = float(accel.lap_time_s)
-        sc.skidpad_s = float(skid.lap_time_s)
-        sc.autocross_s = float(autox.lap_time_s)
-
-        # --- endurance: same lap, N times, with the energy integral ------- #
-        end_track, laps = _endurance_track(space, rules)
-        end_lap = simulate_lap(veh, end_track, pt)
-        sc.endurance_laps = laps
-        if not end_lap.ok:
-            sc.warnings.append(f"endurance lap: {end_lap.warning}")
-
-        # energy per lap from the current trace (integrates to lap energy)
-        shim = _LapParamsShim(mass=derived["mass_kg"], cd_a=space.cda,
-                              rho=1.225)   # canonical ISA sea-level density
-        adapter = _TraceAdapter(end_lap)
-        t_arr, cur = pack_current_trace(
-            adapter, shim, pack_nominal_v=derived["pack_nominal_v"],
-            inverter_motor_eff=space.inverter_motor_eff,
-            regen_eff=space.regen_eff, regen_max_g=space.regen_max_g,
-            regen_enabled=True)
-        # energy (kWh) = ∫ V·I dt over one lap, drive only counted as spend
-        v_pack = derived["pack_nominal_v"]
-        drive_i = np.clip(cur, 0.0, None)
-        e_lap_kwh = _trapz(v_pack * drive_i, t_arr) / 3.6e6
-        # regen returns some; net is what the pack actually loses
-        regen_i = -np.clip(cur, None, 0.0)
-        e_regen_kwh = _trapz(v_pack * regen_i, t_arr) / 3.6e6
-        e_net_lap = max(e_lap_kwh - e_regen_kwh, 0.0)
-        e_event = e_net_lap * laps
-        usable = derived["usable_kwh"]
-        sc.energy_event_kwh = e_event
-        sc.energy_margin_kwh = usable - e_event
-
-        # single-lap endurance time; derate penalty if the pack can't cover it
-        end_single = float(end_lap.lap_time_s)
-        if math.isfinite(e_event) and e_event > usable and e_event > 1e-9:
-            f = usable / e_event
-            sc.derate_penalty_s = end_single * 0.30 * (1.0 - f)
-            sc.warnings.append(
-                f"pack covers {f*100:.0f}% of endurance energy; "
-                f"derate +{sc.derate_penalty_s:.2f} s/lap (planning-grade)")
-        sc.endurance_s = (end_single + sc.derate_penalty_s) * laps
-
-        sc.ok = all(math.isfinite(x) for x in
-                    (sc.accel_s, sc.skidpad_s, sc.autocross_s, sc.endurance_s))
-
-        # architecture yaw benefit — reported, never folded in
-        yaw = _ARCH_TV_YAW_FRAC[cfg.architecture]
-        if yaw > 0:
-            sc.tv_yaw_note = (
-                f"torque vectoring: up to {yaw*100:.1f}% autocross/endurance "
-                "time (control-dependent upper bound, NOT in the totals)")
-
-        # --- the thermal gate (finalists only — it's the expensive one) --- #
-        if run_thermal and end_lap.ok:
-            sc.thermal, sc.overheat_lap = _thermal_gate(
-                cfg, space, rules, adapter, shim, derived, laps)
-
-    except Exception as exc:                       # never crash the search
-        sc.ok = False
-        sc.verdict = "FAILED"
-        sc.kill_reasons = [f"evaluation crashed: {exc!r}"]
-        return sc
-
-    # ---- verdict: does this car finish the season? ----------------------- #
-    if not sc.ok:
-        sc.verdict = "FAILED"
-        sc.kill_reasons = sc.warnings or ["one or more events did not solve"]
-    elif sc.overheat_lap is not None:
-        sc.verdict = "THERMAL_DNF"
-        sc.kill_reasons = [
-            f"cell reaches the {rules.cell_temp_limit_c:.0f} °C limit on "
-            f"endurance lap {sc.overheat_lap} of {sc.endurance_laps}"]
-    elif sc.energy_margin_kwh < 0:
-        sc.verdict = "ENERGY_SHORT"
-        sc.kill_reasons = [
-            f"endurance needs {sc.energy_event_kwh:.2f} kWh, pack holds "
-            f"{sc.derived['usable_kwh']:.2f} kWh usable "
-            f"({sc.energy_margin_kwh:+.2f} kWh)"]
+    Perturbed geometries that fail to solve are charged as fails — the same
+    accounting Stochastic Inversion uses."""
+    samples = fld.sample(n_verify, seed=seed + 1)
+    coords = fld.coords()
+    full_pass = np.zeros(n_verify, bool)
+    for i in range(n_verify):
+        hp_i = _perturbed(hp_candidate, _unflatten(samples[i], coords))
+        r_i, ok = targets.residual(hp_i)
+        full_pass[i] = bool(ok and np.max(np.abs(r_i)) <= 1.0)
+    if J is not None:
+        lin_pass = np.all(np.abs(r_fit[None, :] + samples @ J.T) <= 1.0,
+                          axis=1)
+        agree = float(np.mean(lin_pass == full_pass))
     else:
-        sc.verdict = "FEASIBLE"
-    return sc
-
-
-def _thermal_gate(cfg: FullCarConfig, space: DesignSpace, rules: RuleMatrix,
-                  adapter: _TraceAdapter, shim: _LapParamsShim,
-                  derived: dict[str, float], laps: int
-                  ) -> tuple[PackThermalResult | None, int | None]:
-    """Full transient per-cell integration of the whole endurance stint.
-    Returns (result, overheat_lap) — overheat_lap is the endurance lap on
-    which the worst cell first crosses the rule limit, or None if it never
-    does. The pack's own series/parallel drive the per-cell current."""
-    cell_th = space.cell.thermal
-    cell_th = CellParams(**{**cell_th.__dict__})
-    cell_th.temp_limit_c = rules.cell_temp_limit_c
-    layout = PackLayout(
-        rows=space.thermal_rows, cols=space.thermal_cols,
-        series=cfg.series, parallel=cfg.parallel,
-        cell=cell_th, ambient_c=space.ambient_c)
-    model = PackThermalModel(layout=layout, fans=[], airflow=None)
-    t_arr, cur = pack_current_trace(
-        adapter, shim, pack_nominal_v=layout.pack_nominal_v,
-        inverter_motor_eff=space.inverter_motor_eff,
-        regen_eff=space.regen_eff, regen_max_g=space.regen_max_g,
-        regen_enabled=True)
-    res = model.simulate(t_arr, cur, init_temp_c=space.ambient_c, n_laps=laps)
-    overheat_lap = None
-    if res.ok and res.any_cell_breached_limit:
-        # the worst cell's first-limit time → which endurance lap it fell on
-        ttl = res.time_to_limit_s[res.hottest_cell_index]
-        lap_T = max(t_arr[-1] - t_arr[0], 1e-9)
-        if math.isfinite(ttl):
-            overheat_lap = int(ttl // lap_T) + 1
-            overheat_lap = min(max(overheat_lap, 1), laps)
-    return res, overheat_lap
-
-
-# --------------------------------------------------------------------------- #
-#  The objective — points, scored relative to the field or to declared bests.
-# --------------------------------------------------------------------------- #
-_EVENT_KEYS = ("accel", "skidpad", "autocross", "endurance")
-_EVENT_LABEL = {"accel": "Acceleration", "skidpad": "Skidpad",
-                "autocross": "Autocross", "endurance": "Endurance"}
-# which laptime event-points family each maps to
-_EVENT_FAMILY = {"accel": "acceleration", "skidpad": "skidpad",
-                 "autocross": "autocross", "endurance": "endurance"}
-
-
-def _score_field(scores: list[ConfigScore],
-                 ref: PointsReference) -> None:
-    """Assign points to every feasible-timed candidate, IN PLACE. Best time
-    per event is the declared reference if given, else the best in the field
-    — the honest fallback for a design comparison, stated in the report."""
-    timed = [s for s in scores if s.ok]
-    if not timed:
-        return
-    bests = {}
-    declared = {"accel": ref.accel_s, "skidpad": ref.skidpad_s,
-                "autocross": ref.autocross_s, "endurance": ref.endurance_s}
-    for k in _EVENT_KEYS:
-        field_best = min((getattr(s, f"{k}_s") for s in timed
-                          if math.isfinite(getattr(s, f"{k}_s"))),
-                         default=float("nan"))
-        bests[k] = declared[k] if declared[k] is not None else field_best
-    for s in timed:
-        s.points = {}
-        for k in _EVENT_KEYS:
-            t = getattr(s, f"{k}_s")
-            b = bests[k]
-            if math.isfinite(t) and math.isfinite(b) and b > 0:
-                s.points[k] = event_points_estimate(
-                    t, b, event=_EVENT_FAMILY[k])
-            else:
-                s.points[k] = 0.0
-        # a car that does not finish endurance forfeits its endurance points
-        if s.verdict in ("THERMAL_DNF", "ENERGY_SHORT"):
-            s.points["endurance"] = 0.0
-        s.total_points = float(sum(s.points.values()))
-
-
-# --------------------------------------------------------------------------- #
-#  The staged inverse search — exhaustive integer grid, golden-section gear.
-# --------------------------------------------------------------------------- #
-@dataclass
-class SearchDiagnostics:
-    """What the search actually did — the honesty ledger for the marketing
-    claim. No 'millions per second'; the real, printed count."""
-    n_grid: int = 0                  # integer configs enumerated
-    n_rule_killed: int = 0
-    n_evaluated: int = 0             # QSS event evaluations run
-    n_gear_refimements: int = 0
-    n_thermal_gates: int = 0         # full transient pack integrations
-    n_lap_sims: int = 0              # total QSS lap sims across everything
-    elapsed_s: float = 0.0
-
-    def summary(self) -> str:
-        return (f"{self.n_grid} configs enumerated "
-                f"({self.n_rule_killed} rule-killed), "
-                f"{self.n_evaluated} evaluated, "
-                f"{self.n_gear_refimements} gear refinements, "
-                f"{self.n_thermal_gates} full pack-thermal gates, "
-                f"{self.n_lap_sims} lap sims total.")
-
-    def timing(self) -> str:
-        return f"{self.elapsed_s:.1f} s wall time."
-
-
-def _gear_refine(cfg: FullCarConfig, space: DesignSpace, rules: RuleMatrix,
-                 ref: PointsReference, diag: SearchDiagnostics,
-                 iters: int = 8) -> tuple[FullCarConfig, ConfigScore]:
-    """Golden-section search on final_drive for one integer config — the only
-    continuous freedom, refined deterministically. Objective is the points
-    total WITHOUT the thermal gate (cheap); the finalist re-runs with it."""
-    lo, hi = space.final_drive_range
-
-    def eval_at(fd: float) -> ConfigScore:
-        c = FullCarConfig(cfg.series, cfg.parallel, cfg.architecture, float(fd))
-        s = evaluate_config(c, space, rules, run_thermal=False)
-        diag.n_evaluated += 1
-        diag.n_lap_sims += 4          # accel + skid + autox + endurance lap
-        _score_field([s], ref)         # relative-to-self is fine for ranking
-        return s
-
-    a, b = lo, hi
-    c1 = b - _PHI * (b - a)
-    c2 = a + _PHI * (b - a)
-    s1, s2 = eval_at(c1), eval_at(c2)
-    best_c, best_s = (c1, s1) if s1.total_points >= s2.total_points else (c2, s2)
-    for _ in range(max(int(iters), 1)):
-        diag.n_gear_refimements += 1
-        if s1.total_points >= s2.total_points:
-            b, c2, s2 = c2, c1, s1
-            c1 = b - _PHI * (b - a)
-            s1 = eval_at(c1)
-        else:
-            a, c1, s1 = c1, c2, s2
-            c2 = a + _PHI * (b - a)
-            s2 = eval_at(c2)
-        cand_c, cand_s = ((c1, s1) if s1.total_points >= s2.total_points
-                          else (c2, s2))
-        if cand_s.total_points > best_s.total_points:
-            best_c, best_s = cand_c, cand_s
-    winner = FullCarConfig(cfg.series, cfg.parallel, cfg.architecture,
-                           float(best_c))
-    return winner, best_s
+        agree = 0.0
+    return float(np.mean(full_pass)), agree
 
 
 @dataclass
-class FullCarResult:
+class GenesisResult:
     ok: bool
     reason: str
-    winner: ConfigScore | None
-    finalists: list[ConfigScore]         # thermal-gated, best first
-    ranked: list[ConfigScore]            # all timed candidates, best first
-    rule_killed: list[ConfigScore]       # with their named killing rules
-    diagnostics: SearchDiagnostics
-    space: DesignSpace
-    rules: RuleMatrix
-    points_ref: PointsReference
-    relative_scoring: bool               # True ⇒ no declared bests
-    warnings: list[str] = _dcfield(default_factory=list)
+    candidates: list[Candidate]      # every distinct solve, best first
+    winner: Candidate | None
+    winner_hp: Hardpoints | None
+    best_fit: Candidate | None    # the pure curve-fit optimum (may lose!)
+    resilience_premium: float | None   # winner yield − best-fit yield
+    n_starts: int
+    seed: int
+    verify_yield: float | None    # full-solve check on the winner
+    verify_agreement: float | None
+    thresholds: GenesisThresholds
+    warnings: list[str]
 
 
-def synthesize_fullcar(space: DesignSpace | None = None,
-                       rules: RuleMatrix | None = None,
-                       points_ref: PointsReference | None = None,
-                       *, n_finalists: int = 4,
-                       gear_iters: int = 8) -> FullCarResult:
-    """The engine: walk the design chain backwards from points to
-    configuration. Exhaustive integer grid → golden-section gear per config →
-    field ranking on points → full pack-thermal gate on the top ``n_finalists``
-    → the winner is the highest-points car THAT FINISHES THE SEASON.
+def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
+                    volume: LegalVolume,
+                    fld: ToleranceField | None = None,
+                    n_starts: int = 6, n_yield: int = 4000,
+                    n_verify_full: int = 0, seed: int = 0,
+                    thresholds: GenesisThresholds | None = None,
+                    max_iter: int = 30, step_mm: float = 0.25
+                    ) -> GenesisResult:
+    """The full engine: multi-start reverse solve + build-yield co-optimizer.
 
-    Deterministic: same inputs give the byte-identical winner and ranking.
+    Starts: the nominal itself plus (n_starts − 1) deterministic samples
+    inside the legal boxes. Each converged candidate that HITS the curves is
+    priced for build yield against ``fld``; the winner is the highest-yield
+    hit, NOT the best fit — the knife-edge optimum loses on purpose, and the
+    yield it forfeited is printed as the resilience premium. With no field
+    declared, the engine degrades honestly to pure inverse kinematics and
+    says the buildability question went unasked.
     """
-    space = space or DesignSpace()
-    rules = rules or RuleMatrix()
-    ref = points_ref or PointsReference()
-    relative = all(v is None for v in
-                   (ref.accel_s, ref.skidpad_s, ref.autocross_s,
-                    ref.endurance_s))
-    diag = SearchDiagnostics()
-    t0 = _time.time()
+    th = thresholds or GenesisThresholds()
     warnings: list[str] = []
 
-    # ---- stage 1: enumerate the integer grid, rule-gate first ------------ #
-    grid: list[FullCarConfig] = []
-    for s in space.series_options():
-        for p in space.parallel_options():
-            for arch in space.architectures:
-                grid.append(FullCarConfig(s, p, arch, 0.0))
-    diag.n_grid = len(grid)
-
-    rule_killed: list[ConfigScore] = []
-    survivors: list[FullCarConfig] = []
-    for cfg in grid:
-        viol = rules.violations(cfg.series, cfg.parallel, space.cell,
-                                space.wheelbase_mm)
-        if viol:
-            sc = ConfigScore(config=cfg, ok=False,
-                             derived=cfg.derive(space, rules),
-                             verdict="RULE_KILLED", kill_reasons=viol)
-            rule_killed.append(sc)
-        else:
-            survivors.append(cfg)
-    diag.n_rule_killed = len(rule_killed)
-
-    if not survivors:
-        diag.elapsed_s = _time.time() - t0
-        return FullCarResult(
+    r0, ok0 = targets.residual(hp)
+    if not ok0:
+        return GenesisResult(
             ok=False,
-            reason=("Every configuration in the declared space breaks a rule "
-                    "in the matrix — no legal car exists to optimise. The "
-                    "binding rules are named per candidate below; widen the "
-                    "space or check the matrix bounds (they are seeded near "
-                    "the common EV rules, NOT verified against your year)."),
-            winner=None, finalists=[], ranked=[], rule_killed=rule_killed,
-            diagnostics=diag, space=space, rules=rules, points_ref=ref,
-            relative_scoring=relative, warnings=warnings)
-
-    # ---- stage 2: golden-section gear per survivor ----------------------- #
-    refined: list[ConfigScore] = []
-    for cfg in survivors:
-        _, best = _gear_refine(cfg, space, rules, ref, diag,
-                               iters=gear_iters)
-        refined.append(best)
-
-    # ---- stage 3: rank the field on points (thermal not yet applied) ----- #
-    _score_field(refined, ref)
-    timed = [s for s in refined if s.ok]
-    timed.sort(key=lambda s: -s.total_points)
-    if not timed:
-        diag.elapsed_s = _time.time() - t0
-        return FullCarResult(
-            ok=False,
-            reason=("No legal configuration produced solvable event times — "
-                    "the QSS chain could not follow any survivor. Check the "
-                    "fixed geometry/aero in the design space."),
-            winner=None, finalists=[], ranked=refined,
-            rule_killed=rule_killed, diagnostics=diag, space=space,
-            rules=rules, points_ref=ref, relative_scoring=relative,
+            reason="The NOMINAL geometry does not solve over the requested "
+                   "travel stations — fix the hardpoints (or the stations) "
+                   "before asking for their inverse.",
+            candidates=[], winner=None, winner_hp=None, best_fit=None,
+            resilience_premium=None, n_starts=0, seed=seed,
+            verify_yield=None, verify_agreement=None, thresholds=th,
             warnings=warnings)
 
-    # ---- stage 4: the thermal gate on the top finalists ------------------ #
-    finalists: list[ConfigScore] = []
-    for s in timed[:max(int(n_finalists), 1)]:
-        gated = evaluate_config(s.config, space, rules, run_thermal=True)
-        diag.n_thermal_gates += 1
-        diag.n_evaluated += 1
-        diag.n_lap_sims += 4
-        finalists.append(gated)
-    _score_field(finalists + [s for s in timed
-                              if s.config not in
-                              [f.config for f in finalists]], ref)
-    # re-rank finalists AFTER the thermal verdict zeroes DNF endurance points
-    finalists.sort(key=lambda s: (-s.total_points, s.verdict != "FEASIBLE"))
+    # ---- deterministic multi-start ---------------------------------------- #
+    rng = np.random.default_rng(int(seed))
+    lo, hi = volume.bounds_vec(hp)
+    starts: list[np.ndarray] = [np.zeros(len(lo))]
+    for _ in range(max(0, int(n_starts) - 1)):
+        starts.append(rng.uniform(lo, hi))
 
-    # the winner is the best finalist that actually finishes the season
-    feasible = [s for s in finalists if s.verdict == "FEASIBLE"]
-    if feasible:
-        winner = feasible[0]
-        ok = True
-        reason = _winner_reason(winner, finalists, relative)
-    else:
-        winner = finalists[0]
-        ok = False
-        reason = _no_survivor_reason(finalists, rules, relative)
-
-    # rebuild the full ranked list: gated finalists override their grid twins
-    gated_by_cfg = {(f.config.series, f.config.parallel,
-                     f.config.architecture): f for f in finalists}
-    ranked: list[ConfigScore] = []
-    for s in timed:
-        key = (s.config.series, s.config.parallel, s.config.architecture)
-        ranked.append(gated_by_cfg.get(key, s))
-    ranked.sort(key=lambda s: -s.total_points)
-
-    diag.elapsed_s = _time.time() - t0
-    if relative:
-        warnings.append(
-            "No event-best times were declared, so points are scored RELATIVE "
-            "to the best candidate in this search — correct for choosing "
-            "between configurations, but NOT an absolute points prediction. "
-            "Declare real event bests in the reference to score in points.")
-    if not space.cell.thermal.calibrated:
-        warnings.append(
-            "The cell thermal model is UNCALIBRATED — every pack temperature, "
-            "and therefore every THERMAL_DNF verdict, is physically-shaped but "
-            "not measured. Calibrate the cell before trusting an overheat lap.")
-
-    return FullCarResult(
-        ok=ok, reason=reason, winner=winner, finalists=finalists,
-        ranked=ranked, rule_killed=rule_killed, diagnostics=diag,
-        space=space, rules=rules, points_ref=ref,
-        relative_scoring=relative, warnings=warnings)
-
-
-def _winner_reason(w: ConfigScore, finalists: list[ConfigScore],
-                   relative: bool) -> str:
-    kind = "relative" if relative else "absolute"
-    beaten = [f for f in finalists if f is not w
-              and f.verdict != "FEASIBLE"]
-    note = ""
-    if beaten:
-        b = beaten[0]
-        if b.total_points >= w.total_points - 1e-6:
-            note = (f" A higher-scoring configuration ({b.config.label()}) was "
-                    f"REJECTED: it is {b.verdict.replace('_', ' ').lower()} — "
-                    f"{b.kill_reasons[0] if b.kill_reasons else 'infeasible'}. "
-                    "The engine picks the car that finishes, not the fastest "
-                    "one on paper.")
-    return (f"Full-vehicle synthesis converged. Winner: {w.config.label()}, "
-            f"scoring {w.total_points:.0f} {kind} points and finishing the "
-            f"season (energy margin {w.energy_margin_kwh:+.2f} kWh, peak cell "
-            f"{w.thermal.hottest_peak_c:.0f} °C).{note}")
-
-
-def _no_survivor_reason(finalists: list[ConfigScore], rules: RuleMatrix,
-                        relative: bool) -> str:
-    verdicts = {}
-    for f in finalists:
-        verdicts.setdefault(f.verdict, 0)
-        verdicts[f.verdict] += 1
-    top = finalists[0]
-    return (f"No finalist finishes the season as configured. The highest-"
-            f"scoring car ({top.config.label()}) is "
-            f"{top.verdict.replace('_', ' ').lower()}: "
-            f"{top.kill_reasons[0] if top.kill_reasons else 'infeasible'}. "
-            f"Finalist verdicts: {verdicts}. The levers, in order: raise the "
-            f"cell temp headroom (bigger/cooler pack or add cooling), lift the "
-            f"energy budget (more parallel), or widen the design space. No "
-            "car was fabricated as a winner — the constraints and the track "
-            "disagree AS DECLARED.")
-
-
-# --------------------------------------------------------------------------- #
-#  Stage: kinematic intent synthesis — the winning car's demands as curves.
-# --------------------------------------------------------------------------- #
-def kinematic_intent_for(score: ConfigScore, space: DesignSpace,
-                         hp: Hardpoints | None = None,
-                         stations_mm: np.ndarray | None = None
-                         ) -> _ig.GenesisTargets:
-    """Turn the winning car's dynamics into a drawn kinematic INTENT — a
-    ``GenesisTargets`` in the corner engine's exact dialect, ready to hand to
-    ``inverse_genesis`` for hardpoint synthesis.
-
-    The intent is DERIVED, not typed: from the car's own solved peak lateral
-    g we set a camber-gain target that keeps the loaded outer tyre near
-    upright at the roll angle that g implies (roll-cancelling camber gain),
-    dead bump-steer (toe flat over travel — the universally-wanted default),
-    and roll-centre height held near its static value (no migration/jacking).
-    Bands are representative engineering tolerances; widen or tighten before
-    a build. The nominal geometry seeds the RC/scrub targets so the sheet
-    solves before the first edit — exactly how the corner tab seeds itself.
-    """
-    hp = hp or Hardpoints.default()
-    stations = (np.asarray(stations_mm, float) if stations_mm is not None
-                else np.array([-25.0, -12.5, 0.0, 12.5, 25.0]))
-    vals, ok = _ig.curves_of(hp, stations, track_mm=space.track_mm)
-    if not ok:
-        # fall back to a flat intent seeded at static if the sweep won't run
-        vals = {ch: np.zeros_like(stations) for ch in _ig.CHANNELS}
-
-    peak_g = score.peak_lat_g if math.isfinite(score.peak_lat_g) else 1.4
-    # roll angle at the limit ≈ peak_g · (a representative roll gradient,
-    # deg/g). Camber must gain roughly this over bump travel to keep the
-    # outer tyre upright — the classic double-wishbone camber-gain target.
-    roll_grad_deg_per_g = 1.2
-    roll_deg = peak_g * roll_grad_deg_per_g
-    # target camber curve: static camber at ride, gaining toward upright in
-    # bump by the roll angle scaled over the travel range.
-    static_camber = float(vals["camber_deg"][np.argmin(np.abs(stations))]) \
-        if len(vals["camber_deg"]) else -1.5
-    travel_span = max(float(stations.max() - stations.min()), 1.0)
-    camber_target = static_camber - (stations / travel_span) * roll_deg
-    toe_target = np.zeros_like(stations)                 # dead bump steer
-    rc_target = np.asarray(vals["rc_height_mm"], float)  # hold nominal RC
-    scrub_target = np.asarray(vals["scrub_mm"], float)   # hold nominal scrub
-
-    return _ig.GenesisTargets(curves=[
-        _ig.TargetCurve("camber_deg", stations, camber_target,
-                        np.full(len(stations), 0.20)),
-        _ig.TargetCurve("toe_deg", stations, toe_target,
-                        np.full(len(stations), 0.10)),
-        _ig.TargetCurve("rc_height_mm", stations, rc_target,
-                        np.full(len(stations), 6.0)),
-    ], track_mm=space.track_mm)
-
-
-def synthesize_hardpoints(score: ConfigScore, space: DesignSpace,
-                          hp: Hardpoints | None = None,
-                          volume: _ig.LegalVolume | None = None,
-                          fld=None, **genesis_kw) -> _ig.GenesisResult:
-    """Hand the winning car's derived kinematic intent to the EXISTING
-    corner-level InverseGenesis and realise it as 3D hardpoints — same
-    build-yield co-optimization, keep-out filter and honesty the corner
-    engine always runs. One engine, now driven by the car's own demands.
-
-    ``volume`` defaults to ±8 mm boxes around the two upper inner pickups
-    (the usual camber-gain levers); pass your own legal volume and shop error
-    field for a build-ready generate.
-    """
-    hp = hp or Hardpoints.default()
-    targets = kinematic_intent_for(score, space, hp=hp)
-    if volume is None:
-        volume = _ig.LegalVolume.around(
-            hp, 8.0, points=["upper_front_inner", "upper_rear_inner"])
-    return _ig.inverse_genesis(hp, targets, volume, fld=fld, **genesis_kw)
-
-
-# --------------------------------------------------------------------------- #
-#  Stage: load-case synthesis — the peak corner resolved to member forces.
-# --------------------------------------------------------------------------- #
-@dataclass
-class LoadCase:
-    """The peak-cornering load case for one corner, resolved to per-member
-    axial forces — the literal table to hand the frame/FEA seat."""
-    fz_n: float                          # vertical load on the outer tyre, N
-    mu_lateral: float                    # lateral μ at the limit
-    member_forces: dict[str, float]      # member → axial force (N, + tension)
-    condition: float                     # equilibrium-matrix condition number
-    note: str
-
-
-def load_case_for(score: ConfigScore, space: DesignSpace,
-                  hp: Hardpoints | None = None) -> LoadCase:
-    """The worst-case outer-wheel load at peak lateral g, resolved through the
-    (generated or nominal) linkage into member axial forces. This is the
-    structural side of the inverse: the force vectors the frame must react,
-    computed from the same peak g the kinematic intent was drawn against."""
-    hp = hp or Hardpoints.default()
-    kin = SuspensionKinematics(hp)
-    state = kin.solve_at_travel(0.0)
-    peak_g = score.peak_lat_g if math.isfinite(score.peak_lat_g) else 1.4
-    mass = score.derived.get("mass_kg", 280.0)
-    g = 9.81
-    # weight on the loaded outer front tyre in a peak-g corner: static front
-    # share, all lateral transfer onto the outer wheel (a conservative single-
-    # corner bound; the balance tabs split it properly).
-    static_axle_n = mass * g * space.weight_dist_front
-    fz_outer = static_axle_n            # ~all of the axle on the outer tyre
-    load: WheelLoad = wheel_load_from_corner(
-        Fz=fz_outer, mu_lateral=peak_g, mu_long=0.0)
-    mf = solve_member_forces(kin, state, load)
-    return LoadCase(fz_n=fz_outer, mu_lateral=peak_g,
-                    member_forces={k: float(v) for k, v in mf.forces.items()},
-                    condition=mf.condition, note=mf.note)
-
-
-# --------------------------------------------------------------------------- #
-#  Exporters — the coordinate table (CAD input) and the flash constants.
-#  NOT STEP, NOT a control stack: KinematiK carries no CAD kernel and writes
-#  no firmware. It writes the INPUTS those tools consume, in its own dialect.
-# --------------------------------------------------------------------------- #
-def export_hardpoints_csv(hp: Hardpoints) -> str:
-    """The generated corner geometry as a CSV coordinate table — the CAD/DXF
-    tools' input, not a STEP file (which needs a kernel this tool lacks)."""
-    rows = ["point,x_mm,y_mm,z_mm"]
-    for name in _ig.DESIGNABLE_POINTS + ("wheel_center", "contact_patch"):
-        c = getattr(hp, name, None)
-        if c is None:
+    cands: list[Candidate] = []
+    for s in starts:
+        c = genesis_solve(hp, targets, volume, start_shift=s,
+                          max_iter=max_iter, step_mm=step_mm)
+        if not c.ok:
             continue
-        c = np.asarray(c, float).ravel()
-        rows.append(f"{name},{c[0]:.3f},{c[1]:.3f},{c[2]:.3f}")
-    return "\n".join(rows) + "\n"
+        if any(np.linalg.norm(c.shift_vec - c2.shift_vec) < 0.05
+               for c2 in cands):
+            continue                          # same basin, keep one
+        cands.append(c)
 
+    if not cands:
+        return GenesisResult(
+            ok=False,
+            reason="No start inside the legal volume produced a solvable "
+                   "geometry — the declared boxes reach past the solver's "
+                   "kinematic range. Shrink or move the boxes.",
+            candidates=[], winner=None, winner_hp=None, best_fit=None,
+            resilience_premium=None, n_starts=len(starts), seed=seed,
+            verify_yield=None, verify_agreement=None, thresholds=th,
+            warnings=warnings)
 
-def export_flash_constants_c(score: ConfigScore, space: DesignSpace,
-                             rules: RuleMatrix) -> str:
-    """The derived control CALIBRATION as a C header — power/current limits,
-    regen bounds, per-wheel drive-grip ceilings for a TV allocator, BMS
-    thresholds. These are CONSTANTS a control stack consumes, NOT a control
-    stack. Every value is derived from the winning car; verify against your
-    hardware before flashing anything."""
-    d = score.derived
-    arch = score.config.architecture
-    guard = "KINEMATIK_FULLCAR_CALIB_H"
-    L = [f"/* Auto-generated by InverseGenesis-FullCar. Calibration CONSTANTS,",
-         f"   not a control stack. Car: {score.config.label()}.",
-         f"   Verify every value against your hardware before flashing. */",
-         f"#ifndef {guard}", f"#define {guard}", ""]
-    L += [
-        f"#define TS_POWER_LIMIT_W        {d['power_kw']*1000:.1f}f",
-        f"#define TS_PACK_NOMINAL_V       {d['pack_nominal_v']:.2f}f",
-        f"#define TS_PACK_SERIES          {score.config.series}",
-        f"#define TS_PACK_PARALLEL        {score.config.parallel}",
-        f"#define TS_PACK_SEGMENTS        {d['n_segments']}",
-        f"#define TS_SEGMENT_SERIES       {d['segment_series']}",
-        f"#define BMS_PACK_CURRENT_LIMIT_A {d['power_kw']*1000/max(d['pack_nominal_v'],1):.1f}f",
-        f"#define BMS_CELL_CURRENT_LIMIT_A {space.cell.max_discharge_a:.1f}f",
-        f"#define BMS_CELL_TEMP_LIMIT_C    {rules.cell_temp_limit_c:.1f}f",
-        f"#define BMS_CELL_TEMP_WARN_C     {space.cell.thermal.temp_warn_c:.1f}f",
-        f"#define REGEN_ENABLED            1",
-        f"#define REGEN_MAX_DECEL_G        {space.regen_max_g:.3f}f",
-        f"#define REGEN_EFFICIENCY         {space.regen_eff:.3f}f",
-        f"#define FINAL_DRIVE_RATIO        {score.config.final_drive:.4f}f",
-        f"#define DRIVE_ARCHITECTURE       \"{_ARCH_LABEL[arch]}\"",
-    ]
-    # per-wheel drive-grip ceiling for the torque-vectoring allocator
-    gf = _ARCH_GRIP_FRAC[arch]
-    L.append(f"#define DRIVE_GRIP_FRACTION      {gf:.3f}f  "
-             f"/* deployable driven-axle grip on exit */")
-    if arch == "four_tv":
-        L.append("#define TORQUE_VECTORING         1  "
-                 "/* per-wheel torque allocation available */")
+    hits = [c for c in cands if c.hit]
+
+    # ---- nobody reached the curves: name the binding constraint ----------- #
+    if not hits:
+        best = min(cands, key=lambda c: c.max_band_frac)
+        for c in cands:
+            c.verdict = "NO_FIT"
+        limit = []
+        if best.clamped:
+            limit.append("the legal box is binding on "
+                         + ", ".join(best.clamped))
+        if best.keepout_rejections:
+            limit.append(f"the keep-out filter refused {best.keepout_rejections} "
+                         "step(s) toward the curves")
+        if not limit:
+            limit.append("the linkage itself cannot produce these curves in "
+                         "this volume")
+        reason = (f"No legal geometry reaches the drawn curves. Closest "
+                  f"approach: {best.max_band_frac:.2f}× the band, governed by "
+                  f"{best.worst_row}; {'; '.join(limit)}. The bands and the "
+                  "legal volume are mutually unsatisfiable AS DECLARED — "
+                  "widen that band, free that coordinate, or accept the "
+                  "closest legal curve below. No optimum was fabricated.")
+        cands.sort(key=lambda c: c.max_band_frac)
+        return GenesisResult(ok=False, reason=reason, candidates=cands,
+                             winner=None,
+                             winner_hp=_shifted(hp, volume, best.shift_vec),
+                             best_fit=best, resilience_premium=None,
+                             n_starts=len(starts), seed=seed,
+                             verify_yield=None, verify_agreement=None,
+                             thresholds=th, warnings=warnings)
+
+    best_fit = min(hits, key=lambda c: c.max_band_frac)
+
+    # ---- no error field: pure inverse kinematics, honestly labelled ------- #
+    if fld is None or not fld.specs:
+        for c in cands:
+            c.verdict = "NO_FIT" if not c.hit else "TEMPERED"
+        warnings.append("No tolerance field declared — the buildability "
+                        "question was not asked. This is textbook inverse "
+                        "kinematics: the winner is the best FIT, which may "
+                        "be a knife-edge your shop cannot hold. Declare a "
+                        "field (Stochastic Inversion presets work) to "
+                        "co-optimize for yield.")
+        hits.sort(key=lambda c: c.max_band_frac)
+        others = sorted((c for c in cands if not c.hit),
+                        key=lambda c: c.max_band_frac)
+        return GenesisResult(
+            ok=True,
+            reason="Curves reached (fit-only — no yield pricing).",
+            candidates=hits + others, winner=best_fit,
+            winner_hp=_shifted(hp, volume, best_fit.shift_vec),
+            best_fit=best_fit, resilience_premium=None,
+            n_starts=len(starts), seed=seed,
+            verify_yield=None, verify_agreement=None,
+            thresholds=th, warnings=warnings)
+
+    # ---- the co-optimizer: price every hit for build yield ---------------- #
+    for c in cands:
+        if not c.hit:
+            c.verdict = "NO_FIT"
+            continue
+        hp_c = _shifted(hp, volume, c.shift_vec)
+        y, w = build_yield(hp_c, targets, fld, c.residual,
+                           n=n_yield, seed=seed, step_mm=step_mm)
+        c.yield_warnings = w
+        if y is None:
+            c.yield_frac, c.verdict = 0.0, "KNIFE_EDGE"
+            continue
+        c.yield_frac = y
+        c.verdict = ("RESILIENT" if y >= th.resilient_yield else
+                     "TEMPERED" if y >= th.tempered_yield else
+                     "KNIFE_EDGE")
+
+    hits.sort(key=lambda c: (-(c.yield_frac or 0.0), c.max_band_frac))
+    winner = hits[0]
+    premium = float((winner.yield_frac or 0.0) - (best_fit.yield_frac or 0.0))
+
+    if winner.verdict == "KNIFE_EDGE":
+        reason = (f"Every geometry that hits the drawn curves is KNIFE_EDGE "
+                  f"under the declared field (best yield "
+                  f"{(winner.yield_frac or 0):.1%}) — the bands, the legal "
+                  "volume and the shop's error field are JOINTLY "
+                  "unsatisfiable. The levers, in order of cheapness: jig the "
+                  "dominant tab (shrink the field), widen the governing "
+                  "band, or free another coordinate. The best knife-edge is "
+                  "reported below, clearly labelled — building it is a "
+                  "gamble this engine prices, not one it recommends.")
+        ok = False
     else:
-        L.append("#define TORQUE_VECTORING         0")
-    L += ["", f"#endif /* {guard} */", ""]
-    return "\n".join(L)
+        if winner is not best_fit and premium > 1e-9:
+            reason = (f"Manufacturing-resilient geometry found. The pure "
+                      f"curve-fit optimum was REJECTED: it fits "
+                      f"{best_fit.max_band_frac:.2f}× band vs the winner's "
+                      f"{winner.max_band_frac:.2f}×, but its build yield is "
+                      f"{(best_fit.yield_frac or 0):.1%} against the "
+                      f"winner's {(winner.yield_frac or 0):.1%} — a "
+                      f"{premium:+.1%} yield premium bought by moving off "
+                      "the knife edge. The engine designs the car that gets "
+                      "built.")
+        else:
+            reason = (f"Manufacturing-resilient geometry found: the best "
+                      f"fit is also the most buildable "
+                      f"({(winner.yield_frac or 0):.1%} yield).")
+        ok = True
 
+    # ---- price the linearisation on the winner ---------------------------- #
+    verify_y = verify_a = None
+    if n_verify_full > 0:
+        hp_w = _shifted(hp, volume, winner.shift_vec)
+        Jw = _jacobian(hp_w, targets, fld.coords(), step_mm=step_mm)
+        verify_y, verify_a = _verify_yield_full(
+            hp_w, targets, fld, winner.residual, Jw, n_verify_full, seed)
+        if verify_a < th.verify_agreement:
+            warnings.append(
+                f"Linear/full pass-fail agreement {verify_a:.1%} is below "
+                f"the {th.verify_agreement:.0%} honesty floor — the winning "
+                "yield is DEMOTED to the full-solve figure "
+                f"({verify_y:.1%}); trust that number, and rerun the "
+                "co-optimizer with more full verification samples.")
 
-def export_flash_constants_py(score: ConfigScore, space: DesignSpace,
-                              rules: RuleMatrix) -> str:
-    """The same calibration as an importable Python constants module — for a
-    Python BMS/telemetry stack or a HIL rig."""
-    d = score.derived
-    arch = score.config.architecture
-    L = ['"""Auto-generated by InverseGenesis-FullCar — calibration CONSTANTS.',
-         f'Car: {score.config.label()}. NOT a control stack; verify before use."""',
-         "",
-         f"TS_POWER_LIMIT_W = {d['power_kw']*1000:.1f}",
-         f"TS_PACK_NOMINAL_V = {d['pack_nominal_v']:.2f}",
-         f"TS_PACK_SERIES = {score.config.series}",
-         f"TS_PACK_PARALLEL = {score.config.parallel}",
-         f"TS_PACK_SEGMENTS = {d['n_segments']}",
-         f"BMS_PACK_CURRENT_LIMIT_A = {d['power_kw']*1000/max(d['pack_nominal_v'],1):.1f}",
-         f"BMS_CELL_CURRENT_LIMIT_A = {space.cell.max_discharge_a:.1f}",
-         f"BMS_CELL_TEMP_LIMIT_C = {rules.cell_temp_limit_c:.1f}",
-         f"REGEN_MAX_DECEL_G = {space.regen_max_g:.3f}",
-         f"REGEN_EFFICIENCY = {space.regen_eff:.3f}",
-         f"FINAL_DRIVE_RATIO = {score.config.final_drive:.4f}",
-         f"DRIVE_ARCHITECTURE = {_ARCH_LABEL[arch]!r}",
-         f"DRIVE_GRIP_FRACTION = {_ARCH_GRIP_FRAC[arch]:.3f}",
-         f"TORQUE_VECTORING = {arch == 'four_tv'}",
-         "",
-    ]
-    return "\n".join(L)
+    others = sorted((c for c in cands if not c.hit),
+                    key=lambda c: c.max_band_frac)
+    return GenesisResult(
+        ok=ok, reason=reason, candidates=hits + others, winner=winner,
+        winner_hp=_shifted(hp, volume, winner.shift_vec),
+        best_fit=best_fit, resilience_premium=premium,
+        n_starts=len(starts), seed=seed,
+        verify_yield=verify_y, verify_agreement=verify_a,
+        thresholds=th, warnings=warnings)
 
 
 # --------------------------------------------------------------------------- #
-#  Report — the one page the design review reads.
+#  Report
 # --------------------------------------------------------------------------- #
-_VERDICT_ICON = {"FEASIBLE": "🟢", "ENERGY_SHORT": "🟠",
-                 "THERMAL_DNF": "🔴", "RULE_KILLED": "⚪", "FAILED": "⚫"}
+_VERDICT_ICON = {"RESILIENT": "🟢", "TEMPERED": "🟡",
+                 "KNIFE_EDGE": "🔴", "NO_FIT": "⚪"}
 
 
-def render_fullcar_md(res: FullCarResult,
-                      include_exports: bool = False) -> str:
-    """The design-review page: verdict, the winning configuration, the
-    candidate field, and the honesty ledger. Deterministic — byte-identical
-    across runs for identical inputs."""
-    L: list[str] = ["# 🧬🏁 InverseGenesis-FullCar — full-vehicle synthesis", ""]
+def render_genesis_md(res: GenesisResult,
+                      targets: GenesisTargets | None = None) -> str:
+    """The one-page markdown the design review reads."""
+    L: list[str] = ["# 🧬 InverseGenesis — stochastic inverse report", ""]
     L.append(("✅ " if res.ok else "❌ ") + res.reason)
     L.append("")
-
     if res.winner is not None:
         w = res.winner
-        d = w.derived
-        L.append("## The synthesized car")
-        L.append(f"- configuration: **{w.config.label()}**")
+        L.append("## The generated geometry")
         L.append(f"- verdict: {_VERDICT_ICON.get(w.verdict, '')} "
-                 f"**{w.verdict}** — "
-                 f"**{w.total_points:.0f} "
-                 f"{'relative' if res.relative_scoring else 'absolute'} "
-                 f"points**")
-        L.append(f"- mass: {d['mass_kg']:.0f} kg "
-                 f"(pack {d['pack_mass_kg']:.0f} kg, "
-                 f"{d['n_cells']} cells)")
-        L.append(f"- pack: {d['pack_nominal_v']:.0f} V nominal, "
-                 f"{d['pack_energy_kwh']:.2f} kWh "
-                 f"({d['usable_kwh']:.2f} usable), "
-                 f"{d['n_segments']} segments × {d['segment_series']}s")
-        L.append(f"- power: {d['power_kw']:.1f} kW "
-                 f"(pack can deliver {d['pack_power_cap_kw']:.0f} kW; "
-                 f"rule cap {res.rules.max_power_kw:.0f} kW)")
-        if w.thermal is not None and w.thermal.ok:
-            L.append(f"- endurance thermal: peak cell "
-                     f"{w.thermal.hottest_peak_c:.0f} °C "
-                     f"(limit {res.rules.cell_temp_limit_c:.0f} °C), "
-                     + ("no breach" if w.overheat_lap is None
-                        else f"**breach on lap {w.overheat_lap}**"))
-        L.append(f"- energy margin over endurance: "
-                 f"**{w.energy_margin_kwh:+.2f} kWh**")
-        if w.tv_yaw_note:
-            L.append(f"- {w.tv_yaw_note}")
+                 f"**{w.verdict}**"
+                 + (f" — build yield **{w.yield_frac:.1%}**"
+                    if w.yield_frac is not None else ""))
+        L.append(f"- worst station: {w.max_band_frac:.2f}× band "
+                 f"({w.worst_row})")
+        L.append(f"- converged in {w.iterations} Gauss–Newton iterations"
+                 + (f"; boundary filter refused {w.keepout_rejections} "
+                    "step(s)" if w.keepout_rejections else ""))
+        if w.clamped:
+            L.append(f"- pinned to the legal box: {', '.join(w.clamped)}")
         L.append("")
-        L.append("### Event breakdown")
-        L.append("| event | time (s) | points |")
-        L.append("|---|---|---|")
-        for k in _EVENT_KEYS:
-            t = getattr(w, f"{k}_s")
-            tstr = f"{t:.2f}" if k != "endurance" else f"{t:.1f}"
-            L.append(f"| {_EVENT_LABEL[k]} | {tstr} | "
-                     f"{w.points.get(k, 0):.0f} |")
-        L.append(f"| **total** | | **{w.total_points:.0f}** |")
+        L.append("| hardpoint | Δx (mm) | Δy (mm) | Δz (mm) |")
+        L.append("|---|---|---|---|")
+        for p in sorted(res.winner.shifts):
+            v = res.winner.shifts[p]
+            L.append(f"| {p} | {v[0]:+.2f} | {v[1]:+.2f} | {v[2]:+.2f} |")
+        if not res.winner.shifts:
+            L.append("| (nominal already satisfies the curves) | — | — | — |")
         L.append("")
-
-    # ---- the candidate field --------------------------------------------- #
-    if res.ranked:
-        L.append("## Candidate field (best first)")
-        L.append("| # | configuration | verdict | points | "
-                 "E margin (kWh) | note |")
-        L.append("|---|---|---|---|---|---|")
-        for i, s in enumerate(res.ranked[:12], 1):
-            note = (f"overheat lap {s.overheat_lap}" if s.overheat_lap
-                    else (s.kill_reasons[0][:40] if s.kill_reasons
-                          else "finishes"))
-            em = (f"{s.energy_margin_kwh:+.2f}"
-                  if math.isfinite(s.energy_margin_kwh) else "—")
-            L.append(f"| {i} | {s.config.label()} | "
-                     f"{_VERDICT_ICON.get(s.verdict, '')} {s.verdict} | "
-                     f"{s.total_points:.0f} | {em} | {note} |")
+    if res.resilience_premium is not None and res.best_fit is not None \
+            and res.winner is not res.best_fit:
+        L.append(f"**Resilience premium:** the rejected best-fit candidate "
+                 f"yields {(res.best_fit.yield_frac or 0):.1%}; the winner "
+                 f"pays {res.winner.max_band_frac - res.best_fit.max_band_frac:+.2f}× "
+                 f"band of fit for **{res.resilience_premium:+.1%}** yield.")
         L.append("")
-
-    # ---- rule-killed, named ---------------------------------------------- #
-    if res.rule_killed:
-        L.append(f"## Rule-killed ({len(res.rule_killed)} configs)")
-        L.append("Each names the bound it broke — nothing was silently dropped.")
-        shown = res.rule_killed[:6]
-        for s in shown:
-            L.append(f"- {s.config.label()}: {s.kill_reasons[0]}")
-        if len(res.rule_killed) > len(shown):
-            L.append(f"- …and {len(res.rule_killed) - len(shown)} more.")
+    if len(res.candidates) > 1:
+        L.append("## Candidate family")
+        L.append("| # | verdict | fit (×band) | build yield | governed by |")
+        L.append("|---|---|---|---|---|")
+        for i, c in enumerate(res.candidates, 1):
+            y = f"{c.yield_frac:.1%}" if c.yield_frac is not None else "—"
+            L.append(f"| {i} | {_VERDICT_ICON.get(c.verdict, '')} "
+                     f"{c.verdict} | {c.max_band_frac:.2f} | {y} | "
+                     f"{c.worst_row} |")
         L.append("")
-
-    # ---- honesty ledger -------------------------------------------------- #
-    L.append("## What the search actually did")
-    L.append(f"{res.diagnostics.summary()}")
-    L.append("")
-    L.append("> No \"millions of states per second.\" The integer grid is "
-             "enumerated exhaustively, the gear ratio refined by "
-             "deterministic golden-section search, and the expensive "
-             "transient pack-thermal integration runs only on the finalists. "
-             "The exact evaluation count is printed above.")
-    L.append("")
-
+    if res.verify_yield is not None:
+        L.append(f"**Linearisation, priced:** full-solve verification yield "
+                 f"{res.verify_yield:.1%}; linear/full pass-fail agreement "
+                 f"{res.verify_agreement:.1%} "
+                 f"(floor {res.thresholds.verify_agreement:.0%}).")
+        L.append("")
     for wmsg in res.warnings:
         L.append(f"⚠️ {wmsg}")
     if res.warnings:
         L.append("")
-
-    if include_exports and res.winner is not None and res.ok:
-        L.append("## Firmware calibration (excerpt)")
-        L.append("```c")
-        c = export_flash_constants_c(res.winner, res.space, res.rules)
-        L.append("\n".join(c.splitlines()[6:16]))
-        L.append("```")
-        L.append("")
-
     L.append("---")
-    L.append("*Deterministic full-vehicle inverse synthesis. Event times from "
-             "the QSS laptime chain (relative comparison is its strength; "
-             "absolute times inherit its documented placeholders). The rule "
-             "matrix is seeded near the common FSAE-EV rules and is NOT "
-             "verified against your competition year. Structure output is a "
-             "member-load table for the FEA seat, not a spaceframe; CAD "
-             "output is a coordinate table, not STEP; firmware output is "
-             "calibration constants, not a control stack. Validate the "
-             "winner in the higher-fidelity tabs before cutting metal.*")
+    L.append(f"*{res.n_starts} deterministic starts, seed {res.seed}. "
+             "Scope: rigid corner solver; independent per-point errors; "
+             "keep-out screening tests each movable pickup as a probe "
+             "sphere, not the bracket around it — and an obstacle envelope "
+             "must be carved from NEIGHBOURING assemblies, never from the "
+             "corner being designed. Validate the generated geometry in "
+             "Ghost Topology and full simulation before manufacturing.*")
     return "\n".join(L)
 
 
 # --------------------------------------------------------------------------- #
-#  Self-test
+#  Self-test — python3 -m suspension.inverse_genesis
 # --------------------------------------------------------------------------- #
-if __name__ == "__main__":                                   # pragma: no cover
-    print("InverseGenesis-FullCar self-test\n" + "=" * 60)
-    space = DesignSpace(series_range=(96, 120), series_step=24,
-                        parallel_range=(6, 7),
-                        final_drive_range=(3.0, 4.5), ambient_c=22.0,
-                        cell=CellSpec(capacity_ah=5.0,
-                                      thermal=CellParams(r_internal_ohm=0.012,
-                                                         temp_limit_c=60.0)))
-    res = synthesize_fullcar(space, RuleMatrix(), n_finalists=4, gear_iters=4)
-    print(render_fullcar_md(res, include_exports=True))
-    # determinism
-    res2 = synthesize_fullcar(space, RuleMatrix(), n_finalists=4, gear_iters=4)
-    assert render_fullcar_md(res) == render_fullcar_md(res2), \
-        "non-deterministic report!"
-    print("\n[determinism OK — byte-identical report across runs]")
+if __name__ == "__main__":   # pragma: no cover
+    hp = Hardpoints.default()
+
+    # The ground truth: a KNOWN geometry, shifted off the default, whose own
+    # curves become the drawn target. The engine must find its way back to
+    # curves it has provably never seen the coordinates of.
+    truth_shift = {"upper_front_inner": np.array([0.0, -4.0, 5.0]),
+                   "upper_rear_inner":  np.array([0.0, -4.0, 5.0])}
+    hp_truth = _perturbed(hp, truth_shift)
+    stations = np.array([-25.0, -12.5, 0.0, 12.5, 25.0])
+    truth, ok = curves_of(hp_truth, stations)
+    assert ok, "self-test ground truth must solve"
+
+    targets = GenesisTargets(curves=[
+        TargetCurve("camber_deg", stations, truth["camber_deg"],
+                    np.full(5, 0.15)),
+        TargetCurve("toe_deg", stations, truth["toe_deg"],
+                    np.full(5, 0.08)),
+        TargetCurve("rc_height_mm", stations, truth["rc_height_mm"],
+                    np.full(5, 6.0)),
+    ])
+    volume = LegalVolume.around(
+        hp, 8.0, points=["upper_front_inner", "upper_rear_inner"])
+
+    print("=== 1 · reverse gradients recover a hidden geometry ===")
+    r_nom, _ = targets.residual(hp)
+    print(f"  nominal misses the drawn curves by "
+          f"{np.max(np.abs(r_nom)):.2f}× band")
+    c = genesis_solve(hp, targets, volume)
+    assert c.ok and c.hit, f"inverse solve must hit (got {c.max_band_frac:.2f}×)"
+    print(f"  solved in {c.iterations} iterations → "
+          f"{c.max_band_frac:.2f}× band; shifts:")
+    for p, v in sorted(c.shifts.items()):
+        print(f"    {p}: [{v[0]:+.2f}, {v[1]:+.2f}, {v[2]:+.2f}] mm")
+
+    print()
+    print("=== 2 · the boundary filter is a wall, not a penalty ===")
+    # a keep-out box sitting exactly on the truth's upper-front tab position
+    tgt = np.asarray(hp_truth.upper_front_inner, float)
+    ko = KeepOutBox(tgt - 3.0, tgt + 3.0, label="exhaust primary (test)")
+    volume_ko = LegalVolume.around(
+        hp, 8.0, points=["upper_front_inner", "upper_rear_inner"],
+        keep_out=[ko], min_clearance_mm=1.0)
+    c_ko = genesis_solve(hp, targets, volume_ko)
+    assert c_ko.ok
+    hp_ko = _shifted(hp, volume_ko, c_ko.shift_vec)
+    assert not volume_ko.keepout_violations(hp_ko), \
+        "no generated point may sit inside a keep-out volume"
+    print(f"  with the truth position walled off: "
+          f"{'still hit' if c_ko.hit else 'closest legal'} at "
+          f"{c_ko.max_band_frac:.2f}× band, "
+          f"{c_ko.keepout_rejections} step(s) refused — zero violations")
+
+    print()
+    print("=== 3 · the co-optimizer prices the knife edge ===")
+    fld = ToleranceField.preset("hand_weld", weld_pull_mm=1.0, pull_axis="z")
+    res = inverse_genesis(hp, targets, volume, fld=fld,
+                          n_starts=5, n_yield=3000, n_verify_full=60, seed=0)
+    print(render_genesis_md(res, targets))
+    assert res.winner is not None
+    assert res.winner.yield_frac is not None
+    assert 0.0 <= res.winner.yield_frac <= 1.0
+    assert res.winner.hit or not res.ok
+    # the winner is never out-yielded by another hit
+    for cc in res.candidates:
+        if cc.hit and cc.yield_frac is not None:
+            assert res.winner.yield_frac >= cc.yield_frac - 1e-12
+
+    print()
+    print("=== 4 · determinism: same inputs, byte-identical report ===")
+    res2 = inverse_genesis(hp, targets, volume, fld=fld,
+                           n_starts=5, n_yield=3000, n_verify_full=60, seed=0)
+    assert render_genesis_md(res) == render_genesis_md(res2)
+    print("  identical ✓")
+
+    print()
+    print("=== 5 · unsatisfiable intent is named, not papered over ===")
+    impossible = GenesisTargets(curves=[
+        TargetCurve("camber_deg", stations,
+                    truth["camber_deg"] + 25.0,       # 25° away: not happening
+                    np.full(5, 0.1))])
+    res_no = inverse_genesis(hp, impossible, volume, fld=fld,
+                             n_starts=3, n_yield=500, seed=0)
+    assert not res_no.ok and res_no.winner is None
+    print("  " + res_no.reason.split(".")[0] + ".")
+    print()
+    print("self-test passed ✓")
+
