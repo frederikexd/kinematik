@@ -1,4 +1,4 @@
-"""powertrain.engine — full-car transient drivetrain + thermal cooling solver.
+"""powertrain.engine, full-car transient drivetrain + thermal cooling solver.
 
 Two coupled systems, one module:
 
