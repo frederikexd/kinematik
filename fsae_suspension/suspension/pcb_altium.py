@@ -407,11 +407,22 @@ def parse_altium_ascii(text: str) -> PcbBoard:
             sx = _len_mm(_g(f, "XSIZE", "TOPXSIZE", "SIZEX"), unit) or 1.0
             sy = _len_mm(_g(f, "YSIZE", "TOPYSIZE", "SIZEY"), unit) or 1.0
             nid = net_id(_g(f, "NET"))
+            _shp = (_g(f, "SHAPE", "TOPSHAPE") or "").upper()
+            try:
+                _rot = float(_g(f, "ROTATION") or 0.0)
+            except ValueError:
+                _rot = 0.0
             pad = PcbPad(number=(_g(f, "NAME", "DESIGNATOR") or "?").strip(),
                          net=nid, net_name=board.nets.get(nid, ""),
                          at=(x, -y), size=(sx, sy), through=through,
                          layer=(layer if layer in ("F.Cu", "B.Cu")
-                                else ("" if through else "F.Cu")))
+                                else ("" if through else "F.Cu")),
+                         # drawing only — see PcbPad. The Y flip above keeps
+                         # Altium's CCW angle reading CCW on screen.
+                         shape=("round" if _shp == "ROUND" else
+                                "roundrect" if "ROUNDED" in _shp else
+                                "rect" if _shp.startswith("RECT") else ""),
+                         angle_deg=_rot)
             ci = _int(_g(f, "COMPONENT"), -1)
             (comps[ci] if (ci is not None and 0 <= ci < len(comps))
              else loose).pads.append(pad)
@@ -590,21 +601,35 @@ def _xy(x_mm: float, y_mm: float, px="X", py="Y") -> str:
 def demo_altium_pcb() -> str:
     """The demo ECU board as an Altium ASCII PCB: fan feed under-sized and
     via-choked, CAN pair hugging the 400 V inverter sense net, bulk cap on the
-    hot copper."""
+    hot copper. Pad for pad and track for track the board `demo_kicad_pcb()`
+    describes — sizes and shapes included, because the viewer draws them."""
     nets = ["GND", "FAN_PWR", "CAN_H", "CAN_L", "HV_INV_SENSE", "LV_5V"]
     n = {name: i for i, name in enumerate(nets)}          # 0-based, as Altium
     comps = [  # ref, comment, x_mm, y_mm
         ("J1", "FanConn", 5, 10), ("U1", "VNH7070", 70, 10),
-        ("C1", "470uF 16V", 40, 11.5), ("F1", "5A blade", 20, 10),
-        ("U2", "STM32F4", 70, 40), ("J2", "CAN out", 5, 40)]
+        ("C1", "470uF 16V", 40, 11.5), ("C2", "10uF 0805", 70, 25),
+        ("F1", "5A blade", 20, 10),
+        ("U2", "STM32F4", 70, 40), ("J2", "CAN out", 5, 40),
+        ("J3", "HV sense in", 12, 33), ("R1", "1M HV divider 2512", 60, 33)]
     ci = {ref: i for i, (ref, *_) in enumerate(comps)}
-    pads = [  # comp, name, x_mm, y_mm, net, hole_mm
-        ("J1", "1", 5, 10, "FAN_PWR", 1.0), ("J1", "2", 5, 12.54, "GND", 1.0),
-        ("U1", "1", 70, 10, "FAN_PWR", 0.0), ("U1", "2", 70, 13, "LV_5V", 0.0),
-        ("C1", "1", 40, 11.5, "FAN_PWR", 0.0), ("C1", "2", 40, 13.5, "GND", 0.0),
-        ("F1", "1", 18, 10, "FAN_PWR", 0.0), ("F1", "2", 22, 10, "FAN_PWR", 0.0),
-        ("U2", "1", 70, 40, "CAN_H", 0.0), ("U2", "2", 70, 41.5, "CAN_L", 0.0),
-        ("J2", "1", 5, 40, "CAN_H", 1.0), ("J2", "2", 5, 41.5, "CAN_L", 1.0)]
+    pads = [  # comp, name, x_mm, y_mm, net, hole_mm, (w, h) mm, shape
+        ("J1", "1", 5, 10, "FAN_PWR", 1.0, (1.7, 1.7), "ROUND"),
+        ("J1", "2", 5, 12.54, "GND", 1.0, (1.7, 1.7), "ROUND"),
+        ("U1", "1", 70, 10, "FAN_PWR", 0.0, (2, 2), "RECTANGLE"),
+        ("U1", "2", 70, 13, "LV_5V", 0.0, (2, 2), "RECTANGLE"),
+        ("C1", "1", 40, 11.5, "FAN_PWR", 0.0, (1.5, 1.5), "RECTANGLE"),
+        ("C1", "2", 40, 13.5, "GND", 0.0, (1.5, 1.5), "RECTANGLE"),
+        ("C2", "1", 70, 25, "LV_5V", 0.0, (1.2, 1.2), "RECTANGLE"),
+        ("C2", "2", 70, 27, "GND", 0.0, (1.2, 1.2), "RECTANGLE"),
+        ("F1", "1", 18, 10, "FAN_PWR", 0.0, (2, 2), "RECTANGLE"),
+        ("F1", "2", 22, 10, "FAN_PWR", 0.0, (2, 2), "RECTANGLE"),
+        ("U2", "1", 70, 40, "CAN_H", 0.0, (1, 1), "RECTANGLE"),
+        ("U2", "2", 70, 41.5, "CAN_L", 0.0, (1, 1), "RECTANGLE"),
+        ("J2", "1", 5, 40, "CAN_H", 0.7, (1.1, 1.1), "ROUND"),
+        ("J2", "2", 5, 41.5, "CAN_L", 0.7, (1.1, 1.1), "ROUND"),
+        ("J3", "1", 12, 33, "HV_INV_SENSE", 1.2, (2, 2), "ROUND"),
+        ("R1", "1", 60, 33, "HV_INV_SENSE", 0.0, (1.6, 3.2), "RECTANGLE"),
+        ("R1", "2", 65.5, 33, "GND", 0.0, (1.6, 3.2), "RECTANGLE")]
     tracks = [  # layer, net, x1, y1, x2, y2, width_mm
         ("TOP", "FAN_PWR", 5, 10, 18, 10, 0.3),
         ("TOP", "FAN_PWR", 22, 10, 40, 10, 0.3),
@@ -616,8 +641,10 @@ def demo_altium_pcb() -> str:
         ("TOP", "CAN_L", 55, 41.5, 60, 46, 0.2),
         ("TOP", "CAN_L", 60, 46, 68, 46, 0.2),
         ("TOP", "CAN_L", 68, 46, 70, 41.5, 0.2),
-        ("TOP", "HV_INV_SENSE", 5, 39.2, 70, 39.2, 0.25),
-        ("TOP", "LV_5V", 70, 10, 70, 25, 0.5)]
+        ("TOP", "HV_INV_SENSE", 12, 33, 12, 39.2, 0.25),
+        ("TOP", "HV_INV_SENSE", 12, 39.2, 60, 39.2, 0.25),
+        ("TOP", "HV_INV_SENSE", 60, 39.2, 60, 33, 0.25),
+        ("TOP", "LV_5V", 70, 13, 70, 25, 0.5)]
     vias = [("FAN_PWR", 45, 10), ("FAN_PWR", 70, 10)]
 
     L = ["|RECORD=Board|FILENAME=demo_ecu_board.PcbDoc|"
@@ -626,12 +653,11 @@ def demo_altium_pcb() -> str:
     for ref, comment, x, y in comps:
         L.append(f"|RECORD=Component|SOURCEDESIGNATOR={ref}|COMMENT={comment}|"
                  f"PATTERN={ref}_FP|LAYER=TOP|{_xy(x, y)}|ROTATION=0|")
-    for ref, name, x, y, net, hole in pads:
+    for ref, name, x, y, net, hole, (w, h), shape in pads:
         layer = "MULTILAYER" if hole else "TOP"
         L.append(f"|RECORD=Pad|NAME={name}|COMPONENT={ci[ref]}|LAYER={layer}|"
-                 f"NET={n[net]}|{_xy(x, y)}|XSIZE={_mil(1.7 if hole else 1.5)}|"
-                 f"YSIZE={_mil(1.7 if hole else 1.5)}|"
-                 f"HOLESIZE={_mil(hole)}|SHAPE=ROUND|PLATED=TRUE|")
+                 f"NET={n[net]}|{_xy(x, y)}|XSIZE={_mil(w)}|YSIZE={_mil(h)}|"
+                 f"HOLESIZE={_mil(hole)}|SHAPE={shape}|ROTATION=0|PLATED=TRUE|")
     for layer, net, x1, y1, x2, y2, w in tracks:
         L.append(f"|RECORD=Track|LAYER={layer}|NET={n[net]}|COMPONENT=-1|"
                  f"{_xy(x1, y1, 'X1', 'Y1')}|{_xy(x2, y2, 'X2', 'Y2')}|"
