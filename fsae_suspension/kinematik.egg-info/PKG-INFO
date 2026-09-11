@@ -1,0 +1,43 @@
+Metadata-Version: 2.4
+Name: kinematik
+Version: 0.12.0
+Summary: Formula SAE / Formula EV full-car pre-validation platform: one connected environment for every subsystem, feeding verified inputs into ANSYS/ADAMS/MATLAB.
+Author: Frederik Thio
+License: AGPL-3.0-only
+Keywords: fsae,formula-student,suspension,kinematics,vehicle-dynamics,pre-validation
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+License-File: AUTHORS
+Requires-Dist: streamlit<2,>=1.49
+Requires-Dist: numpy>=1.26
+Requires-Dist: scipy>=1.11
+Requires-Dist: plotly>=5.18
+Requires-Dist: trimesh>=4.0
+Provides-Extra: excel
+Requires-Dist: openpyxl>=3.1; extra == "excel"
+Requires-Dist: xlcalculator>=0.5; extra == "excel"
+Provides-Extra: cad
+Requires-Dist: cascadio>=0.0.16; extra == "cad"
+Requires-Dist: fast_simplification>=0.1; extra == "cad"
+Requires-Dist: rtree>=1.0; extra == "cad"
+Provides-Extra: pdf
+Requires-Dist: reportlab>=4.0; extra == "pdf"
+Provides-Extra: cloud
+Requires-Dist: supabase>=2.0; extra == "cloud"
+Provides-Extra: drive
+Requires-Dist: google-api-python-client>=2.0; extra == "drive"
+Requires-Dist: google-auth>=2.0; extra == "drive"
+Requires-Dist: google-auth-oauthlib>=1.0; extra == "drive"
+Provides-Extra: voice
+Requires-Dist: gTTS>=2.5; extra == "voice"
+Requires-Dist: piper-tts>=1.2; extra == "voice"
+Requires-Dist: vosk>=0.3.45; extra == "voice"
+Requires-Dist: faster-whisper>=1.0; extra == "voice"
+Requires-Dist: imageio-ffmpeg>=0.4.9; extra == "voice"
+Provides-Extra: all
+Requires-Dist: kinematik[cad,cloud,drive,excel,pdf,voice]; extra == "all"
+Provides-Extra: dev
+Requires-Dist: kinematik[all]; extra == "dev"
+Requires-Dist: pytest>=8; extra == "dev"
+Requires-Dist: ruff>=0.5; extra == "dev"
+Dynamic: license-file
