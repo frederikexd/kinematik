@@ -1,7 +1,7 @@
 # ============================================================================
 #  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
 #  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
-#  Open source. Original author: Frederik Thio, creator of KinematiK
+#  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
 
 """
@@ -25103,6 +25103,7 @@ def render_pcb_doctor():
         st.session_state["pdr_name"] = "demo_ecu_board.kicad_pcb"
         st.session_state["pdr_bytes"] = None
         _pdr_reset()
+        st.session_state["pdr_is_demo"] = True
     if lc[2].button("Demo · Altium", key="pdr_demo_alt",
                     help="The identical board as an Altium ASCII export — "
                          "same geometry, same three failures, so you can see "
@@ -25112,6 +25113,7 @@ def render_pcb_doctor():
         st.session_state["pdr_name"] = "demo_ecu_board.PcbDoc"
         st.session_state["pdr_bytes"] = None
         _pdr_reset()
+        st.session_state["pdr_is_demo"] = True
     if up is not None:
         raw_bytes = up.getvalue()
         # Guard before decode/parse so one giant upload can't spike RAM for
@@ -25127,19 +25129,32 @@ def render_pcb_doctor():
         # most likely file to be dropped here. It is read directly (diagnosis
         # only, never patched); the bytes are kept as-is because decoding a
         # binary board to text would destroy it.
+        # The uploader keeps its file across reruns, so without this a board
+        # left sitting in it silently replaced the demo on the very rerun the
+        # Demo button caused — the button looked dead. A dropped file is loaded
+        # once, when it arrives; after that the buttons are free to take over.
+        elif (getattr(up, "file_id", None) or up.name, len(raw_bytes)) \
+                == st.session_state.get("pdr_up_seen"):
+            pass
         elif pdr_mod.sniff_format(raw_bytes, up.name) == "altium_binary":
+            st.session_state["pdr_up_seen"] = (
+                getattr(up, "file_id", None) or up.name, len(raw_bytes))
             if raw_bytes != st.session_state.get("pdr_bytes"):
                 st.session_state["pdr_bytes"] = raw_bytes
                 st.session_state["pdr_text"] = None
                 st.session_state["pdr_name"] = up.name
                 _pdr_reset()
+                st.session_state["pdr_is_demo"] = False
         else:
+            st.session_state["pdr_up_seen"] = (
+                getattr(up, "file_id", None) or up.name, len(raw_bytes))
             raw = raw_bytes.decode("utf-8", errors="replace")
             if raw != st.session_state.get("pdr_text"):
                 st.session_state["pdr_text"] = raw
                 st.session_state["pdr_bytes"] = None
                 st.session_state["pdr_name"] = up.name
                 _pdr_reset()
+                st.session_state["pdr_is_demo"] = False
 
     text = st.session_state.get("pdr_text")
     _blob = st.session_state.get("pdr_bytes")
@@ -25221,6 +25236,13 @@ def render_pcb_doctor():
     if (st.session_state.get("pdr_assign") is None
             or st.session_state.get("pdr_assign_fp") != _led_fp):
         _fresh = pdr_mod.auto_assign_net_currents(pboard, ledger=led)
+        # The demo carries its own declarations. A fresh session's ledger
+        # declares no peak currents, so without these the fan feed — the
+        # demo's headline failure — was (correctly) reported MISSING, and the
+        # demo showed "0 width fix(es) ready" under a board it had promised
+        # three planted failures on. A real board never gets these.
+        if st.session_state.get("pdr_is_demo"):
+            pdr_mod.apply_demo_declarations(pboard, _fresh)
         # A number the electrical member typed by hand is theirs and survives the
         # re-derive; only ledger-sourced and assumed rows refresh underneath it.
         for _nid, _ov in (st.session_state.get("pdr_assign_edits") or {}).items():
@@ -25320,8 +25342,8 @@ def render_pcb_doctor():
                 unsafe_allow_html=True)
 
     # ---------------- board viewer — failing copper glows red ------------------ #
-    with st.expander("🗺️ Board viewer (copper by layer — segments the fix will "
-                     "widen glow red)", expanded=False):
+    with st.expander("🗺️ Board viewer (copper by layer, every pad drawn — "
+                     "segments the fix will widen glow white)", expanded=False):
         show = st.multiselect("Layers", pboard.copper_layers,
                               default=pboard.copper_layers, key="pdr_layers")
         _shown = [s_ for s_ in pboard.segments
