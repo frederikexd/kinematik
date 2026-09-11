@@ -256,6 +256,13 @@ class PcbPad:
     # footprint to inherit from. Getting this wrong makes a bottom-side pad
     # invisible to the top-side copper graph and fakes a "copper open".
     layer: str = ""
+    # Drawing-only: the physics never reads these. "round" covers KiCad's
+    # circle/oval and Altium's ROUND; "rect" and "roundrect" as named; "" when
+    # the reader could not tell. The angle is the pad's absolute orientation on
+    # the board in degrees, counter-clockwise as the EDA displays it — without
+    # it a rotated part's pads are drawn across their own traces.
+    shape: str = ""
+    angle_deg: float = 0.0
 
 
 @dataclass
@@ -749,7 +756,13 @@ def _parse_footprint(node, net_ref=None) -> PcbFootprint:
         else:
             pad_layer = pad_cu[0] if pad_cu else ""
         pat = _child(pd, "at")
-        px, py = (_floats(pat, 2) if pat else [0.0, 0.0])
+        # the third number is the pad's absolute board orientation — KiCad
+        # writes it with the footprint's own rotation already folded in
+        px, py, pang = (_floats(pat, 3) if pat else [0.0, 0.0, 0.0])
+        kinds = {str(a.value) for a in ats[1:3]}
+        shape = ("round" if kinds & {"circle", "oval"} else
+                 "roundrect" if "roundrect" in kinds else
+                 "rect" if kinds & {"rect", "trapezoid"} else "")
         # pad offset is in footprint frame; rotate into board frame.
         # KiCad's y axis points down; fp rotation is CCW in its own convention —
         # the standard transform below matches KiCad's file coordinates.
@@ -775,7 +788,8 @@ def _parse_footprint(node, net_ref=None) -> PcbFootprint:
                 pname = ""
         fp.pads.append(PcbPad(number=number, net=pnet, net_name=pname,
                               at=(ax, ay), size=size, through=through,
-                              layer=pad_layer))
+                              layer=pad_layer, shape=shape,
+                              angle_deg=float(pang or 0.0)))
     return fp
 
 
@@ -1902,10 +1916,60 @@ def fix_report_md(board: PcbBoard, report: DoctorReport, applied: list,
 # --------------------------------------------------------------------------- #
 #  Demo board — one click, three planted real-life failures
 # --------------------------------------------------------------------------- #
+#  The demo's planted faults are *physics* faults — the kind DRC passes. The
+#  rest of the board has to be copper a real fab would accept, because the
+#  viewer draws every pad: two connector pins that overlap, a sense trace that
+#  runs straight through a connector pad, or a rail that starts on another
+#  net's pad are shorts anyone can see, and they make the whole demo read as
+#  broken. Every trace below ends on its own net's pad or via, no two pads of
+#  different nets touch, and no trace crosses a pad of another net
+#  (`TestDemoBoardIsBuildable` holds that line).
+#
+#  The one failure the Doctor can only find with a *declared* current is the
+#  fan feed, and a fresh session's ledger declares nothing — so the demo ships
+#  its own declarations (`DEMO_NET_DECLARATIONS`). Without them the demo shows
+#  "0 width fixes", which is the Doctor correctly refusing to judge a guess and
+#  the member concluding the feature does nothing.
+DEMO_NET_DECLARATIONS = {
+    # the fan's peak: the number the planted 0.30 mm feed cannot carry
+    "FAN_PWR": {"current_a": 8.0},
+    # the inverter sense line sits at pack voltage — the clearance fault
+    "HV_INV_SENSE": {"voltage_v": 400.0},
+}
+DEMO_DECLARATION_SOURCE = "demo board — declared with the demo (edit me)"
+
+
+def apply_demo_declarations(board: PcbBoard, assignments: dict,
+                            overrides: dict = None) -> dict:
+    """Declare the demo board's peak currents / voltages onto `assignments`
+    (in place, and returned). Keyed by net *name*, so the KiCad and Altium
+    demos — whose net ids differ — receive the same inputs. `overrides`
+    ({net: {"current_a": …}}) lets a test ask "what if the fan drew 0.5 A"
+    through the same path the UI uses."""
+    decl = {k: dict(v) for k, v in DEMO_NET_DECLARATIONS.items()}
+    for k, v in (overrides or {}).items():
+        decl.setdefault(k, {}).update(v)
+    for name, spec in decl.items():
+        nid = board.net_id(name)
+        if nid is None:
+            continue
+        if "current_a" in spec:
+            declare_net_current(assignments, nid, spec["current_a"],
+                                voltage_v=spec.get("voltage_v"),
+                                source=DEMO_DECLARATION_SOURCE)
+            assignments[nid]["net"] = assignments[nid].get("net") or name
+        elif nid in assignments and "voltage_v" in spec:
+            # a voltage alone is not a current: the net stays MISSING-current,
+            # which is exactly what a real sense line with no declared amps is
+            assignments[nid]["voltage_v"] = float(spec["voltage_v"])
+    return assignments
+
+
 def demo_kicad_pcb() -> str:
     """A small synthetic .kicad_pcb: an ECU board whose fan feed is under-sized
     and via-choked, whose CAN pair hugs the 400 V inverter sense net, and whose
-    bulk cap sits on the hot copper — the three failures teams actually hit."""
+    bulk cap sits on the hot copper — the three failures teams actually hit.
+    Declare its currents with `apply_demo_declarations`."""
     return """(kicad_pcb (version 20240108) (generator "kinematik-demo")
   (general (thickness 1.6))
   (layers (0 "F.Cu" signal) (1 "In1.Cu" signal) (2 "In2.Cu" signal) (31 "B.Cu" signal))
@@ -1923,6 +1987,10 @@ def demo_kicad_pcb() -> str:
     (property "Reference" "C1") (property "Value" "470uF 16V")
     (pad "1" smd rect (at 0 0) (size 1.5 1.5) (net 2 "FAN_PWR"))
     (pad "2" smd rect (at 0 2) (size 1.5 1.5) (net 1 "GND")))
+  (footprint "Capacitor:C2" (layer "F.Cu") (at 70 25)
+    (property "Reference" "C2") (property "Value" "10uF 0805")
+    (pad "1" smd rect (at 0 0) (size 1.2 1.2) (net 6 "LV_5V"))
+    (pad "2" smd rect (at 0 2) (size 1.2 1.2) (net 1 "GND")))
   (footprint "Fuse:F1" (layer "F.Cu") (at 20 10)
     (property "Reference" "F1") (property "Value" "5A blade")
     (pad "1" smd rect (at -2 0) (size 2 2) (net 2 "FAN_PWR"))
@@ -1933,8 +2001,15 @@ def demo_kicad_pcb() -> str:
     (pad "2" smd rect (at 0 1.5) (size 1 1) (net 4 "CAN_L")))
   (footprint "Connector:J2" (layer "F.Cu") (at 5 40)
     (property "Reference" "J2") (property "Value" "CAN out")
-    (pad "1" thru_hole circle (at 0 0) (size 1.7 1.7) (drill 1.0) (net 3 "CAN_H"))
-    (pad "2" thru_hole circle (at 0 1.5) (size 1.7 1.7) (drill 1.0) (net 4 "CAN_L")))
+    (pad "1" thru_hole circle (at 0 0) (size 1.1 1.1) (drill 0.7) (net 3 "CAN_H"))
+    (pad "2" thru_hole circle (at 0 1.5) (size 1.1 1.1) (drill 0.7) (net 4 "CAN_L")))
+  (footprint "Connector:J3" (layer "F.Cu") (at 12 33)
+    (property "Reference" "J3") (property "Value" "HV sense in")
+    (pad "1" thru_hole circle (at 0 0) (size 2 2) (drill 1.2) (net 5 "HV_INV_SENSE")))
+  (footprint "Resistor:R1" (layer "F.Cu") (at 60 33)
+    (property "Reference" "R1") (property "Value" "1M HV divider 2512")
+    (pad "1" smd rect (at 0 0) (size 1.6 3.2) (net 5 "HV_INV_SENSE"))
+    (pad "2" smd rect (at 5.5 0) (size 1.6 3.2) (net 1 "GND")))
   (segment (start 5 10) (end 18 10) (width 0.3) (layer "F.Cu") (net 2))
   (segment (start 22 10) (end 40 10) (width 0.3) (layer "F.Cu") (net 2))
   (segment (start 40 10) (end 40 11.5) (width 0.3) (layer "F.Cu") (net 2))
@@ -1947,73 +2022,267 @@ def demo_kicad_pcb() -> str:
   (segment (start 55 41.5) (end 60 46) (width 0.2) (layer "F.Cu") (net 4))
   (segment (start 60 46) (end 68 46) (width 0.2) (layer "F.Cu") (net 4))
   (segment (start 68 46) (end 70 41.5) (width 0.2) (layer "F.Cu") (net 4))
-  (segment (start 5 39.2) (end 70 39.2) (width 0.25) (layer "F.Cu") (net 5))
-  (segment (start 70 10) (end 70 25) (width 0.5) (layer "F.Cu") (net 6))
+  (segment (start 12 33) (end 12 39.2) (width 0.25) (layer "F.Cu") (net 5))
+  (segment (start 12 39.2) (end 60 39.2) (width 0.25) (layer "F.Cu") (net 5))
+  (segment (start 60 39.2) (end 60 33) (width 0.25) (layer "F.Cu") (net 5))
+  (segment (start 70 13) (end 70 25) (width 0.5) (layer "F.Cu") (net 6))
 )
 """
 
 
 # --------------------------------------------------------------------------- #
-#  SVG board viewer — failing copper glows red
+#  SVG board viewer — the copper a fix will widen glows, everything else dims
 # --------------------------------------------------------------------------- #
+#  KiCad's own palette, so a KiCad user reads the layers without a legend. That
+#  palette puts F.Cu in red, which is exactly why "failing copper glows red"
+#  could never work: on a single-layer view every trace was already red, so a
+#  board with nothing to fix looked like a board on fire. The fix highlight is
+#  now a white glow on full-strength copper with the rest of the board dimmed —
+#  a signal no layer colour can imitate.
 _LAYER_COLORS = {"F.Cu": "#d94f4f", "B.Cu": "#4a7bd9", "In1.Cu": "#3fae7a",
                  "In2.Cu": "#c9a03a", "In3.Cu": "#9a6ad1", "In4.Cu": "#48b8b8"}
+_FIX_GLOW = "#ffffff"          # the halo on copper a pending fix will widen
+_TH_PAD_FILL = "#d7b46a"       # plated through-hole pads: both sides at once
+_VIEW_BG = "#0e1419"
+
+
+def _pad_extent(p) -> float:
+    """Half the diagonal-safe span of a pad — enough to keep a rotated pad
+    inside the frame without computing its rotated box."""
+    w, h = (p.size or (1.0, 1.0))[:2]
+    return 0.5 * max(float(w), float(h))
+
+
+def _view_bbox(board: PcbBoard, layers, pads):
+    """Frame what is actually drawn: copper *edges*, pads and vias — not just
+    centre-lines and footprint origins, which clipped every pad on the board
+    edge and left a parts-only footprint off-frame entirely."""
+    xs0, ys0, xs1, ys1 = [], [], [], []
+    for sg in board.segments:
+        if sg.layer not in layers:
+            continue
+        r = sg.width_mm / 2.0
+        for x, y in (sg.start, sg.end):
+            xs0.append(x - r); xs1.append(x + r)
+            ys0.append(y - r); ys1.append(y + r)
+    for v in board.vias:
+        r = v.size_mm / 2.0
+        xs0.append(v.at[0] - r); xs1.append(v.at[0] + r)
+        ys0.append(v.at[1] - r); ys1.append(v.at[1] + r)
+    for _fp, p in pads:
+        r = _pad_extent(p)
+        xs0.append(p.at[0] - r); xs1.append(p.at[0] + r)
+        ys0.append(p.at[1] - r); ys1.append(p.at[1] + r)
+    if not xs0:
+        return board.bbox()
+    return min(xs0), min(ys0), max(xs1), max(ys1)
 
 
 def board_svg(board: PcbBoard, report=None, show_layers=None,
               width_px: int = 760, height_px: int = 440) -> str:
-    """Inline SVG of the parsed copper: segments per layer, vias, component refs.
-    Segments referenced by a pending fix are haloed red."""
-    x0, y0, x1, y1 = board.bbox()
+    """Inline SVG of the parsed copper: segments per layer, the real pads of
+    every footprint (so each trace can be seen landing on its pin), vias and
+    component refs. When the report carries fixes, the segments they touch
+    glow and the rest of the copper dims."""
+    from html import escape as _esc
+    layers = list(show_layers or board.copper_layers)
+    lset = set(layers)
+
+    def _pad_layer(fp, p):
+        return p.layer or fp.layer or "F.Cu"
+
+    pads = [(fp, p) for fp in board.footprints for p in fp.pads
+            if p.through or _pad_layer(fp, p) in lset]
+    x0, y0, x1, y1 = _view_bbox(board, lset, pads)
     w = max(x1 - x0, 1.0); h = max(y1 - y0, 1.0)
-    pad = 26
-    s = min((width_px - 2 * pad) / w, (height_px - 2 * pad) / h)
+    side, top, bottom = 18, 44, 30      # legend strip + label room / scale bar
+    s = min((width_px - 2 * side) / w, (height_px - top - bottom) / h)
+    # centre the board in whatever room the aspect ratio leaves over
+    ox = side + ((width_px - 2 * side) - w * s) / 2.0
+    oy = top + ((height_px - top - bottom) - h * s) / 2.0
 
-    def tx(p):
-        return pad + (p[0] - x0) * s, pad + (p[1] - y0) * s
+    def tx(pt):
+        return ox + (pt[0] - x0) * s, oy + (pt[1] - y0) * s
 
-    bad = set()
+    fixes_by_seg = {}
     if report is not None:
-        bad = {fx.seg_index for fx in report.fixes}
-    layers = show_layers or board.copper_layers
+        for fx in report.fixes:
+            fixes_by_seg.setdefault(fx.seg_index, fx)
+    dim = bool(fixes_by_seg)
     parts = [f'<svg viewBox="0 0 {width_px} {height_px}" '
-             f'style="width:100%;height:auto;background:#0e1419;'
+             f'xmlns="http://www.w3.org/2000/svg" '
+             f'style="width:100%;height:auto;background:{_VIEW_BG};'
              f'border:1px solid var(--line);border-radius:8px;">']
-    bar = min(20.0 * s, width_px * 0.4)
-    parts.append(f'<line x1="{pad}" y1="{height_px-12}" x2="{pad+bar}" '
-                 f'y2="{height_px-12}" stroke="#8d99a6" stroke-width="2"/>'
-                 f'<text x="{pad}" y="{height_px-16}" fill="#8d99a6" '
-                 f'font-size="10">{bar/s:.0f} mm</text>')
+
+    # ---- copper ------------------------------------------------------------ #
+    glow = []
     for i, seg in enumerate(board.segments):
-        if seg.layer not in layers:
+        if seg.layer not in lset:
             continue
         (ax, ay), (bx, by) = tx(seg.start), tx(seg.end)
         col = _LAYER_COLORS.get(seg.layer, "#7d8c99")
         sw = max(seg.width_mm * s, 1.2)
-        if i in bad:
-            parts.append(f'<line x1="{ax:.1f}" y1="{ay:.1f}" x2="{bx:.1f}" '
-                         f'y2="{by:.1f}" stroke="#ff3333" '
-                         f'stroke-width="{sw+5:.1f}" stroke-linecap="round" '
-                         f'opacity="0.35"/>')
-        parts.append(f'<line x1="{ax:.1f}" y1="{ay:.1f}" x2="{bx:.1f}" '
-                     f'y2="{by:.1f}" stroke="{col}" stroke-width="{sw:.1f}" '
-                     f'stroke-linecap="round" opacity="0.9"/>')
+        fx = fixes_by_seg.get(i)
+        line = (f'x1="{ax:.1f}" y1="{ay:.1f}" x2="{bx:.1f}" y2="{by:.1f}" '
+                f'stroke-linecap="round"')
+        if fx is not None:
+            tip = _esc(f"{fx.net} on {fx.layer}: {fx.old_width_mm:g} → "
+                       f"{fx.new_width_mm:g} mm"
+                       + ("" if fx.auto else " (prescription — not auto)"))
+            glow.append(f'<g><title>{tip}</title>'
+                        f'<line {line} stroke="{_FIX_GLOW}" '
+                        f'stroke-width="{sw + 7:.1f}" opacity="0.28"/>'
+                        f'<line {line} stroke="{_FIX_GLOW}" '
+                        f'stroke-width="{sw + 3:.1f}" opacity="0.55"/>'
+                        f'<line {line} stroke="{col}" stroke-width="{sw:.1f}"/>'
+                        f'</g>')
+        else:
+            parts.append(f'<line {line} stroke="{col}" stroke-width="{sw:.1f}" '
+                         f'opacity="{0.35 if dim else 0.9}"/>')
+    parts.extend(glow)                   # on top, so nothing hides a fix
+
+    # ---- pads: the copper every trace is supposed to land on --------------- #
+    for fp, p in pads:
+        cx, cy = tx(p.at)
+        pw, ph = (float(v) * s for v in (p.size or (1.0, 1.0))[:2])
+        pw, ph = max(pw, 2.0), max(ph, 2.0)
+        shape = p.shape or ("round" if p.through else "rect")
+        rx = (min(pw, ph) / 2.0 if shape == "round"
+              else min(pw, ph) * 0.25 if shape == "roundrect" else 0.0)
+        fill = (_TH_PAD_FILL if p.through
+                else _LAYER_COLORS.get(_pad_layer(fp, p), "#7d8c99"))
+        rot = (f' transform="rotate({-p.angle_deg:g} {cx:.1f} {cy:.1f})"'
+               if p.angle_deg else "")
+        tip = _esc(f"{fp.ref}.{p.number} · {p.net_name or 'no net'}")
+        parts.append(f'<g{rot}><title>{tip}</title>'
+                     f'<rect x="{cx - pw / 2:.1f}" y="{cy - ph / 2:.1f}" '
+                     f'width="{pw:.1f}" height="{ph:.1f}" rx="{rx:.1f}" '
+                     f'fill="{fill}" opacity="{0.7 if dim else 0.95}"/>')
+        if p.through:
+            parts.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" '
+                         f'r="{max(min(pw, ph) * 0.22, 0.8):.1f}" '
+                         f'fill="{_VIEW_BG}"/>')
+        parts.append('</g>')
+
     for v in board.vias:
         vx, vy = tx(v.at)
-        parts.append(f'<circle cx="{vx:.1f}" cy="{vy:.1f}" r="{max(v.size_mm*s/2,2):.1f}" '
-                     f'fill="#e8edf2" stroke="#0e1419" stroke-width="1"/>')
+        parts.append(f'<circle cx="{vx:.1f}" cy="{vy:.1f}" '
+                     f'r="{max(v.size_mm * s / 2, 2):.1f}" fill="#e8edf2" '
+                     f'stroke="{_VIEW_BG}" stroke-width="1"/>')
+
+    # ---- reference labels, placed where no copper is ----------------------- #
+    #  First choice is just above the part's pads; when a trace arrives from
+    #  that side (a cap fed from above, a connector under a bus) the label
+    #  moves right, left or below instead of being struck through. A coarse
+    #  grid keeps the collision test local, so a 6000-segment board still draws
+    #  in well under a second.
+    CELL = 40.0
+    grid = {}
+
+    def _cells(bx0, by0, bx1, by1):
+        for gx in range(int(bx0 // CELL), int(bx1 // CELL) + 1):
+            for gy in range(int(by0 // CELL), int(by1 // CELL) + 1):
+                yield gx, gy
+
+    def _add(ob, box):
+        for c in _cells(*box):
+            grid.setdefault(c, []).append(ob)
+
+    for seg in board.segments:
+        if seg.layer not in lset:
+            continue
+        (ax, ay), (bx, by) = tx(seg.start), tx(seg.end)
+        r = max(seg.width_mm * s, 1.2) / 2.0 + 1.0
+        _add(("seg", ax, ay, bx, by, r),
+             (min(ax, bx) - r, min(ay, by) - r, max(ax, bx) + r, max(ay, by) + r))
+    for _fp, p in pads:
+        cx, cy = tx(p.at)
+        r = _pad_extent(p) * s + 1.0
+        _add(("box", cx - r, cy - r, cx + r, cy + r), (cx - r, cy - r, cx + r, cy + r))
+
+    def _hits(bx0, by0, bx1, by1):
+        seen = set()
+        for c in _cells(bx0, by0, bx1, by1):
+            for ob in grid.get(c, ()):
+                if id(ob) in seen:
+                    continue
+                seen.add(id(ob))
+                if ob[0] == "box":
+                    if not (ob[3] < bx0 or ob[1] > bx1 or ob[4] < by0 or ob[2] > by1):
+                        return True
+                else:
+                    _, ax, ay, bx, by, r = ob
+                    # distance from the box centre-line to the segment, cheap
+                    # and conservative: sample the segment at ~4 px steps
+                    n = max(1, int(math.hypot(bx - ax, by - ay) // 4))
+                    for k in range(n + 1):
+                        px = ax + (bx - ax) * k / n
+                        py = ay + (by - ay) * k / n
+                        if bx0 - r <= px <= bx1 + r and by0 - r <= py <= by1 + r:
+                            return True
+        return False
+
     for fp in board.footprints:
-        fx_, fy_ = tx(fp.at)
-        parts.append(f'<rect x="{fx_-4:.1f}" y="{fy_-4:.1f}" width="8" height="8" '
-                     f'fill="none" stroke="#e8edf2" stroke-width="1" rx="1.5"/>'
-                     f'<text x="{fx_+6:.1f}" y="{fy_-5:.1f}" fill="#e8edf2" '
-                     f'font-size="10" font-weight="700">{fp.ref}</text>')
-    # legend
-    lx = width_px - 120
-    for i, ly in enumerate(layers):
-        parts.append(f'<line x1="{lx}" y1="{16+i*14}" x2="{lx+18}" y2="{16+i*14}" '
-                     f'stroke="{_LAYER_COLORS.get(ly, "#7d8c99")}" stroke-width="4"/>'
-                     f'<text x="{lx+24}" y="{20+i*14}" fill="#8d99a6" '
-                     f'font-size="10">{ly}</text>')
+        fpads = [p for p in fp.pads if p.through or _pad_layer(fp, p) in lset]
+        tw, th = 6.6 * len(fp.ref or "?") + 2, 10.0
+        if fpads:
+            ext = [(tx(p.at), _pad_extent(p) * s) for p in fpads]
+            px0 = min(c[0] - r for c, r in ext); px1 = max(c[0] + r for c, r in ext)
+            py0 = min(c[1] - r for c, r in ext); py1 = max(c[1] + r for c, r in ext)
+        else:
+            if (fp.layer or "F.Cu") not in lset:
+                continue
+            fx_, fy_ = tx(fp.at)
+            parts.append(f'<rect x="{fx_ - 3:.1f}" y="{fy_ - 3:.1f}" width="6" '
+                         f'height="6" fill="none" stroke="#e8edf2" '
+                         f'stroke-width="1" rx="1.5"/>')
+            px0, py0, px1, py1 = fx_ - 3, fy_ - 3, fx_ + 3, fy_ + 3
+        ymid = (py0 + py1) / 2.0
+        # (left, baseline) candidates: above, right, left, below
+        cands = [(px0, py0 - 4), (px1 + 4, ymid + th / 2 - 1),
+                 (px0 - 4 - tw, ymid + th / 2 - 1), (px0, py1 + th + 3)]
+        lx, ly = cands[0]
+        for cx_, cy_ in cands:
+            bx0, by0, bx1, by1 = cx_, cy_ - th + 1, cx_ + tw, cy_ + 1
+            if bx0 < 0 or bx1 > width_px or by0 < top - 14 or by1 > height_px - bottom + 8:
+                continue
+            if not _hits(bx0, by0, bx1, by1):
+                lx, ly = cx_, cy_
+                break
+        #  Two passes (outline, then fill) rather than `paint-order`, which
+        #  some SVG renderers ignore and then paint the outline over the text.
+        #  The outline keeps a label legible even where no free spot existed.
+        ref = _esc(fp.ref)
+        txt = (f'x="{lx:.1f}" y="{ly:.1f}" font-size="10" font-weight="700"')
+        parts.append(f'<text {txt} fill="none" stroke="{_VIEW_BG}" '
+                     f'stroke-width="3" stroke-linejoin="round">{ref}</text>'
+                     f'<text {txt} fill="#e8edf2">{ref}</text>')
+
+    # ---- legend strip (above the board, so it never sits on copper) --------- #
+    lx = side
+    for ly in layers:
+        parts.append(f'<line x1="{lx}" y1="14" x2="{lx + 16}" y2="14" '
+                     f'stroke="{_LAYER_COLORS.get(ly, "#7d8c99")}" '
+                     f'stroke-width="4"/><text x="{lx + 21}" y="18" '
+                     f'fill="#8d99a6" font-size="10">'
+                     f'{_esc(board.native_layer(ly))}</text>')
+        lx += 30 + 6 * len(board.native_layer(ly))
+    if dim:
+        parts.append(f'<line x1="{lx}" y1="14" x2="{lx + 16}" y2="14" '
+                     f'stroke="{_FIX_GLOW}" stroke-width="7" opacity="0.5"/>'
+                     f'<text x="{lx + 21}" y="18" fill="#e8edf2" '
+                     f'font-size="10">glow = segment a fix will widen '
+                     f'({len(fixes_by_seg)})</text>')
+
+    # ---- scale bar ---------------------------------------------------------- #
+    bar_mm = next((b for b in (100, 50, 20, 10, 5, 2, 1, 0.5)
+                   if b * s <= width_px * 0.35), 0.5)
+    bar = bar_mm * s
+    parts.append(f'<line x1="{side}" y1="{height_px - 10}" '
+                 f'x2="{side + bar:.1f}" y2="{height_px - 10}" '
+                 f'stroke="#8d99a6" stroke-width="2"/>'
+                 f'<text x="{side}" y="{height_px - 15}" fill="#8d99a6" '
+                 f'font-size="10">{bar_mm:g} mm</text>')
     parts.append("</svg>")
     return "".join(parts)
+
