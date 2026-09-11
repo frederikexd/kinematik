@@ -77,6 +77,12 @@ if case == "kicad":
     seed = {{"pdr_text": pdr.demo_kicad_pcb(), "pdr_name": "demo.kicad_pcb"}}
 elif case == "ascii":
     seed = {{"pdr_text": alt.demo_altium_pcb(), "pdr_name": "demo.PcbDoc"}}
+elif case == "kicad_demo":          # exactly what the Demo · KiCad button sets
+    seed = {{"pdr_text": pdr.demo_kicad_pcb(),
+             "pdr_name": "demo_ecu_board.kicad_pcb", "pdr_is_demo": True}}
+elif case == "ascii_demo":          # exactly what the Demo · Altium button sets
+    seed = {{"pdr_text": alt.demo_altium_pcb(),
+             "pdr_name": "demo_ecu_board.PcbDoc", "pdr_is_demo": True}}
 elif case == "unreadable":
     seed = {{"pdr_text": "not a board at all", "pdr_name": "notes.txt"}}
 elif case == "empty":
@@ -104,6 +110,7 @@ print("@@" + json.dumps({{
     "diagnosis": has(exps, "Diagnosis"),
     "viewer": has(exps, "viewer"),
     "retrace": has(exps, "Re-trace"),
+    "retrace_label": next((e for e in exps if "Re-trace" in e), None),
     "notes": has(exps, "import had to assume"),
     "prescriber": has(exps, "Trace Prescriber"),
     "parse_error": next((e for e in errs
@@ -152,6 +159,31 @@ class TestPcbDoctorPanel(unittest.TestCase):
         self._assert_full_panel(r, "Altium / Protel ASCII")
         self.assertTrue(r["notes"],
                         "Altium imports must surface their assumptions")
+
+    @staticmethod
+    def _auto_fixes(r):
+        import re as _re
+        m = _re.search(r"(\d+) width fix", r["retrace_label"] or "")
+        return int(m.group(1)) if m else None
+
+    def test_demo_buttons_show_the_planted_fixes(self):
+        """The reported bug: one click on Demo, in a fresh session whose ledger
+        declares nothing, showed "0 width fix(es) ready". The demo carries its
+        own declarations now, so the re-trace must have work to do."""
+        for case, label in (("kicad_demo", "KiCad"),
+                            ("ascii_demo", "Altium / Protel ASCII")):
+            with self.subTest(case):
+                r = _render(case)
+                self._assert_full_panel(r, label)
+                self.assertGreater(self._auto_fixes(r) or 0, 0,
+                                   f"re-trace said: {r['retrace_label']}")
+
+    def test_demo_declarations_never_reach_a_dropped_board(self):
+        """The same file arriving as an upload is a real board: its currents
+        are undeclared, so nothing may be auto-re-traced off them."""
+        r = _render("kicad")
+        self._assert_full_panel(r, "KiCad")
+        self.assertEqual(self._auto_fixes(r), 0, r["retrace_label"])
 
     def test_unreadable_file_keeps_the_prescriber(self):
         """A bare `return` on the error path used to take the Trace Prescriber
