@@ -1,5 +1,5 @@
 -- ============================================================================
---  KinematiK — When does the CURRENTLY VISIBLE analytics data actually start?
+--  KinematiK: When does the CURRENTLY VISIBLE analytics data actually start?
 --  Run in: Supabase SQL Editor. Read-only.
 --
 --  This does NOT return July 10. July 10 was the purge (old events deleted).
