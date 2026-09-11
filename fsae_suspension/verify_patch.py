@@ -1,5 +1,5 @@
 """Run from your project root:  python verify_patch.py
-Confirms the deployed backends.py has the virtual-tunnel fix BEFORE you start the app."""
+Confirm the deployed backends.py has the virtual-tunnel fix BEFORE you start the app."""
 import importlib, sys
 try:
     bk = importlib.import_module("suspension.aero.backends")
