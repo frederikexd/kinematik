@@ -1,4 +1,4 @@
-# Config tuned for sharing via tunnel links (ngrok, cloudflared, localtunnel)
+# Config tuned for sharing via tunnel link (ngrok, cloudflared, localtunnel)
 # during testing. These let the file uploader and websocket work through a
 # forwarded host. Review before a real public deploy.
 
