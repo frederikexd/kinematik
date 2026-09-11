@@ -1,6 +1,6 @@
 """
 Excel Formula Recalculation Script
-Recalculates all formulas in an Excel file using LibreOffice
+Recalculates all the formulas in an Excel file using LibreOffice
 """
 
 import json
