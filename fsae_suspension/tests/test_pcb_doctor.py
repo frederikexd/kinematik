@@ -16,7 +16,7 @@ from suspension.pcb_doctor import (
     prescribe_trace, required_width_mm, vias_needed, find_diff_pairs,
     board_svg, clearance_required_mm, declare_net_current,
     trace_ampacity_a, NetAssignment, NODE_WELD_MM, PcbZone,
-    PcbSegment, analyze_net)
+    PcbSegment, analyze_net, apply_demo_declarations, DEMO_NET_DECLARATIONS)
 from suspension.pcb_altium_binary import (
     layer_from_code, is_available as _bin_available)
 from suspension.pcb_altium import (
@@ -26,12 +26,12 @@ from suspension.interfaces import Severity
 
 
 def _demo_setup(fan_a=8.0):
+    """The demo exactly as the UI loads it — same declarations, same path —
+    so what these tests prove is what a member sees after one click."""
     board = parse_kicad_pcb(demo_kicad_pcb())
     assignments = auto_assign_net_currents(board, ledger=None)
-    fan = board.net_id("FAN_PWR")
-    declare_net_current(assignments, fan, fan_a)
-    hv = board.net_id("HV_INV_SENSE")
-    assignments[hv]["voltage_v"] = 400.0
+    apply_demo_declarations(board, assignments,
+                            overrides={"FAN_PWR": {"current_a": fan_a}})
     return board, assignments
 
 
@@ -158,7 +158,7 @@ class TestAutoFix(unittest.TestCase):
         self.assertIn("FAN_PWR", md)
         svg = board_svg(board, report=rep)
         self.assertTrue(svg.startswith("<svg"))
-        self.assertIn("#ff3333", svg)   # failing copper is haloed
+        self.assertIn("a fix will widen", svg)   # failing copper glows
 
 
 # =========================================================================== #
@@ -167,8 +167,8 @@ class TestAutoFix(unittest.TestCase):
 def _alt_setup(fan_a=8.0):
     board = parse_board(demo_altium_pcb(), "demo_ecu_board.PcbDoc")
     assignments = auto_assign_net_currents(board, ledger=None)
-    declare_net_current(assignments, board.net_id("FAN_PWR"), fan_a)
-    assignments[board.net_id("HV_INV_SENSE")]["voltage_v"] = 400.0
+    apply_demo_declarations(board, assignments,
+                            overrides={"FAN_PWR": {"current_a": fan_a}})
     return board, assignments
 
 
@@ -621,9 +621,12 @@ class TestKicad10NetDialect(unittest.TestCase):
         self.assertEqual(b.segments[0].net, vcc)
 
     def test_numeric_form_still_works(self):
-        b = parse_kicad_pcb(demo_kicad_pcb())
+        txt = demo_kicad_pcb()
+        b = parse_kicad_pcb(txt)
         self.assertEqual(b.net_name(b.net_id("FAN_PWR")), "FAN_PWR")
-        self.assertEqual(len(b.segments), 12)
+        # every segment in the file is read — counted off the text, so the
+        # assertion follows the demo instead of pinning its current size
+        self.assertEqual(len(b.segments), txt.count("(segment "))
 
 
 class TestFormatSniffing(unittest.TestCase):
@@ -711,7 +714,9 @@ class TestAltiumParser(unittest.TestCase):
         """The demo file carries a TopOverlay and a Mechanical1 track. If either
         reached the copper mesh it would fake a net and skew the geometry."""
         board = parse_board(demo_altium_pcb(), "demo.PcbDoc")
-        self.assertEqual(len(board.segments), 12)
+        # the same routed copper the KiCad demo carries, not one track more
+        self.assertEqual(len(board.segments),
+                         len(parse_kicad_pcb(demo_kicad_pcb()).segments))
         self.assertTrue(all(s.layer in ("F.Cu", "B.Cu") for s in board.segments))
 
     def test_same_board_two_formats_one_diagnosis(self):
@@ -961,7 +966,213 @@ class TestAltiumAutoFix(unittest.TestCase):
         board, assignments = _alt_setup(fan_a=8.0)
         svg = board_svg(board, report=diagnose(board, assignments))
         self.assertTrue(svg.startswith("<svg"))
-        self.assertIn("#ff3333", svg)
+        self.assertIn("a fix will widen", svg)
+        self.assertIn("Top Layer", svg)          # the Altium user's own names
+
+
+# =========================================================================== #
+#  The demo, as a member meets it: one click, no ledger, a board that looks real
+# =========================================================================== #
+def _pad_box(p):
+    """Axis-aligned copper box of a pad (the demo has no rotated pads)."""
+    w, h = p.size
+    return (p.at[0] - w / 2, p.at[1] - h / 2, p.at[0] + w / 2, p.at[1] + h / 2)
+
+
+def _box_gap(a, b):
+    dx = max(b[0] - a[2], a[0] - b[2], 0.0)
+    dy = max(b[1] - a[3], a[1] - b[3], 0.0)
+    return math.hypot(dx, dy)
+
+
+def _seg_box_gap(sg, box):
+    """Edge-to-edge gap from a trace to a pad box; 0 when they touch."""
+    x0, y0, x1, y1 = box
+    (ax, ay), (bx, by) = sg.start, sg.end
+    best = 1e9
+    n = max(1, int(math.hypot(bx - ax, by - ay) / 0.05))
+    for k in range(n + 1):
+        px, py = ax + (bx - ax) * k / n, ay + (by - ay) * k / n
+        dx = max(x0 - px, 0.0, px - x1)
+        dy = max(y0 - py, 0.0, py - y1)
+        best = min(best, math.hypot(dx, dy))
+    return max(best - sg.width_mm / 2.0, 0.0)
+
+
+def _pad_side(fp, p):
+    return None if p.through else (p.layer or fp.layer or "F.Cu")
+
+
+class TestDemoWorksOutOfTheBox(unittest.TestCase):
+    """The reported bug: a fresh session clicked Demo and got "0 width fix(es)
+    ready" under a board advertised as carrying three planted failures. The
+    ledger of a fresh session declares no peak current, so the fan feed was —
+    correctly — MISSING, and the demo's headline failure never appeared."""
+
+    def _fresh_session(self, text, name):
+        from suspension import interfaces as I
+        led = I.IntegrationLedger.from_dict(I.blank_ledger().as_dict())
+        board = parse_board(text, name)
+        asg = auto_assign_net_currents(board, ledger=led)
+        apply_demo_declarations(board, asg)
+        return board, diagnose(board, asg)
+
+    def test_blank_ledger_demo_has_fixes_to_apply(self):
+        for text, name in ((demo_kicad_pcb(), "d.kicad_pcb"),
+                           (demo_altium_pcb(), "d.PcbDoc")):
+            with self.subTest(name):
+                board, rep = self._fresh_session(text, name)
+                self.assertTrue([fx for fx in rep.fixes if fx.auto])
+                checks = {f.check for f in rep.findings}
+                for c in ("trace ampacity — FAN_PWR", "via bottleneck — FAN_PWR",
+                          "HV clearance — HV_INV_SENSE", "diff pair skew — CAN",
+                          "component — C1"):
+                    self.assertIn(c, checks)
+
+    def test_declarations_are_labelled_and_editable(self):
+        board = parse_kicad_pcb(demo_kicad_pcb())
+        asg = apply_demo_declarations(
+            board, auto_assign_net_currents(board, ledger=None))
+        fan = asg[board.net_id("FAN_PWR")]
+        self.assertTrue(fan.declared)
+        self.assertIn("demo", fan["source"])
+        self.assertEqual(fan["current_a"],
+                         DEMO_NET_DECLARATIONS["FAN_PWR"]["current_a"])
+        # a voltage alone must not promote a guessed current to a declaration
+        self.assertFalse(asg[board.net_id("HV_INV_SENSE")].declared)
+        self.assertEqual(asg[board.net_id("HV_INV_SENSE")]["voltage_v"], 400.0)
+
+    def test_a_real_board_is_untouched_by_the_demo_path(self):
+        txt = ('(kicad_pcb (version 20240108)\n'
+               ' (layers (0 "F.Cu" signal) (31 "B.Cu" signal))\n'
+               ' (net 0 "") (net 1 "VBAT")\n'
+               ' (segment (start 0 0) (end 5 0) (width 0.3) (layer "F.Cu") (net 1)))\n')
+        b = parse_kicad_pcb(txt)
+        asg = auto_assign_net_currents(b, ledger=None)
+        before = {k: dict(v) for k, v in asg.items()}
+        apply_demo_declarations(b, asg)
+        self.assertEqual(before, {k: dict(v) for k, v in asg.items()})
+
+
+class TestDemoBoardIsBuildable(unittest.TestCase):
+    """The viewer draws every pad, so the demo's copper has to be copper a fab
+    would accept: its planted faults are physics a DRC passes, never shorts.
+    The previous demo had a CAN connector whose two pins overlapped, a 400 V
+    sense trace running through a CAN pad, and the 5 V rail starting on the
+    fan net's pad — invisible while only footprint origins were drawn."""
+
+    BOARDS = ((demo_kicad_pcb, "d.kicad_pcb"), (demo_altium_pcb, "d.PcbDoc"))
+
+    def test_no_pads_of_different_nets_touch(self):
+        for gen, name in self.BOARDS:
+            b = parse_board(gen(), name)
+            pads = [(fp, p) for fp in b.footprints for p in fp.pads]
+            for i, (fa, pa) in enumerate(pads):
+                for fb, pb in pads[i + 1:]:
+                    if pa.net == pb.net:
+                        continue
+                    sa, sb = _pad_side(fa, pa), _pad_side(fb, pb)
+                    if sa and sb and sa != sb:
+                        continue
+                    with self.subTest(name, a=f"{fa.ref}.{pa.number}",
+                                      b=f"{fb.ref}.{pb.number}"):
+                        self.assertGreater(
+                            _box_gap(_pad_box(pa), _pad_box(pb)), 0.15)
+
+    def test_no_trace_crosses_another_nets_pad(self):
+        for gen, name in self.BOARDS:
+            b = parse_board(gen(), name)
+            for sg in b.segments:
+                for fp in b.footprints:
+                    for p in fp.pads:
+                        side = _pad_side(fp, p)
+                        if p.net == sg.net or (side and side != sg.layer):
+                            continue
+                        with self.subTest(name, net=b.net_name(sg.net),
+                                          pad=f"{fp.ref}.{p.number}"):
+                            self.assertGreater(_seg_box_gap(sg, _pad_box(p)),
+                                               0.1)
+
+    def test_every_trace_end_lands_on_its_own_net(self):
+        """No trace ends in mid-air: each endpoint sits on a pad or via of its
+        net, or on another segment of its net (a T-junction)."""
+        for gen, name in self.BOARDS:
+            b = parse_board(gen(), name)
+            for i, sg in enumerate(b.segments):
+                for end in (sg.start, sg.end):
+                    on_pad = any(
+                        p.net == sg.net and _box_gap(
+                            _pad_box(p), (end[0], end[1], end[0], end[1])) == 0
+                        for fp in b.footprints for p in fp.pads)
+                    on_via = any(v.net == sg.net and math.dist(v.at, end) < 1e-6
+                                 for v in b.vias)
+                    on_seg = any(j != i and o.net == sg.net and
+                                 o.layer == sg.layer and
+                                 (math.dist(o.start, end) < 1e-6
+                                  or math.dist(o.end, end) < 1e-6)
+                                 for j, o in enumerate(b.segments))
+                    with self.subTest(name, net=b.net_name(sg.net), end=end):
+                        self.assertTrue(on_pad or on_via or on_seg)
+
+
+class TestViewerDrawsPads(unittest.TestCase):
+    """The screenshot that prompted this: traces ending in mid-air beside an
+    8-px footprint marker, because pads were never drawn at all."""
+
+    def test_every_pad_is_drawn_with_its_net(self):
+        b = parse_kicad_pcb(demo_kicad_pcb())
+        svg = board_svg(b)
+        for fp in b.footprints:
+            for p in fp.pads:
+                self.assertIn(f"<title>{fp.ref}.{p.number} · {p.net_name}"
+                              f"</title>", svg)
+
+    def test_no_glow_and_no_dimming_without_fixes(self):
+        """Emphasis only when there is something to emphasise: a report with
+        no fixes (and no report at all) must draw the board at full strength."""
+        b, asg = _demo_setup()
+        rep = diagnose(b, asg)
+        self.assertTrue(rep.fixes)                    # the demo has some…
+        rep.fixes = []                                # …so take them away
+        for svg in (board_svg(b), board_svg(b, report=rep)):
+            self.assertNotIn("a fix will widen", svg)
+            self.assertNotIn('opacity="0.35"', svg)
+        self.assertIn('opacity="0.35"', board_svg(b, report=diagnose(b, asg)))
+
+    def test_fix_glow_is_not_a_layer_colour(self):
+        from suspension import pcb_doctor as pdr
+        self.assertNotIn(pdr._FIX_GLOW.lower(),
+                         {c.lower() for c in pdr._LAYER_COLORS.values()})
+
+    def test_names_are_escaped(self):
+        txt = ('(kicad_pcb (version 20240108)\n'
+               ' (layers (0 "F.Cu" signal) (31 "B.Cu" signal))\n'
+               ' (net 0 "") (net 1 "A<B&C")\n'
+               ' (footprint "x" (layer "F.Cu") (at 0 0)\n'
+               '   (property "Reference" "U<1>")\n'
+               '   (pad "1" smd rect (at 0 0) (size 1 1) (net 1 "A<B&C")))\n'
+               ' (segment (start 0 0) (end 5 0) (width 0.3) (layer "F.Cu") (net 1)))\n')
+        svg = board_svg(parse_kicad_pcb(txt))
+        self.assertNotIn("U<1>", svg)
+        self.assertIn("U&lt;1&gt;", svg)
+        self.assertIn("A&lt;B&amp;C", svg)
+
+    def test_rotated_pad_orientation_is_read_and_drawn(self):
+        """KiCad writes a pad's absolute orientation as the third number of its
+        (at …); a 90° part whose pads were drawn unrotated would lie across
+        its own traces."""
+        txt = ('(kicad_pcb (version 20240108)\n'
+               ' (layers (0 "F.Cu" signal) (31 "B.Cu" signal))\n'
+               ' (net 0 "") (net 1 "SIG")\n'
+               ' (footprint "x" (layer "F.Cu") (at 10 10 90)\n'
+               '   (property "Reference" "R9")\n'
+               '   (pad "1" smd roundrect (at -1 0 90) (size 1 2) (net 1 "SIG")))\n'
+               ' (segment (start 10 11) (end 20 11) (width 0.3) (layer "F.Cu") (net 1)))\n')
+        b = parse_kicad_pcb(txt)
+        pad = b.footprints[0].pads[0]
+        self.assertEqual(pad.angle_deg, 90.0)
+        self.assertEqual(pad.shape, "roundrect")
+        self.assertIn('transform="rotate(-90', board_svg(b))
 
 
 if __name__ == "__main__":
