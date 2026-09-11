@@ -1,6 +1,6 @@
 # ============================================================================
 #  KinematiK — one-time migration: legacy single-tenant CAD library
-#  ->  a workspace-scoped project store (post-accounts world).
+#  ->  workspace-scoped project store (post-accounts world).
 #
 #  WHY THIS EXISTS
 #  ---------------
