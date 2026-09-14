@@ -390,6 +390,26 @@ def unum(container, label_with_unit, lo, hi, val, unit, *, step=None, key=None,
         except (TypeError, ValueError):
             pass
     result = container.number_input(lbl, d_lo, d_hi, value=d_val, **extra, **kw)
+    if result is None:
+        # Streamlit hands back None when the box is empty -- either because we
+        # passed value=None with nothing in session state yet, or because the
+        # user selected the contents and deleted them. Never feed that to
+        # float(); fall back to the last value we knew about, then to a number
+        # inside [lo, hi].
+        fallback = d_val
+        if fallback is None and key is not None and st is not None:
+            shadow = st.session_state.get(f"_u_{key}")
+            try:
+                fallback = conv(float(shadow[0]), unit)
+            except (TypeError, ValueError, IndexError):
+                fallback = None
+        if fallback is None:
+            fallback = 0.0
+        if d_lo is not None:
+            fallback = max(fallback, d_lo)
+        if d_hi is not None:
+            fallback = min(fallback, d_hi)
+        result = fallback
     metric_result = back(float(result), unit)
     if key is not None and st is not None:
         st.session_state[f"_u_{key}"] = (metric_result, current_system())
