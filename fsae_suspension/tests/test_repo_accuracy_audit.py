@@ -161,6 +161,11 @@ _ABS_ALLOW = {
         # point of that helper. Reviewed 2026-08.
         "dz",
     },
+    "suspension/genesis_repro.py": {
+        # seg_seg_dist: `abs(dx)` is a direction-agnostic distance calculation
+        # between two line segments — sign is irrelevant. Reviewed 2026-09.
+        "dx",
+    },
     "suspension/adapter.py": {
         # Same: guard only; the divisions use the signed offset. Reviewed
         # alongside the kinematics fix so the two solvers stay in step.
