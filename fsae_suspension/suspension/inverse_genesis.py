@@ -308,6 +308,49 @@ class KeepOutBox:
 
 
 @dataclass
+class PointSpacing:
+    """A relation BETWEEN two hardpoints that no per-point box can express.
+
+    Requires ``coord(b) - coord(a) >= min_gap_mm`` along ``axis`` ("x", "y"
+    or "z"), or — with ``axis="dist"`` — the Euclidean distance |b - a| to be
+    at least ``min_gap_mm``. Along an axis this is an ORDERING as well as a
+    base length: "lower_front_inner ahead of lower_rear_inner by >= 150 mm"
+    is ``PointSpacing("lower_front_inner", "lower_rear_inner", "x", 150)``
+    in corner axes (x rearward). Enforced exactly like a keep-out: a step
+    that breaks it is refused, not penalised.
+    """
+    a: str
+    b: str
+    axis: str = "x"
+    min_gap_mm: float = 0.0
+    label: str = ""
+
+    def __post_init__(self):
+        for n in (self.a, self.b):
+            if n not in PERTURBABLE_OR_FIXED:
+                raise ValueError(f"PointSpacing: unknown hardpoint '{n}'.")
+        if self.axis not in ("x", "y", "z", "dist"):
+            raise ValueError("PointSpacing.axis must be x, y, z or dist.")
+        self.min_gap_mm = float(self.min_gap_mm)
+        if not self.label:
+            rel = ("|b-a|" if self.axis == "dist"
+                   else f"{self.b}.{self.axis} - {self.a}.{self.axis}")
+            self.label = f"spacing {rel} >= {self.min_gap_mm:g} mm"
+
+    def gap(self, hp: Hardpoints) -> float:
+        pa = np.asarray(getattr(hp, self.a), float)
+        pb = np.asarray(getattr(hp, self.b), float)
+        if self.axis == "dist":
+            return float(np.linalg.norm(pb - pa))
+        k = _AXES.index(self.axis)
+        return float(pb[k] - pa[k])
+
+
+PERTURBABLE_OR_FIXED: tuple[str, ...] = DESIGNABLE_POINTS + (
+    "wheel_center", "contact_patch")
+
+
+@dataclass
 class LegalVolume:
     """Where each movable hardpoint is ALLOWED to exist.
 
@@ -325,6 +368,8 @@ class LegalVolume:
     keep_out: list[object] = _dcfield(default_factory=list)
     probe_radius_mm: float = 0.0
     min_clearance_mm: float = 0.0
+    #: relations between points (minimum wishbone base, fore/aft ordering)
+    spacings: list[PointSpacing] = _dcfield(default_factory=list)
 
     def __post_init__(self):
         if not self.boxes:
@@ -402,6 +447,11 @@ class LegalVolume:
             for p, c in zip(self.points(), cl):
                 if c < self.min_clearance_mm - 1e-12:
                     out.append((p, str(lab), float(c)))
+        for sp in self.spacings:
+            g = sp.gap(hp)
+            if g < sp.min_gap_mm - 1e-12:
+                out.append((f"{sp.a}->{sp.b}", sp.label,
+                            float(g - sp.min_gap_mm)))
         return out
 
 

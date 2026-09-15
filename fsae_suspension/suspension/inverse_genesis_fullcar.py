@@ -294,6 +294,19 @@ class DesignSpace:
     weight_dist_front: float = 0.47
     cla: float = 2.6                     # downforce area Cl·A, m²
     cda: float = 1.1                     # drag area Cd·A, m²
+    # -- reproducibility: declared-car overrides ---------------------------- #
+    #: rear track; None keeps the legacy 0.98 × track_mm (stated in reports)
+    track_rear_mm: float | None = None
+    #: "linear" (legacy placeholder) or "mf52_generic" (tiremodel.default_tire:
+    #: synthetic MF5.2 lateral set, peak µ 1.55 at 1100 N — NOT measured)
+    tire_model: str = "linear"
+    #: direct axle roll stiffness, N·m/deg (None → VehicleParams defaults)
+    roll_stiffness_front: float | None = None
+    roll_stiffness_rear: float | None = None
+
+    def rear_track(self) -> float:
+        return (float(self.track_rear_mm) if self.track_rear_mm is not None
+                else 0.98 * float(self.track_mm))
 
     def series_options(self) -> list[int]:
         lo, hi = int(self.series_range[0]), int(self.series_range[1])
@@ -417,15 +430,30 @@ def _vehicle_for(cfg: FullCarConfig, space: DesignSpace,
     weighs, the car's fixed geometry, the placeholder grip model. Geometry
     tabs would feed solved camber; here the fixed grip model is enough to
     RANK configurations, which is all this stage claims."""
+    kw = {}
+    if space.roll_stiffness_front is not None:
+        kw["roll_stiffness_front"] = float(space.roll_stiffness_front)
+    if space.roll_stiffness_rear is not None:
+        kw["roll_stiffness_rear"] = float(space.roll_stiffness_rear)
     vp = VehicleParams(
         mass=derived["mass_kg"],
         cg_height=space.cg_height_mm,
         wheelbase=space.wheelbase_mm,
         track_front=space.track_mm,
-        track_rear=space.track_mm * 0.98,
+        track_rear=space.rear_track(),
         weight_dist_front=space.weight_dist_front,
+        **kw,
     )
-    return VehicleDynamics(vp)
+    return VehicleDynamics(vp, tire=_tire_for(space))
+
+
+def _tire_for(space: DesignSpace):
+    if space.tire_model == "linear":
+        return None
+    if space.tire_model == "mf52_generic":
+        from .tiremodel import default_tire
+        return default_tire()
+    raise ValueError(f"Unknown tire_model '{space.tire_model}'.")
 
 
 def _powertrain_for(cfg: FullCarConfig, space: DesignSpace,
@@ -909,9 +937,13 @@ def _no_survivor_reason(finalists: list[ConfigScore], rules: RuleMatrix,
 # --------------------------------------------------------------------------- #
 #  Stage: kinematic intent synthesis — the winning car's demands as curves.
 # --------------------------------------------------------------------------- #
-def kinematic_intent_for(score: ConfigScore, space: DesignSpace,
+def kinematic_intent_for(score: ConfigScore | None, space: DesignSpace,
                          hp: Hardpoints | None = None,
-                         stations_mm: np.ndarray | None = None
+                         stations_mm: np.ndarray | None = None,
+                         roll_gradient_deg_per_g: float = 1.2,
+                         bands: dict[str, float] | None = None,
+                         declared: dict[str, float] | None = None,
+                         peak_lat_g: float | None = None,
                          ) -> _ig.GenesisTargets:
     """Turn the winning car's dynamics into a drawn kinematic INTENT — a
     ``GenesisTargets`` in the corner engine's exact dialect, ready to hand to
@@ -934,12 +966,33 @@ def kinematic_intent_for(score: ConfigScore, space: DesignSpace,
         # fall back to a flat intent seeded at static if the sweep won't run
         vals = {ch: np.zeros_like(stations) for ch in _ig.CHANNELS}
 
-    peak_g = score.peak_lat_g if math.isfinite(score.peak_lat_g) else 1.4
-    # roll angle at the limit ≈ peak_g · (a representative roll gradient,
-    # deg/g). Camber must gain roughly this over bump travel to keep the
-    # outer tyre upright — the classic double-wishbone camber-gain target.
-    roll_grad_deg_per_g = 1.2
-    roll_deg = peak_g * roll_grad_deg_per_g
+    # DECLARED intent (a paper's stated targets) bypasses the derivation:
+    #   declared = {"static_camber": -1.5, "camber_gain": -0.035,
+    #               "toe": 0.0, "rc_height": 55.0}  (+ optional "scrub")
+    b = {"camber_deg": 0.20, "toe_deg": 0.10, "rc_height_mm": 6.0,
+         "scrub_mm": 3.0}
+    b.update(bands or {})
+    if declared is not None:
+        from .genesis_repro import linear_targets
+        return linear_targets(
+            stations, static_camber=declared.get("static_camber", -1.5),
+            camber_gain=declared.get("camber_gain"),
+            camber_band=b["camber_deg"], toe=declared.get("toe"),
+            toe_band=b["toe_deg"], rc_height=declared.get("rc_height"),
+            rc_band=b["rc_height_mm"], scrub=declared.get("scrub"),
+            scrub_band=b["scrub_mm"], track_mm=space.track_mm)
+
+    if peak_lat_g is not None:
+        peak_g = float(peak_lat_g)
+    elif score is not None and math.isfinite(score.peak_lat_g):
+        peak_g = score.peak_lat_g
+    else:
+        peak_g = 1.4
+    # roll angle at the limit ≈ peak_g · roll gradient (deg/g). Camber must
+    # gain roughly this over bump travel to keep the outer tyre upright — the
+    # classic double-wishbone camber-gain target. The gradient is an INPUT:
+    # 1.2 deg/g is the legacy representative value; pass the car's own.
+    roll_deg = peak_g * float(roll_gradient_deg_per_g)
     # target camber curve: static camber at ride, gaining toward upright in
     # bump by the roll angle scaled over the travel range.
     static_camber = float(vals["camber_deg"][np.argmin(np.abs(stations))]) \
@@ -952,18 +1005,19 @@ def kinematic_intent_for(score: ConfigScore, space: DesignSpace,
 
     return _ig.GenesisTargets(curves=[
         _ig.TargetCurve("camber_deg", stations, camber_target,
-                        np.full(len(stations), 0.20)),
+                        np.full(len(stations), b["camber_deg"])),
         _ig.TargetCurve("toe_deg", stations, toe_target,
-                        np.full(len(stations), 0.10)),
+                        np.full(len(stations), b["toe_deg"])),
         _ig.TargetCurve("rc_height_mm", stations, rc_target,
-                        np.full(len(stations), 6.0)),
+                        np.full(len(stations), b["rc_height_mm"])),
     ], track_mm=space.track_mm)
 
 
 def synthesize_hardpoints(score: ConfigScore, space: DesignSpace,
                           hp: Hardpoints | None = None,
                           volume: _ig.LegalVolume | None = None,
-                          fld=None, **genesis_kw) -> _ig.GenesisResult:
+                          fld=None, intent_kw: dict | None = None,
+                          **genesis_kw) -> _ig.GenesisResult:
     """Hand the winning car's derived kinematic intent to the EXISTING
     corner-level InverseGenesis and realise it as 3D hardpoints — same
     build-yield co-optimization, keep-out filter and honesty the corner
@@ -974,7 +1028,7 @@ def synthesize_hardpoints(score: ConfigScore, space: DesignSpace,
     field for a build-ready generate.
     """
     hp = hp or Hardpoints.default()
-    targets = kinematic_intent_for(score, space, hp=hp)
+    targets = kinematic_intent_for(score, space, hp=hp, **(intent_kw or {}))
     if volume is None:
         volume = _ig.LegalVolume.around(
             hp, 8.0, points=["upper_front_inner", "upper_rear_inner"])
@@ -1018,6 +1072,150 @@ def load_case_for(score: ConfigScore, space: DesignSpace,
     return LoadCase(fz_n=fz_outer, mu_lateral=peak_g,
                     member_forces={k: float(v) for k, v in mf.forces.items()},
                     condition=mf.condition, note=mf.note)
+
+
+# --------------------------------------------------------------------------- #
+#  Declared-car mode: evaluate ONE stated vehicle, no configuration search.
+# --------------------------------------------------------------------------- #
+LBF_IN_TO_N_MM = 0.1751268
+
+
+@dataclass
+class DeclaredCar:
+    """A vehicle stated in full, the way a paper's parameter table states it.
+
+    Every field is an input; nothing is searched. ``front_hp``/``rear_hp``
+    attach the real corners (roll centres and camber come from them). Spring
+    rates are COIL rates (N/mm) and only drive roll stiffness when
+    ``use_spring_rates`` is True AND the corner defines a rocker — otherwise
+    the motion ratio is a proxy, and ``summary()`` says so.
+    """
+    mass_kg: float = 300.0
+    weight_dist_front: float = 0.48
+    cg_height_mm: float = 280.0
+    wheelbase_mm: float = 1630.0
+    track_front_mm: float = 1210.0
+    track_rear_mm: float = 1210.0
+    tire_model: str = "mf52_generic"
+    front_hp: Hardpoints | None = None
+    rear_hp: Hardpoints | None = None
+    roll_stiffness_front: float = 350.0
+    roll_stiffness_rear: float = 300.0
+    use_spring_rates: bool = False
+    spring_rate_front: float = 35.0
+    spring_rate_rear: float = 35.0
+    arb_rate_front: float = 0.0
+    arb_rate_rear: float = 0.0
+    power_kw: float = 80.0
+    cla: float = 0.0
+    cda: float = 1.1
+    drive: str = "rwd"
+
+    def vehicle(self, **over) -> VehicleDynamics:
+        d = {**self.__dict__, **over}
+        vp = VehicleParams(
+            mass=d["mass_kg"], cg_height=d["cg_height_mm"],
+            wheelbase=d["wheelbase_mm"], track_front=d["track_front_mm"],
+            track_rear=d["track_rear_mm"],
+            weight_dist_front=d["weight_dist_front"],
+            roll_stiffness_front=d["roll_stiffness_front"],
+            roll_stiffness_rear=d["roll_stiffness_rear"],
+            use_spring_rates=d["use_spring_rates"],
+            spring_rate_front=d["spring_rate_front"],
+            spring_rate_rear=d["spring_rate_rear"],
+            arb_rate_front=d["arb_rate_front"],
+            arb_rate_rear=d["arb_rate_rear"],
+            static_camber_front=(d["front_hp"].static_camber
+                                 if d["front_hp"] is not None else -1.5),
+            static_camber_rear=(d["rear_hp"].static_camber
+                                if d["rear_hp"] is not None else -1.5))
+        fk = (SuspensionKinematics(d["front_hp"])
+              if d["front_hp"] is not None else None)
+        rk = (SuspensionKinematics(d["rear_hp"])
+              if d["rear_hp"] is not None else None)
+        space = DesignSpace(tire_model=d["tire_model"])
+        return VehicleDynamics(vp, front_kin=fk, rear_kin=rk,
+                               tire=_tire_for(space))
+
+    def powertrain(self, **over) -> Powertrain:
+        d = {**self.__dict__, **over}
+        return Powertrain(power_kw=d["power_kw"], cla=d["cla"], cda=d["cda"],
+                          drive=d["drive"])
+
+    def lap(self, track: Track | None = None, **over) -> LapResult:
+        return simulate_lap(self.vehicle(**over), track or default_autocross(),
+                            self.powertrain(**over))
+
+    def summary(self, lateral_g: float = 1.5) -> dict:
+        """The vehicle-level table (roll centres, roll stiffness and share,
+        max lateral g, balance, body roll, inside-front load, lift-off g)."""
+        v = self.vehicle()
+        loads, info = v.lateral_load_transfer(lateral_g)
+        kf, kr = info["roll_stiffness_front"], info["roll_stiffness_rear"]
+        bal = v.balance_index(lateral_g)
+        # lift-off: the lateral g at which the inside front unloads
+        lo, hi = 0.0, 5.0
+        for _ in range(50):
+            mid = 0.5 * (lo + hi)
+            if v.lateral_load_transfer(mid)[0].fl > 0.0:
+                lo = mid
+            else:
+                hi = mid
+        mr_flags = {}
+        for ax, kin in (("front", v.front_kin), ("rear", v.rear_kin)):
+            if kin is None:
+                mr_flags[ax] = "no geometry"
+            else:
+                solved = bool(kin.motion_ratio_is_real())
+                mr_flags[ax] = ("solved from rocker" if solved
+                                else "PROXY (no rocker defined)")
+        return {
+            "grip_model": v.grip_model_name(),
+            "rc_front_mm": float(info["rc_front"]),
+            "rc_rear_mm": float(info["rc_rear"]),
+            "roll_stiffness_front": float(kf),
+            "roll_stiffness_rear": float(kr),
+            "front_roll_share": float(kf / (kf + kr)) if kf + kr else math.nan,
+            "roll_stiffness_source": ("spring rates × MR² + ARB"
+                                      if self.use_spring_rates
+                                      else "declared directly"),
+            "motion_ratio": mr_flags,
+            "max_lateral_g": float(v.max_lateral_g()),
+            "lateral_g": lateral_g,
+            "balance_index": float(bal[0]),
+            "body_roll_deg": float(info["roll_angle"]),
+            "inside_front_load_N": float(loads.fl),
+            "inside_front_liftoff_g": float(lo),
+        }
+
+
+def lap_sensitivity(car: DeclaredCar, channel: str, values,
+                    track: Track | None = None) -> dict:
+    """Sweep one declared parameter and report lap time at each value.
+
+    ``channel`` is any DeclaredCar field, or ``"front_roll_share"`` which
+    redistributes the car's total direct roll stiffness. Returns the table,
+    the spread (max − min) and the argmin — Table-2-style, deterministic.
+    """
+    track = track or default_autocross()
+    base = car.lap(track).lap_time_s
+    rows = []
+    for x in values:
+        if channel == "front_roll_share":
+            tot = car.roll_stiffness_front + car.roll_stiffness_rear
+            over = {"roll_stiffness_front": tot * float(x),
+                    "roll_stiffness_rear": tot * (1.0 - float(x)),
+                    "use_spring_rates": False}
+        elif channel in car.__dict__:
+            over = {channel: x}
+        else:
+            raise ValueError(f"Unknown sweep channel '{channel}'.")
+        rows.append((float(x), float(car.lap(track, **over).lap_time_s)))
+    times = [t for _, t in rows]
+    return {"channel": channel, "baseline_s": float(base),
+            "track_length_m": float(track.total_length()),
+            "rows": rows, "spread_s": float(max(times) - min(times)),
+            "best_value": rows[int(np.argmin(times))][0]}
 
 
 # --------------------------------------------------------------------------- #
