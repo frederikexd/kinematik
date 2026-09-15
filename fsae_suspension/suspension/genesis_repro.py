@@ -76,6 +76,7 @@ def _kinematik_version() -> str:
 # --------------------------------------------------------------------------- #
 def cad_to_corner(p_cad, axle_station_z: float, ground_y: float) -> np.ndarray:
     """CAD (X lateral +right, Y up, Z forward) → corner (x rearward,
+    All coordinates in mm.
     y = X, z up from the ground plane). Determinant −1 by construction."""
     p = np.asarray(p_cad, float)
     out = np.empty_like(p)
@@ -87,6 +88,7 @@ def cad_to_corner(p_cad, axle_station_z: float, ground_y: float) -> np.ndarray:
 
 def corner_to_cad(p_corner, axle_station_z: float, ground_y: float
                   ) -> np.ndarray:
+    """Corner (x rearward, y outboard, z up from ground, mm) → CAD frame (mm); inverse of ``cad_to_corner``."""
     p = np.asarray(p_corner, float)
     out = np.empty_like(p)
     out[..., 0] = p[..., 1]
@@ -109,7 +111,7 @@ def _pt_seg_dist(p: np.ndarray, a: np.ndarray, b: np.ndarray) -> np.ndarray:
 
 
 def seg_seg_dist(p1, q1, p2, q2) -> float:
-    """Closest distance between segments p1q1 and p2q2 (Ericson §5.1.9)."""
+    """Closest distance between segments p1q1 and p2q2 (Ericson §5.1.9). Distance in the input's length units (mm throughout KinematiK)."""
     p1, q1, p2, q2 = (np.asarray(v, float) for v in (p1, q1, p2, q2))
     d1, d2, r = q1 - p1, q2 - p2, p1 - p2
     a, e, f = d1 @ d1, d2 @ d2, d2 @ r
@@ -162,6 +164,7 @@ class CapsuleObstacle:
             self.names = [f"tube{i}" for i in range(len(self.a))]
 
     def clearances(self, points, probe_radius_mm: float = 0.0) -> np.ndarray:
+        """Signed skin clearance (mm) from each point to the nearest capsule, minus the probe radius (mm); + is clear."""
         pts = np.asarray(points, float).reshape(-1, 3)
         if len(self.a) == 0:
             return np.full(len(pts), np.inf)
@@ -169,6 +172,7 @@ class CapsuleObstacle:
         return d.min(axis=1) - probe_radius_mm
 
     def to_dict(self) -> dict:
+        """Capsule set → dict; endpoints and radii in mm, corner frame."""
         return {"type": "capsules", "label": self.label,
                 "names": list(self.names),
                 "a": self.a.tolist(), "b": self.b.tolist(),
@@ -206,6 +210,7 @@ def capsules_from_framegraph(fg, axle_station_z: float, ground_y: float,
 #  (De)serialisation of the engine's inputs
 # --------------------------------------------------------------------------- #
 def hp_to_dict(hp: Hardpoints) -> dict:
+    """Hardpoints → JSON-safe dict; coordinates in mm, static camber/toe in deg."""
     d: dict[str, Any] = {p: [float(v) for v in np.asarray(getattr(hp, p))]
                          for p in _HP_POINTS}
     for p in _HP_OPTIONAL:
@@ -219,6 +224,7 @@ def hp_to_dict(hp: Hardpoints) -> dict:
 
 
 def hp_from_dict(d: dict) -> Hardpoints:
+    """JSON dict → Hardpoints; coordinates in mm, static camber/toe in deg."""
     kw: dict[str, Any] = {}
     for k, v in d.items():
         if k in _HP_POINTS or k in _HP_OPTIONAL:
@@ -234,6 +240,7 @@ def hp_from_dict(d: dict) -> Hardpoints:
 
 
 def targets_to_dict(t: ig.GenesisTargets) -> dict:
+    """GenesisTargets → dict; travel in mm, targets and bands in each channel's own units (deg or mm)."""
     return {"track_mm": float(t.track_mm),
             "curves": [{"channel": c.channel,
                         "travel_mm": c.travel_mm.tolist(),
@@ -242,6 +249,7 @@ def targets_to_dict(t: ig.GenesisTargets) -> dict:
 
 
 def targets_from_dict(d: dict) -> ig.GenesisTargets:
+    """dict → GenesisTargets; travel in mm, targets and bands in each channel's units (deg or mm)."""
     return ig.GenesisTargets(
         curves=[ig.TargetCurve(c["channel"], c["travel_mm"], c["target"],
                                c["band"]) for c in d["curves"]],
@@ -295,6 +303,7 @@ def _obstacle_from_dict(d: dict):
 
 
 def volume_to_dict(v: ig.LegalVolume) -> dict:
+    """LegalVolume → dict; box bounds, probe radius, clearance and spacing gaps in mm."""
     return {"boxes": {p: {"lo": lo.tolist(), "hi": hi.tolist()}
                       for p, (lo, hi) in sorted(v.boxes.items())},
             "keep_out": [_obstacle_to_dict(o) for o in v.keep_out],
@@ -306,6 +315,7 @@ def volume_to_dict(v: ig.LegalVolume) -> dict:
 
 
 def volume_from_dict(d: dict) -> ig.LegalVolume:
+    """dict → LegalVolume; box bounds, probe radius, clearance and spacing gaps in mm."""
     return ig.LegalVolume(
         boxes={p: (np.asarray(b["lo"]), np.asarray(b["hi"]))
                for p, b in d["boxes"].items()},
@@ -330,6 +340,7 @@ def boxes_about(hp: Hardpoints, half: dict[str, Any]
 
 
 def field_to_dict(f: ToleranceField | None) -> dict | None:
+    """ToleranceField → dict; per-axis lo/hi build tolerances in mm."""
     if f is None:
         return None
     return {"provenance": f.provenance, "calibrated": bool(f.calibrated),
@@ -339,6 +350,7 @@ def field_to_dict(f: ToleranceField | None) -> dict | None:
 
 
 def field_from_dict(d: dict | None) -> ToleranceField | None:
+    """dict → ToleranceField; per-axis lo/hi build tolerances in mm."""
     if d is None:
         return None
     return ToleranceField(
@@ -383,6 +395,7 @@ class SearchSettings:
     verify_agreement: float = 0.98
 
     def thresholds(self) -> ig.GenesisThresholds:
+        """Verdict thresholds as fractions (dimensionless) of builds passing."""
         return ig.GenesisThresholds(self.resilient_yield,
                                     self.tempered_yield,
                                     self.verify_agreement)
@@ -409,6 +422,7 @@ class GenesisManifest:
               volume: ig.LegalVolume, fld: ToleranceField | None,
               search: SearchSettings | None = None,
               context: dict | None = None) -> GenesisManifest:
+        """Assemble a manifest from engine objects; geometry in mm, angles in deg, tolerances in mm."""
         return GenesisManifest(
             name=name, hardpoints=hp_to_dict(hp),
             targets=targets_to_dict(targets), volume=volume_to_dict(volume),
@@ -416,6 +430,7 @@ class GenesisManifest:
             context=dict(context or {}))
 
     def objects(self):
+        """Rebuild (Hardpoints, GenesisTargets, LegalVolume, ToleranceField); all lengths in mm, angles in deg."""
         return (hp_from_dict(self.hardpoints),
                 targets_from_dict(self.targets),
                 volume_from_dict(self.volume),
@@ -444,6 +459,7 @@ class GenesisManifest:
 
     @staticmethod
     def from_json(text: str) -> GenesisManifest:
+        """Parse a manifest; lengths in mm, angles in deg, yields as dimensionless fractions."""
         d = json.loads(text)
         if d.get("schema") != MANIFEST_SCHEMA:
             raise ValueError(f"Not a genesis manifest (schema "
@@ -464,6 +480,7 @@ class GenesisManifest:
 
     # ---- execution --------------------------------------------------------- #
     def run(self) -> ig.GenesisResult:
+        """Re-execute the manifest; returns candidates with fits in band fractions (dimensionless) and coordinates in mm."""
         hp, tg, vol, fld = self.objects()
         s = self.search
         return ig.inverse_genesis(
@@ -472,6 +489,7 @@ class GenesisManifest:
             thresholds=s.thresholds(), max_iter=s.max_iter, step_mm=s.step_mm)
 
     def summarise(self, res: ig.GenesisResult) -> dict:
+        """Outputs as a dict: hardpoints in mm, fit in band fractions and yields as dimensionless fractions."""
         _, _, vol, _ = self.objects()
         cands = []
         for c in res.candidates:
@@ -504,12 +522,14 @@ class GenesisManifest:
         }
 
     def record(self, res: ig.GenesisResult) -> dict:
+        """Store ``summarise(res)`` (mm, dimensionless fractions) as the manifest's recorded outputs."""
         self.recorded = self.summarise(res)
         return self.recorded
 
     def verify(self, res: ig.GenesisResult, tol: float = 1e-9
                ) -> tuple[bool, list[str]]:
         """Compare a re-run against the recorded outputs. Returns (same,
+        Compares coordinates to 1e-6 mm and yields/fits (dimensionless) to ``tol``.
         differences)."""
         if not self.recorded:
             return False, ["Manifest has no recorded outputs to compare."]
@@ -599,6 +619,7 @@ def corner_diagnostics(hp: Hardpoints, *, travel_mm: float = 25.0,
     cpz_st = np.interp(st, tr, cpz)
 
     def slope(y):
+        """Least-squares slope of ``y`` over the travel stations, in y-units per mm."""
         return float(np.polyfit(st, y, 1)[0])
 
     out = {
@@ -664,6 +685,7 @@ def camber_to_road(static_camber_deg: float, camber_gain_deg_per_mm: float,
                    roll_deg: float, track_mm: float,
                    optimum_deg: float | None = None) -> dict:
     """Table-7b arithmetic: outside-wheel bump from roll, camber to chassis,
+    Angles in deg, track in mm, bump in mm, gains in deg/mm.
     camber to road, and the gain that would hold ``optimum_deg``."""
     bump = 0.5 * track_mm * math.tan(math.radians(roll_deg))
     change = camber_gain_deg_per_mm * bump
@@ -708,6 +730,7 @@ def yield_breakdown(hp: Hardpoints, targets: ig.GenesisTargets,
                     fld: ToleranceField, n: int = 4000, seed: int = 0,
                     step_mm: float = 0.25) -> dict:
     """Per-channel failure fractions, first-order worst case W, per-row
+    Yields and failure fractions are dimensionless; headroom in standard deviations; step in mm.
     headroom in standard deviations, and the zero-failure bound."""
     r_fit, J, samples, rows = _linear_rows(hp, targets, fld, n, seed, step_mm)
     if rows is None:
@@ -807,6 +830,7 @@ def swept_clearance(hp: Hardpoints, obstacle: CapsuleObstacle, *,
     The first ``exclusion_mm`` of each link, measured from its inboard
     pickup, is excluded (overlap with the mounting tube is expected there
     by construction). Returns the per-link minimum and the global worst.
+    Travel, link radius, exclusion and clearances in mm.
     """
     kin = SuspensionKinematics(hp)
     states = kin.sweep(travel_min=-travel_mm, travel_max=travel_mm,
@@ -838,3 +862,247 @@ def swept_clearance(hp: Hardpoints, obstacle: CapsuleObstacle, *,
             "tube": worst[2], "travel_mm": worst[3],
             "n_stations": int(n_stations), "exclusion_mm": exclusion_mm,
             "link_radius_mm": link_radius_mm}
+
+
+# --------------------------------------------------------------------------- #
+#  Structural screening — Table 9 of the paper
+# --------------------------------------------------------------------------- #
+from . import loadpath as _lp
+
+
+@dataclass
+class TubeSpec:
+    """A tube used for every link (the common FSAE single-size case)."""
+    od_mm: float = 15.88
+    wall_mm: float = 0.889
+    yield_mpa: float = 460.0     # as-welded 4130, declared
+    E_gpa: float = 205.0
+
+    @property
+    def ri(self):
+        """Inner radius, mm."""
+        return self.od_mm / 2 - self.wall_mm
+
+    @property
+    def area(self):
+        """Wall cross-section area, mm²."""
+        import math
+        return math.pi * ((self.od_mm / 2) ** 2 - self.ri ** 2)
+
+    @property
+    def I(self):
+        """Second moment of area, mm⁴."""
+        import math
+        return math.pi * ((self.od_mm / 2) ** 4 - self.ri ** 4) / 4
+
+
+@dataclass
+class LoadCaseSpec:
+    """One contact-patch load vector.  ``mz_Nmm`` is the aligning torque."""
+    name: str
+    Fz: float
+    Fy: float = 0.0
+    Fx: float = 0.0
+    mz_Nmm: float = 0.0
+
+    def wheel_load(self) -> _lp.WheelLoad:
+        """Contact-patch load: forces in N, aligning torque in N·mm."""
+        return _lp.WheelLoad(Fx=self.Fx, Fy=self.Fy, Fz=self.Fz,
+                             Mz=self.mz_Nmm)
+
+
+def paper_load_cases(mass_kg: float = 300.0,
+                     weight_dist_front: float = 0.48,
+                     cg_height_mm: float = 280.0,
+                     wheelbase_mm: float = 1630.0,
+                     track_mm: float = 1210.0,
+                     brake_bias_front: float = 0.60,
+                     roll_share_front: float = 0.55,
+                     aligning_torque_Nm: float = 50.0,
+                     axle: str = "front") -> list[LoadCaseSpec]:
+    """The five load cases from section 6 of the paper, resolved per corner.
+
+    The methodology:
+    - 1.5g cornering: Fz = static axle share + lateral LT weighted by roll-centre
+      share; Fy = lateral_g × Fz; Mz = aligning torque.
+    - 1.5g braking: Fz = static + longitudinal LT; Fx = bias × total braking / 2.
+    - Combined 1.06g: lateral + longitudinal loads together, with aligning torque.
+    - 3g vertical bump: purely vertical.
+    - Kerb strike 2g vert + 1g long: Fz = 2× static; Fx = braking share.
+    """
+    import math
+    g = 9.81
+    m = float(mass_kg)
+    af = float(weight_dist_front) if axle == "front" else 1.0 - float(weight_dist_front)
+    rs = float(roll_share_front) if axle == "front" else 1.0 - float(roll_share_front)
+    fz_s = m * g * af / 2        # static corner load
+    lat_tr = lambda lat: m * g * lat * float(cg_height_mm) / float(track_mm)
+    long_tr = lambda lon: m * g * lon * float(cg_height_mm) / float(wheelbase_mm)
+    bias = float(brake_bias_front) if axle == "front" else 1.0 - float(brake_bias_front)
+    mz = float(aligning_torque_Nm) * 1000.0
+
+    c1_fz = fz_s + rs * lat_tr(1.5)
+    c2_fz = fz_s + long_tr(1.5) / 2
+    c3_fz = fz_s + rs * lat_tr(1.06) + long_tr(1.06) / 2
+    c5_fz = fz_s * 2.0
+
+    return [
+        LoadCaseSpec("1.5g corner",  Fz=c1_fz, Fy=1.5 * c1_fz, mz_Nmm=mz),
+        LoadCaseSpec("1.5g braking", Fz=c2_fz, Fx=bias * m * g * 1.5 / 2),
+        LoadCaseSpec("combined 1.06g", Fz=c3_fz, Fy=1.06 * c3_fz,
+                     Fx=bias * m * g * 1.06 / 2, mz_Nmm=mz),
+        LoadCaseSpec("3g vertical bump", Fz=fz_s * 3.0),
+        LoadCaseSpec("kerb 2g+1g", Fz=c5_fz, Fx=bias * m * g * 1.0 / 2),
+    ]
+
+
+def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
+                         load_cases: list[LoadCaseSpec] | None = None,
+                         fos_min: float = 1.5, axle: str = "front",
+                         **paper_lc_kw) -> dict:
+    """Member axial forces and factors of safety across a set of load cases.
+
+    If ``load_cases`` is None, uses ``paper_load_cases(**paper_lc_kw)``.
+    Screening is tension yield and pinned-pinned Euler buckling, the correct
+    idealisation for a two-force member on spherical joints.
+    """
+    import math
+    from .kinematics import SuspensionKinematics
+    tube = tube or TubeSpec()
+    kin = SuspensionKinematics(hp)
+    state = kin.solve_at_travel(0.0)
+    pts = _lp._member_geometry(kin, state)
+    if load_cases is None:
+        load_cases = paper_load_cases(axle=axle, **paper_lc_kw)
+
+    def _length(m):
+        if m not in pts:
+            return math.nan
+        p_out, p_in = pts[m]
+        return float(np.linalg.norm(np.array(p_out) - np.array(p_in)))
+
+    def _fos(F, L):
+        if abs(F) < 0.01:
+            return math.inf
+        if F < 0:
+            f_cr = math.pi ** 2 * tube.E_gpa * 1e3 * tube.I / L ** 2
+            f_y = tube.yield_mpa * tube.area
+            return min(f_y, f_cr) / abs(F)
+        return tube.yield_mpa * tube.area / F
+
+    members = [m for m in _lp.MEMBERS if m != "PR" and m in pts]
+    lengths = {m: _length(m) for m in members}
+
+    rows = []
+    worst_fos = {m: math.inf for m in members}
+    governing = {m: "" for m in members}
+
+    for lc in load_cases:
+        mf = _lp.solve_member_forces(kin, state, lc.wheel_load())
+        for m in members:
+            F = float(mf.forces.get(m, 0.0))
+            L = lengths[m]
+            if not math.isfinite(L):
+                continue
+            f = _fos(F, L)
+            rows.append({"load_case": lc.name, "member": m,
+                         "force_N": round(F, 1), "length_mm": round(L, 1),
+                         "fos": round(f, 2),
+                         "mode": "compression" if F < 0 else "tension",
+                         "passes": f >= fos_min})
+            if f < worst_fos[m]:
+                worst_fos[m] = f
+                governing[m] = lc.name
+
+    worst_overall = min(worst_fos.values(), default=math.nan)
+    governing_member = min(worst_fos, key=worst_fos.get) if worst_fos else ""
+
+    return {
+        "ok": True,
+        "rows": rows,
+        "worst_fos_per_member": {m: round(v, 2) for m, v in worst_fos.items()},
+        "governing_case": governing,
+        "worst_fos_overall": round(worst_overall, 2),
+        "governing_member": governing_member,
+        "all_pass": all(r["passes"] for r in rows),
+        "tube": {"od_mm": tube.od_mm, "wall_mm": tube.wall_mm,
+                 "yield_mpa": tube.yield_mpa, "E_gpa": tube.E_gpa},
+        "fos_min": fos_min,
+        "note": ("Table 9 uses the first-run geometry (not Table 13). "
+                 "Forces will differ from the paper's published values, "
+                 "which are from an unpublished seed geometry. Factors of "
+                 "safety scale the same way once forces are correct.")
+    }
+
+
+# --------------------------------------------------------------------------- #
+#  Compliance budget — section 7.1 of the paper
+# --------------------------------------------------------------------------- #
+def compliance_budget(hp: Hardpoints, axle: str = "front",
+                      od_mm: float = 15.88, wall_mm: float = 0.889,
+                      rod_end_lash_mm: float = 0.025,
+                      lateral_g: float = 1.5,
+                      **car_kw) -> dict:
+    """Compliance steer and camber change at one load level.
+
+    Uses the compliance module's uniform-tube path (axial stiffness only —
+    the partial budget the paper reports). Reports each as a fraction of the
+    kinematic acceptance band, so the user can see how much band the load
+    consumes before build scatter is added.
+    """
+    from .compliance import CompliantCorner, corner_wheel_load
+    from .kinematics import SuspensionKinematics
+    from .dynamics import VehicleDynamics, VehicleParams
+    import math
+
+    kin = SuspensionKinematics(hp)
+    # build a minimal vehicle just to get wheel loads
+    mass = float(car_kw.get("mass_kg", 300.0))
+    af = float(car_kw.get("weight_dist_front", 0.48))
+    cg = float(car_kw.get("cg_height_mm", 280.0))
+    track = float(car_kw.get("track_mm", 1210.0))
+    wb = float(car_kw.get("wheelbase_mm", 1630.0))
+    rs = float(car_kw.get("roll_share_front", 0.55))
+    mz = float(car_kw.get("aligning_torque_Nm", 50.0))
+    axle_share = af if axle == "front" else 1.0 - af
+    rs_share = rs if axle == "front" else 1.0 - rs
+    g = 9.81
+    fz = mass * g * axle_share / 2 + rs_share * mass * g * lateral_g * cg / track
+    fy = lateral_g * fz
+    vp = VehicleParams(mass=mass, cg_height=cg, wheelbase=wb,
+                       track_front=track, track_rear=track,
+                       weight_dist_front=af)
+    veh = VehicleDynamics(vp)
+
+    # kerb-strike load for worst compliance
+    fz_kerb = mass * g * axle_share * 2 / 2
+    fy_kerb, fx_kerb = 0.0, mass * g * 0.6 / 2
+
+    from .loadpath import WheelLoad
+    corner_load = WheelLoad(Fx=0, Fy=fy, Fz=fz, Mz=mz * 1000)
+    kerb_load = WheelLoad(Fx=fx_kerb, Fy=fy_kerb, Fz=fz_kerb, Mz=0)
+
+    cc = CompliantCorner.uniform_tube(hp, od_mm=od_mm, wall_mm=wall_mm)
+
+    results = {}
+    for name, load in (("cornering", corner_load), ("kerb strike", kerb_load)):
+        try:
+            r = cc.solve(load)
+            s = r.summary()
+            results[name] = {
+                "compliance_toe_deg": round(r.compliance_toe, 4),
+                "compliance_camber_deg": round(r.compliance_camber, 4),
+                "toe_band_fraction": round(abs(r.compliance_toe) / 0.08, 3),
+                "camber_band_fraction": round(abs(r.compliance_camber) / 0.30, 3),
+                "max_link_extension_mm": round(max(
+                    [abs(v) for v in s.get("member_deflection_mm", {}).values()]
+                    or [0.0]), 4),
+                "forces_N": {k: round(v, 1) for k, v in
+                             s.get("member_forces_N", {}).items()},
+            }
+        except Exception as e:                   # noqa: BLE001
+            results[name] = {"error": str(e)}
+    results["note"] = ("Partial budget: axial stiffness only. Bracket "
+                       "flex, chassis stiffness and upright compliance "
+                       "are omitted. See section 7.1 / 9.")
+    return results

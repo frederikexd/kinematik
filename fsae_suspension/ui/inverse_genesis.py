@@ -139,10 +139,49 @@ def _parse_hardpoints_text(text: str, base):
     return gr.hp_from_dict(merged)
 
 
+def _log_run(ss, man, res, clearance=None):
+    """Append one declaration → outcome row (Tables 7 and 11 are this log)."""
+    from suspension import genesis_repro as gr
+    w = res.winner
+    best = w if w is not None else res.best_fit
+    row = {"declaration": man.name, "verdict": w.verdict if w else "NO_FIT",
+           "best yield (%)": (round(100 * w.yield_frac, 1)
+                              if w is not None and w.yield_frac is not None
+                              else None),
+           "worst station (× band)": (round(best.max_band_frac, 3)
+                                      if best is not None else None),
+           "binding row": best.worst_row if best is not None else "",
+           "shop": (man.tolerance or {}).get("provenance", "")[:40],
+           "RC band (± mm)": next((c["band"][0] for c in
+                                   man.targets["curves"]
+                                   if c["channel"] == "rc_height_mm"), None),
+           "RC migration (mm/mm)": None, "clearance (mm)": clearance,
+           "sha256": man.inputs_sha256[:12]}
+    if res.winner_hp is not None:
+        _, tg, _, _ = man.objects()
+        d = gr.corner_diagnostics(res.winner_hp, stations=tg.stations(),
+                                  track_mm=tg.track_mm)
+        if d.get("ok"):
+            row["RC migration (mm/mm)"] = round(
+                d["rc_migration_chassis_mm_per_mm"], 3)
+    ss.setdefault("ig_log", []).append(row)
+
+
+def _g(value, unit="", limited_by="", digits=4):
+    """Every number this tab prints is analytical: render it MODELLED."""
+    from suspension.provenance import graded
+    return graded(value, "modelled", unit, digits=digits,
+                  limited_by=limited_by)
+
+
+_TOL = "declared tolerance field"
+
+
 def _results_panel(st, pd, np, ss, run):
     """Everything shown after a run; reads only ``ss['ig_run']``."""
     from suspension import inverse_genesis as ig
     from suspension import genesis_repro as gr
+    from suspension import kinematik_stochastic as ks
 
     man = gr.GenesisManifest.from_json(run["manifest_json"])
     res = run["result"]
@@ -164,21 +203,21 @@ def _results_panel(st, pd, np, ss, run):
         st.error(res.reason)
         if res.best_fit is not None:
             st.caption(f"Closest legal approach: "
-                       f"{res.best_fit.max_band_frac:.2f}× band, governed "
+                       f"{_g(res.best_fit.max_band_frac, '× band', digits=3)}, governed "
                        f"by {res.best_fit.worst_row}. This is an upper bound "
                        "on the true minimax distance, not the distance.")
     else:
         w = res.winner
         badge, blurb = _VERDICT_BLURB.get(w.verdict, ("", ""))
-        ytxt = f" — build yield {w.yield_frac*100:.1f}%" \
+        ytxt = f" — build yield {_g(w.yield_frac * 100, '%', _TOL)}" \
             if w.yield_frac is not None else ""
         st.markdown(f"## {badge} {w.verdict}{ytxt}")
         st.caption(blurb)
         (st.success if res.ok else st.warning)(res.reason)
         m1, m2, m3, m4 = st.columns(4)
         if w.yield_frac is not None:
-            m1.metric("Build yield", f"{w.yield_frac*100:.1f} %")
-        m2.metric("Worst station", f"{w.max_band_frac:.2f}× band",
+            m1.metric("Build yield", _g(w.yield_frac * 100, "%", _TOL))
+        m2.metric("Worst station", _g(w.max_band_frac, "× band", digits=3),
                   delta=w.worst_row, delta_color="off")
         m3.metric("Iterations", f"{w.iterations}")
         if res.resilience_premium is not None:
@@ -195,7 +234,7 @@ def _results_panel(st, pd, np, ss, run):
     st.dataframe(pd.DataFrame(
         [{"#": i + 1, "verdict": c.verdict, "hit": c.hit,
           "worst station (×band)": round(c.max_band_frac, 3),
-          "build yield": (f"{c.yield_frac*100:.1f}%"
+          "build yield": (_g(c.yield_frac * 100, "%", _TOL)
                           if c.yield_frac is not None else "—"),
           "governed by": c.worst_row, "iterations": c.iterations,
           "clamped to box face": ", ".join(c.clamped) or "—",
@@ -211,14 +250,18 @@ def _results_panel(st, pd, np, ss, run):
     st.markdown("###### The generated hardpoints — full precision (the "
                 "deliverable)")
     whd = gr.hp_to_dict(whp)
+    _ALL_ROWS = _POINT_ROWS + tuple(
+        q for q in ("pushrod_outer", "rocker_pivot", "rocker_axis",
+                    "rocker_pushrod", "rocker_spring", "spring_inner")
+        if q in whd)
     st.dataframe(pd.DataFrame(
         [{"point": p, "x": whd[p][0], "y": whd[p][1], "z": whd[p][2],
-          "designed": p in volume.boxes} for p in _POINT_ROWS]),
+          "designed": p in volume.boxes} for p in _ALL_ROWS]),
         hide_index=True, width="stretch",
         column_config={a: st.column_config.NumberColumn(format="%.6f")
                        for a in "xyz"})
     csv = "point,x,y,z\n" + "\n".join(
-        f"{p},{whd[p][0]!r},{whd[p][1]!r},{whd[p][2]!r}" for p in _POINT_ROWS)
+        f"{p},{whd[p][0]!r},{whd[p][1]!r},{whd[p][2]!r}" for p in _ALL_ROWS)
     d1, d2, d3 = st.columns(3)
     d1.download_button("Manifest + outputs (.json)", run["manifest_json"],
                        file_name=f"{man.name}.genesis.json",
@@ -245,6 +288,35 @@ def _results_panel(st, pd, np, ss, run):
                     "generated": gen_vals[c.channel],
                 }, index=pd.Index(dense.round(1), name="travel (mm)")),
                     height=200)
+
+    # ---- motion ratio ------------------------------------------------------ #
+    if whp.rocker_pivot is not None or whp.pushrod_outer is not None:
+        with st.expander("📐 Motion ratio — static and across travel"):
+            from suspension.kinematics import SuspensionKinematics as _SK
+            _kin = _SK(whp)
+            if _kin.motion_ratio_is_real():
+                _trv, _mr = _kin.motion_ratio_curve(
+                    travel_min=-travel, travel_max=travel, n=21)
+                mr_static = _kin.motion_ratio()
+                st.metric("Motion ratio (static)", _g(mr_static, digits=3))
+                st.caption("Solved from the pushrod/rocker linkage.")
+                st.line_chart(pd.DataFrame(
+                    {"MR": _mr},
+                    index=pd.Index(np.round(_trv, 1), name="travel (mm)")),
+                    height=200)
+                _mrc_arr = [v for v in _mr if np.isfinite(v)] or [mr_static]
+                _rising = _mrc_arr[-1] > _mrc_arr[0]
+                st.caption(
+                    f"{'Rising' if _rising else 'Falling'}-rate: "
+                    f"MR {_g(min(_mrc_arr), digits=3)} to "
+                    f"{_g(max(_mrc_arr), digits=3)} over ±{_g(travel, 'mm', digits=3)}. "
+                    "Roll stiffness scales with MR²; a placeholder "
+                    f"MR = 1.0 inflates it by {_g(1 / mr_static**2, '×', digits=2)}.")
+            else:
+                st.warning("Motion ratio cannot be solved from the rocker — "
+                           "pushrod outer, rocker pivot/axis/spring points "
+                           "are not all defined. The roll stiffness computed "
+                           "from this corner is a PROXY.")
 
     # ---- properties the channels do not see ------------------------------ #
     with st.expander("🔎 Properties outside the objective (caster, KPI, "
@@ -333,20 +405,20 @@ def _results_panel(st, pd, np, ss, run):
                         "builds failing (%)": 100 * yb["yield"]}]),
                     hide_index=True, width="stretch")
                 st.markdown(
-                    f"First-order worst case **W = {yb['worst_case_W']:.3f}** "
+                    f"First-order worst case **W = {_g(yb['worst_case_W'], digits=3, limited_by=_TOL)}** "
                     f"({yb['worst_case_row']}) — "
                     + ("every build in the box passes to first order."
                        if yb["guaranteed_first_order"] else
                        "W > 1: corner builds of the tolerance box can fail "
                        "even if no sample did.")
                     + f" Governing row {yb['governing_row']} has "
-                    f"{yb['governing_headroom_sigma']:.2f} σ of headroom.")
+                    f"{_g(yb['governing_headroom_sigma'], 'σ', digits=3)} of headroom.")
                 if "yield_lower_bound_95" in yb:
                     st.caption(f"Zero failures in {n}: yield ≥ "
-                               f"{100*yb['yield_lower_bound_95']:.2f}% at "
+                               f"{_g(100 * yb['yield_lower_bound_95'], '%')} at "
                                "95% (rule of three).")
                 else:
-                    st.caption(f"Standard error ≈ {100*yb['yield_se']:.2f} "
+                    st.caption(f"Standard error ≈ {_g(100 * yb['yield_se'], '', digits=3)} "
                                "points.")
             if res.best_fit is not None and res.best_fit is not res.winner:
                 pa = gr.pass_vector(whp, targets, fld, n, man.search.seed,
@@ -360,7 +432,7 @@ def _results_panel(st, pd, np, ss, run):
                         f"Winner vs closest fit: **{dcb['discordant']}** "
                         f"discordant builds ({dcb['a_only']} pass only the "
                         f"winner, {dcb['b_only']} only the fit); exact "
-                        f"two-sided p = {dcb['p_two_sided']:.3g}.")
+                        f"two-sided p = {_g(dcb['p_two_sided'], digits=3)}.")
             if st.button("Rounding sensitivity (±0.05 mm cell)",
                          key="ig_round"):
                 rs = gr.rounding_sensitivity(
@@ -368,7 +440,7 @@ def _results_panel(st, pd, np, ss, run):
                     seed=man.search.seed)
                 if rs.get("ok"):
                     st.info(f"Yield within the 0.1 mm rounding cell: "
-                            f"{100*rs['min']:.1f}% – {100*rs['max']:.1f}% "
+                            f"{_g(100 * rs['min'], '%', _TOL)} – {_g(100 * rs['max'], '%', _TOL)} "
                             f"over {rs['n_trials']} trials. Publish "
                             "coordinates at full precision.")
 
@@ -406,6 +478,9 @@ def _results_panel(st, pd, np, ss, run):
                 if not sw.get("ok"):
                     st.error(sw.get("reason", "check failed"))
                 else:
+                    if ss.get("ig_log"):
+                        ss["ig_log"][-1]["clearance (mm)"] = round(
+                            sw["min_clearance_mm"], 1)
                     (st.success if sw["min_clearance_mm"] >= 0
                      else st.error)(
                         f"Minimum clearance {sw['min_clearance_mm']:+.1f} mm "
@@ -414,6 +489,145 @@ def _results_panel(st, pd, np, ss, run):
                     st.dataframe(pd.DataFrame(
                         [{"link": k, **v} for k, v in sw["per_link"].items()]),
                         hide_index=True, width="stretch")
+
+    # ---- structural screening ------------------------------------------ #
+    with st.expander("🔩 Structural screening — member forces and FoS "
+                     "(section 6 / Table 9 methodology)"):
+        st.caption("Five load cases: 1.5 g cornering, 1.5 g braking, "
+                   "combined 1.06 g, 3 g bump, kerb 2 g + 1 g. Tension "
+                   "yield and pinned-pinned Euler buckling. Note: Table 9 "
+                   "of the paper uses the first-run (unpublished) geometry; "
+                   "forces here are from the generated corner.")
+        sc1, sc2, sc3 = st.columns(3)
+        s_od   = sc1.number_input("Tube OD (mm)", 5.0, 100.0, 15.88, 0.01,
+                                  key="ig_s_od")
+        s_wall = sc2.number_input("Wall (mm)", 0.1, 10.0, 0.889, 0.001,
+                                  key="ig_s_wall")
+        s_sy   = sc3.number_input("Yield stress (MPa)", 100.0, 2000.0,
+                                  460.0, 1.0, key="ig_s_sy",
+                                  help="460 MPa for as-welded 4130 (declared)")
+        sc4, sc5 = st.columns(2)
+        s_E   = sc4.number_input("E (GPa)", 100.0, 500.0, 205.0, 1.0,
+                                 key="ig_s_E")
+        s_fos = sc5.number_input("Required FoS", 0.5, 5.0, 1.5, 0.1,
+                                 key="ig_s_fos")
+        sv1, sv2, sv3, sv4 = st.columns(4)
+        s_mass = sv1.number_input("Vehicle mass (kg)", 50.0, 1000.0, 300.0,
+                                  1.0, key="ig_s_mass")
+        s_wd   = sv2.number_input("Front weight fraction", 0.3, 0.7, 0.48,
+                                  0.005, key="ig_s_wd")
+        s_cg   = sv3.number_input("CG height (mm)", 50.0, 600.0, 280.0,
+                                  1.0, key="ig_s_cg")
+        s_trk  = sv4.number_input("Track (mm)", 500.0, 2500.0, 1210.0,
+                                  1.0, key="ig_s_trk")
+        sv5, sv6 = st.columns(2)
+        s_wb   = sv5.number_input("Wheelbase (mm)", 500.0, 3000.0, 1630.0,
+                                  1.0, key="ig_s_wb")
+        s_mz   = sv6.number_input("Aligning torque (Nm)", 0.0, 200.0, 50.0,
+                                  1.0, key="ig_s_mz")
+        s_axle = run.get("axle", "front")
+        if st.button("Run structural screening", key="ig_str_go"):
+            tube = gr.TubeSpec(od_mm=s_od, wall_mm=s_wall,
+                               yield_mpa=s_sy, E_gpa=s_E)
+            sc = gr.structural_screening(
+                whp, tube=tube, fos_min=s_fos, axle=s_axle,
+                mass_kg=s_mass, weight_dist_front=s_wd,
+                cg_height_mm=s_cg, track_mm=s_trk,
+                wheelbase_mm=s_wb, aligning_torque_Nm=s_mz)
+            if sc["ok"]:
+                (st.success if sc["all_pass"] else st.error)(
+                    f"Governing member: {sc['governing_member']}, "
+                    f"worst FoS = {_g(sc['worst_fos_overall'], digits=3, limited_by='declared 460 MPa / 205 GPa')} "
+                    f"({'PASSES' if sc['all_pass'] else 'FAILS'} "
+                    f"FoS >= {s_fos})")
+                st.dataframe(pd.DataFrame(sc["rows"]),
+                             hide_index=True, width="stretch")
+                st.dataframe(pd.DataFrame(
+                    [{"member": m, "worst FoS": v,
+                      "governing case": sc["governing_case"][m]}
+                     for m, v in sc["worst_fos_per_member"].items()]),
+                    hide_index=True, width="stretch")
+                st.caption(sc["note"])
+
+    # ---- compliance budget ----------------------------------------------- #
+    with st.expander("⚙️ Compliance budget — toe and camber under load "
+                     "(section 7.1)"):
+        st.caption("Partial budget: axial stiffness only. Bracket flex, "
+                   "chassis stiffness and upright compliance are omitted "
+                   "and act in the same direction. The paper reports "
+                   "0.116 deg camber and 0.074 deg toe under kerb strike.")
+        cb1, cb2, cb3 = st.columns(3)
+        c_od   = cb1.number_input("Link OD (mm) ", 5.0, 100.0, 15.88, 0.01,
+                                  key="ig_c_od")
+        c_wall = cb2.number_input("Wall (mm) ", 0.1, 10.0, 0.889, 0.001,
+                                  key="ig_c_wall")
+        c_lat  = cb3.number_input("Lateral g for cornering load", 0.1, 3.0,
+                                  1.5, 0.05, key="ig_c_lat")
+        if st.button("Run compliance budget", key="ig_cmp_go"):
+            cb = gr.compliance_budget(
+                whp, axle=run.get("axle", "front"),
+                od_mm=c_od, wall_mm=c_wall, lateral_g=c_lat,
+                mass_kg=300.0, track_mm=targets.track_mm)
+            for case, vals in cb.items():
+                if case == "note":
+                    st.caption(vals)
+                    continue
+                st.markdown(f"**{case}**")
+                if "error" in vals:
+                    st.error(vals["error"])
+                    continue
+                rows_c = [(k, v) for k, v in vals.items() if k != "forces_N"]
+                st.dataframe(pd.DataFrame(rows_c, columns=["quantity", "value"]),
+                             hide_index=True, width="stretch")
+                with st.expander(f"{case} member forces"):
+                    st.dataframe(
+                        pd.DataFrame(list(vals["forces_N"].items()),
+                                     columns=["member", "force (N)"]),
+                        hide_index=True)
+
+    # ---- Table 6: the same field under every shop class ------------------ #
+    with st.expander("🏭 Candidate yield by tolerance class (Table 6)"):
+        st.caption("Re-runs these exact declarations once per shop class; "
+                   "each row is ranked independently, as in the table.")
+        n6 = int(st.number_input("Sampled builds N per class", 100, 50000,
+                                 int(man.search.n_yield), 100,
+                                 key="ig_t6_n"))
+        if st.button("Run all shop classes", key="ig_t6_go"):
+            import copy
+            rows6 = []
+            for label, key in _SHOPS.items():
+                m6 = copy.deepcopy(man)
+                m6.tolerance = gr.field_to_dict(
+                    ks.ToleranceField.preset(key))
+                m6.search.n_yield = n6
+                m6.recorded = None
+                with st.spinner(label):
+                    r6 = m6.run()
+                ys = sorted((round(100 * c.yield_frac, 1)
+                             for c in r6.candidates
+                             if c.hit and c.yield_frac is not None),
+                            reverse=True)
+                rows6.append({"tolerance class": label,
+                              **{str(i + 1): y for i, y in enumerate(ys)}})
+            ss["ig_t6"] = rows6
+        if ss.get("ig_t6"):
+            st.dataframe(pd.DataFrame(ss["ig_t6"]), hide_index=True,
+                         width="stretch")
+
+    # ---- Tables 7 and 11: the declaration log ----------------------------- #
+    with st.expander("🗂 Declaration log — every run this session "
+                     "(Tables 7 and 11)"):
+        log = ss.get("ig_log", [])
+        if log:
+            df = pd.DataFrame(log)
+            st.dataframe(df.astype(str), hide_index=True, width="stretch")
+            st.download_button("Log (.csv)", df.to_csv(index=False),
+                               file_name="declaration_log.csv",
+                               mime="text/csv", key="ig_log_dl")
+            if st.button("Clear log", key="ig_log_clear"):
+                ss["ig_log"] = []
+        st.caption("Name each run (Run name) after its declaration; run the "
+                   "swept-volume check to fill the clearance column.")
 
     for wmsg in res.warnings:
         st.warning(wmsg)
@@ -830,6 +1044,7 @@ def render():
         man.record(res)
         ss["ig_run"] = {"manifest_json": man.to_json(), "result": res,
                         "verify": None, **ctx}
+        _log_run(ss, man, res)
         w = res.winner
         ss["genesis_last"] = {
             "ok": res.ok, "verdict": w.verdict if w else "NO_FIT",
@@ -845,6 +1060,333 @@ def render():
         st.info("Declare the geometry, curves, volume and shop, then "
                 "generate. The same declarations always produce the same "
                 "geometry, and the manifest proves it.")
+        _render_tables(st, pd, np, ss, hp, "the seed geometry above")
         return
     st.divider()
     _results_panel(st, pd, np, ss, run)
+    res_hp = run["result"].winner_hp
+    _render_tables(st, pd, np, ss, res_hp if res_hp is not None else hp,
+                  "the generated corner" if res_hp is not None
+                  else "the seed geometry above")
+
+
+# =========================================================================== #
+#  Table calculators — "type the declared values, get the table".
+#  Physics lives in suspension/paper_tables.py; these only draw.
+# =========================================================================== #
+def _floats(text, fallback):
+    try:
+        v = [float(x) for x in str(text).replace(";", ",").split(",")
+             if x.strip()]
+        return v or list(fallback)
+    except ValueError:
+        return list(fallback)
+
+
+def _cell(v):
+    if isinstance(v, bool) or v is None:
+        return "—" if v is None else str(v)
+    if isinstance(v, (int, float)):
+        return str(round(float(v), 4)) if isinstance(v, float) else str(v)
+    try:
+        return str(round(float(v), 4))
+    except (TypeError, ValueError):
+        return str(v)
+
+
+def _table(st, pd, rows, cols=None):
+    """Render rows; every column is stringified with 4-decimal rounding so a
+    column that mixes numbers and labels never breaks the Arrow renderer."""
+    df = pd.DataFrame(rows, columns=cols) if cols else pd.DataFrame(rows)
+    for c in df.columns:
+        df[c] = [_cell(v) for v in df[c]]
+    st.dataframe(df, hide_index=True, width="stretch")
+
+
+def _render_tables(st, pd, np, ss, corner=None, corner_note=""):
+    """Draw every table calculator. ``corner`` is the Hardpoints to use for
+    geometry-dependent tables (generated corner if one exists)."""
+    from suspension import paper_tables as pt
+    from suspension import genesis_repro as gr
+
+    st.divider()
+    st.markdown("### 📑 Table calculators — enter the values, get the table")
+    st.caption("Defaults are the declared values of the InverseGenesis "
+               "write-up; change any of them. Corner-dependent tables use: "
+               + (corner_note or "no corner yet") + ".")
+
+    # ---- Table 1 ---------------------------------------------------------- #
+    with st.expander("Table 1 · Chassis recovered from STEP (tubes, length, "
+                     "nodes, walls)"):
+        up = st.file_uploader("Chassis STEP (.step / .stp)",
+                              type=["step", "stp"], key="pt_step")
+        c = st.columns(4)
+        R = c[0].number_input("Tube outer radius (mm)", 1.0, 50.0, 12.70,
+                              0.01, key="pt_R")
+        rtol = c[1].number_input("Radius tolerance (mm)", 0.001, 2.0, 0.02,
+                                 0.001, format="%.3f", key="pt_rtol")
+        atol = c[2].number_input("Coaxial tolerance (mm)", 0.01, 10.0, 0.5,
+                                 0.01, key="pt_atol")
+        tols = _floats(c[3].text_input("Clustering tolerances (mm)",
+                                       "20, 30, 37, 40, 50", key="pt_tols"),
+                       (20, 30, 37, 40, 50))
+        st.caption("Bends the file does not carry as toroidal faces can be "
+                   "added by hand (major radius × swept angle).")
+        extra = st.data_editor(
+            pd.DataFrame(columns=["major radius (mm)", "angle (deg)"]),
+            num_rows="dynamic", key="pt_bends", hide_index=True)
+        manual = [(float(r.iloc[0]), float(r.iloc[1]))
+                  for _, r in extra.iterrows()
+                  if not (pd.isna(r.iloc[0]) or pd.isna(r.iloc[1]))]
+        if up is not None and st.button("Extract", key="pt_step_go"):
+            with st.spinner("Reading the B-rep…"):
+                res = pt.parse_step_tubes(up.getvalue().decode(
+                    "utf-8", errors="replace"), R, rtol, atol)
+                ss["pt_step_res"] = (res, pt.frame_stats(
+                    res.axes, list(res.bends) + manual, tols, res.vertices, R))
+        if ss.get("pt_step_res"):
+            res, s = ss["pt_step_res"]
+            st.caption(res.units_note + f" · axis lines rejected: "
+                       f"{res.rejected}")
+            _table(st, pd, [
+                ("tubes", s["tubes"]), ("straight run (m)", s["straight_m"]),
+                ("bends", s["bends"]), ("bend arc (m)", s["bend_arc_m"]),
+                ("total tube length (m)", s["total_m"])],
+                ["quantity", "value"])
+            _table(st, pd, [{"clustering tol (mm)": k, "nodes": v["nodes"],
+                             "node-to-node length (m)": v["node_to_node_m"]}
+                            for k, v in s["nodes"].items()])
+            _table(st, pd, [{"wall (mm)": str(k), "tubes": v}
+                            for k, v in s["walls_mm"].items()])
+            _table(st, pd, [{"bend": i + 1, "major radius (mm)": r,
+                             "swept angle (deg)": a}
+                            for i, (r, a) in enumerate(res.bends)])
+            if "vertices" in s:
+                _table(st, pd, [{**s["vertices"],
+                                 "cylinder radii in file (mm: faces)":
+                                     str(res.radii_mm)}])
+            if st.button("Send tubes to the Frame Planner", key="pt_to_tf"):
+                from suspension.tubeframe import FrameGraph
+                g = FrameGraph()
+                tol0 = float(tols[0]) if tols else 20.0
+                ends = np.array([q for a, b, _ in res.axes for q in (a, b)])
+                _, lab = pt._cluster_count(ends, tol0)
+                for l in sorted(set(lab.tolist())):
+                    g.add_node(f"N{l}", tuple(ends[lab == l].mean(axis=0)))
+                for i in range(len(res.axes)):
+                    a, b = f"N{lab[2 * i]}", f"N{lab[2 * i + 1]}"
+                    if a != b:
+                        g.add_tube(f"T{i + 1:02d}", a, b)
+                ss["tf_frame"] = g.as_dict()
+                st.success("Frame stored — the swept-volume check and "
+                           "capsule keep-outs can now use it.")
+
+    # ---- Table 1b / sections 2.1, 3 -------------------------------------- #
+    with st.expander("Table 1b · Declared vehicle — wheelbase, clearance"):
+        c = st.columns(3)
+        zf = c[0].number_input("Front axle station, CAD Z (mm)", -5000.0,
+                               5000.0, 950.0, 1.0, key="pt_zf")
+        zr = c[1].number_input("Rear axle station, CAD Z (mm)", -5000.0,
+                               5000.0, -680.0, 1.0, key="pt_zr")
+        wbmin = c[2].number_input("Rules minimum wheelbase (mm)", 0.0,
+                                  5000.0, 1525.0, 1.0, key="pt_wbmin")
+        c = st.columns(2)
+        ylow = c[0].number_input("Lowest frame member, CAD Y (mm)", -1000.0,
+                                 1000.0, -18.5, 0.1, key="pt_ylow")
+        yg = c[1].number_input("Declared ground plane, CAD Y (mm)", -1000.0,
+                               1000.0, -50.0, 0.1, key="pt_yg")
+        w = pt.wheelbase_check(zf, zr, wbmin)
+        cl = pt.static_clearance(ylow, yg)
+        _table(st, pd, [("wheelbase (mm)", w["wheelbase_mm"]),
+                        ("margin to rules minimum (mm)", w["margin_mm"]),
+                        ("meets rules", str(w["passes"])),
+                        ("static clearance under frame (mm)",
+                         cl["clearance_mm"])], ["quantity", "value"])
+
+    # ---- Section 1.1 ------------------------------------------------------- #
+    with st.expander("Section 1.1 · Tyre model at stated loads"):
+        loads = _floats(st.text_input("Vertical loads (N)",
+                                      "550, 1100, 1650", key="pt_loads"),
+                        (550, 1100, 1650))
+        _table(st, pd, pt.tyre_table(loads))
+        st.caption("Synthetic MF5.2 pure-lateral set — not fitted to "
+                   "measured data. Lap sensitivities (Table 2) and the "
+                   "vehicle table (Table 10) are in the FullCar tab's "
+                   "declared-car panel.")
+
+    # ---- Table 2b ----------------------------------------------------------- #
+    with st.expander("Table 2b · Steering-wheel torque against ratio"):
+        cas0 = 3.67
+        if corner is not None:
+            try:
+                from suspension.kinematics import SuspensionKinematics
+                cas0 = float(SuspensionKinematics(corner)
+                             .solve_at_travel(0.0).caster)
+            except Exception:           # noqa: BLE001
+                pass
+        c = st.columns(4)
+        cas = c[0].number_input("Caster (deg)", -20.0, 30.0,
+                                round(cas0, 2), 0.01, key="pt_cas")
+        rt = c[1].number_input("Tyre radius (mm)", 100.0, 500.0, 228.0, 1.0,
+                               key="pt_rt")
+        mu = c[2].number_input("Lateral µ", 0.1, 3.0, 1.55, 0.01,
+                               key="pt_mu")
+        tgt = c[3].number_input("Target at the wheel (N·m)", 1.0, 50.0,
+                                10.0, 0.5, key="pt_tgt")
+        c = st.columns(4)
+        fzo = c[0].number_input("Outer Fz (N)", 0.0, 10000.0, 1262.0, 1.0,
+                                key="pt_fzo")
+        fzi = c[1].number_input("Inner Fz (N)", 0.0, 10000.0, 150.0, 1.0,
+                                key="pt_fzi")
+        mzo = c[2].number_input("Outer aligning torque (N·m)", 0.0, 500.0,
+                                50.0, 0.5, key="pt_mzo")
+        mzi = c[3].number_input("Inner aligning torque (N·m)", 0.0, 500.0,
+                                6.0, 0.5, key="pt_mzi")
+        ratios = _floats(st.text_input("Steering ratios", "4, 5, 6, 8",
+                                       key="pt_ratios"), (4, 5, 6, 8))
+        s = pt.steering_torque(cas, rt, fzo, fzi, mu, mzo, mzi, ratios, tgt)
+        _table(st, pd, [("mechanical trail (mm)", s["trail_mm"]),
+                        ("outer Fy (N)", s["fy_outer_N"]),
+                        ("outer trail torque (N·m)",
+                         s["trail_torque_outer_Nm"]),
+                        ("outer kingpin torque (N·m)", s["outer_Nm"]),
+                        ("inner kingpin torque (N·m)", s["inner_Nm"]),
+                        ("road-wheel total (N·m)", s["road_wheel_total_Nm"]),
+                        ("ratio needed for target", s["ratio_needed_for_target"])],
+               ["quantity", "value"])
+        _table(st, pd, s["rows"])
+
+    # ---- Table 8 / section 5 / 5.1 / Fig. 2 ------------------------------- #
+    with st.expander("Table 8 · Actuation, ride frequency and roll stiffness "
+                     "(section 5, 5.1, Fig. 2)"):
+        c = st.columns(4)
+        k_lb = c[0].number_input("Coil rate (lb/in)", 10.0, 3000.0, 295.0,
+                                 1.0, key="pt_k")
+        m_s = c[1].number_input("Sprung corner mass (kg)", 5.0, 500.0, 60.1,
+                                0.1, key="pt_ms")
+        stroke = c[2].number_input("Damper stroke (mm)", 1.0, 300.0, 57.0,
+                                   1.0, key="pt_stroke")
+        trk = c[3].number_input("Track (mm)", 500.0, 2500.0, 1200.0, 1.0,
+                                key="pt_trk")
+        k = k_lb * 0.1751268
+        mr_used = None
+        if corner is not None:
+            a = pt.actuation_summary(corner, spring_rate_N_mm=k,
+                                     sprung_corner_mass_kg=m_s,
+                                     damper_stroke_mm=stroke)
+            if a.get("ok"):
+                mr_used = a["mr_static"]
+                _table(st, pd, [
+                    ("motion ratio, static", a["mr_static"]),
+                    ("motion ratio, droop / bump",
+                     f"{round(a['mr_droop'], 3)} / {round(a['mr_bump'], 3)}"),
+                    ("rate character", a["rate_character"]),
+                    ("pushrod length (mm)", a["pushrod_length_mm"]),
+                    (f"attachment, fraction out along {a['pushrod_attach']} arm",
+                     a["attachment_fraction"]),
+                    ("damper static length (mm)", a["damper_static_mm"]),
+                    ("damper travel used (mm)", a["damper_travel_used_mm"]),
+                    ("fraction of stroke used", a.get("stroke_fraction_used")),
+                    ("motion-ratio spread (%)", a["mr_spread_pct"]),
+                    ("wheel-rate spread (%)", a["wheel_rate_spread_pct"]),
+                    ("ride frequency droop / static / bump (Hz)",
+                     f"{round(a['ride_hz_droop'], 2)} / "
+                     f"{round(a['ride_hz_static'], 2)} / "
+                     f"{round(a['ride_hz_bump'], 2)}")],
+                    ["quantity", "value"])
+            else:
+                st.info("This corner has no complete pushrod/rocker linkage "
+                        "(" + a["reason"] + "). Enter the motion ratio "
+                        "below; paste the rocker points with the hardpoints "
+                        "to solve it.")
+        mr_in = st.number_input("Motion ratio for the roll-stiffness row",
+                                0.05, 3.0, float(round(mr_used or 0.60, 3)),
+                                0.005, format="%.3f", key="pt_mr")
+        rs = pt.roll_stiffness_from_spring(k, mr_in, trk)
+        _table(st, pd, [("wheel rate (N/mm)", rs["wheel_rate_N_mm"]),
+                        ("axle roll stiffness (N·m/deg)",
+                         rs["roll_stiffness_Nm_deg"]),
+                        ("with placeholder MR = 1.0 (N·m/deg)",
+                         rs["placeholder_Nm_deg"]),
+                        ("placeholder error (%)",
+                         rs["placeholder_error_pct"]),
+                        ("ride frequency at this MR (Hz)",
+                         pt.ride_frequency_hz(k, mr_in, m_s))],
+               ["quantity", "value"])
+
+    # ---- section 6.2 -------------------------------------------------------- #
+    with st.expander("Section 6.2 · Bracket screening (double-shear clevis)"):
+        c = st.columns(3)
+        allow = c[0].number_input("Allowable (MPa)", 50.0, 2000.0, 460.0,
+                                  1.0, key="pt_ballow")
+        kt = c[1].number_input("Stress-concentration factor Kt", 1.0, 5.0,
+                               1.28, 0.01, key="pt_kt",
+                               help="Not stated in the write-up; 1.28 is "
+                                    "back-solved from its three cases.")
+        npl = int(c[2].number_input("Plates", 1, 4, 2, 1, key="pt_npl"))
+        cases = st.data_editor(pd.DataFrame(
+            {"case": ["as drawn", "thicker plates", "stub member"],
+             "load (N)": [4799.0] * 3, "reach (mm)": [27.9, 27.9, 10.0],
+             "plate width (mm)": [30.0, 40.0, 30.0],
+             "plate thickness (mm)": [5.0, 6.0, 5.0]}),
+            num_rows="dynamic", key="pt_brk", hide_index=True)
+        rows = []
+        for _, r in cases.iterrows():
+            try:
+                b = pt.bracket_fos(float(r["load (N)"]), float(r["reach (mm)"]),
+                                   float(r["plate width (mm)"]),
+                                   float(r["plate thickness (mm)"]), npl,
+                                   allow, kt)
+                rows.append({"case": r["case"], "stress (MPa)": b["stress_mpa"],
+                             "FoS": b["fos"]})
+            except (TypeError, ValueError, ZeroDivisionError):
+                continue
+        _table(st, pd, rows)
+
+    # ---- section 7.1 ------------------------------------------------------- #
+    with st.expander("Section 7.1 · Link strain, lash and band consumption"):
+        c = st.columns(4)
+        F = c[0].number_input("Link force (N)", 0.0, 50000.0, 4799.0, 1.0,
+                              key="pt_F")
+        L = c[1].number_input("Link length (mm)", 1.0, 3000.0, 485.0, 1.0,
+                              key="pt_L")
+        od = c[2].number_input("OD (mm)", 1.0, 100.0, 15.88, 0.01,
+                               key="pt_od")
+        wall = c[3].number_input("Wall (mm)", 0.1, 20.0, 0.889, 0.001,
+                                 key="pt_wall")
+        c = st.columns(4)
+        E = c[0].number_input("E (GPa)", 10.0, 500.0, 205.0, 1.0, key="pt_E")
+        lash = c[1].number_input("Lash per rod end (mm)", 0.0, 1.0, 0.025,
+                                 0.001, format="%.3f", key="pt_lash")
+        njt = int(c[2].number_input("Rod ends", 0, 4, 2, 1, key="pt_nj"))
+        rep = c[3].number_input("Reported max extension (mm)", 0.0, 10.0,
+                                0.60, 0.01, key="pt_rep")
+        ab = pt.axial_budget(F, L, od, wall, E, lash, njt, rep)
+        _table(st, pd, [(k, v) for k, v in ab.items()],
+               ["quantity", "value (mm / mm²)"])
+        c = st.columns(4)
+        dcam = c[0].number_input("Camber loss (deg)", 0.0, 5.0, 0.116,
+                                 0.001, format="%.3f", key="pt_dcam")
+        bcam = c[1].number_input("Camber band ± (deg)", 0.001, 5.0, 0.30,
+                                 0.01, key="pt_bcam")
+        dtoe = c[2].number_input("Compliance steer (deg)", 0.0, 5.0, 0.074,
+                                 0.001, format="%.3f", key="pt_dtoe")
+        btoe = c[3].number_input("Toe band ± (deg)", 0.001, 5.0, 0.08, 0.01,
+                                 key="pt_btoe")
+        fr = pt.band_fractions({"camber": dcam, "toe": dtoe},
+                               {"camber": bcam, "toe": btoe})
+        _table(st, pd, [{"channel": k, "fraction of band (%)": 100 * v}
+                        for k, v in fr.items()])
+
+    # ---- section 4.7 --------------------------------------------------------- #
+    with st.expander("Section 4.7 · Ball joints against the rim envelope"):
+        mo = st.number_input("Max offset from wheel centre (mm)", 10.0,
+                             300.0, 115.0, 1.0, key="pt_mo",
+                             help="≈ rim radius minus clearance; 115 mm for "
+                                  "a 254 mm rim in the write-up")
+        if corner is None:
+            st.caption("Needs a corner.")
+        else:
+            e = pt.ball_joint_envelope(corner, mo)
+            _table(st, pd, [(k, str(v) if isinstance(v, bool) else v)
+                            for k, v in e.items()], ["quantity", "value"])

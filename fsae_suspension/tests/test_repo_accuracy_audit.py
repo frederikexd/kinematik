@@ -437,7 +437,7 @@ def test_public_physics_functions_state_their_units():
     #  Both reductions came from making the CHECK sharper, not from documenting
     #  anything — that work is still outstanding. A check with 250 false
     #  positives in it hides the real ones.
-    LIMIT = 1077    # raised 2026-09: 24 items of debt added since the Aug measurement
+    LIMIT = 1052    # 2026-09: genesis_repro units documented (1077 -> 1052)
     detail = "\n".join(
         f"  {rel}: {len(v)} function(s)" for rel, v in sorted(
             missing.items(), key=lambda kv: -len(kv[1]))[:15])
@@ -692,7 +692,7 @@ def test_ungated_numeric_renders_only_decrease():
             per_file[rel] = n
             total += n
 
-    LIMIT = 716    # raised 2026-09: 23 items of debt added since the Aug measurement
+    LIMIT = 705    # 2026-09: InverseGenesis tab routed through graded() (716 -> 705)
     worst = "\n".join(f"  {k}: {v}" for k, v in
                       sorted(per_file.items(), key=lambda kv: -kv[1])[:8])
     assert total <= LIMIT, (
