@@ -7,7 +7,8 @@
 # ============================================================================
 """
 Everything an InverseGenesis result needs to be re-run byte for byte, and the
-diagnostics a paper built on it reports but the engine did not compute.
+diagnostics a design report built on it needs but the engine does not
+compute.
 
 WHAT LIVES HERE
 ---------------
@@ -260,7 +261,7 @@ def linear_targets(stations, *, static_camber=None, camber_gain=None,
                    camber_band=0.30, toe=None, toe_band=0.08,
                    rc_height=None, rc_band=18.0, scrub=None, scrub_band=3.0,
                    track_mm: float = 1200.0) -> ig.GenesisTargets:
-    """Targets written the way a paper states them: static + gain·t for
+    """Targets written the way a design brief states them (deg, mm): static + gain·t for
     camber, constants for toe / RC height / scrub. Omit a channel with None."""
     st = np.asarray(stations, float)
     n = len(st)
@@ -595,7 +596,7 @@ def corner_diagnostics(hp: Hardpoints, *, travel_mm: float = 25.0,
                        cg_height_mm: float | None = None,
                        brake_bias_front: float | None = None,
                        n_dense: int = 201) -> dict:
-    """Everything a paper reports about a corner that is not a channel.
+    """Everything worth reporting about a corner that is not a channel.
 
     Slopes are least-squares over the stations (default −T, −T/2, 0, T/2, T);
     toe change is max − min over the stations. RC migration is given both in
@@ -865,7 +866,7 @@ def swept_clearance(hp: Hardpoints, obstacle: CapsuleObstacle, *,
 
 
 # --------------------------------------------------------------------------- #
-#  Structural screening — Table 9 of the paper
+#  Structural screening of the links
 # --------------------------------------------------------------------------- #
 from . import loadpath as _lp
 
@@ -911,7 +912,7 @@ class LoadCaseSpec:
                              Mz=self.mz_Nmm)
 
 
-def paper_load_cases(mass_kg: float = 300.0,
+def vehicle_load_cases(mass_kg: float = 300.0,
                      weight_dist_front: float = 0.48,
                      cg_height_mm: float = 280.0,
                      wheelbase_mm: float = 1630.0,
@@ -919,12 +920,14 @@ def paper_load_cases(mass_kg: float = 300.0,
                      brake_bias_front: float = 0.60,
                      roll_share_front: float = 0.55,
                      aligning_torque_Nm: float = 50.0,
-                     axle: str = "front") -> list[LoadCaseSpec]:
-    """The five load cases from section 6 of the paper, resolved per corner.
+                     axle: str = "front",
+                     lateral_g: float = 1.5) -> list[LoadCaseSpec]:
+    """Five contact-patch load cases for one corner (forces in N, torque in
+    N·mm), from the declared vehicle (mass kg, lengths mm, g-levels).
 
-    The methodology:
-    - 1.5g cornering: Fz = static axle share + lateral LT weighted by roll-centre
-      share; Fy = lateral_g × Fz; Mz = aligning torque.
+    - cornering at ``lateral_g``: Fz = static corner load + lateral load
+      transfer weighted by the axle's roll-stiffness share; Fy = lateral_g·Fz;
+      Mz = aligning torque.
     - 1.5g braking: Fz = static + longitudinal LT; Fx = bias × total braking / 2.
     - Combined 1.06g: lateral + longitudinal loads together, with aligning torque.
     - 3g vertical bump: purely vertical.
@@ -941,13 +944,15 @@ def paper_load_cases(mass_kg: float = 300.0,
     bias = float(brake_bias_front) if axle == "front" else 1.0 - float(brake_bias_front)
     mz = float(aligning_torque_Nm) * 1000.0
 
-    c1_fz = fz_s + rs * lat_tr(1.5)
+    lat_g = float(lateral_g)
+    c1_fz = fz_s + rs * lat_tr(lat_g)
     c2_fz = fz_s + long_tr(1.5) / 2
     c3_fz = fz_s + rs * lat_tr(1.06) + long_tr(1.06) / 2
     c5_fz = fz_s * 2.0
 
     return [
-        LoadCaseSpec("1.5g corner",  Fz=c1_fz, Fy=1.5 * c1_fz, mz_Nmm=mz),
+        LoadCaseSpec(f"{lat_g:g}g corner", Fz=c1_fz, Fy=lat_g * c1_fz,
+                     mz_Nmm=mz),
         LoadCaseSpec("1.5g braking", Fz=c2_fz, Fx=bias * m * g * 1.5 / 2),
         LoadCaseSpec("combined 1.06g", Fz=c3_fz, Fy=1.06 * c3_fz,
                      Fx=bias * m * g * 1.06 / 2, mz_Nmm=mz),
@@ -959,10 +964,10 @@ def paper_load_cases(mass_kg: float = 300.0,
 def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
                          load_cases: list[LoadCaseSpec] | None = None,
                          fos_min: float = 1.5, axle: str = "front",
-                         **paper_lc_kw) -> dict:
-    """Member axial forces and factors of safety across a set of load cases.
+                         **load_case_kw) -> dict:
+    """Member axial forces (N) and factors of safety (dimensionless) across a set of load cases.
 
-    If ``load_cases`` is None, uses ``paper_load_cases(**paper_lc_kw)``.
+    If ``load_cases`` is None, uses ``vehicle_load_cases(**load_case_kw)``.
     Screening is tension yield and pinned-pinned Euler buckling, the correct
     idealisation for a two-force member on spherical joints.
     """
@@ -973,7 +978,7 @@ def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
     state = kin.solve_at_travel(0.0)
     pts = _lp._member_geometry(kin, state)
     if load_cases is None:
-        load_cases = paper_load_cases(axle=axle, **paper_lc_kw)
+        load_cases = vehicle_load_cases(axle=axle, **load_case_kw)
 
     def _length(m):
         if m not in pts:
@@ -1028,15 +1033,13 @@ def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
         "tube": {"od_mm": tube.od_mm, "wall_mm": tube.wall_mm,
                  "yield_mpa": tube.yield_mpa, "E_gpa": tube.E_gpa},
         "fos_min": fos_min,
-        "note": ("Table 9 uses the first-run geometry (not Table 13). "
-                 "Forces will differ from the paper's published values, "
-                 "which are from an unpublished seed geometry. Factors of "
-                 "safety scale the same way once forces are correct.")
+        "note": ("Two-force members on spherical joints: bending from the "
+                 "pushrod attachment is not included.")
     }
 
 
 # --------------------------------------------------------------------------- #
-#  Compliance budget — section 7.1 of the paper
+#  Compliance budget of the links
 # --------------------------------------------------------------------------- #
 def compliance_budget(hp: Hardpoints, axle: str = "front",
                       od_mm: float = 15.88, wall_mm: float = 0.889,
@@ -1046,7 +1049,7 @@ def compliance_budget(hp: Hardpoints, axle: str = "front",
     """Compliance steer and camber change at one load level.
 
     Uses the compliance module's uniform-tube path (axial stiffness only —
-    the partial budget the paper reports). Reports each as a fraction of the
+    a partial budget). Reports each as a fraction of the
     kinematic acceptance band, so the user can see how much band the load
     consumes before build scatter is added.
     """
@@ -1104,5 +1107,5 @@ def compliance_budget(hp: Hardpoints, axle: str = "front",
             results[name] = {"error": str(e)}
     results["note"] = ("Partial budget: axial stiffness only. Bracket "
                        "flex, chassis stiffness and upright compliance "
-                       "are omitted. See section 7.1 / 9.")
+                       "are omitted and all act in the same direction.")
     return results

@@ -114,33 +114,42 @@ _POINT_ROWS = ("upper_front_inner", "upper_rear_inner", "lower_front_inner",
                "contact_patch")
 
 
+_ROCKER_PTS = ("pushrod_outer", "rocker_pivot", "rocker_axis",
+               "rocker_pushrod", "rocker_spring", "spring_inner")
+
+
 def _parse_hardpoints_text(text: str, base):
-    """JSON (manifest-style dict) or CSV ``point,x,y,z`` → Hardpoints."""
+    """JSON (manifest-style dict) or CSV ``point,x,y,z`` → Hardpoints.
+
+    Linkage points not listed keep the base corner's values, but the base
+    corner's pushrod/rocker is NOT carried over unless the text defines one:
+    a pasted corner without a rocker must not inherit a motion ratio."""
     import io
     import json
-    import numpy as np
     import pandas as pd
     from suspension import genesis_repro as gr
     text = text.strip()
+    merged = gr.hp_to_dict(base)
+    for k in _ROCKER_PTS:
+        merged.pop(k, None)
     if text.startswith("{"):
         d = json.loads(text)
         d = d.get("hardpoints", d)
-        merged = gr.hp_to_dict(base)
         merged.update(d)
         return gr.hp_from_dict(merged)
     df = pd.read_csv(io.StringIO(text))
     cols = {c.lower().strip(): c for c in df.columns}
     name_col = cols.get("point") or cols.get("hardpoint") or df.columns[0]
-    merged = gr.hp_to_dict(base)
+    known = set(merged) | set(_ROCKER_PTS)
     for _, row in df.iterrows():
         n = str(row[name_col]).strip()
-        if n in merged:
+        if n in known:
             merged[n] = [float(row[cols[a]]) for a in ("x", "y", "z")]
     return gr.hp_from_dict(merged)
 
 
 def _log_run(ss, man, res, clearance=None):
-    """Append one declaration → outcome row (Tables 7 and 11 are this log)."""
+    """Append one declaration → outcome row for the declaration log."""
     from suspension import genesis_repro as gr
     w = res.winner
     best = w if w is not None else res.best_fit
@@ -250,10 +259,7 @@ def _results_panel(st, pd, np, ss, run):
     st.markdown("###### The generated hardpoints — full precision (the "
                 "deliverable)")
     whd = gr.hp_to_dict(whp)
-    _ALL_ROWS = _POINT_ROWS + tuple(
-        q for q in ("pushrod_outer", "rocker_pivot", "rocker_axis",
-                    "rocker_pushrod", "rocker_spring", "spring_inner")
-        if q in whd)
+    _ALL_ROWS = _POINT_ROWS + tuple(q for q in _ROCKER_PTS if q in whd)
     st.dataframe(pd.DataFrame(
         [{"point": p, "x": whd[p][0], "y": whd[p][1], "z": whd[p][2],
           "designed": p in volume.boxes} for p in _ALL_ROWS]),
@@ -288,106 +294,6 @@ def _results_panel(st, pd, np, ss, run):
                     "generated": gen_vals[c.channel],
                 }, index=pd.Index(dense.round(1), name="travel (mm)")),
                     height=200)
-
-    # ---- motion ratio ------------------------------------------------------ #
-    if whp.rocker_pivot is not None or whp.pushrod_outer is not None:
-        with st.expander("📐 Motion ratio — static and across travel"):
-            from suspension.kinematics import SuspensionKinematics as _SK
-            _kin = _SK(whp)
-            if _kin.motion_ratio_is_real():
-                _trv, _mr = _kin.motion_ratio_curve(
-                    travel_min=-travel, travel_max=travel, n=21)
-                mr_static = _kin.motion_ratio()
-                st.metric("Motion ratio (static)", _g(mr_static, digits=3))
-                st.caption("Solved from the pushrod/rocker linkage.")
-                st.line_chart(pd.DataFrame(
-                    {"MR": _mr},
-                    index=pd.Index(np.round(_trv, 1), name="travel (mm)")),
-                    height=200)
-                _mrc_arr = [v for v in _mr if np.isfinite(v)] or [mr_static]
-                _rising = _mrc_arr[-1] > _mrc_arr[0]
-                st.caption(
-                    f"{'Rising' if _rising else 'Falling'}-rate: "
-                    f"MR {_g(min(_mrc_arr), digits=3)} to "
-                    f"{_g(max(_mrc_arr), digits=3)} over ±{_g(travel, 'mm', digits=3)}. "
-                    "Roll stiffness scales with MR²; a placeholder "
-                    f"MR = 1.0 inflates it by {_g(1 / mr_static**2, '×', digits=2)}.")
-            else:
-                st.warning("Motion ratio cannot be solved from the rocker — "
-                           "pushrod outer, rocker pivot/axis/spring points "
-                           "are not all defined. The roll stiffness computed "
-                           "from this corner is a PROXY.")
-
-    # ---- properties the channels do not see ------------------------------ #
-    with st.expander("🔎 Properties outside the objective (caster, KPI, "
-                     "scrub, RC migration, anti-dive/-squat)",
-                     expanded=True):
-        a1, a2, a3, a4 = st.columns(4)
-        axle = a1.selectbox("Axle", ["front", "rear"],
-                            index=0 if run.get("axle", "front") == "front"
-                            else 1, key="ig_diag_axle")
-        wb = a2.number_input("Wheelbase (mm)", 1000.0, 3000.0, 1630.0, 5.0,
-                             key="ig_diag_wb")
-        cgh = a3.number_input("CG height (mm)", 100.0, 600.0, 280.0, 5.0,
-                              key="ig_diag_cg")
-        bias = a4.number_input("Front brake bias", 0.0, 1.0, 0.60, 0.01,
-                               key="ig_diag_bias")
-        dg = gr.corner_diagnostics(whp, stations=targets.stations(),
-                                   track_mm=targets.track_mm, axle=axle,
-                                   wheelbase_mm=wb, cg_height_mm=cgh,
-                                   brake_bias_front=bias)
-        if dg.get("ok"):
-            rows = [
-                ("Camber gain (LSQ slope)", dg["camber_gain_deg_per_mm"],
-                 "deg/mm"),
-                ("Bump steer (LSQ slope)", dg["bump_steer_deg_per_mm"],
-                 "deg/mm"),
-                ("Toe change (max − min)", dg["toe_change_deg"], "deg"),
-                ("RC height, static", dg["rc_height_static_mm"], "mm"),
-                ("RC migration, chassis frame",
-                 dg["rc_migration_chassis_mm_per_mm"], "mm/mm"),
-                ("RC migration, above ground",
-                 dg["rc_migration_ground_mm_per_mm"], "mm/mm"),
-                ("RC above ground, minimum", dg["rc_above_ground_min_mm"],
-                 "mm"),
-                ("Caster", dg["caster_deg"], "deg"),
-                ("Kingpin inclination", dg["kpi_deg"], "deg"),
-                ("Scrub radius", dg["scrub_static_mm"], "mm"),
-                ("Contact-patch rise per mm of travel",
-                 dg["contact_patch_rise_per_mm"], "mm/mm"),
-                ("Side-view IC, x rearward", dg["side_view_ic_x_mm"], "mm"),
-                ("Side-view IC, height", dg["side_view_ic_z_mm"], "mm"),
-                (f"tan swing-arm ({dg['side_view_reference']})",
-                 dg["side_view_tan"], "—"),
-            ]
-            if "anti_dive_pct" in dg:
-                rows.append(("Anti-dive", dg["anti_dive_pct"], "%"))
-            if "anti_squat_pct" in dg:
-                rows.append(("Anti-squat", dg["anti_squat_pct"], "%"))
-            st.dataframe(pd.DataFrame(rows, columns=["quantity", "value",
-                                                     "unit"]),
-                         hide_index=True, width="stretch",
-                         column_config={"value": st.column_config.NumberColumn(
-                             format="%.4f")})
-            st.caption("None of these is a channel. The solver is "
-                       "indifferent to all of them — check them on every "
-                       "run.")
-            ss.setdefault("genesis_corners", {})[axle] = gr.hp_to_dict(whp)
-
-        st.markdown("**Camber to the road under roll**")
-        c1, c2 = st.columns(2)
-        roll = c1.number_input("Body roll (deg)", 0.0, 5.0, 1.18, 0.01,
-                               key="ig_roll")
-        opt = c2.number_input("Tyre optimum camber (deg)", -5.0, 0.0,
-                              -1.83, 0.01, key="ig_opt")
-        if dg.get("ok"):
-            ctr = gr.camber_to_road(whp.static_camber,
-                                    dg["camber_gain_deg_per_mm"], roll,
-                                    targets.track_mm, opt)
-            st.dataframe(pd.DataFrame(
-                [(k, float(v)) for k, v in ctr.items()],
-                columns=["quantity", "value"]), hide_index=True,
-                width="stretch")
 
     # ---- yield, taken apart ---------------------------------------------- #
     if fld is not None and fld.specs:
@@ -450,17 +356,17 @@ def _results_panel(st, pd, np, ss, run):
     frame = ss.get("tf_frame")
     with st.expander("🧱 Swept-volume clearance against the frame"):
         if not obstacles and frame:
-            s1, s2 = st.columns(2)
-            za = s1.number_input("Axle station, CAD Z (mm)", -5000.0, 5000.0,
-                                 float(run.get("axle_station", 950.0)), 1.0,
-                                 key="ig_sw_za")
-            yg = s2.number_input("Ground plane, CAD Y (mm)", -1000.0, 1000.0,
-                                 float(run.get("ground_y", -50.0)), 0.5,
-                                 key="ig_sw_yg")
+            v = _veh(ss)
+            ax = run.get("axle", "front")
+            za = float(run.get("axle_station", v[f"{ax}_station_mm"]))
+            yg = float(run.get("ground_y", v["ground_y_mm"]))
+            st.caption(f"Frame placed with the declared {ax} axle station "
+                       f"({za} mm) and ground plane ({yg} mm).")
             obstacles = [gr.capsules_from_framegraph(frame, za, yg)]
         if not obstacles:
-            st.caption("Load a frame in the Frame Planner (or declare frame "
-                       "capsules as keep-outs) to run this check.")
+            st.caption("Recover the frame from STEP under 2 · Keep-out "
+                       "volumes, or load one in the Frame Planner, to run "
+                       "this check.")
         else:
             e1, e2, e3 = st.columns(3)
             nst = e1.number_input("Travel stations", 3, 101, 21, 2,
@@ -490,105 +396,10 @@ def _results_panel(st, pd, np, ss, run):
                         [{"link": k, **v} for k, v in sw["per_link"].items()]),
                         hide_index=True, width="stretch")
 
-    # ---- structural screening ------------------------------------------ #
-    with st.expander("🔩 Structural screening — member forces and FoS "
-                     "(section 6 / Table 9 methodology)"):
-        st.caption("Five load cases: 1.5 g cornering, 1.5 g braking, "
-                   "combined 1.06 g, 3 g bump, kerb 2 g + 1 g. Tension "
-                   "yield and pinned-pinned Euler buckling. Note: Table 9 "
-                   "of the paper uses the first-run (unpublished) geometry; "
-                   "forces here are from the generated corner.")
-        sc1, sc2, sc3 = st.columns(3)
-        s_od   = sc1.number_input("Tube OD (mm)", 5.0, 100.0, 15.88, 0.01,
-                                  key="ig_s_od")
-        s_wall = sc2.number_input("Wall (mm)", 0.1, 10.0, 0.889, 0.001,
-                                  key="ig_s_wall")
-        s_sy   = sc3.number_input("Yield stress (MPa)", 100.0, 2000.0,
-                                  460.0, 1.0, key="ig_s_sy",
-                                  help="460 MPa for as-welded 4130 (declared)")
-        sc4, sc5 = st.columns(2)
-        s_E   = sc4.number_input("E (GPa)", 100.0, 500.0, 205.0, 1.0,
-                                 key="ig_s_E")
-        s_fos = sc5.number_input("Required FoS", 0.5, 5.0, 1.5, 0.1,
-                                 key="ig_s_fos")
-        sv1, sv2, sv3, sv4 = st.columns(4)
-        s_mass = sv1.number_input("Vehicle mass (kg)", 50.0, 1000.0, 300.0,
-                                  1.0, key="ig_s_mass")
-        s_wd   = sv2.number_input("Front weight fraction", 0.3, 0.7, 0.48,
-                                  0.005, key="ig_s_wd")
-        s_cg   = sv3.number_input("CG height (mm)", 50.0, 600.0, 280.0,
-                                  1.0, key="ig_s_cg")
-        s_trk  = sv4.number_input("Track (mm)", 500.0, 2500.0, 1210.0,
-                                  1.0, key="ig_s_trk")
-        sv5, sv6 = st.columns(2)
-        s_wb   = sv5.number_input("Wheelbase (mm)", 500.0, 3000.0, 1630.0,
-                                  1.0, key="ig_s_wb")
-        s_mz   = sv6.number_input("Aligning torque (Nm)", 0.0, 200.0, 50.0,
-                                  1.0, key="ig_s_mz")
-        s_axle = run.get("axle", "front")
-        if st.button("Run structural screening", key="ig_str_go"):
-            tube = gr.TubeSpec(od_mm=s_od, wall_mm=s_wall,
-                               yield_mpa=s_sy, E_gpa=s_E)
-            sc = gr.structural_screening(
-                whp, tube=tube, fos_min=s_fos, axle=s_axle,
-                mass_kg=s_mass, weight_dist_front=s_wd,
-                cg_height_mm=s_cg, track_mm=s_trk,
-                wheelbase_mm=s_wb, aligning_torque_Nm=s_mz)
-            if sc["ok"]:
-                (st.success if sc["all_pass"] else st.error)(
-                    f"Governing member: {sc['governing_member']}, "
-                    f"worst FoS = {_g(sc['worst_fos_overall'], digits=3, limited_by='declared 460 MPa / 205 GPa')} "
-                    f"({'PASSES' if sc['all_pass'] else 'FAILS'} "
-                    f"FoS >= {s_fos})")
-                st.dataframe(pd.DataFrame(sc["rows"]),
-                             hide_index=True, width="stretch")
-                st.dataframe(pd.DataFrame(
-                    [{"member": m, "worst FoS": v,
-                      "governing case": sc["governing_case"][m]}
-                     for m, v in sc["worst_fos_per_member"].items()]),
-                    hide_index=True, width="stretch")
-                st.caption(sc["note"])
-
-    # ---- compliance budget ----------------------------------------------- #
-    with st.expander("⚙️ Compliance budget — toe and camber under load "
-                     "(section 7.1)"):
-        st.caption("Partial budget: axial stiffness only. Bracket flex, "
-                   "chassis stiffness and upright compliance are omitted "
-                   "and act in the same direction. The paper reports "
-                   "0.116 deg camber and 0.074 deg toe under kerb strike.")
-        cb1, cb2, cb3 = st.columns(3)
-        c_od   = cb1.number_input("Link OD (mm) ", 5.0, 100.0, 15.88, 0.01,
-                                  key="ig_c_od")
-        c_wall = cb2.number_input("Wall (mm) ", 0.1, 10.0, 0.889, 0.001,
-                                  key="ig_c_wall")
-        c_lat  = cb3.number_input("Lateral g for cornering load", 0.1, 3.0,
-                                  1.5, 0.05, key="ig_c_lat")
-        if st.button("Run compliance budget", key="ig_cmp_go"):
-            cb = gr.compliance_budget(
-                whp, axle=run.get("axle", "front"),
-                od_mm=c_od, wall_mm=c_wall, lateral_g=c_lat,
-                mass_kg=300.0, track_mm=targets.track_mm)
-            for case, vals in cb.items():
-                if case == "note":
-                    st.caption(vals)
-                    continue
-                st.markdown(f"**{case}**")
-                if "error" in vals:
-                    st.error(vals["error"])
-                    continue
-                rows_c = [(k, v) for k, v in vals.items() if k != "forces_N"]
-                st.dataframe(pd.DataFrame(rows_c, columns=["quantity", "value"]),
-                             hide_index=True, width="stretch")
-                st.caption(f"{case}: member forces (N)")
-                st.dataframe(
-                    pd.DataFrame(list(vals["forces_N"].items()),
-                                 columns=["member", "force (N)"]),
-                    hide_index=True)
-
-    # ---- Table 6: the same field under every shop class ------------------ #
-    with st.expander("🏭 Candidate yield by tolerance class (Table 6)"):
+    # ---- the same field under every shop class --------------------------- #
+    with st.expander("🏭 Candidate yield by shop class"):
         st.caption("Re-runs these exact declarations once per shop class; "
-                   "each row is ranked independently, as in the table.")
+                   "each row is ranked independently.")
         n6 = int(st.number_input("Sampled builds N per class", 100, 50000,
                                  int(man.search.n_yield), 100,
                                  key="ig_t6_n"))
@@ -614,9 +425,8 @@ def _results_panel(st, pd, np, ss, run):
             st.dataframe(pd.DataFrame(ss["ig_t6"]), hide_index=True,
                          width="stretch")
 
-    # ---- Tables 7 and 11: the declaration log ----------------------------- #
-    with st.expander("🗂 Declaration log — every run this session "
-                     "(Tables 7 and 11)"):
+    # ---- the declaration log ---------------------------------------------- #
+    with st.expander("🗂 Declaration log — every run this session"):
         log = ss.get("ig_log", [])
         if log:
             df = pd.DataFrame(log)
@@ -643,22 +453,8 @@ def render():
     import streamlit as st
 
     ss = st.session_state
-    st.subheader("🧬 InverseGenesis — draw the curves; the engine generates "
-                 "the geometry")
-    st.caption(
-        "Draw the kinematic curves you want inside acceptance bands, box the "
-        "legal volume each hardpoint may occupy, declare the shop, and the "
-        "engine pulls the coordinates into the curves — then ranks the "
-        "candidates by BUILD YIELD. Every run is saved as a manifest you can "
-        "download and re-run byte for byte. Rigid kinematics only. "
-        "The 📑 Paper tables sub-tab turns declared values into every table "
-        "of the write-up without a run.")
-    t_gen, t_tab = st.tabs(["🧬 Generate geometry",
-                            "📑 Paper tables — enter values, get the table"])
-    with t_gen:
-        _render_generate()
-    with t_tab:
-        _render_tables_tab(st, pd, np, ss)
+    _render_generate()
+    _render_analysis(st, pd, np, ss)
 
 
 def _render_generate():
@@ -672,6 +468,15 @@ def _render_generate():
     from suspension import genesis_repro as gr
 
     ss = st.session_state
+
+    st.subheader("🧬 InverseGenesis — draw the curves; the engine generates "
+                 "the geometry")
+    st.caption(
+        "Draw the kinematic curves you want inside acceptance bands, box the "
+        "legal volume each hardpoint may occupy, declare the shop, and the "
+        "engine pulls the coordinates into the curves — then ranks the "
+        "candidates by BUILD YIELD. Every run is saved as a manifest you can "
+        "download and re-run byte for byte. Rigid kinematics only.")
 
     # ================= 0 · re-run a manifest ==============================
     with st.expander("📂 Re-run a saved manifest (reproduce a result)"):
@@ -732,12 +537,15 @@ def _render_generate():
                 st.error(f"Could not read the hardpoints: {e}")
                 return
     else:
-        g1, g2 = st.columns(2)
-        axle_station = g1.number_input("Axle station, CAD Z (mm)", -5000.0,
-                                       5000.0, 950.0, 1.0, key="ig_za")
-        ground_y = g2.number_input("Ground plane, CAD Y (mm)", -1000.0,
-                                   1000.0, -50.0, 0.5, key="ig_yg")
+        _v = _veh(ss)
+        axle_station = float(_v[f"{axle}_station_mm"])
+        ground_y = float(_v["ground_y_mm"])
+        st.caption(f"Transform uses the declared {axle} axle station "
+                   f"({axle_station} mm) and ground plane ({ground_y} mm) — "
+                   "edit them under 4 · Vehicle & build declaration.")
         base = gr.hp_to_dict(Hardpoints.default())
+        for _k in _ROCKER_PTS:
+            base.pop(_k, None)
         seed_cad = pd.DataFrame(
             [{"point": p, **dict(zip(("X", "Y", "Z"),
                                      gr.corner_to_cad(base[p], axle_station,
@@ -780,7 +588,7 @@ def _render_generate():
         return
 
     staged = ss.get("genesis_targets")
-    modes = ["Formula (paper style)", "Per-station table"]
+    modes = ["Formula (static + gain·t)", "Per-station table"]
     if staged is not None:
         modes.append("Staged from FullCar")
     tmode = st.radio("Targets as", modes, horizontal=True, key="ig_tmode")
@@ -946,19 +754,19 @@ def _render_generate():
             pd.DataFrame(columns=["label", "x_lo", "y_lo", "z_lo",
                                   "x_hi", "y_hi", "z_hi"]),
             key="ig_keepout", num_rows="dynamic", hide_index=True)
+        st.markdown("**Chassis frame from STEP**")
+        _sec_frame_from_step(st, pd, np, ss, _veh(ss), "ig_step")
         use_frame = False
         if ss.get("tf_frame"):
             use_frame = st.checkbox(
-                "Add the Frame Planner frame as capsule keep-outs",
-                key="ig_use_frame")
+                "Use the frame as capsule keep-outs", key="ig_use_frame")
             if use_frame and axle_station is None:
-                f1, f2 = st.columns(2)
-                axle_station = f1.number_input(
-                    "Axle station, CAD Z (mm) ", -5000.0, 5000.0, 950.0, 1.0,
-                    key="ig_ko_za")
-                ground_y = f2.number_input(
-                    "Ground plane, CAD Y (mm) ", -1000.0, 1000.0, -50.0, 0.5,
-                    key="ig_ko_yg")
+                _v = _veh(ss)
+                axle_station = float(_v[f"{axle}_station_mm"])
+                ground_y = float(_v["ground_y_mm"])
+                st.caption(f"Placed with the declared {axle} axle station "
+                           f"({axle_station} mm) and ground plane "
+                           f"({ground_y} mm).")
         k1, k2 = st.columns(2)
         probe = _units.unum(k1, "Probe radius (mm)", 0.0, 30.0, 6.0, 'mm',
                             step=1.0, key="ig_probe")
@@ -1061,6 +869,9 @@ def _render_generate():
         ss["ig_run"] = {"manifest_json": man.to_json(), "result": res,
                         "verify": None, **ctx}
         _log_run(ss, man, res)
+        if res.winner_hp is not None:
+            ss.setdefault("genesis_corners", {})[axle] = gr.hp_to_dict(
+                res.winner_hp)
         w = res.winner
         ss["genesis_last"] = {
             "ok": res.ok, "verdict": w.verdict if w else "NO_FIT",
@@ -1075,17 +886,153 @@ def _render_generate():
     if run is None:
         st.info("Declare the geometry, curves, volume and shop, then "
                 "generate. The same declarations always produce the same "
-                "geometry, and the manifest proves it.")
+                "geometry, and the manifest proves it. The analysis below "
+                "already runs on the seed geometry.")
         return
     st.divider()
     _results_panel(st, pd, np, ss, run)
-    st.caption("Tables that need only declared values are in the "
-               "📑 Paper tables sub-tab above.")
 
 
 # =========================================================================== #
-#  Table calculators — "type the declared values, get the table".
-#  Physics lives in suspension/paper_tables.py; these only draw.
+#  Vehicle & build declaration — ONE set of declared numbers, shared by this
+#  tab and the InverseGenesis-FullCar tab (kept in sync through session
+#  state), feeding the corner & vehicle analysis below.
+# =========================================================================== #
+_VEH_KEY = "kk_vehicle"
+_VEH_PREFIXES = ("ig_v", "fc_v")
+
+#: (group, [(field, label, lo, hi, step, default)])
+_VEH_FIELDS = [
+    ("Vehicle", [
+        ("mass_kg", "Mass incl. driver (kg)", 50.0, 1000.0, 1.0, 300.0),
+        ("weight_dist_front", "Front weight fraction", 0.2, 0.8, 0.005, 0.48),
+        ("cg_height_mm", "CG height (mm)", 50.0, 800.0, 1.0, 280.0),
+        ("wheelbase_mm", "Wheelbase (mm)", 500.0, 4000.0, 1.0, 1630.0),
+        ("track_front_mm", "Track front (mm)", 500.0, 2500.0, 1.0, 1210.0),
+        ("track_rear_mm", "Track rear (mm)", 500.0, 2500.0, 1.0, 1210.0),
+        ("tire_radius_mm", "Tyre radius (mm)", 100.0, 500.0, 1.0, 228.0),
+        ("brake_bias_front", "Front brake bias", 0.0, 1.0, 0.01, 0.60),
+    ]),
+    ("Powertrain & aero", [
+        ("power_kw", "Power (kW)", 1.0, 500.0, 1.0, 80.0),
+        ("cla", "ClA (m²)", 0.0, 10.0, 0.1, 0.0),
+        ("cda", "CdA (m²)", 0.0, 5.0, 0.05, 1.1),
+    ]),
+    ("Springs, bars & roll", [
+        ("spring_front_lbin", "Coil rate front (lb/in)", 10.0, 3000.0, 1.0, 295.0),
+        ("spring_rear_lbin", "Coil rate rear (lb/in)", 10.0, 3000.0, 1.0, 349.0),
+        ("sprung_front_kg", "Sprung corner mass front (kg)", 5.0, 500.0, 0.1, 60.1),
+        ("sprung_rear_kg", "Sprung corner mass rear (kg)", 5.0, 500.0, 0.1, 66.1),
+        ("damper_stroke_mm", "Damper stroke (mm)", 1.0, 300.0, 1.0, 57.0),
+        ("arb_front", "ARB front (N·m/deg)", 0.0, 5000.0, 1.0, 220.0),
+        ("arb_rear", "ARB rear (N·m/deg)", 0.0, 5000.0, 1.0, 120.0),
+        ("roll_stiffness_front", "Direct roll stiffness front (N·m/deg)", 0.0, 10000.0, 1.0, 458.0),
+        ("roll_stiffness_rear", "Direct roll stiffness rear (N·m/deg)", 0.0, 10000.0, 1.0, 420.0),
+    ]),
+    ("Loads & tyre", [
+        ("lateral_g", "Design lateral acceleration (g)", 0.1, 4.0, 0.05, 1.5),
+        ("lateral_mu", "Lateral µ at the steering load", 0.1, 4.0, 0.01, 1.55),
+        ("aligning_outer_Nm", "Aligning torque, outer (N·m)", 0.0, 500.0, 0.5, 50.0),
+        ("aligning_inner_Nm", "Aligning torque, inner (N·m)", 0.0, 500.0, 0.5, 6.0),
+        ("roll_share_front", "Front roll share for load cases", 0.0, 1.0, 0.01, 0.55),
+        ("body_roll_deg", "Body roll at design g (deg)", 0.0, 10.0, 0.01, 1.18),
+        ("tyre_optimum_camber", "Tyre optimum camber (deg)", -6.0, 1.0, 0.01, -1.83),
+    ]),
+    ("Steering", [
+        ("steering_target_Nm", "Steering-wheel torque target (N·m)", 1.0, 100.0, 0.5, 10.0),
+    ]),
+    ("Chassis & packaging", [
+        ("front_station_mm", "Front axle station, CAD Z (mm)", -5000.0, 5000.0, 1.0, 950.0),
+        ("rear_station_mm", "Rear axle station, CAD Z (mm)", -5000.0, 5000.0, 1.0, -680.0),
+        ("rules_min_wheelbase_mm", "Rules minimum wheelbase (mm)", 0.0, 5000.0, 1.0, 1525.0),
+        ("ground_y_mm", "Ground plane, CAD Y (mm)", -1000.0, 1000.0, 0.5, -50.0),
+        ("lowest_member_y_mm", "Lowest frame member, CAD Y (mm)", -1000.0, 1000.0, 0.1, -18.5),
+        ("rim_offset_mm", "Max ball-joint offset from wheel centre (mm)", 10.0, 300.0, 1.0, 115.0),
+    ]),
+    ("Links & brackets", [
+        ("tube_od_mm", "Link tube OD (mm)", 1.0, 100.0, 0.01, 15.88),
+        ("tube_wall_mm", "Link tube wall (mm)", 0.1, 20.0, 0.001, 0.889),
+        ("yield_mpa", "Allowable stress (MPa)", 50.0, 3000.0, 1.0, 460.0),
+        ("E_gpa", "Young's modulus (GPa)", 10.0, 500.0, 1.0, 205.0),
+        ("fos_min", "Required factor of safety", 0.5, 10.0, 0.1, 1.5),
+        ("rod_end_lash_mm", "Rod-end lash per joint (mm)", 0.0, 2.0, 0.001, 0.025),
+        ("bracket_kt", "Bracket stress-concentration Kt", 1.0, 5.0, 0.01, 1.28),
+        ("bracket_plates", "Bracket plates (double shear = 2)", 1.0, 4.0, 1.0, 2.0),
+    ]),
+]
+_VEH_CHOICES = {
+    "tire_model": ("Tyre model", ["mf52_generic", "linear"], "mf52_generic"),
+    "drive": ("Drive", ["rwd", "awd"], "rwd"),
+    "roll_mode": ("Roll stiffness from",
+                  ["declared directly", "springs × MR² + ARB"],
+                  "declared directly"),
+}
+_VEH_TEXT = {"steering_ratios": ("Steering ratios", "4, 5, 6, 8")}
+
+
+def _veh(ss):
+    """The shared declaration dict, with every field present."""
+    v = ss.setdefault(_VEH_KEY, {})
+    for _, fields in _VEH_FIELDS:
+        for f, *_rest, d in fields:
+            v.setdefault(f, d)
+    for f, (_, _, d) in _VEH_CHOICES.items():
+        v.setdefault(f, d)
+    for f, (_, d) in _VEH_TEXT.items():
+        v.setdefault(f, d)
+    return v
+
+
+def _veh_sync(field, key):
+    import streamlit as st
+    ss = st.session_state
+    val = ss[key]
+    _veh(ss)[field] = val
+    for p in _VEH_PREFIXES:
+        other = f"{p}_{field}"
+        if other != key:
+            ss[other] = val
+
+
+def _vehicle_editor(st, ss, prefix, expanded=False):
+    """Draw the shared declaration. Two tabs draw it with different
+    prefixes; an edit in either is copied to the other."""
+    v = _veh(ss)
+    with st.expander("🚗 Vehicle & build declaration — shared by "
+                     "InverseGenesis and InverseGenesis-FullCar",
+                     expanded=expanded):
+        st.caption("Declared numbers, entered once. Every analysis in both "
+                   "tabs reads them; an edit here shows up in the other tab.")
+        c = st.columns(3)
+        for i, (f, (label, opts, _)) in enumerate(_VEH_CHOICES.items()):
+            key = f"{prefix}_{f}"
+            if key not in ss:
+                ss[key] = v[f]
+            c[i].selectbox(label, opts, key=key, on_change=_veh_sync,
+                           args=(f, key))
+        for group, fields in _VEH_FIELDS:
+            st.markdown(f"**{group}**")
+            cols = st.columns(4)
+            for i, (f, label, lo, hi, step, _) in enumerate(fields):
+                key = f"{prefix}_{f}"
+                if key not in ss:
+                    ss[key] = float(v[f])
+                fmt = "%.3f" if step < 0.01 else None
+                cols[i % 4].number_input(label, lo, hi, step=step, key=key,
+                                         format=fmt, on_change=_veh_sync,
+                                         args=(f, key))
+            if group == "Steering":
+                for f, (label, _) in _VEH_TEXT.items():
+                    key = f"{prefix}_{f}"
+                    if key not in ss:
+                        ss[key] = v[f]
+                    cols[1].text_input(label, key=key, on_change=_veh_sync,
+                                       args=(f, key))
+    return v
+
+
+# =========================================================================== #
+#  Shared rendering helpers
 # =========================================================================== #
 def _floats(text, fallback):
     try:
@@ -1099,8 +1046,6 @@ def _floats(text, fallback):
 def _cell(v):
     if isinstance(v, bool) or v is None:
         return "—" if v is None else str(v)
-    if isinstance(v, (int, float)):
-        return str(round(float(v), 4)) if isinstance(v, float) else str(v)
     try:
         return str(round(float(v), 4))
     except (TypeError, ValueError):
@@ -1108,432 +1053,442 @@ def _cell(v):
 
 
 def _table(st, pd, rows, cols=None):
-    """Render rows; every column is stringified with 4-decimal rounding so a
+    """Render rows with every column stringified (4-decimal rounding) so a
     column that mixes numbers and labels never breaks the Arrow renderer."""
     df = pd.DataFrame(rows, columns=cols) if cols else pd.DataFrame(rows)
     for c in df.columns:
-        df[c] = [_cell(v) for v in df[c]]
+        df[c] = [_cell(x) for x in df[c]]
     st.dataframe(df, hide_index=True, width="stretch")
 
 
-def _render_tables(st, pd, np, ss, corner=None, corner_note=""):
-    """Draw every table calculator. ``corner`` is the Hardpoints to use for
-    geometry-dependent tables (generated corner if one exists)."""
-    from suspension import paper_tables as pt
+_LBIN = 0.1751268
+
+
+def _declared_car(v, front_hp, rear_hp):
+    """A DeclaredCar built from the shared declaration and two corners."""
+    from suspension import inverse_genesis_fullcar as fc
+    springs = (dict(use_spring_rates=True,
+                    spring_rate_front=v["spring_front_lbin"] * _LBIN,
+                    spring_rate_rear=v["spring_rear_lbin"] * _LBIN,
+                    arb_rate_front=v["arb_front"],
+                    arb_rate_rear=v["arb_rear"])
+               if v["roll_mode"].startswith("springs") else
+               dict(use_spring_rates=False,
+                    roll_stiffness_front=v["roll_stiffness_front"],
+                    roll_stiffness_rear=v["roll_stiffness_rear"]))
+    return fc.DeclaredCar(
+        mass_kg=v["mass_kg"], weight_dist_front=v["weight_dist_front"],
+        cg_height_mm=v["cg_height_mm"], wheelbase_mm=v["wheelbase_mm"],
+        track_front_mm=v["track_front_mm"], track_rear_mm=v["track_rear_mm"],
+        tire_model=v["tire_model"], front_hp=front_hp, rear_hp=rear_hp,
+        power_kw=v["power_kw"], cla=v["cla"], cda=v["cda"],
+        drive=v["drive"], **springs)
+
+
+def _corner_pair(ss, corner, axle):
+    """(front, rear) corners: ``corner`` on its own axle, the other axle from
+    an earlier InverseGenesis run if there was one, else the default."""
     from suspension import genesis_repro as gr
+    from suspension.kinematics import Hardpoints
+    store = ss.get("genesis_corners") or {}
+    other = "rear" if axle == "front" else "front"
+    oth = (gr.hp_from_dict(store[other]) if store.get(other)
+           else Hardpoints.default())
+    return (corner, oth) if axle == "front" else (oth, corner)
 
-    st.markdown("#### Calculators")
-    st.caption("Defaults are the declared values of the InverseGenesis "
-               "write-up; change any of them. Corner-dependent tables use: "
-               + (corner_note or "no corner yet") + ".")
 
-    # ---- Table 1 ---------------------------------------------------------- #
-    with st.expander("Table 1 · Chassis recovered from STEP (tubes, length, "
-                     "nodes, walls)"):
-        up = st.file_uploader("Chassis STEP (.step / .stp)",
-                              type=["step", "stp"], key="pt_step")
-        c = st.columns(4)
-        R = c[0].number_input("Tube outer radius (mm)", 1.0, 50.0, 12.70,
-                              0.01, key="pt_R")
-        rtol = c[1].number_input("Radius tolerance (mm)", 0.001, 2.0, 0.02,
-                                 0.001, format="%.3f", key="pt_rtol")
-        atol = c[2].number_input("Coaxial tolerance (mm)", 0.01, 10.0, 0.5,
-                                 0.01, key="pt_atol")
-        tols = _floats(c[3].text_input("Clustering tolerances (mm)",
-                                       "20, 30, 37, 40, 50", key="pt_tols"),
-                       (20, 30, 37, 40, 50))
-        st.caption("Bends the file does not carry as toroidal faces can be "
-                   "added by hand (major radius × swept angle).")
-        extra = st.data_editor(
-            pd.DataFrame(columns=["major radius (mm)", "angle (deg)"]),
-            num_rows="dynamic", key="pt_bends", hide_index=True)
-        manual = [(float(r.iloc[0]), float(r.iloc[1]))
-                  for _, r in extra.iterrows()
-                  if not (pd.isna(r.iloc[0]) or pd.isna(r.iloc[1]))]
-        if up is not None and st.button("Extract", key="pt_step_go"):
-            with st.spinner("Reading the B-rep…"):
-                res = pt.parse_step_tubes(up.getvalue().decode(
-                    "utf-8", errors="replace"), R, rtol, atol)
-                ss["pt_step_res"] = (res, pt.frame_stats(
-                    res.axes, list(res.bends) + manual, tols, res.vertices, R))
-        if ss.get("pt_step_res"):
-            res, s = ss["pt_step_res"]
-            st.caption(res.units_note + f" · axis lines rejected: "
-                       f"{res.rejected}")
-            _table(st, pd, [
-                ("tubes", s["tubes"]), ("straight run (m)", s["straight_m"]),
-                ("bends", s["bends"]), ("bend arc (m)", s["bend_arc_m"]),
-                ("total tube length (m)", s["total_m"])],
-                ["quantity", "value"])
-            _table(st, pd, [{"clustering tol (mm)": k, "nodes": v["nodes"],
-                             "node-to-node length (m)": v["node_to_node_m"]}
-                            for k, v in s["nodes"].items()])
-            _table(st, pd, [{"wall (mm)": str(k), "tubes": v}
-                            for k, v in s["walls_mm"].items()])
+# =========================================================================== #
+#  Analysis sections (each takes a corner + the declaration)
+# =========================================================================== #
+def _sec_steering(st, pd, v, front_hp, rear_hp, key):
+    from suspension import genesis_analysis as ga
+    from suspension.kinematics import SuspensionKinematics
+    st.caption("Kingpin torque from mechanical trail and aligning torque, "
+               "with the corner loads taken from the declared vehicle at the "
+               "design lateral acceleration.")
+    try:
+        car = _declared_car(v, front_hp, rear_hp)
+        loads, _ = car.vehicle().lateral_load_transfer(v["lateral_g"])
+        fz_in, fz_out = float(loads.fl), float(loads.fr)
+        caster = float(SuspensionKinematics(front_hp)
+                       .solve_at_travel(0.0).caster)
+    except Exception as e:                    # noqa: BLE001
+        st.error(f"Vehicle model failed: {e}")
+        return
+    ratios = _floats(v["steering_ratios"], (4, 5, 6, 8))
+    s = ga.steering_torque(caster, v["tire_radius_mm"], fz_out, fz_in,
+                           v["lateral_mu"], v["aligning_outer_Nm"],
+                           v["aligning_inner_Nm"], ratios,
+                           v["steering_target_Nm"])
+    _table(st, pd, [("caster, from the front corner (deg)", caster),
+                    ("outer front Fz (N)", fz_out),
+                    ("inner front Fz (N)", fz_in),
+                    ("mechanical trail (mm)", s["trail_mm"]),
+                    ("outer Fy (N)", s["fy_outer_N"]),
+                    ("outer trail torque (N·m)", s["trail_torque_outer_Nm"]),
+                    ("outer kingpin torque (N·m)", s["outer_Nm"]),
+                    ("inner kingpin torque (N·m)", s["inner_Nm"]),
+                    ("road-wheel total (N·m)", s["road_wheel_total_Nm"]),
+                    ("ratio needed for the target", s["ratio_needed_for_target"])],
+           ["quantity", "value"])
+    _table(st, pd, s["rows"])
+
+
+def _sec_actuation(st, pd, v, corner, axle):
+    from suspension import genesis_analysis as ga
+    k = v[f"spring_{axle}_lbin"] * _LBIN
+    m = v[f"sprung_{axle}_kg"]
+    trk = v[f"track_{axle}_mm"]
+    a = ga.actuation_summary(corner, spring_rate_N_mm=k,
+                             sprung_corner_mass_kg=m,
+                             damper_stroke_mm=v["damper_stroke_mm"])
+    mr = None
+    if a.get("ok"):
+        mr = a["mr_static"]
+        _table(st, pd, [
+            ("motion ratio, static", a["mr_static"]),
+            ("motion ratio, droop", a["mr_droop"]),
+            ("motion ratio, bump", a["mr_bump"]),
+            ("rate character", a["rate_character"]),
+            ("pushrod length (mm)", a["pushrod_length_mm"]),
+            ("attachment, fraction out along the " + a["pushrod_attach"]
+             + " arm", a["attachment_fraction"]),
+            ("damper static length (mm)", a["damper_static_mm"]),
+            ("damper travel used (mm)", a["damper_travel_used_mm"]),
+            ("fraction of stroke used", a.get("stroke_fraction_used")),
+            ("motion-ratio spread (%)", a["mr_spread_pct"]),
+            ("wheel-rate spread (%)", a["wheel_rate_spread_pct"]),
+            ("ride frequency, droop (Hz)", a["ride_hz_droop"]),
+            ("ride frequency, static (Hz)", a["ride_hz_static"]),
+            ("ride frequency, bump (Hz)", a["ride_hz_bump"])],
+            ["quantity", "value"])
+        st.line_chart(pd.DataFrame({"motion ratio": a["motion_ratio"]},
+                                   index=pd.Index(a["travel_mm"],
+                                                  name="travel (mm)")),
+                      height=180)
+    else:
+        st.warning("No complete pushrod/rocker on this corner ("
+                   + a["reason"] + "): the motion ratio below is ASSUMED, "
+                   "not solved. Add the rocker points to the hardpoints to "
+                   "solve it.")
+    mr_used = mr if mr is not None else 1.0
+    rs = ga.roll_stiffness_from_spring(k, mr_used, trk)
+    _table(st, pd, [
+        ("motion ratio used", f"{round(mr_used, 4)} "
+         + ("(solved)" if mr is not None else "(ASSUMED placeholder)")),
+        ("wheel rate (N/mm)", rs["wheel_rate_N_mm"]),
+        ("spring roll stiffness (N·m/deg)", rs["roll_stiffness_Nm_deg"]),
+        ("same with MR = 1.0 placeholder (N·m/deg)", rs["placeholder_Nm_deg"]),
+        ("placeholder error (%)", rs["placeholder_error_pct"])],
+        ["quantity", "value"])
+
+
+def _sec_structural(st, pd, v, corner, axle):
+    from suspension import genesis_repro as gr
+    tube = gr.TubeSpec(od_mm=v["tube_od_mm"], wall_mm=v["tube_wall_mm"],
+                       yield_mpa=v["yield_mpa"], E_gpa=v["E_gpa"])
+    sc = gr.structural_screening(
+        corner, tube=tube, fos_min=v["fos_min"], axle=axle,
+        mass_kg=v["mass_kg"], weight_dist_front=v["weight_dist_front"],
+        cg_height_mm=v["cg_height_mm"], track_mm=v[f"track_{axle}_mm"],
+        wheelbase_mm=v["wheelbase_mm"],
+        brake_bias_front=v["brake_bias_front"],
+        roll_share_front=v["roll_share_front"],
+        aligning_torque_Nm=v["aligning_outer_Nm"])
+    st.caption("Five load cases (design-g cornering, 1.5 g braking, combined "
+               "1.06 g, 3 g bump, kerb 2 g + 1 g); tension yield and "
+               "pinned-pinned Euler buckling on the declared tube.")
+    (st.success if sc["all_pass"] else st.error)(
+        f"Governing member {sc['governing_member']}: worst FoS "
+        f"{_g(sc['worst_fos_overall'], digits=3, limited_by='declared material')}")
+    _table(st, pd, [{"member": m, "worst FoS": f,
+                     "governing case": sc["governing_case"][m]}
+                    for m, f in sc["worst_fos_per_member"].items()])
+    _table(st, pd, sc["rows"])
+    return sc
+
+
+def _sec_compliance(st, pd, v, corner, axle, sc, bands):
+    from suspension import genesis_repro as gr
+    from suspension import genesis_analysis as ga
+    cb = gr.compliance_budget(corner, axle=axle, od_mm=v["tube_od_mm"],
+                              wall_mm=v["tube_wall_mm"],
+                              lateral_g=v["lateral_g"], mass_kg=v["mass_kg"],
+                              weight_dist_front=v["weight_dist_front"],
+                              cg_height_mm=v["cg_height_mm"],
+                              track_mm=v[f"track_{axle}_mm"],
+                              wheelbase_mm=v["wheelbase_mm"],
+                              roll_share_front=v["roll_share_front"],
+                              aligning_torque_Nm=v["aligning_outer_Nm"])
+    rows = []
+    for case in ("cornering", "kerb strike"):
+        r = cb.get(case, {})
+        if "error" in r:
+            st.error(f"{case}: {r['error']}")
+            continue
+        fr = ga.band_fractions(
+            {"camber": r["compliance_camber_deg"],
+             "toe": r["compliance_toe_deg"]}, bands)
+        rows.append({"case": case,
+                     "compliance camber (deg)": r["compliance_camber_deg"],
+                     "share of camber band (%)": 100 * fr.get("camber", 0),
+                     "compliance steer (deg)": r["compliance_toe_deg"],
+                     "share of toe band (%)": 100 * fr.get("toe", 0),
+                     "max link extension (mm)": r["max_link_extension_mm"]})
+    _table(st, pd, rows)
+    st.caption(f"Bands: camber ±{bands['camber']}°, toe ±{bands['toe']}° "
+               "(from the run's targets when there is one). "
+               + cb.get("note", ""))
+    # per-link axial strain at the worst screened force, plus rod-end lash
+    lrows = []
+    worst = {}
+    for r in sc["rows"]:
+        if abs(r["force_N"]) > abs(worst.get(r["member"], {"force_N": 0})
+                                   ["force_N"]):
+            worst[r["member"]] = r
+    for m, r in worst.items():
+        b = ga.axial_budget(abs(r["force_N"]), r["length_mm"],
+                            v["tube_od_mm"], v["tube_wall_mm"], v["E_gpa"],
+                            v["rod_end_lash_mm"], 2)
+        lrows.append({"member": m, "worst force (N)": r["force_N"],
+                      "case": r["load_case"], "length (mm)": r["length_mm"],
+                      "axial strain (mm)": b["axial_strain_mm"],
+                      "rod-end lash (mm)": b["lash_mm"],
+                      "total (mm)": b["sum_mm"]})
+    _table(st, pd, lrows)
+
+
+def _sec_brackets(st, pd, v, sc, key):
+    from suspension import genesis_analysis as ga
+    worst = max(sc["rows"], key=lambda r: abs(r["force_N"]))
+    st.caption("Double-shear clevis root bending. The load defaults to the "
+               f"worst screened link force ({worst['member']}, "
+               f"{worst['load_case']}); reach and plate size are the design "
+               "variables — shortening the reach is usually worth more than "
+               "thickening the plate.")
+    F0 = float(abs(worst["force_N"]))
+    cases = st.data_editor(pd.DataFrame(
+        {"case": ["as drawn", "thicker plates", "shorter reach"],
+         "load (N)": [F0] * 3, "reach (mm)": [27.9, 27.9, 10.0],
+         "plate width (mm)": [30.0, 40.0, 30.0],
+         "plate thickness (mm)": [5.0, 6.0, 5.0]}),
+        num_rows="dynamic", key=key, hide_index=True)
+    rows = []
+    for _, r in cases.iterrows():
+        try:
+            b = ga.bracket_fos(float(r["load (N)"]), float(r["reach (mm)"]),
+                               float(r["plate width (mm)"]),
+                               float(r["plate thickness (mm)"]),
+                               int(v["bracket_plates"]), v["yield_mpa"],
+                               v["bracket_kt"])
+            rows.append({"case": r["case"], "stress (MPa)": b["stress_mpa"],
+                         "FoS": b["fos"],
+                         "meets required FoS": b["fos"] >= v["fos_min"]})
+        except (TypeError, ValueError, ZeroDivisionError):
+            continue
+    _table(st, pd, rows)
+
+
+def _sec_packaging(st, pd, v, corner):
+    from suspension import genesis_analysis as ga
+    w = ga.wheelbase_check(v["front_station_mm"], v["rear_station_mm"],
+                           v["rules_min_wheelbase_mm"])
+    cl = ga.static_clearance(v["lowest_member_y_mm"], v["ground_y_mm"])
+    e = ga.ball_joint_envelope(corner, v["rim_offset_mm"])
+    _table(st, pd, [
+        ("wheelbase from axle stations (mm)", w["wheelbase_mm"]),
+        ("margin to rules minimum (mm)", w["margin_mm"]),
+        ("meets rules minimum", w["passes"]),
+        ("declared wheelbase (mm)", v["wheelbase_mm"]),
+        ("static clearance under frame (mm)", cl["clearance_mm"]),
+        ("upper ball joint above wheel centre (mm)", e["upper_above_wc_mm"]),
+        ("lower ball joint below wheel centre (mm)", e["lower_below_wc_mm"]),
+        ("both joints inside the rim envelope", e["inside"])],
+        ["quantity", "value"])
+    if abs(w["wheelbase_mm"] - v["wheelbase_mm"]) > 0.5:
+        st.warning("The declared wheelbase differs from the axle stations.")
+
+
+def _sec_kinematics(st, pd, v, corner, axle, travel):
+    from suspension import genesis_repro as gr
+    trk = v[f"track_{axle}_mm"]
+    d = gr.corner_diagnostics(corner, travel_mm=travel, track_mm=trk,
+                              axle=axle, wheelbase_mm=v["wheelbase_mm"],
+                              cg_height_mm=v["cg_height_mm"],
+                              brake_bias_front=v["brake_bias_front"])
+    if not d.get("ok"):
+        st.error("The corner does not solve over this travel range.")
+        return None
+    rows = [("camber gain, LSQ (deg/mm)", d["camber_gain_deg_per_mm"]),
+            ("bump steer, LSQ (deg/mm)", d["bump_steer_deg_per_mm"]),
+            ("toe change, max − min (deg)", d["toe_change_deg"]),
+            ("RC height, static (mm)", d["rc_height_static_mm"]),
+            ("RC migration, chassis frame (mm/mm)",
+             d["rc_migration_chassis_mm_per_mm"]),
+            ("RC migration, above ground (mm/mm)",
+             d["rc_migration_ground_mm_per_mm"]),
+            ("RC above ground, minimum (mm)", d["rc_above_ground_min_mm"]),
+            ("caster (deg)", d["caster_deg"]),
+            ("kingpin inclination (deg)", d["kpi_deg"]),
+            ("scrub radius (mm)", d["scrub_static_mm"]),
+            ("contact-patch rise per mm of travel",
+             d["contact_patch_rise_per_mm"]),
+            ("side-view IC, x rearward (mm)", d["side_view_ic_x_mm"]),
+            ("side-view IC, height (mm)", d["side_view_ic_z_mm"]),
+            ("tan swing arm (" + d["side_view_reference"] + ")",
+             d["side_view_tan"])]
+    if "anti_dive_pct" in d:
+        rows.append(("anti-dive (%)", d["anti_dive_pct"]))
+    if "anti_squat_pct" in d:
+        rows.append(("anti-squat (%)", d["anti_squat_pct"]))
+    _table(st, pd, rows, ["quantity", "value"])
+    _table(st, pd, [{"travel (mm)": t, "camber (deg)": a, "toe (deg)": b,
+                     "RC height (mm)": r, "scrub (mm)": sc}
+                    for t, a, b, r, sc in zip(
+                        d["stations_mm"], d["camber_deg"], d["toe_deg"],
+                        d["rc_height_mm"], d["scrub_mm"])])
+    ctr = gr.camber_to_road(corner.static_camber,
+                            d["camber_gain_deg_per_mm"], v["body_roll_deg"],
+                            trk, v["tyre_optimum_camber"])
+    st.markdown("**Loaded tyre camber relative to the road** "
+                "(outside wheel at the declared body roll)")
+    _table(st, pd, [(k, x) for k, x in ctr.items()], ["quantity", "value"])
+    st.caption("None of these is a channel — the solver is indifferent to "
+               "all of them, so check them on every corner.")
+    return d
+
+
+def _sec_tyre(st, pd, v, key):
+    from suspension import genesis_analysis as ga
+    from suspension.tiremodel import default_tire
+    if v["tire_model"] != "mf52_generic":
+        st.caption("The linear placeholder tyre has no load or camber "
+                   "sensitivity to tabulate.")
+        return
+    fz_s = v["mass_kg"] * 9.81 * v["weight_dist_front"] / 2
+    loads = _floats(st.text_input("Vertical loads (N)", "550, 1100, 1650",
+                                  key=key, help="static front corner ≈ "
+                                  + str(round(fz_s)) + " N"), (550, 1100, 1650))
+    _table(st, pd, ga.tyre_table(loads, default_tire()))
+    st.caption("Synthetic MF5.2 pure-lateral set — not fitted to measured "
+               "data.")
+
+
+def _sec_frame_from_step(st, pd, np, ss, v, key):
+    """Chassis STEP → tube axes → frame summary, stored as the Frame Planner
+    frame so keep-outs and the swept-volume check can use it."""
+    from suspension import genesis_analysis as ga
+    from suspension.tubeframe import FrameGraph
+    up = st.file_uploader("Chassis STEP (.step / .stp)", type=["step", "stp"],
+                          key=f"{key}_up")
+    c = st.columns(4)
+    R = c[0].number_input("Tube outer radius (mm)", 1.0, 50.0, 12.70, 0.01,
+                          key=f"{key}_R")
+    rtol = c[1].number_input("Radius tolerance (mm)", 0.001, 2.0, 0.02,
+                             0.001, format="%.3f", key=f"{key}_rtol")
+    atol = c[2].number_input("Coaxial tolerance (mm)", 0.01, 10.0, 0.5, 0.01,
+                             key=f"{key}_atol")
+    tols = _floats(c[3].text_input("Node clustering tolerances (mm)",
+                                   "20, 30, 37, 40, 50", key=f"{key}_tols"),
+                   (20, 30, 37, 40, 50))
+    extra = st.data_editor(
+        pd.DataFrame(columns=["bend major radius (mm)", "bend angle (deg)"]),
+        num_rows="dynamic", key=f"{key}_bends", hide_index=True)
+    manual = [(float(r.iloc[0]), float(r.iloc[1]))
+              for _, r in extra.iterrows()
+              if not (pd.isna(r.iloc[0]) or pd.isna(r.iloc[1]))]
+    if up is not None and st.button("Recover the frame", key=f"{key}_go"):
+        with st.spinner("Reading the B-rep…"):
+            res = ga.parse_step_tubes(
+                up.getvalue().decode("utf-8", errors="replace"), R, rtol, atol)
+            stats = ga.frame_stats(res.axes, list(res.bends) + manual, tols,
+                                   res.vertices, R)
+        g = FrameGraph()
+        ends = np.array([q for a, b, _ in res.axes for q in (a, b)])
+        if len(ends):
+            _, lab = ga._cluster_count(ends, float(tols[0]))
+            for l in sorted(set(lab.tolist())):
+                g.add_node(f"N{l}", tuple(ends[lab == l].mean(axis=0)))
+            for i in range(len(res.axes)):
+                a, b = f"N{lab[2 * i]}", f"N{lab[2 * i + 1]}"
+                if a != b:
+                    g.add_tube(f"T{i + 1:02d}", a, b)
+            ss["tf_frame"] = g.as_dict()
+        ss["ig_step_frame"] = (res, stats)
+    if ss.get("ig_step_frame"):
+        res, s = ss["ig_step_frame"]
+        st.caption(res.units_note + " · axis lines rejected: "
+                   + str(res.rejected) + " · stored as the Frame Planner "
+                   "frame, so it is available as keep-outs below and to the "
+                   "swept-volume check.")
+        _table(st, pd, [("tubes", s["tubes"]), ("straight run (m)", s["straight_m"]),
+                        ("bends", s["bends"]), ("bend arc (m)", s["bend_arc_m"]),
+                        ("total tube length (m)", s["total_m"])],
+               ["quantity", "value"])
+        _table(st, pd, [{"clustering tolerance (mm)": k, "nodes": x["nodes"],
+                         "node-to-node length (m)": x["node_to_node_m"]}
+                        for k, x in s["nodes"].items()])
+        _table(st, pd, [{"wall (mm)": str(k), "tubes": n}
+                        for k, n in s["walls_mm"].items()])
+        if res.bends:
             _table(st, pd, [{"bend": i + 1, "major radius (mm)": r,
                              "swept angle (deg)": a}
                             for i, (r, a) in enumerate(res.bends)])
-            if "vertices" in s:
-                _table(st, pd, [{**s["vertices"],
-                                 "cylinder radii in file (mm: faces)":
-                                     str(res.radii_mm)}])
-            if st.button("Send tubes to the Frame Planner", key="pt_to_tf"):
-                from suspension.tubeframe import FrameGraph
-                g = FrameGraph()
-                tol0 = float(tols[0]) if tols else 20.0
-                ends = np.array([q for a, b, _ in res.axes for q in (a, b)])
-                _, lab = pt._cluster_count(ends, tol0)
-                for l in sorted(set(lab.tolist())):
-                    g.add_node(f"N{l}", tuple(ends[lab == l].mean(axis=0)))
-                for i in range(len(res.axes)):
-                    a, b = f"N{lab[2 * i]}", f"N{lab[2 * i + 1]}"
-                    if a != b:
-                        g.add_tube(f"T{i + 1:02d}", a, b)
-                ss["tf_frame"] = g.as_dict()
-                st.success("Frame stored — the swept-volume check and "
-                           "capsule keep-outs can now use it.")
-
-    # ---- Table 1b / sections 2.1, 3 -------------------------------------- #
-    with st.expander("Table 1b · Declared vehicle — wheelbase, clearance"):
-        c = st.columns(3)
-        zf = c[0].number_input("Front axle station, CAD Z (mm)", -5000.0,
-                               5000.0, 950.0, 1.0, key="pt_zf")
-        zr = c[1].number_input("Rear axle station, CAD Z (mm)", -5000.0,
-                               5000.0, -680.0, 1.0, key="pt_zr")
-        wbmin = c[2].number_input("Rules minimum wheelbase (mm)", 0.0,
-                                  5000.0, 1525.0, 1.0, key="pt_wbmin")
-        c = st.columns(2)
-        ylow = c[0].number_input("Lowest frame member, CAD Y (mm)", -1000.0,
-                                 1000.0, -18.5, 0.1, key="pt_ylow")
-        yg = c[1].number_input("Declared ground plane, CAD Y (mm)", -1000.0,
-                               1000.0, -50.0, 0.1, key="pt_yg")
-        w = pt.wheelbase_check(zf, zr, wbmin)
-        cl = pt.static_clearance(ylow, yg)
-        _table(st, pd, [("wheelbase (mm)", w["wheelbase_mm"]),
-                        ("margin to rules minimum (mm)", w["margin_mm"]),
-                        ("meets rules", str(w["passes"])),
-                        ("static clearance under frame (mm)",
-                         cl["clearance_mm"])], ["quantity", "value"])
-
-    # ---- Section 1.1 ------------------------------------------------------- #
-    with st.expander("Section 1.1 · Tyre model at stated loads"):
-        loads = _floats(st.text_input("Vertical loads (N)",
-                                      "550, 1100, 1650", key="pt_loads"),
-                        (550, 1100, 1650))
-        _table(st, pd, pt.tyre_table(loads))
-        st.caption("Synthetic MF5.2 pure-lateral set — not fitted to "
-                   "measured data. Lap sensitivities (Table 2) and the "
-                   "vehicle table (Table 10) are in the FullCar tab's "
-                   "declared-car panel.")
-
-    # ---- Table 2b ----------------------------------------------------------- #
-    with st.expander("Table 2b · Steering-wheel torque against ratio"):
-        cas0 = 3.67
-        if corner is not None:
-            try:
-                from suspension.kinematics import SuspensionKinematics
-                cas0 = float(SuspensionKinematics(corner)
-                             .solve_at_travel(0.0).caster)
-            except Exception:           # noqa: BLE001
-                pass
-        c = st.columns(4)
-        cas = c[0].number_input("Caster (deg)", -20.0, 30.0,
-                                round(cas0, 2), 0.01, key="pt_cas")
-        rt = c[1].number_input("Tyre radius (mm)", 100.0, 500.0, 228.0, 1.0,
-                               key="pt_rt")
-        mu = c[2].number_input("Lateral µ", 0.1, 3.0, 1.55, 0.01,
-                               key="pt_mu")
-        tgt = c[3].number_input("Target at the wheel (N·m)", 1.0, 50.0,
-                                10.0, 0.5, key="pt_tgt")
-        c = st.columns(4)
-        fzo = c[0].number_input("Outer Fz (N)", 0.0, 10000.0, 1262.0, 1.0,
-                                key="pt_fzo")
-        fzi = c[1].number_input("Inner Fz (N)", 0.0, 10000.0, 150.0, 1.0,
-                                key="pt_fzi")
-        mzo = c[2].number_input("Outer aligning torque (N·m)", 0.0, 500.0,
-                                50.0, 0.5, key="pt_mzo")
-        mzi = c[3].number_input("Inner aligning torque (N·m)", 0.0, 500.0,
-                                6.0, 0.5, key="pt_mzi")
-        ratios = _floats(st.text_input("Steering ratios", "4, 5, 6, 8",
-                                       key="pt_ratios"), (4, 5, 6, 8))
-        s = pt.steering_torque(cas, rt, fzo, fzi, mu, mzo, mzi, ratios, tgt)
-        _table(st, pd, [("mechanical trail (mm)", s["trail_mm"]),
-                        ("outer Fy (N)", s["fy_outer_N"]),
-                        ("outer trail torque (N·m)",
-                         s["trail_torque_outer_Nm"]),
-                        ("outer kingpin torque (N·m)", s["outer_Nm"]),
-                        ("inner kingpin torque (N·m)", s["inner_Nm"]),
-                        ("road-wheel total (N·m)", s["road_wheel_total_Nm"]),
-                        ("ratio needed for target", s["ratio_needed_for_target"])],
-               ["quantity", "value"])
-        _table(st, pd, s["rows"])
-
-    # ---- Table 8 / section 5 / 5.1 / Fig. 2 ------------------------------- #
-    with st.expander("Table 8 · Actuation, ride frequency and roll stiffness "
-                     "(section 5, 5.1, Fig. 2)"):
-        c = st.columns(4)
-        k_lb = c[0].number_input("Coil rate (lb/in)", 10.0, 3000.0, 295.0,
-                                 1.0, key="pt_k")
-        m_s = c[1].number_input("Sprung corner mass (kg)", 5.0, 500.0, 60.1,
-                                0.1, key="pt_ms")
-        stroke = c[2].number_input("Damper stroke (mm)", 1.0, 300.0, 57.0,
-                                   1.0, key="pt_stroke")
-        trk = c[3].number_input("Track (mm)", 500.0, 2500.0, 1200.0, 1.0,
-                                key="pt_trk")
-        k = k_lb * 0.1751268
-        mr_used = None
-        if corner is not None:
-            a = pt.actuation_summary(corner, spring_rate_N_mm=k,
-                                     sprung_corner_mass_kg=m_s,
-                                     damper_stroke_mm=stroke)
-            if a.get("ok"):
-                mr_used = a["mr_static"]
-                _table(st, pd, [
-                    ("motion ratio, static", a["mr_static"]),
-                    ("motion ratio, droop / bump",
-                     f"{round(a['mr_droop'], 3)} / {round(a['mr_bump'], 3)}"),
-                    ("rate character", a["rate_character"]),
-                    ("pushrod length (mm)", a["pushrod_length_mm"]),
-                    (f"attachment, fraction out along {a['pushrod_attach']} arm",
-                     a["attachment_fraction"]),
-                    ("damper static length (mm)", a["damper_static_mm"]),
-                    ("damper travel used (mm)", a["damper_travel_used_mm"]),
-                    ("fraction of stroke used", a.get("stroke_fraction_used")),
-                    ("motion-ratio spread (%)", a["mr_spread_pct"]),
-                    ("wheel-rate spread (%)", a["wheel_rate_spread_pct"]),
-                    ("ride frequency droop / static / bump (Hz)",
-                     f"{round(a['ride_hz_droop'], 2)} / "
-                     f"{round(a['ride_hz_static'], 2)} / "
-                     f"{round(a['ride_hz_bump'], 2)}")],
-                    ["quantity", "value"])
-            else:
-                st.info("This corner has no complete pushrod/rocker linkage "
-                        "(" + a["reason"] + "). Enter the motion ratio "
-                        "below; paste the rocker points with the hardpoints "
-                        "to solve it.")
-        mr_in = st.number_input("Motion ratio for the roll-stiffness row",
-                                0.05, 3.0, float(round(mr_used or 0.60, 3)),
-                                0.005, format="%.3f", key="pt_mr")
-        rs = pt.roll_stiffness_from_spring(k, mr_in, trk)
-        _table(st, pd, [("wheel rate (N/mm)", rs["wheel_rate_N_mm"]),
-                        ("axle roll stiffness (N·m/deg)",
-                         rs["roll_stiffness_Nm_deg"]),
-                        ("with placeholder MR = 1.0 (N·m/deg)",
-                         rs["placeholder_Nm_deg"]),
-                        ("placeholder error (%)",
-                         rs["placeholder_error_pct"]),
-                        ("ride frequency at this MR (Hz)",
-                         pt.ride_frequency_hz(k, mr_in, m_s))],
-               ["quantity", "value"])
-
-    # ---- section 6.2 -------------------------------------------------------- #
-    with st.expander("Section 6.2 · Bracket screening (double-shear clevis)"):
-        c = st.columns(3)
-        allow = c[0].number_input("Allowable (MPa)", 50.0, 2000.0, 460.0,
-                                  1.0, key="pt_ballow")
-        kt = c[1].number_input("Stress-concentration factor Kt", 1.0, 5.0,
-                               1.28, 0.01, key="pt_kt",
-                               help="Not stated in the write-up; 1.28 is "
-                                    "back-solved from its three cases.")
-        npl = int(c[2].number_input("Plates", 1, 4, 2, 1, key="pt_npl"))
-        cases = st.data_editor(pd.DataFrame(
-            {"case": ["as drawn", "thicker plates", "stub member"],
-             "load (N)": [4799.0] * 3, "reach (mm)": [27.9, 27.9, 10.0],
-             "plate width (mm)": [30.0, 40.0, 30.0],
-             "plate thickness (mm)": [5.0, 6.0, 5.0]}),
-            num_rows="dynamic", key="pt_brk", hide_index=True)
-        rows = []
-        for _, r in cases.iterrows():
-            try:
-                b = pt.bracket_fos(float(r["load (N)"]), float(r["reach (mm)"]),
-                                   float(r["plate width (mm)"]),
-                                   float(r["plate thickness (mm)"]), npl,
-                                   allow, kt)
-                rows.append({"case": r["case"], "stress (MPa)": b["stress_mpa"],
-                             "FoS": b["fos"]})
-            except (TypeError, ValueError, ZeroDivisionError):
-                continue
-        _table(st, pd, rows)
-
-    # ---- section 7.1 ------------------------------------------------------- #
-    with st.expander("Section 7.1 · Link strain, lash and band consumption"):
-        c = st.columns(4)
-        F = c[0].number_input("Link force (N)", 0.0, 50000.0, 4799.0, 1.0,
-                              key="pt_F")
-        L = c[1].number_input("Link length (mm)", 1.0, 3000.0, 485.0, 1.0,
-                              key="pt_L")
-        od = c[2].number_input("OD (mm)", 1.0, 100.0, 15.88, 0.01,
-                               key="pt_od")
-        wall = c[3].number_input("Wall (mm)", 0.1, 20.0, 0.889, 0.001,
-                                 key="pt_wall")
-        c = st.columns(4)
-        E = c[0].number_input("E (GPa)", 10.0, 500.0, 205.0, 1.0, key="pt_E")
-        lash = c[1].number_input("Lash per rod end (mm)", 0.0, 1.0, 0.025,
-                                 0.001, format="%.3f", key="pt_lash")
-        njt = int(c[2].number_input("Rod ends", 0, 4, 2, 1, key="pt_nj"))
-        rep = c[3].number_input("Reported max extension (mm)", 0.0, 10.0,
-                                0.60, 0.01, key="pt_rep")
-        ab = pt.axial_budget(F, L, od, wall, E, lash, njt, rep)
-        _table(st, pd, [(k, v) for k, v in ab.items()],
-               ["quantity", "value (mm / mm²)"])
-        c = st.columns(4)
-        dcam = c[0].number_input("Camber loss (deg)", 0.0, 5.0, 0.116,
-                                 0.001, format="%.3f", key="pt_dcam")
-        bcam = c[1].number_input("Camber band ± (deg)", 0.001, 5.0, 0.30,
-                                 0.01, key="pt_bcam")
-        dtoe = c[2].number_input("Compliance steer (deg)", 0.0, 5.0, 0.074,
-                                 0.001, format="%.3f", key="pt_dtoe")
-        btoe = c[3].number_input("Toe band ± (deg)", 0.001, 5.0, 0.08, 0.01,
-                                 key="pt_btoe")
-        fr = pt.band_fractions({"camber": dcam, "toe": dtoe},
-                               {"camber": bcam, "toe": btoe})
-        _table(st, pd, [{"channel": k, "fraction of band (%)": 100 * v}
-                        for k, v in fr.items()])
-
-    # ---- section 4.7 --------------------------------------------------------- #
-    with st.expander("Section 4.7 · Ball joints against the rim envelope"):
-        mo = st.number_input("Max offset from wheel centre (mm)", 10.0,
-                             300.0, 115.0, 1.0, key="pt_mo",
-                             help="≈ rim radius minus clearance; 115 mm for "
-                                  "a 254 mm rim in the write-up")
-        if corner is None:
-            st.caption("Needs a corner.")
-        else:
-            e = pt.ball_joint_envelope(corner, mo)
-            _table(st, pd, [(k, str(v) if isinstance(v, bool) else v)
-                            for k, v in e.items()], ["quantity", "value"])
-
-_PAPER_INDEX = [
-    ("1, section 2", "Calculators → Table 1 (upload the STEP file)"),
-    ("1b, sections 2.1 and 3", "Calculators → Table 1b"),
-    ("Section 1.1", "Calculators → Section 1.1"),
-    ("2 (lap sensitivity)", "InverseGenesis-FullCar tab → Declared-car mode"),
-    ("2b", "Calculators → Table 2b"),
-    ("3, 3b", "Generate geometry → target, volume, shop and solver inputs"),
-    ("4", "Generate geometry → run, then Properties outside the objective"),
-    ("5, 13, Fig. 1", "Generate geometry → run → Candidate field, hardpoints, curves"),
-    ("6", "Generate geometry → run → Candidate yield by tolerance class"),
-    ("7, 11", "Generate geometry → one run per declaration → Declaration log"),
-    ("7b, 9b, 12", "Corner properties (below) or Generate → Properties panel"),
-    ("8, section 5, 5.1, Fig. 2", "Calculators → Table 8"),
-    ("9", "Generate geometry → run → Structural screening"),
-    ("10", "InverseGenesis-FullCar tab → Declared-car mode"),
-    ("Section 4.3g, 4.6", "Generate geometry → run → Yield taken apart"),
-    ("Section 4.7", "Calculators → Section 4.7"),
-    ("Section 6.2", "Calculators → Section 6.2"),
-    ("Section 7.1", "Calculators → Section 7.1 (and Compliance budget after a run)"),
-    ("Section 7.2", "Generate geometry → run → Swept-volume clearance"),
-]
+        if "vertices" in s:
+            _table(st, pd, [{**s["vertices"],
+                             "cylinder radii (mm: faces)": str(res.radii_mm)}])
 
 
-def _render_tables_tab(st, pd, np, ss):
-    """The Paper tables sub-tab: pick a corner, then every calculator."""
+def _render_analysis(st, pd, np, ss):
+    """Section 4 + 5 of the tab: the shared declaration and every analysis of
+    the current corner (generated, else the seed)."""
     from suspension import genesis_repro as gr
     from suspension.kinematics import Hardpoints
+    st.divider()
+    st.markdown("###### 4 · Vehicle & build declaration")
+    v = _vehicle_editor(st, ss, "ig_v")
 
-    with st.expander("🗺 Where each paper table is", expanded=True):
-        _table(st, pd, _PAPER_INDEX, ["paper table", "where in the app"])
-
-    st.markdown("#### Corner used by the geometry tables")
     run = ss.get("ig_run")
-    opts = []
     if run is not None and run["result"].winner_hp is not None:
-        opts.append("Generated corner (last run)")
-    if ss.get("ig_seed_hp"):
-        opts.append("Seed geometry from Generate geometry")
-    opts += ["Paste hardpoints (e.g. Table 13)", "KinematiK default corner"]
-    src = st.radio("Corner", opts, horizontal=True, key="pt_corner_src")
-    corner, note = None, ""
-    if src.startswith("Generated"):
         corner, note = run["result"].winner_hp, "the generated corner"
-    elif src.startswith("Seed"):
-        corner, note = gr.hp_from_dict(ss["ig_seed_hp"]), "the seed geometry"
-    elif src.startswith("KinematiK"):
-        corner, note = Hardpoints.default(), "the KinematiK default corner"
+        axle = run.get("axle", "front")
+        _, tg, _, _ = gr.GenesisManifest.from_json(
+            run["manifest_json"]).objects()
+        travel = float(max(abs(t) for t in tg.stations()))
+        bands = {"camber": 0.30, "toe": 0.08}
+        for c in tg.curves:
+            if c.channel == "camber_deg":
+                bands["camber"] = float(np.min(c.band))
+            if c.channel == "toe_deg":
+                bands["toe"] = float(np.min(c.band))
     else:
-        txt = st.text_area(
-            "Hardpoints — CSV (point,x,y,z) or JSON, corner frame, mm. "
-            "Rocker points (pushrod_outer, rocker_pivot, rocker_axis, "
-            "rocker_pushrod, rocker_spring, spring_inner) are optional.",
-            height=180, key="pt_hp_txt",
-            placeholder="point,x,y,z\nupper_front_inner,-120.0,288.1,280.5\n…")
-        cam = st.number_input("Static camber (deg)", -6.0, 3.0, -1.5, 0.05,
-                              key="pt_hp_cam")
-        if txt.strip():
-            try:
-                corner = _parse_hardpoints_text(txt, Hardpoints.default())
-                corner.static_camber = float(cam)
-                corner.static_toe = 0.0
-                note = "the pasted hardpoints"
-            except Exception as e:           # noqa: BLE001
-                st.error(f"Could not read the hardpoints: {e}")
-        else:
-            st.caption("Paste a corner to fill the geometry tables; the "
-                       "other calculators work without one.")
+        seed = ss.get("ig_seed_hp")
+        corner = gr.hp_from_dict(seed) if seed else Hardpoints.default()
+        note = "the seed geometry (no run yet)"
+        axle = ss.get("ig_axle", "front")
+        travel = float(ss.get("ig_travel", 25.0))
+        bands = {"camber": 0.30, "toe": 0.08}
 
-    if corner is not None:
-        with st.expander("Tables 12, 7b, 9b · Corner properties", expanded=True):
-            c = st.columns(4)
-            axle = c[0].selectbox("Axle", ["front", "rear"], key="pt_cp_axle")
-            trk = c[1].number_input("Track (mm)", 500.0, 2500.0, 1210.0, 1.0,
-                                    key="pt_cp_trk")
-            wb = c[2].number_input("Wheelbase (mm)", 500.0, 3000.0, 1630.0,
-                                   1.0, key="pt_cp_wb")
-            cgh = c[3].number_input("CG height (mm)", 50.0, 600.0, 280.0, 1.0,
-                                    key="pt_cp_cg")
-            c = st.columns(4)
-            trav = c[0].number_input("Travel ± (mm)", 1.0, 80.0, 25.0, 0.5,
-                                     key="pt_cp_trav")
-            bias = c[1].number_input("Front brake bias", 0.0, 1.0, 0.60, 0.01,
-                                     key="pt_cp_bias")
-            roll = c[2].number_input("Body roll (deg)", 0.0, 5.0, 1.18, 0.01,
-                                     key="pt_cp_roll")
-            opt = c[3].number_input("Tyre optimum camber (deg)", -5.0, 0.0,
-                                    -1.83, 0.01, key="pt_cp_opt")
-            try:
-                d = gr.corner_diagnostics(
-                    corner, travel_mm=trav, track_mm=trk, axle=axle,
-                    wheelbase_mm=wb, cg_height_mm=cgh, brake_bias_front=bias)
-            except Exception as e:           # noqa: BLE001
-                d = {"ok": False}
-                st.error(f"Corner does not solve: {e}")
-            if d.get("ok"):
-                rows = [
-                    ("camber gain, LSQ (deg/mm)", d["camber_gain_deg_per_mm"]),
-                    ("bump steer, LSQ (deg/mm)", d["bump_steer_deg_per_mm"]),
-                    ("toe change, max − min (deg)", d["toe_change_deg"]),
-                    ("RC height, static (mm)", d["rc_height_static_mm"]),
-                    ("RC migration, chassis (mm/mm)",
-                     d["rc_migration_chassis_mm_per_mm"]),
-                    ("RC migration, above ground (mm/mm)",
-                     d["rc_migration_ground_mm_per_mm"]),
-                    ("RC above ground, minimum (mm)",
-                     d["rc_above_ground_min_mm"]),
-                    ("caster (deg)", d["caster_deg"]),
-                    ("kingpin inclination (deg)", d["kpi_deg"]),
-                    ("scrub radius (mm)", d["scrub_static_mm"]),
-                    ("contact-patch rise per mm", d["contact_patch_rise_per_mm"]),
-                    ("side-view IC, x rearward (mm)", d["side_view_ic_x_mm"]),
-                    ("side-view IC, height (mm)", d["side_view_ic_z_mm"]),
-                    ("tan swing arm (" + d["side_view_reference"] + ")",
-                     d["side_view_tan"]),
-                ]
-                if "anti_dive_pct" in d:
-                    rows.append(("anti-dive (%)", d["anti_dive_pct"]))
-                if "anti_squat_pct" in d:
-                    rows.append(("anti-squat (%)", d["anti_squat_pct"]))
-                _table(st, pd, rows, ["quantity (Table 12 / 9b)", "value"])
-                _table(st, pd, [{"travel (mm)": t, "camber (deg)": a,
-                                 "toe (deg)": b, "RC height (mm)": r,
-                                 "scrub (mm)": sc}
-                                for t, a, b, r, sc in zip(
-                                    d["stations_mm"], d["camber_deg"],
-                                    d["toe_deg"], d["rc_height_mm"],
-                                    d["scrub_mm"])])
-                ctr = gr.camber_to_road(corner.static_camber,
-                                        d["camber_gain_deg_per_mm"], roll,
-                                        trk, opt)
-                _table(st, pd, [(k, v) for k, v in ctr.items()],
-                       ["quantity (Table 7b)", "value"])
+    st.markdown("###### 5 · Corner & vehicle analysis")
+    st.caption(f"For {note}, {axle} axle, with the declaration above.")
+    front_hp, rear_hp = _corner_pair(ss, corner, axle)
 
-    _render_tables(st, pd, np, ss, corner, note)
+    with st.expander("🔎 Kinematics, anti-geometry and loaded camber",
+                     expanded=True):
+        _sec_kinematics(st, pd, v, corner, axle, travel)
+    with st.expander("📐 Actuation, ride frequency and roll stiffness"):
+        _sec_actuation(st, pd, v, corner, axle)
+    with st.expander("🛞 Steering effort"):
+        if axle != "front":
+            st.caption("Uses the front corner — shown with the front corner "
+                       "from an earlier run, or the default.")
+        _sec_steering(st, pd, v, front_hp, rear_hp, "ig_steer")
+    sc = None
+    with st.expander("🔩 Structural screening of the links"):
+        sc = _sec_structural(st, pd, v, corner, axle)
+    with st.expander("⚙️ Compliance budget — link strain, lash and band use"):
+        _sec_compliance(st, pd, v, corner, axle, sc, bands)
+    with st.expander("🪝 Bracket screening"):
+        _sec_brackets(st, pd, v, sc, "ig_brk")
+    with st.expander("📦 Packaging — wheelbase, ground clearance, rim envelope"):
+        _sec_packaging(st, pd, v, corner)

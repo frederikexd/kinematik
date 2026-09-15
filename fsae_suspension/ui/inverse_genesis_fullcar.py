@@ -85,73 +85,26 @@ def _corner_hp(ss, axle):
 
 
 def _declared_car_panel(st, pd, np, ss, fc):
+    """Declared-car mode on the shared vehicle declaration: vehicle summary,
+    lap sensitivity, tyre, steering effort and actuation of both axles."""
     import json
     from suspension import genesis_repro as gr
     from suspension.kinematics import Hardpoints
-    with st.expander("🚗 Declared-car mode — evaluate ONE stated vehicle "
+    from ui.inverse_genesis import (_vehicle_editor, _declared_car, _table,
+                                    _floats, _sec_tyre, _sec_steering,
+                                    _sec_actuation)
+    v = _vehicle_editor(st, ss, "fc_v")
+    with st.expander("🚗 Declared-car mode — evaluate the declared vehicle "
                      "(no search)", expanded=False):
-        st.caption("Every field is a declared input. Use this to regenerate "
-                   "a paper's vehicle-level table and lap sensitivities; "
-                   "download the JSON so someone else can.")
-        c = st.columns(4)
-        mass = c[0].number_input("Mass incl. driver (kg)", 100.0, 500.0,
-                                 300.0, 1.0, key="dc_m")
-        wd = c[1].number_input("Front weight fraction", 0.3, 0.7, 0.48,
-                               0.005, key="dc_wd")
-        cg = c[2].number_input("CG height (mm)", 100.0, 600.0, 280.0, 1.0,
-                               key="dc_cg")
-        wb = c[3].number_input("Wheelbase (mm)", 1000.0, 2500.0, 1630.0,
-                               1.0, key="dc_wb")
-        c = st.columns(4)
-        tf = c[0].number_input("Track front (mm)", 800.0, 2000.0, 1210.0,
-                               1.0, key="dc_tf")
-        tr = c[1].number_input("Track rear (mm)", 800.0, 2000.0, 1210.0,
-                               1.0, key="dc_tr")
-        tire = c[2].selectbox("Tyre model", ["mf52_generic", "linear"],
-                              key="dc_tire",
-                              help="mf52_generic: synthetic MF5.2 lateral "
-                                   "set, peak µ 1.55 at 1100 N — NOT "
-                                   "fitted to measured data.")
-        drive = c[3].selectbox("Drive", ["rwd", "awd"], key="dc_drive")
-        c = st.columns(3)
-        power = c[0].number_input("Power (kW)", 5.0, 200.0, 80.0, 1.0,
-                                  key="dc_pw")
-        cla = c[1].number_input("ClA (m²)", 0.0, 10.0, 0.0, 0.1,
-                                key="dc_cla")
-        cda = c[2].number_input("CdA (m²)", 0.0, 5.0, 1.1, 0.05,
-                                key="dc_cda")
-        rs_mode = st.radio("Roll stiffness from",
-                           ["Declared directly (N·m/deg)",
-                            "Springs × MR² + ARB (needs rockers)"],
-                           horizontal=True, key="dc_rsmode")
-        c = st.columns(4)
-        if rs_mode.startswith("Declared"):
-            kf = c[0].number_input("Front (N·m/deg)", 0.0, 5000.0, 458.0,
-                                   1.0, key="dc_kf")
-            kr = c[1].number_input("Rear (N·m/deg)", 0.0, 5000.0, 420.0,
-                                   1.0, key="dc_kr")
-            springs = dict(use_spring_rates=False, roll_stiffness_front=kf,
-                           roll_stiffness_rear=kr)
-        else:
-            sf = c[0].number_input("Spring front (lb/in)", 10.0, 2000.0,
-                                   295.0, 1.0, key="dc_sf")
-            sr = c[1].number_input("Spring rear (lb/in)", 10.0, 2000.0,
-                                   349.0, 1.0, key="dc_sr")
-            af = c[2].number_input("ARB front (N·m/deg)", 0.0, 3000.0,
-                                   220.0, 1.0, key="dc_af")
-            ar = c[3].number_input("ARB rear (N·m/deg)", 0.0, 3000.0,
-                                   120.0, 1.0, key="dc_ar")
-            springs = dict(use_spring_rates=True,
-                           spring_rate_front=sf * fc.LBF_IN_TO_N_MM,
-                           spring_rate_rear=sr * fc.LBF_IN_TO_N_MM,
-                           arb_rate_front=af, arb_rate_rear=ar)
+        st.caption("Uses the vehicle & build declaration above and the "
+                   "corners from InverseGenesis. Download the JSON to keep "
+                   "the inputs with the results.")
         corners = {}
         g = st.columns(2)
         for col, axle in zip(g, ("front", "rear")):
-            srcs = ["InverseGenesis / live", "KinematiK default",
-                    "Paste JSON"]
-            src = col.selectbox(f"{axle.title()} corner", srcs,
-                                key=f"dc_src_{axle}")
+            src = col.selectbox(f"{axle.title()} corner",
+                                ["InverseGenesis / live", "KinematiK default",
+                                 "Paste JSON"], key=f"dc_src_{axle}")
             if src == "KinematiK default":
                 corners[axle] = Hardpoints.default()
             elif src == "Paste JSON":
@@ -159,7 +112,7 @@ def _declared_car_panel(st, pd, np, ss, fc):
                                     key=f"dc_txt_{axle}")
                 if not txt.strip():
                     col.info("Paste a hardpoints dict (or a genesis "
-                             "manifest's winner_hardpoints).")
+                             "manifest).")
                     return
                 try:
                     d = json.loads(txt)
@@ -172,15 +125,7 @@ def _declared_car_panel(st, pd, np, ss, fc):
             else:
                 corners[axle], note = _corner_hp(ss, axle)
                 col.caption(note)
-        car = fc.DeclaredCar(
-            mass_kg=mass, weight_dist_front=wd, cg_height_mm=cg,
-            wheelbase_mm=wb, track_front_mm=tf, track_rear_mm=tr,
-            tire_model=tire, front_hp=corners["front"],
-            rear_hp=corners["rear"], power_kw=power, cla=cla, cda=cda,
-            drive=drive, **springs)
-
-        lat = st.number_input("Evaluate balance / roll at lateral g", 0.1,
-                              3.0, 1.5, 0.05, key="dc_lat")
+        car = _declared_car(v, corners["front"], corners["rear"])
         st.markdown("**Lap sensitivity**")
         c = st.columns(2)
         chan = c[0].selectbox("Sweep", ["front_roll_share", "cg_height_mm",
@@ -192,21 +137,15 @@ def _declared_car_panel(st, pd, np, ss, fc):
         if st.button("Evaluate the declared car", key="dc_go",
                      type="primary"):
             try:
-                vals = [float(v) for v in vals_txt.split(",") if v.strip()]
-                if chan == "front_roll_share" and car.use_spring_rates:
-                    st.warning("front_roll_share redistributes DIRECT roll "
-                               "stiffness; the sweep switches spring-rate "
-                               "mode off for its rows.")
+                vals = _floats(vals_txt, ())
                 with st.spinner("Solving the declared car…"):
-                    summ = car.summary(lat)
+                    summ = car.summary(v["lateral_g"])
                     sens = fc.lap_sensitivity(car, chan, vals)
-                inputs = {k: v for k, v in car.__dict__.items()
-                          if k not in ("front_hp", "rear_hp")}
-                inputs["front_hp"] = gr.hp_to_dict(car.front_hp)
-                inputs["rear_hp"] = gr.hp_to_dict(car.rear_hp)
                 ss["fc_declared"] = {
-                    "schema": "kinematik.declared_car/1",
-                    "inputs": inputs, "lateral_g": lat,
+                    "schema": "kinematik.declared_car/2",
+                    "declaration": dict(v),
+                    "front_hp": gr.hp_to_dict(car.front_hp),
+                    "rear_hp": gr.hp_to_dict(car.rear_hp),
                     "sweep": {"channel": chan, "values": vals},
                     "summary": summ, "sensitivity": sens}
             except Exception as exc:          # noqa: BLE001
@@ -214,27 +153,34 @@ def _declared_car_panel(st, pd, np, ss, fc):
         out = ss.get("fc_declared")
         if out:
             summ, sens = out["summary"], out["sensitivity"]
-            st.dataframe(pd.DataFrame(
-                [(k, (f"{v:.4f}" if isinstance(v, float)
-                      else json.dumps(v) if isinstance(v, dict) else str(v)))
-                 for k, v in summ.items()], columns=["quantity", "value"]),
-                hide_index=True, width="stretch")
-            if "PROXY" in json.dumps(summ["motion_ratio"]) and \
-                    summ["roll_stiffness_source"].startswith("spring"):
+            st.markdown("**Vehicle summary**")
+            _table(st, pd, [(k, json.dumps(x) if isinstance(x, dict) else x)
+                            for k, x in summ.items()], ["quantity", "value"])
+            if ("PROXY" in json.dumps(summ["motion_ratio"])
+                    and summ["roll_stiffness_source"].startswith("spring")):
                 st.warning("Spring-rate roll stiffness is running on a "
                            "PROXY motion ratio (no rocker defined): these "
                            "roll stiffnesses are provisional.")
-            st.markdown(
-                f"Baseline lap **{sens['baseline_s']:.3f} s** on a "
-                f"{sens['track_length_m']:.0f} m layout; "
-                f"{sens['channel']} spread **{sens['spread_s']:.3f} s**, "
-                f"best at {sens['best_value']:g}.")
+            st.markdown("**Lap sensitivity** — baseline "
+                        + str(round(sens["baseline_s"], 3)) + " s on a "
+                        + str(round(sens["track_length_m"])) + " m layout; "
+                        + sens["channel"] + " spread "
+                        + str(round(sens["spread_s"], 3)) + " s, best at "
+                        + str(sens["best_value"]) + ".")
             st.line_chart(pd.DataFrame(sens["rows"], columns=[
                 sens["channel"], "lap time (s)"]).set_index(sens["channel"]))
             st.download_button("Declared car + results (.json)",
                                json.dumps(out, indent=2, default=float),
                                file_name="declared_car.json",
                                mime="application/json", key="dc_dl")
+        st.markdown("**Tyre**")
+        _sec_tyre(st, pd, v, "dc_tyre_loads")
+        st.markdown("**Steering effort**")
+        _sec_steering(st, pd, v, corners["front"], corners["rear"],
+                      "dc_steer")
+        for axle in ("front", "rear"):
+            st.markdown(f"**Actuation, ride and roll stiffness — {axle}**")
+            _sec_actuation(st, pd, v, corners[axle], axle)
 
 
 def render():
@@ -315,10 +261,14 @@ def render():
         return
 
     with st.expander("The fixed car & cell (the search does not move these)"):
-        f1, f2, f3 = st.columns(3)
+        from ui.inverse_genesis import _veh
+        vd = _veh(ss)
+        f1, f3 = st.columns(2)
         base_mass = _units.unum(f1, "Base mass excl. cells & motors (kg)", 120.0, 320.0, 215.0, 'kg', step=5.0, key="fc_bm")
-        wheelbase = _units.unum(f2, "Wheelbase (mm)", 1400.0, 1800.0, 1550.0, 'mm', step=5.0, key="fc_wbcar")
         ambient = _units.unum(f3, "Cooling-air inlet (°C)", 10.0, 45.0, 30.0, '°C', step=1.0, key="fc_amb")
+        st.caption("Wheelbase, CG height, weight distribution, tracks, tyre "
+                   "model and aero come from the vehicle & build declaration "
+                   "at the top of this tab.")
         c1, c2, c3 = st.columns(3)
         cap_ah = c1.number_input("Cell capacity (Ah)", 1.0, 10.0, 4.5, 0.1,
                                  key="fc_cap")
@@ -326,23 +276,6 @@ def render():
                                 key="fc_rint") / 1000.0
         max_dis = c3.number_input("Cell max discharge (A)", 10.0, 100.0, 45.0,
                                   1.0, key="fc_maxdis")
-        v1, v2, v3 = st.columns(3)
-        cg_h = v1.number_input("CG height (mm)", 100.0, 600.0, 300.0, 1.0,
-                               key="fc_cg")
-        wdf = v2.number_input("Front weight fraction", 0.3, 0.7, 0.47,
-                              0.005, key="fc_wdf")
-        tire_m = v3.selectbox("Tyre model", ["linear", "mf52_generic"],
-                              key="fc_tire")
-        t1, t2, t3, t4 = st.columns(4)
-        trk_f = t1.number_input("Track front (mm)", 800.0, 2000.0, 1200.0,
-                                1.0, key="fc_trf")
-        trk_r = t2.number_input("Track rear (mm)", 800.0, 2000.0, 1176.0,
-                                1.0, key="fc_trr",
-                                help="Was hard-coded to 0.98 × front.")
-        cla_v = t3.number_input("ClA (m²)", 0.0, 10.0, 2.6, 0.1,
-                                key="fc_cla")
-        cda_v = t4.number_input("CdA (m²)", 0.0, 5.0, 1.1, 0.05,
-                                key="fc_cda")
         calibrated = st.checkbox(
             "Cell thermal model is calibrated to datasheet/rig data",
             value=False, key="fc_cal",
@@ -360,9 +293,11 @@ def render():
         parallel_range=(int(par_lo), int(par_hi)),
         final_drive_range=(float(gear_lo), float(gear_hi)),
         architectures=tuple(archs), cell=cell,
-        base_mass_kg=base_mass, wheelbase_mm=wheelbase, ambient_c=ambient,
-        cg_height_mm=cg_h, weight_dist_front=wdf, track_mm=trk_f,
-        track_rear_mm=trk_r, cla=cla_v, cda=cda_v, tire_model=tire_m)
+        base_mass_kg=base_mass, wheelbase_mm=vd["wheelbase_mm"],
+        ambient_c=ambient, cg_height_mm=vd["cg_height_mm"],
+        weight_dist_front=vd["weight_dist_front"],
+        track_mm=vd["track_front_mm"], track_rear_mm=vd["track_rear_mm"],
+        cla=vd["cla"], cda=vd["cda"], tire_model=vd["tire_model"])
 
     # ================= 3 · the objective ==================================
     st.markdown("###### 3 · The objective — points, anchored or relative")
@@ -497,10 +432,12 @@ def render():
                        "generate the hardpoints with build-yield pricing.")
             k1, k2, k3 = st.columns(3)
             i_axle = k1.selectbox("Axle", ["front", "rear"], key="fc_i_axle")
-            rgrad = k2.number_input("Roll gradient (deg/g)", 0.1, 5.0, 1.2,
-                                    0.01, key="fc_i_rg",
-                                    help="Was hard-coded to 1.2. Use the "
-                                         "car's own (body roll ÷ lateral g).")
+            from ui.inverse_genesis import _veh
+            _vd = _veh(ss)
+            rgrad = float(_vd["body_roll_deg"]) / max(
+                float(_vd["lateral_g"]), 1e-6)
+            k2.caption("Roll gradient " + str(round(rgrad, 3))
+                       + " deg/g — declared body roll ÷ design lateral g.")
             i_mode = k3.selectbox("Intent", ["derived", "declared"],
                                   key="fc_i_mode")
             decl = None

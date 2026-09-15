@@ -305,6 +305,7 @@ class DesignSpace:
     roll_stiffness_rear: float | None = None
 
     def rear_track(self) -> float:
+        """Rear track in mm (declared, else the legacy 0.98 × front track)."""
         return (float(self.track_rear_mm) if self.track_rear_mm is not None
                 else 0.98 * float(self.track_mm))
 
@@ -966,7 +967,7 @@ def kinematic_intent_for(score: ConfigScore | None, space: DesignSpace,
         # fall back to a flat intent seeded at static if the sweep won't run
         vals = {ch: np.zeros_like(stations) for ch in _ig.CHANNELS}
 
-    # DECLARED intent (a paper's stated targets) bypasses the derivation:
+    # DECLARED intent (targets stated in a design brief) bypasses the derivation:
     #   declared = {"static_camber": -1.5, "camber_gain": -0.035,
     #               "toe": 0.0, "rc_height": 55.0}  (+ optional "scrub")
     b = {"camber_deg": 0.20, "toe_deg": 0.10, "rc_height_mm": 6.0,
@@ -1082,7 +1083,7 @@ LBF_IN_TO_N_MM = 0.1751268
 
 @dataclass
 class DeclaredCar:
-    """A vehicle stated in full, the way a paper's parameter table states it.
+    """A vehicle stated in full: every field is a declared input.
 
     Every field is an input; nothing is searched. ``front_hp``/``rear_hp``
     attach the real corners (roll centres and camber come from them). Spring
@@ -1112,6 +1113,8 @@ class DeclaredCar:
     drive: str = "rwd"
 
     def vehicle(self, **over) -> VehicleDynamics:
+        """VehicleDynamics for the declaration (masses kg, lengths mm, roll
+        stiffness N·m/deg); keyword overrides replace fields for one call."""
         d = {**self.__dict__, **over}
         vp = VehicleParams(
             mass=d["mass_kg"], cg_height=d["cg_height_mm"],
@@ -1138,11 +1141,13 @@ class DeclaredCar:
                                tire=_tire_for(space))
 
     def powertrain(self, **over) -> Powertrain:
+        """Powertrain for the declaration: power in W×1000 (kW), ClA and CdA in m² (m-squared)."""
         d = {**self.__dict__, **over}
         return Powertrain(power_kw=d["power_kw"], cla=d["cla"], cda=d["cda"],
                           drive=d["drive"])
 
     def lap(self, track: Track | None = None, **over) -> LapResult:
+        """Quasi-steady lap of the declared car; lap time in seconds, distance in m."""
         return simulate_lap(self.vehicle(**over), track or default_autocross(),
                             self.powertrain(**over))
 

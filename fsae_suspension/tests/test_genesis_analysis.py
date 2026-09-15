@@ -3,8 +3,8 @@
 #  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 #
-#  tests/test_paper_tables.py — the table calculators, pinned to the numbers
-#  the InverseGenesis write-up reports, and the STEP tube reader on a
+#  tests/test_genesis_analysis.py — the InverseGenesis corner/vehicle
+#  analyses, pinned to reference values, and the STEP tube reader on a
 #  synthetic B-rep.
 # ============================================================================
 import math
@@ -12,7 +12,7 @@ import math
 import numpy as np
 import pytest
 
-from suspension import paper_tables as pt
+from suspension import genesis_analysis as pt
 from suspension.kinematics import Hardpoints
 
 LB_IN = 0.1751268
@@ -118,7 +118,7 @@ def test_frame_stats_counts_and_lengths(step_text):
     assert s["vertices"]["in_tube_envelope"] >= 6
 
 
-def test_paper_bend_total():
+def test_mixed_bend_total():
     bends = [(64, 90)] * 2 + [(80, a) for a in
                               (43.6, 141.6, 90, 90, 90, 90, 80)]
     s = pt.frame_stats([], bends, cluster_tols_mm=())
@@ -132,7 +132,7 @@ def test_wheelbase_and_clearance():
     assert pt.static_clearance(-18.5, -50)["clearance_mm"] == 31.5
 
 
-def test_tyre_table_matches_section_1_1():
+def test_tyre_table_reference_values():
     rows = {r["Fz_N"]: r for r in pt.tyre_table()}
     assert round(rows[550.0]["mu_peak"], 2) == 1.66
     assert round(rows[1100.0]["mu_peak"], 2) == 1.55
@@ -141,8 +141,8 @@ def test_tyre_table_matches_section_1_1():
     assert round(rows[1100.0]["optimal_camber_deg"], 1) == -1.8
 
 
-# ---- Table 2b ------------------------------------------------------------------ #
-def test_steering_torque_table_2b():
+# ---- steering ------------------------------------------------------------------ #
+def test_steering_torque_reference_case():
     s = pt.steering_torque(3.67, 228, 1262, 150, 1.55, 50, 6.0)
     assert round(s["trail_mm"], 1) == 14.6
     assert round(s["fy_outer_N"]) == 1956
@@ -152,7 +152,7 @@ def test_steering_torque_table_2b():
     assert got == {4.0: 22.0, 5.0: 17.6, 6.0: 14.7, 8.0: 11.0}
 
 
-# ---- section 5 / Fig. 2 / 5.1 ------------------------------------------------- #
+# ---- actuation, ride, roll ------------------------------------------------- #
 def test_roll_stiffness_placeholder_error():
     f = pt.roll_stiffness_from_spring(295 * LB_IN, 0.60, 1200)
     assert round(f["roll_stiffness_Nm_deg"]) == 234
@@ -186,14 +186,14 @@ def test_actuation_summary_refuses_without_rocker():
     assert pt.actuation_summary(hp)["ok"] is False
 
 
-# ---- section 6.2 / 7.1 ----------------------------------------------------------- #
-def test_bracket_cases_6_2():
+# ---- brackets and compliance ----------------------------------------------------------- #
+def test_bracket_reference_cases():
     assert round(pt.bracket_fos(4799, 27.9, 30, 5)["fos"], 2) == 0.67
     assert round(pt.bracket_fos(4799, 27.9, 40, 6)["fos"], 2) == 1.29
     assert round(pt.bracket_fos(4799, 10.0, 30, 5)["fos"], 1) == 1.9
 
 
-def test_axial_budget_7_1():
+def test_axial_budget_reference_case():
     b = pt.axial_budget(4799, 485, reported_extension_mm=0.60)
     assert round(b["axial_strain_mm"], 2) == 0.27
     assert b["lash_mm"] == pytest.approx(0.05)

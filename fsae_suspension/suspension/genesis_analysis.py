@@ -3,19 +3,20 @@
 #  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 #
-#  suspension/paper_tables.py — input → output calculators for every table of
-#  the InverseGenesis prevalidation write-up that is not already an engine run.
+#  suspension/genesis_analysis.py — corner and vehicle analyses that sit next
+#  to the InverseGenesis engine: frame recovery, packaging, steering effort,
+#  actuation, brackets and link compliance.
 # ============================================================================
 """
-Deterministic calculators: the user types the declared values, the function
-returns the table. Nothing here is fitted or searched.
+Deterministic analyses fed by the InverseGenesis corner and the shared
+vehicle declaration. Nothing here is fitted or searched.
 
 WHAT LIVES HERE
 ---------------
 * ``parse_step_tubes`` / ``frame_stats`` — tube axes, wall thicknesses and
   bend arcs straight from a STEP file's B-rep entities (no CAD kernel), and
   the tube count, straight run, bend arc, node count per clustering tolerance
-  and vertex accounting the chassis table reports.
+  and vertex accounting of the recovered frame.
 * ``wheelbase_check`` / ``static_clearance`` — axle stations against the
   rules minimum; frame clearance above the declared ground plane.
 * ``steering_torque`` — trail, per-wheel kingpin torque and steering-wheel
@@ -30,9 +31,8 @@ WHAT LIVES HERE
   a fraction of an acceptance band.
 * ``ball_joint_envelope`` — ball-joint heights against the rim envelope.
 
-Every function states its units. Values that the write-up does not state
-(the bracket stress-concentration factor) are explicit inputs with the
-back-solved default named as such.
+Every function states its units. The bracket stress-concentration factor is
+an explicit input; its 1.28 default is a declared assumption, not derived.
 """
 
 from __future__ import annotations
@@ -142,7 +142,7 @@ def parse_step_tubes(text: str, outer_radius_mm: float = 12.70,
                      min_length_mm: float = 1.0) -> StepTubes:
     """Tube axis lines, walls and bends from STEP text (lengths in mm).
 
-    Method (the one the write-up states): every CYLINDRICAL_SURFACE of the
+    Method: every CYLINDRICAL_SURFACE of the
     outer radius is collapsed into unique axis lines; each axis is bounded by
     the vertices of ITS OWN faces (not by every vertex within the radius —
     that envelope rule over-extends at every joint); the wall is the outer
@@ -321,7 +321,7 @@ def _cluster_count(points: np.ndarray, tol_mm: float) -> tuple[int, np.ndarray]:
 def frame_stats(axes, bends=(), cluster_tols_mm=(20, 30, 37, 40, 50),
                 vertices=None, outer_radius_mm: float = 12.70,
                 small_radii_mm=()) -> dict:
-    """Chassis table from tube axes (mm) and bends (major mm, angle deg).
+    """Frame summary from tube axes (mm) and bends (major mm, angle deg).
 
     Returns tube count, straight run (m), bend arc (m), total (m), node count
     and node-to-node centreline length (m) per clustering tolerance (mm),
@@ -463,7 +463,7 @@ def actuation_summary(hp: Hardpoints, travel_mm: float = 25.0, n: int = 11,
                       spring_rate_N_mm: float | None = None,
                       sprung_corner_mass_kg: float | None = None,
                       damper_stroke_mm: float | None = None) -> dict:
-    """Actuation table: motion ratio (dimensionless) static and at ±travel,
+    """Actuation summary: motion ratio (dimensionless) static and at ±travel,
     pushrod length (mm), attachment fraction along the arm (dimensionless),
     damper static length (mm), damper travel used (mm), wheel-rate spread
     (%), and — given coil rate (N/mm) and sprung mass (kg) — ride frequency
@@ -538,8 +538,8 @@ def bracket_fos(load_N: float, reach_mm: float, plate_width_mm: float,
 
     Each plate carries load/n_plates (N) at the reach (mm) as a cantilever
     bent about its thin axis: σ = Kt·M/Z, Z = w·t²/6 (mm³), allowable in MPa.
-    ``kt`` is a stress-concentration / combined-load factor the write-up does
-    not state; 1.28 is back-solved from its three reported cases.
+    ``kt`` is a declared stress-concentration / combined-load factor
+    (dimensionless); 1.28 is the default declaration.
     """
     m = load_N / n_plates * reach_mm
     z = plate_width_mm * plate_thickness_mm ** 2 / 6.0
