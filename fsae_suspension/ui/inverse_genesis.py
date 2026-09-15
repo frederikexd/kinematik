@@ -579,11 +579,11 @@ def _results_panel(st, pd, np, ss, run):
                 rows_c = [(k, v) for k, v in vals.items() if k != "forces_N"]
                 st.dataframe(pd.DataFrame(rows_c, columns=["quantity", "value"]),
                              hide_index=True, width="stretch")
-                with st.expander(f"{case} member forces"):
-                    st.dataframe(
-                        pd.DataFrame(list(vals["forces_N"].items()),
-                                     columns=["member", "force (N)"]),
-                        hide_index=True)
+                st.caption(f"{case}: member forces (N)")
+                st.dataframe(
+                    pd.DataFrame(list(vals["forces_N"].items()),
+                                 columns=["member", "force (N)"]),
+                    hide_index=True)
 
     # ---- Table 6: the same field under every shop class ------------------ #
     with st.expander("🏭 Candidate yield by tolerance class (Table 6)"):
@@ -638,6 +638,30 @@ def _results_panel(st, pd, np, ss, run):
 
 
 def render():
+    import numpy as np
+    import pandas as pd
+    import streamlit as st
+
+    ss = st.session_state
+    st.subheader("🧬 InverseGenesis — draw the curves; the engine generates "
+                 "the geometry")
+    st.caption(
+        "Draw the kinematic curves you want inside acceptance bands, box the "
+        "legal volume each hardpoint may occupy, declare the shop, and the "
+        "engine pulls the coordinates into the curves — then ranks the "
+        "candidates by BUILD YIELD. Every run is saved as a manifest you can "
+        "download and re-run byte for byte. Rigid kinematics only. "
+        "The 📑 Paper tables sub-tab turns declared values into every table "
+        "of the write-up without a run.")
+    t_gen, t_tab = st.tabs(["🧬 Generate geometry",
+                            "📑 Paper tables — enter values, get the table"])
+    with t_gen:
+        _render_generate()
+    with t_tab:
+        _render_tables_tab(st, pd, np, ss)
+
+
+def _render_generate():
     import json
     import numpy as np
     import pandas as pd
@@ -648,15 +672,6 @@ def render():
     from suspension import genesis_repro as gr
 
     ss = st.session_state
-
-    st.subheader("🧬 InverseGenesis — draw the curves; the engine generates "
-                 "the geometry")
-    st.caption(
-        "Draw the kinematic curves you want inside acceptance bands, box the "
-        "legal volume each hardpoint may occupy, declare the shop, and the "
-        "engine pulls the coordinates into the curves — then ranks the "
-        "candidates by BUILD YIELD. Every run is saved as a manifest you can "
-        "download and re-run byte for byte. Rigid kinematics only.")
 
     # ================= 0 · re-run a manifest ==============================
     with st.expander("📂 Re-run a saved manifest (reproduce a result)"):
@@ -747,6 +762,7 @@ def render():
     hp.static_toe = float(a2.number_input(
         "Static toe δ₀ (deg) — declared input", -3.0, 3.0,
         float(hp.static_toe), 0.01, key="ig_delta0"))
+    ss["ig_seed_hp"] = gr.hp_to_dict(hp)
 
     # ================= 1 · targets ========================================
     st.markdown("###### 1 · Target curves")
@@ -1060,14 +1076,11 @@ def render():
         st.info("Declare the geometry, curves, volume and shop, then "
                 "generate. The same declarations always produce the same "
                 "geometry, and the manifest proves it.")
-        _render_tables(st, pd, np, ss, hp, "the seed geometry above")
         return
     st.divider()
     _results_panel(st, pd, np, ss, run)
-    res_hp = run["result"].winner_hp
-    _render_tables(st, pd, np, ss, res_hp if res_hp is not None else hp,
-                  "the generated corner" if res_hp is not None
-                  else "the seed geometry above")
+    st.caption("Tables that need only declared values are in the "
+               "📑 Paper tables sub-tab above.")
 
 
 # =========================================================================== #
@@ -1109,8 +1122,7 @@ def _render_tables(st, pd, np, ss, corner=None, corner_note=""):
     from suspension import paper_tables as pt
     from suspension import genesis_repro as gr
 
-    st.divider()
-    st.markdown("### 📑 Table calculators — enter the values, get the table")
+    st.markdown("#### Calculators")
     st.caption("Defaults are the declared values of the InverseGenesis "
                "write-up; change any of them. Corner-dependent tables use: "
                + (corner_note or "no corner yet") + ".")
@@ -1390,3 +1402,138 @@ def _render_tables(st, pd, np, ss, corner=None, corner_note=""):
             e = pt.ball_joint_envelope(corner, mo)
             _table(st, pd, [(k, str(v) if isinstance(v, bool) else v)
                             for k, v in e.items()], ["quantity", "value"])
+
+_PAPER_INDEX = [
+    ("1, section 2", "Calculators → Table 1 (upload the STEP file)"),
+    ("1b, sections 2.1 and 3", "Calculators → Table 1b"),
+    ("Section 1.1", "Calculators → Section 1.1"),
+    ("2 (lap sensitivity)", "InverseGenesis-FullCar tab → Declared-car mode"),
+    ("2b", "Calculators → Table 2b"),
+    ("3, 3b", "Generate geometry → target, volume, shop and solver inputs"),
+    ("4", "Generate geometry → run, then Properties outside the objective"),
+    ("5, 13, Fig. 1", "Generate geometry → run → Candidate field, hardpoints, curves"),
+    ("6", "Generate geometry → run → Candidate yield by tolerance class"),
+    ("7, 11", "Generate geometry → one run per declaration → Declaration log"),
+    ("7b, 9b, 12", "Corner properties (below) or Generate → Properties panel"),
+    ("8, section 5, 5.1, Fig. 2", "Calculators → Table 8"),
+    ("9", "Generate geometry → run → Structural screening"),
+    ("10", "InverseGenesis-FullCar tab → Declared-car mode"),
+    ("Section 4.3g, 4.6", "Generate geometry → run → Yield taken apart"),
+    ("Section 4.7", "Calculators → Section 4.7"),
+    ("Section 6.2", "Calculators → Section 6.2"),
+    ("Section 7.1", "Calculators → Section 7.1 (and Compliance budget after a run)"),
+    ("Section 7.2", "Generate geometry → run → Swept-volume clearance"),
+]
+
+
+def _render_tables_tab(st, pd, np, ss):
+    """The Paper tables sub-tab: pick a corner, then every calculator."""
+    from suspension import genesis_repro as gr
+    from suspension.kinematics import Hardpoints
+
+    with st.expander("🗺 Where each paper table is", expanded=True):
+        _table(st, pd, _PAPER_INDEX, ["paper table", "where in the app"])
+
+    st.markdown("#### Corner used by the geometry tables")
+    run = ss.get("ig_run")
+    opts = []
+    if run is not None and run["result"].winner_hp is not None:
+        opts.append("Generated corner (last run)")
+    if ss.get("ig_seed_hp"):
+        opts.append("Seed geometry from Generate geometry")
+    opts += ["Paste hardpoints (e.g. Table 13)", "KinematiK default corner"]
+    src = st.radio("Corner", opts, horizontal=True, key="pt_corner_src")
+    corner, note = None, ""
+    if src.startswith("Generated"):
+        corner, note = run["result"].winner_hp, "the generated corner"
+    elif src.startswith("Seed"):
+        corner, note = gr.hp_from_dict(ss["ig_seed_hp"]), "the seed geometry"
+    elif src.startswith("KinematiK"):
+        corner, note = Hardpoints.default(), "the KinematiK default corner"
+    else:
+        txt = st.text_area(
+            "Hardpoints — CSV (point,x,y,z) or JSON, corner frame, mm. "
+            "Rocker points (pushrod_outer, rocker_pivot, rocker_axis, "
+            "rocker_pushrod, rocker_spring, spring_inner) are optional.",
+            height=180, key="pt_hp_txt",
+            placeholder="point,x,y,z\nupper_front_inner,-120.0,288.1,280.5\n…")
+        cam = st.number_input("Static camber (deg)", -6.0, 3.0, -1.5, 0.05,
+                              key="pt_hp_cam")
+        if txt.strip():
+            try:
+                corner = _parse_hardpoints_text(txt, Hardpoints.default())
+                corner.static_camber = float(cam)
+                corner.static_toe = 0.0
+                note = "the pasted hardpoints"
+            except Exception as e:           # noqa: BLE001
+                st.error(f"Could not read the hardpoints: {e}")
+        else:
+            st.caption("Paste a corner to fill the geometry tables; the "
+                       "other calculators work without one.")
+
+    if corner is not None:
+        with st.expander("Tables 12, 7b, 9b · Corner properties", expanded=True):
+            c = st.columns(4)
+            axle = c[0].selectbox("Axle", ["front", "rear"], key="pt_cp_axle")
+            trk = c[1].number_input("Track (mm)", 500.0, 2500.0, 1210.0, 1.0,
+                                    key="pt_cp_trk")
+            wb = c[2].number_input("Wheelbase (mm)", 500.0, 3000.0, 1630.0,
+                                   1.0, key="pt_cp_wb")
+            cgh = c[3].number_input("CG height (mm)", 50.0, 600.0, 280.0, 1.0,
+                                    key="pt_cp_cg")
+            c = st.columns(4)
+            trav = c[0].number_input("Travel ± (mm)", 1.0, 80.0, 25.0, 0.5,
+                                     key="pt_cp_trav")
+            bias = c[1].number_input("Front brake bias", 0.0, 1.0, 0.60, 0.01,
+                                     key="pt_cp_bias")
+            roll = c[2].number_input("Body roll (deg)", 0.0, 5.0, 1.18, 0.01,
+                                     key="pt_cp_roll")
+            opt = c[3].number_input("Tyre optimum camber (deg)", -5.0, 0.0,
+                                    -1.83, 0.01, key="pt_cp_opt")
+            try:
+                d = gr.corner_diagnostics(
+                    corner, travel_mm=trav, track_mm=trk, axle=axle,
+                    wheelbase_mm=wb, cg_height_mm=cgh, brake_bias_front=bias)
+            except Exception as e:           # noqa: BLE001
+                d = {"ok": False}
+                st.error(f"Corner does not solve: {e}")
+            if d.get("ok"):
+                rows = [
+                    ("camber gain, LSQ (deg/mm)", d["camber_gain_deg_per_mm"]),
+                    ("bump steer, LSQ (deg/mm)", d["bump_steer_deg_per_mm"]),
+                    ("toe change, max − min (deg)", d["toe_change_deg"]),
+                    ("RC height, static (mm)", d["rc_height_static_mm"]),
+                    ("RC migration, chassis (mm/mm)",
+                     d["rc_migration_chassis_mm_per_mm"]),
+                    ("RC migration, above ground (mm/mm)",
+                     d["rc_migration_ground_mm_per_mm"]),
+                    ("RC above ground, minimum (mm)",
+                     d["rc_above_ground_min_mm"]),
+                    ("caster (deg)", d["caster_deg"]),
+                    ("kingpin inclination (deg)", d["kpi_deg"]),
+                    ("scrub radius (mm)", d["scrub_static_mm"]),
+                    ("contact-patch rise per mm", d["contact_patch_rise_per_mm"]),
+                    ("side-view IC, x rearward (mm)", d["side_view_ic_x_mm"]),
+                    ("side-view IC, height (mm)", d["side_view_ic_z_mm"]),
+                    ("tan swing arm (" + d["side_view_reference"] + ")",
+                     d["side_view_tan"]),
+                ]
+                if "anti_dive_pct" in d:
+                    rows.append(("anti-dive (%)", d["anti_dive_pct"]))
+                if "anti_squat_pct" in d:
+                    rows.append(("anti-squat (%)", d["anti_squat_pct"]))
+                _table(st, pd, rows, ["quantity (Table 12 / 9b)", "value"])
+                _table(st, pd, [{"travel (mm)": t, "camber (deg)": a,
+                                 "toe (deg)": b, "RC height (mm)": r,
+                                 "scrub (mm)": sc}
+                                for t, a, b, r, sc in zip(
+                                    d["stations_mm"], d["camber_deg"],
+                                    d["toe_deg"], d["rc_height_mm"],
+                                    d["scrub_mm"])])
+                ctr = gr.camber_to_road(corner.static_camber,
+                                        d["camber_gain_deg_per_mm"], roll,
+                                        trk, opt)
+                _table(st, pd, [(k, v) for k, v in ctr.items()],
+                       ["quantity (Table 7b)", "value"])
+
+    _render_tables(st, pd, np, ss, corner, note)
