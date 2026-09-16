@@ -125,7 +125,7 @@ def _declared_car_panel(st, pd, np, ss, fc):
     from suspension.kinematics import Hardpoints
     from ui.inverse_genesis import (_vehicle_editor, _declared_car, _table,
                                     _floats, _sec_tyre, _sec_steering,
-                                    _sec_actuation)
+                                    _sec_actuation, _parse_hardpoints_text)
     from ui.inverse_genesis import _hint
     _hint(st, ss, "The vehicle & build declaration below is the same one the "
                   "InverseGenesis tab uses — enter a number once and both "
@@ -150,40 +150,60 @@ def _declared_car_panel(st, pd, np, ss, fc):
                        "tracks, and a 40–70 % roll-split sweep. Changes the "
                        "shared declaration — note your values first.")
         corners = {}
+        waiting = []
         g = st.columns(2)
         for col, axle in zip(g, ("front", "rear")):
             src = col.selectbox(f"{axle.title()} corner",
                                 ["InverseGenesis / live", "KinematiK default",
-                                 "Paste JSON",
+                                 "Paste hardpoints",
                                  "None — vehicle-level model only"],
                                 key=f"dc_src_{axle}",
-                                help="None: no corner geometry is attached, "
-                                     "so roll centres and camber come from "
-                                     "the vehicle-level model's own "
+                                help="Paste hardpoints: CSV (point,x,y,z) or "
+                                     "JSON, corner frame, mm — e.g. a table of "
+                                     "archived hardpoints or a genesis "
+                                     "manifest. None: no corner geometry is "
+                                     "attached, so roll centres and camber "
+                                     "come from the vehicle-level model's own "
                                      "defaults.")
             if src.startswith("None"):
                 corners[axle] = None
                 col.caption("No corner geometry attached.")
             elif src == "KinematiK default":
                 corners[axle] = Hardpoints.default()
-            elif src == "Paste JSON":
-                txt = col.text_area(f"{axle} hardpoints JSON", height=120,
-                                    key=f"dc_txt_{axle}")
+            elif src == "Paste hardpoints":
+                txt = col.text_area(
+                    f"{axle.title()} hardpoints (CSV point,x,y,z or JSON)",
+                    height=150, key=f"dc_txt_{axle}",
+                    placeholder="point,x,y,z\nupper_front_inner,-120.0,288.1,"
+                                "280.5\n…")
+                cam = col.number_input(
+                    f"{axle.title()} static camber (deg)", -6.0, 3.0,
+                    -1.5 if axle == "front" else -1.0, 0.05,
+                    key=f"dc_cam_{axle}")
                 if not txt.strip():
-                    col.info("Paste a hardpoints dict (or a genesis "
-                             "manifest).")
-                    return
+                    col.info("Paste the " + axle + " corner to continue.")
+                    waiting.append(axle)
+                    continue
                 try:
-                    d = json.loads(txt)
-                    d = (d.get("recorded", {}) or {}).get(
-                        "winner_hardpoints") or d.get("hardpoints", d)
-                    corners[axle] = gr.hp_from_dict(d)
+                    body = txt.strip()
+                    if body.startswith("{"):
+                        d = json.loads(body)
+                        w = (d.get("recorded") or {}).get("winner_hardpoints")
+                        if w:
+                            body = json.dumps(w)
+                    hp = _parse_hardpoints_text(body, Hardpoints.default())
+                    hp.static_camber = float(cam)
+                    corners[axle] = hp
+                    col.caption("Pasted " + axle + " corner, static camber "
+                                + str(cam) + "°.")
                 except Exception as e:      # noqa: BLE001
-                    col.error(f"Could not read: {e}")
-                    return
+                    col.error(f"Could not read the {axle} corner: {e}")
+                    waiting.append(axle)
             else:
                 corners[axle], note = _corner_hp(ss, axle)
                 col.caption(note)
+        if waiting:
+            return
         car = _declared_car(v, corners["front"], corners["rear"])
         st.markdown("**Lap sensitivity**")
         c = st.columns(2)
