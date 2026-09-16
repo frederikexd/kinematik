@@ -151,7 +151,8 @@ def parse_step_tubes(text: str, outer_radius_mm=None,
                      radius_tol_mm: float = 0.02,
                      axis_tol_mm: float = 0.5,
                      min_length_mm: float = 1.0,
-                     detect_range_mm=(4.0, 40.0)) -> StepTubes:
+                     detect_range_mm=(4.0, 40.0),
+                     split_gap_mm: float | None = 1.0) -> StepTubes:
     """Tube axis lines, walls and bends from STEP text (lengths in mm).
 
     Method: every CYLINDRICAL_SURFACE of a tube's outer radius is collapsed
@@ -166,6 +167,11 @@ def parse_step_tubes(text: str, outer_radius_mm=None,
     the tube sizes: radii within ``detect_range_mm`` (mm) that occur on at
     least two faces and are not only ever the bore of a larger coaxial
     cylinder. The file's declared length unit is converted to mm.
+
+    Collinear faces are one tube only where their extents overlap or come
+    within ``split_gap_mm`` (mm) of each other, so two separate tubes on the
+    same line (left and right stubs of a cross member) stay two tubes. Pass
+    ``split_gap_mm=None`` for the classic rule: one tube per unique axis line.
     """
     E = {}
     for raw in _split_entities(text):
@@ -275,25 +281,42 @@ def parse_step_tubes(text: str, outer_radius_mm=None,
     out.tube_radii_mm = radii
 
     for R in radii:
-        lines = []
+        lines = []                              # [o, d, [vid-sets]]
         for rad, o, d, vids in cyls:
             if abs(rad - R) > radius_tol_mm:
                 continue
             for L in lines:
                 if same_line(L[0], L[1], o, d):
-                    L[2] |= vids
+                    L[2].append(set(vids))
                     break
             else:
-                lines.append([o, d, set(vids)])
-        for o, d, vids in lines:
-            if len(vids) < 2:
+                lines.append([o, d, [set(vids)]])
+        pieces = []                             # [o, d, lo, hi, nverts]
+        for o, d, groups in lines:
+            spans = []
+            for g in groups:
+                if not g:
+                    continue
+                sp = [float((pt(v) - o) @ d) for v in g]
+                spans.append([min(sp), max(sp), len(g)])
+            if split_gap_mm is None and spans:
+                spans = [[min(x[0] for x in spans), max(x[1] for x in spans),
+                          len(set().union(*groups))]]
+            spans.sort()
+            merged = []
+            for lo_, hi_, n in spans:
+                if merged and lo_ <= merged[-1][1] + float(split_gap_mm or 0):
+                    merged[-1][1] = max(merged[-1][1], hi_)
+                    merged[-1][2] += n
+                else:
+                    merged.append([lo_, hi_, n])
+            for lo_, hi_, n in merged:
+                pieces.append((o, d, lo_, hi_, n))
+        for o, d, lo_, hi_, n in pieces:
+            if n < 2 or hi_ - lo_ < min_length_mm:
                 out.rejected += 1
                 continue
-            sproj = [float((pt(v) - o) @ d) for v in vids]
-            if max(sproj) - min(sproj) < min_length_mm:
-                out.rejected += 1
-                continue
-            p0, p1 = o + min(sproj) * d, o + max(sproj) * d
+            p0, p1 = o + lo_ * d, o + hi_ * d
             wall, best = None, -1.0
             for rad, io, idir, _ in cyls:
                 if best < rad < R - radius_tol_mm and \

@@ -1744,7 +1744,7 @@ def _sec_frame_from_step(st, pd, np, ss, v, key):
     adv = st.toggle("Reading settings", key=f"{key}_adv",
                     help="Only needed if the automatic tube-size detection "
                          "picks the wrong cylinders.")
-    radii_txt, rtol, atol = "", 0.02, 0.5
+    radii_txt, rtol, atol, classic = "", 0.02, 0.5, False
     tols = [20.0, 30.0, 37.0, 40.0, 50.0]
     manual = []
     if adv:
@@ -1759,6 +1759,12 @@ def _sec_frame_from_step(st, pd, np, ss, v, key):
         tols = _floats(c[3].text_input("Node clustering tolerances (mm)",
                                        "20, 30, 37, 40, 50",
                                        key=f"{key}_tols"), tols)
+        classic = st.checkbox(
+            "Merge collinear segments into one tube (classic method)",
+            value=False, key=f"{key}_classic",
+            help="Off: two separate tubes on the same line (e.g. left and "
+                 "right stubs) stay two tubes. On: one tube per unique axis "
+                 "line, spanning both.")
         st.caption("Bends the file does not carry as toroidal faces can be "
                    "added by hand:")
         extra = st.data_editor(
@@ -1772,7 +1778,7 @@ def _sec_frame_from_step(st, pd, np, ss, v, key):
 
     if up is not None:
         sig = (up.name, up.size, radii_txt, rtol, atol, tuple(tols),
-               tuple(manual))
+               tuple(manual), classic)
         if ss.get("ig_step_sig") != sig:
             with st.spinner("Reading " + up.name + "…"):
                 try:
@@ -1781,7 +1787,9 @@ def _sec_frame_from_step(st, pd, np, ss, v, key):
                     if "ISO-10303-21" not in text[:2000]:
                         raise ValueError("this does not look like a STEP "
                                          "file (no ISO-10303-21 header)")
-                    res = ga.parse_step_tubes(text, radii, rtol, atol)
+                    res = ga.parse_step_tubes(
+                        text, radii, rtol, atol,
+                        split_gap_mm=None if classic else 1.0)
                     stats = ga.frame_stats(res.axes, list(res.bends) + manual,
                                            tols, res.vertices,
                                            od_mm=res.od_mm)

@@ -307,3 +307,18 @@ def test_step_single_radius_and_unit_scaling():
     metres = txt.replace("SI_UNIT(.MILLI.,.METRE.)", "SI_UNIT($,.METRE.)")
     r = pt.parse_step_tubes(metres, [9525.0, 12700.0])   # radii now in mm
     assert r.unit_scale == 1000.0 and len(r.axes) == 6
+
+
+def test_collinear_tubes_with_a_gap_stay_separate():
+    s = _Step()
+    s.point((0, 0, 0))
+    s.tube((0, 0, 0), (100, 0, 0))
+    s.tube((200, 0, 0), (300, 0, 0))            # same line, 100 mm gap
+    s.tube((300, 0, 0), (300, 150, 0))
+    txt = s.text()
+    split = pt.parse_step_tubes(txt, 12.7)
+    lens = sorted(round(float(np.linalg.norm(b - a))) for a, b, _ in split.axes)
+    assert lens == [100, 100, 150]
+    classic = pt.parse_step_tubes(txt, 12.7, split_gap_mm=None)
+    lens = sorted(round(float(np.linalg.norm(b - a))) for a, b, _ in classic.axes)
+    assert lens == [150, 300]
