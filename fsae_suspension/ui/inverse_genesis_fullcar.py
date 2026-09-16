@@ -84,6 +84,39 @@ def _corner_hp(ss, axle):
     return hp, note
 
 
+#: The vehicle-level lap-sensitivity setup: linear grip model, default aero,
+#: no corner geometry, 55 % front roll split at baseline, 1200/1180 mm tracks.
+_LAP_REF = {
+    "declaration": {"mass_kg": 300.0, "weight_dist_front": 0.48,
+                    "cg_height_mm": 280.0, "wheelbase_mm": 1630.0,
+                    "track_front_mm": 1200.0, "track_rear_mm": 1180.0,
+                    "tire_model": "linear", "power_kw": 80.0, "cla": 2.6,
+                    "cda": 1.1, "drive": "rwd",
+                    "roll_mode": "declared directly",
+                    "roll_stiffness_front": 357.5,
+                    "roll_stiffness_rear": 292.5},
+    "widgets": {"dc_src_front": "None — vehicle-level model only",
+                "dc_src_rear": "None — vehicle-level model only",
+                "dc_chan": "front_roll_share",
+                "dc_vals": "0.40, 0.42, 0.44, 0.46, 0.48, 0.50, 0.52, 0.54, "
+                           "0.56, 0.58, 0.60, 0.62, 0.64, 0.66, 0.68, 0.70"},
+}
+
+
+def _load_lap_reference():
+    import streamlit as st
+    from ui.inverse_genesis import _veh, _VEH_PREFIXES
+    ss = st.session_state
+    v = _veh(ss)
+    for f, x in _LAP_REF["declaration"].items():
+        v[f] = x
+        for p in _VEH_PREFIXES:
+            ss[f"{p}_{f}"] = x
+    for k, x in _LAP_REF["widgets"].items():
+        ss[k] = x
+    ss.pop("fc_declared", None)
+
+
 def _declared_car_panel(st, pd, np, ss, fc):
     """Declared-car mode on the shared vehicle declaration: vehicle summary,
     lap sensitivity, tyre, steering effort and actuation of both axles."""
@@ -93,19 +126,45 @@ def _declared_car_panel(st, pd, np, ss, fc):
     from ui.inverse_genesis import (_vehicle_editor, _declared_car, _table,
                                     _floats, _sec_tyre, _sec_steering,
                                     _sec_actuation)
+    from ui.inverse_genesis import _hint
+    _hint(st, ss, "The vehicle & build declaration below is the same one the "
+                  "InverseGenesis tab uses — enter a number once and both "
+                  "tabs follow. Declared-car mode evaluates exactly that car; "
+                  "the synthesis further down searches battery and gearing "
+                  "around it.")
     v = _vehicle_editor(st, ss, "fc_v")
     with st.expander("🚗 Declared-car mode — evaluate the declared vehicle "
                      "(no search)", expanded=False):
         st.caption("Uses the vehicle & build declaration above and the "
                    "corners from InverseGenesis. Download the JSON to keep "
                    "the inputs with the results.")
+        _hint(st, ss, "Pick the corners (a generated InverseGenesis corner "
+                      "is used automatically once you have one), choose a "
+                      "parameter to sweep, and press Evaluate. The lap "
+                      "sensitivity shows how much lap time that parameter "
+                      "is worth on this layout.")
+        st.button("Load the vehicle-level lap-sensitivity setup",
+                  key="dc_lapref", on_click=_load_lap_reference,
+                  help="Linear grip model, ClA 2.6 / CdA 1.1, no corner "
+                       "geometry, 55 % front roll split, 1200 / 1180 mm "
+                       "tracks, and a 40–70 % roll-split sweep. Changes the "
+                       "shared declaration — note your values first.")
         corners = {}
         g = st.columns(2)
         for col, axle in zip(g, ("front", "rear")):
             src = col.selectbox(f"{axle.title()} corner",
                                 ["InverseGenesis / live", "KinematiK default",
-                                 "Paste JSON"], key=f"dc_src_{axle}")
-            if src == "KinematiK default":
+                                 "Paste JSON",
+                                 "None — vehicle-level model only"],
+                                key=f"dc_src_{axle}",
+                                help="None: no corner geometry is attached, "
+                                     "so roll centres and camber come from "
+                                     "the vehicle-level model's own "
+                                     "defaults.")
+            if src.startswith("None"):
+                corners[axle] = None
+                col.caption("No corner geometry attached.")
+            elif src == "KinematiK default":
                 corners[axle] = Hardpoints.default()
             elif src == "Paste JSON":
                 txt = col.text_area(f"{axle} hardpoints JSON", height=120,
@@ -144,8 +203,10 @@ def _declared_car_panel(st, pd, np, ss, fc):
                 ss["fc_declared"] = {
                     "schema": "kinematik.declared_car/2",
                     "declaration": dict(v),
-                    "front_hp": gr.hp_to_dict(car.front_hp),
-                    "rear_hp": gr.hp_to_dict(car.rear_hp),
+                    "front_hp": (gr.hp_to_dict(car.front_hp)
+                                 if car.front_hp is not None else None),
+                    "rear_hp": (gr.hp_to_dict(car.rear_hp)
+                                if car.rear_hp is not None else None),
                     "sweep": {"channel": chan, "values": vals},
                     "summary": summ, "sensitivity": sens}
             except Exception as exc:          # noqa: BLE001
@@ -176,11 +237,17 @@ def _declared_car_panel(st, pd, np, ss, fc):
         st.markdown("**Tyre**")
         _sec_tyre(st, pd, v, "dc_tyre_loads")
         st.markdown("**Steering effort**")
-        _sec_steering(st, pd, v, corners["front"], corners["rear"],
-                      "dc_steer")
+        if corners["front"] is None:
+            st.caption("Needs a front corner.")
+        else:
+            _sec_steering(st, pd, v, corners["front"],
+                          corners["rear"] or Hardpoints.default(), "dc_steer")
         for axle in ("front", "rear"):
             st.markdown(f"**Actuation, ride and roll stiffness — {axle}**")
-            _sec_actuation(st, pd, v, corners[axle], axle)
+            if corners[axle] is None:
+                st.caption("Needs a " + axle + " corner.")
+            else:
+                _sec_actuation(st, pd, v, corners[axle], axle)
 
 
 def render():

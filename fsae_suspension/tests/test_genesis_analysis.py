@@ -8,6 +8,7 @@
 #  synthetic B-rep.
 # ============================================================================
 import math
+import os
 
 import numpy as np
 import pytest
@@ -206,3 +207,103 @@ def test_axial_budget_reference_case():
 def test_ball_joint_envelope():
     e = pt.ball_joint_envelope(Hardpoints.default(), 115.0)
     assert set(e) >= {"upper_above_wc_mm", "lower_below_wc_mm", "inside"}
+
+
+# ---- design review ---------------------------------------------------------- #
+def test_design_review_statuses():
+    rows = {r["key"]: r for r in pt.design_review({
+        "caster_deg": 5.0,            # inside 2..8
+        "kpi_deg": 10.4,              # 0.4 over a 10-wide span -> watch
+        "scrub_mm": 80.0,             # far outside -> fail
+        "joints_in_rim": 0.0,         # boolean -> fail
+        "worst_fos": 1.45,            # one-sided >= 1.5, small miss -> watch
+    })}
+    assert rows["caster_deg"]["status"] == "pass"
+    assert rows["kpi_deg"]["status"] == "watch"
+    assert rows["scrub_mm"]["status"] == "fail"
+    assert rows["joints_in_rim"]["status"] == "fail"
+    assert rows["worst_fos"]["status"] == "watch"
+    assert rows["bump_steer_abs"]["status"] == "n/a"
+
+
+def test_design_review_custom_limits():
+    lim = [{"key": "x", "check": "x", "unit": "", "lo": 0.0, "hi": 1.0,
+            "why": "", "fix": ""}]
+    assert pt.design_review({"x": 0.5}, lim)[0]["status"] == "pass"
+    assert pt.design_review({"x": 3.0}, lim)[0]["status"] == "fail"
+
+
+def test_every_default_limit_explains_itself():
+    for r in pt.DEFAULT_REVIEW_LIMITS:
+        assert r["lo"] <= r["hi"]
+        assert len(r["why"]) > 20 and len(r["fix"]) > 10
+
+
+def test_declared_motion_ratio_curve_reference_values():
+    f = pt.declared_mr_summary(0.585, 0.600, 0.596, 295 * LB_IN, 60.1)
+    assert round(f["wheel_rate_spread_pct"], 1) == 5.2
+    assert [round(f[k], 2) for k in ("ride_hz_droop", "ride_hz_static",
+                                     "ride_hz_bump")] == [2.73, 2.80, 2.78]
+    r = pt.declared_mr_summary(0.603, 0.620, 0.630, 349 * LB_IN, 66.1)
+    assert r["rate_character"] == "rising"
+    assert round(r["mr_spread_pct"], 1) == 4.5
+    assert round(r["wheel_rate_spread_pct"], 1) == 9.2
+    assert [round(r[k], 2) for k in ("ride_hz_droop", "ride_hz_static",
+                                     "ride_hz_bump")] == [2.92, 3.00, 3.05]
+
+
+def test_vehicle_level_lap_sensitivity_reference():
+    """Linear grip, default aero, no corners, 55 % split, 1200/1180 tracks:
+    26.126 s baseline, 0.127 s roll-split spread with its best at 54 %,
+    0.315 s CG spread (240–320 mm)."""
+    from suspension import inverse_genesis_fullcar as fc
+    car = fc.DeclaredCar(tire_model="linear", cla=2.6, cda=1.1,
+                         track_front_mm=1200, track_rear_mm=1180,
+                         roll_stiffness_front=357.5,
+                         roll_stiffness_rear=292.5)
+    shares = [round(0.40 + 0.02 * i, 2) for i in range(16)]
+    a = fc.lap_sensitivity(car, "front_roll_share", shares)
+    b = fc.lap_sensitivity(car, "cg_height_mm", [240, 260, 280, 300, 320])
+    assert round(a["baseline_s"], 3) == 26.126
+    assert round(a["spread_s"], 3) == 0.127
+    assert a["best_value"] == 0.54
+    assert round(b["spread_s"], 3) == 0.315
+
+
+# ---- a real CAD-kernel STEP file (OpenCascade export) ---------------------- #
+_MIXED = os.path.join(os.path.dirname(__file__), "data",
+                      "tube_frame_mixed.step")
+
+
+def test_real_step_detects_sizes_lengths_walls_and_bend():
+    """Four straight 25.4/19.05 mm tubes, a bent 19.05 mm tube (200 mm +
+    64 mm × 90° + 200 mm) and a bolted plate that must not read as a tube."""
+    r = pt.parse_step_tubes(open(_MIXED).read())
+    assert r.tube_radii_mm == [9.525, 12.7]
+    assert "millimetre" in r.units_note
+    s = pt.frame_stats(r.axes, r.bends, (5,), r.vertices, od_mm=r.od_mm)
+    assert s["tubes"] == 6
+    assert s["straight_m"] == pytest.approx(2.0, abs=1e-6)
+    assert s["sizes_mm"] == {(19.05, 0.889): 4, (25.4, 1.65): 1,
+                             (25.4, 2.41): 1}
+    assert len(r.bends) == 1
+    assert r.bends[0][0] == pytest.approx(64.0)
+    assert r.bends[0][1] == pytest.approx(90.0, abs=1e-6)
+    assert s["vertices"]["outside_envelopes"] == 8      # the plate corners
+
+
+def test_real_step_to_frame_graph_keeps_tube_sizes():
+    r = pt.parse_step_tubes(open(_MIXED).read())
+    g = pt.frame_graph_from_step(r, cluster_tol_mm=5.0)
+    assert len(g.tubes) == 6
+    ods = sorted(g.spec_of(t).od_mm for t in g.tubes)
+    assert ods == [19.05] * 4 + [25.4] * 2
+
+
+def test_step_single_radius_and_unit_scaling():
+    txt = open(_MIXED).read()
+    only_big = pt.parse_step_tubes(txt, 12.7)
+    assert len(only_big.axes) == 2
+    metres = txt.replace("SI_UNIT(.MILLI.,.METRE.)", "SI_UNIT($,.METRE.)")
+    r = pt.parse_step_tubes(metres, [9525.0, 12700.0])   # radii now in mm
+    assert r.unit_scale == 1000.0 and len(r.axes) == 6

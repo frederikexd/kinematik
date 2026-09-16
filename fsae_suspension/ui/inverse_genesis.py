@@ -80,6 +80,237 @@ _VERDICT_BLURB = {
 }
 
 
+# =========================================================================== #
+#  Plain-language help — shown as tooltips and in the glossary
+# =========================================================================== #
+_HELP = {
+    "ig_src": "Where the starting corner comes from. The engine moves only "
+              "the points you free in step 2; everything else stays put.",
+    "ig_axle": "Which axle this corner is. It picks the axle station, track "
+               "and spring used by the analysis.",
+    "ig_travel": "Wheel travel either side of ride height over which the "
+                 "curves are checked. ±25 mm is a common FSAE starting point.",
+    "ig_nst": "How many travel positions are checked. 5 (−25, −12.5, 0, "
+              "+12.5, +25 mm) is enough for smooth curves.",
+    "ig_track": "Track width used to place the roll centre. Use the axle's "
+                "real track.",
+    "ig_tmode": "Formula: type a static value and a slope, the usual way a "
+                "design brief states targets. Table: type every point.",
+    "ig_f_gain": "Camber gain: how much the wheel leans in (negative) per mm "
+                 "of bump. Negative keeps the outside tyre upright in roll. "
+                 "Typical −0.02 to −0.05 deg/mm.",
+    "ig_f_cb": "Band: how far the camber curve may stray from the target at "
+               "each position. Wider bands are easier to hit and to build.",
+    "ig_f_toe": "Toe target through travel. 0 means no bump steer.",
+    "ig_f_tb": "How much toe change is acceptable. ±0.08 deg is tight; bump "
+               "steer is felt by the driver.",
+    "ig_f_rc": "Roll-centre height at each position (chassis frame, above "
+               "static ground). Sets how lateral load splits between links "
+               "and springs.",
+    "ig_f_rb": "How far the roll centre may move. A wide band lets it "
+               "migrate — check the migration in the analysis.",
+    "ig_f_scrub": "Scrub radius: distance on the ground from the steering "
+                  "axis to the tyre centre. Small and positive is usual.",
+    "ig_f_sb": "How far scrub may stray from its target.",
+    "ig_movable": "The points the engine is allowed to move. Start with the "
+                  "five inboard pickups; keep ball joints fixed unless the "
+                  "upright is also being designed.",
+    "ig_bmode": "± half-width: a box around each starting point. Absolute: "
+                "exact min/max coordinates, e.g. the space a rail allows.",
+    "ig_shop": "How accurately your team can build. The engine picks the "
+               "geometry that survives THIS tolerance best.",
+    "ig_seed": "Random seed. Same seed + same inputs = identical result.",
+    "ig_nstarts": "How many starting points the search tries. More starts "
+                  "find more candidates but take longer. 6 is a good default.",
+    "ig_nyield": "How many simulated builds are used to estimate yield. "
+                 "4000 gives about ±0.5 % resolution.",
+    "ig_nverify": "Re-solve some builds exactly to check the fast estimate. "
+                  "0 is fine for exploration.",
+    "ig_name": "Name the run after what you changed — it becomes the row "
+               "name in the declaration log.",
+    "ig_probe": "Treat each pickup as a ball of this radius when checking "
+                "keep-outs (think bracket size).",
+    "ig_mincl": "Minimum gap required between that ball and any keep-out.",
+    "ig_pull": "Systematic weld distortion toward the bead. 0 if unknown.",
+}
+
+_GLOSSARY = [
+    ("Hardpoint", "A suspension pivot or ball-joint location (x rearward, "
+     "y outboard, z up from the ground, mm, origin at the wheel centre)."),
+    ("Camber gain", "Change of wheel lean per mm of bump. Negative = the top "
+     "of the wheel moves inboard in bump."),
+    ("Bump steer", "Toe change per mm of bump. Ideally zero."),
+    ("Roll centre", "The point the body rolls about in front view; its "
+     "height splits lateral load between links and springs."),
+    ("RC migration", "How fast the roll centre moves with travel. Not a "
+     "solver channel, so check it."),
+    ("Scrub radius", "Ground distance from the steering axis to the tyre "
+     "centre line."),
+    ("Caster / trail", "Rearward tilt of the steering axis; trail is the "
+     "ground distance it creates. Both set steering weight."),
+    ("Band", "The ± window each target curve may sit in. It is also the "
+     "margin that build scatter consumes."),
+    ("Legal volume", "The box each free point may occupy — where a bracket "
+     "can physically go."),
+    ("Keep-out", "Space a point may not enter (frame tubes, headers, "
+     "mounts)."),
+    ("Build yield", "Share of simulated builds, at your shop's tolerance, "
+     "whose curves still stay inside every band."),
+    ("RESILIENT / TEMPERED / KNIFE_EDGE", "Yield ≥ 95 % / ≥ 80 % / below "
+     "80 %."),
+    ("W (worst case)", "First-order worst corner of the tolerance box. "
+     "W ≤ 1 guarantees every build passes (to first order)."),
+    ("Anti-dive / anti-squat", "Share of pitch load carried by the links "
+     "instead of the springs under braking / drive."),
+    ("Motion ratio", "Damper travel per unit wheel travel. Roll stiffness "
+     "scales with its square."),
+    ("Manifest", "A JSON file holding every input of a run; re-running it "
+     "reproduces the result exactly."),
+]
+
+#: Worked examples. Each sets widget values before the tab draws.
+_PRESETS = {
+    "Front corner — jig-welded (recommended first run)": {
+        "ig_src": "KinematiK default corner", "ig_axle": "front",
+        "ig_travel": 25.0, "ig_nst": 5, "ig_track": 1210.0,
+        "ig_tmode": "Formula (static + gain·t)",
+        "ig_f_c": True, "ig_f_gain": -0.035, "ig_f_cb": 0.30,
+        "ig_f_t": True, "ig_f_toe": 0.0, "ig_f_tb": 0.08,
+        "ig_f_r": True, "ig_f_rc": 55.0, "ig_f_rb": 18.0, "ig_f_s": False,
+        "ig_movable": ["upper_front_inner", "upper_rear_inner",
+                       "lower_front_inner", "lower_rear_inner",
+                       "tie_rod_inner"],
+        "ig_bmode": "± half-width per axis about the seed",
+        "ig_shop": "Jig-welded tabs (±0.5 mm)", "ig_seed": 0,
+        "ig_nstarts": 6, "ig_nyield": 4000, "ig_nverify": 0,
+        "ig_name": "front, jig weld, ±40 mm boxes",
+    },
+    "Same corner — hand-welded (see how the shop changes the answer)": {
+        "ig_src": "KinematiK default corner", "ig_axle": "front",
+        "ig_tmode": "Formula (static + gain·t)",
+        "ig_f_c": True, "ig_f_gain": -0.035, "ig_f_cb": 0.30,
+        "ig_f_t": True, "ig_f_toe": 0.0, "ig_f_tb": 0.08,
+        "ig_f_r": True, "ig_f_rc": 55.0, "ig_f_rb": 18.0, "ig_f_s": False,
+        "ig_shop": "Hand-welded tabs (±1.5 mm)", "ig_seed": 0,
+        "ig_nstarts": 6, "ig_nyield": 2000,
+        "ig_name": "front, hand weld, ±40 mm boxes",
+    },
+    "Quick look — 2 starts, 500 builds (seconds, not a final answer)": {
+        "ig_nstarts": 2, "ig_nyield": 500, "ig_name": "quick look",
+    },
+}
+
+
+def _apply_preset(name):
+    import streamlit as st
+    ss = st.session_state
+    for k, v in _PRESETS[name].items():
+        ss[k] = v
+    if "ig_axle" in _PRESETS[name] and _PRESETS[name].get("ig_src", "").startswith("KinematiK"):
+        ss["ig_gamma0"] = -1.5
+        ss["ig_delta0"] = 0.0
+    ss["ig_preset_msg"] = name
+
+
+def _guided(ss):
+    return ss.get("ig_mode", "Guided") == "Guided"
+
+
+def _hint(st, ss, text):
+    """A plain-language 'what this step does' box, Guided mode only."""
+    if _guided(ss):
+        st.info(text, icon="💡")
+
+
+def _intro(st, ss):
+    """Mode switch, worked examples and glossary at the top of the tab."""
+    c1, c2 = st.columns([2, 3])
+    c1.radio("Experience", ["Guided", "Expert"], horizontal=True,
+             key="ig_mode",
+             help="Guided adds a short explanation to every step and "
+                  "plain-language result summaries. Expert keeps the page "
+                  "compact. Nothing is hidden in either mode.")
+    with c2.expander("📖 Glossary"):
+        for term, text in _GLOSSARY:
+            st.markdown(f"**{term}** — {text}")
+    with st.expander("🚀 Start from a worked example",
+                     expanded=_guided(ss) and "ig_run" not in ss):
+        st.caption("Loads sensible inputs into every step below. Change "
+                   "anything afterwards; press 🧬 Generate when ready.")
+        cols = st.columns(len(_PRESETS))
+        for col, name in zip(cols, _PRESETS):
+            col.button(name, key=f"ig_preset_{abs(hash(name)) % 10**8}",
+                       on_click=_apply_preset, args=(name,),
+                       width="stretch")
+        if ss.get("ig_preset_msg"):
+            st.success("Loaded: " + ss["ig_preset_msg"])
+
+
+def _progress(st, ss, box):
+    """Five-step status bar, drawn into ``box`` after the page has run."""
+    steps = [("Geometry", ss.get("ig_ok_geom", False)),
+             ("Targets", ss.get("ig_ok_targets", False)),
+             ("Legal volume", ss.get("ig_ok_volume", False)),
+             ("Generated", ss.get("ig_run") is not None),
+             ("Reviewed", ss.get("ig_ok_review", False))]
+    done = sum(ok for _, ok in steps)
+    with box:
+        st.progress(done / len(steps))
+        cols = st.columns(len(steps))
+        for i, (col, (label, ok)) in enumerate(zip(cols, steps)):
+            col.markdown(("✅ " if ok else "⬜ ") + f"**{i + 1}. {label}**")
+
+
+_VERDICT_NEXT = {
+    "RESILIENT": "Buildable as declared. Next: read the design review below, "
+                 "then download the hardpoints and the manifest.",
+    "TEMPERED": "Mostly buildable. To raise yield: widen the band that "
+                "governs (named above), give the engine bigger boxes, free "
+                "one more point, or build to a tighter shop class.",
+    "KNIFE_EDGE": "It fits the curves, but many real builds will not. Do "
+                  "not cut metal yet: widen the governing band, enlarge the "
+                  "boxes, or pick a tighter shop class, then run again.",
+}
+
+
+def _explain_result(st, ss, res, man):
+    """Plain-language 'what this means / what next' for a run."""
+    lines = []
+    w = res.winner
+    if w is None:
+        gov = res.best_fit.worst_row if res.best_fit else "a target"
+        lines.append("**No geometry inside the boxes reached every band.** "
+                     f"The closest attempt missed on *{gov}*.")
+        lines.append("Try, in order: widen that channel's band; enlarge the "
+                     "boxes of the points that control it; free one more "
+                     "point; check the target is physically plausible for "
+                     "this corner (e.g. camber gain sign).")
+    else:
+        lines.append(_VERDICT_NEXT.get(w.verdict, ""))
+        if w.clamped:
+            lines.append("**" + str(len(w.clamped)) + " coordinate(s) "
+                         "finished on a box face** (" + ", ".join(w.clamped)
+                         + "). The box, not the targets, is limiting — "
+                         "widen it if the chassis allows.")
+        if (res.resilience_premium or 0) > 0.005:
+            lines.append("Ranking by yield chose a different candidate than "
+                         "the closest fit — the closest fit is less "
+                         "buildable at this tolerance.")
+        hits = [c for c in res.candidates if c.hit and c.yield_frac is not None]
+        if len(hits) >= 2:
+            ys = [c.yield_frac for c in hits]
+            if max(ys) - min(ys) > 0.2:
+                lines.append("Candidates that all fit the curves differ "
+                             "widely in yield — fit alone would not have "
+                             "told them apart.")
+    with st.container(border=True):
+        st.markdown("**What this means**")
+        for ln in lines:
+            if ln:
+                st.markdown("- " + ln)
+
+
+
 def _hardpoints_from_session(ss):
     """The live hardpoint set, else the KinematiK default corner.
 
@@ -233,6 +464,7 @@ def _results_panel(st, pd, np, ss, run):
             m4.metric("Resilience premium",
                       f"{res.resilience_premium*100:+.1f} pts")
 
+    _explain_result(st, ss, res, man)
     st.caption(f"Manifest `{man.name}` · inputs sha256 "
                f"`{man.inputs_sha256[:16]}…` · seed {man.search.seed} · "
                f"{man.search.n_starts} starts · N = {man.search.n_yield} · "
@@ -364,7 +596,7 @@ def _results_panel(st, pd, np, ss, run):
                        f"({za} mm) and ground plane ({yg} mm).")
             obstacles = [gr.capsules_from_framegraph(frame, za, yg)]
         if not obstacles:
-            st.caption("Recover the frame from STEP under 2 · Keep-out "
+            st.caption("Recover the frame from STEP under 3 · Keep-out "
                        "volumes, or load one in the Frame Planner, to run "
                        "this check.")
         else:
@@ -453,8 +685,20 @@ def render():
     import streamlit as st
 
     ss = st.session_state
+    st.subheader("🧬 InverseGenesis — describe the suspension you want; "
+                 "the engine finds geometry your shop can build")
+    st.caption("You state the curves (camber, toe, roll centre) and where "
+               "each pickup may go. The engine moves the pickups until the "
+               "curves fit, then keeps the candidate that survives your "
+               "shop's build tolerance best. Every run can be downloaded and "
+               "re-run exactly.")
+    _intro(st, ss)
+    bar = st.container()
+    for k in ("ig_ok_geom", "ig_ok_targets", "ig_ok_volume", "ig_ok_review"):
+        ss[k] = False
     _render_generate()
     _render_analysis(st, pd, np, ss)
+    _progress(st, ss, bar)
 
 
 def _render_generate():
@@ -468,15 +712,6 @@ def _render_generate():
     from suspension import genesis_repro as gr
 
     ss = st.session_state
-
-    st.subheader("🧬 InverseGenesis — draw the curves; the engine generates "
-                 "the geometry")
-    st.caption(
-        "Draw the kinematic curves you want inside acceptance bands, box the "
-        "legal volume each hardpoint may occupy, declare the shop, and the "
-        "engine pulls the coordinates into the curves — then ranks the "
-        "candidates by BUILD YIELD. Every run is saved as a manifest you can "
-        "download and re-run byte for byte. Rigid kinematics only.")
 
     # ================= 0 · re-run a manifest ==============================
     with st.expander("📂 Re-run a saved manifest (reproduce a result)"):
@@ -508,17 +743,21 @@ def _render_generate():
                 st.error(f"Manifest refused: {e}")
 
     # ================= geometry ===========================================
-    st.markdown("###### Geometry — the seed the engine moves from")
+    st.markdown("###### 1 · Starting geometry")
+    _hint(st, ss, "Pick the corner the engine starts from. New to this? Use "
+                  "the KinematiK default corner or a worked example above. "
+                  "Have CAD numbers? Paste them — corner frame is x rearward, "
+                  "y outboard, z up from the ground, in mm.")
     live_hp, live_note = _hardpoints_from_session(ss)
     src = st.radio("Source", ["Live (Kinematics tab)",
                               "KinematiK default corner",
                               "Paste hardpoints (corner frame)",
                               "CAD coordinates (SolidWorks frame)"],
-                   horizontal=True, key="ig_src")
+                   horizontal=True, help=_HELP["ig_src"], key="ig_src")
     from suspension.kinematics import Hardpoints
     axle_station = ground_y = None
     axle = st.radio("Axle", ["front", "rear"], horizontal=True,
-                    key="ig_axle")
+                    help=_HELP["ig_axle"], key="ig_axle")
     if src.startswith("Live"):
         hp = live_hp
         st.caption(f"Geometry: {live_note}.")
@@ -542,7 +781,7 @@ def _render_generate():
         ground_y = float(_v["ground_y_mm"])
         st.caption(f"Transform uses the declared {axle} axle station "
                    f"({axle_station} mm) and ground plane ({ground_y} mm) — "
-                   "edit them under 4 · Vehicle & build declaration.")
+                   "edit them under 5 · Vehicle & build declaration.")
         base = gr.hp_to_dict(Hardpoints.default())
         for _k in _ROCKER_PTS:
             base.pop(_k, None)
@@ -573,13 +812,18 @@ def _render_generate():
     ss["ig_seed_hp"] = gr.hp_to_dict(hp)
 
     # ================= 1 · targets ========================================
-    st.markdown("###### 1 · Target curves")
+    ss["ig_ok_geom"] = True
+    st.markdown("###### 2 · What the suspension should do")
+    _hint(st, ss, "State each curve as a target plus a ± band. The engine "
+                  "only has to land inside the band, so a sensible band is "
+                  "as important as the target: too tight and nothing is "
+                  "buildable.")
     c1, c2, c3 = st.columns(3)
     travel = float(c1.number_input("Travel range (± mm)", 2.0, 80.0, 25.0,
-                                   0.5, key="ig_travel"))
-    n_st = int(c2.number_input("Stations", 2, 41, 5, 1, key="ig_nst"))
+                                   0.5, help=_HELP["ig_travel"], key="ig_travel"))
+    n_st = int(c2.number_input("Stations", 2, 41, 5, 1, help=_HELP["ig_nst"], key="ig_nst"))
     track = float(c3.number_input("Track for RC construction (mm)", 500.0,
-                                  2500.0, 1210.0, 5.0, key="ig_track"))
+                                  2500.0, 1210.0, 5.0, help=_HELP["ig_track"], key="ig_track"))
     stations = np.linspace(-travel, travel, n_st)
 
     nom_vals, nom_ok = ig.curves_of(hp, stations, track_mm=track)
@@ -591,7 +835,7 @@ def _render_generate():
     modes = ["Formula (static + gain·t)", "Per-station table"]
     if staged is not None:
         modes.append("Staged from FullCar")
-    tmode = st.radio("Targets as", modes, horizontal=True, key="ig_tmode")
+    tmode = st.radio("Targets as", modes, horizontal=True, help=_HELP["ig_tmode"], key="ig_tmode")
 
     if tmode.startswith("Staged"):
         targets = staged["targets"] if isinstance(staged, dict) else staged
@@ -608,28 +852,28 @@ def _render_generate():
         f1, f2, f3, f4 = st.columns(4)
         use_c = f1.checkbox("Camber", True, key="ig_f_c")
         gain = f2.number_input("gain (deg/mm)", -0.5, 0.5, -0.035, 0.001,
-                               format="%.4f", key="ig_f_gain")
+                               format="%.4f", help=_HELP["ig_f_gain"], key="ig_f_gain")
         cband = f3.number_input("± band (deg)", 0.001, 5.0, 0.30, 0.01,
-                                key="ig_f_cb")
+                                help=_HELP["ig_f_cb"], key="ig_f_cb")
         f4.caption(f"target = γ₀ + gain·t, γ₀ = {hp.static_camber:+.2f}°")
         g1, g2, g3, _ = st.columns(4)
         use_t = g1.checkbox("Toe", True, key="ig_f_t")
         toe = g2.number_input("toe (deg)", -2.0, 2.0, 0.0, 0.01,
-                              key="ig_f_toe")
+                              help=_HELP["ig_f_toe"], key="ig_f_toe")
         tband = g3.number_input("± band (deg) ", 0.001, 5.0, 0.08, 0.01,
-                                key="ig_f_tb")
+                                help=_HELP["ig_f_tb"], key="ig_f_tb")
         h1, h2, h3, _ = st.columns(4)
         use_r = h1.checkbox("RC height", True, key="ig_f_r")
         rc = h2.number_input("RC height (mm)", -200.0, 300.0, 55.0, 0.5,
-                             key="ig_f_rc")
+                             help=_HELP["ig_f_rc"], key="ig_f_rc")
         rband = h3.number_input("± band (mm)", 0.01, 200.0, 18.0, 0.5,
-                                key="ig_f_rb")
+                                help=_HELP["ig_f_rb"], key="ig_f_rb")
         k1, k2, k3, _ = st.columns(4)
         use_s = k1.checkbox("Scrub", False, key="ig_f_s")
         scrub = k2.number_input("scrub (mm)", -100.0, 100.0, 5.0, 0.5,
-                                key="ig_f_scrub")
+                                help=_HELP["ig_f_scrub"], key="ig_f_scrub")
         sband = k3.number_input("± band (mm) ", 0.01, 100.0, 3.0, 0.5,
-                                key="ig_f_sb")
+                                help=_HELP["ig_f_sb"], key="ig_f_sb")
         try:
             targets = gr.linear_targets(
                 stations, static_camber=hp.static_camber,
@@ -672,18 +916,23 @@ def _render_generate():
         targets = ig.GenesisTargets(curves=curves, track_mm=track)
 
     # ================= 2 · legal volume ===================================
-    st.markdown("###### 2 · The legal volume")
+    ss["ig_ok_targets"] = True
+    st.markdown("###### 3 · Where the pickups may go")
+    _hint(st, ss, "Free the pickups the engine may move and give each a box "
+                  "it must stay in — the space a bracket can really reach on "
+                  "your frame. Add keep-outs for tubes, headers and mounts. "
+                  "Anything you do not constrain, the engine may exploit.")
     movable = st.multiselect(
         "Hardpoints the engine may move", list(ig.DESIGNABLE_POINTS),
         default=["upper_front_inner", "upper_rear_inner",
                  "lower_front_inner", "lower_rear_inner", "tie_rod_inner"],
-        key="ig_movable")
+        help=_HELP["ig_movable"], key="ig_movable")
     if not movable:
         st.info("Free at least one hardpoint.")
         return
     bmode = st.radio("Boxes as", ["± half-width per axis about the seed",
                                   "Absolute bounds (corner frame)"],
-                     horizontal=True, key="ig_bmode")
+                     horizontal=True, help=_HELP["ig_bmode"], key="ig_bmode")
     whd = gr.hp_to_dict(hp)
     if bmode.startswith("±"):
         hdf = st.data_editor(pd.DataFrame(
@@ -722,6 +971,24 @@ def _render_generate():
                        + ", ".join(outside)
                        + " — the first step clamps it onto the box.")
 
+    with st.expander("🧱 Your chassis — upload the STEP file",
+                     expanded=not ss.get("tf_frame")):
+        _sec_frame_from_step(st, pd, np, ss, _veh(ss), "ig_step")
+    use_frame = False
+    if ss.get("tf_frame"):
+        use_frame = st.checkbox(
+            "Keep the pickups and links clear of the chassis tubes "
+            "(use the frame as keep-outs)", value=True, key="ig_use_frame",
+            help="Every free pickup must stay the required clearance away "
+                 "from every tube. After a run, the swept-volume check "
+                 "uses the same frame.")
+        if use_frame and axle_station is None:
+            _v = _veh(ss)
+            axle_station = float(_v[f"{axle}_station_mm"])
+            ground_y = float(_v["ground_y_mm"])
+            st.caption(f"Frame placed with the declared {axle} axle station "
+                       f"({axle_station} mm) and ground plane "
+                       f"({ground_y} mm) — edit them in section 5.")
     with st.expander("Spacing constraints (wishbone base, fore/aft "
                      "ordering)"):
         st.caption("Each row requires b.axis − a.axis ≥ gap (x is "
@@ -754,24 +1021,11 @@ def _render_generate():
             pd.DataFrame(columns=["label", "x_lo", "y_lo", "z_lo",
                                   "x_hi", "y_hi", "z_hi"]),
             key="ig_keepout", num_rows="dynamic", hide_index=True)
-        st.markdown("**Chassis frame from STEP**")
-        _sec_frame_from_step(st, pd, np, ss, _veh(ss), "ig_step")
-        use_frame = False
-        if ss.get("tf_frame"):
-            use_frame = st.checkbox(
-                "Use the frame as capsule keep-outs", key="ig_use_frame")
-            if use_frame and axle_station is None:
-                _v = _veh(ss)
-                axle_station = float(_v[f"{axle}_station_mm"])
-                ground_y = float(_v["ground_y_mm"])
-                st.caption(f"Placed with the declared {axle} axle station "
-                           f"({axle_station} mm) and ground plane "
-                           f"({ground_y} mm).")
         k1, k2 = st.columns(2)
         probe = _units.unum(k1, "Probe radius (mm)", 0.0, 30.0, 6.0, 'mm',
-                            step=1.0, key="ig_probe")
+                            step=1.0, help=_HELP["ig_probe"], key="ig_probe")
         min_cl = _units.unum(k2, "Required clearance (mm)", 0.0, 20.0, 2.0,
-                             'mm', step=0.5, key="ig_mincl")
+                             'mm', step=0.5, help=_HELP["ig_mincl"], key="ig_mincl")
     keep_out = []
     for _, row in ko_df.iterrows():
         try:
@@ -795,12 +1049,17 @@ def _render_generate():
         return
 
     # ================= 3 · shop & search ==================================
-    st.markdown("###### 3 · The shop and the search")
+    ss["ig_ok_volume"] = True
+    st.markdown("###### 4 · How it will be built, and how hard to search")
+    _hint(st, ss, "Pick the tolerance your team can really hold. The engine "
+                  "simulates thousands of builds at that tolerance and keeps "
+                  "the geometry that survives best. The defaults are fine "
+                  "for a first run.")
     s1, s2, s3 = st.columns([2, 1, 1])
     shop_label = s1.selectbox("Shop class", list(_SHOPS.keys()),
-                              index=1, key="ig_shop")
+                              index=1, help=_HELP["ig_shop"], key="ig_shop")
     pull = _units.unum(s2, "Weld pull (mm)", 0.0, 3.0, 0.0, 'mm', step=0.1,
-                       key="ig_pull")
+                       help=_HELP["ig_pull"], key="ig_pull")
     pull_axis = s3.selectbox("Pull axis", _AXES, index=2, key="ig_pull_axis")
     with st.expander("Per-point tolerance overrides"):
         st.caption("E.g. a welded rear toe-link tab: tie_rod_inner at the "
@@ -820,12 +1079,12 @@ def _render_generate():
                                   pull_axis=pull_axis)
 
     r1, r2, r3, r4 = st.columns(4)
-    seed = int(r1.number_input("Seed s", 0, 2**31 - 1, 0, 1, key="ig_seed"))
-    n_starts = int(r2.number_input("Starts", 1, 64, 6, 1, key="ig_nstarts"))
+    seed = int(r1.number_input("Seed s", 0, 2**31 - 1, 0, 1, help=_HELP["ig_seed"], key="ig_seed"))
+    n_starts = int(r2.number_input("Starts", 1, 64, 6, 1, help=_HELP["ig_nstarts"], key="ig_nstarts"))
     n_yield = int(r3.number_input("Sampled builds N", 100, 50000, 4000, 100,
-                                  key="ig_nyield"))
+                                  help=_HELP["ig_nyield"], key="ig_nyield"))
     n_verify = int(r4.number_input("Full-solve verification", 0, 2000, 0,
-                                   10, key="ig_nverify"))
+                                   10, help=_HELP["ig_nverify"], key="ig_nverify"))
     with st.expander("Solver constants"):
         q1, q2, q3, q4, q5 = st.columns(5)
         max_iter = int(q1.number_input("Iteration cap", 1, 500, 30, 1,
@@ -838,7 +1097,7 @@ def _render_generate():
                                      key="ig_tht"))
         th_v = float(q5.number_input("Linearisation floor", 0.0, 1.0, 0.98,
                                      0.01, key="ig_thv"))
-    name = st.text_input("Run name", f"{axle}_corner", key="ig_name")
+    name = st.text_input("Run name", f"{axle}_corner", help=_HELP["ig_name"], key="ig_name")
 
     if st.button("🧬 Generate the geometry", key="ig_run_btn",
                  type="primary"):
@@ -928,6 +1187,14 @@ _VEH_FIELDS = [
         ("arb_rear", "ARB rear (N·m/deg)", 0.0, 5000.0, 1.0, 120.0),
         ("roll_stiffness_front", "Direct roll stiffness front (N·m/deg)", 0.0, 10000.0, 1.0, 458.0),
         ("roll_stiffness_rear", "Direct roll stiffness rear (N·m/deg)", 0.0, 10000.0, 1.0, 420.0),
+    ]),
+    ("Motion ratio when the corner has no rocker", [
+        ("mr_front_droop", "Front MR at full droop", 0.05, 3.0, 0.001, 0.585),
+        ("mr_front_static", "Front MR at ride height", 0.05, 3.0, 0.001, 0.600),
+        ("mr_front_bump", "Front MR at full bump", 0.05, 3.0, 0.001, 0.596),
+        ("mr_rear_droop", "Rear MR at full droop", 0.05, 3.0, 0.001, 0.603),
+        ("mr_rear_static", "Rear MR at ride height", 0.05, 3.0, 0.001, 0.620),
+        ("mr_rear_bump", "Rear MR at full bump", 0.05, 3.0, 0.001, 0.630),
     ]),
     ("Loads & tyre", [
         ("lateral_g", "Design lateral acceleration (g)", 0.1, 4.0, 0.05, 1.5),
@@ -1044,18 +1311,51 @@ def _floats(text, fallback):
 
 
 def _cell(v):
+    """Readable number: precision by magnitude, trailing zeros trimmed."""
     if isinstance(v, bool) or v is None:
-        return "—" if v is None else str(v)
+        return "—" if v is None else ("yes" if v else "no")
+    if isinstance(v, int):
+        return str(v)
     try:
-        return str(round(float(v), 4))
+        x = float(v)
     except (TypeError, ValueError):
         return str(v)
+    if x != x:
+        return "—"
+    a = abs(x)
+    if a >= 1e8:
+        return "∞" if x > 0 else "−∞"
+    if a >= 100:
+        t = str(round(x, 1))
+    elif a >= 1:
+        t = str(round(x, 3))
+    elif a >= 0.001 or a == 0:
+        t = str(round(x, 4))
+    else:
+        t = "%.3g" % x
+    if "." in t and "e" not in t:
+        t = t.rstrip("0").rstrip(".")
+    return "0" if t in ("-0", "") else t
+
+
+def _split_unit(label):
+    """'camber gain (deg/mm)' → ('camber gain', 'deg/mm')."""
+    label = str(label)
+    if label.endswith(")") and " (" in label:
+        head, _, unit = label.rpartition(" (")
+        return head, unit[:-1]
+    return label, ""
 
 
 def _table(st, pd, rows, cols=None):
-    """Render rows with every column stringified (4-decimal rounding) so a
-    column that mixes numbers and labels never breaks the Arrow renderer."""
+    """Render rows with readable numbers. A two-column quantity/value table
+    gets its units split into their own column."""
     df = pd.DataFrame(rows, columns=cols) if cols else pd.DataFrame(rows)
+    if len(df.columns) == 2 and str(df.columns[1]).startswith("value"):
+        q = [_split_unit(x) for x in df.iloc[:, 0]]
+        df = pd.DataFrame({df.columns[0]: [a for a, _ in q],
+                           "value": list(df.iloc[:, 1]),
+                           "unit": [u for _, u in q]})
     for c in df.columns:
         df[c] = [_cell(x) for x in df[c]]
     st.dataframe(df, hide_index=True, width="stretch")
@@ -1132,6 +1432,7 @@ def _sec_steering(st, pd, v, front_hp, rear_hp, key):
                     ("ratio needed for the target", s["ratio_needed_for_target"])],
            ["quantity", "value"])
     _table(st, pd, s["rows"])
+    return s
 
 
 def _sec_actuation(st, pd, v, corner, axle):
@@ -1168,19 +1469,35 @@ def _sec_actuation(st, pd, v, corner, axle):
                       height=180)
     else:
         st.warning("No complete pushrod/rocker on this corner ("
-                   + a["reason"] + "): the motion ratio below is ASSUMED, "
-                   "not solved. Add the rocker points to the hardpoints to "
-                   "solve it.")
-    mr_used = mr if mr is not None else 1.0
+                   + a["reason"] + "). Using the DECLARED motion-ratio curve "
+                   "from the vehicle & build declaration — pushrod and damper "
+                   "lengths need the rocker points.")
+        dm = ga.declared_mr_summary(v[f"mr_{axle}_droop"],
+                                    v[f"mr_{axle}_static"],
+                                    v[f"mr_{axle}_bump"], k, m)
+        _table(st, pd, [
+            ("motion ratio, static — declared", dm["mr_static"]),
+            ("motion ratio, droop — declared", dm["mr_droop"]),
+            ("motion ratio, bump — declared", dm["mr_bump"]),
+            ("rate character", dm["rate_character"]),
+            ("motion-ratio spread (%)", dm["mr_spread_pct"]),
+            ("wheel-rate spread (%)", dm["wheel_rate_spread_pct"]),
+            ("ride frequency, droop (Hz)", dm["ride_hz_droop"]),
+            ("ride frequency, static (Hz)", dm["ride_hz_static"]),
+            ("ride frequency, bump (Hz)", dm["ride_hz_bump"])],
+            ["quantity", "value"])
+    solved = mr is not None
+    mr_used = mr if solved else float(v[f"mr_{axle}_static"])
     rs = ga.roll_stiffness_from_spring(k, mr_used, trk)
     _table(st, pd, [
-        ("motion ratio used", f"{round(mr_used, 4)} "
-         + ("(solved)" if mr is not None else "(ASSUMED placeholder)")),
+        ("motion ratio used", str(round(mr_used, 4))
+         + (" (solved)" if solved else " (declared)")),
         ("wheel rate (N/mm)", rs["wheel_rate_N_mm"]),
         ("spring roll stiffness (N·m/deg)", rs["roll_stiffness_Nm_deg"]),
         ("same with MR = 1.0 placeholder (N·m/deg)", rs["placeholder_Nm_deg"]),
         ("placeholder error (%)", rs["placeholder_error_pct"])],
         ["quantity", "value"])
+    return a
 
 
 def _sec_structural(st, pd, v, corner, axle):
@@ -1257,6 +1574,32 @@ def _sec_compliance(st, pd, v, corner, axle, sc, bands):
                       "total (mm)": b["sum_mm"]})
     _table(st, pd, lrows)
 
+    st.markdown("**Check a stated link and stated deflections**")
+    c = st.columns(3)
+    F = c[0].number_input("Link force (N)", 0.0, 100000.0, 4799.0, 1.0,
+                          key="ig_cmp_F")
+    L = c[1].number_input("Link length (mm)", 1.0, 5000.0, 485.0, 1.0,
+                          key="ig_cmp_L")
+    rep = c[2].number_input("Reported max extension (mm)", 0.0, 50.0, 0.60,
+                            0.01, key="ig_cmp_rep")
+    b = ga.axial_budget(F, L, v["tube_od_mm"], v["tube_wall_mm"], v["E_gpa"],
+                        v["rod_end_lash_mm"], 2, rep)
+    _table(st, pd, [("tube area (mm²)", b["area_mm2"]),
+                    ("axial strain (mm)", b["axial_strain_mm"]),
+                    ("rod-end lash, two joints (mm)", b["lash_mm"]),
+                    ("strain + lash (mm)", b["sum_mm"]),
+                    ("unexplained part of the reported extension (mm)",
+                     b["unexplained_mm"])], ["quantity", "value"])
+    c = st.columns(2)
+    dcam = c[0].number_input("Stated camber loss (deg)", 0.0, 10.0, 0.116,
+                             0.001, format="%.3f", key="ig_cmp_dcam")
+    dtoe = c[1].number_input("Stated compliance steer (deg)", 0.0, 10.0,
+                             0.074, 0.001, format="%.3f", key="ig_cmp_dtoe")
+    fr = ga.band_fractions({"camber": dcam, "toe": dtoe}, bands)
+    _table(st, pd, [{"channel": ch, "band (± deg)": bands[ch],
+                     "share of band (%)": 100 * x} for ch, x in fr.items()])
+    return rows
+
 
 def _sec_brackets(st, pd, v, sc, key):
     from suspension import genesis_analysis as ga
@@ -1307,6 +1650,7 @@ def _sec_packaging(st, pd, v, corner):
         ["quantity", "value"])
     if abs(w["wheelbase_mm"] - v["wheelbase_mm"]) > 0.5:
         st.warning("The declared wheelbase differs from the axle stations.")
+    return {"wheelbase": w, "clearance": cl, "envelope": e}
 
 
 def _sec_kinematics(st, pd, v, corner, axle, travel):
@@ -1335,7 +1679,7 @@ def _sec_kinematics(st, pd, v, corner, axle, travel):
              d["contact_patch_rise_per_mm"]),
             ("side-view IC, x rearward (mm)", d["side_view_ic_x_mm"]),
             ("side-view IC, height (mm)", d["side_view_ic_z_mm"]),
-            ("tan swing arm (" + d["side_view_reference"] + ")",
+            ("tan swing arm, referenced to the " + d["side_view_reference"],
              d["side_view_tan"])]
     if "anti_dive_pct" in d:
         rows.append(("anti-dive (%)", d["anti_dive_pct"]))
@@ -1352,7 +1696,15 @@ def _sec_kinematics(st, pd, v, corner, axle, travel):
                             trk, v["tyre_optimum_camber"])
     st.markdown("**Loaded tyre camber relative to the road** "
                 "(outside wheel at the declared body roll)")
-    _table(st, pd, [(k, x) for k, x in ctr.items()], ["quantity", "value"])
+    names = {"bump_mm": "outside-wheel bump from roll (mm)",
+             "camber_change_deg": "camber change from gain (deg)",
+             "camber_to_chassis_deg": "camber to chassis (deg)",
+             "camber_to_road_deg": "camber to road (deg)",
+             "gain_required_deg_per_mm": "gain needed to hold the optimum (deg/mm)",
+             "ratio_to_delivered": "needed ÷ delivered gain (×)",
+             "error_from_optimum_deg": "distance from the tyre optimum (deg)"}
+    _table(st, pd, [(names.get(k, k), x) for k, x in ctr.items()],
+           ["quantity", "value"])
     st.caption("None of these is a channel — the solver is indifferent to "
                "all of them, so check them on every corner.")
     return d
@@ -1375,69 +1727,133 @@ def _sec_tyre(st, pd, v, key):
 
 
 def _sec_frame_from_step(st, pd, np, ss, v, key):
-    """Chassis STEP → tube axes → frame summary, stored as the Frame Planner
-    frame so keep-outs and the swept-volume check can use it."""
+    """Chassis STEP → tube axes → frame, read as soon as a file is dropped
+    and stored as the Frame Planner frame for keep-outs and the swept-volume
+    check."""
     from suspension import genesis_analysis as ga
-    from suspension.tubeframe import FrameGraph
-    up = st.file_uploader("Chassis STEP (.step / .stp)", type=["step", "stp"],
-                          key=f"{key}_up")
-    c = st.columns(4)
-    R = c[0].number_input("Tube outer radius (mm)", 1.0, 50.0, 12.70, 0.01,
-                          key=f"{key}_R")
-    rtol = c[1].number_input("Radius tolerance (mm)", 0.001, 2.0, 0.02,
-                             0.001, format="%.3f", key=f"{key}_rtol")
-    atol = c[2].number_input("Coaxial tolerance (mm)", 0.01, 10.0, 0.5, 0.01,
-                             key=f"{key}_atol")
-    tols = _floats(c[3].text_input("Node clustering tolerances (mm)",
-                                   "20, 30, 37, 40, 50", key=f"{key}_tols"),
-                   (20, 30, 37, 40, 50))
-    extra = st.data_editor(
-        pd.DataFrame(columns=["bend major radius (mm)", "bend angle (deg)"]),
-        num_rows="dynamic", key=f"{key}_bends", hide_index=True)
-    manual = [(float(r.iloc[0]), float(r.iloc[1]))
-              for _, r in extra.iterrows()
-              if not (pd.isna(r.iloc[0]) or pd.isna(r.iloc[1]))]
-    if up is not None and st.button("Recover the frame", key=f"{key}_go"):
-        with st.spinner("Reading the B-rep…"):
-            res = ga.parse_step_tubes(
-                up.getvalue().decode("utf-8", errors="replace"), R, rtol, atol)
-            stats = ga.frame_stats(res.axes, list(res.bends) + manual, tols,
-                                   res.vertices, R)
-        g = FrameGraph()
-        ends = np.array([q for a, b, _ in res.axes for q in (a, b)])
-        if len(ends):
-            _, lab = ga._cluster_count(ends, float(tols[0]))
-            for l in sorted(set(lab.tolist())):
-                g.add_node(f"N{l}", tuple(ends[lab == l].mean(axis=0)))
-            for i in range(len(res.axes)):
-                a, b = f"N{lab[2 * i]}", f"N{lab[2 * i + 1]}"
-                if a != b:
-                    g.add_tube(f"T{i + 1:02d}", a, b)
-            ss["tf_frame"] = g.as_dict()
-        ss["ig_step_frame"] = (res, stats)
-    if ss.get("ig_step_frame"):
-        res, s = ss["ig_step_frame"]
-        st.caption(res.units_note + " · axis lines rejected: "
-                   + str(res.rejected) + " · stored as the Frame Planner "
-                   "frame, so it is available as keep-outs below and to the "
-                   "swept-volume check.")
-        _table(st, pd, [("tubes", s["tubes"]), ("straight run (m)", s["straight_m"]),
-                        ("bends", s["bends"]), ("bend arc (m)", s["bend_arc_m"]),
-                        ("total tube length (m)", s["total_m"])],
-               ["quantity", "value"])
-        _table(st, pd, [{"clustering tolerance (mm)": k, "nodes": x["nodes"],
-                         "node-to-node length (m)": x["node_to_node_m"]}
-                        for k, x in s["nodes"].items()])
-        _table(st, pd, [{"wall (mm)": str(k), "tubes": n}
-                        for k, n in s["walls_mm"].items()])
-        if res.bends:
-            _table(st, pd, [{"bend": i + 1, "major radius (mm)": r,
-                             "swept angle (deg)": a}
-                            for i, (r, a) in enumerate(res.bends)])
-        if "vertices" in s:
-            _table(st, pd, [{**s["vertices"],
-                             "cylinder radii (mm: faces)": str(res.radii_mm)}])
+    _hint(st, ss, "Export the chassis from your CAD as STEP (AP203/AP214, "
+                  "solid bodies) and drop it here. Tubes, their sizes, wall "
+                  "thicknesses and bends are read straight from the file; "
+                  "nothing is meshed. Coordinates are taken as CAD axes: "
+                  "X to the vehicle's right, Y up, Z forward.")
+    up = st.file_uploader("Chassis STEP file",
+                          type=["step", "stp", "STEP", "STP"],
+                          key=f"{key}_up",
+                          help="Solid-body STEP export. Multi-body weldments "
+                               "and single fused bodies both work.")
+    adv = st.toggle("Reading settings", key=f"{key}_adv",
+                    help="Only needed if the automatic tube-size detection "
+                         "picks the wrong cylinders.")
+    radii_txt, rtol, atol = "", 0.02, 0.5
+    tols = [20.0, 30.0, 37.0, 40.0, 50.0]
+    manual = []
+    if adv:
+        c = st.columns(4)
+        radii_txt = c[0].text_input(
+            "Tube outer radii (mm), blank = detect", "", key=f"{key}_radii",
+            help="e.g. 12.7, 9.525 for 1 in and 3/4 in tube.")
+        rtol = c[1].number_input("Radius tolerance (mm)", 0.001, 2.0, 0.02,
+                                 0.001, format="%.3f", key=f"{key}_rtol")
+        atol = c[2].number_input("Coaxial tolerance (mm)", 0.01, 10.0, 0.5,
+                                 0.01, key=f"{key}_atol")
+        tols = _floats(c[3].text_input("Node clustering tolerances (mm)",
+                                       "20, 30, 37, 40, 50",
+                                       key=f"{key}_tols"), tols)
+        st.caption("Bends the file does not carry as toroidal faces can be "
+                   "added by hand:")
+        extra = st.data_editor(
+            pd.DataFrame(columns=["bend major radius (mm)",
+                                  "bend angle (deg)"]),
+            num_rows="dynamic", key=f"{key}_bends", hide_index=True)
+        manual = [(float(r.iloc[0]), float(r.iloc[1]))
+                  for _, r in extra.iterrows()
+                  if not (pd.isna(r.iloc[0]) or pd.isna(r.iloc[1]))]
+    radii = _floats(radii_txt, ()) or None
 
+    if up is not None:
+        sig = (up.name, up.size, radii_txt, rtol, atol, tuple(tols),
+               tuple(manual))
+        if ss.get("ig_step_sig") != sig:
+            with st.spinner("Reading " + up.name + "…"):
+                try:
+                    raw = up.getvalue()
+                    text = raw.decode("utf-8", errors="replace")
+                    if "ISO-10303-21" not in text[:2000]:
+                        raise ValueError("this does not look like a STEP "
+                                         "file (no ISO-10303-21 header)")
+                    res = ga.parse_step_tubes(text, radii, rtol, atol)
+                    stats = ga.frame_stats(res.axes, list(res.bends) + manual,
+                                           tols, res.vertices,
+                                           od_mm=res.od_mm)
+                    ss["ig_step_frame"] = (res, stats, up.name)
+                    ss["ig_step_err"] = None
+                    if res.axes:
+                        g = ga.frame_graph_from_step(res, float(tols[0]))
+                        ss["tf_frame"] = g.as_dict()
+                except Exception as e:           # noqa: BLE001
+                    ss["ig_step_frame"] = None
+                    ss["ig_step_err"] = str(e)
+            ss["ig_step_sig"] = sig
+
+    if ss.get("ig_step_err"):
+        st.error("Could not read the file: " + ss["ig_step_err"])
+        return
+    if not ss.get("ig_step_frame"):
+        if ss.get("tf_frame"):
+            st.caption("A frame is already loaded (from the Frame Planner).")
+        return
+    res, s, fname = ss["ig_step_frame"]
+    if not res.axes:
+        common = sorted(res.radii_mm.items(), key=lambda kv: -kv[1])[:6]
+        st.error("No tubes found in " + fname + ". Cylinder radii in the "
+                 "file (mm: faces): "
+                 + (", ".join(_cell(r) + ": " + str(n) for r, n in common)
+                    or "none")
+                 + ". Open Reading settings and type the tube outer "
+                 "radius, or check that the export contains solid bodies.")
+        return
+    sizes = ", ".join(str(n) + " × " + _cell(od) + " × "
+                      + ("?" if w is None else _cell(w)) + " mm"
+                      for (od, w), n in sorted(s["sizes_mm"].items(),
+                                               key=lambda kv: -kv[1]))
+    st.success(fname + ": " + str(s["tubes"]) + " tubes, "
+               + _cell(s["total_m"]) + " m of tube ("
+               + _cell(s["straight_m"]) + " m straight + "
+               + _cell(s["bend_arc_m"]) + " m of bends). Sizes (OD × wall): "
+               + sizes + ".")
+    st.caption(res.units_note + " · tube radii used: "
+               + ", ".join(_cell(r) for r in res.tube_radii_mm) + " mm")
+    try:
+        import plotly.graph_objects as go
+        fig = go.Figure()
+        for (a, b, w), od in zip(res.axes, res.od_mm):
+            fig.add_trace(go.Scatter3d(
+                x=[a[0], b[0]], y=[a[2], b[2]], z=[a[1], b[1]],
+                mode="lines", line=dict(width=max(2.0, od / 4)),
+                hovertext=_cell(od) + " × "
+                + ("?" if w is None else _cell(w)) + " mm",
+                hoverinfo="text", showlegend=False))
+        fig.update_layout(height=380, margin=dict(l=0, r=0, t=0, b=0),
+                          scene=dict(aspectmode="data",
+                                     xaxis_title="X right (mm)",
+                                     yaxis_title="Z forward (mm)",
+                                     zaxis_title="Y up (mm)"))
+        st.plotly_chart(fig, key=f"{key}_fig")
+    except Exception:                            # noqa: BLE001
+        pass
+    _table(st, pd, [{"node clustering (mm)": k, "nodes": x["nodes"],
+                     "node-to-node length (m)": x["node_to_node_m"]}
+                    for k, x in s["nodes"].items()])
+    if res.bends:
+        _table(st, pd, [{"bend": i + 1, "major radius (mm)": r,
+                         "swept angle (deg)": a}
+                        for i, (r, a) in enumerate(res.bends)])
+    if "vertices" in s:
+        vx = s["vertices"]
+        st.caption("File check: " + str(vx["total"]) + " vertices, "
+                   + str(vx["in_tube_envelope"]) + " on tubes, "
+                   + str(vx["outside_envelopes"]) + " elsewhere (plates, "
+                   "holes, bend tangents).")
 
 def _render_analysis(st, pd, np, ss):
     """Section 4 + 5 of the tab: the shared declaration and every analysis of
@@ -1445,7 +1861,7 @@ def _render_analysis(st, pd, np, ss):
     from suspension import genesis_repro as gr
     from suspension.kinematics import Hardpoints
     st.divider()
-    st.markdown("###### 4 · Vehicle & build declaration")
+    st.markdown("###### 5 · Vehicle & build declaration")
     v = _vehicle_editor(st, ss, "ig_v")
 
     run = ss.get("ig_run")
@@ -1469,26 +1885,191 @@ def _render_analysis(st, pd, np, ss):
         travel = float(ss.get("ig_travel", 25.0))
         bands = {"camber": 0.30, "toe": 0.08}
 
-    st.markdown("###### 5 · Corner & vehicle analysis")
+    st.markdown("###### 6 · Design review and analysis")
+    _hint(st, ss, "Everything the solver was NOT asked about: steering "
+                  "geometry, strength, packaging, ride. The review "
+                  "summarises it against editable starting ranges; the "
+                  "sections below show the working.")
     st.caption(f"For {note}, {axle} axle, with the declaration above.")
     front_hp, rear_hp = _corner_pair(ss, corner, axle)
+    review_box = st.container()
 
-    with st.expander("🔎 Kinematics, anti-geometry and loaded camber",
-                     expanded=True):
-        _sec_kinematics(st, pd, v, corner, axle, travel)
+    out = {}
+    with st.expander("🔎 Kinematics, anti-geometry and loaded camber"):
+        out["kin"] = _sec_kinematics(st, pd, v, corner, axle, travel)
     with st.expander("📐 Actuation, ride frequency and roll stiffness"):
-        _sec_actuation(st, pd, v, corner, axle)
+        out["act"] = _sec_actuation(st, pd, v, corner, axle)
     with st.expander("🛞 Steering effort"):
         if axle != "front":
             st.caption("Uses the front corner — shown with the front corner "
                        "from an earlier run, or the default.")
-        _sec_steering(st, pd, v, front_hp, rear_hp, "ig_steer")
-    sc = None
+        out["steer"] = _sec_steering(st, pd, v, front_hp, rear_hp,
+                                     "ig_steer")
     with st.expander("🔩 Structural screening of the links"):
-        sc = _sec_structural(st, pd, v, corner, axle)
+        out["sc"] = _sec_structural(st, pd, v, corner, axle)
     with st.expander("⚙️ Compliance budget — link strain, lash and band use"):
-        _sec_compliance(st, pd, v, corner, axle, sc, bands)
+        out["comp"] = _sec_compliance(st, pd, v, corner, axle, out["sc"],
+                                      bands)
     with st.expander("🪝 Bracket screening"):
-        _sec_brackets(st, pd, v, sc, "ig_brk")
-    with st.expander("📦 Packaging — wheelbase, ground clearance, rim envelope"):
-        _sec_packaging(st, pd, v, corner)
+        _sec_brackets(st, pd, v, out["sc"], "ig_brk")
+    with st.expander("📦 Packaging — wheelbase, ground clearance, rim "
+                     "envelope"):
+        out["pack"] = _sec_packaging(st, pd, v, corner)
+
+    with review_box:
+        _render_review(st, pd, ss, v, out, axle, note, run)
+
+
+def _review_values(v, out, axle):
+    """Collect the numbers the design review checks from the sections."""
+    vals = {}
+    d = out.get("kin") or {}
+    if d.get("ok"):
+        vals.update(caster_deg=d["caster_deg"], kpi_deg=d["kpi_deg"],
+                    scrub_mm=d["scrub_static_mm"],
+                    camber_gain_deg_per_mm=d["camber_gain_deg_per_mm"],
+                    bump_steer_abs=abs(d["bump_steer_deg_per_mm"]),
+                    toe_change_deg=d["toe_change_deg"],
+                    rc_height_mm=d["rc_height_static_mm"],
+                    rc_migration_abs=abs(d["rc_migration_chassis_mm_per_mm"]))
+        anti = d.get("anti_dive_pct", d.get("anti_squat_pct"))
+        if anti is not None:
+            vals["anti_pct"] = anti
+    pk = out.get("pack")
+    if pk:
+        vals["joints_in_rim"] = 1.0 if pk["envelope"]["inside"] else 0.0
+        vals["wheelbase_margin_mm"] = pk["wheelbase"]["margin_mm"]
+        vals["ground_clearance_mm"] = pk["clearance"]["clearance_mm"]
+    sc = out.get("sc")
+    if sc:
+        vals["worst_fos"] = sc["worst_fos_overall"]
+    stq = out.get("steer")
+    if stq:
+        vals["steering_ratio_needed"] = stq["ratio_needed_for_target"]
+    a = out.get("act") or {}
+    vals["mr_solved"] = 1.0 if a.get("ok") else 0.0
+    if a.get("stroke_fraction_used") is not None:
+        vals["stroke_used"] = a["stroke_fraction_used"]
+    shares = [r["share of toe band (%)"] / 100 for r in (out.get("comp") or [])]
+    if shares:
+        vals["toe_band_share"] = max(shares)
+    return vals
+
+
+_STATUS_ICON = {"pass": "🟢", "watch": "🟡", "fail": "🔴", "n/a": "⚪"}
+
+
+def _range_text(r):
+    lo, hi = r["lo"], r["hi"]
+    if r["key"] in ("joints_in_rim", "mr_solved"):
+        return "must be yes"
+    if hi >= 1e8:
+        return "≥ " + _cell(lo)
+    if lo == 0 and r["key"].endswith(("_abs", "used", "share", "change_deg",
+                                     "needed")):
+        return "≤ " + _cell(hi)
+    return _cell(lo) + " … " + _cell(hi)
+
+
+def _render_review(st, pd, ss, v, out, axle, note, run):
+    """Traffic-light design review with editable ranges and a report."""
+    from suspension import genesis_analysis as ga
+    limits = ss.get("ig_review_limits")
+    if limits is None:
+        limits = [dict(r) for r in ga.DEFAULT_REVIEW_LIMITS]
+        for r in limits:
+            if r["key"] == "worst_fos":
+                r["lo"] = float(v["fos_min"])
+        ss["ig_review_limits"] = limits
+    rows = ga.design_review(_review_values(v, out, axle), limits)
+    counts = {k: sum(r["status"] == k for r in rows)
+              for k in ("pass", "watch", "fail", "n/a")}
+    ss["ig_ok_review"] = counts["fail"] == 0
+    with st.container(border=True):
+        head = ("**📋 Design review** — 🟢 " + str(counts["pass"])
+                + " pass · 🟡 " + str(counts["watch"]) + " watch · 🔴 "
+                + str(counts["fail"]) + " fail")
+        if counts["n/a"]:
+            head += " · ⚪ " + str(counts["n/a"]) + " not available"
+        st.markdown(head)
+        order = {"fail": 0, "watch": 1, "pass": 2, "n/a": 3}
+        show = sorted(rows, key=lambda r: order[r["status"]])
+        _table(st, pd, [{"": _STATUS_ICON[r["status"]], "check": r["check"],
+                         "value": ("yes" if r["value"] == 1.0 else "no")
+                         if r["key"] in ("joints_in_rim", "mr_solved")
+                         and r["value"] is not None else r["value"],
+                         "unit": r["unit"], "range": _range_text(r),
+                         "why it matters": r["why"],
+                         "what to change": r["fix"]
+                         if r["status"] in ("fail", "watch") else ""}
+                        for r in show])
+        if _guided(ss) and counts["fail"]:
+            st.warning("Red is a prompt, not a verdict: the ranges are "
+                       "generic starting points. Either change the design "
+                       "(see 'what to change') or set the range to your "
+                       "team's target and write down why.")
+        with st.expander("Edit review ranges (your team's targets)"):
+            ed = st.data_editor(
+                pd.DataFrame([{"check": r["check"], "unit": r["unit"],
+                               "min": r["lo"], "max": r["hi"]}
+                              for r in limits]),
+                key="ig_review_editor", hide_index=True,
+                disabled=["check", "unit"])
+            c1, c2 = st.columns(2)
+            if c1.button("Apply ranges", key="ig_review_apply"):
+                for r, (_, e) in zip(limits, ed.iterrows()):
+                    r["lo"], r["hi"] = float(e["min"]), float(e["max"])
+                ss["ig_review_limits"] = limits
+                st.rerun()
+            if c2.button("Reset to starting ranges", key="ig_review_reset"):
+                ss.pop("ig_review_limits", None)
+                st.rerun()
+        st.download_button("⬇ Design report (.md)",
+                           _report_md(v, out, rows, axle, note, run),
+                           file_name="design_report_" + axle + ".md",
+                           mime="text/markdown", key="ig_report_dl")
+
+
+def _report_md(v, out, rows, axle, note, run):
+    """A self-contained markdown design report of the current state."""
+    from suspension import genesis_repro as gr
+    L = ["# Corner design report", "", "- Corner: " + note + ", " + axle
+         + " axle"]
+    if run is not None:
+        man = gr.GenesisManifest.from_json(run["manifest_json"])
+        w = run["result"].winner
+        L.append("- Run: `" + man.name + "` · inputs sha256 `"
+                 + man.inputs_sha256 + "`")
+        verdict = w.verdict if w else "NO_FIT"
+        if w is not None and w.yield_frac is not None:
+            verdict += ", build yield " + _cell(100 * w.yield_frac) + " %"
+        L.append("- Verdict: " + verdict)
+    L += ["", "## Design review", "",
+          "| status | check | value | unit | range |",
+          "|---|---|---|---|---|"]
+    for r in rows:
+        L.append("| " + " | ".join([r["status"], r["check"],
+                                     _cell(r["value"]), r["unit"],
+                                     _range_text(r)]) + " |")
+    d = out.get("kin") or {}
+    if d.get("ok"):
+        L += ["", "## Kinematics", "",
+              "| travel (mm) | camber (deg) | toe (deg) | RC height (mm) | "
+              "scrub (mm) |", "|---|---|---|---|---|"]
+        for vals in zip(d["stations_mm"], d["camber_deg"], d["toe_deg"],
+                        d["rc_height_mm"], d["scrub_mm"]):
+            L.append("| " + " | ".join(_cell(x) for x in vals) + " |")
+    sc = out.get("sc")
+    if sc:
+        L += ["", "## Link factors of safety", "",
+              "| member | worst FoS | governing case |", "|---|---|---|"]
+        for m, f in sc["worst_fos_per_member"].items():
+            L.append("| " + m + " | " + _cell(f) + " | "
+                     + sc["governing_case"][m] + " |")
+    L += ["", "## Vehicle & build declaration", "", "| field | value |",
+          "|---|---|"]
+    for k, x in v.items():
+        L.append("| " + k + " | " + _cell(x) + " |")
+    L += ["", "_Analytical results from declared inputs; review ranges are "
+          "starting points, not requirements._", ""]
+    return "\n".join(L)

@@ -54,18 +54,22 @@ _ENTITY = re.compile(r"#(\d+)\s*=\s*([A-Z0-9_]+)\s*\((.*)\)\s*$", re.S)
 
 def _split_entities(text: str):
     """Yield raw entity strings from the DATA section, splitting on ';'
-    outside quoted strings."""
+    outside quoted strings (linear time: split on quotes first)."""
     m = re.search(r"\bDATA\s*;(.*?)\bENDSEC\s*;", text, re.S)
     body = m.group(1) if m else text
-    buf, in_str = [], False
-    for ch in body:
-        if ch == "'":
-            in_str = not in_str
-        if ch == ";" and not in_str:
+    buf = []
+    for i, chunk in enumerate(body.split("'")):
+        if i % 2:                      # inside a string literal
+            buf.append("'" + chunk + "'")
+            continue
+        parts = chunk.split(";")
+        buf.append(parts[0])
+        for part in parts[1:]:
             yield "".join(buf).strip()
-            buf = []
-        else:
-            buf.append(ch)
+            buf = [part]
+    tail = "".join(buf).strip()
+    if tail:
+        yield tail
 
 
 def _parse_args(s: str):
@@ -128,29 +132,40 @@ def _refs(x):
 class StepTubes:
     """What ``parse_step_tubes`` recovers, all lengths in mm."""
     axes: list = _dcfield(default_factory=list)      # [(p0, p1, wall_mm|None)]
+    od_mm: list = _dcfield(default_factory=list)     # outer diameter per axis
     bends: list = _dcfield(default_factory=list)     # [(major_mm, angle_deg)]
     radii_mm: dict = _dcfield(default_factory=dict)  # cylinder radius -> faces
+    tube_radii_mm: list = _dcfield(default_factory=list)
     vertices: np.ndarray = _dcfield(
         default_factory=lambda: np.zeros((0, 3)))
     rejected: int = 0
     units_note: str = ""
+    unit_scale: float = 1.0
 
 
-def parse_step_tubes(text: str, outer_radius_mm: float = 12.70,
+_UNIT_SCALE = {"MILLI": 1.0, "CENTI": 10.0, "DECI": 100.0, "": 1000.0,
+               "MICRO": 1e-3}
+
+
+def parse_step_tubes(text: str, outer_radius_mm=None,
                      radius_tol_mm: float = 0.02,
                      axis_tol_mm: float = 0.5,
-                     min_length_mm: float = 1.0) -> StepTubes:
+                     min_length_mm: float = 1.0,
+                     detect_range_mm=(4.0, 40.0)) -> StepTubes:
     """Tube axis lines, walls and bends from STEP text (lengths in mm).
 
-    Method: every CYLINDRICAL_SURFACE of the
-    outer radius is collapsed into unique axis lines; each axis is bounded by
-    the vertices of ITS OWN faces (not by every vertex within the radius —
-    that envelope rule over-extends at every joint); the wall is the outer
-    radius minus the radius of a coaxial inner cylinder; each
-    TOROIDAL_SURFACE whose minor radius is the outer radius is a bend whose
-    arc is major radius × swept angle, the angle read from its face vertices.
-    Assumes the file's length unit is mm (SolidWorks default); the returned
-    ``units_note`` says what the header declared.
+    Method: every CYLINDRICAL_SURFACE of a tube's outer radius is collapsed
+    into unique axis lines; each axis is bounded by the vertices of ITS OWN
+    faces (not by every vertex within the radius — that envelope rule
+    over-extends at every joint); the wall is the outer radius minus the
+    radius of a coaxial inner cylinder; each TOROIDAL_SURFACE whose minor
+    radius is a tube radius is a bend whose arc is major radius × swept
+    angle, the angle read from its face vertices.
+
+    ``outer_radius_mm`` may be one radius (mm), several, or None to detect
+    the tube sizes: radii within ``detect_range_mm`` (mm) that occur on at
+    least two faces and are not only ever the bore of a larger coaxial
+    cylinder. The file's declared length unit is converted to mm.
     """
     E = {}
     for raw in _split_entities(text):
@@ -158,18 +173,28 @@ def parse_step_tubes(text: str, outer_radius_mm: float = 12.70,
         if m:
             E[int(m.group(1))] = (m.group(2), _parse_args(m.group(3)))
 
+    out = StepTubes()
+    unit = re.search(r"SI_UNIT\s*\(\s*(?:\.(\w+)\.|\$)\s*,\s*\.METRE\.",
+                     text)
+    prefix = (unit.group(1) or "") if unit else "MILLI"
+    scale = _UNIT_SCALE.get(prefix, 1.0)
+    out.unit_scale = scale
+    out.units_note = ("length unit: " + (prefix.lower() + "metre"
+                                          if unit else "not declared (mm assumed)")
+                      + ("" if scale == 1.0 else " — converted to mm"))
+
     def pt(i):
-        """Point or vertex entity → xyz in the file's length unit (mm)."""
+        """Point or vertex entity → xyz in mm."""
         k, a = E[i]
         if k == "CARTESIAN_POINT":
-            return np.array(a[1], float)
+            return np.array(a[1], float) * scale
         if k == "VERTEX_POINT":
             return pt(_refs(a[1])[0])
         raise KeyError(k)
 
     def direction(i):
         """DIRECTION entity → unit vector (dimensionless)."""
-        k, a = E[i]
+        _, a = E[i]
         v = np.array(a[1], float)
         return v / np.linalg.norm(v)
 
@@ -185,52 +210,16 @@ def parse_step_tubes(text: str, outer_radius_mm: float = 12.70,
         """Vertex ids bounding a face (ids, no unit; points are in mm)."""
         _, a = E[face_id]
         vs = set()
-        for b in _refs(a[1]):                         # FACE_(OUTER_)BOUND
+        for b in _refs(a[1]):
             loop = _refs(E[b][1][1])[0]
             kind, la = E[loop]
             if kind == "VERTEX_LOOP":
                 vs.add(_refs(la[1])[0])
                 continue
-            for oe in _refs(la[1]):                   # ORIENTED_EDGE
-                ec = _refs(E[oe][1])[-1]              # EDGE_CURVE
-                ea = E[ec][1]
-                r = _refs(ea)
-                vs.update(r[:2])
+            for oe in _refs(la[1]):
+                ec = _refs(E[oe][1])[-1]
+                vs.update(_refs(E[ec][1])[:2])
         return vs
-
-    # faces grouped by surface
-    faces_of = {}
-    for i, (k, a) in E.items():
-        if k in ("ADVANCED_FACE", "FACE_SURFACE"):
-            surf = _refs(a[2])[0]
-            faces_of.setdefault(surf, []).append(i)
-
-    out = StepTubes()
-    unit = re.search(r"SI_UNIT\s*\(\s*\.(\w+)\.\s*,\s*\.METRE\.", text)
-    out.units_note = ("length unit: " + (unit.group(1).lower() + "metre"
-                                          if unit else "not declared (mm assumed)"))
-
-    all_v = {i for i, (k, _) in E.items() if k == "VERTEX_POINT"}
-    out.vertices = (np.array([pt(i) for i in sorted(all_v)])
-                    if all_v else np.zeros((0, 3)))
-
-    outer, inner = [], []
-    for sid, fids in faces_of.items():
-        k, a = E[sid]
-        if k != "CYLINDRICAL_SURFACE":
-            continue
-        rad = float(a[2])
-        o, d = placement(_refs(a[1])[0])
-        key = round(rad, 3)
-        out.radii_mm[key] = out.radii_mm.get(key, 0) + len(fids)
-        vids = set()
-        for f in fids:
-            vids |= face_vertices(f)
-        rec = (o, d, vids, rad)
-        if abs(rad - outer_radius_mm) <= radius_tol_mm:
-            outer.append(rec)
-        elif rad < outer_radius_mm:
-            inner.append(rec)
 
     def same_line(o1, d1, o2, d2):
         """True if two axis lines coincide within axis_tol_mm (mm)."""
@@ -239,37 +228,87 @@ def parse_step_tubes(text: str, outer_radius_mm: float = 12.70,
         w = o2 - o1
         return np.linalg.norm(w - (w @ d1) * d1) <= axis_tol_mm
 
-    lines = []                                  # [o, d, vids]
-    for o, d, vids, _ in outer:
-        for L in lines:
-            if same_line(L[0], L[1], o, d):
-                L[2] |= vids
-                break
-        else:
-            lines.append([o, d, set(vids)])
+    faces_of = {}
+    for i, (k, a) in E.items():
+        if k in ("ADVANCED_FACE", "FACE_SURFACE"):
+            try:
+                faces_of.setdefault(_refs(a[2])[0], []).append(i)
+            except (IndexError, TypeError):
+                continue
 
-    for o, d, vids in lines:
-        if len(vids) < 2:
-            out.rejected += 1
+    all_v = [i for i, (k, _) in E.items() if k == "VERTEX_POINT"]
+    out.vertices = (np.array([pt(i) for i in sorted(all_v)])
+                    if all_v else np.zeros((0, 3)))
+
+    cyls = []                                  # (radius, o, d, vids)
+    for sid, fids in faces_of.items():
+        k, a = E[sid]
+        if k != "CYLINDRICAL_SURFACE":
             continue
-        s = [float((pt(v) - o) @ d) for v in vids]
-        if max(s) - min(s) < min_length_mm:
-            out.rejected += 1
-            continue
-        p0, p1 = o + min(s) * d, o + max(s) * d
-        wall = None
-        for io, idir, _, irad in inner:
-            if same_line(o, d, io, idir):
-                wall = round(outer_radius_mm - irad, 3)
-                break
-        out.axes.append((p0, p1, wall))
+        rad = float(a[2]) * scale
+        o, d = placement(_refs(a[1])[0])
+        vids = set()
+        for f in fids:
+            vids |= face_vertices(f)
+        key = round(rad, 3)
+        out.radii_mm[key] = out.radii_mm.get(key, 0) + len(fids)
+        cyls.append((rad, o, d, vids))
+
+    if outer_radius_mm is None:
+        lo, hi = detect_range_mm
+        cand = sorted(r for r, n in out.radii_mm.items()
+                      if lo <= r <= hi and n >= 2)
+        radii = []
+        for r in cand:
+            mine = [c for c in cyls if abs(c[0] - r) <= radius_tol_mm]
+            outer_somewhere = any(
+                not any(c2[0] > r + radius_tol_mm
+                        and same_line(c[1], c[2], c2[1], c2[2])
+                        for c2 in cyls)
+                for c in mine)
+            if outer_somewhere:
+                radii.append(r)
+    elif isinstance(outer_radius_mm, (int, float)):
+        radii = [float(outer_radius_mm)]
+    else:
+        radii = [float(r) for r in outer_radius_mm]
+    out.tube_radii_mm = radii
+
+    for R in radii:
+        lines = []
+        for rad, o, d, vids in cyls:
+            if abs(rad - R) > radius_tol_mm:
+                continue
+            for L in lines:
+                if same_line(L[0], L[1], o, d):
+                    L[2] |= vids
+                    break
+            else:
+                lines.append([o, d, set(vids)])
+        for o, d, vids in lines:
+            if len(vids) < 2:
+                out.rejected += 1
+                continue
+            sproj = [float((pt(v) - o) @ d) for v in vids]
+            if max(sproj) - min(sproj) < min_length_mm:
+                out.rejected += 1
+                continue
+            p0, p1 = o + min(sproj) * d, o + max(sproj) * d
+            wall, best = None, -1.0
+            for rad, io, idir, _ in cyls:
+                if best < rad < R - radius_tol_mm and \
+                        same_line(o, d, io, idir):
+                    best = rad
+                    wall = round(R - rad, 3)
+            out.axes.append((p0, p1, wall))
+            out.od_mm.append(round(2 * R, 3))
 
     for sid, fids in faces_of.items():
         k, a = E[sid]
         if k != "TOROIDAL_SURFACE":
             continue
-        major, minor = float(a[2]), float(a[3])
-        if abs(minor - outer_radius_mm) > radius_tol_mm:
+        major, minor = float(a[2]) * scale, float(a[3]) * scale
+        if not any(abs(minor - R) <= radius_tol_mm for R in radii):
             continue
         c, ax = placement(_refs(a[1])[0])
         vids = set()
@@ -281,8 +320,8 @@ def parse_step_tubes(text: str, outer_radius_mm: float = 12.70,
         ref /= np.linalg.norm(ref)
         ref2 = np.cross(ax, ref)
         angs = []
-        for v in vids:
-            w = pt(v) - c
+        for vid in vids:
+            w = pt(vid) - c
             w = w - (w @ ax) * ax
             if np.linalg.norm(w) > 1e-9:
                 angs.append(math.atan2(w @ ref2, w @ ref))
@@ -291,9 +330,33 @@ def parse_step_tubes(text: str, outer_radius_mm: float = 12.70,
         angs = sorted(set(round(x, 9) for x in angs))
         gaps = [angs[i + 1] - angs[i] for i in range(len(angs) - 1)]
         gaps.append(2 * math.pi - (angs[-1] - angs[0]))
-        span = 2 * math.pi - max(gaps)
-        out.bends.append((major, math.degrees(span)))
+        out.bends.append((major, math.degrees(2 * math.pi - max(gaps))))
     return out
+
+
+def frame_graph_from_step(res: StepTubes, cluster_tol_mm: float = 20.0):
+    """FrameGraph (node coordinates in mm, CAD axes) from recovered tubes:
+    ends clustered within ``cluster_tol_mm`` (mm) become nodes, and each
+    tube keeps its own OD and wall (mm) as a size-table entry."""
+    from .tubeframe import FrameGraph, TubeSpec as FrameTubeSpec
+    sizes = {}
+    for od, (_, _, w) in zip(res.od_mm, res.axes):
+        key = f"STEP {od:g}x{(w if w is not None else 0):g}"
+        sizes[key] = FrameTubeSpec(key, float(od),
+                                   float(w) if w is not None else 0.0)
+    g = FrameGraph(size_table=sizes or None)
+    if not res.axes:
+        return g
+    ends = np.array([q for a, b, _ in res.axes for q in (a, b)])
+    _, lab = _cluster_count(ends, float(cluster_tol_mm))
+    for l in sorted(set(lab.tolist())):
+        g.add_node(f"N{l}", tuple(ends[lab == l].mean(axis=0)))
+    for i, (od, (_, _, w)) in enumerate(zip(res.od_mm, res.axes)):
+        a, b = f"N{lab[2 * i]}", f"N{lab[2 * i + 1]}"
+        if a != b:
+            key = f"STEP {od:g}x{(w if w is not None else 0):g}"
+            g.add_tube(f"T{i + 1:02d}", a, b, size=key)
+    return g
 
 
 def _cluster_count(points: np.ndarray, tol_mm: float) -> tuple[int, np.ndarray]:
@@ -320,7 +383,7 @@ def _cluster_count(points: np.ndarray, tol_mm: float) -> tuple[int, np.ndarray]:
 
 def frame_stats(axes, bends=(), cluster_tols_mm=(20, 30, 37, 40, 50),
                 vertices=None, outer_radius_mm: float = 12.70,
-                small_radii_mm=()) -> dict:
+                small_radii_mm=(), od_mm=None) -> dict:
     """Frame summary from tube axes (mm) and bends (major mm, angle deg).
 
     Returns tube count, straight run (m), bend arc (m), total (m), node count
@@ -342,17 +405,23 @@ def frame_stats(axes, bends=(), cluster_tols_mm=(20, 30, 37, 40, 50),
                   for i in range(len(p)))
         nodes[float(tol)] = {"nodes": cnt, "node_to_node_m": n2n / 1000.0}
     walls = {}
-    for a in axes:
+    sizes = {}
+    for i, a in enumerate(axes):
         w = a[2] if len(a) > 2 else None
         walls[w] = walls.get(w, 0) + 1
+        if od_mm:
+            k = (float(od_mm[i]), w)
+            sizes[k] = sizes.get(k, 0) + 1
     out = {"tubes": len(p), "straight_m": straight / 1000.0,
            "bends": len(bends), "bend_arc_m": arc / 1000.0,
            "total_m": (straight + arc) / 1000.0, "nodes": nodes,
-           "walls_mm": walls}
+           "walls_mm": walls, "sizes_mm": sizes}
     if vertices is not None and len(vertices):
         V = np.asarray(vertices, float)
         inside = np.zeros(len(V), bool)
-        for a, b in p:
+        radii = ([0.5 * float(x) for x in od_mm] if od_mm
+                 else [outer_radius_mm] * len(p))
+        for (a, b), rad in zip(p, radii):
             d = b - a
             L = np.linalg.norm(d)
             if L < 1e-9:
@@ -361,7 +430,7 @@ def frame_stats(axes, bends=(), cluster_tols_mm=(20, 30, 37, 40, 50),
             s = (V - a) @ u
             perp = np.linalg.norm((V - a) - np.outer(s, u), axis=1)
             inside |= (s >= -1e-6) & (s <= L + 1e-6) & \
-                (perp <= outer_radius_mm + 1e-3)
+                (perp <= rad + 1e-3)
         out["vertices"] = {"total": int(len(V)),
                            "in_tube_envelope": int(inside.sum()),
                            "outside_envelopes": int((~inside).sum())}
@@ -582,3 +651,140 @@ def ball_joint_envelope(hp: Hardpoints, max_offset_mm: float = 115.0) -> dict:
     return {"upper_above_wc_mm": up, "lower_below_wc_mm": -lo,
             "max_offset_mm": max_offset_mm,
             "inside": abs(up) <= max_offset_mm and abs(lo) <= max_offset_mm}
+
+
+# =========================================================================== #
+#  Design review — the checks a reviewer asks about, in one table
+# =========================================================================== #
+#: Starting ranges only (typical FSAE practice). Every team should edit them;
+#: the UI exposes this table for exactly that.
+DEFAULT_REVIEW_LIMITS = [
+    {"key": "caster_deg", "check": "Caster", "unit": "deg", "lo": 2.0, "hi": 8.0,
+     "why": "Sets self-centring and steering weight; negative caster makes the "
+            "car wander.",
+     "fix": "Move the upper ball joint rearward relative to the lower (or bound "
+            "the outboard x-coordinates)."},
+    {"key": "kpi_deg", "check": "Kingpin inclination", "unit": "deg",
+     "lo": 0.0, "hi": 10.0,
+     "why": "High KPI adds camber loss with steer and jacking.",
+     "fix": "Move the upper ball joint outboard or the lower inboard."},
+    {"key": "scrub_mm", "check": "Scrub radius", "unit": "mm", "lo": -5.0,
+     "hi": 30.0,
+     "why": "Large scrub feeds braking and bump forces into the steering.",
+     "fix": "Move the kingpin axis toward the contact patch (upright/offset)."},
+    {"key": "camber_gain_deg_per_mm", "check": "Camber gain", "unit": "deg/mm",
+     "lo": -0.08, "hi": -0.005,
+     "why": "Negative gain keeps the outside tyre upright as the body rolls.",
+     "fix": "Make the upper arm shorter or more inclined than the lower."},
+    {"key": "bump_steer_abs", "check": "Bump steer (magnitude)",
+     "unit": "deg/mm", "lo": 0.0, "hi": 0.01,
+     "why": "Toe change over bumps makes the car dart and costs tyre life.",
+     "fix": "Put the tie-rod inner on the line of the wishbone instant axis."},
+    {"key": "toe_change_deg", "check": "Toe change over travel",
+     "unit": "deg", "lo": 0.0, "hi": 0.10,
+     "why": "The whole-travel toe range the driver feels.",
+     "fix": "Tie-rod inner height and length (see bump steer)."},
+    {"key": "rc_height_mm", "check": "Roll-centre height", "unit": "mm",
+     "lo": 0.0, "hi": 100.0,
+     "why": "Sets how much lateral load goes through the links vs the springs.",
+     "fix": "Change the front-view angle of the arms."},
+    {"key": "rc_migration_abs", "check": "Roll-centre migration (magnitude)",
+     "unit": "mm/mm", "lo": 0.0, "hi": 1.0,
+     "why": "A roll centre that moves a lot makes the balance change "
+            "mid-corner. Not a solver channel — nothing bounds it unless you do.",
+     "fix": "Tighten the RC-height band or make the arms more parallel."},
+    {"key": "anti_pct", "check": "Anti-dive / anti-squat", "unit": "%",
+     "lo": 0.0, "hi": 50.0,
+     "why": "Too much stiffens the car in braking/drive; negative adds "
+            "pitch.",
+     "fix": "Tilt the wishbone pivot axes in side view."},
+    {"key": "joints_in_rim", "check": "Ball joints inside the rim", "unit": "",
+     "lo": 1.0, "hi": 1.0,
+     "why": "The solver has no wheel: a joint outside the rim is unbuildable.",
+     "fix": "Move the ball joints toward the wheel centre."},
+    {"key": "worst_fos", "check": "Worst link factor of safety", "unit": "",
+     "lo": 1.5, "hi": 1e9,
+     "why": "Below this a link can yield or buckle in the screened cases.",
+     "fix": "Bigger tube, shorter link, or reduce the governing load."},
+    {"key": "steering_ratio_needed", "check": "Steering ratio needed for the "
+     "torque target", "unit": ":1", "lo": 0.0, "hi": 6.0,
+     "why": "Above ~6:1 the steering is slow; the torque target then needs "
+            "less caster/trail or assistance.",
+     "fix": "Reduce caster (trail) or scrub, or accept a slower rack."},
+    {"key": "stroke_used", "check": "Damper stroke used", "unit": "fraction",
+     "lo": 0.0, "hi": 0.8,
+     "why": "Leave stroke for kerbs and bottoming protection.",
+     "fix": "Lower the motion ratio or use a longer-stroke damper."},
+    {"key": "mr_solved", "check": "Motion ratio solved from a linkage",
+     "unit": "", "lo": 1.0, "hi": 1.0,
+     "why": "An assumed motion ratio makes every roll-stiffness number "
+            "provisional.",
+     "fix": "Add pushrod and rocker points to the corner."},
+    {"key": "toe_band_share", "check": "Compliance steer, share of toe band",
+     "unit": "fraction", "lo": 0.0, "hi": 0.5,
+     "why": "Deflection under load uses the same band as build scatter.",
+     "fix": "Stiffer tie rod / brackets, or a wider toe band."},
+    {"key": "wheelbase_margin_mm", "check": "Wheelbase margin to rules",
+     "unit": "mm", "lo": 0.0, "hi": 1e9,
+     "why": "Below the rules minimum the car is not legal.",
+     "fix": "Move the axle stations apart."},
+    {"key": "ground_clearance_mm", "check": "Static clearance under frame",
+     "unit": "mm", "lo": 25.0, "hi": 1e9,
+     "why": "Too little clearance and the frame strikes over kerbs.",
+     "fix": "Raise ride height (ground plane) or the lowest member."},
+]
+
+
+def design_review(values: dict, limits=None, margin: float = 0.10) -> list:
+    """Compare each available value (units as named in the limit rows: deg,
+    mm, deg/mm, %, dimensionless fractions) with its range.
+
+    Status is "pass" inside [lo, hi], "watch" outside by at most ``margin``
+    of the span (or of the bound for one-sided ranges), "fail" beyond, and
+    "n/a" when the value is missing. Boolean checks use lo = hi = 1.
+    """
+    out = []
+    for lim in (limits if limits is not None else DEFAULT_REVIEW_LIMITS):
+        k = lim["key"]
+        v = values.get(k)
+        row = dict(lim)
+        row["value"] = v
+        if v is None or (isinstance(v, float) and math.isnan(v)):
+            row["status"] = "n/a"
+            out.append(row)
+            continue
+        v = float(v)
+        lo, hi = float(lim["lo"]), float(lim["hi"])
+        if lo <= v <= hi:
+            row["status"] = "pass"
+        elif lo == hi:
+            row["status"] = "fail"
+        else:
+            finite = [b for b in (lo, hi) if abs(b) < 1e8]
+            span = (hi - lo) if len(finite) == 2 else max(abs(finite[0]), 1.0)
+            miss = (lo - v) if v < lo else (v - hi)
+            row["status"] = "watch" if miss <= margin * span else "fail"
+        out.append(row)
+    return out
+
+
+def declared_mr_summary(mr_droop: float, mr_static: float, mr_bump: float,
+                        spring_rate_N_mm: float | None = None,
+                        sprung_corner_mass_kg: float | None = None) -> dict:
+    """Actuation summary from a DECLARED motion-ratio curve (dimensionless,
+    at full droop / ride height / full bump) when no rocker is defined:
+    rate character, motion-ratio and wheel-rate spread (%), and — given coil
+    rate (N/mm) and sprung corner mass (kg) — ride frequency (Hz) at each."""
+    mr = [float(mr_droop), float(mr_static), float(mr_bump)]
+    wr = [m ** 2 for m in mr]
+    out = {"mr_droop": mr[0], "mr_static": mr[1], "mr_bump": mr[2],
+           "rate_character": ("rising" if mr[2] > mr[1] > mr[0]
+                              else "falling" if mr[2] < mr[1] < mr[0]
+                              else "peaks/dips at ride height"),
+           "mr_spread_pct": 100 * (max(mr) - min(mr)) / min(mr),
+           "wheel_rate_spread_pct": 100 * (max(wr) - min(wr)) / min(wr)}
+    if spring_rate_N_mm and sprung_corner_mass_kg:
+        f = [ride_frequency_hz(spring_rate_N_mm, m, sprung_corner_mass_kg)
+             for m in mr]
+        out.update(ride_hz_droop=f[0], ride_hz_static=f[1], ride_hz_bump=f[2])
+    return out
