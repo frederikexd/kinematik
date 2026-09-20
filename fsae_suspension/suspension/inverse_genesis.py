@@ -258,21 +258,28 @@ class GenesisTargets:
 
     # ---- residual layout: one row per (channel, station) ------------------ #
     def rows(self) -> list[tuple[str, float]]:
+        """Returns (channel, travel) pairs with travel in mm."""
         return [(c.channel, float(t)) for c in self.curves
                 for t in c.travel_mm]
 
     def stations(self) -> np.ndarray:
+        """Travel stations in mm."""
         return np.unique(np.concatenate([c.travel_mm for c in self.curves]))
 
     def target_vec(self) -> np.ndarray:
+        """Target values in deg or mm, channel-native units."""
         return np.concatenate([c.target for c in self.curves])
 
     def band_vec(self) -> np.ndarray:
+        """Acceptance half-widths in deg or mm, channel-native units."""
         return np.concatenate([c.band for c in self.curves])
 
     def residual(self, hp: Hardpoints) -> tuple[np.ndarray, bool]:
         """Band-weighted residual r: |r_i| ≤ 1 means station i is inside its
-        band. NaNs (with ok=False) when the geometry doesn't solve."""
+        band. NaNs (with ok=False) when the geometry doesn't solve.
+
+        Rows normalised by their band, so the result is dimensionless.
+        """
         vals, ok = curves_of(hp, self.stations(), track_mm=self.track_mm)
         if not ok:
             return np.full(len(self.rows()), np.nan), False
@@ -283,6 +290,7 @@ class GenesisTargets:
         return np.concatenate(parts), True
 
     def row_labels(self) -> list[str]:
+        """Labels carry the channel unit and the station in mm."""
         return [f"{_CHANNEL_LABELS[ch]} @ {t:+.1f} mm" for ch, t in self.rows()]
 
 
@@ -310,6 +318,7 @@ class KeepOutBox:
                              "on every axis.")
 
     def clearances(self, points, probe_radius_mm: float = 0.0) -> np.ndarray:
+        """Signed skin clearance in mm, positive clear and negative penetrating."""
         pts = np.asarray(points, float)
         if pts.ndim == 1:
             pts = pts[None, :]
@@ -354,6 +363,7 @@ class PointSpacing:
             self.label = f"spacing {rel} >= {self.min_gap_mm:g} mm"
 
     def gap(self, hp: Hardpoints) -> float:
+        """Signed gap in mm along the declared axis."""
         pa = np.asarray(getattr(hp, self.a), float)
         pb = np.asarray(getattr(hp, self.b), float)
         if self.axis == "dist":
@@ -450,6 +460,8 @@ class PropertyBound:
         A non-finite property is reported as a violation of -inf rather than
         quietly passing, because "this geometry has no side-view instant
         centre" is not the same as "this geometry meets your anti-squat".
+
+        Units follow the bound: mm/mm for migration, deg for angles, percent for anti-effects.
         """
         v = float(value)
         if not np.isfinite(v):
@@ -465,6 +477,8 @@ def properties_of(hp: Hardpoints, ctx: "SolvedPropertyBounds",
     ``only`` restricts the evaluation to the named properties; the default is
     the set actually bounded by ``ctx``, which is what keeps this affordable
     inside the search loop.
+
+    Lengths in mm, angles in deg, anti-effects in dimensionless percent.
     """
     want = set(only) if only is not None else ctx.needed()
     if not want:
@@ -549,13 +563,18 @@ class SolvedPropertyBounds:
         self.travel_mm = (lo, hi)
 
     def needed(self) -> set[str]:
+        """Returns property-name strings; dimensionless keys, not measurements."""
         return {b.prop for b in self.bounds}
 
     def evaluate(self, hp: Hardpoints) -> dict[str, float] | None:
+        """Values in mm, deg or percent depending on the property."""
         return properties_of(hp, self)
 
     def violations(self, hp: Hardpoints) -> list[tuple[str, str, float]]:
-        """(property, bound label, margin) for every violated bound."""
+        """(property, bound label, margin) for every violated bound.
+
+        Margin in mm/mm, deg or percent depending on the property.
+        """
         if not self.bounds:
             return []
         vals = self.evaluate(hp)
@@ -622,7 +641,10 @@ class LegalVolume:
     def around(hp: Hardpoints, half_mm: dict[str, float] | float,
                points: Sequence[str] | None = None,
                **kw) -> LegalVolume:
-        """Boxes of ± half_mm around the nominal — the common declaration."""
+        """Boxes of ± half_mm around the nominal — the common declaration.
+
+        half_mm is the box half-width in mm.
+        """
         if points is None:
             points = list(half_mm) if isinstance(half_mm, dict) \
                 else list(DESIGNABLE_POINTS)
@@ -636,16 +658,22 @@ class LegalVolume:
 
     # ---- coordinate bookkeeping ------------------------------------------- #
     def points(self) -> list[str]:
+        """Returns hardpoint-name strings; dimensionless keys, not measurements."""
         return sorted(self.boxes)
 
     def coords(self) -> list[tuple[str, int]]:
+        """Returns (point name, axis index) pairs; dimensionless indices, not measurements."""
         return [(p, a) for p in self.points() for a in range(3)]
 
     def coord_labels(self) -> list[str]:
+        """Labels name a coordinate measured in mm."""
         return [f"{p}.{_AXES[a]}" for p, a in self.coords()]
 
     def bounds_vec(self, hp: Hardpoints) -> tuple[np.ndarray, np.ndarray]:
-        """Shift bounds (lo, hi) per flattened coordinate, RELATIVE to hp."""
+        """Shift bounds (lo, hi) per flattened coordinate, RELATIVE to hp.
+
+        Shift bounds in mm, relative to hp.
+        """
         lo, hi = [], []
         for p in self.points():
             c = np.asarray(getattr(hp, p), float)
@@ -656,7 +684,10 @@ class LegalVolume:
 
     def clamp(self, hp: Hardpoints, shift: np.ndarray
               ) -> tuple[np.ndarray, list[str]]:
-        """Clamp a flattened shift into the boxes; name clamped coordinates."""
+        """Clamp a flattened shift into the boxes; name clamped coordinates.
+
+        Shift in mm.
+        """
         lo, hi = self.bounds_vec(hp)
         clamped = [lab for lab, s, l, h in
                    zip(self.coord_labels(), shift, lo, hi)
@@ -665,7 +696,10 @@ class LegalVolume:
 
     def keepout_violations(self, hp: Hardpoints
                            ) -> list[tuple[str, str, float]]:
-        """(point, obstacle label, clearance) for every filtered violation."""
+        """(point, obstacle label, clearance) for every filtered violation.
+
+        Clearance in mm.
+        """
         out: list[tuple[str, str, float]] = []
         pts = np.array([np.asarray(getattr(hp, p), float)
                         for p in self.points()])
@@ -695,13 +729,18 @@ class LegalVolume:
         because a pickup sits inside the exhaust and a step refused because
         the corner would deliver -51% anti-squat are different facts about
         the design, and the report has to be able to say which happened.
+
+        Margin in mm/mm, deg or percent depending on the property.
         """
         if not self.has_property_bounds():
             return []
         return self.properties.violations(hp)
 
     def evaluate_properties(self, hp: Hardpoints) -> dict[str, float] | None:
-        """Solved properties of one geometry, or None when none are bounded."""
+        """Solved properties of one geometry, or None when none are bounded.
+
+        Values in mm, deg or percent depending on the property.
+        """
         if self.properties is None or not self.properties.bounds:
             return None
         return self.properties.evaluate(hp)
@@ -781,6 +820,8 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
     declared solved-property bound (raise λ and retry — the filter is a
     constraint, not a penalty), accept on cost decrease. Deterministic: no
     randomness anywhere in this function.
+
+    Coordinates in mm; camber, toe and caster in deg; roll-centre height and scrub in mm.
     """
     coords = volume.coords()
     x, _ = volume.clamp(hp, np.zeros(len(coords))
@@ -968,6 +1009,8 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
     yield it forfeited is printed as the resilience premium. With no field
     declared, the engine degrades honestly to pure inverse kinematics and
     says the buildability question went unasked.
+
+    Hardpoint coordinates in mm; channels in deg or mm; build yield dimensionless.
     """
     th = thresholds or GenesisThresholds()
     warnings: list[str] = []
