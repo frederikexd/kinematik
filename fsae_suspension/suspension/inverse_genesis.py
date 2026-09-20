@@ -29,13 +29,22 @@ the fixed anchor and pulls the coordinates into alignment. Three stages:
 
   1. THE PHYSICS-INFORMED BOUNDARY FILTER — candidates are never free points
      in space. Every step of the search is clamped to the declared per-point
-     legal boxes, and every accepted geometry is screened against keep-out
+     legal boxes; every accepted geometry is screened against keep-out
      volumes queried through the exact Phantom Envelope capsule arithmetic
      (any object exposing ``clearances(points, probe_radius_mm)`` works: a
      carved PhantomEnvelope of a neighbouring assembly, or the KeepOutBox
      declared here for "the header lives in this box"). A coordinate that
      hits the curves from inside an exhaust primary is not a solution; the
-     filter makes it unrepresentable rather than merely penalised.
+     filter makes it unrepresentable rather than merely penalised. The
+     same wall carries SOLVED-PROPERTY BOUNDS (``PropertyBound``): anti-dive,
+     anti-squat, roll-centre migration rate, caster, kingpin inclination and
+     static scrub are evaluated on every trial geometry, and a step that
+     leaves a declared range is refused exactly as a keep-out violation is.
+     This is the difference between a search that steers around a bound and
+     a screen that discards candidates afterwards: a screen can only tell
+     you that no candidate it happened to produce survived, while a bound
+     inside the loop lets the solver walk the feasible boundary and report
+     honestly when there is nothing behind it.
 
   2. THE DETERMINISTIC REVERSE GRADIENTS — the inverse solve itself. Each
      iteration builds the Jacobian of the band-weighted curve residual with
@@ -96,6 +105,13 @@ SCOPE, HONESTLY
   being designed. Stated here and in the report footer.
 * The error field is Stochastic Inversion's, with its scope: independent
   per-point errors, build-to-fit links.
+* Solved-property bounds are evaluated at the STATIC state (and, for
+  roll-centre migration, as the least-squares slope of roll-centre height
+  over the declared travel range). They therefore bound the property as the
+  nominal geometry delivers it, not as every as-built car delivers it; the
+  build-yield stage still prices only the declared curve channels. Bounding
+  a property costs solver time — each trial geometry pays one extra short
+  sweep — so only the properties actually bounded are computed.
 * Deterministic end to end: fixed seeds drive the multi-start sampler and
   the yield sampler, so the same inputs give byte-identical geometry,
   yields and markdown.
@@ -350,6 +366,210 @@ PERTURBABLE_OR_FIXED: tuple[str, ...] = DESIGNABLE_POINTS + (
     "wheel_center", "contact_patch")
 
 
+# --------------------------------------------------------------------------- #
+#  Solved-property bounds — the properties the curve channels do not carry.
+# --------------------------------------------------------------------------- #
+#  A channel is a curve the engineer draws. A solved property is a number the
+#  geometry happens to produce. Anti-squat, roll-centre migration and caster
+#  are all in the second class, and an inverse solver is indifferent to any
+#  property it is not told about: it will happily return a corner that hits
+#  every drawn curve with -5 deg of caster, -102% anti-squat, or a roll centre
+#  that runs away under heave. Declaring a PropertyBound moves that property
+#  onto the same wall as the keep-out volumes.
+SOLVED_PROPERTIES: tuple[str, ...] = (
+    "anti_dive_pct",           # front, at the static state, %
+    "anti_squat_pct",          # rear, at the static state, %
+    "caster_deg",              # static caster angle, deg
+    "kpi_deg",                 # static kingpin inclination, deg
+    "scrub_static_mm",         # static scrub radius, mm
+    "rc_migration_mm_per_mm",  # d(roll-centre height)/d(travel), chassis frame
+)
+
+_PROPERTY_LABELS = {
+    "anti_dive_pct":          "anti-dive (%)",
+    "anti_squat_pct":         "anti-squat (%)",
+    "caster_deg":             "caster (deg)",
+    "kpi_deg":                "kingpin inclination (deg)",
+    "scrub_static_mm":        "scrub radius, static (mm)",
+    "rc_migration_mm_per_mm": "roll-centre migration (mm/mm)",
+}
+
+#: properties that need the (more expensive) side-view path slope
+_PITCH_PROPERTIES = frozenset({"anti_dive_pct", "anti_squat_pct"})
+
+#: how many random shifts to draw per requested start when hunting for one
+#: that already satisfies the declared property bounds
+_MAX_START_DRAWS_PER_START = 40
+
+
+@dataclass
+class PropertyBound:
+    """A declared range on a SOLVED property — a wall, not a penalty.
+
+    ``lo``/``hi`` are inclusive; either may be left at infinity for a
+    one-sided bound. A trial geometry whose property falls outside the range,
+    or whose property is not finite (a side-view instant centre at infinity,
+    a degenerate front-view IC), refuses the step exactly as a keep-out
+    violation does.
+
+    Declaring only a lower bound is the common mistake and the module says so
+    rather than silently allowing it: ``PropertyBound("anti_squat_pct",
+    lo=23.0)`` lets the solver walk to +116% because nothing stops it. Bound
+    the band you actually want.
+    """
+    prop: str
+    lo: float = float("-inf")
+    hi: float = float("inf")
+    label: str = ""
+
+    def __post_init__(self):
+        if self.prop not in SOLVED_PROPERTIES:
+            raise ValueError(
+                f"PropertyBound: unknown property '{self.prop}'. Allowed: "
+                f"{', '.join(SOLVED_PROPERTIES)}.")
+        self.lo = float(self.lo)
+        self.hi = float(self.hi)
+        if self.hi < self.lo:
+            raise ValueError(f"PropertyBound '{self.prop}': hi < lo.")
+        if self.lo == float("-inf") and self.hi == float("inf"):
+            raise ValueError(
+                f"PropertyBound '{self.prop}': declare at least one side; an "
+                "unbounded bound is not a constraint.")
+        if not self.label:
+            name = _PROPERTY_LABELS[self.prop]
+            if self.lo == float("-inf"):
+                self.label = f"{name} <= {self.hi:g}"
+            elif self.hi == float("inf"):
+                self.label = f"{name} >= {self.lo:g}"
+            else:
+                self.label = f"{self.lo:g} <= {name} <= {self.hi:g}"
+
+    def margin(self, value: float) -> float:
+        """Signed slack: >= 0 satisfied, < 0 by how much it is violated.
+
+        A non-finite property is reported as a violation of -inf rather than
+        quietly passing, because "this geometry has no side-view instant
+        centre" is not the same as "this geometry meets your anti-squat".
+        """
+        v = float(value)
+        if not np.isfinite(v):
+            return float("-inf")
+        return float(min(v - self.lo, self.hi - v))
+
+
+def properties_of(hp: Hardpoints, ctx: "SolvedPropertyBounds",
+                  only: Sequence[str] | None = None
+                  ) -> dict[str, float] | None:
+    """Every solved property of one geometry, or None if it does not solve.
+
+    ``only`` restricts the evaluation to the named properties; the default is
+    the set actually bounded by ``ctx``, which is what keeps this affordable
+    inside the search loop.
+    """
+    want = set(only) if only is not None else ctx.needed()
+    if not want:
+        return {}
+    lo, hi = float(ctx.travel_mm[0]), float(ctx.travel_mm[1])
+    n = max(3, int(ctx.n_nodes))
+    try:
+        kin = SuspensionKinematics(hp)
+        states = kin.sweep(travel_min=lo, travel_max=hi, n=n)
+    except Exception:
+        return None
+    if not states or any(not getattr(st, "converged", True) for st in states):
+        return None
+
+    tr = np.array([st.travel for st in states], float)
+    i0 = int(np.argmin(np.abs(tr)))
+    s0 = states[i0]
+
+    out: dict[str, float] = {}
+    if "caster_deg" in want:
+        out["caster_deg"] = float(s0.caster)
+    if "kpi_deg" in want:
+        out["kpi_deg"] = float(s0.kpi)
+    if "scrub_static_mm" in want:
+        out["scrub_static_mm"] = float(s0.scrub_radius)
+    if "rc_migration_mm_per_mm" in want:
+        rc = np.array([_rc_height_mm(st, track_mm=ctx.track_mm)
+                       for st in states], float)
+        if np.all(np.isfinite(rc)) and np.ptp(tr) > 1e-9:
+            A = np.vstack([tr, np.ones_like(tr)]).T
+            out["rc_migration_mm_per_mm"] = float(
+                np.linalg.lstsq(A, rc, rcond=None)[0][0])
+        else:
+            out["rc_migration_mm_per_mm"] = float("nan")
+    if want & _PITCH_PROPERTIES:
+        try:
+            if "anti_dive_pct" in want:
+                out["anti_dive_pct"] = float(kin.anti_dive_pct(
+                    ctx.cg_height_mm, ctx.wheelbase_mm,
+                    ctx.brake_bias_front, state=s0))
+            if "anti_squat_pct" in want:
+                out["anti_squat_pct"] = float(kin.anti_squat_pct(
+                    ctx.cg_height_mm, ctx.wheelbase_mm,
+                    ctx.drive_bias_rear, state=s0))
+        except Exception:
+            return None
+    return out
+
+
+@dataclass
+class SolvedPropertyBounds:
+    """The bounds, plus the vehicle context the pitch properties need.
+
+    Anti-dive and anti-squat are not properties of the linkage alone: they
+    need the wheelbase, the CG height and the brake/drive bias. Those are
+    declared here so that a bound cannot be enforced against an undeclared
+    vehicle, and so that the same manifest that reproduces a run reproduces
+    the numbers the bound was checked against.
+    """
+    bounds: list[PropertyBound] = _dcfield(default_factory=list)
+    cg_height_mm: float = 280.0
+    wheelbase_mm: float = 1630.0
+    track_mm: float = 1200.0
+    brake_bias_front: float = 0.60
+    drive_bias_rear: float = 1.0
+    travel_mm: tuple[float, float] = (-25.0, 25.0)
+    n_nodes: int = 5
+
+    def __post_init__(self):
+        self.bounds = list(self.bounds)
+        for b in self.bounds:
+            if not isinstance(b, PropertyBound):
+                raise TypeError("SolvedPropertyBounds.bounds takes "
+                                "PropertyBound instances.")
+        for name in ("cg_height_mm", "wheelbase_mm", "track_mm"):
+            if float(getattr(self, name)) <= 0.0:
+                raise ValueError(f"SolvedPropertyBounds.{name} must be > 0.")
+        lo, hi = (float(self.travel_mm[0]), float(self.travel_mm[1]))
+        if hi <= lo:
+            raise ValueError("SolvedPropertyBounds.travel_mm must be "
+                             "(min, max) with max > min.")
+        self.travel_mm = (lo, hi)
+
+    def needed(self) -> set[str]:
+        return {b.prop for b in self.bounds}
+
+    def evaluate(self, hp: Hardpoints) -> dict[str, float] | None:
+        return properties_of(hp, self)
+
+    def violations(self, hp: Hardpoints) -> list[tuple[str, str, float]]:
+        """(property, bound label, margin) for every violated bound."""
+        if not self.bounds:
+            return []
+        vals = self.evaluate(hp)
+        if vals is None:
+            return [("(sweep)", "geometry does not solve over the bound "
+                                "evaluation range", float("-inf"))]
+        out: list[tuple[str, str, float]] = []
+        for b in self.bounds:
+            m = b.margin(vals.get(b.prop, float("nan")))
+            if m < -1e-12:
+                out.append((b.prop, b.label, m))
+        return out
+
+
 @dataclass
 class LegalVolume:
     """Where each movable hardpoint is ALLOWED to exist.
@@ -363,6 +583,13 @@ class LegalVolume:
     probe_radius_mm  : the sphere tested at each movable point (inflate to
                        cover the physical tab/bracket, not just the pickup).
     min_clearance_mm : required skin gap to every obstacle.
+    properties       : optional SolvedPropertyBounds — ranges on anti-dive,
+                       anti-squat, roll-centre migration, caster, KPI and
+                       scrub that the SEARCH enforces, refusing any step that
+                       leaves them exactly as it refuses a keep-out. None
+                       (the default) reproduces the pre-bound behaviour
+                       exactly: the properties are neither computed nor
+                       enforced and the solver pays nothing for them.
     """
     boxes: dict[str, tuple[np.ndarray, np.ndarray]]
     keep_out: list[object] = _dcfield(default_factory=list)
@@ -370,6 +597,8 @@ class LegalVolume:
     min_clearance_mm: float = 0.0
     #: relations between points (minimum wishbone base, fore/aft ordering)
     spacings: list[PointSpacing] = _dcfield(default_factory=list)
+    #: ranges on properties the curve channels do not carry
+    properties: SolvedPropertyBounds | None = None
 
     def __post_init__(self):
         if not self.boxes:
@@ -454,6 +683,29 @@ class LegalVolume:
                             float(g - sp.min_gap_mm)))
         return out
 
+    # ---- the solved-property wall ----------------------------------------- #
+    def has_property_bounds(self) -> bool:
+        return bool(self.properties is not None and self.properties.bounds)
+
+    def property_violations(self, hp: Hardpoints
+                            ) -> list[tuple[str, str, float]]:
+        """(property, bound label, margin) for every violated bound.
+
+        Kept separate from ``keepout_violations`` on purpose: a step refused
+        because a pickup sits inside the exhaust and a step refused because
+        the corner would deliver -51% anti-squat are different facts about
+        the design, and the report has to be able to say which happened.
+        """
+        if not self.has_property_bounds():
+            return []
+        return self.properties.violations(hp)
+
+    def evaluate_properties(self, hp: Hardpoints) -> dict[str, float] | None:
+        """Solved properties of one geometry, or None when none are bounded."""
+        if self.properties is None or not self.properties.bounds:
+            return None
+        return self.properties.evaluate(hp)
+
 
 # --------------------------------------------------------------------------- #
 #  Flatten / unflatten between the solver's vector and named point shifts.
@@ -506,7 +758,10 @@ class Candidate:
     worst_row: str                  # which (channel, station) governs
     iterations: int
     clamped: list[str]              # coordinates pinned to a box face
-    keepout_rejections: int         # steps the boundary filter refused
+    keepout_rejections: int         # steps the keep-out filter refused
+    # solved-property wall (empty / None when no bounds were declared):
+    property_rejections: int = 0    # steps a PropertyBound refused
+    properties: dict[str, float] | None = None
     # co-optimizer stage:
     yield_frac: float | None = None
     yield_warnings: list[str] = _dcfield(default_factory=list)
@@ -522,9 +777,10 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
 
     Levenberg-damped Gauss–Newton on the band-weighted residual: solve
     (JᵀJ + λ·diag(JᵀJ))Δx = −Jᵀr, clamp Δx into the legal boxes, reject the
-    step outright if any moved point violates a keep-out volume (raise λ and
-    retry — the filter is a constraint, not a penalty), accept on cost
-    decrease. Deterministic: no randomness anywhere in this function.
+    step outright if any moved point violates a keep-out volume OR leaves a
+    declared solved-property bound (raise λ and retry — the filter is a
+    constraint, not a penalty), accept on cost decrease. Deterministic: no
+    randomness anywhere in this function.
     """
     coords = volume.coords()
     x, _ = volume.clamp(hp, np.zeros(len(coords))
@@ -543,11 +799,20 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
                          residual=r, max_band_frac=float(np.max(np.abs(r))),
                          worst_row="(start violates a keep-out volume)",
                          iterations=0, clamped=[], keepout_rejections=1)
+    start_pvio = volume.property_violations(hp_x)
+    if start_pvio:
+        return Candidate(ok=False, hit=False, shifts={}, shift_vec=x,
+                         residual=r, max_band_frac=float(np.max(np.abs(r))),
+                         worst_row=("(start violates "
+                                    f"{start_pvio[0][1]})"),
+                         iterations=0, clamped=[], keepout_rejections=0,
+                         property_rejections=1)
 
     cost = float(r @ r)
     lam = lam0
     clamped_last: list[str] = []
     rejections = 0
+    prop_rejections = 0
     it = 0
     for it in range(1, max_iter + 1):
         if np.max(np.abs(r)) <= 1.0:        # every station inside its band
@@ -571,6 +836,10 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
             if vio:
                 rejections += 1
                 lam *= 10.0                  # shorter step, away from the wall
+                continue
+            if volume.property_violations(hp_try):
+                prop_rejections += 1
+                lam *= 10.0                  # same wall, different surface
                 continue
             r_try, ok_try = targets.residual(hp_try)
             if not ok_try:
@@ -600,6 +869,8 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
         iterations=it,
         clamped=clamped_last,
         keepout_rejections=rejections,
+        property_rejections=prop_rejections,
+        properties=volume.evaluate_properties(hp_x),
     )
 
 
@@ -676,6 +947,8 @@ class GenesisResult:
     verify_agreement: float | None
     thresholds: GenesisThresholds
     warnings: list[str]
+    #: the bounds the search enforced, echoed for the report and the manifest
+    property_bounds: SolvedPropertyBounds | None = None
 
 
 def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
@@ -709,20 +982,53 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
             candidates=[], winner=None, winner_hp=None, best_fit=None,
             resilience_premium=None, n_starts=0, seed=seed,
             verify_yield=None, verify_agreement=None, thresholds=th,
-            warnings=warnings)
+            warnings=warnings, property_bounds=volume.properties)
 
     # ---- deterministic multi-start ---------------------------------------- #
+    #  The property wall is absolute, exactly like the keep-out wall: the
+    #  search refuses a step that leaves a bound, so it cannot walk INTO the
+    #  feasible set from outside it. With bounds declared, the random starts
+    #  are therefore drawn until they are property-feasible (a bounded number
+    #  of draws, still deterministic from the seed) instead of being thrown
+    #  away by the first check. The nominal is always offered as a start; if
+    #  it violates a bound, that is reported rather than hidden, because "your
+    #  current geometry is already outside the band you just declared" is a
+    #  design answer.
     rng = np.random.default_rng(int(seed))
     lo, hi = volume.bounds_vec(hp)
     starts: list[np.ndarray] = [np.zeros(len(lo))]
-    for _ in range(max(0, int(n_starts) - 1)):
-        starts.append(rng.uniform(lo, hi))
+    want = max(0, int(n_starts) - 1)
+    if volume.has_property_bounds():
+        draws = 0
+        max_draws = max(1, want) * _MAX_START_DRAWS_PER_START
+        while len(starts) - 1 < want and draws < max_draws:
+            draws += 1
+            cand_shift = rng.uniform(lo, hi)
+            if not volume.property_violations(
+                    _shifted(hp, volume, cand_shift)):
+                starts.append(cand_shift)
+        if len(starts) - 1 < want:
+            warnings.append(
+                f"Only {len(starts) - 1} of {want} random starts landed "
+                f"inside the declared solved-property bounds after "
+                f"{draws} draws. The bounds are tight relative to the legal "
+                "volume, so the candidate field is thinner than requested "
+                "and the resilience premium is measured over fewer basins.")
+    else:
+        for _ in range(want):
+            starts.append(rng.uniform(lo, hi))
 
     cands: list[Candidate] = []
+    n_start_prop_refused = 0
+    n_start_keepout_refused = 0
     for s in starts:
         c = genesis_solve(hp, targets, volume, start_shift=s,
                           max_iter=max_iter, step_mm=step_mm)
         if not c.ok:
+            if c.property_rejections:
+                n_start_prop_refused += 1
+            elif c.keepout_rejections:
+                n_start_keepout_refused += 1
             continue
         if any(np.linalg.norm(c.shift_vec - c2.shift_vec) < 0.05
                for c2 in cands):
@@ -730,15 +1036,29 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
         cands.append(c)
 
     if not cands:
+        if n_start_prop_refused and volume.has_property_bounds():
+            names = "; ".join(b.label for b in volume.properties.bounds)
+            reason = (
+                f"No start survived the declared solved-property bounds "
+                f"({names}). {n_start_prop_refused} of {len(starts)} starts "
+                "were refused on a property, not on the curves, so the "
+                "search never moved. The wall is absolute by design — it "
+                "refuses a step out of the band, it does not walk in from "
+                "outside — so this means the bound is unreachable FROM THIS "
+                "LEGAL VOLUME with these starts, not that no geometry "
+                "anywhere satisfies it. Widen the band, move or enlarge the "
+                "boxes, or seed from a geometry that already meets the "
+                "bound. No optimum was fabricated.")
+        else:
+            reason = ("No start inside the legal volume produced a solvable "
+                      "geometry — the declared boxes reach past the solver's "
+                      "kinematic range. Shrink or move the boxes.")
         return GenesisResult(
-            ok=False,
-            reason="No start inside the legal volume produced a solvable "
-                   "geometry — the declared boxes reach past the solver's "
-                   "kinematic range. Shrink or move the boxes.",
+            ok=False, reason=reason,
             candidates=[], winner=None, winner_hp=None, best_fit=None,
             resilience_premium=None, n_starts=len(starts), seed=seed,
             verify_yield=None, verify_agreement=None, thresholds=th,
-            warnings=warnings)
+            warnings=warnings, property_bounds=volume.properties)
 
     hits = [c for c in cands if c.hit]
 
@@ -754,6 +1074,12 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
         if best.keepout_rejections:
             limit.append(f"the keep-out filter refused {best.keepout_rejections} "
                          "step(s) toward the curves")
+        if best.property_rejections:
+            names = ", ".join(b.label for b in volume.properties.bounds) \
+                if volume.has_property_bounds() else "a solved-property bound"
+            limit.append(f"a solved-property bound refused "
+                         f"{best.property_rejections} step(s) toward the "
+                         f"curves ({names})")
         if not limit:
             limit.append("the linkage itself cannot produce these curves in "
                          "this volume")
@@ -770,7 +1096,8 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
                              best_fit=best, resilience_premium=None,
                              n_starts=len(starts), seed=seed,
                              verify_yield=None, verify_agreement=None,
-                             thresholds=th, warnings=warnings)
+                             thresholds=th, warnings=warnings,
+            property_bounds=volume.properties)
 
     best_fit = min(hits, key=lambda c: c.max_band_frac)
 
@@ -795,7 +1122,8 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
             best_fit=best_fit, resilience_premium=None,
             n_starts=len(starts), seed=seed,
             verify_yield=None, verify_agreement=None,
-            thresholds=th, warnings=warnings)
+            thresholds=th, warnings=warnings,
+            property_bounds=volume.properties)
 
     # ---- the co-optimizer: price every hit for build yield ---------------- #
     for c in cands:
@@ -869,7 +1197,8 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
         best_fit=best_fit, resilience_premium=premium,
         n_starts=len(starts), seed=seed,
         verify_yield=verify_y, verify_agreement=verify_a,
-        thresholds=th, warnings=warnings)
+        thresholds=th, warnings=warnings,
+            property_bounds=volume.properties)
 
 
 # --------------------------------------------------------------------------- #
@@ -895,11 +1224,30 @@ def render_genesis_md(res: GenesisResult,
         L.append(f"- worst station: {w.max_band_frac:.2f}× band "
                  f"({w.worst_row})")
         L.append(f"- converged in {w.iterations} Gauss–Newton iterations"
-                 + (f"; boundary filter refused {w.keepout_rejections} "
-                    "step(s)" if w.keepout_rejections else ""))
+                 + (f"; keep-out filter refused {w.keepout_rejections} "
+                    "step(s)" if w.keepout_rejections else "")
+                 + (f"; solved-property bounds refused "
+                    f"{w.property_rejections} step(s)"
+                    if w.property_rejections else ""))
         if w.clamped:
             L.append(f"- pinned to the legal box: {', '.join(w.clamped)}")
         L.append("")
+        if w.properties:
+            L.append("## Solved properties, bounded inside the search")
+            L.append("| property | bound | delivered | margin |")
+            L.append("|---|---|---|---|")
+            bounds = (res.property_bounds.bounds
+                      if res.property_bounds is not None else [])
+            for b in bounds:
+                v = w.properties.get(b.prop, float("nan"))
+                m = b.margin(v)
+                L.append(f"| {_PROPERTY_LABELS[b.prop]} | {b.label} | "
+                         f"{v:.3f} | {m:+.3f} |")
+            extra = sorted(set(w.properties) - {b.prop for b in bounds})
+            for k in extra:
+                L.append(f"| {_PROPERTY_LABELS[k]} | (reported only) | "
+                         f"{w.properties[k]:.3f} | — |")
+            L.append("")
         L.append("| hardpoint | Δx (mm) | Δy (mm) | Δz (mm) |")
         L.append("|---|---|---|---|")
         for p in sorted(res.winner.shifts):
@@ -941,7 +1289,13 @@ def render_genesis_md(res: GenesisResult,
              "keep-out screening tests each movable pickup as a probe "
              "sphere, not the bracket around it — and an obstacle envelope "
              "must be carved from NEIGHBOURING assemblies, never from the "
-             "corner being designed. Validate the generated geometry in "
+             "corner being designed. "
+             + ("Solved-property bounds are enforced on every trial geometry "
+                "at the static state (migration as the least-squares slope "
+                "over the declared travel range), so they bound the nominal "
+                "corner, not every as-built one. "
+                if res.property_bounds is not None else "")
+             + "Validate the generated geometry in "
              "Ghost Topology and full simulation before manufacturing.*")
     return "\n".join(L)
 
@@ -1034,6 +1388,67 @@ if __name__ == "__main__":   # pragma: no cover
                              n_starts=3, n_yield=500, seed=0)
     assert not res_no.ok and res_no.winner is None
     print("  " + res_no.reason.split(".")[0] + ".")
+
+    print()
+    print("=== 6 · the channels do not carry anti-squat; a bound does ===")
+    wide = LegalVolume.around(
+        hp, 20.0, points=["upper_front_inner", "upper_rear_inner",
+                          "lower_front_inner", "lower_rear_inner"])
+    ctx_kw = dict(cg_height_mm=280.0, wheelbase_mm=1630.0,
+                  track_mm=1200.0, drive_bias_rear=1.0)
+    free = inverse_genesis(hp, targets, wide, fld=None, n_starts=6, seed=0)
+    probe = SolvedPropertyBounds(bounds=[], **ctx_kw)
+    spread = [properties_of(_shifted(hp, wide, c.shift_vec), probe,
+                            only=["anti_squat_pct"])["anti_squat_pct"]
+              for c in free.candidates if c.hit]
+    print(f"  {len(spread)} candidates all hit every channel at every "
+          f"station, with anti-squat from {min(spread):+.1f}% to "
+          f"{max(spread):+.1f}% — the channels never saw it")
+
+    bounded_vol = LegalVolume.around(
+        hp, 20.0, points=["upper_front_inner", "upper_rear_inner",
+                          "lower_front_inner", "lower_rear_inner"],
+        properties=SolvedPropertyBounds(
+            bounds=[PropertyBound("anti_squat_pct", lo=23.0, hi=60.0)],
+            **ctx_kw))
+    bounded = inverse_genesis(hp, targets, bounded_vol, fld=fld,
+                              n_starts=6, n_yield=1500, seed=0)
+    assert bounded.ok and bounded.winner is not None
+    for c in bounded.candidates:
+        if c.hit:
+            assert 23.0 - 1e-9 <= c.properties["anti_squat_pct"] \
+                <= 60.0 + 1e-9, "a bounded run returned an out-of-band corner"
+    print(f"  with the bound inside the search every surviving candidate "
+          f"lands in [23, 60]%; the winner delivers "
+          f"{bounded.winner.properties['anti_squat_pct']:+.1f}% at "
+          f"{bounded.winner.max_band_frac:.2f}x band and "
+          f"{bounded.winner.yield_frac:.1%} yield")
+
+    unreachable = LegalVolume.around(
+        hp, 20.0, points=["upper_front_inner", "upper_rear_inner",
+                          "lower_front_inner", "lower_rear_inner"],
+        properties=SolvedPropertyBounds(
+            bounds=[PropertyBound("rc_migration_mm_per_mm",
+                                  lo=-0.15, hi=0.15)], **ctx_kw))
+    res_un = inverse_genesis(hp, targets, unreachable, fld=fld,
+                             n_starts=6, n_yield=500, seed=0)
+    assert not res_un.ok and res_un.winner is None
+    assert "solved-property" in res_un.reason
+    print("  an unreachable bound is named as unreachable FROM THIS VOLUME, "
+          "not silently dropped and not fabricated")
+
+    print()
+    print("=== 7 · declaring no bounds changes nothing ===")
+    plain = LegalVolume.around(
+        hp, 8.0, points=["upper_front_inner", "upper_rear_inner"],
+        properties=SolvedPropertyBounds(bounds=[], **ctx_kw))
+    a = inverse_genesis(hp, targets, volume, fld=fld, n_starts=5,
+                        n_yield=3000, n_verify_full=60, seed=0)
+    b = inverse_genesis(hp, targets, plain, fld=fld, n_starts=5,
+                        n_yield=3000, n_verify_full=60, seed=0)
+    assert np.allclose(a.winner.shift_vec, b.winner.shift_vec)
+    print("  empty bounds reproduce the unbounded winner exactly ✓")
+
     print()
     print("self-test passed ✓")
 

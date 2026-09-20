@@ -1,6 +1,49 @@
 # Changelog
 
 
+## Unreleased
+
+**Solved-property bounds are enforced inside the InverseGenesis search.** An
+inverse solver is indifferent to any property it is not told about: the four
+curve channels (camber, toe, roll-centre height, scrub) never carried
+anti-squat, anti-dive, roll-centre migration rate, caster or kingpin
+inclination, so the engine would happily return a corner that hit every drawn
+curve at -5 deg of caster or -102% anti-squat. Those properties could be
+computed afterwards and the field screened, but a screen can only report that
+nothing it happened to produce survived; it cannot steer the search.
+
+`PropertyBound` and `SolvedPropertyBounds` now put them on the same wall as
+the keep-out volumes. A declared range is evaluated on every trial geometry
+and a step that leaves it is refused, raising lambda and retrying, exactly as
+a keep-out violation is refused — a constraint, not a penalty. Anti-dive and
+anti-squat need a vehicle to be meaningful, so the CG height, wheelbase and
+brake/drive bias are declared alongside the bounds and travel into the
+manifest with them.
+
+Three honesty properties are preserved rather than assumed, and are pinned by
+tests. The wall is absolute in both directions, so it refuses a step out of
+the band and does not walk in from outside it: with bounds declared the
+multi-start draws property-feasible starts (deterministically, from the same
+seed) and, when it cannot find any, the result says the bound is unreachable
+*from this legal volume* rather than unreachable full stop. A non-finite
+property — a side-view instant centre at infinity — counts as a violation,
+not as a free pass. And declaring no bounds is bit-for-bit the previous
+behaviour: nothing is computed, nothing is enforced, and the solver pays
+nothing, so every existing run reproduces exactly.
+
+Only the properties actually bounded are evaluated, which is what keeps this
+affordable inside the loop; the report gains a delivered-vs-bound-vs-margin
+table for the winner and counts property refusals separately from keep-out
+refusals, because "a pickup sits inside the exhaust" and "this corner would
+deliver -51% anti-squat" are different facts about the design.
+
+New: `suspension/inverse_genesis.py` (`PropertyBound`, `SolvedPropertyBounds`,
+`properties_of`, `SOLVED_PROPERTIES`, `LegalVolume.properties`,
+`LegalVolume.property_violations`, `Candidate.property_rejections`,
+`Candidate.properties`, `GenesisResult.property_bounds`) and
+`tests/test_inverse_genesis_property_bounds.py`.
+
+
 ## What changed in this build (`0.33.0-dual-eda`).
 
 **PCB Doctor reads three formats.** KiCad `.kicad_pcb` (v5–v10), Altium/Protel
