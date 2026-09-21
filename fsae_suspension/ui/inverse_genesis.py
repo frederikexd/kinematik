@@ -295,6 +295,15 @@ def _explain_result(st, ss, res, man):
         gov = res.best_fit.worst_row if res.best_fit else "a target"
         lines.append("**No geometry inside the boxes reached every band.** "
                      f"The closest attempt missed on *{gov}*.")
+        if res.n_starts and not res.candidates:
+            lines.append("Every start failed before the search began, which "
+                         "usually means the declaration, not the linkage, is "
+                         "the problem: targets left at defaults that this "
+                         "corner cannot reach, boxes far from the seed "
+                         "geometry, or a solved-property bound no start "
+                         "satisfies. If you meant to reproduce a published "
+                         "result, upload its manifest at the top of the tab "
+                         "instead of filling the form in.")
         lines.append("Try, in order: widen that channel's band; enlarge the "
                      "boxes of the points that control it; free one more "
                      "point; check the target is physically plausible for "
@@ -735,6 +744,36 @@ def render():
     _progress(st, ss, bar)
 
 
+def _manifest_summary(st, ig, man):
+    """One-glance summary of what a manifest will actually run."""
+    try:
+        hp, targets, volume, fld = man.objects()
+    except (ValueError, KeyError, TypeError) as e:
+        st.warning(f"Manifest loaded but could not be summarised: {e}")
+        return
+    chans = ", ".join(sorted({c.channel for c in targets.curves})) or "none"
+    pts = ", ".join(volume.points()) or "none"
+    lines = [
+        f"- **Free hardpoints:** {pts}",
+        f"- **Target channels:** {chans} over "
+        f"{len(targets.stations())} stations",
+        f"- **Keep-out volumes:** {len(volume.keep_out)} · "
+        f"spacing rules: {len(volume.spacings)}",
+        f"- **Search:** seed {man.search.seed} · {man.search.n_starts} "
+        f"starts · N = {man.search.n_yield}",
+        f"- **Tolerance field:** "
+        + (fld.provenance if fld is not None else "none declared"),
+    ]
+    if volume.has_property_bounds():
+        b = "; ".join(p.label for p in volume.properties.bounds)
+        lines.append(f"- **Solved-property bounds (enforced in the search):** "
+                     f"{b}")
+    else:
+        lines.append("- **Solved-property bounds:** none — anti-squat, "
+                     "migration and caster run free")
+    st.markdown("\n".join(lines))
+
+
 def _render_generate():
     import json
     import numpy as np
@@ -748,7 +787,21 @@ def _render_generate():
     ss = st.session_state
 
     # ================= 0 · re-run a manifest ==============================
-    with st.expander("📂 Re-run a saved manifest (reproduce a result)"):
+    #  Two ways in, and they must not be confusable: a manifest REPLACES every
+    #  form field below, so a user who uploads one and then presses the form's
+    #  own button gets a different run than the one they meant. The expander
+    #  therefore opens itself the moment a file is present and says plainly
+    #  which button does what.
+    _man_loaded = ss.get("ig_manifest_up") is not None
+    with st.expander("📂 Re-run a saved manifest — reproduce a published "
+                     "result exactly (skips every field below)",
+                     expanded=_man_loaded):
+        st.caption("A manifest carries the whole declaration: hardpoints, "
+                   "target curves, boxes, keep-outs, solved-property bounds, "
+                   "shop class and search settings. Running it ignores the "
+                   "form below entirely, so you do not have to fill anything "
+                   "in. Use this to reproduce a number from a paper or to "
+                   "re-run your own archived result on a newer build.")
         up = st.file_uploader("Genesis manifest (.json)", type=["json"],
                               key="ig_manifest_up")
         if up is not None:
@@ -759,8 +812,12 @@ def _render_generate():
                            f"KinematiK {man.kinematik_version} · "
                            + ("has recorded outputs" if man.recorded
                               else "no recorded outputs"))
+                _manifest_summary(st, ig, man)
                 if man.context:
                     st.json(man.context, expanded=False)
+                st.info("Press the button below — **not** 🧬 Generate the "
+                        "geometry further down, which runs the form instead "
+                        "and will ignore this file.")
                 if st.button("▶ Run this manifest", key="ig_manifest_run",
                              type="primary"):
                     with st.spinner("Re-running the manifest…"):
@@ -770,11 +827,18 @@ def _render_generate():
                         man.record(res)
                     ss["ig_run"] = {"manifest_json": man.to_json(),
                                     "result": res, "verify": ver,
+                                    "source": "manifest",
                                     **{k: man.context.get(k) for k in
                                        ("axle", "axle_station", "ground_y")
                                        if man.context.get(k) is not None}}
             except ValueError as e:
                 st.error(f"Manifest refused: {e}")
+
+    if _man_loaded:
+        st.warning("A manifest is loaded above. The fields below are **not** "
+                   "what it will run — use ▶ Run this manifest inside that "
+                   "section. Remove the file to go back to filling the form "
+                   "in yourself.")
 
     # ================= geometry ===========================================
     st.markdown("###### 1 · Starting geometry")
@@ -1074,8 +1138,8 @@ def _render_generate():
             ss["tf_frame"], axle_station, ground_y))
 
     # ---- bounds on properties the curve channels do not carry ------------ #
-    with st.expander("Bounds on solved properties (anti-squat, migration, "
-                     "caster)"):
+    with st.expander("⭐ Bounds on solved properties — anti-squat, "
+                     "migration, caster (the channels do NOT carry these)"):
         st.caption("The four curve channels do not carry anti-squat, "
                    "anti-dive, roll-centre migration rate, caster or kingpin "
                    "inclination, and the engine is indifferent to any "
@@ -1198,14 +1262,27 @@ def _render_generate():
                                      0.01, key="ig_thv"))
     name = st.text_input("Run name", f"{axle}_corner", help=_HELP["ig_name"], key="ig_name")
 
-    if st.button("🧬 Generate the geometry", key="ig_run_btn",
-                 type="primary"):
+    # A run started here uses the form, never an uploaded manifest. Say so on
+    # the control itself rather than only in the section above, because this
+    # is the button a user reaches by scrolling.
+    st.caption("🧬 Generate runs **the fields on this page**. To reproduce a "
+               "published result instead, use *Re-run a saved manifest* at "
+               "the top of the tab.")
+    if pbounds:
+        st.caption("Enforcing inside the search: "
+                   + "; ".join(p.label for p in pbounds))
+    if st.button("🧬 Generate the geometry (from the fields above)",
+                 key="ig_run_btn", type="primary",
+                 disabled=_man_loaded,
+                 help="Disabled while a manifest is loaded, so an uploaded "
+                      "result cannot be silently replaced by a form run."
+                      if _man_loaded else None):
         search = gr.SearchSettings(seed=seed, n_starts=n_starts,
                                    n_yield=n_yield, n_verify_full=n_verify,
                                    max_iter=max_iter, step_mm=step,
                                    resilient_yield=th_r, tempered_yield=th_t,
                                    verify_agreement=th_v)
-        ctx = {"axle": axle, "geometry_source": src}
+        ctx = {"axle": axle, "geometry_source": src, "entered": "form"}
         if axle_station is not None:
             ctx.update(axle_station=axle_station, ground_y=ground_y)
         if overrides:
