@@ -5,6 +5,7 @@
 # ============================================================================
 
 """Tests for the weight budget, decision log, persistence, and report."""
+import pytest
 import os, sys, tempfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from suspension import project as pj
@@ -293,3 +294,46 @@ if __name__ == "__main__":
         except AssertionError as e:
             print(f"  FAIL  {fn.__name__}: {e}")
     print(f"\n{p}/{len(fns)} project tests passed")
+
+
+# ============================================================================
+#  Wide markdown tables must not break the PDF build
+# ============================================================================
+def _md_table(ncols: int, nrows: int = 6, long_col: int | None = None) -> str:
+    """A markdown table with `ncols` columns; cell(0,0) is a one-char '#'."""
+    hdr = "| " + " | ".join(["#"] + [f"col{i}" for i in range(1, ncols)]) + " |"
+    sep = "|" + "|".join(["---"] * ncols) + "|"
+    body = []
+    for r in range(nrows):
+        cells = []
+        for c in range(ncols):
+            if c == long_col:
+                cells.append("a very long descriptive cell that has to wrap "
+                             "instead of overflowing the frame")
+            else:
+                cells.append(str(r) if c == 0 else f"{r}.{c}")
+        body.append("| " + " | ".join(cells) + " |")
+    return "\n".join([hdr, sep] + body)
+
+
+@pytest.mark.parametrize("ncols", [3, 7, 10, 14, 24])
+def test_wide_tables_build_a_pdf(tmp_path, ncols):
+    """Reportlab refuses the whole document if a column is narrower than its
+    own padding — 'flowable given negative availWidth'. A 10-column results
+    table with a one-character first column used to trigger exactly that.
+    """
+    from suspension import project as pj
+
+    out = tmp_path / f"wide_{ncols}.pdf"
+    pj.render_pdf("# Wide table\n\n" + _md_table(ncols) + "\n", str(out))
+    assert out.exists() and out.stat().st_size > 1000
+
+
+def test_wide_table_with_one_long_column_builds(tmp_path):
+    """A long cell beside very short ones is the shape that starves them."""
+    from suspension import project as pj
+
+    out = tmp_path / "wide_long.pdf"
+    pj.render_pdf("# Wide table\n\n" + _md_table(10, long_col=1) + "\n",
+                  str(out))
+    assert out.exists() and out.stat().st_size > 1000

@@ -1542,7 +1542,16 @@ def render_pdf(markdown_text: str, out_path: str, figures=None):
             # padding is a fixed cost per column, so it eats a trivial slice of
             # a wide column and most of a narrow one — which is how a 39 pt "ID"
             # column still wrapped "0x400" onto two lines.
-            _PAD = 3.0                                   # per side, set below
+            # Padding is a fixed per-column cost, so a wide table has to buy
+            # it back before anything is left to print in. At 10 columns the
+            # old flat 3 pt per side spent 60 pt of the frame on padding and
+            # then scaled every column down to fit, which drove the narrow
+            # ones BELOW their own padding: reportlab then reports a negative
+            # availWidth and refuses to build the document at all. Padding now
+            # shrinks with the column count, and no column is ever scaled
+            # below the width its own padding needs plus one character.
+            _PAD = 3.0 if ncols <= 6 else (2.0 if ncols <= 9 else 1.0)
+            _MIN_TEXT = 6.0                    # pt of printable width, minimum
             overhead = 2 * _PAD * ncols
             widths = []
             for c in range(ncols):
@@ -1556,9 +1565,27 @@ def render_pdf(markdown_text: str, out_path: str, figures=None):
             # ~4.6 pt per character at 8 pt in a proportional face, so a column
             # never gets less room than its own longest word needs.
             colw = [2 * _PAD + max(w * 4.6, avail * w / total) for w in widths]
-            scale = _frame_w / max(sum(colw), 1e-6)
-            if scale < 1.0:                              # only ever shrink
-                colw = [w * scale for w in colw]
+            floor = 2 * _PAD + _MIN_TEXT
+            if floor * ncols > _frame_w:
+                # More columns than the page can hold even at one character
+                # each. Give every column an equal slice and let the cells
+                # wrap; a cramped table still beats no document.
+                colw = [_frame_w / ncols] * ncols
+            else:
+                # Shrink only the columns that have slack, so the scaling can
+                # never push a column under its floor. Repeat until the total
+                # fits or nothing is left to take.
+                for _ in range(8):
+                    excess = sum(colw) - _frame_w
+                    if excess <= 1e-6:
+                        break
+                    slack = sum(w - floor for w in colw if w > floor)
+                    if slack <= 1e-6:
+                        colw = [_frame_w / ncols] * ncols
+                        break
+                    take = min(1.0, excess / slack)
+                    colw = [w - (w - floor) * take if w > floor else w
+                            for w in colw]
             t = Table(rows, hAlign="LEFT", colWidths=colw)
             t.setStyle(TableStyle([
                 ("FONTSIZE", (0, 0), (-1, -1), 8),
@@ -1570,9 +1597,11 @@ def render_pdf(markdown_text: str, out_path: str, figures=None):
                 ("TOPPADDING", (0, 0), (-1, -1), 3),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
                 # Must match _PAD in the width calculation above, or narrow
-                # columns wrap despite the arithmetic saying they fit.
-                ("LEFTPADDING", (0, 0), (-1, -1), 3),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                # columns wrap despite the arithmetic saying they fit — and a
+                # column narrower than its padding makes reportlab refuse the
+                # whole document, so this tracks _PAD rather than hard-coding.
+                ("LEFTPADDING", (0, 0), (-1, -1), _PAD),
+                ("RIGHTPADDING", (0, 0), (-1, -1), _PAD),
             ]))
             flow.append(t)
             flow.append(Spacer(1, 6))
