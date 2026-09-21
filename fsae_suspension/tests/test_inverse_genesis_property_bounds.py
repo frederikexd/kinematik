@@ -311,3 +311,65 @@ def test_bounds_change_the_inputs_hash(nominal, targets):
         "b", nominal, targets,
         volume([PropertyBound("anti_squat_pct", lo=23.0, hi=60.0)]), None)
     assert a.inputs_sha256 != b.inputs_sha256
+
+
+# --------------------------------------------------------------------------- #
+#  Rear anti-lift: its own formula, its own sign
+# --------------------------------------------------------------------------- #
+def _rear_hp():
+    from suspension.kinematics import Hardpoints
+    d = dict(upper_front_inner=[-410.4, 326.8, 321.7],
+             upper_rear_inner=[-127.4, 216.6, 285.7],
+             lower_front_inner=[-268.8, 220.0, 58.9],
+             lower_rear_inner=[5.6, 165.0, 127.6],
+             tie_rod_inner=[-50.5, 310.0, 118.9],
+             upper_outer=[3.0, 571.0, 300.0], lower_outer=[-5.0, 590.2, 120.0],
+             tie_rod_outer=[90.0, 579.2, 150.0],
+             wheel_center=[0.0, 600.0, 228.0], contact_patch=[0.0, 605.0, 0.0])
+    hp = Hardpoints.default()
+    for k, v in d.items():
+        setattr(hp, k, np.array(v, float))
+    hp.static_camber, hp.static_toe = -2.6, 0.0
+    return hp
+
+
+def test_anti_lift_is_opposite_sign_to_anti_dive_formula():
+    """Same path slope, opposite load-transfer sense: the rear is not the front."""
+    from suspension.kinematics import SuspensionKinematics
+    k = SuspensionKinematics(_rear_hp())
+    ad = k.anti_dive_pct(280.0, 1630.0, 0.40)
+    al = k.anti_lift_pct(280.0, 1630.0, 0.40)
+    assert al == pytest.approx(-ad, rel=1e-9)
+
+
+def test_delivered_rear_is_pro_lift():
+    """Its patch moves forward in bump (SVIC behind the patch): pro-lift."""
+    from suspension.kinematics import SuspensionKinematics
+    k = SuspensionKinematics(_rear_hp())
+    assert k.anti_lift_pct(280.0, 1630.0, 0.40) == pytest.approx(-111.3, abs=0.2)
+
+
+def test_anti_lift_is_a_boundable_property():
+    from suspension.inverse_genesis import properties_of, SolvedPropertyBounds
+    ctx = SolvedPropertyBounds(bounds=[], cg_height_mm=280.0,
+                               wheelbase_mm=1630.0, track_mm=1210.0,
+                               brake_bias_front=0.60, drive_bias_rear=1.0)
+    p = properties_of(_rear_hp(), ctx, only=["anti_lift_pct"])
+    assert p["anti_lift_pct"] == pytest.approx(-111.3, abs=0.2)
+    PropertyBound("anti_lift_pct", lo=0.0, hi=100.0)   # accepted
+
+
+def test_rear_review_matches_the_kinematic_core():
+    """The review's rear branch used the front sign and misreported anti-squat."""
+    from suspension import genesis_repro as gr
+    from suspension.kinematics import SuspensionKinematics
+    hp = _rear_hp()
+    d = gr.corner_diagnostics(hp, travel_mm=25.0, track_mm=1210.0, axle="rear",
+                              wheelbase_mm=1630.0, cg_height_mm=280.0,
+                              brake_bias_front=0.60)
+    k = SuspensionKinematics(hp)
+    assert d["anti_squat_pct"] == pytest.approx(
+        k.anti_squat_pct(280.0, 1630.0, 1.0), abs=1e-6)
+    assert d["anti_squat_pct"] == pytest.approx(-25.7, abs=0.2)
+    assert d["anti_lift_pct"] == pytest.approx(-111.3, abs=0.2)
+    assert "anti_dive_pct" not in d

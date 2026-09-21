@@ -195,7 +195,13 @@ def test_table12_delivered_rear(rear):
     assert round(d["rc_above_ground_min_mm"], 2) == -0.85
     assert round(d["caster_deg"], 2) == 2.54
     assert abs(d["side_view_ic_x_mm"] - 1142) < 1
-    assert round(d["anti_squat_pct"]) == -102
+    # Was pinned at -102: the wheel-centre construction with the FRONT sign,
+    # which the paper withdraws. The rear branch now uses the kinematic core,
+    # sign-correct by virtual work: same magnitude, opposite sign.
+    from suspension.kinematics import SuspensionKinematics
+    assert d["anti_squat_pct"] == pytest.approx(
+        SuspensionKinematics(rear).anti_squat_pct(280, 1630, 1.0), abs=1e-6)
+    assert round(d["anti_squat_pct"]) == 101
 
 
 def test_table7b_camber_to_road():

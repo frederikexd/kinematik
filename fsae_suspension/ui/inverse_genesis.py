@@ -1861,6 +1861,9 @@ def _sec_kinematics(st, pd, v, corner, axle, travel):
         rows.append(("anti-dive (%)", d["anti_dive_pct"]))
     if "anti_squat_pct" in d:
         rows.append(("anti-squat (%)", d["anti_squat_pct"]))
+    if "anti_lift_pct" in d:
+        rows.append(("anti-lift, outboard rear brakes (%)",
+                     d["anti_lift_pct"]))
     _table(st, pd, rows, ["quantity", "value"])
     _table(st, pd, [{"travel (mm)": t, "camber (deg)": a, "toe (deg)": b,
                      "RC height (mm)": r, "scrub (mm)": sc}

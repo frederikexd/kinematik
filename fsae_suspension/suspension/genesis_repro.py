@@ -730,7 +730,18 @@ def corner_diagnostics(hp: Hardpoints, *, travel_mm: float = 25.0,
             if brake_bias_front is not None:
                 out["anti_dive_pct"] = 100.0 * k * float(brake_bias_front)
         else:
-            out["anti_squat_pct"] = 100.0 * k
+            # x is REARWARD, so the anti sense at the rear (SVIC forward of
+            # and above the reference) is a NEGATIVE dx. The front branch's
+            # sign applied here reported a pro-squat geometry as anti-squat
+            # and vice versa. Use the kinematic core's path-slope methods,
+            # which are sign-correct by virtual work, for both rear effects.
+            kin = SuspensionKinematics(hp)
+            out["anti_squat_pct"] = float(kin.anti_squat_pct(
+                cg_height_mm, wheelbase_mm, 1.0, state=s0))
+            if brake_bias_front is not None:
+                out["anti_lift_pct"] = float(kin.anti_lift_pct(
+                    cg_height_mm, wheelbase_mm,
+                    1.0 - float(brake_bias_front), state=s0))
     return out
 
 
