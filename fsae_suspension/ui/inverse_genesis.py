@@ -131,6 +131,20 @@ _HELP = {
     "ig_probe": "Treat each pickup as a ball of this radius when checking "
                 "keep-outs (think bracket size).",
     "ig_mincl": "Minimum gap required between that ball and any keep-out.",
+    "ig_pbounds": "Ranges on properties the four curve channels do not "
+                  "carry. Each row is a wall: the search evaluates the "
+                  "property on every trial geometry and refuses a step "
+                  "that leaves the range, exactly as it refuses a "
+                  "keep-out. Leave lo or hi empty for a one-sided "
+                  "bound, but note that a floor alone lets the solver "
+                  "overshoot: bound the band you actually want.",
+    "ig_pb_drive": "Share of tractive force reaching this axle. 1.0 for "
+                   "the driven axle of a RWD car, 0.0 for the front. "
+                   "Only anti-squat uses it.",
+    "ig_pb_nodes": "Sweep nodes used to evaluate the bounded properties "
+                   "on each trial geometry. Roll-centre migration is the "
+                   "least-squares slope over these nodes. More nodes "
+                   "cost solver time on every step.",
     "ig_pull": "Systematic weld distortion toward the bead. 0 if unknown.",
 }
 
@@ -479,9 +493,29 @@ def _results_panel(st, pd, np, ss, run):
                           if c.yield_frac is not None else "—"),
           "governed by": c.worst_row, "iterations": c.iterations,
           "clamped to box face": ", ".join(c.clamped) or "—",
-          "refused steps": c.keepout_rejections}
+          "refused: keep-out": c.keepout_rejections,
+          "refused: property": c.property_rejections}
          for i, c in enumerate(res.candidates)]),
         hide_index=True, width="stretch")
+
+    # ---- solved properties the search bounded ----------------------------- #
+    if res.property_bounds is not None and res.winner is not None \
+            and res.winner.properties:
+        st.markdown("###### Solved properties, bounded inside the search")
+        st.caption("Evaluated at the static state on every trial geometry "
+                   "(migration as the least-squares slope over the travel "
+                   "range), and a step that left the range was refused. "
+                   "These bound the nominal corner, not every as-built one: "
+                   "the build-yield stage still prices only the four curve "
+                   "channels.")
+        st.dataframe(pd.DataFrame(
+            [{"property": ig._PROPERTY_LABELS[b.prop], "bound": b.label,
+              "delivered": round(res.winner.properties.get(b.prop,
+                                                           float("nan")), 3),
+              "margin": round(b.margin(res.winner.properties.get(
+                  b.prop, float("nan"))), 3)}
+             for b in res.property_bounds.bounds]),
+            hide_index=True, width="stretch")
 
     if res.winner_hp is None:
         return
@@ -1039,11 +1073,76 @@ def _render_generate():
         keep_out.append(gr.capsules_from_framegraph(
             ss["tf_frame"], axle_station, ground_y))
 
+    # ---- bounds on properties the curve channels do not carry ------------ #
+    with st.expander("Bounds on solved properties (anti-squat, migration, "
+                     "caster)"):
+        st.caption("The four curve channels do not carry anti-squat, "
+                   "anti-dive, roll-centre migration rate, caster or kingpin "
+                   "inclination, and the engine is indifferent to any "
+                   "property it is not told about. A row here is a wall: the "
+                   "property is evaluated on every trial geometry and a step "
+                   "that leaves the range is refused, exactly as a keep-out "
+                   "violation is. Leave a side empty for a one-sided bound.")
+        pb_df = st.data_editor(
+            pd.DataFrame(columns=["property", "lo", "hi"]),
+            num_rows="dynamic", key="ig_pbounds", hide_index=True,
+            column_config={
+                "property": st.column_config.SelectboxColumn(
+                    options=list(ig.SOLVED_PROPERTIES), width="medium"),
+                "lo": st.column_config.NumberColumn(help="empty = no floor"),
+                "hi": st.column_config.NumberColumn(help="empty = no ceiling")})
+        pv = _veh(ss)
+        p1, p2 = st.columns(2)
+        drive_rear = float(p1.number_input(
+            "Drive bias to this axle", 0.0, 1.0,
+            1.0 if axle == "rear" else 0.0, 0.05,
+            help=_HELP["ig_pb_drive"], key="ig_pb_drive"))
+        pb_nodes = int(p2.number_input(
+            "Property sweep nodes", 3, 21, 5, 1,
+            help=_HELP["ig_pb_nodes"], key="ig_pb_nodes"))
+        if len(pb_df.index):
+            st.caption(f"Anti-dive and anti-squat also read the declared "
+                       f"CG height ({pv['cg_height_mm']:.0f} mm), wheelbase "
+                       f"({pv['wheelbase_mm']:.0f} mm) and front brake bias "
+                       f"({pv['brake_bias_front']:.2f}) from the vehicle "
+                       f"declaration below. A bound cannot be enforced "
+                       f"against an undeclared vehicle.")
+
+    pbounds = []
+    for _, r in pb_df.iterrows():
+        prop = r.get("property")
+        if not prop or (pd.isna(r.get("lo")) and pd.isna(r.get("hi"))):
+            continue
+        try:
+            pbounds.append(ig.PropertyBound(
+                str(prop),
+                lo=float("-inf") if pd.isna(r.get("lo")) else float(r["lo"]),
+                hi=float("inf") if pd.isna(r.get("hi")) else float(r["hi"])))
+        except (ValueError, TypeError) as e:
+            st.error(f"Property bound skipped: {e}")
+
+    properties = None
+    if pbounds:
+        try:
+            properties = ig.SolvedPropertyBounds(
+                bounds=pbounds,
+                cg_height_mm=float(pv["cg_height_mm"]),
+                wheelbase_mm=float(pv["wheelbase_mm"]),
+                track_mm=float(track),
+                brake_bias_front=float(pv["brake_bias_front"]),
+                drive_bias_rear=drive_rear,
+                travel_mm=(-float(travel), float(travel)),
+                n_nodes=pb_nodes)
+        except (ValueError, TypeError) as e:
+            st.error(f"Solved-property bounds refused: {e}")
+            return
+
     try:
         volume = ig.LegalVolume(boxes=boxes, keep_out=keep_out,
                                 probe_radius_mm=float(probe),
                                 min_clearance_mm=float(min_cl),
-                                spacings=spacings)
+                                spacings=spacings,
+                                properties=properties)
     except ValueError as e:
         st.error(f"Legal volume refused: {e}")
         return

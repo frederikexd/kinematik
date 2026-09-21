@@ -243,3 +243,71 @@ def test_vehicle_context_is_validated():
         SolvedPropertyBounds(bounds=[], travel_mm=(25.0, -25.0))
     with pytest.raises(TypeError):
         SolvedPropertyBounds(bounds=["anti_squat_pct >= 23"])
+
+
+# --------------------------------------------------------------------------- #
+#  Manifest round-trip — a bounded run must replay as a bounded run
+# --------------------------------------------------------------------------- #
+def test_manifest_carries_the_bounds(nominal, targets):
+    """A manifest that forgot the bounds would replay as an unbounded run."""
+    from suspension import genesis_repro as gr
+
+    bounds = [PropertyBound("anti_squat_pct", lo=23.0, hi=60.0),
+              PropertyBound("caster_deg", hi=6.0)]           # one-sided
+    vol = volume(bounds)
+    man = gr.GenesisManifest.build(
+        "bounded", nominal, targets, vol, ToleranceField.preset("jig_weld"))
+    back = gr.GenesisManifest.from_json(man.to_json())
+    _, _, vol2, _ = back.objects()
+
+    assert vol2.properties is not None
+    assert vol2.has_property_bounds()
+    got = {b.prop: (b.lo, b.hi) for b in vol2.properties.bounds}
+    assert got["anti_squat_pct"] == (23.0, 60.0)
+    # the infinity survived a JSON round-trip as an infinity, not as 0 or null
+    assert got["caster_deg"][0] == float("-inf")
+    assert got["caster_deg"][1] == 6.0
+    # the vehicle the bounds were checked against travels with them
+    p = vol2.properties
+    assert p.cg_height_mm == CTX["cg_height_mm"]
+    assert p.wheelbase_mm == CTX["wheelbase_mm"]
+    assert p.track_mm == CTX["track_mm"]
+    assert p.drive_bias_rear == CTX["drive_bias_rear"]
+    assert p.travel_mm == (-25.0, 25.0)
+    assert p.n_nodes == 5
+
+
+def test_unbounded_manifest_bytes_are_unchanged(nominal, targets):
+    """No bounds declared → no new key, so old manifests keep their hash."""
+    from suspension import genesis_repro as gr
+
+    vol = volume(None)
+    d = gr.volume_to_dict(vol)
+    assert "properties" not in d, (
+        "an unbounded run must not gain a key, or every archived "
+        "inputs_sha256 changes")
+    assert gr.volume_from_dict(d).properties is None
+
+
+def test_legacy_manifest_without_properties_still_loads(nominal, targets):
+    """A manifest written before this feature existed must still replay."""
+    from suspension import genesis_repro as gr
+
+    man = gr.GenesisManifest.build(
+        "legacy", nominal, targets, volume(None), None)
+    d = man.to_json()
+    assert '"properties"' not in d
+    _, _, vol2, _ = gr.GenesisManifest.from_json(d).objects()
+    assert vol2.properties is None
+    assert not vol2.has_property_bounds()
+
+
+def test_bounds_change_the_inputs_hash(nominal, targets):
+    """Two runs that differ only in a bound must not share a manifest hash."""
+    from suspension import genesis_repro as gr
+
+    a = gr.GenesisManifest.build("a", nominal, targets, volume(None), None)
+    b = gr.GenesisManifest.build(
+        "b", nominal, targets,
+        volume([PropertyBound("anti_squat_pct", lo=23.0, hi=60.0)]), None)
+    assert a.inputs_sha256 != b.inputs_sha256

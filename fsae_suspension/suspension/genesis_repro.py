@@ -303,16 +303,67 @@ def _obstacle_from_dict(d: dict):
     raise ValueError(f"Unknown keep-out type '{d['type']}'.")
 
 
+def _property_bounds_to_dict(b: ig.SolvedPropertyBounds | None) -> dict | None:
+    """SolvedPropertyBounds → dict; infinities as JSON null, lengths in mm.
+
+    A one-sided bound carries a real infinity, which JSON cannot hold, so an
+    absent side is written as null and read back as the infinity it was.
+    """
+    if b is None or not b.bounds:
+        return None
+
+    def _side(x: float):
+        return None if not np.isfinite(x) else float(x)
+
+    return {"bounds": [{"prop": p.prop, "lo": _side(p.lo), "hi": _side(p.hi),
+                        "label": p.label} for p in b.bounds],
+            "cg_height_mm": float(b.cg_height_mm),
+            "wheelbase_mm": float(b.wheelbase_mm),
+            "track_mm": float(b.track_mm),
+            "brake_bias_front": float(b.brake_bias_front),
+            "drive_bias_rear": float(b.drive_bias_rear),
+            "travel_mm": [float(b.travel_mm[0]), float(b.travel_mm[1])],
+            "n_nodes": int(b.n_nodes)}
+
+
+def _property_bounds_from_dict(d: dict | None) -> ig.SolvedPropertyBounds | None:
+    """dict → SolvedPropertyBounds; null sides become infinities, lengths in mm."""
+    if not d:
+        return None
+    return ig.SolvedPropertyBounds(
+        bounds=[ig.PropertyBound(
+            b["prop"],
+            lo=float("-inf") if b.get("lo") is None else float(b["lo"]),
+            hi=float("inf") if b.get("hi") is None else float(b["hi"]))
+            for b in d.get("bounds", [])],
+        cg_height_mm=float(d.get("cg_height_mm", 280.0)),
+        wheelbase_mm=float(d.get("wheelbase_mm", 1630.0)),
+        track_mm=float(d.get("track_mm", 1200.0)),
+        brake_bias_front=float(d.get("brake_bias_front", 0.60)),
+        drive_bias_rear=float(d.get("drive_bias_rear", 1.0)),
+        travel_mm=tuple(d.get("travel_mm", (-25.0, 25.0))),
+        n_nodes=int(d.get("n_nodes", 5)))
+
+
 def volume_to_dict(v: ig.LegalVolume) -> dict:
-    """LegalVolume → dict; box bounds, probe radius, clearance and spacing gaps in mm."""
-    return {"boxes": {p: {"lo": lo.tolist(), "hi": hi.tolist()}
-                      for p, (lo, hi) in sorted(v.boxes.items())},
-            "keep_out": [_obstacle_to_dict(o) for o in v.keep_out],
-            "probe_radius_mm": float(v.probe_radius_mm),
-            "min_clearance_mm": float(v.min_clearance_mm),
-            "spacings": [{"a": s.a, "b": s.b, "axis": s.axis,
-                          "min_gap_mm": s.min_gap_mm, "label": s.label}
-                         for s in v.spacings]}
+    """LegalVolume → dict; box bounds, probe radius, clearance and spacing gaps in mm.
+
+    ``properties`` is written only when solved-property bounds are declared,
+    so a manifest from an unbounded run keeps the bytes, and therefore the
+    inputs hash, it has always had.
+    """
+    out = {"boxes": {p: {"lo": lo.tolist(), "hi": hi.tolist()}
+                     for p, (lo, hi) in sorted(v.boxes.items())},
+           "keep_out": [_obstacle_to_dict(o) for o in v.keep_out],
+           "probe_radius_mm": float(v.probe_radius_mm),
+           "min_clearance_mm": float(v.min_clearance_mm),
+           "spacings": [{"a": s.a, "b": s.b, "axis": s.axis,
+                         "min_gap_mm": s.min_gap_mm, "label": s.label}
+                        for s in v.spacings]}
+    props = _property_bounds_to_dict(getattr(v, "properties", None))
+    if props is not None:
+        out["properties"] = props
+    return out
 
 
 def volume_from_dict(d: dict) -> ig.LegalVolume:
@@ -323,7 +374,8 @@ def volume_from_dict(d: dict) -> ig.LegalVolume:
         keep_out=[_obstacle_from_dict(o) for o in d.get("keep_out", [])],
         probe_radius_mm=float(d.get("probe_radius_mm", 0.0)),
         min_clearance_mm=float(d.get("min_clearance_mm", 0.0)),
-        spacings=[ig.PointSpacing(**s) for s in d.get("spacings", [])])
+        spacings=[ig.PointSpacing(**s) for s in d.get("spacings", [])],
+        properties=_property_bounds_from_dict(d.get("properties")))
 
 
 def boxes_about(hp: Hardpoints, half: dict[str, Any]
