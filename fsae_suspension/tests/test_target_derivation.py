@@ -66,3 +66,24 @@ def test_sensitivity_study_shape():
     rows = td.tire_sensitivity(c)
     assert rows[0]["case"] == "reference" and len(rows) == 7
     assert all("rear" in r for r in rows)
+
+
+def test_derived_ride_frequencies():
+    assert td.ride_frequency_derived(V, T, 61.17, "front") == pytest.approx(2.47, abs=0.01)
+    assert td.ride_frequency_derived(V, T, 34.28, "rear") == pytest.approx(3.07, abs=0.01)
+    assert td.ride_frequency_derived(V, T, 34.28, "rear", 0.0) == pytest.approx(2.77, abs=0.01)
+
+
+def test_roll_gradient_ceilings():
+    assert td.roll_gradient_ceiling(V, T, 34.28, "rear", 3.0) == pytest.approx(0.894, abs=0.002)
+    assert td.roll_gradient_ceiling(V, T, 34.28, "rear", 3.0, 0.10) == pytest.approx(0.751, abs=0.002)
+
+
+def test_roll_centre_band_as_load_transfer():
+    assert 18.0 * td.share_per_mm_front_rc(V) == pytest.approx(0.0111, abs=0.0003)
+
+
+def test_balance_target_is_a_mild_understeer_margin():
+    assert td.neutral_front_share(V) == pytest.approx(0.511, abs=0.002)
+    assert td.axle_capacity_ratio(V, 0.53) == pytest.approx(0.993, abs=0.001)
+    assert td.axle_capacity_ratio(V, 0.48) > 1.0 > td.axle_capacity_ratio(V, 0.53)

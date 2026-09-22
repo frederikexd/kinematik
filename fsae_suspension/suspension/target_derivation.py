@@ -196,3 +196,83 @@ def tire_sensitivity(corners: list[Corner], veh: Vehicle = Vehicle(),
             }
         out.append(row)
     return out
+
+
+# --------------------------------------------------------------------------- #
+#  Deriving the set-up values the targets were first declared with
+# --------------------------------------------------------------------------- #
+def ride_frequency_derived(veh: Vehicle, tire: Tire, anti_pct: float, axle: str,
+                           mu_allowance: float = 0.10) -> float:
+    """Ride frequency (Hz): the travel floor with an allowance on peak mu.
+
+    A frequency above its floor costs mechanical grip over bumps and buys no
+    travel, so the derived value is the combined-case floor evaluated with peak
+    mu raised by ``mu_allowance`` (fraction) while the tire is not measured.
+    """
+    t = replace(tire, peak_mu=tire.peak_mu * (1.0 + mu_allowance))
+    a = design_accelerations(t)
+    return f_min(veh, anti_pct, a["combined"], a["combined"], axle)
+
+
+def roll_gradient_ceiling(veh: Vehicle, tire: Tire, anti_pct: float, axle: str,
+                          ride_hz: float, mu_allowance: float = 0.0) -> float:
+    """Largest roll gradient (deg/g) at which ``ride_hz`` still holds the budget."""
+    t = replace(tire, peak_mu=tire.peak_mu * (1.0 + mu_allowance))
+    a = design_accelerations(t)
+    lo, hi = 0.05, 3.0
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        ok = f_min(replace(veh, roll_gradient_deg_per_g=mid), anti_pct,
+                   a["combined"], a["combined"], axle) < ride_hz
+        lo, hi = (mid, hi) if ok else (lo, mid)
+    return lo
+
+
+def share_per_mm_front_rc(veh: Vehicle, front_stiffness_share: float = 0.522,
+                          rear_weight_fraction: float = 0.52) -> float:
+    """Front lateral load-transfer share (fraction) per mm of front roll-centre height.
+
+    Linearised over the geometric and elastic paths: raising the front roll
+    centre adds geometric transfer at the front and lowers the roll axis, which
+    removes elastic transfer in proportion to the front stiffness share.
+    """
+    msf = 2.0 * veh.sprung_corner_front_kg
+    ms = 2.0 * (veh.sprung_corner_front_kg + veh.sprung_corner_rear_kg)
+    return (msf - front_stiffness_share * rear_weight_fraction * ms) / (
+        veh.mass_kg * veh.cg_height_mm)
+
+
+#: Where the tire numbers in this module come from. The load sensitivity below
+#: is the synthetic MF5.2 set of the paper, not a fit to measured data; every
+#: result that uses it (the neutral share, the understeer margin) must be
+#: re-derived when a measured tire replaces it.
+TIRE_PROVENANCE = "synthesised MF5.2 pure-lateral set; uncalibrated against measured data"
+
+
+def mu_of_load(fz_N: float) -> float:
+    """Synthetic tire peak mu (dimensionless) vs load: 1.66 at 550 N, 1.44 at 1650 N.
+
+    Provenance: see TIRE_PROVENANCE; not measured.
+    """
+    return 1.66 - 0.0002 * (fz_N - 550.0)
+
+
+def axle_capacity_ratio(veh: Vehicle, front_share: float, a_lat_g: float = 1.5,
+                        front_weight_fraction: float = 0.48) -> float:
+    """Front over rear normalised lateral capacity (dimensionless); < 1 is understeer."""
+    lt = veh.mass_kg * G0 * a_lat_g * veh.cg_height_mm / veh.track_mm
+    wf = veh.mass_kg * G0 * front_weight_fraction / 2.0
+    wr = veh.mass_kg * G0 * (1.0 - front_weight_fraction) / 2.0
+    cf = sum(mu_of_load(f) * f for f in (wf + front_share * lt, wf - front_share * lt)) / (2 * wf)
+    cr = sum(mu_of_load(f) * f for f in (wr + (1 - front_share) * lt,
+                                         wr - (1 - front_share) * lt)) / (2 * wr)
+    return cf / cr
+
+
+def neutral_front_share(veh: Vehicle, a_lat_g: float = 1.5) -> float:
+    """Front load-transfer share (fraction) at which both axles saturate together."""
+    lo, hi = 0.3, 0.8
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        lo, hi = (mid, hi) if axle_capacity_ratio(veh, mid, a_lat_g) > 1.0 else (lo, mid)
+    return lo
