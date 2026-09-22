@@ -1046,37 +1046,6 @@ class SuspensionKinematics:
             return 0.0
         return float(slope * (wheelbase / cg_height) * brake_bias_rear * 100.0)
 
-    def anti_lift_pct(self, cg_height: float, wheelbase: float,
-                      brake_bias_rear: float = 0.40, state=None) -> float:
-        """
-        Rear anti-lift under braking, percent, for OUTBOARD rear brakes.
-
-        Braking transfers load off the rear, so the rear EXTENDS; anti-lift is
-        the share of that extension the links resist. With outboard brakes the
-        caliper torque is reacted by the upright, so the braking force acts at
-        the CONTACT PATCH and it is the patch's own path that does the virtual
-        work (as for front anti-dive). Virtual work gives anti = -Fx*S/dW with
-        S = d(x_cp)/d(q). Braking puts Fx rearward (+x) at both axles, but the
-        load transfer has opposite sign at the rear (extension, not
-        compression), so the rear result carries the OPPOSITE sign to
-        anti-dive:
-
-            anti-dive (front)  = -bias_f * S_cp * L/h * 100
-            anti-lift (rear)   = +bias_r * S_cp * L/h * 100
-
-        Positive when the side-view instant centre lies FORWARD of the rear
-        contact patch and above ground. An SVIC behind the patch is PRO-lift:
-        the links add to the rear rise instead of resisting it, and it reads
-        negative. `brake_bias_rear` is the fraction of braking force at the
-        rear axle (1 - front bias). Applying anti_dive_pct to a rear corner,
-        with the front bias, is wrong in both magnitude and sign; this method
-        exists so that nobody has to.
-        """
-        slope = self._path_slope_xz("contact_patch", state)
-        if not np.isfinite(slope):
-            return 0.0
-        return float(slope * (wheelbase / cg_height) * brake_bias_rear * 100.0)
-
     def side_view_swing_arm_length(self, state=None) -> float:
         """Horizontal distance (mm) from contact patch to the side-view instant
         centre — the side-view swing-arm length. Long arm => little pitch

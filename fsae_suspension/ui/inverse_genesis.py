@@ -503,7 +503,12 @@ def _results_panel(st, pd, np, ss, run):
           "governed by": c.worst_row, "iterations": c.iterations,
           "clamped to box face": ", ".join(c.clamped) or "—",
           "refused: keep-out": c.keepout_rejections,
-          "refused: property": c.property_rejections}
+          "refused: property": c.property_rejections,
+          "refused: wheel": c.envelope_rejections,
+          "refused: node": c.node_rejections,
+          "wheel clearance (mm)": (round(c.envelope_margin_mm, 2)
+                                   if c.envelope_margin_mm is not None
+                                   else "—")}
          for i, c in enumerate(res.candidates)]),
         hide_index=True, width="stretch")
 
@@ -525,6 +530,27 @@ def _results_panel(st, pd, np, ss, run):
                   b.prop, float("nan"))), 3)}
              for b in res.property_bounds.bounds]),
             hide_index=True, width="stretch")
+
+    if res.wheel_envelope is None and res.winner_hp is not None:
+        # Never silent: with the wall off, still check the result against a
+        # standard wheel and say so if a link passes through it.
+        post = ig.WheelEnvelope(travel_mm=(-25.0, 25.0))
+        pv = post.violations(res.winner_hp)
+        if pv:
+            w = min(pv, key=lambda v: v[2])
+            st.warning(f"This geometry puts **{w[0]}** {abs(w[2]):.1f} mm "
+                       f"inside a standard 10-inch wheel ({w[1]}). The search "
+                       "did not forbid it because the wheel envelope was off. "
+                       "Turn on 🛞 Wheel envelope in section 3, with your own "
+                       "wheel dimensions, and regenerate.")
+    if res.wheel_envelope is not None and res.winner is not None \
+            and res.winner.envelope_margin_mm is not None:
+        m = res.winner.envelope_margin_mm
+        (st.success if m >= 0 else st.error)(
+            f"Wheel envelope: worst clearance {m:+.2f} mm over the declared "
+            "travel" + (" and both steering locks"
+                        if res.wheel_envelope.rack_travel_mm else "")
+            + ". No link or outboard pickup enters the rim or tire.")
 
     if res.winner_hp is None:
         return
@@ -764,6 +790,9 @@ def _manifest_summary(st, ig, man):
         f"- **Tolerance field:** "
         + (fld.provenance if fld is not None else "none declared"),
     ]
+    lines.append("- **Wheel envelope:** "
+                 + (volume.wheel_envelope.label if volume.has_wheel_envelope()
+                    else "not declared — links may pass through the wheel"))
     if volume.has_property_bounds():
         b = "; ".join(p.label for p in volume.properties.bounds)
         lines.append(f"- **Solved-property bounds (enforced in the search):** "
@@ -1201,12 +1230,143 @@ def _render_generate():
             st.error(f"Solved-property bounds refused: {e}")
             return
 
+    # ---- the wheel as a solid no link may enter ------------------------- #
+    with st.expander("🛞 Wheel envelope — no link may pass through the rim "
+                     "or tire", expanded=False):
+        st.caption("The solver has no wheel in it: without this, it can "
+                   "return a corner whose toe link crosses the tire while "
+                   "every curve sits in its band. With it on, the rim and tire "
+                   "are a solid the search refuses to enter, checked along "
+                   "every link body at every travel station and, if you give "
+                   "a rack travel, at both steering locks. Replace the "
+                   "defaults with your own wheel and upright.")
+        use_env = st.checkbox(
+            "Enforce the wheel envelope inside the search", value=False,
+            key="ig_env_on",
+            help="Off by default only so that existing declarations and "
+                 "manifests replay unchanged. Even when off, every result is "
+                 "checked against this wheel afterwards and you are told if a "
+                 "link passes through it.")
+        e1, e2, e3 = st.columns(3)
+        env_pick = float(e1.number_input(
+            "Upright envelope radius (mm)", 40.0, 250.0, 115.0, 1.0,
+            key="ig_env_pick",
+            help="Outboard pickups must sit within this radius of the spin "
+                 "axis: the space the hub, upright and brake leave."))
+        env_rim = float(e2.number_input(
+            "Rim inner radius (mm)", 60.0, 300.0, 127.0, 1.0,
+            key="ig_env_rim",
+            help="Inner radius of the rim/tire solid. 127 mm is a 10-inch "
+                 "bead seat."))
+        env_tire = float(e3.number_input(
+            "Tire outer radius (mm)", 100.0, 400.0, 228.0, 1.0,
+            key="ig_env_tire"))
+        e4, e5, e6 = st.columns(3)
+        env_rimw = float(e4.number_input(
+            "Rim half-width (mm)", 20.0, 200.0, 89.0, 1.0, key="ig_env_rimw",
+            help="Flange to flange, halved. 89 mm is a 7-inch barrel."))
+        env_tirew = float(e5.number_input(
+            "Tire section half-width (mm)", 20.0, 250.0, 95.0, 1.0,
+            key="ig_env_tirew"))
+        env_rack = float(e6.number_input(
+            "Rack travel to lock (± mm)", 0.0, 120.0,
+            32.0 if axle == "front" else 0.0, 1.0, key="ig_env_rack",
+            help="Checked at centre and at both locks. 0 for a rear corner. "
+                 "Rack travel ≈ steering arm × sin(road-wheel lock)."))
+        e7, e8 = st.columns(2)
+        env_off = float(e7.number_input(
+            "Rim offset from wheel centre (mm, + outboard)", -100.0, 100.0,
+            0.0, 1.0, key="ig_env_off"))
+        env_cl = float(e8.number_input(
+            "Extra clearance required (mm)", 0.0, 30.0, 0.0, 0.5,
+            key="ig_env_cl"))
+        e9, e10, e11 = st.columns(3)
+        env_lr = float(e9.number_input(
+            "Link tube radius (mm)", 0.0, 20.0, 8.0, 0.1, key="ig_env_lr",
+            help="Links are checked as tubes, not lines. 8 mm covers a "
+                 "5/8-inch wishbone tube. This number decides tight packaging "
+                 "cases: use your real tube."))
+        env_ro = float(e10.number_input(
+            "Rod-end / ball-joint housing radius (mm)", 0.0, 25.0, 11.0, 0.5,
+            key="ig_env_ro",
+            help="The housing around each outboard pickup must clear the rim "
+                 "barrel, not just its centre."))
+        env_swing = float(e11.number_input(
+            "Rod-end misalignment rating (± deg, 0 = off)", 0.0, 45.0, 0.0,
+            0.5, key="ig_env_swing",
+            help="Every joint's swing over the travel and both locks must "
+                 "stay inside this, or the rod end is loaded in bending. "
+                 "Standard rod ends are typically rated around ±13-16 deg; "
+                 "high-misalignment parts or spacers go further. Use the "
+                 "rating printed for your part."))
+
+    wheel_env = None
+    if use_env:
+        try:
+            wheel_env = ig.WheelEnvelope(
+                pickup_radius_mm=env_pick, rim_radius_mm=env_rim,
+                tire_radius_mm=env_tire, rim_half_width_mm=env_rimw,
+                tire_half_width_mm=env_tirew, wheel_offset_mm=env_off,
+                clearance_mm=env_cl, link_radius_mm=env_lr,
+                rod_end_radius_mm=env_ro,
+                joint_swing_limit_deg=(env_swing if env_swing > 0 else None),
+                travel_mm=(-float(travel), float(travel)),
+                rack_travel_mm=env_rack)
+        except (ValueError, TypeError) as e:
+            st.error(f"Wheel envelope refused: {e}")
+            return
+        seed_v = wheel_env.violations(hp)
+        if seed_v:
+            w = min(seed_v, key=lambda v: v[2])
+            st.warning(f"The seed geometry is already inside the wheel "
+                       f"envelope ({w[0]}, {w[2]:+.1f} mm at {w[1]}). The "
+                       "search cannot start from it; free the outboard "
+                       "pickups or give their boxes room to move out.")
+
+    # ---- chassis pickups at frame nodes ---------------------------------- #
+    node_att = None
+    if use_frame:
+        with st.expander("🔩 Chassis pickups at frame nodes — no brackets "
+                         "at tube midspans"):
+            st.caption("A pickup at a tube midspan loads the tube in bending "
+                       "and needs a long, weak bracket. With this on, each "
+                       "chosen pickup must sit within the bracket reach of a "
+                       "node of the loaded chassis, and the search refuses "
+                       "any step that would strand it.")
+            use_nodes = st.checkbox("Enforce node attachment", value=False,
+                                    key="ig_nodes_on")
+            n_pts = st.multiselect(
+                "Pickups that must sit at a node",
+                [p for p in ig.DESIGNABLE_POINTS if p.endswith("_inner")],
+                default=[p for p in ("upper_front_inner", "upper_rear_inner",
+                                     "lower_front_inner", "lower_rear_inner")
+                         if p in boxes], key="ig_nodes_pts")
+            n_reach = float(st.number_input(
+                "Longest bracket you will build (mm)", 5.0, 150.0, 25.0, 1.0,
+                key="ig_nodes_reach"))
+        if use_nodes and n_pts:
+            try:
+                node_att = ig.NodeAttachment(
+                    nodes=gr.nodes_from_framegraph(ss["tf_frame"],
+                                                   axle_station, ground_y),
+                    points=tuple(n_pts), max_offset_mm=n_reach)
+            except (ValueError, TypeError, KeyError) as e:
+                st.error(f"Node attachment refused: {e}")
+                return
+            nv = node_att.violations(hp)
+            if nv:
+                st.warning("The seed already has pickups off a node: "
+                           + "; ".join(f"{p} {w}" for p, w, _ in nv)
+                           + ". Move their boxes over a node.")
+
     try:
         volume = ig.LegalVolume(boxes=boxes, keep_out=keep_out,
                                 probe_radius_mm=float(probe),
                                 min_clearance_mm=float(min_cl),
                                 spacings=spacings,
-                                properties=properties)
+                                properties=properties,
+                                wheel_envelope=wheel_env,
+                                node_attachment=node_att)
     except ValueError as e:
         st.error(f"Legal volume refused: {e}")
         return

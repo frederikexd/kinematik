@@ -412,7 +412,7 @@ _PITCH_PROPERTIES = frozenset({"anti_dive_pct", "anti_squat_pct",
 
 #: how many random shifts to draw per requested start when hunting for one
 #: that already satisfies the declared property bounds
-_MAX_START_DRAWS_PER_START = 40
+_MAX_START_DRAWS_PER_START = 200
 
 
 @dataclass
@@ -596,6 +596,446 @@ class SolvedPropertyBounds:
         return out
 
 
+# --------------------------------------------------------------------------- #
+#  The wheel envelope — no link may pass through the rim or the tire.
+# --------------------------------------------------------------------------- #
+#  The kinematic solver has no wheel in it: it knows five links and three
+#  outboard points, and it will happily return a corner whose toe link crosses
+#  the tire in plan view while every curve sits inside its band. That is not a
+#  corner, and it is exactly the failure an unconstrained search produced in an
+#  early run of this module. The envelope puts the wheel back as a solid the
+#  search is not allowed to enter, checked on every trial geometry at every
+#  travel station and, when a rack travel is declared, at both steering locks.
+#
+#  The wheel is modelled in its own frame, which moves with the upright: origin
+#  at the wheel centre, axis along the spin axis reconstructed from the solved
+#  camber and toe. Two rules apply.
+#    1. Every outboard pickup must lie within ``pickup_radius_mm`` of the spin
+#       axis — the space the upright, hub and brake leave inside the barrel.
+#    2. No point on any link body may lie inside the solid annulus the rim and
+#       tire occupy: radially between ``rim_radius_mm`` and ``tire_radius_mm``,
+#       axially within the tire section. The section tapers linearly from the
+#       rim flange width at the bead to the full section width at mid-sidewall,
+#       which is how a real tire is shaped, so a wishbone leg entering the
+#       barrel just outboard of the flange is not flagged as crossing a sidewall
+#       that is not there.
+#  Each link is sampled along its length. A violation is reported with the
+#  smallest move that would clear it, so the margin is in mm and comparable
+#  across links, stations and locks.
+_ENVELOPE_LINKS: dict[str, tuple[str, str]] = {
+    "upper_front": ("upper_front_inner", "upper_outer"),
+    "upper_rear":  ("upper_rear_inner", "upper_outer"),
+    "lower_front": ("lower_front_inner", "lower_outer"),
+    "lower_rear":  ("lower_rear_inner", "lower_outer"),
+    "tie_rod":     ("tie_rod_inner", "tie_rod_outer"),
+}
+_OUTBOARD_PICKUPS = ("upper_outer", "lower_outer", "tie_rod_outer")
+
+
+def spin_axis(camber_deg: float, toe_deg: float) -> np.ndarray:
+    """Unit spin axis (dimensionless) from camber and toe in deg.
+
+    Inverts the kinematics conventions exactly: camber = -atan2(s_z, |s_y|)
+    and toe = atan2(s_x, |s_y|), with the axis pointing outboard (+y).
+    """
+    v = np.array([np.tan(np.radians(toe_deg)), 1.0,
+                  -np.tan(np.radians(camber_deg))])
+    return v / np.linalg.norm(v)
+
+
+def _kabsch(p0: np.ndarray, p1: np.ndarray) -> np.ndarray:
+    """Rotation (dimensionless 3x3) best mapping point set p0 onto p1 (mm)."""
+    a = p0 - p0.mean(axis=0)
+    b = p1 - p1.mean(axis=0)
+    u, _, vt = np.linalg.svd(a.T @ b)
+    d = np.sign(np.linalg.det(vt.T @ u.T))
+    return vt.T @ np.diag([1.0, 1.0, d]) @ u.T
+
+
+def joint_swing(hp: Hardpoints, travel_mm: tuple[float, float] = (-25.0, 25.0),
+                n_travel: int = 5, rack_travel_mm: float = 0.0,
+                links: Sequence[str] | None = None) -> dict:
+    """Angular swing (deg) of every link at both of its joints over travel and lock.
+
+    A spherical bearing or rod end is installed at some angle and then swings
+    as the suspension moves; the swing is what consumes its misalignment
+    capacity, and a joint that runs out of it is loaded in bending. The swing
+    is measured in the frame the housing is fixed to: the chassis for the
+    inboard joint, and the upright for the outboard one. The upright is a
+    rigid body carrying the three outboard pickups, so its rotation at each
+    state is recovered exactly from those three points (Kabsch), and the link
+    direction is expressed in that rotating frame before it is compared with
+    its installed direction.
+
+    Returns {"<link>.inner": deg, "<link>.outer": deg, "_worst": (joint, deg,
+    where)}; angles in deg.
+    """
+    links = tuple(links) if links is not None else tuple(_ENVELOPE_LINKS)
+    racks = [0.0] + ([-abs(rack_travel_mm), abs(rack_travel_mm)]
+                     if rack_travel_mm else [])
+    s0 = SuspensionKinematics(hp).solve_at_travel(0.0)
+    up0 = np.array([s0.upper_outer, s0.lower_outer, s0.tie_rod_outer], float)
+
+    def direction(h, s, link):
+        inn, out = _ENVELOPE_LINKS[link]
+        v = np.asarray(getattr(s, out), float) - np.asarray(getattr(h, inn), float)
+        return v / np.linalg.norm(v)
+
+    d0 = {l: direction(hp, s0, l) for l in links}
+    out = {f"{l}.{e}": 0.0 for l in links for e in ("inner", "outer")}
+    worst = ("", 0.0, "")
+    for r in racks:
+        pd = {"tie_rod_inner": np.array([0.0, r, 0.0])} if r else None
+        h = hp if not r else _perturbed(hp, pd)
+        for s in SuspensionKinematics(hp, pickup_deltas=pd).sweep(
+                travel_min=travel_mm[0], travel_max=travel_mm[1], n=n_travel):
+            pts = np.array([s.upper_outer, s.lower_outer, s.tie_rod_outer], float)
+            R = _kabsch(up0, pts)
+            where = f"{s.travel:+.1f} mm travel" + (f", rack {r:+g} mm" if r else "")
+            for l in links:
+                d = direction(h, s, l)
+                # the tie-rod inner housing rides on the rack, which only
+                # translates, so its frame is still the chassis frame
+                a_in = float(np.degrees(np.arccos(np.clip(d @ d0[l], -1, 1))))
+                a_out = float(np.degrees(np.arccos(np.clip(
+                    (R.T @ d) @ d0[l], -1, 1))))
+                for key, a in ((f"{l}.inner", a_in), (f"{l}.outer", a_out)):
+                    if a > out[key]:
+                        out[key] = a
+                    if a > worst[1]:
+                        worst = (key, a, where)
+    out["_worst"] = worst
+    return out
+
+
+@dataclass
+class NodeAttachment:
+    """Chassis pickups must sit at a frame node. Lengths in mm.
+
+    A pickup placed at a tube midspan puts the bracket load into the tube in
+    bending, and the bracket that reaches it is long and weak; the bracket
+    screening of the paper failed at exactly such a point (FoS 0.67). With
+    this wall, each listed pickup must lie within ``max_offset_mm`` of one of
+    the declared nodes, which is the longest bracket the team will build. The
+    nodes are the frame's own, read from the chassis STEP and transformed into
+    the corner frame (``genesis_repro.nodes_from_framegraph``).
+    """
+    nodes: tuple[tuple[float, float, float], ...]
+    points: tuple[str, ...] = ("upper_front_inner", "upper_rear_inner",
+                               "lower_front_inner", "lower_rear_inner")
+    max_offset_mm: float = 25.0
+
+    def __post_init__(self):
+        self.nodes = tuple(tuple(float(c) for c in n) for n in self.nodes)
+        if not self.nodes:
+            raise ValueError("NodeAttachment needs at least one node.")
+        self.points = tuple(self.points)
+        bad = [p for p in self.points if p not in DESIGNABLE_POINTS]
+        if bad:
+            raise ValueError(f"NodeAttachment: unknown point(s) {bad}.")
+        if float(self.max_offset_mm) <= 0.0:
+            raise ValueError("NodeAttachment.max_offset_mm must be > 0.")
+        self._arr = np.asarray(self.nodes, float)
+
+    @property
+    def label(self) -> str:
+        """Readable summary; offset in mm."""
+        return (f"{', '.join(self.points)} within {self.max_offset_mm:g} mm of "
+                f"one of {len(self.nodes)} frame nodes")
+
+    def nearest(self, hp: Hardpoints) -> dict[str, float]:
+        """Distance in mm from each listed pickup to its nearest node."""
+        arr = getattr(self, "_arr", None)
+        if arr is None:
+            arr = self._arr = np.asarray(self.nodes, float)
+        return {p: float(np.min(np.linalg.norm(
+            arr - np.asarray(getattr(hp, p), float), axis=1)))
+            for p in self.points}
+
+    def violations(self, hp: Hardpoints) -> list[tuple[str, str, float]]:
+        """(point, nearest-node distance, margin mm) for every stranded pickup."""
+        return [(p, f"{d:.1f} mm from the nearest node", self.max_offset_mm - d)
+                for p, d in self.nearest(hp).items()
+                if d > self.max_offset_mm + 1e-9]
+
+
+@dataclass
+class WheelSector:
+    """A solid fixed to the upright, in the wheel frame. Lengths mm, angles deg.
+
+    Describes anything bolted to the upright inside the barrel: the brake
+    caliper, a wheel-speed sensor, the hub nut. The angle is measured about
+    the spin axis from the upward direction, positive rearward, so a caliper
+    trailing the axle at the top of the rotor sits near +30 to +90 deg. Axial
+    offsets are from the wheel centre along the spin axis, + outboard.
+    """
+    label: str
+    r_min_mm: float
+    r_max_mm: float
+    theta_min_deg: float
+    theta_max_deg: float
+    axial_min_mm: float
+    axial_max_mm: float
+
+    def __post_init__(self):
+        if not (0.0 <= self.r_min_mm < self.r_max_mm):
+            raise ValueError(f"WheelSector '{self.label}': need 0 <= r_min < r_max.")
+        if self.theta_max_deg <= self.theta_min_deg:
+            raise ValueError(f"WheelSector '{self.label}': theta_max <= theta_min.")
+        if self.axial_max_mm <= self.axial_min_mm:
+            raise ValueError(f"WheelSector '{self.label}': axial_max <= axial_min.")
+
+    def depth(self, radial: float, theta_deg: float, axial: float,
+              pad: float) -> float:
+        """Penetration in mm (> 0 inside) of a padded point; <= 0 is clear."""
+        th = (theta_deg - self.theta_min_deg) % 360.0
+        span = self.theta_max_deg - self.theta_min_deg
+        # angular gap expressed as arc length at this radius (mm)
+        if th <= span:
+            ang_gap = min(th, span - th) * np.pi / 180.0 * max(radial, 1e-6)
+        else:
+            ang_gap = -min(th - span, 360.0 - th) * np.pi / 180.0 * max(radial, 1e-6)
+        gaps = (radial - (self.r_min_mm - pad), (self.r_max_mm + pad) - radial,
+                axial - (self.axial_min_mm - pad),
+                (self.axial_max_mm + pad) - axial, ang_gap + pad)
+        return min(gaps)
+
+
+@dataclass
+class WheelEnvelope:
+    """The rim and tire as a solid the search may not enter. Lengths in mm.
+
+    Defaults are a 10-inch rim with a 7-inch barrel carrying an 18 x 7.5 in
+    tire, and a 115 mm upright envelope; every one is a declared input and
+    should be replaced with the team's own wheel and upright.
+    """
+    pickup_radius_mm: float = 115.0     # outboard pickups inside this radius
+    rim_radius_mm: float = 127.0        # inner radius of the rim/tire solid
+    tire_radius_mm: float = 228.0       # outer radius of the tire
+    rim_half_width_mm: float = 89.0     # flange-to-flange / 2 (7 in rim)
+    tire_half_width_mm: float = 95.0    # section width / 2 (7.5 in tire)
+    wheel_offset_mm: float = 0.0        # rim centreplane from wheel centre, + outboard
+    clearance_mm: float = 0.0           # extra gap required everywhere
+    travel_mm: tuple[float, float] = (-25.0, 25.0)
+    n_travel: int = 5
+    rack_travel_mm: float = 0.0         # evaluated at 0 and at +/- this rack
+    samples_per_link: int = 16
+    links: tuple[str, ...] = tuple(_ENVELOPE_LINKS)
+    #: links are capsules, not lines: tube or rod radius along the body (mm)
+    link_radius_mm: float = 8.0
+    #: outboard rod-end / ball-joint housing radius (mm); its body must clear
+    #: the rim barrel, not just its centre
+    rod_end_radius_mm: float = 11.0
+    #: measured tire section: (radius mm, half-width mm) pairs, overriding the
+    #: linear taper when given
+    tire_profile: tuple[tuple[float, float], ...] = ()
+    #: solids fixed to the upright inside the barrel (caliper, sensor, nut)
+    sectors: tuple[WheelSector, ...] = ()
+    #: rated misalignment of the spherical bearings / rod ends, deg; None =
+    #: not checked. Every joint's swing over the declared travel and lock
+    #: must stay inside it, or the joint is loaded in bending.
+    joint_swing_limit_deg: float | None = None
+
+    def __post_init__(self):
+        for n in ("pickup_radius_mm", "rim_radius_mm", "tire_radius_mm",
+                  "rim_half_width_mm", "tire_half_width_mm"):
+            if float(getattr(self, n)) <= 0.0:
+                raise ValueError(f"WheelEnvelope.{n} must be > 0.")
+        if self.tire_radius_mm <= self.rim_radius_mm:
+            raise ValueError("WheelEnvelope: tire radius must exceed rim radius.")
+        if self.tire_half_width_mm < self.rim_half_width_mm:
+            raise ValueError("WheelEnvelope: tire section must be at least as "
+                             "wide as the rim.")
+        if self.pickup_radius_mm > self.rim_radius_mm:
+            raise ValueError("WheelEnvelope: the pickup envelope cannot extend "
+                             "past the rim.")
+        lo, hi = float(self.travel_mm[0]), float(self.travel_mm[1])
+        if hi <= lo:
+            raise ValueError("WheelEnvelope.travel_mm must be (min, max).")
+        self.travel_mm = (lo, hi)
+        self.n_travel = max(2, int(self.n_travel))
+        self.samples_per_link = max(4, int(self.samples_per_link))
+        self.rack_travel_mm = abs(float(self.rack_travel_mm))
+        bad = [l for l in self.links if l not in _ENVELOPE_LINKS]
+        if bad:
+            raise ValueError(f"WheelEnvelope: unknown link(s) {bad}; allowed "
+                             f"{list(_ENVELOPE_LINKS)}.")
+        self.links = tuple(self.links)
+        self.link_radius_mm = max(0.0, float(self.link_radius_mm))
+        self.rod_end_radius_mm = max(0.0, float(self.rod_end_radius_mm))
+        prof = tuple(sorted((float(r), float(w)) for r, w in self.tire_profile))
+        if prof and (prof[0][0] < self.rim_radius_mm - 1e-9
+                     or prof[-1][0] > self.tire_radius_mm + 1e-9):
+            raise ValueError("WheelEnvelope.tire_profile radii must lie between "
+                             "the rim and tire radii.")
+        self.tire_profile = prof
+        self.sectors = tuple(self.sectors)
+        for sec in self.sectors:
+            if not isinstance(sec, WheelSector):
+                raise TypeError("WheelEnvelope.sectors takes WheelSector items.")
+
+    @property
+    def label(self) -> str:
+        """Readable summary of the declared envelope, lengths in mm."""
+        lock = (f", rack \u00b1{self.rack_travel_mm:g} mm"
+                if self.rack_travel_mm else "")
+        lock += (f", links as {self.link_radius_mm:g} mm capsules, rod ends "
+                 f"{self.rod_end_radius_mm:g} mm")
+        if self.tire_profile:
+            lock += ", measured tire profile"
+        if self.sectors:
+            lock += ", " + ", ".join(s.label for s in self.sectors)
+        if self.joint_swing_limit_deg is not None:
+            lock += f", joint swing within {self.joint_swing_limit_deg:g} deg"
+        return (f"pickups within {self.pickup_radius_mm:g} mm; no link inside "
+                f"the rim/tire solid ({self.rim_radius_mm:g}\u2013"
+                f"{self.tire_radius_mm:g} mm, section \u00b1"
+                f"{self.tire_half_width_mm:g} mm) over "
+                f"{self.travel_mm[0]:g} to {self.travel_mm[1]:+g} mm{lock}")
+
+    def _half_width(self, radial: float) -> float:
+        """Axial half-width (mm) of the tire solid at a given radius (mm)."""
+        if self.tire_profile:
+            rs = [p[0] for p in self.tire_profile]
+            ws = [p[1] for p in self.tire_profile]
+            return float(np.interp(radial, rs, ws))
+        mid = 0.5 * (self.rim_radius_mm + self.tire_radius_mm)
+        if radial >= mid:
+            return self.tire_half_width_mm
+        f = (radial - self.rim_radius_mm) / max(mid - self.rim_radius_mm, 1e-9)
+        f = min(max(f, 0.0), 1.0)
+        return self.rim_half_width_mm + f * (self.tire_half_width_mm
+                                             - self.rim_half_width_mm)
+
+    def _states(self, hp: Hardpoints):
+        """(rack mm, solved states) at centre and, if declared, both locks."""
+        racks = [0.0]
+        if self.rack_travel_mm > 0.0:
+            racks += [-self.rack_travel_mm, self.rack_travel_mm]
+        out = []
+        for r in racks:
+            # A rack displaces the tie-rod inner while the rod keeps its length.
+            # Moving the point in a copied Hardpoints would NOT steer: static
+            # toe is a declared alignment, so the solver re-derives the rod
+            # length to hold it. pickup_deltas keeps the rest length from the
+            # unshifted geometry, which is what a rack does.
+            h = hp
+            pd = None
+            if r:
+                pd = {"tie_rod_inner": np.array([0.0, r, 0.0])}
+                h = _perturbed(hp, pd)      # for the link's inner end position
+            try:
+                st = SuspensionKinematics(hp, pickup_deltas=pd).sweep(
+                    travel_min=self.travel_mm[0], travel_max=self.travel_mm[1],
+                    n=self.n_travel)
+            except Exception:
+                st = None
+            out.append((r, h, st))
+        return out
+
+    def check(self, hp: Hardpoints) -> tuple[list[tuple[str, str, float]], float]:
+        """(violations, worst margin mm). Violations are (item, where, margin mm)."""
+        c = float(self.clearance_mm)
+        vio: list[tuple[str, str, float]] = []
+        worst = float("inf")
+        for rack, h, states in self._states(hp):
+            tag = f"rack {rack:+g} mm" if rack else "centre"
+            if not states or any(not getattr(s, "converged", True)
+                                 for s in states):
+                vio.append(("(sweep)", f"does not solve, {tag}", float("-inf")))
+                worst = float("-inf")
+                continue
+            for s in states:
+                ax = spin_axis(s.camber, s.toe)
+                wc = np.asarray(s.wheel_center, float)
+                where = f"{s.travel:+.1f} mm travel, {tag}"
+
+                # upright-fixed reference direction for sector angles: global
+                # up with its spin-axis component removed
+                up = np.array([0.0, 0.0, 1.0]) - ax[2] * ax
+                up /= max(np.linalg.norm(up), 1e-12)
+                rear = np.cross(up, ax)
+                if rear[0] < 0:
+                    rear = -rear
+
+                def frame(p):
+                    d = np.asarray(p, float) - wc
+                    a = float(d @ ax)
+                    rv = d - a * ax
+                    th = float(np.degrees(np.arctan2(rv @ rear, rv @ up)))
+                    return a, float(np.linalg.norm(rv)), th
+
+                def sector_margin(a, rad, th, pad):
+                    m = float("inf")
+                    for sec in self.sectors:
+                        m = min(m, -sec.depth(rad, th, a, pad))
+                    return m
+
+                ro = self.rod_end_radius_mm
+                for name in _OUTBOARD_PICKUPS:
+                    a, rad, th = frame(getattr(s, name))
+                    # centre inside the upright envelope
+                    m = (self.pickup_radius_mm - c) - rad
+                    # rod-end body clear of the rim barrel where it sits axially
+                    if abs(a - self.wheel_offset_mm) <= self._half_width(
+                            self.rim_radius_mm) + ro:
+                        m = min(m, (self.rim_radius_mm - c) - (rad + ro))
+                    if self.sectors:
+                        m = min(m, sector_margin(a, rad, th, ro + c))
+                    worst = min(worst, m)
+                    if m < -1e-9:
+                        vio.append((name, where, m))
+                for link in self.links:
+                    inner_n, outer_n = _ENVELOPE_LINKS[link]
+                    pin = np.asarray(getattr(h, inner_n), float)
+                    pout = np.asarray(getattr(s, outer_n), float)
+                    link_worst = float("inf")
+                    lr = self.link_radius_mm
+                    for t in np.linspace(0.0, 1.0, self.samples_per_link,
+                                         endpoint=False):
+                        a, rad, th = frame(pin + t * (pout - pin))
+                        if self.sectors:
+                            link_worst = min(link_worst,
+                                             sector_margin(a, rad, th, lr + c))
+                        a -= self.wheel_offset_mm
+                        inner_gap = rad - (self.rim_radius_mm - c - lr)
+                        outer_gap = (self.tire_radius_mm + c + lr) - rad
+                        axial_gap = (self._half_width(rad) + c + lr) - abs(a)
+                        gaps = (inner_gap, outer_gap, axial_gap)
+                        if min(gaps) > 0.0:
+                            # inside the solid: depth = smallest move out
+                            m = -min(gaps)
+                        else:
+                            # outside: separation along the clearest direction
+                            # (a lower bound on the true distance, so the
+                            # reported clearance is never optimistic)
+                            m = max(-g for g in gaps if g <= 0.0)
+                        link_worst = min(link_worst, m)
+                    worst = min(worst, link_worst)
+                    if link_worst < -1e-9:
+                        vio.append((f"{link} link", where, link_worst))
+        return vio, worst
+
+    def violations(self, hp: Hardpoints) -> list[tuple[str, str, float]]:
+        """(item, where, margin mm) for every breach; joint swing margins in deg."""
+        v = self.check(hp)[0]
+        if self.joint_swing_limit_deg is not None:
+            try:
+                sw = joint_swing(hp, self.travel_mm, self.n_travel,
+                                 self.rack_travel_mm, self.links)
+            except Exception:
+                return v + [("(joints)", "swing does not solve", float("-inf"))]
+            lim = float(self.joint_swing_limit_deg)
+            for k, a in sw.items():
+                if k != "_worst" and a > lim + 1e-9:
+                    v.append((f"{k} joint swing", f"{a:.1f} deg", lim - a))
+        return v
+
+    def margin(self, hp: Hardpoints) -> float:
+        """Worst clearance to the wheel envelope in mm; negative = inside."""
+        return self.check(hp)[1]
+
+
 @dataclass
 class LegalVolume:
     """Where each movable hardpoint is ALLOWED to exist.
@@ -625,6 +1065,10 @@ class LegalVolume:
     spacings: list[PointSpacing] = _dcfield(default_factory=list)
     #: ranges on properties the curve channels do not carry
     properties: SolvedPropertyBounds | None = None
+    #: the rim and tire as a solid no link may enter (None = not checked)
+    wheel_envelope: WheelEnvelope | None = None
+    #: chassis pickups must sit at frame nodes (None = not checked)
+    node_attachment: NodeAttachment | None = None
 
     def __post_init__(self):
         if not self.boxes:
@@ -743,6 +1187,40 @@ class LegalVolume:
             return []
         return self.properties.violations(hp)
 
+    # ---- the wheel wall ---------------------------------------------------- #
+    def has_wheel_envelope(self) -> bool:
+        """True when a wheel envelope is declared (dimensionless flag)."""
+        return self.wheel_envelope is not None
+
+    def envelope_violations(self, hp: Hardpoints
+                            ) -> list[tuple[str, str, float]]:
+        """(item, where, margin mm) for every breach of the wheel envelope."""
+        if self.wheel_envelope is None:
+            return []
+        return self.wheel_envelope.violations(hp)
+
+    def envelope_margin(self, hp: Hardpoints) -> float | None:
+        """Worst clearance to the wheel envelope in mm, or None if undeclared."""
+        if self.wheel_envelope is None:
+            return None
+        return self.wheel_envelope.margin(hp)
+
+    def node_violations(self, hp: Hardpoints) -> list[tuple[str, str, float]]:
+        """(point, where, margin mm) for pickups not at a frame node."""
+        if self.node_attachment is None:
+            return []
+        return self.node_attachment.violations(hp)
+
+    def has_hard_walls(self) -> bool:
+        """True when any wall beyond boxes and keep-outs is declared (flag)."""
+        return (self.has_property_bounds() or self.has_wheel_envelope()
+                or self.node_attachment is not None)
+
+    def wall_violations(self, hp: Hardpoints) -> list[tuple[str, str, float]]:
+        """Property, wheel and node breaches together; margins in mm, deg or %."""
+        return (self.property_violations(hp) + self.envelope_violations(hp)
+                + self.node_violations(hp))
+
     def evaluate_properties(self, hp: Hardpoints) -> dict[str, float] | None:
         """Solved properties of one geometry, or None when none are bounded.
 
@@ -808,6 +1286,10 @@ class Candidate:
     # solved-property wall (empty / None when no bounds were declared):
     property_rejections: int = 0    # steps a PropertyBound refused
     properties: dict[str, float] | None = None
+    # wheel wall (0 / None when no envelope was declared):
+    envelope_rejections: int = 0    # steps the wheel envelope refused
+    envelope_margin_mm: float | None = None
+    node_rejections: int = 0        # steps that would strand a pickup off a node
     # co-optimizer stage:
     yield_frac: float | None = None
     yield_warnings: list[str] = _dcfield(default_factory=list)
@@ -847,6 +1329,23 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
                          residual=r, max_band_frac=float(np.max(np.abs(r))),
                          worst_row="(start violates a keep-out volume)",
                          iterations=0, clamped=[], keepout_rejections=1)
+    start_nvio = volume.node_violations(hp_x)
+    if start_nvio:
+        w = min(start_nvio, key=lambda v: v[2])
+        return Candidate(ok=False, hit=False, shifts={}, shift_vec=x,
+                         residual=r, max_band_frac=float(np.max(np.abs(r))),
+                         worst_row=f"(start off a frame node: {w[0]}, {w[1]})",
+                         iterations=0, clamped=[], keepout_rejections=0,
+                         node_rejections=1)
+    start_evio = volume.envelope_violations(hp_x)
+    if start_evio:
+        w = min(start_evio, key=lambda v: v[2])
+        return Candidate(ok=False, hit=False, shifts={}, shift_vec=x,
+                         residual=r, max_band_frac=float(np.max(np.abs(r))),
+                         worst_row=(f"(start inside the wheel envelope: "
+                                    f"{w[0]}, {w[2]:+.1f} mm at {w[1]})"),
+                         iterations=0, clamped=[], keepout_rejections=0,
+                         envelope_rejections=1)
     start_pvio = volume.property_violations(hp_x)
     if start_pvio:
         return Candidate(ok=False, hit=False, shifts={}, shift_vec=x,
@@ -861,6 +1360,8 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
     clamped_last: list[str] = []
     rejections = 0
     prop_rejections = 0
+    env_rejections = 0
+    node_rejections = 0
     it = 0
     for it in range(1, max_iter + 1):
         if np.max(np.abs(r)) <= 1.0:        # every station inside its band
@@ -888,6 +1389,14 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
             if volume.property_violations(hp_try):
                 prop_rejections += 1
                 lam *= 10.0                  # same wall, different surface
+                continue
+            if volume.envelope_violations(hp_try):
+                env_rejections += 1
+                lam *= 10.0                  # a link would enter the wheel
+                continue
+            if volume.node_violations(hp_try):
+                node_rejections += 1
+                lam *= 10.0                  # a pickup would leave its node
                 continue
             r_try, ok_try = targets.residual(hp_try)
             if not ok_try:
@@ -919,6 +1428,9 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
         keepout_rejections=rejections,
         property_rejections=prop_rejections,
         properties=volume.evaluate_properties(hp_x),
+        envelope_rejections=env_rejections,
+        envelope_margin_mm=volume.envelope_margin(hp_x),
+        node_rejections=node_rejections,
     )
 
 
@@ -997,6 +1509,8 @@ class GenesisResult:
     warnings: list[str]
     #: the bounds the search enforced, echoed for the report and the manifest
     property_bounds: SolvedPropertyBounds | None = None
+    #: the wheel envelope the search enforced, echoed for report and manifest
+    wheel_envelope: WheelEnvelope | None = None
 
 
 def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
@@ -1032,7 +1546,8 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
             candidates=[], winner=None, winner_hp=None, best_fit=None,
             resilience_premium=None, n_starts=0, seed=seed,
             verify_yield=None, verify_agreement=None, thresholds=th,
-            warnings=warnings, property_bounds=volume.properties)
+            warnings=warnings, property_bounds=volume.properties,
+            wheel_envelope=volume.wheel_envelope)
 
     # ---- deterministic multi-start ---------------------------------------- #
     #  The property wall is absolute, exactly like the keep-out wall: the
@@ -1048,20 +1563,20 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
     lo, hi = volume.bounds_vec(hp)
     starts: list[np.ndarray] = [np.zeros(len(lo))]
     want = max(0, int(n_starts) - 1)
-    if volume.has_property_bounds():
+    if volume.has_hard_walls():
         draws = 0
         max_draws = max(1, want) * _MAX_START_DRAWS_PER_START
         while len(starts) - 1 < want and draws < max_draws:
             draws += 1
             cand_shift = rng.uniform(lo, hi)
-            if not volume.property_violations(
+            if not volume.wall_violations(
                     _shifted(hp, volume, cand_shift)):
                 starts.append(cand_shift)
         if len(starts) - 1 < want:
             warnings.append(
                 f"Only {len(starts) - 1} of {want} random starts landed "
-                f"inside the declared solved-property bounds after "
-                f"{draws} draws. The bounds are tight relative to the legal "
+                f"clear of the declared property bounds and wheel envelope "
+                f"after {draws} draws. The walls are tight relative to the legal "
                 "volume, so the candidate field is thinner than requested "
                 "and the resilience premium is measured over fewer basins.")
     else:
@@ -1070,12 +1585,15 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
 
     cands: list[Candidate] = []
     n_start_prop_refused = 0
+    n_start_env_refused = 0
     n_start_keepout_refused = 0
     for s in starts:
         c = genesis_solve(hp, targets, volume, start_shift=s,
                           max_iter=max_iter, step_mm=step_mm)
         if not c.ok:
-            if c.property_rejections:
+            if c.envelope_rejections:
+                n_start_env_refused += 1
+            elif c.property_rejections:
                 n_start_prop_refused += 1
             elif c.keepout_rejections:
                 n_start_keepout_refused += 1
@@ -1086,7 +1604,17 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
         cands.append(c)
 
     if not cands:
-        if n_start_prop_refused and volume.has_property_bounds():
+        if n_start_env_refused and volume.has_wheel_envelope():
+            reason = (
+                f"No start cleared the declared wheel envelope "
+                f"({volume.wheel_envelope.label}). {n_start_env_refused} of "
+                f"{len(starts)} starts put a link or an outboard pickup inside "
+                "the rim or tire before the search moved. The wall is "
+                "absolute: it refuses a step into the wheel and does not walk "
+                "out from inside it, so free the outboard pickups or enlarge "
+                "their boxes, or seed from a geometry that already clears the "
+                "wheel. No geometry that passes through the wheel was returned.")
+        elif n_start_prop_refused and volume.has_property_bounds():
             names = "; ".join(b.label for b in volume.properties.bounds)
             reason = (
                 f"No start survived the declared solved-property bounds "
@@ -1108,7 +1636,8 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
             candidates=[], winner=None, winner_hp=None, best_fit=None,
             resilience_premium=None, n_starts=len(starts), seed=seed,
             verify_yield=None, verify_agreement=None, thresholds=th,
-            warnings=warnings, property_bounds=volume.properties)
+            warnings=warnings, property_bounds=volume.properties,
+            wheel_envelope=volume.wheel_envelope)
 
     hits = [c for c in cands if c.hit]
 
@@ -1124,6 +1653,13 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
         if best.keepout_rejections:
             limit.append(f"the keep-out filter refused {best.keepout_rejections} "
                          "step(s) toward the curves")
+        if best.node_rejections:
+            limit.append(f"the node wall refused {best.node_rejections} "
+                         "step(s) that would have left a pickup off a frame node")
+        if best.envelope_rejections:
+            limit.append(f"the wheel envelope refused "
+                         f"{best.envelope_rejections} step(s) that would have "
+                         "put a link inside the rim or tire")
         if best.property_rejections:
             names = ", ".join(b.label for b in volume.properties.bounds) \
                 if volume.has_property_bounds() else "a solved-property bound"
@@ -1147,7 +1683,8 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
                              n_starts=len(starts), seed=seed,
                              verify_yield=None, verify_agreement=None,
                              thresholds=th, warnings=warnings,
-            property_bounds=volume.properties)
+            property_bounds=volume.properties,
+            wheel_envelope=volume.wheel_envelope)
 
     best_fit = min(hits, key=lambda c: c.max_band_frac)
 
@@ -1173,7 +1710,8 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
             n_starts=len(starts), seed=seed,
             verify_yield=None, verify_agreement=None,
             thresholds=th, warnings=warnings,
-            property_bounds=volume.properties)
+            property_bounds=volume.properties,
+            wheel_envelope=volume.wheel_envelope)
 
     # ---- the co-optimizer: price every hit for build yield ---------------- #
     for c in cands:
@@ -1248,7 +1786,8 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
         n_starts=len(starts), seed=seed,
         verify_yield=verify_y, verify_agreement=verify_a,
         thresholds=th, warnings=warnings,
-            property_bounds=volume.properties)
+            property_bounds=volume.properties,
+            wheel_envelope=volume.wheel_envelope)
 
 
 # --------------------------------------------------------------------------- #
@@ -1278,7 +1817,16 @@ def render_genesis_md(res: GenesisResult,
                     "step(s)" if w.keepout_rejections else "")
                  + (f"; solved-property bounds refused "
                     f"{w.property_rejections} step(s)"
-                    if w.property_rejections else ""))
+                    if w.property_rejections else "")
+                 + (f"; wheel envelope refused {w.envelope_rejections} "
+                    "step(s)" if w.envelope_rejections else ""))
+        if w.envelope_margin_mm is not None:
+            env = res.wheel_envelope
+            L.append(f"- wheel envelope: worst clearance "
+                     f"{w.envelope_margin_mm:+.2f} mm over the declared travel"
+                     + (" and both steering locks"
+                        if env is not None and env.rack_travel_mm else "")
+                     + "; no link or outboard pickup inside the rim or tire")
         if w.clamped:
             L.append(f"- pinned to the legal box: {', '.join(w.clamped)}")
         L.append("")

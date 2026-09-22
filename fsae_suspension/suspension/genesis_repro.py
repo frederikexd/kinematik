@@ -345,6 +345,62 @@ def _property_bounds_from_dict(d: dict | None) -> ig.SolvedPropertyBounds | None
         n_nodes=int(d.get("n_nodes", 5)))
 
 
+def _envelope_to_dict(e: "ig.WheelEnvelope | None") -> dict | None:
+    """WheelEnvelope → dict; lengths in mm."""
+    if e is None:
+        return None
+    return {"pickup_radius_mm": float(e.pickup_radius_mm),
+            "rim_radius_mm": float(e.rim_radius_mm),
+            "tire_radius_mm": float(e.tire_radius_mm),
+            "rim_half_width_mm": float(e.rim_half_width_mm),
+            "tire_half_width_mm": float(e.tire_half_width_mm),
+            "wheel_offset_mm": float(e.wheel_offset_mm),
+            "clearance_mm": float(e.clearance_mm),
+            "travel_mm": [float(e.travel_mm[0]), float(e.travel_mm[1])],
+            "n_travel": int(e.n_travel),
+            "rack_travel_mm": float(e.rack_travel_mm),
+            "samples_per_link": int(e.samples_per_link),
+            "links": list(e.links),
+            "link_radius_mm": float(e.link_radius_mm),
+            "rod_end_radius_mm": float(e.rod_end_radius_mm),
+            "tire_profile": [[float(r), float(w)] for r, w in e.tire_profile],
+            "joint_swing_limit_deg": e.joint_swing_limit_deg,
+            "sectors": [{"label": q.label, "r_min_mm": q.r_min_mm,
+                         "r_max_mm": q.r_max_mm,
+                         "theta_min_deg": q.theta_min_deg,
+                         "theta_max_deg": q.theta_max_deg,
+                         "axial_min_mm": q.axial_min_mm,
+                         "axial_max_mm": q.axial_max_mm}
+                        for q in e.sectors]}
+
+
+def _envelope_from_dict(d: dict | None) -> "ig.WheelEnvelope | None":
+    """dict → WheelEnvelope; lengths in mm."""
+    if not d:
+        return None
+    d = dict(d)
+    d["travel_mm"] = tuple(d.get("travel_mm", (-25.0, 25.0)))
+    d["links"] = tuple(d.get("links", ig.WheelEnvelope().links))
+    # A manifest written before links had thickness recorded no radius, and
+    # meant thin lines: replay it as written rather than under new defaults.
+    d.setdefault("link_radius_mm", 0.0)
+    d.setdefault("rod_end_radius_mm", 0.0)
+    d["tire_profile"] = tuple(tuple(p) for p in d.get("tire_profile", ()))
+    d["sectors"] = tuple(ig.WheelSector(**q) for q in d.get("sectors", ()))
+    return ig.WheelEnvelope(**d)
+
+
+def nodes_from_framegraph(fg, axle_station_z: float, ground_y: float
+                          ) -> tuple[tuple[float, float, float], ...]:
+    """FrameGraph nodes (CAD axes, mm) → corner-frame node coordinates, mm."""
+    from .tubeframe import FrameGraph
+    if isinstance(fg, dict):
+        fg = FrameGraph.from_dict(fg)
+    return tuple(tuple(float(c) for c in cad_to_corner(
+        np.asarray(n.xyz_mm, float), axle_station_z, ground_y))
+        for n in fg.nodes.values())
+
+
 def volume_to_dict(v: ig.LegalVolume) -> dict:
     """LegalVolume → dict; box bounds, probe radius, clearance and spacing gaps in mm.
 
@@ -363,6 +419,14 @@ def volume_to_dict(v: ig.LegalVolume) -> dict:
     props = _property_bounds_to_dict(getattr(v, "properties", None))
     if props is not None:
         out["properties"] = props
+    env = _envelope_to_dict(getattr(v, "wheel_envelope", None))
+    if env is not None:
+        out["wheel_envelope"] = env
+    na = getattr(v, "node_attachment", None)
+    if na is not None:
+        out["node_attachment"] = {"nodes": [list(n) for n in na.nodes],
+                                  "points": list(na.points),
+                                  "max_offset_mm": float(na.max_offset_mm)}
     return out
 
 
@@ -375,7 +439,13 @@ def volume_from_dict(d: dict) -> ig.LegalVolume:
         probe_radius_mm=float(d.get("probe_radius_mm", 0.0)),
         min_clearance_mm=float(d.get("min_clearance_mm", 0.0)),
         spacings=[ig.PointSpacing(**s) for s in d.get("spacings", [])],
-        properties=_property_bounds_from_dict(d.get("properties")))
+        properties=_property_bounds_from_dict(d.get("properties")),
+        wheel_envelope=_envelope_from_dict(d.get("wheel_envelope")),
+        node_attachment=(ig.NodeAttachment(
+            nodes=tuple(tuple(n) for n in d["node_attachment"]["nodes"]),
+            points=tuple(d["node_attachment"]["points"]),
+            max_offset_mm=float(d["node_attachment"]["max_offset_mm"]))
+            if d.get("node_attachment") else None))
 
 
 def boxes_about(hp: Hardpoints, half: dict[str, Any]
