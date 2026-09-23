@@ -1514,6 +1514,68 @@ def _render_generate():
         return
     st.divider()
     _results_panel(st, pd, np, ss, run)
+    _actuation_panel(st, pd, np, ss, run)
+
+
+def _actuation_panel(st, pd, np, ss, run):
+    """Second stage: design the pushrod, rocker and spring on the returned corner.
+
+    Actuation points do not enter camber, toe or roll centre, so this cannot
+    spoil the kinematic result. Targets are derived from the damper stroke.
+    """
+    res = run.get("result")
+    if res is None or res.winner_hp is None:
+        return
+    from suspension import actuation as _ac
+    with st.expander("\u2699\ufe0f Actuation synthesis \u2014 design the pushrod, rocker "
+                     "and spring for this corner"):
+        st.caption("The motion ratio is set as high as the damper stroke allows, "
+                   "because more damper travel per millimetre of wheel travel "
+                   "gives more usable damping resolution, and its spread across "
+                   "travel is bounded so the wheel rate, and the ride frequency, "
+                   "stay near constant. The pushrod and spring must act close to "
+                   "the rocker plane and away from toggle.")
+        a1, a2, a3 = st.columns(3)
+        stroke = float(a1.number_input("Damper stroke (mm)", 10.0, 200.0, 57.0,
+                                       1.0, key="ig_act_stroke"))
+        spread = float(a2.number_input("Max motion-ratio spread (%)", 1.0, 50.0,
+                                       10.0, 1.0, key="ig_act_spread")) / 100.0
+        box = float(a3.number_input("Point movement box (\u00b1 mm)", 5.0, 100.0,
+                                    40.0, 1.0, key="ig_act_box"))
+        b1, b2 = st.columns(2)
+        hz = float(b1.number_input("Ride frequency at static (Hz)", 0.5, 8.0,
+                                   2.5, 0.05, key="ig_act_hz"))
+        ms = float(b2.number_input("Sprung corner mass (kg)", 5.0, 300.0, 60.1,
+                                   0.1, key="ig_act_ms"))
+        if not st.button("Synthesise actuation", key="ig_act_go"):
+            return
+        t = _ac.ActuationTargets.derived(stroke_mm=stroke, max_spread=spread)
+        with st.spinner("Designing the linkage\u2026"):
+            r = _ac.synthesize_actuation(res.winner_hp, t, box_mm=box,
+                                         ride_hz=hz, sprung_corner_kg=ms)
+        d, m = r.seed_metrics, r.metrics
+        rows = [{"": "default linkage", "motion ratio": d.mr_static,
+                 "spread (%)": 100 * d.spread, "stroke used (mm)": d.stroke_used_mm,
+                 "out of plane (deg)": d.out_of_plane_deg,
+                 "transmission min (deg)": d.transmission_deg[0]},
+                {"": "synthesised", "motion ratio": m.mr_static,
+                 "spread (%)": 100 * m.spread, "stroke used (mm)": m.stroke_used_mm,
+                 "out of plane (deg)": m.out_of_plane_deg,
+                 "transmission min (deg)": m.transmission_deg[0]}]
+        st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+        if r.ok:
+            st.success("Every actuation band met.")
+        else:
+            st.warning("Closest linkage shown; not every band is met. Widen the "
+                       "movement box or relax the spread.")
+        pts = [{"point": p, "x": getattr(r.hp, p)[0], "y": getattr(r.hp, p)[1],
+                "z": getattr(r.hp, p)[2]} for p in _ac.ACTUATION_POINTS]
+        st.dataframe(pd.DataFrame(pts), hide_index=True, width="stretch")
+        if r.ride_frequency_hz:
+            st.dataframe(pd.DataFrame({"travel (mm)": m.travel,
+                                       "ride frequency (Hz)": r.ride_frequency_hz,
+                                       "spring rate (N/mm)": [r.spring_rate_N_per_mm] * len(m.travel)}),
+                         hide_index=True, width="stretch")
 
 
 # =========================================================================== #
