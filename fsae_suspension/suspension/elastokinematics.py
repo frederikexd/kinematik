@@ -226,8 +226,13 @@ class ElastoResult:
 
 
 def solve_elastokinematic(hp: Hardpoints, spec: ElastoSpec, tol_mm: float = 1e-6,
-                          max_iter: int = 40) -> ElastoResult:
-    """Apply ``spec``'s load in steps and solve the deflected corner."""
+                          max_iter: int = 40, jacobian: bool = True) -> ElastoResult:
+    """Apply ``spec``'s load in steps and solve the deflected corner.
+
+    ``jacobian=False`` skips the linear comparison (linear and linearity_error
+    are then empty), which is what the search uses: the non-linear result is
+    the one bounded, and the Jacobian costs thirty extra solves.
+    """
     _, s_rigid = _state(hp, None, None)
     base = _channels_of(s_rigid)
     pick = {p: np.zeros(3) for p in PICKUPS}
@@ -264,6 +269,12 @@ def solve_elastokinematic(hp: Hardpoints, spec: ElastoSpec, tol_mm: float = 1e-6
         forces = {m: float(mf.forces.get(m, 0.0)) for m in MEMBER_PICKUP}
     _, s_def = _state(hp, pick, lens)
     nl = _channels_of(s_def) - base
+    if not jacobian:
+        return ElastoResult(
+            change={c: float(v) for c, v in zip(CHANNELS, nl)}, linear={},
+            linearity_error={}, pickup_deflection_mm={p: pick[p].tolist() for p in PICKUPS},
+            link_deflection_mm=link_defl, member_forces=forces, converged=ok,
+            iterations=iters, provenance=spec.stiffness.provenance)
     J = compliance_jacobian(hp)
     lin = J @ np.concatenate([pick[p] for p in PICKUPS])
     if lens:

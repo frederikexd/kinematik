@@ -557,7 +557,7 @@ def properties_of(hp: Hardpoints, ctx: "SolvedPropertyBounds",
             return out
         try:
             from .elastokinematics import solve_elastokinematic
-            r = solve_elastokinematic(hp, spec)
+            r = solve_elastokinematic(hp, spec, jacobian=False)
         except Exception:
             return None
         if not r.converged:
