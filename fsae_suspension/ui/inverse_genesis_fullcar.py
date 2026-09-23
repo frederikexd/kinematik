@@ -592,6 +592,53 @@ def render():
             except Exception as exc:
                 st.info(f"Load-case synthesis unavailable: {exc}")
 
+            st.markdown("**Under load: what the pickups and the frame do to the wheel**")
+            st.caption("The same peak-corner load, solved with the chassis "
+                       "pickups on springs (node, bracket and bearing in series) "
+                       "and applied in steps, re-resolving member forces on the "
+                       "deflected geometry each time. Then the frame's own twist "
+                       "between the rack and the tie-rod plane. Use measured "
+                       "stiffness where you have it.")
+            e1, e2, e3 = st.columns(3)
+            fk = float(e1.number_input("Pickup stiffness (kN/mm)", 1.0, 500.0,
+                                       30.0, 1.0, key="fc_ek_k"))
+            fkt = float(e2.number_input("Frame torsional stiffness K_T (N·m/deg)",
+                                        100.0, 50000.0, 2000.0, 100.0,
+                                        key="fc_ek_kt"))
+            fsep = float(e3.number_input("Rack to tie-rod plane (mm)", 0.0,
+                                         600.0, 150.0, 5.0, key="fc_ek_sep"))
+            try:
+                from suspension import elastokinematics as _ek
+                hp_e, _ = _corner_hp(ss, "front")
+                r = fc.elastokinematic_check(
+                    res.winner, space, hp=hp_e,
+                    stiffness=_ek.StiffnessField(fk * 1000.0))
+                ft = fc.frame_twist_toe_budget(res.winner, space, fkt, fsep, hp=hp_e)
+                erows = [{"source": "pickup compliance", "camber (deg)":
+                          round(r.change["camber"], 4), "toe (deg)":
+                          round(r.change["toe"], 4), "caster (deg)":
+                          round(r.change["caster"], 4), "KPI (deg)":
+                          round(r.change["kpi"], 4)},
+                         {"source": "frame twist, rack vs tie-rod plane",
+                          "camber (deg)": None, "toe (deg)": round(ft["toe_deg"], 4),
+                          "caster (deg)": None, "KPI (deg)": None}]
+                st.dataframe(pd.DataFrame(erows), hide_index=True, width="stretch")
+                from suspension.provenance import graded as _g
+                _lim = f"{r.provenance} pickup stiffness"
+                st.caption("Converged: " + str(r.converged) + " (iterations per "
+                           "step " + str(r.iterations) + "); linear-correction "
+                           "error " + _g(max(r.linearity_error.values()),
+                                         "modelled", "deg", digits=2,
+                                         limited_by=_lim)
+                           + ". Frame twist " + _g(ft["twist_deg"], "modelled",
+                                                   "deg", digits=3,
+                                                   limited_by="declared K_T")
+                           + " across the wheelbase under "
+                           + _g(ft["torque_Nm"], "modelled", "N·m", digits=0,
+                                limited_by="declared mass and CG") + ".")
+            except Exception as exc:
+                st.info(f"Elastokinematic check unavailable: {exc}")
+
         with tabs[2]:
             st.caption("The nominal corner geometry as a coordinate table — "
                        "the CAD/DXF tools' input, not STEP (KinematiK carries "

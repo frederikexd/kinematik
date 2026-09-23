@@ -303,6 +303,14 @@ def _obstacle_from_dict(d: dict):
     raise ValueError(f"Unknown keep-out type '{d['type']}'.")
 
 
+def _elasto_from_dict(d: dict | None):
+    """dict -> elastokinematics.ElastoSpec (stiffness N/mm, forces N), or None."""
+    if not d:
+        return None
+    from . import elastokinematics as _ek
+    return _ek.ElastoSpec.from_dict(d)
+
+
 def _property_bounds_to_dict(b: ig.SolvedPropertyBounds | None) -> dict | None:
     """SolvedPropertyBounds → dict; infinities as JSON null, lengths in mm.
 
@@ -323,7 +331,9 @@ def _property_bounds_to_dict(b: ig.SolvedPropertyBounds | None) -> dict | None:
             "brake_bias_front": float(b.brake_bias_front),
             "drive_bias_rear": float(b.drive_bias_rear),
             "travel_mm": [float(b.travel_mm[0]), float(b.travel_mm[1])],
-            "n_nodes": int(b.n_nodes)}
+            "n_nodes": int(b.n_nodes),
+            **({"elasto": b.elasto.to_dict()}
+               if getattr(b, "elasto", None) is not None else {})}
 
 
 def _property_bounds_from_dict(d: dict | None) -> ig.SolvedPropertyBounds | None:
@@ -342,7 +352,8 @@ def _property_bounds_from_dict(d: dict | None) -> ig.SolvedPropertyBounds | None
         brake_bias_front=float(d.get("brake_bias_front", 0.60)),
         drive_bias_rear=float(d.get("drive_bias_rear", 1.0)),
         travel_mm=tuple(d.get("travel_mm", (-25.0, 25.0))),
-        n_nodes=int(d.get("n_nodes", 5)))
+        n_nodes=int(d.get("n_nodes", 5)),
+        elasto=_elasto_from_dict(d.get("elasto")))
 
 
 def _envelope_to_dict(e: "ig.WheelEnvelope | None") -> dict | None:

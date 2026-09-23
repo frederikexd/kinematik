@@ -395,6 +395,15 @@ SOLVED_PROPERTIES: tuple[str, ...] = (
     "scrub_static_mm",         # static scrub radius, mm
     "rc_migration_mm_per_mm",  # d(roll-centre height)/d(travel), chassis frame
 )
+#: properties of the loaded corner; they need an ElastoSpec on the context
+COMPLIANCE_PROPERTIES: tuple[str, ...] = (
+    "compliance_camber_deg",   # camber change under the declared load, deg
+    "compliance_toe_deg",      # toe change under the declared load, deg
+    "compliance_caster_deg",   # caster change under the declared load, deg
+    "compliance_kpi_deg",      # kingpin-inclination change under load, deg
+)
+#: every name a PropertyBound may carry
+BOUNDABLE_PROPERTIES: tuple[str, ...] = SOLVED_PROPERTIES + COMPLIANCE_PROPERTIES
 
 _PROPERTY_LABELS = {
     "anti_dive_pct":          "anti-dive, front (%)",
@@ -404,6 +413,10 @@ _PROPERTY_LABELS = {
     "kpi_deg":                "kingpin inclination (deg)",
     "scrub_static_mm":        "scrub radius, static (mm)",
     "rc_migration_mm_per_mm": "roll-centre migration (mm/mm)",
+    "compliance_camber_deg":  "compliance camber (deg)",
+    "compliance_toe_deg":     "compliance steer (deg)",
+    "compliance_caster_deg":  "compliance caster (deg)",
+    "compliance_kpi_deg":     "compliance kingpin inclination (deg)",
 }
 
 #: properties that need the (more expensive) side-view path slope
@@ -412,6 +425,9 @@ _PITCH_PROPERTIES = frozenset({"anti_dive_pct", "anti_squat_pct",
 
 #: how many random shifts to draw per requested start when hunting for one
 #: that already satisfies the declared property bounds
+#: properties that need an elastokinematic solve (ElastoSpec on the context)
+_COMPLIANCE_PROPERTIES = frozenset(COMPLIANCE_PROPERTIES)
+
 _MAX_START_DRAWS_PER_START = 200
 
 
@@ -436,10 +452,10 @@ class PropertyBound:
     label: str = ""
 
     def __post_init__(self):
-        if self.prop not in SOLVED_PROPERTIES:
+        if self.prop not in BOUNDABLE_PROPERTIES:
             raise ValueError(
                 f"PropertyBound: unknown property '{self.prop}'. Allowed: "
-                f"{', '.join(SOLVED_PROPERTIES)}.")
+                f"{', '.join(BOUNDABLE_PROPERTIES)}.")
         self.lo = float(self.lo)
         self.hi = float(self.hi)
         if self.hi < self.lo:
@@ -532,6 +548,24 @@ def properties_of(hp: Hardpoints, ctx: "SolvedPropertyBounds",
                     ctx.drive_bias_rear, state=s0))
         except Exception:
             return None
+    if want & _COMPLIANCE_PROPERTIES:
+        spec = getattr(ctx, "elasto", None)
+        if spec is None:
+            # not evaluable without a load case; a bound on one cannot be
+            # declared without it (SolvedPropertyBounds refuses), so skipping
+            # here only affects explicit ``only=`` requests
+            return out
+        try:
+            from .elastokinematics import solve_elastokinematic
+            r = solve_elastokinematic(hp, spec)
+        except Exception:
+            return None
+        if not r.converged:
+            return None
+        for ch in ("camber", "toe", "caster", "kpi"):
+            key = f"compliance_{ch}_deg"
+            if key in want:
+                out[key] = float(r.change[ch])
     return out
 
 
@@ -553,6 +587,9 @@ class SolvedPropertyBounds:
     drive_bias_rear: float = 1.0
     travel_mm: tuple[float, float] = (-25.0, 25.0)
     n_nodes: int = 5
+    #: load case and pickup stiffness for the compliance_* properties
+    #: (elastokinematics.ElastoSpec); required only when one is bounded
+    elasto: object = None
 
     def __post_init__(self):
         self.bounds = list(self.bounds)
@@ -560,6 +597,10 @@ class SolvedPropertyBounds:
             if not isinstance(b, PropertyBound):
                 raise TypeError("SolvedPropertyBounds.bounds takes "
                                 "PropertyBound instances.")
+        if self.elasto is None and any(b.prop in _COMPLIANCE_PROPERTIES
+                                       for b in self.bounds):
+            raise ValueError("A compliance_* bound needs an elastokinematic "
+                             "load case: pass elasto=ElastoSpec(...).")
         for name in ("cg_height_mm", "wheelbase_mm", "track_mm"):
             if float(getattr(self, name)) <= 0.0:
                 raise ValueError(f"SolvedPropertyBounds.{name} must be > 0.")

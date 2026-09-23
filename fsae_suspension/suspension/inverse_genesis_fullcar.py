@@ -1081,6 +1081,63 @@ def load_case_for(score: ConfigScore, space: DesignSpace,
 LBF_IN_TO_N_MM = 0.1751268
 
 
+def elastokinematic_check(score: ConfigScore, space: DesignSpace,
+                          hp: Hardpoints | None = None, stiffness=None,
+                          n_steps: int = 5):
+    """The peak-corner load of ``load_case_for`` through the elastokinematic solve.
+
+    Returns an ``elastokinematics.ElastoResult``: camber, toe, caster and
+    kingpin-inclination change (deg) at the outer front corner when the chassis
+    pickups have the stiffness in ``stiffness`` (an
+    ``elastokinematics.StiffnessField``; declared 30 kN/mm if omitted). The
+    load is the same conservative single-corner bound the member-force table
+    uses, so the two are consistent.
+    """
+    from . import elastokinematics as _ek
+    hp = hp or Hardpoints.default()
+    peak_g = score.peak_lat_g if math.isfinite(score.peak_lat_g) else 1.4
+    mass = score.derived.get("mass_kg", 280.0)
+    fz_outer = mass * 9.81 * space.weight_dist_front
+    load: WheelLoad = wheel_load_from_corner(Fz=fz_outer, mu_lateral=peak_g,
+                                             mu_long=0.0)
+    spec = _ek.ElastoSpec(stiffness=stiffness or _ek.StiffnessField(),
+                          Fx=load.Fx, Fy=load.Fy, Fz=load.Fz, Mz=load.Mz,
+                          n_steps=n_steps)
+    return _ek.solve_elastokinematic(hp, spec)
+
+
+def frame_twist_toe_budget(score: ConfigScore, space: DesignSpace,
+                           kt_Nm_per_deg: float, rack_separation_mm: float,
+                           lever_mm: float = 200.0,
+                           toe_per_mm: float | None = None,
+                           hp: Hardpoints | None = None,
+                           cg_height_mm: float = 280.0,
+                           wheelbase_mm: float = 1630.0) -> dict:
+    """Toe (deg) the frame's own twist puts into the steering at peak lateral g.
+
+    The roll moment the front axle passes through the structure, M = m g a h / 2
+    (N*m), twists the frame by M / K_T; the part of that twist between the rack
+    mounts and the tie-rod inner plane moves the rack, and the tie-rod
+    sensitivity turns it into toe. ``toe_per_mm`` defaults to the solved
+    sensitivity of ``hp`` along the tie rod. Lengths mm, K_T in N*m/deg.
+    """
+    from . import elastokinematics as _ek
+    import numpy as _np
+    hp = hp or Hardpoints.default()
+    if toe_per_mm is None:
+        J = _ek.compliance_jacobian(hp, points=("tie_rod_inner",))
+        u = _np.asarray(hp.tie_rod_outer, float) - _np.asarray(hp.tie_rod_inner, float)
+        u /= _np.linalg.norm(u)
+        toe_per_mm = float(abs(J[1] @ u))
+    peak_g = score.peak_lat_g if math.isfinite(score.peak_lat_g) else 1.4
+    mass = score.derived.get("mass_kg", 280.0)
+    torque = mass * 9.81 * peak_g * (cg_height_mm / 1000.0) / 2.0
+    toe = _ek.frame_twist_toe(torque, kt_Nm_per_deg, wheelbase_mm,
+                              rack_separation_mm, lever_mm, toe_per_mm)
+    return {"torque_Nm": torque, "toe_deg": toe, "toe_per_mm": toe_per_mm,
+            "twist_deg": torque / kt_Nm_per_deg}
+
+
 @dataclass
 class DeclaredCar:
     """A vehicle stated in full: every field is a declared input.

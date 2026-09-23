@@ -1181,7 +1181,7 @@ def _render_generate():
             num_rows="dynamic", key="ig_pbounds", hide_index=True,
             column_config={
                 "property": st.column_config.SelectboxColumn(
-                    options=list(ig.SOLVED_PROPERTIES), width="medium"),
+                    options=list(ig.BOUNDABLE_PROPERTIES), width="medium"),
                 "lo": st.column_config.NumberColumn(help="empty = no floor"),
                 "hi": st.column_config.NumberColumn(help="empty = no ceiling")})
         pv = _veh(ss)
@@ -1193,6 +1193,27 @@ def _render_generate():
         pb_nodes = int(p2.number_input(
             "Property sweep nodes", 3, 21, 5, 1,
             help=_HELP["ig_pb_nodes"], key="ig_pb_nodes"))
+        # ---- elastokinematic load case for the compliance_* rows ------- #
+        st.markdown("**Compliance under load** — for any `compliance_*` row")
+        st.caption("The corner is solved with the chassis pickups on springs: "
+                   "the node, bracket and bearing in series at each one. Member "
+                   "forces are re-resolved on the deflected geometry at every "
+                   "load step, so compliance steer and compliance camber become "
+                   "walls like any other property. Use the stiffness your pull "
+                   "tests measured; a declared value is reported as declared.")
+        c1, c2, c3 = st.columns(3)
+        ek_k = float(c1.number_input("Pickup stiffness (kN/mm)", 1.0, 500.0,
+                                     30.0, 1.0, key="ig_ek_k",
+                                     help="Series stiffness of node, bracket "
+                                          "and bearing at every chassis pickup."))
+        ek_prov = c2.selectbox("Stiffness source", ["declared", "measured", "fea"],
+                               key="ig_ek_prov")
+        ek_steps = int(c3.number_input("Load steps", 1, 20, 5, 1, key="ig_ek_steps"))
+        c4, c5 = st.columns(2)
+        ek_lat = float(c4.number_input("Lateral g at this corner", 0.0, 3.0,
+                                       1.5, 0.1, key="ig_ek_lat"))
+        ek_fz = float(c5.number_input("Outer-wheel vertical load (N)", 0.0,
+                                      10000.0, 1235.0, 5.0, key="ig_ek_fz"))
         if len(pb_df.index):
             st.caption(f"Anti-dive and anti-squat also read the declared "
                        f"CG height ({pv['cg_height_mm']:.0f} mm), wheelbase "
@@ -1214,6 +1235,7 @@ def _render_generate():
         except (ValueError, TypeError) as e:
             st.error(f"Property bound skipped: {e}")
 
+    from suspension import elastokinematics as _ek
     properties = None
     if pbounds:
         try:
@@ -1225,7 +1247,13 @@ def _render_generate():
                 brake_bias_front=float(pv["brake_bias_front"]),
                 drive_bias_rear=drive_rear,
                 travel_mm=(-float(travel), float(travel)),
-                n_nodes=pb_nodes)
+                n_nodes=pb_nodes,
+                elasto=(_ek.ElastoSpec(
+                    stiffness=_ek.StiffnessField(ek_k * 1000.0,
+                                                 provenance=ek_prov),
+                    Fy=ek_lat * ek_fz, Fz=ek_fz, n_steps=ek_steps)
+                    if any(b.prop.startswith("compliance_") for b in pbounds)
+                    else None))
         except (ValueError, TypeError) as e:
             st.error(f"Solved-property bounds refused: {e}")
             return
