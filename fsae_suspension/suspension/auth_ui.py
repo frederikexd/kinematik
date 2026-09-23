@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import re
-import uuid as _uuid
 
 from .auth import AuthError, SupabaseAuth, Session, build_auth
 from .workspace import WorkspaceContext
@@ -27,10 +26,7 @@ from .workspace import WorkspaceContext
 
 _SS_SESSION = "_kx_auth_session"        # dict of cached tokens
 _SS_CTX = "_kx_workspace_ctx"           # the active WorkspaceContext
-_SS_AUTH = "_kx_auth_client"
-_SS_GUEST = "_kx_guest_ctx"             # guest WorkspaceContext (no JWT)
-_GUEST_FLAG_SECRET = "KINEMATIK_GUEST_WORKSPACE_ID"
-_GUEST_QUERY_PARAM = "guest"            # ?guest=1 bypasses the login screen            # cached SupabaseAuth instance
+_SS_AUTH = "_kx_auth_client"            # cached SupabaseAuth instance
 
 
 def _get_auth(st) -> SupabaseAuth | None:
@@ -301,45 +297,6 @@ def current_session(st) -> Session | None:
         return None
     return _restore_session(st, auth)
 
-
-
-
-def _guest_workspace_id(st) -> "str | None":
-    """ID of the workspace to use for unauthenticated guest access.
-
-    Set KINEMATIK_GUEST_WORKSPACE_ID = "<uuid>" in Streamlit Cloud
-    Settings -> Secrets (the TOML box).  When blank or absent the guest
-    pathway is disabled and the normal login gate applies.
-    """
-    try:
-        val = st.secrets.get(_GUEST_FLAG_SECRET)
-    except Exception:
-        val = None
-    if not val:
-        import os as _os
-        val = _os.environ.get(_GUEST_FLAG_SECRET)
-    return str(val).strip() or None
-
-
-def _build_guest_ctx(workspace_id: str) -> "WorkspaceContext":
-    """A read-only WorkspaceContext for unauthenticated visitors."""
-    from .workspace import Workspace
-    ws = Workspace(id=workspace_id, name="Guest workspace", kind="sandbox")
-    return WorkspaceContext(
-        workspace=ws,
-        user_id="guest-" + _uuid.uuid4().hex[:8],
-        access_token="",
-        role="viewer",          # viewer = read-only in every store gate
-        email="guest",
-    )
-
-
-def _render_guest_banner(st) -> None:
-    st.caption(
-        "Guest workspace: you can run manifests and explore the tool, "
-        "but nothing you do here is saved. "
-        "Create a free account to get your own workspace."
-    )
 
 _ADMIN_ROLES = ("lead", "member")   # roles this UI hands out (owner is implicit)
 
@@ -874,43 +831,6 @@ def require_workspace(st) -> WorkspaceContext | None:
     auth = _get_auth(st)
     if auth is None:
         return None
-
-    # ------ guest pathway: no sign-in required ------
-    guest_ws_id = _guest_workspace_id(st)
-    if guest_ws_id:
-        cached = st.session_state.get(_SS_GUEST)
-        if isinstance(cached, WorkspaceContext):
-            _render_guest_banner(st)
-            return cached
-        try:
-            auto = str(st.query_params.get(_GUEST_QUERY_PARAM, "")).strip().lower() in ("1", "true", "yes")
-        except Exception:
-            auto = False
-        if auto:
-            ctx = _build_guest_ctx(guest_ws_id)
-            st.session_state[_SS_GUEST] = ctx
-            st.session_state[_SS_CTX] = ctx
-            try:
-                st.query_params.clear()
-            except Exception:
-                pass
-            _render_guest_banner(st)
-            return ctx
-        with st.sidebar:
-            st.markdown("### Welcome to KinematiK")
-            st.caption(
-                "Sign in to save your work and share results with your team.\n\n"
-                "Or explore as a guest \u2014 no account needed."
-            )
-            if st.button("Continue as guest", use_container_width=True,
-                         key="_kx_enter_guest"):
-                ctx = _build_guest_ctx(guest_ws_id)
-                st.session_state[_SS_GUEST] = ctx
-                st.session_state[_SS_CTX] = ctx
-                _render_guest_banner(st)
-                return ctx
-            st.divider()
-            st.markdown("**Or sign in below**")
 
     # Supabase configured: a signed-in user + selected workspace is required
     # before any tenant data renders. That is the tenant wall.
