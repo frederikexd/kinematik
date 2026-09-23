@@ -100,7 +100,6 @@ history is in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-AGPL-3.0: free to use, fork and build on. Modifications must be shared under
-the same licence.
+AGPL-3.0
 
 Original work of Frederik Thio. © 2026.
