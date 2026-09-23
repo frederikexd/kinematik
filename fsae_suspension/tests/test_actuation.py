@@ -64,3 +64,58 @@ def test_synthesis_leaves_the_kinematics_alone():
     b = SuspensionKinematics(r.hp).sweep(-25.0, 25.0, 5)
     assert max(abs(x.camber - y.camber) for x, y in zip(a, b)) < 1e-9
     assert max(abs(x.toe - y.toe) for x, y in zip(a, b)) < 1e-9
+
+
+# --------------------------------------------------------------------------- #
+#  Frame tubes, nodes, and rocker bearings
+# --------------------------------------------------------------------------- #
+def _brute(p0, p1, q0, q1, n=801):
+    s = np.linspace(0, 1, n)[:, None]
+    P = p0 + s * (p1 - p0); Q = q0 + s * (q1 - q0)
+    return float(np.min(np.linalg.norm(P[:, None, :] - Q[None, ::2, :], axis=2)))
+
+
+def test_segment_distance_matches_brute_force():
+    """Regression: an earlier scalar version divided by the wrong denominator."""
+    rng = np.random.default_rng(7)
+    for _ in range(25):
+        p0, p1, q0, q1 = (rng.uniform(-400, 400, 3) for _ in range(4))
+        assert ac._seg_dist(p0, p1, q0, q1) == pytest.approx(_brute(p0, p1, q0, q1), abs=1.0)
+
+
+def test_clearance_is_swept_through_travel():
+    """A tube the linkage only reaches in bump is caught; a static check misses it."""
+    m = ac.actuation_metrics(HP)
+    from suspension.kinematics import SuspensionKinematics
+    kin = SuspensionKinematics(HP)
+    st = kin.solve_at_travel(25.0)
+    L, th, ok = kin.spring_length_at(st, seed=0.0)
+    rs_b = kin._rotate_about_axis(HP.rocker_spring, th)
+    tube = [(rs_b + np.array([0, 0, 12.0]), rs_b + np.array([0, 0, 40.0]), 5.0)]
+    hit = ac.actuation_metrics(HP, obstacles=tube)
+    assert hit.clearance_mm < 5.0
+
+
+def test_node_gap_is_measured():
+    far = np.array([[5000.0, 5000.0, 5000.0]])
+    near = np.array([np.asarray(HP.rocker_pivot), np.asarray(HP.spring_inner)])
+    assert ac.actuation_metrics(HP, nodes=far).node_gap_mm > 1000.0
+    assert ac.actuation_metrics(HP, nodes=near).node_gap_mm == pytest.approx(0.0, abs=1e-9)
+
+
+def test_rocker_is_in_equilibrium():
+    """Pushrod, spring and pivot forces sum to zero and balance moments about the axis."""
+    from suspension import genesis_repro as gr
+    rows = ac.rocker_bearing_loads(HP, gr.vehicle_load_cases())
+    assert len(rows) == 5
+    assert all(r["pivot_radial_N"] > 0 and np.isfinite(r["s0"]) for r in rows)
+
+
+def test_offset_rocker_loads_its_bearings_harder():
+    from suspension import genesis_repro as gr
+    import copy
+    flat = ac.rocker_bearing_loads(HP, gr.vehicle_load_cases())
+    h = copy.deepcopy(HP)
+    h.rocker_pushrod = np.asarray(h.rocker_pushrod, float) + np.array([40.0, 0.0, 0.0])
+    off = ac.rocker_bearing_loads(h, gr.vehicle_load_cases())
+    assert max(r["couple_Nmm"] for r in off) > max(r["couple_Nmm"] for r in flat)
