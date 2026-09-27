@@ -146,6 +146,77 @@ class StiffnessField:
 
 
 @dataclass
+class FrameTwist:
+    """A global frame twist mode between the rack and the tie-rod plane.
+
+    The pickup stiffness field is local: it cannot see the frame twisting
+    between the axles. This carries the uniform-twist estimate of
+    ``frame_twist_toe`` onto every trial geometry, so it can be bounded inside
+    the search: the roll moment ``torque_Nm`` twists a frame of torsional
+    stiffness ``kt_Nm_per_deg``; the share of that twist over
+    ``separation_mm`` (rack mounts to tie-rod inner plane) moves the rack by
+    that angle times ``lever_mm``, and the corner's own tie-rod sensitivity,
+    solved per geometry, turns it into toe. Lengths mm.
+    """
+    kt_Nm_per_deg: float
+    torque_Nm: float
+    separation_mm: float
+    lever_mm: float = 200.0
+    wheelbase_mm: float = 1630.0
+
+    def __post_init__(self):
+        for n in ("kt_Nm_per_deg", "wheelbase_mm"):
+            if float(getattr(self, n)) <= 0.0:
+                raise ValueError(f"FrameTwist.{n} must be > 0.")
+        for n in ("separation_mm", "lever_mm"):
+            if float(getattr(self, n)) < 0.0:
+                raise ValueError(f"FrameTwist.{n} must be >= 0.")
+
+    def toe_deg(self, hp: Hardpoints) -> float:
+        """Toe (deg) the twist puts into this corner."""
+        J = compliance_jacobian(hp, points=("tie_rod_inner",))
+        u = np.asarray(hp.tie_rod_outer, float) - np.asarray(hp.tie_rod_inner, float)
+        u /= np.linalg.norm(u)
+        toe_per_mm = float(abs(J[1] @ u))
+        return abs(frame_twist_toe(self.torque_Nm, self.kt_Nm_per_deg,
+                                   self.wheelbase_mm, self.separation_mm,
+                                   self.lever_mm, toe_per_mm))
+
+    def to_dict(self) -> dict:
+        return {"kt_Nm_per_deg": float(self.kt_Nm_per_deg),
+                "torque_Nm": float(self.torque_Nm),
+                "separation_mm": float(self.separation_mm),
+                "lever_mm": float(self.lever_mm),
+                "wheelbase_mm": float(self.wheelbase_mm)}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "FrameTwist":
+        return cls(**{k: float(v) for k, v in d.items()})
+
+
+def lash_deadband(hp: Hardpoints, lash_mm: Mapping[str, float],
+                  h: float = 0.01) -> dict:
+    """Worst-case channel movement (deg) the declared joint clearance allows.
+
+    A joint with clearance lets its link change effective length by up to
+    the clearance with no load at all, ahead of any stiffness. The deadband of
+    each channel is the sum over members of |d channel / d length| times that
+    member's total clearance: the worst case, every joint at the end of its
+    play in the adverse direction. Returns {channel: deg}.
+    """
+    out = np.zeros(len(CHANNELS))
+    base = None
+    for m, c in lash_mm.items():
+        if not c:
+            continue
+        key = _MEMBER_TO_LENGTHKEY[m]
+        cp = _channels_of(_state(hp, None, {key: h})[1])
+        cm = _channels_of(_state(hp, None, {key: -h})[1])
+        out += np.abs((cp - cm) / (2.0 * h)) * float(c)
+    return {ch: float(v) for ch, v in zip(CHANNELS, out)}
+
+
+@dataclass
 class ElastoSpec:
     """Load case and stiffness a compliance evaluation runs under.
 
@@ -160,27 +231,65 @@ class ElastoSpec:
     Mz: float = 0.0
     n_steps: int = 5
     members: dict = field(default_factory=dict)
+    #: shaft-reacted longitudinal force at the wheel centre (N), see
+    #: loadpath.WheelLoad.Fx_wc (inboard drive / inboard brakes)
+    Fx_wc: float = 0.0
+    #: total radial clearance (mm) per member across both of its joints, the
+    #: free play taken up before the joint carries load: {"TR": 0.05, ...}
+    joint_lash_mm: dict = field(default_factory=dict)
+    #: optional global frame twist between the rack and the tie-rod plane
+    twist: "FrameTwist | None" = None
 
     def __post_init__(self):
         if int(self.n_steps) < 1:
             raise ValueError("ElastoSpec.n_steps must be >= 1.")
+        self.joint_lash_mm = {str(k): float(v) for k, v in
+                              dict(self.joint_lash_mm).items()}
+        for k, v in self.joint_lash_mm.items():
+            if k not in MEMBER_PICKUP:
+                raise ValueError(f"ElastoSpec.joint_lash_mm: unknown member '{k}'.")
+            if v < 0.0:
+                raise ValueError("ElastoSpec.joint_lash_mm values must be >= 0 (mm).")
+        if self.twist is not None and not isinstance(self.twist, FrameTwist):
+            raise TypeError("ElastoSpec.twist takes a FrameTwist.")
 
     def load(self, frac: float = 1.0) -> _lp.WheelLoad:
         return _lp.WheelLoad(Fx=frac * self.Fx, Fy=frac * self.Fy,
-                             Fz=frac * self.Fz, Mz=frac * self.Mz)
+                             Fz=frac * self.Fz, Mz=frac * self.Mz,
+                             Fx_wc=frac * self.Fx_wc)
 
     def to_dict(self) -> dict:
-        """JSON-safe; member stiffness maps are not serialised (declare in code)."""
-        return {"stiffness": self.stiffness.to_dict(), "Fx": float(self.Fx),
-                "Fy": float(self.Fy), "Fz": float(self.Fz), "Mz": float(self.Mz),
-                "n_steps": int(self.n_steps)}
+        """JSON-safe; member stiffness maps are not serialised (declare in code).
+
+        Fields added after the first manifest schema are written only when
+        they differ from their defaults, so every earlier manifest keeps its
+        input hash.
+        """
+        d = {"stiffness": self.stiffness.to_dict(), "Fx": float(self.Fx),
+             "Fy": float(self.Fy), "Fz": float(self.Fz), "Mz": float(self.Mz),
+             "n_steps": int(self.n_steps)}
+        if self.Fx_wc:
+            d["Fx_wc"] = float(self.Fx_wc)
+        if self.joint_lash_mm:
+            d["joint_lash_mm"] = dict(sorted(self.joint_lash_mm.items()))
+        if self.twist is not None:
+            d["twist"] = self.twist.to_dict()
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "ElastoSpec":
         return cls(stiffness=StiffnessField.from_dict(d.get("stiffness", {})),
                    Fx=float(d.get("Fx", 0.0)), Fy=float(d.get("Fy", 0.0)),
                    Fz=float(d.get("Fz", 0.0)), Mz=float(d.get("Mz", 0.0)),
-                   n_steps=int(d.get("n_steps", 5)))
+                   n_steps=int(d.get("n_steps", 5)),
+                   Fx_wc=float(d.get("Fx_wc", 0.0)),
+                   joint_lash_mm=dict(d.get("joint_lash_mm", {})),
+                   twist=(FrameTwist.from_dict(d["twist"]) if d.get("twist")
+                          else None))
+
+    def wheel_load_magnitude(self) -> float:
+        """|F| of the full wheel load, N (contact-patch and wheel-centre parts)."""
+        return float(np.linalg.norm(self.load(1.0).force()))
 
 
 def _state(hp: Hardpoints, pickup: dict | None, lengths: dict | None):
@@ -223,6 +332,8 @@ class ElastoResult:
     converged: bool
     iterations: list               # fixed-point iterations per load step
     provenance: str
+    #: every member's final axial force (N), pushrod included
+    all_member_forces: dict = field(default_factory=dict)
 
 
 def solve_elastokinematic(hp: Hardpoints, spec: ElastoSpec, tol_mm: float = 1e-6,
@@ -238,7 +349,7 @@ def solve_elastokinematic(hp: Hardpoints, spec: ElastoSpec, tol_mm: float = 1e-6
     pick = {p: np.zeros(3) for p in PICKUPS}
     lens: dict = {}
     link_defl: dict = {}
-    iters, ok, forces = [], True, {}
+    iters, ok, forces, all_f = [], True, {}, {}
     for k in range(1, int(spec.n_steps) + 1):
         load = spec.load(k / int(spec.n_steps))
         for it in range(1, max_iter + 1):
@@ -267,6 +378,7 @@ def solve_elastokinematic(hp: Hardpoints, spec: ElastoSpec, tol_mm: float = 1e-6
             ok = False
         iters.append(it)
         forces = {m: float(mf.forces.get(m, 0.0)) for m in MEMBER_PICKUP}
+        all_f = {m: float(v) for m, v in mf.forces.items()}
     _, s_def = _state(hp, pick, lens)
     nl = _channels_of(s_def) - base
     if not jacobian:
@@ -274,7 +386,8 @@ def solve_elastokinematic(hp: Hardpoints, spec: ElastoSpec, tol_mm: float = 1e-6
             change={c: float(v) for c, v in zip(CHANNELS, nl)}, linear={},
             linearity_error={}, pickup_deflection_mm={p: pick[p].tolist() for p in PICKUPS},
             link_deflection_mm=link_defl, member_forces=forces, converged=ok,
-            iterations=iters, provenance=spec.stiffness.provenance)
+            iterations=iters, provenance=spec.stiffness.provenance,
+            all_member_forces=all_f)
     J = compliance_jacobian(hp)
     lin = J @ np.concatenate([pick[p] for p in PICKUPS])
     if lens:
@@ -287,7 +400,8 @@ def solve_elastokinematic(hp: Hardpoints, spec: ElastoSpec, tol_mm: float = 1e-6
         linearity_error={c: float(abs(a - b)) for c, a, b in zip(CHANNELS, nl, lin)},
         pickup_deflection_mm={p: pick[p].tolist() for p in PICKUPS},
         link_deflection_mm=link_defl, member_forces=forces, converged=ok,
-        iterations=iters, provenance=spec.stiffness.provenance)
+        iterations=iters, provenance=spec.stiffness.provenance,
+        all_member_forces=all_f)
 
 
 def required_uniform_stiffness(hp: Hardpoints, spec: ElastoSpec, channel: str,

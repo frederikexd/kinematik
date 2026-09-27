@@ -36,6 +36,8 @@ interface.
 from __future__ import annotations
 
 import math
+
+import numpy as np
 from dataclasses import dataclass, replace
 
 G0 = 9.81  # m/s^2
@@ -54,6 +56,15 @@ class Vehicle:
     roll_gradient_deg_per_g: float = 0.78
     ride_front_hz: float = 2.8
     ride_rear_hz: float = 3.0
+    #: tire vertical rate (N/mm) in series with the suspension; None keeps the
+    #: tires rigid, which is how every table of the paper was computed. With a
+    #: rate, the whole lateral transfer deflects the tires and rolls the car
+    #: further relative to the road, and the camber targets count it.
+    tire_rate_n_per_mm: float | None = None
+    #: suspension compression (mm) from aerodynamic downforce at the speed of
+    #: the design case; it comes out of the jounce budget before roll and
+    #: pitch are charged against it. 0 = no aero package.
+    aero_heave_mm: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -85,10 +96,66 @@ def roll(veh: Vehicle, a_lat_g: float) -> tuple[float, float]:
     return phi, 0.5 * veh.track_mm * math.tan(math.radians(phi))
 
 
+def tire_roll_deg(veh: Vehicle, a_lat_g: float) -> float:
+    """Extra roll of the whole car relative to the road (deg) from tire deflection.
+
+    Every newton of lateral transfer passes through the tires, geometric and
+    elastic paths alike, so the moment m g a h deflects them against a roll
+    stiffness of Kt * t^2 (both axles, each Kt * t^2 / 2). Zero when the
+    tires are declared rigid (``tire_rate_n_per_mm`` None).
+    """
+    if not veh.tire_rate_n_per_mm:
+        return 0.0
+    M = veh.mass_kg * G0 * a_lat_g * veh.cg_height_mm / 1000.0          # N*m
+    k = veh.tire_rate_n_per_mm * 1000.0 * (veh.track_mm / 1000.0) ** 2  # N*m/rad
+    return math.degrees(M / k)
+
+
+def roll_to_road(veh: Vehicle, a_lat_g: float) -> tuple[float, float]:
+    """(roll of the body relative to the road deg, outside-wheel bump mm).
+
+    The bump is the suspension's own, from the suspension roll gradient; the
+    roll to the road adds the tire deflection, which moves no suspension
+    travel but tilts the wheel against the road.
+    """
+    phi, z = roll(veh, a_lat_g)
+    return phi + tire_roll_deg(veh, a_lat_g), z
+
+
+def series_roll_stiffness(k_front: float, k_rear: float,
+                          tire_rate_n_per_mm: float, track_mm: float
+                          ) -> dict[str, float]:
+    """Axle roll stiffness (N*m/deg) with each axle's tires in series.
+
+    ``k_front``/``k_rear`` are the springs-plus-bars values. Returns the
+    effective values, the tire roll stiffness per axle, the front share on
+    rigid tires and with the tires in series.
+    """
+    kt = (tire_rate_n_per_mm * 1000.0 * (track_mm / 1000.0) ** 2 / 2.0
+          * math.pi / 180.0)                                           # N*m/deg
+    f = k_front * kt / (k_front + kt)
+    r = k_rear * kt / (k_rear + kt)
+    return {"tire_axle_Nm_per_deg": kt, "front": f, "rear": r,
+            "total": f + r, "share_rigid": k_front / (k_front + k_rear),
+            "share_series": f / (f + r)}
+
+
+def aero_heave_mm(cla_m2: float, speed_kmh: float, wheel_rate_n_per_mm: float,
+                  axle_share: float = 0.5, rho: float = 1.225) -> float:
+    """Suspension compression per corner (mm) from downforce at a speed.
+
+    Downforce 0.5 rho ClA v^2 (N), ``axle_share`` of it on this axle, split
+    over two corners, against the corner's wheel rate (N/mm).
+    """
+    v = speed_kmh / 3.6
+    F = 0.5 * rho * cla_m2 * v * v
+    return F * axle_share / 2.0 / wheel_rate_n_per_mm
+
+
 def camber_gain_needed(veh: Vehicle, tire: Tire, static_camber_deg: float
                        ) -> float:
     """Gain (deg/mm) that puts the loaded outside tire at its optimum."""
-    phi, z = roll(veh, design_accelerations(tire)["lateral"])
+    phi, z = roll_to_road(veh, design_accelerations(tire)["lateral"])
     return (tire.camber_opt_deg - phi - static_camber_deg) / z
 
 
@@ -98,14 +165,14 @@ def static_camber_needed(veh: Vehicle, tire: Tire, gain_deg_per_mm: float
 
     This is an alignment change: it moves no hardpoint.
     """
-    phi, z = roll(veh, design_accelerations(tire)["lateral"])
+    phi, z = roll_to_road(veh, design_accelerations(tire)["lateral"])
     return tire.camber_opt_deg - phi - gain_deg_per_mm * z
 
 
 def loaded_camber_error(veh: Vehicle, tire: Tire, static_camber_deg: float,
                         gain_deg_per_mm: float) -> float:
     """Loaded outside-tire camber minus the optimum, deg, at the design case."""
-    phi, z = roll(veh, design_accelerations(tire)["lateral"])
+    phi, z = roll_to_road(veh, design_accelerations(tire)["lateral"])
     return static_camber_deg + gain_deg_per_mm * z + phi - tire.camber_opt_deg
 
 
@@ -114,7 +181,7 @@ def f_min(veh: Vehicle, anti_pct: float, a_x_g: float, a_y_g: float,
     """Minimum ride frequency (Hz) that keeps a manoeuvre inside the budget."""
     m_s = veh.sprung_corner_front_kg if axle == "front" else veh.sprung_corner_rear_kg
     dW = veh.mass_kg * G0 * a_x_g * veh.cg_height_mm / (2.0 * veh.wheelbase_mm)
-    room = veh.jounce_budget_mm - roll(veh, a_y_g)[1]
+    room = veh.jounce_budget_mm - veh.aero_heave_mm - roll(veh, a_y_g)[1]
     if room <= 0.0:
         return float("inf")
     k = (1.0 - anti_pct / 100.0) * dW / (room / 1000.0)      # N/m
@@ -126,7 +193,7 @@ def anti_floor_pct(veh: Vehicle, ride_hz: float, a_x_g: float, a_y_g: float,
     """Minimum anti (%) for which ``ride_hz`` keeps the manoeuvre in budget."""
     m_s = veh.sprung_corner_front_kg if axle == "front" else veh.sprung_corner_rear_kg
     dW = veh.mass_kg * G0 * a_x_g * veh.cg_height_mm / (2.0 * veh.wheelbase_mm)
-    room = veh.jounce_budget_mm - roll(veh, a_y_g)[1]
+    room = veh.jounce_budget_mm - veh.aero_heave_mm - roll(veh, a_y_g)[1]
     if room <= 0.0:
         return float("inf")
     k = (2.0 * math.pi * ride_hz) ** 2 * m_s
@@ -276,3 +343,112 @@ def neutral_front_share(veh: Vehicle, a_lat_g: float = 1.5) -> float:
         mid = 0.5 * (lo + hi)
         lo, hi = (mid, hi) if axle_capacity_ratio(veh, mid, a_lat_g) > 1.0 else (lo, mid)
     return lo
+
+
+# --------------------------------------------------------------------------- #
+#  Hot inflation: pressure growth over a stint and the tire rate it moves
+# --------------------------------------------------------------------------- #
+def hot_pressure_kpa(p_cold_kpa: float, t_cold_c: float, t_hot_c: float,
+                     p_atm_kpa: float = 101.325) -> float:
+    """Gauge pressure (kPa) after the inflation gas heats at constant volume."""
+    p_abs = (p_cold_kpa + p_atm_kpa) * (t_hot_c + 273.15) / (t_cold_c + 273.15)
+    return p_abs - p_atm_kpa
+
+
+def tire_rate_at_pressure(rate_cold_n_per_mm: float, p_cold_kpa: float,
+                          p_hot_kpa: float, carcass_share: float = 0.3) -> float:
+    """Tire vertical rate (N/mm) at a new gauge pressure.
+
+    The rate is a carcass part, independent of pressure, plus an inflation
+    part proportional to it: k(p) = k0 (s + (1 - s) p / p0), with s the
+    carcass share at the cold pressure. ``carcass_share`` is DECLARED (0.2 to
+    0.4 is typical of racing tires); a two-pressure load test fixes it.
+    """
+    s = float(carcass_share)
+    return rate_cold_n_per_mm * (s + (1.0 - s) * p_hot_kpa / p_cold_kpa)
+
+
+# --------------------------------------------------------------------------- #
+#  Tire vertical load at each corner: every term, broken out
+# --------------------------------------------------------------------------- #
+def corner_loads(veh: "Vehicle", a_lat_g: float = 0.0, a_long_g: float = 0.0,
+                 bank_deg: float = 0.0, grade_deg: float = 0.0,
+                 downforce_n: float = 0.0, aero_front_share: float = 0.5,
+                 front_lltd: float = 0.53, steer_warp_n: float = 0.0,
+                 weight_front: float = 0.48) -> dict:
+    """Vertical load (N) on each tire, FL FR RL RR, with each term separated.
+
+    Fz = static + longitudinal transfer + lateral transfer + bank/grade +
+    downforce + steer warp. Conventions: a_lat_g > 0 is a left turn (load to
+    the right wheels), a_long_g > 0 is braking (load to the front). A bank
+    raises the outside of the turn by ``bank_deg``: in the car's frame gravity
+    then adds m g sin(beta) against the centripetal load, the normal load
+    grows to m (g cos beta + a_y sin beta), and the lateral transfer uses the
+    lateral load the tires actually carry, m (a_y cos beta - g sin beta). A
+    grade of ``grade_deg`` (uphill > 0) tilts gravity rearward. Downforce is
+    split front/rear by ``aero_front_share``. ``steer_warp_n`` is the
+    diagonal load change steering puts in (``steer_warp``): FR and RL gain it,
+    FL and RR lose it, for a left turn. Units: N, g, deg.
+    """
+    m, g = veh.mass_kg, G0
+    L = veh.wheelbase_mm / 1000.0; h = veh.cg_height_mm / 1000.0
+    t = veh.track_mm / 1000.0
+    b, gr = math.radians(bank_deg), math.radians(grade_deg)
+    ay, ax = a_lat_g * g, a_long_g * g
+    normal = m * (g * math.cos(b) * math.cos(gr) + ay * math.sin(b))
+    lat = m * (ay * math.cos(b) - g * math.sin(b))
+    lon = m * ax - m * g * math.sin(gr)               # braking > 0, uphill < 0
+    wf = float(weight_front)
+    static = {"FL": normal * wf / 2, "FR": normal * wf / 2,
+              "RL": normal * (1 - wf) / 2, "RR": normal * (1 - wf) / 2}
+    dlon = lon * h / L / 2.0
+    lon_t = {"FL": dlon, "FR": dlon, "RL": -dlon, "RR": -dlon}
+    dlat = lat * h / t
+    lat_t = {"FL": -front_lltd * dlat, "FR": front_lltd * dlat,
+             "RL": -(1 - front_lltd) * dlat, "RR": (1 - front_lltd) * dlat}
+    aero = {"FL": downforce_n * aero_front_share / 2,
+            "FR": downforce_n * aero_front_share / 2,
+            "RL": downforce_n * (1 - aero_front_share) / 2,
+            "RR": downforce_n * (1 - aero_front_share) / 2}
+    w = float(steer_warp_n)
+    warp = {"FL": -w, "FR": w, "RL": w, "RR": -w}
+    total = {c: static[c] + lon_t[c] + lat_t[c] + aero[c] + warp[c] for c in static}
+    grav_static = m * g * np.array([wf / 2, wf / 2, (1 - wf) / 2, (1 - wf) / 2])
+    bank_grade = {c: static[c] - grav_static[i] for i, c in enumerate(static)}
+    return {"total": total, "static_flat": dict(zip(static, grav_static)),
+            "bank_grade": bank_grade, "longitudinal": lon_t, "lateral": lat_t,
+            "downforce": aero, "steer_warp": warp,
+            "check_sum_N": sum(total.values()), "normal_N": normal + downforce_n}
+
+
+def steer_warp(hp, rack_mm: float, k_roll_front_nm_per_deg: float,
+               k_roll_rear_nm_per_deg: float, track_front_mm: float,
+               track_rear_mm: float) -> dict:
+    """Diagonal load change (N) from steering, through caster and KPI jacking.
+
+    At fixed wheel travel (lower ball joint height) a steered wheel's contact
+    patch moves vertically: caster lifts one front corner and drops the
+    other, kingpin inclination lifts both. The difference is a front-axle
+    roll input phi = (dz_right - dz_left) / t_f that the body resists through
+    the front and rear roll stiffnesses in series, so the diagonal pair
+    carries dF = phi K_f K_r / (K_f + K_r) / t (front at t_f, rear at t_r).
+    The common part lifts the front evenly and changes no corner weight on a
+    rigid body. The left wheel at +rack is the mirrored right wheel at -rack.
+    """
+    from .kinematics import SuspensionKinematics
+
+    def patch_z(r):
+        k = SuspensionKinematics(hp, pickup_deltas={
+            "tie_rod_inner": np.array([0.0, float(r), 0.0])})
+        return float(k.solve_at_travel(0.0).contact_patch[2])
+
+    z0 = patch_z(0.0)
+    dzR, dzL = patch_z(rack_mm) - z0, patch_z(-rack_mm) - z0
+    phi = (dzR - dzL) / track_front_mm                       # rad
+    kf = k_roll_front_nm_per_deg * 180.0 / math.pi           # N*m/rad
+    kr = k_roll_rear_nm_per_deg * 180.0 / math.pi
+    M = phi * kf * kr / (kf + kr)                            # N*m
+    return {"dz_right_mm": dzR, "dz_left_mm": dzL, "phi_deg": math.degrees(phi),
+            "warp_moment_Nm": M, "front_pair_N": M / (track_front_mm / 1000.0),
+            "rear_pair_N": M / (track_rear_mm / 1000.0),
+            "lift_common_mm": 0.5 * (dzR + dzL)}

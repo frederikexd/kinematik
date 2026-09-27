@@ -1016,7 +1016,8 @@ class SuspensionKinematics:
         return float(tan_phi * (wheelbase / cg_height) * drive_bias_rear * 100.0)
 
     def anti_lift_pct(self, cg_height: float, wheelbase: float,
-                      brake_bias_rear: float = 0.40, state=None) -> float:
+                      brake_bias_rear: float = 0.40, state=None,
+                      inboard_brakes: bool = False) -> float:
         """
         Rear anti-lift under braking, percent, for OUTBOARD rear brakes.
 
@@ -1040,8 +1041,16 @@ class SuspensionKinematics:
         rear axle (1 - front bias). Applying anti_dive_pct to a rear corner,
         with the front bias, is wrong in both magnitude and sign; this method
         exists so that nobody has to.
+
+        INBOARD rear brakes (``inboard_brakes=True``: a rotor on the final drive
+        or the halfshafts) react the brake torque at the chassis, exactly as an
+        inboard drive reacts the drive torque, so only the braking force passes
+        through the links, at WHEEL-CENTRE height: the wheel centre's path is
+        the one that does the work, and anti-lift then shares anti-squat's
+        reference, anti-lift = anti-squat x brake_bias_rear / drive_bias_rear.
         """
-        slope = self._path_slope_xz("contact_patch", state)
+        ref = "wheel_center" if inboard_brakes else "contact_patch"
+        slope = self._path_slope_xz(ref, state)
         if not np.isfinite(slope):
             return 0.0
         return float(slope * (wheelbase / cg_height) * brake_bias_rear * 100.0)

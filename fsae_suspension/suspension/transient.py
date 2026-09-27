@@ -305,6 +305,22 @@ class RoadInput:
     """
     z: Callable[[float], np.ndarray] = lambda t: np.zeros(4)
     zdot: Callable[[float], np.ndarray] | None = None
+    #: per-corner surface friction scale mu(t) -> (4,) (FL, FR, RL, RR), 1.0 =
+    #: the tire model's own grip. None = uniform surface, exactly as before.
+    #: Scaled by similarity (Fy(a; s) = s * Fy(a / s)): the peak and the slip
+    #: at peak scale with s while the cornering stiffness stays the tire's,
+    #: which is how a lower-grip surface behaves to first order.
+    mu: Callable[[float], np.ndarray] | None = None
+
+    def mu_at(self, t: float) -> np.ndarray | None:
+        """Per-corner friction scale at time t, or None for a uniform surface."""
+        if self.mu is None:
+            return None
+        try:
+            m = np.asarray(self.mu(t), float).reshape(4)
+        except Exception:
+            return None
+        return np.clip(m, 0.05, 5.0)
 
     def sample(self, t: float):
         try:
@@ -520,6 +536,7 @@ class TransientSolver:
         beta = math.atan2(v, max(abs(u), p.u_min))
         d_steer, thr, brk = driver.sample(t, dict(t=t, u=u, v=v, r=r, beta=beta))
         z_road, zd_road = road.sample(t)
+        mu_s = road.mu_at(t) if hasattr(road, "mu_at") else None
 
         # --- sprung-corner vertical position & velocity (small angle) ---
         zc = z_s + x_i * th - y_i * phi
@@ -618,12 +635,13 @@ class TransientSolver:
             if fz <= 1.0:
                 continue
             front = i in (FL, FR)
+            sc = 1.0 if mu_s is None else float(mu_s[i])
             try:
-                fy_pure = float(self.tire.lateral.fy(al[i], fz, cam[i]))
+                fy_pure = sc * float(self.tire.lateral.fy(al[i] / sc, fz, cam[i]))
             except Exception:
                 fy_pure = 0.0
                 self._warn("Tyre lateral force failed at a corner; used 0 there.")
-            fy_max = self._peak_force(fz, front)
+            fy_max = sc * self._peak_force(fz, front)
             fx_max = mu_x_ratio * fy_max
             # clamp the longitudinal demand to the ellipse given the lateral use,
             # then reduce the lateral to what's left — friction-circle coupling.
@@ -894,6 +912,61 @@ def step_steer_maneuver(steer_deg: float = 4.0, u0: float = 18.0,
     return drv, RoadInput(), t_end, u0, f"Step steer {steer_deg:.1f}°"
 
 
+def mu_step_maneuver(axle: str = "rear", d_mu: float = -0.15,
+                     mu_ref: float = 1.55, steer_deg: float = 3.0,
+                     u0: float = 16.0, t_step: float = 1.5, t_end: float = 3.5,
+                     side: str = "both"):
+    """A surface change mid-corner: grip steps by ``d_mu`` at one axle.
+
+    The car is steered into a steady corner, and at ``t_step`` the named
+    axle's friction changes by ``d_mu`` (absolute, against ``mu_ref``), as when
+    one axle crosses from asphalt onto a painted line or sealed concrete.
+    ``side`` = "both", "inside" or "outside" limits it to one track (a split-mu
+    line under one side of the car). The driver holds the wheel, so the
+    response is the car's own: yaw-rate and sideslip excursion after the step.
+    """
+    d = math.radians(steer_deg)
+    s = 1.0 + float(d_mu) / float(mu_ref)
+    idx = (0, 1) if axle == "front" else (2, 3)
+    if side == "inside":          # a positive steer turns left: inside is left
+        idx = idx[:1]
+    elif side == "outside":
+        idx = idx[1:]
+
+    def steer(t):
+        return d * min(t / 0.3, 1.0)
+
+    def mu(t):
+        m = np.ones(4)
+        if t >= t_step:
+            m[list(idx)] = s
+        return m
+
+    drv = DriverInput(steer=steer, throttle=lambda t: 0.12)
+    return (drv, RoadInput(mu=mu), t_end, u0,
+            f"mu step {d_mu:+.2f} at {axle} ({side})")
+
+
+def mu_step_response(res: "TransientResult", t_step: float) -> dict:
+    """Yaw-rate and sideslip excursion (deg/s, deg) after a mu step.
+
+    Compares the window after ``t_step`` with the settled state just before
+    it: a growing sideslip and a yaw-rate rise mean the car oversteers across
+    the change, a yaw-rate fall that it understeers.
+    """
+    t = np.asarray(res.t)
+    pre = (t > t_step - 0.3) & (t < t_step)
+    post = t >= t_step
+    r = np.degrees(np.asarray(res.r)); b = np.degrees(np.asarray(res.beta))
+    r0 = float(np.mean(r[pre])); b0 = float(np.mean(b[pre]))
+    dr = r[post] - r0; db = b[post] - b0
+    k = int(np.argmax(np.abs(dr)))
+    return {"yaw_rate_before_deg_s": r0, "sideslip_before_deg": b0,
+            "yaw_rate_peak_change_deg_s": float(dr[k]),
+            "sideslip_peak_change_deg": float(db[int(np.argmax(np.abs(db)))]),
+            "sideslip_end_change_deg": float(db[-1])}
+
+
 def snap_oversteer_maneuver(steer_deg: float = 3.8, u0: float = 16.0,
                             lift_time: float = 1.0, brake_stab: float = 0.45,
                             stab_dur: float = 0.35, recover: bool = True,
@@ -997,7 +1070,7 @@ def run_maneuver(veh: VehicleDynamics | None, kind: str = "step_steer",
                  damper: DamperCurve | None = None, **kw) -> TransientResult:
     """
     Build and run one named manoeuvre. `kind` in
-    {step_steer, snap_oversteer, brake_to_throttle, curb_strike}. Extra kwargs are
+    {step_steer, snap_oversteer, brake_to_throttle, curb_strike, mu_step}. Extra kwargs are
     forwarded to the builder. Never raises; returns a (possibly flagged) result.
     """
     builders = {
@@ -1005,6 +1078,7 @@ def run_maneuver(veh: VehicleDynamics | None, kind: str = "step_steer",
         "snap_oversteer": snap_oversteer_maneuver,
         "brake_to_throttle": brake_to_throttle_maneuver,
         "curb_strike": curb_strike_maneuver,
+        "mu_step": mu_step_maneuver,
     }
     try:
         builder = builders.get(kind)
