@@ -122,7 +122,7 @@ Self-test: ``python3 -m suspension.inverse_genesis``
 from __future__ import annotations
 
 import numpy as np
-from dataclasses import dataclass, field as _dcfield
+from dataclasses import dataclass, field as _dcfield, fields as _dcfields
 from collections.abc import Sequence
 
 from .kinematics import Hardpoints, SuspensionKinematics
