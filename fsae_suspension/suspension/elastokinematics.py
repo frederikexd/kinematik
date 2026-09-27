@@ -183,6 +183,7 @@ class FrameTwist:
                                    self.lever_mm, toe_per_mm))
 
     def to_dict(self) -> dict:
+        """Serialise: torsional rate in N·m/deg, torque in N·m, lengths in mm."""
         return {"kt_Nm_per_deg": float(self.kt_Nm_per_deg),
                 "torque_Nm": float(self.torque_Nm),
                 "separation_mm": float(self.separation_mm),
@@ -191,6 +192,7 @@ class FrameTwist:
 
     @classmethod
     def from_dict(cls, d: dict) -> "FrameTwist":
+        """Rebuild from a dict: torsional rate in N·m/deg, torque in N·m, lengths in mm."""
         return cls(**{k: float(v) for k, v in d.items()})
 
 

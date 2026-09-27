@@ -110,6 +110,7 @@ def installation_offset(reading_n: float, predicted_n: float, u_n: float) -> dic
 
     The difference is the fit-up preload to record, never to tare away; it
     is significant when it exceeds the expanded uncertainty.
+    Units: readings, prediction, offset and uncertainty all in N.
     """
     off = float(reading_n - predicted_n)
     return {"offset_n": off, "significant": abs(off) > u_n}
@@ -133,6 +134,7 @@ def loading_schedule(rated_n: float, n_steps: int = 5, n_preloads: int = 3,
     """
     pts = []
     def add(o, ph, load, hold, rec=False):
+        """Units: load in N, hold in seconds, orientation in deg."""
         pts.append({"orientation_deg": o, "phase": ph, "load_n": load,
                     "min_hold_s": hold, "recorded": rec})
     for k, o in enumerate(orientations_deg):
@@ -211,6 +213,7 @@ def check_calibration_header(cal: dict, channel: dict) -> dict:
     ``channel`` the logger's channel metadata (``channel_id``,
     ``transducer_serial`` and optionally ``date``). Returns the mismatches;
     an empty list means the header matches and data may be written.
+    Compares identifiers and dates only, so it carries no physical units (dimensionless).
     """
     problems = []
     for key in ("channel_id", "transducer_serial"):

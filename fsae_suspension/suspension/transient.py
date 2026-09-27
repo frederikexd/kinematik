@@ -313,7 +313,7 @@ class RoadInput:
     mu: Callable[[float], np.ndarray] | None = None
 
     def mu_at(self, t: float) -> np.ndarray | None:
-        """Per-corner friction scale at time t, or None for a uniform surface."""
+        """Per-corner friction scale at time t, or None for a uniform surface. Friction coefficient (dimensionless) at a corner and time in seconds."""
         if self.mu is None:
             return None
         try:
@@ -934,9 +934,11 @@ def mu_step_maneuver(axle: str = "rear", d_mu: float = -0.15,
         idx = idx[1:]
 
     def steer(t):
+        """Steering-wheel angle in deg at a time in seconds."""
         return d * min(t / 0.3, 1.0)
 
     def mu(t):
+        """Friction coefficient (dimensionless) at a time in seconds."""
         m = np.ones(4)
         if t >= t_step:
             m[list(idx)] = s

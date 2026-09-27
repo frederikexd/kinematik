@@ -541,6 +541,7 @@ def shank_fatigue_check(load_n: float, ball_radius_mm: float,
     (d3 = d - 1.226869 p for UN threads). Returns stress amplitude, endurance
     amplitude and their ratio; at a governing shock load this bounds the
     check, and the measured load spectrum sets the real one.
+    Units: forces in N, lengths in mm, stresses in MPa (N/mm²), factors dimensionless.
     """
     p = 25.4 / threads_per_inch
     d3 = nominal_dia_mm - 1.226869 * p

@@ -91,6 +91,7 @@ def _load(sec, E, sy, M, sr, epp):
     y, A = sec.fibers()
 
     def forces(e0, k):
+        """Section axial force in N and moment in N·mm."""
         s, _ = _stress(y, sr, E, sy, e0, k, epp)
         return float(np.sum(s * A)), float(np.sum(s * A * y))
 
@@ -99,6 +100,7 @@ def _load(sec, E, sy, M, sr, epp):
     sgn = 1.0 if M >= 0 else -1.0
 
     def e0_for(k):
+        """Reference-fibre strain (dimensionless) for a curvature in 1/mm."""
         a, b = -1.0, 1.0
         for _ in range(60):
             m = 0.5 * (a + b)

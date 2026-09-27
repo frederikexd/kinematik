@@ -150,6 +150,7 @@ def kinematic_split(hp: Hardpoints, rack_mm: float) -> dict:
     toe0 = SuspensionKinematics(hp).solve_at_travel(0.0).toe
 
     def toe_at(r):
+        """Road-wheel toe in deg at a rack travel in mm."""
         k = SuspensionKinematics(hp, pickup_deltas={
             "tie_rod_inner": np.array([0.0, r, 0.0])})
         return k.solve_at_travel(0.0).toe

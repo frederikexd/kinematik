@@ -90,12 +90,12 @@ def shield_factor(emissivity_shield: float = 0.1, emissivity_source: float = 0.8
 
 def apparent_microstrain(delta_T_arms_c: float, mismatch_ue_per_c: float = 1.8
                          ) -> float:
-    """Apparent strain (microstrain) from a temperature difference between arms."""
+    """Apparent strain (microstrain) from a temperature difference between arms. Units: temperatures in °C, apparent strain in microstrain (dimensionless)."""
     return mismatch_ue_per_c * delta_T_arms_c
 
 
 def two_sensor_reading(delta_T_c: float, misalign_deg: float) -> float:
-    """Difference two diametral sensors read, misaligned from the source."""
+    """Difference two diametral sensors read, misaligned from the source. Units: temperatures in degrees Celsius."""
     return delta_T_c * math.cos(math.radians(misalign_deg))
 
 
@@ -125,6 +125,7 @@ def ring_harmonics(q_w_m2: float, od_mm: float, wall_mm: float,
     k, rho, c = MATERIALS[material]
     r = od_mm / 2000.0; t = wall_mm / 1000.0
     def cn(n):
+        """Fourier temperature coefficient in degrees Celsius."""
         if n == 1:
             return 0.5
         if n % 2 == 1:
@@ -151,6 +152,7 @@ def poisson_bridge_apparent_ue(t_axial, t_transverse, mismatch_ue_per_c: float =
     strain is mismatch (Ta1 + Ta2 - Tt1 - Tt2) / (2 (1 + nu)). A uniform rise
     cancels; so does any field antisymmetric across the tube, as bending does,
     when the axial gauges sit on opposite faces.
+    Units: temperatures in °C, apparent strain in microstrain (dimensionless).
     """
     ta1, ta2 = t_axial; tt1, tt2 = t_transverse
     return mismatch_ue_per_c * (ta1 + ta2 - tt1 - tt2) / (2.0 * (1.0 + poisson))

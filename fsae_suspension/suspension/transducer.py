@@ -30,7 +30,7 @@ import numpy as np
 
 
 def tube_section(od_mm: float, wall_mm: float) -> dict:
-    """Area, second moment and polar moment of a round tube."""
+    """Area, second moment and polar moment of a round tube. Units: diameter and wall in mm; area in mm², moments in mm⁴."""
     idm = od_mm - 2.0 * wall_mm
     A = math.pi / 4.0 * (od_mm ** 2 - idm ** 2)
     I = math.pi / 64.0 * (od_mm ** 4 - idm ** 4)
@@ -40,7 +40,7 @@ def tube_section(od_mm: float, wall_mm: float) -> dict:
 def tube_strains(force_n: float, bend_nmm: float, torque_nmm: float,
                  od_mm: float, wall_mm: float, E: float = 205000.0,
                  nu: float = 0.29) -> dict:
-    """Surface strains (microstrain) from axial force, bending and torsion."""
+    """Surface strains (microstrain) from axial force, bending and torsion. Units: force in N, moments in N·mm, dimensions in mm, E in MPa; strains in microstrain (dimensionless)."""
     s = tube_section(od_mm, wall_mm)
     G = E / (2.0 * (1.0 + nu))
     return {"axial_ue": force_n / (E * s["A_mm2"]) * 1e6,
@@ -56,6 +56,7 @@ def bridge_output_mvv(axial_ue: float, gauge_factor: float = 2.1,
     arms (+e) and two transverse arms (-nu e), so V_o/V_i = (GF/4) 2 (1+nu) e.
     A half bridge (one axial, one transverse) gives half that; a quarter
     bridge a quarter of the full-axial value.
+    Units: strain in microstrain, output in mV/V (both dimensionless ratios).
     """
     e = axial_ue * 1e-6
     k = {"poisson_full": 2.0 * (1.0 + nu), "poisson_half": 1.0 + nu,
@@ -115,6 +116,7 @@ def four_wire_loss(r_bridge_ohm: float, r_lead_ohm: float,
     Without remote sensing the bridge sees V r/(r + 2 R_lead); the loss moves
     with lead temperature through copper's coefficient. A six-wire connection
     senses excitation at the bridge and removes both terms.
+    Units: resistances in ohm, temperature change in degrees Celsius, losses in percent.
     """
     loss = 2.0 * r_lead_ohm / (r_bridge_ohm + 2.0 * r_lead_ohm)
     rl2 = r_lead_ohm * (1.0 + alpha_cu * dT_c)
@@ -123,7 +125,7 @@ def four_wire_loss(r_bridge_ohm: float, r_lead_ohm: float,
 
 
 def dynamic_amplitude_error(f_hz: float, fn_hz: float) -> float:
-    """Amplitude error (%) of a lightly damped member: 1/(1 - r^2) - 1."""
+    """Amplitude error (%) of a lightly damped member: 1/(1 - r^2) - 1. Units: frequencies in Hz, error in percent."""
     r = f_hz / fn_hz
     return 100.0 * (1.0 / (1.0 - r * r) - 1.0)
 
@@ -154,9 +156,11 @@ def rejection_monte_carlo(n_axial: int = 2, pos_tol_deg: float = 1.0,
     gT = 1.0 + rng.uniform(-gf_tol, gf_tol, (n, n_axial))
 
     def gauge(ex, ey, gxy, ph):
+        """Strain a grid reads (dimensionless) at an orientation in rad."""
         return ex * np.cos(ph) ** 2 + ey * np.sin(ph) ** 2 + gxy * np.sin(ph) * np.cos(ph)
 
     def bridge(ex, ey, gxy):
+        """Bridge output per unit strain (dimensionless)."""
         return (gA * gauge(ex, ey, gxy, phA)).mean(1) - (gT * gauge(ex, ey, gxy, phT)).mean(1)
 
     one = np.ones_like(th)
@@ -177,6 +181,7 @@ def poisson_bridge_exact_mvv(axial_ue: float, gauge_factor: float = 2.1, nu: flo
 
     Axial arms change by x = GF e and transverse by -nu x, so the exact
     output is (1 + nu) x / (2 + (1 - nu) x), against the linear (1 + nu) x / 2.
+    Units: strain in microstrain, output in mV/V (dimensionless ratios), non-linearity in %.
     """
     x = gauge_factor * axial_ue * 1e-6
     exact = (1.0 + nu) * x / (2.0 + (1.0 - nu) * x)
@@ -189,6 +194,7 @@ def shunt_ratio_check(measured_mvv: float, reference_mvv: float, limit_pct: floa
 
     A shift beyond ``limit_pct`` points at the connection or the bridge
     (contact resistance, a damaged gauge) and triggers inspection.
+    Units: readings in mV/V (dimensionless), shift and limit in %.
     """
     shift = 100.0 * (measured_mvv - reference_mvv) / reference_mvv
     return {"shift_pct": shift, "inspect": abs(shift) > limit_pct}

@@ -41,6 +41,7 @@ def thermal_fit(dT_c: float, span_mm: float, pin_d_mm: float,
     The pickup span grows by (a_u - a_p) L dT relative to the steel pin, and
     the bore diameter by (a_u - a_p) d dT relative to it: a positive bore
     change means the clearance opens.
+    Units: lengths in mm, growth in micrometres, temperature rise in °C.
     """
     d = alpha_upright - alpha_pin
     span_um = d * span_mm * dT_c * 1000.0
@@ -87,7 +88,7 @@ def toe_arm_mm(hp: Hardpoints, dl_mm: float = 0.05) -> float:
 
 def toe_thread_resolution(arm_mm: float, tpi: float = 24.0, band_deg: float = 0.08,
                           backlash_mm: float = 0.025, flats: int = 6) -> dict:
-    """Toe per flat of a threaded rod end, the band in rod travel, backlash."""
+    """Toe per flat of a threaded rod end, the band in rod travel, backlash. Units: arm and travel in mm, toe in deg."""
     pitch = 25.4 / tpi
     flat = pitch / flats
     return {"pitch_mm": pitch, "toe_per_flat_deg": math.degrees(math.atan(flat / arm_mm)),
@@ -113,7 +114,7 @@ def tube_mass_g(hp: Hardpoints, od_mm: float = 15.875, wall_mm: float = 0.889,
 
 def bom_cost(tube_ft: float, usd_per_ft: float, rod_ends: int, usd_rod_end: float,
              ptfe_joints: int = 0, usd_ptfe: float = 0.0, other_usd: float = 0.0) -> dict:
-    """Structural bill of materials from declared quantities and prices."""
+    """Structural bill of materials from declared quantities and prices. Units: tube length in ft, prices in USD; quantities are dimensionless counts."""
     tube = tube_ft * usd_per_ft
     joints = rod_ends * usd_rod_end + ptfe_joints * usd_ptfe
     return {"tube_usd": tube, "joints_usd": joints, "total_usd": tube + joints + other_usd}
@@ -142,6 +143,7 @@ def hand_torque_at_collapse(fy_outer_n: float, fy_inner_n: float, mech_trail_mm:
 
     Only the mechanical trail is left, so the road-wheel torque is
     (Fy_outer + Fy_inner) t_m and the hand torque that over the ratio.
+    Units: forces in N, trail in mm, torques in N·m, ratio dimensionless.
     """
     road = (fy_outer_n + fy_inner_n) * mech_trail_mm / 1000.0
     hand = road / ratio
@@ -149,5 +151,5 @@ def hand_torque_at_collapse(fy_outer_n: float, fy_inner_n: float, mech_trail_mm:
 
 
 def frame_twist_toe_scaled(toe_ref_deg: float, load_ref_g: float, load_g: float) -> float:
-    """Frame-twist toe scales linearly with the twisting load in the uniform model."""
+    """Frame-twist toe scales linearly with the twisting load in the uniform model. Units: toe in deg, loads in g (dimensionless multiples of gravity)."""
     return toe_ref_deg * load_g / load_ref_g

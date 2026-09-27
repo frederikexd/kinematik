@@ -126,6 +126,7 @@ def goodman_min_diameter(t_max_nm: float, t_min_nm: float, sut_mpa: float = 1000
     k = math.sqrt(3.0) if von_mises else 1.0
 
     def util(d):
+        """Goodman utilisation (dimensionless) of a solid shaft of diameter d in mm."""
         kb = 1.24 * d ** -0.107 if d <= 51 else 1.51 * d ** -0.157
         se = ka * kb * kc * se0
         s = lambda T: k * 16.0 * abs(T) * 1000.0 / (math.pi * d ** 3)

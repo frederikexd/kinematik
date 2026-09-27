@@ -438,6 +438,7 @@ def steer_warp(hp, rack_mm: float, k_roll_front_nm_per_deg: float,
     from .kinematics import SuspensionKinematics
 
     def patch_z(r):
+        """Contact-patch height in mm at a rack travel in mm."""
         k = SuspensionKinematics(hp, pickup_deltas={
             "tie_rod_inner": np.array([0.0, float(r), 0.0])})
         return float(k.solve_at_travel(0.0).contact_patch[2])

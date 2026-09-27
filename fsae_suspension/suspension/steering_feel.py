@@ -69,7 +69,7 @@ def aligning_curve(tire, fz_n: float, t_mech_mm: float,
 
 def limit_feel(tire, fz_n: float, t_mech_mm: float,
                t0_mm: float | None = None) -> dict:
-    """The feel metrics of the module docstring for one wheel."""
+    """The feel metrics of the module docstring for one wheel. Units: load in N, trail in mm, torque in N·m, slip in deg."""
     c = aligning_curve(tire, fz_n, t_mech_mm, t0_mm)
     a, M = c["alpha_deg"], c["M_Nm"]
     k = int(np.argmax(M))
@@ -107,6 +107,7 @@ def ratio_window(tire, fz_outer_n: float, fz_inner_n: float, t_mech_mm: float,
     slip, not at the limit, because pneumatic trail peaks before the force
     does); lock needs ratio <= ``lock_ratio_max``. Feasible when the first is
     below the second.
+    Units: ratios dimensionless, torques in N·m, lock in deg.
     """
     w = worst_axle_torque(tire, fz_outer_n, fz_inner_n, t_mech_mm, t0_outer_mm)
     lo = w["torque_Nm"] / effort_limit_Nm

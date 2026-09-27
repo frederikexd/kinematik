@@ -58,6 +58,7 @@ def fit_carcass_share(pressure_kpa, rate_n_per_mm, p_ref_kpa: float) -> dict:
     k(p) = a + b p is fitted by least squares; at the reference pressure the
     rate is k0 = a + b p_ref and the carcass share s = a / k0, the form
     ``target_derivation.tire_rate_at_pressure`` uses.
+    Units: rates in N/mm, pressures in kPa, share dimensionless.
     """
     p = np.asarray(pressure_kpa, float); k = np.asarray(rate_n_per_mm, float)
     if len(p) < 2 or np.ptp(p) <= 0:
@@ -127,7 +128,7 @@ def fit_fade_law(temp_c, mu_ratio) -> dict:
 
 def fit_plunge_friction(torque_nm, axial_force_n,
                         pitch_radius_mm: float) -> dict:
-    """Effective plunge friction mu from a bench test: F = mu T / r."""
+    """Effective plunge friction mu from a bench test: F = mu T / r. Units: force in N, torque in N·m, radius in mm, friction coefficient dimensionless."""
     T = np.asarray(torque_nm, float) * 1000.0; F = np.asarray(axial_force_n, float)
     k = float(np.sum(T * F) / np.sum(T * T))
     return {"mu_plunge": k * pitch_radius_mm,
@@ -145,12 +146,14 @@ def residual_profile(depth_mm, stress_mpa, thickness_mm: float,
     face is taken as stress-free. Between measured depths it interpolates
     linearly and holds the deepest value to the mid-plane; ``permanent_set``
     then removes the net force and moment so the profile is self-equilibrated.
+    Units: residuals in the measured channel's own units (mm, deg or N).
     """
     d = np.asarray(depth_mm, float); s = np.asarray(stress_mpa, float)
     order = np.argsort(d); d, s = d[order], s[order]
     h2 = thickness_mm / 2.0
 
     def prof(y: float) -> float:
+        """Residual in the measured channel's own units (mm, deg or N)."""
         depth_top = h2 - y
         depth_bot = h2 + y
         v = float(np.interp(depth_top, d, s))

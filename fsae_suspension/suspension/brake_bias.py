@@ -87,7 +87,7 @@ class BrakeHydraulics:
         return tf / 1000.0, tr / 1000.0
 
     def bias(self, t_front_c: float = 30.0, t_rear_c: float = 30.0) -> float:
-        """Front share of brake torque (fraction). Independent of pedal force."""
+        """Front share of brake torque (fraction). Independent of pedal force. Units: dimensionless fraction; temperatures in °C."""
         tf, tr = self.axle_torques_Nm(1000.0, t_front_c, t_rear_c)
         return tf / (tf + tr)
 
@@ -119,13 +119,14 @@ def anti_dive_window(anti_at_ref_pct: float, bias_ref: float,
 
     With outboard front brakes anti-dive is proportional to the front brake
     fraction, so anti(b) = anti_ref * b / b_ref.
+    Units: anti-dive in %, bias as a front fraction (dimensionless).
     """
     k = anti_at_ref_pct / bias_ref
     return lo_pct / k, hi_pct / k
 
 
 def anti_dive_over_bias(anti_at_ref_pct: float, bias_ref: float, bias) -> np.ndarray:
-    """Anti-dive (%) at each bias along a trace (outboard front brakes)."""
+    """Anti-dive (%) at each bias along a trace (outboard front brakes). Units: anti-dive in %, bias as a front fraction (dimensionless)."""
     return anti_at_ref_pct * np.asarray(bias, float) / bias_ref
 
 

@@ -437,7 +437,7 @@ def test_public_physics_functions_state_their_units():
     #  Both reductions came from making the CHECK sharper, not from documenting
     #  anything — that work is still outstanding. A check with 250 false
     #  positives in it hides the real ones.
-    LIMIT = 1048    # 2026-09: genesis units documented (1077 -> 1048)
+    LIMIT = 1047    # 2026-09: genesis units documented (1077 -> 1048); review modules documented (1048 -> 1047)
     detail = "\n".join(
         f"  {rel}: {len(v)} function(s)" for rel, v in sorted(
             missing.items(), key=lambda kv: -len(kv[1]))[:15])

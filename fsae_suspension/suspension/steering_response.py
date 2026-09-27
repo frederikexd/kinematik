@@ -58,6 +58,7 @@ class SingleTrack:
 
     @property
     def iz(self) -> float:
+        """Yaw inertia in kg·m²."""
         return self.iz_kgm2 if self.iz_kgm2 else self.mass_kg * self.a_m * self.b_m
 
 
@@ -100,6 +101,7 @@ def lag_budget(car: SingleTrack, f_hz: float = 2.5) -> dict:
     The shares are the lag lost when that term is removed from the full car,
     so they need not sum to the total exactly; the chassis term is what is
     left with all three removed (yaw and sideslip dynamics of a rigid car).
+    Units: lag in milliseconds, frequency in Hz, speed in m/s.
     """
     full = lag(car, f_hz)["lag_ms"]
     no_relax = lag(replace(car, sigma_m=0.0), f_hz)["lag_ms"]

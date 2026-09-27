@@ -728,6 +728,7 @@ class SteerEffort:
         return 360.0 * hi / self.rack_c_mm_per_rev
 
     def ratio_min(self, trail_mm: float) -> float:
+        """Units: steering ratio (dimensionless) the effort limit needs; torque in N·m, trail in mm."""
         from .steering_feel import worst_axle_torque
         from .tiremodel import default_tire
         w = worst_axle_torque(default_tire(), self.fz_outer_n, self.fz_inner_n,
@@ -735,14 +736,13 @@ class SteerEffort:
         return w["torque_Nm"] / self.effort_limit_nm
 
     def to_dict(self) -> dict:
+        """Units: loads in N, effort limit in N·m, rack in mm per turn, lock in deg, trail in mm."""
         d = {"fz_outer_n": self.fz_outer_n, "fz_inner_n": self.fz_inner_n,
              "effort_limit_nm": self.effort_limit_nm}
-        if self.rack_c_mm_per_rev != 76.2:
-            d["rack_c_mm_per_rev"] = self.rack_c_mm_per_rev
-        if self.lock_road_wheel_deg != 20.0:
-            d["lock_road_wheel_deg"] = self.lock_road_wheel_deg
-        if self.rack_travel_max_mm != 60.0:
-            d["rack_travel_max_mm"] = self.rack_travel_max_mm
+        defaults = {f.name: f.default for f in dataclasses.fields(self)}
+        for key in ("rack_c_mm_per_rev", "lock_road_wheel_deg", "rack_travel_max_mm"):
+            if getattr(self, key) != defaults[key]:      # written only when changed
+                d[key] = getattr(self, key)
         if self.t0_outer_mm is not None:
             d["t0_outer_mm"] = self.t0_outer_mm
         return d
@@ -2237,6 +2237,7 @@ def band_sweep(hp: Hardpoints, targets: GenesisTargets, volume: LegalVolume,
     jumps shows which band is doing the deciding. Deterministic.
     """
     def run(t):
+        """One synthesis at band scale t (dimensionless); geometry in mm."""
         r = inverse_genesis(hp, t, volume, fld=fld, **genesis_kw)
         return r
 

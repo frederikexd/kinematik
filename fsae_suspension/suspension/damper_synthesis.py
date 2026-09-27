@@ -51,7 +51,7 @@ def _crit(qc: QuarterCar) -> float:
 
 def zeta_sweep(qc: QuarterCar, zetas, speed_ms: float = 15.0,
                road_class: str = "B") -> list[dict]:
-    """Load-variation ratio at each body damping ratio (wheel-referred)."""
+    """Load-variation ratio at each body damping ratio (wheel-referred). Units: damping ratios dimensionless, load variation as a fraction (dimensionless)."""
     out = []
     for z in zetas:
         q = replace(qc, c=float(z) * _crit(qc))
@@ -63,7 +63,7 @@ def zeta_sweep(qc: QuarterCar, zetas, speed_ms: float = 15.0,
 def grip_optimal_zeta(qc: QuarterCar, speed_ms: float = 15.0,
                       road_class: str = "B", lo: float = 0.05,
                       hi: float = 1.5) -> float:
-    """Damping ratio minimising tire load variation (golden section)."""
+    """Damping ratio minimising tire load variation (golden section). Units: damping ratio (dimensionless), load variation as a fraction (dimensionless)."""
     g = (math.sqrt(5.0) - 1.0) / 2.0
     f = lambda z: load_variation(replace(qc, c=z * _crit(qc)), speed_ms,
                                  road_class)["ratio"]
@@ -101,7 +101,7 @@ def body_band_velocity_rms(qc: QuarterCar, speed_ms: float = 15.0,
 def synthesize(qc: QuarterCar, motion_ratio: float, speed_ms: float = 15.0,
                road_class: str = "B", zeta_body: float = 0.65,
                knee_factor: float = 1.5, rebound_ratio: float = 1.5) -> dict:
-    """A bump/rebound damper curve (shaft-referred) and how it was set."""
+    """A bump/rebound damper curve (shaft-referred) and how it was set. Units: rates in N/m and N·s/m, masses in kg, damping ratios dimensionless."""
     z_grip = grip_optimal_zeta(qc, speed_ms, road_class)
     cc = _crit(qc)
     c_low_w, c_high_w = zeta_body * cc, z_grip * cc
@@ -122,7 +122,7 @@ def synthesize(qc: QuarterCar, motion_ratio: float, speed_ms: float = 15.0,
 
 def transient_front_share(c_front_wheel: float, c_rear_wheel: float,
                           track_front_mm: float, track_rear_mm: float) -> float:
-    """Front share of the damper roll moment while the body rolls."""
+    """Front share of the damper roll moment while the body rolls. Units: damping rates in N·s/m, tracks in mm, share dimensionless."""
     f = c_front_wheel * (track_front_mm / 1000.0) ** 2
     r = c_rear_wheel * (track_rear_mm / 1000.0) ** 2
     return f / (f + r)
@@ -130,6 +130,6 @@ def transient_front_share(c_front_wheel: float, c_rear_wheel: float,
 
 def front_rate_for_share(target: float, c_rear_wheel: float,
                          track_front_mm: float, track_rear_mm: float) -> float:
-    """Front wheel-referred low-speed rate giving ``target`` transient share."""
+    """Front wheel-referred low-speed rate giving ``target`` transient share. Units: damping rates in N·s/m, tracks in mm, share dimensionless."""
     r = c_rear_wheel * (track_rear_mm / 1000.0) ** 2
     return target / (1.0 - target) * r / (track_front_mm / 1000.0) ** 2
