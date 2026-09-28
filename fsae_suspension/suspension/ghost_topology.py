@@ -426,7 +426,7 @@ class GhostCorner:
 
         def solve_at(Fy: float) -> CompliantResult:
             return self.cc.solve(lp.WheelLoad(Fx=load.Fx, Fy=Fy, Fz=load.Fz,
-                                              Mz=load.Mz))
+                                              Mz=load.Mz, Fx_wc=getattr(load, "Fx_wc", 0.0)))
 
         # --- closed loop by measured contraction --------------------------- #
         res1 = solve_at(load.Fy)
@@ -461,7 +461,8 @@ class GhostCorner:
                 else:
                     warnings.append("feedback polish hit its iteration cap — "
                                     "closed-loop force carries ± a few N.")
-        closed_load = lp.WheelLoad(Fx=load.Fx, Fy=Fy_closed, Fz=load.Fz, Mz=load.Mz)
+        closed_load = lp.WheelLoad(Fx=load.Fx, Fy=Fy_closed, Fz=load.Fz, Mz=load.Mz,
+                                   Fx_wc=getattr(load, "Fx_wc", 0.0))
         if not res.converged:
             warnings.append("inner compliance loop did not fully converge at this "
                             "instant — treat the last digit with care.")

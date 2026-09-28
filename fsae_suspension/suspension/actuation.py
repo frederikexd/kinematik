@@ -446,7 +446,10 @@ def rocker_bearing_loads(hp: Hardpoints, cases, bearing: RockerBearing = RockerB
     out = []
     for c in cases:
         load = _lp.WheelLoad(Fx=getattr(c, "Fx", 0.0), Fy=getattr(c, "Fy", 0.0),
-                             Fz=getattr(c, "Fz", 0.0), Mz=getattr(c, "mz_Nmm", 0.0))
+                             Fz=getattr(c, "Fz", 0.0), Mz=getattr(c, "mz_Nmm", 0.0),
+                             Fx_wc=getattr(c, "Fx_wc", 0.0),
+                             F_wc_extra=tuple(getattr(c, "F_wc_extra", (0.0, 0.0, 0.0))),
+                             M_wc_extra=tuple(getattr(c, "M_wc_extra", (0.0, 0.0, 0.0))))
         mf = _lp.solve_member_forces(kin, st, load)
         T = float(mf.forces["PR"]); u = np.asarray(mf.axes["PR"], float)
         Fp = -T * u                                      # on the rocker, at rp
@@ -464,3 +467,39 @@ def rocker_bearing_loads(hp: Hardpoints, cases, bearing: RockerBearing = RockerB
                     "pivot_radial_N": Fr, "pivot_axial_N": Fa, "couple_Nmm": M,
                     "bearing_P0_N": P0, "s0": s0, "passes": s0 >= bearing.required_s0})
     return out
+
+
+def required_rating_vs_spacing(hp: Hardpoints, cases, spacings_mm,
+                               bearing: RockerBearing = RockerBearing()) -> list[dict]:
+    """Static rating (N) each rocker bearing needs, at each bearing spacing.
+
+    The couple an offset pushrod puts on the rocker is carried by the bearing
+    pair over their spacing, so the requirement falls as they spread. For each
+    spacing the worst case's static equivalent load P0 is found and the
+    rating needed is ``required_s0`` x P0; compare it with a catalogue C0 to
+    choose a bearing type or spacing that the existing node can take.
+    """
+    out = []
+    for sp in spacings_mm:
+        b = RockerBearing(label=bearing.label, C0_N=1.0, spacing_mm=float(sp),
+                          X0=bearing.X0, Y0=bearing.Y0,
+                          required_s0=bearing.required_s0)
+        rows = rocker_bearing_loads(hp, cases, b)
+        p0 = max(1.0 / r["s0"] for r in rows if r["s0"] > 0)   # C0 = 1 N => s0 = 1/P0
+        out.append({"spacing_mm": float(sp), "P0_N": p0,
+                    "required_C0_N": bearing.required_s0 * p0})
+    return out
+
+
+def select_rocker_bearing(hp: Hardpoints, cases, candidates) -> list[dict]:
+    """Rank candidate rocker bearings (the team's catalogue data) on the real
+    geometry. ``candidates`` is a list of RockerBearing, each with its part's
+    catalogue C0 and the spacing the node allows. Returns each with its worst
+    static safety factor and whether it meets its ``required_s0``."""
+    out = []
+    for b in candidates:
+        rows = rocker_bearing_loads(hp, cases, b)
+        s0 = min(r["s0"] for r in rows)
+        out.append({"label": b.label, "C0_N": b.C0_N, "spacing_mm": b.spacing_mm,
+                    "s0": s0, "meets": s0 >= b.required_s0})
+    return sorted(out, key=lambda r: -r["s0"])

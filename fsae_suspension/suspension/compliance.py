@@ -465,7 +465,8 @@ class CompliantCorner:
 #  Driving the compliance case from a vehicle cornering condition
 # --------------------------------------------------------------------------- #
 def corner_wheel_load(veh, axle: str, lateral_g: float,
-                      outer: bool = True, long_g: float = 0.0) -> lp.WheelLoad:
+                      outer: bool = True, long_g: float = 0.0,
+                      inboard_drive: bool = False) -> lp.WheelLoad:
     """
     Build the contact-patch WheelLoad on one tyre from a steady-state cornering case.
 
@@ -475,6 +476,8 @@ def corner_wheel_load(veh, axle: str, lateral_g: float,
       outer      : True for the loaded outer tyre (the one that matters for grip and
                    the worst compliance case), False for the inner
       long_g     : optional simultaneous longitudinal g (braking/traction)
+      inboard_drive : traction (long_g < 0) through a chassis-mounted drive is
+                   applied at the wheel centre (the halfshaft reacts its torque)
 
     Vertical load comes from the real load-transfer model. The lateral force on the
     tyre is distributed by equal lateral-g utilisation (Fy = lateral_g · Fz), the
@@ -487,4 +490,7 @@ def corner_wheel_load(veh, axle: str, lateral_g: float,
         Fz = loads.rr if outer else loads.rl
     # lateral force toward the turn centre (centripetal). For the right-side corner
     # model, the outer wheel's cornering force points inboard (−y).
-    return lp.WheelLoad(Fx=long_g * Fz, Fy=-lateral_g * Fz, Fz=Fz)
+    fx = long_g * Fz
+    if inboard_drive and fx < 0.0:
+        return lp.WheelLoad(Fx=0.0, Fx_wc=fx, Fy=-lateral_g * Fz, Fz=Fz)
+    return lp.WheelLoad(Fx=fx, Fy=-lateral_g * Fz, Fz=Fz)
