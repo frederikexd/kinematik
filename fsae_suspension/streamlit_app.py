@@ -29096,7 +29096,7 @@ with tab10:
                         'optimiser\'s best within these bounds. Nice.</p>',
                         unsafe_allow_html=True)
 
-        if _is_default:
+        if st.session_state.get("tire_is_default", True):
             st.markdown('<p class="hint" style="border-left:2px solid #5a4317;'
                         'padding-left:10px;">These rankings run on the <b>generic '
                         'default tire</b>. They show the right <i>directions</i>, but '
