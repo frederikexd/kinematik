@@ -29014,9 +29014,9 @@ with tab10:
   if st.session_state.get("_run_opt"):
       with st.spinner("Sweeping setup space on the live tire…"):
           sens = setup_mod.sensitivity(base_vp, front_kin=kin, rear_kin=kin,
-                                       tire=live_tire)
+                                       tire=tire_mod.PacejkaLateral(coeffs=dict(st.session_state.tire_coeffs), FNOMIN=st.session_state.tire_fnomin))
           opt = setup_mod.optimise(base_vp, front_kin=kin, rear_kin=kin,
-                                   tire=live_tire, target_balance=target_bal,
+                                   tire=tire_mod.PacejkaLateral(coeffs=dict(st.session_state.tire_coeffs), FNOMIN=st.session_state.tire_fnomin), target_balance=target_bal,
                                    balance_tol=bal_tol)
 
       b = sens["base"]
