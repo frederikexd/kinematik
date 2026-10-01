@@ -51,7 +51,8 @@ from typing import Any
 import numpy as np
 
 from .kinematics import Hardpoints, SuspensionKinematics
-from .kinematik_stochastic import ToleranceField, ToleranceSpec, _perturbed
+from .kinematik_stochastic import (ToleranceField, ToleranceSpec,
+                                   ToleranceCluster, _perturbed)
 from . import inverse_genesis as ig
 
 MANIFEST_SCHEMA = "kinematik.genesis.manifest/1"
@@ -333,7 +334,12 @@ def _property_bounds_to_dict(b: ig.SolvedPropertyBounds | None) -> dict | None:
             "travel_mm": [float(b.travel_mm[0]), float(b.travel_mm[1])],
             "n_nodes": int(b.n_nodes),
             **({"elasto": b.elasto.to_dict()}
-               if getattr(b, "elasto", None) is not None else {})}
+               if getattr(b, "elasto", None) is not None else {}),
+            # written only when used, so earlier manifests keep their hash
+            **({"rear_brakes_inboard": True}
+               if getattr(b, "rear_brakes_inboard", False) else {}),
+            **({"steer_effort": b.steer_effort.to_dict()}
+               if getattr(b, "steer_effort", None) is not None else {})}
 
 
 def _property_bounds_from_dict(d: dict | None) -> ig.SolvedPropertyBounds | None:
@@ -353,7 +359,10 @@ def _property_bounds_from_dict(d: dict | None) -> ig.SolvedPropertyBounds | None
         drive_bias_rear=float(d.get("drive_bias_rear", 1.0)),
         travel_mm=tuple(d.get("travel_mm", (-25.0, 25.0))),
         n_nodes=int(d.get("n_nodes", 5)),
-        elasto=_elasto_from_dict(d.get("elasto")))
+        elasto=_elasto_from_dict(d.get("elasto")),
+        rear_brakes_inboard=bool(d.get("rear_brakes_inboard", False)),
+        steer_effort=(ig.SteerEffort(**d["steer_effort"])
+                      if d.get("steer_effort") else None))
 
 
 def _envelope_to_dict(e: "ig.WheelEnvelope | None") -> dict | None:
@@ -438,6 +447,13 @@ def volume_to_dict(v: ig.LegalVolume) -> dict:
         out["node_attachment"] = {"nodes": [list(n) for n in na.nodes],
                                   "points": list(na.points),
                                   "max_offset_mm": float(na.max_offset_mm)}
+    ta = getattr(v, "tool_access", None)
+    if ta is not None:
+        out["tool_access"] = {"points": list(ta.points),
+                              "reach_mm": float(ta.reach_mm),
+                              "tool_radius_mm": float(ta.tool_radius_mm),
+                              "start_offset_mm": float(ta.start_offset_mm),
+                              "samples": int(ta.samples)}
     return out
 
 
@@ -456,7 +472,10 @@ def volume_from_dict(d: dict) -> ig.LegalVolume:
             nodes=tuple(tuple(n) for n in d["node_attachment"]["nodes"]),
             points=tuple(d["node_attachment"]["points"]),
             max_offset_mm=float(d["node_attachment"]["max_offset_mm"]))
-            if d.get("node_attachment") else None))
+            if d.get("node_attachment") else None),
+        tool_access=(ig.ToolAccess(**{**d["tool_access"],
+                                      "points": tuple(d["tool_access"]["points"])})
+                     if d.get("tool_access") else None))
 
 
 def boxes_about(hp: Hardpoints, half: dict[str, Any]
@@ -477,10 +496,16 @@ def field_to_dict(f: ToleranceField | None) -> dict | None:
     """ToleranceField → dict; per-axis lo/hi build tolerances in mm."""
     if f is None:
         return None
-    return {"provenance": f.provenance, "calibrated": bool(f.calibrated),
-            "specs": {p: {"lo": s.lo.tolist(), "hi": s.hi.tolist(),
-                          "dist": s.dist}
-                      for p, s in sorted(f.specs.items())}}
+    d = {"provenance": f.provenance, "calibrated": bool(f.calibrated),
+         "specs": {p: {"lo": s.lo.tolist(), "hi": s.hi.tolist(),
+                       "dist": s.dist}
+                   for p, s in sorted(f.specs.items())}}
+    if getattr(f, "clusters", None):
+        # written only when present, so earlier manifests keep their hash
+        d["clusters"] = [{"points": list(c.points), "label": c.label,
+                          "lo": c.spec.lo.tolist(), "hi": c.spec.hi.tolist(),
+                          "dist": c.spec.dist} for c in f.clusters]
+    return d
 
 
 def field_from_dict(d: dict | None) -> ToleranceField | None:
@@ -492,7 +517,13 @@ def field_from_dict(d: dict | None) -> ToleranceField | None:
                           s.get("dist", "uniform"))
          for p, s in d["specs"].items()},
         provenance=d.get("provenance", "manifest"),
-        calibrated=bool(d.get("calibrated", False)))
+        calibrated=bool(d.get("calibrated", False)),
+        clusters=[ToleranceCluster(tuple(c["points"]),
+                                   ToleranceSpec(np.asarray(c["lo"]),
+                                                 np.asarray(c["hi"]),
+                                                 c.get("dist", "uniform")),
+                                   c.get("label", "cluster"))
+                  for c in d.get("clusters", [])])
 
 
 def field_with_overrides(shop: str, overrides: dict[str, float | tuple]
@@ -889,8 +920,7 @@ def yield_breakdown(hp: Hardpoints, targets: ig.GenesisTargets,
     passed = ~np.any(fail, axis=1)
     y = float(np.mean(passed))
     # first-order worst case over the tolerance box
-    lo = np.concatenate([fld.specs[p].lo for p in sorted(fld.specs)])
-    hi = np.concatenate([fld.specs[p].hi for p in sorted(fld.specs)])
+    lo, hi = fld.bounds_vec()
     mid, half = 0.5 * (lo + hi), 0.5 * (hi - lo)
     worst_rows = np.abs(r_fit + J @ mid) + np.abs(J) @ half
     W = float(np.max(worst_rows))
@@ -1049,11 +1079,42 @@ class LoadCaseSpec:
     Fy: float = 0.0
     Fx: float = 0.0
     mz_Nmm: float = 0.0
+    #: longitudinal force (N) whose torque a shaft reacts (inboard drive or
+    #: inboard brakes); applied at the wheel centre, see loadpath.WheelLoad
+    Fx_wc: float = 0.0
+    #: hub force (N) and moment (N*mm) at the wheel centre (halfshaft.py)
+    F_wc_extra: tuple = (0.0, 0.0, 0.0)
+    M_wc_extra: tuple = (0.0, 0.0, 0.0)
 
     def wheel_load(self) -> _lp.WheelLoad:
-        """Contact-patch load: forces in N, aligning torque in N·mm."""
+        """Corner load: forces in N, aligning torque in N·mm."""
         return _lp.WheelLoad(Fx=self.Fx, Fy=self.Fy, Fz=self.Fz,
-                             Mz=self.mz_Nmm)
+                             Mz=self.mz_Nmm, Fx_wc=self.Fx_wc,
+                             F_wc_extra=tuple(self.F_wc_extra),
+                             M_wc_extra=tuple(self.M_wc_extra))
+
+
+def with_halfshaft(cases: list, spec, state, wheel_radius_mm: float = 228.0
+                   ) -> list:
+    """Each shaft-driven case split into two, plunge friction either way.
+
+    A case whose traction goes through a shaft (Fx_wc < 0) gets the plunge
+    force and the outboard CV couple of ``halfshaft.halfshaft_loads`` at the
+    torque Fx_wc x wheel radius; the rest pass through unchanged.
+    """
+    from . import halfshaft as _hs
+    out = []
+    for c in cases:
+        if c.Fx_wc >= 0.0:
+            out.append(c)
+            continue
+        hl = _hs.halfshaft_loads(spec, state, abs(c.Fx_wc) * wheel_radius_mm / 1000.0)
+        for tag, ex in zip(("plunge +", "plunge -"), hl["cases"]):
+            out.append(LoadCaseSpec(f"{c.name}, {tag}", Fz=c.Fz, Fy=c.Fy, Fx=c.Fx,
+                                    mz_Nmm=c.mz_Nmm, Fx_wc=c.Fx_wc,
+                                    F_wc_extra=ex["F_wc_extra"],
+                                    M_wc_extra=ex["M_wc_extra"]))
+    return out
 
 
 def vehicle_load_cases(mass_kg: float = 300.0,
@@ -1065,7 +1126,11 @@ def vehicle_load_cases(mass_kg: float = 300.0,
                      roll_share_front: float = 0.55,
                      aligning_torque_Nm: float = 50.0,
                      axle: str = "front",
-                     lateral_g: float = 1.5) -> list[LoadCaseSpec]:
+                     lateral_g: float = 1.5,
+                     traction_g: float = 0.0,
+                     drive_share: float = 1.0,
+                     inboard_drive: bool = True,
+                     inboard_brakes: bool = False) -> list[LoadCaseSpec]:
     """Five contact-patch load cases for one corner (forces in N, torque in
     N·mm), from the declared vehicle (mass kg, lengths mm, g-levels).
 
@@ -1076,6 +1141,16 @@ def vehicle_load_cases(mass_kg: float = 300.0,
     - Combined 1.06g: lateral + longitudinal loads together, with aligning torque.
     - 3g vertical bump: purely vertical.
     - Kerb strike 2g vert + 1g long: Fz = 2× static; Fx = braking share.
+
+    A DRIVEN axle also needs the drive cases, which the five above do not
+    contain: with ``traction_g`` > 0 two more are added, straight-line
+    traction at ``traction_g`` and combined traction and cornering at 1.06 g
+    (the combined case of the ride-frequency derivation). ``drive_share`` is
+    this axle's share of the tractive force (1.0 for rear drive). Traction on
+    the car is forward, so Fx < 0; with ``inboard_drive`` (a chassis-mounted
+    final drive and halfshafts) it is applied at the wheel centre, because the
+    halfshaft, not the upright, reacts its torque. ``inboard_brakes`` does the
+    same for the braking cases. Defaults reproduce the five cases exactly.
     """
     import math
     g = 9.81
@@ -1094,7 +1169,7 @@ def vehicle_load_cases(mass_kg: float = 300.0,
     c3_fz = fz_s + rs * lat_tr(1.06) + long_tr(1.06) / 2
     c5_fz = fz_s * 2.0
 
-    return [
+    cases = [
         LoadCaseSpec(f"{lat_g:g}g corner", Fz=c1_fz, Fy=lat_g * c1_fz,
                      mz_Nmm=mz),
         LoadCaseSpec("1.5g braking", Fz=c2_fz, Fx=bias * m * g * 1.5 / 2),
@@ -1103,11 +1178,35 @@ def vehicle_load_cases(mass_kg: float = 300.0,
         LoadCaseSpec("3g vertical bump", Fz=fz_s * 3.0),
         LoadCaseSpec("kerb 2g+1g", Fz=c5_fz, Fx=bias * m * g * 1.0 / 2),
     ]
+    if inboard_brakes:
+        for c in cases:
+            if c.Fx > 0.0:
+                c.Fx_wc, c.Fx = c.Fx, 0.0
+    if float(traction_g) > 0.0:
+        tg = float(traction_g)
+        sign = 1.0 if axle != "front" else -1.0     # load moves rearward
+        share = float(drive_share)
+
+        def _drive(name, fz, fx, fy=0.0, mzz=0.0):
+            if inboard_drive:
+                return LoadCaseSpec(name, Fz=fz, Fy=fy, Fx_wc=fx, mz_Nmm=mzz)
+            return LoadCaseSpec(name, Fz=fz, Fy=fy, Fx=fx, mz_Nmm=mzz)
+
+        t1_fz = fz_s + sign * long_tr(tg) / 2
+        t2_fz = fz_s + rs * lat_tr(1.06) + sign * long_tr(1.06) / 2
+        cases += [
+            _drive(f"{tg:g}g traction", t1_fz, -share * m * g * tg / 2),
+            _drive("combined 1.06g traction", t2_fz,
+                   -share * m * g * 1.06 / 2, fy=1.06 * t2_fz, mzz=mz),
+        ]
+    return cases
 
 
 def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
                          load_cases: list[LoadCaseSpec] | None = None,
                          fos_min: float = 1.5, axle: str = "front",
+                         halfshaft=None, wheel_radius_mm: float = 228.0,
+                         rod_end: dict | None = None,
                          **load_case_kw) -> dict:
     """Member axial forces (N) and factors of safety (dimensionless) across a set of load cases.
 
@@ -1123,6 +1222,8 @@ def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
     pts = _lp._member_geometry(kin, state)
     if load_cases is None:
         load_cases = vehicle_load_cases(axle=axle, **load_case_kw)
+    if halfshaft is not None:
+        load_cases = with_halfshaft(load_cases, halfshaft, state, wheel_radius_mm)
 
     def _length(m):
         if m not in pts:
@@ -1165,6 +1266,20 @@ def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
 
     worst_overall = min(worst_fos.values(), default=math.nan)
     governing_member = min(worst_fos, key=worst_fos.get) if worst_fos else ""
+    shank = None
+    if rod_end:
+        # the ball's friction moment bends the threaded shank at the largest
+        # member force each member sees (joints.shank_fatigue_check); rod_end
+        # = {nominal_dia_mm, threads_per_inch, ball_radius_mm, mu_ball}
+        from .joints import shank_fatigue_check
+        peak = {m: 0.0 for m in members}
+        for r in rows:
+            peak[r["member"]] = max(peak[r["member"]], abs(float(r.get("force_N", 0.0))))
+        shank = {m: shank_fatigue_check(peak[m], rod_end["ball_radius_mm"],
+                                        rod_end["nominal_dia_mm"],
+                                        rod_end["threads_per_inch"],
+                                        rod_end.get("mu_ball", 0.15))
+                 for m in members}
 
     return {
         "ok": True,
@@ -1172,6 +1287,8 @@ def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
         "worst_fos_per_member": {m: round(v, 2) for m, v in worst_fos.items()},
         "governing_case": governing,
         "worst_fos_overall": round(worst_overall, 2),
+        **({"shank_fatigue": {m: {k: round(v, 2) for k, v in d.items()}
+                              for m, d in shank.items()}} if shank else {}),
         "governing_member": governing_member,
         "all_pass": all(r["passes"] for r in rows),
         "tube": {"od_mm": tube.od_mm, "wall_mm": tube.wall_mm,

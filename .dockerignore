@@ -1,0 +1,6 @@
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+.git
+analytics_buffer.jsonl
+fsae_suspension/analytics_buffer.jsonl

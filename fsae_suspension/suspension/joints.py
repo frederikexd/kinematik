@@ -57,6 +57,7 @@ N·s/mm, loss factor dimensionless, frequency Hz.
 
 from __future__ import annotations
 
+import math
 import numpy as np
 from dataclasses import dataclass, field
 from collections.abc import Sequence
@@ -427,3 +428,125 @@ class JointCompliance:
                 "lash_mm": self.lash, "k_lash_N_per_mm": self.k_lash,
                 "c_viscous_N_s_per_mm": self.c_viscous,
                 "loss_factor": self.loss_factor}
+
+
+# --------------------------------------------------------------------------- #
+#  Stiction: the stick-release a linear joint rate cannot represent
+# --------------------------------------------------------------------------- #
+def stiction_describing_function(k_n_per_mm: float, breakout_n: float,
+                                 force_amp_n: float, n: int = 4000) -> dict:
+    """Fundamental response of a compliant joint path with stiction.
+
+    The path is a spring of rate ``k`` in parallel with a Coulomb friction
+    element that holds until the force across it exceeds ``breakout_n``: a
+    spherical joint under radial load that sticks and releases. Driven by a
+    sinusoidal force of amplitude ``force_amp_n``, it stays locked while the
+    force change since the last release is inside the break-out, then slides
+    with the spring carrying the rest. Quasi-static (no mass), so the result
+    depends on amplitude, not frequency.
+
+    Returns the effective stiffness of the fundamental (N/mm, the secant a
+    pull test would report at that amplitude), the phase lag of deflection
+    behind force (deg; 0 for a linear spring) and the hysteresis width
+    (mm, loading against unloading at zero force). Below break-out the joint
+    never moves: ``locked`` is True and the path is rigid, not soft.
+    """
+    k = float(k_n_per_mm); Fs = abs(float(breakout_n)); F0 = abs(float(force_amp_n))
+    if k <= 0.0 or F0 <= 0.0:
+        raise ValueError("k and force amplitude must be > 0.")
+    if F0 <= Fs:
+        return {"locked": True, "k_eff_n_per_mm": float("inf"),
+                "phase_lag_deg": 0.0, "hysteresis_mm": 0.0}
+    th = np.linspace(0.0, 4.0 * np.pi, 2 * n, endpoint=False)
+    F = F0 * np.sin(th)
+    x = np.zeros_like(F)
+    xi = 0.0
+    for i, f in enumerate(F):
+        # slides only when the spring cannot hold the force within break-out
+        if f - k * xi > Fs:
+            xi = (f - Fs) / k
+        elif f - k * xi < -Fs:
+            xi = (f + Fs) / k
+        x[i] = xi
+    th2, x2 = th[n:], x[n:]                       # second cycle: settled
+    a = 2.0 / n * np.sum(x2 * np.sin(th2))
+    b = 2.0 / n * np.sum(x2 * np.cos(th2))
+    amp = math.hypot(a, b)
+    lag = -math.degrees(math.atan2(b, a))
+    return {"locked": False, "k_eff_n_per_mm": F0 / amp if amp > 0 else float("inf"),
+            "phase_lag_deg": lag, "hysteresis_mm": 2.0 * Fs / k}
+
+
+# --------------------------------------------------------------------------- #
+#  Double-shear clevis: pin tilt from tab flexure, and rod-end shank bending
+# --------------------------------------------------------------------------- #
+def clevis_pin_tilt_deg(load_n: float, k_tab_a_n_per_mm: float,
+                        k_tab_b_n_per_mm: float, tab_spacing_mm: float,
+                        load_offset_mm: float = 0.0) -> float:
+    """Pin tilt (deg) when the two tabs of a double-shear clevis flex unequally.
+
+    Each tab carries its share of the load (by lever from ``load_offset_mm``,
+    the bearing's offset from the mid-plane toward tab a) and deflects by
+    share / rate; the pin tilts by the difference over the tab spacing.
+    Equal tabs with a centred bearing do not tilt the pin at all.
+    """
+    s = float(tab_spacing_mm)
+    fa = load_n * (0.5 + load_offset_mm / s)
+    fb = load_n - fa
+    d = fa / k_tab_a_n_per_mm - fb / k_tab_b_n_per_mm
+    return math.degrees(math.atan2(d, s))
+
+
+def rod_end_shank_bending(load_n: float, ball_radius_mm: float,
+                          shank_minor_dia_mm: float, mu_ball: float = 0.1,
+                          pin_tilt_deg: float = 0.0,
+                          misalignment_rating_deg: float = 13.0) -> dict:
+    """Bending stress (MPa) in a rod-end shank from the ball and the pin.
+
+    A spherical bearing takes pin tilt in its ball, so tilt by itself does not
+    bend the shank while it stays inside the misalignment rating. What does
+    bend it is friction: when the ball turns under a radial load F, its
+    friction moment mu F r_ball goes into the shank. Past the rating the ball
+    binds and the tilt is forced into the shank as well; that case is flagged,
+    not sized, because the moment then depends on the housing's stiffness.
+    ``mu_ball`` is DECLARED: PTFE-lined 0.05 to 0.1, metal-on-metal up to 0.2.
+    """
+    M = mu_ball * abs(load_n) * ball_radius_mm                    # N*mm
+    Z = math.pi * shank_minor_dia_mm ** 3 / 32.0                  # mm^3
+    return {"moment_Nmm": M, "stress_MPa": M / Z,
+            "binds": abs(pin_tilt_deg) >= misalignment_rating_deg}
+
+
+def thread_endurance_amplitude_mpa(nominal_dia_mm: float,
+                                   rolled_after_heat_treatment: bool = False,
+                                   mean_to_proof: float = 0.5) -> float:
+    """Endurance stress amplitude (MPa) of a threaded shank, VDI 2230.
+
+    Rolled before heat treatment (the usual rod-end shank):
+    sigma_ASV = 0.85 (150 / d + 45). Rolled after heat treatment:
+    sigma_ASG = (2 - F_Sm / F_0.2) sigma_ASV, with ``mean_to_proof`` the ratio
+    of mean load to yield load. d is the nominal diameter in mm.
+    """
+    sv = 0.85 * (150.0 / nominal_dia_mm + 45.0)
+    return (2.0 - mean_to_proof) * sv if rolled_after_heat_treatment else sv
+
+
+def shank_fatigue_check(load_n: float, ball_radius_mm: float,
+                        nominal_dia_mm: float, threads_per_inch: float,
+                        mu_ball: float = 0.15) -> dict:
+    """Friction-moment bending in a UN-threaded shank against its endurance.
+
+    The ball's friction moment reverses with the joint's direction of
+    rotation, so it is a fully reversed amplitude at the thread root
+    (d3 = d - 1.226869 p for UN threads). Returns stress amplitude, endurance
+    amplitude and their ratio; at a governing shock load this bounds the
+    check, and the measured load spectrum sets the real one.
+    Units: forces in N, lengths in mm, stresses in MPa (N/mm²), factors dimensionless.
+    """
+    p = 25.4 / threads_per_inch
+    d3 = nominal_dia_mm - 1.226869 * p
+    M = mu_ball * abs(load_n) * ball_radius_mm
+    sa = M / (math.pi * d3 ** 3 / 32.0)
+    se = thread_endurance_amplitude_mpa(nominal_dia_mm)
+    return {"root_dia_mm": d3, "stress_amp_MPa": sa, "endurance_amp_MPa": se,
+            "fos": se / sa if sa > 0 else math.inf}

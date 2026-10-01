@@ -21,3 +21,30 @@ jobs:
             -n auto -v -ra --tb=short
         env:
           PYTHONPATH: ${{ github.workspace }}/fsae_suspension
+
+  docker:
+    # The container is the frozen environment the paper points teams to; build
+    # it on every push and run the synthesis suites inside it, so it cannot rot
+    # silently while the host-Python job stays green.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t kinematik .
+      - name: Synthesis tests inside the image
+        run: |
+          docker run --rm kinematik pytest -q -p no:cacheprovider \
+            fsae_suspension/tests/test_inverse_genesis.py \
+            fsae_suspension/tests/test_inverse_genesis_property_bounds.py \
+            fsae_suspension/tests/test_inverse_genesis_wheel_envelope.py \
+            fsae_suspension/tests/test_inverse_genesis_fullcar.py \
+            fsae_suspension/tests/test_genesis_repro.py \
+            fsae_suspension/tests/test_elastokinematics.py \
+            fsae_suspension/tests/test_target_derivation.py \
+            fsae_suspension/tests/test_kinematik_stochastic.py \
+            fsae_suspension/tests/test_gap_closures.py \
+            fsae_suspension/tests/test_gap_closures_dynamics.py \
+            fsae_suspension/tests/test_gap_closures_final.py \
+            fsae_suspension/tests/test_measurement_fits.py \
+            fsae_suspension/tests/test_review_routes.py \
+            fsae_suspension/tests/test_transient.py
