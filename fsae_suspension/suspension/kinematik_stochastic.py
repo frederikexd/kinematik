@@ -227,6 +227,30 @@ def _Phi(x: float) -> float:
 
 
 @dataclass
+class ToleranceCluster:
+    """Points that move TOGETHER: one error drawn per build, shared by all.
+
+    A jig that locates a cluster of tabs, or a sub-frame welded and then
+    located as a unit, displaces its points by a common vector. Independent
+    per-point scatter cannot represent that: it averages out across the
+    cluster, while the real error does not. The common shift is drawn from
+    ``spec`` once per sampled build and added to every listed point, on top of
+    each point's own scatter. Lengths mm.
+    """
+    points: tuple[str, ...]
+    spec: ToleranceSpec
+    label: str = "cluster"
+
+    def __post_init__(self):
+        self.points = tuple(self.points)
+        bad = [p for p in self.points if p not in PERTURBABLE_POINTS]
+        if bad:
+            raise ValueError(f"ToleranceCluster: unknown point(s) {bad}.")
+        if len(self.points) < 1:
+            raise ValueError("ToleranceCluster needs at least one point.")
+
+
+@dataclass
 class ToleranceField:
     """point name → ToleranceSpec. Only listed points are perturbed."""
     specs: dict[str, ToleranceSpec] = _dcfield(default_factory=dict)
@@ -239,6 +263,9 @@ class ToleranceField:
     #: real inspection of your own parts.
     provenance: str = "not specified"
     calibrated: bool = False
+    #: correlated groups (jigged clusters, located sub-frames); each draws one
+    #: shared error per build. Empty = the independent field, unchanged.
+    clusters: list = _dcfield(default_factory=list)
 
     def __post_init__(self):
         for name in self.specs:
@@ -246,6 +273,35 @@ class ToleranceField:
                 raise ValueError(
                     f"'{name}' is not a perturbable hardpoint. Allowed: "
                     f"{', '.join(PERTURBABLE_POINTS)}.")
+        self.clusters = list(self.clusters)
+        for c in self.clusters:
+            if not isinstance(c, ToleranceCluster):
+                raise TypeError("ToleranceField.clusters takes ToleranceCluster items.")
+            for p in c.points:
+                # a clustered point needs a column even if it has no own scatter
+                self.specs.setdefault(p, ToleranceSpec(np.zeros(3), np.zeros(3)))
+
+    def shifted(self, offsets: dict[str, "np.ndarray"],
+                provenance: str | None = None) -> "ToleranceField":
+        """The same field with each named point's box moved by a vector (mm).
+
+        This is how a SYSTEMATIC displacement enters: weld shrinkage that
+        pulls a tab toward its bead, or the mean offset measured on a first
+        article. The box moves rather than widens, so the expected as-built
+        point is biased by exactly that vector and the scatter about it is
+        unchanged.
+        """
+        specs = {}
+        for p, sp in self.specs.items():
+            d = np.asarray(offsets.get(p, np.zeros(3)), float).reshape(3)
+            specs[p] = ToleranceSpec(sp.lo + d, sp.hi + d, sp.dist)
+        for p in offsets:
+            if p not in specs:
+                d = np.asarray(offsets[p], float).reshape(3)
+                specs[p] = ToleranceSpec(d.copy(), d.copy())
+        return ToleranceField(specs, provenance=provenance or (
+            self.provenance + " + systematic offsets"),
+            calibrated=self.calibrated, clusters=list(self.clusters))
 
     # ---- shop presets — representative, not measured; edit to your shop ----
     @staticmethod
@@ -324,15 +380,56 @@ class ToleranceField:
                 u = np.clip(u, s.lo, s.hi)
                 u = np.where((s.hi - s.lo) > 0, u, mid)
             cols.append(u)
-        return np.hstack(cols) if cols else np.zeros((n, 0))
+        out = np.hstack(cols) if cols else np.zeros((n, 0))
+        if self.clusters:
+            # a separate stream, so a field without clusters samples exactly
+            # as it always did
+            crng = np.random.default_rng([int(seed), 7919])
+            order = sorted(self.specs)
+            for c in self.clusters:
+                sp = c.spec
+                if sp.dist == "uniform":
+                    shift = crng.uniform(sp.lo, sp.hi, size=(n, 3))
+                else:
+                    mid, sig = sp.mean, (sp.hi - sp.lo) / 4.0
+                    shift = np.clip(crng.normal(mid, np.where(sig > 0, sig, 1.0),
+                                                size=(n, 3)), sp.lo, sp.hi)
+                for p in c.points:
+                    j = 3 * order.index(p)
+                    out[:, j:j + 3] += shift
+        return out
+
+    def _cluster_add(self, attr: str) -> np.ndarray:
+        order = sorted(self.specs)
+        add = np.zeros(3 * len(order))
+        for c in self.clusters:
+            v = np.asarray(getattr(c.spec, attr), float)
+            for p in c.points:
+                j = 3 * order.index(p)
+                add[j:j + 3] += v
+        return add
 
     def mean_vec(self) -> np.ndarray:
-        return np.concatenate([self.specs[p].mean for p in sorted(self.specs)]) \
-            if self.specs else np.zeros(0)
+        base = (np.concatenate([self.specs[p].mean for p in sorted(self.specs)])
+                if self.specs else np.zeros(0))
+        return base + self._cluster_add("mean") if self.clusters else base
 
     def var_vec(self) -> np.ndarray:
-        return np.concatenate([self.specs[p].var for p in sorted(self.specs)]) \
-            if self.specs else np.zeros(0)
+        """Marginal variance per coordinate (clusters add their variance; the
+        covariance between clustered points is in ``sample``, not here)."""
+        base = (np.concatenate([self.specs[p].var for p in sorted(self.specs)])
+                if self.specs else np.zeros(0))
+        return base + self._cluster_add("var") if self.clusters else base
+
+    def bounds_vec(self) -> tuple[np.ndarray, np.ndarray]:
+        """(lo, hi) per coordinate (mm), cluster shifts included."""
+        order = sorted(self.specs)
+        lo = np.concatenate([self.specs[p].lo for p in order]) if order else np.zeros(0)
+        hi = np.concatenate([self.specs[p].hi for p in order]) if order else np.zeros(0)
+        if self.clusters:
+            lo = lo + self._cluster_add("lo")
+            hi = hi + self._cluster_add("hi")
+        return lo, hi
 
 
 # --------------------------------------------------------------------------- #

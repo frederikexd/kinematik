@@ -62,9 +62,26 @@ class WheelLoad:
     Fy: float = 0.0
     Fz: float = 0.0
     Mz: float = 0.0
+    #: longitudinal force (N, +rearward) whose torque about the spin axis is
+    #: carried by a SHAFT to the chassis rather than by the upright: traction
+    #: through an inboard final drive, or braking through inboard brakes. The
+    #: ground applies it at the contact patch, but the wheel and hub pass it to
+    #: the upright through the bearing at the wheel centre with no moment about
+    #: the spin axis, because the halfshaft reacts Fx x R. It is therefore
+    #: applied at the wheel centre here. Outboard brakes (caliper on the
+    #: upright) and hub motors react their torque through the upright: put
+    #: those in ``Fx``, at the contact patch.
+    Fx_wc: float = 0.0
+    #: further force (N) and moment (N*mm) the hub puts on the upright at the
+    #: wheel centre, SAE axes: halfshaft plunge friction and the secondary
+    #: couple of an angled CV joint (see halfshaft.py). Zero by default.
+    F_wc_extra: tuple = (0.0, 0.0, 0.0)
+    M_wc_extra: tuple = (0.0, 0.0, 0.0)
 
     def force(self) -> np.ndarray:
-        return np.array([self.Fx, self.Fy, self.Fz], float)
+        """Total force on the corner, N: contact-patch and wheel-centre parts."""
+        return (np.array([self.Fx + self.Fx_wc, self.Fy, self.Fz], float)
+                + np.asarray(self.F_wc_extra, float))
 
 
 @dataclass
@@ -162,6 +179,20 @@ def solve_member_forces(kin, state, load: WheelLoad) -> MemberForces:
 
     F = load.force()
     M_applied = np.array([0.0, 0.0, load.Mz])
+    fx_wc = float(getattr(load, "Fx_wc", 0.0))
+    f_ex = np.asarray(getattr(load, "F_wc_extra", (0.0, 0.0, 0.0)), float)
+    m_ex = np.asarray(getattr(load, "M_wc_extra", (0.0, 0.0, 0.0)), float)
+    if np.any(f_ex) or np.any(m_ex):
+        wc = np.asarray(state.wheel_center, float)
+        M_applied = M_applied + np.cross(wc - cp, f_ex) + m_ex
+        note += " Hub force/moment at the wheel centre included (halfshaft)."
+    if fx_wc:
+        # shaft-reacted longitudinal force acts at the wheel centre, so about
+        # the contact patch it carries only the lever (wc - cp) x F
+        wc = np.asarray(state.wheel_center, float)
+        M_applied = M_applied + np.cross(wc - cp, np.array([fx_wc, 0.0, 0.0]))
+        note += (f" {fx_wc:+.0f} N of longitudinal force applied at the wheel "
+                 "centre (torque reacted by a shaft, not the upright).")
     b = np.concatenate([-F, -M_applied])
 
     cond = float(np.linalg.cond(A)) if A.shape[1] == 6 else np.inf
@@ -189,7 +220,9 @@ def solve_member_forces(kin, state, load: WheelLoad) -> MemberForces:
 
 def wheel_load_from_corner(Fz: float, mu_lateral: float = 0.0,
                            mu_long: float = 0.0,
-                           lateral_sign: float = -1.0) -> WheelLoad:
+                           lateral_sign: float = -1.0,
+                           inboard_drive: bool = False,
+                           inboard_brakes: bool = False) -> WheelLoad:
     """
     Convenience: build a WheelLoad from a vertical tyre load and friction fractions.
 
@@ -200,7 +233,12 @@ def wheel_load_from_corner(Fz: float, mu_lateral: float = 0.0,
       lateral_sign: −1 puts the cornering force toward the centreline (the inboard,
                     centripetal direction for a RIGHT-side outer wheel in a left
                     turn) — the usual compliance-steer load case.
+      inboard_drive / inboard_brakes : when the traction (Fx < 0, forward) or
+                  braking (Fx > 0) torque is reacted by a shaft to the chassis,
+                  that force goes to ``Fx_wc`` and acts at the wheel centre.
     """
-    return WheelLoad(Fx=mu_long * Fz,
+    fx = mu_long * Fz
+    shaft = (fx < 0.0 and inboard_drive) or (fx > 0.0 and inboard_brakes)
+    return WheelLoad(Fx=0.0 if shaft else fx,
                      Fy=lateral_sign * mu_lateral * Fz,
-                     Fz=Fz)
+                     Fz=Fz, Fx_wc=fx if shaft else 0.0)
