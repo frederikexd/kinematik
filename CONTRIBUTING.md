@@ -11,7 +11,7 @@ Nobody has found an error yet.
 ## Bug Reports
 
 Open an issue with:
-- The hardpoint values you used
+- The values you used
 - The output you got
 - The output you expected and why
 
