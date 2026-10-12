@@ -1,0 +1,605 @@
+{
+ "schema": "kinematik.genesis.manifest/1",
+ "name": "front_v11_29deg",
+ "kinematik_version": "0.23.0",
+ "inputs_sha256": "2673492a63c56b7758a9a10656c91acf95c24c499d3db544ca8b17c6f426e908",
+ "context": {
+  "paper": "v11",
+  "axle": "front",
+  "run": "(reconstructed locally from front_v11_29deg_b73 at 0.60 bias; scaffold, not in the patch)"
+ },
+ "hardpoints": {
+  "upper_front_inner": [
+   -133.23423507750636,
+   222.26050824712408,
+   280.92441992056536
+  ],
+  "upper_rear_inner": [
+   92.76458894010501,
+   269.8311178095781,
+   265.1950040048937
+  ],
+  "lower_front_inner": [
+   -49.496361012760524,
+   192.88839708302638,
+   124.4260533211659
+  ],
+  "lower_rear_inner": [
+   29.99451657781485,
+   162.509090922957,
+   129.5243534267429
+  ],
+  "upper_outer": [
+   6.5,
+   560.5,
+   300.0
+  ],
+  "lower_outer": [
+   -5.0,
+   583.6,
+   120.0
+  ],
+  "tie_rod_inner": [
+   -3.7661436163290225,
+   192.28937754420267,
+   147.11713123739557
+  ],
+  "tie_rod_outer": [
+   51.37543392805734,
+   539.822865123218,
+   148.24869249435073
+  ],
+  "wheel_center": [
+   0.0,
+   600.0,
+   228.0
+  ],
+  "contact_patch": [
+   0.0,
+   605.0,
+   0.0
+  ],
+  "pushrod_outer": [
+   -5.0,
+   408.0,
+   120.0
+  ],
+  "rocker_pivot": [
+   -5.0,
+   360.0,
+   330.0
+  ],
+  "rocker_axis": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "rocker_pushrod": [
+   -5.0,
+   402.0,
+   308.0
+  ],
+  "rocker_spring": [
+   -5.0,
+   335.0,
+   360.0
+  ],
+  "spring_inner": [
+   -5.0,
+   196.7,
+   244.8
+  ],
+  "pushrod_attach": "lower",
+  "static_camber": -2.5,
+  "static_toe": 0.0
+ },
+ "targets": {
+  "track_mm": 1200.0,
+  "curves": [
+   {
+    "channel": "camber_deg",
+    "travel_mm": [
+     -25.0,
+     -12.5,
+     0.0,
+     12.5,
+     25.0
+    ],
+    "target": [
+     -1.625,
+     -2.0625,
+     -2.5,
+     -2.9375,
+     -3.375
+    ],
+    "band": [
+     0.3,
+     0.3,
+     0.3,
+     0.3,
+     0.3
+    ]
+   },
+   {
+    "channel": "toe_deg",
+    "travel_mm": [
+     -25.0,
+     -12.5,
+     0.0,
+     12.5,
+     25.0
+    ],
+    "target": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "band": [
+     0.08,
+     0.08,
+     0.08,
+     0.08,
+     0.08
+    ]
+   },
+   {
+    "channel": "rc_height_mm",
+    "travel_mm": [
+     -25.0,
+     -12.5,
+     0.0,
+     12.5,
+     25.0
+    ],
+    "target": [
+     55.0,
+     55.0,
+     55.0,
+     55.0,
+     55.0
+    ],
+    "band": [
+     18.0,
+     18.0,
+     18.0,
+     18.0,
+     18.0
+    ]
+   }
+  ]
+ },
+ "volume": {
+  "boxes": {
+   "lower_front_inner": {
+    "lo": [
+     -180.0,
+     30.80000000000001,
+     19.900000000000006
+    ],
+    "hi": [
+     20.0,
+     230.8,
+     219.9
+    ]
+   },
+   "lower_rear_inner": {
+    "lo": [
+     -35.53,
+     48.139999999999986,
+     32.72999999999999
+    ],
+    "hi": [
+     164.47,
+     248.14,
+     232.73
+    ]
+   },
+   "tie_rod_inner": {
+    "lo": [
+     -117.0,
+     81.72,
+     49.620000000000005
+    ],
+    "hi": [
+     83.0,
+     281.72,
+     249.62
+    ]
+   },
+   "tie_rod_outer": {
+    "lo": [
+     -20.61,
+     462.78,
+     59.58000000000001
+    ],
+    "hi": [
+     179.39,
+     662.78,
+     259.58000000000004
+    ]
+   },
+   "upper_front_inner": {
+    "lo": [
+     -260.0,
+     174.88,
+     174.99
+    ],
+    "hi": [
+     -60.0,
+     374.88,
+     374.99
+    ]
+   },
+   "upper_rear_inner": {
+    "lo": [
+     -40.0,
+     130.2,
+     165.62
+    ],
+    "hi": [
+     160.0,
+     330.2,
+     365.62
+    ]
+   }
+  },
+  "keep_out": [],
+  "probe_radius_mm": 0.0,
+  "min_clearance_mm": 0.0,
+  "spacings": [],
+  "properties": {
+   "bounds": [
+    {
+     "prop": "anti_dive_pct",
+     "lo": 39.0,
+     "hi": 70.0,
+     "label": "39 <= anti-dive, front (%) <= 70"
+    },
+    {
+     "prop": "kpi_deg",
+     "lo": 0.0,
+     "hi": 10.0,
+     "label": "0 <= kingpin inclination (deg) <= 10"
+    },
+    {
+     "prop": "scrub_static_mm",
+     "lo": -5.0,
+     "hi": 30.0,
+     "label": "-5 <= scrub radius, static (mm) <= 30"
+    },
+    {
+     "prop": "caster_deg",
+     "lo": 3.65,
+     "hi": 8.0,
+     "label": "3.65 <= caster (deg) <= 8"
+    },
+    {
+     "prop": "steer_effort_margin",
+     "lo": 0.0,
+     "hi": null,
+     "label": "kinematic ratio minus the ratio effort needs (-) >= 0"
+    },
+    {
+     "prop": "lock_sw_deg",
+     "lo": null,
+     "hi": 120.0,
+     "label": "steering-wheel angle to reach lock (deg) <= 120"
+    }
+   ],
+   "cg_height_mm": 280.0,
+   "wheelbase_mm": 1630.0,
+   "track_mm": 1210.0,
+   "brake_bias_front": 0.6,
+   "drive_bias_rear": 1.0,
+   "travel_mm": [
+    -25.0,
+    25.0
+   ],
+   "n_nodes": 5,
+   "steer_effort": {
+    "fz_outer_n": 1247.7,
+    "fz_inner_n": 164.9,
+    "effort_limit_nm": 10.0,
+    "lock_road_wheel_deg": 29.4
+   }
+  },
+  "wheel_envelope": {
+   "pickup_radius_mm": 115.0,
+   "rim_radius_mm": 127.0,
+   "tire_radius_mm": 228.0,
+   "rim_half_width_mm": 89.0,
+   "tire_half_width_mm": 95.0,
+   "wheel_offset_mm": 0.0,
+   "clearance_mm": 3.0,
+   "travel_mm": [
+    -25.0,
+    25.0
+   ],
+   "n_travel": 5,
+   "rack_travel_mm": 25.4,
+   "samples_per_link": 16,
+   "links": [
+    "upper_front",
+    "upper_rear",
+    "lower_front",
+    "lower_rear",
+    "tie_rod"
+   ],
+   "link_radius_mm": 7.94,
+   "rod_end_radius_mm": 11.0,
+   "tire_profile": [],
+   "joint_swing_limit_deg": null,
+   "sectors": []
+  }
+ },
+ "tolerance": {
+  "provenance": "shop preset 'jig_weld' \u2014 REPRESENTATIVE tolerances, not measured on your parts. Replace with inspection data before quoting these spreads as your build's real scatter.",
+  "calibrated": false,
+  "specs": {
+   "lower_front_inner": {
+    "lo": [
+     -0.5,
+     -0.5,
+     -0.5
+    ],
+    "hi": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "dist": "uniform"
+   },
+   "lower_outer": {
+    "lo": [
+     -0.15,
+     -0.15,
+     -0.15
+    ],
+    "hi": [
+     0.15,
+     0.15,
+     0.15
+    ],
+    "dist": "uniform"
+   },
+   "lower_rear_inner": {
+    "lo": [
+     -0.5,
+     -0.5,
+     -0.5
+    ],
+    "hi": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "dist": "uniform"
+   },
+   "tie_rod_inner": {
+    "lo": [
+     -0.15,
+     -0.15,
+     -0.15
+    ],
+    "hi": [
+     0.15,
+     0.15,
+     0.15
+    ],
+    "dist": "uniform"
+   },
+   "tie_rod_outer": {
+    "lo": [
+     -0.15,
+     -0.15,
+     -0.15
+    ],
+    "hi": [
+     0.15,
+     0.15,
+     0.15
+    ],
+    "dist": "uniform"
+   },
+   "upper_front_inner": {
+    "lo": [
+     -0.5,
+     -0.5,
+     -0.5
+    ],
+    "hi": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "dist": "uniform"
+   },
+   "upper_outer": {
+    "lo": [
+     -0.15,
+     -0.15,
+     -0.15
+    ],
+    "hi": [
+     0.15,
+     0.15,
+     0.15
+    ],
+    "dist": "uniform"
+   },
+   "upper_rear_inner": {
+    "lo": [
+     -0.5,
+     -0.5,
+     -0.5
+    ],
+    "hi": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "dist": "uniform"
+   }
+  }
+ },
+ "search": {
+  "seed": 0,
+  "n_starts": 6,
+  "n_yield": 2000,
+  "n_verify_full": 0,
+  "max_iter": 30,
+  "step_mm": 0.25,
+  "resilient_yield": 0.95,
+  "tempered_yield": 0.8,
+  "verify_agreement": 0.98
+ },
+ "recorded": {
+  "ok": true,
+  "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (100.0% yield).",
+  "winner_hardpoints": {
+   "upper_front_inner": [
+    -133.23423507750636,
+    222.26050824712408,
+    280.92441992056536
+   ],
+   "upper_rear_inner": [
+    92.76458894010501,
+    269.8311178095781,
+    265.1950040048937
+   ],
+   "lower_front_inner": [
+    -49.496361012760524,
+    192.88839708302638,
+    124.4260533211659
+   ],
+   "lower_rear_inner": [
+    29.99451657781485,
+    162.509090922957,
+    129.5243534267429
+   ],
+   "upper_outer": [
+    6.5,
+    560.5,
+    300.0
+   ],
+   "lower_outer": [
+    -5.0,
+    583.6,
+    120.0
+   ],
+   "tie_rod_inner": [
+    -3.7661436163290225,
+    192.28937754420267,
+    147.11713123739557
+   ],
+   "tie_rod_outer": [
+    51.37543392805734,
+    539.822865123218,
+    148.24869249435073
+   ],
+   "wheel_center": [
+    0.0,
+    600.0,
+    228.0
+   ],
+   "contact_patch": [
+    0.0,
+    605.0,
+    0.0
+   ],
+   "pushrod_outer": [
+    -5.0,
+    408.0,
+    120.0
+   ],
+   "rocker_pivot": [
+    -5.0,
+    360.0,
+    330.0
+   ],
+   "rocker_axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "rocker_pushrod": [
+    -5.0,
+    402.0,
+    308.0
+   ],
+   "rocker_spring": [
+    -5.0,
+    335.0,
+    360.0
+   ],
+   "spring_inner": [
+    -5.0,
+    196.7,
+    244.8
+   ],
+   "pushrod_attach": "lower",
+   "static_camber": -2.5,
+   "static_toe": 0.0
+  },
+  "winner_verdict": "RESILIENT",
+  "winner_yield": 1.0,
+  "resilience_premium": 0.0,
+  "candidates": [
+   {
+    "hit": true,
+    "verdict": "RESILIENT",
+    "max_band_frac": 0.39390089980645043,
+    "worst_row": "toe (\u00b0) @ -25.0 mm",
+    "yield_frac": 1.0,
+    "iterations": 1,
+    "clamped": [],
+    "keepout_rejections": 0,
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  ],
+  "coord_labels": [
+   "lower_front_inner.x",
+   "lower_front_inner.y",
+   "lower_front_inner.z",
+   "lower_rear_inner.x",
+   "lower_rear_inner.y",
+   "lower_rear_inner.z",
+   "tie_rod_inner.x",
+   "tie_rod_inner.y",
+   "tie_rod_inner.z",
+   "tie_rod_outer.x",
+   "tie_rod_outer.y",
+   "tie_rod_outer.z",
+   "upper_front_inner.x",
+   "upper_front_inner.y",
+   "upper_front_inner.z",
+   "upper_rear_inner.x",
+   "upper_rear_inner.y",
+   "upper_rear_inner.z"
+  ],
+  "n_starts": 1,
+  "inputs_sha256": "2673492a63c56b7758a9a10656c91acf95c24c499d3db544ca8b17c6f426e908",
+  "kinematik_version": "0.23.0"
+ }
+}
