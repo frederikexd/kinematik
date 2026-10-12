@@ -1458,8 +1458,12 @@ def _job_ghost(ctx: Ctx) -> list[Artifact]:
 #  inside what phasing between lateral and longitudinal events produces on a
 #  perfectly square car, and above 15 % is bigger than any plausible phasing
 #  artefact. Both were set by running a synthetic symmetric log through this
-#  job and reading what a square car actually scores.
-_ASYM_CLOSE, _ASYM_LARGE = 0.05, 0.15
+#  job and reading what a square car actually scores. Re-read after the
+#  two-body statics correction (loadpath: a wishbone-mounted pushrod now bends
+#  that wishbone's legs, so the governing leg can differ left to right): the
+#  square car scores 5.6 %, a 3 mm pot offset 12 % and 9 mm 25 %, so "close"
+#  is 7 %.
+_ASYM_CLOSE, _ASYM_LARGE = 0.07, 0.15
 
 
 def _asymmetry_note(front_rel: float, rear_rel: float) -> str:

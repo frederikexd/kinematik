@@ -119,3 +119,40 @@ def test_offset_rocker_loads_its_bearings_harder():
     h.rocker_pushrod = np.asarray(h.rocker_pushrod, float) + np.array([40.0, 0.0, 0.0])
     off = ac.rocker_bearing_loads(h, gr.vehicle_load_cases())
     assert max(r["couple_Nmm"] for r in off) > max(r["couple_Nmm"] for r in flat)
+
+
+def test_upright_motion_is_rigid_and_exact():
+    """The upright's pose at any wheel position maps its three joints exactly, by a proper rotation."""
+    kin = SuspensionKinematics(HP)
+    s0 = kin.solve_at_travel(0.0)
+    R, t = ac._upright_motion(kin, s0, s0)
+    assert np.allclose(R, np.eye(3), atol=1e-9) and np.allclose(t, 0.0, atol=1e-6)
+    for z in (-25.0, 25.0):
+        st = kin.solve_at_travel(z)
+        R, t = ac._upright_motion(kin, s0, st)
+        assert np.allclose(R.T @ R, np.eye(3), atol=1e-9) and np.linalg.det(R) == pytest.approx(1.0)
+        for k in ("lower_outer", "upper_outer", "tie_rod_outer", "wheel_center"):
+            assert np.allclose(R @ np.asarray(getattr(s0, k), float) + t, np.asarray(getattr(st, k), float), atol=1e-3)
+
+
+def test_wheel_obstacles_ride_with_the_wheel_and_default_is_unchanged():
+    """A capsule on the upright is checked where the upright is; a chassis capsule at the same static place is not
+    the same check; with no wheel obstacles the metrics are those of the frame-only check."""
+    m0 = ac.actuation_metrics(HP)
+    assert ac.actuation_metrics(HP, wheel_obstacles=()).clearance_mm == m0.clearance_mm
+    kin = SuspensionKinematics(HP)
+    s0 = kin.solve_at_travel(0.0)
+    po = np.asarray(s0.pushrod_outer if s0.pushrod_outer is not None else HP.pushrod_outer, float)
+    rp = np.asarray(HP.rocker_pushrod, float)
+    mid = po + 0.5 * (rp - po); off = np.array([0.0, 0.0, 30.0])
+    cap = (mid + off, mid + off + np.array([1.0, 0.0, 0.0]), 10.0)
+    on_wheel = ac.actuation_metrics(HP, wheel_obstacles=[cap + ("wheel",)])
+    on_frame = ac.actuation_metrics(HP, obstacles=[cap])
+    assert math.isfinite(on_wheel.clearance_mm) and math.isfinite(on_frame.clearance_mm)
+    assert on_wheel.clearance_mm != pytest.approx(on_frame.clearance_mm, abs=1e-6)
+    # a link-kind capsule keeps its chassis end: from the pushrod's own outer mount to a far chassis point, it
+    # touches the pushrod at the mount unless the mount's own length is skipped
+    link = (po, po + np.array([0.0, -300.0, 0.0]), 5.0, "link")
+    assert ac.actuation_metrics(HP, wheel_obstacles=[link]).clearance_mm < 0.0
+    assert ac.actuation_metrics(HP, wheel_obstacles=[link], pushrod_skip_mm=40.0).clearance_mm > \
+        ac.actuation_metrics(HP, wheel_obstacles=[link]).clearance_mm

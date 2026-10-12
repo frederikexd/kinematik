@@ -54,6 +54,7 @@ from .kinematics import Hardpoints, SuspensionKinematics
 from .kinematik_stochastic import (ToleranceField, ToleranceSpec,
                                    ToleranceCluster, _perturbed)
 from . import inverse_genesis as ig
+from . import genesis_walls as _gw
 
 MANIFEST_SCHEMA = "kinematik.genesis.manifest/1"
 
@@ -335,11 +336,20 @@ def _property_bounds_to_dict(b: ig.SolvedPropertyBounds | None) -> dict | None:
             "n_nodes": int(b.n_nodes),
             **({"elasto": b.elasto.to_dict()}
                if getattr(b, "elasto", None) is not None else {}),
+            **({"elasto_braking": b.elasto_braking.to_dict()}
+               if getattr(b, "elasto_braking", None) is not None else {}),
             # written only when used, so earlier manifests keep their hash
             **({"rear_brakes_inboard": True}
                if getattr(b, "rear_brakes_inboard", False) else {}),
             **({"steer_effort": b.steer_effort.to_dict()}
-               if getattr(b, "steer_effort", None) is not None else {})}
+               if getattr(b, "steer_effort", None) is not None else {}),
+            # vehicle-level walls, written only when declared (hash-stable)
+            **({"brake": b.brake.to_dict()}
+               if getattr(b, "brake", None) is not None else {}),
+            **({"structure": b.structure.to_dict()}
+               if getattr(b, "structure", None) is not None else {}),
+            **({"bearing": b.bearing.to_dict()}
+               if getattr(b, "bearing", None) is not None else {})}
 
 
 def _property_bounds_from_dict(d: dict | None) -> ig.SolvedPropertyBounds | None:
@@ -360,9 +370,15 @@ def _property_bounds_from_dict(d: dict | None) -> ig.SolvedPropertyBounds | None
         travel_mm=tuple(d.get("travel_mm", (-25.0, 25.0))),
         n_nodes=int(d.get("n_nodes", 5)),
         elasto=_elasto_from_dict(d.get("elasto")),
+        elasto_braking=_elasto_from_dict(d.get("elasto_braking")),
         rear_brakes_inboard=bool(d.get("rear_brakes_inboard", False)),
         steer_effort=(ig.SteerEffort(**d["steer_effort"])
-                      if d.get("steer_effort") else None))
+                      if d.get("steer_effort") else None),
+        brake=(_gw.BrakeDecel.from_dict(d["brake"]) if d.get("brake") else None),
+        structure=(_gw.LinkStructure.from_dict(d["structure"])
+                   if d.get("structure") else None),
+        bearing=(_gw.RockerBearingWall.from_dict(d["bearing"])
+                 if d.get("bearing") else None))
 
 
 def _envelope_to_dict(e: "ig.WheelEnvelope | None") -> dict | None:
@@ -580,6 +596,11 @@ class GenesisManifest:
     recorded: dict | None = None
     kinematik_version: str = _dcfield(default_factory=_kinematik_version)
     schema: str = MANIFEST_SCHEMA
+    #: optional start search (genesis_seed.SeedSearch settings as a dict). When declared, run() first moves the
+    #: declared hardpoints with the pattern search until every wall holds, then runs InverseGenesis from its result,
+    #: so a start that breaks a wall is searched from rather than refused, and a re-run repeats both stages. It enters
+    #: the inputs hash only when declared, so manifests without it keep their hashes.
+    start_search: dict | None = None
 
     # ---- construction ------------------------------------------------------ #
     @staticmethod
@@ -594,6 +615,22 @@ class GenesisManifest:
             tolerance=field_to_dict(fld), search=search or SearchSettings(),
             context=dict(context or {}))
 
+    def restarted(self, name: str, hp: Hardpoints, start_search=None,
+                  context: dict | None = None) -> GenesisManifest:
+        """Every input of this manifest (targets, boxes, walls, tolerance, search settings) with a different start.
+
+        ``start_search`` (a genesis_seed.SeedSearch or its dict) declares the pattern-search stage; ``hp`` may
+        then break walls. Coordinates in mm."""
+        from dataclasses import asdict, is_dataclass
+        ss = asdict(start_search) if is_dataclass(start_search) else (
+            None if start_search is None else dict(start_search))
+        ctx = {"declared_from": f"{self.name} (inputs {self.inputs_sha256[:12]})"}
+        ctx.update(context or {})
+        return GenesisManifest(
+            name=name, hardpoints=hp_to_dict(hp), targets=json.loads(json.dumps(self.targets)),
+            volume=json.loads(json.dumps(self.volume)), tolerance=json.loads(json.dumps(self.tolerance)),
+            search=SearchSettings(**self.search.__dict__), context=ctx, start_search=ss)
+
     def objects(self):
         """Rebuild (Hardpoints, GenesisTargets, LegalVolume, ToleranceField); all lengths in mm, angles in deg."""
         return (hp_from_dict(self.hardpoints),
@@ -601,11 +638,24 @@ class GenesisManifest:
                 volume_from_dict(self.volume),
                 field_from_dict(self.tolerance))
 
+    def search_start(self) -> Hardpoints:
+        """The hardpoints InverseGenesis started from (mm): the declared ones, moved by the recorded start search
+        when one is declared. Every candidate's shift_vec is measured from here."""
+        hp, _, vol, _ = self.objects()
+        rep = (self.recorded or {}).get("start_search")
+        if self.start_search is None or not rep:
+            return hp
+        x = np.array([rep["shift_mm"].get(f"{p}.{'xyz'[a]}", 0.0) for (p, a) in vol.coords()], float)
+        return hp_from_dict(hp_to_dict(ig._shifted(hp, vol, x)))
+
     # ---- identity ---------------------------------------------------------- #
     def _inputs(self) -> dict:
-        return {"hardpoints": self.hardpoints, "targets": self.targets,
-                "volume": self.volume, "tolerance": self.tolerance,
-                "search": self.search.__dict__}
+        d = {"hardpoints": self.hardpoints, "targets": self.targets,
+             "volume": self.volume, "tolerance": self.tolerance,
+             "search": self.search.__dict__}
+        if self.start_search is not None:
+            d["start_search"] = self.start_search
+        return d
 
     @property
     def inputs_sha256(self) -> str:
@@ -635,7 +685,8 @@ class GenesisManifest:
             tolerance=d.get("tolerance"),
             search=SearchSettings(**d.get("search", {})),
             context=d.get("context", {}), recorded=d.get("recorded"),
-            kinematik_version=d.get("kinematik_version", "unknown"))
+            kinematik_version=d.get("kinematik_version", "unknown"),
+            start_search=d.get("start_search"))
         stored = d.get("inputs_sha256")
         if stored and stored != m.inputs_sha256:
             raise ValueError("Manifest inputs were edited after it was "
@@ -648,10 +699,17 @@ class GenesisManifest:
         """Re-execute the manifest; returns candidates with fits in band fractions (dimensionless) and coordinates in mm."""
         hp, tg, vol, fld = self.objects()
         s = self.search
-        return ig.inverse_genesis(
+        start = None
+        if self.start_search is not None:                  # stage 1: a start inside the walls
+            from . import genesis_seed as gs
+            hp, start = gs.seed_search(hp, tg, vol, gs.SeedSearch(**self.start_search))
+            hp = hp_from_dict(hp_to_dict(hp))               # the start exactly as a manifest would store it
+        res = ig.inverse_genesis(
             hp, tg, vol, fld=fld, n_starts=s.n_starts, n_yield=s.n_yield,
             n_verify_full=s.n_verify_full, seed=s.seed,
             thresholds=s.thresholds(), max_iter=s.max_iter, step_mm=s.step_mm)
+        res.start_search = start
+        return res
 
     def summarise(self, res: ig.GenesisResult) -> dict:
         """Outputs as a dict: hardpoints in mm, fit in band fractions and yields as dimensionless fractions."""
@@ -684,6 +742,8 @@ class GenesisManifest:
             "n_starts": int(res.n_starts),
             "inputs_sha256": self.inputs_sha256,
             "kinematik_version": _kinematik_version(),
+            **({"start_search": _start_report(res.start_search)}
+               if getattr(res, "start_search", None) is not None else {}),
         }
 
     def record(self, res: ig.GenesisResult) -> dict:
@@ -693,9 +753,11 @@ class GenesisManifest:
 
     def verify(self, res: ig.GenesisResult, tol: float = 1e-9
                ) -> tuple[bool, list[str]]:
-        """Compare a re-run against the recorded outputs. Returns (same,
-        Compares coordinates to 1e-6 mm and yields/fits (dimensionless) to ``tol``.
-        differences)."""
+        """Compare a re-run against the recorded outputs; returns (same, differences).
+
+        Not a byte comparison: coordinates must agree to 1e-6 mm and fits and yields (dimensionless) to ``tol``,
+        so the last-bit differences of another CPU or numerical library pass and anything larger does not. A
+        declared start search must repeat its evaluation count, wall result and pickup moves (1e-6 mm)."""
         if not self.recorded:
             return False, ["Manifest has no recorded outputs to compare."]
         now = self.summarise(res)
@@ -726,12 +788,39 @@ class GenesisManifest:
             for p in _HP_POINTS:
                 if np.max(np.abs(np.asarray(wa[p]) - np.asarray(wb[p]))) > 1e-6:
                     diffs.append(f"winner {p} differs")
+        sa_, sb_ = a.get("start_search"), b.get("start_search")
+        if (sa_ is None) != (sb_ is None):
+            diffs.append("start search presence differs")
+        elif sa_ is not None:
+            for k in ("evaluations", "walls_hold", "final_violated"):
+                if sa_.get(k) != sb_.get(k):
+                    diffs.append(f"start search {k}: {sa_.get(k)} → {sb_.get(k)}")
+            ka, kb = sa_.get("shift_mm", {}), sb_.get("shift_mm", {})
+            if set(ka) != set(kb) or any(abs(ka[k] - kb[k]) > 1e-6 for k in ka):
+                diffs.append("start search moved different pickups")
         if a.get("kinematik_version") != b.get("kinematik_version"):
             diffs.append(f"(note) recorded on KinematiK "
                          f"{a.get('kinematik_version')}, re-run on "
                          f"{b.get('kinematik_version')}")
         real = [d for d in diffs if not d.startswith("(note)")]
         return (not real), diffs
+
+
+def _start_report(r: dict) -> dict:
+    """The start search's report as JSON-safe values (mm, dimensionless costs)."""
+    def _safe(v):
+        if isinstance(v, dict):
+            return {k: _safe(x) for k, x in v.items()}
+        if isinstance(v, (list, tuple)):
+            return [_safe(x) for x in v]
+        if isinstance(v, (bool, np.bool_)):
+            return bool(v)
+        if isinstance(v, (int, np.integer)):
+            return int(v)
+        if isinstance(v, (float, np.floating)):
+            return float(v) if np.isfinite(v) else None
+        return v
+    return _safe(r)
 
 
 # --------------------------------------------------------------------------- #
@@ -1135,8 +1224,17 @@ def vehicle_load_cases(mass_kg: float = 300.0,
     N·mm), from the declared vehicle (mass kg, lengths mm, g-levels).
 
     - cornering at ``lateral_g``: Fz = static corner load + lateral load
-      transfer weighted by the axle's roll-stiffness share; Fy = lateral_g·Fz;
-      Mz = aligning torque.
+      transfer weighted by the axle's roll-stiffness share; Fy = -lateral_g·Fz;
+      Mz = -aligning torque.
+
+    Signs (corner frame: x rearward, y outboard, z up; loadpath.WheelLoad). The
+    corner is the loaded OUTER wheel, so the ground pushes it toward the centre
+    of the turn: inboard, Fy < 0. That force needs the wheel steered into the
+    turn relative to its path (a slip angle that is a rotation about +z), and
+    the aligning torque opposes that slip: Mz < 0. Before this correction the
+    lateral cases carried Fy > 0 and Mz > 0, the forces of a wheel pushed
+    outboard, which no outer wheel sees; tests/test_load_case_physics.py checks
+    the sign against vehicle equilibrium and the tire model.
     - 1.5g braking: Fz = static + longitudinal LT; Fx = bias × total braking / 2.
     - Combined 1.06g: lateral + longitudinal loads together, with aligning torque.
     - 3g vertical bump: purely vertical.
@@ -1170,11 +1268,11 @@ def vehicle_load_cases(mass_kg: float = 300.0,
     c5_fz = fz_s * 2.0
 
     cases = [
-        LoadCaseSpec(f"{lat_g:g}g corner", Fz=c1_fz, Fy=lat_g * c1_fz,
-                     mz_Nmm=mz),
+        LoadCaseSpec(f"{lat_g:g}g corner", Fz=c1_fz, Fy=-lat_g * c1_fz,
+                     mz_Nmm=-mz),
         LoadCaseSpec("1.5g braking", Fz=c2_fz, Fx=bias * m * g * 1.5 / 2),
-        LoadCaseSpec("combined 1.06g", Fz=c3_fz, Fy=1.06 * c3_fz,
-                     Fx=bias * m * g * 1.06 / 2, mz_Nmm=mz),
+        LoadCaseSpec("combined 1.06g", Fz=c3_fz, Fy=-1.06 * c3_fz,
+                     Fx=bias * m * g * 1.06 / 2, mz_Nmm=-mz),
         LoadCaseSpec("3g vertical bump", Fz=fz_s * 3.0),
         LoadCaseSpec("kerb 2g+1g", Fz=c5_fz, Fx=bias * m * g * 1.0 / 2),
     ]
@@ -1197,7 +1295,7 @@ def vehicle_load_cases(mass_kg: float = 300.0,
         cases += [
             _drive(f"{tg:g}g traction", t1_fz, -share * m * g * tg / 2),
             _drive("combined 1.06g traction", t2_fz,
-                   -share * m * g * 1.06 / 2, fy=1.06 * t2_fz, mzz=mz),
+                   -share * m * g * 1.06 / 2, fy=-1.06 * t2_fz, mzz=-mz),
         ]
     return cases
 

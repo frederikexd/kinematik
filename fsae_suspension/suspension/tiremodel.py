@@ -114,8 +114,14 @@ class PacejkaLateral:
         alphas = np.radians(np.linspace(-15, 15, 121))
         # fy is fully vectorised over alpha, so evaluate all sweep points in one
         # call rather than looping in Python — same numbers, ~100x fewer calls.
-        fy = self.fy(alphas, Fz, gamma)
-        return float(np.max(np.abs(fy)) / max(Fz, 1e-6))
+        fy = np.abs(self.fy(alphas, Fz, gamma))
+        k = int(np.argmax(fy))
+        if k in (0, 120):
+            # the peak lies at the sweep's edge (a racing slick can peak past 15 deg
+            # at high load): sweep to +/-30 deg at the same spacing instead
+            alphas = np.radians(np.linspace(-30, 30, 241))
+            fy = np.abs(self.fy(alphas, Fz, gamma))
+        return float(np.max(fy) / max(Fz, 1e-6))
 
     def peak_force(self, Fz, gamma=0.0):
         """Peak |Fy| in newtons at a given load/camber (mu_peak * Fz)."""
@@ -127,7 +133,7 @@ class PacejkaLateral:
         the target operating slip — knowing it tells the driver/aero team how much
         steer the front needs at the limit, and feeds combined-slip headroom later.
         """
-        alphas = np.radians(np.linspace(0.0, 15.0, 151))
+        alphas = np.radians(np.linspace(0.0, 30.0, 301))      # 0.1 deg steps; a slick can peak past 15 deg
         fy = np.abs(self.fy(alphas, Fz, gamma))
         return float(np.degrees(alphas[int(np.argmax(fy))]))
 

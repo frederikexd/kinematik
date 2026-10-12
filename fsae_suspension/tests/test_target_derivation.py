@@ -30,7 +30,7 @@ def test_camber_chain_reproduces_section_4():
 
 def test_derived_floors_match_the_paper():
     t = td.targets(V, T)
-    assert t["anti_dive_floor_pct"] == pytest.approx(39.0, abs=0.5)
+    assert t["anti_dive_floor_pct"] == pytest.approx(47.5, abs=0.5)        # at the 2.6 Hz set-up (39% at 2.8 Hz)
     assert t["anti_squat_floor_pct"] == pytest.approx(23.0, abs=0.5)
 
 
@@ -58,7 +58,7 @@ def test_higher_grip_raises_the_anti_floors():
     lo = td.targets(V, replace(T, peak_mu=1.16))
     hi = td.targets(V, replace(T, peak_mu=1.94))
     assert lo["anti_squat_floor_pct"] < 23.0 < hi["anti_squat_floor_pct"]
-    assert lo["anti_dive_floor_pct"] < 39.0 < hi["anti_dive_floor_pct"]
+    assert lo["anti_dive_floor_pct"] < 47.5 < hi["anti_dive_floor_pct"]
 
 
 def test_sensitivity_study_shape():

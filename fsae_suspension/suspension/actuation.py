@@ -63,21 +63,26 @@ class ActuationTargets:
     min_clearance_mm: float = 5.0     # swept, to every declared obstacle
     node_reach_mm: float = 30.0       # chassis mounts to their nearest node
     max_arm_offset_mm: float = 5.0    # rocker force points off the bearing mid-plane
+    #: the damper's eye-to-eye length at full extension (mm); None leaves the damper's length free (as before). When
+    #: given, the damper must not top out before full droop (length at the droop end <= this) and must stay inside its
+    #: usable stroke at full bump (length at the bump end >= this - usable_stroke * stroke_mm)
+    damper_extended_mm: float | None = None
 
     @classmethod
     def derived(cls, stroke_mm: float = 57.0, travel_mm=(-25.0, 25.0),
                 usable_stroke: float = 0.80, margin: float = 0.07,
-                max_spread: float = 0.10) -> "ActuationTargets":
+                max_spread: float = 0.10, damper_extended_mm: float | None = None) -> "ActuationTargets":
         """Static ratio set ``margin`` (fraction) below the stroke ceiling.
 
-        stroke_mm and travel_mm in mm; usable_stroke, margin and max_spread are
-        dimensionless fractions; the motion ratio is dimensionless.
+        stroke_mm, travel_mm and damper_extended_mm in mm; usable_stroke, margin and
+        max_spread are dimensionless fractions; the motion ratio is dimensionless.
         """
         total = float(travel_mm[1] - travel_mm[0])
         mr_max = usable_stroke * stroke_mm / total
         return cls(mr_static=round(mr_max * (1.0 - margin), 3), mr_tol=0.05,
                    max_spread=max_spread, stroke_mm=stroke_mm,
-                   usable_stroke=usable_stroke, travel_mm=tuple(travel_mm))
+                   usable_stroke=usable_stroke, travel_mm=tuple(travel_mm),
+                   damper_extended_mm=damper_extended_mm)
 
     @property
     def mr_ceiling(self) -> float:
@@ -129,20 +134,55 @@ class ActuationMetrics:
     node_gap_mm: float = 0.0            # worst chassis mount to its nearest node
     arm_offset_mm: float = 0.0          # rocker force points off the bearing mid-plane
     reason: str = ""
+    member_clearance_mm: tuple = ()     # pushrod, rocker arm (pushrod), rocker arm (spring), spring
+    spring_length_mm: tuple = ()        # damper eye-to-eye at full droop, static and full bump
 
 
 CHASSIS_MOUNTS = ("rocker_pivot", "spring_inner")
 
 
+def _upright_motion(kin, s0, st):
+    """Rigid motion (R, t) of the upright from state s0 to st, x_st = R x_s0 + t (Kabsch on its three joints)."""
+    P = np.array([np.asarray(getattr(s0, k), float) for k in ("lower_outer", "upper_outer", "tie_rod_outer")])
+    Q = np.array([np.asarray(getattr(st, k), float) for k in ("lower_outer", "upper_outer", "tie_rod_outer")])
+    pc, qc = P.mean(0), Q.mean(0)
+    U, _, Vt = np.linalg.svd((P - pc).T @ (Q - qc))
+    D = np.diag([1.0, 1.0, float(np.sign(np.linalg.det(Vt.T @ U.T)))])
+    R = Vt.T @ D @ U.T
+    return R, qc - R @ pc
+
+
+def _carried(wheel_obstacles, R, t):
+    """Capsules of ``wheel_obstacles`` at an upright pose: kind 'wheel' moves both ends with the upright, kind
+    'link' (a link or a halfshaft) moves its first end with the upright and keeps the second on the chassis."""
+    out = []
+    for o in wheel_obstacles:
+        p0, p1, r = np.asarray(o[0], float), np.asarray(o[1], float), float(o[2])
+        kind = o[3] if len(o) > 3 else "wheel"
+        out.append((R @ p0 + t, (R @ p1 + t) if kind == "wheel" else p1, r))
+    return out
+
+
 def actuation_metrics(hp: Hardpoints, travel_mm=(-25.0, 25.0), n: int = 11,
-                      obstacles: Sequence = (), nodes=None) -> ActuationMetrics:
+                      obstacles: Sequence = (), nodes=None, wheel_obstacles: Sequence = (),
+                      pushrod_skip_mm: float = 0.0, member_radii=(0.0, 0.0, 0.0, 0.0),
+                      spring_skip_mm: float = 0.0) -> ActuationMetrics:
     """Solve the real pushrod-rocker-spring chain across travel and measure it.
 
     ``obstacles`` is a list of (p0, p1, radius_mm) capsules, for example frame
     tubes; the pushrod, both rocker arms and the spring are checked against
-    them at every step through travel, not only at static. ``nodes`` (N x 3,
-    mm) are frame nodes; the rocker pivot and spring mount are measured to the
-    nearest one, because a mount far from a node needs a long, soft bracket.
+    them at every step through travel, not only at static. ``wheel_obstacles``
+    are (p0, p1, radius_mm, kind) capsules at static height that move with the
+    wheel: kind 'wheel' for the upright, hub and outer joint, kind 'link' for a
+    link or halfshaft whose first end rides on the upright and second sits on
+    the chassis; they are carried to each wheel position by the upright's rigid
+    motion. ``pushrod_skip_mm`` (mm) leaves the pushrod's own rod end and
+    bracket at its outer mount out of the check, ``spring_skip_mm`` (mm) the
+    spring's end eyes at both ends; ``member_radii`` (mm) are the radii of the
+    pushrod, the two rocker arms and the spring (coilover), so clearance is
+    surface to surface rather than axis to surface. ``nodes`` (N x 3, mm) are
+    frame nodes; the rocker pivot and spring mount are measured to the nearest
+    one, because a mount far from a node needs a long, soft bracket.
     """
     try:
         kin = SuspensionKinematics(hp)
@@ -196,17 +236,29 @@ def actuation_metrics(hp: Hardpoints, travel_mm=(-25.0, 25.0), n: int = 11,
             tr.append(_angle_deg(rp_t - piv, p_out - rp_t))
             tr.append(_angle_deg(rs_t - piv, si - rs_t))
         clear = math.inf
-        if len(obstacles):
-            A = np.array([o[0] for o in obstacles], float)
-            B = np.array([o[1] for o in obstacles], float)
-            R = np.array([o[2] for o in obstacles], float)
+        mclear = [math.inf] * 4
+        if len(obstacles) or len(wheel_obstacles):
             for st, th in swept[::2]:
+                obs = list(obstacles)
+                if len(wheel_obstacles):
+                    obs += _carried(wheel_obstacles, *_upright_motion(kin, s0, st))
+                A = np.array([o[0] for o in obs], float)
+                B = np.array([o[1] for o in obs], float)
+                R = np.array([o[2] for o in obs], float)
                 p_o = np.asarray(st.pushrod_outer if st.pushrod_outer is not None
                                  else kin._pushrod_outer_at(st.lower_outer, st.upper_outer,
                                                             st.tie_rod_outer), float)
                 rp_t = kin._rotate_about_axis(rp, th); rs_t = kin._rotate_about_axis(rs, th)
-                for seg in ((p_o, rp_t), (piv, rp_t), (piv, rs_t), (rs_t, si)):
-                    clear = min(clear, _seg_dist_many(seg[0], seg[1], A, B, R))
+                if pushrod_skip_mm > 0.0:
+                    u = rp_t - p_o
+                    p_o = p_o + min(pushrod_skip_mm, 0.5 * float(np.linalg.norm(u))) * u / np.linalg.norm(u)
+                s_a, s_b = rs_t, si
+                if spring_skip_mm > 0.0:
+                    u = si - rs_t; Lu = float(np.linalg.norm(u)); e = min(spring_skip_mm, 0.4 * Lu) * u / Lu
+                    s_a, s_b = rs_t + e, si - e
+                for j, (seg, rm) in enumerate(zip(((p_o, rp_t), (piv, rp_t), (piv, rs_t), (s_a, s_b)), member_radii)):
+                    c_ = _seg_dist_many(seg[0], seg[1], A, B, R + float(rm))
+                    mclear[j] = min(mclear[j], c_); clear = min(clear, c_)
         gap = 0.0
         if nodes is not None and len(nodes):
             N = np.asarray(nodes, float)
@@ -220,7 +272,9 @@ def actuation_metrics(hp: Hardpoints, travel_mm=(-25.0, 25.0), n: int = 11,
             out_of_plane_deg=float(oop),
             transmission_deg=(float(min(tr)), float(max(tr))), clearance_mm=clear,
             node_gap_mm=gap,
-            arm_offset_mm=float(max(abs((rp - piv) @ k), abs((rs - piv) @ k))))
+            arm_offset_mm=float(max(abs((rp - piv) @ k), abs((rs - piv) @ k))),
+            member_clearance_mm=tuple(float(c) for c in mclear),
+            spring_length_mm=tuple(float(v) for v in lengths))
     except Exception as e:                                   # noqa: BLE001
         return ActuationMetrics(ok=False, reason=f"{type(e).__name__}: {e}")
 
@@ -232,7 +286,7 @@ def _residual(m: ActuationMetrics, t: ActuationTargets, shrink: float = 1.0) -> 
     them so results land strictly within the true band rather than on its edge.
     """
     if not m.ok:
-        return np.full(9, 50.0)
+        return np.full(11, 50.0)
     lo, hi = t.transmission_deg
     usable = t.usable_stroke * t.stroke_mm
     return np.array([
@@ -245,6 +299,12 @@ def _residual(m: ActuationMetrics, t: ActuationTargets, shrink: float = 1.0) -> 
         max(0.0, t.min_clearance_mm * (2 - shrink) - m.clearance_mm) / 5.0,
         max(0.0, m.node_gap_mm - shrink * t.node_reach_mm) / 5.0,
         max(0.0, m.arm_offset_mm - shrink * t.max_arm_offset_mm) / 5.0,
+        # damper length: no top-out before full droop, and full bump inside the usable stroke (a margin of 1 - shrink
+        # of the stroke at each end)
+        (max(0.0, m.spring_length_mm[0] - (t.damper_extended_mm - (1 - shrink) * t.stroke_mm)) / 5.0
+         if t.damper_extended_mm is not None and m.spring_length_mm else 0.0),
+        (max(0.0, (t.damper_extended_mm - t.usable_stroke * t.stroke_mm + (1 - shrink) * t.stroke_mm) - m.spring_length_mm[2]) / 5.0
+         if t.damper_extended_mm is not None and m.spring_length_mm else 0.0),
     ])
 
 
@@ -265,7 +325,8 @@ def _set(hp: Hardpoints, x: np.ndarray, pts) -> Hardpoints:
     import copy
     h = copy.deepcopy(hp)
     for i, p in enumerate(pts):
-        setattr(h, p, np.asarray(x[3 * i:3 * i + 3], float))
+        v = np.asarray(x[3 * i:3 * i + 3], float)
+        setattr(h, p, v / np.linalg.norm(v) if p == "rocker_axis" else v)
     return h
 
 
@@ -276,7 +337,9 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
                          seed: int = 0, ride_hz: float | None = None,
                          sprung_corner_kg: float | None = None,
                          nodes=None, standoff_mm: float = 24.0,
-                         n_node_candidates: int = 6) -> ActuationResult:
+                         n_node_candidates: int = 6, wheel_obstacles: Sequence = (),
+                         pushrod_skip_mm: float = 0.0, axis_box: float = 0.5,
+                         member_radii=(0.0, 0.0, 0.0, 0.0), spring_skip_mm: float = 0.0) -> ActuationResult:
     """Place the actuation points so the linkage meets ``targets``.
 
     Each point moves inside a box around its seed (``pushrod_box_mm`` for the
@@ -285,22 +348,32 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
     is returned. With ``ride_hz`` (Hz) and ``sprung_corner_kg`` (kg) the spring
     rate (N/mm) that gives that frequency at static height is returned, with the
     frequency across travel. Boxes and standoff in mm; ``nodes`` (N x 3, mm)
-    switch on node-seeded synthesis for the chassis mounts.
+    switch on node-seeded synthesis for the chassis mounts. ``wheel_obstacles``
+    ``pushrod_skip_mm``, ``member_radii`` and ``spring_skip_mm`` are as in
+    :func:`actuation_metrics`; with
+    "rocker_axis" among ``points`` the rocker axis is free too (each component
+    within ``axis_box`` of the seed's unit axis, renormalised), so the rocker
+    can lean to keep a pushrod that passes fore or aft of the hub in its plane.
     """
     t = targets or ActuationTargets.derived()
     pts = list(points)
     x0 = np.concatenate([np.asarray(getattr(hp, p), float) for p in pts])
-    half = np.concatenate([np.full(3, pushrod_box_mm if p == "pushrod_outer" else box_mm)
+    half = np.concatenate([np.full(3, pushrod_box_mm if p == "pushrod_outer"
+                                   else (axis_box if p == "rocker_axis" else box_mm))
                            for p in pts])
     lo, hi = x0 - half, x0 + half
-    seed_m = actuation_metrics(hp, t.travel_mm, obstacles=obstacles)
+    kw = dict(obstacles=obstacles, wheel_obstacles=wheel_obstacles, pushrod_skip_mm=pushrod_skip_mm,
+              member_radii=member_radii, spring_skip_mm=spring_skip_mm)
+    seed_m = actuation_metrics(hp, t.travel_mm, **kw)
 
     def fun(x):
-        m = actuation_metrics(_set(hp, x, pts), t.travel_mm, obstacles=obstacles)
+        m = actuation_metrics(_set(hp, x, pts), t.travel_mm, **kw)
         reg = 0.002 * (x - x0) / half          # stay near the seed when free
         return np.concatenate([_residual(m, t, shrink=0.98), reg])
 
     if nodes is not None and len(nodes):
+        if len(wheel_obstacles) or pushrod_skip_mm or spring_skip_mm or any(member_radii):
+            raise ValueError("node-seeded synthesis does not take wheel_obstacles or pushrod_skip_mm")
         # the rocker must sit on structure: seed by carrying the rocker body to
         # candidate nodes (and the spring mount to others), standing off each
         # node far enough to clear its tubes, then optimise locally around the
@@ -318,8 +391,7 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
                                 max_nfev=120, xtol=1e-6, ftol=1e-8)
         except Exception:                                    # noqa: BLE001
             continue
-        r = _residual(actuation_metrics(_set(hp, sol.x, pts), t.travel_mm,
-                                        obstacles=obstacles), t)
+        r = _residual(actuation_metrics(_set(hp, sol.x, pts), t.travel_mm, **kw), t)
         score = float(np.sum(r ** 2))
         if best is None or score < best[0]:
             best = (score, sol.x, r)
@@ -329,7 +401,7 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
         return ActuationResult(ok=False, hp=hp, metrics=seed_m, residual=[],
                                seed_metrics=seed_m, reason="no start solved")
     h = _set(hp, best[1], pts)
-    m = actuation_metrics(h, t.travel_mm, obstacles=obstacles)
+    m = actuation_metrics(h, t.travel_mm, **kw)
     k_s, fz = math.nan, []
     if ride_hz and sprung_corner_kg and m.ok:
         k_w = (2 * math.pi * ride_hz) ** 2 * sprung_corner_kg / 1000.0   # N/mm

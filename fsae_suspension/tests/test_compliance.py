@@ -178,9 +178,9 @@ def test_pure_vertical_load_reacts_vertically():
     state = kin.static
     Fz = 1000.0
     mf = solve_member_forces(kin, state, WheelLoad(Fx=0, Fy=0, Fz=Fz, Mz=0))
-    total = np.zeros(3)
-    for m, T in mf.forces.items():
-        total += T * mf.axes[m]          # force the member applies to the upright
+    # the chassis reacts the corner through its pickups and, via the rocker, the pushrod; with the pushrod on a
+    # wishbone the legs' pivot reactions need not lie along them (two-body statics), so sum the reactions, not T*u
+    total = -sum(mf.pickup_forces.values()) + mf.forces["PR"] * mf.axes["PR"]
     # the links must react the patch vertical load (equal/opposite through upright)
     assert abs(total[0]) < 1e-5 * Fz
     assert abs(total[1]) < 1e-5 * Fz

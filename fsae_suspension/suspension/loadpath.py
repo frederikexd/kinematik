@@ -94,6 +94,15 @@ class MemberForces:
     residual: float                   # ‖A·f − b‖ (N), should be ~0 when determinate
     has_pushrod: bool                 # False ⇒ vertical strut proxy was used
     note: str = ""
+    #: force each inboard pickup puts on the chassis (N, corner axes). For two-force members it is -T·û; for the legs
+    #: of a wishbone that carries the pushrod it is the full pivot reaction, which need not lie along the leg.
+    pickup_forces: dict | None = None
+    #: force across each such leg at its inner pivot (N): it bends the leg; zero for two-force members
+    transverse: dict | None = None
+    #: distance along each such leg from its pivot to where the pushrod load enters (mm), for the bending moment
+    bending_arm_mm: dict | None = None
+    #: "two-force" (pushrod on the upright: every member axial) or "wishbone-pushrod" (two-body solution)
+    model: str = "two-force"
 
     def tension(self, m: str) -> float:
         return float(self.forces.get(m, 0.0))
@@ -144,6 +153,9 @@ def solve_member_forces(kin, state, load: WheelLoad) -> MemberForces:
     Returns MemberForces. When no pushrod is defined, a vertical strut proxy from
     the lower ball joint carries the vertical path and `has_pushrod` is False.
     """
+    if (getattr(kin, "_has_rocker", False) and state.pushrod_outer is not None
+            and getattr(kin, "_pushrod_body", "upright") in ("lower", "upper")):
+        return _solve_wishbone_pushrod(kin, state, load)
     geom = _member_geometry(kin, state)
     members = list(geom.keys())
     cp = np.asarray(state.contact_patch, float)
@@ -213,9 +225,105 @@ def solve_member_forces(kin, state, load: WheelLoad) -> MemberForces:
                  "linkage may be near a singular configuration — treat member loads "
                  "with caution.")
 
+    names = {"UF": "upper_front_inner", "UR": "upper_rear_inner", "LF": "lower_front_inner",
+             "LR": "lower_rear_inner", "TR": "tie_rod_inner"}
+    pick = {names[m]: -forces[m] * axes[m] for m in names if m in forces}   # each link's pull on the chassis
     return MemberForces(forces=forces, axes=axes, outboard=outb,
                         condition=cond, residual=residual,
-                        has_pushrod=has_pushrod, note=note.strip())
+                        has_pushrod=has_pushrod, note=note.strip(), pickup_forces=pick)
+
+
+def _applied_moment(state, load, cp):
+    """Moment (N*mm) about the contact patch of the load's non-patch parts: aligning torque, shaft-reacted Fx and hub
+    extras at the wheel centre."""
+    M = np.array([0.0, 0.0, float(load.Mz)])
+    wc = np.asarray(state.wheel_center, float)
+    f_ex = np.asarray(getattr(load, "F_wc_extra", (0.0, 0.0, 0.0)), float)
+    m_ex = np.asarray(getattr(load, "M_wc_extra", (0.0, 0.0, 0.0)), float)
+    M = M + np.cross(wc - cp, f_ex) + m_ex
+    fx_wc = float(getattr(load, "Fx_wc", 0.0))
+    if fx_wc:
+        M = M + np.cross(wc - cp, np.array([fx_wc, 0.0, 0.0]))
+    return M
+
+
+def _solve_wishbone_pushrod(kin, state, load: WheelLoad) -> MemberForces:
+    """Two-body statics when the pushrod acts on a wishbone, not on the upright.
+
+    The upright is held by the other wishbone's two legs and the tie rod (two-force members) and by the ball joint
+    of the pushrod-carrying wishbone, which can push in any direction: six unknowns, the upright's six equilibrium
+    equations. That wishbone pivots about its inner axis, so its moment about that axis fixes the pushrod force
+    (virtual work gives the same number: tests/test_load_case_physics.py). Its two pivot reactions carry the rest;
+    their split along the pivot axis is statically indeterminate and is taken as the one closest to two-force legs
+    (least force across the legs), which is exact when every load reaches the wishbone at its ball joint. The force
+    across each leg is reported (``transverse``) with the arm to the pushrod mount, so the leg can be checked in
+    bending. Units N, mm.
+    """
+    hp = kin.hp
+    which = kin._pushrod_body
+    cp = np.asarray(state.contact_patch, float)
+    uo, lo, tro = (np.asarray(getattr(state, k), float) for k in ("upper_outer", "lower_outer", "tie_rod_outer"))
+    if which == "lower":
+        bj, (fn, rn), (fi, ri) = lo, ("LF", "LR"), (hp.lower_front_inner, hp.lower_rear_inner)
+        others = {"UF": (uo, hp.upper_front_inner), "UR": (uo, hp.upper_rear_inner)}
+    else:
+        bj, (fn, rn), (fi, ri) = uo, ("UF", "UR"), (hp.upper_front_inner, hp.upper_rear_inner)
+        others = {"LF": (lo, hp.lower_front_inner), "LR": (lo, hp.lower_rear_inner)}
+    others["TR"] = (tro, hp.tie_rod_inner)
+    fi, ri = np.asarray(fi, float), np.asarray(ri, float)
+    A = np.zeros((6, 6)); axes, outb = {}, {}
+    for j, (m, (po, pi)) in enumerate(others.items()):
+        u = _unit(np.asarray(pi, float) - po)
+        axes[m], outb[m] = u, po
+        A[:3, j] = u; A[3:, j] = np.cross(po - cp, u)
+    for k in range(3):
+        e = np.eye(3)[k]
+        A[:3, 3 + k] = e; A[3:, 3 + k] = np.cross(bj - cp, e)
+    b = np.concatenate([-load.force(), -_applied_moment(state, load, cp)])
+    cond = float(np.linalg.cond(A))
+    x = np.linalg.solve(A, b)
+    B = x[3:]                                              # force of the wishbone on the upright, at the ball joint
+    P = np.asarray(state.pushrod_outer, float)
+    u_pr = _unit(np.asarray(hp.rocker_pushrod, float) - P)
+    ax = _unit(ri - fi)
+    T_pr = -float(ax @ np.cross(bj - fi, -B)) / float(ax @ np.cross(P - fi, u_pr))
+    # wishbone: -B at the ball joint, T_pr u_pr at the mount, pivot reactions RF at fi and RR at ri
+    Fw = -B + T_pr * u_pr
+    Mw = np.cross(bj - fi, -B) + np.cross(P - fi, T_pr * u_pr)
+    d = ri - fi
+    Sd = np.array([[0, -d[2], d[1]], [d[2], 0, -d[0]], [-d[1], d[0], 0]])
+    # particular solution: RR from (d x RR = -Mw) (minimum norm, perpendicular to d), RF = -Fw - RR
+    RR0 = np.linalg.lstsq(Sd, -Mw, rcond=None)[0]
+    RF0 = -Fw - RR0
+    eF, eR = _unit(fi - bj), _unit(ri - bj)                # leg axes, ball joint -> pivot (the û of each leg)
+    PF, PR_ = np.eye(3) - np.outer(eF, eF), np.eye(3) - np.outer(eR, eR)
+    # RF = RF0 + lam*ax, RR = RR0 - lam*ax: choose lam minimising the force across both legs
+    num = -(ax @ PF @ RF0) + (ax @ PR_ @ RR0)
+    den = ax @ PF @ ax + ax @ PR_ @ ax
+    lam = num / den if den > 1e-12 else 0.0
+    RF, RR = RF0 + lam * ax, RR0 - lam * ax
+    forces = {m: float(x[j]) for j, m in enumerate(others)}
+    forces[fn], forces[rn] = float(RF @ eF), float(RR @ eR)
+    forces["PR"] = T_pr
+    axes[fn], axes[rn], outb[fn], outb[rn] = eF, eR, bj, bj
+    axes["PR"], outb["PR"] = u_pr, P
+    pick = {}
+    names = {"UF": "upper_front_inner", "UR": "upper_rear_inner", "LF": "lower_front_inner",
+             "LR": "lower_rear_inner", "TR": "tie_rod_inner"}
+    for m in others:
+        pick[names[m]] = -forces[m] * axes[m]
+    pick[names[fn]], pick[names[rn]] = -RF, -RR
+    trans = {fn: float(np.linalg.norm(PF @ RF)), rn: float(np.linalg.norm(PR_ @ RR))}
+    arm = {fn: float(np.clip((P - fi) @ (-eF), 0.0, np.linalg.norm(bj - fi))),
+           rn: float(np.clip((P - ri) @ (-eR), 0.0, np.linalg.norm(bj - ri)))}
+    # residual: the whole corner (upright + wishbone) against the load
+    tot_F = sum(-v for v in pick.values()) + (-T_pr * u_pr) * 0.0
+    res_up = float(np.linalg.norm(A @ x - b))
+    res_wb = float(np.linalg.norm(Fw + RF + RR)) + float(np.linalg.norm(Mw + np.cross(ri - fi, RR))) / 1000.0
+    return MemberForces(forces=forces, axes=axes, outboard=outb, condition=cond,
+                        residual=res_up + res_wb, has_pushrod=True,
+                        note=f"pushrod on the {which} wishbone: two-body solution", pickup_forces=pick,
+                        transverse=trans, bending_arm_mm=arm, model="wishbone-pushrod")
 
 
 def wheel_load_from_corner(Fz: float, mu_lateral: float = 0.0,

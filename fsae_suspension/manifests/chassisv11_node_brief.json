@@ -1,0 +1,849 @@
+{
+ "schema": "kinematik.chassis_node_brief/1",
+ "chassis": "ChassisV11 (node brief for the superseded Elbee Racing ChassisV10 layout)",
+ "frame": {
+  "corner_coordinates": "x rearward from axle station, y outboard, z up from ground (mm)",
+  "to_cad": "X = y; Z = Z_axle - x; Y = z + ground_cad_y_mm (-76)",
+  "left_corner": "mirror (negate X)",
+  "ground_cad_y_mm": -76.0,
+  "ground_basis": "ChassisV10.STEP holds the frame only (112 tube solids, no wheels or ground plane). The flat ground plane that best puts the delivered front and rear inboard pickups on the STEP tubes (median distance 24.5 mm front, 42.1 mm rear) is CAD Y = -76 mm; per axle the best fits lie within 5 mm of their minimum from -95 to -68 mm (front) and -83 to -53 mm (rear). Static clearance at the frame's lowest point (CAD Y -26.5 mm) is 49.5 mm."
+ },
+ "build_tolerance": "jig-weld preset, +/- 0.5 mm per axis at chassis tabs, 2000 Monte Carlo builds",
+ "wheel_clearance_mm": 3.0,
+ "corners": {
+  "rear": {
+   "axle": "rear",
+   "axle_station_cad_z_mm": -680.0,
+   "source_manifest": "rear_v11_final",
+   "source_inputs_sha256": "8818c4b890d19232199087de057c06f7caccf0f04399fe899531504dedf69ad4",
+   "verdict": "RESILIENT",
+   "predicted_yield": 1.0,
+   "status": "final under the declared inputs and the vehicle walls, on the corrected load cases and statics (pushrod on the upright beside the lower ball joint, rocker and spring re-placed for it; rear_v11_final re-declares rear_v11_walls): the inputs of rear_v11 with the 3 mm wheel wall declared, inboard rear brakes at 73% front bias, 0 <= anti-lift <= 100%, deceleration >= 1.5 g, link factor >= 2.0, rocker bearings >= 2.0; the damper declared (Ohlins TTX25 MkII FSAE, 200 mm eye to eye extended, 57 mm stroke), the spring mount on its axis",
+   "properties": {
+    "fit_of_band": 0.41,
+    "wheel_clearance_beyond_wall_mm": 1.19,
+    "anti_squat_pct": 46.7,
+    "anti_lift_pct_inboard_brakes_73": 12.6,
+    "anti_lift_pct_outboard_brakes_73": -86.8,
+    "caster_deg": 2.86,
+    "kpi_deg": 8.6,
+    "scrub_mm": 13.6,
+    "rc_height_mm": 41.6,
+    "rc_migration": -0.068,
+    "camber_gain_deg_per_mm": -0.0287,
+    "bump_steer_range_deg": 0.033,
+    "link_sections": {
+     "lower_front_leg": "5/8 x 0.065 in 4130",
+     "lower_rear_leg": "5/8 x 0.049 in 4130",
+     "other_links": "5/8 x 0.035 in 4130"
+    },
+    "link_fos_min": 2.24,
+    "rocker_bearings": "2 x SKF 6205-2RSH at 30 mm",
+    "rocker_bearing_sf": 2.08,
+    "rocker_bearing_sf_6001": 0.63,
+    "motion_ratio": 0.821,
+    "spring_N_per_mm": 34.8,
+    "ride_hz_across_travel": [
+     2.9,
+     3.0
+    ],
+    "damper_bottoms_at_bump_mm": 43.1,
+    "hand_weld_yield": 0.9325,
+    "link_load_factor_to_first_yield": {
+     "lower_front": 1.95,
+     "upper_rear": 4.62
+    },
+    "compliance_1p5g_corner_camber_deg": 0.126,
+    "compliance_traction_toe_deg": -0.164,
+    "caster_over_travel_deg": [
+     -1.28,
+     6.78
+    ],
+    "compliance_toe_1p06g_traction_cornering_deg": -0.122,
+    "pushrod": "on the upright beside the lower ball joint (bracket 47 mm from it): every link a two-force member",
+    "motion_ratio_spread_pct": 3.4,
+    "rocker_axis_tilt_deg": 15.0,
+    "swept_clearance_mm": 5.1,
+    "chassis_mounts_to_nearest_v10_node_mm": 143.0,
+    "rocker_hub_clearance_mm": 53.9,
+    "damper": {
+     "eye_to_eye_static_mm": 177.0,
+     "compression_to_full_bump_mm": 20.2,
+     "extension_to_full_droop_mm": 20.6,
+     "stroke_used_mm": 40.8,
+     "mr_static": 0.821,
+     "unit": "Ohlins TTX25 MkII FSAE, 200 mm eye to eye extended, 57 mm stroke",
+     "top_out_margin_at_full_droop_mm": 2.4,
+     "stroke_left_at_full_bump_mm": 13.8
+    }
+   },
+   "nodes_corner_mm": {
+    "upper_front_inner": [
+     -330.4,
+     337.388,
+     381.756
+    ],
+    "upper_rear_inner": [
+     -112.307,
+     206.4,
+     305.797
+    ],
+    "lower_front_inner": [
+     -264.222,
+     183.96,
+     97.885
+    ],
+    "lower_rear_inner": [
+     23.422,
+     85.0,
+     143.886
+    ],
+    "tie_rod_inner": [
+     -40.692,
+     341.571,
+     146.301
+    ],
+    "rocker_pivot": [
+     62.713,
+     357.582,
+     282.844
+    ],
+    "spring_inner": [
+     88.693,
+     185.932,
+     199.685
+    ],
+    "upper_outer": [
+     3.0,
+     546.0,
+     300.0
+    ],
+    "lower_outer": [
+     -5.0,
+     570.2,
+     140.0
+    ],
+    "tie_rod_outer": [
+     78.0,
+     564.2,
+     162.0
+    ],
+    "pushrod_outer": [
+     29.093,
+     540.91,
+     154.293
+    ],
+    "rocker_pushrod": [
+     67.664,
+     403.739,
+     322.469
+    ],
+    "rocker_spring": [
+     86.688,
+     304.504,
+     331.055
+    ]
+   },
+   "allowed_boxes_corner_mm": {
+    "lower_front_inner": {
+     "lo": [
+      -316.0,
+      183.96,
+      60.03
+     ],
+     "hi": [
+      -236.0,
+      263.96,
+      140.03
+     ]
+    },
+    "lower_rear_inner": {
+     "lo": [
+      -52.36,
+      85.0,
+      110.27
+     ],
+     "hi": [
+      27.64,
+      165.0,
+      190.27
+     ]
+    },
+    "tie_rod_inner": {
+     "lo": [
+      -74.13,
+      280.58,
+      105.21
+     ],
+     "hi": [
+      5.87,
+      360.58,
+      185.21
+     ]
+    },
+    "upper_front_inner": {
+     "lo": [
+      -410.4,
+      284.46,
+      334.86
+     ],
+     "hi": [
+      -330.4,
+      364.46,
+      414.86
+     ]
+    },
+    "upper_rear_inner": {
+     "lo": [
+      -127.4,
+      206.4,
+      270.83
+     ],
+     "hi": [
+      -47.4,
+      286.4,
+      350.83
+     ]
+    }
+   },
+   "static_camber_deg": -2.6,
+   "static_toe_deg": 0.0,
+   "rocker_axis": [
+    0.966,
+    0.1587,
+    -0.2041
+   ],
+   "damper": {
+    "eye_to_eye_static_mm": 177.0,
+    "compression_to_full_bump_mm": 20.2,
+    "extension_to_full_droop_mm": 20.6,
+    "stroke_used_mm": 40.8,
+    "mr_static": 0.821,
+    "unit": "Ohlins TTX25 MkII FSAE, 200 mm eye to eye extended, 57 mm stroke",
+    "top_out_margin_at_full_droop_mm": 2.4,
+    "stroke_left_at_full_bump_mm": 13.8
+   }
+  },
+  "front": {
+   "axle": "front",
+   "axle_station_cad_z_mm": 950.0,
+   "source_manifest": "front_v11_final",
+   "source_inputs_sha256": "2e7072ce22681a3d3e4edb8e2d9e184414b924a6b75f4a5820ad972849b379e8",
+   "verdict": "RESILIENT",
+   "predicted_yield": 1.0,
+   "status": "final under the declared inputs and the vehicle walls: ChassisV11 front for the 4.5 m hairpin, the lock declared on the axle's mean road-wheel steer at 25.6 deg (outer tire edge on the line; the mean of the ideal pair), Ackermann at lock >= 75%, joint misalignment <= 12 deg with the bolt axes declared, compliance toe in the 1.5 g corner within +/-0.08 deg on the frame-derived pickup flexibility in series with the 4130 links (3/4 x 0.083 in tie rod), anti-dive 63.6 to 70% at 73% bias, 120 degree wheel limit, link factor >= 2.0, rocker bearings >= 2.0; on the corrected load cases and statics (front_v11_final re-declares front_v11_hairpin_walls: pushrod on the upright beside the lower ball joint, rocker and spring re-placed for it); the damper declared (Ohlins TTX25 MkII FSAE, 200 mm eye to eye extended, 57 mm stroke), the spring mount on its axis; compliance toe in the 1.5 g stop within +/-0.25 deg, the lower-front pickup moved 41.5 mm forward along the lower pivot axis (167 mm base; every curve unchanged)",
+   "properties": {
+    "fit_of_band": 0.347,
+    "wheel_clearance_beyond_wall_mm": 0.49,
+    "steering_ratio_averaged_to_lock": "4.64:1",
+    "steering_ratio_centre": "4.99:1",
+    "wheel_lock_deg": 118.9,
+    "hairpin_dynamic_target_pct": {
+     "1.5g": 76,
+     "1.0g": 84,
+     "basis": "rear axle centre 3.49 m (outer tire edge on the 4.5 m line), synthetic tire, 53% front share"
+    },
+    "front_axle_force_lost_pct": {
+     "1.5g": 0.0,
+     "1.0g": 0.06
+    },
+    "tie_rod_outer_swing_deg": 32.9,
+    "outboard_joint_swing_deg": 29.7,
+    "effort_margin": 0.95,
+    "caster_deg": 3.656,
+    "kpi_deg": 7.313,
+    "scrub_mm": 6.0,
+    "anti_dive_pct": 68.9,
+    "rack_at_lock_mm": 26.8,
+    "brake_bias_front": 0.73,
+    "brake_decel_g": 1.57,
+    "anti_dive_pct_at_60_bias": 56.7,
+    "lower_wishbone_base_mm": 166.9,
+    "link_sections": {
+     "lower_rear": "5/8 x 0.065 in 4130",
+     "lower_front": "5/8 x 0.049 in 4130",
+     "tie_rod": "3/4 x 0.083 in 4130",
+     "other": "5/8 x 0.035 in 4130"
+    },
+    "link_fos_min": 2.85,
+    "link_fos_min_all_5_8x0_035": 1.78,
+    "rocker_bearings": "2 x SKF 6204-2RSH at 30 mm",
+    "rocker_bearing_sf": 2.44,
+    "rocker_bearing_sf_6001": 0.88,
+    "lock_method": "suspension.dynamic_ackermann.lock_report(lock_basis='mean')",
+    "damper": {
+     "eye_to_eye_static_mm": 176.8,
+     "compression_to_full_bump_mm": 19.7,
+     "extension_to_full_droop_mm": 20.4,
+     "stroke_used_mm": 40.0,
+     "mr_static": 0.804,
+     "unit": "Ohlins TTX25 MkII FSAE, 200 mm eye to eye extended, 57 mm stroke",
+     "top_out_margin_at_full_droop_mm": 2.8,
+     "stroke_left_at_full_bump_mm": 14.2
+    },
+    "lock_basis": "mean",
+    "road_lock_mean_deg": 25.6,
+    "inner_wheel_deg": 28.74,
+    "compliance_toe_1p5g_corner_deg": 0.034,
+    "compliance_toe_1p5g_braking_deg": 0.23,
+    "compliance_basis": "frame-derived pickup flexibility (scripts/frame_derivation.py: ChassisV10 tubes, each pickup on a four-tube node, frame free and balanced by the car's inertia) in series with each link's axial stiffness (4130, EA/L)",
+    "link_load_factor_to_first_yield_lower_rear": 2.37,
+    "hand_weld_yield": 0.5965,
+    "outer_wheel_deg": 22.46,
+    "ackermann_pct_5mm_to_lock": [
+     63.2,
+     75.3
+    ],
+    "ackermann_at_lock_pct": 75.3,
+    "camber_at_lock_deg": {
+     "outside": -3.61,
+     "inside": 0.18
+    },
+    "joint_misalignment_deg": {
+     "upper_ball": 4.41,
+     "lower_ball": 2.77,
+     "tie_rod_outer": 4.41,
+     "tie_rod_inner": 3.79
+    },
+    "joint_swing_upper_bound_deg": 32.91,
+    "bolt_axes": "outboard ball joints and tie-rod outer: along the kingpin axis; wishbone inboard: along the A-arm pivot axis; tie-rod inner: vertical",
+    "compliance_toe_1p06g_braking_cornering_deg": 0.205,
+    "compliance_toe_1p5g_corner_whole_car_deg": 0.022,
+    "pushrod": "on the upright beside the lower ball joint (bracket 64 mm from it): every link a two-force member",
+    "motion_ratio": 0.804,
+    "motion_ratio_spread_pct": 7.7,
+    "spring_N_per_mm": 24.8,
+    "ride_hz_across_travel": [
+     2.43,
+     2.63
+    ],
+    "rocker_axis_tilt_deg": 14.0,
+    "swept_clearance_mm": 9.5,
+    "chassis_mounts_to_nearest_v10_node_mm": 196.0,
+    "rocker_hub_clearance_mm": 23.1,
+    "compliance_toe_1p5g_corner_links_deg": 0.007,
+    "compliance_caster_1p5g_braking_deg": -1.02,
+    "pushrod_fos": 7.2,
+    "steer_spring_change_at_27mm_rack_mm": [
+     3.8,
+     1.0
+    ],
+    "steer_warp_diagonal_N": 44.0,
+    "damper_bottoms_at_bump_mm": 45.6,
+    "compliance_toe_1p5g_braking_bound_deg": 0.25,
+    "link_load_factor_to_first_yield_lower_rear_5_8x0_035": 1.45
+   },
+   "nodes_corner_mm": {
+    "upper_front_inner": [
+     -91.234,
+     220.261,
+     280.924
+    ],
+    "upper_rear_inner": [
+     91.015,
+     324.2,
+     265.195
+    ],
+    "lower_front_inner": [
+     -90.383,
+     155.054,
+     122.74
+    ],
+    "lower_rear_inner": [
+     75.12,
+     175.509,
+     129.524
+    ],
+    "tie_rod_inner": [
+     -23.766,
+     167.289,
+     147.117
+    ],
+    "rocker_pivot": [
+     27.04,
+     365.46,
+     319.92
+    ],
+    "spring_inner": [
+     87.571,
+     170.684,
+     343.694
+    ],
+    "upper_outer": [
+     6.5,
+     560.5,
+     300.0
+    ],
+    "lower_outer": [
+     -5.0,
+     583.6,
+     120.0
+    ],
+    "tie_rod_outer": [
+     53.375,
+     540.573,
+     148.249
+    ],
+    "pushrod_outer": [
+     8.22,
+     522.81,
+     132.84
+    ],
+    "rocker_pushrod": [
+     13.5,
+     435.4,
+     360.87
+    ],
+    "rocker_spring": [
+     31.29,
+     332.37,
+     387.98
+    ]
+   },
+   "allowed_boxes_corner_mm": {
+    "lower_front_inner": {
+     "lo": [
+      -180.0,
+      30.8,
+      19.9
+     ],
+     "hi": [
+      20.0,
+      230.8,
+      219.9
+     ]
+    },
+    "lower_rear_inner": {
+     "lo": [
+      -35.53,
+      48.14,
+      32.73
+     ],
+     "hi": [
+      164.47,
+      248.14,
+      232.73
+     ]
+    },
+    "tie_rod_inner": {
+     "lo": [
+      -117.0,
+      81.72,
+      49.62
+     ],
+     "hi": [
+      83.0,
+      281.72,
+      249.62
+     ]
+    },
+    "tie_rod_outer": {
+     "lo": [
+      -20.61,
+      462.78,
+      59.58
+     ],
+     "hi": [
+      179.39,
+      662.78,
+      259.58
+     ]
+    },
+    "upper_front_inner": {
+     "lo": [
+      -260.0,
+      174.88,
+      174.99
+     ],
+     "hi": [
+      -60.0,
+      374.88,
+      374.99
+     ]
+    },
+    "upper_rear_inner": {
+     "lo": [
+      -40.0,
+      130.2,
+      165.62
+     ],
+     "hi": [
+      160.0,
+      330.2,
+      365.62
+     ]
+    }
+   },
+   "static_camber_deg": -2.5,
+   "static_toe_deg": 0.0,
+   "damper": {
+    "eye_to_eye_static_mm": 176.8,
+    "compression_to_full_bump_mm": 19.7,
+    "extension_to_full_droop_mm": 20.4,
+    "stroke_used_mm": 40.0,
+    "mr_static": 0.804,
+    "unit": "Ohlins TTX25 MkII FSAE, 200 mm eye to eye extended, 57 mm stroke",
+    "top_out_margin_at_full_droop_mm": 2.8,
+    "stroke_left_at_full_bump_mm": 14.2
+   },
+   "rocker_axis": [
+    0.9716,
+    0.2329,
+    0.043
+   ]
+  }
+ },
+ "hairpin_requirement": {
+  "rule": "outside radius >= 4.5 m (9 m outside diameter) [CITE: autocross layout clause]",
+  "geometry": "outer front tire edge on the line, 95 mm tire half-width: rear axle centre radius 3.487 m, inner rear wheel 2.882 m",
+  "mean_road_wheel_steer_deg": 25.6,
+  "basis": "at low speed the front tires carry almost no net side force, so their slip angles cancel and the mean steer equals the mean of the ideal pair",
+  "ideal_pair_deg": [
+   29.49,
+   21.72
+  ],
+  "single_track_deg": 25.05,
+  "wheel_centre_on_line_mean_deg": 24.94,
+  "ratio_window_at_120_deg": {
+   "effort_floor": 4.04,
+   "mean_steer_max": 4.69
+  }
+ },
+ "front_searches_at_hairpin_lock": [
+  {
+   "lock_deg": 25.0,
+   "caster_wall": ">=3.65",
+   "boxes": "+/-40 mm",
+   "result": "NO_FIT",
+   "closest_x_band": 2.05,
+   "governing": "roll-centre height @ -25 mm"
+  },
+  {
+   "lock_deg": 29.4,
+   "caster_wall": ">=3.65",
+   "boxes": "+/-40 mm",
+   "result": "NO_FIT",
+   "closest_x_band": 3.91,
+   "governing": "roll-centre height @ +25 mm"
+  },
+  {
+   "lock_deg": 25.0,
+   "caster_wall": ">=1.0",
+   "boxes": "+/-40 mm",
+   "result": "NO_FIT",
+   "closest_x_band": 2.05
+  },
+  {
+   "lock_deg": 29.4,
+   "caster_wall": ">=1.0",
+   "boxes": "+/-40 mm",
+   "result": "NO_FIT",
+   "closest_x_band": 3.91
+  },
+  {
+   "lock_deg": 25.0,
+   "boxes": "+/-100 mm",
+   "start": "delivered",
+   "result": "no start survived the solved-property bounds"
+  },
+  {
+   "lock_deg": 25.0,
+   "boxes": "+/-100 mm",
+   "start": "tie-rod outer x 55 and 48 mm (outer only), and x 52 mm (both ends)",
+   "result": "no start cleared the wheel envelope"
+  },
+  {
+   "lock_deg": 25.0,
+   "boxes": "+/-100 mm",
+   "start": "front_wheel_lock winner, tie-rod outer x 60 mm (both ends moved)",
+   "result": "no start cleared the wheel envelope"
+  },
+  {
+   "lock_deg": 25.0,
+   "boxes": "+/-100 mm",
+   "start": "local search over the six free pickups (cost = worst band fraction + penalties for clearance < 2 mm and solved-property bounds; 247 evaluations, seed 1)",
+   "result": "RESILIENT, 100% yield, fit 0.278 (manifest front_v11_25deg, ae5cef6d5757)"
+  },
+  {
+   "lock_deg": 29.4,
+   "boxes": "+/-100 mm",
+   "start": "local search from the 25 degree front over the six free pickups (same cost; 354 evaluations, seed 1)",
+   "result": "RESILIENT, 100% yield, fit 0.394 (manifest front_v11_29deg, 2673492a63c5)"
+  },
+  {
+   "lock_deg": 29.4,
+   "boxes": "+/-100 mm",
+   "walls": "vehicle walls, swing <= 34.3, anti-dive 57.3 to 70% at 73% bias",
+   "start": "genesis_seed.seed_search chained from front_v11_29deg through the first wall set (anti-dive >= 48%, 527 evaluations); final step from that winner (inputs 77eefa56384f), seed 1, 33 evaluations",
+   "result": "RESILIENT, 100% yield, fit 0.359 (manifest front_v11_29deg_walls, 4f088b0e4609)"
+  },
+  {
+   "lock_deg": 25.0,
+   "boxes": "+/-100 mm",
+   "walls": "vehicle walls, swing <= 27.5, Ackermann at lock >= 25%, anti-dive 57.3 to 70% at 73% bias",
+   "start": "genesis_seed.seed_search chained from front_v11_25deg through the earlier wall sets (anti-dive >= 48%); final step from that winner (inputs a226a3d6ed99), seed 1, 119 evaluations",
+   "result": "RESILIENT, 100% yield, fit 0.443 (superseded: inputs 82a761ea8381, inner-wheel lock)"
+  },
+  {
+   "lock_deg": 25.0,
+   "lock_basis": "mean",
+   "boxes": "+/-100 mm",
+   "walls": "vehicle walls, swing <= 27.5, Ackermann at lock >= 0%, anti-dive 57.3 to 70% at 73% bias, compliance toe within +/-0.08 deg (links in series)",
+   "start": "genesis_seed.seed_search from the mean-lock winner (6a6c110c9fc4), seed 1, 663 evaluations",
+   "result": "RESILIENT, 100% yield, fit 0.295 (manifest front_v11_25deg_walls, 5e0ab207749b)"
+  },
+  {
+   "lock_deg": 25.6,
+   "lock_basis": "mean",
+   "boxes": "+/-100 mm",
+   "walls": "vehicle walls, misalignment <= 12 deg, Ackermann at lock >= 75%, anti-dive 63.6 to 70% at 73% bias, compliance toe within +/-0.08 deg (links in series)",
+   "start": "genesis_seed.seed_search from the front_v11_29deg_walls winner (4f088b0e4609), seed 1, 1274 evaluations on an 80 mm rack, then 3 on the 81 mm rack",
+   "result": "RESILIENT, 100% yield, fit 0.347 (manifest front_v11_final, b2cef1acebb1)"
+  }
+ ],
+ "frame_stiffness_derived": {
+  "method": "beam model of the ChassisV10 STEP tubes (suspension/frame_fe.py; data/chassisv10_tube_axes.json): 779 nodes, 825 space-frame elements, rigid joints; six rigid-body modes; each pickup of the final corners on a node of four 25.4 x 1.65 mm tubes to the best-triangulating ChassisV10 junctions within 400 mm",
+  "status": "upper bounds (rigid joints, stiff bend chords, no tabs or panels); Table 10 rows 9 and 12 measure the built frame",
+  "torsional_rate_kNm_per_deg_between_pickup_sets": 2.88,
+  "torsional_rate_kNm_per_deg_chassisv10_alone": [
+   1.41,
+   1.59
+  ],
+  "pickup_axial_kN_per_mm_single_load": {
+   "front": {
+    "upper_front_inner": 5.3,
+    "upper_rear_inner": 8.1,
+    "lower_front_inner": 7.2,
+    "lower_rear_inner": 8.9,
+    "tie_rod_inner": 8.5
+   },
+   "rear": {
+    "upper_front_inner": 3.3,
+    "upper_rear_inner": 8.6,
+    "lower_front_inner": 5.5,
+    "lower_rear_inner": 14.8,
+    "tie_rod_inner": 12.0
+   }
+  },
+  "used_as": "15 x 15 coupled flexibility per corner (StiffnessField.coupled, provenance 'fea') in the compliance wall and results"
+ },
+ "open_items": [
+  "rear traction compliance toe: 0.164 deg toe-in per wheel in a 1.06 g launch and 0.122 deg at the 1.06 g traction and cornering exit",
+  "rod ends: 5/16-24 shanks reach 200 MPa against a 54 MPa endurance amplitude under the 5.8 Nm friction moment; PTFE-lined 3/8-24 joints pass (35 MPa) but are not yet in the wheel envelope",
+  "the upright, hub, brake and drivetrain envelopes the actuation was placed against are declarations: check them, and the pushrod path past them, against the ChassisV11 CAD; the uprights' pushrod brackets in bending",
+  "wheel clearance is a rigid-body figure; the CAD solid sweep with exact tire geometry is mandatory if the first-build feeler check reads below 5 mm"
+ ],
+ "superseded_fronts": [
+  {
+   "manifest": "front_v11_29deg",
+   "inputs_sha256": "2673492a63c56b7758a9a10656c91acf95c24c499d3db544ca8b17c6f426e908",
+   "reason": "lower wishbone base narrowed by the local search; lower-rear leg buckles in the 1.8 g stop at 73% bias (factor 0.84 on the winner, 0.83 on the start of front_v11_29deg_b73_tube035, on 5/8 x 0.035 in); refused by the link-force wall"
+  },
+  {
+   "manifest": "front_v11_25deg",
+   "inputs_sha256": "ae5cef6d5757a89a469d2ef35276b084ed8979d6f5d7a9139696b0c735c5adbc",
+   "reason": "lower wishbone base narrowed by the local search; lower-rear leg buckles in the 1.8 g stop at 73% bias (factor 0.91 on 5/8 x 0.035 in); refused by the link-force wall"
+  },
+  {
+   "manifest": "front_v11_29deg_walls (first wall set)",
+   "inputs_sha256": "77eefa56384f",
+   "reason": "anti-dive 50.3% at 73% bias, below the 57.3% the 2.6 Hz front set-up was derived with"
+  },
+  {
+   "manifest": "front_v11_25deg_walls (first wall set)",
+   "inputs_sha256": "a226a3d6ed99",
+   "reason": "anti-dive 49.0% at 73% bias, below the 57.3% the 2.6 Hz front set-up was derived with"
+  },
+  {
+   "manifest": "front_v11_25deg_walls (inner-wheel lock)",
+   "inputs_sha256": "82a761ea8381",
+   "reason": "lock declared on the inner wheel: at 25% Ackermann the axle's mean steer at lock is 23.9 deg, short of the 25.6 deg two-track mean the 4.5 m hairpin needs"
+  },
+  {
+   "manifest": "front_v11_25deg_walls (mean lock, no compliance wall)",
+   "inputs_sha256": "6a6c110c9fc4",
+   "reason": "compliance toe in the 1.5 g corner 0.133 deg with the links in series (166% of the +/-0.08 deg band)"
+  },
+  {
+   "manifest": "front_v11_25deg_walls",
+   "inputs_sha256": "5e0ab207749b59e90de12ab30cb1f23cdb1178adb3a70d5698ea152c4d23764e",
+   "reason": "25.0 deg on the mean steer, short of the 25.6 deg the hairpin needs with the outer tire edge on the line; 6.7% Ackermann (a joint-swing bound that counted rotation about the bolt kept it near parallel steer); re-run on the corrected code it returns no winner (its start fails the link wall at 0.34 and the bearing wall at 1.97)"
+  },
+  {
+   "manifest": "front_v11_29deg_walls",
+   "inputs_sha256": "4f088b0e46094eef06cd40a618b3bcdc95f42dc2c311df4f0adeb9612ccd6ec4",
+   "reason": "compliance toe 0.104 deg in the 1.5 g corner with the links counted (130% of the band); anti-dive 58.7% (front holds only to peak mu 1.73); start of the final front"
+  },
+  {
+   "manifest": "front_v11_hairpin_walls",
+   "inputs_sha256": "7f1436d93a63a9eeeb33f668843a28cc1e923b3bd19150234a451c27e096746e",
+   "reason": "same pickups, judged on reversed cornering load cases and on statics that put the wishbone-mounted pushrod on the upright; re-run on the corrected code it returns no winner (its start fails the link wall at 0.24 and the bearing wall at 1.61); re-declared as front_v11_final"
+  },
+  {
+   "manifest": "front_v11_final (pushrod at the lower ball joint)",
+   "inputs_sha256": "b2cef1acebb1",
+   "reason": "the pushrod at the lower ball joint ran through the upright, the hub and a link once their envelopes were declared (supplement S6.37); re-declared with the pushrod on the upright"
+  },
+  {
+   "manifest": "front_v11_final (125 mm lower base, damper length free)",
+   "inputs_sha256": "cea1a7c48229",
+   "reason": "a 1.5 g stop toed each front wheel out 0.67 deg on the derived frame, and the spring sat 106.7 mm eye to eye; re-declared with the braking compliance wall (lower-front pickup 41.5 mm forward along the pivot axis, every curve unchanged) and the damper wall (scripts/final_corners_v3.py; kept in manifests/superseded)"
+  }
+ ],
+ "vehicle_walls": {
+  "module": "suspension/genesis_walls.py, bounded in InverseGenesis as solved properties",
+  "brake_decel_g": "straight-line deceleration at the declared bias >= 1.5 g (tire_utilisation, declared tire): 60% bias gives 1.27 g and is refused; the balanced 73% gives 1.57 g",
+  "link_fos_min": "lowest Euler/Perry-Robertson factor >= 2.0 under robustness.shock_cases('front', 0.73)",
+  "rocker_bearing_sf": "static safety factor >= 2.0 under genesis_repro.vehicle_load_cases('front', 0.73); 2 x 6001-2RS gives 0.88 on the final front and is refused",
+  "joint_swing_lock_deg": "used on front_v11_25deg_walls (<= 27.5) and front_v11_29deg_walls (<= 34.3), withdrawn: it counts rotation about the bolt, which the joint allows freely, so it bounds misalignment from above",
+  "ackermann_lock_pct": "final front: Ackermann at the declared lock >= 75% (the dynamic target at the hairpin is 76 to 84%)",
+  "start": "genesis_seed.seed_search (pattern search on band fraction plus wall penalties), then InverseGenesis with every wall absolute",
+  "refusals": [
+   {
+    "manifest": "front_v11_29deg_b60_brake",
+    "inputs_sha256": "113a757c3ce0f7ad1d882b4a2d0e741b67cb4cdb2cde5d55893d864eb6d84d20",
+    "result": "NO_FIT",
+    "binding": "refused at the seed: brake_decel_g = 1.269 against the bound"
+   },
+   {
+    "manifest": "front_v11_29deg_b73_6001",
+    "inputs_sha256": "115b45a62748bcf0e72148adefe1eda081ef21ccae5ebcb3c79f747996e35eba",
+    "result": "NO_FIT",
+    "binding": "refused at the seed: rocker_bearing_sf = 0.890 against the bound"
+   },
+   {
+    "manifest": "front_v11_29deg_b73_tube035",
+    "inputs_sha256": "af71aa072573b36b087308fae9045e879aa369cfcf4189c61a450804636ea4de",
+    "result": "NO_FIT",
+    "binding": "refused at the seed: link_fos_min = 0.000 against the bound; lower-rear leg -16.0 kN, buckling factor 0.83"
+   }
+  ],
+  "anti_dive_pct": "final front 63.6 to 70% at 73% bias (the front then holds to the peak mu the rear holds to, 1.83); 57.3 to 70% on the earlier walls fronts",
+  "rear": "rear_v11_final: deceleration >= 1.5 g, link factor >= 2.0 under robustness.shock_cases('rear', 0.73) with 5/8 x 0.065 in lower-front and 5/8 x 0.049 in lower-rear legs, 2 x SKF 6205-2RSH bearings >= 2.0, 0 <= anti-lift <= 100% with inboard rear brakes, 3 mm wheel wall",
+  "lock_basis": "final front: 25.6 deg on the axle's mean steer (SteerEffort.lock_basis = 'mean')",
+  "compliance_toe_deg": "final front: -0.08 <= compliance steer in the 1.5 g corner <= 0.08 deg on the frame-derived 15 x 15 pickup flexibility (scripts/frame_derivation.py) with MemberStiffness (4130: 15.88 x 1.651 mm lower-rear, 15.88 x 1.245 mm lower-front, 19.05 x 2.108 mm tie rod, 15.88 x 0.889 mm elsewhere) in series",
+  "joint_misalignment_lock_deg": "final front: worst joint misalignment over travel at the declared lock <= 12 deg, bolts along the kingpin (outboard), the A-arm pivot axis (inboard) and vertical (rack): inverse_genesis.joint_misalignment",
+  "compliance_toe_braking_deg": "final front: -0.25 <= compliance toe in the 1.5 g stop at 73% bias <= 0.25 deg on the same flexibility and links: a 60% left-right brake force difference then steers the axle e x 0.6 / 2, inside the +/-0.08 deg toe band (bound 0.27, declared 0.25)",
+  "damper": "actuation.ActuationTargets.damper_extended_mm: the spring must not top out at full droop and must stay inside 80% of the declared stroke at full bump (Ohlins TTX25 MkII FSAE, 200 mm, 57 mm)"
+ },
+ "requirements_for_chassisv11": {
+  "pickup_nodes": "every inboard pickup, rocker pivot and spring mount on a node of at least four tubes (the modelled node: four 25.4 x 1.65 mm tubes to frame junctions within 400 mm, triangulated); the compliance results rest on it; Table 10 row 9 verifies by in-situ pull tests",
+  "actuation_nodes": "the frame provides nodes at rocker_pivot and spring_inner as listed (196 mm front and 143 mm rear from the nearest ChassisV10 node)",
+  "caster": "3.656 deg, inherited from the delivered uprights and held for the limit cue (32% aligning-torque fall at the limit against 79% at 1 deg); Table 10 row 18 measures it",
+  "rod_ends": "bolt axes along the kingpin at the upright (both ball joints and the tie-rod outer), along the A-arm pivot axis inboard and vertical at the rack; worst misalignment 4.4 deg over travel at lock; 5/16-24 shanks fail the friction-moment fatigue screen (open item)",
+  "links": "front: 5/8 x 0.065 in lower-rear and 5/8 x 0.049 in lower-front legs, 3/4 x 0.083 in tie rod, 5/8 x 0.035 in elsewhere; rear: 5/8 x 0.065 in lower-front and 5/8 x 0.049 in lower-rear legs, 5/8 x 0.035 in elsewhere; 4130",
+  "brake_bias_front": "0.73 (balanced, 1.57 g); 0.60 is refused by the deceleration wall",
+  "rocker_bearings": "2 x SKF 6204-2RSH front (static factor 2.44) and 2 x SKF 6205-2RSH rear (2.08), 30 mm apart; hubs (bearing OD + 3 mm front, + 3.5 mm rear, 44 mm long) clear the ChassisV10 tubes by 23.1 mm front and 53.9 mm rear",
+  "damper": "Ohlins TTX25 MkII FSAE (200 mm eye to eye extended, 57 mm stroke) at each corner: static eye to eye 176.8 mm front and 177.0 mm rear, 2.8 and 2.4 mm short of top-out at full droop, 14.2 and 13.8 mm of stroke left at full bump (40.0 and 40.8 mm used over +/-25 mm); springs 24.8 N/mm front (2.6 Hz) and 34.8 N/mm rear (3.0 Hz); the damper closes at 45.6 mm of bump front and 43.1 mm rear, so a bump stop engages at 35 to 40 mm. Springs: rear the Ohlins 200 lb/in (35.0 N/mm, 3.01 Hz); front 24.8 N/mm (142 lb/in), below the Ohlins range (150 to 650 lb/in), made to rate for the damper's spring seat; with the 150 lb/in catalogue spring the front runs at 2.68 Hz and about 12 Nm/deg less front bar keeps the roll-stiffness share",
+  "actuation": "pushrod on the upright beside the lower ball joint (64 mm front, 47 mm rear), rocker and spring re-placed against the ChassisV10 tubes and the declared upright, hub, rim, link and (rear) drivetrain envelopes at ground CAD Y -76 mm, rocker axis free (tilt 14 deg front, 15 deg rear): motion ratio 0.804 front and 0.821 rear, spread 7.7% and 3.4%, swept clearance 9.5 mm front and 5.1 mm rear, surface to surface; V10 node reach not imposed",
+  "verification": "Table 10 of the paper pre-registers the physical checks; they are tests of this brief, not open items",
+  "braking_compliance": "front: |toe in the 1.5 g stop| <= 0.25 deg is a wall of the search; on the derived frame with the links in series the final front toes out 0.23 deg per wheel (0.185 deg of it the links), so a 60% left-right brake difference steers the axle 0.069 deg, inside the +/-0.08 deg toe band; it loses 1.02 deg of caster. The lower wishbone's base is 167 mm along its pivot axis. At the rear a 1.06 g launch toes each wheel in 0.164 deg and a traction and cornering exit 0.122 deg. Table 10 row 9 measures both",
+  "lower_fore_bracket": "front lower-front bracket rated >= 17.5 kN (factor 2.0 on the final front's 8.7 kN in a curb strike while braking)",
+  "build_tolerance": "jig-weld (+/-0.5 mm tabs): 100% predicted yield on both corners; hand-weld (+/-1.5 mm): 1193 of 2000 builds front (59.65%, KNIFE_EDGE) and 1865 of 2000 rear (93.25%, TEMPERED), so the frame is jig-welded",
+  "rack_stop": "rack end stops at 26.8 mm of rack, where the axle's mean steer reaches 25.6 deg (118.9 deg of wheel); the clearance sweep runs to 27.0 mm",
+  "frame_twist": "rack tie-rod inner and each wishbone's inner pickups co-located on one triangulated bay; twist toe at 2000 Nm/deg is 0.013 deg steady (52 Nm) and 0.15 deg at the 618 Nm bound; Table 10 row 12 measures it",
+  "rear_boxes": "four of the five rear inner pickups sit on a face of their +/-40 mm boxes; the boxes bind the rear, so a wider box is the first change if V11's nodes allow it",
+  "rack": "81 mm of rack travel per steering-wheel turn (76.2 declared before); seeded searches under the same walls stalled over 120 deg of wheel on 76.2 and 80 mm racks",
+  "pushrod": "pushrod on the upright on a bracket beside the lower ball joint (64 mm front, 47 mm rear), every link a two-force member; the bracket's bending is an item of the upright's design; its path past the declared upright, hub, rim, link and drivetrain envelopes is checked (S6.37) and the envelopes must be checked against the V11 CAD",
+  "tie_rod": "front tie rod 3/4 x 0.083 in 4130: the cornering compliance wall needs it on the corrected cases",
+  "alignment": "static camber: the corners are recorded at -2.5 deg front and -2.6 deg rear, which meet the declared optimum of -1.83 deg; published R25B results put the optimum near 0 deg (supplement S6.38), met at -0.74 deg front and -0.82 deg rear on the same gains, an alignment change with no pickup moved. Start at -0.7 deg front and -0.8 deg rear and set the static camber from the skidpad camber sweep between -0.5 and -2.75 deg (Table M10, row 11)",
+  "link_end_stiffness": "the compliance walls were evaluated with rigid joints and tabs. With every link end (rod end or ball joint, tab, upright arm) in series along its link, the cornering toe wall holds above 30 kN/mm per end and the braking toe wall only above 494 kN/mm (toe in the 1.5 g stop 0.43 deg at 50 kN/mm), almost all of it from the lower-front leg (7.3 kN in the stop). Pull-test every pickup with its joint and tab (Table M10, row 9) before the frame is released; below that stiffness, re-run the front search with the measured end stiffness declared (scripts/review_checks.py, suspension/compliance_margin.py)",
+  "steering_upright_alternative_front_v11_final": "the effort wall holds to a zero-slip pneumatic trail of 22.4 mm on the declared tire (8.1 N*m at the hand at the estimated trail). Alternative upright, pre-verified (scripts/steering_margin.py): spindle moved 2.0 mm forward relative to the kingpin axis, caster, kingpin and every pickup unchanged, mechanical trail 12.7 -> 10.7 mm, every wall and band held (wheel clearance +0.14 mm beyond the wall). Machine it if the skidpad steering-torque log (Table M10, row 18) fits a zero-slip trail above 22.4 mm; at 25.4 mm it gives 9.9 N*m on the declared tire and 9.6 at road mu 1.43. Do not change the steering ratio: the hairpin needs 118.9 of the 120 deg wheel-angle wall"
+ },
+ "superseded_rear": [
+  {
+   "manifest": "rear_v11",
+   "inputs_sha256": "71b6c9fe45bd961f50656516b52ec4d174a84d3a9aec322fff63fcc0fe6c8d82",
+   "reason": "declared 0 mm wheel clearance and sits 0.25 mm from the tire (2.75 mm inside the 3 mm wall); rear_v11_walls declares the wall and moves the upper-front inner pickup 16 mm inboard and 6 mm rearward"
+  },
+  {
+   "manifest": "rear_v11_walls",
+   "inputs_sha256": "f567eaf8bce3d4250e30addfba2743ee495bd20a123119986484e981f287178f",
+   "reason": "same pickups, judged on reversed cornering load cases and on the earlier statics; re-run on the corrected code it returns no winner; re-declared as rear_v11_final"
+  },
+  {
+   "manifest": "rear_v11_final (damper length free)",
+   "inputs_sha256": "b0e6ef7369d9",
+   "reason": "re-declared with the damper wall: the spring mount moved along the damper axis (kept in manifests/superseded)"
+  }
+ ],
+ "front_to_build": {
+  "source_manifest": "front_v11_joints50",
+  "source_inputs_sha256": "7d226fcc1090140fa82a48d6069d1d5ae371ea483776ebe5eb8722f8b4ec72f9",
+  "verdict": "RESILIENT",
+  "predicted_yield": 0.9975,
+  "nodes_corner_mm": {
+   "upper_front_inner": [
+    -111.484,
+    225.761,
+    281.174
+   ],
+   "upper_rear_inner": [
+    76.265,
+    322.7,
+    266.195
+   ],
+   "lower_front_inner": [
+    -106.383,
+    183.804,
+    122.49
+   ],
+   "lower_rear_inner": [
+    60.12,
+    152.259,
+    129.524
+   ],
+   "tie_rod_inner": [
+    -23.766,
+    167.789,
+    147.117
+   ],
+   "rocker_pivot": [
+    27.04,
+    365.46,
+    319.92
+   ],
+   "spring_inner": [
+    87.571,
+    170.684,
+    343.694
+   ],
+   "upper_outer": [
+    6.5,
+    560.5,
+    300.0
+   ],
+   "lower_outer": [
+    -5.0,
+    583.6,
+    120.0
+   ],
+   "tie_rod_outer": [
+    53.375,
+    524.823,
+    148.249
+   ],
+   "pushrod_outer": [
+    8.22,
+    522.81,
+    132.84
+   ],
+   "rocker_pushrod": [
+    13.5,
+    435.4,
+    360.87
+   ],
+   "rocker_spring": [
+    31.29,
+    332.37,
+    387.98
+   ]
+  },
+  "rule": "build this front: it holds every wall with 50 kN/mm per link end (toe in the 1.5 g stop 0.249 deg), where front_v11_final needs 494 kN/mm. Pull a test tab with its joint before the frame is welded; below 50 kN/mm per end, re-run scripts/front_with_joints.py at the measured stiffness",
+  "steering_upright_alternative": "spindle moved 0.5 mm forward relative to the kingpin axis (mechanical trail 12.17 mm, clearance +0.25 mm, every wall held); machine it if the steering-torque log fits a zero-slip trail above 25.0 mm",
+  "ackermann_at_lock_pct": 143.8,
+  "actuation": "as front_v11_final (pushrod on the upright, rocker, spring and damper nodes unchanged)",
+  "corners_front_note": "corners.front records front_v11_final, the result with rigid joints; build front_to_build"
+ },
+ "inputs_sha256": "670a878fbb96e588071a8d910bfb7f487057ec034bd9203d0793d3f948e29181"
+}

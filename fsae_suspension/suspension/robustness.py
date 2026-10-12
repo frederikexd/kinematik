@@ -114,35 +114,49 @@ def member_margins(hp: Hardpoints, loads: dict, od_mm: float = 15.875, wall_mm: 
     ``loads`` maps case names to loadpath.WheelLoad (N at the contact patch).
     Compression: buckling factor P_cr/P with P_cr = π²EI/L² (pinned ends), and a
     yield factor from the Perry–Robertson peak stress P/A·[1 + e c/r² /(1 − P/P_cr)]
-    with initial crookedness e = crook·L. Tension: σ_y A / F. Forces N, lengths mm,
-    stresses MPa, factors dimensionless.
+    with initial crookedness e = crook·L. Tension: σ_y A / F. A leg of the wishbone that
+    carries the pushrod also bends (loadpath's two-body solution reports the force across it
+    and the arm to the mount): its moment adds M/Z to the peak stress, amplified by
+    1/(1 − P/P_cr) in compression. Forces N, lengths mm, stresses MPa, factors dimensionless.
     """
     from .loadpath import solve_member_forces
     A = math.pi / 4 * (od_mm ** 2 - (od_mm - 2 * wall_mm) ** 2); I = math.pi / 64 * (od_mm ** 4 - (od_mm - 2 * wall_mm) ** 4)
     r2, c = I / A, od_mm / 2.0
+    Z = I / c                                       # section modulus, mm^3
     kin = SuspensionKinematics(hp); st = kin.solve_at_travel(0.0); out = {}
     for case, ld in loads.items():
         mf = solve_member_forces(kin, st, ld)
+        trans = mf.transverse or {}
+        arm = mf.bending_arm_mm or {}
         for mem, F in mf.forces.items():
             p0, p1 = (np.asarray(getattr(hp, e), float) for e in _MEMBER_ENDS[mem]); L = float(np.linalg.norm(p1 - p0))
             pcr = math.pi ** 2 * e_mpa * I / L ** 2
+            # a leg of the wishbone that carries the pushrod is pinned at its pivot and loaded across by the pivot
+            # reaction's transverse part: bending moment V * a at the pushrod mount, a its distance from the pivot
+            Mb = float(trans.get(mem, 0.0)) * float(arm.get(mem, 0.0))
             if F < 0:
-                P = -F; smax = P / A * (1 + crook * L * c / r2 / (1 - P / pcr)) if P < pcr else math.inf
+                P = -F
+                amp = 1.0 / (1 - P / pcr) if P < pcr else math.inf
+                smax = P / A * (1 + crook * L * c / r2 * amp) + Mb / Z * amp if P < pcr else math.inf
                 fb, fy = pcr / P, sy_mpa / smax
             else:
-                fb, fy = math.inf, sy_mpa * A / max(F, 1e-9)
+                fb, fy = math.inf, sy_mpa / max(F / A + Mb / Z, 1e-9)
             r = out.setdefault(mem, {"length_mm": L, "p_cr_n": pcr, "worst_n": 0.0, "worst_case": "", "fos_buckling": math.inf, "fos_yield": math.inf})
             if abs(F) > abs(r["worst_n"]): r["worst_n"], r["worst_case"] = float(F), case
             r["fos_buckling"] = min(r["fos_buckling"], fb); r["fos_yield"] = min(r["fos_yield"], fy)
     return out
 
 
-def overtravel_check(hp: Hardpoints, bump_mm: float = 50.0, droop_mm: float = 25.0, stroke_mm: float = 57.0, n: int = 31) -> dict:
+def overtravel_check(hp: Hardpoints, bump_mm: float = 50.0, droop_mm: float = 25.0, stroke_mm: float = 57.0, n: int = 31,
+                     damper_extended_mm: float | None = None) -> dict:
     """Pushrod-rocker behaviour to ``bump_mm`` of jounce (mm): transmission angles (deg), motion ratio, stroke.
 
     A linkage near toggle shows a transmission angle approaching 0 or 180 deg and
     a motion ratio that reverses; a binding one fails to solve. The damper end of
-    travel is where the stroke used from full droop reaches ``stroke_mm``.
+    travel is where the stroke used from full droop reaches ``stroke_mm``; with the
+    damper's extended eye-to-eye length ``damper_extended_mm`` (mm) it is where the
+    spring reaches the damper's closed length, ``damper_extended_mm - stroke_mm``,
+    so the margin to top-out at full droop is not counted as stroke.
     """
     from .actuation import actuation_metrics
     m = actuation_metrics(hp, travel_mm=(-droop_mm, bump_mm), n=n)
@@ -150,12 +164,13 @@ def overtravel_check(hp: Hardpoints, bump_mm: float = 50.0, droop_mm: float = 25
     ta = np.asarray(m.transmission_deg, float); mr = np.asarray(m.mr, float); trv = np.asarray(m.travel, float)
     mono = bool(np.all(np.diff(mr) <= 1e-9) or np.all(np.diff(mr) >= -1e-9))
     used = np.concatenate([[0.0], np.cumsum(0.5 * (mr[1:] + mr[:-1]) * np.diff(trv))])
-    bottom = float(np.interp(stroke_mm, used, trv)) if used[-1] >= stroke_mm else None
+    avail = stroke_mm if damper_extended_mm is None else float(m.spring_length_mm[0] - (damper_extended_mm - stroke_mm))
+    bottom = float(np.interp(avail, used, trv)) if used[-1] >= avail else None
     return {"ok": True, "transmission_min_deg": float(np.nanmin(ta)), "transmission_max_deg": float(np.nanmax(ta)),
             "mr_min": float(np.nanmin(mr)), "mr_max": float(np.nanmax(mr)), "monotonic": mono,
             "toggle_margin_deg": float(min(np.nanmin(ta), 180.0 - np.nanmax(ta))),
             "all_steps_solved": bool(np.all(np.isfinite(mr))),
-            "stroke_used_mm": float(used[-1]), "damper_bottoms_at_mm": bottom}
+            "stroke_used_mm": float(used[-1]), "stroke_available_mm": avail, "damper_bottoms_at_mm": bottom}
 
 
 def hand_roll_centre(hp: Hardpoints) -> dict:
@@ -184,7 +199,9 @@ def shock_cases(axle: str, brake_front: float = 0.73, kick: float = 0.3, mass_kg
     braking 1.8 g      the axle's share of a 1.8 g stop at ``brake_front``, on the
                        dynamic vertical load
     curb strike 3 g    three times the static corner load with a longitudinal and
-                       lateral kick of ``kick`` times that load (declared)
+                       lateral kick of ``kick`` times that load (declared), the lateral
+                       kick outboard and, as a second case, inboard: a kerb can push
+                       the wheel either way, and the two load different legs
     curb + braking     the curb strike during the 1.8 g stop (front), or during a
                        1.06 g traction exit (rear)
     Units N; the cases are declared design loads, not measurements.
@@ -195,10 +212,12 @@ def shock_cases(axle: str, brake_front: float = 0.73, kick: float = 0.3, mass_kg
         st = mass_kg * g * wf / 2.0; fx = brake_front * mass_kg * g * 1.8 / 2.0
         fz = td.corner_loads(v, a_lat_g=0.0, a_long_g=1.8)["total"]["FL"]
         return {"braking 1.8 g": WheelLoad(Fx=fx, Fz=fz), "curb strike 3 g + kick": WheelLoad(Fx=kick * 3 * st, Fy=kick * 3 * st, Fz=3 * st),
+                "curb strike 3 g + inboard kick": WheelLoad(Fx=kick * 3 * st, Fy=-kick * 3 * st, Fz=3 * st),
                 "curb strike while braking": WheelLoad(Fx=fx, Fz=3 * st)}
     st = mass_kg * g * (1 - wf) / 2.0; fxb = (1 - brake_front) * mass_kg * g * 1.8 / 2.0
     fzb = td.corner_loads(v, a_lat_g=0.0, a_long_g=1.8)["total"]["RL"]
     return {"braking 1.8 g": WheelLoad(Fx=fxb, Fz=fzb), "curb strike 3 g + kick": WheelLoad(Fx=kick * 3 * st, Fy=kick * 3 * st, Fz=3 * st),
+            "curb strike 3 g + inboard kick": WheelLoad(Fx=kick * 3 * st, Fy=-kick * 3 * st, Fz=3 * st),
             "traction 1.06 g + curb": WheelLoad(Fx=-mass_kg * g * 1.06 / 2.0, Fz=3 * st)}
 
 

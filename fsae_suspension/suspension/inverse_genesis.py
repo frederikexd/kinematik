@@ -406,18 +406,30 @@ COMPLIANCE_PROPERTIES: tuple[str, ...] = (
     "lash_toe_deg",            # toe deadband from declared joint clearance, deg
     "lash_camber_deg",         # camber deadband from declared joint clearance, deg
     "twist_toe_deg",           # toe from a declared global frame twist, deg
+    "compliance_toe_braking_deg",  # toe change under the declared braking case (elasto_braking), deg
 )
 
 #: steering properties: need a SteerEffort declared on SolvedPropertyBounds
 _STEER_PROPERTIES = frozenset({"mech_trail_mm", "steer_ratio_min", "steer_ratio",
-                               "steer_effort_margin", "lock_sw_deg"})
+                               "steer_effort_margin", "lock_sw_deg",
+                               "joint_swing_lock_deg", "joint_misalignment_lock_deg",
+                               "ackermann_lock_pct"})
 #: every name a PropertyBound may carry
 #: properties that need a SteerEffort declared (like compliance needs elasto)
 STEER_PROPERTIES: tuple[str, ...] = ("steer_ratio_min", "steer_ratio",
-                                     "steer_effort_margin", "lock_sw_deg")
+                                     "steer_effort_margin", "lock_sw_deg",
+                                     "joint_swing_lock_deg", "ackermann_lock_pct",
+                                     "joint_misalignment_lock_deg")
+
+#: vehicle-level walls (genesis_walls): brake bias against the tire, link
+#: strength under the shock cases, rocker bearings; each needs its spec
+VEHICLE_PROPERTIES: tuple[str, ...] = ("brake_decel_g", "link_fos_min",
+                                       "rocker_bearing_sf")
+_VEHICLE_SPEC = {"brake_decel_g": "brake", "link_fos_min": "structure",
+                 "rocker_bearing_sf": "bearing"}
 
 BOUNDABLE_PROPERTIES: tuple[str, ...] = (SOLVED_PROPERTIES + COMPLIANCE_PROPERTIES
-                                         + STEER_PROPERTIES)
+                                         + STEER_PROPERTIES + VEHICLE_PROPERTIES)
 
 _PROPERTY_LABELS = {
     "anti_dive_pct":          "anti-dive, front (%)",
@@ -435,11 +447,18 @@ _PROPERTY_LABELS = {
     "lash_toe_deg":           "joint-lash toe deadband (deg)",
     "lash_camber_deg":        "joint-lash camber deadband (deg)",
     "twist_toe_deg":          "frame-twist toe (deg)",
+    "compliance_toe_braking_deg": "compliance steer in the declared braking case (deg)",
     "mech_trail_mm":          "mechanical trail at the ground (mm)",
     "steer_ratio_min":        "steering ratio the effort limit needs (-)",
     "steer_ratio":            "kinematic steering ratio about centre (-)",
     "steer_effort_margin":    "kinematic ratio minus the ratio effort needs (-)",
     "lock_sw_deg":            "steering-wheel angle to reach lock (deg)",
+    "joint_swing_lock_deg":   "worst joint swing over travel at the declared lock (deg)",
+    "joint_misalignment_lock_deg": "worst joint misalignment over travel at the declared lock, bolt axes declared (deg)",
+    "ackermann_lock_pct":     "Ackermann at the declared lock (%)",
+    "brake_decel_g":          "straight-line deceleration at the declared bias (g)",
+    "link_fos_min":           "lowest link buckling/yield factor under the shock cases (-)",
+    "rocker_bearing_sf":      "rocker bearing static safety factor (-)",
 }
 
 #: properties that need the (more expensive) side-view path slope
@@ -547,7 +566,8 @@ def properties_of(hp: Hardpoints, ctx: "SolvedPropertyBounds",
         if "mech_trail_mm" in want:
             out["mech_trail_mm"] = trail
         need = want & {"steer_ratio_min", "steer_ratio", "steer_effort_margin",
-                       "lock_sw_deg"}
+                       "lock_sw_deg", "joint_swing_lock_deg",
+                       "joint_misalignment_lock_deg", "ackermann_lock_pct"}
         if need:
             se = getattr(ctx, "steer_effort", None)
             if se is None or not np.isfinite(trail):
@@ -564,8 +584,54 @@ def properties_of(hp: Hardpoints, ctx: "SolvedPropertyBounds",
                     out["steer_ratio"] = rk
                 if "steer_effort_margin" in want:
                     out["steer_effort_margin"] = rk - rmin
+            _sw = []
+
+            def _lock_sw():                    # solved once per call: lock, swing and misalignment share it
+                if not _sw:
+                    _sw.append(se.lock_sw_deg(hp))
+                return _sw[0]
             if "lock_sw_deg" in want:
-                out["lock_sw_deg"] = se.lock_sw_deg(hp)
+                out["lock_sw_deg"] = _lock_sw()
+            if "joint_swing_lock_deg" in want:
+                # every joint over the travel range with the rack at the
+                # travel that reaches the declared road lock: what the rod
+                # ends must be rated for at the hairpin
+                sw = _lock_sw()
+                if not np.isfinite(sw):
+                    return None
+                try:
+                    js = joint_swing(hp, (lo, hi), n,
+                                     sw * se.rack_c_mm_per_rev / 360.0)
+                except Exception:
+                    return None
+                out["joint_swing_lock_deg"] = float(js["_worst"][1])
+            if "joint_misalignment_lock_deg" in want:
+                # the rotation the bearings actually take up, with the bolt
+                # axes of joint_misalignment, at the rack that reaches lock
+                sw = _lock_sw()
+                if not np.isfinite(sw):
+                    return None
+                try:
+                    jm = joint_misalignment(hp, (lo, hi), n,
+                                            sw * se.rack_c_mm_per_rev / 360.0)
+                except Exception:
+                    return None
+                out["joint_misalignment_lock_deg"] = float(jm["_worst"][1])
+            if "ackermann_lock_pct" in want:
+                # inner/outer steer of the mirrored axle where the inner wheel
+                # reaches the declared lock (dynamic_ackermann.lock_report)
+                from .dynamic_ackermann import lock_report
+                try:
+                    lr = lock_report(hp, se.rack_c_mm_per_rev, se.lock_road_wheel_deg,
+                                     wheelbase_mm=ctx.wheelbase_mm,
+                                     kingpin_track_mm=ctx.track_mm,
+                                     rack_max_mm=se.rack_travel_max_mm,
+                                     lock_basis=se.lock_basis)
+                except Exception:
+                    return None
+                if not lr.get("reachable"):
+                    return None
+                out["ackermann_lock_pct"] = float(lr["ackermann_pct_lo_and_lock"][1])
     if "kpi_deg" in want:
         out["kpi_deg"] = float(s0.kpi)
     if "scrub_static_mm" in want:
@@ -602,7 +668,7 @@ def properties_of(hp: Hardpoints, ctx: "SolvedPropertyBounds",
             # not evaluable without a load case; a bound on one cannot be
             # declared without it (SolvedPropertyBounds refuses), so skipping
             # here only affects explicit ``only=`` requests
-            return out
+            want = want - _COMPLIANCE_PROPERTIES
         from . import elastokinematics as _ek
         loaded = {f"compliance_{c}_deg" for c in ("camber", "toe", "caster", "kpi")}
         loaded.add("member_force_ratio")
@@ -636,11 +702,32 @@ def properties_of(hp: Hardpoints, ctx: "SolvedPropertyBounds",
                 out["lash_toe_deg"] = db["toe"]
             if "lash_camber_deg" in want:
                 out["lash_camber_deg"] = db["camber"]
+        if "compliance_toe_braking_deg" in want:
+            bspec = getattr(ctx, "elasto_braking", None)
+            try:
+                rb = _ek.solve_elastokinematic(hp, bspec, jacobian=False)
+            except Exception:
+                return None
+            if not rb.converged:
+                return None
+            out["compliance_toe_braking_deg"] = float(rb.change["toe"])
         if "twist_toe_deg" in want:
             try:
                 out["twist_toe_deg"] = float(spec.twist.toe_deg(hp))
             except Exception:
                 return None
+    if "brake_decel_g" in want:
+        out["brake_decel_g"] = float(ctx.brake.decel_g(ctx.brake_bias_front))
+    if "link_fos_min" in want:
+        try:
+            out["link_fos_min"] = ctx.structure.fos_min(hp)
+        except Exception:
+            return None
+    if "rocker_bearing_sf" in want:
+        try:
+            out["rocker_bearing_sf"] = ctx.bearing.s0_min(hp)
+        except Exception:
+            return None
     return out
 
 
@@ -681,6 +768,15 @@ class SteerEffort:
     lock_road_wheel_deg: float = 20.0
     #: rack travel (mm) beyond which the linkage is taken as unable to steer
     rack_travel_max_mm: float = 60.0
+    #: which steer the declared lock applies to: "inner" (the wheel steering
+    #: toward the turn) or "mean" (the mean of inner and outer, the bicycle
+    #: angle that sets the path radius when the two tires slip equally at low
+    #: speed). Written to the manifest only when changed.
+    lock_basis: str = "inner"
+
+    def __post_init__(self):
+        if self.lock_basis not in ("inner", "mean"):
+            raise ValueError("SteerEffort.lock_basis must be 'inner' or 'mean'.")
 
     def _toe_at(self, hp, rack_mm: float) -> float:
         from .kinematics import SuspensionKinematics
@@ -701,27 +797,38 @@ class SteerEffort:
         return (360.0 / self.rack_c_mm_per_rev) / abs(dtoe)
 
     def lock_sw_deg(self, hp) -> float:
-        """Steering-wheel angle (deg) that puts the inner wheel at the lock angle.
+        """Steering-wheel angle (deg) at which the declared lock is reached.
 
-        The inner wheel is the one steering toward the turn, which for this
-        right-side corner is the rack direction that makes toe grow; the rack
-        travel reaching ``lock_road_wheel_deg`` is found by bisection on the
-        solved linkage, and converted to wheel angle through the c-factor.
-        Returns inf when the linkage cannot reach it within the rack travel.
+        With ``lock_basis="inner"`` the lock is read on the inner wheel, the one
+        steering toward the turn, which for this right-side corner is the rack
+        direction that makes toe grow; with ``"mean"`` it is read on the mean of
+        inner and outer steer, the outer wheel being this corner at the opposite
+        rack travel (a left-right symmetric car). The rack travel reaching
+        ``lock_road_wheel_deg`` is found by bisection on the solved linkage, and
+        converted to wheel angle through the c-factor. Returns inf when the
+        linkage cannot reach it within the rack travel.
         """
         t0 = self._toe_at(hp, 0.0)
         sgn = 1.0 if self._toe_at(hp, 1.0) > t0 else -1.0
         target = abs(self.lock_road_wheel_deg)
+
+        def _reach_at(x):
+            inner = abs(self._toe_at(hp, sgn * x) - t0)
+            if self.lock_basis == "mean":
+                # the outer wheel is the mirrored left corner: this corner at -rack
+                return 0.5 * (inner + abs(self._toe_at(hp, -sgn * x) - t0))
+            return inner
+
         lo, hi = 0.0, float(self.rack_travel_max_mm)
         try:
-            if abs(self._toe_at(hp, sgn * hi) - t0) < target:
+            if _reach_at(hi) < target:
                 return float("inf")
         except Exception:
             return float("inf")
         for _ in range(40):
             mid = 0.5 * (lo + hi)
             try:
-                reach = abs(self._toe_at(hp, sgn * mid) - t0)
+                reach = _reach_at(mid)
             except Exception:
                 reach = 0.0
             lo, hi = (mid, hi) if reach < target else (lo, mid)
@@ -740,7 +847,7 @@ class SteerEffort:
         d = {"fz_outer_n": self.fz_outer_n, "fz_inner_n": self.fz_inner_n,
              "effort_limit_nm": self.effort_limit_nm}
         defaults = {f.name: f.default for f in _dcfields(self)}
-        for key in ("rack_c_mm_per_rev", "lock_road_wheel_deg", "rack_travel_max_mm"):
+        for key in ("rack_c_mm_per_rev", "lock_road_wheel_deg", "rack_travel_max_mm", "lock_basis"):
             if getattr(self, key) != defaults[key]:      # written only when changed
                 d[key] = getattr(self, key)
         if self.t0_outer_mm is not None:
@@ -774,6 +881,15 @@ class SolvedPropertyBounds:
     #: load case and pickup stiffness for the compliance_* properties
     #: (elastokinematics.ElastoSpec); required only when one is bounded
     elasto: object = None
+    #: a second load case for the compliance_toe_braking_deg property (an ElastoSpec carrying the braking load, the
+    #: same stiffness and members as ``elasto``); required only when that property is bounded
+    elasto_braking: object = None
+    #: vehicle-level walls (genesis_walls); each required only when bounded:
+    #: BrakeDecel for brake_decel_g, LinkStructure for link_fos_min,
+    #: RockerBearingWall for rocker_bearing_sf
+    brake: object = None
+    structure: object = None
+    bearing: object = None
 
     def __post_init__(self):
         self.bounds = list(self.bounds)
@@ -787,6 +903,9 @@ class SolvedPropertyBounds:
                              "needs an elastokinematic spec: pass "
                              "elasto=ElastoSpec(...).")
         props = {b.prop for b in self.bounds}
+        if "compliance_toe_braking_deg" in props and getattr(self, "elasto_braking", None) is None:
+            raise ValueError("A compliance_toe_braking_deg bound needs elasto_braking=ElastoSpec(...) "
+                             "carrying the braking load.")
         if props & set(STEER_PROPERTIES) and getattr(self, "steer_effort", None) is None:
             raise ValueError("A steer_ratio_min bound needs steer_effort="
                              "SteerEffort(...): the loads and the effort limit.")
@@ -799,6 +918,11 @@ class SolvedPropertyBounds:
                     and getattr(self.elasto, "twist", None) is None):
                 raise ValueError("A twist_toe_deg bound needs ElastoSpec.twist "
                                  "(a FrameTwist).")
+        for b in self.bounds:
+            spec = _VEHICLE_SPEC.get(b.prop)
+            if spec and getattr(self, spec, None) is None:
+                raise ValueError(f"A {b.prop} bound needs {spec}=... "
+                                 "(genesis_walls): declare what it is checked against.")
         for name in ("cg_height_mm", "wheelbase_mm", "track_mm"):
             if float(getattr(self, name)) <= 0.0:
                 raise ValueError(f"SolvedPropertyBounds.{name} must be > 0.")
@@ -897,8 +1021,9 @@ def joint_swing(hp: Hardpoints, travel_mm: tuple[float, float] = (-25.0, 25.0),
     """Angular swing (deg) of every link at both of its joints over travel and lock.
 
     A spherical bearing or rod end is installed at some angle and then swings
-    as the suspension moves; the swing is what consumes its misalignment
-    capacity, and a joint that runs out of it is loaded in bending. The swing
+    as the suspension moves. The swing counts rotation about the bolt too,
+    which the joint allows freely, so it bounds the misalignment from above;
+    ``joint_misalignment`` counts only the tilt against declared bolt axes. The swing
     is measured in the frame the housing is fixed to: the chassis for the
     inboard joint, and the upright for the outboard one. The upright is a
     rigid body carrying the three outboard pickups, so its rotation at each
@@ -943,6 +1068,71 @@ def joint_swing(hp: Hardpoints, travel_mm: tuple[float, float] = (-25.0, 25.0),
                         out[key] = a
                     if a > worst[1]:
                         worst = (key, a, where)
+    out["_worst"] = worst
+    return out
+
+
+def joint_misalignment(hp: Hardpoints, travel_mm: tuple[float, float] = (-25.0, 25.0),
+                       n_travel: int = 5, rack_travel_mm: float = 0.0) -> dict:
+    """Misalignment (deg) each spherical joint takes up over travel and lock, bolt axes declared.
+
+    ``joint_swing`` measures the change of a link's direction in its housing's
+    frame, which counts rotation about the bolt; a spherical bearing or rod end
+    turns about its bolt freely, so that is an upper bound. Here the bolt axes
+    are declared and only the tilt of the bolt against the bore is counted:
+
+    * outboard ball joints (upper, lower): bolt fixed in the upright along the
+      kingpin axis, bore in the wishbone, an A-arm whose rotation is fixed by
+      its two inner pivots; misalignment is the angle between the bolt carried
+      by the upright and the bore carried by the arm (both Kabsch-recovered);
+    * inboard wishbone joints: bolts along the A-arm pivot axis, about which
+      the arm turns, so they take up no misalignment by construction;
+    * tie rod (a two-force member, free to spin about its axis): rod ends
+      whose bolts lie along the kingpin axis at the steering arm (fixed in
+      the upright) and along chassis z at the rack, each set normal to the
+      rod at ride height; misalignment is the angle between the bolt and the
+      plane normal to the rod.
+
+    Returns {"upper_ball", "lower_ball", "tie_rod_outer", "tie_rod_inner":
+    deg, "_worst": (joint, deg, where)}.
+    """
+    def _unit(v):
+        v = np.asarray(v, float)
+        return v / np.linalg.norm(v)
+
+    racks = [0.0] + ([-abs(rack_travel_mm), abs(rack_travel_mm)] if rack_travel_mm else [])
+    s0 = SuspensionKinematics(hp).solve_at_travel(0.0)
+    up0 = np.array([s0.upper_outer, s0.lower_outer, s0.tie_rod_outer], float)
+    kp = _unit(np.subtract(s0.upper_outer, s0.lower_outer))
+    arms = {"upper_ball": ("upper_front_inner", "upper_rear_inner", "upper_outer"),
+            "lower_ball": ("lower_front_inner", "lower_rear_inner", "lower_outer")}
+    a0 = {k: np.array([getattr(hp, i), getattr(hp, j), getattr(s0, o)], float)
+          for k, (i, j, o) in arms.items()}
+    d0 = _unit(np.subtract(s0.tie_rod_outer, hp.tie_rod_inner))
+    p_out = _unit(kp - (kp @ d0) * d0)
+    z = np.array([0.0, 0.0, 1.0])
+    p_in = _unit(z - (z @ d0) * d0)
+    out = {"upper_ball": 0.0, "lower_ball": 0.0, "tie_rod_outer": 0.0, "tie_rod_inner": 0.0}
+    worst = ("", 0.0, "")
+    for r in racks:
+        pd = {"tie_rod_inner": np.array([0.0, r, 0.0])} if r else None
+        h = hp if not r else _perturbed(hp, pd)
+        for s in SuspensionKinematics(hp, pickup_deltas=pd).sweep(
+                travel_min=travel_mm[0], travel_max=travel_mm[1], n=n_travel):
+            Ru = _kabsch(up0, np.array([s.upper_outer, s.lower_outer, s.tie_rod_outer], float))
+            where = f"{s.travel:+.1f} mm travel" + (f", rack {r:+g} mm" if r else "")
+            vals = {}
+            for k, (i, j, o) in arms.items():
+                Ra = _kabsch(a0[k], np.array([getattr(hp, i), getattr(hp, j), getattr(s, o)], float))
+                vals[k] = float(np.degrees(np.arccos(np.clip((Ru @ kp) @ (Ra @ kp), -1.0, 1.0))))
+            d = _unit(np.subtract(s.tie_rod_outer, h.tie_rod_inner))
+            vals["tie_rod_outer"] = float(np.degrees(np.arcsin(min(1.0, abs((Ru @ p_out) @ d)))))
+            vals["tie_rod_inner"] = float(np.degrees(np.arcsin(min(1.0, abs(p_in @ d)))))
+            for k, a in vals.items():
+                if a > out[k]:
+                    out[k] = a
+                if a > worst[1]:
+                    worst = (k, a, where)
     out["_worst"] = worst
     return out
 
@@ -1827,6 +2017,8 @@ class GenesisResult:
     warnings: list[str]
     #: the bounds the search enforced, echoed for the report and the manifest
     property_bounds: SolvedPropertyBounds | None = None
+    #: the declared start search's report (genesis_seed.seed_search), when a manifest ran one before the search
+    start_search: dict | None = None
     #: the wheel envelope the search enforced, echoed for report and manifest
     wheel_envelope: WheelEnvelope | None = None
 

@@ -163,3 +163,50 @@ def kinematic_split(hp: Hardpoints, rack_mm: float) -> dict:
         inner, outer = -dL, -dR
     return {"inner_deg": float(inner), "outer_deg": float(outer),
             "difference_deg": float(inner - outer)}
+
+
+def lock_report(hp: Hardpoints, rack_c_mm_per_rev: float, lock_road_wheel_deg: float,
+                wheelbase_mm: float = 1630.0, kingpin_track_mm: float = 1210.0,
+                rack_lo_mm: float = 5.0, rack_max_mm: float = 60.0,
+                lock_basis: str = "inner") -> dict:
+    """Steer split, Ackermann and camber of a mirrored front axle at its lock.
+
+    The lock rack is the rack travel at which the inner wheel's steer (or, with
+    ``lock_basis="mean"``, the mean of inner and outer steer, the bicycle angle
+    that sets the low-speed path), read from kinematic_split, reaches
+    ``lock_road_wheel_deg`` (bisection). Ackermann
+    is ackermann_pct of the (inner, outer) pair at ``rack_lo_mm`` and at lock,
+    against geometric Ackermann for the wheelbase and kingpin track. Camber at
+    lock is the solved camber of the inner wheel (the right corner at the rack
+    that steers it toward the turn) and of the outer wheel (the right corner
+    at the opposite rack, which is the mirrored left wheel). Degrees and mm.
+    """
+    if lock_basis not in ("inner", "mean"):
+        raise ValueError("lock_basis must be 'inner' or 'mean'.")
+
+    def _reach(r):
+        s = kinematic_split(hp, r)
+        return s["inner_deg"] if lock_basis == "inner" else 0.5 * (s["inner_deg"] + s["outer_deg"])
+
+    lo, hi = 0.0, float(rack_max_mm)
+    if _reach(hi) < lock_road_wheel_deg:
+        return {"reachable": False}
+    for _ in range(50):
+        mid = 0.5 * (lo + hi)
+        lo, hi = (mid, hi) if _reach(mid) < lock_road_wheel_deg else (lo, mid)
+    x = hi
+    s_lo, s_lock = kinematic_split(hp, rack_lo_mm), kinematic_split(hp, x)
+    ack = [ackermann_pct(s["inner_deg"], s["outer_deg"], wheelbase_mm, kingpin_track_mm)
+           for s in (s_lo, s_lock)]
+
+    def _st(r):
+        return SuspensionKinematics(hp, pickup_deltas={
+            "tie_rod_inner": np.array([0.0, r, 0.0])}).solve_at_travel(0.0)
+    t0 = SuspensionKinematics(hp).solve_at_travel(0.0).toe
+    sgn = 1.0 if _st(1.0).toe > t0 else -1.0
+    return {"reachable": True, "rack_at_lock_mm": x, "wheel_lock_deg": 360.0 * x / rack_c_mm_per_rev,
+            "inner_deg": s_lock["inner_deg"], "outer_deg": s_lock["outer_deg"],
+            "mean_deg": 0.5 * (s_lock["inner_deg"] + s_lock["outer_deg"]),
+            "ackermann_pct_lo_and_lock": ack,
+            "camber_at_lock_outside_deg": float(_st(-sgn * x).camber),
+            "camber_at_lock_inside_deg": float(_st(sgn * x).camber)}

@@ -40,13 +40,14 @@ G = 9.81
 TIRES = ("FL", "FR", "RL", "RR")
 
 
-def _fy_combined(tire, alpha_deg: float, fz: float, fx: float, kx: float, gamma: float) -> float:
+def _fy_combined(tire, alpha_deg: float, fz: float, fx: float, kx: float, gamma: float, mu: float | None = None) -> float:
     """Lateral force magnitude (N) at slip angle alpha (deg), reduced by the friction ellipse for Fx.
 
     The tire model follows the SAE sign (negative Fy for positive slip); the
-    magnitude is used here and the sign restored by the caller.
+    magnitude is used here and the sign restored by the caller. ``mu`` is the
+    tire's peak mu at this load, computed here when not given.
     """
-    mu = tire.mu_peak(fz, gamma)
+    mu = tire.mu_peak(fz, gamma) if mu is None else mu
     r = min(1.0, abs(fx) / (kx * mu * fz)) if fz > 0 else 1.0
     return abs(float(tire.fy(math.radians(alpha_deg), fz, gamma))) * math.sqrt(max(0.0, 1.0 - r * r))
 
@@ -57,8 +58,9 @@ def _axle_split(tire, fy_req: float, fz: tuple, fx: tuple, kx: float, gamma: flo
     Returns None when the axle cannot carry ``fy_req`` at any slip angle.
     """
     sgn = 1.0 if fy_req >= 0 else -1.0; need = abs(fy_req)
-    tot = lambda a: sum(_fy_combined(tire, a, z, x, kx, gamma) for z, x in zip(fz, fx))
-    grid = np.linspace(0.0, 20.0, 201); vals = [tot(a) for a in grid]
+    mus = [tire.mu_peak(z, gamma) for z in fz]                       # peak mu depends on load only: once per tire
+    tot = lambda a: sum(_fy_combined(tire, a, z, x, kx, gamma, m) for z, x, m in zip(fz, fx, mus))
+    grid = np.linspace(0.0, 30.0, 301); vals = [tot(a) for a in grid]          # 0.1 deg; a slick can peak past 20 deg
     k = int(np.argmax(vals))
     if vals[k] < need: return None
     lo, hi = 0.0, float(grid[k])
@@ -67,7 +69,7 @@ def _axle_split(tire, fy_req: float, fz: tuple, fx: tuple, kx: float, gamma: flo
         if tot(mid) < need: lo = mid
         else: hi = mid
     a = 0.5 * (lo + hi)
-    return sgn * a, [sgn * _fy_combined(tire, a, z, x, kx, gamma) for z, x in zip(fz, fx)]
+    return sgn * a, [sgn * _fy_combined(tire, a, z, x, kx, gamma, m) for z, x, m in zip(fz, fx, mus)]
 
 
 def tire_state(ax_g: float, ay_g: float, veh: Vehicle | None = None, tire=None, brake_front: float = 0.60,
@@ -106,6 +108,13 @@ def tire_state(ax_g: float, ay_g: float, veh: Vehicle | None = None, tire=None, 
     return out
 
 
+#: In pure cornering a tire past its peak slip has u below 1 again, so the inside tires sit at u = 1 over a range of
+#: lateral acceleration and the limit there is where an axle can no longer carry its share. Peak mu comes from a
+#: 0.25 deg slip sweep, which reads up to about 5e-5 of itself below the true peak (declared set, 100 to 2200 N), so a
+#: tire at its peak can read u slightly above 1; this tolerance keeps that from ending the search early.
+U_TOL = 1.0 + 1e-4
+
+
 def limit_envelope(n_dir: int = 72, veh: Vehicle | None = None, tire=None, **kw) -> list[dict]:
     """The vehicle's quasi-steady g-g limit: the largest acceleration in each
     direction before the first tire reaches the edge of its ellipse, with every
@@ -118,7 +127,7 @@ def limit_envelope(n_dir: int = 72, veh: Vehicle | None = None, tire=None, **kw)
         lo, hi = 0.0, 2.5
         for _ in range(40):
             mid = 0.5 * (lo + hi); s = tire_state(mid * math.cos(th), mid * math.sin(th), veh, tire, **kw)
-            if s["feasible"] and s["vehicle_u"] <= 1.0: lo = mid
+            if s["feasible"] and s["vehicle_u"] <= U_TOL: lo = mid
             else: hi = mid
         s = tire_state(lo * math.cos(th), lo * math.sin(th), veh, tire, **kw)
         rows.append({"theta_deg": math.degrees(th), "a_g": lo, "ax_g": lo * math.cos(th), "ay_g": lo * math.sin(th),

@@ -19,7 +19,20 @@ from suspension.halfshaft import goodman_min_diameter
 
 MAN = Path(__file__).resolve().parents[1] / "manifests"
 TABLE_S5_1 = {"front_final": "5220385cbcd2", "front_steering_walls": "bbc4d8297765", "front_wheel_lock": "9e9257a82fe5",
-              "rear_final": "aa9928e583fe", "rear_antilift": "24bc81a7538c", "rear_v11": "71b6c9fe45bd"}
+              "rear_final": "aa9928e583fe", "rear_antilift": "24bc81a7538c", "rear_v11": "71b6c9fe45bd",
+              "front_v11_25deg": "ae5cef6d5757", "front_v11_29deg": "2673492a63c5",
+              "front_v11_29deg_walls": "4f088b0e4609",
+              "front_v11_25deg_walls": "5e0ab207749b",
+              "front_v11_hairpin_walls": "7f1436d93a63",
+              "front_v11_curves_only": "c320eac46d0f",
+              "rear_v11_walls": "f567eaf8bce3",
+              "front_v11_29deg_b60_brake": "113a757c3ce0",
+              "front_v11_29deg_b73_6001": "115b45a62748",
+              "front_v11_29deg_b73_tube035": "af71aa072573",
+              "front_v11_final": "2e7072ce2268",
+              "rear_v11_final": "8818c4b890d1",
+              "front_v11_from_85mm": "3bcacea5c507",
+              "front_v11_from_delivered": "3079657a19c5", "front_v11_joints50": "7d226fcc1090"}
 
 
 def _manifest(name):
@@ -35,7 +48,8 @@ def test_published_manifests_carry_the_table_s5_1_hashes(name, prefix):
     assert _manifest(name).inputs_sha256.startswith(prefix)
 
 
-@pytest.mark.parametrize("name,s0,c30,c60", [("front_steering_walls", 0.89, 5.3, 4.6), ("rear_final", 1.07, 4.4, 4.1)])
+# the delivered and released corners with their pushrods on the lower wishbone, on the corrected statics (S14)
+@pytest.mark.parametrize("name,s0,c30,c60", [("front_steering_walls", 0.60, 7.9, 6.9), ("rear_final", 0.76, 6.2, 5.8)])
 def test_rocker_bearings_on_the_synthesised_actuation(name, s0, c30, c60):
     res = act.synthesize_actuation(_winner(name)); hp = getattr(res, "hp", None) or getattr(res, "hardpoints", None)
     cases = gr.vehicle_load_cases()
@@ -46,9 +60,19 @@ def test_rocker_bearings_on_the_synthesised_actuation(name, s0, c30, c60):
 
 
 def test_front_lower_fore_bracket_closure():
-    assert ga.bracket_fos(4799, 27.9, 30, 5)["fos"] == pytest.approx(0.67, abs=0.005)       # steady case, as reported
-    assert ga.bracket_fos(11183, 27.9, 30, 5)["fos"] == pytest.approx(0.29, abs=0.005)      # 1.8 g stop at 73% bias
-    assert ga.bracket_fos(11183, 13.0, 50, 6.35)["fos"] == pytest.approx(1.66, abs=0.005)   # moved to its node
+    # the delivered front's lower-front leg on the corrected statics: 8.66 kN in steady 1.5 g braking, 10.51 kN in the
+    # curb strike while braking at 73% bias
+    from suspension import genesis_walls as gw
+    from suspension.kinematics import SuspensionKinematics
+    from suspension.loadpath import solve_member_forces
+    hp = _winner("front_steering_walls"); kin = SuspensionKinematics(hp); st = kin.solve_at_travel(0.0)
+    steady = max(solve_member_forces(kin, st, gw._wheel_load(gw._load_dict(c))).forces["LF"]
+                 for c in gr.vehicle_load_cases(axle="front", brake_bias_front=0.73))
+    stop = gw.LinkStructure.from_shock_cases("front", 0.73).margins(hp)["LF"]["worst_n"]
+    assert (round(steady / 1000, 1), round(stop / 1000, 2)) == (8.7, 10.51)
+    assert ga.bracket_fos(steady, 27.9, 30, 5)["fos"] == pytest.approx(0.37, abs=0.005)      # steady case, as built
+    assert ga.bracket_fos(stop, 27.9, 30, 5)["fos"] == pytest.approx(0.31, abs=0.005)        # curb strike while braking
+    assert ga.bracket_fos(stop, 13.0, 50, 6.35)["fos"] == pytest.approx(1.77, abs=0.005)     # moved to its node
 
 
 @pytest.mark.parametrize("kw,d", [({}, 23.2), ({"ke": 0.897}, 24.0), ({"ke": 0.897, "kf": 1.3}, 26.1), ({"ke": 0.897, "kf": 1.5}, 27.4)])
@@ -62,12 +86,15 @@ def test_upright_brake_torque_requirement():
 
 
 def test_front_lower_legs_at_73_percent_bias():
+    # the delivered front, pushrod on the lower wishbone: on the corrected statics the pushrod bends the bare legs, so
+    # yield, not buckling, governs, and upsizing the walls alone does not recover them
     m = rb.member_margins(_winner("front_steering_walls"), rb.shock_cases("front", 0.73), sy_mpa=435.0)
-    assert m["LR"]["fos_buckling"] == pytest.approx(1.28, abs=0.01) and m["LR"]["fos_yield"] == pytest.approx(1.21, abs=0.01)
-    assert m["LF"]["fos_yield"] == pytest.approx(1.63, abs=0.01)
+    assert m["LR"]["fos_buckling"] == pytest.approx(1.22, abs=0.01) and m["LR"]["fos_yield"] == pytest.approx(0.07, abs=0.01)
+    assert m["LF"]["fos_yield"] == pytest.approx(0.32, abs=0.01)
     lr = rb.member_margins(_winner("front_steering_walls"), rb.shock_cases("front", 0.73), wall_mm=1.651, sy_mpa=435.0)["LR"]
     lf = rb.member_margins(_winner("front_steering_walls"), rb.shock_cases("front", 0.73), wall_mm=1.245, sy_mpa=435.0)["LF"]
-    assert lr["fos_buckling"] == pytest.approx(2.05, abs=0.01) and lf["fos_yield"] == pytest.approx(2.23, abs=0.01)
+    assert lr["fos_buckling"] == pytest.approx(1.95, abs=0.01) and lr["fos_yield"] == pytest.approx(0.27, abs=0.01)
+    assert lf["fos_yield"] == pytest.approx(0.42, abs=0.01)
 
 
 def _qc(f_hz, ms=60.1, mu=11.9, zeta=0.3, kappa=0.0):
@@ -215,3 +242,40 @@ def test_hand_derived_pitch_chain():
     dive = dF * (1 - 0.573) / kf; rise = dF * (1 - 0.137) / kr
     assert dive == pytest.approx(10.1, abs=0.05) and rise == pytest.approx(13.9, abs=0.05)
     assert math.degrees(math.atan((dive + rise) / 1630)) == pytest.approx(0.84, abs=0.005)
+
+
+def test_footprint_lengths_and_the_trail_limit():
+    # [29] Tables 3-4: 145 x 71 mm at 525 N and 175 x 78 mm at 881 N (width x length). The lengths fit inside the
+    # chord the measured 100.2 N/mm vertical rate allows on a 228.6 mm radius; the widths could not be lengths.
+    import numpy as np
+    from suspension import steering_feel as sf
+    from suspension.tiremodel import default_tire
+    for fz, w, l in ((525.0, 145.0, 71.0), (881.0, 175.0, 78.0)):
+        d = fz / 100.173
+        chord = 2 * math.sqrt(2 * 228.6 * d - d * d)
+        assert l < chord < w
+    assert sf.brush_trail_mm(1248.0) == pytest.approx(13.9, abs=0.05)
+    t = default_tire()
+    def peak(t0):
+        co = sf.aligning_curve(t, 1248.0, 12.6667, t0_mm=t0); ci = sf.aligning_curve(t, 165.0, 12.6667)
+        a = np.asarray(co["alpha_deg"]); return float((np.asarray(co["M_Nm"]) + np.interp(a, ci["alpha_deg"], ci["M_Nm"])).max())
+    assert peak(19.6) < 10.0 * 120.0 / 25.6 < peak(19.8)          # the t0 limit at the 4.69:1 window edge, 19.7 mm
+    assert peak(78.0 / 6.0) < peak(85.2 / 6.0) < 10.0 * 120.0 / 25.6
+
+
+def test_lower_fore_bracket_bound_and_resolved_load():
+    # bracket_fos puts the whole leg load across both plates (thin axis); resolved along and across the bolt the
+    # final front's node bracket reaches 4.16 and the delivered bracket as built 0.66
+    import numpy as np
+    assert ga.bracket_fos(8736, 13.0, 50, 6.35)["fos"] == pytest.approx(2.13, abs=0.005)
+    def split(name, F, r, w, t):
+        hp = _winner(name)
+        A, B, O = (np.asarray(getattr(hp, p), float) for p in ("lower_front_inner", "lower_rear_inner", "lower_outer"))
+        c = abs(float(((O - A) / np.linalg.norm(O - A)) @ ((B - A) / np.linalg.norm(B - A))))
+        fa, fp = F * c, F * math.sqrt(1 - c * c)
+        s = 1.28 * (fa / 2 * r) / (w * t * t / 6) + 1.28 * (fp / 2 * r) / (t * w * w / 6) + 1.28 * (fp / 2) / (w * t)
+        return math.degrees(math.acos(c)), 460.0 / s
+    ang, fos = split("front_v11_final", 8736.0, 13.0, 50.0, 6.35)
+    assert (round(ang), round(fos, 2)) == (72, 4.16)
+    assert round(split("front_steering_walls", 10506.0, 27.9, 30.0, 5.0)[1], 2) == 0.66
+    assert round(split("front_steering_walls", 10506.0, 13.0, 50.0, 6.35)[1], 2) == 3.69

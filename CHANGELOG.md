@@ -3,6 +3,92 @@
 
 ## Unreleased
 
+**What it changes on the car.** `review_checks.car_gains()` sets the delivered ChassisV10 front against the front to
+build on the same rack, tire, load cases, actuation and 50 kN/mm link ends: braking limit 1.27 to 1.57 g (31.0 to
+25.0 m from 100 km/h), toe-out per wheel in a 1.5 g stop 0.80 to 0.249 deg (brake imbalance held inside the toe band
+20% to 64%), 137 to 120 deg of wheel at the hairpin, Ackermann force loss 2.8 to 0.8% at 1.5 g. Paper section 3.4.
+
+**Every front check repeated on the front to build.** `scripts/review_checks.py` gains `front_to_build()`: Table 4's
+rows, the anti-dive friction threshold, the steering margin, full lock, the alternative upright, the hairpin
+Ackermann cost and the half-scale model predictions (`half_scale()`, defined at full scale with a declared model
+tolerance) for front_v11_final and front_v11_joints50. On the front to build the 2.0 mm alternative upright would
+break the wheel clearance, so its alternative is 0.5 mm; its 144% Ackermann at lock costs 0.8% (1.5 g) to 1.4%
+(1.0 g) of front lateral force at the hairpin. The half-scale predictions printed earlier came from an earlier front
+and are replaced. The node brief names `front_to_build` (front_v11_joints50).
+
+**The final front re-searched with its joints declared.** `scripts/front_with_joints.py` declares every input of
+front_v11_final with 50 kN/mm at every link end in both compliance cases and the start search. From
+front_v11_final, which then breaks only the braking-toe wall, the pattern search reaches every wall in 811
+evaluations (pickups moved 0.5 to 33 mm) and InverseGenesis returns `front_v11_joints50`, RESILIENT at 99.75%:
+toe 0.249 deg in the 1.5 g stop and 0.056 deg in the corner at 50 kN/mm per end. The node brief carries it as the
+front to build unless a pulled test tab and joint measure above 494 kN/mm per end.
+
+**Three checks the walls do not make.** `suspension/compliance_margin.py` puts the joints, tabs and upright arms at
+both ends of every link in series along it (one stiffness per end) and finds the end stiffness each compliance wall
+needs, for any manifest. On the final front the cornering toe wall holds above 30 kN/mm per end; the braking toe
+wall, met with rigid joints, holds only above about 494 kN/mm (0.43 deg at 50 kN/mm), almost all from the
+lower-front leg; the node brief now requires pull tests and a re-search with the measured stiffness.
+`steering_margin.lock_check()` evaluates the steering at full lock (moment arms about the steering axis, weight
+jacking by virtual work): 8.3 N*m at the hairpin. `scripts/yield_full_check.py` re-solves sampled builds: 2000 of
+2000 pass at jig tolerance on both final corners; at hand weld the full solves give 78.0% front and 93.2% rear
+against 80.5% and 94.0% to first order. The 59.7% and 93.3% quoted earlier were those of front_v11_hairpin_walls
+and rear_v11_walls. `scripts/review_checks.py` gathers the three.
+
+**A start that breaks a wall is searched from, for any corner.** `GenesisManifest.start_search` declares the
+pattern search (`genesis_seed.SeedSearch`) as part of a manifest: `run()` first moves the declared hardpoints until
+every wall holds, then runs InverseGenesis from there, and `verify()` checks that a re-run repeats the start
+search's evaluation count, wall result and moves. It enters the inputs hash only when declared, so every earlier
+manifest keeps its hash. `GenesisManifest.restarted()` copies a manifest's targets, boxes, walls, tolerance and
+search settings onto another start. `GenesisManifest.search_start()` gives the hardpoints the search itself started from, which
+every candidate's `shift_vec` is measured from. `genesis_seed.walls_broken()` names the walls a start breaks. In the browser
+studio, Inverse Genesis offers the start search (on by default) whenever the start breaks a wall, records it in the
+manifest and reports its moves; before, such a run ended NO_FIT. Keep-outs, spacings and bolt access now enter the
+pattern search's cost by depth (`SeedSearch.graded_keepouts`, default on), so it can walk out of them; the
+published searches were made with the earlier flat penalty and declare `graded_keepouts: false`. The two searches
+from a failing start (`front_v11_from_85mm`, `front_v11_from_delivered`) are re-recorded with the start search
+declared, so a re-run repeats both stages; their earlier records are in `manifests/superseded`.
+
+**The steering margin for any front manifest.** `suspension/steering_margin.py` takes the loads, effort limit and
+ratio from a manifest's own `SteerEffort` and geometry: `margin()` gives the hand torque, the trail limit and the
+mechanical trail each tire needs at an assumed trail; `offset_check()` re-evaluates every wall and band with the
+spindle moved along x; `offset_for_trail()` finds the offset for a trail. `scripts/steering_margin.py` keeps only this
+car's declarations.
+
+**Re-run checks say what they compare.** `GenesisManifest.verify` is not a byte comparison: coordinates must agree to
+1e-6 mm and fits and yields to 1e-9. Its docstring and the app's re-run message now say so.
+
+**The steering-effort margin and a pre-verified alternative upright.** `scripts/steering_margin.py` states the
+final front's margin on the 10 N*m effort wall at each tire level (declared set; R25B shape at road friction 1.43
+and 1.55; the car tire's belt friction) at the brush-theory trail and at a 25.4 mm (1 in) trail, and re-evaluates
+the final front with the spindle 2.0 mm forward of the kingpin axis (mechanical trail 12.7 to 10.7 mm; caster, kingpin and every
+pickup unchanged): every wall and band holds and a 25.4 mm trail stays under 10 N*m on the declared set and at road
+friction 1.43. The 3.1 mm offset the R25B shape at 1.55 would need breaks the wheel-clearance wall, and the script
+reports it. The node brief carries the alternative upright.
+
+**The search from a failing start.** `scripts/design_from_delivered.py` declares every input of the final
+front with a different start (the delivered front, or the 85 mm-base ChassisV11 candidate) and runs the two
+recorded stages: `genesis_seed` until every wall holds, then InverseGenesis. From the 85 mm candidate, which fails
+the link and braking-toe walls, it reaches a front that meets every wall, RESILIENT at 100%
+(`front_v11_from_85mm`); from the delivered front it stalls at 1.30 times the band and InverseGenesis returns
+NO_FIT (`front_v11_from_delivered`): the search is local. `SeedSearch.walls_only` stops the first stage as soon
+as the walls hold, wherever the curves are. The lock solve is shared between the lock, swing and misalignment
+properties (the same numbers, computed once).
+
+**A damper-length wall and a braking compliance wall.** The actuation synthesis
+can now be told which damper it is placing (`ActuationTargets.damper_extended_mm`
+with `stroke_mm`): the spring may not top out before full droop and must stay
+inside the usable stroke at full bump. Left unset, targets and residuals are as
+before. InverseGenesis gains `compliance_toe_braking_deg`, the elastokinematic
+toe under a second declared load case (`SolvedPropertyBounds.elasto_braking`),
+written to a manifest only when declared so earlier hashes stand.
+`robustness.overtravel_check(..., damper_extended_mm=)` counts the damper's
+margin to top-out at full droop instead of treating the whole stroke as usable.
+`scripts/final_corners_v3.py` declares the final corners with both walls (an
+Öhlins TTX25 MkII FSAE, 200 mm / 57 mm; front braking toe within ±0.25 deg,
+reached by moving the lower-front pickup along its own pivot axis, which leaves
+every kinematic curve unchanged). The ride-frequency default is now the derived
+2.6 Hz front set-up.
+
 **Solved-property bounds are enforced inside the InverseGenesis search.** An
 inverse solver is indifferent to any property it is not told about: the four
 curve channels (camber, toe, roll-centre height, scrub) never carried

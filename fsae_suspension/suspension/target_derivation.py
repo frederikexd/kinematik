@@ -54,7 +54,7 @@ class Vehicle:
     sprung_corner_front_kg: float = 60.1
     sprung_corner_rear_kg: float = 66.1
     roll_gradient_deg_per_g: float = 0.78
-    ride_front_hz: float = 2.8
+    ride_front_hz: float = 2.6     # the jounce-budget floor with a 10% grip allowance (section 3.1), rounded
     ride_rear_hz: float = 3.0
     #: tire vertical rate (N/mm) in series with the suspension; None keeps the
     #: tires rigid, which is how every table of the paper was computed. With a
@@ -440,17 +440,35 @@ def steer_warp(hp, rack_mm: float, k_roll_front_nm_per_deg: float,
     carries dF = phi K_f K_r / (K_f + K_r) / t (front at t_f, rear at t_r).
     The common part lifts the front evenly and changes no corner weight on a
     rigid body. The left wheel at +rack is the mirrored right wheel at -rack.
+    When the pushrod rides on the upright it turns with the steering and
+    changes the spring length at fixed ride height; that compression, as wheel
+    travel (over the motion ratio), adds to the patch's height change.
     """
     from .kinematics import SuspensionKinematics
 
+    k0 = SuspensionKinematics(hp)
+    act = bool(getattr(k0, "_has_rocker", False)) and k0.motion_ratio_is_real()
+    if act:
+        st0 = k0.solve_at_travel(0.0)
+        L0 = k0.spring_length_at(st0, seed=0.0)[0]
+        mr0 = float(np.interp(0.0, *k0.motion_ratio_curve(-1.0, 1.0, 3)))
+
     def patch_z(r):
-        """Contact-patch height in mm at a rack travel in mm."""
+        """Effective contact-patch height in mm at a rack travel in mm: the patch's own height change less the
+        spring compression the steering puts in (a pushrod on the upright turns with it), as wheel travel."""
         k = SuspensionKinematics(hp, pickup_deltas={
             "tie_rod_inner": np.array([0.0, float(r), 0.0])})
-        return float(k.solve_at_travel(0.0).contact_patch[2])
+        st = k.solve_at_travel(0.0)
+        z = float(st.contact_patch[2])
+        if act:
+            L = k.spring_length_at(st, seed=0.0)[0]
+            return z, -(L0 - L) / mr0              # spring compressed by steering = patch pushed down
+        return z, 0.0
 
-    z0 = patch_z(0.0)
-    dzR, dzL = patch_z(rack_mm) - z0, patch_z(-rack_mm) - z0
+    z0 = patch_z(0.0)[0]
+    (zR, sR), (zL, sL) = patch_z(rack_mm), patch_z(-rack_mm)
+    gR, gL = zR - z0, zL - z0                                # the patch's own height change
+    dzR, dzL = gR + sR, gL + sL
     phi = (dzR - dzL) / track_front_mm                       # rad
     kf = k_roll_front_nm_per_deg * 180.0 / math.pi           # N*m/rad
     kr = k_roll_rear_nm_per_deg * 180.0 / math.pi
@@ -462,7 +480,8 @@ def steer_warp(hp, rack_mm: float, k_roll_front_nm_per_deg: float,
     # outside patch, dropping that corner of the body. A positive moment M
     # therefore loads the FL-RR diagonal when steering left.
     pair = M / (track_front_mm / 1000.0)
-    return {"dz_right_mm": dzR, "dz_left_mm": dzL, "phi_deg": math.degrees(phi),
+    return {"dz_right_mm": dzR, "dz_left_mm": dzL, "patch_dz_right_mm": gR, "patch_dz_left_mm": gL,
+            "spring_dz_right_mm": sR, "spring_dz_left_mm": sL, "phi_deg": math.degrees(phi),
             "left_steer_N": {"FL": pair, "FR": -pair, "RL": -M / (track_rear_mm / 1000.0), "RR": M / (track_rear_mm / 1000.0)},
             "warp_moment_Nm": M, "front_pair_N": M / (track_front_mm / 1000.0),
             "rear_pair_N": M / (track_rear_mm / 1000.0),

@@ -47,13 +47,14 @@ def solved(hp):
 # --------------------------------------------------------------------------- #
 #  Drive torque: traction through an inboard final drive
 # --------------------------------------------------------------------------- #
-def _member_moment_about(mf, point):
-    """Moment (N*mm) of all member forces on the upright about a point."""
+def _member_moment_about(mf, point, hp):
+    """Moment (N*mm) about a point of every force the chassis puts on the corner: the reaction at each inboard pickup
+    (with the pushrod on a wishbone the legs' pivot reactions need not lie along them) and the pushrod, whose line
+    runs through its outer mount."""
     M = np.zeros(3)
-    for m, T in mf.forces.items():
-        u = np.asarray(mf.axes[m], float)
-        p = np.asarray(mf.outboard[m], float)
-        M += np.cross(p - point, T * u)
+    for k, F in mf.pickup_forces.items():
+        M += np.cross(np.asarray(getattr(hp, k), float) - point, -np.asarray(F, float))
+    M += np.cross(np.asarray(mf.outboard["PR"], float) - point, mf.forces["PR"] * np.asarray(mf.axes["PR"], float))
     return M
 
 
@@ -61,7 +62,7 @@ def test_wheel_centre_force_puts_no_moment_about_the_wheel_centre(solved):
     kin, st = solved
     mf = lp.solve_member_forces(kin, st, lp.WheelLoad(Fx_wc=-1500.0))
     assert mf.residual < 1e-6
-    M = _member_moment_about(mf, np.asarray(st.wheel_center, float))
+    M = _member_moment_about(mf, np.asarray(st.wheel_center, float), kin.hp)
     assert np.linalg.norm(M) < 1e-3 * 1500.0          # N*mm, numerically zero
 
 
@@ -69,7 +70,7 @@ def test_patch_force_puts_the_wheel_radius_moment_through_the_links(solved):
     kin, st = solved
     Fx = -1500.0
     mf = lp.solve_member_forces(kin, st, lp.WheelLoad(Fx=Fx))
-    M = _member_moment_about(mf, np.asarray(st.wheel_center, float))
+    M = _member_moment_about(mf, np.asarray(st.wheel_center, float), kin.hp)
     lever = np.asarray(st.contact_patch, float) - np.asarray(st.wheel_center, float)
     # the links must react the patch force's moment about the wheel centre
     expect = -np.cross(lever, np.array([Fx, 0.0, 0.0]))

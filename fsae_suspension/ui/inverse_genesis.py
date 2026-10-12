@@ -29,7 +29,8 @@ Reproducibility: every run is captured as a GenesisManifest
 (suspension/genesis_repro.py) — geometry at full precision, targets, boxes,
 spacing constraints, keep-outs, tolerance field, seed, sample counts and
 solver constants — downloadable with its recorded outputs, and re-runnable
-from the top of the tab with a byte-for-byte verification.
+from the top of the tab, verified against the recorded outputs (coordinates to
+1e-6 mm, fits and yields to 1e-9).
 
 Session keys used:
     hp               read: the Kinematics editor's geometry (dict)
@@ -43,6 +44,8 @@ Session keys used:
 """
 
 from __future__ import annotations
+
+from dataclasses import asdict
 
 _AXES = ("x", "y", "z")
 
@@ -454,12 +457,25 @@ def _results_panel(st, pd, np, ss, run):
     if run.get("verify") is not None:
         same, diffs = run["verify"]
         if same:
-            st.success("✅ Re-run reproduces the recorded outputs exactly "
-                       "(every candidate's coordinates, fit and yield).")
+            st.success("✅ Re-run reproduces the recorded outputs: every candidate's "
+                       "coordinates to 1e-6 mm, fits and yields to 1e-9"
+                       + (", and the start search's moves" if run.get("result") is not None
+                          and getattr(run["result"], "start_search", None) else "") + ".")
         else:
             st.error("❌ Re-run differs from the recorded outputs.")
         for d in diffs:
             st.caption(d)
+
+    rep = getattr(res, "start_search", None)
+    if rep:
+        moved = ", ".join(f"{k} {round(v, 1)}" for k, v in sorted(rep.get("shift_mm", {}).items(),
+                                                          key=lambda kv: -abs(kv[1]))[:6])
+        msg = (f"Start search: {rep['evaluations']} evaluations; "
+               + ("every wall holds" if rep.get("walls_met", rep.get("walls_hold")) else
+                  "walls still broken: " + ", ".join(rep.get("final_violated") or []))
+               + (f", curves at {round(rep['final_band'], 2)} of their bands" if rep.get("final_band") is not None else "")
+               + (f". Largest moves (mm): {moved}." if moved else "."))
+        (st.info if rep.get("walls_met", rep.get("walls_hold")) else st.warning)(msg)
 
     if res.winner is None:
         st.markdown("## ⚪ NO LEGAL GEOMETRY REACHES THE CURVES")
@@ -631,7 +647,7 @@ def _results_panel(st, pd, np, ss, run):
                 pa = gr.pass_vector(whp, targets, fld, n, man.search.seed,
                                     man.search.step_mm)
                 pb = gr.pass_vector(
-                    ig._shifted(hp, volume, res.best_fit.shift_vec), targets,
+                    ig._shifted(man.search_start(), volume, res.best_fit.shift_vec), targets,
                     fld, n, man.search.seed, man.search.step_mm)
                 if pa is not None and pb is not None:
                     dcb = gr.discordant_builds(pa, pb)
@@ -800,6 +816,12 @@ def _manifest_summary(st, ig, man):
     else:
         lines.append("- **Solved-property bounds:** none — anti-squat, "
                      "migration and caster run free")
+    ssd = getattr(man, "start_search", None)
+    if ssd:
+        lines.append(f"- **Start search (run first):** pattern search, seed {ssd.get('seed')}, "
+                     f"up to {ssd.get('max_evals')} evaluations, steps {ssd.get('step0_mm')} to "
+                     f"{ssd.get('step_min_mm')} mm"
+                     + (", walls only" if ssd.get("walls_only") else ""))
     st.markdown("\n".join(lines))
 
 
@@ -1448,6 +1470,19 @@ def _render_generate():
                                      key="ig_tht"))
         th_v = float(q5.number_input("Linearisation floor", 0.0, 1.0, 0.98,
                                      0.01, key="ig_thv"))
+    from suspension import genesis_seed as gs
+    b1, b2 = st.columns([3, 1])
+    seed_first = b1.checkbox(
+        "If the start breaks a wall, search for a start inside the walls first "
+        "(pattern search), then run the search from there", value=True, key="ig_seed_first",
+        help="The search refuses a start inside a wall and would return NO_FIT. With this on, "
+             "a start that breaks one is first moved, inside the same boxes and one coordinate "
+             "at a time, until every wall holds with the curves near their bands. The step is "
+             "declared in the manifest, so a re-run repeats it; if it cannot reach the walls, "
+             "the result says which ones it could not meet. A start inside every wall is "
+             "searched from directly, as before.")
+    seed_budget = int(b2.number_input("Evaluations", 50, 10000, 1500, 50,
+                                      key="ig_seed_budget", disabled=not seed_first))
     name = st.text_input("Run name", f"{axle}_corner", help=_HELP["ig_name"], key="ig_name")
 
     # A run started here uses the form, never an uploaded manifest. Say so on
@@ -1481,7 +1516,13 @@ def _render_generate():
         except TypeError as e:
             st.error(f"Cannot record this run: {e}")
             return
-        with st.spinner("Reverse gradients pulling the points into the "
+        broken = gs.walls_broken(hp, targets, volume) if seed_first else []
+        if broken:
+            st.info("The start breaks " + ", ".join(broken) + ": searching for a start "
+                    "inside the walls first.")
+            man.start_search = asdict(gs.SeedSearch(max_evals=seed_budget, step_min_mm=0.125))
+        with st.spinner(("Searching for a start inside the walls, then " if broken else "")
+                        + "reverse gradients pulling the points into the "
                         "curves, pricing build yield…"):
             try:
                 res = man.run()
