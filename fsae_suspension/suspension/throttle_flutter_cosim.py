@@ -487,7 +487,7 @@ REPORT BACK
 # --------------------------------------------------------------------------- #
 def extract_flutter_derivative(case: OscillationCase,
                                backend: FlutterSolver | None = None,
-                               workdir: str = "/tmp/kinematik_flutter") -> FlutterDerivative:
+                               workdir: str | None = None) -> FlutterDerivative:
     """Run a backend through write→run and return the FlutterDerivative.
 
     Defaults to the runnable quasi-steady reference backend so the loop works today.
@@ -496,6 +496,9 @@ def extract_flutter_derivative(case: OscillationCase,
     """
     if backend is None:
         backend = QuasiSteadyFlutterModel()
+    if workdir is None:                                   # a private temp dir, not a fixed path anyone can pre-create
+        import tempfile
+        workdir = tempfile.mkdtemp(prefix="kinematik_flutter_")
     backend.write_case(case, workdir)
     try:
         return backend.run_case(case, workdir)

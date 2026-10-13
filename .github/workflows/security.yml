@@ -1,0 +1,20 @@
+# Dependency vulnerabilities (pip-audit against the PyPI advisory database) and a source security
+# lint (bandit, failing on any medium or high finding). Runs on every push without an account or token.
+name: security
+
+on: [push, pull_request]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install tools
+        run: pip install pip-audit bandit
+      - name: Known vulnerabilities in the dependencies
+        run: pip-audit -r requirements.txt -r fsae_suspension/requirements.txt
+      - name: Source security lint (medium and high severity)
+        run: bandit -r fsae_suspension -x fsae_suspension/tests -ll -q

@@ -25,6 +25,7 @@ dependencies = [
     "scipy>=1.11",
     "plotly>=5.18",
     "trimesh>=4.0",
+    "defusedxml>=0.7",
 ]
 
 [project.optional-dependencies]

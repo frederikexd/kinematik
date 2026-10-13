@@ -1439,7 +1439,7 @@ def _pcb_fingerprint(board, assign=None, extra=()) -> str:
             parts.append(f"{nid}:{a.get('current_a')}:{a.get('voltage_v')}:"
                          f"{int(bool(a.get('assumed')))}")
     parts.extend(str(e) for e in extra)
-    return hashlib.md5("|".join(parts).encode()).hexdigest()
+    return hashlib.md5("|".join(parts).encode(), usedforsecurity=False).hexdigest()
 
 
 #  Above this many copper segments the inline SVG stops being a diagram and
@@ -7762,7 +7762,7 @@ def _briefing_audio_file_available() -> bool:
                           "resolve/main/voices.json",
                           method="HEAD",
                           headers={"User-Agent": "KinematiK/audio-probe"})
-        with _u.urlopen(_req, timeout=4) as _r:
+        with _u.urlopen(_req, timeout=4) as _r:  # nosec B310
             if 200 <= getattr(_r, "status", 200) < 500:
                 return True
     except Exception:
@@ -7777,7 +7777,7 @@ def _briefing_audio_file_available() -> bool:
         _req = _u.Request("https://translate.google.com/",
                           method="HEAD",
                           headers={"User-Agent": "KinematiK/audio-probe"})
-        with _u.urlopen(_req, timeout=3) as _r:
+        with _u.urlopen(_req, timeout=3) as _r:  # nosec B310
             return 200 <= getattr(_r, "status", 200) < 500
     except Exception:
         return False
@@ -9536,7 +9536,7 @@ def _fitfc_geom_fingerprint():
             overrides=st.session_state.get("car3d_overrides", {}),
             parts=_lite(st.session_state.get("car3d_custom_parts")),
         ), sort_keys=True, default=str)
-        return _hl.sha1(blob.encode()).hexdigest()
+        return _hl.sha1(blob.encode(), usedforsecurity=False).hexdigest()
     except Exception:
         return None
 
@@ -12574,7 +12574,7 @@ def _voice_memo_store(subsystem_key):
 
 def _vm_digest(data):
     import hashlib
-    return hashlib.sha1(data).hexdigest()[:16]
+    return hashlib.sha1(data, usedforsecurity=False).hexdigest()[:16]
 
 
 def _vm_wav_duration(data):
@@ -12743,9 +12743,11 @@ def _vm_vosk_model_path(download=True):
     for _u in _urls:
         try:
             _tmp_zip = _dst + ".partial.zip"
+            if not str(_u).startswith("https://"):
+                continue                                    # only https model downloads, never file:// or http://
             _req = _url.Request(_u, headers={"User-Agent": "KinematiK/voice"})
-            with _url.urlopen(_req, timeout=180) as _r, \
-                    open(_tmp_zip, "wb") as _f:
+            _resp = _url.urlopen(_req, timeout=180)  # nosec B310
+            with _resp as _r, open(_tmp_zip, "wb") as _f:
                 while True:
                     _chunk = _r.read(1 << 16)
                     if not _chunk:
@@ -25545,7 +25547,7 @@ def _harness_check_cached(store, ledger=None, net_currents=None):
          led_key,
          sorted((net_currents or {}).items())],
         sort_keys=True, default=str)
-    h = hashlib.md5(payload.encode()).hexdigest()
+    h = hashlib.md5(payload.encode(), usedforsecurity=False).hexdigest()
     cached = st.session_state.get("_hn_check_cache")
     if cached is not None and cached[0] == h:
         return cached[1], keepouts

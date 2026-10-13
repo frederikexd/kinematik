@@ -401,7 +401,7 @@ echo "Mesh done. Inspect log.checkMesh for the REAL cell count before solving."
         path = os.path.join(case_dir, "Allmesh")
         self._w(case_dir, "Allmesh", txt)
         try:
-            os.chmod(path, 0o755)
+            os.chmod(path, 0o700)
         except OSError:
             pass
         return path

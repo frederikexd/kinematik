@@ -29,3 +29,5 @@ fast_simplification>=0.1   # faster CAD-part decimation for the 3D model (option
 rtree>=1.0         # chassis/part collision queries via trimesh.proximity
 reportlab>=4.0     # PDF design-handover export         (project.py: render_pdf)
 supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseStore)
+
+defusedxml>=0.7    # safe XML parsing of uploaded workbooks and documents (xlsx_formula_cache.py)

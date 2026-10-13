@@ -59,7 +59,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
 from collections.abc import Sequence
-from xml.etree import ElementTree as ET
+import defusedxml.ElementTree as ET           # uploaded workbooks are untrusted: no entity expansion
 
 __all__ = [
     "XlError", "FormulaError", "evaluate_workbook", "populate_cached_values",

@@ -421,7 +421,7 @@ def build_convective_map(solver: RotorCFDSolver | None = None,
                          speeds_ms: Sequence[float] | None = None,
                          rolling_radius_m: float = 0.22,
                          rho: float = 1.225,
-                         workdir: str = "/tmp/kinematik_wheeltunnel") -> ConvectiveMap:
+                         workdir: str | None = None) -> ConvectiveMap:
     """
     Sweep the wheel-tunnel solver across a speed range and assemble the h_c(speed)
     map. With the reference solver this is instant; with a real solver each speed is
@@ -432,6 +432,9 @@ def build_convective_map(solver: RotorCFDSolver | None = None,
     Never raises.
     """
     solver = solver or ReferenceRotorCFD()
+    if workdir is None:                                   # a private temp dir, not a fixed path anyone can pre-create
+        import tempfile
+        workdir = tempfile.mkdtemp(prefix="kinematik_wheeltunnel_")
     speeds = np.asarray(speeds_ms if speeds_ms is not None
                         else [5, 10, 15, 20, 25, 30, 35], float)
     speeds = np.sort(np.unique(np.clip(speeds, 0.1, None)))
