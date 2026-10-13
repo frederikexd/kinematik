@@ -1394,7 +1394,7 @@ def strip_unprintable(text):
         # ranges that are pictographic emoji by construction.
         if _EMOJI_RE is None:
             _EMOJI_RE = _re.compile(
-                "[\U0001F000-\U0001FAFF\U0001F1E6-\U0001F1FF"
+                "[\U0001F000-\U0001FAFF"
                 "\u2190-\u21FF\u2B00-\u2BFF\u2700-\u2710\uFE0F\u200D]")
         out = _EMOJI_RE.sub("", out)
     return _re.sub(r"[ \t]{2,}", " ", out).strip()

@@ -48,11 +48,13 @@ def test_build_auth_url_generates_state_and_google_url(monkeypatch):
         reason="optional 'drive' extra not installed (pip install kinematik[drive])")
     _set_oauth_env(monkeypatch)
     url, state = ox.build_auth_url()
-    assert url and "accounts.google.com" in url
-    assert "state=" in url
+    from urllib.parse import parse_qs, urlparse
+    parsed = urlparse(url)
+    assert parsed.scheme == "https" and parsed.hostname == "accounts.google.com"
+    assert "state" in parse_qs(parsed.query)
     assert state and len(state) > 10           # random CSRF state present
     # the app's redirect and client id must be in the consent URL
-    assert "cid.apps.googleusercontent.com" in url
+    assert parse_qs(parsed.query).get("client_id") == ["cid.apps.googleusercontent.com"]
 
 
 def test_build_auth_url_declines_when_unconfigured(monkeypatch):

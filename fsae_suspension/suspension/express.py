@@ -487,7 +487,7 @@ _BUDGET_PHRASES: list[tuple[str, float]] = [
     ("in a hurry", 45.0), ("short on time", 45.0), ("quick", 45.0),
 ]
 _BUDGET_NUM_RE = re.compile(
-    r"(?<![a-z])(\d+(?:\.\d+)?)\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)"
+    r"(?<![a-z\d.])(\d{1,9}(?:\.\d{1,6})?)\s{0,8}(hours?|hrs?|minutes?|mins?|seconds?|secs?)"
     r"(?![a-z])", re.IGNORECASE)
 _BUDGET_UNIT_S = {"hour": 3600.0, "hr": 3600.0, "minute": 60.0, "min": 60.0,
                   "second": 1.0, "sec": 1.0}

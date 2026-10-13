@@ -116,7 +116,7 @@ _ACK_WORDS = ("electric", "ev", "vehicle", "car", "optimized", "optimised",
 
 _BUDGET_RE = re.compile(r"[\$€£]?\s*(\d{1,3}(?:[,.]\d{3})+|\d+(?:\.\d+)?)\s*"
                         r"(k\b|thousand\b)?", re.IGNORECASE)
-_TOL_RE = re.compile(r"(?:±|\+/?-|\\pm)?\s*(\d+(?:\.\d+)?)\s*mm", re.IGNORECASE)
+_TOL_RE = re.compile(r"(?:±|\+/?-|\\pm)?\s{0,8}(?<![\d.])(\d{1,6}(?:\.\d{1,6})?)\s{0,8}mm", re.IGNORECASE)
 
 
 @dataclass
