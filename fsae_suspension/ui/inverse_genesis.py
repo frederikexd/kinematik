@@ -822,8 +822,30 @@ def render():
     _progress(st, ss, bar)
 
 
+def recorded_verdict_line(man) -> str | None:
+    """The result a manifest records, in one line: grade, build yield (%), fit (fraction of the band); None when the
+    manifest has no recorded outputs."""
+    rec = man.recorded or {}
+    if not rec:
+        return None
+    v = rec.get("winner_verdict")
+    if not v:
+        return "Recorded result: NO_FIT, no geometry met every band"
+    y, f = rec.get("winner_yield"), None
+    cands = rec.get("candidates") or []
+    if cands:
+        f = min(c.get("max_band_frac", float("inf")) for c in cands if c.get("max_band_frac") is not None)
+    return ("Recorded result: " + str(v) + (f" — build yield {round(100 * y, 2)}%" if y is not None else "")
+            + (f", curves at {round(f, 3)} of their bands" if f is not None and f != float("inf") else ""))
+
+
 def _manifest_summary(st, ig, man):
-    """One-glance summary of what a manifest will actually run."""
+    """One-glance summary of what a manifest will actually run, led by the result it records."""
+    line = recorded_verdict_line(man)
+    if line:
+        badge, _ = _VERDICT_BLURB.get((man.recorded or {}).get("winner_verdict") or "", ("", ""))
+        st.success(f"{badge} **{line}**. Press ▶ Run this manifest to re-run it and check it reproduces; the run "
+                   "takes a few minutes (longer for searches with a start search) and the result appears here.")
     try:
         hp, targets, volume, fld = man.objects()
     except (ValueError, KeyError, TypeError) as e:

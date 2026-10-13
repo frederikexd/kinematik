@@ -32642,11 +32642,23 @@ with sc3:
             value=False, key="_load_inc_ledger")
     if loaded is not None:
         try:
-            apply_project_bundle(json.load(loaded),
-                                 include_shared_ledger=_ld_inc_led)
-            st.success("Project loaded — geometry, vehicle, handover, and "
-                       "pedal-box/throttle inputs restored.")
-            st.rerun()
+            _bundle = json.load(loaded)
+            if isinstance(_bundle, dict) and "inputs_sha256" in _bundle and "targets" in _bundle \
+                    and "volume" in _bundle:
+                # an InverseGenesis manifest, not a project file: say so instead of "loading" it silently
+                from suspension.genesis_repro import GenesisManifest as _GM
+                from ui.inverse_genesis import recorded_verdict_line as _rvl
+                _m = _GM.from_json(json.dumps(_bundle))
+                st.warning(f"**{_m.name}** is an InverseGenesis manifest, not a project file. "
+                           + ((_rvl(_m) + ". ") if _rvl(_m) else "")
+                           + "To re-run it, open **Design & Sizing → InverseGenesis** and use "
+                             "**📂 Re-run a saved manifest** at the top of that tab.")
+            else:
+                apply_project_bundle(_bundle,
+                                     include_shared_ledger=_ld_inc_led)
+                st.success("Project loaded — geometry, vehicle, handover, and "
+                           "pedal-box/throttle inputs restored.")
+                st.rerun()
         except Exception as e:
             st.error(f"Couldn't read that project file: {e}")
 
