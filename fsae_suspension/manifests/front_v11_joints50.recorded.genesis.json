@@ -2,11 +2,11 @@
  "schema": "kinematik.genesis.manifest/1",
  "name": "front_v11_joints50",
  "kinematik_version": "0.23.0",
- "inputs_sha256": "7d226fcc1090140fa82a48d6069d1d5ae371ea483776ebe5eb8722f8b4ec72f9",
+ "inputs_sha256": "b6399630cabacf92a0df0344f1b1ec2bff368b4b508ca0b6e5344e248f761eb4",
  "context": {
   "paper": "v11",
   "axle": "front",
-  "run": "every input of front_v11_final (inputs 2e7072ce2268) with each link's two ends (joint, tab, upright arm) declared at 50 kN/mm along the link in both compliance load cases, started from its winner; start search declared, then InverseGenesis (scripts/front_with_joints.py)"
+  "run": "every input of front_v11_final (inputs 2e7072ce2268) with each link's two ends (joint, tab, upright arm) declared at 50 kN/mm along the link in both compliance load cases, Ackermann at lock at most 100%, started from its winner; start search declared, then InverseGenesis (scripts/front_with_joints.py)"
  },
  "hardpoints": {
   "upper_front_inner": [
@@ -290,8 +290,8 @@
     {
      "prop": "ackermann_lock_pct",
      "lo": 75.0,
-     "hi": null,
-     "label": "Ackermann at the declared lock (%) >= 75"
+     "hi": 100.0,
+     "label": "75 <= Ackermann at the declared lock (%) <= 100"
     },
     {
      "prop": "brake_decel_g",
@@ -1219,26 +1219,26 @@
  },
  "recorded": {
   "ok": true,
-  "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (99.8% yield).",
+  "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (99.4% yield).",
   "winner_hardpoints": {
    "upper_front_inner": [
-    -111.48423507750636,
-    225.76050824712408,
-    281.17441992056536
+    -111.23423507750636,
+    232.26050824712408,
+    280.92441992056536
    ],
    "upper_rear_inner": [
-    76.26458894010501,
-    322.7,
-    266.1950040048937
+    91.01458894010501,
+    318.2,
+    265.1950040048937
    ],
    "lower_front_inner": [
-    -106.38344886893329,
-    183.80416019141555,
-    122.48966455100255
+    -90.38344886893329,
+    187.05416019141555,
+    122.73966455100255
    ],
    "lower_rear_inner": [
-    60.11951657781485,
-    152.259090922957,
+    59.11951657781485,
+    175.509090922957,
     129.5243534267429
    ],
    "upper_outer": [
@@ -1252,13 +1252,13 @@
     120.0
    ],
    "tie_rod_inner": [
-    -23.766143616329025,
-    167.78937754420267,
+    -7.766143616329025,
+    183.28937754420267,
     147.11713123739557
    ],
    "tie_rod_outer": [
     53.37543392805734,
-    524.822865123218,
+    540.572865123218,
     148.24869249435073
    ],
    "wheel_center": [
@@ -1306,15 +1306,15 @@
    "static_toe": 0.0
   },
   "winner_verdict": "RESILIENT",
-  "winner_yield": 0.9975,
+  "winner_yield": 0.9935,
   "resilience_premium": 0.0,
   "candidates": [
    {
     "hit": true,
     "verdict": "RESILIENT",
-    "max_band_frac": 0.5943900975742865,
+    "max_band_frac": 0.5937678854285292,
     "worst_row": "toe (\u00b0) @ -25.0 mm",
-    "yield_frac": 0.9975,
+    "yield_frac": 0.9935,
     "iterations": 1,
     "clamped": [],
     "keepout_rejections": 0,
@@ -1361,7 +1361,7 @@
    "upper_rear_inner.z"
   ],
   "n_starts": 1,
-  "inputs_sha256": "7d226fcc1090140fa82a48d6069d1d5ae371ea483776ebe5eb8722f8b4ec72f9",
+  "inputs_sha256": "b6399630cabacf92a0df0344f1b1ec2bff368b4b508ca0b6e5344e248f761eb4",
   "kinematik_version": "0.23.0",
   "start_search": {
    "settings": {
@@ -1374,31 +1374,25 @@
     "walls_only": false,
     "graded_keepouts": true
    },
-   "evaluations": 811,
+   "evaluations": 260,
    "start_cost": 7.575112767372014,
    "start_violated": [
     "compliance_toe_braking_deg"
    ],
-   "final_cost": 0.5943900975742865,
-   "final_band": 0.5943900975742865,
+   "final_cost": 0.5937678854285292,
+   "final_band": 0.5937678854285292,
    "final_violated": [],
-   "final_clearance_mm": 0.4502463943304491,
+   "final_clearance_mm": 0.7050460432279237,
    "walls_hold": true,
    "walls_met": true,
    "shift_mm": {
-    "lower_front_inner.x": -16.0,
-    "lower_front_inner.y": 28.75,
-    "lower_front_inner.z": -0.25,
-    "lower_rear_inner.x": -15.0,
-    "lower_rear_inner.y": -23.25,
-    "tie_rod_inner.y": 0.5,
-    "tie_rod_outer.y": -15.75,
-    "upper_front_inner.x": -20.25,
-    "upper_front_inner.y": 5.5,
-    "upper_front_inner.z": 0.25,
-    "upper_rear_inner.x": -14.75,
-    "upper_rear_inner.y": -1.5,
-    "upper_rear_inner.z": 1.0
+    "lower_front_inner.y": 32.0,
+    "lower_rear_inner.x": -16.0,
+    "tie_rod_inner.x": 16.0,
+    "tie_rod_inner.y": 16.0,
+    "upper_front_inner.x": -20.0,
+    "upper_front_inner.y": 12.0,
+    "upper_rear_inner.y": -6.0
    }
   }
  }

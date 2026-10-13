@@ -32,7 +32,7 @@ TABLE_S5_1 = {"front_final": "5220385cbcd2", "front_steering_walls": "bbc4d82977
               "front_v11_final": "2e7072ce2268",
               "rear_v11_final": "8818c4b890d1",
               "front_v11_from_85mm": "3bcacea5c507",
-              "front_v11_from_delivered": "3079657a19c5", "front_v11_joints50": "7d226fcc1090"}
+              "front_v11_from_delivered": "3079657a19c5", "front_v11_joints50": "b6399630caba"}
 
 
 def _manifest(name):

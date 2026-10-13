@@ -72,8 +72,12 @@ def test_the_front_re_searched_with_joints_holds_every_wall_at_50_kn_per_mm():
     F = json.loads((ROOT / "manifests" / "front_v11_final.recorded.genesis.json").read_text())
     for k in ("targets", "tolerance", "search"):
         assert d[k] == F[k]
-    for case in ("elasto", "elasto_braking"):                 # the only change: the link ends at 50 kN/mm
+    for case in ("elasto", "elasto_braking"):                 # change 1: the link ends at 50 kN/mm
         assert all(m["k_tab"] == 25000.0 for m in d["volume"]["properties"][case]["members"].values())
+    ack = {b["prop"]: b for b in d["volume"]["properties"]["bounds"]}["ackermann_lock_pct"]
+    assert ack["lo"] == 75.0 and ack["hi"] == 100.0             # change 2: a ceiling on Ackermann at lock
+    rest = lambda v: [b for b in v["properties"]["bounds"] if b["prop"] != "ackermann_lock_pct"]   # noqa: E731
+    assert rest(d["volume"]) == rest(F["volume"])
     m = GenesisManifest.from_json(json.dumps(d))
     assert m.start_search is not None and m.recorded["winner_verdict"] == "RESILIENT"
     _, tg, vol, _ = m.objects()
@@ -81,7 +85,8 @@ def test_the_front_re_searched_with_joints_holds_every_wall_at_50_kn_per_mm():
     assert vol.property_violations(w) == [] and not vol.keepout_violations(w) and vol.envelope_margin(w) >= 0.0
     v = vol.properties.evaluate(w)
     assert abs(v["compliance_toe_braking_deg"]) <= 0.25 and abs(v["compliance_toe_deg"]) <= 0.08
-    assert m.recorded["start_search"]["evaluations"] == 811
+    assert m.recorded["start_search"]["evaluations"] == 260
+    assert 75.0 <= v["ackermann_lock_pct"] <= 100.0
 
 
 def test_every_front_check_holds_on_the_front_to_build():
@@ -89,9 +94,9 @@ def test_every_front_check_holds_on_the_front_to_build():
     j, f = fb["front_v11_joints50"], fb["front_v11_final"]
     assert j["props"]["compliance_toe_braking_deg"] <= 0.25 and j["props"]["lock_sw_deg"] <= 120.0
     assert j["mu_front"] >= 1.83 and j["clearance_mm"] >= 0.0 and j["margin"]["declared"]["hand_brush_Nm"] < 10.0
-    assert j["alt_0p5"]["walls_hold"] and j["alt_0p5"]["clearance_mm"] > 0.0 and not j["alt"]["walls_hold"]
-    assert j["alt_0p5"]["hand_25p4"]["declared"] < 10.0 and j["lock"]["hand_lock_Nm"] < 10.0
-    assert 0.5 < j["ackermann_loss_pct"][1.5] < 1.0 and f["ackermann_loss_pct"][1.5] < 0.01   # the cost of 144%
+    assert j["alt_build"]["walls_hold"] and j["alt_build"]["clearance_mm"] > 0.0
+    assert j["alt_build"]["hand_25p4"]["declared"] < 10.0 and j["lock"]["hand_lock_Nm"] < 10.0
+    assert j["ackermann_loss_pct"][1.5] < 0.1 and f["ackermann_loss_pct"][1.5] < 0.01   # inside 75 to 100%, a negligible cost
     assert abs(j["mr_static"] - f["mr_static"]) < 0.005 and j["spring_mm"]["0.0"] == pytest.approx(f["spring_mm"]["0.0"], abs=0.1)
     hs = j["half_scale"]["values_deg"]
     assert hs["camber_droop"] > 0 > hs["camber_bump"] and hs["spacer_toe_droop"] > 0 > hs["spacer_toe_bump"]

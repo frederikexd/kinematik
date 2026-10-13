@@ -688,6 +688,11 @@
    "manifest": "front_v11_final (125 mm lower base, damper length free)",
    "inputs_sha256": "cea1a7c48229",
    "reason": "a 1.5 g stop toed each front wheel out 0.67 deg on the derived frame, and the spring sat 106.7 mm eye to eye; re-declared with the braking compliance wall (lower-front pickup 41.5 mm forward along the pivot axis, every curve unchanged) and the damper wall (scripts/final_corners_v3.py; kept in manifests/superseded)"
+  },
+  {
+   "manifest": "front_v11_joints50 (no Ackermann ceiling)",
+   "inputs_sha256": "7d226fcc1090",
+   "reason": "held every wall at 50 kN/mm per link end but left 143.8% Ackermann at lock, which nothing bounded; re-searched with Ackermann at lock held to 75 to 100%"
   }
  ],
  "vehicle_walls": {
@@ -769,33 +774,33 @@
  ],
  "front_to_build": {
   "source_manifest": "front_v11_joints50",
-  "source_inputs_sha256": "7d226fcc1090140fa82a48d6069d1d5ae371ea483776ebe5eb8722f8b4ec72f9",
+  "source_inputs_sha256": "b6399630cabacf92a0df0344f1b1ec2bff368b4b508ca0b6e5344e248f761eb4",
   "verdict": "RESILIENT",
-  "predicted_yield": 0.9975,
+  "predicted_yield": 0.9935,
   "nodes_corner_mm": {
    "upper_front_inner": [
-    -111.484,
-    225.761,
-    281.174
+    -111.234,
+    232.261,
+    280.924
    ],
    "upper_rear_inner": [
-    76.265,
-    322.7,
-    266.195
+    91.015,
+    318.2,
+    265.195
    ],
    "lower_front_inner": [
-    -106.383,
-    183.804,
-    122.49
+    -90.383,
+    187.054,
+    122.74
    ],
    "lower_rear_inner": [
-    60.12,
-    152.259,
+    59.12,
+    175.509,
     129.524
    ],
    "tie_rod_inner": [
-    -23.766,
-    167.789,
+    -7.766,
+    183.289,
     147.117
    ],
    "rocker_pivot": [
@@ -820,7 +825,7 @@
    ],
    "tie_rod_outer": [
     53.375,
-    524.823,
+    540.573,
     148.249
    ],
    "pushrod_outer": [
@@ -840,10 +845,11 @@
    ]
   },
   "rule": "build this front: it holds every wall with 50 kN/mm per link end (toe in the 1.5 g stop 0.249 deg), where front_v11_final needs 494 kN/mm. Pull a test tab with its joint before the frame is welded; below 50 kN/mm per end, re-run scripts/front_with_joints.py at the measured stiffness",
-  "steering_upright_alternative": "spindle moved 0.5 mm forward relative to the kingpin axis (mechanical trail 12.17 mm, clearance +0.25 mm, every wall held); machine it if the steering-torque log fits a zero-slip trail above 25.0 mm",
-  "ackermann_at_lock_pct": 143.8,
+  "steering_upright_alternative": "spindle moved 2.5 mm forward relative to the kingpin axis (mechanical trail 10.17 mm, clearance +0.15 mm, every wall held); machine it if the steering-torque log fits a zero-slip trail above 21.5 mm",
+  "ackermann_at_lock_pct": 85.3,
+  "ackermann_wall": "75 to 100% at the hairpin lock (a ceiling added in s14; the search without it left 143.8%)",
   "actuation": "as front_v11_final (pushrod on the upright, rocker, spring and damper nodes unchanged)",
   "corners_front_note": "corners.front records front_v11_final, the result with rigid joints; build front_to_build"
  },
- "inputs_sha256": "670a878fbb96e588071a8d910bfb7f487057ec034bd9203d0793d3f948e29181"
+ "inputs_sha256": "2699ec59d2cb8df26e56deac04e5c24166c98281a1d5973187d902574ce2a309"
 }

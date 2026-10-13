@@ -3,6 +3,36 @@
 
 ## Unreleased
 
+**The roll gradient is derived, not declared.** `target_derivation.roll_gradient_for_friction` gives the softest roll
+gradient at which the ride frequency still holds the 1.06 g combined case inside the jounce budget at a stated tire
+friction: with the springs at 2.6/3.0 Hz and the final corners' anti-geometry, the rear binds at 0.788 deg/g at mu 1.82
+(the car tire's published belt friction), the front at 0.868, so the declared 0.78 deg/g is that limit rounded down.
+`springs_only_roll_gradient` shows the springs alone give 1.36 deg/g, so the bars are needed for travel as well as
+balance. Paper section 2 now opens with the chain from requirement to number for every target, citing the travel rule
+(FS T2.5.1) and the hairpin rule (FSAE, 9 m outside diameter).
+
+**A ceiling on Ackermann for the front to build.** `scripts/front_with_joints.py` now declares Ackermann at lock
+between 75 and 100% (it had a floor only). The re-search reaches every wall in 260 evaluations and returns
+`front_v11_joints50` (inputs b6399630caba), RESILIENT at 99.35%: 85.3% Ackermann at lock (was 143.8%), 115.6 deg of
+wheel at the hairpin (was 120.0), wheel clearance +0.71 mm (was +0.45), braking toe 0.249 deg at 50 kN/mm per end
+unchanged. The price is a quicker ratio, 4.88:1 against 5.28:1: 8.3 N*m at the hand and a 21.5 mm trail limit, so its
+alternative upright moves the spindle 2.5 mm forward (`review_checks.ALT_BUILD_MM`, every wall held, +0.15 mm
+clearance). The earlier record (7d226fcc1090) is in `manifests/superseded`; the node brief is rehashed (2699ec59d2cb).
+
+**An independent forward solver.** `scripts/independent_kinematics.py` solves the corner as one rigid upright (six
+unknowns, SciPy fsolve), sharing no code with `suspension/kinematics.py`; on the three final corners camber and toe
+agree to 1e-12 deg over +/-25 mm and roll-centre heights to 0.6 mm. `scripts/export_points.py` writes each corner's
+points and curves so an outside team with OptimumKinematics or another package can check them.
+
+**A manifest re-run reports its result where it was started.** In the browser studio, ▶ Run this manifest now shows
+the grade, build yield and fit right under the button, with the recorded grade beside it, whether the re-run matches
+the record and what the start search did; the full results panel stays at the bottom of the tab
+(`ui/inverse_genesis._manifest_run_summary`, `tests/test_manifest_run_summary.py`).
+
+**The brake result against grip.** `review_checks.brake_grip()` gives the closed form at constant friction: the
+balanced bias b = w_f + mu h/L, where a/g = mu; the 60 -> 73% gain is the same 24% at mu 1.55 and 13 to 24% (balanced
+bias) across road mu 1.09 to 1.43. Tests: `tests/test_review_items.py`.
+
 **What it changes on the car.** `review_checks.car_gains()` sets the delivered ChassisV10 front against the front to
 build on the same rack, tire, load cases, actuation and 50 kN/mm link ends: braking limit 1.27 to 1.57 g (31.0 to
 25.0 m from 100 km/h), toe-out per wheel in a 1.5 g stop 0.80 to 0.249 deg (brake imbalance held inside the toe band

@@ -313,7 +313,7 @@ CLAIMS = [
     C("refused-front_v11_hairpin_walls-bearing", "S S13.3", "rocker bearings 1.58, 1.97, 1.61 and 1.94", _refused("front_v11_hairpin_walls", "rocker_bearing_sf"), "{:.2f}", doc="S"),
     C("refused-rear_v11_walls-link", "S S13.3", "link factor 0.18, 0.34, 0.24 and 0.13", _refused("rear_v11_walls", "link_fos_min"), "{:.2f}", doc="S"),
     C("refused-rear_v11_walls-bearing", "S S13.3", "rocker bearings 1.58, 1.97, 1.61 and 1.94", _refused("rear_v11_walls", "rocker_bearing_sf"), "{:.2f}", doc="S"),
-    C("brief-hash", "P §9.4", "chassisv11_node_brief.json (inputs SHA-256 670a878fbb96", _brief_hash, "{:012x}"),
+    C("brief-hash", "P §9.4", "chassisv11_node_brief.json (inputs SHA-256 2699ec59d2cb", _brief_hash, "{:012x}"),
     C("S6.36-F-1.5g_corner-k30-toe", "S Table S6.36", "+0.030 / +0.028", lambda c: c.compliance_table[("F", "1.5g corner")]["k30"]["toe"] + 0.0, "{:+.3f}", doc="S"),
     C("S6.36-F-1.5g_corner-k30-camber", "S Table S6.36", "+0.030 / +0.028", lambda c: c.compliance_table[("F", "1.5g corner")]["k30"]["camber"] + 0.0, "{:+.3f}", doc="S"),
     C("S6.36-F-1.5g_corner-derived-toe", "S Table S6.36", "+0.034 / +0.101", lambda c: c.compliance_table[("F", "1.5g corner")]["derived"]["toe"] + 0.0, "{:+.3f}", doc="S"),
@@ -750,15 +750,15 @@ def _jf(*path):
 
 
 S13 = [
-    C("jf-hash", "P §3.3", "returns front_v11_joints50 (7d226fcc1090)", _hash("front_v11_joints50"), "{:012x}"),
-    C("jf-evals", "P §3.3", "in 811 evaluations moves", _jf("evaluations"), "{:d}"),
-    C("jf-lf", "P §3.3", "moves the lower pickups 33 and 28 mm", _jf("moves_mm", "lower_front_inner"), "{:.0f}"),
-    C("jf-lr", "P §3.3", "moves the lower pickups 33 and 28 mm", _jf("moves_mm", "lower_rear_inner"), "{:.0f}"),
-    C("jf-uf", "P §3.3", "the upper 21 and 15 mm", _jf("moves_mm", "upper_front_inner"), "{:.0f}"),
-    C("jf-ur", "P §3.3", "the upper 21 and 15 mm", _jf("moves_mm", "upper_rear_inner"), "{:.0f}"),
-    C("jf-tro", "P §3.3", "the tie-rod outer 16 mm", _jf("moves_mm", "tie_rod_outer"), "{:.0f}"),
-    C("jf-yield", "P §3.3", "RESILIENT at 99.8%, with every wall held", lambda c: 100.0 * _jf("yield")(c)),
-    C("jf-abs", "P abstract", "moves the pickups by up to 33 mm", lambda c: max(_jf("moves_mm")(c).values()), "{:.0f}"),
+    C("jf-hash", "P §3.3", "returns front_v11_joints50 (b6399630caba)", _hash("front_v11_joints50"), "{:012x}"),
+    C("jf-evals", "P §3.3", "in 260 evaluations moves", _jf("evaluations"), "{:d}"),
+    C("jf-lf", "P §3.3", "moves the lower pickups 32 and 16 mm", _jf("moves_mm", "lower_front_inner"), "{:.0f}"),
+    C("jf-lr", "P §3.3", "moves the lower pickups 32 and 16 mm", _jf("moves_mm", "lower_rear_inner"), "{:.0f}"),
+    C("jf-uf", "P §3.3", "the upper 23 and 6 mm", _jf("moves_mm", "upper_front_inner"), "{:.0f}"),
+    C("jf-ur", "P §3.3", "the upper 23 and 6 mm", _jf("moves_mm", "upper_rear_inner"), "{:.0f}"),
+    C("jf-tro", "P §3.3", "the tie-rod inner 23 mm", _jf("moves_mm", "tie_rod_inner"), "{:.0f}"),
+    C("jf-yield", "P §3.3", "RESILIENT at 99.4%, with every wall held", lambda c: 100.0 * _jf("yield")(c)),
+    C("jf-abs", "P §3.3", "moves the lower pickups 32 and 16 mm", lambda c: max(_jf("moves_mm")(c).values()), "{:.0f}"),
 ]
 CLAIMS += S13
 
@@ -791,55 +791,53 @@ def _yj(*path):
 _J5 = lambda *p: _fb("front_v11_joints50", *p)                              # noqa: E731
 _F0 = lambda *p: _fb("front_v11_final", *p)                                 # noqa: E731
 S14 = [
-    C("b-band", "P Table 4", "0.594; 99.8% (62.7% at hand weld)", _J5("band"), "{:.3f}"),
-    C("b-yield", "P Table 4", "0.594; 99.8% (62.7% at hand weld)", lambda c: 100.0 * _J5("yield")(c)),
-    C("b-hand", "P Table 4", "0.594; 99.8% (62.7% at hand weld)", lambda c: 100.0 * _yj("fields", "hand_weld", "full_yield")(c)),
-    C("b-clr", "P Table 4", "+0.45 mm", _J5("clearance_mm"), "{:+.2f}"),
-    C("b-lock", "P Table 4", "120.0°; 143.8%", _J5("props", "lock_sw_deg")),
-    C("b-ack", "P Table 4", "120.0°; 143.8%", _J5("props", "ackermann_lock_pct")),
-    C("b-rig-c", "P Table 4", "0.031°; 0.10°", _J5("toe_rigid", "corner"), "{:.3f}"),
-    C("b-rig-b", "P Table 4", "0.031°; 0.10°", _J5("toe_rigid", "braking"), "{:.2f}"),
-    C("b-50-c", "P Table 4", "0.056°; 0.249°", _J5("props", "compliance_toe_deg"), "{:.3f}"),
-    C("b-50-b", "P Table 4", "0.056°; 0.249°", _J5("props", "compliance_toe_braking_deg"), "{:.3f}"),
+    C("b-band", "P Table 4", "0.594; 99.4% (57.1% at hand weld)", _J5("band"), "{:.3f}"),
+    C("b-yield", "P Table 4", "0.594; 99.4% (57.1% at hand weld)", lambda c: 100.0 * _J5("yield")(c)),
+    C("b-hand", "P Table 4", "0.594; 99.4% (57.1% at hand weld)", lambda c: 100.0 * _yj("fields", "hand_weld", "full_yield")(c)),
+    C("b-clr", "P Table 4", "+0.71 mm", _J5("clearance_mm"), "{:+.2f}"),
+    C("b-lock", "P Table 4", "115.6°; 85.3%", _J5("props", "lock_sw_deg")),
+    C("b-ack", "P Table 4", "115.6°; 85.3%", _J5("props", "ackermann_lock_pct")),
+    C("b-rig-c", "P Table 4", "0.035°; 0.09°", _J5("toe_rigid", "corner"), "{:.3f}"),
+    C("b-rig-b", "P Table 4", "0.035°; 0.09°", _J5("toe_rigid", "braking"), "{:.2f}"),
+    C("b-50-c", "P Table 4", "0.062°; 0.249°", _J5("props", "compliance_toe_deg"), "{:.3f}"),
+    C("b-50-b", "P Table 4", "0.062°; 0.249°", _J5("props", "compliance_toe_braking_deg"), "{:.3f}"),
     C("b-ad-F", "P Table 4", "68.9%; 1.95", _F0("anti_dive_73")),
     C("b-mu-F", "P Table 4", "68.9%; 1.95", _F0("mu_front"), "{:.2f}"),
-    C("b-ad", "P Table 4", "64.0%; 1.84", _J5("anti_dive_73")),
-    C("b-mu", "P Table 4", "64.0%; 1.84", _J5("mu_front"), "{:.2f}"),
+    C("b-ad", "P Table 4", "64.1%; 1.84", _J5("anti_dive_73")),
+    C("b-mu", "P Table 4", "64.1%; 1.84", _J5("mu_front"), "{:.2f}"),
     C("b-hand-F", "P Table 4", "8.1 N·m; 22.4 mm", _F0("margin", "declared", "hand_brush_Nm")),
     C("b-t0-F", "P Table 4", "8.1 N·m; 22.4 mm", _F0("margin", "declared", "t0_limit_mm")),
-    C("b-hand-J", "P Table 4", "7.7 N·m; 25.0 mm", _J5("margin", "declared", "hand_brush_Nm")),
-    C("b-t0-J", "P Table 4", "7.7 N·m; 25.0 mm", _J5("margin", "declared", "t0_limit_mm")),
+    C("b-hand-J", "P Table 4", "8.3 N·m; 21.5 mm", _J5("margin", "declared", "hand_brush_Nm")),
+    C("b-t0-J", "P Table 4", "8.3 N·m; 21.5 mm", _J5("margin", "declared", "t0_limit_mm")),
     C("b-link", "P Table 4", "2.72; 2.43", _J5("props", "link_fos_min"), "{:.2f}"),
     C("b-brg", "P Table 4", "2.72; 2.43", _J5("props", "rocker_bearing_sf"), "{:.2f}"),
     C("b-mr", "P Table 4", "0.802; 176.8 mm", _J5("mr_static"), "{:.3f}"),
     C("b-spring", "P Table 4", "0.802; 176.8 mm", _J5("spring_mm", "0.0")),
-    C("b-ack-txt", "P §3.3", "leaves it at 144% at lock", _J5("props", "ackermann_lock_pct"), "{:.0f}"),
-    C("b-ackloss15", "P §3.3", "costs 0.8% of the front axle's lateral force", _J5("ackermann_loss_pct", 1.5)),
-    C("b-ackloss10", "P §3.3", "and 1.4% at 1.0 g", _J5("ackermann_loss_pct", 1.0)),
-    C("b-ackloss-F", "P §3.3", "against 0.06% or less on front_v11_final", _F0("ackermann_loss_pct", 1.0), "{:.2f}"),
-    C("b-ratio", "P §3.3", "the steering ratio is 5.28:1", _J5("ratio"), "{:.2f}"),
-    C("b-hand-txt", "P §3.3", "the same checks give 7.7 N·m at the hand", _J5("margin", "declared", "hand_brush_Nm")),
-    C("b-t0", "P §3.3", "a trail limit of 25.0 mm", _J5("margin", "declared", "t0_limit_mm")),
-    C("b-25", "P §3.3", "10.1 N·m at 25.4 mm of trail", _J5("margin", "declared", "hand_assumed_Nm")),
-    C("b-lockT", "P §3.3", "and 8.0 N·m at the hairpin", _J5("lock", "hand_lock_Nm")),
-    C("b-alt2", "P §3.3", "break its wheel clearance (−0.37 mm)", _J5("alt", "after", "clearance_mm"), "{:+.2f}"),
-    C("b-alt05", "P §3.3", "(clearance +0.25 mm, every wall held)", _J5("alt_0p5", "clearance_mm"), "{:+.2f}"),
-    C("b-alt05-d", "P §3.3", "giving 9.9 N·m at 25.4 mm on the declared set", _J5("alt_0p5", "hand_25p4", "declared")),
-    C("b-alt05-r", "P §3.3", "and 9.6 at road μ 1.43", _J5("alt_0p5", "hand_25p4", "r25b_road_1p43")),
-    C("b-belt", "P §3.3", "9.3 on the front to build", _J5("margin", "r25b_car_tire_belt", "hand_brush_Nm")),
-    C("b-limits", "P §4", "and the 25.0 mm of the front to build", _J5("margin", "declared", "t0_limit_mm")),
-    C("b-hs-c", "P Table 5", "+0.82 to −1.05°", _J5("half_scale", "values_deg", "camber_bump"), "{:+.2f}"),
-    C("b-hs-c0", "P Table 5", "+0.82 to −1.05°", _J5("half_scale", "values_deg", "camber_droop"), "{:+.2f}"),
-    C("b-hs-t", "P Table 5", "−0.048 to −0.040°", _J5("half_scale", "values_deg", "toe_droop"), "{:+.3f}"),
-    C("b-hs-s", "P Table 5", "+0.39 to −0.46°", _J5("half_scale", "values_deg", "spacer_toe_bump"), "{:+.2f}"),
-    C("b-hs-band", "P Table 5", "within ±0.016°, ±0.039° and ±0.038°",
+    C("b-ack-txt", "P §3.3", "at 85%, near the 76% the tire's peak slips ask", _J5("props", "ackermann_lock_pct"), "{:.0f}"),
+    C("b-ackloss15", "P §3.3", "the front to build gives up 0.02%, and it reaches", _J5("ackermann_loss_pct", 1.5), "{:.2f}"),
+    C("b-ackloss10", "P Table 5", "0.02%; 0.00%", _J5("ackermann_loss_pct", 1.0), "{:.2f}"),
+    C("b-ratio", "P §3.3", "the steering ratio is 4.88:1", _J5("ratio"), "{:.2f}"),
+    C("b-hand-txt", "P §3.3", "the same checks give 8.3 N·m at the hand", _J5("margin", "declared", "hand_brush_Nm")),
+    C("b-t0", "P §3.3", "a trail limit of 21.5 mm", _J5("margin", "declared", "t0_limit_mm")),
+    C("b-25", "P §3.3", "10.9 N·m at 25.4 mm of trail", _J5("margin", "declared", "hand_assumed_Nm")),
+    C("b-lockT", "P §3.3", "and 8.5 N·m at the hairpin", _J5("lock", "hand_lock_Nm")),
+    C("b-alt05", "P §3.3", "(clearance +0.15 mm, every wall held)", _J5("alt_build", "clearance_mm"), "{:+.2f}"),
+    C("b-alt05-d", "P §3.3", "giving 9.9 N·m at 25.4 mm on the declared set", _J5("alt_build", "hand_25p4", "declared")),
+    C("b-alt05-r", "P §3.3", "and 9.6 at road μ 1.43", _J5("alt_build", "hand_25p4", "r25b_road_1p43")),
+    C("b-belt", "P §3.1", "9.9 N·m at the hand against 10; 10.1 on the front to build", _J5("margin", "r25b_car_tire_belt", "hand_brush_Nm")),
+    C("b-limits", "P §4", "and the 21.5 mm of the front to build", _J5("margin", "declared", "t0_limit_mm")),
+    C("b-hs-c", "P Table 5", "+0.82 to −1.03°", _J5("half_scale", "values_deg", "camber_bump"), "{:+.2f}"),
+    C("b-hs-c0", "P Table 5", "+0.82 to −1.03°", _J5("half_scale", "values_deg", "camber_droop"), "{:+.2f}"),
+    C("b-hs-t", "P Table 5", "−0.048 to −0.044°", _J5("half_scale", "values_deg", "toe_droop"), "{:+.3f}"),
+    C("b-hs-s", "P Table 5", "+0.43 to −0.51°", _J5("half_scale", "values_deg", "spacer_toe_bump"), "{:+.2f}"),
+    C("b-hs-band", "P Table 5", "within ±0.016°, ±0.043° and ±0.042°",
       lambda c: max(_J5("half_scale", "band_deg", "camber_droop")(c), _J5("half_scale", "band_deg", "camber_bump")(c)),
       "{:.3f}"),
-    C("b-t5-clr", "P Table 5", "3.45 mm; 4.7°", lambda c: 3.0 + _J5("clearance_mm")(c), "{:.2f}"),
-    C("b-t5-mis", "P Table 5", "3.45 mm; 4.7°", _J5("props", "joint_misalignment_lock_deg")),
-    C("b-t5-gain", "P Table 5", "−0.037 deg/mm; 0.049°", _J5("corner", "gain"), "{:.3f}"),
-    C("b-t5-bs", "P Table 5", "−0.037 deg/mm; 0.049°", _J5("corner", "bump_steer"), "{:.3f}"),
-    C("b-t5-t0", "P Table 5", "zero-slip trail ≤ 25.0 mm", _J5("margin", "declared", "t0_limit_mm")),
+    C("b-t5-clr", "P Table 5", "3.71 mm; 4.5°", lambda c: 3.0 + _J5("clearance_mm")(c), "{:.2f}"),
+    C("b-t5-mis", "P Table 5", "3.71 mm; 4.5°", _J5("props", "joint_misalignment_lock_deg")),
+    C("b-t5-gain", "P Table 5", "−0.037 deg/mm; 0.048°", _J5("corner", "gain"), "{:.3f}"),
+    C("b-t5-bs", "P Table 5", "−0.037 deg/mm; 0.048°", _J5("corner", "bump_steer"), "{:.3f}"),
+    C("b-t5-t0", "P Table 5", "zero-slip trail ≤ 21.5 mm", _J5("margin", "declared", "t0_limit_mm")),
 ]
 CLAIMS += S14
 
@@ -859,9 +857,9 @@ def _cg(*path):
 
 _gain = lambda c: 100.0 * (_cg("decel_g", "73")(c) / _cg("decel_g", "60")(c) - 1.0)          # noqa: E731
 S15 = [
-    C("g-d60", "P §3.4", "the car stops at 1.27 g. Moving", _cg("decel_g", "60"), "{:.2f}"),
-    C("g-d73", "P §3.4", "to 73%, lifts the limit to 1.57 g", _cg("decel_g", "73"), "{:.2f}"),
-    C("g-pct", "P §3.4", "1.57 g, 24% more deceleration", _gain, "{:.0f}"),
+    C("g-d60", "P §3.4", "on the declared tire it stops at 1.27 g. At 73%", _cg("decel_g", "60"), "{:.2f}"),
+    C("g-d73", "P §3.4", "the limit is 1.57 g, 24% more", _cg("decel_g", "73"), "{:.2f}"),
+    C("g-pct", "P §3.4", "the limit is 1.57 g, 24% more", _gain, "{:.0f}"),
     C("g-s73", "P §3.4", "25.0 m from 100 km/h instead of 31.0 m", _cg("stop_m", "73")),
     C("g-s60", "P §3.4", "25.0 m from 100 km/h instead of 31.0 m", _cg("stop_m", "60")),
     C("g-dtoe", "P §3.4", "The delivered front toes out 0.80° per wheel", _cg("delivered", "brake_toe_50_deg"), "{:.2f}"),
@@ -869,23 +867,118 @@ S15 = [
     C("g-btoe", "P §3.4", "The front to build toes out 0.249°", _cg("build", "brake_toe_50_deg"), "{:.3f}"),
     C("g-bdiff", "P §3.4", "holds the band up to a 64% difference", lambda c: 100.0 * _cg("build", "brake_diff_ok")(c), "{:.0f}"),
     C("g-dlock", "P §3.4", "The delivered front needs 137° of steering wheel", _cg("delivered", "lock_sw_deg"), "{:.0f}"),
-    C("g-block", "P §3.4", "the front to build needs 120.0° with", _cg("build", "lock_sw_deg")),
-    C("g-bhand", "P §3.4", "with 7.7 N·m at the hand in a 1.5 g corner", _cg("build", "hand_Nm")),
+    C("g-block", "P §3.4", "the front to build needs 115.6° with", _cg("build", "lock_sw_deg")),
+    C("g-bhand", "P §3.4", "with 8.3 N·m at the hand in a 1.5 g corner", _cg("build", "hand_Nm")),
     C("g-dack", "P §3.4", "runs −1.9% Ackermann", _cg("delivered", "ackermann_pct")),
     C("g-dloss", "P §3.4", "which gives up 2.8% of the front axle's", _cg("delivered", "ack_loss_pct", 1.5)),
-    C("g-bloss", "P §3.4", "the front to build gives up 0.8%", _cg("build", "ack_loss_pct", 1.5)),
+    C("g-bloss", "P §3.4", "near the 76% the tire's peak slips ask for, and gives up 0.02%", _cg("build", "ack_loss_pct", 1.5), "{:.2f}"),
     C("g-t-d60", "P Table 5", "1.27 g at 60% bias", _cg("decel_g", "60"), "{:.2f}"),
     C("g-t-dtoe", "P Table 5", "not 20%", lambda c: 100.0 * _cg("delivered", "brake_diff_ok")(c), "{:.0f}"),
     C("g-t-dlock", "P Table 5", "137.1°", _cg("delivered", "lock_sw_deg")),
     C("g-t-dl10", "P Table 5", "2.8%; 3.5%", _cg("delivered", "ack_loss_pct", 1.0)),
-    C("g-t-bl10", "P Table 5", "0.8%; 1.4%", _cg("build", "ack_loss_pct", 1.0)),
+    C("g-t-bl10", "P Table 5", "0.02%; 0.00%", _cg("build", "ack_loss_pct", 1.0), "{:.2f}"),
     C("g-t-dh", "P Table 5", "7.3 N·m; 5.56:1", _cg("delivered", "hand_Nm")),
     C("g-t-dr", "P Table 5", "7.3 N·m; 5.56:1", _cg("delivered", "ratio"), "{:.2f}"),
-    C("g-t-br", "P Table 5", "7.7 N·m; 5.28:1", _cg("build", "ratio"), "{:.2f}"),
-    C("g-abs", "P abstract", "it stops 24% harder and straight under a 64% brake imbalance instead of 20%", _gain, "{:.0f}"),
-    C("g-abs-b", "P abstract", "it stops 24% harder and straight under a 64% brake imbalance instead of 20%",
+    C("g-t-br", "P Table 5", "8.3 N·m; 4.88:1", _cg("build", "ratio"), "{:.2f}"),
+    C("g-abs", "P abstract", "the front to build brakes 24% harder on the declared tire", _gain, "{:.0f}"),
+    C("g-abs-b", "P abstract", "stops straight under a 64% brake imbalance instead of 20%, and reaches",
       lambda c: 100.0 * _cg("build", "brake_diff_ok")(c), "{:.0f}"),
-    C("g-con", "P §6", "the front to build stops 24% harder, stops straight under a 64% brake imbalance instead of 20%",
+    C("g-con", "P §6", "% at published road grip), stops straight under a 64% brake imbalance instead of 20%",
       lambda c: 100.0 * _cg("delivered", "brake_diff_ok")(c), "{:.0f}"),
 ]
 CLAIMS += S15
+
+
+# ---- review items (paper s14): brake result against grip, independent solver ------------------------------------- #
+def _bg(*path):
+    def f(c):
+        if "brake_grip" not in _RV:
+            import review_checks as rcx
+            _RV["brake_grip"] = rcx.brake_grip()
+        v = _RV["brake_grip"]
+        for k in path:
+            v = v[k]
+        return v
+    return f
+
+
+def _ik(name, key):
+    def f(c):
+        if "ik" not in _RV:
+            import independent_kinematics as ikx
+            _RV["ik"] = {n: ikx.compare(n) for n in ("front_v11_final", "rear_v11_final", "front_v11_joints50")}
+        return _RV["ik"][name][key]
+    return f
+
+
+_ikmax = lambda c: max(abs(_ik(n, "rc_independent_mm")(c) - _ik(n, "rc_kinematik_mm")(c))           # noqa: E731
+                       for n in ("front_v11_final", "rear_v11_final", "front_v11_joints50"))
+S16 = [
+    C("bg-mu60", "P §3.4", "The declared 60% balances only at μ = 0.70", _bg("mu_balanced_at_60"), "{:.2f}"),
+    C("bg-155g", "P §3.4", "at a constant μ of 1.55 it is the same 24% (1.21 to 1.50 g)", _bg("const155", "gain73_pct"), "{:.0f}"),
+    C("bg-155a", "P §3.4", "at a constant μ of 1.55 it is the same 24% (1.21 to 1.50 g)", _bg("const155", "d60"), "{:.2f}"),
+    C("bg-155b", "P §3.4", "at a constant μ of 1.55 it is the same 24% (1.21 to 1.50 g)", _bg("const155", "d73"), "{:.2f}"),
+    C("bg-blo", "P §3.4", "the balanced bias is 67 to 73% and", lambda c: 100 * _bg("road", "1.09", "b_bal")(c), "{:.0f}"),
+    C("bg-bhi", "P §3.4", "the balanced bias is 67 to 73% and", lambda c: 100 * _bg("road", "1.43", "b_bal")(c), "{:.0f}"),
+    C("bg-glo", "P §3.4", "the car brakes 13 to 24% harder than at 60%", _bg("road", "1.09", "gain_bal_pct"), "{:.0f}"),
+    C("bg-ghi", "P §3.4", "the car brakes 13 to 24% harder than at 60%", _bg("road", "1.43", "gain_bal_pct"), "{:.0f}"),
+    C("bg-s60", "P §3.4", "(34.2 against 27.5 m at μ 1.43)", _bg("road", "1.43", "stop60_m")),
+    C("bg-sbal", "P §3.4", "(34.2 against 27.5 m at μ 1.43)", _bg("road", "1.43", "stopbal_m")),
+    C("bg-abs-lo", "P abstract", "(13 to 24% across published road grip)", _bg("road", "1.09", "gain_bal_pct"), "{:.0f}"),
+    C("bg-abs-hi", "P abstract", "(13 to 24% across published road grip)", _bg("road", "1.43", "gain_bal_pct"), "{:.0f}"),
+    C("bg-t5", "P Table 5", "13 to 24% more deceleration at road μ 1.09 to 1.43", _bg("road", "1.43", "gain_bal_pct"), "{:.0f}"),
+    C("bg-con", "P §6", "(13 to 24% at published road grip)", _bg("road", "1.09", "gain_bal_pct"), "{:.0f}"),
+    C("ik-rcF", "P §3.3", "against 52.8 mm front", _ik("front_v11_final", "rc_kinematik_mm")),
+    C("ik-rcFi", "P §3.3", "(52.9 against 52.8 mm front", _ik("front_v11_final", "rc_independent_mm")),
+    C("ik-rcR", "P §3.3", "42.2 against 41.6 mm rear", _ik("rear_v11_final", "rc_kinematik_mm")),
+    C("ik-rcRi", "P §3.3", "42.2 against 41.6 mm rear", _ik("rear_v11_final", "rc_independent_mm")),
+    C("ik-rcmax", "P §3.3", "roll-centre heights to 0.6 mm", _ikmax),
+]
+
+
+def _superseded_ack(c):
+    from paper_check import MAN as _MAN
+    from suspension.genesis_repro import GenesisManifest as _GM, hp_from_dict as _hp
+    m = _GM.from_json((_MAN / "superseded" / "front_v11_joints50.7d226fcc1090.recorded.genesis.json").read_text())
+    return m.objects()[2].properties.evaluate(_hp(m.recorded["winner_hardpoints"]))["ackermann_lock_pct"]
+
+
+S16 += [
+    C("ak-ratioF", "P §3.3", "4.88:1 against 4.99:1", _F0("ratio"), "{:.2f}"),
+    C("ak-lock", "P §3.3", "it reaches the hairpin in 115.6° of wheel", _J5("props", "lock_sw_deg")),
+    C("ak-super", "P §3.3", "the same search left 144% at lock (inputs 7d226fcc1090", _superseded_ack, "{:.0f}"),
+]
+CLAIMS += S16
+
+
+# ---- the target chain (paper s16, Section 2): roll gradient derived, 3.0 Hz rear ------------------------------ #
+def _rg(axle):
+    def f(c):
+        from suspension import target_derivation as tdx
+        F, R = c.corners["F"], c.corners["R"]
+        return (tdx.roll_gradient_for_friction(tdx.Vehicle(), tdx.Tire(), R["as"], "rear", 3.0, 1.82) if axle == "R"
+                else tdx.roll_gradient_for_friction(tdx.Vehicle(), tdx.Tire(), F["ad73"], "front", 2.6, 1.82))
+    return f
+
+
+def _springs_grad(c):
+    from suspension import target_derivation as tdx
+    return tdx.springs_only_roll_gradient(tdx.Vehicle(), c.corners["F"]["rc"], c.corners["R"]["rc"])["gradient_deg_per_g"]
+
+
+S17 = [
+    C("rg-R", "P §2", "at μ 1.82 is 0.79 deg/g (the front binds at 0.87)", _rg("R"), "{:.2f}"),
+    C("rg-F", "P §2", "at μ 1.82 is 0.79 deg/g (the front binds at 0.87)", _rg("F"), "{:.2f}"),
+    C("rg-spr", "P §2", "springs alone give 1.36 deg/g", _springs_grad, "{:.2f}"),
+    C("rg-t1", "P Table 1", "0.79 deg/g, the softest that holds at μ 1.82", _rg("R"), "{:.2f}"),
+    C("rr-floor", "P §2", "above the final rear's 2.76 Hz floor and 15% above the front", lambda c: c.targets["ride_R"], "{:.2f}"),
+    C("rr-pct", "P §2", "above the final rear's 2.76 Hz floor and 15% above the front", lambda c: 100 * (3.0 / 2.6 - 1), "{:.0f}"),
+    C("rg-S", "S M3.1", "up to 0.788 deg/g at μ 1.82", _rg("R"), "{:.3f}", doc="S"),
+]
+S17 += [
+    C("rf-final", "P §2", "lowers its floor to 2.21 Hz, and the 0.39 Hz between them", lambda c: c.targets["ride_F"], "{:.2f}"),
+    C("rf-margin", "P §2", "lowers its floor to 2.21 Hz, and the 0.39 Hz between them", lambda c: 2.6 - c.targets["ride_F"], "{:.2f}"),
+    C("comb-g", "P §2", "and 1.06 g each way for combined braking", lambda c: 1.5 / 2 ** 0.5, "{:.2f}"),
+]
+CLAIMS += S17
+

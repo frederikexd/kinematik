@@ -37,6 +37,7 @@ from suspension.genesis_repro import GenesisManifest                        # no
 FINAL_FRONT = ROOT / "manifests" / "front_v11_final.recorded.genesis.json"
 K_REF = 50000.0                      # N/mm per link end, the reference case the paper quotes
 BRAKE_DIFF_DECLARED = 0.60           # the left-right brake force difference behind the +/-0.25 deg wall
+ALT_BUILD_MM = -2.5                  # mm, the front to build's alternative upright: spindle 2.5 mm forward
 TOE_BAND = 0.08                      # deg, the toe band the net steer must stay inside
 
 
@@ -194,7 +195,7 @@ def front_to_build() -> dict:
             "alt": {"walls_hold": alt["walls_hold"], "bands_hold": alt["bands_hold"], "after": alt["after"],
                     "hand_25p4": {n: t["hand_assumed_Nm"] for n, t in alt_m["tires"].items()}},
             "ackermann_loss_pct": {g: r25.ackermann(T["synthetic"], hp, g)["final_front_loss_pct"] for g in (1.5, 1.0)},
-            "alt_0p5": _alt(m, hp, lv, -0.5),
+            "alt_build": _alt(m, hp, lv, ALT_BUILD_MM),
             "half_scale": half_scale(hp),
             "mr_static": float(act.actuation_metrics(hp).mr_static),
             "corner": {kk: float(x) for kk, x in pc.Ctx._corner(hp).items() if kk in ("gain", "bump_steer")},
@@ -234,6 +235,35 @@ def car_gains() -> dict:
     return out
 
 
+def brake_grip(mass_kg: float = 300.0, cg_height_mm: float = 280.0, wheelbase_mm: float = 1630.0,
+               weight_front: float = 0.48, mu_road=(1.09, 1.43), bias=(0.60, 0.73)) -> dict:
+    """The brake result's dependence on grip (paper section 3.4), closed form at a constant friction coefficient.
+
+    With every tire at the same mu, the front axle saturates at a/g = mu w_f / (b - mu h/L) and the rear at
+    a/g = mu (1 - w_f) / ((1 - b) + mu h/L); the limit is the lower. Both meet at b = w_f + mu h/L, where a/g = mu.
+    Returns, at mu 1.55 and at each road mu, the limits (g) at the declared and the built bias, the balanced bias
+    (fraction), the gains (%) and the stops from 100 km/h (m); and the mu at which the declared bias is balanced.
+    The mass does not enter: every term scales with it."""
+    hL, wf = cg_height_mm / wheelbase_mm, weight_front
+
+    def dec(mu, b):
+        return min(mu * (1.0 - wf) / ((1.0 - b) + mu * hL), mu * wf / (b - mu * hL))
+
+    v = 100.0 / 3.6
+    stop = lambda a: v * v / (2.0 * 9.80665 * a)                        # noqa: E731
+    b0, b1 = bias
+    out = {"const155": {"d60": dec(1.55, b0), "d73": dec(1.55, b1),
+                        "gain73_pct": 100.0 * (dec(1.55, b1) / dec(1.55, b0) - 1.0)},
+           "mu_balanced_at_60": (b0 - wf) / hL, "road": {}}
+    for mu in mu_road:
+        bb = wf + mu * hL
+        out["road"][f"{mu:.2f}"] = {"b_bal": bb, "d60": dec(mu, b0), "d73": dec(mu, b1), "dbal": dec(mu, bb),
+                                    "gain73_pct": 100.0 * (dec(mu, b1) / dec(mu, b0) - 1.0),
+                                    "gain_bal_pct": 100.0 * (dec(mu, bb) / dec(mu, b0) - 1.0),
+                                    "stop60_m": stop(dec(mu, b0)), "stopbal_m": stop(dec(mu, bb))}
+    return out
+
+
 def lock() -> dict:
     """Full-lock steering on the final front and the alternative upright; torques N*m, arms mm."""
     m = _man()
@@ -257,7 +287,7 @@ def yield_(n_full: int = 2000) -> dict:
 def run(n_full: int = 2000, out_path: str | None = None) -> dict:
     """All three checks; lengths in mm, forces in N, angles in deg, torques in N·m, yields dimensionless."""
     out = {"joints": joints(), "joints_front": joints_front(), "front_to_build": front_to_build(), "lock": lock(),
-           "car_gains": car_gains(),
+           "car_gains": car_gains(), "brake_grip": brake_grip(),
            "yield": yield_(n_full) if n_full else None}
     if out_path:
         Path(out_path).write_text(json.dumps(out, indent=1, default=float))

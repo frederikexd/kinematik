@@ -443,6 +443,42 @@ def _g(value, unit="", limited_by="", digits=4):
 _TOL = "declared tolerance field"
 
 
+def _manifest_run_summary(st, run, man):
+    """The outcome of a manifest re-run, shown beside its Run button: the grade, build yield and fit the run returned,
+    whether they match the recorded ones, and what the start search did. Yield in %, fit as a fraction of the band."""
+    res, ver = run["result"], run.get("verify")
+    w = getattr(res, "winner", None)
+    rec = man.recorded or {}
+    st.markdown("###### Result of this run")
+    if w is not None:
+        badge, _ = _VERDICT_BLURB.get(w.verdict, ("", ""))
+        y = f" — build yield {_g(w.yield_frac * 100, '%', _TOL)}" if w.yield_frac is not None else ""
+        st.markdown(f"### {badge} {w.verdict}{y}")
+        st.caption(f"Curves at {_g(w.max_band_frac, '× band', digits=3)} of their bands (worst: {w.worst_row}); "
+                   f"{len(res.candidates)} candidates searched.")
+    else:
+        st.markdown("### ⚪ NO_FIT — no geometry meets every band")
+        bf = getattr(res, "best_fit", None)
+        if bf is not None:
+            st.caption(f"Closest approach: {_g(bf.max_band_frac, '× band', digits=3)}, governed by {bf.worst_row}.")
+    if rec.get("winner_verdict") is not None or rec:
+        ry = rec.get("winner_yield")
+        st.caption("Recorded in the manifest: " + str(rec.get("winner_verdict") or "NO_FIT")
+                   + (f", build yield {round(100 * ry, 2)}%" if ry is not None else ""))
+    rep = getattr(res, "start_search", None)
+    if rep:
+        ok = rep.get("walls_met", rep.get("walls_hold"))
+        st.caption(f"Start search: {rep['evaluations']} evaluations; "
+                   + ("every wall holds." if ok else "walls still broken: " + ", ".join(rep.get("final_violated") or []) + "."))
+    if ver is not None:
+        same, diffs = ver
+        (st.success if same else st.error)(
+            "✅ Matches the recorded outputs (coordinates to 1e-6 mm, fits and yields to 1e-9)." if same
+            else f"❌ Differs from the recorded outputs in {len(diffs)} place(s); details in the results below.")
+    st.caption("The candidate table, solved properties and diagnostics are in the results panel at the bottom of "
+               "this tab.")
+
+
 def _results_panel(st, pd, np, ss, run):
     """Everything shown after a run; reads only ``ss['ig_run']``."""
     from suspension import inverse_genesis as ig
@@ -878,10 +914,13 @@ def _render_generate():
                         man.record(res)
                     ss["ig_run"] = {"manifest_json": man.to_json(),
                                     "result": res, "verify": ver,
-                                    "source": "manifest",
+                                    "source": "manifest", "inputs_sha256": man.inputs_sha256,
                                     **{k: man.context.get(k) for k in
                                        ("axle", "axle_station", "ground_y")
                                        if man.context.get(k) is not None}}
+                _run = ss.get("ig_run")
+                if _run and _run.get("source") == "manifest" and _run.get("inputs_sha256") == man.inputs_sha256:
+                    _manifest_run_summary(st, _run, man)
             except ValueError as e:
                 st.error(f"Manifest refused: {e}")
 

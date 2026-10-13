@@ -295,6 +295,34 @@ def roll_gradient_ceiling(veh: Vehicle, tire: Tire, anti_pct: float, axle: str,
     return lo
 
 
+def roll_gradient_for_friction(veh: Vehicle, tire: Tire, anti_pct: float, axle: str, ride_hz: float,
+                               mu: float) -> float:
+    """Softest roll gradient (deg/g) at which ``ride_hz`` still holds the combined case inside the jounce budget when
+    the tire's peak friction is ``mu`` (dimensionless) and the design accelerations scale with it.
+
+    This is how the roll gradient is derived rather than declared: the springs are fixed by the ride frequency, the
+    anti-geometry by the corner, and the travel budget by the rules; the gradient is then the largest (the least bar,
+    the most compliance over single-wheel bumps) at which every wall still holds at the highest friction the tire is
+    expected to reach. ``anti_pct`` in percent, ``ride_hz`` in Hz."""
+    return roll_gradient_ceiling(veh, tire, anti_pct, axle, ride_hz, mu_allowance=mu / tire.peak_mu - 1.0)
+
+
+def springs_only_roll_gradient(veh: Vehicle, rc_front_mm: float, rc_rear_mm: float,
+                               weight_front: float = 0.48) -> dict:
+    """Roll gradient (deg/g) the springs alone give at the declared ride frequencies, and their roll stiffness.
+
+    Wheel rate k = (2 pi f)^2 m_s per corner (N/mm), axle roll stiffness k t^2 / 2 (N*m/deg), roll moment per g
+    m g (h - h_ra) with h_ra the roll axis at the CG station (the convention of front_lltd_share). Returns
+    {"front_Nm_per_deg", "rear_Nm_per_deg", "moment_Nm_per_g", "gradient_deg_per_g"}."""
+    kf = (2.0 * math.pi * veh.ride_front_hz) ** 2 * veh.sprung_corner_front_kg / 1000.0
+    kr = (2.0 * math.pi * veh.ride_rear_hz) ** 2 * veh.sprung_corner_rear_kg / 1000.0
+    to_deg = veh.track_mm ** 2 / 2.0 * math.pi / 180.0 / 1000.0
+    Kf, Kr = kf * to_deg, kr * to_deg
+    h_ra = rc_front_mm + (rc_rear_mm - rc_front_mm) * (1.0 - weight_front)
+    M = veh.mass_kg * G0 * (veh.cg_height_mm - h_ra) / 1000.0
+    return {"front_Nm_per_deg": Kf, "rear_Nm_per_deg": Kr, "moment_Nm_per_g": M, "gradient_deg_per_g": M / (Kf + Kr)}
+
+
 def share_per_mm_front_rc(veh: Vehicle, front_stiffness_share: float = 0.522,
                           front_weight_fraction: float = 0.48) -> float:
     """Front lateral load-transfer share (fraction) per mm of front roll-centre height.

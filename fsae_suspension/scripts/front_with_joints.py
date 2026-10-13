@@ -26,13 +26,19 @@ from suspension.genesis_repro import GenesisManifest, hp_from_dict            # 
 MAN = ROOT / "manifests"
 
 
-def declare(k_end: float = 50000.0, max_evals: int = 3000) -> GenesisManifest:
-    """front_v11_final with link ends of ``k_end`` N/mm each, started from its own winner."""
+def declare(k_end: float = 50000.0, max_evals: int = 3000, ack_hi: float | None = 100.0) -> GenesisManifest:
+    """front_v11_final with link ends of ``k_end`` N/mm each, started from its own winner; ``ack_hi`` (%) adds a
+    ceiling to the Ackermann-at-lock wall (None keeps the floor alone)."""
     F = GenesisManifest.from_json((MAN / "front_v11_final.recorded.genesis.json").read_text())
     d = json.loads(F.to_json())
     for case in ("elasto", "elasto_braking"):
         for m in d["volume"]["properties"][case]["members"].values():
             m["k_tab"] = k_end / 2.0
+    if ack_hi is not None:
+        for b in d["volume"]["properties"]["bounds"]:
+            if b["prop"] == "ackermann_lock_pct":
+                b["hi"] = float(ack_hi)
+                b["label"] = f"{b['lo']:g} <= Ackermann at the declared lock (%) <= {ack_hi:g}"
     vol = json.loads(json.dumps(d["volume"]))
     base = GenesisManifest.from_json(json.dumps({k: v for k, v in d.items() if k not in ("inputs_sha256", "recorded")}))
     m = base.restarted(f"front_v11_joints{k_end / 1000:.0f}", hp_from_dict(F.recorded["winner_hardpoints"]),
@@ -41,7 +47,7 @@ def declare(k_end: float = 50000.0, max_evals: int = 3000) -> GenesisManifest:
                        {"paper": "v11", "axle": "front", "run": (
                            "every input of front_v11_final (inputs " + F.inputs_sha256[:12] + ") with each link's two "
                            f"ends (joint, tab, upright arm) declared at {k_end / 1000:.0f} kN/mm along the link in both "
-                           "compliance load cases, started from its winner; start search declared, then InverseGenesis "
+                           "compliance load cases" + ("" if ack_hi is None else f", Ackermann at lock at most {ack_hi:g}%") + ", started from its winner; start search declared, then InverseGenesis "
                            "(scripts/front_with_joints.py)")})
     assert m.volume == vol
     m.context.pop("declared_from", None)
