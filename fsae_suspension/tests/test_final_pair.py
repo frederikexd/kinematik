@@ -83,12 +83,12 @@ def _pitch(ad, al, a_g=1.5):
 
 def test_final_rear_holds_every_wall():
     m = _m(REAR); _, _, vol, _ = m.objects(); hp = _w(REAR)
-    assert m.recorded["winner_verdict"] == "RESILIENT" and m.inputs_sha256.startswith("8818c4b890d1")
+    assert m.recorded["winner_verdict"] == "RESILIENT" and m.inputs_sha256.startswith("1d2b4a0a7fca")
     assert m.recorded["winner_hardpoints"] == json.loads(m.to_json())["hardpoints"]    # returns its start
     assert vol.wall_violations(hp) == []
     v = vol.properties.evaluate(hp)
     assert v["brake_decel_g"] == pytest.approx(1.57, abs=0.005)
-    assert v["link_fos_min"] == pytest.approx(2.24, abs=0.005)
+    assert v["link_fos_min"] == pytest.approx(4.63, abs=0.005)        # traction at the wheel centre (inboard drive)
     assert v["rocker_bearing_sf"] == pytest.approx(2.08, abs=0.005)
     assert vol.envelope_margin(hp) == pytest.approx(1.19, abs=0.01)
     assert vol.envelope_margin(_w("rear_v11")) == pytest.approx(-2.75, abs=0.01)     # 0.25 mm from the tire
@@ -96,12 +96,12 @@ def test_final_rear_holds_every_wall():
 
 def test_final_front_holds_every_wall():
     m = _m(FRONT); _, _, vol, _ = m.objects(); hp = _w(FRONT)
-    assert m.recorded["winner_verdict"] == "RESILIENT" and m.inputs_sha256.startswith("2e7072ce2268")
+    assert m.recorded["winner_verdict"] == "RESILIENT" and m.inputs_sha256.startswith("2d35663ecd27")
     assert vol.wall_violations(hp) == []
     v = vol.properties.evaluate(hp)
     assert v["ackermann_lock_pct"] == pytest.approx(75.27, abs=0.005)
     assert v["joint_misalignment_lock_deg"] == pytest.approx(4.41, abs=0.005)
-    assert v["compliance_toe_deg"] == pytest.approx(0.0335, abs=0.0005)           # derived frame, links in series
+    assert v["compliance_toe_deg"] == pytest.approx(-0.0116, abs=0.0005)          # derived frame, links in series, tire-consistent Mz
     assert v["compliance_toe_braking_deg"] == pytest.approx(0.230, abs=0.0005)    # the braking wall, +/-0.25 deg
     assert v["anti_dive_pct"] == pytest.approx(68.94, abs=0.005)
     assert (round(v["link_fos_min"], 2), round(v["rocker_bearing_sf"], 2), round(v["brake_decel_g"], 2)) == (2.85, 2.44, 1.57)
@@ -225,9 +225,9 @@ def test_table_8_on_the_final_corners():
     s = gw.LinkStructure.from_shock_cases("front", 0.73).margins(_w(FRONT))
     assert (round(s["LR"]["fos_buckling"], 2), round(s["LR"]["fos_yield"], 2), round(s["LF"]["fos_yield"], 2)) == (1.78, 1.85, 2.08)
     r = _m(REAR).objects()[2].properties.structure.margins(_w(REAR))
-    assert (round(r["UR"]["worst_n"]), round(r["UR"]["fos_buckling"], 2), round(r["UR"]["fos_yield"], 2)) == (-2894, 6.41, 5.62)
-    assert (round(r["LF"]["worst_n"]), round(r["LF"]["fos_buckling"], 2), round(r["LF"]["fos_yield"], 2)) == (-7833, 2.24, 3.25)
-    assert (round(r["LR"]["worst_n"]), round(r["LR"]["fos_buckling"], 2), round(r["LR"]["fos_yield"], 2)) == (9356, 7.03, 2.66)
+    assert (round(r["UR"]["worst_n"]), round(r["UR"]["fos_buckling"], 2), round(r["UR"]["fos_yield"], 2)) == (-1687, 10.99, 9.71)
+    assert (round(r["LF"]["worst_n"]), round(r["LF"]["fos_buckling"], 2), round(r["LF"]["fos_yield"], 2)) == (-3785, 4.63, 7.16)
+    assert (round(r["LR"]["worst_n"]), round(r["LR"]["fos_buckling"], 2), round(r["LR"]["fos_yield"], 2)) == (4785, float("inf"), 5.20)
     assert ga.bracket_fos(8736, 13.0, 50, 6.35)["fos"] == pytest.approx(2.13, abs=0.005)
 
 
@@ -254,12 +254,12 @@ def test_compliance_of_the_final_front():
                                                jacobian=False).change
         links[c.name] = ek.solve_elastokinematic(hp, ek.ElastoSpec(stiffness=ek.StiffnessField(1e9), members=dict(el.members), **kw),
                                                  jacobian=False).change
-    assert out["1.5g corner"]["toe"] == pytest.approx(0.0335, abs=0.0005)     # the compliance wall, 42% of +/-0.08
-    assert links["1.5g corner"]["toe"] == pytest.approx(0.007, abs=0.0005)
+    assert out["1.5g corner"]["toe"] == pytest.approx(-0.0116, abs=0.0005)    # the compliance wall, 14% of +/-0.08 (tire-consistent Mz)
+    assert links["1.5g corner"]["toe"] == pytest.approx(-0.0199, abs=0.0005)
     assert out["1.5g braking"]["toe"] == pytest.approx(0.230, abs=0.0005)     # the braking wall, +/-0.25
     assert out["1.5g braking"]["caster"] == pytest.approx(-1.02, abs=0.005)
     assert links["1.5g braking"]["toe"] == pytest.approx(0.185, abs=0.0005)
-    assert out["combined 1.06g"]["toe"] == pytest.approx(0.205, abs=0.0005)
+    assert out["combined 1.06g"]["toe"] == pytest.approx(0.172, abs=0.0005)
     lf = ek.solve_elastokinematic(hp, ek.ElastoSpec(stiffness=ek.StiffnessField(1e9), members={"LF": el.members["LF"]},
                                                     **_case("front", "1.5g braking")), jacobian=False).change
     assert lf["toe"] == pytest.approx(0.20, abs=0.005)                       # the lower-front leg's own stretch
@@ -280,9 +280,9 @@ def test_compliance_of_the_final_rear_at_the_declared_rate():
     def ch(name):
         return ek.solve_elastokinematic(hp, ek.ElastoSpec(stiffness=ek.StiffnessField(30000.0), members=mem, **_case("rear", name)),
                                         jacobian=False).change
-    assert ch("1.5g corner")["camber"] == pytest.approx(0.088, abs=0.0005)
+    assert ch("1.5g corner")["camber"] == pytest.approx(0.085, abs=0.0005)
     assert ch("1.06g traction")["toe"] == pytest.approx(-0.144, abs=0.0005)
-    assert ch("combined 1.06g traction")["toe"] == pytest.approx(-0.096, abs=0.0005)
+    assert ch("combined 1.06g traction")["toe"] == pytest.approx(-0.131, abs=0.0005)
 
 
 def test_twist_adjustment_and_warp():

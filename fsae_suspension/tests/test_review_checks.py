@@ -25,7 +25,7 @@ def joints():
 
 def test_rigid_ends_reproduce_the_manifest_walls(joints):
     s = joints["sweep"]
-    assert round(s["corner"]["toe_deg"]["rigid"], 3) == 0.034 and round(s["braking"]["toe_deg"]["rigid"], 2) == 0.23
+    assert round(s["corner"]["toe_deg"]["rigid"], 3) == -0.012 and round(s["braking"]["toe_deg"]["rigid"], 2) == 0.23
 
 
 def test_compliant_ends_only_add_toe_and_break_the_braking_wall(joints):
@@ -34,7 +34,7 @@ def test_compliant_ends_only_add_toe_and_break_the_braking_wall(joints):
     assert all(abs(b[k1]) < abs(b[k2]) for k1, k2 in zip(keys, keys[1:]))
     assert all(abs(c[k1]) < abs(c[k2]) for k1, k2 in zip(keys, keys[1:]))
     assert abs(b["100000.0"]) > 0.25 and abs(c["50000.0"]) < 0.08
-    assert 25e3 < joints["required_n_per_mm"]["corner"] < 35e3 and joints["required_n_per_mm"]["braking"] > 4e5
+    assert 8e3 < joints["required_n_per_mm"]["corner"] < 15e3 and joints["required_n_per_mm"]["braking"] > 4e5
     assert joints["lf_move_clearance_allows_mm"] < joints["lf_move_for_wall_at_ref_mm"]
 
 

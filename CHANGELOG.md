@@ -3,6 +3,23 @@
 
 ## Unreleased
 
+**Load cases corrected; the final corners re-run.** Two load-case inconsistencies the paper disclosed are fixed in
+code rather than in text. (1) The cornering cases carried a declared 50 N*m aligning moment at the lateral-force peak,
+where the pneumatic trail has collapsed; `genesis_repro.vehicle_load_cases` now gives each case the tire's own moment,
+`tire_aligning_moment_Nmm` (cosine-law pneumatic trail, brush t0 at 83 kPa and a 180 mm patch, at the slip that
+carries the case's lateral force): -7.5 N*m front and -8.4 N*m rear at 1.5 g, -18.7 N*m front combined, -18.3 N*m
+rear combined traction. A number passed as `aligning_torque_Nm` still declares a fixed moment. (2) The rear traction
+and braking shock cases applied the longitudinal force at the contact patch, as for outboard drive and brakes;
+`robustness.shock_cases` now takes `inboard_drive` and `inboard_brakes` (default True for the rear) and applies it at
+the wheel centre (`Fx_wc`), and rear braking unloads the rear wheels. `front_v11_final` (2d35663ecd27, was
+2e7072ce2268), `rear_v11_final` (1d2b4a0a7fca, was 8818c4b890d1) and `front_v11_joints50` (3678a72d786b, was
+b6399630caba) were re-run on the corrected cases: each returns the same winner (every pickup within 0.0 mm), with
+the same grade and yield. The rear link factor rises from 2.24 to 4.63 (lower-front leg -3.8 kN instead of -7.8 kN;
+2.89 on 5/8 x 0.035 in legs throughout), bearings unchanged at 2.08; front cornering compliance toe becomes -0.012 deg
+(was +0.034) on the final front and -0.018 deg (was +0.062) on the front to build; braking toe, the front link
+factors and bearings are unchanged. The replaced records are in `manifests/superseded`; the node brief is rehashed
+(4f1c95fff3ab) and `scripts/paper_claims.py` quotes the current paper and supplement.
+
 **The roll gradient is derived, not declared.** `target_derivation.roll_gradient_for_friction` gives the softest roll
 gradient at which the ride frequency still holds the 1.06 g combined case inside the jounce budget at a stated tire
 friction: with the springs at 2.6/3.0 Hz and the final corners' anti-geometry, the rear binds at 0.788 deg/g at mu 1.82
