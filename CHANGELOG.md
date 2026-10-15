@@ -17,8 +17,10 @@ b6399630caba) were re-run on the corrected cases: each returns the same winner (
 the same grade and yield. The rear link factor rises from 2.24 to 4.63 (lower-front leg -3.8 kN instead of -7.8 kN;
 2.89 on 5/8 x 0.035 in legs throughout), bearings unchanged at 2.08; front cornering compliance toe becomes -0.012 deg
 (was +0.034) on the final front and -0.018 deg (was +0.062) on the front to build; braking toe, the front link
-factors and bearings are unchanged. The replaced records are in `manifests/superseded`; the node brief is rehashed
-(4f1c95fff3ab) and `scripts/paper_claims.py` quotes the current paper and supplement.
+factors and bearings are unchanged. `front_v11_from_85mm` (41c4fcdd9766, was 3bcacea5c507) and `front_v11_from_delivered` (1d9bb6277536, was
+3079657a19c5), which carry every input of the final front, were re-run on the same cases and record the same
+results (RESILIENT at 113 mm; NO_FIT at 1.26); only their cornering compliance toe moves. The replaced records are in
+`manifests/superseded`; the node brief is rehashed (4f1c95fff3ab) and `scripts/paper_claims.py` quotes the current paper and supplement.
 
 **The roll gradient is derived, not declared.** `target_derivation.roll_gradient_for_friction` gives the softest roll
 gradient at which the ride frequency still holds the 1.06 g combined case inside the jounce budget at a stated tire

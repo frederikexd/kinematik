@@ -42,14 +42,8 @@ def test_the_manifests_carry_every_input_of_the_final_front():
     F = json.loads(_m("front_v11_final").to_json())
     for name in ("front_v11_from_85mm", "front_v11_from_delivered"):
         d = json.loads(_m(name).to_json())
-        for k in ("targets", "tolerance", "search"):
+        for k in ("targets", "volume", "tolerance", "search"):
             assert d[k] == F[k], (name, k)
-        # these two records predate the load-case correction (CHANGELOG): their cornering cases still carry the
-        # declared 50 N*m aligning moment; every other input of the volume is the final front's
-        dv, fv = d["volume"], F["volume"]
-        for v in (dv, fv):
-            v["properties"]["bearing"].pop("cases", None); v["properties"]["elasto"].pop("Mz", None)
-        assert dv == fv, name
         for k in dfd.ACTUATION:
             assert d["hardpoints"][k] == F["hardpoints"][k]
 
