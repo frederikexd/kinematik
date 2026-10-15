@@ -132,3 +132,17 @@ def test_free_frame_load_is_balanced_by_inertia():
     mass = fr.lumped_mass(200.0)
     U, res, reaction = fd.solve_free(fr, mass, {10: np.array([0, 0, 1000.0, 0, 0, 0]), 200: np.array([500.0, 0, 0, 0, 0, 0])})
     assert reaction < 1e-6
+
+
+def test_cornering_aligning_moment_follows_the_tire():
+    """The cornering cases carry the declared tire's own aligning moment (cosine-law trail), not a fixed 50 N*m;
+    rear braking cases take load off the rear wheels."""
+    from suspension.genesis_repro import vehicle_load_cases, tire_aligning_moment_Nmm
+    f = {c.name: c for c in vehicle_load_cases(axle="front", brake_bias_front=0.73)}
+    assert -10000.0 < f["1.5g corner"].mz_Nmm < -5000.0              # about 7.5 N*m near the limit, not 50
+    assert f["combined 1.06g"].mz_Nmm < f["1.5g corner"].mz_Nmm      # further from the limit, more trail
+    assert tire_aligning_moment_Nmm(1247.7, 0.0) == 0.0
+    r = {c.name: c for c in vehicle_load_cases(axle="rear", brake_bias_front=0.73)}
+    st = 300.0 * 9.81 * 0.52 / 2.0
+    assert r["1.5g braking"].Fz < st and r["combined 1.06g"].Fz < st + 0.47 * 300.0 * 9.81 * 1.06 * 280.0 / 1210.0
+    assert vehicle_load_cases(axle="front", aligning_torque_Nm=50.0)[0].mz_Nmm == -50000.0   # declared value kept
