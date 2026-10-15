@@ -193,7 +193,8 @@ def hand_roll_centre(hp: Hardpoints) -> dict:
     return {"ic_y_mm": float(ic[0]), "ic_z_mm": float(ic[1]), "rc_height_mm": float(cp[2] - slope * cp[1])}
 
 
-def shock_cases(axle: str, brake_front: float = 0.73, kick: float = 0.3, mass_kg: float = 300.0) -> dict:
+def shock_cases(axle: str, brake_front: float = 0.73, kick: float = 0.3, mass_kg: float = 300.0,
+                inboard_drive: bool = True, inboard_brakes: bool = True) -> dict:
     """The declared shock load cases at one axle's outer wheel (loadpath.WheelLoad, N, SAE axes).
 
     braking 1.8 g      the axle's share of a 1.8 g stop at ``brake_front``, on the
@@ -216,9 +217,14 @@ def shock_cases(axle: str, brake_front: float = 0.73, kick: float = 0.3, mass_kg
                 "curb strike while braking": WheelLoad(Fx=fx, Fz=3 * st)}
     st = mass_kg * g * (1 - wf) / 2.0; fxb = (1 - brake_front) * mass_kg * g * 1.8 / 2.0
     fzb = td.corner_loads(v, a_lat_g=0.0, a_long_g=1.8)["total"]["RL"]
-    return {"braking 1.8 g": WheelLoad(Fx=fxb, Fz=fzb), "curb strike 3 g + kick": WheelLoad(Fx=kick * 3 * st, Fy=kick * 3 * st, Fz=3 * st),
+    # a chassis-mounted final drive (and inboard rear brakes) react the shaft torque, so their longitudinal force
+    # reaches the upright at the wheel centre (loadpath.WheelLoad.Fx_wc), as the anti-squat and bearing cases declare
+    fxt = -mass_kg * g * 1.06 / 2.0
+    brake = WheelLoad(Fx_wc=fxb, Fz=fzb) if inboard_brakes else WheelLoad(Fx=fxb, Fz=fzb)
+    trac = WheelLoad(Fx_wc=fxt, Fz=3 * st) if inboard_drive else WheelLoad(Fx=fxt, Fz=3 * st)
+    return {"braking 1.8 g": brake, "curb strike 3 g + kick": WheelLoad(Fx=kick * 3 * st, Fy=kick * 3 * st, Fz=3 * st),
             "curb strike 3 g + inboard kick": WheelLoad(Fx=kick * 3 * st, Fy=-kick * 3 * st, Fz=3 * st),
-            "traction 1.06 g + curb": WheelLoad(Fx=-mass_kg * g * 1.06 / 2.0, Fz=3 * st)}
+            "traction 1.06 g + curb": trac}
 
 
 def upright_brake_requirement(brake_front: float = 0.73, decel_g: float = 1.8, mass_kg: float = 300.0,

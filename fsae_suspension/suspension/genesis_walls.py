@@ -151,11 +151,14 @@ class LinkStructure:
                       else _load_dict(v) for k, v in self.cases.items()}
 
     @classmethod
-    def from_shock_cases(cls, axle: str, brake_front: float, **kw) -> "LinkStructure":
-        """The declared shock cases of robustness.shock_cases at this bias; loads in N, sections in mm."""
+    def from_shock_cases(cls, axle: str, brake_front: float, inboard_drive: bool = True, inboard_brakes: bool = True,
+                         **kw) -> "LinkStructure":
+        """The declared shock cases of robustness.shock_cases at this bias; loads in N, sections in mm. The rear
+        drive and rear brakes default to inboard (their force at the wheel centre)."""
         from .robustness import shock_cases
         return cls(cases={k: _load_dict(v) for k, v in
-                          shock_cases(axle, brake_front=brake_front).items()}, **kw)
+                          shock_cases(axle, brake_front=brake_front, inboard_drive=inboard_drive,
+                                      inboard_brakes=inboard_brakes).items()}, **kw)
 
     def margins(self, hp) -> dict:
         """Per link: worst force (N), its case, buckling and yield factors."""

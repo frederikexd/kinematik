@@ -53,4 +53,8 @@ def test_shock_cases_follow_the_brake_bias():
     assert hi.Fx / lo.Fx == pytest.approx(0.73 / 0.60)                         # front braking scales with bias
     assert hi.Fz == pytest.approx(lo.Fz)                                       # vertical load does not
     r = rb.shock_cases("rear", 0.73)
-    assert r["traction 1.06 g + curb"].Fx < 0                                  # traction is forward (-x)
+    assert r["traction 1.06 g + curb"].Fx_wc < 0                               # traction is forward (-x), at the wheel centre
+    assert r["traction 1.06 g + curb"].Fx == 0.0                               # the inboard drive's shaft reacts its torque
+    assert r["braking 1.8 g"].Fx_wc > 0 and r["braking 1.8 g"].Fx == 0.0       # inboard rear brakes likewise
+    o = rb.shock_cases("rear", 0.73, inboard_drive=False, inboard_brakes=False)
+    assert o["traction 1.06 g + curb"].Fx < 0 and o["braking 1.8 g"].Fx > 0    # outboard: at the contact patch

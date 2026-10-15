@@ -29,10 +29,10 @@ TABLE_S5_1 = {"front_final": "5220385cbcd2", "front_steering_walls": "bbc4d82977
               "front_v11_29deg_b60_brake": "113a757c3ce0",
               "front_v11_29deg_b73_6001": "115b45a62748",
               "front_v11_29deg_b73_tube035": "af71aa072573",
-              "front_v11_final": "2e7072ce2268",
-              "rear_v11_final": "8818c4b890d1",
+              "front_v11_final": "2d35663ecd27",
+              "rear_v11_final": "1d2b4a0a7fca",
               "front_v11_from_85mm": "3bcacea5c507",
-              "front_v11_from_delivered": "3079657a19c5", "front_v11_joints50": "b6399630caba"}
+              "front_v11_from_delivered": "3079657a19c5", "front_v11_joints50": "3678a72d786b"}
 
 
 def _manifest(name):
