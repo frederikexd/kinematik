@@ -1,7 +1,7 @@
 # Features
 
 
-Detail for every subsystem. The [README](../README.md) has the short version
+Detail for every subsystem. The [README](../README.md) has the short version.
 
 
 ## Coverage
