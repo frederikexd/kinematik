@@ -1206,6 +1206,27 @@ def with_halfshaft(cases: list, spec, state, wheel_radius_mm: float = 228.0
     return out
 
 
+
+def tire_aligning_moment_Nmm(fz_n: float, fy_n: float, inflation_kpa: float = 83.0,
+                             patch_width_mm: float = 180.0) -> float:
+    """Aligning moment (N*mm, opposing the slip, so negative for an outer wheel pushed toward the turn centre) that
+    the declared tire carries at a lateral force: the slip angle that gives |fy_n| at fz_n on the declared MF5.2 set,
+    and the cosine-law pneumatic trail of steering_feel (brush zero-slip trail, zero at peak force). At or past peak
+    force the trail has collapsed and the moment is zero. Forces in N."""
+    import math
+    import numpy as np
+    from scipy.optimize import brentq
+    from .tiremodel import default_tire
+    t = default_tire()
+    a = np.linspace(0.5, 20.0, 3901)
+    fy = np.abs(t.fy(np.radians(a), fz_n)); k = int(np.argmax(fy)); a0, fyp = float(a[k]), float(fy[k])
+    if abs(fy_n) >= fyp or fy_n == 0.0:
+        return 0.0
+    alpha = brentq(lambda x: abs(float(t.fy(math.radians(x), fz_n))) - abs(fy_n), 1e-4, a0)
+    t0 = fz_n / (inflation_kpa * 1e-3 * patch_width_mm) / 6.0
+    return -abs(fy_n) * t0 * math.cos(0.5 * math.pi * alpha / a0)
+
+
 def vehicle_load_cases(mass_kg: float = 300.0,
                      weight_dist_front: float = 0.48,
                      cg_height_mm: float = 280.0,
@@ -1213,7 +1234,7 @@ def vehicle_load_cases(mass_kg: float = 300.0,
                      track_mm: float = 1210.0,
                      brake_bias_front: float = 0.60,
                      roll_share_front: float = 0.55,
-                     aligning_torque_Nm: float = 50.0,
+                     aligning_torque_Nm: float | None = None,
                      axle: str = "front",
                      lateral_g: float = 1.5,
                      traction_g: float = 0.0,
@@ -1235,7 +1256,9 @@ def vehicle_load_cases(mass_kg: float = 300.0,
     lateral cases carried Fy > 0 and Mz > 0, the forces of a wheel pushed
     outboard, which no outer wheel sees; tests/test_load_case_physics.py checks
     the sign against vehicle equilibrium and the tire model.
-    - 1.5g braking: Fz = static + longitudinal LT; Fx = bias × total braking / 2.
+    - 1.5g braking: Fz = static + longitudinal LT at the front, static - LT at the rear; Fx = bias × total braking / 2.
+    ``aligning_torque_Nm`` None (the default) gives each cornering case the declared tire's own aligning moment
+    (tire_aligning_moment_Nmm); a number declares a fixed moment, as the manifests recorded before this change did.
     - Combined 1.06g: lateral + longitudinal loads together, with aligning torque.
     - 3g vertical bump: purely vertical.
     - Kerb strike 2g vert + 1g long: Fz = 2× static; Fx = braking share.
@@ -1259,20 +1282,23 @@ def vehicle_load_cases(mass_kg: float = 300.0,
     lat_tr = lambda lat: m * g * lat * float(cg_height_mm) / float(track_mm)
     long_tr = lambda lon: m * g * lon * float(cg_height_mm) / float(wheelbase_mm)
     bias = float(brake_bias_front) if axle == "front" else 1.0 - float(brake_bias_front)
-    mz = float(aligning_torque_Nm) * 1000.0
+    # aligning moment: declared (N*m) when given, otherwise the declared tire's own moment at each case
+    mzf = (lambda fz, fy: -float(aligning_torque_Nm) * 1000.0) if aligning_torque_Nm is not None \
+        else (lambda fz, fy: tire_aligning_moment_Nmm(fz, fy))
 
     lat_g = float(lateral_g)
     c1_fz = fz_s + rs * lat_tr(lat_g)
-    c2_fz = fz_s + long_tr(1.5) / 2
-    c3_fz = fz_s + rs * lat_tr(1.06) + long_tr(1.06) / 2
+    dsign = 1.0 if axle == "front" else -1.0     # braking moves load onto the front, off the rear
+    c2_fz = fz_s + dsign * long_tr(1.5) / 2
+    c3_fz = fz_s + rs * lat_tr(1.06) + dsign * long_tr(1.06) / 2
     c5_fz = fz_s * 2.0
 
     cases = [
         LoadCaseSpec(f"{lat_g:g}g corner", Fz=c1_fz, Fy=-lat_g * c1_fz,
-                     mz_Nmm=-mz),
+                     mz_Nmm=mzf(c1_fz, -lat_g * c1_fz)),
         LoadCaseSpec("1.5g braking", Fz=c2_fz, Fx=bias * m * g * 1.5 / 2),
         LoadCaseSpec("combined 1.06g", Fz=c3_fz, Fy=-1.06 * c3_fz,
-                     Fx=bias * m * g * 1.06 / 2, mz_Nmm=-mz),
+                     Fx=bias * m * g * 1.06 / 2, mz_Nmm=mzf(c3_fz, -1.06 * c3_fz)),
         LoadCaseSpec("3g vertical bump", Fz=fz_s * 3.0),
         LoadCaseSpec("kerb 2g+1g", Fz=c5_fz, Fx=bias * m * g * 1.0 / 2),
     ]
@@ -1295,7 +1321,7 @@ def vehicle_load_cases(mass_kg: float = 300.0,
         cases += [
             _drive(f"{tg:g}g traction", t1_fz, -share * m * g * tg / 2),
             _drive("combined 1.06g traction", t2_fz,
-                   -share * m * g * 1.06 / 2, fy=-1.06 * t2_fz, mzz=-mz),
+                   -share * m * g * 1.06 / 2, fy=-1.06 * t2_fz, mzz=mzf(t2_fz, -1.06 * t2_fz)),
         ]
     return cases
 

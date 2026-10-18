@@ -2,11 +2,11 @@
  "schema": "kinematik.genesis.manifest/1",
  "name": "front_v11_from_85mm",
  "kinematik_version": "0.23.0",
- "inputs_sha256": "3bcacea5c50759b08eff894b26994fa37f05ef90f2980cd7f7417a97154bfa0b",
+ "inputs_sha256": "41c4fcdd9766da0a4015e48cf19f9b343f5a32833b4512357838a08121b46acc",
  "context": {
   "paper": "v11",
   "axle": "front",
-  "run": "the search from a bad start: every input of front_v11_final (inputs 2e7072ce2268; targets, +/-100 mm boxes, tolerance field, search settings, every wall, the frame-derived pickup flexibility, the braking case and the actuation with the pushrod on the upright) with the 85 mm-base ChassisV11 candidate's pickups (front_v11_29deg winner, inputs 2673492a63c5) as the start, which fails the link wall (1.37 on the declared legs) and the braking compliance wall (0.77 deg); the pattern search (genesis_seed, declared as this manifest's start_search, so a re-run repeats it) on band fraction plus wall penalties, then InverseGenesis with every wall absolute (scripts/design_from_delivered.py)"
+  "run": "the search from a bad start: every input of front_v11_final (inputs 2d35663ecd27; targets, +/-100 mm boxes, tolerance field, search settings, every wall, the frame-derived pickup flexibility, the braking case and the actuation with the pushrod on the upright) with the 85 mm-base ChassisV11 candidate's pickups (front_v11_29deg winner, inputs 2673492a63c5) as the start, which fails the link wall (1.37 on the declared legs) and the braking compliance wall (0.77 deg); the pattern search (genesis_seed, declared as this manifest's start_search, so a re-run repeats it) on band fraction plus wall penalties, then InverseGenesis with every wall absolute (scripts/design_from_delivered.py) Re-declared with corrected load cases: the cornering cases of the bearing and compliance walls carry the tire-consistent aligning moment (cosine-law trail on the declared MF5.2 set) instead of a declared 50 N*m; rear braking cases take load off the rear wheels; with the inboard drive and inboard rear brakes the rear longitudinal force acts at the wheel centre in the shock cases. Earlier inputs: 3bcacea5c507."
  },
  "hardpoints": {
   "upper_front_inner": [
@@ -411,7 +411,7 @@
       "Fx": 0.0,
       "Fy": -1902.2481818181816,
       "Fz": 1268.1654545454544,
-      "Mz": -50000.0,
+      "Mz": -7529.910145554393,
       "Fx_wc": 0.0,
       "name": "1.5g corner"
      },
@@ -427,7 +427,7 @@
       "Fx": 1138.6467000000002,
       "Fy": -1453.5746515114336,
       "Fz": 1371.296841048522,
-      "Mz": -50000.0,
+      "Mz": -18662.815659631196,
       "Fx_wc": 0.0,
       "name": "combined 1.06g"
      },
@@ -720,7 +720,7 @@
     "Fx": 0.0,
     "Fy": -1902.2481818181816,
     "Fz": 1268.1654545454544,
-    "Mz": -50000.0,
+    "Mz": -7529.910145554393,
     "n_steps": 5,
     "members": {
      "LF": {
@@ -1351,7 +1351,7 @@
    "upper_rear_inner.z"
   ],
   "n_starts": 1,
-  "inputs_sha256": "3bcacea5c50759b08eff894b26994fa37f05ef90f2980cd7f7417a97154bfa0b",
+  "inputs_sha256": "41c4fcdd9766da0a4015e48cf19f9b343f5a32833b4512357838a08121b46acc",
   "kinematik_version": "0.23.0",
   "start_search": {
    "settings": {
