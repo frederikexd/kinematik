@@ -1698,7 +1698,7 @@ Every difference that exceeded its limit was traced to a definition, each checke
 
 Not compared: camber in steer (ARD's definition is unconfirmed), and anti-dive and anti-lift (ARD's brake page was not set to this car's bias and inboard rear brakes).
 
-**ARD lap time.** A load-transfer-balance study in ARD's lap simulator (front share 49, 53 and 57%) is not yet usable: ARD's static state settles at an implausible ride height. This is open with ARD support, so no lap-time agreement is claimed. KinematiK's own quasi-steady check puts the effect of that balance range at about 0.1 s.
+**ARD lap time.** A load-transfer-balance study in ARD's lap simulator (front share 49, 53 and 57%) is pending. 
 
 ---
 
