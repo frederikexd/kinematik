@@ -1,6 +1,6 @@
 # KinematiK: Physics & Mathematics Reference
 
-This document covers the physics and mathematics behind every feature of KinematiK, across every discipline it models: suspension kinematics and synthesis, vehicle dynamics and lap time, tyres, aerodynamics, brakes and pedal box, powertrain and energy, battery and cooling thermal, electrical systems, data acquisition, structures, measurement and uncertainty. Each section names the source module in `fsae_suspension/suspension/` (or `fsae_suspension/scripts/`, `fsae_suspension/powertrain/`) that implements it. Sections 14 to 20 follow the paper *Inverse Kinematic Synthesis* and its supplement; references of the form M3.1 (paper method part) and S6.35 (supplement) point there. Section 32 sets out how the physics is verified, and the external validation it has had so far.
+This document covers the physics and mathematics behind every feature of KinematiK, across every discipline it models: suspension kinematics and synthesis, vehicle dynamics and lap time, tyres, aerodynamics, brakes and pedal box, powertrain and energy, battery and cooling thermal, electrical systems, data acquisition, structures, measurement and uncertainty. Each section names the source module in `fsae_suspension/suspension/` (or `fsae_suspension/scripts/`, `fsae_suspension/powertrain/`) that implements it. Section 32 sets out how the physics is verified, and the external validation it has had so far.
 
 Modules that only move data (the app, accounts, reports, file import and export, plotting) contain no physics and are not listed. A model labelled *representative* or *uncalibrated* in its module returns `synthesized=True` or `calibrated=False` on its outputs until it is fitted to measurements.
 
@@ -86,7 +86,7 @@ ground = lo + t · kp̂
 scrub  = cp[y] − ground[y]   [mm]
 ```
 
-In the body-fixed corner frame the road moves with the wheel: at +20 mm of bump it sits 20 mm above z = 0. Intersecting the axis with z = 0 instead adds `tan(KPI) × travel` to the scrub (2.3 mm at 20 mm of bump on the front to build). At static the two planes coincide. The generic adapter (`adapter.py`) uses the same road plane, through the wheel-centre reference it carries, and the mechanical trail of §16.1 is taken on the same plane. Pinned by `test_scrub_radius_is_measured_on_the_road`.
+In the body-fixed corner frame the road moves with the wheel: at +20 mm of bump it sits 20 mm above z = 0. Intersecting the axis with z = 0 instead adds `tan(KPI) × travel` to the scrub (2.3 mm at 20 mm of bump on `front_v11_joints50`). At static the two planes coincide. The generic adapter (`adapter.py`) uses the same road plane, through the wheel-centre reference it carries, and the mechanical trail of §16.1 is taken on the same plane. Pinned by `test_scrub_radius_is_measured_on_the_road`.
 
 ### 1.6 Front-View Instant Centre & Roll-Centre Height
 
@@ -107,9 +107,9 @@ RC_height = cp_z − m · cp_y
 
 When `IC_y = cp_y` the line is vertical and never reaches the centreline: the roll centre is at infinity and the function returns NaN. (It used to return the contact-patch height, which reads as a legitimate 0 mm design target.)
 
-**Why not the midpoint construction:** the textbook method draws each wishbone as the line from its ball joint to the midpoint of its two chassis pickups. This is only correct when the wishbone pivot axis is parallel to x. With staggered z-heights (which anti-dive geometry requires), the midpoint line is no longer perpendicular to the ball joint's velocity. On the default geometry this error displaced the IC by ~96 mm and the roll centre by ~1.3 mm. On the paper's re-run front it would put the roll centre 3.8 mm low (52.26 against 56.09 mm).
+**Why not the midpoint construction:** the textbook method draws each wishbone as the line from its ball joint to the midpoint of its two chassis pickups. This is only correct when the wishbone pivot axis is parallel to x. With staggered z-heights (which anti-dive geometry requires), the midpoint line is no longer perpendicular to the ball joint's velocity. On the default geometry this error displaced the IC by ~96 mm and the roll centre by ~1.3 mm. On a staggered FSAE front (`front_v11_joints50`) it puts the roll centre 3.8 mm low (52.26 against 56.09 mm).
 
-**Hand check (S6.28):** the construction above, done by hand from the published hardpoints (pivot axes, joint velocities, the two front-view lines and their intersection), reproduces KinematiK's IC and roll-centre height to within 1e-12 mm.
+**Hand check:** the construction above, done by hand from a corner's hardpoints (pivot axes, joint velocities, the two front-view lines and their intersection), reproduces KinematiK's IC and roll-centre height to within 1e-12 mm.
 
 ### 1.7 Side-View Instant Centre (SVIC)
 
@@ -140,7 +140,7 @@ anti-dive% = tan(φ) × (wheelbase / CG_height) × brake_bias_front × 100
 
 **Sign convention:** positive only when SVIC is rearward of the front contact patch and above ground. An SVIC forward of the patch is pro-dive and returns negative. The old bug took |offset|, which reported pro-dive geometry as positive anti-dive.
 
-Every anti value is the same function of a side-view path slope, `anti = slope × (L/h) × (brake or drive share) × 100`; the supplement (S6.31) recomputes it from the solved path by central difference over ±0.5 mm and agrees with these functions to better than 1e-9 points.
+Every anti value is the same function of a side-view path slope, `anti = slope × (L/h) × (brake or drive share) × 100`; recomputing it from the solved path by central difference over ±0.5 mm agrees with these functions to better than 1e-9 points.
 
 **Reference:** Gillespie §5; Milliken & Milliken §17.
 
@@ -187,7 +187,7 @@ MR = |Δ spring_length / Δ z_wheel_centre|            (central difference over 
 
 **Without rocker** (direct-acting fallback): the lower-ball-joint displacement projected onto the spring axis, over the same wheel-centre travel. Labelled explicitly in all outputs (`motion_ratio_is_real()`).
 
-### 1.11 Scrub Rate and the Force-Based Roll Centre (`scripts/force_based_rc.py`, S6.35)
+### 1.11 Scrub Rate and the Force-Based Roll Centre (`scripts/force_based_rc.py`)
 
 Let the wheel rise `dz`, body held; the contact patch moves sideways `dy = q dz`, with `q = dy_cp/dz_cp` the scrub rate (corner frame, y outboard). By virtual work, of the patch loads `Fz` and `Fy`:
 
@@ -273,7 +273,7 @@ Migration across travel is reported explicitly (`roll_center_migration`) — a s
 
 ### 3.1 Pacejka Magic Formula MF5.2 — Pure Lateral
 
-Standard MF5.2 pure-lateral force equations (Pacejka, *Tyre and Vehicle Dynamics*). The equations are textbook and open-source. Coefficients are tire-specific, loaded from a private file that is gitignored and never committed; the paper's set is a synthetic, hand-tuned one (S6.33, S6.38).
+Standard MF5.2 pure-lateral force equations (Pacejka, *Tyre and Vehicle Dynamics*). The equations are textbook and open-source. Coefficients are tire-specific, loaded from a private file that is gitignored and never committed; the default set is a synthetic, hand-tuned one, flagged as such.
 
 ```
 dfz = (Fz − FNOMIN) / FNOMIN          normalised load increment
@@ -312,7 +312,7 @@ Standard elliptic combined-slip approximation. Flagged uncalibrated until drive/
 dα/dt = (|V| / σ) · (α_ss − α)
 ```
 
-where σ is the relaxation length (typically 0.3–0.5 m for FSAE tyres; the paper declares 0.47 m, S6.38) and α_ss the steady-state slip. Used in the transient solver (§6) and the steering-response model (§16.6).
+where σ is the relaxation length (typically 0.3–0.5 m for FSAE tyres; 0.47 m by default) and α_ss the steady-state slip. Used in the transient solver (§6) and the steering-response model (§16.6).
 
 ---
 
@@ -627,9 +627,9 @@ The frame beam model used for torsion and pickup stiffness is §18.5; link buckl
 
 ---
 
-## 14. Target Derivation (`target_derivation.py`) — paper M3
+## 14. Target Derivation (`target_derivation.py`)
 
-Targets are derived from vehicle requirements rather than declared, so the chain can be re-run when an input changes. Units: mm, kg, deg, g, Hz, N. The declared vehicle (`Vehicle`) is paper table M2: 300 kg, h = 280 mm, L = 1630 mm, t = 1210 mm, jounce budget 17.5 mm, sprung corner masses 60.1 / 66.1 kg, front weight fraction 0.48. The declared tyre (`Tire`): camber optimum −1.83°, peak μ 1.55, camber sensitivity 0.36%/deg. Tyres are rigid (no vertical rate) unless a rate is declared.
+Targets are derived from vehicle requirements rather than declared, so the chain can be re-run when an input changes. Units: mm, kg, deg, g, Hz, N. The default declared vehicle (`Vehicle`): 300 kg, h = 280 mm, L = 1630 mm, t = 1210 mm, jounce budget 17.5 mm, sprung corner masses 60.1 / 66.1 kg, front weight fraction 0.48. The declared tyre (`Tire`): camber optimum −1.83°, peak μ 1.55, camber sensitivity 0.36%/deg. Tyres are rigid (no vertical rate) unless a rate is declared.
 
 ### 14.1 Design Accelerations
 
@@ -663,7 +663,7 @@ error      = γ_static + g·z + φ − γ_opt                     loaded_camber_
 
 At −2.5° static the gain is −0.040 deg/mm; at the declared −1.5° it would be −0.12 deg/mm.
 
-### 14.4 Ride-Frequency Floor (equation 1) and Anti Floors
+### 14.4 Ride-Frequency Floor and Anti Floors
 
 Under a longitudinal acceleration the spring must absorb the part of the load transfer the anti-geometry does not, inside the jounce budget left after roll and downforce:
 
@@ -671,7 +671,7 @@ Under a longitudinal acceleration the spring must absorb the part of the load tr
 ΔFz   = m · g · a_x · h / (2L)                          per-wheel transfer (N)
 room  = b − z_aero − z_roll(a_y)                         jounce budget left (mm)
 k_min = (1 − A) · ΔFz / room
-f_min = (1 / 2π) · √(k_min / m_s)                       f_min
+f_min = (1 / 2π) · √(k_min / m_s)
 ```
 
 with A the anti fraction and m_s the sprung corner mass. Inverting it gives the smallest anti that lets a declared ride frequency hold the manoeuvre inside the budget:
@@ -680,7 +680,7 @@ with A the anti fraction and m_s the sprung corner mass. Inverting it gives the 
 A_min = 1 − (2π f)² · m_s · room / ΔFz                  anti_floor_pct
 ```
 
-On the paper's final corners (anti-dive 68.9% at 73% bias, anti-squat 46.7%, every case at 1.06g): front 1.42 Hz straight and 2.00 Hz combined, rear 1.77 and 2.50 Hz (`test_equation_1_reproduces_table_3`).
+On `front_v11_final` and `rear_v11_final` (anti-dive 68.9% at 73% bias, anti-squat 46.7%, every case at 1.06g): front 1.42 Hz straight and 2.00 Hz combined, rear 1.77 and 2.50 Hz (`test_target_derivation.py`).
 
 **Derived ride frequency** (`ride_frequency_derived`): the combined-case floor evaluated with peak μ raised by a 10% allowance while the tyre is unmeasured. A frequency above its floor costs grip over bumps and buys no travel.
 
@@ -726,7 +726,7 @@ capacity ratio = C_f / C_r        (< 1: understeer)
 
 The **neutral share** is where the ratio is 1 (bisection): 51.1% at 1.5g. The 53% target makes the front saturate first by 0.7% of axle capacity, a controllability choice.
 
-**Tyre heat** (`robustness.balance_under_tire_change`, S6.25): the same balance with one axle's μ scaled; it reports the new neutral share and the front roll-centre (hardpoint) or front-bar (set-up) change that would restore the margin.
+**Tyre heat** (`robustness.balance_under_tire_change`): the same balance with one axle's μ scaled; it reports the new neutral share and the front roll-centre (hardpoint) or front-bar (set-up) change that would restore the margin.
 
 ### 14.7 Design Corner Loads (`corner_loads`, `steer_warp`)
 
@@ -765,7 +765,7 @@ Each tyre input is moved by ±25% and the camber sensitivity from half to five t
 
 ---
 
-## 15. Inverse Synthesis (`inverse_genesis.py`, `genesis_walls.py`, `genesis_seed.py`) — paper M4
+## 15. Inverse Synthesis (`inverse_genesis.py`, `genesis_walls.py`, `genesis_seed.py`)
 
 ### 15.1 Design Vector and Residual
 
@@ -838,7 +838,7 @@ A manifest holds the seed hardpoints at full precision, targets, bands, boxes, t
 
 ---
 
-## 16. Steering (`steering_feel.py`, `inverse_genesis.SteerEffort`, `dynamic_ackermann.py`, `steering_response.py`) — paper M3.2
+## 16. Steering (`steering_feel.py`, `inverse_genesis.SteerEffort`, `dynamic_ackermann.py`, `steering_response.py`)
 
 ### 16.1 Mechanical Trail
 
@@ -879,7 +879,7 @@ effort:  r_k − r_eff ≥ 0
 lock:    360 · x_lock / c ≤ 120°                    x_lock: rack travel at which the inner (or mean) wheel reaches lock, by bisection
 ```
 
-The worst torque comes before the limit because the pneumatic trail peaks before the force does. `trail_limit_mm` finds, by bisection, the zero-slip trail at which the window closes (the paper's 22.4 mm limit on the final front).
+The worst torque comes before the limit because the pneumatic trail peaks before the force does. `trail_limit_mm` finds, by bisection, the zero-slip trail at which the window closes (22.4 mm on `front_v11_final`).
 
 ### 16.5 Ackermann (`dynamic_ackermann.py`)
 
@@ -910,7 +910,7 @@ e_f is compliance steer (rad per N of front axle force) and G the joint-stiction
 
 ```
 T_caliper = bias_f · m · g · a_x · R / 2           per front wheel (N·m)
-k_upright ≥ T_caliper / Δcaster_limit               (0.1° in the paper)
+k_upright ≥ T_caliper / Δcaster_limit               (0.1° by default)
 ```
 
 ---
@@ -1038,7 +1038,7 @@ slot margin = slot clearance / span growth
 
 ---
 
-## 19. Tyre Use, Yaw Moment and Torque Distribution (`tire_utilisation.py`, `torque_distribution.py`) — S6.21 to S6.29
+## 19. Tyre Use, Yaw Moment and Torque Distribution (`tire_utilisation.py`, `torque_distribution.py`)
 
 ### 19.1 Instantaneous Tyre Utilisation (`tire_state`, `limit_envelope`)
 
@@ -1071,7 +1071,7 @@ Rear forces written `F_R/2 ± d`:
 
 Drag, rolling resistance and the rearward component of the front lateral force at the steer angle enter the longitudinal balance. Each state takes the split that minimises the largest utilisation (scan, then golden section). `simulate_corner` runs a straight, clothoid, arc and mirrored exit by forward and backward passes at the largest tangential acceleration the allocation allows.
 
-### 19.3 Yaw Moment Budget (`yaw_budget`, S6.29)
+### 19.3 Yaw Moment Budget (`yaw_budget`)
 
 The twelve causes of yaw moment about the CG, the lateral force, longitudinal force and aligning torque of each tyre i at (x_i, y_i), x forward and y left:
 
@@ -1081,7 +1081,7 @@ N = Σ_i ( x_i Fy,i − y_i Fx,i + Mz,i ),     Mz,i = −Fy,i · t_p(α_i)   (§
 
 The eight force terms must equal Iz ṙ: zero in a steady corner, positive to build yaw rate, negative to unwind it.
 
-### 19.4 Lateral Acceleration Beyond V²/R (S6.23)
+### 19.4 Lateral Acceleration Beyond V²/R
 
 ```
 a_y = V · (r + β̇),    β = v / V
@@ -1091,7 +1091,7 @@ Only at constant sideslip is all of it V r = V²/R; whenever sideslip changes, V
 
 ---
 
-## 20. Measurement and Uncertainty (`transducer.py`, `calibration.py`, `strain_thermal.py`) — paper M7, S7.4
+## 20. Measurement and Uncertainty (`transducer.py`, `calibration.py`, `strain_thermal.py`)
 
 ### 20.1 Strain-Gauged Link (`transducer.py`)
 
@@ -1129,7 +1129,7 @@ apparent strain = (gauge compensation mismatch) × (temperature difference betwe
 
 Two sensors on a diameter read the full amplitude only when aligned with the source (cos φ otherwise); three at 120° resolve amplitude and direction (`first_harmonic_from_three`).
 
-### 20.4 GUM Budget (S7.4)
+### 20.4 GUM Budget
 
 Every term is combined in quadrature after conversion to a standard uncertainty (Type B rectangular: half-width / √3), and expanded at k = 2. The budget is a pre-calibration estimate, every term Type B, to be replaced by measured values once the links are calibrated.
 
@@ -1629,7 +1629,7 @@ corner scales: σ_total = √4 × pad resolution
 
 ---
 
-## 32. Verification of the Physics — paper M6, S14
+## 32. Verification of the Physics
 
 ### 32.1 Physics Proofs (`tests/test_load_case_physics.py`, `tests/test_accuracy_invariants.py`)
 
@@ -1652,7 +1652,7 @@ Each check uses a principle the code under test does not:
 ### 32.2 Benchmarks
 
 - **Lotus Suspension Analysis** (`scripts/lotus_benchmark.py`, `tests/test_lotus_benchmark.py`): camber and toe in bump, roll and steer, and roll centre, against a published corner the code was not tuned to. It checks the forward kinematics, not the synthesis.
-- **Independent kinematics** (`scripts/independent_kinematics.py`): the upright as one rigid body (six unknowns, SciPy `fsolve`), camber and toe read off the spin axis, the roll centre off the patch's path; agrees with KinematiK's camber and toe within 1e-12° on the paper's final corners.
+- **Independent kinematics** (`scripts/independent_kinematics.py`): the upright as one rigid body (six unknowns, SciPy `fsolve`), camber and toe read off the spin axis, the roll centre off the patch's path; agrees with KinematiK's camber and toe within 1e-12° on `front_v11_final`, `rear_v11_final` and `front_v11_joints50`.
 - **Known-answer recovery** (`test_inverse_solve_recovers_hidden_geometry`): hidden geometries recovered from their curves alone.
 
 ### 32.3 Corrections the Checks Forced
@@ -1673,7 +1673,7 @@ Each check uses a principle the code under test does not:
 
 **Independent re-runs (SIT Racing, Elbee Racing).** Khabir Aqib, technical director of SIT Racing (Singapore Institute of Technology), and Jonathan Iglesias of the Elbee Racing suspension team each re-ran `front_v11_final` from the published code (manifest `2e7072ce2268`, its record before the load-case correction; the corrected record `2d35663ecd27` returns the same pickups). `scripts/verify_run.py` reported each re-run identical to the recorded outputs: every coordinate to 1e-6 mm, every fit and yield to 1e-9. This shows the synthesis reproduces outside the author's environment. It is a reproducibility check, not a physical test of the car.
 
-**Applied Racing Dynamics (ARD).** The front to build (`front_v11_joints50`) and the final rear were entered in ARD's suspension model and compared at static and at ±20 mm of travel. Differences are against ARD's display precision.
+**Applied Racing Dynamics (ARD).** `front_v11_joints50` (front) and `rear_v11_final` (rear) were entered in ARD's suspension model and compared at static and at ±20 mm of travel. Differences are against ARD's display precision.
 
 | Quantity | Front: KinematiK / ARD | Rear: KinematiK / ARD |
 |----------|------------------------|-----------------------|
@@ -1715,10 +1715,10 @@ The formulas in this document are pinned by the test suite (`fsae_suspension/tes
 | `test_kinematics.py`, `test_motion_ratio_antidive.py` | Camber, toe, caster, KPI, scrub, motion ratio |
 | `test_tiremodel.py` | MF5.2 force law, load sensitivity, mu_peak, fitter |
 | `test_compliance.py`, `test_elastokinematics.py` | Compliance steer and camber, pickup stiffness, elastokinematic solve |
-| `test_target_derivation.py`, `test_paper_values.py` | Equation 1, camber chain, floors, shares, sensitivity |
+| `test_target_derivation.py` | Ride-frequency floor, camber chain, floors, shares, sensitivity |
 | `test_inverse_genesis*.py`, `test_genesis_walls.py`, `test_genesis_repro.py` | Residual, walls as refusals, wheel envelope, property bounds, yield, manifests |
 | `test_load_case_physics.py` | The physics proofs of §32.1 |
-| `test_lotus_benchmark.py`, `test_final_pair.py` | External benchmark; every wall and claim on the final corners |
+| `test_lotus_benchmark.py`, `test_final_pair.py` | External benchmark; every wall and quoted value on the final corners |
 | `test_robustness.py`, `test_actuation.py`, `test_steering_margin.py` | Margins, shock cases, actuation, steering window |
 | `test_tire_utilisation.py`, `test_torque_distribution.py` | Utilisation, envelope, torque split, yaw budget |
 | `test_transducer.py` | Strains, bridge output, excitation limit, dynamic error, calibration certificate |
