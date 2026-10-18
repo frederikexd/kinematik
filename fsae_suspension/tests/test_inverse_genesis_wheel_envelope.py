@@ -19,8 +19,7 @@ import pytest
 from suspension.kinematics import Hardpoints, SuspensionKinematics
 from suspension.kinematik_stochastic import ToleranceField
 from suspension.inverse_genesis import (
-    GenesisTargets, LegalVolume, TargetCurve, WheelEnvelope, curves_of,
-    genesis_solve, inverse_genesis, render_genesis_md, spin_axis, _perturbed,
+    GenesisTargets, LegalVolume, TargetCurve, WheelEnvelope, genesis_solve, inverse_genesis, render_genesis_md, spin_axis, _perturbed,
 )
 
 ST = np.array([-25.0, -12.5, 0.0, 12.5, 25.0])

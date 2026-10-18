@@ -1,0 +1,59 @@
+# Reproducibility: the published results, recomputed from the published manifests on the current code.
+#   claims     scripts/paper_check.py recomputes every quoted number from the manifests (about 12 min)
+#   manifests  scripts/verify_run.py re-runs the final corners and requires the outputs to match the recorded
+#              ones, every coordinate to 1e-6 mm and every fit and yield to 1e-9 (rear about 4 min, front about 25)
+# Too slow for every push, so it runs weekly, on demand, and on pushes to main that touch the solver,
+# the manifests or the checks themselves.
+name: reproduce
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 5 * * 0'
+  push:
+    branches: [main]
+    paths:
+      - 'fsae_suspension/suspension/**'
+      - 'fsae_suspension/manifests/**'
+      - 'fsae_suspension/scripts/paper_check.py'
+      - 'fsae_suspension/scripts/paper_claims.py'
+      - 'fsae_suspension/scripts/verify_run.py'
+      - 'requirements.txt'
+      - '.github/workflows/reproduce.yml'
+
+jobs:
+  claims:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install -e ./fsae_suspension
+      - name: Recompute every quoted number from the manifests
+        working-directory: fsae_suspension
+        run: python scripts/paper_check.py
+
+  manifests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        manifest: [rear_v11_final, front_v11_final]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install -e ./fsae_suspension
+      - name: Re-run ${{ matrix.manifest }} and compare with the recorded outputs
+        working-directory: fsae_suspension
+        run: python scripts/verify_run.py manifests/${{ matrix.manifest }}.recorded.genesis.json

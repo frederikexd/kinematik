@@ -163,7 +163,7 @@ def front_to_build() -> dict:
     import steering_margin as sms
     import paper_check as pc
     from dataclasses import replace as _r
-    from suspension import target_derivation as td, tire_field as tf, inverse_genesis as ig
+    from suspension import target_derivation as td, tire_field as tf
     from suspension.genesis_repro import hp_from_dict
     from suspension.kinematics import SuspensionKinematics
     from suspension import actuation as act

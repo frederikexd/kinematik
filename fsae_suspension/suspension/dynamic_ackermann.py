@@ -86,7 +86,7 @@ class AxleCase:
     def from_vehicle(mass_kg: float = 300.0, weight_front: float = 0.48,
                      cg_height_mm: float = 280.0, track_mm: float = 1210.0,
                      front_share: float = 0.53, a_lat_g: float = 1.5,
-                     **kw) -> "AxleCase":
+                     **kw) -> AxleCase:
         """Outer and inner front loads from the balance target of the paper."""
         g = 9.81
         stat = mass_kg * g * weight_front / 2.0

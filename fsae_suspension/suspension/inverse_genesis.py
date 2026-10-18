@@ -530,7 +530,7 @@ class PropertyBound:
         return float(min(v - self.lo, self.hi - v))
 
 
-def properties_of(hp: Hardpoints, ctx: "SolvedPropertyBounds",
+def properties_of(hp: Hardpoints, ctx: SolvedPropertyBounds,
                   only: Sequence[str] | None = None
                   ) -> dict[str, float] | None:
     """Every solved property of one geometry, or None if it does not solve.

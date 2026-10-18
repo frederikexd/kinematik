@@ -34,9 +34,8 @@ temperature and is not modelled. Units: mm, N, MPa, N*mm.
 """
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 

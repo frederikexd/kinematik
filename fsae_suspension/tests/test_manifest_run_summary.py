@@ -4,7 +4,6 @@
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
 """A manifest re-run in the studio reports its grade, yield and record match beside the Run button."""
-import json
 from pathlib import Path
 from types import SimpleNamespace
 

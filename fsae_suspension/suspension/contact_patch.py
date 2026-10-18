@@ -192,7 +192,7 @@ def body_accel_rms(qc: QuarterCar, speed_ms: float, road_class: str = "B",
     return math.sqrt(float(fn(acc * iso8608_psd(f, speed_ms, road_class), f)))
 
 
-def damper_speed_distribution(qc: "QuarterCar", speed_ms: float, knee_ms: float,
+def damper_speed_distribution(qc: QuarterCar, speed_ms: float, knee_ms: float,
                               motion_ratio: float = 1.0, road_class: str = "B",
                               f_lo: float = 0.1, f_hi: float = 50.0, n: int = 4000) -> dict:
     """Share of time the damper spends below its low/high-speed knee.

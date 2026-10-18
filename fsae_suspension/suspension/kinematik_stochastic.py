@@ -281,8 +281,8 @@ class ToleranceField:
                 # a clustered point needs a column even if it has no own scatter
                 self.specs.setdefault(p, ToleranceSpec(np.zeros(3), np.zeros(3)))
 
-    def shifted(self, offsets: dict[str, "np.ndarray"],
-                provenance: str | None = None) -> "ToleranceField":
+    def shifted(self, offsets: dict[str, np.ndarray],
+                provenance: str | None = None) -> ToleranceField:
         """The same field with each named point's box moved by a vector (mm).
 
         This is how a SYSTEMATIC displacement enters: weld shrinkage that

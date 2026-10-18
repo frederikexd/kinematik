@@ -6,7 +6,6 @@
 """Proofs that the statics, the load cases and the frame model obey physics, each against an independent principle
 (supplement S14): virtual work, global equilibrium, vehicle equilibrium, closed-form beam results and Maxwell-Betti
 reciprocity."""
-import json
 import sys
 from pathlib import Path
 
@@ -17,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 from suspension import loadpath as lp, frame_fe as ff, tire_utilisation as tu        # noqa: E402
-from suspension.kinematics import SuspensionKinematics, Hardpoints                   # noqa: E402
+from suspension.kinematics import SuspensionKinematics                   # noqa: E402
 from suspension.genesis_repro import GenesisManifest, hp_from_dict, vehicle_load_cases  # noqa: E402
 
 MAN = ROOT / "manifests"

@@ -693,7 +693,6 @@ class TestAltiumBinary(unittest.TestCase):
     def test_a_truncated_binary_file_is_refused_not_reported_on(self):
         """A mis-parse yields confident nonsense, not an exception, so the
         reader checks its own output against reality before returning."""
-        from suspension import pcb_altium_binary as _bin
         if not _bin_available():
             self.skipTest("olefile not installed")
         with self.assertRaises(ValueError):

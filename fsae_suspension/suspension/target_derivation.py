@@ -401,7 +401,7 @@ def tire_rate_at_pressure(rate_cold_n_per_mm: float, p_cold_kpa: float,
 # --------------------------------------------------------------------------- #
 #  Tire vertical load at each corner: every term, broken out
 # --------------------------------------------------------------------------- #
-def corner_loads(veh: "Vehicle", a_lat_g: float = 0.0, a_long_g: float = 0.0,
+def corner_loads(veh: Vehicle, a_lat_g: float = 0.0, a_long_g: float = 0.0,
                  bank_deg: float = 0.0, grade_deg: float = 0.0,
                  downforce_n: float = 0.0, aero_front_share: float = 0.5,
                  front_lltd: float = 0.53, steer_warp_n: float = 0.0,

@@ -50,7 +50,7 @@ it as a MIRROR with a comparison, or not adding it. That is the point.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 __all__ = ["Quantity", "PHYSICS_OWNERS", "owner_of", "mirrors_of", "unowned_report"]
 

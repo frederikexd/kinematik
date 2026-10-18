@@ -4,7 +4,6 @@
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
 """Rear torque distribution, torque vectoring and tire exploitation."""
-import math
 
 import pytest
 

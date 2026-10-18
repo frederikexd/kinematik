@@ -30,7 +30,6 @@ Forces in N, lengths in mm, stresses in MPa, accelerations in g.
 """
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from functools import lru_cache
 from types import SimpleNamespace
@@ -112,7 +111,7 @@ class BrakeDecel:
                 "wheelbase_mm": float(self.wheelbase_mm), "track_mm": float(self.track_mm)}
 
     @classmethod
-    def from_dict(cls, d: dict) -> "BrakeDecel":
+    def from_dict(cls, d: dict) -> BrakeDecel:
         """Rebuild from to_dict: lengths in mm, loads in N, mass in kg."""
         return cls(**{k: float(v) for k, v in d.items()})
 
@@ -152,7 +151,7 @@ class LinkStructure:
 
     @classmethod
     def from_shock_cases(cls, axle: str, brake_front: float, inboard_drive: bool = True, inboard_brakes: bool = True,
-                         **kw) -> "LinkStructure":
+                         **kw) -> LinkStructure:
         """The declared shock cases of robustness.shock_cases at this bias; loads in N, sections in mm. The rear
         drive and rear brakes default to inboard (their force at the wheel centre)."""
         from .robustness import shock_cases
@@ -194,7 +193,7 @@ class LinkStructure:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "LinkStructure":
+    def from_dict(cls, d: dict) -> LinkStructure:
         """Rebuild from to_dict: lengths in mm, loads in N, mass in kg."""
         return cls(cases=dict(d["cases"]), od_mm=float(d.get("od_mm", 15.875)),
                    wall_mm=float(d.get("wall_mm", 0.889)),
@@ -229,7 +228,7 @@ class RockerBearingWall:
                       for c in self.cases]
 
     @classmethod
-    def from_vehicle_cases(cls, axle: str, brake_bias_front: float, **kw) -> "RockerBearingWall":
+    def from_vehicle_cases(cls, axle: str, brake_bias_front: float, **kw) -> RockerBearingWall:
         """The five (or seven) declared vehicle load cases of genesis_repro; loads in N, spacing in mm."""
         from .genesis_repro import vehicle_load_cases
         return cls(cases=list(vehicle_load_cases(axle=axle, brake_bias_front=brake_bias_front)), **kw)
@@ -257,7 +256,7 @@ class RockerBearingWall:
                 "X0": float(self.X0), "Y0": float(self.Y0)}
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RockerBearingWall":
+    def from_dict(cls, d: dict) -> RockerBearingWall:
         """Rebuild from to_dict: lengths in mm, loads in N, mass in kg."""
         return cls(cases=list(d["cases"]), label=str(d.get("label", "")),
                    C0_N=float(d["C0_N"]), spacing_mm=float(d.get("spacing_mm", 30.0)),

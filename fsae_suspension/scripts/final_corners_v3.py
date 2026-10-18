@@ -33,7 +33,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT)); sys.path.insert(0, str(ROOT / "scripts"))
-from suspension import actuation as act, elastokinematics as ek, inverse_genesis as ig       # noqa: E402
+from suspension import actuation as act       # noqa: E402
 from suspension.genesis_repro import GenesisManifest, hp_from_dict, hp_to_dict, vehicle_load_cases  # noqa: E402
 
 DAMPER = {"label": "Ohlins TTX25 MkII FSAE", "extended_mm": 200.0, "stroke_mm": 57.0}

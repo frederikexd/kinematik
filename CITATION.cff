@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use KinematiK, please cite it using the metadata below."
+type: software
+title: "KinematiK: inverse kinematic synthesis and vehicle design tools for Formula SAE and Formula SAE EV"
+authors:
+  - family-names: Thio
+    given-names: Frederik
+license: AGPL-3.0-only
+repository-code: "https://github.com/frederikexd/kinematik"
+url: "https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/"
+abstract: >-
+  Open-source design tools for Formula SAE and Formula SAE EV teams. KinematiK derives suspension targets from
+  vehicle requirements and synthesises double-wishbone hardpoints to meet them inside absolute packaging,
+  structural and steering walls, prices each candidate for build yield, and records every search as a hashed,
+  re-runnable manifest. It also covers vehicle dynamics, aerodynamics, brakes, powertrain and energy, thermal,
+  electrical systems, data acquisition and measurement.
+keywords:
+  - Formula SAE
+  - suspension kinematics
+  - inverse kinematics
+  - vehicle dynamics
+  - reproducibility

@@ -1,0 +1,19 @@
+# Correctness lint (ruff, the rule set in fsae_suspension/pyproject.toml). Every selected rule is held at zero
+# findings; the version is pinned so a new ruff release cannot turn the badge red without a code change.
+name: lint
+
+on: [push, pull_request]
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install ruff
+        run: pip install ruff==0.16.8
+      - name: Lint
+        working-directory: fsae_suspension
+        run: ruff check . --output-format github

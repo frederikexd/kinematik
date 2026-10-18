@@ -54,7 +54,6 @@ Honesty rules, kept:
 
 from __future__ import annotations
 
-import math
 import re
 
 from .pcb_doctor import (PcbBoard, PcbSegment, PcbVia, PcbPad, PcbFootprint,

@@ -381,7 +381,7 @@ def _property_bounds_from_dict(d: dict | None) -> ig.SolvedPropertyBounds | None
                  if d.get("bearing") else None))
 
 
-def _envelope_to_dict(e: "ig.WheelEnvelope | None") -> dict | None:
+def _envelope_to_dict(e: ig.WheelEnvelope | None) -> dict | None:
     """WheelEnvelope → dict; lengths in mm."""
     if e is None:
         return None
@@ -410,7 +410,7 @@ def _envelope_to_dict(e: "ig.WheelEnvelope | None") -> dict | None:
                         for q in e.sectors]}
 
 
-def _envelope_from_dict(d: dict | None) -> "ig.WheelEnvelope | None":
+def _envelope_from_dict(d: dict | None) -> ig.WheelEnvelope | None:
     """dict → WheelEnvelope; lengths in mm."""
     if not d:
         return None
@@ -1273,7 +1273,6 @@ def vehicle_load_cases(mass_kg: float = 300.0,
     halfshaft, not the upright, reacts its torque. ``inboard_brakes`` does the
     same for the braking cases. Defaults reproduce the five cases exactly.
     """
-    import math
     g = 9.81
     m = float(mass_kg)
     af = float(weight_dist_front) if axle == "front" else 1.0 - float(weight_dist_front)
@@ -1438,10 +1437,9 @@ def compliance_budget(hp: Hardpoints, axle: str = "front",
     kinematic acceptance band, so the user can see how much band the load
     consumes before build scatter is added.
     """
-    from .compliance import CompliantCorner, corner_wheel_load
+    from .compliance import CompliantCorner
     from .kinematics import SuspensionKinematics
     from .dynamics import VehicleDynamics, VehicleParams
-    import math
 
     kin = SuspensionKinematics(hp)
     # build a minimal vehicle just to get wheel loads

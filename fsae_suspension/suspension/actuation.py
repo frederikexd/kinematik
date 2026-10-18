@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, replace
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 from scipy.optimize import least_squares
@@ -71,7 +71,7 @@ class ActuationTargets:
     @classmethod
     def derived(cls, stroke_mm: float = 57.0, travel_mm=(-25.0, 25.0),
                 usable_stroke: float = 0.80, margin: float = 0.07,
-                max_spread: float = 0.10, damper_extended_mm: float | None = None) -> "ActuationTargets":
+                max_spread: float = 0.10, damper_extended_mm: float | None = None) -> ActuationTargets:
         """Static ratio set ``margin`` (fraction) below the stroke ceiling.
 
         stroke_mm, travel_mm and damper_extended_mm in mm; usable_stroke, margin and

@@ -96,7 +96,7 @@ class Car:
         return self.L * self.wf
 
 
-def _d_range(option: str, driving: bool, FR: float, car: "Car", fz_out: float, fz_in: float, kappa: float, tt) -> tuple:
+def _d_range(option: str, driving: bool, FR: float, car: Car, fz_out: float, fz_in: float, kappa: float, tt) -> tuple:
     """Allowed outside-minus-mean force d (N) for an option; (lo, hi), equal for a fixed split."""
     if option == "tv":
         D = max(0.0, car.tv_wheel_max_n - abs(FR) / 2.0); return (-D, D)
@@ -250,7 +250,7 @@ def simulate_corner(R: float, arc_deg: float, option: str, v_top: float = 22.0, 
             "ay_g": np.array([V[i] ** 2 * k[i] / G for i in range(n)]), "at_g": at / G}
 
 
-def yaw_budget(r: dict, car: "Car | None" = None, t0_mm: float = 14.0, alpha_peak_deg: float = 8.1) -> dict:
+def yaw_budget(r: dict, car: Car | None = None, t0_mm: float = 14.0, alpha_peak_deg: float = 8.1) -> dict:
     """The twelve causes of yaw moment at one instant, N·m about the CG (positive turns the car left).
 
     For each tire i at (x_i, y_i) (x forward of the CG, y to the left): its

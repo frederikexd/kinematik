@@ -949,7 +949,7 @@ def mu_step_maneuver(axle: str = "rear", d_mu: float = -0.15,
             f"mu step {d_mu:+.2f} at {axle} ({side})")
 
 
-def mu_step_response(res: "TransientResult", t_step: float) -> dict:
+def mu_step_response(res: TransientResult, t_step: float) -> dict:
     """Yaw-rate and sideslip excursion (deg/s, deg) after a mu step.
 
     Compares the window after ``t_step`` with the settled state just before

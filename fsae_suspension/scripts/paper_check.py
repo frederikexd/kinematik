@@ -232,7 +232,6 @@ class Ctx:
     @cached_property
     def compliance(self) -> dict:
         """Front: own-corner derived flexibility (the manifest's compliance wall), links alone and 30 kN/mm, every case."""
-        from suspension.compliance import MemberStiffness
         el = self.vF.properties.elasto
         mem = dict(el.members)
         out = {}

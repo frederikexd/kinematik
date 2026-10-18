@@ -10,9 +10,7 @@ The properties that matter are behavioural, not functional: this feature only
 works if it is cheap enough to actually use, and only helps if it never invents
 a reason nobody gave.
 """
-import ast
 import os
-import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

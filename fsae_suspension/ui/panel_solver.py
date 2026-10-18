@@ -40,7 +40,6 @@ the appropriate controls for each.
 
 from __future__ import annotations
 
-import io
 import os
 import tempfile
 from dataclasses import replace
@@ -982,7 +981,7 @@ def render(st, default_area_m2: float = 1.0,
     m[1].metric("C_D", _fmt(best["C_D"]),
                 help="Induced drag only for the vortex lattice — total drag "
                      "is higher." if use_vlm else None)
-    m[2].metric("Downforce at %.0f m/s" % speed,
+    m[2].metric("Downforce at %.0f m/s" % speed,  # noqa: UP031 -- see test_repo_accuracy_audit
                 "—" if best["downforce (N)"] is None
                 else f"{best['downforce (N)']:.0f} N")
     #  L/D IS ONLY L/D WHEN THE DRAG IS ALL OF THE DRAG.

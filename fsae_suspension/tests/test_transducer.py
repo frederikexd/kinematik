@@ -7,7 +7,6 @@
 worked relations, and reproduction of a published calibration certificate."""
 import math
 
-import numpy as np
 import pytest
 
 from suspension import transducer as td

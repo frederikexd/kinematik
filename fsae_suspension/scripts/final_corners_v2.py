@@ -43,7 +43,6 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT)); sys.path.insert(0, str(ROOT / "scripts"))
 from suspension.genesis_repro import GenesisManifest, vehicle_load_cases                 # noqa: E402
-from suspension.robustness import shock_cases                                            # noqa: E402
 from suspension import genesis_walls as gw                                               # noqa: E402
 
 SRC = {"front": "front_v11_hairpin_walls", "rear": "rear_v11_walls"}

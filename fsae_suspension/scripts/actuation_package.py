@@ -147,7 +147,6 @@ def upright_seed(hp, along_mm=20.0, inboard_mm=30.0, dxdz=0.0, dydz=-0.7, fore_m
 
 def steer_coupling(hp, rack_mm):
     """Spring length change (mm) at static height when the rack moves ``rack_mm`` each way (front only)."""
-    import copy
     from suspension.kinematics import SuspensionKinematics
     out = []
     L0 = None

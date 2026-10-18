@@ -21,7 +21,6 @@ default operating point proves almost nothing.
 
 Run:  python -m pytest tests/test_physics_ownership.py -v
 """
-import math
 import os
 import sys
 
@@ -29,7 +28,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from suspension.physics_owners import PHYSICS_OWNERS, owner_of, mirrors_of
+from suspension.physics_owners import PHYSICS_OWNERS
 
 
 # --------------------------------------------------------------------------- #

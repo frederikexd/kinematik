@@ -317,7 +317,7 @@ def aggregate_grades(quantities: list[Quantity]) -> dict:
 
 
 def objective_grade(objective: Objective, quantities: list[Quantity],
-                    report: "UncertaintyReport | None" = None,
+                    report: UncertaintyReport | None = None,
                     share_floor: float = 0.01,
                     today: _dt.date | None = None) -> tuple[EvidenceGrade, list[str]]:
     """(grade, limiting channel keys) for an objective's VALUE.

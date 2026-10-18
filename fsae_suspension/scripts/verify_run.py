@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from suspension.genesis_repro import GenesisManifest                                    # noqa: E402
 
 if __name__ == "__main__":
+    all_ok = True
     for p in sys.argv[1:]:
         m = GenesisManifest.from_json(Path(p).read_text())
         t = time.time()
@@ -27,3 +28,5 @@ if __name__ == "__main__":
               f"{round(time.time() - t)} s", flush=True)
         for d in diff:
             print("   ", d)
+        all_ok = all_ok and ok
+    sys.exit(0 if all_ok else 1)                       # a mismatch fails CI

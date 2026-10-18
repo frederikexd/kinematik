@@ -34,7 +34,7 @@ __all__ = ["with_end_stiffness", "toe", "end_stiffness_sweep", "required_end_sti
            "walls"]
 
 
-def with_end_stiffness(spec: "ek.ElastoSpec", k_end_n_per_mm: float | None) -> "ek.ElastoSpec":
+def with_end_stiffness(spec: ek.ElastoSpec, k_end_n_per_mm: float | None) -> ek.ElastoSpec:
     """``spec`` with every link's two ends (joint, tab, arm) in series along it, each of stiffness
     ``k_end_n_per_mm`` (N/mm); None or inf leaves the ends rigid, as the manifest declares them."""
     if k_end_n_per_mm is None or not math.isfinite(k_end_n_per_mm):
@@ -51,7 +51,7 @@ def with_end_stiffness(spec: "ek.ElastoSpec", k_end_n_per_mm: float | None) -> "
     return replace(spec, members=mem)
 
 
-def toe(hp, spec: "ek.ElastoSpec") -> float:
+def toe(hp, spec: ek.ElastoSpec) -> float:
     """Toe change (deg) of the corner under the spec's load, joints and tabs included as the spec declares."""
     r = ek.solve_elastokinematic(hp, spec, jacobian=False)
     if not r.converged:

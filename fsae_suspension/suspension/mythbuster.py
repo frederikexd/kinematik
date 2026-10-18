@@ -353,8 +353,8 @@ PRELIMINARY_NOTE = (
     "against your actual figures.")
 
 
-def preliminary(verdict: "Verdict", text: str, *, need: str,
-                provenance: str = "") -> "CheckOutcome":
+def preliminary(verdict: Verdict, text: str, *, need: str,
+                provenance: str = "") -> CheckOutcome:
     """A qualitative verdict given without the live model, clearly marked.
 
     A rule that needs a model used to return UNKNOWN — "open the EV Powertrain

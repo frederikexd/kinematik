@@ -30,14 +30,16 @@ class _Step:
         return self.n
 
     def point(self, p):
-        return self.add("CARTESIAN_POINT('',(%r,%r,%r))" % tuple(map(float, p)))
+        x, y, z = map(float, p)
+        return self.add(f"CARTESIAN_POINT('',({x!r},{y!r},{z!r}))")
 
     def vertex(self, p):
         return self.add(f"VERTEX_POINT('',#{self.point(p)})")
 
     def placement(self, o, z):
         po = self.point(o)
-        d = self.add("DIRECTION('',(%r,%r,%r))" % tuple(map(float, z)))
+        zx, zy, zz = map(float, z)
+        d = self.add(f"DIRECTION('',({zx!r},{zy!r},{zz!r}))")
         return self.add(f"AXIS2_PLACEMENT_3D('',#{po},#{d},$)")
 
     def face(self, surf, verts):

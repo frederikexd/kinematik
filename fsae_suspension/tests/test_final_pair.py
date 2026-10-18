@@ -109,7 +109,7 @@ def test_final_front_holds_every_wall():
     assert m.recorded["winner_hardpoints"] == json.loads(m.to_json())["hardpoints"]    # the genesis_seed start, returned unchanged
     assert (m.context["seed_search_stage1"]["evaluations"], m.context["seed_search"]["evaluations"]) == (1274, 3)
     assert vol.properties.elasto.stiffness.provenance == "fea"                          # the frame-derived flexibility
-    assert getattr(hp, "pushrod_attach") == "upright"
+    assert hp.pushrod_attach == "upright"
     hh = _w(HAIRPIN)
     for p in ("upper_front_inner", "upper_rear_inner", "lower_rear_inner", "tie_rod_inner",
               "tie_rod_outer", "upper_outer", "lower_outer"):                          # the pickups of the hairpin front

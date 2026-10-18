@@ -121,7 +121,7 @@ def axle_cornering_stiffness(tire, fz_per_wheel_n: float,
     return 2.0 * abs(float(tire.fy(a, fz_per_wheel_n))) / a
 
 
-def yaw_mode(car: "SingleTrack", speeds_ms=(10.0, 15.0, 20.0, 25.0)) -> list[dict]:
+def yaw_mode(car: SingleTrack, speeds_ms=(10.0, 15.0, 20.0, 25.0)) -> list[dict]:
     """Natural frequency (Hz) and damping ratio (dimensionless) of the yaw mode.
 
     The linear single-track car in lateral velocity v and yaw rate r (tire
@@ -148,7 +148,7 @@ def yaw_mode(car: "SingleTrack", speeds_ms=(10.0, 15.0, 20.0, 25.0)) -> list[dic
     return out
 
 
-def lateral_accel_split(car: "SingleTrack", delta_deg: float = 2.0, gust_n: float = 0.0,
+def lateral_accel_split(car: SingleTrack, delta_deg: float = 2.0, gust_n: float = 0.0,
                         gust_s: float = 0.5, t_end: float = 2.0, dt: float = 0.001) -> dict:
     """Split lateral acceleration into its yaw-rate part V·r and its sideslip part V·dβ/dt.
 
@@ -179,7 +179,7 @@ def lateral_accel_split(car: "SingleTrack", delta_deg: float = 2.0, gust_n: floa
 
 
 def tire_derived_single_track(tire=None, mass_kg: float = 300.0, weight_front: float = 0.48,
-                              alpha_deg: float = 1.0, **overrides) -> "SingleTrack":
+                              alpha_deg: float = 1.0, **overrides) -> SingleTrack:
     """The single-track car the paper's steering lag is computed on.
 
     Axle cornering stiffness comes from the tire at the static corner loads as a

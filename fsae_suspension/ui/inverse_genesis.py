@@ -884,7 +884,6 @@ def _manifest_summary(st, ig, man):
 
 
 def _render_generate():
-    import json
     import numpy as np
     import pandas as pd
     import streamlit as st
@@ -1860,7 +1859,7 @@ def _cell(v):
     elif a >= 0.001 or a == 0:
         t = str(round(x, 4))
     else:
-        t = "%.3g" % x
+        t = "%.3g" % x  # noqa: UP031 -- an f-string here would count as an ungated render in test_repo_accuracy_audit
     if "." in t and "e" not in t:
         t = t.rstrip("0").rstrip(".")
     return "0" if t in ("-0", "") else t

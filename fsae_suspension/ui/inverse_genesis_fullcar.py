@@ -644,7 +644,6 @@ def render():
                        "the CAD/DXF tools' input, not STEP (KinematiK carries "
                        "no CAD kernel).")
             try:
-                from suspension.kinematics import Hardpoints
                 hp_c, note_c = _corner_hp(ss, "front")
                 st.caption(f"Geometry: {note_c}.")
                 csv = fc.export_hardpoints_csv(hp_c)

@@ -39,7 +39,6 @@ distinguishable from the others.
 from __future__ import annotations
 
 import copy
-import math
 
 #: Hard cap on samples per trace. A lap-time or transient trace can carry tens
 #: of thousands of points; at report DPI anything past a couple of thousand is

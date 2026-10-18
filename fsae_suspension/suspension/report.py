@@ -53,6 +53,10 @@ import hashlib
 import json
 import datetime as _dt
 from dataclasses import dataclass, field, asdict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:                       # annotations only; reportlab is imported lazily at run time
+    from reportlab.platypus import Paragraph, Table
 
 #  reportlab is imported by the functions that draw, not at module scope.
 #

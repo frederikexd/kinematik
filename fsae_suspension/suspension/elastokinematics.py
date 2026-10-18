@@ -38,7 +38,7 @@ Units: mm, N, N/mm (stiffness), deg (channels).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 
@@ -107,7 +107,7 @@ class StiffnessField:
         """Compliance matrix at a pickup, mm/N."""
         return np.linalg.inv(self.matrix(point))
 
-    def scaled(self, factor: float) -> "StiffnessField":
+    def scaled(self, factor: float) -> StiffnessField:
         """Every stiffness multiplied by ``factor`` (dimensionless)."""
         return StiffnessField(
             default_n_per_mm=self.default_n_per_mm * factor,
@@ -118,7 +118,7 @@ class StiffnessField:
     @classmethod
     def from_pull_tests(cls, hp: Hardpoints, tests: Mapping[str, tuple],
                         transverse_n_per_mm: float | None = None,
-                        default_n_per_mm: float = 30000.0) -> "StiffnessField":
+                        default_n_per_mm: float = 30000.0) -> StiffnessField:
         """Build from measured in-situ pull tests.
 
         ``tests`` maps a pickup to (force N, deflection mm), both measured along
@@ -155,7 +155,7 @@ class StiffnessField:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "StiffnessField":
+    def from_dict(cls, d: dict) -> StiffnessField:
         return cls(default_n_per_mm=float(d.get("default_n_per_mm", 30000.0)),
                    per_point={k: np.asarray(v, float) for k, v in d.get("per_point", {}).items()},
                    provenance=d.get("provenance", "declared"),
@@ -208,7 +208,7 @@ class FrameTwist:
                 "wheelbase_mm": float(self.wheelbase_mm)}
 
     @classmethod
-    def from_dict(cls, d: dict) -> "FrameTwist":
+    def from_dict(cls, d: dict) -> FrameTwist:
         """Rebuild from a dict: torsional rate in N·m/deg, torque in N·m, lengths in mm."""
         return cls(**{k: float(v) for k, v in d.items()})
 
@@ -257,7 +257,7 @@ class ElastoSpec:
     #: free play taken up before the joint carries load: {"TR": 0.05, ...}
     joint_lash_mm: dict = field(default_factory=dict)
     #: optional global frame twist between the rack and the tie-rod plane
-    twist: "FrameTwist | None" = None
+    twist: FrameTwist | None = None
 
     def __post_init__(self):
         if int(self.n_steps) < 1:
@@ -306,7 +306,7 @@ class ElastoSpec:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "ElastoSpec":
+    def from_dict(cls, d: dict) -> ElastoSpec:
         return cls(stiffness=StiffnessField.from_dict(d.get("stiffness", {})),
                    Fx=float(d.get("Fx", 0.0)), Fy=float(d.get("Fy", 0.0)),
                    Fz=float(d.get("Fz", 0.0)), Mz=float(d.get("Mz", 0.0)),

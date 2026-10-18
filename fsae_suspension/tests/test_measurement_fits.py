@@ -4,7 +4,6 @@
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
 """Each fitter must recover the parameters that generated its synthetic test."""
-import math
 
 import numpy as np
 import pytest

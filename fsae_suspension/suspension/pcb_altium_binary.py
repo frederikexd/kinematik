@@ -41,7 +41,6 @@ AGPL-3.0; the layouts below were written from that reference, not copied):
 
 from __future__ import annotations
 
-import math
 import struct
 
 from .pcb_doctor import (PcbBoard, PcbSegment, PcbVia, PcbPad, PcbFootprint,

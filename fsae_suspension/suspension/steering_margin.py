@@ -43,7 +43,7 @@ def mechanical_trail(hp) -> float:
     return ig.mechanical_trail_mm(SuspensionKinematics(hp).solve_at_travel(0.0))
 
 
-def steer_effort(manifest) -> "ig.SteerEffort":
+def steer_effort(manifest) -> ig.SteerEffort:
     """The manifest's declared SteerEffort (loads in N, effort limit in N·m, rack in mm per turn), or the default
     when it declares none."""
     vol = manifest.objects()[2]

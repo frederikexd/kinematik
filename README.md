@@ -8,6 +8,8 @@
 [![tests](https://github.com/frederikexd/kinematik/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/frederikexd/kinematik/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/codeql.yml)
 [![security](https://github.com/frederikexd/kinematik/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/security.yml)
+[![lint](https://github.com/frederikexd/kinematik/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/lint.yml)
+[![reproduce](https://github.com/frederikexd/kinematik/actions/workflows/reproduce.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/reproduce.yml)
 
 Design tools for Formula SAE and Formula SAE EV teams. Suspension kinematics,
 aero, brakes, accumulator, chassis, cooling, electrics and powertrain in one place, sharing

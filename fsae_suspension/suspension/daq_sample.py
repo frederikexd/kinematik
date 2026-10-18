@@ -50,7 +50,7 @@ gps_position           STORAGE + a wide payload on a slow channel.
 from __future__ import annotations
 
 from .daq_plan import (
-    BmsSignal, BusSpec, LoggerSpec, OutputType, Rail, SensorSpec, UartLink,
+    BmsSignal, BusSpec, LoggerSpec, OutputType, SensorSpec, UartLink,
     catalog, default_rails, plan, plan_bms_bridge,
 )
 
