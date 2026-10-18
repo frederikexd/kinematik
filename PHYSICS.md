@@ -706,13 +706,14 @@ front share = [ w_f · RC_f + s_f · (h − h_ra) ] / h          front_lltd_shar
 s_f         = (target · h − w_f · RC_f) / (h − h_ra)         stiffness_share_for_lltd
 ```
 
-with s_f the front roll-stiffness share. Linearised, the share moves per mm of front roll centre by
+with s_f the front roll-stiffness share. Differentiating this share model with respect to each roll centre gives the resolution of the roll-centre band:
 
 ```
-d(share)/d(RC_f) = (m_s,front − s_f · w_f · m_s) / (m · h)       share_per_mm_front_rc
+d(share)/d(RC_f) = w_f (1 − s_f) / h          0.082 points per mm
+d(share)/d(RC_r) = −s_f (1 − w_f) / h         −0.097 points per mm
 ```
 
-(m_s,front and m_s the sprung masses of the front axle and the car): 0.068 points per mm, so ±18 mm is ±1.2 points.
+so ±18 mm is ±1.5 points at the front and ±1.7 at the rear. `share_per_mm_front_rc` gives a variant that charges the geometric transfer to the sprung masses only, `(m_s,front − s_f w_f m_s) / (m h)`, 0.068 points per mm; it is used to size roll-centre changes in `robustness.balance_under_tire_change`.
 
 ### 14.6 Neutral Balance from Load Sensitivity
 
@@ -757,7 +758,7 @@ At 1.5g on the flat the outer front carries 1248 N (FL, FR, RL, RR: 165, 1248, 2
 |---------|------|-------|
 | Toe | ±0.08° | 1% of the 8.1° peak slip angle |
 | Camber | ±0.30° | at most 0.11% of peak grip at the synthetic sensitivity |
-| Roll-centre height | ±18 mm | ±1.2 points of front load-transfer share (§14.5) |
+| Roll-centre height | ±18 mm | ±1.5 points of front load-transfer share at the front, ±1.7 at the rear (§14.5) |
 
 ### 14.9 Sensitivity to the Tyre Inputs (`tire_sensitivity`)
 
@@ -1107,9 +1108,21 @@ dynamic amplitude error = 1 / (1 − r²) − 1,   r = f / f_n             light
 
 `rejection_monte_carlo` estimates bending and torsion leakage for a gauge layout under bonding tolerances.
 
-### 20.2 Calibration Reduction (`calibration.calibrate`)
+### 20.2 Calibration Reduction (`calibration.certificate_reduction`, `calibration.calibrate`)
 
-A best-fit line through every ascending and descending point gives sensitivity and zero. Non-linearity is the largest deviation of the ascending mean from the line, hysteresis the largest ascending-descending difference at one load, repeatability the largest spread between runs at one load and direction, each in % of full scale. The standard uncertainty combines them as rectangular distributions with the reference cell:
+**Certificate reduction** (the acceptance definition), from the mean increasing and decreasing response at each load over the runs or orientations:
+
+```
+A(F)     = mean increasing response − its value at zero               span response
+B(F)     = m₁ F² + m₂ F                                               second-order polynomial through zero, least squares on A
+NL(F)    = 100 (B − A) / A(F_max)                                     non-linearity, % of span
+H(F)     = 100 (mean increasing − mean decreasing) / A(F_max)         hysteresis, % of span
+F(y)     = m₁' y² + m₂' y                                             inverse polynomial used in service
+```
+
+Acceptance: non-linearity and hysteresis each ≤ 0.25% FS, reproducibility between orientations ≤ 0.10% FS. `loading_schedule` generates the loading cycle itself: three preloads, five equal steps up and down with 30 s holds, and one preload before each further orientation.
+
+**Straight-line reduction** (`calibrate`), used for the uncertainty estimate: a best-fit line through every ascending and descending point gives sensitivity and zero. Non-linearity is the largest deviation of the ascending mean from the line, hysteresis the largest ascending-descending difference at one load, repeatability the largest spread between runs at one load and direction, each in % of full scale. The standard uncertainty combines them as rectangular distributions with the reference cell:
 
 ```
 u = √( (NL/√3)² + (H/(2√3))² + (Rp/(2√3))² + (u_ref · FS)² ),     U = 2u   (k = 2)
