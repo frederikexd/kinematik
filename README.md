@@ -12,9 +12,7 @@
 [![reproduce](https://github.com/frederikexd/kinematik/actions/workflows/reproduce.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/reproduce.yml)
 [![DOI](https://zenodo.org/badge/1264704197.svg)](https://doi.org/10.5281/zenodo.23450788)
 
-Design tools for Formula SAE and Formula SAE EV teams. Suspension kinematics,
-aero, brakes, accumulator, chassis, cooling, electrics and powertrain in one place, sharing
-one set of numbers.
+The hour before SolidWorks, ANSYS or ADAMS/Car: KinematiK pre-validates Formula SAE and FSAE EV design ideas, catching cross-subsystem mistakes in real time and documenting as it goes, reducing the garbage in garbage out effect when using established tools.
 
 **[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · Free for student teams · No install needed
 
