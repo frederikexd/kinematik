@@ -1684,7 +1684,7 @@ Each check uses a principle the code under test does not:
 
 ### 32.4 External Validation
 
-**Independent re-runs (SIT Racing, Elbee Racing).** Khabir Aqib, technical director of SIT Racing (Singapore Institute of Technology), and Jonathan Iglesias of the Elbee Racing suspension team each re-ran `front_v11_final` from the published code (manifest `2e7072ce2268`, its record before the load-case correction; the corrected record `2d35663ecd27` returns the same pickups). `scripts/verify_run.py` reported each re-run identical to the recorded outputs: every coordinate to 1e-6 mm, every fit and yield to 1e-9. This shows the synthesis reproduces outside the author's environment. It is a reproducibility check, not a physical test of the car.
+**Independent re-runs (SIT Racing, Elbee Racing).** SIT Formula Racing team (Singapore Institute of Technology), and Jonathan Iglesias of the Elbee Racing suspension team each re-ran `front_v11_final` from the published code (manifest `2e7072ce2268`, its record before the load-case correction; the corrected record `2d35663ecd27` returns the same pickups). `scripts/verify_run.py` reported each re-run identical to the recorded outputs: every coordinate to 1e-6 mm, every fit and yield to 1e-9. This shows the synthesis reproduces outside the author's environment. It is a reproducibility check, not a physical test of the car.
 
 **Applied Racing Dynamics (ARD).** `front_v11_joints50` (front) and `rear_v11_final` (rear) were entered in ARD's suspension model and compared at static and at ±20 mm of travel. Differences are against ARD's display precision.
 
