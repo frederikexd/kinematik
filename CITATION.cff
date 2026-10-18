@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use KinematiK, please cite it using the metadata below."
 type: software
-title: "KinematiK: inverse kinematic synthesis and vehicle design tools for Formula SAE and Formula SAE EV"
+title: "KinematiK: prevalidation vehicle design studio for Formula Student and Formula Student EV"
 authors:
   - family-names: Thio
     given-names: Frederik
