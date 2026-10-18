@@ -10,6 +10,7 @@
 [![security](https://github.com/frederikexd/kinematik/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/security.yml)
 [![lint](https://github.com/frederikexd/kinematik/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/lint.yml)
 [![reproduce](https://github.com/frederikexd/kinematik/actions/workflows/reproduce.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/reproduce.yml)
+[![DOI](https://zenodo.org/badge/1264704197.svg)](https://doi.org/10.5281/zenodo.23450788)
 
 Design tools for Formula SAE and Formula SAE EV teams. Suspension kinematics,
 aero, brakes, accumulator, chassis, cooling, electrics and powertrain in one place, sharing
