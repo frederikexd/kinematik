@@ -107,7 +107,9 @@ class ThermalParams:
 
     cp_tread: float = 1900.0            # J/(kg·K), rubber
     cp_carcass: float = 1100.0          # J/(kg·K), carcass composite (effective)
-    cp_gas: float = 1005.0              # J/(kg·K), air at constant pressure
+    # The cavity is a fixed volume, so the gas heats at constant VOLUME: c_v of air, not c_p. With c_p
+    # (1005) the gas node heated about 29% too slowly and lagged the hot-pressure rise.
+    cv_gas: float = 718.0               # J/(kg·K), air at constant volume
 
     # --- conduction (W/K) between lumped nodes ---
     k_tread_carcass: float = 18.0       # tread band <-> carcass
@@ -371,7 +373,7 @@ class ThermalTireModel:
 
             # gas node
             q_g = p.k_carcass_gas * (self.T_carcass - self.T_gas)
-            C_g = p.m_gas_kg * p.cp_gas
+            C_g = p.m_gas_kg * p.cv_gas
             dT_gas = q_g / max(C_g, 1e-6) * dt
 
             # ---- 5. integrate (explicit Euler, clamped) ----------------------

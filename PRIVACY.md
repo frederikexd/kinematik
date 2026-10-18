@@ -14,7 +14,7 @@ Questions or deletion requests: kinematik.kng1q@8shield.net
 | Voice memos you record in notes | So your team can play them back | Inside the note, in your team's workspace (memos over about 2.5 MB are not saved). Transcription runs on the app's own server; the audio is not sent to any speech service |
 | Project data (hardpoints, settings, results, notes, manifests) and save history (who saved what, and when) | So your work persists and your team can share it | Inside your team's workspace in the Supabase database |
 | Usage events (which tabs and features are used, timings, errors, app version) | To find bugs and see which tools are useful | Supabase database, analytics table |
-| A visitor id | To count unique and returning visitors | A cookie named `kinematik_vid`. If cookies are blocked, a SHA-256 hash of your IP address and browser type is used instead; the raw IP address is not stored |
+| A visitor id | To count unique and returning visitors | A cookie named `kinematik_vid`. If cookies are blocked, a keyed hash (HMAC-SHA256) of your IP address and browser type is used instead. The key is a secret held only on the app's server, so the id cannot be turned back into an IP address; the raw IP address is not stored |
 
 An optional name and subteam that you type in yourself may be attached to usage events. Nothing else about you is collected. There is no advertising, no data is sold, and nothing is shared with anyone other than the two hosting providers that run the app (below).
 
@@ -34,10 +34,16 @@ An optional name and subteam that you type in yourself may be attached to usage 
 
 Your data is kept while your account exists. To delete your account and everything stored for it, email kinematik.kng1q@8shield.net from the address you signed up with. I will delete your account, your uploaded files and your project data within 30 days and confirm by email. Files you shared into a team workspace belong to that workspace, so a workspace owner can also remove them. Usage events that carry only a visitor id, with no name or account, are kept for 12 months for usage statistics.
 
+### Usage events in the repository's history
+
+Until 18 October 2026, two local log files of usage events (`analytics_buffer.jsonl`) were committed to the public code repository by mistake; some of the events were written by the test suite rather than by visitors. Across the repository's history they hold 896 events from July 2026: tab and feature names, timings, errors, the app version, a subteam label, and session, workspace and visitor ids. They contain no names, email addresses, IP addresses or project data. Some visitor ids were made by hashing the visitor's IP address and browser type without a secret key, so they are pseudonymous rather than anonymous. Since 18 October 2026 the app keys that hash with a server-side secret.
+
+These files are no longer tracked and cannot be committed again, but they remain in the repository's earlier commits and in the archived releases (v1.0.0 and v1.1.0). I have not rewritten the history, because doing so would break every published commit and release reference, including the ones that the reproducibility records point to. If you have a question about this, or want to ask for it to be removed, email the address above.
+
 If you would rather not create an account at all, the full code is open source. You can run KinematiK on your own computer from https://github.com/frederikexd/kinematik, and nothing leaves your machine.
 
 ## Changes
 
 If this page changes, the date below changes with it, and the history is in the repository.
 
-Last updated: 15 October 2026
+Last updated: 18 October 2026

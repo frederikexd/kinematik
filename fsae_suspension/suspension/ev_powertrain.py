@@ -269,37 +269,21 @@ class EVLapSimulator:
                     continue
                 vi = max(v[i], p.V_MIN)
                 a = lg[i] * p.g                       # m/s^2 (signed)
-                # inertial + resistive force the wheels must supply (accel side)
                 F_drag = 0.5 * p.rho * p.cd_a * vi * vi
                 F_roll = p.rolling_g * p.mass * p.g
-                if a > 0:                             # accelerating: draw energy
-                    F_trac = p.mass * a + F_drag + F_roll
-                    if F_trac > 0:
-                        # energy at the battery = wheel work / efficiency
-                        traction_J += (F_trac * ds) / max(ev.inverter_motor_eff, 1e-3)
-                elif a < 0:                           # braking: regen what we can
-                    if ev.regen_enabled:
-                        # DRAG AND ROLLING RESISTANCE ARE NOT RECOVERABLE. They
-                        # are already slowing the car for free, so the motor only
-                        # ever resists what is left over. The accel branch above
-                        # gets this right (F_trac = m*a + F_drag + F_roll); the
-                        # regen branch used the bare m*a and so credited the
-                        # battery with energy that went into the air and the
-                        # tyres. At 20 m/s that is ~320 N of the braking force —
-                        # about 22% of a 0.5 g stop over-counted, and the error
-                        # grows as deceleration falls.
-                        #
-                        # It also fixes a sign trap. Below m*|a| = F_drag + F_roll
-                        # the car is merely coasting down; the motor is supplying
-                        # nothing and may still be pulling. The old form credited
-                        # regen for every one of those samples. Flooring the motor
-                        # force at zero removes that whole class of phantom
-                        # recovery.
-                        F_motor = p.mass * (-a) - F_drag - F_roll
-                        # regen_max_g caps what the driven axle can take; the rest
-                        # of the stop goes to the friction brakes.
-                        F_regen = min(max(F_motor, 0.0), ev.regen_max_g * p.mass * p.g)
-                        regen_J += F_regen * ds * ev.regen_eff
+                # The force the motor must supply comes from the force balance, not from the sign of a. At
+                # constant speed (a = 0: a steady corner, top speed) and in a gentle deceleration that drag and
+                # rolling resistance alone exceed, the motor still pushes against them; gating the draw on a > 0
+                # booked those stretches as free.
+                F_trac = p.mass * a + F_drag + F_roll
+                if F_trac > 0:                        # motor drives: energy at the battery = wheel work / eff
+                    traction_J += (F_trac * ds) / max(ev.inverter_motor_eff, 1e-3)
+                elif ev.regen_enabled:                # motor resists: regen what it can
+                    # Drag and rolling resistance are NOT recoverable: they slow the car for free, so the motor
+                    # only resists what is left over, -F_trac = m|a| - F_drag - F_roll. regen_max_g caps what the
+                    # driven axle can take; the rest of the stop goes to the friction brakes.
+                    F_regen = min(-F_trac, ev.regen_max_g * p.mass * p.g)
+                    regen_J += F_regen * ds * ev.regen_eff
             kwh = 1.0 / 3.6e6
             net = max(traction_J - (regen_J if ev.regen_enabled else 0.0), 0.0)
             return net * kwh, regen_J * kwh

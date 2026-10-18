@@ -102,7 +102,7 @@ _AIR_PR = 0.71           # Prandtl number
 
 
 def h_rotating_disc(diameter_mm: float, v_car_ms: float,
-                    *, duct_gain: float = 1.0) -> float:
+                    *, duct_gain: float = 1.0, wheel_radius_mm: float = 228.0) -> float:
     """Forced-convection coefficient (W/m²·K) for a rotor from a rotating-disc +
     cross-flow Nusselt correlation, instead of a hand-set h0+h1·v line.
 
@@ -120,10 +120,16 @@ def h_rotating_disc(diameter_mm: float, v_car_ms: float,
     factor of two. Cross-flow dominates at racing speeds so the net effect on h
     is only ~9%, but mixing length scales inside one correlation is wrong
     regardless of how much it happens to move the answer.
+
+    SPIN SPEED: the rotor turns with the wheel, so its angular speed is the car's
+    speed over the TYRE's rolling radius, omega = v / R_wheel (``wheel_radius_mm``,
+    228 mm by default, the loaded radius used elsewhere in KinematiK). It used to
+    be v over the ROTOR's own radius, which spun a 220 mm disc about twice as fast
+    as the wheel carrying it and overstated the rotational term by about 1.8x.
     """
     D = max(diameter_mm, 1.0) / 1000.0
     r = D / 2.0
-    omega = max(abs(v_car_ms), 0.0) / max(r, 1e-3)       # rotor spins with wheel
+    omega = max(abs(v_car_ms), 0.0) / max(wheel_radius_mm / 1000.0, 1e-3)   # rotor spins with the wheel
     Re_rot = omega * r * r / _AIR_NU
     Nu_rot = 0.015 * max(Re_rot, 1.0) ** 0.8
     h_rot = Nu_rot * _AIR_K / max(r, 1e-3)               # radius-based

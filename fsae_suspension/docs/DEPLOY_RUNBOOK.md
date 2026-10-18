@@ -38,6 +38,10 @@ Never apply this directly to the deployed branch.
 
 ## 2. Apply the delta
 
+> **Done (October 2026).** The delta below has been applied and its helper files (`APPLY_REMOVALS.sh`,
+> `REMOVED_FILES.txt`, `CHANGED_FILES_README.txt`, `DELETE_THESE.txt`) have been removed from the repository.
+> They remain in the git history; this section is kept as a record of how it was done.
+
 ```bash
 unzip -o kinematik_changes_complete.zip -d /tmp/delta
 cp -r /tmp/delta/fsae_suspension/. .

@@ -1232,7 +1232,7 @@ endurance:     P̄ = h A (T − T∞) + ε σ A (T⁴ − T∞⁴)        solved
 transient:     C_r dT_r/dt = q_rotor − q_cond − h A (T_r − T∞) − q_rad;   C_p dT_p/dt = q_pad + q_cond − ½ h A_pad (T_p − T∞)
 ```
 
-The convection coefficient combines a rotating-disc and a cross-flow correlation, `h = √(h_rot² + h_x²) · duct gain` (floor 12 W/m²K), with `Nu_r = 0.015 Re_r^0.8`, `Re_r = ω r² / ν`, and `Nu_x = 0.037 Re_x^0.8 Pr^(1/3)` on the rotor diameter. The design loop of §12 thins the ring until the pad and fluid limits bind.
+The convection coefficient combines a rotating-disc and a cross-flow correlation, `h = √(h_rot² + h_x²) · duct gain` (floor 12 W/m²K), with `Nu_r = 0.015 Re_r^0.8`, `Re_r = ω r² / ν` with the rotor turning with the wheel, `ω = v / R_wheel` (228 mm by default), and `Nu_x = 0.037 Re_x^0.8 Pr^(1/3)` on the rotor diameter. The design loop of §12 thins the ring until the pad and fluid limits bind.
 
 ### 22.4 Throttle Return Redundancy (`throttle_return.py`)
 
@@ -1260,7 +1260,7 @@ Tread band(s), carcass and inflation gas, explicit Euler:
 Q_fric = |Fy · V_x tan α| + |Fx · V_x κ|,     Q_roll = C_rr Fz V_x
 C_tread dT_t/dt = Q_gen − G_tc (T_t − T_c) − h(V) A (T_t − T∞) − G_track (T_t − T_track)   (track term only while loaded)
 C_carc  dT_c/dt = G_tc (T̄_t − T_c) − G_cg (T_c − T_g) − h(V) A_c (T_c − T∞)
-C_gas   dT_g/dt = G_cg (T_c − T_g),       p_hot from the ideal gas at constant volume
+m_gas c_v dT_g/dt = G_cg (T_c − T_g),     c_v = 718 J/kg K (the cavity is a fixed volume); p_hot from the ideal gas
 μ_scale(T) = max(1 − s |T − T_opt|, floor),   s colder or hotter side
 ```
 
@@ -1332,8 +1332,9 @@ The electrical check flags peak pack current against the fuse, peak cell current
 Each architecture (single motor and diff, two motors, four-motor vectoring) runs the QSS lap of §5 with its own mass and a declared drive-grip fraction. Energy along the lap:
 
 ```
-accelerating:  E_trac += (m a + F_drag + F_roll) · ds / η_inv,motor
-braking:       E_regen += min(m|a| − F_drag − F_roll, a_regen,max m g) · ds · η_regen
+F = m a + F_drag + F_roll                  the force the motor must supply, from the force balance
+F > 0 (driving, including constant speed):  E_trac += F · ds / η_inv,motor
+F < 0 (resisting):                          E_regen += min(−F, a_regen,max m g) · ds · η_regen
 E_lap = E_trac − E_regen,     laps until empty = E_usable / E_lap
 ```
 
@@ -1373,7 +1374,7 @@ Degradation (contact resistance, pack resistance, authority loss) enters as elec
 
 ### 26.1 Pack Thermal (`pack_thermal.py`)
 
-Current against time from the QSS lap (`dt = ds / v̄`, `P_batt = F v / η`, `I = P_batt / V_pack`, optionally with resistive sag). Each cell on the layout grid:
+Current against time from the QSS lap, on the same force balance as §25.2 (`dt = ds / v̄`, `F = m a + F_drag + F_roll`, `P_batt = F v / η` when F > 0 and regenerated current when F < 0, `I = P_batt / V_pack`, optionally with resistive sag). Each cell on the layout grid:
 
 ```
 C_cell dT/dt = I_cell² R(T)  +  Σ_neighbours k_cc (T_n − T)  +  h(x,y) A (T_air − T),       I_cell = I_pack / P_par

@@ -49,15 +49,27 @@ def test_legacy_kvid_query_param_carries_over_and_is_stripped():
     assert "kvid" not in st.query_params  # cleaned out of the visible URL
 
 
-def test_fingerprint_matches_old_recipe():
+def test_fingerprint_is_keyed_and_cannot_be_recomputed_without_the_secret(monkeypatch):
     import hashlib
+    import hmac
     ip, ua = "10.0.0.7", "Mozilla/5.0 (X11; Linux x86_64) " + "x" * 100
-    st = _FakeSt(ip=ip, ua=ua)
-    vid, kind = resolve_visitor_id(st)
-    expected = "fp-" + hashlib.sha256(
-        f"{ip}|{ua[:80]}".encode()).hexdigest()[:24]
-    assert vid == expected                # old fp- ids keep matching
-    assert kind == "ip+ua fingerprint"
+    monkeypatch.setenv("KINEMATIK_VID_SECRET", "test-secret")
+    vid, kind = resolve_visitor_id(_FakeSt(ip=ip, ua=ua))
+    expected = "fp-" + hmac.new(b"test-secret", f"{ip}|{ua[:80]}".encode(), hashlib.sha256).hexdigest()[:24]
+    assert vid == expected
+    assert kind == "ip+ua fingerprint (keyed)"
+    # the old unkeyed recipe, which anyone could recompute from a guessed IP, no longer matches
+    assert vid != "fp-" + hashlib.sha256(f"{ip}|{ua[:80]}".encode()).hexdigest()[:24]
+    # same device and key -> same id on the next visit; another key -> another id
+    assert resolve_visitor_id(_FakeSt(ip=ip, ua=ua))[0] == vid
+    monkeypatch.setenv("KINEMATIK_VID_SECRET", "other-secret")
+    assert resolve_visitor_id(_FakeSt(ip=ip, ua=ua))[0] != vid
+
+
+def test_no_ip_derived_id_without_a_secret(monkeypatch):
+    monkeypatch.delenv("KINEMATIK_VID_SECRET", raising=False)
+    vid, kind = resolve_visitor_id(_FakeSt(ip="10.0.0.7", ua="Mozilla/5.0"))
+    assert vid.startswith("vid-") and kind == "minted uuid"
 
 
 def test_minted_id_when_nothing_available_and_sticky():

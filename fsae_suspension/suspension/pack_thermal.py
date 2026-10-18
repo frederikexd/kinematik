@@ -334,8 +334,9 @@ def pack_current_trace(lap,
     Physics, per distance step (matching `_energy_from_trace` in ev_powertrain so
     the current integrates back to the same energy):
       - dt = ds / v_avg              (lap sim is distance-indexed; recover time)
-      - accel: F = m·a + F_drag + F_roll ; P_wheel = F·v ; P_batt = P_wheel/eff
-      - brake: regen captures up to regen_max_g of decel at regen_eff (negative I)
+      - F = m·a + F_drag + F_roll; when F > 0 the motor drives, at constant speed too:
+        P_wheel = F·v ; P_batt = P_wheel/eff
+      - when F < 0 the motor resists: regen captures up to regen_max_g of it at regen_eff (negative I)
       - I = P_batt / V_pack          (optionally with an IR sag on V_pack)
 
     Returns time and current arrays of equal length (one sample per trace point).
@@ -374,12 +375,12 @@ def pack_current_trace(lap,
             a = (lg[i] if np.isfinite(lg[i]) else 0.0) * g
             f_drag = 0.5 * rho * cd_a * vi * vi
             f_roll = rolling_g * mass * g
-            if a > 0:                                   # drawing
-                f_trac = mass * a + f_drag + f_roll
-                p_wheel = max(f_trac, 0.0) * vi
+            f_trac = mass * a + f_drag + f_roll
+            if f_trac > 0:                              # drawing (at constant speed too)
+                p_wheel = f_trac * vi
                 p_batt = p_wheel / eff
                 cur[i] = p_batt / v_pack
-            elif a < 0 and regen_enabled:               # regen (negative current)
+            elif regen_enabled:                         # regen (negative current)
                 # Drag and rolling resistance are NOT recoverable — they slow the
                 # car for free, so the motor only ever resists the remainder.
                 # This mirrors the same correction in

@@ -1,0 +1,16 @@
+# Python caches and build output
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Local environments and OS files
+.venv/
+venv/
+.DS_Store
+
+# Usage telemetry (session ids and timestamps of real users): never commit
+analytics_buffer*.jsonl

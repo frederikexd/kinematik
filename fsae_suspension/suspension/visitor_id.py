@@ -34,10 +34,18 @@ no round-trip, no reload, no extra rerun, no "wait for the id" deferral:
   2. **``?kvid=`` query param** — carry-over from the legacy scheme (old
      bookmarks / URLs that still have it). Honoured so pre-rewrite visitors
      keep their original id, then stripped from the visible URL.
-  3. **ip+ua fingerprint** — ``sha256(ip | user_agent[:80])``, the SAME
-     recipe (and ``fp-`` prefix) as before, so fingerprints minted by the old
-     code still match. Stable across visits for the same device; used on a
-     browser's first-ever visit, or when cookies are blocked.
+  3. **ip+ua fingerprint** — ``HMAC-SHA256(secret, ip | user_agent[:80])``,
+     keyed with ``visitor_id_secret`` (Streamlit secrets, or the
+     ``KINEMATIK_VID_SECRET`` environment variable). Stable across visits for
+     the same device; used on a browser's first-ever visit, or when cookies
+     are blocked. The key matters: an unkeyed hash of an IP address can be
+     reversed by hashing candidate addresses until one matches, so the old
+     ``sha256(ip | ua)`` ids were pseudonymous rather than anonymous. Without
+     the secret nobody can test a guess. With no secret configured (local
+     runs, self-hosting) this tier is skipped entirely and tier 4 mints a
+     random id, so no IP-derived id is ever stored. Switching to the keyed
+     recipe changed every fingerprint id once (October 2026), so devices first
+     seen before then are counted as new visitors one time.
   4. **Minted ``vid-`` uuid** — last resort (no ip available, e.g. local dev).
 
 Whatever tier 2-4 resolves is then PERSISTED browser-side by a tiny
@@ -60,11 +68,32 @@ Id prefixes in the data: ``ls-`` legacy localStorage, ``fp-`` fingerprint,
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import os
 import uuid
 
 _QP_KEY = "kvid"           # legacy query param that carried the id to Python
 _COOKIE_KEY = "kinematik_vid"  # cookie AND localStorage key in the browser
 _COOKIE_MAX_AGE = 63072000     # 2 years, in seconds
+_SECRET_KEY = "visitor_id_secret"          # Streamlit secret holding the fingerprint key
+_SECRET_ENV = "KINEMATIK_VID_SECRET"       # environment-variable fallback
+
+
+def _fingerprint_secret(st) -> bytes | None:
+    """The fingerprint key, or None when none is configured (tier 3 is then skipped)."""
+    try:
+        val = st.secrets.get(_SECRET_KEY)
+    except Exception:
+        val = None
+    val = val or os.environ.get(_SECRET_ENV)
+    return str(val).encode() if val else None
+
+
+def fingerprint_id(secret: bytes, ip: str, user_agent: str) -> str:
+    """``fp-`` + the first 24 hex digits of HMAC-SHA256(secret, "ip|user_agent[:80]")."""
+    mac = hmac.new(secret, f"{ip}|{(user_agent or '')[:80]}".encode(), hashlib.sha256)
+    return "fp-" + mac.hexdigest()[:24]
 
 
 def resolve_visitor_id(st) -> tuple[str, str]:
@@ -113,13 +142,13 @@ def resolve_visitor_id(st) -> tuple[str, str]:
     except Exception:
         pass
 
-    # 3. Server-side device fingerprint — identical recipe and prefix to the
-    #    old code, so previously-minted fp- ids still match. Not perfect
-    #    (shared NAT + identical UA collides; ip/UA change mints a new id),
-    #    but stable across visits and needs no browser cooperation.
-    if not vid:
+    # 3. Server-side device fingerprint, keyed so it cannot be reversed to an
+    #    IP address. Not perfect (shared NAT + identical UA collides; ip/UA
+    #    change mints a new id), but stable across visits and needs no browser
+    #    cooperation. Skipped when no key is configured.
+    _secret = _fingerprint_secret(st) if not vid else None
+    if not vid and _secret:
         try:
-            import hashlib as _hl
             _ip = None
             _ua = ""
             try:
@@ -131,8 +160,7 @@ def resolve_visitor_id(st) -> tuple[str, str]:
             except Exception:
                 _ua = ""
             if _ip:
-                _fp = _hl.sha256(f"{_ip}|{_ua[:80]}".encode()).hexdigest()
-                vid, kind = "fp-" + _fp[:24], "ip+ua fingerprint"
+                vid, kind = fingerprint_id(_secret, str(_ip), _ua), "ip+ua fingerprint (keyed)"
         except Exception:
             pass
 
