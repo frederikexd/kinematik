@@ -1702,6 +1702,74 @@ Not compared: camber in steer (ARD's definition is unconfirmed), and anti-dive a
 
 ---
 
+**Lotus Suspension Analysis Benchmark**
+
+The source is C. Arevalo, A. Medina and J. Valladolid, *Kinematic and dynamic study of the suspension system of an electric single seater competition Formula Student*, Ingenius 20 (2018) 96–107 (open access). It lists the hardpoints of two double-wishbone corners and plots their kinematics from Lotus Suspension Analysis. KinematiK solves the same hardpoints and is compared against the plotted values (read from the figures, so the Lotus figures carry reading error).
+
+**Set-up.** Source frame to KinematiK: `x_K = −(x − x_axle)` with the axles at x ≈ 160 and x ≈ 1760 mm, y unchanged, `z_K = z − (310 − 247.65)` mm, which puts the ground under the 310 mm wheel centre of a 19.5 in tyre. As in Lotus, bump is wheel-centre travel. The corners are named here by their source x position, because the source's front/rear labels are inconsistent between its tables.
+
+| Quantity | Lotus | KinematiK | Largest difference |
+|----------|-------|-----------|--------------------|
+| Camber, bump ±30 mm | figure 5 | table below | 0.009° |
+| Toe, bump ±30 mm | figure 8 | table below | 0.0003° |
+| Camber, body roll ±3° | figure 9 | table below | 0.008° |
+| Camber, steer ±31.5° (tyre on the ground) | figure 11 | table below | 0.050° |
+| Roll-centre height, bump ±30 mm | figure 7 | table below | 2.1 mm (x ≈ 160), 3.3 mm (x ≈ 1760) |
+| Caster magnitude, static (x ≈ 160 / x ≈ 1760) | 7.0° / 9.36° | 7.00° / 9.36° | < 0.01° |
+| KPI, static (x ≈ 160 / x ≈ 1760) | 8.13° / 0° | 8.13° / 0.00° | exact |
+| Track (x ≈ 160 / x ≈ 1760) | 1200 / 1180 mm | 1200 / 1180 mm | exact |
+
+**Bump** (degrees; toe-in positive):
+
+| Wheel travel (mm) | Camber x≈160, Lotus / KinematiK | Camber x≈1760, Lotus / KinematiK | Toe x≈160, Lotus / KinematiK | Toe x≈1760, Lotus / KinematiK |
+|---|---|---|---|---|
+| −30 | +1.414 / +1.416 | +0.964 / +0.964 | +0.0062 / +0.0062 | +0.1388 / +0.1391 |
+| −20 | +0.964 / +0.967 | +0.660 / +0.660 | +0.0007 / +0.0007 | +0.0734 / +0.0731 |
+| −10 | +0.492 / +0.495 | +0.340 / +0.339 | −0.0015 / −0.0015 | +0.0270 / +0.0269 |
+| +10 | −0.524 / −0.520 | −0.356 / −0.358 | +0.0054 / +0.0054 | −0.0078 / −0.0079 |
+| +20 | −1.065 / −1.066 | −0.731 / −0.735 | +0.0150 / +0.0151 | +0.0033 / +0.0031 |
+| +30 | −1.631 / −1.640 | −1.129 / −1.133 | +0.0291 / +0.0293 | +0.0327 / +0.0329 |
+
+**Camber to ground against body roll** (degrees):
+
+| Roll (°) | x≈160, Lotus / KinematiK | x≈1760, Lotus / KinematiK |
+|---|---|---|
+| −3 | +1.276 / +1.274 | +1.827 / +1.829 |
+| −2 | +0.879 / +0.881 | +1.240 / +1.242 |
+| −1 | +0.449 / +0.455 | +0.630 / +0.631 |
+| +1 | −0.476 / −0.482 | −0.646 / −0.651 |
+| +2 | −0.988 / −0.990 | −1.315 / −1.321 |
+| +3 | −1.512 / −1.520 | −2.004 / −2.008 |
+
+**Camber against steer**, x ≈ 160 corner (degrees). KinematiK is solved with the tyre held on the ground, as Lotus does. `camber_in_steer` as shipped holds the ball joint at ride height instead, which reads 0.06 to 0.19° larger in magnitude.
+
+| Steer (°) | Lotus | KinematiK, tyre on the ground | Difference | KinematiK, ball joint held |
+|---|---|---|---|---|
+| −31.5 | +5.507 | +5.553 | +0.046 | +5.740 |
+| −30 | +5.146 | +5.162 | +0.016 | +5.342 |
+| −20 | +2.920 | +2.970 | +0.050 | +3.093 |
+| −10 | +1.302 | +1.306 | +0.004 | +1.368 |
+| +10 | −1.051 | −1.050 | +0.001 | −1.112 |
+| +20 | −1.925 | −1.906 | +0.019 | −2.029 |
+| +30 | −2.647 | −2.605 | +0.042 | −2.784 |
+| +31.5 | −2.744 | −2.697 | +0.047 | −2.884 |
+
+**Roll-centre height above ground in bump** (mm), tyre radius 230 mm (the radius that reproduces the source's static roll centre):
+
+| Wheel travel (mm) | x≈160, Lotus / KinematiK | x≈1760, Lotus / KinematiK |
+|---|---|---|
+| −30 | 90.9 / 90.0 | 110.2 / 113.5 |
+| −20 | 75.8 / 74.7 | 95.3 / 97.5 |
+| −10 | 60.8 / 59.6 | 80.5 / 81.8 |
+| 0 | 46.0 / 44.6 | 66.1 / 66.2 |
+| +10 | 31.4 / 29.9 | 51.8 / 50.9 |
+| +20 | 17.0 / 15.3 | 37.8 / 35.7 |
+| +30 | 3.0 / 0.9 | 23.8 / 20.7 |
+
+Camber and toe agree to within the precision of reading the source's plots. The roll-centre differences are larger: they depend on the tire radius the source used (unstated) and on reading a steep curve off a figure. The source publishes no anti-geometry. Every anti value in KinematiK is the same function of the solved side-view path slope (§1.8), which this benchmark checks through camber and toe.
+
+---
+
 ## 33. Test Coverage
 
 The formulas in this document are pinned by the test suite (`fsae_suspension/tests/`); the exception is the underfloor channel (§21.1), which has no dedicated test yet. Key tests and files:
