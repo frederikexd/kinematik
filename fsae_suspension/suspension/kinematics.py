@@ -538,11 +538,16 @@ class SuspensionKinematics:
         return caster, kpi
 
     def _scrub_radius(self, uo, lo, cp):
-        # distance in ground plane between kingpin-axis ground intersection and contact patch
+        # Lateral distance, on the road, between the contact patch and the point where
+        # the kingpin axis meets the road. The road is the plane through the contact
+        # patch at this travel, not the static ground plane: in this body-fixed frame
+        # the road moves with the wheel, so at +20 mm of bump it sits 20 mm above z = 0.
+        # Intersecting with z = 0 instead mixed in tan(KPI) x travel (2.3 mm at 20 mm on
+        # the front to build). At static the two planes coincide and nothing changes.
         kp = _unit(uo - lo)
         if abs(kp[2]) < 1e-9:
             return np.nan
-        t = -lo[2] / kp[2]
+        t = (cp[2] - lo[2]) / kp[2]
         ground = lo + t * kp
         return float(cp[1] - ground[1])
 

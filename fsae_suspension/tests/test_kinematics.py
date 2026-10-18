@@ -185,3 +185,31 @@ if __name__ == "__main__":
         except AssertionError as e:
             print(f"  FAIL  {fn.__name__}: {e}")
     print(f"\n{passed}/{len(fns)} tests passed")
+
+
+# The ChassisV11 front to build (front_v11_joints50, inputs 3678a72d786b), right-hand corner, mm.
+_FRONT_TO_BUILD = {
+    "upper_front_inner": [-111.234, 232.261, 280.924], "upper_rear_inner": [91.015, 318.200, 265.195],
+    "lower_front_inner": [-90.383, 187.054, 122.740], "lower_rear_inner": [59.120, 175.509, 129.524],
+    "upper_outer": [6.500, 560.500, 300.000], "lower_outer": [-5.000, 583.600, 120.000],
+    "tie_rod_inner": [-7.766, 183.289, 147.117], "tie_rod_outer": [53.375, 540.573, 148.249],
+    "wheel_center": [0.0, 600.0, 228.0], "contact_patch": [0.0, 605.0, 0.0],
+    "static_camber": -2.5, "static_toe": 0.0,
+}
+
+
+def test_scrub_radius_is_measured_on_the_road():
+    """Scrub radius over travel lies on the road (the plane through the contact patch at that travel),
+    not on the static ground plane z = 0, which in this body-fixed frame is the road only at static.
+    Reference: Applied Racing Dynamics on the same points, 16 Oct 2026: 6.00 mm static, 6.02 mm at
+    20 mm droop, 6.00 mm at 20 mm bump (its heave keeps the tire on the ground). Before the fix
+    KinematiK gave 8.36 and 3.11 mm there, off by tan(KPI) x travel."""
+    kin = SuspensionKinematics(Hardpoints.from_dict(_FRONT_TO_BUILD))
+    assert abs(kin.solve_at_travel(0.0).scrub_radius - 6.0) < 0.05
+    for travel in (-20.0, 20.0):
+        s = kin.solve_at_travel(travel)
+        assert abs(s.scrub_radius - 6.0) < 0.1, (travel, s.scrub_radius)
+        # the same number from first principles: the kingpin line met with the plane z = contact patch z
+        kp = (s.upper_outer - s.lower_outer) / np.linalg.norm(s.upper_outer - s.lower_outer)
+        g = s.lower_outer + (s.contact_patch[2] - s.lower_outer[2]) / kp[2] * kp
+        assert abs(s.scrub_radius - (s.contact_patch[1] - g[1])) < 1e-9

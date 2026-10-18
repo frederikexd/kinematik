@@ -139,11 +139,12 @@ class GenericKinematics:
 
     def _scrub(self, kp, r):
         cp = r["contact_patch"]
-        # intersect the kingpin line (through wheel centre, along kp) with ground
+        # intersect the kingpin line (through wheel centre, along kp) with the road:
+        # the plane through the contact patch at this travel, not the static z = 0
         wc = r["wheel_center"]
         if abs(kp[2]) < 1e-9:
             return np.nan
-        t = -wc[2] / kp[2]
+        t = (cp[2] - wc[2]) / kp[2]
         ground = wc + t * kp
         return float(cp[1] - ground[1])
 
