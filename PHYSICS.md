@@ -1,8 +1,10 @@
 # KinematiK: Physics & Mathematics Reference
 
-This document covers the physics and mathematics in KinematiK. Each section names the source module in `fsae_suspension/suspension/` (or `fsae_suspension/scripts/`) that implements it, and the test files that pin it. Sections 14 to 21 follow the paper *Inverse Kinematic Synthesis* and its supplement; section references of the form M3.1 (paper method part) and S6.35 (supplement) point there.
+This document covers the physics and mathematics behind every feature of KinematiK, across every discipline it models: suspension kinematics and synthesis, vehicle dynamics and lap time, tyres, aerodynamics, brakes and pedal box, powertrain and energy, battery and cooling thermal, electrical systems, data acquisition, structures, measurement and uncertainty. Each section names the source module in `fsae_suspension/suspension/` (or `fsae_suspension/scripts/`, `fsae_suspension/powertrain/`) that implements it. Sections 14 to 20 follow the paper *Inverse Kinematic Synthesis* and its supplement; references of the form M3.1 (paper method part) and S6.35 (supplement) point there. Section 32 sets out how the physics is verified, and the external validation it has had so far.
 
-If you find an error in the math or physics, [open an issue](https://github.com/frederikexd/kinematik/issues). The errors found so far, and the corrections they forced, are listed in §21.3.
+Modules that only move data (the app, accounts, reports, file import and export, plotting) contain no physics and are not listed. A model labelled *representative* or *uncalibrated* in its module returns `synthesized=True` or `calibrated=False` on its outputs until it is fitted to measurements.
+
+If you find an error in the math or physics, [open an issue](https://github.com/frederikexd/kinematik/issues). The errors found so far, and the corrections they forced, are listed in §32.3.
 
 ---
 
@@ -1133,9 +1135,503 @@ Every term is combined in quadrature after conversion to a standard uncertainty 
 
 ---
 
-## 21. Verification of the Physics — paper M6, S14
+## 21. Aerodynamics Beyond the Solvers (`aero/`)
 
-### 21.1 Physics Proofs (`tests/test_load_case_physics.py`, `tests/test_accuracy_invariants.py`)
+### 21.1 Underfloor Channel (`aero/underfloor.py`)
+
+A floor makes downforce as a duct, not a wing: the gap converges to a throat, the flow speeds up, and the diffuser recovers the pressure. Quasi-1D incompressible continuity plus Bernoulli on the gap area A(x):
+
+```
+A_flow  = min( A_exit, 1.15 · A_inlet )            the base wake sets the exit flow; the inlet may over-capture by 15%
+v/V∞    = A_flow / A(x)
+Cp(x)   = C_d · (1 − (A_flow / A(x))²)             up to the throat (C_d = 0.75, a loss factor on the suction)
+Cp(x)   = Cp_throat · (1 − η · ξ)                  aft of the throat, ξ from 0 at the throat to 1 at the exit, η = 0.80
+L       = Σ Cp · q · w(x) · Δx,    q = ½ ρ V²,    C_L = L / (q · A_ref)
+```
+
+A constant-area duct gives Cp = 0 at any C_d. Because the inlet and throat both shrink as the car is lowered, their ratio, and so the suction, saturates instead of diverging as thin-surface theory does. The diffuser is screened by its equivalent conical half-angle, `atan((r_exit − r_throat) / length)` with r = √(A/π); above 7° the attached-flow recovery is flagged as optimistic. No spanwise variation, edge vortices or yaw. This module has no dedicated test yet.
+
+### 21.2 Aero Map and Lap-Sim Coupling (`aero/aeromap.py`, `aero/coupling.py`, `aero/backends.py`)
+
+The map stores converged coefficient results over attitude (roll, pitch, yaw, ride height, speed), interpolates multilinearly on the axes that varied, clamps to the swept envelope and returns no value for a channel nobody solved. The lap sim works in area-coefficients:
+
+```
+F = ½ ρ (C·A) v²,      cl_a = −C_L · A,      cd_a = C_D · A        (C_L negative = downforce)
+```
+
+Attitude comes from the same vehicle model: roll from §2.1; pitch from the longitudinal transfer through the wheel rates, less the anti share, `θ = atan((δ_r − δ_f)/L)` with `δ_f = (ΔW/k_f)(1 − anti-dive)` under braking; ride height from the downforce over the ride rate.
+
+The analytic reference model (`ReferenceAeroModel`, labelled `POTENTIAL`, uncorrelated) is a trends-only surrogate: `C_L = C_L0 + k_yaw|ψ| + clamp(−k_h (h_ref − h), ±0.6)`, induced drag `0.15 (C_L² − C_L0²)/|C_L0|`, side force proportional to yaw, and front balance shifting with pitch.
+
+### 21.3 Wind Tunnel, Pressure Taps, Balance and PIV (`aero/windtunnel.py`, `aero/pressure_tap.py`, `aero/daq.py`, `aero/piv.py`)
+
+- **Like-for-like correlation:** the CFD sweep is run at the tunnel's exact front and rear ride heights and speed; per point `error% = 100 (C_CFD − C_tunnel)/|C_tunnel|`, and the map RMS of the C_L error is held to a declared tolerance (5% per point, 4% RMS by default).
+- **Pressure taps:** `p = s (V − V0)`, `q = ½ρV²` (or the measured pitot q), `Cp = (p − p∞)/q`. Sectional normal force `C_n = ∫ (Cp_pressure − Cp_suction) d(x/c)` over the chord both surfaces cover (trapezoidal). Stall is read from the suction surface: the recovery slope dCp/d(x/c) aft of the suction peak; a flat plateau below the declared slope marks separation. CFD against taps by `RMSE = √(mean (Cp_CFD − Cp_tap)²)` at the same points.
+- **Six-component balance:** `loads = C · (V − V_zero)` with C the 6×6 interaction matrix; an uncalibrated or ill-conditioned C, or a railed bridge, gives NaN rather than a raw channel. Fan blade-pass tones and structural resonances are notched before averaging, with the removed variance reported.
+- **PIV:** each interrogation window of the two frames is cross-correlated; the integer peak is refined by a three-point Gaussian fit, `δ = (ln c₋ − ln c₊) / (2 (ln c₋ − 2 ln c₀ + ln c₊))`; velocity = pixel shift × magnification / Δt. Seeding is checked by the Stokes number `St = τ_p / τ_f` and the quarter-window rule on the expected shift `U Δt / magnification`.
+
+### 21.4 Scale Models (`aero/scale_model.py`)
+
+```
+ν(T)   = μ(T) / ρ(T),   μ = 1.716e-5 (T/273.15)^1.5 (273.15 + 110.4)/(T + 110.4)  (Sutherland),   ρ = 101325 / (287.05 T)
+Re     = V L / ν
+V_model = V_full / scale                                  Reynolds match
+```
+
+When the tunnel cannot reach the matched speed the residual Re mismatch is reported. Build tolerances become coefficient uncertainty by first-order sensitivities (chord 1:1 on C_L and 0.5:1 on C_D, camber/leading edge 3:1 and 2:1, span 1:1 and 0.3:1, surface waviness 0.2:1 and 2.5:1, each as a fraction of the scaled dimension), combined root-sum-square.
+
+---
+
+## 22. Brakes, Pedal Box and Throttle (`brake_bias.py`, `brake_thermal.py`, `pedal_box.py`, `throttle_return.py`, `throttle_dynamics.py`)
+
+### 22.1 Brake Bias from the Hydraulics (`brake_bias.py`)
+
+```
+P_ax  = F_pedal · ratio · bar_ax / A_mc,ax           line pressure per circuit
+N_ax  = P_ax · A_piston,ax                           clamp force, one side of an opposed caliper
+T_ax  = n_cal · 2 · μ_ax(T) · N_ax · r_eff,ax        two pad faces
+bias  = T_f / (T_f + T_r)
+```
+
+μ_ax(T) is the nominal pad friction times the fade law of each axle's rotor temperature, so the bias is followed through a stint. Caliper deflection, hose swell and fluid expansion change pedal travel, not bias, because each circuit's pressure at equilibrium is still pedal force over master-cylinder area.
+
+### 22.2 Balance Bar and Pedal Travel (`pedal_box.py`)
+
+```
+F_front = F_rod · b / L,   F_rear = F_rod · a / L     a, b: pivot to front/rear clevis, a + b = L
+r_eff   = (r_o + r_i) / 2                              swept pad band
+```
+
+`bias_authority` sweeps the bar through its adjustment to give the reachable bias band and the change per turn. **Pedal travel** adds every consumer of fluid and converts it to travel at the pad:
+
+```
+V = V_knockback + V_pad + (caliper + hose + hardline compliance) · P + V_fluid · P / K + V_air · (1 − 1/(1 + P))
+stroke = V / A_mc,      travel = (stroke + free play) · pedal ratio
+```
+
+(K the fluid bulk modulus; trapped air compressed isothermally from 1 bar.) Travel past the available pedal stroke, or master-cylinder stroke past its limit, fails. `stack_up` breaks the installed length into named segments and prices each shortening lever in pedal force or travel.
+
+### 22.3 Rotor Thermal (`brake_thermal.py`)
+
+```
+single stop:   Q = ½ m v₀² · (1 + Σ I_i / (r² m)),   ΔT = Q · bias · η_rotor / 2 / (m_rotor c_p)
+endurance:     P̄ = h A (T − T∞) + ε σ A (T⁴ − T∞⁴)        solved for T by Newton
+transient:     C_r dT_r/dt = q_rotor − q_cond − h A (T_r − T∞) − q_rad;   C_p dT_p/dt = q_pad + q_cond − ½ h A_pad (T_p − T∞)
+```
+
+The convection coefficient combines a rotating-disc and a cross-flow correlation, `h = √(h_rot² + h_x²) · duct gain` (floor 12 W/m²K), with `Nu_r = 0.015 Re_r^0.8`, `Re_r = ω r² / ν`, and `Nu_x = 0.037 Re_x^0.8 Pr^(1/3)` on the rotor diameter. The design loop of §12 thins the ring until the pad and fluid limits bind.
+
+### 22.4 Throttle Return Redundancy (`throttle_return.py`)
+
+Spring rates are measured (`k = F/x`, `k = ΔF/Δx`, `k_θ = T/θ`) or estimated from geometry, `k = G d⁴ / (8 D³ N_a)`. With the worst single spring removed, the net closing torque (springs less friction, stiction and cable drag) must stay positive over the whole travel, with margin. The snap-closed model integrates the plate's rotation under the spring torque, friction and an aerodynamic torque `T_aero = C q A_plate r_plate f(θ)`, with `I_plate ≈ ⅓ m r²` plus pedal and cable mass reflected to the shaft, through any backlash band. The brake pedal is screened at 2000 N against FoS ≥ 1.5 on yield.
+
+### 22.5 Throttle Plate and Plenum Dynamics (`throttle_dynamics.py`, `throttle_flutter_cosim.py`)
+
+```
+ṁ = C_d A(θ) p_up / √(R T_up) · √( 2γ/(γ−1) · ( pr^(2/γ) − pr^((γ+1)/γ) ) ),   pr = max(p_down/p_up, (2/(γ+1))^(γ/(γ−1)))   (choked below the critical ratio)
+dp/dt = (R T / V_plenum) (ṁ_in − ṁ_out)
+A(θ) ∝ 1 − cos θ  (normalised to the bore at 90°, plus a leak area)
+```
+
+Plate angle, rate and manifold pressure are integrated together, the vacuum acting back on the plate as a torque. **Flutter screen:** `I θ̈ + (c_struct + c_aero(V)) θ̇ + k_θ θ = 0`, `c_aero(V) = c_aero,ref (V/V_ref)²`; negative total damping is flutter. The aerodynamic damping derivative is the in-phase component of the moment in a forced-oscillation CFD case (`throttle_flutter_cosim`); without one, only the structural stability is reported.
+
+---
+
+## 23. Tyre Thermal, Fitting and Field Tests (`tire_thermal.py`, `thermic_patch.py`, `tirefit.py`, `tire_field.py`, `degradation.py`)
+
+### 23.1 Lumped Tyre Thermal Network (`tire_thermal.py`)
+
+Tread band(s), carcass and inflation gas, explicit Euler:
+
+```
+Q_fric = |Fy · V_x tan α| + |Fx · V_x κ|,     Q_roll = C_rr Fz V_x
+C_tread dT_t/dt = Q_gen − G_tc (T_t − T_c) − h(V) A (T_t − T∞) − G_track (T_t − T_track)   (track term only while loaded)
+C_carc  dT_c/dt = G_tc (T̄_t − T_c) − G_cg (T_c − T_g) − h(V) A_c (T_c − T∞)
+C_gas   dT_g/dt = G_cg (T_c − T_g),       p_hot from the ideal gas at constant volume
+μ_scale(T) = max(1 − s |T − T_opt|, floor),   s colder or hotter side
+```
+
+Uncalibrated until fitted: every output carries `synthesized=True`.
+
+### 23.2 Flash Heat Along a Transient (`thermic_patch.py`)
+
+A post-processor on a solved transient (§6): a three-node ladder (surface, grip core, carcass) takes the frictional flash heat, and the core temperature sets grip through a parabolic window, `μ/μ_opt = clip(1 − ((T − T_opt)/w)², floor, 1)`, with a narrower half-width w on the hot side. Sub-stepped for explicit stability.
+
+### 23.3 Fitting and Field Tests (`tirefit.py`, `tire_field.py`, `measurement_fits.py`)
+
+- **MF5.2 fit:** bounded non-linear least squares of the §3.1 Fy equation against (α, Fz, γ, Fy), seeded from the default set, so the fitted model is exactly the one evaluated.
+- **Skidpad friction:** `μ = m a_y / (m g + ½ ρ ClA v²)`, with `a_y = v²/R` and `v = 2πR/t` from a lap time (`correlation`).
+- **Camber optimum:** a parabola through lap time at three or more static cambers; its minimum.
+- **Tyre rate:** the slope of load against deflection on the car's own tyre; rate at pressure `k(p) = k0 (s + (1 − s) p/p0)` with the carcass share s fitted from two or more pressures.
+- **Pneumatic trail:** t0 and α0 of `t_p = t0 cos(πα/2α0)` fitted to Mz and Fy against slip (§16.2).
+
+### 23.4 Degradation over a Run (`degradation.py`)
+
+Three layers on the same kinematic solver: thermal expansion of the chassis pickups, `Δx = α ΔT L` along the vector from a thermal datum, with `T(t) = T∞ + (T_soak − T∞)(1 − e^{−t/τ})` and an optional decay `e^{−d/ℓ}` with distance; structural compliance through §8; and an empirical tyre grip-temperature law, flagged as a placeholder until fitted.
+
+---
+
+## 24. Ride and Damping (`contact_patch.py`, `damper_synthesis.py`)
+
+### 24.1 Quarter Car over an ISO 8608 Road (`contact_patch.py`)
+
+Sprung corner mass m_s, unsprung m_u, wheel rate k, damper c, tyre k_t (and c_t), road input z_r:
+
+```
+ΔFz      = k_t (z_r − z_u) + c_t (ż_r − ż_u)
+G_d(n)   = G_d(n0) (n/n0)^−2,   n0 = 0.1 cycle/m,   G_d(n0) = 16e-6 (A), 64e-6 (B), 256e-6 (C) m³
+G(f)     = G_d(f/V) / V
+σ²_ΔFz   = ∫ |H(f)|² G(f) df,       result reported as σ(ΔFz) / Fz_static
+f_hop    = √((k + k_t)/m_u) / 2π
+P(|v_shaft| < v_knee) = erf( v_knee / (σ_v √2) )
+```
+
+Under braking or traction the anti-geometry carries `F_link = κ ΔFz` straight into the body, `κ = tan θ · μ_x`, `tan θ = (anti/100) h / (L · share)`; κ = 0 is the classical quarter car. Body acceleration RMS uses the same frequency response.
+
+### 24.2 Damper Synthesis (`damper_synthesis.py`)
+
+- **High-speed slope:** the damping ratio at the minimum of σ(ΔFz) on the design road (grip optimum).
+- **Low-speed slope:** a body-control ratio (0.65 to 0.7) for the body modes.
+- **Knee:** a declared multiple of the RMS suspension velocity below 4 Hz on the design road.
+- **Front/rear split:** the transient front share of the damper roll moment, `c_f t_f² / (c_f t_f² + c_r t_r²)`, matched to the steady share (53%) by `front_rate_for_share`.
+
+Rebound is a declared multiple of bump; wheel rates go to the shaft through MR² (§9). The result is flagged as synthesised until dynoed.
+
+---
+
+## 25. EV Powertrain and Energy (`ev_powertrain.py`, `power_draw.py`, `ev_electrical_check.py`, `powertrain/engine.py`, `simulforge.py`)
+
+### 25.1 Tractive Power, Current and Pack Limits (`power_draw.py`, `ev_electrical_check.py`)
+
+```
+F       = C_rr m g + ½ ρ CdA v² + m a
+P_wheel = F v,        P_elec = P_wheel / η
+P       = (V_oc − I R) I   →   I = (V_oc − √(V_oc² − 4 R P)) / (2R)      (low-current root)
+R_pack  = S · R_cell / P_par,     P_max = V_oc² / (4 R_pack)
+I_cell  = I_pack / P_par,         joule heat = I² R
+gear:   ω_motor = ω_wheel · reduction,   F_t = T / r_pitch,   F_r = F_t tan(pressure angle)
+```
+
+The electrical check flags peak pack current against the fuse, peak cell current against its rated C, and lap energy against usable pack energy, and returns the fastest lap the current limit allows. `power_draw` also audits the team workbook (inverted gear ratio, current proportional to voltage, efficiency multiplied rather than divided).
+
+### 25.2 Architecture and Energy over an Event (`ev_powertrain.py`)
+
+Each architecture (single motor and diff, two motors, four-motor vectoring) runs the QSS lap of §5 with its own mass and a declared drive-grip fraction. Energy along the lap:
+
+```
+accelerating:  E_trac += (m a + F_drag + F_roll) · ds / η_inv,motor
+braking:       E_regen += min(m|a| − F_drag − F_roll, a_regen,max m g) · ds · η_regen
+E_lap = E_trac − E_regen,     laps until empty = E_usable / E_lap
+```
+
+A shortfall is priced as a planning-grade derate (`0.30 × lap time × energy shortfall fraction`).
+
+### 25.3 Launch and Gear Ratio (`powertrain/engine.py`)
+
+```
+rpm      = v/r · G · 60/2π
+T        = min( curve(rpm), k_t · i_max )
+F_drive  = T G η / r
+N_driven = m g w_driven + m a h / L               static share plus load transfer onto the driven (rear) axle
+F        = min( F_drive, μ N_driven )
+a        = (F − ½ ρ CdA v² − C_rr m g) / (k_rot m)
+v ← v + a dt,  x ← x + v dt                         semi-implicit Euler
+```
+
+`optimize_gear_ratio` sweeps the final drive for minimum time over a distance.
+
+### 25.4 Actuator on the Bus (`simulforge.py`)
+
+An electrically driven active anti-roll actuator solved with the bus it draws from:
+
+```
+M_cmd = clip( −(k_p φ + k_d φ̇), ±M_max )
+V_app = clip( R i_ref + K_e ω, ±duty · V_bus )
+L di/dt = V_app − R i − K_e ω                      exact exponential update over the step
+V_bus = V_oc − I_total R_total                     brown-out latch below a threshold
+M = K_t · gear · η · i
+```
+
+Degradation (contact resistance, pack resistance, authority loss) enters as electrical parameters and shows up as lost roll authority.
+
+---
+
+## 26. Battery and Cooling Thermal (`pack_thermal.py`, `pcm_cooling.py`, `cooling.py`, `powertrain/engine.py`)
+
+### 26.1 Pack Thermal (`pack_thermal.py`)
+
+Current against time from the QSS lap (`dt = ds / v̄`, `P_batt = F v / η`, `I = P_batt / V_pack`, optionally with resistive sag). Each cell on the layout grid:
+
+```
+C_cell dT/dt = I_cell² R(T)  +  Σ_neighbours k_cc (T_n − T)  +  h(x,y) A (T_air − T),       I_cell = I_pack / P_par
+```
+
+h varies with position from the declared fans, so moving a fan moves the answer. Uncalibrated until fitted.
+
+### 26.2 Phase-Change Buffer (`pcm_cooling.py`)
+
+Effective heat capacity over a melt window around T_melt: `c_p,eff = c_p + L / ΔT_window`; the latent buffer per cell is `m_PCM · L`.
+
+### 26.3 Coolant Loop and Rig (`cooling.py`)
+
+```
+Q          = (P_shaft / (η_motor η_inv) − P_shaft) · coolant fraction
+ṁ          = ρ V̇,     ΔT = Q / (ṁ c_p)
+UA_req     = Q / (T_coolant,in − T∞)              conservative (cold end); also against the mean core temperature
+T_steady   = T∞ + Q / UA
+t_limit    = m_loop c_p (T_max − T_in) / Q          no radiator
+T_boil     ≈ T_boil,1bar + 20 °C per bar of cap pressure
+(u_Q/Q)²   = (u_V̇/V̇)² + (u_ΔT/ΔT)² + (u_cp/cp)²,    two independent sensors: u_ΔT = √2 · u_sensor
+```
+
+### 26.4 Cooling Network (`powertrain/engine.py`)
+
+```
+1/√f  = −1.8 log10[ (ε/D/3.7)^1.11 + 6.9/Re ]             Haaland
+ΔP    = (f L/D + Σζ) · ½ ρ v²                             Darcy–Weisbach with minor losses
+Y-branch: K_branch = k0 + (1 − A_in/A_b)² (expansion) or 0.5 (1 − A_b/A_in) (contraction), on the inlet head
+pump:  ΔP(Q) = Δp0 (1 − (Q/Q_max)²),   operating point where pump and system curves meet
+radiator (cross-flow, both unmixed): NTU = UA/C_min, C_r = C_min/C_max,
+       ε = 1 − exp[ NTU^0.22 / C_r · (exp(−C_r NTU^0.78) − 1) ],   Q̇ = ε C_min (T_cool,in − T_air)
+C_th dT/dt = Q̇_gen(t) − Q̇_reject(T, v(t)),     C_th = ρ V c_p (coolant) + m_metal c_p,al
+```
+
+---
+
+## 27. Electrical Systems (`wiring.py`, `fuse_test.py`, `fusebox.py`, `electronics.py`, `pcb_doctor.py`, `harness.py`, `tractive_system.py`, `bq796xx.py`, `rules_fsae.py`)
+
+### 27.1 Wire Ampacity (`wiring.py`)
+
+Base ampacities are the NEC 2017 table. Since the heat shed is proportional to the rise and the heat is I²R:
+
+```
+ambient correction = √( (T_rating − T_ambient) / (T_rating − 30 °C) )
+bundling: 1.00 (≤3), 0.80 (4–6), 0.70 (7–9), 0.50 (10–20), 0.45 (21–30), 0.40 (31–40), 0.35 (>40)
+```
+
+The two multiply; duty is judged on the RMS current.
+
+### 27.2 Fuse and Wire Coordination (`fuse_test.py`)
+
+```
+wire withstand:   I² t = k² S²,   k = √( q_c (β + 20)/ρ_20 · ln((β + θ_f)/(β + θ_i)) )    adiabatic; reproduces the IEC 60364-5-54 values
+fuse curve:       t = a (I/I_r)^−b,   flattening to constant I²t at high current
+crossover:        I^(2−b) = k² S² / (a I_r^b)
+```
+
+On the bench: pooled log scatter `s_p² = Σ(n_i − 1) s_i² / Σ(n_i − 1)`, samples needed `n = (z σ_ln / ln(1 + p))²`, relative uncertainty of σ ≈ 1/√(2 dof), timing quantisation resolution/√12.
+
+### 27.3 Which Element Fails First (`fusebox.py`)
+
+Each element on a load path has a capacity with mean μ_i (its FoS at the path's reference load) and σ_i from its evidence grade (§31.1):
+
+```
+P(i before j)   = Φ( (μ_j − μ_i) / √(σ_i² + σ_j²) )
+P(i fails first) = ∫ φ_i(x) Π_{j≠i} (1 − Φ_j(x)) dx         (trapezoidal quadrature)
+```
+
+### 27.4 PCB Copper and Signal Integrity (`electronics.py`, `pcb_doctor.py`)
+
+```
+R = ρ_Cu(T) L / A,   ρ_Cu(T) = ρ_20 (1 + α (T − 20))
+IPC-2221:   I = k ΔT^0.44 A^0.725   (A in square mils; k = 0.048 external, 0.024 internal)
+Onderdonk:  I = A_cmil √( log10( (T_m − T_a)/(234 + T_a) + 1 ) / (33 t) ),   T_m = 1083 °C,   A_cmil = A_sqmil · 4/π
+microstrip: Z0 = 87/√(ε_r + 1.41) · ln( 5.98 h / (0.8 w + t) )
+diff pair:  Z_diff ≈ 2 Z0 (1 − 0.48 e^(−0.96 s/h))
+```
+
+plus a geometric crosstalk budget against switching aggressors. `pcb_doctor` applies the same checks to imported KiCad and Altium boards.
+
+### 27.5 Harness (`harness.py`)
+
+Each conductor is a 3D polyline in car coordinates, checked for clearance against the same keep-outs as the suspension.
+
+- **Bend radius at a vertex:** `R = min(leg_in, leg_out)/2 · tan((180° − turn)/2)`, against the minimum formed bend radius, a multiplier × the outside diameter.
+- **Cut length:** path length plus bend allowance, service loops and strip stock.
+- **Resistance and mass:** from AWG area.
+- **Span sag:** geometric slack `δ ≈ c √(3(s − c)/(8c))`; elastic sag `δ = q L⁴ / (384 EI)` (clamped–clamped), with EI bounded between solid and stranded conductor.
+- **First natural frequency:** `f₁ = (22.373 / 2π L²) √(EI/μ)`, with a resonant amplitude `Q n δ` when it overlaps the excitation band.
+
+### 27.6 Tractive-System Safety (`tractive_system.py`, `rules_fsae.py`)
+
+```
+precharge:   τ = R C,   V_cap(t) = V (1 − e^(−t/τ)),   t(frac) = −τ ln(1 − frac)
+             I_peak = V/R,   P_R,peak = V²/R,   E_R = ½ C V² (independent of R)
+```
+
+The shutdown chain (TSAL, BSPD, AMS, IMD) is a series of normally-closed nodes, each naming what trips it. Logged power and voltage are checked the way the energy meter checks them: a violation is the limit exceeded continuously for 100 ms or on a 500 ms moving average (EV.3.4.1, 2027 draft, flagged non-binding).
+
+### 27.7 BMS Daisy-Chain Polling (`bq796xx.py`)
+
+```
+t_cycle = (request + response bytes) · t_byte / usable fraction + ADC settle + parse,     max poll rate = 1 / t_cycle
+```
+
+CRC-16 (polynomial 0x8005, reflected 0xA001), seeded 0xFFFF, pinned against the published example frames.
+
+---
+
+## 28. Data Acquisition and Sensing (`daq_plan.py`, `gnss.py`, `correlation.py`)
+
+### 28.1 CAN Bus (`daq_plan.py`)
+
+```
+frame bits (standard ID) = 47 + 8 · DLC,   + ⌊(34 + 8 · DLC − 1)/4⌋ worst-case stuff bits
+bus load = Σ_i bits_i · rate_i / bitrate
+response time:  w = B + C_m + Σ_{j higher priority} ⌈(w + τ_bit) · rate_j⌉ C_j,   iterated to a fixed point;
+                B = the longest lower-priority frame; unschedulable if w exceeds the period
+```
+
+### 28.2 Sampling (`daq_plan.py`)
+
+- **Sample rate:** at least 2× the signal bandwidth (floor), 5× practical, 10× comfortable, with the anti-alias cutoff below fs/2. Aliasing is flagged as unrecoverable.
+- **ADC resolution:** span / 2^bits in engineering units.
+- **Temperature-difference budget:** `σ_ΔT = √(σ_in² + σ_out²)` for independent sensors, smaller for a matched pair.
+
+### 28.3 IMU Placement and Yaw Limits (`gnss.py`)
+
+```
+a_measured = a_cg + α × r + ω × (ω × r)
+err_x = −α y − ω² x,    err_y = α x − ω² y            (ω, α about z; r the IMU offset from the CG)
+I_zz ≈ m a b                                          (dynamic index one)
+α_max = μ g / L                                       from M_z = μ m g (b/L) a
+```
+
+### 28.4 Correlation with Track Data (`correlation.py`)
+
+```
+skidpad:   v = √(a_y R),   t = 2πR / v
+trace:     RMSE, mean bias (sim fast or slow), peak-speed error, R² of predicted against measured speed
+```
+
+Nothing is fitted; the gap and its sign are reported.
+
+---
+
+## 29. Structures and Mechanisms Beyond the Corner (`flex.py`, `flexgen.py`, `generic_compliance.py`, `joints.py`, `permanent_set.py`, `printed_parts.py`, `morphmesh.py`, `ghost_topology.py`, `phantom_envelope.py`, `topology.py`, `chassis.py`, `mountpoints.py`, `interfaces.py`)
+
+### 29.1 Flexible Bodies (`flex.py`)
+
+`k = E A / L` for a tube link, or a finite-element part condensed to its interface nodes (Guyan):
+
+```
+K_red = K_mm − K_ms K_ss⁻¹ K_sm
+```
+
+which is exact for the quasi-static case; modal content is not fabricated.
+
+### 29.2 Flexure Joints (`flexgen.py`)
+
+A pseudo-rigid-body discretised elastica: n rigid segments of length ℓ = L/n joined by torsional springs `k_i = E I(s_i)/ℓ` at midpoint stations. Equilibrium by Newton on the exact gradient of
+
+```
+Π(φ) = Σ ½ k_i (φ_i − φ_{i−1})² − F · u_tip(φ) − M φ_tip
+C    = J H⁻¹ Jᵀ   (tip compliance, J = ∂u_tip/∂φ)
+P_cr from H(P) = K − P · diag(ℓ) becoming singular → π² E I / (K L)²
+```
+
+n = 16 is within 1% of the analytic small-deflection limits. The strain energy per mm of bump gives the wheel rate the flexure adds, `d²U/dz²`.
+
+### 29.3 Compliance of Any Architecture (`generic_compliance.py`)
+
+For each link, nudge its held length and re-solve the whole mechanism to get `b_i = ∂(contact patch)/∂L_i` and `r_i = ∂(carrier rotation)/∂L_i`. By virtual work the member force is `λ_i = F · b_i`, its stretch `λ_i / k_i`, and the wheel moves by `Σ b_i ΔL_i`; the held lengths are updated and the mechanism re-solved.
+
+### 29.4 Non-Linear Joints (`joints.py`)
+
+```
+series:      δ_total(T) = δ_link(T) + δ_joint,in(T) + δ_joint,out(T)
+laws:        F = k δ;   F = k₁ δ + k₃ δ³;   bilinear with a knee;   free-play dead band;   tabulated
+loss/cycle:  E = π c ω X² (viscous),   E = π η k_sec X² (structural),   c_eq = c + η k / ω
+thread fatigue (VDI 2230): σ_ASV = 0.85 (150/d + 45),   rolled after heat treatment σ_ASG = (2 − F_Sm/F_0.2) σ_ASV
+```
+
+Stiction enters as a describing function (secant stiffness and a phase lag, §16.6).
+
+### 29.5 Permanent Set (`permanent_set.py`)
+
+A fiber model of the section: plane sections `ε = ε₀ + κ y`, each fiber `σ = σ_res + E (ε − ε_p)` clipped to ±σ_y (elastic–perfectly plastic). Loading finds the curvature that carries the moment with zero axial force at each station and records plastic strain; unloading is elastic (a 2×2 solve). Permanent curvature integrated along the cantilever gives the residual tip deflection. Weld residual stress is declared and self-equilibrated; strain hardening is neglected.
+
+### 29.6 Printed Parts (`printed_parts.py`)
+
+```
+allowable = σ_datasheet × k_orientation × k_temperature × k_creep × k_moisture
+k_orientation = z-factor across layers (0.40–0.60), 1 in-plane
+k_temperature = 1 below (HDT − 60 °C), falling linearly to 0.2 at HDT, 0 above
+k_creep       = 0.75 sustained, 0.55 sustained within 90 °C of HDT
+k_moisture    = 0.95 dried and sealed, 0.80 otherwise (hygroscopic materials)
+hoop stress   = p d / (2t),  axial half
+```
+
+### 29.7 Generative Brackets (`morphmesh.py`)
+
+Density-based SIMP on a 2D plate: `E_e = E_min + x^3 (E_0 − E_min)`, density filter of radius r_min, Heaviside projection `x̄ = (tanh βη + tanh β(x − η)) / (tanh βη + tanh β(1 − η))` with β continuation, and an optimality-criteria update under a volume budget. The load set is the fan of member-force directions from a transient audit, grouped by exposure; the minimum rib and the heat-affected zone come from the declared shop tolerance.
+
+### 29.8 Deformed Geometry under a Transient (`ghost_topology.py`, `phantom_envelope.py`)
+
+At each instant of a transient the compliant corner (§8) is solved under that instant's loads. The tyre force responds to the deflection, `dFy = (∂Fy/∂γ) Δγ + (∂Fy/∂toe) Δtoe`, with a loop gain `g = (dFy₂ − dFy₁)/dFy₁` and converged force `Fy + dFy₁/(1 − g)`. Members are screened by pinned Euler buckling and yield. `phantom_envelope` sweeps each member as a capsule (tube radius) over travel, steer and the compliant states, and reports where the loaded envelope leaves the rigid one.
+
+### 29.9 Multibody Kernel and Packaging (`topology.py`, `chassis.py`, `mountpoints.py`, `interfaces.py`)
+
+- **Multibody kernel:** any suspension (MacPherson, multilink, trailing arm, solid axle, twist beam, truck steering) is a list of points, bodies and constraints (distance, revolute, planar, in-line) driven by wheel travel and rack, solved by Levenberg-Marquardt like §1.1.
+- **Clearance:** the minimum distance from the swept links to the chassis mesh over travel and steer.
+- **Mount points:** the signed distance from each point to the keep-out boxes.
+- **Mass roll-up:** `CG = Σ m_i r_i / Σ m_i`.
+
+---
+
+## 30. Build Tolerance (`kinematik_stochastic.py`)
+
+Per-point, per-axis tolerance boxes, which may be asymmetric (a weld pulls toward the bead), sampled uniformly (the default) or as a normal truncated at the box with σ = span/4. Metrics are propagated to first order through the Jacobian J (or by full solves), giving yield as in §15.5. With an asymmetric field the expected as-built error is `E[Δm] = J E[δ] ≠ 0`, and the **robust nudge** shifts the nominal by the band-weighted least-squares solution of `J x ≈ −J μ`, re-centring the build cloud in its bands. A symmetric field admits no such gain, and the module says so. Adjusters (shims, threads) are quantised.
+
+---
+
+## 31. Uncertainty, Tests and Decisions (`proof_engine.py`, `phantom_car.py`, `earshot.py`, `saboteur.py`, `trade.py`, `measurement_fits.py`, `setup.py`, `arch_synth.py`)
+
+### 31.1 Evidence Grades (`proof_engine.py`)
+
+Every declared number carries a relative uncertainty from its evidence grade, inflated linearly with age and capped at the guess level:
+
+| Grade | Base relative uncertainty | Doubles after |
+|-------|---------------------------|---------------|
+| guess | 40% | never |
+| estimate | 20% | 365 days |
+| modelled | 10% | 270 days |
+| measured | 3% | 180 days |
+| verified | 1% | 180 days |
+
+```
+u(age) = min( u_base (1 + age / half-life), 0.40 )
+```
+
+These are propagated through the objective models. A simulation result outside the prediction ± 3u is reported as discrepant: either the run or the ledger is wrong.
+
+### 31.2 Stacked Margins and Mutation Testing (`phantom_car.py`, `saboteur.py`)
+
+Each hedge on a shared number is expressed as `z_i = (f_i − 1) |value| / σ` and combined as a first-order reliability index `β = √(Σ z_i²)`: the statistical rarity of the car the margins actually defend. `saboteur` injects known input errors (unit slips, imperial into SI, frame flips, dropped or double-counted roll-up terms) and reports those that move the objective by less than its own 3σ band.
+
+### 31.3 Will the Test Answer the Question? (`earshot.py`)
+
+```
+A/B laps:      n per configuration = 2 ((z_{1−α/2} + z_power) σ / δ)²,    MDE(n) = (z_{1−α/2} + z_power) σ √(2/n)
+               miss probability = Φ( δ / (σ √(2/n)) − z_{1−α/2} )
+ordering bias: drift × difference in mean lap index (AABB biased; ABBA cancels linear drift)
+tilt CG:       h = ΔW L / (W tan θ),  σ from the angle term σ_θ/(sin θ cos θ) and the scale term σ_ΔW/ΔW
+coast-down:    F = A + B v²,   B = m (a_h − a_l) / (v_h² − v_l²),   CdA = 2B/ρ
+corner scales: σ_total = √4 × pad resolution
+```
+
+### 31.4 Trade Studies, Sensitivity and Architecture (`trade.py`, `setup.py`, `arch_synth.py`, `inverse_genesis_fullcar.py`)
+
+- **Trade studies:** sweep the parameters a component comparison is sensitive to (μ scale, torque bias ratio, preload, locked-axle penalty, exit lateral g), and declare no winner unless the sign of the points delta holds across the band.
+- **Setup sensitivity:** finite differences of limit grip and balance per knob; optimisation is a transparent grid or coordinate search that holds balance in a window.
+- **Architecture synthesis:** NSGA-II over discrete and continuous variables together, with kinematic objectives from the real solver and mass and points as labelled parametric estimates.
+- **Full-car synthesis:** a staged deterministic search over pack configuration, drive architecture and final drive against a rule matrix and the event-points model.
+
+---
+
+## 32. Verification of the Physics — paper M6, S14
+
+### 32.1 Physics Proofs (`tests/test_load_case_physics.py`, `tests/test_accuracy_invariants.py`)
 
 Each check uses a principle the code under test does not:
 
@@ -1153,13 +1649,13 @@ Each check uses a principle the code under test does not:
 | Anti-dive, anti-squat | Re-derived from virtual work without production code |
 | Instant centre | Perpendicular to the ball joints' motion; matches the hand construction |
 
-### 21.2 Benchmarks
+### 32.2 Benchmarks
 
 - **Lotus Suspension Analysis** (`scripts/lotus_benchmark.py`, `tests/test_lotus_benchmark.py`): camber and toe in bump, roll and steer, and roll centre, against a published corner the code was not tuned to. It checks the forward kinematics, not the synthesis.
 - **Independent kinematics** (`scripts/independent_kinematics.py`): the upright as one rigid body (six unknowns, SciPy `fsolve`), camber and toe read off the spin axis, the roll centre off the patch's path; agrees with KinematiK's camber and toe within 1e-12° on the paper's final corners.
 - **Known-answer recovery** (`test_inverse_solve_recovers_hidden_geometry`): hidden geometries recovered from their curves alone.
 
-### 21.3 Corrections the Checks Forced
+### 32.3 Corrections the Checks Forced
 
 | Error | Correction |
 |-------|-----------|
@@ -1173,11 +1669,42 @@ Each check uses a principle the code under test does not:
 | `LGAY` on SVy only; curvature sign on raw α | `LGAY` on every camber term; sign of shifted slip (§3.1) |
 | Damping ratio on wheel rate alone | Ride rate with the tyre in series (§9) |
 
+### 32.4 External Validation
+
+**Independent re-runs (SIT Racing, Elbee Racing).** Khabir Aqib, technical director of SIT Racing (Singapore Institute of Technology), and Jonathan Iglesias of the Elbee Racing suspension team each re-ran `front_v11_final` from the published code (manifest `2e7072ce2268`, its record before the load-case correction; the corrected record `2d35663ecd27` returns the same pickups). `scripts/verify_run.py` reported each re-run identical to the recorded outputs: every coordinate to 1e-6 mm, every fit and yield to 1e-9. This shows the synthesis reproduces outside the author's environment. It is a reproducibility check, not a physical test of the car.
+
+**Applied Racing Dynamics (ARD).** The front to build (`front_v11_joints50`) and the final rear were entered in ARD's suspension model and compared at static and at ±20 mm of travel. Differences are against ARD's display precision.
+
+| Quantity | Front: KinematiK / ARD | Rear: KinematiK / ARD |
+|----------|------------------------|-----------------------|
+| Caster, static (°) | 3.656 / 3.66 | 2.862 / 2.86 |
+| KPI, static (°) | 7.313 / 7.31 | 8.601 / 8.60 |
+| Scrub, static (mm) | 6.0 / 6.00 | 13.625 / 13.62 |
+| Roll-centre height, static (mm) | 56.09 / 56.35 | 41.85 / 41.90 |
+| Motion ratio (spring) | 0.80 / 0.80 | 0.821 / 0.82 |
+| Camber change, 20 mm droop (°) | +0.672 / +0.67 | +0.551 / +0.56 |
+| Camber change, 20 mm bump (°) | −0.804 / −0.79 | −0.598 / −0.59 |
+| Caster at ±20 mm (°) | within 0.01 | within 0.003 (tyre on the ground) |
+| KPI at ±20 mm (°) | within 0.012 | within 0.003 |
+| Scrub at ±20 mm, on the road (mm) | 6.03, 5.96 / 6.02, 6.00 | 13.66, 13.53 / 13.68, 13.58 |
+| Anti-squat (%) | — | 50.2 / 50.29 |
+
+Every difference that exceeded its limit was traced to a definition, each checked with an independent solve:
+
+- **Toe change and steer angle** (0.04 to 0.15°). ARD's kinematics page evaluates the spin axis at 0° static camber. With 0° the independent solve reproduces ARD (front −0.007 and +0.073°, rear −0.133 and +0.150°); with the static camber the corner carries (−2.5°, −2.6°) it reproduces KinematiK.
+- **Roll-centre height over travel.** ARD measures from the road, KinematiK from the static ground line in the body frame. The constant 0.26 mm offset at static carries through ±20 mm.
+- **Rear caster and KPI over travel.** ARD heaves the body with the tyre on the ground, so the wheel centre moves 20.34 and 19.61 mm for a 20 mm heave. At that state the independent solve gives ARD's values.
+- **Scrub over travel.** The comparison found that KinematiK took scrub on z = 0 at every travel. This was corrected to the road plane (§1.5, §32.3), after which it agrees.
+
+Not compared: camber in steer (ARD's definition is unconfirmed), and anti-dive and anti-lift (ARD's brake page was not set to this car's bias and inboard rear brakes).
+
+**ARD lap time.** A load-transfer-balance study in ARD's lap simulator (front share 49, 53 and 57%) is not yet usable: ARD's static state settles at an implausible ride height. This is open with ARD support, so no lap-time agreement is claimed. KinematiK's own quasi-steady check puts the effect of that balance range at about 0.1 s.
+
 ---
 
-## 22. Test Coverage
+## 33. Test Coverage
 
-Every formula in this document is pinned by the test suite (`fsae_suspension/tests/`). Key tests and files:
+The formulas in this document are pinned by the test suite (`fsae_suspension/tests/`); the exception is the underfloor channel (§21.1), which has no dedicated test yet. Key tests and files:
 
 | Test | What it pins |
 |------|-------------|
@@ -1190,12 +1717,20 @@ Every formula in this document is pinned by the test suite (`fsae_suspension/tes
 | `test_compliance.py`, `test_elastokinematics.py` | Compliance steer and camber, pickup stiffness, elastokinematic solve |
 | `test_target_derivation.py`, `test_paper_values.py` | Equation 1, camber chain, floors, shares, sensitivity |
 | `test_inverse_genesis*.py`, `test_genesis_walls.py`, `test_genesis_repro.py` | Residual, walls as refusals, wheel envelope, property bounds, yield, manifests |
-| `test_load_case_physics.py` | The physics proofs of §21.1 |
+| `test_load_case_physics.py` | The physics proofs of §32.1 |
 | `test_lotus_benchmark.py`, `test_final_pair.py` | External benchmark; every wall and claim on the final corners |
 | `test_robustness.py`, `test_actuation.py`, `test_steering_margin.py` | Margins, shock cases, actuation, steering window |
 | `test_tire_utilisation.py`, `test_torque_distribution.py` | Utilisation, envelope, torque split, yaw budget |
 | `test_transducer.py` | Strains, bridge output, excitation limit, dynamic error, calibration certificate |
 | `test_damper*.py`, `test_bolted_joint.py`, `test_bracket_fos.py` | Damper law, VDI 2230, bracket FoS |
+| `test_scale_model.py`, `test_pressure_tap.py`, `test_piv.py`, `test_windtunnel.py`, `test_daq.py` | Similitude, Cp reduction and stall, PIV, tunnel correlation, balance decoupling |
+| `test_pedal_box.py`, `test_throttle_return.py`, `test_throttle_dynamics.py` | Balance bar, pedal travel, return-spring redundancy, plenum and flutter |
+| `test_tire_thermal.py`, `test_thermic_patch.py`, `test_tire_field.py`, `test_degradation.py`, `test_measurement_fits.py` | Tyre thermal network, flash heat, field tests, degradation, fits |
+| `test_ev_powertrain.py`, `test_power_draw.py`, `test_pack_thermal.py`, `test_simulforge.py` | Architecture and energy, power draw, pack thermal, actuator on the bus |
+| `test_electronics.py`, `test_harness.py`, `test_fuse_test.py`, `test_fusebox.py`, `test_bq796xx.py` | PCB copper and impedance, harness, fuse coordination, failure order, BMS polling |
+| `test_daq_plan.py`, `test_gnss.py`, `test_correlation.py` | CAN frames and bus load, sampling, IMU lever arm, track correlation |
+| `test_flexgen.py`, `test_generic_compliance.py`, `test_morphmesh.py`, `test_ghost_topology.py`, `test_phantom_envelope.py`, `test_topology.py` | Flexures, generic compliance, SIMP, deformed geometry, envelopes, multibody kernel |
+| `test_kinematik_stochastic.py`, `test_proof_engine.py`, `test_phantom_car.py`, `test_earshot.py`, `test_arch_synth.py` | Tolerance and robust nudge, evidence grades, stacked margins, test power, architecture search |
 
 About 3,500 tests; `pytest --collect-only -q` gives the current count.
 
@@ -1214,3 +1749,12 @@ About 3,500 tests; `pytest --collect-only -q` gives the current count.
 - BS 8422:2003 — Force measurement: strain gauge load cells
 - JCGM 100:2008 — Evaluation of measurement data: Guide to the expression of uncertainty in measurement (GUM)
 - ISO 8608 — Mechanical vibration: road surface profiles
+- Haaland, S.E. — *Simple and Explicit Formulas for the Friction Factor in Turbulent Pipe Flow*, J. Fluids Eng., 1983
+- Incropera, F.P. & DeWitt, D.P. — *Fundamentals of Heat and Mass Transfer*, Wiley (ε-NTU, convection correlations)
+- Heywood, J.B. — *Internal Combustion Engine Fundamentals*, McGraw-Hill (compressible orifice flow)
+- IPC-2221 / IPC-2152 — Printed board design; current-carrying capacity
+- IEC 60364-5-54 and NEC 2017 — Conductor short-circuit withstand; ampacity tables
+- Davis, R.I. et al. — *Controller Area Network (CAN) Schedulability Analysis*, Real-Time Systems, 2007
+- Howell, L.L. — *Compliant Mechanisms*, Wiley (pseudo-rigid-body model)
+- Andreassen, E., Clausen, A., Schevenels, M., Lazarov, B.S. & Sigmund, O. — *Efficient topology optimization in MATLAB using 88 lines of code*, Struct. Multidisc. Optim., 2011
+- Deb, K. et al. — *A fast and elitist multiobjective genetic algorithm: NSGA-II*, IEEE Trans. Evol. Comput., 2002
