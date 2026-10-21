@@ -85,12 +85,12 @@ quote absolute downforce.
 
 ## Peer review
 
-A manuscript describing the inverse synthesis is in preparation and has not been
+A manuscript describing the inverse synthesis is in preparation and is in the process of being
 peer reviewed. The software is archived at Zenodo,
 [doi:10.5281/zenodo.23450788](https://doi.org/10.5281/zenodo.23450788).
 
 ## How this was built
 
-KinematiK is written by one author with AI assistance. That is why every claim
+KinematiK is written by one author. That is why every claim
 above comes with a script that re-runs it: the checks, not the author, are the
 evidence. If one of them is wrong, open an issue.
