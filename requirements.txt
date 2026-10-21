@@ -19,6 +19,7 @@ numpy>=2.0          # np.trapezoid requires numpy 2.0+
 scipy>=1.11
 plotly>=5.18
 trimesh>=4.0
+networkx>=3.0      # trimesh needs it to slice a mesh into sections (vortex-lattice camber surface)
 
 # --- optional features: imported lazily, only when the feature is used ---
 # The app boots fine without these; each one just unlocks its feature.

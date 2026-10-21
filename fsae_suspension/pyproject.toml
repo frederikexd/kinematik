@@ -25,6 +25,7 @@ dependencies = [
     "scipy>=1.11",
     "plotly>=5.18",
     "trimesh>=4.0",
+    "networkx>=3.0",                       # trimesh mesh sections (vortex_lattice.py)
     "defusedxml>=0.7",
 ]
 
