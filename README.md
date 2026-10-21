@@ -109,7 +109,7 @@ Python 3.11+. The hosted app needs no install.
   refinement while the ratio between two geometries holds to 3%, so compare
   designs at matched settings rather than quoting one figure.
 - **Not peer reviewed yet.** A manuscript is in preparation.
-- **One author, AI-assisted.** That is why every published number has a script
+- **One author.** That is why every published number has a script
   that re-runs it, and why the checks run weekly in CI.
 
 **It tells you when it can't answer.** Diverged cases are blanked rather than
