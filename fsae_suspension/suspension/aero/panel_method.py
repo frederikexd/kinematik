@@ -415,6 +415,8 @@ class PanelMethodModel:
             raise PanelMethodUnavailable(f"trimesh not available: {e}")
 
         try:
+            from ..image_safety import restrict_image_decoders
+            restrict_image_decoders()
             mesh = trimesh.load(path, force="mesh")
         except Exception as e:                              # noqa: BLE001
             raise PanelMethodUnavailable(f"could not load geometry '{path}': {e}")

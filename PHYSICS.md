@@ -519,6 +519,8 @@ C_D_friction      = flat-plate turbulent skin-friction estimate (Cf × wetted ar
 C_D_total         = C_D_pressure + C_D_friction
 ```
 
+**Checked against closed form** (sphere in free air, ground effect and circulation off; `scripts/aero_closed_form.py`): surface Cp against `1 − (9/4) sin²θ` has minimum −1.248 (analytic −1.250), mean |ΔCp| 0.009 and largest |ΔCp| 0.028 on 1,280 panels; 0.007 and 0.024 on 5,120.
+
 Fidelity label: `POTENTIAL`. Captures: ground effect, attached-flow pressure field, downforce trend with rake/ride height. Does not capture: viscous separation, turbulent wake, stall. Trust deltas between geometries more than absolute levels.
 
 ---
@@ -544,11 +546,12 @@ Di = ρ · V∞ · Σ(Γ_i · w_i · Δy_i)   (induced drag from own downwash)
 
 **Ground effect:** image vortices reflected through z = 0 with reversed circulation.
 
-**Validated against closed form** (rectangular AR = 8 wing):
-- C_L within 6% of lifting-line theory (expected — rectangular planform ≠ elliptic loading)
-- Span efficiency e = 1.004 (induced drag = theoretical)
-- Grid-converged to < 0.5% between 30×8 and 40×10 panels
-- C_L rises monotonically 0.411 (free air) → 0.931 (h/c = 0.15)
+**Checked against closed form** (flat rectangular AR = 8 wing, 4°, free air, 40 × 10 panels; `scripts/aero_closed_form.py`, `tests/test_aero_closed_form.py`):
+- C_L 11% under lifting-line theory and 9% under Helmbold's lifting-surface estimate (rectangular planform ≠ elliptic loading accounts for part of this)
+- C_L 4% under an independent flat-plate lattice on the same grid; the gap is not yet explained (open item)
+- Span efficiency e = 0.92
+- Grid-converged to 0.2% between 30×8 and 40×10 panels
+- C_L rises 2.4× from free air to h/c = 0.15
 
 Does not capture: profile drag, viscous separation, stall. Induced drag only.
 

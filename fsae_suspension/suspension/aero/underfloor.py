@@ -232,6 +232,8 @@ def solve(geometry_path: str, ride_height_mm: float, speed_ms: float,
     import numpy as np
     import trimesh
 
+    from ..image_safety import restrict_image_decoders
+    restrict_image_decoders()
     mesh = trimesh.load(geometry_path, force="mesh")
     if mesh.is_empty or len(mesh.faces) == 0:
         raise ValueError("empty mesh")

@@ -40,15 +40,17 @@ the collocation rather than being imposed as an extra equation.
 
 VALIDATED AGAINST CLOSED FORM
 -----------------------------
-On a rectangular AR = 8 wing, this implementation returns:
+On a flat rectangular AR = 8 wing at 4 degrees in free air, 40 x 10 panels
+(scripts/aero_closed_form.py, tests/test_aero_closed_form.py):
 
-  * C_L within 6% of lifting-line theory (2π·α·AR/(AR+2)), linear in α, and
-    the shortfall is expected — lifting-line assumes elliptic loading, which a
-    rectangular planform does not have.
-  * Span efficiency e = 1.004 against the ideal C_Di = C_L²/(π·AR), i.e. the
-    induced drag is the theoretical value.
-  * Grid-converged to under 0.5% between 30×8 and 40×10 panels.
-  * C_L rising monotonically from 0.411 in free air to 0.931 at h/c = 0.15.
+  * C_L 11% under lifting-line theory, 2*pi*alpha*AR/(AR+2), and 9% under
+    Helmbold's lifting-surface estimate. Part of that is expected: lifting
+    line assumes elliptic loading, which a rectangular planform does not have.
+  * C_L 4% under an independent flat-plate lattice on the same grid. That gap
+    is not explained yet and is listed as open in VALIDATION.md.
+  * Span efficiency e = 0.92 against C_Di = C_L^2/(pi*AR).
+  * Grid-converged to 0.2% between 30 x 8 and 40 x 10 panels.
+  * C_L rises 2.4 times from free air to h/c = 0.15 in ground effect.
 
 WHAT IT HONESTLY DOES NOT DO
 ----------------------------
@@ -198,6 +200,8 @@ def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
     if not path or not os.path.isfile(path):
         raise VortexLatticeUnavailable(f"geometry '{path}' not found on disk")
     try:
+        from ..image_safety import restrict_image_decoders
+        restrict_image_decoders()
         mesh = trimesh.load(path, force="mesh")
     except Exception as e:                                  # noqa: BLE001
         raise VortexLatticeUnavailable(f"could not load '{path}': {e}")

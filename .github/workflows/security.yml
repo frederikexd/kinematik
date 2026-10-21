@@ -14,7 +14,21 @@ jobs:
           python-version: '3.12'
       - name: Install tools
         run: pip install pip-audit bandit
+      # Pillow advisories fixed only in Pillow 13, which Streamlit (<13) does not yet allow. KinematiK opens no
+      # image itself; the one route in is a texture inside an uploaded mesh, and suspension/image_safety.py removes
+      # every decoder but PNG and JPEG (and the PDF writer) before any mesh is loaded, which closes all eight
+      # (TIFF, GIF, PPM/PGM, EPS, PDF append). tests/test_image_safety.py holds that true. Remove these ignores
+      # once Streamlit allows Pillow 13.
       - name: Known vulnerabilities in the dependencies
-        run: pip-audit -r requirements.txt -r fsae_suspension/requirements.txt
+        run: >-
+          pip-audit -r requirements.txt -r fsae_suspension/requirements.txt
+          --ignore-vuln CVE-2026-112895
+          --ignore-vuln CVE-2026-112400
+          --ignore-vuln CVE-2026-112397
+          --ignore-vuln CVE-2026-112896
+          --ignore-vuln CVE-2026-112897
+          --ignore-vuln CVE-2026-112395
+          --ignore-vuln CVE-2026-112404
+          --ignore-vuln CVE-2026-112899
       - name: Source security lint (medium and high severity)
         run: bandit -r fsae_suspension -x fsae_suspension/tests -ll -q

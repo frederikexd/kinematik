@@ -107,9 +107,13 @@ def load_part(path: str, offset=(0.0, 0.0, 0.0), scale=1.0,
             with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
                 glb = tmp.name
             cascadio.step_to_glb(path, glb, tol_linear=0.5, tol_angular=0.5)
+            from .image_safety import restrict_image_decoders
+            restrict_image_decoders()
             scene = trimesh.load(glb, force="scene")
             os.unlink(glb)
         else:
+            from .image_safety import restrict_image_decoders
+            restrict_image_decoders()
             scene = trimesh.load(path, force="scene")
     except Exception as e:
         raise ValueError(

@@ -103,9 +103,13 @@ def load_chassis(path: str, offset=(0.0, 0.0, 0.0), scale=1.0) -> trimesh.Trimes
         with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
             glb_path = tmp.name
         cascadio.step_to_glb(path, glb_path, tol_linear=0.5, tol_angular=0.5)
+        from .image_safety import restrict_image_decoders
+        restrict_image_decoders()
         scene = trimesh.load(glb_path, force="scene")
         os.unlink(glb_path)
     else:
+        from .image_safety import restrict_image_decoders
+        restrict_image_decoders()
         scene = trimesh.load(path, force="scene")
 
     if isinstance(scene, trimesh.Scene):
@@ -234,9 +238,13 @@ def load_part_mesh(path: str, *, max_faces: int = 4000,
         with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
             glb_path = tmp.name
         cascadio.step_to_glb(path, glb_path, tol_linear=0.1, tol_angular=0.3)
+        from .image_safety import restrict_image_decoders
+        restrict_image_decoders()
         scene = trimesh.load(glb_path, force="scene")
         os.unlink(glb_path)
     else:
+        from .image_safety import restrict_image_decoders
+        restrict_image_decoders()
         scene = trimesh.load(path, force="scene")
 
     if isinstance(scene, trimesh.Scene):
