@@ -3,6 +3,14 @@
 
 ## Unreleased
 
+**Adams View benchmark and a benchmark index.** The paper's three corners solved in Adams View 2026.1 agree with
+KinematiK at every 1 mm over ±25 mm of wheel-centre travel: largest differences 0.000027° and 0.000027 mm against
+limits of 0.005–0.01° and 0.05 mm set before the runs. The command files (generated from the manifests), the Adams
+exports and the comparison are in `benchmarks/adams_view/`, `scripts/adams_view_benchmark.py` and
+`tests/test_adams_view_benchmark.py`. New `BENCHMARK.md` lists every benchmark test by role and feature, and says
+which features have none. The claim check gains 24 claims for the benchmark (499 in all), and 22 quotes are brought in
+line with the current text (American spelling, two doubled words, and four reworded sentences); no value changed.
+
 **Load cases corrected; the final corners re-run.** Two load-case inconsistencies the paper disclosed are fixed in
 code rather than in text. (1) The cornering cases carried a declared 50 N*m aligning moment at the lateral-force peak,
 where the pneumatic trail has collapsed; `genesis_repro.vehicle_load_cases` now gives each case the tire's own moment,

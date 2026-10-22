@@ -83,7 +83,7 @@ def _env(name):
 CLAIMS = [
     # ---- identity of the final corners -------------------------------------------------------------------- #
     C("final-front-hash", "P §6.1", "front_v11_final (2d35663ecd27) and rear_v11_final", _hash("front_v11_final"), "{:012x}"),
-    C("final-rear-hash", "P §6.1", "rear_v11_final (1d2b4a0a7fca) are each returned by the optimiser", _hash("rear_v11_final"), "{:012x}"),
+    C("final-rear-hash", "P §6.1", "rear_v11_final (1d2b4a0a7fca) are each returned by the optimizer", _hash("rear_v11_final"), "{:012x}"),
     C("final-front-verdict", "P Table 6", "RESILIENT, 100%", lambda c: 100 * manifest("front_v11_final").recorded["winner_yield"], "{:.0f}"),
     C("final-front-fit", "P Table 6", "0.347", _fit("front_v11_final"), "{:.3f}"),
     C("final-rear-fit", "P Table 6", "RESILIENT, 100%   0.41", _fit("rear_v11_final"), "{:.2f}"),
@@ -94,8 +94,8 @@ CLAIMS = [
     C("share", "P Table 3", "0.78 deg/g; 52.5%", lambda c: 100 * c.corners["F"]["share"]),
     C("gain-front", "P §3.1", "The final gains (−0.035 and −0.029 deg/mm)", F("gain"), "{:.3f}"),
     C("gain-rear", "P §3.1", "The final gains (−0.035 and −0.029 deg/mm)", R("gain"), "{:.3f}"),
-    C("bump-steer-front", "P §5.4", "steer of the final corners is 0.028 degrees front and and 0.033 degrees rear over", F("bump_steer"), "{:.3f}"),
-    C("bump-steer-rear", "P §5.4", "Bump steer of the final corners is 0.028 degrees front and and 0.033 degrees rear", R("bump_steer"), "{:.3f}"),
+    C("bump-steer-front", "P §5.4", "steer of the final corners is 0.028 degrees front and 0.033 degrees rear over", F("bump_steer"), "{:.3f}"),
+    C("bump-steer-rear", "P §5.4", "Bump steer of the final corners is 0.028 degrees front and 0.033 degrees rear", R("bump_steer"), "{:.3f}"),
     C("anti-dive-73", "P §3.1", "at the final front’s +68.9% anti-dive (73% bias), and", F("ad73")),
     C("anti-dive-60b", "P §5.5", "68.9% anti-dive there (56.7% at 60%)", F("ad60")),
     C("anti-squat", "P §3.1", "the final rear’s +46.7% anti-squat", R("as")),
@@ -116,10 +116,10 @@ CLAIMS = [
     C("pitch18", "P §5.3", "and about 0.90 degrees at 1.8g", lambda c: c.pitch["deg18"], "{:.2f}"),
     C("migration-share", "P Table 3", "0.09 points; the pitch itself adds 1.9 points above", lambda c: abs(c.pitch["shift_body_pts"]), "{:.2f}"),
     # ---- steering ---------------------------------------------------------------------------------------------- #
-    C("ratio-centre", "P Table 3", "4.99:1 at centre, 25.6 degrees mean steer at 118.9 degrees", ST("ratio_centre"), "{:.2f}"),
-    C("lock-sw", "P Table 3", "4.99:1 at centre, 25.6 degrees mean steer at 118.9 degrees;", ST("lock_sw")),
-    C("ratio-avg", "P Table 6", "4.64:1 averaged, 4.99:1 at centre; margin +0.95", ST("ratio_avg"), "{:.2f}"),
-    C("effort-margin", "P Table 6", "4.64:1 averaged, 4.99:1 at centre; margin +0.95", ST("effort_margin"), "{:.2f}"),
+    C("ratio-centre", "P Table 3", "4.99:1 at center, 25.6 degrees mean steer at 118.9 degrees", ST("ratio_centre"), "{:.2f}"),
+    C("lock-sw", "P Table 3", "4.99:1 at center, 25.6 degrees mean steer at 118.9 degrees;", ST("lock_sw")),
+    C("ratio-avg", "P Table 6", "4.64:1 averaged, 4.99:1 at center; margin +0.95", ST("ratio_avg"), "{:.2f}"),
+    C("effort-margin", "P Table 6", "4.64:1 averaged, 4.99:1 at center; margin +0.95", ST("effort_margin"), "{:.2f}"),
     C("inner", "P §5.2", "28.7 degrees inner, 22.5 degrees outer, 75.3% Ackermann) at", ST("inner")),
     C("outer", "P §5.2", "28.7 degrees inner, 22.5 degrees outer, 75.3% Ackermann) at", ST("outer")),
     C("ackermann", "P §5.2", "28.7 degrees inner, 22.5 degrees outer, 75.3% Ackermann) at", ST("ack")),
@@ -200,7 +200,7 @@ CLAIMS = [
     C("warp-patch", "P §3.1", "Steering to the hairpin lock lifts the outer patch 0.76 mm and drops the inner 0.96 mm",
       lambda c: c.warp["patch_dz_right_mm"], "{:.2f}"),
     C("warp-row13", "P Table 10", "RF -44 N, LF +44 N, RR +44 N, LR -44", lambda c: c.warp["left_steer_N"]["FR"], "{:.0f}"),
-    C("corner-load", "P §3.1", "and up to 1434 N (+14.9%) with 442 N of of downforce", lambda c: c.corner_load, "{:.0f}"),
+    C("corner-load", "P §3.1", "and up to 1434 N (+14.9%) with 442 N of downforce", lambda c: c.corner_load, "{:.0f}"),
     C("steer-spring-S", "S S6.37", "the front spring changes length by +3.8 and -1.0 mm at fixed ride height",
       lambda c: c.packaging["F"]["steer_spring"][0], "{:.1f}", doc="S"),
     C("t8-LF-load", "P Table 8", "+8736", lambda c: c.structure["F"]["LF"]["worst_n"], "{:.0f}"),
@@ -293,7 +293,7 @@ CLAIMS = [
     C("released-29-kN", "P §1", "which puts 16.5 and 14.2 kN into the lower-rear leg", lambda c: -c.earlier["front_v11_29deg"]["LR"]["worst_n"] / 1000),
     C("released-25-kN", "P §1", "which puts 16.5 and 14.2 kN into the lower-rear leg", lambda c: -c.earlier["front_v11_25deg"]["LR"]["worst_n"] / 1000),
     C("tube035-now", "S D4", "(-17.3 kN and 0.77 on the corrected statics)", lambda c: c.earlier["tube035_LR"]["fos_buckling"], "{:.2f}", doc="S"),
-    C("tube035-rec", "S D4", "lower rear leg-16.0 kN, buckling 0.83 on 5.8 x 0.035 inch", lambda c: float(re.search(
+    C("tube035-rec", "S D4", "lower rear leg-16.0 kN, buckling 0.83 on ⅝ x 0.035 inch", lambda c: float(re.search(
         r"buckling factor ([0-9.]+)", manifest("front_v11_29deg_b73_tube035").context["binding_wall"]).group(1)), "{:.2f}", doc="S"),
     C("b6001-rec", "S D3", "2x b001 rocker bearings at 0.89 against 2.0", lambda c: float(re.search(
         r"rocker_bearing_sf = ([0-9.]+)", manifest("front_v11_29deg_b73_6001").context["binding_wall"]).group(1)), "{:.2f}", doc="S"),
@@ -431,8 +431,8 @@ def _rear_final_antilift60(c):
 
 S7 = [
     C("s7-decel60", "P Table 2", "stops at 1.27g, limited by the rear tires", _decel60, "{:.2f}"),
-    C("s7-decel73", "P Table 2", "73%; 1.57g (figure 2)", WF("brake_decel_g"), "{:.2f}"),
-    C("s7-antilift", "P Table 2", "anti-lift −121%: the rear extends 30 mm", _rear_final_antilift60, "{:.0f}"),
+    C("s7-decel73", "P Table 2", "(wall 1.5g) 73%; 1.57g", WF("brake_decel_g"), "{:.2f}"),
+    C("s7-antilift", "P Table 2", "anti-lift −121% at 60% bias: the rear extends 30 mm", _rear_final_antilift60, "{:.0f}"),
     C("s7-antilift-in", "P Table 2", "inboard rear brakes: +12.6% at 73%", R("al_in")),
     C("s7-released-29", "P Table 2", "buckling factor 0.81 and 0.88 in the 1.8g stop ⅝",
       lambda c: c.earlier["front_v11_29deg"]["LR"]["fos_buckling"], "{:.2f}"),
@@ -527,7 +527,7 @@ S7 += [
       lambda c: manifest("front_v11_from_delivered").recorded["candidates"][0]["max_band_frac"], "{:.2f}"),
     C("r2-del-stall", "P §3.2", "but the curves end at 1.30 of their bands",
       lambda c: _seedrep("front_v11_from_delivered")["final_band"], "{:.2f}"),
-    C("r2-del-btoe", "P §3.2", "toes 0.48 degrees per wheel in a 1.5g stop. The",
+    C("r2-del-btoe", "P §3.2", "toes 0.48 degrees per wheel in a 1.5g stop with rigid joints",
       _start85("compliance_toe_braking_deg", "front_steering_walls", "front_v11_from_delivered"), "{:.2f}"),
 ]
 CLAIMS += S7[len(S7) - 21:]
@@ -567,7 +567,7 @@ S8 = [
     C("r3-del-env", "P Table 3", "+0.00 mm", _delbest("env"), "{:+.2f}"),
     C("r3-del-band", "P Table 3", "1.26 (camber at full bump)", _delbest("camber_bump"), "{:.2f}"),
     C("r3-del-camber", "P §3.2", "camber at full bump misses its band by 26%", lambda c: 100 * (_delbest("camber_bump")(c) - 1), "{:.0f}"),
-    C("r3-del-rc", "P §3.2", "roll-centre height at full droop by 14%", lambda c: 100 * (_delbest("rc_droop")(c) - 1), "{:.0f}"),
+    C("r3-del-rc", "P §3.2", "roll-center height at full droop by 14%", lambda c: 100 * (_delbest("rc_droop")(c) - 1), "{:.0f}"),
     C("r3-del-evals", "P §3.2", "The pattern search reaches every wall in 964", lambda c: _seedrep("front_v11_from_delivered")["evaluations"], "{:d}"),
     C("r3-del-start-lock", "P Table 3", "137.1 degrees", _start85("lock_sw_deg", "front_steering_walls", "front_v11_from_delivered")),
     C("r3-del-start-ad", "P Table 3", "69.7%", _start85("anti_dive_pct", "front_steering_walls", "front_v11_from_delivered")),
@@ -615,8 +615,8 @@ def _deliv_6001(c):
 
 S10 = [
     C("d-buck", "P §3.1", "reach a buckling factor of 1.22 in a 1.8g stop, and", lambda c: c.earlier["d73"]["LR"]["fos_buckling"], "{:.2f}"),
-    C("d-yield", "P §3.1", "bent by the pushrod mounted on that wishbone, a yield factor of 0.07 in a kerb strike while braking", lambda c: c.earlier["d73"]["LR"]["fos_yield"], "{:.2f}"),
-    C("d-bracket", "P §3.1", "off its node, reaches 0.31", lambda c: c.earlier["bracket_built"], "{:.2f}"),
+    C("d-yield", "P §3.1", "bent by the pushrod mounted on that wishbone, a yield factor of 0.07 in a curb strike while braking", lambda c: c.earlier["d73"]["LR"]["fos_yield"], "{:.2f}"),
+    C("d-bracket", "P §3.1", "off its node, reaches a factor of 0.31", lambda c: c.earlier["bracket_built"], "{:.2f}"),
     C("d-6001", "P §3.1", "its 6001 rocker bearings reach a static factor of 0.72", _deliv_6001, "{:.2f}"),
     C("d-decel", "P §3.1", "the car stops at 1.27g,", _decel60, "{:.2f}"),
     C("d-lock", "P §3.1", "it needs 137 degrees of steering wheel to reach the hairpin on", lambda c: c.baseline["winner"]["lock_sw_deg"], "{:.0f}"),
@@ -665,7 +665,7 @@ S11 = [
       _sm("contingency", "hand_25p4_Nm", "declared")),
     C("sm-c-road", "P §3.3", "gives 9.9 Nm on the declared set and 9.6 at road 1.43. The",
       _sm("contingency", "hand_25p4_Nm", "r25b_road_1p43")),
-    C("sm-lock", "P §3.3", "takes 118.9 degrees of the 120 degrees wheel angle wall, so", _sm("contingency", "contingency", "lock_sw_deg")),
+    C("sm-lock", "P §3.3", "takes 118.9 degrees of the 120 degree wheel-angle wall, so", _sm("contingency", "contingency", "lock_sw_deg")),
     C("sm-r-dx", "P §3.3", "the 3.1 mm offset that the R25B shape", lambda c: -_sm("r25b_1p55_offset", "dx_mm")(c)),
     C("sm-r-env", "P §3.3", "breaks the clearance wall by 0.30 mm", _sm("r25b_1p55_offset", "env"), "{:.2f}"),
 ]
@@ -836,7 +836,7 @@ S14 = [
     C("b-t5-mis", "P Table 5", "3.71 mm; 4.5°", _J5("props", "joint_misalignment_lock_deg"), doc=""),
     C("b-t5-gain", "P Table 5", "−0.037 deg/mm; 0.048°", _J5("corner", "gain"), "{:.3f}", doc=""),
     C("b-t5-bs", "P Table 5", "−0.037 deg/mm; 0.048°", _J5("corner", "bump_steer"), "{:.3f}", doc=""),
-    C("b-t5-t0", "P Table 5", "19) zero-slip trail 21.5 mm", _J5("margin", "declared", "t0_limit_mm")),
+    C("b-t5-t0", "P Table 5", "zero-slip trail 21.5 mm; near 0.47 m", _J5("margin", "declared", "t0_limit_mm")),
 ]
 CLAIMS += S14
 
@@ -927,10 +927,10 @@ S16 = [
     C("bg-abs-hi", "P abstract", "tire (13 to 24% across published road grip", _bg("road", "1.43", "gain_bal_pct"), "{:.0f}"),
     C("bg-t5", "P Table 5", "lifts the limit to 1.57g, 24% more deceleration", _bg("road", "1.43", "gain_bal_pct"), "{:.0f}"),
     C("bg-con", "P §6", "13 to 24% across published road grip", _bg("road", "1.09", "gain_bal_pct"), "{:.0f}"),
-    C("ik-rcF", "P §3.3", "the roll centres (52.9 against 52.8, 42.2 against 41.6 and 56.2 against 56.1 mm)", _ik("front_v11_final", "rc_kinematik_mm"), doc="S"),
-    C("ik-rcFi", "P §3.3", "the roll centres (52.9 against 52.8, 42.2 against 41.6 and 56.2 against 56.1 mm)", _ik("front_v11_final", "rc_independent_mm"), doc="S"),
-    C("ik-rcR", "P §3.3", "the roll centres (52.9 against 52.8, 42.2 against 41.6 and 56.2 against 56.1 mm)", _ik("rear_v11_final", "rc_kinematik_mm"), doc="S"),
-    C("ik-rcRi", "P §3.3", "the roll centres (52.9 against 52.8, 42.2 against 41.6 and 56.2 against 56.1 mm)", _ik("rear_v11_final", "rc_independent_mm"), doc="S"),
+    C("ik-rcF", "P §3.3", "the roll centers (52.9 against 52.8, 42.2 against 41.6 and 56.2 against 56.1 mm)", _ik("front_v11_final", "rc_kinematik_mm"), doc="S"),
+    C("ik-rcFi", "P §3.3", "the roll centers (52.9 against 52.8, 42.2 against 41.6 and 56.2 against 56.1 mm)", _ik("front_v11_final", "rc_independent_mm"), doc="S"),
+    C("ik-rcR", "P §3.3", "the roll centers (52.9 against 52.8, 42.2 against 41.6 and 56.2 against 56.1 mm)", _ik("rear_v11_final", "rc_kinematik_mm"), doc="S"),
+    C("ik-rcRi", "P §3.3", "the roll centers (52.9 against 52.8, 42.2 against 41.6 and 56.2 against 56.1 mm)", _ik("rear_v11_final", "rc_independent_mm"), doc="S"),
     C("ik-rcmax", "P §3.3", "roll-centre heights to 0.6 mm", _ikmax, doc=""),
 ]
 
@@ -943,11 +943,47 @@ def _superseded_ack(c):
 
 
 S16 += [
-    C("ak-ratioF", "P §3.3", "walls in the search 4.99:1 at centre", _F0("ratio"), "{:.2f}"),
+    C("ak-ratioF", "P §3.3", "walls in the search 4.99:1 at center", _F0("ratio"), "{:.2f}"),
     C("ak-lock", "P §3.3", "and reaches the hairpin with 115.6 degrees of wheel", _J5("props", "lock_sw_deg")),
     C("ak-super", "P §3.3", "Without the Ackermann ceiling the same search left 144% at lock", _superseded_ack, "{:.0f}"),
 ]
 CLAIMS += S16
+
+
+# ---- Adams View benchmark (paper 3.3, table 6; supplement M6.4, S6.39) ---------------------------------------- #
+_AV_CORNERS = ("front_v11_final", "rear_v11_final", "front_v11_joints50")
+_AV_ANG, _AV_MM = ("camber", "toe_in", "caster", "kpi"), ("wc_dx", "wc_dy")
+
+
+def _av(name, q):
+    def f(c):
+        if "av" not in _RV:
+            import adams_view_benchmark as avx
+            _RV["av"] = {n: avx.compare(n) for n in _AV_CORNERS}
+        return _RV["av"][name]["worst"][q]
+    return f
+
+
+_av_ang = lambda c: max(_av(n, q)(c) for n in _AV_CORNERS for q in _AV_ANG)     # noqa: E731
+_av_mm = lambda c: max(_av(n, q)(c) for n in _AV_CORNERS for q in _AV_MM)       # noqa: E731
+_AV_P = "to within 0.00003 degrees and 0.00003 mm against limits of 0.005 to 0.01 degrees and 0.05 mm"
+_AV_T6 = "Passed: at most 0.00003 degrees and 0.00003 mm"
+_AV_M64 = "Over all three corners the largest differences are 0.00003 degrees and 0.00003 mm (S6.39"
+S16b = [
+    C("av-ang", "P §3.3", _AV_P, _av_ang, "{:.5f}"),
+    C("av-mm", "P §3.3", _AV_P, _av_mm, "{:.5f}"),
+    C("av-t6-ang", "P Table 6", _AV_T6, _av_ang, "{:.5f}"),
+    C("av-t6-mm", "P Table 6", _AV_T6, _av_mm, "{:.5f}"),
+    C("av-m64-ang", "S M6.4", _AV_M64, _av_ang, "{:.5f}", doc="S"),
+    C("av-m64-mm", "S M6.4", _AV_M64, _av_mm, "{:.5f}", doc="S"),
+]
+_AV_ROWS = {"front_v11_final": "front_v11_final 0.000026 0.000004 0.000009 0.000004 0.000025 0.000027",
+            "rear_v11_final": "rear_v11_final 0.000002 0.000005 0.000005 0.000003 0.000013 0.000025",
+            "front_v11_joints50": "front_v11_joints50 0.000027 0.000004 0.000010 0.000006 0.000017 0.000027"}
+for _n, _row in _AV_ROWS.items():
+    for _q in _AV_ANG + _AV_MM:
+        S16b.append(C(f"av-{_n}-{_q}", "S Table S6.39", _row, _av(_n, _q), "{:.6f}", doc="S"))
+CLAIMS += S16b
 
 
 # ---- the target chain (paper s16, Section 2): roll gradient derived, 3.0 Hz rear ------------------------------ #
