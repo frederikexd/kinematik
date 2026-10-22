@@ -16,7 +16,7 @@ The hour before SolidWorks, ANSYS or ADAMS/Car: KinematiK pre-validates Formula 
 
 **[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · Free for student teams · No install needed
 
-The physics and mathematics behind every module are documented in [PHYSICS.md](PHYSICS.md), including the derivations and their test coverage. What has been checked against other tools, and what has not, is in [VALIDATION.md](VALIDATION.md). If you find an error in the math, open an issue.
+The physics and mathematics behind every module are documented in [PHYSICS.md](PHYSICS.md), including the derivations and their test coverage. What has been checked against other tools, and what has not, is in [VALIDATION.md](VALIDATION.md); every benchmark test, listed by role and feature, is in [BENCHMARK.md](BENCHMARK.md). If you find an error in the math, open an issue.
 
 ---
 
@@ -93,8 +93,8 @@ Python 3.11+. The hosted app needs no install.
 
 ## Known limitations
 
-- **Not correlated with a measured car.** The kinematics agree with Lotus
-  Suspension Analysis and Applied Racing Dynamics, and the synthesis reproduces
+- **Not correlated with a measured car.** The kinematics agree with Adams View,
+  Lotus Suspension Analysis and Applied Racing Dynamics, and the synthesis reproduces
   on other teams' machines ([VALIDATION.md](VALIDATION.md)), but nothing has been
   compared with an instrumented vehicle, a K&C rig or a wind tunnel. Treat every
   number as a starting point for your own test day.

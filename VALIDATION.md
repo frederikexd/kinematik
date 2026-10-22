@@ -2,17 +2,19 @@
 
 What has been checked, how, what it found, and what has not been checked yet. Every
 number here can be re-run from this repository; the derivations are in
-[PHYSICS.md](PHYSICS.md) and the section numbers below point there.
+[PHYSICS.md](PHYSICS.md) and the section numbers below point there. Every benchmark test, listed by role and
+feature, is in [BENCHMARK.md](BENCHMARK.md).
 
 ## Summary
 
 | Check | Against | Result | Re-run |
 |---|---|---|---|
+| Suspension kinematics | Adams View 2026.1, the paper's three corners | Camber, toe, caster, KPI and wheel-centre path within 0.00003° and 0.00003 mm at every 1 mm over ±25 mm (limits 0.005–0.01° and 0.05 mm, set before the run) | `scripts/adams_view_benchmark.py`, `tests/test_adams_view_benchmark.py` |
 | Suspension kinematics | Lotus Suspension Analysis, two published corners | Camber in bump within 0.009°, toe within 0.0003°, camber in roll within 0.008° | `scripts/lotus_benchmark.py`, `tests/test_lotus_benchmark.py` |
 | Suspension kinematics | Applied Racing Dynamics (ARD), front and rear corners | Static caster, KPI, scrub, motion ratio and camber change at ±20 mm agree to ARD's display precision; every larger difference traced to a definition | §32.4 |
 | Suspension kinematics | Independent rigid-body solve (SciPy `fsolve`, no shared code) | Camber and toe within 1e-12° on three corners | `scripts/independent_kinematics.py` |
 | Synthesis reproducibility | Re-runs by SIT Formula Racing and Elbee Racing on their own machines | Identical to the recorded outputs: coordinates to 1e-6 mm, fits and yield to 1e-9 | `scripts/verify_run.py` |
-| Published numbers | Recomputed from the manifests | 475 of 475 claims match | `scripts/paper_check.py`, weekly in CI |
+| Published numbers | Recomputed from the manifests | 499 of 499 claims match | `scripts/paper_check.py`, weekly in CI |
 | Final corners | Re-solved from the manifests | Match the recorded outputs | `scripts/verify_run.py`, weekly in CI |
 | Statics and load cases | Virtual work, global equilibrium, closed-form beams | Pass | §32.1, `tests/test_load_case_physics.py` |
 | Panel method | Sphere in potential flow | Cp minimum −1.248 against −1.250; mean error 0.009, largest 0.028 | `scripts/aero_closed_form.py` |
@@ -20,6 +22,15 @@ number here can be re-run from this repository; the derivations are in
 | Code | About 3,500 tests, lint, CodeQL, dependency audit, bandit | Green on every push | badges in the README |
 
 ## Kinematics
+
+**Adams View.** The three corners of the paper (`front_v11_final`, `rear_v11_final`, `front_v11_joints50`) built
+in Adams View 2026.1 Student Edition from command files generated from their manifests: rigid wishbones on
+revolute pivots, spherical ball joints, a tie rod with a Hooke joint at the fixed rack end, and the wheel centre
+driven from −25 to +25 mm in 1 mm steps. The limits were set before the runs. Largest differences over all three
+corners: camber 0.000027°, toe 0.000005°, caster 0.000010°, KPI 0.000006°, wheel-centre x 0.000025 mm and y 0.000027
+mm, the size of KinematiK's interpolation and Adams' solver tolerance. The models were built from the command files,
+not from the Adams/Car template, and this checks the solver against the solver, not against a built car. Files,
+exports and limits: [benchmarks/adams_view](fsae_suspension/benchmarks/adams_view/README.md).
 
 **Lotus Suspension Analysis.** Hardpoints from Arevalo, Medina and Valladolid,
 *Ingenius* 20 (2018) 96–107, solved in KinematiK and compared with the Lotus
@@ -46,7 +57,7 @@ Every synthesis run writes a manifest with SHA-256 hashes of its inputs and
 outputs. SIT Formula Racing (Singapore Institute of Technology) and Jonathan
 Iglesias of Elbee Racing re-ran `front_v11_final` from the published code and got
 the recorded result to 1e-6 mm. The `reproduce` workflow repeats this weekly for
-the front and rear corners and recomputes all 475 published numbers from the
+the front and rear corners and recomputes all 499 published numbers from the
 manifests. This shows the result reproduces; it is not a physical test of a car.
 
 ## Corrections the checks forced
