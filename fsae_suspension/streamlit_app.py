@@ -2189,7 +2189,19 @@ def _make_store():
     if ctx is not None:
         from suspension.workspace import workspace_store
         return workspace_store(ctx, root=os.getcwd())
+    if _in_preview():
+        # Preview (accounts on, visitor not signed in): an in-memory store held in this session only. It must
+        # never fall through to ProjectStore's auto-detected Supabase backend, which is the shared legacy row.
+        from suspension import preview as _pv
+        return project_mod.ProjectStore(PROJECT_PATH, backend=_pv.backend(st.session_state))
     return project_mod.ProjectStore(PROJECT_PATH)
+
+
+def _in_preview() -> bool:
+    """Accounts are on, nobody is signed in, and this session has started its preview."""
+    from suspension import preview as _pv
+    return bool(globals().get("ENABLE_LOGIN")) and _active_workspace_ctx() is None \
+        and _pv.started(st.session_state)
 
 
 def get_store():
@@ -2210,7 +2222,7 @@ def get_store():
     previous tenant's cached data.
     """
     ctx = _active_workspace_ctx()
-    ws_key = ctx.workspace_id if ctx is not None else "__local__"
+    ws_key = ctx.workspace_id if ctx is not None else ("__preview__" if _in_preview() else "__local__")
     cached = st.session_state.get("_project_store")
     if cached is None or st.session_state.get("_project_store_ws") != ws_key:
         _switching = ("_project_store_ws" in st.session_state
@@ -2678,6 +2690,38 @@ def _read_flag(name: str) -> bool:
 ENABLE_LOGIN = _read_flag("KINEMATIK_ENABLE_LOGIN")
 
 _workspace_ctx = _auth_ui.require_workspace(st) if ENABLE_LOGIN else None
+
+
+# --------------------------------------------------------------------------- #
+#  PREVIEW MODE — five minutes without an account (suspension/preview.py).
+#  The gate above lets a visitor in for preview.PREVIEW_SECONDS; this shows the
+#  time left, warns at one minute, and reruns the app when time is up so the
+#  gate replaces everything with the "Like what you see?" sign-up screen.
+# --------------------------------------------------------------------------- #
+if ENABLE_LOGIN and _workspace_ctx is None:
+    from suspension import preview as _preview
+
+    if _preview.active(st.session_state):
+        _pv_top = st.columns([0.78, 0.22], vertical_alignment="center")
+        _pv_top[0].info(f"👀 Preview mode: {_preview.clock(_preview.remaining_s(st.session_state))} left. "
+                        "Explore anything; nothing you do here is saved.")
+        if _pv_top[1].button("Create free account", key="_kx_preview_signup", type="primary"):
+            _preview.end_now(st.session_state)
+            st.rerun()
+
+        @st.fragment(run_every=5)
+        def _preview_clock():
+            """Ticks in the sidebar every 5 s; at zero it reruns the whole app so the gate takes over."""
+            _left = _preview.remaining_s(st.session_state)
+            if _left <= 0:
+                st.rerun()
+            if _preview.should_warn(st.session_state):
+                st.toast("⏱️ One minute left in your preview. Like what you see? Create a free account to keep "
+                         "going.")
+            st.metric("Preview time left", _preview.clock(_left))
+
+        with st.sidebar:
+            _preview_clock()
 
 
 def _memo(cache_key, signature, compute_fn):

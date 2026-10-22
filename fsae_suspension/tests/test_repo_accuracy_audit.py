@@ -378,7 +378,7 @@ _UNITS_ALLOW_PREFIX = (
     "suspension/history", "suspension/drive_", "suspension/cad_",
     "suspension/analytics", "suspension/report", "suspension/myth",
     "suspension/express", "suspension/adapter", "suspension/interfaces",
-    "suspension/visitor_id",
+    "suspension/visitor_id", "suspension/preview",
 )
 
 
