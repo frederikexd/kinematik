@@ -20130,6 +20130,15 @@ with tab_ev:
     render_process_library("powertrain", key_prefix="ev_pl")
   except Exception:
     pass
+  # --- ⛽ Combustion (ICE) powertrain: the EV panels' counterpart for an engine and a gearbox. All physics in
+  # suspension/ice_powertrain.py, all drawing in ui/ice_powertrain.py.
+  try:
+    with st.expander("⛽ Combustion (ICE) powertrain: engine, restrictor, gears, launch, lap, fuel, cooling, gate",
+                     expanded=False):
+      from ui import ice_powertrain as _ice_mod
+      _ice_mod.render()
+  except Exception as _ice_err:             # noqa: BLE001 — a broken panel must not kill the tab
+    st.error(f"ICE powertrain failed to render: {_ice_err}")
   try:
     _subsystem_cad_import("powertrain", key_prefix="ev")
     _subsystem_cad_import("cooling", key_prefix="ev_cooling")

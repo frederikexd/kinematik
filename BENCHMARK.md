@@ -102,7 +102,8 @@ Aerodynamics, Track Testing, Setup Optimiser.
 
 ## Powertrain / Drivetrain
 
-EV Powertrain, Data Acquisition, InverseGenesis-FullCar, Track Testing, Setup Optimiser, DFMEA.
+EV Powertrain (with the ⛽ combustion panel), Data Acquisition, InverseGenesis-FullCar, Track Testing, Setup
+Optimiser, DFMEA.
 
 | Feature | Benchmark | Kind | Re-run |
 |---|---|---|---|
@@ -111,6 +112,14 @@ EV Powertrain, Data Acquisition, InverseGenesis-FullCar, Track Testing, Setup Op
 | Torque distribution | Force and yaw balance hold; an open differential splits equally and a limited-slip one respects its bias ratio | Closed form | `tests/test_torque_distribution.py::test_force_and_yaw_balance_hold`, `::test_open_split_is_equal_and_lsd_respects_its_bias_ratio` |
 | Throttle | Compressible flow through the plate against the textbook choked form | Closed form | `tests/test_accuracy_invariants.py::test_throttle_compressible_flow_matches_the_textbook_choked_form` |
 | | Not benchmarked: no dyno or measured energy trace | | |
+| ICE: intake restrictor | Choked mass flow against the isentropic closed form (0.0745 kg/s through 20 mm at Cd 1); flow scales with throat area | Closed form | `tests/test_ice_powertrain.py::test_choked_flow_matches_the_isentropic_closed_form`, `::test_choked_flow_scales_with_throat_area` |
+| | Power ceiling is air ÷ stoichiometric AFR × LHV × BTE; a capped curve never exceeds it at any rpm | Closed form | `tests/test_ice_powertrain.py::test_power_ceiling_is_air_over_afr_times_lhv_times_bte`, `::test_restricted_curve_never_exceeds_the_ceiling` |
+| | Restrictor diameters and CO2 factors are the rule values | Published | `tests/test_ice_powertrain.py::test_rule_diameters_and_co2_factors` |
+| ICE: gearbox | Upshift speed on a linear torque curve against v* = a / (b c (G_g + G_g+1)); a flat curve runs each gear to redline | Closed form | `tests/test_ice_powertrain.py::test_shift_speed_matches_the_closed_form_on_a_linear_torque_curve`, `::test_flat_torque_runs_each_gear_to_redline` |
+| ICE: launch and 75 m | With no losses, the 75 m time is √(2x/a) for a = T G / (r m); rotating inertia reflects through G²; shifts land on the gearbox's shift speeds | Closed form | `tests/test_ice_powertrain.py::test_launch_matches_constant_acceleration_with_no_losses`, `::test_rotating_inertia_reflects_through_the_square_of_the_ratio`, `::test_launch_shifts_where_the_gearbox_says_and_finishes` |
+| ICE: fuel and CO2 | Fuel at constant speed from the force balance; coasting burns only the overrun flow; endurance fuel and tank margin | Closed form | `tests/test_ice_powertrain.py::test_fuel_at_constant_speed_matches_the_force_balance`, `::test_coasting_burns_only_the_overrun_flow`, `::test_endurance_fuel_and_tank_margin` |
+| ICE: engine braking | Overrun force T G / r and the effective brake balance | Closed form | `tests/test_ice_powertrain.py::test_engine_braking_force_and_balance` |
+| | Not benchmarked: the torque curve is declared (no engine model), BTE is one number for the whole map, and nothing has been run against GT-POWER, OptimumLap or a dyno yet ([plan](docs/POWERTRAIN_BENCHMARK_PLAN.md)) | | |
 | Data Acquisition | See [Data Acquisition](#data-acquisition) | | |
 | InverseGenesis-FullCar, Track Testing, Setup Optimiser | See [Suspension / Dynamics](#suspension--dynamics) | | |
 | DFMEA | No physics to benchmark: risk-priority arithmetic, covered by its own tests | | `tests/test_dfmea.py` |
@@ -145,6 +154,7 @@ EV Powertrain, Data Acquisition, DFMEA, Tractive Safety.
 |---|---|---|---|
 | Coolant heat rejection | Heat rejection equals ṁ·c_p·ΔT | Closed form | `tests/test_daq_plan.py::TestDeltaT::test_heat_rejection_matches_m_dot_cp_delta_t` |
 | Radiator sizing | No benchmark: the steady state is checked for self-consistency only, not against a measured radiator | | `tests/test_accuracy_invariants.py::test_cooling_steady_state_inverts_its_own_ua_requirement` |
+| Engine heat to coolant (ICE) | No benchmark: a declared share of the fuel energy, fed to the same loop sizing | | `tests/test_ice_powertrain.py::test_cooling_uses_the_engine_heat` |
 | EV Powertrain, DFMEA | See [Powertrain / Drivetrain](#powertrain--drivetrain) | | |
 | Tractive Safety | See [Electrics](#electrics) | | |
 | Data Acquisition | See [Data Acquisition](#data-acquisition) | | |

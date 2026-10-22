@@ -3,6 +3,17 @@
 
 ## Unreleased
 
+**Combustion (ICE) powertrain at parity with the EV side.** New `suspension/ice_powertrain.py` and the ⛽ panel at the
+top of the powertrain tab (`ui/ice_powertrain.py`): the engine curve against the intake restrictor's choked air flow
+(20.0 mm gasoline, 19.0 mm E85), gear ratios and shift points, a clutch launch with timed shifts over 75 m, a
+final-drive sweep, the QSS lap on the best-gear envelope with engine inertia and a per-shift penalty, fuel per lap and
+for the endurance against the tank and the fuel limit, CO2 for the efficiency event (and for an EV's kWh), engine
+heat into the cooling loop, engine braking against the brake balance, an ICE feasibility gate and an engine-option
+comparison. The torque curve is declared; until a team loads one, a representative restricted 600 cc inline-four
+shape is used and flagged. Choked flow delegates to `throttle_dynamics.compressible_mass_flow`, registered in
+`physics_owners.py`. 27 tests (`tests/test_ice_powertrain.py`), PHYSICS.md §25.5, FEATURES.md, BENCHMARK.md and
+`docs/POWERTRAIN_BENCHMARK_PLAN.md` (the EV and ICE cases to run against GT-SUITE, Simulink, OptimumLap and PyBaMM).
+
 **Adams View benchmark and a benchmark index.** The paper's three corners solved in Adams View 2026.1 agree with
 KinematiK at every 1 mm over ±25 mm of wheel-centre travel: largest differences 0.000027° and 0.000027 mm against
 limits of 0.005–0.01° and 0.05 mm set before the runs. The command files (generated from the manifests), the Adams

@@ -218,6 +218,15 @@ PHYSICS_OWNERS: tuple[Quantity, ...] = (
             "modules were on 1.20, making their drag and downforce 2% low "
             "against the aero stack they are cross-checked with."),
     ),
+    Quantity(
+        key="compressible_mass_flow",
+        description="Compressible orifice mass flow with choking, kg/s (throttle plate, intake restrictor)",
+        owner="suspension/throttle_dynamics.py",
+        delegates=("suspension/ice_powertrain.py",),
+        agreement=(
+            "ice_powertrain.choked_mass_flow_kg_s calls the owner with zero back pressure; "
+            "test_ice_powertrain checks the result against the isentropic closed form."),
+    ),
 )
 
 _BY_KEY = {q.key: q for q in PHYSICS_OWNERS}

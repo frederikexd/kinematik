@@ -93,6 +93,11 @@ quote absolute downforce.
 - **Vortex-lattice lift gap.** The 4% gap to an independent lattice above.
 - **Most non-suspension modules** (brakes, accumulator, electronics, structures)
   are checked against closed forms and their own tests, not against another tool.
+- **Powertrain, EV and combustion.** Checked against closed forms only (BENCHMARK.md).
+  The combustion side has no engine model: the torque curve is declared, and fuel
+  rests on one brake thermal efficiency. The comparison against GT-SUITE,
+  Simulink, OptimumLap and PyBaMM is planned in
+  [docs/POWERTRAIN_BENCHMARK_PLAN.md](docs/POWERTRAIN_BENCHMARK_PLAN.md) and not run.
 
 ## Peer review
 
