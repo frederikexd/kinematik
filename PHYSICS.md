@@ -1315,7 +1315,7 @@ Rebound is a declared multiple of bump; wheel rates go to the shaft through MR²
 
 ---
 
-## 25. EV Powertrain and Energy (`ev_powertrain.py`, `power_draw.py`, `ev_electrical_check.py`, `powertrain/engine.py`, `simulforge.py`)
+## 25. EV and Combustion Powertrain and Energy (`ev_powertrain.py`, `power_draw.py`, `ev_electrical_check.py`, `powertrain/engine.py`, `simulforge.py`, `ice_powertrain.py`)
 
 ### 25.1 Tractive Power, Current and Pack Limits (`power_draw.py`, `ev_electrical_check.py`)
 
@@ -1370,6 +1370,37 @@ M = K_t · gear · η · i
 ```
 
 Degradation (contact resistance, pack resistance, authority loss) enters as electrical parameters and shows up as lost roll authority.
+
+### 25.5 Combustion Powertrain (`ice_powertrain.py`)
+
+The combustion counterpart of §25.1 to §25.3. The torque curve is declared (dyno or engine code); the module does
+not model the engine's breathing.
+
+```
+restrictor (choked):  ṁ_air = C_d A p₀ √(γ/(R T₀)) (2/(γ+1))^((γ+1)/(2(γ−1)))      (owner: throttle_dynamics, §22)
+                      20 mm, 101.325 kPa, 298 K, C_d = 1:  ṁ_air = 0.0745 kg/s
+power ceiling:        P_max = ṁ_air / AFR_stoich · LHV · BTE                   (rich fuel beyond stoichiometric does not burn)
+gear g:               G_g = primary · ratio_g · final,   rpm = v/r · G_g · 60/2π,   F_g = T(rpm) G_g η / r
+upshift g → g+1:      F_g(v) = F_g+1(v), or the redline speed of g if g still pulls harder there
+                      (linear T = a − b·rpm:  v* = a / (b c (G_g + G_g+1)),  c = 60/(2π r))
+rotating inertia:     m_eff = m + (J_wheels + J_engine G_g² η) / r²             (J_engine only while coupled)
+launch:               engine held at launch rpm while the clutch slips; locks when rpm(v, gear 1) = launch rpm;
+                      drive cut for t_shift at each upshift; traction and integration as §25.3
+QSS lap:              §5 solver on the best-gear envelope, force scaled by m / m_eff so a = F / m_eff;
+                      each upshift adds Δt ≈ min(t_s, L a t_s / v²) over the L metres before the next braking point
+fuel:                 P_engine = (m_eff a + ½ ρ CdA v² + C_rr m g) v / η  (capped at the envelope),
+                      ṁ_fuel = P_engine / (BTE · LHV) on the throttle, a declared overrun flow off it
+CO2:                  litres × 2.31 kg/L (gasoline) or 1.65 kg/L (E85);  EV: kWh × 0.65 kg/kWh
+coolant heat:         Q = share × ṁ_fuel · LHV  (share declared, about a quarter to a third at load)
+engine braking:       F_eb = T_overrun G_g / r at the rear; mechanical brakes supply m a − F_eb split by the bias,
+                      so the effective front share = bias (m a − F_eb) / (m a)
+```
+
+The feasibility gate checks the restrictor diameter against the rule (20.0 mm gasoline, 19.0 mm E85), the curve against
+the restrictor's power ceiling, endurance fuel against the tank with a 10% reserve, fuel use against the 26 L/100 km
+limit of the 2024 efficiency proposal, the fuel pump at 1.2 × peak demand, injector duty at 85%, top-gear redline
+against the lap's top speed and the cooling loop of §26. An undeclared input is MISSING, never a pass. Brake thermal
+efficiency is one number for the whole map, so fuel is a planning estimate until a BSFC map replaces it.
 
 ---
 
@@ -1812,6 +1843,7 @@ The formulas in this document are pinned by the test suite (`fsae_suspension/tes
 | `test_pedal_box.py`, `test_throttle_return.py`, `test_throttle_dynamics.py` | Balance bar, pedal travel, return-spring redundancy, plenum and flutter |
 | `test_tire_thermal.py`, `test_thermic_patch.py`, `test_tire_field.py`, `test_degradation.py`, `test_measurement_fits.py` | Tyre thermal network, flash heat, field tests, degradation, fits |
 | `test_ev_powertrain.py`, `test_power_draw.py`, `test_pack_thermal.py`, `test_simulforge.py` | Architecture and energy, power draw, pack thermal, actuator on the bus |
+| `test_ice_powertrain.py` | Choked restrictor flow and power ceiling, shift points, clutch launch, fuel by force balance, endurance fuel, engine braking, the ICE gate |
 | `test_electronics.py`, `test_harness.py`, `test_fuse_test.py`, `test_fusebox.py`, `test_bq796xx.py` | PCB copper and impedance, harness, fuse coordination, failure order, BMS polling |
 | `test_daq_plan.py`, `test_gnss.py`, `test_correlation.py` | CAN frames and bus load, sampling, IMU lever arm, track correlation |
 | `test_flexgen.py`, `test_generic_compliance.py`, `test_morphmesh.py`, `test_ghost_topology.py`, `test_phantom_envelope.py`, `test_topology.py` | Flexures, generic compliance, SIMP, deformed geometry, envelopes, multibody kernel |

@@ -13,6 +13,7 @@ One environment. Every subsystem. The entire car.
 | **Suspension / Dynamics** | 3D constraint solver, camber gain, bump steer, roll centre migration, load transfer, grip balance, compliance, setup optimiser, GGV, transient, upright mount-plate DXF |
 | **Aerodynamics** | Downforce & ground effect, wing/diffuser sizing, aero map, virtual wind tunnel, wing-section (airfoil) DXF |
 | **EV Powertrain** | Motor architecture comparison, energy budget, regen, lap time, torque vectoring, motor-flange DXF |
+| **Combustion (ICE) Powertrain** | Engine curve against the intake restrictor, gears and shift points, clutch launch and 75 m, final-drive sweep, lap time, fuel per lap and for the endurance, CO2, engine heat into the cooling loop, engine braking against the brake balance, feasibility gate, engine-option comparison |
 | **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model, electrical feasibility gate, segment-box DXF |
 | **Brakes** | Bias & lock-up, hydraulic sizing, bolt & bracket FoS, rotor thermal, fade test, rotor optimiser + rotor DXF export, caliper-bracket DXF |
 | **Chassis / Frame** | 3D model, team fit, weight & CG ledger, handover export, node-gusset DXF, **Frame Planner** (node/tube frame graph with 3D wireframe, triangulation & load-path audit with per-defect fixes, Size C→B sourcing trade study, alternative-tubing equivalency screen, panel & attachment planner for seat/harness/floor/firewall/aero panels) |
@@ -226,6 +227,35 @@ All of it lives in `suspension/morphmesh.py` — pure Python + scipy, headless, 
 Scope, honestly: a **screening-fidelity** sweep (the reduced iteration budgets are printed on the result), one driveline in the transient model (a `4wd` token is disclosed, not varied), cost and mass models that price the *decision scope* (actuators + grown tabs + shop capex over a declared base vehicle), and a twin that corrects toward the declared nominal — whose own evidence grade lives in the Proof Engine ledger. The front is where full-fidelity runs should be **spent**, not a certificate that they were.
 
 All of it lives in `suspension/omnicore.py` — pure Python + NumPy over the engines already in the repo, headless, deterministic, self-tested (`python3 -m suspension.omnicore`), UI in `ui/omnicore.py`.
+
+---
+
+## ⛽ Combustion (ICE) powertrain — everything the EV panels do, for an engine and a gearbox
+
+KinematiK grew its powertrain tools on the EV side. A combustion team asks the same questions, so each EV feature now
+has its combustion counterpart, in the ⛽ panel at the top of the powertrain tab:
+
+| EV | Combustion |
+|---|---|
+| Motor torque curve | Engine torque curve (dyno, GT-POWER or Ricardo WAVE export), checked against the power the intake restrictor's choked air flow can feed |
+| Single reduction | Primary reduction × gear ratios × final drive, with the upshift speed out of every gear |
+| Launch and 75 m | Clutch launch at a held rpm, slip to lock-up, timed upshifts with the drive cut |
+| Final-drive sweep | Final-drive sweep with the whole gear set, and top speed at redline |
+| Lap time | The same QSS lap solver on the best-gear envelope, engine inertia included, plus a per-shift penalty |
+| Pack energy, can it finish | Fuel per lap, endurance fuel against the tank, L/100 km against the fuel limit |
+| Regen and brake balance | Engine braking on the overrun and how it moves the effective brake balance |
+| Motor and inverter heat | Engine heat to the coolant, into the same loop sizing |
+| Electrical feasibility gate | Restrictor rule, curve against the restrictor, tank, fuel pump, injector duty, cooling, fuel limit, top gear |
+| Architecture comparison | Engine-option comparison: 75 m, lap, endurance fuel, CO2 and mass |
+| — | CO2 for the efficiency event, for both (litres × the fuel's factor; kWh × 0.65 for an EV) |
+
+The torque curve, the brake thermal efficiency, the share of fuel energy reaching the coolant, the overrun torque and
+the engine's inertia are declared; until a team loads its own curve a representative restricted 600 cc inline-four
+shape is used and every result says so. Torque vectoring has no single-engine counterpart; the differential models
+(`driveline.py`, `torque_distribution.py`) already serve both.
+
+All of it lives in `suspension/ice_powertrain.py` — pure Python + NumPy, headless, tested
+(`tests/test_ice_powertrain.py`), UI in `ui/ice_powertrain.py`. Benchmark plan: `docs/POWERTRAIN_BENCHMARK_PLAN.md`.
 
 ---
 
