@@ -3824,7 +3824,7 @@ _TAB_META = {
     "roll":        ("🎚️", "Roll & Load Transfer"),
     "model3d":     ("🏎️", "3D Model"),
     "aero":        ("🌬️", "Aerodynamics"),
-    "ev":          ("⚡", "EV Powertrain"),
+    "ev":          ("⚡", "Powertrain"),
     "accum":       ("🔋", "Accumulator"),
     "brakes":      ("🛑", "Brakes"),
     "cost":        ("💲", "Cost & BOM"),
@@ -12029,7 +12029,7 @@ _EXPORT_SOURCE_HINT = {
                   ("Board height (mm)", "h_mm")],
     },
     "powertrain": {
-        "where": "the ⚡ EV Powertrain tab (the sub-tab you were just on)",
+        "where": "the ⚡ Powertrain tab, EV side (the sub-tab you were just on)",
         "steps": ["Enter the motor face — bore diameter and bolt PCD.",
                   "Enter peak torque so the flange can be sized."],
         "needs": [("Motor bore (mm)", "bore_d_mm"),
@@ -20130,18 +20130,32 @@ with tab_ev:
     render_process_library("powertrain", key_prefix="ev_pl")
   except Exception:
     pass
-  # --- ⛽ Combustion (ICE) powertrain: the EV panels' counterpart for an engine and a gearbox. All physics in
-  # suspension/ice_powertrain.py, all drawing in ui/ice_powertrain.py.
-  try:
-    with st.expander("⛽ Combustion (ICE) powertrain: engine, restrictor, gears, launch, lap, fuel, cooling, gate",
-                     expanded=False):
+  # --- EV / ICE slide switch. Off: the electric panels below. On: the combustion panel (all physics in
+  # suspension/ice_powertrain.py, all drawing in ui/ice_powertrain.py) and the EV body is skipped. Nothing
+  # outside this tab reads a variable the EV body defines (each later use reassigns it), so skipping is safe.
+  class _PowertrainModeSkip(Exception):
+    """Raised at the top of the EV body when the switch is on ICE, so the EV panels are not drawn."""
+
+  _sw = st.columns([0.09, 0.07, 0.84], vertical_alignment="center")
+  _ice_mode = bool(st.session_state.get("pt_ice_mode", False))
+  _sw[0].markdown("**⚡ EV**" if not _ice_mode else '<span style="opacity:0.45">⚡ EV</span>',
+                  unsafe_allow_html=True)
+  _ice_mode = _sw[1].toggle("Combustion (ICE)", key="pt_ice_mode", label_visibility="collapsed",
+                            help="Slide right for a combustion car (engine, restrictor, gears, fuel); left for "
+                                 "an electric car (motors, pack, regen).")
+  _sw[2].markdown("**⛽ ICE** (beta)" if _ice_mode else '<span style="opacity:0.45">⛽ ICE (beta)</span>',
+                  unsafe_allow_html=True)
+  if _ice_mode:
+    try:
       from ui import ice_powertrain as _ice_mod
       _ice_mod.render()
-  except Exception as _ice_err:             # noqa: BLE001 — a broken panel must not kill the tab
-    st.error(f"ICE powertrain failed to render: {_ice_err}")
+    except Exception as _ice_err:           # noqa: BLE001 — a broken panel must not kill the tab
+      st.error(f"ICE powertrain failed to render: {_ice_err}")
   try:
-    _subsystem_cad_import("powertrain", key_prefix="ev")
+    _subsystem_cad_import("powertrain", key_prefix="ev")       # engine or motor CAD: both car types
     _subsystem_cad_import("cooling", key_prefix="ev_cooling")
+    if _ice_mode:
+      raise _PowertrainModeSkip
     st.markdown(
         '<p class="hint" style="margin:0 0 6px;">Pick the <b>motor architecture</b> and '
         'size the pack. KinematiK runs the same lap on each option, with each one '
@@ -21191,6 +21205,8 @@ with tab_ev:
             except Exception as _se:
                 st.warning(f"Couldn't build the spec sheet: {_se}")
 
+  except _PowertrainModeSkip:
+    pass
   except Exception as _eev:
     st.error(f"Could not build the EV powertrain workspace: {_eev}")
 

@@ -3,6 +3,18 @@
 
 ## Unreleased
 
+
+## 1.2.0 (2026-10-22)
+
+The combustion powertrain (beta), the EV / ICE switch and the Adams View benchmark. Also since 1.1.0: EV energy
+at constant speed, brake rotor spin speed and tyre gas heating fixed (`tests/test_energy_rotor_gas_physics.py`);
+`networkx` added for the vortex-lattice mesher; tracked caches and telemetry removed from the repository. Every
+result in the paper and supplement is unchanged: they cite v1.1.0, and the claim check passes on this release.
+
+**EV / ICE slide switch.** The ⚡ Powertrain tab (was EV Powertrain) opens with a switch: left shows the electric
+panels, right shows the combustion panel in their place instead of an expander above them. The CAD import stays on
+both sides. Skipping the EV body in ICE mode is safe: no code outside the tab reads a variable it defines.
+
 **Combustion (ICE) powertrain at parity with the EV side.** New `suspension/ice_powertrain.py` and the ⛽ panel at the
 top of the powertrain tab (`ui/ice_powertrain.py`): the engine curve against the intake restrictor's choked air flow
 (20.0 mm gasoline, 19.0 mm E85), gear ratios and shift points, a clutch launch with timed shifts over 75 m, a
@@ -21,6 +33,8 @@ exports and the comparison are in `benchmarks/adams_view/`, `scripts/adams_view_
 `tests/test_adams_view_benchmark.py`. New `BENCHMARK.md` lists every benchmark test by role and feature, and says
 which features have none. The claim check gains 24 claims for the benchmark (499 in all), and 22 quotes are brought in
 line with the current text (American spelling, two doubled words, and four reworded sentences); no value changed.
+
+## 1.1.0 and earlier
 
 **Load cases corrected; the final corners re-run.** Two load-case inconsistencies the paper disclosed are fixed in
 code rather than in text. (1) The cornering cases carried a declared 50 N*m aligning moment at the lateral-force peak,
