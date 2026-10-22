@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import re
 
+from . import preview as _preview
 from .auth import AuthError, SupabaseAuth, Session, build_auth
 from .workspace import WorkspaceContext
 
@@ -58,14 +59,34 @@ def _restore_session(st, auth: SupabaseAuth) -> Session | None:
         return None
 
 
-def _render_sign_in(st, auth: SupabaseAuth) -> None:
-    st.markdown("### Sign in to KinematiK")
+def _render_preview_offer(st) -> None:
+    """The way in without an account: five minutes of the full app, nothing saved. Offered once per session and
+    never to someone holding an invite (they should sign up and join their team)."""
+    if _preview.started(st.session_state) or st.session_state.get(_SS_JOIN):
+        return
+    st.markdown("##### New here?")
+    st.caption(f"Explore the full app for {_preview.PREVIEW_SECONDS // 60} minutes without an account. Nothing you "
+               "do in the preview is saved.")
+    if st.button("👀 Preview KinematiK", key="_kx_preview_start"):
+        _preview.start(st.session_state)
+        st.rerun()
+    st.divider()
+
+
+def _render_sign_in(st, auth: SupabaseAuth, *, after_preview: bool = False) -> None:
+    if after_preview:
+        st.markdown("### Like what you see? 🏁")
+        st.markdown(f"Your {_preview.PREVIEW_SECONDS // 60}-minute preview is over. Create a free account to keep "
+                    "exploring and to save your team's work in its own workspace.")
+    else:
+        _render_preview_offer(st)
+        st.markdown("### Sign in to KinematiK")
     if st.session_state.get(_SS_JOIN):
         st.info("You've been invited to a team workspace. Sign in — or create "
                 "an account — and you'll join automatically.")
     st.caption("Your project data is isolated per workspace. Sign in to continue.")
     st.caption("Disclaimer: Please use your official university or team name for your workspace. Workspaces with inappropriate titles will be automatically removed.")
-    mode = st.radio("mode", ["Sign in", "Create account"],
+    mode = st.radio("mode", ["Sign in", "Create account"], index=1 if after_preview else 0,
                     horizontal=True, label_visibility="collapsed")
     email = st.text_input("Email", key="_kx_email")
     password = st.text_input("Password", type="password", key="_kx_pw")
@@ -815,6 +836,9 @@ def require_workspace(st) -> WorkspaceContext | None:
           chosen. Store this and build a tenant-scoped store from it.
         * None              — Supabase NOT configured: run in legacy local
           single-user mode (caller falls back to ProjectStore(path)).
+        * None, preview     — not signed in but inside the 5-minute preview
+          (preview.active): the caller must use the in-memory preview store,
+          never ProjectStore(path) with its auto-detected Supabase backend.
 
     When Supabase IS configured but the user isn't signed in / hasn't picked a
     workspace, this renders the sign-in or picker UI and calls st.stop() so the
@@ -836,7 +860,11 @@ def require_workspace(st) -> WorkspaceContext | None:
     # before any tenant data renders. That is the tenant wall.
     session = _restore_session(st, auth)
     if session is None:
-        _render_sign_in(st, auth)
+        # Preview: the full app with an in-memory store (streamlit_app._make_store), no workspace, for
+        # preview.PREVIEW_SECONDS; then the sign-up screen until the visitor signs in.
+        if _preview.active(st.session_state):
+            return None
+        _render_sign_in(st, auth, after_preview=_preview.expired(st.session_state))
         st.stop()
 
     ctx = _render_workspace_picker(st, auth, session)

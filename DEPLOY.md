@@ -26,6 +26,13 @@ Then run these four, in this order. All are idempotent.
 
 ---
 
+## Accounts and preview
+
+Accounts turn on with `KINEMATIK_ENABLE_LOGIN=1` (environment or Streamlit secrets). With them on, a visitor who is not
+signed in can start one five-minute preview per browser session (`suspension/preview.py`, `PREVIEW_SECONDS`). The
+preview runs on an in-memory project store, so it needs no database rows and leaves nothing behind; when it ends the
+visitor sees the sign-up screen. With accounts off there is no gate and no preview.
+
 ## Architecture
 
 **Kinematics engine** — architecture-agnostic multibody solver (`suspension/topology.py`). Rigid bodies defined by points, constraint primitives (distance links, ball/pin coincidence, prismatic slider, planar, revolute, rack translation, beam-axle roll), assembled into a `Mechanism` and solved by branch-stable Levenberg–Marquardt sweep.

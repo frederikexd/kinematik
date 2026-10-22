@@ -3,6 +3,13 @@
 
 ## Unreleased
 
+**Preview mode: five minutes without an account.** With accounts on (`KINEMATIK_ENABLE_LOGIN`), the sign-in screen
+now offers "👀 Preview KinematiK": the full app for five minutes, a countdown in the sidebar and a banner with a
+"Create free account" button, a toast at one minute left, then the "Like what you see?" screen with Create account
+preselected. The preview's project store is in memory, held in the visitor's own session (`suspension/preview.py`),
+so a preview never reads or writes a workspace, the shared legacy project row or another visitor's preview. One
+preview per browser session; invited visitors go straight to sign-up. Tests in `tests/test_preview.py`.
+
 
 ## 1.2.0 (2026-10-22)
 
