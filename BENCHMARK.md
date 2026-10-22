@@ -102,12 +102,12 @@ Aerodynamics, Track Testing, Setup Optimiser.
 
 ## Powertrain / Drivetrain
 
-EV Powertrain (with the ⛽ combustion panel), Data Acquisition, InverseGenesis-FullCar, Track Testing, Setup
+Powertrain (EV / ICE switch), Data Acquisition, InverseGenesis-FullCar, Track Testing, Setup
 Optimiser, DFMEA.
 
 | Feature | Benchmark | Kind | Re-run |
 |---|---|---|---|
-| EV Powertrain: energy | Pack current at constant speed matches the force balance; cruise power is (rolling + aero force) × speed | Closed form | `tests/test_energy_rotor_gas_physics.py::test_pack_current_at_constant_speed_matches_the_force_balance`, `tests/test_power_draw.py::test_steady_cruise_power_is_force_times_velocity` |
+| EV: energy | Pack current at constant speed matches the force balance; cruise power is (rolling + aero force) × speed | Closed form | `tests/test_energy_rotor_gas_physics.py::test_pack_current_at_constant_speed_matches_the_force_balance`, `tests/test_power_draw.py::test_steady_cruise_power_is_force_times_velocity` |
 | | Pack current does not depend on gearing; wheel-speed constant against the unit conversion | Closed form | `tests/test_power_draw.py::test_pack_current_does_not_depend_on_gearing`, `::test_wheel_rpm_constant_matches_mph_conversion` |
 | Torque distribution | Force and yaw balance hold; an open differential splits equally and a limited-slip one respects its bias ratio | Closed form | `tests/test_torque_distribution.py::test_force_and_yaw_balance_hold`, `::test_open_split_is_equal_and_lsd_respects_its_bias_ratio` |
 | Throttle | Compressible flow through the plate against the textbook choked form | Closed form | `tests/test_accuracy_invariants.py::test_throttle_compressible_flow_matches_the_textbook_choked_form` |
@@ -126,7 +126,7 @@ Optimiser, DFMEA.
 
 ## Electrics
 
-Accumulator, EV Powertrain, Track Testing, Electronics (PCB), Data Acquisition, Tractive Safety, DFMEA, SimulForge,
+Accumulator, Powertrain, Track Testing, Electronics (PCB), Data Acquisition, Tractive Safety, DFMEA, SimulForge,
 OmniCore.
 
 | Feature | Benchmark | Kind | Re-run |
@@ -141,21 +141,21 @@ OmniCore.
 | Harness | AWG areas against the gauge table; copper mass exact; clearance exact | Published, closed form | `tests/test_harness.py::test_awg_area_known_and_interpolated`, `::test_copper_mass_exact`, `::test_clearance_is_exact_not_sampled` |
 | Tractive Safety | Precharge time constant and energy against the RC solution | Closed form | `tests/test_tractive_and_pcm.py::test_precharge_time_constant_and_energy` |
 | | Phase-change buffer energy is mass × latent heat; the enthalpy method conserves latent heat | Closed form | `tests/test_tractive_and_pcm.py::test_pcm_buffer_energy_is_mass_times_latent`, `tests/test_accuracy_invariants.py::test_pcm_effective_cp_conserves_latent_heat` |
-| EV Powertrain | See [Powertrain / Drivetrain](#powertrain--drivetrain) | | |
+| Powertrain | See [Powertrain / Drivetrain](#powertrain--drivetrain) | | |
 | Data Acquisition | See [Data Acquisition](#data-acquisition) | | |
 | Track Testing, SimulForge, OmniCore | See [Suspension / Dynamics](#suspension--dynamics) | | |
 | DFMEA | See [Powertrain / Drivetrain](#powertrain--drivetrain) | | |
 
 ## Cooling
 
-EV Powertrain, Data Acquisition, DFMEA, Tractive Safety.
+Powertrain, Data Acquisition, DFMEA, Tractive Safety.
 
 | Feature | Benchmark | Kind | Re-run |
 |---|---|---|---|
 | Coolant heat rejection | Heat rejection equals ṁ·c_p·ΔT | Closed form | `tests/test_daq_plan.py::TestDeltaT::test_heat_rejection_matches_m_dot_cp_delta_t` |
 | Radiator sizing | No benchmark: the steady state is checked for self-consistency only, not against a measured radiator | | `tests/test_accuracy_invariants.py::test_cooling_steady_state_inverts_its_own_ua_requirement` |
 | Engine heat to coolant (ICE) | No benchmark: a declared share of the fuel energy, fed to the same loop sizing | | `tests/test_ice_powertrain.py::test_cooling_uses_the_engine_heat` |
-| EV Powertrain, DFMEA | See [Powertrain / Drivetrain](#powertrain--drivetrain) | | |
+| Powertrain, DFMEA | See [Powertrain / Drivetrain](#powertrain--drivetrain) | | |
 | Tractive Safety | See [Electrics](#electrics) | | |
 | Data Acquisition | See [Data Acquisition](#data-acquisition) | | |
 

@@ -3,6 +3,10 @@
 
 ## Unreleased
 
+**EV / ICE slide switch.** The ⚡ Powertrain tab (was EV Powertrain) opens with a switch: left shows the electric
+panels, right shows the combustion panel in their place instead of an expander above them. The CAD import stays on
+both sides. Skipping the EV body in ICE mode is safe: no code outside the tab reads a variable it defines.
+
 **Combustion (ICE) powertrain at parity with the EV side.** New `suspension/ice_powertrain.py` and the ⛽ panel at the
 top of the powertrain tab (`ui/ice_powertrain.py`): the engine curve against the intake restrictor's choked air flow
 (20.0 mm gasoline, 19.0 mm E85), gear ratios and shift points, a clutch launch with timed shifts over 75 m, a

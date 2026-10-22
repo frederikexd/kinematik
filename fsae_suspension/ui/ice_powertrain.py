@@ -3,7 +3,7 @@
 #  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 #
-#  ui/ice_powertrain.py — the ⛽ combustion powertrain panel in the powertrain tab
+#  ui/ice_powertrain.py — the ⛽ combustion side of the ⚡ Powertrain tab's EV / ICE switch
 # ============================================================================
 """
 The combustion counterpart of the EV panels: engine curve against the restrictor, gears and shift points, the
