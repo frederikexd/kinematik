@@ -233,7 +233,8 @@ All of it lives in `suspension/omnicore.py` — pure Python + NumPy over the eng
 ## ⛽ Combustion (ICE) powertrain — everything the EV panels do, for an engine and a gearbox
 
 KinematiK grew its powertrain tools on the EV side. A combustion team asks the same questions, so each EV feature now
-has its combustion counterpart, in the ⛽ panel at the top of the powertrain tab:
+has its combustion counterpart. A slide switch at the top of the ⚡ Powertrain tab flips the tab between the
+electric panels and the combustion ones:
 
 | EV | Combustion |
 |---|---|

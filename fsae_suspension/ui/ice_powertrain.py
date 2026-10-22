@@ -3,7 +3,7 @@
 #  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 #
-#  ui/ice_powertrain.py — the ⛽ combustion powertrain panel in the powertrain tab
+#  ui/ice_powertrain.py — the ⛽ combustion side of the ⚡ Powertrain tab's EV / ICE switch
 # ============================================================================
 """
 The combustion counterpart of the EV panels: engine curve against the restrictor, gears and shift points, the
@@ -37,6 +37,8 @@ def render():
 
     ss = st.session_state
     ss.setdefault("ice_curve_csv", None)
+    st.info("Beta: the combustion powertrain is new. Its physics is checked against closed forms, not yet against "
+            "GT-SUITE, OptimumLap or a dyno. Feedback on results that look wrong is very welcome.")
     st.caption(
         "For a combustion car: the same questions the EV panels answer, for an engine and a gearbox. The torque "
         "curve is declared (dyno, GT-POWER or Ricardo WAVE export); until you load one, a representative restricted "

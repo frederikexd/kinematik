@@ -1998,7 +1998,7 @@ _TAB_NAMES = {
     "setup": "🎛️ Setup Optimiser", "daq": "📡 Data Acquisition",
     "laptime": "🏁 Track Testing", "brakes": "🛑 Brakes",
     "compliance": "🧬 Compliance (Flex)", "tire": "🛞 Tire & Grip",
-    "ev": "⚡ EV Powertrain", "weight": "⚖️ Weight & Handover",
+    "ev": "⚡ Powertrain", "weight": "⚖️ Weight & Handover",
     "frames": "🧭 Frames & Datums", "setup": "🎛️ Setup Optimiser",
     "aero": "🪂 Aero", "dfmea": "🧯 DFMEA", "fusebox": "🔌 Fusebox",
     "pcb": "🩺 PCB Doctor", "electronics": "🔗 Electronics Integration",

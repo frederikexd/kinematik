@@ -6,6 +6,8 @@ authors:
   - family-names: Thio
     given-names: Frederik
 license: AGPL-3.0-only
+version: 1.2.0
+date-released: 2026-10-22
 doi: 10.5281/zenodo.23450788
 repository-code: "https://github.com/frederikexd/kinematik"
 url: "https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/"
