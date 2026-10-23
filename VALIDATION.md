@@ -33,7 +33,7 @@ not from the Adams/Car template, and this checks the solver against the solver, 
 exports and limits: [benchmarks/adams_view](fsae_suspension/benchmarks/adams_view/README.md).
 
 **Lotus Suspension Analysis.** Hardpoints from Arevalo, Medina and Valladolid,
-*Ingenius* 20 (2018) 96–107, solved in KinematiK and compared with the Lotus
+*Ingenius* 20 (2018) 95–106, solved in KinematiK and compared with the Lotus
 curves published there. Full tables in PHYSICS.md §32.5. Largest differences:
 camber in bump 0.009°, toe in bump 0.0003°, camber in roll 0.008°, camber in
 steer 0.050°, roll-centre height 3.3 mm. The Lotus values are read off the
