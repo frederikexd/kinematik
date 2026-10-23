@@ -4,6 +4,10 @@
 #              ones, every coordinate to 1e-6 mm and every fit and yield to 1e-9 (rear about 4 min, front about 25)
 # Too slow for every push, so it runs weekly, on demand, and on pushes to main that touch the solver,
 # the manifests or the checks themselves.
+# It installs the exact versions in requirements-reproduce.lock, not the ranges in requirements.txt, so a new
+# numpy or scipy release cannot move a published number without a commit that changes the lock. Regenerate with:
+#   uv pip compile requirements.txt --python-version 3.12 --python-platform x86_64-manylinux_2_28 \
+#     --no-header --annotation-style line -o requirements-reproduce.lock
 name: reproduce
 
 on:
@@ -19,6 +23,7 @@ on:
       - 'fsae_suspension/scripts/paper_claims.py'
       - 'fsae_suspension/scripts/verify_run.py'
       - 'requirements.txt'
+      - 'requirements-reproduce.lock'
       - '.github/workflows/reproduce.yml'
 
 jobs:
@@ -32,8 +37,8 @@ jobs:
           python-version: '3.12'
       - name: Install
         run: |
-          pip install -r requirements.txt
-          pip install -e ./fsae_suspension
+          pip install -r requirements-reproduce.lock
+          pip install --no-deps -e ./fsae_suspension
       - name: Recompute every quoted number from the manifests
         working-directory: fsae_suspension
         run: python scripts/paper_check.py
@@ -52,8 +57,8 @@ jobs:
           python-version: '3.12'
       - name: Install
         run: |
-          pip install -r requirements.txt
-          pip install -e ./fsae_suspension
+          pip install -r requirements-reproduce.lock
+          pip install --no-deps -e ./fsae_suspension
       - name: Re-run ${{ matrix.manifest }} and compare with the recorded outputs
         working-directory: fsae_suspension
         run: python scripts/verify_run.py manifests/${{ matrix.manifest }}.recorded.genesis.json
