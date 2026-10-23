@@ -3,6 +3,20 @@
 
 ## Unreleased
 
+**Testing the tests.** Four additions aimed at the question of whether the tests would notice a wrong answer.
+`tests/test_invariants_property.py` checks 14 laws of the kinematics and statics with `hypothesis` on randomly
+perturbed corners (100 derandomized geometries and loads each, with the pushrod on the upright, the lower or the upper
+wishbone): rigid links, a pushrod that rides its own body, no dependence on where the corner sits or the path taken,
+statics linear in the load, chassis forces that balance the wheel load including the halfshaft's wheel-centre force
+and moment, virtual work, an independent rocker solve for the spring length and motion ratio, compliance stretch
+carried exactly, side-view geometry, and inboard anti-lift equal to anti-squat times the brake bias. Mutation testing
+(`mutmut`, `.github/workflows/mutation.yml`, monthly) deliberately breaks `suspension/kinematics.py` and
+`suspension/loadpath.py` and requires the suites to catch it: 70.7% of 2,355 mutants caught (it was 60.6% before the
+property tests), held at a 70% floor. Coverage of `suspension/` and `powertrain/` (81.8%) is reported on every push
+with an 81% floor. The weekly reproduce run now installs the exact versions in `requirements-reproduce.lock`, so a new
+numpy or scipy cannot move a published number without a commit. The README shows the three suspension benchmarks and
+how to re-run them. Removed `kinematics._rotation_from_to`, which nothing called.
+
 **Preview mode: five minutes without an account.** With accounts on (`KINEMATIK_ENABLE_LOGIN`), the sign-in screen
 now offers "👀 Preview KinematiK": the full app for five minutes, a countdown in the sidebar and a banner with a
 "Create free account" button, a toast at one minute left, then the "Like what you see?" screen with Create account

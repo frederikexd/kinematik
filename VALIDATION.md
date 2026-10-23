@@ -20,6 +20,7 @@ feature, is in [BENCHMARK.md](BENCHMARK.md).
 | Panel method | Sphere in potential flow | Cp minimum −1.248 against −1.250; mean error 0.009, largest 0.028 | `scripts/aero_closed_form.py` |
 | Vortex lattice | Rectangular AR 8 wing | C_L 11% under lifting-line, 4% under an independent lattice (open, see below) | `scripts/aero_closed_form.py` |
 | Code | About 3,500 tests, lint, CodeQL, dependency audit, bandit | Green on every push | badges in the README |
+| The tests themselves | Mutation testing of the kinematics and statics; property-based invariants on random corners | 70.7% of 2,355 deliberate errors caught (floor 70%); 14 laws hold on 100 random cases each | `.github/workflows/mutation.yml`, `tests/test_invariants_property.py` |
 
 ## Kinematics
 
@@ -59,6 +60,32 @@ Iglesias of Elbee Racing re-ran `front_v11_final` from the published code and go
 the recorded result to 1e-6 mm. The `reproduce` workflow repeats this weekly for
 the front and rear corners and recomputes all 499 published numbers from the
 manifests. This shows the result reproduces; it is not a physical test of a car.
+
+## Testing the tests
+
+A suite that only agrees with the code it was written against proves little, so the tests are tested too.
+
+**Mutation testing.** `mutmut` makes 2,355 small deliberate errors in `suspension/kinematics.py` and
+`suspension/loadpath.py` (a flipped sign, a swapped operator, a wrong index) and runs the kinematics, statics,
+property and benchmark suites against each. 70.7% are caught. Of the errors that survive, about half change nothing a
+test could see: an error message's wording, a solver tolerance or starting guess, the numbers of the built-in demo
+geometry, or a conversion to float of data that is already float. The rest are being worked through; the score is
+held at a 70% floor monthly (`.github/workflows/mutation.yml`), and the run lists every survivor.
+
+**Property-based invariants.** `tests/test_invariants_property.py` draws 100 corners at random around the published
+ones, with every pickup moved independently by up to 4 mm and the pushrod on the upright or either wishbone, and
+random wheel loads including the halfshaft's wheel-centre force and moment. On every one: links and the upright stay
+rigid and the pushrod rides its own body; moving the whole corner changes no angle, anti-geometry or swing arm;
+stepping to a travel and solving straight to it agree; member forces are linear in the load and balance it on the
+chassis; the pushrod force equals virtual work; an independent one-variable rocker solve gives the same spring length
+and motion ratio; a compliant link carries its stretch exactly; and inboard anti-lift is anti-squat times the brake
+bias. The examples are derandomized, so a failure reproduces exactly.
+
+**Coverage.** 81.8% of `suspension/` and `powertrain/` (kinematics 91%, statics 91%), reported on every push and held
+at an 81% floor.
+
+**Pinned reproduction.** The weekly reproduce run installs the exact versions in `requirements-reproduce.lock`, so the
+published numbers are recomputed on a fixed environment, not on whatever numpy and scipy were released that week.
 
 ## Corrections the checks forced
 

@@ -14,3 +14,7 @@ venv/
 
 # Usage telemetry (session ids and timestamps of real users): never commit
 analytics_buffer*.jsonl
+.hypothesis/
+mutants/
+.coverage
+coverage.xml

@@ -18,6 +18,26 @@ The hour before SolidWorks, ANSYS or ADAMS/Car: KinematiK pre-validates Formula 
 
 The physics and mathematics behind every module are documented in [PHYSICS.md](PHYSICS.md), including the derivations and their test coverage. What has been checked against other tools, and what has not, is in [VALIDATION.md](VALIDATION.md); every benchmark test, listed by role and feature, is in [BENCHMARK.md](BENCHMARK.md). If you find an error in the math, open an issue.
 
+### Benchmarked against established tools
+
+The suspension kinematics solver has been checked against three established tools and an independent solve that shares no code with it. The limits were set before each run.
+
+| Checked against | Corners | Largest difference |
+|---|---|---|
+| Adams View 2026.1 | The paper's three corners, every 1 mm over ±25 mm | Camber, toe, caster and KPI within 0.00003°; wheel-centre path within 0.00003 mm (limits 0.005–0.01° and 0.05 mm) |
+| Lotus Suspension Analysis | Two published corners (Arévalo et al., 2018) | Camber in bump 0.009°, toe in bump 0.0003°, camber in roll 0.008° (Lotus values read from the published figures) |
+| Applied Racing Dynamics | Front and rear corners, static and ±20 mm | Static caster, KPI, scrub and motion ratio to ARD's display precision; camber change within 0.014°; larger differences traced to definitions |
+| Independent rigid-body solve | Three corners | Camber and toe within 1e-12° |
+
+These check the kinematics solver, not a built car; what has not been checked yet is listed in [VALIDATION.md](VALIDATION.md).
+
+**Check it yourself** (from `fsae_suspension/`, a few minutes on a laptop):
+
+```bash
+pytest tests/test_adams_view_benchmark.py tests/test_lotus_benchmark.py tests/test_invariants_property.py
+python scripts/verify_run.py manifests/rear_v11_final.recorded.genesis.json   # re-solves a final corner, about 4 min
+```
+
 ---
 
 ## What it's for

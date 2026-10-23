@@ -54,6 +54,9 @@ all = ["kinematik[excel,cad,pdf,cloud,drive,voice]"]
 dev = [
     "kinematik[all]",
     "pytest>=8",
+    "pytest-cov>=5",
+    "hypothesis>=6.100",
+    "mutmut>=3.2",
     "ruff>=0.5",
 ]
 
@@ -75,7 +78,7 @@ py-modules = ["coordinate_frames"]
 testpaths = ["tests"]
 # _attic holds quarantined duplicates, including a stale clone of this very
 # suite whose conftest inserted the wrong root at sys.path[0]. Never collect it.
-norecursedirs = ["_attic", ".git", "__pycache__", "*.egg-info"]
+norecursedirs = ["_attic", ".git", "__pycache__", "*.egg-info", ".hypothesis"]
 addopts = "-q --strict-markers"
 filterwarnings = [
     # Promoted from "default" to "error" Aug 2026. The stale TODO here said
@@ -166,3 +169,27 @@ ignore = [
 "streamlit_app.py" = ["F821"]
 # __init__.py imports are the public API surface (re-exports), not dead code.
 "**/__init__.py" = ["F401"]
+
+[tool.mutmut]
+# Mutation testing of the core solvers (.github/workflows/mutation.yml). mutmut changes the code on purpose (a flipped
+# sign, a swapped operator, an off-by-one) and checks that the tests below fail; a mutant that survives is a change
+# no test notices. Only the kinematics and the statics are mutated, against the suites that are meant to pin them.
+source_paths = ["suspension/"]
+only_mutate = ["suspension/kinematics.py", "suspension/loadpath.py"]
+also_copy = ["manifests/", "scripts/", "powertrain/", "ui/", "benchmarks/", "coordinate_frames.py"]
+pytest_add_cli_args_test_selection = [
+    "tests/test_kinematics.py",
+    "tests/test_load_case_physics.py",
+    "tests/test_invariants_property.py",
+    "tests/test_lotus_benchmark.py",
+    "tests/test_adams_view_benchmark.py",
+    "tests/test_motion_ratio_antidive.py",
+    "tests/test_accuracy_invariants.py",
+    "tests/test_actuation.py",
+    # two full actuation syntheses (about 25 s each) would run against every mutant of the solver
+    "--deselect=tests/test_actuation.py::test_synthesis_meets_every_band",
+    "--deselect=tests/test_actuation.py::test_synthesis_leaves_the_kinematics_alone",
+    # the frame-model checks in that file read data/ and do not touch the mutated files
+    "--deselect=tests/test_load_case_physics.py::test_chassis_model_rigid_modes_and_reciprocity",
+    "--deselect=tests/test_load_case_physics.py::test_free_frame_load_is_balanced_by_inertia",
+]
