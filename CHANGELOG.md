@@ -3,6 +3,15 @@
 
 ## Unreleased
 
+**The core solvers at 100% coverage.** `kinematics.py`, `loadpath.py`, `compliance.py` and `elastokinematics.py` are
+now at 100% of statements and branches, held by a new `core-coverage` CI job. The new `tests/test_core_solver_edges.py`
+(47 tests) checks the edges against closed forms or independent calculations: parallel equal arms put the front-view
+centre at infinity, unstaggered pickups give an infinite side-view swing arm, a non-determinate member set is flagged
+and solved by least squares, the direct-acting motion-ratio proxy, joint linearisation and damping energy, rear and
+inboard-drive corner loads, frame-twist toe against a re-solved tie-rod sensitivity, a coupled frame flexibility equal
+to the point stiffnesses, the required stiffness for a budget, and every input the solvers must refuse. Removed
+`SuspensionKinematics._tro_local_static`, which nothing called.
+
 **Testing the tests.** Four additions aimed at the question of whether the tests would notice a wrong answer.
 `tests/test_invariants_property.py` checks 14 laws of the kinematics and statics with `hypothesis` on randomly
 perturbed corners (100 derandomized geometries and loads each, with the pushrod on the upright, the lower or the upper
