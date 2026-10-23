@@ -24,3 +24,5 @@ PRs are welcome. Any change that touches physics must include a test that pins t
 ## Code of Conduct
 
 Engage with the engineering. If you have not used the interface or read the physics, you do not have a technical opinion yet.
+
+The full code of conduct, and how to report a problem, is in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Accessibility barriers can be reported as described in [ACCESSIBILITY.md](ACCESSIBILITY.md).

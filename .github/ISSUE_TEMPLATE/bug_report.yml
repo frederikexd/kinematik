@@ -1,0 +1,29 @@
+name: Bug report
+description: Something in the app or the code does not work as it should.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you got, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: inputs
+    attributes:
+      label: Values or file used
+      description: The inputs, manifest or file that reproduces it. Remove anything confidential to your team.
+      render: text
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: Hosted app (page or tab) or local install (module or script).
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: KinematiK version or commit, and your browser if it is the app.
