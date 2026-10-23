@@ -1752,7 +1752,7 @@ Not compared: camber in steer (ARD's definition is unconfirmed), and anti-dive a
 
 **Lotus Suspension Analysis Benchmark**
 
-The source is C. Arevalo, A. Medina and J. Valladolid, *Kinematic and dynamic study of the suspension system of an electric single seater competition Formula Student*, Ingenius 20 (2018) 96–107 (open access). It lists the hardpoints of two double-wishbone corners and plots their kinematics from Lotus Suspension Analysis. KinematiK solves the same hardpoints and is compared against the plotted values (read from the figures, so the Lotus figures carry reading error).
+The source is C. Arévalo, A. Medina and J. Valladolid, *Kinematic and dinamic study of the suspension system of an electric single seater competition Formula Student* (title as published), Ingenius 20 (2018) 95–106, doi:10.17163/ings.n20.2018.09 (open access). It lists the hardpoints of two double-wishbone corners and plots their kinematics from Lotus Suspension Analysis. KinematiK solves the same hardpoints and is compared against the plotted values (read from the figures, so the Lotus figures carry reading error).
 
 **Set-up.** Source frame to KinematiK: `x_K = −(x − x_axle)` with the axles at x ≈ 160 and x ≈ 1760 mm, y unchanged, `z_K = z − (310 − 247.65)` mm, which puts the ground under the 310 mm wheel centre of a 19.5 in tyre. As in Lotus, bump is wheel-centre travel. The corners are named here by their source x position, because the source's front/rear labels are inconsistent between its tables.
 

@@ -4,7 +4,7 @@
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
 """External benchmark against Lotus Suspension Analysis (supplement S6.30): the published hardpoints of
-Arevalo, Medina and Valladolid, Ingenius 20 (2018) 96-107, table 3, solved by KinematiK.
+Arevalo, Medina and Valladolid, Ingenius 20 (2018) 95-106, table 3, solved by KinematiK.
 
 Frame conversion: x_K = -(x - x_axle) with the axles at x = 160 and 1760 mm, y unchanged,
 z_K = z - (310 - 247.65) mm (ground under the 310 mm wheel centre of a 19.5 in tire). Bump is matched on
