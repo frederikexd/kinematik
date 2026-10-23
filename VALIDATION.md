@@ -20,7 +20,7 @@ feature, is in [BENCHMARK.md](BENCHMARK.md).
 | Panel method | Sphere in potential flow | Cp minimum −1.248 against −1.250; mean error 0.009, largest 0.028 | `scripts/aero_closed_form.py` |
 | Vortex lattice | Rectangular AR 8 wing | C_L 11% under lifting-line, 4% under an independent lattice (open, see below) | `scripts/aero_closed_form.py` |
 | Code | About 3,500 tests, lint, CodeQL, dependency audit, bandit | Green on every push | badges in the README |
-| The tests themselves | Mutation testing of the kinematics and statics; property-based invariants on random corners | 70.7% of 2,355 deliberate errors caught (floor 70%); 14 laws hold on 100 random cases each | `.github/workflows/mutation.yml`, `tests/test_invariants_property.py` |
+| The tests themselves | Mutation testing of the kinematics and statics; property-based invariants on random corners | 70.7% of 2,355 deliberate errors caught (floor 70%); 14 laws hold on 100 random cases each; core solvers at 100% statement and branch coverage | `.github/workflows/mutation.yml`, `tests/test_invariants_property.py` |
 
 ## Kinematics
 
@@ -81,8 +81,15 @@ chassis; the pushrod force equals virtual work; an independent one-variable rock
 and motion ratio; a compliant link carries its stretch exactly; and inboard anti-lift is anti-squat times the brake
 bias. The examples are derandomized, so a failure reproduces exactly.
 
-**Coverage.** 81.8% of `suspension/` and `powertrain/` (kinematics 91%, statics 91%), reported on every push and held
-at an 81% floor.
+**Coverage.** The four core solvers, `kinematics.py`, `loadpath.py` (statics), `compliance.py` and
+`elastokinematics.py`, are at 100% of statements and branches, and a CI job holds them there on every push. Reaching
+that took tests of what the corner studies never exercise: degenerate geometry (parallel arms, a joint on its own pivot
+axis, a horizontal kingpin, no pickup stagger), inputs that must be refused, the fall-backs (no rocker, a
+non-determinate member set, a solve that runs out of iterations), joint linearisation and damping, and the required
+stiffness for a budget (`tests/test_core_solver_edges.py`). Each checks an answer against a closed form or an
+independent calculation, not only that the line ran. Two helpers that nothing called were removed. Across all of
+`suspension/` and `powertrain/` coverage is 81.8%, reported on every push and held at an 81% floor; the rest is mostly
+the interface, sign-in and file import code.
 
 **Pinned reproduction.** The weekly reproduce run installs the exact versions in `requirements-reproduce.lock`, so the
 published numbers are recomputed on a fixed environment, not on whatever numpy and scipy were released that week.

@@ -430,9 +430,6 @@ class SuspensionKinematics:
         R = np.column_stack([x, y, z])
         return R, origin
 
-    def _tro_local_static(self):
-        return self._R0.T @ (self.hp.tie_rod_outer - self._o0)
-
     # --------------------------------------------------------------------- #
     def _residuals(self, q, target_lower_z):
         """

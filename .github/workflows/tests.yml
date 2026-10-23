@@ -26,6 +26,30 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}/fsae_suspension
 
+  core-coverage:
+    # The four core solvers (kinematics, statics, compliance, elastokinematics) are held at 100% of statements AND
+    # branches by their own fast suites, so a new line in them cannot land without a test that reaches it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          pip install -r requirements.txt pytest pytest-xdist pytest-cov hypothesis
+          pip install -e ./fsae_suspension
+      - name: Core solvers at 100% statement and branch coverage
+        working-directory: fsae_suspension
+        run: |
+          pytest -n auto -q -p no:cacheprovider \
+            tests/test_core_solver_edges.py tests/test_invariants_property.py tests/test_kinematics.py \
+            tests/test_compliance.py tests/test_elastokinematics.py tests/test_load_case_physics.py \
+            tests/test_motion_ratio_antidive.py \
+            --cov=suspension.kinematics --cov=suspension.loadpath \
+            --cov=suspension.elastokinematics --cov=suspension.compliance \
+            --cov-branch --cov-report=term-missing --cov-fail-under=100
+
   docker:
     # The container is the frozen environment the paper points teams to; build
     # it on every push and run the synthesis suites inside it, so it cannot rot

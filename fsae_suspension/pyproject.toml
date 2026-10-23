@@ -181,6 +181,7 @@ pytest_add_cli_args_test_selection = [
     "tests/test_kinematics.py",
     "tests/test_load_case_physics.py",
     "tests/test_invariants_property.py",
+    "tests/test_core_solver_edges.py",
     "tests/test_lotus_benchmark.py",
     "tests/test_adams_view_benchmark.py",
     "tests/test_motion_ratio_antidive.py",

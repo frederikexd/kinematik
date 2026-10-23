@@ -18,6 +18,7 @@ on:
       - 'fsae_suspension/tests/test_kinematics.py'
       - 'fsae_suspension/tests/test_load_case_physics.py'
       - 'fsae_suspension/tests/test_invariants_property.py'
+      - 'fsae_suspension/tests/test_core_solver_edges.py'
       - 'fsae_suspension/tests/test_motion_ratio_antidive.py'
       - 'fsae_suspension/tests/test_accuracy_invariants.py'
       - 'fsae_suspension/tests/test_actuation.py'
