@@ -1,0 +1,21 @@
+name: Feature request
+description: Describe an engineering problem KinematiK should help you solve.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The engineering problem
+      description: What you are trying to do on your car or team, and where the current tools stop.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+      description: The feature, output or workflow you have in mind. Optional.
+  - type: input
+    id: team
+    attributes:
+      label: Team or role
+      description: e.g. suspension lead, powertrain, chassis. Optional; it helps prioritize what teams actually need.

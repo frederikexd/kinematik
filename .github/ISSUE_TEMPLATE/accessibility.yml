@@ -1,0 +1,21 @@
+name: Accessibility barrier
+description: Something in KinematiK is hard or impossible to use with your setup.
+labels: ["accessibility"]
+body:
+  - type: textarea
+    id: barrier
+    attributes:
+      label: What you were trying to do, and what got in the way
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Page or feature
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Browser and assistive technology
+      placeholder: e.g. Firefox 131 with NVDA, Safari with VoiceOver, keyboard only, 200% zoom

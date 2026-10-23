@@ -1,0 +1,34 @@
+name: Challenge the physics
+description: You believe an equation, a model or a result is wrong.
+labels: ["physics"]
+body:
+  - type: markdown
+    attributes:
+      value: Be specific. Name the module, the equation and the result you believe is correct. A general doubt without a technical objection cannot be acted on.
+  - type: input
+    id: module
+    attributes:
+      label: Module, function or document section
+      placeholder: e.g. suspension/elastokinematics.py, PHYSICS.md section 14, supplement S7.4
+    validations:
+      required: true
+  - type: textarea
+    id: claim
+    attributes:
+      label: What KinematiK does
+      description: The equation, assumption or number you are challenging.
+    validations:
+      required: true
+  - type: textarea
+    id: correct
+    attributes:
+      label: What you believe is correct, and why
+      description: Derivation, reference, measurement or another tool's result (Lotus, Adams, ARD, OptimumKinematics, test data).
+    validations:
+      required: true
+  - type: textarea
+    id: case
+    attributes:
+      label: Case that shows the difference
+      description: Inputs and the two results side by side, if you have them.
+      render: text
