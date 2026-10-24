@@ -45,7 +45,10 @@ jobs:
           pip install -e ./fsae_suspension pytest hypothesis 'mutmut>=3.2'
       - name: Mutate the kinematics and statics and run the tests against each mutant
         working-directory: fsae_suspension
-        run: mutmut run --max-children 4 || true
+        # No `|| true`: mutmut exits non-zero only when it cannot start (its clean run of the test selection failed,
+        # or no tests were collected), never because mutants survived. Swallowing that exit turned a broken test into
+        # a silent 0% score; letting it fail puts the failing test at the end of this step's log.
+        run: mutmut run --max-children 4
       - name: Score
         working-directory: fsae_suspension
         run: |
@@ -56,6 +59,9 @@ jobs:
           tested = int(s.get("total", 0)) - int(s.get("skipped", 0))       # mutmut's own score definition
           score = 100.0 * (int(s.get("killed", 0)) + int(s.get("timeout", 0))) / tested if tested else 0.0
           floor = float(os.environ["FLOOR"])
+          if not tested:
+              raise SystemExit("mutmut tested no mutants: its clean run of the test selection failed before mutating "
+                               "anything. The failing test is at the end of the 'Mutate' step's log.")
           line = (f"Mutation score {score:.1f}% ({s['killed']} killed, {s['survived']} survived, "
                   f"{s.get('timeout', 0)} timed out, {s.get('no_tests', 0)} with no test); floor {floor:.1f}%")
           print(line)
