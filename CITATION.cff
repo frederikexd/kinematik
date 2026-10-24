@@ -12,13 +12,14 @@ doi: 10.5281/zenodo.23450788
 repository-code: "https://github.com/frederikexd/kinematik"
 url: "https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/"
 abstract: >-
-  Open-source design tools for Formula SAE and Formula SAE EV teams. KinematiK derives suspension targets from
+  Open-source design tools for Formula Student and Formula Student EV teams. KinematiK derives suspension targets from
   vehicle requirements and synthesises double-wishbone hardpoints to meet them inside absolute packaging,
   structural and steering walls, prices each candidate for build yield, and records every search as a hashed,
   re-runnable manifest. It also covers vehicle dynamics, aerodynamics, brakes, powertrain and energy, thermal,
   electrical systems, data acquisition and measurement.
 keywords:
   - Formula SAE
+  - Formula Student
   - suspension kinematics
   - inverse kinematics
   - vehicle dynamics
