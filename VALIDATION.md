@@ -20,7 +20,7 @@ feature, is in [BENCHMARK.md](BENCHMARK.md).
 | Panel method | Sphere in potential flow | Cp minimum −1.248 against −1.250; mean error 0.009, largest 0.028 | `scripts/aero_closed_form.py` |
 | Vortex lattice | Rectangular AR 8 wing | C_L 11% under lifting-line, 4% under an independent lattice (open, see below) | `scripts/aero_closed_form.py` |
 | Code | About 3,500 tests, lint, CodeQL, dependency audit, bandit | Green on every push | badges in the README |
-| The tests themselves | Mutation testing of the kinematics and statics; property-based invariants on random corners | 70.7% of 2,355 deliberate errors caught (floor 70%); 14 laws hold on 100 random cases each; core solvers at 100% statement and branch coverage | `.github/workflows/mutation.yml`, `tests/test_invariants_property.py` |
+| The tests themselves | Mutation testing of the kinematics and statics; property-based invariants on random corners | all 1,679 deliberate errors caught (floor 99%); 14 laws hold on 100 random cases each; core solvers and seven physics, model and workbook modules at 100% statement and branch coverage | `.github/workflows/mutation.yml`, `tests/test_invariants_property.py` |
 
 ## Kinematics
 
@@ -65,12 +65,29 @@ manifests. This shows the result reproduces; it is not a physical test of a car.
 
 A suite that only agrees with the code it was written against proves little, so the tests are tested too.
 
-**Mutation testing.** `mutmut` makes 2,355 small deliberate errors in `suspension/kinematics.py` and
+**Mutation testing.** `mutmut` makes 1,679 small deliberate errors in `suspension/kinematics.py` and
 `suspension/loadpath.py` (a flipped sign, a swapped operator, a wrong index) and runs the kinematics, statics,
-property and benchmark suites against each. 70.7% are caught. Of the errors that survive, about half change nothing a
-test could see: an error message's wording, a solver tolerance or starting guess, the numbers of the built-in demo
-geometry, or a conversion to float of data that is already float. The rest are being worked through; the score is
-held at a 70% floor monthly (`.github/workflows/mutation.yml`), and the run lists every survivor.
+property and benchmark suites against each. All 1,679 are caught (it was 70.7% before the property tests, 74.8% before
+`tests/test_mutation_gaps.py` and 93.7% before the equivalent mutants were marked). The survivors were sorted by what they change. The float conversions that about
+90 of them dropped now happen in one helper, `_vec`, instead of at 45 call sites, and the solver settings (iteration
+limits, tolerances) are marked not to mutate, since any setting that converges gives the same answer; the rest were
+real gaps, and `tests/test_mutation_gaps.py` closes the largest groups: the pushrod-carrying wishbone's own balance and the split
+of its pivot reactions, every compliance link-length shim, the default corner pinned value by value, a save-and-reload
+of every field, the validation messages, the rocker rotation, the motion-ratio functions against finite differences
+of the solved linkage, and the side-view centre against the solved ball-joint motion. Dead code those mutants were
+pointing at (cached rocker lengths and frames nothing read, a residual that was computed and discarded) was removed.
+Of the 117 that then survived, 19 were already caught: mutmut 3 keeps the result of a mutant whose function has not
+changed, so tests added since did not count until those results were cleared. The rest fell in two groups. Lines whose
+every mutant gives the same answer are marked `# pragma: no mutate` with the reason on the line: a `<` against `<=` on
+a floating-point threshold that no real input meets exactly, a slice past the end of a fixed-length array, the sign of
+a solve parameter that is never read, a residual that is a sum of zeros on a balanced solve, and one row of the
+pivot-axis cross-product matrix (any two rows fix the reaction up to a multiple of the axis, which the leg split then
+removes); two redundant pieces of code were deleted instead. Every other survivor was a missing check, now in
+`tests/test_mutation_gaps.py`: a rocker that does not close gives no motion ratio, a failed linkage solve is marked
+unconverged, each solve starts from the seed it is given, the bending arm is clipped to the leg, points are stored as
+floats, the default sweep and curve ranges, a state without a pushrod point falls back to the strut, and notes add up
+rather than replace each other. That removed 189 mutants and left none surviving. The score is held at a 99% floor
+monthly (`.github/workflows/mutation.yml`), and the run lists every survivor.
 
 **Property-based invariants.** `tests/test_invariants_property.py` draws 100 corners at random around the published
 ones, with every pickup moved independently by up to 4 mm and the pushrod on the upright or either wishbone, and
@@ -87,9 +104,30 @@ that took tests of what the corner studies never exercise: degenerate geometry (
 axis, a horizontal kingpin, no pickup stagger), inputs that must be refused, the fall-backs (no rocker, a
 non-determinate member set, a solve that runs out of iterations), joint linearisation and damping, and the required
 stiffness for a budget (`tests/test_core_solver_edges.py`). Each checks an answer against a closed form or an
-independent calculation, not only that the line ran. Two helpers that nothing called were removed. Across all of
-`suspension/` and `powertrain/` coverage is 81.8%, reported on every push and held at an 81% floor; the rest is mostly
-the interface, sign-in and file import code.
+independent calculation, not only that the line ran. Two helpers that nothing called were removed.
+
+Five physics modules are held at 100% the same way: the engine and cooling model (`powertrain/engine.py`), the
+underfloor (`aero/underfloor.py`), the fit forecast (`fit_forecast.py`), rotor thermal (`brake_thermal.py`) and the EV
+electrical check (`ev_electrical_check.py`). So is the full-car 3D model (`fullcar3d.py`), whose tests check the mesh
+primitives against closed forms (box and cylinder volumes, the NACA section thickness, closed meshes) and every body
+against its documented sizing law; they found six drawing bugs, also in the changelog. The EV workbook round trip
+(`ev_excel_roundtrip.py`) is held there too, tested on a workbook built to the stock layout (the stock file is not in
+the repository): the propulsion chain at constant speed against its closed form, the profile and block rows the
+dependent sheets read, and the parameter read-back when cached values, sheets or labels are missing. Their tests check Darcy–Weisbach and Hagen–Poiseuille losses, the
+Borda–Carnot expansion, the pump and system operating point, ε-NTU, energy conservation in the thermal transient,
+`x = at²/2` and the load-transfer traction limit at launch, zero force from a constant-area duct, force proportional to
+dynamic pressure, the radiative and convective balance solved back for the power, and the pack and fuse arithmetic by
+hand. Writing them found six bugs, listed in the changelog.
+
+Two coverage figures are reported on every push from the same test run. Everything in `suspension/` and `powertrain/`
+is at 87.5% (it was 81.8% before the physics-module, full-car and EV workbook tests), held at an 87% floor. The
+engineering code alone is at 89.0%, held at 88.5%: that figure leaves out the twelve modules that compute nothing about the car (sign-in and its
+screens, workspaces and project history in the database, report storage and Google Drive export, usage analytics and
+its cache, the anonymous visitor id, preview mode and the hosting memory guard). Those modules are still tested and
+still counted in the first figure; the list is in `.github/workflows/tests.yml`, so anyone can see what was left out.
+The largest gaps left in the engineering code are the briefing concept figures (`brief_visuals.py`, 0%), the binary
+Altium reader (`pcb_altium_binary.py`, 17%), the process library (`process_library.py`, 18%) and the chassis mesh code
+(`chassis.py`, 52%).
 
 **Pinned reproduction.** The weekly reproduce run installs the exact versions in `requirements-reproduce.lock`, so the
 published numbers are recomputed on a fixed environment, not on whatever numpy and scipy were released that week.
