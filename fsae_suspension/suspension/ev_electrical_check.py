@@ -152,7 +152,12 @@ class ElecParams:
         v_pack = g(pack, "Battery Pack Nominal Voltage (V)") or (n_ser * 3.6)
         cap_ah = g(pack, "Pack Capacity (Ah)") or (cell_c * n_par)
         fuse   = g(pack, "Fuse Max (A)") or 50.0
-        i_cell = g(pack, "Current Across a Single Cell (A)") or (cap_ah / n_par)
+        # The sheet's "Current Across a Single Cell" is the fuse current shared
+        # across the parallel strings (the class default, 16.667 A, is 50 A / 3).
+        # Fall back to that, not to pack Ah / strings: that is a 1C figure, a
+        # different quantity, and flagged cell overcurrent at under a third of
+        # the sheet's own limit whenever the row was blank.
+        i_cell = g(pack, "Current Across a Single Cell (A)") or (fuse / max(n_par, 1))
 
         mot_pk_kw  = g(ep, "Motor Peak Power (kW)") or 150.0
         mot_pk_nm  = g(ep, "Motor Peak Torque (Nm)") or 120.0
@@ -271,6 +276,43 @@ class ElecCheckResult:
 # Core computation
 # ─────────────────────────────────────────────────────────────────────────────
 
+def traction_power_w(v, a, *, vehicle_mass_kg: float = 230.0, drag_cda: float = 1.10,
+                     crr: float = 0.018, rho_air: float = 1.225,
+                     drivetrain_eff: float = 0.90):
+    """Tractive force, wheel power and pack power along a speed profile.
+
+        F       = m a + ½ ρ CdA v² + Crr m g
+        P_wheel = F v
+        P_pack  = max(P_wheel, 0) / η
+
+    When the deceleration is larger than the road load alone would give, the car
+    is coasting or on the brakes and the motor draws nothing (no regeneration is
+    credited). Returns (F_N, P_wheel_W, P_pack_W) as arrays.
+    """
+    v = np.asarray(v, dtype=float)
+    a = np.asarray(a, dtype=float)
+    F = (vehicle_mass_kg * a + 0.5 * rho_air * drag_cda * v ** 2
+         + crr * vehicle_mass_kg * 9.81)
+    P_wheel = F * v
+    P_pack = np.maximum(P_wheel, 0.0) / max(drivetrain_eff, 0.50)
+    return F, P_wheel, P_pack
+
+
+def fuse_limited_speed(max_pack_power_w: float, *, vehicle_mass_kg: float = 230.0,
+                       drag_cda: float = 1.10, crr: float = 0.018,
+                       rho_air: float = 1.225, drivetrain_eff: float = 0.90) -> float:
+    """Highest steady speed whose road load the fuse-limited pack power can carry.
+
+    Solves ½ρCdA v³ + Crr·m·g·v = P_pack,max · η on a 0.1-100 m/s grid (100 m/s
+    when even that is within the cap).
+    """
+    v_test = np.linspace(0.1, 100.0, 5000)
+    P_test = (0.5 * rho_air * drag_cda * v_test ** 3
+              + crr * vehicle_mass_kg * 9.81 * v_test)
+    idx = np.searchsorted(P_test, max_pack_power_w * max(drivetrain_eff, 0.50))
+    return float(v_test[min(idx, len(v_test) - 1)])
+
+
 def check_lap_electrical(
     speed_ms: Sequence[float],
     distance_m: Sequence[float],
@@ -309,26 +351,16 @@ def check_lap_electrical(
         r.summary = "Not enough speed data to run the electrical check."
         return r
 
-    # ── Step 1: compute required tractive force at each point ─────────────────
-    # F_drag = ½ ρ CdA v²
-    F_drag = 0.5 * rho_air * drag_cda * v ** 2
-    # F_roll = crr × mg
-    F_roll = crr * vehicle_mass_kg * 9.81
-    # F_accel = m × a  (finite difference; clamp to 0 — we only care about traction)
-    dv = np.gradient(v, s)          # dv/ds (m/s per m)
-    a  = v * dv                     # a = v × dv/ds  (m/s²)
-    F_accel = vehicle_mass_kg * np.maximum(a, 0.0)  # only acceleration phases
-
-    F_total = F_drag + F_roll + F_accel    # N, at each point
-
-    # ── Step 2: mechanical power at wheels ────────────────────────────────────
-    P_wheel_w = F_total * np.maximum(v, 0.5)          # W
-    P_wheel_kw = P_wheel_w / 1000.0
-
-    # ── Step 3: electrical power from pack ────────────────────────────────────
+    # ── Steps 1-3: tractive force, wheel power, pack power ────────────────────
+    # a = v dv/ds. Under braking the deceleration outweighs the road load and
+    # the motor draws nothing; the old clamp kept drag and rolling power on the
+    # pack through every braking zone.
+    a = v * np.gradient(v, s)
     eff = max(drivetrain_eff, 0.50)
-    P_elec_kw = P_wheel_kw / eff                      # kW drawn from pack
-    P_elec_w  = P_elec_kw * 1000.0                    # W
+    _F, _P_wheel_w, P_elec_w = traction_power_w(
+        v, a, vehicle_mass_kg=vehicle_mass_kg, drag_cda=drag_cda, crr=crr,
+        rho_air=rho_air, drivetrain_eff=eff)
+    P_elec_kw = P_elec_w / 1000.0                     # kW drawn from pack
 
     # ── Step 4: pack current ──────────────────────────────────────────────────
     V_pack = params.pack_voltage_v
@@ -369,12 +401,9 @@ def check_lap_electrical(
     max_safe_P_w  = max_safe_P_kw * 1000.0
 
     # Solve  ½ρCdA v³ + crr·mg·v  =  max_safe_P_w × eff   for v  (numerically)
-    v_test = np.linspace(0.1, 100.0, 5000)
-    P_test = (0.5 * rho_air * drag_cda * v_test ** 3
-              + crr * vehicle_mass_kg * 9.81 * v_test)
-    P_cap  = max_safe_P_w * eff
-    idx    = np.searchsorted(P_test, P_cap)
-    max_safe_speed_ms = float(v_test[min(idx, len(v_test) - 1)])
+    max_safe_speed_ms = fuse_limited_speed(
+        max_safe_P_w, vehicle_mass_kg=vehicle_mass_kg, drag_cda=drag_cda, crr=crr,
+        rho_air=rho_air, drivetrain_eff=eff)
 
     # ── Step 9: assemble result ───────────────────────────────────────────────
     ok = not (fuse_blown or cell_overcurrent or energy_empty)
@@ -386,7 +415,7 @@ def check_lap_electrical(
             f"🚨 FUSE WILL BLOW — peak pack current {peak_I:.1f} A exceeds "
             f"the {fuse_limit:.0f} A fuse by {margin:.1f} A "
             f"(at {peak_speed * 3.6:.1f} km/h). "
-            f"The lap-time sim assumed {max_safe_P_kw:.1f} kW available; "
+            f"The lap asks the pack for {float(np.max(P_elec_kw)):.1f} kW at its peak; "
             f"the fuse actually caps you at {max_safe_P_kw:.1f} kW "
             f"(~{max_safe_speed_ms * 3.6:.1f} km/h sustained). "
             f"Slow your roll — or upsize the fuse with the electrics lead."
@@ -564,16 +593,21 @@ def load_speed_vs_time(path: str) -> tuple[np.ndarray, np.ndarray]:
     except Exception as exc:
         raise ValueError(f"Could not open Excel workbook: {exc}") from exc
 
-    if "SpeedVsTime" not in wb.sheetnames:
+    # By alias and then by content, as the pack and propulsion sheets are: an
+    # exact-name lookup is what took the Lap time tab down when a sheet was
+    # renamed (see ev_excel_roundtrip.resolve_sheet).
+    from .ev_excel_roundtrip import resolve_svt_sheet
+    ws = resolve_svt_sheet(wb)
+    if ws is None:
         available = ", ".join(wb.sheetnames) or "(none)"
         raise ValueError(
-            f"No 'SpeedVsTime' sheet found in the workbook. "
+            f"No speed-vs-time sheet found in the workbook. "
             f"Available sheets: {available}. "
-            f"Please add a sheet named exactly 'SpeedVsTime' with columns: time_s, speed_mph."
+            f"Please add a sheet named 'SpeedVsTime' with columns: time_s, speed_mph."
         )
 
     times, speeds = [], []
-    for row in wb["SpeedVsTime"].iter_rows(values_only=True):
+    for row in ws.iter_rows(values_only=True):
         if len(row) < 2:
             continue
         t, v = row[0], row[1]

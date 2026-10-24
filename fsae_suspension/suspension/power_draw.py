@@ -81,6 +81,11 @@ WHAT THIS MODULE FOUND IN KINEMATIK ITSELF
 Auditing the workbook meant testing the code that reads it, and that code is
 worse off than the spreadsheet:
 
+(Since fixed: both readers now find the pack sheet by alias and by its row
+labels, and the round trip reports pack current from the road load and
+corrects the workbook it hands back — `audit_kinematik_readers` checks both by
+behaviour. What follows is the state this module found.)
+
 `ev_electrical_check.ElecParams.from_excel` and
 `ev_excel_roundtrip.extract_params_from_excel` both gate on a sheet named
 "Battery Pack Calcs". This workbook's sheet is called "BatteryPackConfig".
@@ -107,6 +112,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import math
+import re
 from dataclasses import dataclass, field
 from collections.abc import Sequence
 
@@ -763,7 +769,8 @@ def audit_workbook(path: str) -> list[Finding]:
 
         # ---- gear ratio inverted ----------------------------------------- #
         rpm = str(ftext(ep, "H2") or "")
-        if "$H$1" in rpm and "1056" in rpm:
+        # Multiplied in (`* $H$1`), not divided: a corrected file divides.
+        if re.search(r"\*\s*\$H\$1(?![0-9])", rpm) and "1056" in rpm:
             g1 = wbv["ElecPropulsion"]["N1"].value
             if isinstance(g1, (int, float)) and 0 < g1 < 1:
                 out.append(_f(
@@ -859,7 +866,7 @@ def audit_workbook(path: str) -> list[Finding]:
                 subs=["electrics", "cooling"]))
 
         b6 = str(ftext(tlf, "B6") or "")
-        if b6.upper().startswith("=SUM"):
+        if re.match(r"=\s*SUM\(", b6, flags=re.IGNORECASE):       # not SUMPRODUCT
             out.append(_f(
                 "pd-sum-of-power", Severity.FAIL,
                 "'Sum of Joule Heat (kW)' sums instantaneous power across "
@@ -887,7 +894,7 @@ def audit_workbook(path: str) -> list[Finding]:
     if "EMFs" in names:
         e = wbf["EMFs"]
         b1 = str(ftext(e, "B1") or "")
-        if "B12" in b1 and "B11" in b1:
+        if "B12" in b1 and "B11" in b1 and "KX_RoadLoad" not in b1:   # not yet V - I R
             out.append(_f(
                 "pd-emf-dimensions", Severity.FAIL,
                 "The EMF columns compute V_pack * Power * R_pack — volts times "
@@ -921,7 +928,7 @@ def audit_workbook(path: str) -> list[Finding]:
                 f"in RADIANS().",
                 cells="BearingBlowOut!G1:G1893",
                 subs=["powertrain", "suspension"]))
-        if "$B$16" in g1:
+        if "$B$16" in g1 and "$B$16/2" not in g1:
             out.append(_f(
                 "pd-pitch-diameter", Severity.FAIL,
                 "Gear tangential force divides torque by the pitch DIAMETER "
@@ -981,33 +988,35 @@ def audit_kinematik_readers(path: str) -> list[Finding]:
 
     import openpyxl
     names = openpyxl.load_workbook(path).sheetnames
-    if "Battery Pack Calcs" not in names:
+    # Behaviour, not a sheet-name rule: does the round trip's reader find the pack?
+    from . import ev_excel_roundtrip as _rt
+    with open(path, "rb") as fh:
+        params = _rt.extract_params_from_excel(fh.read())
+    if not params.get("pack"):
         out.append(_f(
             "pd-reader-sheet-name", Severity.FAIL,
-            f"ev_electrical_check.ElecParams.from_excel and "
-            f"ev_excel_roundtrip.extract_params_from_excel both gate on a "
-            f"sheet named 'Battery Pack Calcs'. This workbook's pack sheet is "
-            f"'BatteryPackConfig', so neither has ever read it: the round-trip "
-            f"returns an empty pack dict, and from_excel falls through to its "
-            f"dataclass defaults. Those defaults are 504 V, 15 Ah, 140S3P — "
-            f"this exact pack — so it looks like it works. Read by label "
-            f"instead: read_pack_config() in this module does.",
+            "ev_excel_roundtrip.extract_params_from_excel found no pack sheet in "
+            "this workbook (looked by alias and by the 'Series Battery Count' / "
+            "'Fuse Max' row labels), so every pack figure it reports is a default.",
             cells="|".join(names),
             subs=["dataacq", "electrics"]))
 
     out.extend(assert_reader_sees_the_file(path, ElecParams.from_excel))
 
-    out.append(_f(
-        "pd-roundtrip-mirrors-errors", Severity.FAIL,
-        "ev_excel_roundtrip re-implements the workbook's formulas including "
-        "their errors — the same V*sqrt(3)*PF*RPM/1000 current, the same "
-        "gear ratio applied as 1/N. So the bridge validates the spreadsheet "
-        "against a copy of itself and can never disagree with it. "
-        "ev_electrical_check, in the same package, already has the correct "
-        "formulation (P_elec = P_wheel/eta, I = P/V). Two modules disagree and "
-        "the wrong one is the one wired to the Excel.",
-        cells="suspension/ev_excel_roundtrip.py",
-        subs=["dataacq", "electrics", "powertrain"]))
+    # The round trip must not mirror the workbook's speed-only current: at one
+    # speed, a launch has to draw more than a cruise.
+    import numpy as _np
+    t = _np.arange(0.0, 4.0, 0.1)
+    launch = _rt.lap_to_excel_roundtrip_from_db(10 + 3.0 * t, t, params)
+    cruise = _rt.lap_to_excel_roundtrip_from_db(_np.full(t.size, 16.0), t, params)
+    if not launch.current_draw_a[20] > cruise.current_draw_a[20]:
+        out.append(_f(
+            "pd-roundtrip-mirrors-errors", Severity.FAIL,
+            "ev_excel_roundtrip reports the same pack current for a launch and a "
+            "cruise at the same speed, which is the workbook's speed-only "
+            "V*PF*RPM/1000. It should come from the road load, P = F v / eta.",
+            cells="suspension/ev_excel_roundtrip.py",
+            subs=["dataacq", "electrics", "powertrain"]))
     return out
 
 

@@ -20,9 +20,11 @@
 #  a duct: the gap between the underside and the road converges to a throat,
 #  the flow speeds up, the static pressure drops, and the diffuser recovers it.
 #  That is a continuity-and-Bernoulli problem, and modelling it directly gives
-#  the right behaviour where it matters — because the inlet and the throat both
-#  shrink as the car is lowered, their RATIO tends to a constant, so the
-#  suction saturates instead of running away.
+#  the right behaviour in the 30–60 mm band FSAE floors run in, where the
+#  vortex lattice has already diverged. It is not free of the same limit:
+#  with an inlet ramp the inlet/throat ratio grows as the gap closes, so the
+#  suction still rises without bound as the ride height goes to zero, just far
+#  lower than the lattice's singularity (see RIDE HEIGHT below).
 #
 #  WHAT IT DOES NOT DO. It is one-dimensional: no spanwise pressure variation,
 #  no vortices off the edges, no yaw sensitivity. It assumes the diffuser stays
@@ -166,12 +168,11 @@ def _solve_channel(xs_l, area_l, width_l, speed_ms, ref_area_m2, rho,
     #  at the exit. eta is the diffuser effectiveness: 1.0 would be perfect
     #  recovery to ambient, 0 none at all.
     _eta = 0.80
-    _aft = np.arange(len(area_l)) >= i_throat_pre
-    if _aft.any():
-        _cp_t = float(cp[i_throat_pre])
-        _x = np.asarray(xs_l)[_aft]
-        _f = ((_x - _x[0]) / max(_x[-1] - _x[0], 1e-9)) if len(_x) > 1 else 0.0
-        cp[_aft] = _cp_t * (1.0 - _eta * _f)
+    _aft = np.arange(len(area_l)) >= i_throat_pre      # always includes the throat station itself
+    _cp_t = float(cp[i_throat_pre])
+    _x = np.asarray(xs_l)[_aft]
+    _f = ((_x - _x[0]) / max(_x[-1] - _x[0], 1e-9)) if len(_x) > 1 else 0.0
+    cp[_aft] = _cp_t * (1.0 - _eta * _f)
 
     #  QUASI-1D CONTINUITY. The mass flow that gets under the car is the inlet
     #  area times the freestream, reduced by whatever spills around the edges.
@@ -275,14 +276,18 @@ def solve(geometry_path: str, ride_height_mm: float, speed_ms: float,
 #  Both paths call _solve_channel, so a sweep cannot drift away from the file
 #  it is meant to be exploring.
 #
-#  ONE THING THE SWEEP WILL SHOW YOU AND YOU SHOULD NOT BELIEVE. Exit height
-#  barely moves the predicted force — 348 N at a 60 mm exit and 347 N at
-#  225 mm — because the mass flow here is set by the inlet and the diffuser is
-#  credited only with RECOVERING pressure, not with pumping the throat. A real
-#  diffuser does both: a bigger exit pulls more air under the car and deepens
-#  the throat suction. So read exit height for its effect on the SEPARATION
-#  flag, which is modelled, and not for its effect on downforce, which is not.
-#  Throat position and ride height are the two the model genuinely resolves.
+#  EXIT HEIGHT. The exit sets the mass flow (see _solve_channel), so a bigger
+#  exit pulls more air under the car and deepens the throat suction, until it
+#  asks for more than SPILL_LIMIT times the inlet can supply; past that the
+#  force stops growing (628 N at a 60 mm exit, 784 N at 115 mm and at 225 mm on
+#  the default floor). Read the large exits for their effect on the SEPARATION
+#  flag: the steepest ramp in a sweep is also the one most likely to separate.
+#
+#  RIDE HEIGHT. With an inlet ramp the inlet/throat ratio is about
+#  (rise + h)/h, so it grows without limit as h -> 0 and so does the suction:
+#  784 N at 40 mm, 1.9 kN at 20 mm, 17 kN at 5 mm on the default floor. There is
+#  no boundary-layer or stall model to stop it. Below about 20 mm read the
+#  number as an upper bound, not a prediction.
 # ---------------------------------------------------------------------- #
 
 #: The four numbers a floor is actually iterated on, with sane FSAE bounds.

@@ -940,7 +940,10 @@ def evaluate_workbook(path: str, *, only_prefix: str | None = None,
             for row in ws.iter_rows():
                 for cell in row:
                     raw = cell.value
-                    if not (isinstance(raw, str) and raw.startswith("=")):
+                    # data_type "f": a string that merely starts with "=" (text
+                    # quoting a formula) is not one.
+                    if cell.data_type != "f" or not (isinstance(raw, str)
+                                                     and raw.startswith("=")):
                         continue
                     key = (title, cell.coordinate)
                     try:

@@ -186,7 +186,10 @@ def _cylinder(center, axis, radius, length, n=24, cap=True):
     I, J, K = [], [], []
     for a in range(n):
         b = (a + 1) % n
-        I += [a, a]; J += [b, a + n]; K += [a + n, b + n]
+        # Both triangles share the b -> a+n diagonal, so each side quad is covered
+        # exactly once. (They used to take different diagonals, which overlapped on
+        # one half of the quad and left a sliver open along every b -> b+n edge.)
+        I += [a, b]; J += [b, b + n]; K += [a + n, a + n]
     if cap:
         ci0, ci1 = len(verts), len(verts) + 1
         verts = np.vstack([verts, a0, a1])
@@ -379,18 +382,24 @@ def _solved_corner_points(hp: Hardpoints, ride_drop_mm: float = 0.0):
         wheel_center=np.array(s.wheel_center, float),
         contact_patch=np.array(s.contact_patch, float),
     )
-    if hp.has_rocker():
+    if hp.has_rocker():               # all six linkage points are present
         for kk in ("rocker_pivot", "rocker_pushrod", "rocker_spring", "spring_inner"):
-            vv = getattr(hp, kk)
-            if vv is not None:
-                pts[kk] = np.array(vv, float)
+            pts[kk] = np.array(getattr(hp, kk), float)
         po = s.pushrod_outer if s.pushrod_outer is not None else hp.pushrod_outer
-        if po is not None:
-            pts["pushrod_outer"] = np.array(po, float)
+        pts["pushrod_outer"] = np.array(po, float)
     if ride_drop_mm:
+        # Static sag lowers the SPRUNG side: the chassis pickups and the rocker
+        # move down with the body, while the upright, wheel and contact patch stay
+        # on the ground.
         for kk in pts:
-            pts[kk] = pts[kk] - np.array([0, 0, ride_drop_mm], float)
+            if kk in _SPRUNG_POINTS:
+                pts[kk] = pts[kk] - np.array([0, 0, ride_drop_mm], float)
     return pts, s
+
+
+_SPRUNG_POINTS = {"upper_front_inner", "upper_rear_inner", "lower_front_inner",
+                  "lower_rear_inner", "tie_rod_inner", "rocker_pivot",
+                  "rocker_pushrod", "rocker_spring", "spring_inner"}
 
 
 # --------------------------------------------------------------------------- #
@@ -446,15 +455,15 @@ def _extract_corner(corner, ride_drop_mm, color_registry):
     """Normalise a corner (Hardpoints OR GenericKinematics-like) into:
         dict(segments=[(p, q, label, color, group)],
              markers=[points...], wheel_center, contact_patch, camber)
-    All points already lowered by ride_drop_mm.
+    For wishbones the inboard (sprung) points are lowered by ride_drop_mm and the
+    wheel stays on the ground. Other topologies don't say which of their points
+    are sprung, so they are drawn as solved.
 
     For wishbones we keep the named-link colour scheme (cyan upper, amber lower,
     etc). For any other topology we draw exactly the members render_segments()
     reports, coloured per-label, so a MacPherson shows a strut, a multi-link
     shows its links, a solid axle shows its Panhard rod — the real architecture.
     """
-    drop = np.array([0, 0, ride_drop_mm], float)
-
     if _is_wishbone_hardpoints(corner):
         pts, s = _solved_corner_points(corner, ride_drop_mm)
         cam = getattr(corner, "static_camber", -1.5)
@@ -502,8 +511,8 @@ def _extract_corner(corner, ride_drop_mm, color_registry):
     raw = corner.render_segments()
     segs = []
     for p, q, label in raw:
-        p = np.asarray(p, float) - drop
-        q = np.asarray(q, float) - drop
+        p = np.asarray(p, float)
+        q = np.asarray(q, float)
         if label == "Wheel":
             continue  # the wheel hub line is drawn from wc/cp below
         color, base = _agnostic_color(label, color_registry)
@@ -522,10 +531,10 @@ def _extract_corner(corner, ride_drop_mm, color_registry):
     }
     markers = [(_AGN.get(str(k).lower(),
                          str(k).replace("_", " ").capitalize()),
-                np.asarray(v, float) - drop) for k, v in named.items()]
+                np.asarray(v, float)) for k, v in named.items()]
     st = corner.static
-    wc = np.asarray(st.wheel_center, float) - drop
-    cp = np.asarray(st.contact_patch, float) - drop
+    wc = np.asarray(st.wheel_center, float)
+    cp = np.asarray(st.contact_patch, float)
     cam = getattr(st, "camber", -1.5)
     return dict(segments=segs, markers=markers,
                 wheel_center=wc, contact_patch=cp, camber=cam)
@@ -550,20 +559,26 @@ def _wing_span_chord(downforce_n, default_span, default_chord):
 # --------------------------------------------------------------------------- #
 #  Ledger helpers
 # --------------------------------------------------------------------------- #
+def _as_ledger(led):
+    """Accept an IntegrationLedger or its as_dict() form (what session state holds).
+
+    A plain dict used to be passed straight through, and dict.get(name) looked for
+    the subsystem at the top level, where as_dict() never puts it, so every
+    declaration silently fell back to the nominal body.
+    """
+    if isinstance(led, dict):
+        from .interfaces import IntegrationLedger
+        return IntegrationLedger.from_dict(led)
+    return led
+
+
 def _iface(led, name):
     if led is None:
         return None
     try:
         return led.get(name)
     except Exception:
-        try:
-            from .interfaces import SubsystemInterface
-            if isinstance(led, dict):
-                d = led.get("interfaces", {}).get(name)
-                return SubsystemInterface.from_dict(d) if d else None
-        except Exception:
-            return None
-    return None
+        return None
 
 
 def _g(it, attr, default=None):
@@ -594,14 +609,10 @@ _HEAT_NEUTRAL = "#3a4048"        # grey for bodies with no value for this metric
 def heat_color(t: float) -> str:
     """Hex colour for a normalised load 0..1 along the cool→warm ramp."""
     t = max(0.0, min(1.0, float(t)))
-    for (a_t, a_c), (b_t, b_c) in zip(_HEAT_RAMP, _HEAT_RAMP[1:]):
-        if t <= b_t:
-            f = 0.0 if b_t == a_t else (t - a_t) / (b_t - a_t)
-            r = round(a_c[0] + (b_c[0] - a_c[0]) * f)
-            g = round(a_c[1] + (b_c[1] - a_c[1]) * f)
-            b = round(a_c[2] + (b_c[2] - a_c[2]) * f)
-            return f"#{r:02x}{g:02x}{b:02x}"
-    return "#{:02x}{:02x}{:02x}".format(*_HEAT_RAMP[-1][1])
+    stops = [a for a, _c in _HEAT_RAMP]
+    r, g, b = (round(float(np.interp(t, stops, [c[ch] for _a, c in _HEAT_RAMP])))
+               for ch in range(3))
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 # Which subsystems carry a meaningful value for each metric, and the human label
@@ -639,7 +650,10 @@ def subsystem_metrics(vp, ledger, metric: str = "heat") -> dict:
       * power — flagged when total LV draw exceeds LV supply (the lv-power check).
       * mass  — flagged when the whole-car mass is over the target budget.
     """
-    spec = _METRIC_SPECS.get(metric, _METRIC_SPECS["heat"])
+    ledger = _as_ledger(ledger)
+    if metric not in _METRIC_SPECS:      # unknown metric: the heat map, labelled as such
+        metric = "heat"
+    spec = _METRIC_SPECS[metric]
     field = spec["field"]
 
     # Pull the raw value each subsystem declares for this metric.
@@ -710,7 +724,7 @@ def subsystem_metrics(vp, ledger, metric: str = "heat") -> dict:
                 v_s = _g(it, "voltage_v", None)
                 if v_s is None or abs(float(v_s) - lv_bus) < 5.0:
                     over[s] = True
-    elif metric == "mass":
+    else:                                # "mass"
         cap_kg = _capacity("target_mass_kg")
         capacity = cap_kg
         # mass is a whole-car budget; flag the heaviest contributors when over.
@@ -718,12 +732,12 @@ def subsystem_metrics(vp, ledger, metric: str = "heat") -> dict:
         total = sum(values.values())
         if (f and f.get("severity") in ("fail", "warning")) or \
            (cap_kg > 0 and total > cap_kg):
-            # mark the top contributors (those above the mean) as the ones to cut
-            if values:
-                mean_v = total / len(values)
-                for s, v in values.items():
-                    if v >= mean_v:
-                        over[s] = True
+            # mark the top contributors (those above the mean) as the ones to cut;
+            # over budget means some mass was declared, so `values` is not empty
+            mean_v = total / len(values)
+            for s, v in values.items():
+                if v >= mean_v:
+                    over[s] = True
 
     # ---- warnings: the relevant findings, plain-language -------------------#
     relevant = {"heat": {"cooling-airflow", "aero-cooling-duct"},
@@ -824,6 +838,7 @@ def build_full_car_figure(
     subsystem — click-to-zoom frames it too. This is the path a powertrain lead
     uses to type "Radiator 289×124×34" and see it sit on the car immediately.
     """
+    ledger = _as_ledger(ledger)
     # Resolve the front/rear corner objects (architecture-agnostic).
     cf = corner_front if corner_front is not None else hp_front
     cr = corner_rear if corner_rear is not None else hp_rear
@@ -851,9 +866,12 @@ def build_full_car_figure(
             break
     _car_scale = 1.0            # wheels/tyres keep their natural size
 
-    # Softer front spring -> more static sag -> body visibly lower. Cue, not a calc.
+    # Softer front spring -> more static sag -> body visibly lower. Cue, not a calc:
+    # the sprung bodies (frame, driver, wings, pods, motor, accumulator, logger)
+    # and the inboard pickups drop by ride_drop; wheels and ground stay at z = 0.
     kf = float(getattr(vp, "spring_rate_front", 35.0) or 35.0)
     ride_drop = _clamp((35.0 - kf) * 0.6, -12.0, 18.0)
+    _body_dz = 0.0                 # set to ride_drop while the sprung bodies draw
 
     # Extract each axle's corner into a uniform, topology-independent description.
     color_registry = {}
@@ -886,12 +904,9 @@ def build_full_car_figure(
     # of draw-names that the mesh/seg chokepoint honours through _is_hidden.
     _suppress = set(suppress_subsystems or ())
     _suppress_names = set(suppress_parts or ())
-    try:
-        for _pk, _pdn, _ps, _pc in PART_CATALOG:
-            if _ps in _suppress:
-                _suppress_names.add(_pdn)
-    except Exception:
-        pass
+    for _pk, _pdn, _ps, _pc in PART_CATALOG:
+        if _ps in _suppress:
+            _suppress_names.add(_pdn)
 
     # Real drawn extent of each built-in body, keyed by draw-name — recorded even
     # when the body is then suppressed, so a replacing CAD part can be fitted to
@@ -1010,8 +1025,6 @@ def build_full_car_figure(
     part_pts: dict[str, list] = {}
 
     def _accrue(subsys, pts, part=None, corner=None):
-        if pts is None:
-            return
         arr = np.asarray(pts, float).reshape(-1, 3).tolist()
         if subsys:
             subsys_pts.setdefault(subsys, []).extend(arr)
@@ -1023,15 +1036,18 @@ def build_full_car_figure(
             if corner:
                 part_pts.setdefault(f"{part}#{corner}", []).extend(arr)
 
-    def seg(p, q, color, w=5, name=None, group=None, subsys=None, corner=None):
-        if p is None or q is None:
-            return
-        # Override key: prefer the legend name, fall back to the group token so
+    def seg(p, q, color, w=5, name=None, group=None, subsys=None, corner=None,
+            part=None):
+        # `part` is the member's stable display name. The legend `name` is set on
+        # the first corner only (corner_name dedups it), so hiding or moving
+        # "Upright" by `name` alone used to reach one corner and leave three.
+        part = part or name
+        # Override key: prefer the part name, fall back to the group token so
         # unnamed members of a named part (hoop braces, wing mounts) move too.
-        _ovk = name if (name and name in _ov) else (group if group in _ov else name)
-        if _is_hidden(name) or _is_hidden(group):
+        _ovk = part if (part and part in _ov) else (group if group in _ov else part)
+        if _is_hidden(part) or _is_hidden(group):
             return
-        pq = _apply_ov(_ovk, np.array([p, q], float))
+        pq = _apply_ov(_ovk, _sprung(np.array([p, q], float)))
         p, q = pq[0], pq[1]
         # Accrue under a STABLE part key. corner_name() returns a label only the
         # first time (legend dedup), so for the 2nd–4th corners `name` is None;
@@ -1057,31 +1073,35 @@ def build_full_car_figure(
             showlegend=name is not None, hoverinfo="skip",
             customdata=[[subsys, _part_key, corner or ""]] * 2 if subsys else None))
 
+    def _sprung(V):
+        """Lower V by the static sag while the sprung bodies are being drawn."""
+        if not _body_dz:
+            return V
+        A = np.array(V, float)
+        A[..., 2] -= _body_dz
+        return A
+
     def mesh(verts, i, j, k, color, name, subsys, base_op=0.6, hover=None,
              corner=None):
+        verts = _sprung(verts)
         # Record this body's true drawn box (keyed by draw-name) BEFORE any
         # suppression, so a replacing CAD part can land in exactly the same place
         # its placeholder occupied — even when the placeholder is now hidden.
-        if name:
-            try:
-                _vv = _apply_ov(name, verts)
-                _lo = np.asarray(_vv, float).reshape(-1, 3).min(axis=0)
-                _hi = np.asarray(_vv, float).reshape(-1, 3).max(axis=0)
-                if name in _part_boxes:
-                    _pb = _part_boxes[name]
-                    _pb[0] = np.minimum(_pb[0], _lo)
-                    _pb[1] = np.maximum(_pb[1], _hi)
-                else:
-                    _part_boxes[name] = [_lo.copy(), _hi.copy()]
-                # Also keep the PER-CALL box: a body drawn once per corner /
-                # side (4 tires, 2 radiators) merges into one misleading
-                # car-spanning box above; the pieces are clustered into true
-                # per-INSTANCE boxes after the build (fig._part_instance_boxes)
-                # so fit / clearance tools can reason about one instance.
-                _part_pieces.setdefault(name, []).append(
-                    (_lo.copy(), _hi.copy()))
-            except Exception:
-                pass
+        # Every body is drawn under a name (custom parts default to "Custom part").
+        _vv = np.asarray(_apply_ov(name, verts), float).reshape(-1, 3)
+        _lo, _hi = _vv.min(axis=0), _vv.max(axis=0)
+        if name in _part_boxes:
+            _pb = _part_boxes[name]
+            _pb[0] = np.minimum(_pb[0], _lo)
+            _pb[1] = np.maximum(_pb[1], _hi)
+        else:
+            _part_boxes[name] = [_lo.copy(), _hi.copy()]
+        # Also keep the PER-CALL box: a body drawn once per corner / side
+        # (4 tires, 2 radiators) merges into one misleading car-spanning box
+        # above; the pieces are clustered into true per-INSTANCE boxes after
+        # the build (fig._part_instance_boxes) so fit / clearance tools can
+        # reason about one instance.
+        _part_pieces.setdefault(name, []).append((_lo.copy(), _hi.copy()))
         if _is_hidden(name):
             return
         once = name not in legend_done
@@ -1106,16 +1126,11 @@ def build_full_car_figure(
         # body's subsystem exceeds the car's capacity for the active metric, so
         # failures pop without flooding the scene with per-triangle edges.
         if _hover_budget:
-            try:
-                lo = verts.min(axis=0)
-                hi = verts.max(axis=0)
-                _bx, _by, _bz = _bbox_wire(lo, hi)
-                fig.add_trace(go.Scatter3d(
-                    x=_bx, y=_by, z=_bz, mode="lines",
-                    line=dict(color=_OVER_BUDGET_COLOR, width=5),
-                    opacity=0.95, showlegend=False, hoverinfo="skip"))
-            except Exception:
-                pass
+            _bx, _by, _bz = _bbox_wire(verts.min(axis=0), verts.max(axis=0))
+            fig.add_trace(go.Scatter3d(
+                x=_bx, y=_by, z=_bz, mode="lines",
+                line=dict(color=_OVER_BUDGET_COLOR, width=5),
+                opacity=0.95, showlegend=False, hoverinfo="skip"))
 
     def corner_name(base):
         if base in legend_done:
@@ -1154,13 +1169,13 @@ def build_full_car_figure(
             pT = _xform(p, mirror, lat_scale, x_shift)
             qT = _xform(q, mirror, lat_scale, x_shift)
             seg(pT, qT, color, 5, corner_name(label), group, "suspension",
-                corner=_corner_id)
+                corner=_corner_id, part=label)
 
         wc = _xform(corner["wheel_center"], mirror, lat_scale, x_shift)
         cp = _xform(corner["contact_patch"], mirror, lat_scale, x_shift)
         # wheel hub line
         seg(cp, wc, COLORS["wheel"], 3, corner_name("Wheel hub"), "wheel",
-            "suspension", corner=_corner_id)
+            "suspension", corner=_corner_id, part="Wheel hub")
 
         cam = np.deg2rad(corner["camber"])
         sign = -1.0 if mirror else 1.0
@@ -1235,7 +1250,7 @@ def build_full_car_figure(
             _dummy_wid = _dummy_tub_w
             _dummy_hgt = _dummy_tub_top - _dummy_tub_bot
             _dummy_cx = (_dummy_nose_x + _dummy_tail_x) / 2.0
-            _dummy_cz = (_dummy_tub_top + _dummy_tub_bot) / 2.0
+            _dummy_cz = (_dummy_tub_top + _dummy_tub_bot) / 2.0 - ride_drop
 
             # Scale so the CAD fits INSIDE the dummy monocoque envelope on every
             # axis (tightest ratio), keeping true shape, so it occupies the same
@@ -1262,6 +1277,7 @@ def build_full_car_figure(
     #  Spans the SAME envelope the shell did (nose tip -> tail, same width and
     #  deck heights), so slot fitting, part boxes and `define_car` scaling all
     #  keep working unchanged.
+    _body_dz = ride_drop
     if show_bodywork:
         ch_it = _iface(ledger, "chassis")
         tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
@@ -1338,13 +1354,9 @@ def build_full_car_figure(
         mesh(hv_e[0], hv_e[1], hv_e[2], hv_e[3], COLORS["helmet"],
              "Driver", "chassis", 0.98, "Driver (helmet)")
         # Helmet stripe band.
-        bandv = _sphere([cockpit_x, 0, helmet_z], helmet_r * 1.01, n=14)
-        bv = bandv[0]
-        keep = np.abs(bv[:, 2] - helmet_z) < helmet_r * 0.18
-        if keep.any():
-            seg([cockpit_x - helmet_r, 0, helmet_z],
-                [cockpit_x + helmet_r, 0, helmet_z],
-                COLORS["helmet_band"], 6, None, "helmet", "chassis")
+        seg([cockpit_x - helmet_r, 0, helmet_z],
+            [cockpit_x + helmet_r, 0, helmet_z],
+            COLORS["helmet_band"], 6, None, "helmet", "chassis")
 
         # MAIN roll hoop: a curved tube arching above and behind the helmet.
         hoop_x = cockpit_x - tire_r * 0.55
@@ -1519,8 +1531,6 @@ def build_full_car_figure(
         el_it = _iface(ledger, "electrics")
         ex, ey, ez = _g(el_it, "env_x_mm"), _g(el_it, "env_y_mm"), _g(el_it, "env_z_mm")
         emass, pwr = _g(el_it, "mass_kg"), _g(el_it, "power_draw_w")
-        bl = bw = bh = 0
-        sized = ""
         if ex and ey and ez:
             bl, bw, bh, sized = ex, ey, ez, "(declared envelope)"
         elif emass:
@@ -1533,11 +1543,10 @@ def build_full_car_figure(
             # a placeholder until electrics declares an envelope or mass.
             bl, bw, bh = wb * 0.16, min(inner_y_r, 160) * 1.2, tire_r * 0.55
             sized = "(placeholder — declare envelope/mass in INTEGRATION)"
-        if bl:
-            bx = x_rear + tire_r * 2.6
-            v, i, j, k = _box(bx, 0, tire_r * 0.55, bl, bw, bh)
-            hv = "Accumulator / battery " + sized + (f" · {pwr:.0f} W" if pwr else "")
-            mesh(v, i, j, k, COLORS["battery"], "Accumulator", "electrics", 0.85, hv)
+        bx = x_rear + tire_r * 2.6         # every branch above gives a positive box
+        v, i, j, k = _box(bx, 0, tire_r * 0.55, bl, bw, bh)
+        hv = "Accumulator / battery " + sized + (f" · {pwr:.0f} W" if pwr else "")
+        mesh(v, i, j, k, COLORS["battery"], "Accumulator", "electrics", 0.85, hv)
 
     # ---- 7) data-acquisition: logger pod ------------------------------- #
     daq_it = _iface(ledger, "data-acquisition")
@@ -1546,6 +1555,7 @@ def build_full_car_figure(
     _daq_hv = (f"Data-acquisition logger · {_daq_mass:.1f} kg" if _daq_mass
                else "Data-acquisition logger (placeholder — declare mass in INTEGRATION)")
     mesh(v, i, j, k, COLORS["logger"], "Data logger", "data-acquisition", 0.85, _daq_hv)
+    _body_dz = 0.0                 # custom parts are placed in real mm off the ground
 
     # ---- 8) CG marker from mass roll-up -------------------------------- #
     cg_h = float(getattr(vp, "cg_height", 0.0) or 0.0)
@@ -1597,9 +1607,8 @@ def build_full_car_figure(
             _sx += _px * _m
             _sy += _py * _m
             _sz += _pz * _m
-        if _tot > 0:
-            cg_x, cg_y, cg_h = _sx / _tot, _sy / _tot, _sz / _tot
-            cg_label = f"CG (+{sum(m for m, *_ in _cp_masses):.1f} kg parts)"
+        cg_x, cg_y, cg_h = _sx / _tot, _sy / _tot, _sz / _tot     # _tot >= _base_kg > 0
+        cg_label = f"CG (+{sum(m for m, *_ in _cp_masses):.1f} kg parts)"
 
     if show_cg and cg_h > 0:
         # When a subsystem is spotlit, fade the CG marker too — it's a global
@@ -1621,7 +1630,7 @@ def build_full_car_figure(
         ys2 = [-max(tf, tr) / 2 - pad, max(tf, tr) / 2 + pad]
         gx, gy = np.meshgrid(xs2, ys2)
         fig.add_trace(go.Surface(
-            x=gx, y=gy, z=np.zeros_like(gx) - ride_drop, showscale=False,
+            x=gx, y=gy, z=np.zeros_like(gx), showscale=False,
             opacity=0.22, colorscale=[[0, COLORS["floor"]], [1, COLORS["floor"]]],
             hoverinfo="skip", name="Ground", showlegend=False))
 
@@ -1775,16 +1784,9 @@ def build_full_car_figure(
 
     # Global scene extents (mm) over every accrued vertex — feeds the units-
     # aware axis tick generator so ticks land on round mm OR round inches.
-    _ext_lo = np.array([np.nan] * 3)
-    _ext_hi = np.array([np.nan] * 3)
-    try:
-        _all = [np.asarray(_p, float).reshape(-1, 3)
-                for _p in subsys_pts.values() if _p]
-        if _all:
-            _all = np.vstack(_all)
-            _ext_lo, _ext_hi = _all.min(axis=0), _all.max(axis=0)
-    except Exception:
-        pass
+    # The suspension pickups always accrue, so there is at least one vertex.
+    _all = np.vstack([np.asarray(_p, float).reshape(-1, 3) for _p in subsys_pts.values()])
+    _ext_lo, _ext_hi = _all.min(axis=0), _all.max(axis=0)
 
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
@@ -1812,35 +1814,23 @@ def build_full_car_figure(
     # Expose each subsystem's centroid (mean of all its accrued vertices) so a
     # caller can float a label on it — e.g. the role picker tags every lit
     # subteam by name at the centre of the parts it owns.
-    _centroids = {}
-    for _s, _pts in subsys_pts.items():
-        if _pts:
-            _arr = np.asarray(_pts, float).reshape(-1, 3)
-            _centroids[_s] = _arr.mean(axis=0).tolist()
+    _centroids = {_s: np.asarray(_pts, float).reshape(-1, 3).mean(axis=0).tolist()
+                  for _s, _pts in subsys_pts.items()}
     # Attach as a plain Python attribute, bypassing plotly's Figure.__setattr__
     # guard via object.__setattr__. This avoids stuffing a nested dict into
     # layout.meta, which older plotly (5.x) validates strictly and can reject —
     # the previous cause of the picker silently failing to build. The attribute
     # is read in-process by the role picker and never serialised.
-    try:
-        object.__setattr__(fig, "_kk_subsys_centroids", _centroids)
-    except Exception:
-        pass
+    object.__setattr__(fig, "_kk_subsys_centroids", _centroids)
     # Expose the real drawn boxes (centre+size in car mm) so the CAD "fit to
     # area" tool can size a replacement to the ACTUAL placeholder box a part
     # occupies, not just the rough anchor. Same object.__setattr__ approach as
     # the centroids above, to bypass plotly's Figure.__setattr__ guard.
-    try:
-        object.__setattr__(fig, "_part_boxes", {
-            nm: dict(
-                centre=[float((lo[i] + hi[i]) / 2.0) for i in range(3)],
-                size=[float(hi[i] - lo[i]) for i in range(3)])
-            for nm, (lo, hi) in _part_boxes.items()})
-    except Exception:
-        try:
-            object.__setattr__(fig, "_part_boxes", {})
-        except Exception:
-            pass
+    object.__setattr__(fig, "_part_boxes", {
+        nm: dict(
+            centre=[float((lo[i] + hi[i]) / 2.0) for i in range(3)],
+            size=[float(hi[i] - lo[i]) for i in range(3)])
+        for nm, (lo, hi) in _part_boxes.items()})
     # Per-INSTANCE boxes: cluster each name's per-call boxes by overlap (10 mm
     # slack), so a body drawn once per corner/side yields one box PER COPY —
     # "Tire" gives four wheel-sized boxes instead of one ring spanning the car.
@@ -1877,15 +1867,8 @@ def build_full_car_figure(
                 size=[float(hi[k] - lo[k]) for k in range(3)]))
         return out
 
-    try:
-        object.__setattr__(fig, "_part_instance_boxes", {
-            nm: _cluster_instances(pieces)
-            for nm, pieces in _part_pieces.items() if pieces})
-    except Exception:
-        try:
-            object.__setattr__(fig, "_part_instance_boxes", {})
-        except Exception:
-            pass
+    object.__setattr__(fig, "_part_instance_boxes", {
+        nm: _cluster_instances(pieces) for nm, pieces in _part_pieces.items()})
     return fig
 
 
@@ -2052,20 +2035,26 @@ def corner_label(corner_id: str) -> str:
 #  Live influence summary
 # --------------------------------------------------------------------------- #
 def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
+    ledger = _as_ledger(ledger)
     rows = []
     def add(sys, status, detail):
         rows.append(dict(subsystem=sys, status=status, detail=detail))
 
+    # Each row states the rule build_full_car_figure actually applies.
     aero = _iface(ledger, "aerodynamics")
     df = _g(aero, "downforce_n_at_v")
-    add("aerodynamics", "sized" if df else "default",
+    df_ok = isinstance(df, (tuple, list)) and len(df) >= 2 and bool(df[0])
+    add("aerodynamics", "sized" if df_ok else "default",
         (f"{df[0]:.0f} N @ {df[1]:.0f} m/s → wing span/chord")
-        if isinstance(df, (tuple, list)) and df else "no downforce → nominal wings")
+        if df_ok else "no downforce → nominal wings")
 
     pt = _iface(ledger, "powertrain")
     pkw = _g(pt, "peak_power_kw")
-    add("powertrain", "sized" if (pkw or _g(pt, "env_x_mm")) else "default",
-        (f"{pkw:.0f} kW → motor + inverter size") if pkw else "no power/envelope → nominal motor")
+    pt_env = all(_g(pt, k) for k in ("env_x_mm", "env_y_mm", "env_z_mm"))
+    add("powertrain", "sized" if (pt_env or pkw) else "default",
+        "declared envelope → motor + inverter size" if pt_env else
+        ((f"{pkw:.0f} kW → motor + inverter size") if pkw
+         else "no power/envelope → nominal motor"))
 
     cool = _iface(ledger, "cooling")
     af = _g(cool, "cooling_airflow_cms")
@@ -2073,10 +2062,12 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
         (f"{af:.2f} m³/s → sidepod size") if af else "no airflow → nominal sidepods")
 
     el = _iface(ledger, "electrics")
-    em, ee = _g(el, "mass_kg"), _g(el, "env_x_mm")
-    add("electrics", "shown" if (em or ee) else "hidden",
+    em = _g(el, "mass_kg")
+    ee = all(_g(el, k) for k in ("env_x_mm", "env_y_mm", "env_z_mm"))
+    add("electrics", "sized" if (em or ee) else "default",
         "declared envelope → battery box" if ee else
-        ((f"{em:.1f} kg → battery box size") if em else "no mass/envelope → not drawn"))
+        ((f"{em:.1f} kg → battery box size") if em
+         else "no mass/envelope → placeholder battery box"))
 
     br = _iface(ledger, "brakes")
     bt = _g(br, "brake_torque_nm")
@@ -2091,7 +2082,7 @@ def influence_summary(vp, ledger, topology_label: str | None = None) -> list:
 
     ch = _iface(ledger, "chassis")
     cm = _g(ch, "mass_kg")
-    add("chassis", "live", (f"{cm:.1f} kg monocoque") if cm else "monocoque (no mass declared)")
+    add("chassis", "live", (f"{cm:.1f} kg spaceframe") if cm else "spaceframe (no mass declared)")
 
     if ledger is not None:
         try:
@@ -2217,22 +2208,19 @@ def reconcile_part(guess: dict, real: dict, tol_mm: float = 8.0,
                               "— your packaging holds."])
 
     # Same multiset of extents but assigned to different axes -> mirror/swap.
-    if sorted(round(x, 1) for x in g) == sorted(round(x, 1) for x in r) and \
-            not axiswise_ok:
+    if sorted(round(x, 1) for x in g) == sorted(round(x, 1) for x in r):
         return dict(status="mirrored", deltas=deltas,
                     messages=["Same dimensions, different axes — this looks "
                               "mirrored or rotated vs your stand-in. Confirm "
                               "handedness/orientation before committing."])
-    if sorted(within(gv, rv) for gv, rv in zip(sorted(g), sorted(r))) and \
-            all(within(gv, rv) for gv, rv in zip(sorted(g), sorted(r))):
+    if all(within(gv, rv) for gv, rv in zip(sorted(g), sorted(r))):
         return dict(status="mirrored", deltas=deltas,
                     messages=["Extents match but on different axes — likely a "
                               "mirror/orientation swap. Check before cutting."])
 
-    msgs = []
-    for ax, dv in zip(("L", "W", "H"), deltas):
-        if abs(dv) > max(tol_mm, tol_frac * max(g[("L", "W", "H").index(ax)], 1.0)):
-            msgs.append(f"{ax} {dv:+.0f} mm")
+    # List exactly the axes that failed the match test above.
+    msgs = [f"{ax} {dv:+.0f} mm" for ax, dv, gi, ri in zip(("L", "W", "H"), deltas, g, r)
+            if not within(gi, ri)]
     return dict(status="resize", deltas=deltas,
                 messages=["Real part differs from your stand-in: "
                           + ", ".join(msgs) + ". Repackage around the real size."])
@@ -2267,7 +2255,7 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
     interior_w = max(120.0, min(tf, tr) / 2.0 - 180.0 - 40.0) * 2.0  # full width
     x_front, x_rear = wb / 2.0, -wb / 2.0
 
-    it = _iface(ledger, subsys) if ledger is not None else None
+    it = _iface(_as_ledger(ledger), subsys)
     dec = (_g(it, "env_x_mm"), _g(it, "env_y_mm"), _g(it, "env_z_mm"))
 
     # Per-subsystem TYPICAL envelope + home position, mirroring the renderer.
@@ -2451,11 +2439,12 @@ def suggest_part_geometry_for(vp, part_key: str, ledger=None) -> dict:
     return base
 
 
-# Single source of truth for WHERE and HOW BIG each part is. Both the placeholder
-# renderer (via _placeholder_box, drawn when a part has no replacement) and the
-# replacement auto-fit read this, so a CAD/sketch/estimate lands in EXACTLY the
-# same box its placeholder occupied — every part integrates on one coordinate
-# system. Honours ledger env_* declarations through suggest_part_geometry_for.
+# A nominal box for each catalog part, used before the car has been drawn. The
+# renderer does NOT read it: it sizes its bodies from the ledger itself, and the
+# rear wing, for one, is drawn further back than this anchor. Where the true
+# placeholder box matters (snapping a CAD part into place), measure the drawn
+# body with fig._part_boxes or dummy_body_footprint(). Honours ledger env_*
+# declarations through suggest_part_geometry_for.
 def part_anchor(vp, part_key: str, ledger=None) -> dict:
     """Canonical (centre + size + shape) box for a catalog part, in car SAE mm."""
     return suggest_part_geometry_for(vp, part_key, ledger=ledger)
