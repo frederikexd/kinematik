@@ -14,6 +14,8 @@ whose absence let the largest groups of breaks through:
 Each check is an independent calculation (a free-body balance, a finite difference of solved
 positions, a closed form), not a re-run of the code under test.
 """
+import inspect
+
 import numpy as np
 import pytest
 
@@ -639,8 +641,9 @@ def test_spring_length_passes_its_seed_and_flags_a_rocker_that_does_not_close(mo
 
 
 def test_solve_at_travel_starts_from_its_seed_and_reports_a_failed_solve(monkeypatch):
-    # patch the solver where solve_at_travel looks it up (another test may have reloaded the module)
-    module = SuspensionKinematics.solve_at_travel.__globals__
+    # patch the solver where solve_at_travel looks it up (another test may have reloaded the module); unwrap first,
+    # because under mutmut the method is a decorator defined in mutmut's own module
+    module = inspect.unwrap(SuspensionKinematics.solve_at_travel).__globals__
     k = SuspensionKinematics(Hardpoints.default())
     st = k.static
     seed = np.concatenate([st.lower_outer, st.upper_outer, st.tie_rod_outer]) + 0.5
