@@ -433,11 +433,10 @@ def realism_score(rep: dict, fit: dict) -> dict:
     """0–100 'assembles-as-is' realism, with the deductions itemised."""
     score, why = 100.0, []
 
-    def hit(pts, reason):
+    def hit(pts, reason):                       # every deduction below is positive
         nonlocal score
-        if pts > 0:
-            score -= pts
-            why.append((round(pts), reason))
+        score -= pts
+        why.append((round(pts), reason))
 
     if fit.get("unit_suspect"):
         hit(45, "probable unit (inch/mm) mixup")

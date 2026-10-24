@@ -187,6 +187,7 @@ pytest_add_cli_args_test_selection = [
     "tests/test_motion_ratio_antidive.py",
     "tests/test_accuracy_invariants.py",
     "tests/test_actuation.py",
+    "tests/test_mutation_gaps.py",
     # two full actuation syntheses (about 25 s each) would run against every mutant of the solver
     "--deselect=tests/test_actuation.py::test_synthesis_meets_every_band",
     "--deselect=tests/test_actuation.py::test_synthesis_leaves_the_kinematics_alone",

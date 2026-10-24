@@ -210,6 +210,21 @@ class BrakeThermalParams:
         return float(max(s, self.fade_floor))
 
 
+def convection_h(p: BrakeThermalParams, diameter_mm: float, v_ms: float, duct_gain: float = 1.0) -> float:
+    """Convection coefficient (W/m²·K) the steady-state calculations use, so the endurance equilibrium and its
+    inverse, the duct-gain calculator, can never disagree.
+
+    Uncalibrated (the default): the rotating-disc + cross-flow correlation, h_rotating_disc, the same one the
+    transient two-node and through-thickness models use. Calibrated: the fitted line h_air0 + h_air1·v, scaled by the
+    duct gain. The equilibrium used to take the hand-set line while the duct calculator took the correlation, so on
+    the Brakes tab a 220 mm rotor read 302 °C unducted while the calculator said holding that same 302 °C needed a
+    1.24x duct.
+    """
+    if p.calibrated:
+        return float(p.h_air(v_ms) * max(float(duct_gain), 0.1))
+    return h_rotating_disc(diameter_mm, v_ms, duct_gain=duct_gain)
+
+
 def default_brake_thermal_params() -> BrakeThermalParams:
     """Representative, UNCALIBRATED parameter set (calibrated=False by design)."""
     return BrakeThermalParams()
@@ -325,37 +340,44 @@ class BrakeThermalModel:
 
     # ---- endurance / repeated braking equilibrium -------------------------
     def equilibrium(self, *, p_brake_avg_w: float, v_work_ms: float,
-                    diameter_mm: float, hat_clearance_mm: float = 40.0
-                    ) -> EnduranceResult:
+                    diameter_mm: float, hat_clearance_mm: float = 40.0,
+                    duct_gain: float = 1.0) -> EnduranceResult:
         """Steady-state rotor temperature where convective (+ radiative) cooling
         balances the average braking power into one front rotor.
 
         `p_brake_avg_w` is the time-averaged power dumped into ONE front rotor
         over the stint (compute it from total brake energy per lap × front share
-        / lap time, or from the lap sim's braking events).
+        / lap time, or from the lap sim's braking events). Convection is
+        `convection_h`, the same coefficient `required_duct_gain` inverts, so a
+        duct of the gain it returns brings this equilibrium to its target.
         """
         p = self.p
         A = convective_area_m2(diameter_mm, hat_clearance_mm=hat_clearance_mm,
                                area_factor=p.area_factor)
-        h = p.h_air(v_work_ms)
+        h = convection_h(p, diameter_mm, v_work_ms, duct_gain)
         Tamb_k = p.T_ambient_c + 273.15
 
         # Solve P = h·A·(T-Tamb) + ε·σ·A·(T⁴-Tamb⁴) for T. Convection alone is
-        # linear; with radiation we do a few Newton iterations.
-        # Start from the convection-only solution.
+        # linear; with radiation, Newton. Each mechanism ALONE would need a
+        # higher temperature than both together, so the smaller of the
+        # convection-only and radiation-only answers is an upper bound; on this
+        # convex, increasing balance Newton from an upper bound falls straight
+        # to the root. (It used to start from the convection-only answer alone,
+        # which at very high power sat orders of magnitude above the root and
+        # did not reach it in the iteration cap.)
         T = p.T_ambient_c + p_brake_avg_w / max(h * A, 1e-6)
         if p.enable_radiation:
-            for _ in range(40):
+            eps_sig_A = max(p.emissivity * p._SIGMA * A, 1e-30)
+            T_rad = (max(p_brake_avg_w, 0.0) / eps_sig_A + Tamb_k ** 4) ** 0.25 - 273.15
+            T = min(T, T_rad)
+            for _ in range(60):
                 Tk = T + 273.15
                 f = (h * A * (T - p.T_ambient_c)
                      + p.emissivity * p._SIGMA * A * (Tk ** 4 - Tamb_k ** 4)
                      - p_brake_avg_w)
                 df = (h * A
                       + 4.0 * p.emissivity * p._SIGMA * A * Tk ** 3)
-                step = f / max(df, 1e-9)
-                T -= step
-                if abs(step) < 1e-3:
-                    break
+                T -= f / max(df, 1e-9)
         mult = p.mu_fade(T)
         return EnduranceResult(
             p_brake_avg_w=float(p_brake_avg_w), h_air=h, area_m2=A,
@@ -784,7 +806,7 @@ def required_duct_gain(*, p_brake_avg_w: float, v_work_ms: float,
              if p.enable_radiation else 0.0)
     q_conv_needed = max(p_brake_avg_w - q_rad, 0.0)
     h_needed = q_conv_needed / (A * dT)
-    h_base = h_rotating_disc(diameter_mm, v_work_ms, duct_gain=1.0)
+    h_base = convection_h(p, diameter_mm, v_work_ms, 1.0)
     gain = h_needed / max(h_base, 1e-6)
     return {
         "required_duct_gain": float(gain),

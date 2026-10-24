@@ -210,15 +210,12 @@ def read_pack_values(ws, warnings: list | None = None) -> dict[str, float]:
 
     # --- 1. by label ------------------------------------------------------- #
     labels: dict[str, float] = {}
-    try:
-        for row in ws.iter_rows(max_col=2, values_only=True):
-            if not row or row[0] is None:
-                continue
-            lab = str(row[0]).strip().lower()
-            if lab and len(row) > 1 and row[1] is not None:
-                labels.setdefault(lab, row[1])
-    except Exception:
-        labels = {}
+    for row in ws.iter_rows(max_col=2, values_only=True):
+        if not row or row[0] is None:
+            continue
+        lab = str(row[0]).strip().lower()
+        if lab and len(row) > 1 and row[1] is not None:
+            labels.setdefault(lab, row[1])
 
     def by_label(key):
         for want in _PACK_LABEL_KEYS.get(key, ()):
@@ -239,10 +236,7 @@ def read_pack_values(ws, warnings: list | None = None) -> dict[str, float]:
             "cell coordinates, which are only correct for the original sheet "
             "layout. Verify the values shown against the workbook.")
         for key, (row, col) in _PACK_CELLS.items():
-            try:
-                pack[key] = _safe_float(ws.cell(row=row, column=col).value)
-            except Exception:
-                pass
+            pack[key] = _safe_float(ws.cell(row=row, column=col).value)
 
     # --- 2. derive, and cross-check against the sheet ---------------------- #
     s, p = pack.get("n_series"), pack.get("n_parallel")
@@ -282,10 +276,6 @@ def read_pack_values(ws, warnings: list | None = None) -> dict[str, float]:
                 f"This normally means the pack sheet's layout differs from what "
                 f"was expected, so a neighbouring row was read instead.")
             pack.pop(key)
-
-    # keep the legacy alias the older callers expect
-    if "pack_energy_wh" in pack:
-        pack.setdefault("pack_energy_wh", pack["pack_energy_wh"])
     return pack
 
 # ElecPropulsion scalar params — key → (row, col)
@@ -374,16 +364,25 @@ class ExcelRoundTripResult:
     speed_mph:      np.ndarray = field(default_factory=lambda: np.array([]))
     speed_ms:       np.ndarray = field(default_factory=lambda: np.array([]))
 
-    # RPM at each time step (col H = gear ratio 1 from header row)
-    rpm_gear1:      np.ndarray = field(default_factory=lambda: np.array([]))
+    # Gear the dependent sheets select (ROUND(1/ThermalLoad!B2, 0)) and its
+    # reduction: the ratio cells hold 1/N, so gear 7 is a 7:1 reduction.
+    gear:           int   = 1
+    gear_reduction: float = 1.0
 
-    # Current draw: =(B8_ep * B11_ep * RPM) / 1000
+    # Wheel and motor speed, acceleration and motor shaft torque at each step
+    wheel_rpm:       np.ndarray = field(default_factory=lambda: np.array([]))
+    motor_rpm:       np.ndarray = field(default_factory=lambda: np.array([]))
+    accel_ms2:       np.ndarray = field(default_factory=lambda: np.array([]))
+    motor_torque_nm: np.ndarray = field(default_factory=lambda: np.array([]))
+
+    # Pack current from the road load: I = max(F v, 0) / (eta V_pack)
     current_draw_a: np.ndarray = field(default_factory=lambda: np.array([]))
 
-    # Phase current: =(B11_ep * sqrt(3) * B6_ep * RPM) / 1000
-    phase_current_a: np.ndarray = field(default_factory=lambda: np.array([]))
+    # The workbook's own "Current Draw" formula, =(EP.B8 * EP.B11 * RPM)/1000 in
+    # the selected gear column: speed only, kept for comparison with the sheet
+    workbook_current_a: np.ndarray = field(default_factory=lambda: np.array([]))
 
-    # Electrical power profile
+    # Pack power profile (kW), the road load through the drivetrain
     power_kw:       np.ndarray = field(default_factory=lambda: np.array([]))
 
     # ── Pack / motor scalars ──────────────────────────────────────────────────
@@ -407,11 +406,14 @@ class ExcelRoundTripResult:
     # ── Feasibility flags ─────────────────────────────────────────────────────
     fuse_ok:       bool = True
     energy_ok:     bool = True
+    motor_ok:      bool = True     # within the motor's max RPM, peak torque, peak power
     feasible:      bool = True
     verdict:       str  = ""
 
     # ── Downloaded file ───────────────────────────────────────────────────────
     excel_bytes:  bytes = field(default_factory=bytes)
+    # Corrections made to that file: dict(sheet, cells, before, after, why)
+    corrections:  list  = field(default_factory=list)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -558,32 +560,35 @@ def native_profile_extent(wb, ws_ep, ws_svt) -> tuple[int, int]:
 
     starts = dependent_block_starts(wb)
     if len(starts) >= 2:
-        # Consecutive starts are one block apart. The smallest gap is the block
-        # height: larger gaps include the blank separator row between blocks.
+        # The block height is what the dependent ranges span (by majority; see
+        # _contract_block_height), not the gap between starts, which includes
+        # any blank separator row.
         #
         # Only the HEIGHT transfers. `starts` are ElecPropulsion rows; the value
         # returned here is a SpeedVsTime extent, and using starts[0] as its
         # origin wrote the profile at the propulsion sheet's first block row
         # instead of the profile's own — invisible in the stock workbook, where
         # both are 2, and wrong everywhere else.
+        # The same references that give the starts state the height, and only
+        # spans of four rows or more count as blocks, so it is always >= 4.
         height = _contract_block_height(wb)
-        if height < 3:
-            height = min(b - a for a, b in zip(starts, starts[1:]) if b > a)
-        if height >= 3:
-            first = _svt_first_data_row(ws_svt)
-            return first, first + height - 1
+        first = _svt_first_data_row(ws_svt)
+        return first, first + height - 1
 
-    if ws_svt is not None:
-        last = 0
-        for r in range(2, (ws_svt.max_row or 0) + 1):
-            a = ws_svt.cell(row=r, column=1).value
-            b = ws_svt.cell(row=r, column=2).value
-            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-                last = r
-            elif last:
+    # The populated run of numeric rows, starting where the data does. (This
+    # used to start at row 2 whatever the sheet held there, so a profile with
+    # two title rows was written over its own headers.)
+    first = _svt_first_data_row(ws_svt, default=0)
+    if first:
+        last = first
+        while last < (ws_svt.max_row or 0):
+            a = ws_svt.cell(row=last + 1, column=1).value
+            b = ws_svt.cell(row=last + 1, column=2).value
+            if not (isinstance(a, (int, float)) and isinstance(b, (int, float))):
                 break
-        if last >= 3:
-            return 2, last
+            last += 1
+        if last > first:
+            return first, last
     return _SVT_FALLBACK_EXTENT
 
 
@@ -873,6 +878,7 @@ def extract_params_from_excel(excel_bytes: bytes) -> dict:
                  current_from_pack_a, pack_voltage_ep_v, motor_max_rpm,
                  wheel_diam_in, motor_pf, no_load_speed, synchronous_rpm}
         gear_ratios: [float × 15]
+        selected_gear: the gear ThermalLoad!B2 selects (1..15), or None
         _source: "excel"
     """
     try:
@@ -882,6 +888,7 @@ def extract_params_from_excel(excel_bytes: bytes) -> dict:
 
     try:
         wb = openpyxl.load_workbook(io.BytesIO(excel_bytes), data_only=True)
+        wb_f = openpyxl.load_workbook(io.BytesIO(excel_bytes), data_only=False)
     except Exception as exc:
         return {"_source": "excel", "_error": str(exc)}
 
@@ -902,11 +909,31 @@ def extract_params_from_excel(excel_bytes: bytes) -> dict:
     gear_recovered: list[int] = []
     gear_unreadable: list[int] = []
     if ws_ep:
+        ws_ep_f = resolve_ep_sheet(wb_f)
         for idx, col in enumerate(range(_EP_GEAR_COL_START,
                                        _EP_GEAR_COL_END + 1), start=1):
             cell = ws_ep.cell(row=_EP_GEAR_RATIO_ROW, column=col)
             val, status = gear_ratio_value(cell.value)
-            if status == "recovered":
+            formula = ws_ep_f.cell(row=_EP_GEAR_RATIO_ROW, column=col).value
+            m = (_SIMPLE_RATIO_RE.match(formula.strip())
+                 if status == "unreadable" and isinstance(formula, str) else None)
+            if m and float(m.group(2)) != 0:
+                # A workbook saved by openpyxl has no cached value for `=1/7`;
+                # the formula itself still says what the ratio is. Without this,
+                # the stored parameters fell back to 1:1 — the very defect
+                # read_gear_ratios() fixed for the workbook path.
+                val = float(m.group(1)) / float(m.group(2))
+                gear_recovered.append(idx)
+                gear_notes.append(
+                    f"gear {idx} ({cell.coordinate}) had no cached value; read "
+                    f"{val:.6g} from its formula {formula.strip()}.")
+            elif status == "ok" and val <= 0:
+                gear_unreadable.append(idx)
+                gear_notes.append(
+                    f"gear {idx} ({cell.coordinate}) is {val:g}, not a usable "
+                    f"ratio; left as 1.0, so treat that column as direct drive.")
+                val = 1.0
+            elif status == "recovered":
                 gear_recovered.append(idx)
                 gear_notes.append(
                     f"gear {idx} ({cell.coordinate}) had a date number format; "
@@ -932,8 +959,186 @@ def extract_params_from_excel(excel_bytes: bytes) -> dict:
         "gear_ratio_notes": gear_notes,
         "gear_ratios_recovered": gear_recovered,
         "gear_ratios_unreadable": gear_unreadable,
+        "selected_gear": selected_gear(wb, wb_f),
         "_source": "excel",
     }
+
+
+_THERMAL_SHEET_ALIASES = ("ThermalLoad", "Thermal Load")
+
+
+def selected_gear(*workbooks) -> int | None:
+    """The gear the dependent sheets use: ROUND(1/ThermalLoad!B2, 0).
+
+    ThermalLoad, EMFs and BearingBlowOut pick their gear column with that
+    expression, so it is the workbook's own statement of which gear the car runs.
+    Tries each workbook given (a cached-value copy, then a formula copy, where
+    `=1/7` is read from the formula). Returns 1..15, or None when there is no
+    selector or it does not name a gear column.
+    """
+    for wb in workbooks:
+        ws = resolve_sheet(wb, _THERMAL_SHEET_ALIASES) if wb is not None else None
+        if ws is None:
+            continue
+        raw = ws.cell(row=2, column=2).value
+        val, _status = gear_ratio_value(raw)
+        if val is None and isinstance(raw, str):
+            m = _SIMPLE_RATIO_RE.match(raw.strip())
+            if m and float(m.group(2)) != 0:
+                val = float(m.group(1)) / float(m.group(2))
+        if val is not None and val > 0:
+            g = int(round(1.0 / val))
+            if 1 <= g <= 15:
+                return g
+    return None
+
+
+_DEFAULT_VEHICLE = dict(vehicle_mass_kg=230.0, drag_cda=1.10, crr=0.018,
+                        rho_air=1.225, drivetrain_eff=0.90)
+
+
+def _lap_electrics(v_ms: np.ndarray, t_arr: np.ndarray, pack: dict, motor: dict,
+                   gear_ratios: Sequence[float], gear: int = 1,
+                   vehicle: dict | None = None) -> dict:
+    """Pack current and the verdict from the road load the lap actually asks for.
+
+    Shared by the database path and the workbook path so the two can never
+    disagree.
+
+        a        = dv/dt
+        F        = m a + ½ρCdA v² + Crr m g
+        P_pack   = max(F v, 0) / η                  (no draw coasting or braking)
+        I_pack   = P_pack / V_pack
+        energy   = Σ P_pack,i (t_i - t_(i-1))        (rectangle rule)
+
+    The workbook's own "Current Draw" formula, V·PF·RPM/1000, depends on speed
+    alone: it has no acceleration and no load in it, so a hard launch and a
+    steady cruise at the same speed read the same, and it is carried only for
+    comparison. The gear matters for the motor, not the pack: the ratio cell
+    holds 1/N, so the motor turns N times the wheel, and the lap is checked
+    against the motor's max RPM, peak torque and peak power in that gear.
+    """
+    veh = dict(_DEFAULT_VEHICLE, **(vehicle or {}))
+    from suspension.ev_electrical_check import fuse_limited_speed, traction_power_w
+
+    v_mph = v_ms * 2.23694                                   # m/s -> mph
+    wheel_diam_in = motor.get("wheel_diam_in", 18.0) or 18.0
+    pack_v_ep     = motor.get("pack_voltage_ep_v", 504.0) or 504.0   # EP B8
+    motor_pf      = motor.get("motor_pf", 0.95) or 0.95             # EP B11
+    motor_eff     = motor.get("motor_efficiency", 0.9545) or 0.9545  # EP B6
+    pack_v        = pack.get("pack_voltage_v") or pack_v_ep
+    fuse_limit    = pack.get("fuse_max_a", 50.0) or 50.0
+    usable_kwh    = (pack_v * pack.get("pack_capacity_ah", 15.0)) * 0.92 / 1000.0
+    eff           = max(float(veh["drivetrain_eff"]), 0.50)
+
+    # Speeds. k_rpm is the workbook's 1056 / (pi * D): mph to wheel rev/min.
+    k_rpm = 1056.0 / (math.pi * wheel_diam_in)
+    gear = int(min(max(gear, 1), len(gear_ratios)))
+    ratio = float(gear_ratios[gear - 1])
+    reduction = 1.0 / ratio
+    wheel_rpm = v_mph * k_rpm
+    motor_rpm = wheel_rpm * reduction
+    workbook_current_a = (pack_v_ep * motor_pf * wheel_rpm * ratio) / 1000.0
+
+    # Road load, from the acceleration the profile implies.
+    increasing = len(t_arr) == len(v_ms) and bool(np.all(np.diff(t_arr) > 0))
+    accel = np.gradient(v_ms, t_arr) if increasing else np.zeros_like(v_ms)
+    F, P_wheel_w, P_pack_w = traction_power_w(
+        v_ms, accel, vehicle_mass_kg=veh["vehicle_mass_kg"], drag_cda=veh["drag_cda"],
+        crr=veh["crr"], rho_air=veh["rho_air"], drivetrain_eff=eff)
+    current_draw_a = P_pack_w / max(pack_v, 1.0)
+    power_kw = P_pack_w / 1000.0
+    r_wheel = wheel_diam_in * 0.0254 / 2.0
+    motor_torque_nm = np.maximum(F, 0.0) * r_wheel / reduction / eff
+
+    dt_arr = np.diff(t_arr, prepend=t_arr[0])
+    total_energy_kwh = float(np.sum(power_kw * np.abs(dt_arr))) / 3600.0
+
+    peak_i    = float(np.max(current_draw_a))
+    avg_i     = float(np.mean(current_draw_a))
+    peak_pw   = float(np.max(power_kw))
+    fuse_ok   = peak_i <= fuse_limit
+    energy_ok = total_energy_kwh <= usable_kwh
+    fuse_margin = fuse_limit - peak_i
+
+    # Motor limits in the selected gear, where the workbook declares them.
+    issues = []
+    if not fuse_ok:
+        issues.append(f"fuse blown (+{-fuse_margin:.1f} A over)")
+    if not energy_ok:
+        issues.append(f"energy deficit ({total_energy_kwh-usable_kwh:.3f} kWh short)")
+    max_rpm = float(motor.get("motor_max_rpm") or 0.0)
+    max_tq = float(motor.get("motor_peak_torque_nm") or 0.0)
+    max_kw = float(motor.get("motor_peak_power_kw") or 0.0)
+    motor_ok = True
+    if max_rpm > 0 and float(np.max(motor_rpm)) > max_rpm:
+        motor_ok = False
+        issues.append(f"motor over its max speed in gear {gear} "
+                      f"({float(np.max(motor_rpm)):.0f} vs {max_rpm:.0f} rpm)")
+    if max_tq > 0 and float(np.max(motor_torque_nm)) > max_tq:
+        motor_ok = False
+        issues.append(f"motor torque short in gear {gear} "
+                      f"({float(np.max(motor_torque_nm)):.0f} vs {max_tq:.0f} N·m)")
+    if max_kw > 0 and float(np.max(P_wheel_w)) / 1000.0 > max_kw:
+        motor_ok = False
+        issues.append(f"motor power short ({float(np.max(P_wheel_w)) / 1000.0:.1f} "
+                      f"vs {max_kw:.0f} kW at the wheels)")
+    feasible = fuse_ok and energy_ok and motor_ok
+
+    fuse_speed_ms = fuse_limited_speed(
+        fuse_limit * pack_v, vehicle_mass_kg=veh["vehicle_mass_kg"],
+        drag_cda=veh["drag_cda"], crr=veh["crr"], rho_air=veh["rho_air"],
+        drivetrain_eff=eff)
+
+    if feasible:
+        verdict = (f"✅ Electrically feasible — peak {peak_i:.1f} A / "
+                   f"{fuse_limit:.0f} A fuse  |  "
+                   f"{total_energy_kwh:.3f} kWh / {usable_kwh:.3f} kWh usable  |  "
+                   f"gear {gear}, motor to {float(np.max(motor_rpm)):.0f} rpm")
+    else:
+        verdict = f"❌ NOT feasible — {', '.join(issues)}"
+
+    return dict(v_mph=v_mph, k_rpm=k_rpm, pack_v_ep=pack_v_ep, motor_pf=motor_pf,
+                motor_eff=motor_eff, fuse_limit=fuse_limit, usable_kwh=usable_kwh,
+                gear=gear, gear_reduction=reduction, wheel_rpm=wheel_rpm,
+                motor_rpm=motor_rpm, accel_ms2=accel, motor_torque_nm=motor_torque_nm,
+                current_draw_a=current_draw_a, workbook_current_a=workbook_current_a,
+                power_kw=power_kw, total_energy_kwh=total_energy_kwh, peak_i=peak_i,
+                avg_i=avg_i, peak_pw=peak_pw, fuse_ok=fuse_ok, energy_ok=energy_ok,
+                motor_ok=motor_ok, feasible=feasible, fuse_margin=fuse_margin,
+                fuse_speed_ms=fuse_speed_ms, verdict=verdict, increasing=increasing)
+
+
+def _result(e: dict, t_arr, v_ms, pack, motor, **extra) -> ExcelRoundTripResult:
+    return ExcelRoundTripResult(
+        ok=True, time_s=t_arr, speed_mph=e["v_mph"], speed_ms=v_ms,
+        gear=e["gear"], gear_reduction=e["gear_reduction"],
+        wheel_rpm=e["wheel_rpm"], motor_rpm=e["motor_rpm"],
+        accel_ms2=e["accel_ms2"], motor_torque_nm=e["motor_torque_nm"],
+        current_draw_a=e["current_draw_a"],
+        workbook_current_a=e["workbook_current_a"], power_kw=e["power_kw"],
+        pack=pack, motor=motor, max_speed_mph=float(np.max(e["v_mph"])),
+        peak_current_a=e["peak_i"], avg_current_a=e["avg_i"],
+        peak_power_kw=e["peak_pw"], total_energy_kwh=e["total_energy_kwh"],
+        fuse_margin_a=e["fuse_margin"], fuse_speed_ceiling_ms=e["fuse_speed_ms"],
+        usable_energy_kwh=e["usable_kwh"], fuse_ok=e["fuse_ok"],
+        energy_ok=e["energy_ok"], motor_ok=e["motor_ok"], feasible=e["feasible"],
+        verdict=e["verdict"], **extra)
+
+
+def _gear_notes(gear, source_found: bool, e: dict) -> list[str]:
+    notes = []
+    if not source_found:
+        notes.append(
+            f"No gear selector found (ThermalLoad!B2, read by the dependent "
+            f"sheets as ROUND(1/B2,0)); using gear {gear}. Motor speed and torque "
+            f"are checked in that gear.")
+    if not e["increasing"]:
+        notes.append(
+            "The time axis is not strictly increasing, so the acceleration could "
+            "not be taken from it: pack current is the steady-speed road load "
+            "only, with no acceleration demand.")
+    return notes
 
 
 def lap_to_excel_roundtrip_from_db(
@@ -944,6 +1149,8 @@ def lap_to_excel_roundtrip_from_db(
     lap_time_s:   float = 0.0,
     top_speed_ms: float = 0.0,
     avg_speed_ms: float = 0.0,
+    gear: int | None = None,
+    vehicle: dict | None = None,
 ) -> ExcelRoundTripResult:
     """
     Run the full round-trip calculation using parameters stored in the project
@@ -951,6 +1158,9 @@ def lap_to_excel_roundtrip_from_db(
     of requiring the raw xlsx bytes.  No workbook is written; the excel_bytes
     field of the returned result will be empty.  Use lap_to_excel_roundtrip()
     when you do need the updated workbook file.
+
+    `gear` overrides the stored selector; `vehicle` takes vehicle_mass_kg,
+    drag_cda, crr, rho_air and drivetrain_eff for the road load.
     """
     v_ms  = np.asarray(speed_ms, dtype=float)
     t_arr = np.asarray(time_s,   dtype=float)
@@ -959,88 +1169,433 @@ def lap_to_excel_roundtrip_from_db(
     if len(t_arr) != len(v_ms):
         t_arr = np.arange(len(v_ms)) * 0.1
 
-    v_mph = v_ms * 2.23694
-    n_pts = len(v_mph)
-
     pack        = ev_params.get("pack", {})
     motor       = ev_params.get("motor", {})
     gear_ratios = ev_params.get("gear_ratios") or [1.0] * 15
-
-    wheel_diam_in = motor.get("wheel_diam_in", 18.0) or 18.0
-    pack_v_ep     = motor.get("pack_voltage_ep_v", 504.0) or 504.0
-    motor_pf      = motor.get("motor_pf", 0.95) or 0.95
-    motor_eff     = motor.get("motor_efficiency", 0.9545) or 0.9545
-    pack_v_bpc    = pack.get("pack_voltage_v", 504.0) or 504.0
-    fuse_limit    = pack.get("fuse_max_a", 50.0) or 50.0
-    usable_kwh    = (pack_v_bpc * pack.get("pack_capacity_ah", 15.0)) * 0.92 / 1000.0
-
-    k_rpm    = 1056.0 / (math.pi * wheel_diam_in)
-    rpm_all  = np.zeros((n_pts, len(gear_ratios)), dtype=float)
-    for gi, gr in enumerate(gear_ratios):
-        rpm_all[:, gi] = v_mph * gr * k_rpm
-    rpm_gear1 = rpm_all[:, 0]
-
-    current_draw_a  = (pack_v_ep * motor_pf * rpm_gear1) / 1000.0
-    phase_current_a = motor_pf * math.sqrt(3) * motor_eff * rpm_gear1
-    power_kw        = current_draw_a * pack_v_ep / 1000.0
-
-    dt_arr = np.diff(t_arr, prepend=t_arr[0])
-    total_energy_kwh = float(np.sum(power_kw * np.abs(dt_arr))) / 3600.0
-
-    peak_i    = float(np.max(current_draw_a))
-    avg_i     = float(np.mean(current_draw_a))
-    peak_pw   = float(np.max(power_kw))
-    fuse_ok   = peak_i <= fuse_limit
-    energy_ok = total_energy_kwh <= usable_kwh
-    feasible  = fuse_ok and energy_ok
-    fuse_margin = fuse_limit - peak_i
-
-    P_fuse_kw = fuse_limit * pack_v_ep / 1000.0
-    v_test = np.linspace(0.1, 100.0, 5000)
-    P_test = (0.5 * 1.225 * 1.10 * v_test**3 + 0.018 * 230.0 * 9.81 * v_test) / 1000.0
-    idx_ceil = int(np.searchsorted(P_test, P_fuse_kw * 0.90))
-    fuse_speed_ms = float(v_test[min(idx_ceil, len(v_test) - 1)])
-
-    if feasible:
-        verdict = (f"✅ Electrically feasible — peak {peak_i:.1f} A / "
-                   f"{fuse_limit:.0f} A fuse  |  "
-                   f"{total_energy_kwh:.3f} kWh / {usable_kwh:.3f} kWh usable")
-    else:
-        issues = []
-        if not fuse_ok:   issues.append(f"fuse blown (+{-fuse_margin:.1f} A over)")
-        if not energy_ok: issues.append(f"energy deficit ({total_energy_kwh-usable_kwh:.3f} kWh short)")
-        verdict = f"❌ NOT feasible — {', '.join(issues)}"
-
-    return ExcelRoundTripResult(
-        ok=True,
-        time_s=t_arr,
-        speed_mph=v_mph,
-        speed_ms=v_ms,
-        rpm_gear1=rpm_gear1,
-        current_draw_a=current_draw_a,
-        phase_current_a=phase_current_a,
-        power_kw=power_kw,
-        pack=pack,
-        motor=motor,
-        max_speed_mph=float(np.max(v_mph)),
-        peak_current_a=peak_i,
-        avg_current_a=avg_i,
-        peak_power_kw=peak_pw,
-        total_energy_kwh=total_energy_kwh,
-        fuse_margin_a=fuse_margin,
-        fuse_speed_ceiling_ms=fuse_speed_ms,
-        usable_energy_kwh=usable_kwh,
-        fuse_ok=fuse_ok,
-        energy_ok=energy_ok,
-        feasible=feasible,
-        verdict=verdict,
-        excel_bytes=b"",
-    )
+    found = gear or ev_params.get("selected_gear")
+    e = _lap_electrics(v_ms, t_arr, pack, motor, gear_ratios, found or 1, vehicle)
+    return _result(e, t_arr, v_ms, pack, motor, excel_bytes=b"",
+                   warnings=_gear_notes(e["gear"], bool(found), e))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Core round-trip (writes back to workbook)
 # ─────────────────────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Correcting the workbook itself
+#
+# power_draw.audit_workbook() pins each defect in the stock workbook to its cells
+# (see that module's docstring for the derivations). The round trip used to
+# leave every one of them in the file it handed back. With correct_workbook=True
+# (the default) the exported workbook is corrected in place, each change is
+# listed with its before and after on a KX_Corrections sheet, and the model
+# stays live: the corrected cells are formulas, so editing the vehicle mass or a
+# gear ratio still recomputes everything in Excel.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_ROAD_SHEET = "KX_RoadLoad"
+_CORR_SHEET = "KX_Corrections"
+
+#: `* $H$1` in an RPM formula: the ratio cell (1/N) multiplied into wheel speed.
+_RATIO_MUL_RE = re.compile(r"\*\s*(\$?[H-V]\$?1)(?![0-9])")
+_RANGE_RE = re.compile(
+    r"(?P<pre>ElecPropulsion!)?(?P<c1>\$?[A-Z]{1,3}\$?)(?P<r1>\d+):"
+    r"(?P<c2>\$?[A-Z]{1,3}\$?)(?P<r2>\d+)")
+_FUSE_REF_RE = re.compile(r"B1(?![0-9])")
+
+
+def _formula_text(v):
+    try:
+        from openpyxl.worksheet.formula import ArrayFormula
+    except ImportError:                                   # pragma: no cover
+        ArrayFormula = ()                                 # type: ignore
+    return v.text if isinstance(v, ArrayFormula) else v
+
+
+def _block_layout(wb, n_rows: int):
+    """(b1, b2, b3) row spans of the propulsion blocks, and whether the dependent
+    sheets' references placed them (else the stock spacing from row 2)."""
+    fallback = [(_EP_RPM_ROW_START, _EP_RPM_ROW_START + n_rows - 1),
+                (_EP_RPM_ROW_START + n_rows, _EP_RPM_ROW_START + 2 * n_rows - 1),
+                (_EP_RPM_ROW_START + 2 * n_rows + 1, _EP_RPM_ROW_START + 3 * n_rows)]
+    contract = dependent_block_starts(wb)
+    placed = [(st, st + n_rows - 1) for st in contract[:3]]
+    if len(placed) == 3 and all(a[1] < b[0] for a, b in zip(placed, placed[1:])):
+        return placed, True, contract
+    return fallback, False, contract
+
+
+def _fix_block_ranges(text: str, blocks, *, own_sheet: bool) -> str:
+    """Pull a block range that runs one row past its block back to the block.
+
+    In the propulsion sheet itself the ranges are unprefixed; elsewhere only
+    `ElecPropulsion!` ranges are touched.
+    """
+    def _sub(m):
+        if bool(m.group("pre")) == own_sheet:
+            return m.group(0)
+        r1, r2 = int(m.group("r1")), int(m.group("r2"))
+        for b_start, b_end in blocks:
+            if r1 == b_start and r2 == b_end + 1:
+                return (f"{m.group('pre') or ''}{m.group('c1')}{r1}:"
+                        f"{m.group('c2')}{b_end}")
+        return m.group(0)
+    return _RANGE_RE.sub(_sub, text)
+
+
+def _wrap_tan_in_radians(text: str) -> str:
+    out, i = "", 0
+    up = text.upper()
+    while True:
+        j = up.find("TAN(", i)
+        if j < 0:
+            return out + text[i:]
+        args, end = _split_args(text, j + 4)
+        out += text[i:j] + f"TAN(RADIANS({args[0]}))" if args else text[i:j + 4]
+        i = end + 1 if args else j + 4
+
+
+def _write_road_load_sheet(wb, svt_title: str, svt_first: int, n_rows: int,
+                           vehicle: dict, pack_v: float):
+    """A live road-load model on the profile rows: the force balance the workbook lacks.
+
+        a = dv/dt (central difference),  F = m a + ½ρCdA v² + Crr m g
+        P_pack = MAX(F v, 0) / η,        I_pack = P_pack / V_pack
+    """
+    if _ROAD_SHEET in wb.sheetnames:
+        del wb[_ROAD_SHEET]
+    ws = wb.create_sheet(_ROAD_SHEET)
+    for c, h in enumerate(("Time (s)", "Speed (m/s)", "Accel (m/s²)", "Tractive force (N)",
+                           "Pack power (kW)", "Pack current (A)", "Wheel power (kW)",
+                           "dt (s)"), start=1):
+        ws.cell(row=1, column=c, value=h)
+    params = [("Vehicle mass incl. driver (kg)", vehicle["vehicle_mass_kg"]),
+              ("Drag area CdA (m²)", vehicle["drag_cda"]),
+              ("Rolling resistance Crr", vehicle["crr"]),
+              ("Air density (kg/m³)", vehicle["rho_air"]),
+              ("Drivetrain efficiency", vehicle["drivetrain_eff"]),
+              ("Pack voltage (V)", pack_v)]
+    for r, (lab, val) in enumerate(params, start=1):
+        ws.cell(row=r, column=10, value=lab)
+        ws.cell(row=r, column=11, value=float(val))
+    q = f"'{svt_title}'" if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]*", svt_title) else svt_title
+    last = n_rows + 1
+    for i in range(n_rows):
+        r, sr = 2 + i, svt_first + i
+        lo, hi = max(r - 1, 2), min(r + 1, last)
+        ws.cell(row=r, column=1, value=f"={q}!A{sr}")
+        ws.cell(row=r, column=2, value=f"={q}!B{sr}*0.44704")
+        ws.cell(row=r, column=3, value=f"=IFERROR((B{hi}-B{lo})/(A{hi}-A{lo}),0)")
+        ws.cell(row=r, column=4,
+                value=f"=$K$1*C{r}+0.5*$K$4*$K$2*B{r}*B{r}+$K$3*$K$1*9.81")
+        ws.cell(row=r, column=7, value=f"=D{r}*B{r}/1000")
+        ws.cell(row=r, column=5, value=f"=MAX(G{r},0)/$K$5")
+        ws.cell(row=r, column=6, value=f"=E{r}*1000/$K$6")
+        ws.cell(row=r, column=8, value="=0" if i == 0 else f"=A{r}-A{r - 1}")
+    ws.cell(row=8, column=10,
+            value="Coasting and braking draw nothing (no regeneration credited). "
+                  "Edit the inputs above and the propulsion blocks recompute.")
+    return ws
+
+
+def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int,
+                     gear_ratios, vehicle: dict, pack_v: float,
+                     ep_is_live: bool) -> tuple[list, list]:
+    """Correct the audited defects in an open workbook. Returns (corrections, notes).
+
+    Each correction is a dict(sheet, cells, before, after, why). A defect whose
+    intended quantity cannot be built from what the workbook holds is listed as
+    left for review, not guessed at. The road-load sheet it adds carries speed (m/s), acceleration
+    (m/s²), tractive force (N), pack power (kW) and pack current (A).
+    """
+    fixes: list = []
+    notes: list = []
+
+    def _log(sheet, cells, before, after, why):
+        fixes.append(dict(sheet=sheet, cells=cells, before=str(before or ""),
+                          after=str(after or ""), why=why))
+
+    _write_road_load_sheet(wb, ws_svt.title, svt_first, n_rows, vehicle, pack_v)
+    blocks, from_contract, contract = _block_layout(wb, n_rows)
+    (b1, b2, b3) = blocks
+    if contract and not from_contract:
+        notes.append(f"ElecPropulsion block starts named by the dependent sheets "
+                     f"({contract}) do not fit {n_rows}-row blocks; the blocks were "
+                     f"written at the stock spacing ({b1[0]}, {b2[0]}, {b3[0]}). Check "
+                     f"that ThermalLoad, EMFs and BearingBlowOut read the block they "
+                     f"mean to.")
+    H, V = _EP_GEAR_COL_START, _EP_GEAR_COL_END
+    span = lambda blk: f"{_col_letter(H)}{blk[0]}:{_col_letter(V)}{blk[1]}"
+    ep = ws_ep.title
+
+    # ---- block 1: motor RPM, reduction applied the right way round ------- #
+    rpm_why = ("The ratio cells hold 1/N and were multiplied into wheel speed, so a "
+               "7:1 reduction made the motor turn 7x slower than the wheel instead of "
+               "7x faster (49x low in power at gear 7). Divided by the cell instead.")
+    if ep_is_live:
+        before = after = None
+        for r in range(b1[0], b1[1] + 1):
+            for c in range(H, V + 1):
+                cell = ws_ep.cell(row=r, column=c)
+                t = cell.value
+                if isinstance(t, str) and "1056" in t and _RATIO_MUL_RE.search(t):
+                    new = _RATIO_MUL_RE.sub(r"/\1", t)
+                    before, after = before or t, after or new
+                    cell.value = new
+        if before:
+            _log(ep, span(b1), before, after, rpm_why)
+    else:
+        q = ws_svt.title if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]*", ws_svt.title) \
+            else f"'{ws_svt.title}'"
+        for i in range(n_rows):
+            for c in range(H, V + 1):
+                L = _col_letter(c)
+                ws_ep.cell(row=b1[0] + i, column=c,
+                           value=f"=({q}!B{svt_first + i}*1056/${L}$1)/($B$10*PI())")
+        _log(ep, span(b1), "static values (an earlier export had flattened the sheet)",
+            f"=({q}!B{svt_first}*1056/$H$1)/($B$10*PI())", rpm_why)
+    ws_ep.cell(row=b1[0], column=7).value = "Motor RPM"
+
+    # ---- blocks 2 and 3: pack current and power from the road load ------- #
+    cur0 = _formula_text(ws_ep.cell(row=b2[0], column=H).value)
+    already = isinstance(cur0, str) and cur0.startswith(f"={_ROAD_SHEET}!")
+    is_current = (not ep_is_live) or already or (
+        isinstance(cur0, str) and f"{_col_letter(H)}{b1[0]}" in cur0)
+    if is_current:
+        pw0 = _formula_text(ws_ep.cell(row=b3[0], column=H).value)
+        for i in range(n_rows):
+            for c in range(H, V + 1):
+                ws_ep.cell(row=b2[0] + i, column=c, value=f"={_ROAD_SHEET}!$F{2 + i}")
+                ws_ep.cell(row=b3[0] + i, column=c, value=f"={_ROAD_SHEET}!$E{2 + i}")
+        ws_ep.cell(row=b2[0], column=7).value = "Pack Current (A)"
+        ws_ep.cell(row=b3[0], column=7).value = "Pack Power (kW)"
+    if is_current and not already:
+        _log(ep, span(b2), cur0 if ep_is_live else "static values",
+            f"={_ROAD_SHEET}!$F2",
+            "Current was V_pack * PF * RPM / 1000: volts times rpm, with no mass, drag, "
+            "rolling resistance or acceleration, so it could not tell a launch from a "
+            "cruise. It now reads the road-load pack current, which does not depend on "
+            "the gear, so all fifteen columns agree.")
+        _log(ep, span(b3), pw0 if ep_is_live else "static values",
+            f"={_ROAD_SHEET}!$E2",
+            "Power multiplied by motor efficiency (losses must raise the draw, so they "
+            "divide) and applied sqrt(3) and power factor to the DC bus. It now reads "
+            "the road-load pack power, MAX(F v, 0) / eta.")
+    elif not is_current:
+        notes.append(f"ElecPropulsion!{_col_letter(H)}{b2[0]} does not hold the current "
+                     f"formula this correction expects ({cur0!r}); the current and power "
+                     f"blocks were left as they are.")
+
+    # ---- summary rows under the blocks ------------------------------------ #
+    stats = [("Min RPM", b1, "MIN"), ("Max RPM", b1, "MAX"),
+             ("Min Current (A)", b2, "MIN"), ("Max Current (A)", b2, "MAX"),
+             ("Min Power (kW)", b3, "MIN"), ("Max Power (kW)", b3, "MAX")]
+    for si, (label, blk, agg) in enumerate(stats):
+        r = b3[1] + 2 + si
+        old_lab = ws_ep.cell(row=r, column=7).value
+        if not ep_is_live:
+            ws_ep.cell(row=r, column=7).value = label
+            for c in range(H, V + 1):
+                L = _col_letter(c)
+                ws_ep.cell(row=r, column=c, value=f"={agg}({L}{blk[0]}:{L}{blk[1]})")
+            continue
+        if isinstance(old_lab, str) and "(W)" in old_lab and "Power" in old_lab:
+            ws_ep.cell(row=r, column=7).value = old_lab.replace("(W)", "(kW)")
+            _log(ep, f"G{r}", old_lab, old_lab.replace("(W)", "(kW)"),
+                "The block is divided by 1000, so it is kW; the adjacent Max row already "
+                "said so.")
+        before = after = None
+        for c in range(H, V + 1):
+            cell = ws_ep.cell(row=r, column=c)
+            t = cell.value
+            if isinstance(t, str):
+                new = _fix_block_ranges(t, blocks, own_sheet=True)
+                if new != t:
+                    before, after = before or t, after or new
+                    cell.value = new
+        if before:
+            _log(ep, f"H{r}:V{r}", before, after,
+                "The range ran one row past its block into the next one.")
+
+    # Date-formatted gear cells read back as times; General keeps them numbers.
+    for c in range(H, V + 1):
+        cell = ws_ep.cell(row=1, column=c)
+        if cell.number_format not in ("General", "0", "0.00", "0.000", "0.0000"):
+            _log(ep, cell.coordinate, cell.number_format, "General",
+                "A gear ratio with a date number format reads back as a time of day.")
+            cell.number_format = "General"
+
+    # ---- every other sheet: block ranges off by one ----------------------- #
+    for ws in wb.worksheets:
+        if ws.title in (ep, _ROAD_SHEET, _CORR_SHEET):
+            continue
+        for row in ws.iter_rows():
+            for cell in row:
+                t = _formula_text(cell.value)
+                if (cell.data_type != "f" or not isinstance(t, str)
+                        or "ElecPropulsion!" not in t):
+                    continue
+                new = _fix_block_ranges(t, blocks, own_sheet=False)
+                if new != t:
+                    cell.value = (type(cell.value)(cell.value.ref, new)
+                                  if not isinstance(cell.value, str) else new)
+                    _log(ws.title, cell.coordinate, t, new,
+                        "The range ran one row past its propulsion block (a blank row, "
+                        "which is why the last value read 0).")
+
+    # ---- the pack sheet: resistance ignoring the parallel strings --------- #
+    ws_pack = resolve_pack_sheet(wb)
+    rows: dict = {}
+    if ws_pack is not None:
+        for r in range(1, (ws_pack.max_row or 0) + 1):
+            lab = str(ws_pack.cell(row=r, column=1).value or "").lower()
+            for key, wants in (("s", ("series battery count",)),
+                               ("p", ("parrallel battery count", "parallel battery count")),
+                               ("rc", ("internal resistance battery cell",)),
+                               ("rp", ("battery pack internal resistance",)),
+                               ("v", ("battery pack nominal voltage",))):
+                if key not in rows and any(w in lab for w in wants):
+                    rows[key] = r
+        if {"s", "p", "rc", "rp"} <= rows.keys():
+            cell = ws_pack.cell(row=rows["rp"], column=2)
+            new = f"=B{rows['s']}*B{rows['rc']}/B{rows['p']}"
+            if cell.value != new:
+                _log(ws_pack.title, cell.coordinate, cell.value, new,
+                    "Pack resistance is S x R_cell / P. The old cell left out the "
+                    "parallel strings (3x high for 3P), and it feeds every joule-heat "
+                    "and EMF figure.")
+                cell.value = new
+
+    # ---- ThermalLoad ------------------------------------------------------- #
+    tl = resolve_sheet(wb, _THERMAL_SHEET_ALIASES)
+    if tl is not None:
+        b4, b5 = _formula_text(tl["B4"].value), _formula_text(tl["B5"].value)
+        if (isinstance(b4, str) and isinstance(b5, str) and "MIN(" in b4.upper()
+                and "MAX(" in b5.upper() and _FUSE_REF_RE.search(b5)
+                and not _FUSE_REF_RE.search(b4)):
+            new = re.sub("MIN\\(", "MAX(", b4, flags=re.IGNORECASE)
+            _log(tl.title, "B5", b5, new,
+                "Max joule heat carried an extra factor of the fuse rating that the "
+                "matching Min cell does not (I² x A x ohm); now the same formula as B4.")
+            tl["B5"] = new
+        e1, f1 = str(tl["E1"].value or ""), str(_formula_text(tl["F1"].value) or "")
+        if "kW" in e1 and "B11" in f1:
+            tl["E1"] = e1.replace("(kW)", "(W)").replace("kW", "W")
+            _log(tl.title, "E1", e1, tl["E1"].value, "I² R is in watts.")
+        b6 = _formula_text(tl["B6"].value)
+        m = re.fullmatch(r"=\s*SUM\(\s*(\$?F\$?)(\d+):(\$?F\$?)(\d+)\s*\)", str(b6 or ""),
+                         flags=re.IGNORECASE)
+        if m and int(m.group(4)) - int(m.group(2)) + 1 == n_rows:
+            new = (f"=SUMPRODUCT(F{m.group(2)}:F{m.group(4)},"
+                   f"{_ROAD_SHEET}!H2:H{n_rows + 1})/3600000")
+            _log(tl.title, "B6", b6, new,
+                "Summing instantaneous watts gives watts, scaled by the row count. "
+                "Energy is the sum of P x dt; now in kWh.")
+            tl["B6"] = new
+            a6 = str(tl["A6"].value or "")
+            if a6:
+                tl["A6"] = "Joule Heat Energy (kWh)"
+        elif isinstance(b6, str) and re.match(r"=\s*SUM\(", b6, flags=re.IGNORECASE):
+            _log(tl.title, "B6", b6, b6,
+                "Left for review: a sum of instantaneous power, but its range does not "
+                "line up with the profile rows, so the time steps cannot be paired.")
+
+    # ---- BearingBlowOut: TAN in degrees, torque over the pitch diameter --- #
+    bb = resolve_sheet(wb, ("BearingBlowOut", "Bearing Blow Out"))
+    if bb is not None:
+        first_t = first_n = None
+        last_g = 0
+        for r in range(1, (bb.max_row or 0) + 1):
+            cell = bb.cell(row=r, column=7)
+            t = cell.value
+            if not isinstance(t, str):
+                continue
+            last_g = r
+            new = t
+            if "TAN(" in new.upper() and "RADIANS" not in new.upper():
+                new = _wrap_tan_in_radians(new)
+            if "$B$16" in new and "$B$16/2" not in new:
+                new = new.replace("$B$16", "($B$16/2)")
+            if new != t:
+                first_t, first_n = first_t or t, first_n or new
+                cell.value = new
+        if first_t:
+            _log(bb.title, f"G1:G{last_g}", first_t, first_n,
+                "TAN takes radians: TAN(20) is the tangent of 20 rad, 6.15x tan(20°). "
+                "And the moment arm of a gear is its pitch RADIUS, so torque divides by "
+                "half the pitch diameter.")
+        b19 = str(bb["B19"].value or "")
+        m = re.search(r"G1:G(\d+)", b19)
+        if m and last_g and int(m.group(1)) == last_g + 1:
+            new = b19.replace(f"G1:G{m.group(1)}", f"G1:G{last_g}")
+            _log(bb.title, "B19", b19, new, "Column G ends one row earlier.")
+            bb["B19"] = new
+
+    # ---- EMFs: volts x kW x ohms becomes the pack's voltage under load ---- #
+    # The columns multiply pack voltage, power and pack resistance. Of the two
+    # voltages that could have been meant, only one is computable from what the
+    # workbook holds: the terminal voltage V - I R needs exactly the pack voltage
+    # and resistance these cells already reference, plus the pack current. A
+    # motor back-EMF needs a voltage constant (V per rpm) that is nowhere in the
+    # file. So the column becomes V_term = V_pack - I_pack * R_pack.
+    emf = resolve_sheet(wb, ("EMFs", "EMF"))
+    if emf is not None:
+        for col in (2, 5):
+            t = str(_formula_text(emf.cell(row=1, column=col).value) or "")
+            if not ("B12" in t and "B11" in t and _ROAD_SHEET not in t):
+                continue
+            L = _col_letter(col)
+            if {"v", "rp"} <= rows.keys():
+                pq = (ws_pack.title if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]*",
+                                                    ws_pack.title)
+                      else f"'{ws_pack.title}'")
+                for r in range(1, max(emf.max_row or 0, n_rows) + 1):
+                    cell = emf.cell(row=r, column=col)
+                    if cell.data_type == "f" or r <= n_rows:
+                        cell.value = None
+                for i in range(n_rows):
+                    emf.cell(row=1 + i, column=col,
+                             value=f"={pq}!$B${rows['v']}-{_ROAD_SHEET}!$F{2 + i}"
+                                   f"*{pq}!$B${rows['rp']}")
+                # The range trim above touched this cell; the rewrite supersedes it,
+                # and the cell as the workbook had it is the honest "before".
+                trimmed = [f for f in fixes
+                           if f["sheet"] == emf.title and f["cells"] == f"{L}1"]
+                fixes[:] = [f for f in fixes if f not in trimmed]
+                _log(emf.title, f"{L}1:{L}{n_rows}", trimmed[0]["before"] if trimmed else t,
+                     f"={pq}!$B${rows['v']}-{_ROAD_SHEET}!$F2*{pq}!$B${rows['rp']}",
+                     "V_pack x power x R_pack is volts x kW x ohms, not a voltage. Of the "
+                     "two voltages it could mean, only the pack's terminal voltage under "
+                     "load, V - I R, can be computed from what the workbook holds (a "
+                     "motor back-EMF needs a V/rpm constant the file does not have), and "
+                     "it uses the same pack voltage and resistance cells. Now V - I R "
+                     "with the road-load current, one row per profile sample.")
+            else:
+                _log(emf.title, f"{L}1", t, t,
+                     "Left for review: volts x kW x ohms is not a voltage, and the pack "
+                     "sheet has no 'Battery Pack Nominal Voltage' / 'Battery Pack Internal "
+                     "Resistance' rows to build V - I R from.")
+
+    # ---- the list, in the file ------------------------------------------- #
+    if _CORR_SHEET in wb.sheetnames:
+        del wb[_CORR_SHEET]
+    wc = wb.create_sheet(_CORR_SHEET)
+    wc.append(["Sheet", "Cells", "Before", "After", "Why"])
+    for r, f in enumerate(fixes, start=2):
+        for c, key in enumerate(("sheet", "cells", "before", "after", "why"), start=1):
+            cell = wc.cell(row=r, column=c, value=f[key])
+            cell.data_type = "s"            # a formula quoted here is text, not live
+    for col, w in zip("ABCDE", (16, 18, 48, 48, 90)):
+        wc.column_dimensions[col].width = w
+    fixed = sum(1 for f in fixes if not f["why"].startswith("Left for review"))
+    notes.append(f"Corrected {fixed} workbook defect(s) and flagged "
+                 f"{len(fixes) - fixed} for review; every change, with its before and "
+                 f"after, is on the {_CORR_SHEET} sheet. Pack current and power in "
+                 f"ElecPropulsion now come from the live road-load model on "
+                 f"{_ROAD_SHEET}.")
+    return fixes, notes
+
 
 def lap_to_excel_roundtrip(
     speed_ms:    Sequence[float],
@@ -1051,9 +1606,19 @@ def lap_to_excel_roundtrip(
     top_speed_ms:  float = 0.0,
     avg_speed_ms:  float = 0.0,
     libreoffice_timeout: int = 60,   # kept for API compat, not used
+    gear: int | None = None,
+    vehicle: dict | None = None,
+    correct_workbook: bool = True,
 ) -> ExcelRoundTripResult:
     """
     Full round-trip — Python-evaluated, no LibreOffice required.
+
+    With `correct_workbook` (the default) the returned file also has the
+    audited defects corrected in place: a live road-load sheet drives the
+    propulsion current and power blocks, the gear reduction is applied the
+    right way round, and each change is listed on a KX_Corrections sheet (see
+    apply_workbook_corrections). False returns the workbook's own model with
+    only the speed profile replaced.
 
     Writes the lap sim speed profile into the workbook, evaluates every
     downstream formula in pure Python, then returns a fully-computed result
@@ -1100,65 +1665,16 @@ def lap_to_excel_roundtrip(
     else:
         gear_ratios = [1.0] * 15
 
-    # Key constants for formula evaluation
-    wheel_diam_in  = motor.get("wheel_diam_in", 18.0)   or 18.0
-    pack_v_ep      = motor.get("pack_voltage_ep_v", 504.0) or 504.0  # EP B8
-    motor_pf       = motor.get("motor_pf", 0.95)          or 0.95    # EP B11
-    motor_eff      = motor.get("motor_efficiency", 0.9545) or 0.9545 # EP B6
-    pack_v_bpc     = pack.get("pack_voltage_v", 504.0)    or 504.0   # BPC B11
-    fuse_limit     = pack.get("fuse_max_a", 50.0)         or 50.0
-    usable_kwh     = (pack_v_bpc * pack.get("pack_capacity_ah", 15.0)) * 0.92 / 1000.0
-
-    # ── 3. Evaluate RPM grid (15 gear ratios × n_pts) — Python ───────────
-    # Formula: RPM = v_mph * gear_ratio * 1056 / (wheel_diam_in * π)
-    # Constant k = 1056 / (π * wheel_diam_in)
-    k_rpm = 1056.0 / (math.pi * wheel_diam_in)
-    rpm_all = np.zeros((n_pts, len(gear_ratios)), dtype=float)
-    for gi, gr in enumerate(gear_ratios):
-        rpm_all[:, gi] = v_mph * gr * k_rpm
-
-    rpm_gear1 = rpm_all[:, 0]   # gear ratio 1 (col H)
-
-    # ── 4. Current draw: =(EP.B8 * EP.B11 * RPM) / 1000 ─────────────────
-    # EP.B8 = pack_voltage_ep_v (504), EP.B11 = motor_pf (0.95)
-    current_draw_a  = (pack_v_ep * motor_pf * rpm_gear1) / 1000.0
-
-    # ── 5. Phase current: =(EP.B11 * √3 * EP.B6 * RPM)  — no /1000, matches sheet ──
-    phase_current_a = motor_pf * math.sqrt(3) * motor_eff * rpm_gear1
-
-    # ── 6. Electrical power ───────────────────────────────────────────────
-    power_kw = current_draw_a * pack_v_ep / 1000.0
-
-    # ── 7. Total energy (trapezoidal) ─────────────────────────────────────
-    dt_arr = np.diff(t_arr, prepend=t_arr[0])
-    total_energy_kwh = float(np.sum(power_kw * np.abs(dt_arr))) / 3600.0
-
-    # ── 8. Feasibility ────────────────────────────────────────────────────
-    peak_i    = float(np.max(current_draw_a))
-    avg_i     = float(np.mean(current_draw_a))
-    peak_pw   = float(np.max(power_kw))
-    fuse_ok   = peak_i <= fuse_limit
-    energy_ok = total_energy_kwh <= usable_kwh
-    feasible  = fuse_ok and energy_ok
-    fuse_margin = fuse_limit - peak_i
-
-    # Fuse-limited max sustained speed (solve P_wheel=P_fuse_cap numerically)
-    P_fuse_kw  = fuse_limit * pack_v_ep / 1000.0
-    rho, cda, crr_def, g = 1.225, 1.10, 0.018, 9.81
-    v_test = np.linspace(0.1, 100.0, 5000)
-    P_test = (0.5 * rho * cda * v_test**3 + crr_def * 230.0 * g * v_test) / 1000.0
-    idx_ceil = int(np.searchsorted(P_test, P_fuse_kw * 0.90))
-    fuse_speed_ms = float(v_test[min(idx_ceil, len(v_test)-1)])
-
-    if feasible:
-        verdict = (f"✅ Electrically feasible — peak {peak_i:.1f} A / "
-                   f"{fuse_limit:.0f} A fuse  |  "
-                   f"{total_energy_kwh:.3f} kWh / {usable_kwh:.3f} kWh usable")
-    else:
-        issues = []
-        if not fuse_ok:   issues.append(f"fuse blown (+{-fuse_margin:.1f} A over)")
-        if not energy_ok: issues.append(f"energy deficit ({total_energy_kwh-usable_kwh:.3f} kWh short)")
-        verdict = f"❌ NOT feasible — {', '.join(issues)}"
+    # ── 3-8. The road load, the selected gear and the verdict ─────────────
+    found = gear or selected_gear(wb_data, wb)
+    e = _lap_electrics(v_ms, t_arr, pack, motor, gear_ratios, found or 1, vehicle)
+    warnings += _gear_notes(e["gear"], bool(found), e)
+    k_rpm, pack_v_ep = e["k_rpm"], e["pack_v_ep"]
+    motor_pf, motor_eff = e["motor_pf"], e["motor_eff"]
+    peak_i, avg_i, peak_pw = e["peak_i"], e["avg_i"], e["peak_pw"]
+    total_energy_kwh, usable_kwh = e["total_energy_kwh"], e["usable_kwh"]
+    fuse_limit, fuse_margin = e["fuse_limit"], e["fuse_margin"]
+    fuse_speed_ms, feasible = e["fuse_speed_ms"], e["feasible"]
 
     # ── 9. Write updated workbook (all computed values as plain numbers) ───
     # 9a. SpeedVsTime — clear old data, write new
@@ -1222,7 +1738,14 @@ def lap_to_excel_roundtrip(
         for r in range(_EP_RPM_ROW_START, min(ws_ep.max_row or 0,
                                               _EP_RPM_ROW_START + 50) + 1))
 
-    if not ep_is_live:
+    corrections: list = []
+    if correct_workbook:
+        corrections, notes = apply_workbook_corrections(
+            wb, ws_ep=ws_ep, ws_svt=ws_svt, svt_first=svt_first, n_rows=n_rows,
+            gear_ratios=gear_ratios, vehicle=dict(_DEFAULT_VEHICLE, **(vehicle or {})),
+            pack_v=pack.get("pack_voltage_v") or pack_v_ep, ep_is_live=ep_is_live)
+        warnings += notes
+    elif not ep_is_live:
         # The propulsion sheet has already been flattened to values by an
         # earlier export. Rebuild all three blocks at the canonical offsets the
         # dependent sheets reference, with every gear column filled, so the
@@ -1331,7 +1854,10 @@ def lap_to_excel_roundtrip(
         ("Profile Points",                   int(n_pts)),
         ("Profile Duration (s)",             round(float(t_arr[-1]), 2)),
         ("Max Speed in Profile (mph)",       round(float(np.max(v_mph)), 2)),
+        ("Gear (ThermalLoad selector)",      f"{e['gear']} ({e['gear_reduction']:.3g}:1)"),
+        ("Max Motor Speed (rpm)",            round(float(np.max(e["motor_rpm"])), 0)),
         ("Peak Current Draw (A)",            round(peak_i, 2)),
+        ("Workbook Current Formula Peak (A)", round(float(np.max(e["workbook_current_a"])), 2)),
         ("Avg Current Draw (A)",             round(avg_i, 2)),
         ("Peak Power Draw (kW)",             round(peak_pw, 2)),
         ("Total Energy (kWh)",               round(total_energy_kwh, 4)),
@@ -1368,32 +1894,8 @@ def lap_to_excel_roundtrip(
     wb.save(buf)
     out_bytes = buf.getvalue()
 
-    return ExcelRoundTripResult(
-        ok=True,
-        warnings=warnings,
-        time_s=t_arr,
-        speed_mph=v_mph,
-        speed_ms=v_ms,
-        rpm_gear1=rpm_gear1,
-        current_draw_a=current_draw_a,
-        phase_current_a=phase_current_a,
-        power_kw=power_kw,
-        pack=pack,
-        motor=motor,
-        max_speed_mph=float(np.max(v_mph)),
-        peak_current_a=peak_i,
-        avg_current_a=avg_i,
-        peak_power_kw=peak_pw,
-        total_energy_kwh=total_energy_kwh,
-        fuse_margin_a=fuse_margin,
-        fuse_speed_ceiling_ms=fuse_speed_ms,
-        usable_energy_kwh=usable_kwh,
-        fuse_ok=fuse_ok,
-        energy_ok=energy_ok,
-        feasible=feasible,
-        verdict=verdict,
-        excel_bytes=out_bytes,
-    )
+    return _result(e, t_arr, v_ms, pack, motor, warnings=warnings,
+                   excel_bytes=out_bytes, corrections=corrections)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1559,19 +2061,24 @@ def compute_minimum_feasible_pack(
     cell_v    = float(pack.get("cell_voltage_v", 3.6) or 3.6)
     cell_ah   = float(pack.get("cell_capacity_ah", 2.5) or 2.5)
     cell_mass = float(pack.get("cell_weight_kg", 0.065) or 0.065)
-    n_series  = int(pack.get("n_series", 1) or max(1, round(pack_v / max(cell_v, 0.1))))
+    # A missing series count is derived from the voltage. (It used to default
+    # to 1, which sized a 504 V pack as a single cell in series.)
+    n_series  = int(pack.get("n_series") or max(1, round(pack_v / max(cell_v, 0.1))))
     fuse_a    = float(pack.get("fuse_max_a", 50.0) or 50.0)
 
     dt = np.abs(np.diff(time_s, prepend=time_s[0]))
     total_energy_kwh = float(np.sum(power_kw * dt)) / 3600.0
     peak_i = float(np.max(current_draw_a))
 
-    min_energy_kwh  = total_energy_kwh / usable_frac
+    # USABLE energy needed is what the lap draws. (This used to be divided by
+    # the usable fraction, i.e. nameplate energy, and was then shown in the
+    # "Energy (usable)" row beside the current pack's usable energy.)
+    min_energy_kwh  = total_energy_kwh
     rec_energy_kwh  = min_energy_kwh * (1.0 + safety_margin)
 
-    # Capacity from energy: E = V × Ah  → Ah = E×1000 / V
-    min_cap_ah = min_energy_kwh * 1000.0 / max(pack_v, 1.0)
-    rec_cap_ah = rec_energy_kwh * 1000.0 / max(pack_v, 1.0)
+    # Nameplate capacity for that usable energy: E_usable = V × Ah × usable_frac
+    min_cap_ah = min_energy_kwh * 1000.0 / (max(pack_v, 1.0) * usable_frac)
+    rec_cap_ah = rec_energy_kwh * 1000.0 / (max(pack_v, 1.0) * usable_frac)
 
     # How many parallel strings: ceil(cap / cell_ah), for both the bare minimum
     # and the recommended pack. The minimum column used to print "—" for
@@ -1655,9 +2162,7 @@ def build_enhanced_excel(
 
     # ── colour helpers ────────────────────────────────────────────────────────
     def _heat_colour(val: float, lo: float, hi: float) -> str:
-        """Map val in [lo,hi] → hex fill colour green→yellow→red."""
-        if hi <= lo:
-            return "FF37E0D0"
+        """Map val in [lo,hi] → hex fill colour green→yellow→red (callers give hi > lo)."""
         t = max(0.0, min(1.0, (val - lo) / (hi - lo)))
         if t < 0.5:
             # green → yellow
@@ -1703,7 +2208,7 @@ def build_enhanced_excel(
     temp_c    = thermals["temp_c"]
     i_cell    = thermals["i_cell_a"]
 
-    # Downsample to ≤500 pts for the grid snapshot
+    # Downsample to roughly 200-400 rows for the time-series tables
     step = max(1, n_pts // 200)
     snap_idx = list(range(0, n_pts, step))
 
@@ -1742,20 +2247,15 @@ def build_enhanced_excel(
     for p in range(n_par):
         _header(ws_hm, 6, p + 2, f"P{p+1}")
 
-    # ── Fill cell grid with Joule heat colour
-    # Each cell in the grid represents one physical cell.
-    # Joule heat per cell is the same for all cells at the same parallel
-    # position (they share the same string current), so the n_series rows
-    # differ only if cell-level resistance differs — we use a single lap
-    # total here and modulate by series position (thermal gradient proxy).
-    total_j_per_cell = thermals["total_joule_kwh"] * 3_600_000.0  # J
-    # Series cells at the bottom of the stack tend to run hotter in real packs.
-    # Approximate with a ±15% gradient across the stack.
-    series_gradient = np.linspace(0.85, 1.15, n_series)
-
-    # temperature range for colour mapping
-    t_lo = 25.0
-    t_hi = max(thermals["peak_temp_c"], 30.0)
+    # ── Fill the cell grid with the modelled peak temperature
+    # Every cell carries the same current in this model (pack current over the
+    # parallel strings) and has the same resistance and thermal mass, so every
+    # cell reaches the same peak. The grid used to spread that over an invented
+    # ±15% "gradient across the stack", which printed cell temperatures above
+    # the modelled peak; a spread needs measured cell temperatures, not a guess.
+    t_lo = float(temp_c[0])                       # ambient: the model's start
+    t_hi = max(thermals["peak_temp_c"], t_lo + 5.0)
+    cell_t = float(thermals["peak_temp_c"])
 
     for s in range(n_series):
         row = 7 + s
@@ -1763,8 +2263,6 @@ def build_enhanced_excel(
             bold=True, size=9, color="FF8899AA")
         for p in range(n_par):
             col = p + 2
-            cell_j = total_j_per_cell * series_gradient[s]
-            cell_t = t_lo + (t_hi - t_lo) * series_gradient[s]
             colour  = _heat_colour(cell_t, t_lo, t_hi)
             c = ws_hm.cell(row=row, column=col, value=round(cell_t, 1))
             c.fill      = _cell_fill(colour)
@@ -1773,11 +2271,17 @@ def build_enhanced_excel(
             c.border    = _thin_border()
             c.number_format = "0.0"
 
+    ws_hm.cell(row=7 + n_series, column=1,
+               value="Same current, resistance and thermal mass in every cell, "
+                     "so the model gives one peak temperature for all of them. "
+                     "Cell-to-cell spread needs measured cell temperatures."
+               ).font = Font(italic=True, size=8, color="FF8899AA")
+
     # ── Legend
     legend_row = 7 + n_series + 2
     ws_hm.cell(row=legend_row, column=1, value="Temperature legend:").font = Font(
         bold=True, size=9, color="FF8899AA")
-    labels = ["Cool (25°C)", "Warm", "Hot", f"Peak ({t_hi:.0f}°C)"]
+    labels = [f"Ambient ({t_lo:.0f}°C)", "Warm", "Hot", f"Peak ({t_hi:.0f}°C)"]
     for i, label in enumerate(labels):
         t_val = t_lo + (t_hi - t_lo) * i / (len(labels) - 1)
         colour = _heat_colour(t_val, t_lo, t_hi)
@@ -1931,25 +2435,20 @@ def build_enhanced_excel(
                 bold=True, color="FFE74C3C", size=10)
 
     # SoC chart
-    try:
-        chart_ref_soc = Reference(ws_le,
-            min_col=5, min_row=5, max_row=5 + len(snap_idx))
-        chart_ref_t   = Reference(ws_le,
-            min_col=1, min_row=6, max_row=5 + len(snap_idx))
-        from openpyxl.chart import LineChart
-        lc = LineChart()
-        lc.title  = "State of Charge over Lap"
-        lc.y_axis.title = "SoC (%)"
-        lc.x_axis.title = "Time (s)"
-        lc.height = 12
-        lc.width  = 22
-        lc.add_data(chart_ref_soc, titles_from_data=True)
-        lc.set_categories(chart_ref_t)
-        lc.series[0].graphicalProperties.line.solidFill = "3B7CFF"
-        lc.series[0].graphicalProperties.line.width = 20000
-        ws_le.add_chart(lc, f"I5")
-    except Exception:
-        pass
+    from openpyxl.chart import LineChart
+    chart_ref_soc = Reference(ws_le, min_col=5, min_row=5, max_row=5 + len(snap_idx))
+    chart_ref_t   = Reference(ws_le, min_col=1, min_row=6, max_row=5 + len(snap_idx))
+    lc = LineChart()
+    lc.title  = "State of Charge over Lap"
+    lc.y_axis.title = "SoC (%)"
+    lc.x_axis.title = "Time (s)"
+    lc.height = 12
+    lc.width  = 22
+    lc.add_data(chart_ref_soc, titles_from_data=True)
+    lc.set_categories(chart_ref_t)
+    lc.series[0].graphicalProperties.line.solidFill = "3B7CFF"
+    lc.series[0].graphicalProperties.line.width = 20000
+    ws_le.add_chart(lc, "I5")
 
     for col_idx, w in enumerate([12, 12, 10, 16, 8, 10, 14], 1):
         ws_le.column_dimensions[get_column_letter(col_idx)].width = w
@@ -2183,13 +2682,10 @@ def read_raw_sheets(excel_bytes: bytes, *,
                 return False
         return False
 
-    def _num(v):
+    def _num(v):                       # only called on values _is_number accepted
         if isinstance(v, (int, float)):
             return float(v)
-        try:
-            return float(str(v).replace(",", "").strip())
-        except (ValueError, TypeError):
-            return None
+        return float(str(v).replace(",", "").strip())
 
     sheets_out = []
     all_names = list(wb.sheetnames)
@@ -2203,9 +2699,7 @@ def read_raw_sheets(excel_bytes: bytes, *,
             rows.append(row[:max_cols] if row else ())
         if not rows:
             continue
-        n_cols = max((len(r) for r in rows), default=0)
-        if n_cols == 0:
-            continue
+        n_cols = max(len(r) for r in rows)
 
         # Decide whether row 0 is a header (mostly non-numeric, has some text).
         first = rows[0]
@@ -2368,7 +2862,12 @@ def ledger_declarations_from_ev_params(ev_params: dict) -> dict:
         electrics["voltage_v"] = v_pack
 
     # --- electrics: current + the Joule-heat the cooling team must reject ---
-    i_peak = _pos(pack, "cell_current_a") or _pos(motor, "current_from_pack_a")
+    # The PACK's current. "Current Across a Single Cell" is one cell of one
+    # parallel string, so on its own it understates the pack by the parallel
+    # count; it was declared as the pack's peak current before.
+    i_cell, n_par = _pos(pack, "cell_current_a"), _pos(pack, "n_parallel")
+    i_peak = _pos(motor, "current_from_pack_a") or (
+        i_cell * n_par if i_cell is not None and n_par is not None else None)
     if i_peak is not None:
         electrics["peak_current_a"] = i_peak
     p_draw_kw = _pos(pack, "power_draw_kw")
@@ -2383,15 +2882,14 @@ def ledger_declarations_from_ev_params(ev_params: dict) -> dict:
         # stint_seconds = stint_hours * 3600. (Earlier this mixed km with m/s and
         # produced a ~MW result — guard with sane bounds below.)
         endurance_pace_kmh = 50.0
-        stint_s = (endurance_km / endurance_pace_kmh) * 3600.0 if endurance_km else 1600.0
-        if stint_s > 0:
-            heat_w = joule_kwh * 1000.0 * 3600.0 / stint_s
-            electrics["heat_reject_w"] = heat_w
-            notes.append(
-                f"heat_reject_w = {heat_w:.0f} W is the {joule_kwh:.3f} kWh "
-                f"workbook Joule figure averaged over a ~{stint_s/60:.0f}-min "
-                f"endurance stint at {endurance_pace_kmh:.0f} km/h "
-                f"(stint average, not peak).")
+        stint_s = (endurance_km / endurance_pace_kmh) * 3600.0   # endurance_km > 0
+        heat_w = joule_kwh * 1000.0 * 3600.0 / stint_s
+        electrics["heat_reject_w"] = heat_w
+        notes.append(
+            f"heat_reject_w = {heat_w:.0f} W is the {joule_kwh:.3f} kWh "
+            f"workbook Joule figure averaged over a ~{stint_s/60:.0f}-min "
+            f"endurance stint at {endurance_pace_kmh:.0f} km/h "
+            f"(stint average, not peak).")
 
     out = {}
     if powertrain:

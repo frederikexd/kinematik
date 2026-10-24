@@ -196,7 +196,7 @@ def test_a_spring_axis_square_to_the_joint_path_gives_no_motion_ratio_and_no_whe
 
 def test_motion_ratio_is_undefined_when_the_wheel_does_not_move():
     kin = _flat_travel(SuspensionKinematics(_default()))
-    assert np.isnan(kin._compute_motion_ratio())
+    assert np.isnan(kin._compute_motion_ratio(None, None, None, 5.0))
 
 
 # --------------------------------------------------------------------------- #

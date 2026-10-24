@@ -173,8 +173,18 @@ def test_ledger_declarations_pull_propulsion_stats():
     assert decl["powertrain"]["peak_power_kw"] == 80.0
     assert decl["powertrain"]["peak_torque_nm"] == 140.0
     assert decl["powertrain"]["voltage_v"] == 432.0
-    assert decl["electrics"]["peak_current_a"] == 180.0
+    # The pack's current (ElecPropulsion "I from pack"), not "cell I": a single
+    # cell carries the pack current divided by the parallel strings.
+    assert decl["electrics"]["peak_current_a"] == 175.0
     assert decl["_provenance"] == "FSAE_EV_Power_Draw.xlsx"
+
+
+def test_ledger_peak_current_scales_a_cell_current_to_the_pack():
+    decl = rt.ledger_declarations_from_ev_params(
+        {"pack": {"cell_current_a": 16.667, "n_parallel": 3}, "motor": {}})
+    assert decl["electrics"]["peak_current_a"] == pytest.approx(50.0, rel=1e-4)
+    alone = rt.ledger_declarations_from_ev_params({"pack": {"cell_current_a": 16.667}})
+    assert "electrics" not in alone              # no parallel count: not the pack's
 
 
 def test_ledger_heat_rejection_is_physically_sane():

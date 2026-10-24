@@ -20,11 +20,24 @@ jobs:
             --ignore=fsae_suspension/tests/test_voice_memo.py \
             -n auto -v -ra --tb=short \
             --cov=suspension --cov=powertrain --cov-report=term-missing:skip-covered \
-            --cov-fail-under=81
-        # Coverage ratchet: 81.8% of suspension/ and powertrain/ when the floor was set (kinematics 91%, statics 91%).
-        # Raise the floor when coverage rises; never lower it to make a change pass.
+            --cov-fail-under=87
+        # Coverage ratchet, everything in suspension/ and powertrain/: 81.8% when the first floor was set, 84.1% after
+        # the physics-module tests, 86.5% after the full-car model tests, 87.5% after the EV workbook tests. Raise the floor when coverage rises; never
+        # lower it to make a change pass.
         env:
           PYTHONPATH: ${{ github.workspace }}/fsae_suspension
+      - name: Engineering code coverage (accounts, cloud and telemetry left out)
+        # The same run, re-reported without the modules that compute nothing about the car: sign-in and its screens,
+        # workspaces and project history in the database, Google Drive export, usage analytics, the anonymous visitor
+        # id, preview mode and the hosting memory guard. They are still tested and still counted in the total above;
+        # this number is the one that says how much of the engineering is exercised. 85.5% when this figure was
+        # added, 87.9% after the full-car model tests, 89.0% after the EV workbook tests.
+        run: |
+          coverage report --skip-covered --fail-under=88.5 --omit="\
+          */suspension/auth.py,*/suspension/auth_ui.py,*/suspension/workspace.py,*/suspension/history.py,\
+          */suspension/report_store.py,*/suspension/drive_oauth.py,*/suspension/drive_export.py,\
+          */suspension/analytics.py,*/suspension/analytics_cache.py,*/suspension/visitor_id.py,\
+          */suspension/preview.py,*/suspension/mem_utils.py"
 
   core-coverage:
     # The four core solvers (kinematics, statics, compliance, elastokinematics) are held at 100% of statements AND
@@ -48,6 +61,23 @@ jobs:
             tests/test_motion_ratio_antidive.py \
             --cov=suspension.kinematics --cov=suspension.loadpath \
             --cov=suspension.elastokinematics --cov=suspension.compliance \
+            --cov-branch --cov-report=term-missing --cov-fail-under=100
+      - name: Physics modules and the full-car model at 100% statement and branch coverage
+        # Engine/cooling, underfloor aero, fit forecast, brake thermal and the EV electrical check are pinned to
+        # closed-form results (Darcy-Weisbach, eps-NTU, x = a t^2/2, Borda-Carnot, h*A*dT + eps*sigma*A*(T^4 - Ta^4)).
+        # The full-car 3D model is checked against its own sizing laws and closed meshes, and the EV workbook round
+        # trip against the workbook's own formula chain on a workbook built to the stock layout.
+        working-directory: fsae_suspension
+        run: |
+          pytest -n auto -q -p no:cacheprovider \
+            tests/test_powertrain_engine.py tests/test_underfloor.py tests/test_fit_forecast.py \
+            tests/test_brake_thermal_closed_form.py tests/test_energy_rotor_gas_physics.py \
+            tests/test_gap_closures_dynamics.py tests/test_ev_electrical_check.py tests/test_ev_sheet_resolution.py \
+            tests/test_fullcar3d.py tests/test_ev_excel_roundtrip.py tests/test_ev_excel_database.py \
+            tests/test_storage_diagnosis.py \
+            --cov=powertrain.engine --cov=suspension.aero.underfloor --cov=suspension.fit_forecast \
+            --cov=suspension.brake_thermal --cov=suspension.ev_electrical_check --cov=suspension.fullcar3d \
+            --cov=suspension.ev_excel_roundtrip \
             --cov-branch --cov-report=term-missing --cov-fail-under=100
 
   docker:

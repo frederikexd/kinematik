@@ -29677,9 +29677,17 @@ def render_laptime(_pt):
         '<code>FSAE_EV_Power_Draw.xlsx</code> and stored in the project — '
         'they stay there across sessions, restarts, and team members. '
         'The round-trip calculation uses the stored values instantly; '
-        'upload a new workbook only when the electrics lead updates the numbers.'
+        'upload a new workbook only when the electrics lead updates the numbers. '
+        'Pack current comes from the road load of this lap (vehicle mass, CdA, '
+        'Crr and drivetrain efficiency from the Electrical Feasibility Check '
+        'above); motor speed and torque are checked in the gear the workbook '
+        'selects (ThermalLoad!B2).'
         '</p>',
         unsafe_allow_html=True)
+    # The same vehicle inputs the Electrical Feasibility Check uses, so the two
+    # checks cannot disagree about the road load.
+    _rt_vehicle = dict(vehicle_mass_kg=float(_elec_mass), drag_cda=float(_elec_cda),
+                       crr=float(_elec_crr), drivetrain_eff=float(_elec_driveff))
 
     # ── Load / display / edit the stored EV params ─────────────────────
     _store_rt = get_store()
@@ -30023,6 +30031,7 @@ def render_laptime(_pt):
                         lap_time_s   = _rt_laptime_in2,
                         top_speed_ms = _rt_topspd_in2,
                         avg_speed_ms = _rt_avgspd_in2,
+                        vehicle      = _rt_vehicle,
                     )
                 st.session_state["_rt_result"] = _rt_result2
 
@@ -30083,16 +30092,16 @@ def render_laptime(_pt):
                 _rc2 = st.columns(3)
                 _rc2[0].markdown(metric("Max speed",
                     f"{_rt_res.max_speed_mph:.1f}", "mph"), unsafe_allow_html=True)
-                _rc2[1].markdown(metric("Max RPM (gear 1)",
-                    f"{float(_rt_res.rpm_gear1.max()):.0f}" if len(_rt_res.rpm_gear1) else "—",
-                    "rpm"), unsafe_allow_html=True)
+                _rc2[1].markdown(metric(f"Max motor RPM (gear {_rt_res.gear})",
+                    f"{float(_rt_res.motor_rpm.max()):.0f}" if len(_rt_res.motor_rpm) else "—",
+                    "rpm", "good" if _rt_res.motor_ok else "bad"), unsafe_allow_html=True)
                 _fuse_headroom2 = _fuse_limit2 - _rt_res.peak_current_a
                 _rc2[2].markdown(metric("Fuse headroom",
                     f"{_fuse_headroom2:.1f}", "A",
                     "good" if _fuse_headroom2 > 0 else "bad"), unsafe_allow_html=True)
 
                 # Current + RPM charts
-                if len(_rt_res.current_draw_a) > 2 and len(_rt_res.rpm_gear1) > 2:
+                if len(_rt_res.current_draw_a) > 2 and len(_rt_res.motor_rpm) > 2:
                     import plotly.graph_objects as _go_rt2
                     _t_axis = list(_rt_res.time_s)
                     _fig_rt = _go_rt2.Figure()
@@ -30107,11 +30116,15 @@ def render_laptime(_pt):
                         annotation_text=f"Fuse {_fuse_limit2:.0f} A",
                         annotation_position="top right")
                     _fig_rt.add_trace(_go_rt2.Scatter(
-                        x=_t_axis, y=list(_rt_res.rpm_gear1),
-                        name="Wheel RPM (gear 1)", yaxis="y2",
+                        x=_t_axis, y=list(_rt_res.motor_rpm),
+                        name=f"Motor RPM (gear {_rt_res.gear})", yaxis="y2",
                         line=dict(color="#f0a500", width=1.5, dash="dot")))
+                    _fig_rt.add_trace(_go_rt2.Scatter(
+                        x=_t_axis, y=list(_rt_res.workbook_current_a),
+                        name="Workbook current formula (speed only)", yaxis="y1",
+                        line=dict(color="#8d99a6", width=1, dash="dash")))
                     _fig_rt.update_layout(
-                        title="Pack current & wheel RPM vs lap time",
+                        title="Pack current (road load) & motor RPM vs lap time",
                         xaxis_title="time (s)",
                         yaxis=dict(title="current (A)", color="#3b7cff"),
                         yaxis2=dict(title="RPM", overlaying="y",
@@ -30166,6 +30179,7 @@ def render_laptime(_pt):
                         lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
                         top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2"  in dir() else 0.0,
                         avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2"  in dir() else 0.0,
+                        vehicle     = _rt_vehicle,
                     )
                     if _rt_write.ok and _rt_write.excel_bytes:
                         _dl_col1.download_button(
@@ -30174,11 +30188,17 @@ def render_laptime(_pt):
                             file_name="FSAE_EV_PowerDraw_LapSim.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                             key="rt_download_btn",
-                            help="Workbook with SpeedVsTime updated and all values baked in.")
+                            help="Workbook with SpeedVsTime updated and the audited "
+                                 "formula defects corrected.")
                         _dl_col2.markdown(
                             '<p class="hint" style="margin-top:10px;">'
-                            'SpeedVsTime updated with the lap sim trace; all downstream '
-                            'formulas recalculated as plain numbers. '
+                            f'SpeedVsTime updated with the lap sim trace, and '
+                            f'{len(_rt_write.corrections)} workbook corrections made: '
+                            'pack current and power now come from a live road-load '
+                            'sheet (KX_RoadLoad), the gear reduction is applied the '
+                            'right way round, and every change is listed with its '
+                            'before and after on the KX_Corrections sheet. Excel '
+                            'recalculates on open. '
                             'Re-upload a new workbook to refresh the stored parameters.</p>',
                             unsafe_allow_html=True)
                 else:
@@ -30589,6 +30609,7 @@ def render_laptime(_pt):
                             lap_time_s  = _rt_laptime_in2 if "_rt_laptime_in2" in dir() else 0.0,
                             top_speed_ms= _rt_topspd_in2  if "_rt_topspd_in2" in dir() else 0.0,
                             avg_speed_ms= _rt_avgspd_in2  if "_rt_avgspd_in2" in dir() else 0.0,
+                            vehicle     = _rt_vehicle,
                         )
                         if _rt_base.ok and _rt_base.excel_bytes:
                             _enh_bytes = roundtrip_mod.build_enhanced_excel(
@@ -30636,7 +30657,7 @@ def render_laptime(_pt):
                         f"Peak current: {_rt_res.peak_current_a:.1f} A / "
                         f"{_fuse_limit2:.0f} A fuse. "
                         f"Total energy: {_rt_res.total_energy_kwh:.3f} kWh. "
-                        f"Max RPM (gear 1): {float(_rt_res.rpm_gear1.max()):.0f}. "
+                        f"Max motor RPM (gear {_rt_res.gear}): {float(_rt_res.motor_rpm.max()):.0f}. "
                         f"{_stop_note}"
                         f"Min pack needed: {_min_pack['rec_capacity_ah']:.1f} Ah / "
                         f"{_min_pack['rec_energy_kwh']:.3f} kWh. "

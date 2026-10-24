@@ -51,8 +51,9 @@ def _ledger_items(ledger) -> Mapping[str, object]:
     d = ledger.as_dict() if hasattr(ledger, "as_dict") else ledger
     if not isinstance(d, Mapping):
         return {}
-    # as_dict() may nest under a 'subsystems'/'items' key or be flat.
-    for k in ("subsystems", "items"):
+    # IntegrationLedger.as_dict() nests the subsystems under 'interfaces'; other callers may use
+    # 'subsystems'/'items' or pass them flat.
+    for k in ("interfaces", "subsystems", "items"):
         if k in d and isinstance(d[k], Mapping):
             d = d[k]
             break
