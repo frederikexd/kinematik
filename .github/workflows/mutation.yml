@@ -22,6 +22,7 @@ on:
       - 'fsae_suspension/tests/test_motion_ratio_antidive.py'
       - 'fsae_suspension/tests/test_accuracy_invariants.py'
       - 'fsae_suspension/tests/test_actuation.py'
+      - 'fsae_suspension/tests/test_mutation_gaps.py'
       - 'fsae_suspension/pyproject.toml'
       - '.github/workflows/mutation.yml'
 
@@ -30,7 +31,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 300
     env:
-      FLOOR: '70'
+      # 100% measured 2026-10-23 (1679 of 1679 caught); it was 93.7% before the equivalent mutants were marked and
+      # 74.8% before tests/test_mutation_gaps.py. 99 leaves room for one equivalent mutant a later edit brings in.
+      FLOOR: '99'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

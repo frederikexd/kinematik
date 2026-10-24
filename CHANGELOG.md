@@ -3,6 +3,157 @@
 
 ## Unreleased
 
+**Five physics modules at 100% coverage, and the bugs that turned up.** `powertrain/engine.py`,
+`suspension/aero/underfloor.py`, `suspension/fit_forecast.py`, `suspension/brake_thermal.py` and
+`suspension/ev_electrical_check.py` are now at 100% of statements and branches, held by a second step in the
+`core-coverage` job. The five new test files check closed forms (Darcy–Weisbach, Haaland against Colebrook,
+Borda–Carnot, ε-NTU, the pump operating point, `x = at²/2`, the traction limit with load transfer, the convective and
+radiative balance) rather than only running the lines. Fixed along the way:
+- The endurance equilibrium used the rotating-disc correlation while the duct-gain calculator used a calibrated set's
+  fitted `h0 + h1·v`, so the gain it asked for did not give the target temperature. Both now use `convection_h`. The
+  uncalibrated example rotor's equilibrium moves from 302 °C to 350 °C; the calculator now returns a gain of 1.00 for
+  that temperature.
+- The equilibrium's Newton solve started from the convective estimate and could stop far from the answer at high power
+  (at 1e15 W the balance was off by a factor of 2e14). It now starts from the lower of the convective and radiative
+  bounds.
+- `engine.py` read the subsystem masses from the integration ledger under the wrong key and fell back to 230 kg; a car
+  declaring 95 kg now gets 95 kg.
+- The EV fuse warning printed the fuse limit twice instead of the lap's peak power against it.
+- The EV check found the speed-vs-time sheet only by its exact name; it now uses the same alias and content lookup as
+  the other sheets.
+- With no single-cell current given, the EV check fell back to capacity over parallel count (5 A) instead of the fuse
+  rating over parallel count.
+- The underfloor header claimed the force saturates at low ride height; it does not (784 N at 40 mm, 1.9 kN at 20 mm,
+  17 kN at 5 mm), and the model has no ground-effect stall, so read results below about 20 mm as an upper bound.
+Removed two conditions that could never be false (`underfloor` aft recovery, `fit_forecast` deductions).
+
+**Mutation testing at 100%.** All 1,679 deliberate errors in the kinematics and statics are caught; the floor is raised
+from 92% to 99%. Of the 117 survivors left at 93.7%, 19 were stale results (mutmut 3 keeps a result while the function is
+unchanged, so newer tests had not been counted). Lines whose every mutant is equivalent carry `# pragma: no mutate` with
+the reason: floating-point thresholds where `<` and `<=` differ only on exact equality, slices past the end of a
+9-entry or 6-row array, the unused sign in the instant-centre solves, the balance residual (a sum of zeros), one row of
+the pivot-axis cross-product matrix, and the two multi-line solver calls, which now use a `start`/`end` block because a
+trailing pragma covers only a statement's first line. The redundant `if self._has_rocker` around `_pushrod_outer_at` and
+the restated `pushrod_attach="lower"` default were removed. `_solve_rocker_angle` takes its seed explicitly. Eight new
+tests in `tests/test_mutation_gaps.py` cover the rest: a rocker that does not close, an unconverged solve, the seed
+passed to each solve, the bending arm clipped at both ends of the leg, float storage, the default ranges, the strut
+fallback for a state without a pushrod point, and notes that add up.
+
+**Mutation testing at 93.7%.** The full run catches 1,751 of 1,868 deliberate errors (it was 70.7%, then 74.8%); the
+floor is raised from 70% to 92%. The survivors were sorted by what they change. The float conversions about 90 of them
+dropped now go through one helper (`_vec`) instead of 45 call sites, the solver settings are marked not to mutate (any
+converging setting gives the same answer), and the new `tests/test_mutation_gaps.py` (58 tests, added to the mutation
+selection) closes the real gaps, each by an independent calculation:
+- the wishbone that carries the pushrod: the corner balances with every chassis reaction, the wishbone balances on
+  its own with the ball-joint force the upright implies, and the pivot reactions are split for the least force
+  across the legs (sign errors in that solve used to pass), for a pushrod on the lower and a pullrod on the upper arm;
+- every compliance link-length shim lengthens that link and only that link; a chassis-tab shift keeps the unloaded
+  length;
+- the default corner pinned field by field, with its documented outputs;
+- every hardpoint field through a save and reload, including an unknown key first;
+- the validation messages; the rocker's right-hand rotation; spring length, motion ratio (and its cache) and the
+  motion-ratio curve against finite differences of the solved linkage; the direct-acting proxy;
+- the side-view centre against finite differences of the solved ball joints, at static and in bump, with the pivot
+  axes square and angled in plan, and with one arm square and the other staggered; the anti-geometry at a given state
+  and with its default biases;
+- a corner drawn in metres solves the same as in millimetres, so no "is this zero" threshold is tied to a unit;
+- the sweep and the motion-ratio curve warm-start each step from the previous solution, as their docstrings say;
+- the exact notes the force solver attaches, and the flag for a near-singular linkage.
+Removed code nothing read (cached rocker arm and spring lengths, a wishbone frame and kingpin axis, a tie-rod side
+flag, a discarded force sum) and the `getattr` fallbacks for attributes that always exist (`WheelLoad` fields,
+`_has_rocker`); `spring_length_at` now always places the pushrod from the solved joints; the two-force solve now
+uses the same `_applied_moment` as the wishbone solve. Corrected `_side_view_swing_arm`'s docstring, which said the
+default geometry's velocity and hand constructions differ (1908.6 against 2050.4 mm): with pivot axes that have no
+lateral component they are the same line, both 1908.6 mm; they part only when the axes are angled in plan.
+
+**The exported EV workbook is corrected, not just refilled.** `power_draw.audit_workbook()` pins thirteen defects in
+the stock power-draw workbook to their cells; the round trip used to hand every one of them back. By default
+(`correct_workbook=True`) the exported file now:
+- adds `KX_RoadLoad`, a live road-load model on the profile rows (`a = dv/dt`, `F = m a + ½ρCdA v² + Crr m g`,
+  `P = MAX(F v, 0)/η`, `I = P/V`, with mass, CdA, Crr, air density, efficiency and pack voltage as editable cells);
+- points the ElecPropulsion current and power blocks at it, in all fifteen gear columns (pack current does not depend
+  on the gear), replacing `V · PF · RPM / 1000` and the power formula that multiplied by efficiency and applied
+  `√3 · PF` to the DC bus;
+- divides wheel speed by the ratio cell instead of multiplying, so gear 7 turns the motor 7× the wheel, not 1/7;
+- pulls block ranges that ran one row long back to their blocks (the RPM statistics, the EMF range), relabels
+  "Min Power (W)" as kW and "Joule Heat (kW)" as W, sets date-formatted gear cells to General;
+- writes pack resistance as `S · R_cell / P`, drops the stray fuse factor from ThermalLoad's max joule heat, turns
+  "Sum of Joule Heat" into the energy `Σ P dt` in kWh, and gives BearingBlowOut `TAN(RADIANS(…))` and the pitch
+  radius instead of the diameter;
+- rewrites the EMF columns, which multiplied volts × kW × ohms, as the pack's terminal voltage under load,
+  `V_pack − I · R_pack` with the road-load current: of the two voltages they could have meant, it is the only one the
+  workbook holds the inputs for (a motor back-EMF needs a V/rpm constant the file does not have), and it uses the same
+  pack voltage and resistance cells they already referenced;
+- lists every change with its before, after and reason on a `KX_Corrections` sheet.
+On a workbook in the stock layout, `audit_workbook` goes from thirteen findings to none. A second export does not
+correct twice, cells it cannot recognise are left alone and said so, and `correct_workbook=False` keeps the old
+behaviour. The audit's own checks now tell a corrected cell from a defective one (a divided ratio, `$B$16/2`,
+`SUMPRODUCT`), and its reader checks test behaviour instead of asserting it. The formula evaluator no longer treats
+text that quotes a formula as one.
+
+**EV pack current from the road load, in the gear the workbook selects.** The workbook round trip reported pack
+current from the workbook's own `V · PF · RPM / 1000`, which has no load or acceleration in it (a launch and a cruise
+at the same speed read the same, and almost any lap "blew" a 50 A fuse), and it used the first gear column although
+ThermalLoad, EMFs and BearingBlowOut select gear 7. It now uses the same road load as the Electrical Feasibility
+Check, `I = max(m a + ½ρCdA v² + Crr m g, 0) · v / (η V_pack)` with `a = dv/dt` and that check's mass, CdA, Crr and
+drivetrain efficiency, and reads the gear from `ROUND(1/ThermalLoad!B2, 0)` (stored with the workbook parameters, with
+a stated fallback to gear 1 when there is no selector). The ratio cells hold 1/N, so the motor turns N times the
+wheel; the verdict now also checks motor speed, torque and power against the declared limits in that gear. The
+workbook's formula is kept as `workbook_current_a` and in the summary block for comparison. Both electrical checks
+now credit no draw while coasting or braking: the feasibility check used to keep drag and rolling power on the pack
+through every braking zone.
+
+**The EV workbook round trip at 100% coverage, and six bugs in what it reports.** `suspension/ev_excel_roundtrip.py`
+was at 51%; the new `tests/test_ev_excel_roundtrip.py` (37 tests) builds a workbook to the stock layout (live gear
+formulas in three stacked blocks, dependent sheets that read them by absolute row, a CHOOSECOLS array formula, a pack
+sheet read by label) and checks the propulsion chain at constant speed against its closed form, the rows written and
+left alone, the rebuilt blocks of a flattened file, and the read-back paths. Fixed:
+- The minimum-feasible-pack advisor showed nameplate energy in its "Energy (usable)" row, beside the current pack's
+  usable energy, overstating the minimum by 1/0.92. It now reports the usable energy the lap draws, and sizes the
+  nameplate capacity from it.
+- With no series count in the pack sheet, the advisor sized a 504 V pack as one cell in series; the count is now
+  derived from the pack and cell voltages.
+- The integration ledger received "Current Across a Single Cell" as the pack's peak current, low by the parallel
+  count. It now takes the propulsion sheet's pack current, or the cell current times the parallel strings.
+- Stored workbook parameters read uncached `=1/7` gear ratios as 1:1 (the defect already fixed for the workbook path,
+  still present in the database path); they are now read from the formula, and a zero ratio is reported.
+- The pack heat map spread the modelled peak over an invented ±15% "gradient across the stack", printing cell
+  temperatures above the modelled peak. Every cell carries the same current in this model, so the grid now shows the
+  one modelled peak and says that a spread needs measured cell temperatures.
+- A speed profile with title rows above its data was written over those rows when its extent came from the populated
+  rows; it now starts at the first data row.
+The workbook path and the database path now share one evaluation of the propulsion chain, so they cannot disagree,
+and the comment that called the rectangle-rule energy sum trapezoidal is corrected.
+
+**The full-car 3D model at 100% coverage, and six drawing bugs.** `suspension/fullcar3d.py` was at 7%; the new
+`tests/test_fullcar3d.py` (69 tests) checks the mesh primitives against closed forms (a box's volume, a cylinder's
+radius and polygon volume, the NACA thickness of the wing section, closed watertight meshes), every body against its
+documented sizing law, the CG marker against a hand-weighted mean, the heat map against the ledger checks, and the
+helpers that read a figure back. It joins the 100% step of the `core-coverage` job. Fixed:
+- Every cylinder (tires, rims, brake discs, the motor, roll hoops, frame tubes) was triangulated with two different
+  diagonals per side quad, so half of each quad was drawn twice and a sliver along every edge was left open. The
+  meshes are now closed.
+- The spring-rate ride-height cue was backwards: a softer spring lowered the wheels and the ground, so the body ended
+  up higher above the ground. Now the frame, driver, wings, pods, motor, accumulator, logger and the inboard pickups
+  drop by the static sag, and the wheels and ground stay at z = 0.
+- Hiding or moving a suspension member ("Upright", "Tie rod", …) reached only the first corner, because the legend
+  name is set once; it now reaches all four.
+- A ledger passed in its `as_dict()` form was read at the wrong level, so every subsystem fell back to its nominal
+  body. Dict ledgers are now converted first.
+- The live influence read-out said the accumulator is "not drawn" when nothing is declared (a placeholder box is
+  drawn), still called the frame a monocoque, and said "no power/envelope" when a powertrain envelope was declared.
+- The CAD reconcile check listed an axis as changed when it was inside the tolerance it had just passed (it measured
+  5% of the stand-in instead of the larger of the two sizes).
+An unknown heat-map metric now falls back to the heat map with its own label, a comment that claimed the renderer
+reads `part_anchor()` (it does not; the rear wing is drawn 122 mm further back) is corrected, and defensive branches
+that could not run were removed.
+
+**Two coverage figures.** The test job now reports coverage twice from one run: everything in `suspension/` and
+`powertrain/` (87.5% with the full-car and EV workbook tests, floor raised from 81% to 87%), and the engineering code
+alone (89.0%, floor 88.5%), which leaves
+out the twelve account, cloud, telemetry and hosting modules listed in `.github/workflows/tests.yml`. Nothing is hidden
+from the first figure.
+
 **The core solvers at 100% coverage.** `kinematics.py`, `loadpath.py`, `compliance.py` and `elastokinematics.py` are
 now at 100% of statements and branches, held by a new `core-coverage` CI job. The new `tests/test_core_solver_edges.py`
 (47 tests) checks the edges against closed forms or independent calculations: parallel equal arms put the front-view

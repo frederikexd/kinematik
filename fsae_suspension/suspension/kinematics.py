@@ -144,7 +144,6 @@ class Hardpoints:
             rocker_pushrod=np.array([-5.0, 402.0, 308.0]),
             rocker_spring=np.array([-5.0, 335.0, 360.0]),
             spring_inner=np.array([-5.0, 196.7, 244.8]),
-            pushrod_attach="lower",
         )
 
     def as_dict(self):
@@ -190,9 +189,14 @@ class Hardpoints:
 # --------------------------------------------------------------------------- #
 #  Geometry helpers
 # --------------------------------------------------------------------------- #
+def _vec(v) -> np.ndarray:
+    """A point or vector as a float array. The one place the conversion happens."""
+    return np.asarray(v, float)
+
+
 def _unit(v: np.ndarray) -> np.ndarray:
     n = np.linalg.norm(v)
-    return v / n if n > 1e-12 else v
+    return v / n if n > 1e-12 else v  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
 
 
 # --------------------------------------------------------------------------- #
@@ -254,8 +258,8 @@ class SuspensionKinematics:
             hp = hp.copy()
             for name, shift in pickup_deltas.items():
                 if hasattr(hp, name) and getattr(hp, name) is not None:
-                    setattr(hp, name, np.asarray(getattr(hp, name), float)
-                            + np.asarray(shift, float))
+                    setattr(hp, name, _vec(getattr(hp, name))
+                            + _vec(shift))
         else:
             hp_nominal = hp
         self.hp = hp
@@ -283,7 +287,7 @@ class SuspensionKinematics:
             "tie_rod_inner", "tie_rod_outer", "wheel_center", "contact_patch",
         ]
         for name in point_fields:
-            v = np.asarray(getattr(hp, name), float)
+            v = _vec(getattr(hp, name))
             if v.shape != (3,):
                 raise ValueError(
                     f"Hardpoint '{name}' must be a 3D point [x, y, z]; "
@@ -291,7 +295,7 @@ class SuspensionKinematics:
             if not np.all(np.isfinite(v)):
                 raise ValueError(f"Hardpoint '{name}' contains non-finite values: {v}.")
         # Degenerate geometry: ball joints must be distinct, wishbone arms non-zero.
-        if np.linalg.norm(hp.upper_outer - hp.lower_outer) < 1e-6:
+        if np.linalg.norm(hp.upper_outer - hp.lower_outer) < 1e-6:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
             raise ValueError("Upper and lower ball joints are coincident — "
                              "the upright would have zero length.")
         for inner, outer, label in [
@@ -300,39 +304,33 @@ class SuspensionKinematics:
             (hp.lower_front_inner, hp.lower_outer, "lower front"),
             (hp.lower_rear_inner, hp.lower_outer, "lower rear"),
         ]:
-            if np.linalg.norm(np.asarray(inner, float) - np.asarray(outer, float)) < 1e-6:
+            if np.linalg.norm(_vec(inner) - _vec(outer)) < 1e-6:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
                 raise ValueError(f"The {label} wishbone has zero length "
                                  "(inner and outer points coincide).")
 
     def _cache_static(self):
         hp = self.hp
-        ref = getattr(self, "_hp_ref", hp)   # nominal geometry for rest lengths
-        dL = getattr(self, "_dL", {})
+        ref = self._hp_ref                   # nominal geometry for rest lengths
+        dL = self._dL                        # every key is set in __init__
         # Rigid link lengths captured at static ride height. Any compliance length
         # deltas (default 0) are added here, so the constraint the solver enforces
         # becomes the LOADED length of each link — the only change a flexible link
         # makes to the geometry is that it is a little longer (in tension) or shorter
         # (in compression) than its unloaded length.
-        self.L_upper_f = np.linalg.norm(ref.upper_outer - ref.upper_front_inner) + dL.get("upper_f", 0.0)
-        self.L_upper_r = np.linalg.norm(ref.upper_outer - ref.upper_rear_inner) + dL.get("upper_r", 0.0)
-        self.L_lower_f = np.linalg.norm(ref.lower_outer - ref.lower_front_inner) + dL.get("lower_f", 0.0)
-        self.L_lower_r = np.linalg.norm(ref.lower_outer - ref.lower_rear_inner) + dL.get("lower_r", 0.0)
-        self.L_upright = np.linalg.norm(ref.upper_outer - ref.lower_outer) + dL.get("upright", 0.0)
-        self.L_tie = np.linalg.norm(ref.tie_rod_outer - ref.tie_rod_inner) + dL.get("tie", 0.0)
+        self.L_upper_f = np.linalg.norm(ref.upper_outer - ref.upper_front_inner) + dL["upper_f"]
+        self.L_upper_r = np.linalg.norm(ref.upper_outer - ref.upper_rear_inner) + dL["upper_r"]
+        self.L_lower_f = np.linalg.norm(ref.lower_outer - ref.lower_front_inner) + dL["lower_f"]
+        self.L_lower_r = np.linalg.norm(ref.lower_outer - ref.lower_rear_inner) + dL["lower_r"]
+        self.L_upright = np.linalg.norm(ref.upper_outer - ref.lower_outer) + dL["upright"]
+        self.L_tie = np.linalg.norm(ref.tie_rod_outer - ref.tie_rod_inner) + dL["tie"]
         # Tie-rod outer is rigid to the upright: fixed distances to both ball joints.
-        self.L_tro_lo = np.linalg.norm(ref.tie_rod_outer - ref.lower_outer) + dL.get("tro_lo", 0.0)
-        self.L_tro_uo = np.linalg.norm(ref.tie_rod_outer - ref.upper_outer) + dL.get("tro_uo", 0.0)
-        # Signed side of tro relative to the kingpin plane, to disambiguate the
-        # two mirror solutions for the tie-rod outer position.
-        kp0 = _unit(hp.upper_outer - hp.lower_outer)
-        n0 = _unit(np.cross(kp0, np.array([1.0, 0.0, 0.0])))
-        self._tro_side = np.sign(np.dot(hp.tie_rod_outer - hp.lower_outer, n0)) or 1.0
+        self.L_tro_lo = np.linalg.norm(ref.tie_rod_outer - ref.lower_outer) + dL["tro_lo"]
+        self.L_tro_uo = np.linalg.norm(ref.tie_rod_outer - ref.upper_outer) + dL["tro_uo"]
 
         # Rigid offsets of the wheel-carrier points relative to the upright frame.
         # The upright frame is defined by the lower ball joint (origin) and the
         # kingpin axis (lower->upper). We store body points in that local frame so
         # they ride rigidly with the upright as it moves.
-        self.kp_axis_static = _unit(hp.upper_outer - hp.lower_outer)
         # Define a rigid upright frame from TWO physical points (lower & upper ball
         # joints) plus the tie-rod outer, which fixes rotation about the kingpin.
         self._R0, self._o0 = self._upright_pose(hp.lower_outer, hp.upper_outer, hp.tie_rod_outer)
@@ -354,22 +352,18 @@ class SuspensionKinematics:
         # ------------------------------------------------------------------ #
         self._has_rocker = hp.has_rocker()
         if self._has_rocker:
-            attach = getattr(hp, "pushrod_attach", "lower")
+            attach = hp.pushrod_attach
             if attach == "upright":
                 self._pushrod_body = "upright"
                 self._pushrod_local = self._R0.T @ (hp.pushrod_outer - self._o0)
             else:
                 self._pushrod_body = attach  # "lower" | "upper"
                 Rw0, ow0 = self._wishbone_pose_static(attach)
-                self._pushrod_wb_R0 = Rw0
-                self._pushrod_wb_o0 = ow0
                 self._pushrod_local = Rw0.T @ (hp.pushrod_outer - ow0)
-            # Rigid link lengths for the pushrod/rocker.
+            # The pushrod is the one rocker link the solver enforces; the rocker
+            # arms are rigid by construction (points rotated about the pivot).
             self.L_pushrod = np.linalg.norm(hp.rocker_pushrod - hp.pushrod_outer)
-            self.L_rocker_push = np.linalg.norm(hp.rocker_pushrod - hp.rocker_pivot)
-            self.L_rocker_spring = np.linalg.norm(hp.rocker_spring - hp.rocker_pivot)
-            self.L_spring_static = np.linalg.norm(hp.rocker_spring - hp.spring_inner)
-            self._rocker_axis = _unit(np.asarray(hp.rocker_axis, float))
+            self._rocker_axis = _unit(_vec(hp.rocker_axis))
 
         self.static = self.solve_at_travel(0.0)
 
@@ -391,9 +385,9 @@ class SuspensionKinematics:
 
     @staticmethod
     def _wishbone_pose(front_inner, ri, outer):
-        origin = np.asarray(front_inner, float).copy()
-        z = _unit(np.asarray(ri, float) - origin)
-        ref = np.asarray(outer, float) - origin
+        origin = _vec(front_inner).copy()
+        z = _unit(_vec(ri) - origin)
+        ref = _vec(outer) - origin
         x = _unit(ref - np.dot(ref, z) * z)
         y = np.cross(z, x)
         R = np.column_stack([x, y, z])
@@ -443,7 +437,7 @@ class SuspensionKinematics:
           lower-outer z drives travel                          (1)
         """
         hp = self.hp
-        lo, uo, tro = q[0:3], q[3:6], q[6:9]
+        lo, uo, tro = q[0:3], q[3:6], q[6:9]  # pragma: no mutate (q has 9 entries: a longer slice is the same)
         r = [
             np.linalg.norm(lo - hp.lower_front_inner) - self.L_lower_f,
             np.linalg.norm(lo - hp.lower_rear_inner) - self.L_lower_r,
@@ -469,13 +463,15 @@ class SuspensionKinematics:
         target_lower_z = hp.lower_outer[2] + travel_mm
         q0 = seed if seed is not None else np.concatenate(
             [hp.lower_outer, hp.upper_outer, hp.tie_rod_outer])
+        # pragma: no mutate start (solver settings: the solve converges well inside them)
         sol = least_squares(
             self._residuals, q0, args=(target_lower_z,),
             method="lm", max_nfev=400, xtol=1e-12, ftol=1e-12,
         )
-        lo, uo, tro = sol.x[0:3], sol.x[3:6], sol.x[6:9]
+        # pragma: no mutate end
+        lo, uo, tro = sol.x[0:3], sol.x[3:6], sol.x[6:9]  # pragma: no mutate (9 entries: a longer slice is the same)
         max_resid = float(np.max(np.abs(sol.fun)))
-        converged = max_resid < 0.1
+        converged = max_resid < 0.1  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
 
         # Rigid pose of the upright in the solved configuration.
         R, o = self._upright_pose(lo, uo, tro)
@@ -488,7 +484,7 @@ class SuspensionKinematics:
         caster, kpi = self._caster_kpi(uo, lo)
         scrub = self._scrub_radius(uo, lo, cp)
         ic = self._instant_center(uo, lo)
-        pro = self._pushrod_outer_at(lo, uo, tro) if getattr(self, "_has_rocker", False) else None
+        pro = self._pushrod_outer_at(lo, uo, tro)          # None when there is no rocker
 
         return CornerState(
             travel=travel_mm, upper_outer=uo, lower_outer=lo, tie_rod_outer=tro,
@@ -531,7 +527,7 @@ class SuspensionKinematics:
         # Intersecting with z = 0 instead mixed in tan(KPI) x travel (2.3 mm at 20 mm on
         # the front to build). At static the two planes coincide and nothing changes.
         kp = _unit(uo - lo)
-        if abs(kp[2]) < 1e-9:
+        if abs(kp[2]) < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
             return np.nan
         t = (cp[2] - lo[2]) / kp[2]
         ground = lo + t * kp
@@ -568,11 +564,11 @@ class SuspensionKinematics:
         def fv_perp(joint, front_inner, rear_inner):
             """Front-view line (point, direction) through `joint` on which the
             IC must lie: perpendicular to the joint's projected velocity."""
-            axis = np.asarray(rear_inner, float) - np.asarray(front_inner, float)
-            r = np.asarray(joint, float) - np.asarray(front_inner, float)
+            axis = _vec(rear_inner) - _vec(front_inner)
+            r = _vec(joint) - _vec(front_inner)
             v = np.cross(axis, r)                 # velocity direction, 3D
             vy, vz = v[1], v[2]                   # project into the front view
-            if abs(vy) < 1e-12 and abs(vz) < 1e-12:
+            if abs(vy) < 1e-12 and abs(vz) < 1e-12:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
                 return None                       # degenerate: joint on the axis
             # perpendicular to (vy, vz) in the y-z plane
             return np.array([joint[1], joint[2]]), np.array([-vz, vy])
@@ -584,8 +580,8 @@ class SuspensionKinematics:
         p1, d1 = up
         p2, d2 = lw
         # solve p1 + t d1 = p2 + s d2
-        A = np.column_stack([d1, -d2])
-        if abs(np.linalg.det(A)) < 1e-9:
+        A = np.column_stack([d1, -d2])  # pragma: no mutate (only ts[0] is used; the sign of d2 flips ts[1] alone)
+        if abs(np.linalg.det(A)) < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
             return np.array([np.nan, np.nan])     # parallel arms => IC at infinity
         ts = np.linalg.solve(A, p2 - p1)
         ic = p1 + ts[0] * d1
@@ -633,28 +629,30 @@ class SuspensionKinematics:
     def _rotate_about_axis(self, point, angle):
         """Rotate `point` about the rocker pivot/axis by `angle` (rad), Rodrigues."""
         hp = self.hp
-        piv = np.asarray(hp.rocker_pivot, float)
+        piv = _vec(hp.rocker_pivot)
         k = self._rocker_axis
-        v = np.asarray(point, float) - piv
+        v = _vec(point) - piv
         c, s = np.cos(angle), np.sin(angle)
         rot = v * c + np.cross(k, v) * s + k * np.dot(k, v) * (1.0 - c)
         return piv + rot
 
-    def _solve_rocker_angle(self, pushrod_outer, seed=0.0):
+    def _solve_rocker_angle(self, pushrod_outer, seed):
         """
         Find the rocker rotation (rad about its axis) such that the rocker's
         pushrod point sits exactly one pushrod-length from the (moved) pushrod
         outer. Returns the signed angle on the branch closest to `seed`.
         """
         hp = self.hp
-        rp0 = np.asarray(hp.rocker_pushrod, float)
+        rp0 = _vec(hp.rocker_pushrod)
 
         def resid(theta):
             rp = self._rotate_about_axis(rp0, theta)
-            return np.linalg.norm(rp - np.asarray(pushrod_outer, float)) - self.L_pushrod
+            return np.linalg.norm(rp - _vec(pushrod_outer)) - self.L_pushrod
 
+        # pragma: no mutate start (solver settings: the solve converges well inside them)
         sol = least_squares(lambda t: [resid(t[0])], [seed],
                             method="lm", max_nfev=200, xtol=1e-12, ftol=1e-12)
+        # pragma: no mutate end
         return float(sol.x[0]), float(abs(sol.fun[0]))
 
     def spring_length_at(self, state: CornerState, seed=0.0):
@@ -663,17 +661,15 @@ class SuspensionKinematics:
         the real pushrod→rocker→spring chain. Returns (length, rocker_angle, ok).
         Requires a defined rocker; raises otherwise.
         """
-        if not getattr(self, "_has_rocker", False):
+        if not self._has_rocker:
             raise ValueError("No pushrod/rocker geometry defined on these hardpoints.")
         hp = self.hp
-        pro = state.pushrod_outer
-        if pro is None:
-            pro = self._pushrod_outer_at(state.lower_outer, state.upper_outer,
-                                         state.tie_rod_outer)
+        # from the solved joints, so a state built by hand (no pushrod_outer) works too
+        pro = self._pushrod_outer_at(state.lower_outer, state.upper_outer, state.tie_rod_outer)
         theta, err = self._solve_rocker_angle(pro, seed=seed)
-        rs = self._rotate_about_axis(np.asarray(hp.rocker_spring, float), theta)
-        length = float(np.linalg.norm(rs - np.asarray(hp.spring_inner, float)))
-        return length, theta, (err < 0.05)
+        rs = self._rotate_about_axis(_vec(hp.rocker_spring), theta)
+        length = float(np.linalg.norm(rs - _vec(hp.spring_inner)))
+        return length, theta, (err < 0.05)  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
 
     def motion_ratio(self, spring_inner=None, rocker_pivot=None,
                      push_outer_local=None, d=5.0):
@@ -706,24 +702,22 @@ class SuspensionKinematics:
             cached = getattr(self, "_motion_ratio_cache", None)
             if cached is not None:
                 return cached
-            mr = self._compute_motion_ratio(spring_inner, rocker_pivot,
-                                            push_outer_local, d)
+            mr = self._compute_motion_ratio(None, None, None, 5.0)
             self._motion_ratio_cache = mr
             return mr
         return self._compute_motion_ratio(spring_inner, rocker_pivot,
                                           push_outer_local, d)
 
-    def _compute_motion_ratio(self, spring_inner=None, rocker_pivot=None,
-                              push_outer_local=None, d=5.0):
+    def _compute_motion_ratio(self, spring_inner, rocker_pivot, push_outer_local, d):
         s_up = self.solve_at_travel(+d)
         s_dn = self.solve_at_travel(-d)
         wheel_disp = s_up.wheel_center[2] - s_dn.wheel_center[2]
-        if abs(wheel_disp) < 1e-9:
+        if abs(wheel_disp) < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
             return np.nan
 
-        if getattr(self, "_has_rocker", False):
+        if self._has_rocker:
             # Real rocker: change in installed spring length per wheel travel.
-            l_up, th_up, ok_up = self.spring_length_at(s_up, seed=0.0)
+            l_up, th_up, ok_up = self.spring_length_at(s_up)
             l_dn, th_dn, ok_dn = self.spring_length_at(s_dn, seed=th_up)
             spring_disp = l_up - l_dn
             mr = abs(spring_disp / wheel_disp)
@@ -740,15 +734,15 @@ class SuspensionKinematics:
         else:
             p_up = s_up.lower_outer + push_outer_local
             p_dn = s_dn.lower_outer + push_outer_local
-        axis = _unit(np.asarray(si, float) - np.asarray(rp, float))
+        axis = _unit(_vec(si) - _vec(rp))
         spring_disp = np.dot(p_up - p_dn, axis)
-        if abs(spring_disp) < 1e-9:
+        if abs(spring_disp) < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
             return np.nan
         return abs(spring_disp / wheel_disp)
 
     def motion_ratio_is_real(self) -> bool:
         """True when motion_ratio() uses the actual rocker linkage (not the proxy)."""
-        return bool(getattr(self, "_has_rocker", False))
+        return bool(self._has_rocker)
 
     def wheel_rate(self, spring_rate_N_per_mm: float) -> float:
         """
@@ -771,7 +765,7 @@ class SuspensionKinematics:
         warm-started central difference so the rocker stays on one branch.
         """
         travels = np.linspace(travel_min, travel_max, n)
-        if not getattr(self, "_has_rocker", False):
+        if not self._has_rocker:
             return list(travels), [self.motion_ratio()] * n  # proxy: ~constant
         h = 1.0
         out = []
@@ -782,8 +776,9 @@ class SuspensionKinematics:
             lu, seed, ok_u = self.spring_length_at(su, seed=seed)
             ld, _, ok_d = self.spring_length_at(sd, seed=seed)
             wd = su.wheel_center[2] - sd.wheel_center[2]
-            mr = abs((lu - ld) / wd) if abs(wd) > 1e-9 and ok_u and ok_d else np.nan
-            out.append(float(mr) if np.isfinite(mr) else np.nan)
+            moved = abs(wd) > 1e-9  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
+            mr = abs((lu - ld) / wd) if moved and ok_u and ok_d else np.nan
+            out.append(float(mr))
         return list(travels), out
 
     # ===================================================================== #
@@ -825,8 +820,8 @@ class SuspensionKinematics:
         dn = self.solve_at_travel(base - d)
         pu, pd = getattr(up, point_name), getattr(dn, point_name)
         dz = pu[2] - pd[2]
-        if abs(dz) < 1e-12:
-            return float("nan")
+        if abs(dz) < 1e-12:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
+            return float("nan")  # pragma: no mutate (float() ignores the case of "nan")
         return float((pu[0] - pd[0]) / dz)
 
     def _side_view_swing_arm(self, state=None):
@@ -848,30 +843,31 @@ class SuspensionKinematics:
         the old front-view midpoint construction wrong once the pickups were
         staggered.
 
-        It was measurably wrong here. On the default geometry the hand
-        construction put the swing-arm length at 1908.6 mm and the velocity
-        construction at 2050.4 mm — 7.4% apart, which is 26% on anti-squat. The
-        generic-topology solver in adapter.py already used the velocity form, so
-        the same car gave two different anti-squat numbers depending on which
-        solver a user happened to be in. They now agree, and they agree on the
-        exact answer rather than meeting in the middle.
+        When the two constructions agree, and when they do not: if a pivot axis
+        has no lateral (y) component, the joint's velocity is perpendicular to the
+        axis's own side-view projection, so the velocity construction and the
+        hand construction give the same line. The default geometry's axes are
+        like that, and both give 1908.6 mm. Angle the axes in plan view (rear
+        pickups 40 mm out on the upper arm and 30 mm in on the lower) and they
+        part: 1852.4 mm by velocity, still 1908.6 mm by hand. The velocity form is
+        the one that matches the solved motion; tests/test_mutation_gaps.py checks
+        it against finite differences of the solved ball-joint positions.
 
         Returns NaNs when the perpendiculars are parallel (infinite swing arm =>
         zero anti-dive), which is the correct degenerate case.
         """
         hp = self.hp
-        st = state if state is not None else getattr(self, "static", None)
-        uo = st.upper_outer if st is not None else hp.upper_outer
-        lo = st.lower_outer if st is not None else hp.lower_outer
+        st = state if state is not None else self.static
+        uo, lo = st.upper_outer, st.lower_outer
 
         def sv_perp(joint, front_inner, rear_inner):
             """Side-view line (point, direction) through `joint` on which the
             instant centre must lie: perpendicular to its projected velocity."""
-            axis = np.asarray(rear_inner, float) - np.asarray(front_inner, float)
-            r = np.asarray(joint, float) - np.asarray(front_inner, float)
+            axis = _vec(rear_inner) - _vec(front_inner)
+            r = _vec(joint) - _vec(front_inner)
             v = np.cross(axis, r)
             vx, vz = v[0], v[2]
-            if abs(vx) < 1e-12 and abs(vz) < 1e-12:
+            if abs(vx) < 1e-12 and abs(vz) < 1e-12:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
                 return None
             return np.array([joint[0], joint[2]]), np.array([-vz, vx])
 
@@ -881,8 +877,8 @@ class SuspensionKinematics:
             return np.array([np.nan, np.nan])
         p1, d1 = up
         p2, d2 = lw
-        A = np.column_stack([d1, -d2])
-        if abs(np.linalg.det(A)) < 1e-9:
+        A = np.column_stack([d1, -d2])  # pragma: no mutate (only ts[0] is used; the sign of d2 flips ts[1] alone)
+        if abs(np.linalg.det(A)) < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
             return np.array([np.nan, np.nan])
         ts = np.linalg.solve(A, p2 - p1)
         return p1 + ts[0] * d1
