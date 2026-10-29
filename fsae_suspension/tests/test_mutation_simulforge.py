@@ -5,12 +5,10 @@ stand-in ghost corner so every branch is reached without long transient solves."
 import types
 
 import numpy as np
-import pytest
 
 from suspension import earshot as es
 from suspension import fusebox as fb
 from suspension import ghost_topology as gt
-from suspension import loadpath as lp
 from suspension import simulforge as sf
 from suspension import transient as tr
 from suspension.proof_engine import EvidenceGrade

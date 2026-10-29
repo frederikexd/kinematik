@@ -2,7 +2,6 @@
 multilinear interpolation reproduces a bilinear field exactly, queries clamp and say so, a missing corner falls back
 to the normalised inverse-distance blend written out here, an absent channel stays None, and the CSV round trip and
 status read back what went in."""
-import math
 
 import pytest
 

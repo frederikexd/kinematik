@@ -3,7 +3,6 @@
 Each case is a purpose-built workbook or trace; the full findings (check, severity, message, cells, detail) and the
 numeric traces are compared against tests/golden/power_draw_*.json. See tests/_golden.py."""
 import datetime as dt
-import math
 import json
 import re
 

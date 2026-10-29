@@ -1,6 +1,5 @@
 """Characterization suite for suspension/ghost_topology.py (mutation gate); see tests/_golden.py."""
 import dataclasses
-import math
 import types
 
 import numpy as np

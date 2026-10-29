@@ -92,8 +92,7 @@ import numpy as np
 from ._num import vec as _vec
 
 from .dynamics import VehicleDynamics, VehicleParams
-from .tiremodel import (CombinedSlipTire, default_tire,
-                        default_combined_tire, relaxation_length)
+from .tiremodel import (CombinedSlipTire, default_combined_tire, relaxation_length)
 from .damper import DamperCurve, default_damper
 
 

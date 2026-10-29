@@ -4,7 +4,6 @@ The optimiser cases replace scipy's least_squares and the kinematic metrics with
 synthesis bookkeeping (bounds, starts, scoring, node seeding, ride rates) is pinned without the cost of the real solve;
 the real metrics are pinned separately on the default hardpoints."""
 import copy
-import math
 import types
 
 import numpy as np

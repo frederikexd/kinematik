@@ -1,13 +1,12 @@
 """Characterization suite for suspension/flexgen.py (mutation gate); see tests/_golden.py."""
 import dataclasses
 import datetime
-import math
 
 import numpy as np
 import pytest
 
 from suspension import flexgen as fg
-from suspension.flex import MATERIALS, Material
+from suspension.flex import MATERIALS
 from tests._golden import check
 
 STEEL = MATERIALS["Steel 4130"]

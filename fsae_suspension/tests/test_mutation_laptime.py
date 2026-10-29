@@ -4,7 +4,6 @@ the friction-circle accel and brake limits, the standing start, the skidpad, the
 path tools (Menger curvature, path to track, cone midlines, GPS projection, the racing-line relaxation, the points
 curve), each against arithmetic written out in this file."""
 import math
-import sys
 from types import SimpleNamespace as NS
 
 import numpy as np
