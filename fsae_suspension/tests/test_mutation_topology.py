@@ -354,6 +354,7 @@ def test_characterized_two_bodies_and_custom_constraints():
     b.constraint(_BodyHeight("arm", 31.0))
     m = b.finish(carrier="arm", wheel_center="W", contact_patch="C", drive_point="P")
     res = {"static": {n: p.pos for n, p in m.points.items()}}
+    res["resid"] = m._residuals(m._get_free() + 0.01)       # before any solve: the solves move the free points
     # M is coincident with itself and revolves about the z axis through G, so it may sit anywhere on that circle and
     # each LAPACK picks a different point: record the circle (radius about G's axis, height), not the point
     def fixed(pos):
@@ -362,6 +363,5 @@ def test_characterized_two_bodies_and_custom_constraints():
         out["M_z"] = float(pos["M"][2])
         return out
     res["solves"] = [[fixed(r["positions"]), r["max_residual"] < 1e9] for r in (m.solve(4.0), m.solve(-3.0, steer=0.0))]
-    res["resid"] = m._residuals(m._get_free() + 0.01)
     res["dflt_sweep"] = [len(_arm().sweep()), [r["travel"] for r in _arm().sweep()][:3]]
     check("topology_two_bodies", res)

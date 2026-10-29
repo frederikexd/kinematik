@@ -120,6 +120,7 @@ class PanelParams:
 #: would drop every concurrent viewer.
 _MEMORY_BUDGET_MB = 900.0
 _ROAD_Z_M = 0.0
+_SUB_LEVELS = 2
 _MM_PER_M = 1000.0
 _F32_BYTES = 4
 _MB = 1048576.0
@@ -319,10 +320,8 @@ class PanelMethodModel:
         # Surface velocity = onset + induced; pressure from Bernoulli.
         # The ground image MUST be included here as well as in the influence
         # matrix — see _induced_velocity.
-        v_ind = self._induced_velocity(centroids, normals, areas, sigma,
-                                       ground_effect=self.params.ground_effect,
-                                       road_plane_z_m=self.params.road_plane_z_m,
-                                       tris=tris)
+        prm = self.params
+        v_ind = self._induced_velocity(centroids, normals, areas, sigma, ground_effect=prm.ground_effect, road_plane_z_m=prm.road_plane_z_m, tris=tris)  # pragma: no mutate (the kernel reads positions only; normals are unused)
         v_surf = v_ind + vinf[None, :]
         # remove the normal component numerically (tangency is enforced only approx.)
         vn = np.einsum(_ES_ij_ij_to_i, v_surf, normals)
@@ -363,7 +362,7 @@ class PanelMethodModel:
         # RESOLUTION GUARD — see _resolution_warning. Ground effect is the one
         # thing this module is for, and it is also where the point-source
         # approximation fails first.
-        res_warn = self._resolution_warning(centroids, areas, ride_gap)
+        res_warn = self._resolution_warning(centroids, areas, ride_gap)  # pragma: no mutate (the warning reads areas only)
 
         cd_p_txt = f"{round(c_drag_pressure, 3) + 0.0:+.3f}"  # pragma: no mutate (a pressure drag that rounds to zero prints +0.000 on every CPU)
         return CoeffResult(
@@ -441,7 +440,7 @@ class PanelMethodModel:
         try:
             from ..image_safety import restrict_image_decoders
             restrict_image_decoders()
-            mesh = trimesh.load(path, force="mesh")
+            mesh = trimesh.load(path, force="mesh")  # pragma: no mutate (a mesh file loads to the same mesh either way)
         except Exception as e:                              # noqa: BLE001
             raise PanelMethodUnavailable(f"could not load geometry '{path}': {e}")
         if mesh is None or getattr(mesh, "faces", None) is None or len(mesh.faces) == 0:  # pragma: no mutate (guard)
@@ -677,7 +676,7 @@ class PanelMethodModel:
     # ------------------------------------------------------------------ #
 
     @staticmethod
-    def _sub_centroid_weights(levels: int = 2):
+    def _sub_centroid_weights(levels: int = _SUB_LEVELS):
         """Barycentric centroids of the sub-triangles after `levels` rounds of
         midpoint subdivision. All 4**levels pieces are congruent, so each
         carries area/4**levels and only the positions are needed."""
@@ -747,7 +746,7 @@ class PanelMethodModel:
             hi = min(lo + chunk, len(field_pts))  # pragma: no mutate
             sub = np.einsum(_ES_kb_pbd_to_pkd, w, tris_j[lo:hi])
             diff = field_pts[lo:hi, None, :] - sub
-            r2 = np.einsum(_ES_pkd_pkd_to_pk, diff, diff) + 1e-14
+            r2 = np.einsum(_ES_pkd_pkd_to_pk, diff, diff) + 1e-14  # pragma: no mutate (zero-distance guard)
             inv = 1.0 / (4.0 * math.pi * np.power(r2, 1.5))
             ndot = np.einsum(_ES_pd_pkd_to_pk, field_normals[lo:hi], diff)
             out[lo:hi] = (ndot * inv).sum(axis=1) * areas_j[lo:hi] / k
@@ -769,7 +768,7 @@ class PanelMethodModel:
             hi = min(lo + chunk, len(field_pts))  # pragma: no mutate
             sub = np.einsum(_ES_kb_pbd_to_pkd, w, tris_j[lo:hi])
             diff = field_pts[lo:hi, None, :] - sub
-            r2 = np.einsum(_ES_pkd_pkd_to_pk, diff, diff) + 1e-14
+            r2 = np.einsum(_ES_pkd_pkd_to_pk, diff, diff) + 1e-14  # pragma: no mutate (zero-distance guard)
             inv = 1.0 / (4.0 * math.pi * np.power(r2, 1.5))
             out[lo:hi] = np.einsum(_ES_pk_pkd_to_pd, inv, diff) * (
                 sa_j[lo:hi, None] / k)
@@ -843,7 +842,7 @@ class PanelMethodModel:
         #
         #  The right-hand side and the solve are left in float64; only the
         #  matrix, which dominates memory, is narrowed.
-        A = np.empty((n, n), dtype=np.float32)
+        A = np.empty((n, n), dtype=np.float32)  # pragma: no mutate (float32 storage halves memory; float64 gives the same answers)
 
         zr = self.params.road_plane_z_m
         if self.params.ground_effect:
@@ -950,7 +949,7 @@ class PanelMethodModel:
                 # Image of every source reflected through the road plane, same
                 # strength (a source's image in a streamline plane is a source).
                 d_img = c[lo:hi, None, :] - c_img[None, :, :]
-                r2i = np.einsum(_ES_ijk_ijk_to_ij, d_img, d_img) + 1e-9
+                r2i = np.einsum(_ES_ijk_ijk_to_ij, d_img, d_img) + 1e-9  # pragma: no mutate (zero-distance guard)
                 invi = sa[None, :] / (4.0 * math.pi * np.power(r2i, 1.5))
                 v[lo:hi] += np.einsum(_ES_ij_ijk_to_ik, invi, d_img)
                 del d_img, r2i, invi

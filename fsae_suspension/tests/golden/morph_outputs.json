@@ -86,20 +86,20 @@
    "fan": {
     "cases": [
      {
-      "F_N": 2300.0,
-      "angle_deg": -5.4,
+      "F_N": 1900.0,
+      "angle_deg": -16.2,
       "n_instants": 3,
-      "t_hi_ms": 40.0,
-      "t_lo_ms": 20.0,
-      "weight": 0.663
+      "t_hi_ms": 20.0,
+      "t_lo_ms": 0.0,
+      "weight": 0.537
      },
      {
-      "F_N": 1700.0,
-      "angle_deg": 22.8,
+      "F_N": 2300.0,
+      "angle_deg": 10.0,
       "n_instants": 2,
-      "t_hi_ms": 10.0,
-      "t_lo_ms": 0.0,
-      "weight": 0.337
+      "t_hi_ms": 40.0,
+      "t_lo_ms": 30.0,
+      "weight": 0.463
      }
     ],
     "inplane_share": 1.0,
@@ -107,12 +107,12 @@
     "n_instants": 5,
     "peak_F_N": 2300.0,
     "reversal_share": 0.0,
-    "span_deg": 28.2,
+    "span_deg": 26.2,
     "warnings": []
    },
    "findings": [],
-   "fos": 4.504,
-   "fos_case_deg": -5.4,
+   "fos": 4.557,
+   "fos_case_deg": 10.0,
    "limits": {
     "accuracy_mm": 0.05,
     "haz_mm": 0.0,
@@ -121,27 +121,27 @@
     "process": "cnc",
     "web_floor_mm": 1.0
    },
-   "mass_g": 12.8,
+   "mass_g": 12.6,
    "n_solves": 18,
    "rounds": [
     {
      "accepted": true,
-     "compliance": 21.351,
+     "compliance": 20.695,
      "filter_mm": 3.0,
      "iterations": 8,
      "viol_frac": 0.0,
      "viol_haz_frac": 0.0,
-     "volfrac": 0.4499
+     "volfrac": 0.4501
     }
    ],
    "suggested_thickness_mm": null,
    "verdict": "FORGEABLE",
-   "vm_max_MPa": 102.1,
+   "vm_max_MPa": 100.9,
    "warnings": []
   },
-  "# 🕸️🔩 MorphMesh — chassis tab\n\n🟢 FORGEABLE — grown, converged, and buildable at the shop's own limits on the first attempt.\n\n## The transient load fan — member LF (LCA front leg)\n- 5 audited instants, peak 2300 N, fan span 28°, 100% of exposure in the bracket plane.\n\n| case | angle | peak force | exposure | instants | window |\n|---|---|---|---|---|---|\n| 1 | -5° | 2300 N | 66% | 3 | 20–40 ms |\n| 2 | +23° | 1700 N | 34% | 2 | 0–10 ms |\n\n## The shop's declared limits\n- process **cnc** — positional accuracy ±0.05 mm, web floor 1.0 mm → minimum rib **1.1 mm**; no weld zone declared.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 21.35 | 45% | 0.0% | 0.0% | ACCEPTED |\n\n## The finished shape\n- mass **13 g** at 4.0 mm Steel 4130\n- worst von Mises FoS **4.50** (102 MPa, governing case at -5°) vs the standing 1.5 rule.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*",
-  "{\n  \"verdict\": \"FORGEABLE\",\n  \"domain\": \"chassis tab\",\n  \"limits\": {\n    \"process\": \"cnc\",\n    \"min_rib_mm\": 1.1,\n    \"haz_mm\": 0.0,\n    \"min_rib_haz_mm\": 1.1,\n    \"accuracy_mm\": 0.05,\n    \"web_floor_mm\": 1.0\n  },\n  \"fan\": {\n    \"member\": \"LF\",\n    \"cases\": [\n      {\n        \"angle_deg\": -5.4,\n        \"F_N\": 2300.0,\n        \"weight\": 0.663,\n        \"n_instants\": 3,\n        \"t_lo_ms\": 20.0,\n        \"t_hi_ms\": 40.0\n      },\n      {\n        \"angle_deg\": 22.8,\n        \"F_N\": 1700.0,\n        \"weight\": 0.337,\n        \"n_instants\": 2,\n        \"t_lo_ms\": 0.0,\n        \"t_hi_ms\": 10.0\n      }\n    ],\n    \"inplane_share\": 1.0,\n    \"span_deg\": 28.2,\n    \"n_instants\": 5,\n    \"peak_F_N\": 2300.0,\n    \"reversal_share\": 0.0,\n    \"warnings\": []\n  },\n  \"rounds\": [\n    {\n      \"filter_mm\": 3.0,\n      \"iterations\": 8,\n      \"compliance\": 21.351,\n      \"volfrac\": 0.4499,\n      \"viol_frac\": 0.0,\n      \"viol_haz_frac\": 0.0,\n      \"accepted\": true\n    }\n  ],\n  \"mass_g\": 12.8,\n  \"fos\": 4.504,\n  \"fos_case_deg\": -5.4,\n  \"vm_max_MPa\": 102.1,\n  \"suggested_thickness_mm\": null,\n  \"coarsen_premium\": null,\n  \"n_solves\": 18,\n  \"findings\": [],\n  \"warnings\": []\n}",
-  "x_mm,y_mm,density\n1.00,1.00,1.000\n3.00,1.00,0.998\n5.00,1.00,0.978\n7.00,1.00,0.910\n9.00,1.00,0.889\n11.00,1.00,0.928\n13.00,1.00,0.928\n15.00,1.00,0.886\n17.00,1.00,0.906\n19.00,1.00,0.976\n21.00,1.00,0.998\n23.00,1.00,1.000\n1.00,3.00,1.000\n3.00,3.00,0.997\n5.00,3.00,0.974\n7.00,3.00,0.944\n9.00,3.00,0.967\n11.00,3.00,0.988\n13.00,3.00,0.988\n15.00,3.00,0.966\n17.00,3.00,0.942\n19.00,3.00,0.972\n21.00,3.00,0.997\n23.00,3.00,1.000\n1.00,5.00,1.000\n3.00,5.00,0.991\n5.00,5.00,0.905\n7.00,5.00,0.865\n9.00,5.00,0.985\n11.00,5.00,1.000\n13.00,5.00,1.000\n15.00,5.00,0.985\n17.00,5.00,0.863\n19.00,5.00,0.901\n21.00,5.00,0.991\n23.00,5.00,1.000\n1.00,7.00,0.992\n3.00,7.00,0.981\n5.00,7.00,0.689\n7.00,7.00,0.691\n9.00,7.00,1.000\n11.00,7.00,1.000\n13.00,7.00,1.000\n15.00,7.00,1.000\n17.00,7.00,0.689\n19.00,7.00,0.683\n21.00,7.00,0.981\n23.00,7.00,0.991\n1.00,9.00,0.900\n3.00,9.00,0.960\n5.00,9.00,0.810\n7.00,9.00,1.000\n9.00,9.00,1.000\n11.00,9.00,1.000\n13.00,9.00,1.000\n15.00,9.00,1.000\n17.00,9.00,1.000\n19.00,9.00,0.808\n21.00,9.00,0.959\n23.00,9.00,0.894\n1.00,11.00,0.521\n3.00,11.00,0.970\n5.00,11.00,1.000\n7.00,11.00,1.000\n9.00,11.00,1.000\n15.00,11.00,1.000\n17.00,11.00,1.000\n19.00,11.00,1.000\n21.00,11.00,0.969\n23.00,11.00,0.510\n1.00,13.00,0.181\n3.00,13.00,0.923\n5.00,13.00,1.000\n7.00,13.00,1.000\n17.00,13.00,1.000\n19.00,13.00,1.000\n21.00,13.00,0.921\n23.00,13.00,0.177\n3.00,15.00,0.526\n5.00,15.00,1.000\n7.00,15.00,1.000\n17.00,15.00,1.000\n19.00,15.00,1.000\n21.00,15.00,0.509\n3.00,17.00,0.104\n5.00,17.00,1.000\n7.00,17.00,1.000\n17.00,17.00,1.000\n19.00,17.00,1.000\n21.00,17.00,0.102\n5.00,19.00,1.000\n7.00,19.00,1.000\n9.00,19.00,1.000\n15.00,19.00,1.000\n17.00,19.00,1.000\n19.00,19.00,1.000\n5.00,21.00,0.136\n7.00,21.00,1.000\n9.00,21.00,1.000\n11.00,21.00,1.000\n13.00,21.00,1.000\n15.00,21.00,1.000\n17.00,21.00,1.000\n19.00,21.00,0.136\n7.00,23.00,0.136\n9.00,23.00,1.000\n11.00,23.00,1.000\n13.00,23.00,1.000\n15.00,23.00,1.000\n17.00,23.00,0.136\n11.00,25.00,0.053\n13.00,25.00,0.053",
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n🟢 FORGEABLE — grown, converged, and buildable at the shop's own limits on the first attempt.\n\n## The transient load fan — member LF (LCA front leg)\n- 5 audited instants, peak 2300 N, fan span 26°, 100% of exposure in the bracket plane.\n\n| case | angle | peak force | exposure | instants | window |\n|---|---|---|---|---|---|\n| 1 | -16° | 1900 N | 54% | 3 | 0–20 ms |\n| 2 | +10° | 2300 N | 46% | 2 | 30–40 ms |\n\n## The shop's declared limits\n- process **cnc** — positional accuracy ±0.05 mm, web floor 1.0 mm → minimum rib **1.1 mm**; no weld zone declared.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 20.70 | 45% | 0.0% | 0.0% | ACCEPTED |\n\n## The finished shape\n- mass **13 g** at 4.0 mm Steel 4130\n- worst von Mises FoS **4.56** (101 MPa, governing case at 10°) vs the standing 1.5 rule.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*",
+  "{\n  \"verdict\": \"FORGEABLE\",\n  \"domain\": \"chassis tab\",\n  \"limits\": {\n    \"process\": \"cnc\",\n    \"min_rib_mm\": 1.1,\n    \"haz_mm\": 0.0,\n    \"min_rib_haz_mm\": 1.1,\n    \"accuracy_mm\": 0.05,\n    \"web_floor_mm\": 1.0\n  },\n  \"fan\": {\n    \"member\": \"LF\",\n    \"cases\": [\n      {\n        \"angle_deg\": -16.2,\n        \"F_N\": 1900.0,\n        \"weight\": 0.537,\n        \"n_instants\": 3,\n        \"t_lo_ms\": 0.0,\n        \"t_hi_ms\": 20.0\n      },\n      {\n        \"angle_deg\": 10.0,\n        \"F_N\": 2300.0,\n        \"weight\": 0.463,\n        \"n_instants\": 2,\n        \"t_lo_ms\": 30.0,\n        \"t_hi_ms\": 40.0\n      }\n    ],\n    \"inplane_share\": 1.0,\n    \"span_deg\": 26.2,\n    \"n_instants\": 5,\n    \"peak_F_N\": 2300.0,\n    \"reversal_share\": 0.0,\n    \"warnings\": []\n  },\n  \"rounds\": [\n    {\n      \"filter_mm\": 3.0,\n      \"iterations\": 8,\n      \"compliance\": 20.695,\n      \"volfrac\": 0.4501,\n      \"viol_frac\": 0.0,\n      \"viol_haz_frac\": 0.0,\n      \"accepted\": true\n    }\n  ],\n  \"mass_g\": 12.6,\n  \"fos\": 4.557,\n  \"fos_case_deg\": 10.0,\n  \"vm_max_MPa\": 100.9,\n  \"suggested_thickness_mm\": null,\n  \"coarsen_premium\": null,\n  \"n_solves\": 18,\n  \"findings\": [],\n  \"warnings\": []\n}",
+  "x_mm,y_mm,density\n1.00,1.00,1.000\n3.00,1.00,0.996\n5.00,1.00,0.968\n7.00,1.00,0.896\n9.00,1.00,0.881\n11.00,1.00,0.928\n13.00,1.00,0.931\n15.00,1.00,0.896\n17.00,1.00,0.920\n19.00,1.00,0.985\n21.00,1.00,0.999\n23.00,1.00,1.000\n1.00,3.00,1.000\n3.00,3.00,0.996\n5.00,3.00,0.965\n7.00,3.00,0.935\n9.00,3.00,0.963\n11.00,3.00,0.988\n13.00,3.00,0.989\n15.00,3.00,0.970\n17.00,3.00,0.951\n19.00,3.00,0.981\n21.00,3.00,0.998\n23.00,3.00,1.000\n1.00,5.00,1.000\n3.00,5.00,0.991\n5.00,5.00,0.892\n7.00,5.00,0.857\n9.00,5.00,0.984\n11.00,5.00,1.000\n13.00,5.00,1.000\n15.00,5.00,0.986\n17.00,5.00,0.873\n19.00,5.00,0.916\n21.00,5.00,0.992\n23.00,5.00,1.000\n1.00,7.00,0.990\n3.00,7.00,0.981\n5.00,7.00,0.675\n7.00,7.00,0.685\n9.00,7.00,1.000\n11.00,7.00,1.000\n13.00,7.00,1.000\n15.00,7.00,1.000\n17.00,7.00,0.701\n19.00,7.00,0.707\n21.00,7.00,0.982\n23.00,7.00,0.993\n1.00,9.00,0.877\n3.00,9.00,0.957\n5.00,9.00,0.804\n7.00,9.00,1.000\n9.00,9.00,1.000\n11.00,9.00,1.000\n13.00,9.00,1.000\n15.00,9.00,1.000\n17.00,9.00,1.000\n19.00,9.00,0.820\n21.00,9.00,0.963\n23.00,9.00,0.914\n1.00,11.00,0.481\n3.00,11.00,0.968\n5.00,11.00,1.000\n7.00,11.00,1.000\n9.00,11.00,1.000\n15.00,11.00,1.000\n17.00,11.00,1.000\n19.00,11.00,1.000\n21.00,11.00,0.971\n23.00,11.00,0.550\n1.00,13.00,0.167\n3.00,13.00,0.915\n5.00,13.00,1.000\n7.00,13.00,1.000\n17.00,13.00,1.000\n19.00,13.00,1.000\n21.00,13.00,0.928\n23.00,13.00,0.191\n3.00,15.00,0.463\n5.00,15.00,1.000\n7.00,15.00,1.000\n17.00,15.00,1.000\n19.00,15.00,1.000\n21.00,15.00,0.565\n3.00,17.00,0.095\n5.00,17.00,1.000\n7.00,17.00,1.000\n17.00,17.00,1.000\n19.00,17.00,1.000\n21.00,17.00,0.111\n5.00,19.00,1.000\n7.00,19.00,1.000\n9.00,19.00,1.000\n15.00,19.00,1.000\n17.00,19.00,1.000\n19.00,19.00,1.000\n5.00,21.00,0.136\n7.00,21.00,1.000\n9.00,21.00,1.000\n11.00,21.00,1.000\n13.00,21.00,1.000\n15.00,21.00,1.000\n17.00,21.00,1.000\n19.00,21.00,0.136\n7.00,23.00,0.136\n9.00,23.00,1.000\n11.00,23.00,1.000\n13.00,23.00,1.000\n15.00,23.00,1.000\n17.00,23.00,0.136\n11.00,25.00,0.053\n13.00,25.00,0.053",
   [
    [
     0.0,
@@ -265,6 +265,12 @@
    ],
    [
     0.0,
+    10.0,
+    2.0,
+    10.0
+   ],
+   [
+    0.0,
     8.0,
     0.0,
     10.0
@@ -288,15 +294,9 @@
     10.0
    ],
    [
-    0.0,
-    12.0,
     2.0,
-    12.0
-   ],
-   [
-    0.0,
     10.0,
-    0.0,
+    2.0,
     12.0
    ],
    [
@@ -337,38 +337,38 @@
    ],
    [
     2.0,
-    12.0,
-    2.0,
-    14.0
-   ],
-   [
-    8.0,
-    12.0,
-    8.0,
-    14.0
-   ],
-   [
-    16.0,
-    12.0,
-    16.0,
-    14.0
-   ],
-   [
-    22.0,
-    12.0,
-    22.0,
-    14.0
-   ],
-   [
-    2.0,
-    16.0,
+    14.0,
     4.0,
-    16.0
+    14.0
    ],
    [
     2.0,
-    14.0,
+    12.0,
     2.0,
+    14.0
+   ],
+   [
+    8.0,
+    12.0,
+    8.0,
+    14.0
+   ],
+   [
+    16.0,
+    12.0,
+    16.0,
+    14.0
+   ],
+   [
+    22.0,
+    12.0,
+    22.0,
+    14.0
+   ],
+   [
+    4.0,
+    14.0,
+    4.0,
     16.0
    ],
    [

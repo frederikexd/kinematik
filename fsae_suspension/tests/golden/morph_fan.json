@@ -43,7 +43,7 @@
   "cases": [
    {
     "F_N": 900.0,
-    "angle_deg": -0.0,
+    "angle_deg": 0.0,
     "n_instants": 2,
     "t_hi_ms": 100.0,
     "t_lo_ms": 0.0,
@@ -61,36 +61,36 @@
  "lf": {
   "cases": [
    {
-    "F_N": 2800.0,
-    "angle_deg": -9.7,
-    "n_instants": 2,
-    "t_hi_ms": 60.0,
-    "t_lo_ms": 50.0,
-    "weight": 0.398
-   },
-   {
-    "F_N": 1900.0,
-    "angle_deg": 21.8,
-    "n_instants": 2,
-    "t_hi_ms": 30.0,
-    "t_lo_ms": 20.0,
-    "weight": 0.263
-   },
-   {
-    "F_N": 1300.0,
-    "angle_deg": 42.2,
-    "n_instants": 2,
-    "t_hi_ms": 10.0,
-    "t_lo_ms": 0.0,
-    "weight": 0.173
-   },
-   {
     "F_N": 2200.0,
-    "angle_deg": 5.9,
-    "n_instants": 1,
+    "angle_deg": -10.7,
+    "n_instants": 2,
     "t_hi_ms": 40.0,
-    "t_lo_ms": 40.0,
-    "weight": 0.165
+    "t_lo_ms": 30.0,
+    "weight": 0.308
+   },
+   {
+    "F_N": 1600.0,
+    "angle_deg": -35.5,
+    "n_instants": 3,
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.293
+   },
+   {
+    "F_N": 2800.0,
+    "angle_deg": 13.7,
+    "n_instants": 1,
+    "t_hi_ms": 60.0,
+    "t_lo_ms": 60.0,
+    "weight": 0.211
+   },
+   {
+    "F_N": 2500.0,
+    "angle_deg": 4.6,
+    "n_instants": 1,
+    "t_hi_ms": 50.0,
+    "t_lo_ms": 50.0,
+    "weight": 0.188
    }
   ],
   "inplane_share": 1.0,
@@ -98,14 +98,14 @@
   "n_instants": 7,
   "peak_F_N": 2800.0,
   "reversal_share": 0.0,
-  "span_deg": 51.9,
+  "span_deg": 49.2,
   "warnings": []
  },
  "lf_1": {
   "cases": [
    {
     "F_N": 2800.0,
-    "angle_deg": 4.8,
+    "angle_deg": -4.8,
     "n_instants": 7,
     "t_hi_ms": 60.0,
     "t_lo_ms": 0.0,
@@ -124,7 +124,7 @@
   "cases": [
    {
     "F_N": 2800.0,
-    "angle_deg": -13.7,
+    "angle_deg": 13.7,
     "n_instants": 1,
     "t_hi_ms": 60.0,
     "t_lo_ms": 60.0,
@@ -132,7 +132,7 @@
    },
    {
     "F_N": 2500.0,
-    "angle_deg": -4.6,
+    "angle_deg": 4.6,
     "n_instants": 1,
     "t_hi_ms": 50.0,
     "t_lo_ms": 50.0,
@@ -140,7 +140,7 @@
    },
    {
     "F_N": 2200.0,
-    "angle_deg": 5.9,
+    "angle_deg": -5.9,
     "n_instants": 1,
     "t_hi_ms": 40.0,
     "t_lo_ms": 40.0,
@@ -148,7 +148,7 @@
    },
    {
     "F_N": 1900.0,
-    "angle_deg": 17.1,
+    "angle_deg": -17.1,
     "n_instants": 1,
     "t_hi_ms": 30.0,
     "t_lo_ms": 30.0,
@@ -156,7 +156,7 @@
    },
    {
     "F_N": 1600.0,
-    "angle_deg": 28.4,
+    "angle_deg": -28.4,
     "n_instants": 1,
     "t_hi_ms": 20.0,
     "t_lo_ms": 20.0,
@@ -164,7 +164,7 @@
    },
    {
     "F_N": 1300.0,
-    "angle_deg": 38.8,
+    "angle_deg": -38.8,
     "n_instants": 1,
     "t_hi_ms": 10.0,
     "t_lo_ms": 10.0,
@@ -172,7 +172,7 @@
    },
    {
     "F_N": 1000.0,
-    "angle_deg": 48.0,
+    "angle_deg": -48.0,
     "n_instants": 1,
     "t_hi_ms": 0.0,
     "t_lo_ms": 0.0,
@@ -191,7 +191,7 @@
   "cases": [
    {
     "F_N": 2800.0,
-    "angle_deg": -13.7,
+    "angle_deg": 13.7,
     "n_instants": 1,
     "t_hi_ms": 60.0,
     "t_lo_ms": 60.0,
@@ -199,15 +199,23 @@
    },
    {
     "F_N": 2500.0,
-    "angle_deg": -4.6,
+    "angle_deg": 4.6,
     "n_instants": 1,
     "t_hi_ms": 50.0,
     "t_lo_ms": 50.0,
     "weight": 0.188
    },
    {
+    "F_N": 1300.0,
+    "angle_deg": -42.2,
+    "n_instants": 2,
+    "t_hi_ms": 10.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.173
+   },
+   {
     "F_N": 2200.0,
-    "angle_deg": 5.9,
+    "angle_deg": -5.9,
     "n_instants": 1,
     "t_hi_ms": 40.0,
     "t_lo_ms": 40.0,
@@ -215,7 +223,7 @@
    },
    {
     "F_N": 1900.0,
-    "angle_deg": 17.1,
+    "angle_deg": -17.1,
     "n_instants": 1,
     "t_hi_ms": 30.0,
     "t_lo_ms": 30.0,
@@ -223,27 +231,11 @@
    },
    {
     "F_N": 1600.0,
-    "angle_deg": 28.4,
+    "angle_deg": -28.4,
     "n_instants": 1,
     "t_hi_ms": 20.0,
     "t_lo_ms": 20.0,
     "weight": 0.12
-   },
-   {
-    "F_N": 1300.0,
-    "angle_deg": 38.8,
-    "n_instants": 1,
-    "t_hi_ms": 10.0,
-    "t_lo_ms": 10.0,
-    "weight": 0.098
-   },
-   {
-    "F_N": 1000.0,
-    "angle_deg": 48.0,
-    "n_instants": 1,
-    "t_hi_ms": 0.0,
-    "t_lo_ms": 0.0,
-    "weight": 0.075
    }
   ],
   "inplane_share": 1.0,
@@ -251,34 +243,34 @@
   "n_instants": 7,
   "peak_F_N": 2800.0,
   "reversal_share": 0.0,
-  "span_deg": 61.7,
+  "span_deg": 55.9,
   "warnings": []
  },
  "lf_full": {
   "cases": [
    {
-    "F_N": 2799.9999999999995,
-    "angle_deg": -5.697218710566892,
+    "F_N": 2199.9999999999995,
+    "angle_deg": -20.108902915214305,
     "dir2": [
-     0.9950603900335053,
-     -0.09927144698435797
+     0.9390408411332074,
+     -0.34380561176897373
     ],
-    "n_instants": 3,
-    "t_hi_s": 0.06,
-    "t_lo_s": 0.04,
-    "weight": 0.5639097744360902
+    "n_instants": 5,
+    "t_hi_s": 0.04,
+    "t_lo_s": 0.0,
+    "weight": 0.6015037593984962
    },
    {
-    "F_N": 1899.9999999999995,
-    "angle_deg": 27.968114161588083,
+    "F_N": 2799.9999999999995,
+    "angle_deg": 9.659946586489312,
     "dir2": [
-     0.8832087230825737,
-     0.4689801184174546
+     0.9858210130772962,
+     0.16780026869839457
     ],
-    "n_instants": 4,
-    "t_hi_s": 0.03,
-    "t_lo_s": 0.0,
-    "weight": 0.4360902255639098
+    "n_instants": 2,
+    "t_hi_s": 0.06,
+    "t_lo_s": 0.05,
+    "weight": 0.39849624060150374
    }
   ],
   "e1": [
@@ -287,28 +279,28 @@
    0.2944951600507147
   ],
   "e2": [
-   0.029303363658730548,
-   0.29303363658730414,
-   -0.9556529708564213
+   -0.029303363658730548,
+   -0.29303363658730414,
+   0.9556529708564213
   ],
   "inplane_share": 0.9999999999999999,
   "member": "LF",
   "n_instants": 7,
   "normal": [
-   -0.9950371902099889,
-   0.09950371902099904,
-   -9.71445146547012e-17
+   0.9950371902099889,
+   -0.09950371902099904,
+   9.71445146547012e-17
   ],
   "peak_F_N": 2799.9999999999995,
   "reversal_share": 0.0,
-  "span_deg": 33.66533287215498,
+  "span_deg": 29.768849501703617,
   "warnings": []
  },
  "m_LR": {
   "cases": [
    {
     "F_N": 800.0,
-    "angle_deg": 180.0,
+    "angle_deg": -0.0,
     "n_instants": 3,
     "t_hi_ms": 20.0,
     "t_lo_ms": 0.0,
@@ -327,7 +319,7 @@
   "cases": [
    {
     "F_N": 800.0,
-    "angle_deg": 180.0,
+    "angle_deg": -0.0,
     "n_instants": 3,
     "t_hi_ms": 20.0,
     "t_lo_ms": 0.0,
@@ -346,7 +338,7 @@
   "cases": [
    {
     "F_N": 800.0,
-    "angle_deg": 0.0,
+    "angle_deg": -0.0,
     "n_instants": 3,
     "t_hi_ms": 20.0,
     "t_lo_ms": 0.0,
@@ -365,7 +357,7 @@
   "cases": [
    {
     "F_N": 800.0,
-    "angle_deg": 180.0,
+    "angle_deg": 0.0,
     "n_instants": 3,
     "t_hi_ms": 20.0,
     "t_lo_ms": 0.0,
@@ -605,7 +597,7 @@
   "cases": [
    {
     "F_N": 850.0,
-    "angle_deg": 172.0,
+    "angle_deg": -8.0,
     "n_instants": 2,
     "t_hi_ms": 10.0,
     "t_lo_ms": 0.0,
@@ -613,7 +605,7 @@
    },
    {
     "F_N": 950.0,
-    "angle_deg": -171.0,
+    "angle_deg": 9.0,
     "n_instants": 1,
     "t_hi_ms": 30.0,
     "t_lo_ms": 30.0,
@@ -621,7 +613,7 @@
    },
    {
     "F_N": 900.0,
-    "angle_deg": -178.5,
+    "angle_deg": 1.5,
     "n_instants": 1,
     "t_hi_ms": 20.0,
     "t_lo_ms": 20.0,
@@ -639,8 +631,16 @@
  "pr_proxy": {
   "cases": [
    {
+    "F_N": 850.0,
+    "angle_deg": -3.4,
+    "n_instants": 2,
+    "t_hi_ms": 10.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.471
+   },
+   {
     "F_N": 950.0,
-    "angle_deg": 176.2,
+    "angle_deg": 3.8,
     "n_instants": 1,
     "t_hi_ms": 30.0,
     "t_lo_ms": 30.0,
@@ -648,19 +648,11 @@
    },
    {
     "F_N": 900.0,
-    "angle_deg": 179.3,
-    "n_instants": 2,
-    "t_hi_ms": 20.0,
-    "t_lo_ms": 10.0,
-    "weight": 0.5
-   },
-   {
-    "F_N": 800.0,
-    "angle_deg": -175.3,
+    "angle_deg": 0.7,
     "n_instants": 1,
-    "t_hi_ms": 0.0,
-    "t_lo_ms": 0.0,
-    "weight": 0.229
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 20.0,
+    "weight": 0.257
    }
   ],
   "inplane_share": 1.0,
@@ -668,7 +660,7 @@
   "n_instants": 4,
   "peak_F_N": 950.0,
   "reversal_share": 0.0,
-  "span_deg": 8.5,
+  "span_deg": 7.1,
   "warnings": [
    "no rocker defined — pushrod inner proxied 200 mm above the upper-front pickup; treat the PR fan as indicative only."
   ]
@@ -676,36 +668,36 @@
  "rev": {
   "cases": [
    {
-    "F_N": 2800.0,
-    "angle_deg": -15.7,
-    "n_instants": 2,
-    "t_hi_ms": 60.0,
-    "t_lo_ms": 50.0,
-    "weight": 0.301
+    "F_N": 1900.0,
+    "angle_deg": -21.9,
+    "n_instants": 4,
+    "t_hi_ms": 30.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.33
    },
    {
     "F_N": 2500.0,
-    "angle_deg": -161.5,
+    "angle_deg": 6.1,
+    "n_instants": 2,
+    "t_hi_ms": 50.0,
+    "t_lo_ms": 40.0,
+    "weight": 0.267
+   },
+   {
+    "F_N": 2500.0,
+    "angle_deg": 161.5,
     "n_instants": 2,
     "t_hi_ms": 210.0,
     "t_lo_ms": 200.0,
     "weight": 0.244
    },
    {
-    "F_N": 2200.0,
-    "angle_deg": 4.6,
-    "n_instants": 2,
-    "t_hi_ms": 40.0,
-    "t_lo_ms": 30.0,
-    "weight": 0.233
-   },
-   {
-    "F_N": 1600.0,
-    "angle_deg": 29.4,
-    "n_instants": 3,
-    "t_hi_ms": 20.0,
-    "t_lo_ms": 0.0,
-    "weight": 0.222
+    "F_N": 2800.0,
+    "angle_deg": 19.7,
+    "n_instants": 1,
+    "t_hi_ms": 60.0,
+    "t_lo_ms": 60.0,
+    "weight": 0.159
    }
   ],
   "inplane_share": 1.0,
@@ -713,7 +705,7 @@
   "n_instants": 9,
   "peak_F_N": 2800.0,
   "reversal_share": 0.244,
-  "span_deg": 169.0,
+  "span_deg": 176.5,
   "warnings": [
    "the member force REVERSES sign for 24% of the event's load exposure — the tab is loaded both ways; the fan carries both arrows."
   ]
@@ -722,9 +714,9 @@
   "cases": [
    {
     "F_N": 899.9999999999998,
-    "angle_deg": -170.09131870715268,
+    "angle_deg": -9.908681292847348,
     "dir2": [
-     -0.9850832646409154,
+     0.9850832646409154,
      -0.172078359256462
     ],
     "n_instants": 1,
@@ -734,9 +726,9 @@
    },
    {
     "F_N": 699.9999999999999,
-    "angle_deg": 156.9501501959592,
+    "angle_deg": 23.04984980404081,
     "dir2": [
-     -0.9201645521296293,
+     0.9201645521296293,
      0.39153185950070346
     ],
     "n_instants": 1,
@@ -746,9 +738,9 @@
    }
   ],
   "e1": [
-   -0.09947624042902851,
-   -0.9947624042902846,
-   0.02349971490716749
+   0.09947624042902851,
+   0.9947624042902846,
+   -0.02349971490716749
   ],
   "e2": [
    0.0023383090291963643,
@@ -759,13 +751,13 @@
   "member": "LF",
   "n_instants": 2,
   "normal": [
-   -0.9950371902099887,
-   0.09950371902099893,
-   2.168404344971009e-18
+   0.9950371902099887,
+   -0.09950371902099893,
+   -2.168404344971009e-18
   ],
   "peak_F_N": 899.9999999999998,
   "reversal_share": 0.0,
-  "span_deg": 32.95853109688811,
+  "span_deg": 32.95853109688816,
   "warnings": []
  },
  "sym": {

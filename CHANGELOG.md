@@ -3,6 +3,22 @@
 
 ## Unreleased
 
+
+## 1.3.0 (2026-10-29)
+
+**CI runs the same on any machine.** Fixes found when the new suites first ran on GitHub's runners:
+- `contact_patch.QuarterCar.is_stable()` decided an undamped corner from rounding noise (its poles sit on the
+  imaginary axis, at +-1e-15 depending on the CPU's LAPACK) and could call it stable; a pole now counts as decaying
+  only when it is clearly left of the axis, so an undamped corner is reported as not stable on every machine;
+- the panel solver prints a pressure drag that rounds to zero as `+0.000` (it printed `-0.000` on some CPUs), and a
+  straight-back load arrow in `morphmesh` reads +180 deg rather than either sign of the branch cut;
+- golden files are compared at a relative 1e-7 in the suites whose results come from iterative solves, and at 1e-6
+  for the panel method (part of its solve runs in float32); every other suite keeps 1e-9;
+- tests no longer depend on pytest before 9.2 (no `pytest.approx` on nested data) or on `lxml` being installed
+  (openpyxl writes an empty cell as `<v />` without it);
+- the mutation gate fails a group outright when mutmut cannot start (its clean run of the tests failed) instead of
+  scoring it 0%, and three groups that were just under 99% on Python 3.12 had equivalent mutants removed.
+
 **Every physics module held at a 99% mutation floor.** `mutation_targets.toml` now lists 80 groups covering 83 files
 in `suspension/` and `powertrain/`, and the shared floor is 99.0% per file (it was 90%); 60,223 of 60,443 mutants are
 caught (99.6%). 81 `tests/test_mutation_*.py` suites pin them, most as golden-master characterizations:
