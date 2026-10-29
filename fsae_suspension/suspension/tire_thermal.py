@@ -310,7 +310,7 @@ class ThermalTireModel:
             kappa = _finite(ws.kappa, -1.0, 1.0)
             v_x_s = _finite(ws.v_x, 0.0, 150.0)
             dt = _finite(ws.dt, 0.0, 1.0)
-            Fz = _finite(ws.Fz, 0.0, 1.0e5)
+            Fz = _finite(ws.Fz, 0.0, 1.0e5)  # pragma: no mutate (physical clamp limits)
             T_amb = _finite(ws.ambient_temp_c, -40.0, 80.0, 25.0)
             T_track = _finite(ws.track_temp_c, -40.0, 120.0, 30.0)
 

@@ -14,6 +14,10 @@ from suspension.aero import cfd
 from suspension.aero import panel_method as pm
 from tests._golden import check, plain
 
+# part of the solve runs in float32, so results agree across CPUs only to about 1e-7 (a zero lift reads as +-1e-9
+# noise); 1e-6 still fails every mutant that changes the physics
+_TOL = dict(rel=1e-6, abs_=1e-6)
+
 PM = pm.PanelMethodModel
 
 
@@ -73,11 +77,11 @@ def test_solves(geo, tmp_path, monkeypatch):
                        PM(P(lifting=False)).read_result(_spec(geo["sphere"]), "x")]
     res["prov"] = [PM().provenance(), PM().provenance(0), PM().provenance(77)]
     res["name"] = [PM.name, pm._MEMORY_BUDGET_MB, PM._NEAR_R, P()]
-    check("panel_solves", _norm(res, tmp_path))
+    check("panel_solves", _norm(res, tmp_path), **_TOL)
 
 
 def test_real_lattice_call(geo, tmp_path):
-    check("panel_lattice", _norm({"r": PM().solve(_spec(geo["slab"]))}, tmp_path))
+    check("panel_lattice", _norm({"r": PM().solve(_spec(geo["slab"]))}, tmp_path), **_TOL)
 
 
 def test_solver_fallbacks(geo, tmp_path, monkeypatch):
@@ -112,7 +116,7 @@ def test_solver_fallbacks(geo, tmp_path, monkeypatch):
         m.setattr(sl, "lu_factor", lambda A, **k: (lambda lu: (lu[0] * np.where(np.eye(len(A)) > 0, 1e-6, 1.0)
                                                               if False else lu[0], lu[1]))(real(A, **k)))
         res["ok_again"] = PM(P).solve(s).converged
-    check("panel_fallbacks", _norm(res, tmp_path))
+    check("panel_fallbacks", _norm(res, tmp_path), **_TOL)
 
 
 def test_load_panels(geo, tmp_path, monkeypatch):
@@ -165,7 +169,7 @@ def test_load_panels(geo, tmp_path, monkeypatch):
     with monkeypatch.context() as mp:
         mp.setattr(trimesh, "load", no_bbox)
         res["no_bbox"] = m.solve(_spec(geo["thin"])).c_lift
-    check("panel_load", _norm(res, tmp_path))
+    check("panel_load", _norm(res, tmp_path), **_TOL)
 
 
 class _NoBox:
@@ -226,7 +230,7 @@ def test_kernels_and_helpers(monkeypatch):
                   ([1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0], [1.0, 1.0, -1.0, -1.0], [2.0, 1.0, 0.5, 0.5],
                    [1.0, 1.0, -0.9, -0.9], [1.0, 1.0, -0.5, -0.5], [-1.0, 0.2, 1.0, 1.0], [5.0, 0.0, 0.0, 0.2])]
     res["free"] = [pm._freestream_unit(cfd.Attitude(yaw_deg=y)) for y in (0.0, 10.0, -90.0)]
-    check("panel_kernels", res)
+    check("panel_kernels", res, **_TOL)
 
 
 def _stl(tmp_path, name, mesh):
@@ -287,7 +291,7 @@ def test_characterized_blocks_and_guards(tmp_path, monkeypatch):
             res[f"mem_{k}"] = "solved"
         except pm.PanelMethodUnavailable as e:
             res[f"mem_{k}"] = str(e)
-    check("panel_blocks", _norm(res, tmp_path))
+    check("panel_blocks", _norm(res, tmp_path), **_TOL)
 
 
 def test_characterized_defaults_and_messages(geo, tmp_path, monkeypatch):
@@ -312,4 +316,4 @@ def test_characterized_defaults_and_messages(geo, tmp_path, monkeypatch):
                                                                           np.full(2, 0.004), tris2)]
     m1 = PM(pm.PanelParams(ground_effect=True))
     res["note"] = m1._resolution_warning(c, np.full(6, 0.36), 1.0)
-    check("panel_defaults", _norm(res, tmp_path))
+    check("panel_defaults", _norm(res, tmp_path), **_TOL)

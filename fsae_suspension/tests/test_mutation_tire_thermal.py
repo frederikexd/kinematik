@@ -399,3 +399,31 @@ def test_the_warm_up_tread_follows_every_input_exactly():
                     ambient_temp_c=12.0, track_temp_c=40.0, dt=0.01)
     tread = np.array([m.step(ws).tread_temp_c for _ in range(30)])
     assert r.tread_c == pytest.approx(tread, rel=1e-13)
+
+
+class _ForcesOf(_Flat):
+    """_Flat with chosen tyre forces, so the heat from friction can be compared between force sets."""
+
+    def __init__(self, fx, fy, **kw):
+        super().__init__(**kw)
+        self.fx, self.fy = fx, fy
+
+    def step(self, ws):
+        o = super().step(ws)
+        o.Fy, o.Fx = self.fy, self.fx
+        return o
+
+
+def test_non_finite_forces_heat_like_no_force_and_the_track_counts():
+    ws = WheelState(alpha=0.1, kappa=0.08, v_x=20.0, Fz=900.0, dt=0.01, ambient_temp_c=25.0, track_temp_c=40.0)
+
+    def tread(fx, fy, w=ws):
+        o = tt.ThermalTireModel(reference=_ForcesOf(fx, fy, lateral=tt.default_tire())).step(w)
+        return [*o.tread_temp_c, o.carcass_temp_c]
+    assert tread(float("nan"), float("nan")) == pytest.approx(tread(0.0, 0.0), rel=1e-12)
+    assert tread(float("inf"), 0.0) == pytest.approx(tread(0.0, 0.0), rel=1e-12)
+    assert tread(0.0, float("-inf")) == pytest.approx(tread(0.0, 0.0), rel=1e-12)
+    assert tread(400.0, 0.0) != pytest.approx(tread(0.0, 0.0), rel=1e-12)       # a finite Fx does heat the tread
+    assert tread(0.0, 400.0) != pytest.approx(tread(0.0, 0.0), rel=1e-12)
+    hot = WheelState(**{**vars(ws), "track_temp_c": 90.0}) if hasattr(ws, "__dict__") else None
+    assert tread(250.0, 600.0, hot) != pytest.approx(tread(250.0, 600.0), rel=1e-12)   # the track temperature is read

@@ -43,7 +43,7 @@ def plain(x):
     return repr(x)
 
 
-def _same(a, b, path):
+def _same(a, b, path, rel=1e-9, abs_=1e-12):
     if isinstance(a, bool) or isinstance(b, bool):
         if type(a) is not type(b) or a != b:
             raise AssertionError(f"{path}: {a!r} != {b!r}")
@@ -51,27 +51,27 @@ def _same(a, b, path):
     if isinstance(a, float) or isinstance(b, float):
         if not (isinstance(a, (int, float)) and isinstance(b, (int, float))):
             raise AssertionError(f"{path}: {a!r} != {b!r}")
-        if not math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-12):
+        if not math.isclose(a, b, rel_tol=rel, abs_tol=abs_):
             raise AssertionError(f"{path}: {a!r} != {b!r}")
         return
     if isinstance(a, dict) and isinstance(b, dict):
         if set(a) != set(b):
             raise AssertionError(f"{path}: keys {sorted(set(a) ^ set(b))} differ")
         for k in a:
-            _same(a[k], b[k], f"{path}.{k}")
+            _same(a[k], b[k], f"{path}.{k}", rel, abs_)
         return
     if isinstance(a, list) and isinstance(b, list):
         if len(a) != len(b):
             raise AssertionError(f"{path}: length {len(a)} != {len(b)}")
         for i, (u, v) in enumerate(zip(a, b)):
-            _same(u, v, f"{path}[{i}]")
+            _same(u, v, f"{path}[{i}]", rel, abs_)
         return
     if a != b or type(a) is not type(b):
         raise AssertionError(f"{path}: {a!r} != {b!r}")
 
 
-def check(name, results):
-    """`results` maps a case label to any value; compares with tests/golden/<name>.json."""
+def check(name, results, rel=1e-9, abs_=1e-12):
+    """`results` maps a case label to any value; compares with tests/golden/<name>.json (floats at `rel`/`abs_`)."""
     got = plain(results)
     path = GOLDEN_DIR / f"{name}.json"
     if os.environ.get("KINEMATIK_GOLDEN_RECORD") == "1" or not path.exists():
@@ -85,4 +85,4 @@ def check(name, results):
         assert k in got, f"case {k} missing"
     for k in got:
         assert k in want, f"case {k} not recorded"
-        _same(got[k], want[k], k)
+        _same(got[k], want[k], k, rel, abs_)
