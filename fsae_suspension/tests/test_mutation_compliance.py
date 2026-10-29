@@ -219,7 +219,10 @@ def test_the_solved_corner_is_a_fixed_point_of_force_and_deflection():
     rigid = SuspensionKinematics(HP).static
     assert r.change["toe"] == pytest.approx(st.toe - rigid.toe, abs=1e-9)
     full = ek.solve_elastokinematic(HP, spec, tol_mm=1e-10)
-    assert full.pickup_deflection_mm == pytest.approx(r.pickup_deflection_mm)
+    # pickup by pickup: pytest.approx does not take a mapping whose values are vectors
+    assert set(full.pickup_deflection_mm) == set(r.pickup_deflection_mm)
+    for p, d in r.pickup_deflection_mm.items():
+        assert full.pickup_deflection_mm[p] == pytest.approx(d)
     assert full.member_forces == pytest.approx(r.member_forces) and full.provenance == "declared"
     assert full.iterations == r.iterations and full.link_deflection_mm == pytest.approx(r.link_deflection_mm)
     assert full.all_member_forces == pytest.approx(r.all_member_forces)

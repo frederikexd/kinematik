@@ -31,8 +31,9 @@ def _cache(path, cached):
             data = zin.read(item.filename)
             if item.filename.startswith("xl/worksheets/"):
                 txt = data.decode()
-                for f, v in cached.items():
-                    txt = txt.replace(f"<f>{f}</f><v></v>", f"<f>{f}</f><v>{v}</v>")
+                for f, v in cached.items():       # openpyxl writes <v></v> with lxml and <v /> without it
+                    txt = re.sub(f"<f>{re.escape(f)}</f><v(?:></v>| ?/>)", lambda m, f=f, v=v: f"<f>{f}</f><v>{v}</v>",
+                                 txt)
                 data = txt.encode()
             zout.writestr(item, data)
     shutil.move(tmp, path)

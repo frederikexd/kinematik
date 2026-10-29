@@ -49,6 +49,8 @@ from .kinematics import Hardpoints, SuspensionKinematics
 
 _ROWDOT = "ij,ij->i"          # row-wise dot product
 _NO_RADIUS = np.zeros(1)
+_N_NODE_CANDIDATES = 6
+_AXIS_BOX = 0.5
 _float_array = partial(np.asarray, dtype=float)
 
 ACTUATION_POINTS = ("pushrod_outer", "rocker_pivot", "rocker_pushrod",
@@ -335,8 +337,8 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
                          seed: int = 0, ride_hz: float | None = None,
                          sprung_corner_kg: float | None = None,
                          nodes=None, standoff_mm: float = 24.0,
-                         n_node_candidates: int = 6, wheel_obstacles: Sequence = (),
-                         pushrod_skip_mm: float = 0.0, axis_box: float = 0.5,
+                         n_node_candidates: int = _N_NODE_CANDIDATES, wheel_obstacles: Sequence = (),
+                         pushrod_skip_mm: float = 0.0, axis_box: float = _AXIS_BOX,
                          member_radii=(0.0, 0.0, 0.0, 0.0), spring_skip_mm: float = 0.0) -> ActuationResult:
     """Place the actuation points so the linkage meets ``targets``.
 
@@ -390,7 +392,7 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
         except Exception:                                    # noqa: BLE001
             continue
         r = _residual(actuation_metrics(_set(hp, sol.x, pts), t.travel_mm, **kw), t)
-        score = float(np.sum(r ** 2))
+        score = float(np.dot(r, r))
         if best is None or score < best[0]:  # pragma: no mutate (a tie keeps the first)
             best = (score, sol.x, r)
         if score <= 1e-12:  # pragma: no mutate (tolerance)
@@ -436,7 +438,8 @@ def _synthesize_on_nodes(hp, t, pts, box_mm, pushrod_box_mm, obstacles, N,
                 setattr(h, p, _vec(getattr(hp, p)) + d)
             h.spring_inner = _toward(b, h.rocker_spring, standoff)
             m = actuation_metrics(h, t.travel_mm, obstacles=obstacles, nodes=N)
-            seeds.append((float(np.sum(_residual(m, t) ** 2)), h))
+            r0 = _residual(m, t)
+            seeds.append((float(np.dot(r0, r0)), h))
     seeds.sort(key=lambda z: z[0])
     best = None
     for _, h0 in seeds[:max(1, n_starts)]:
@@ -454,7 +457,7 @@ def _synthesize_on_nodes(hp, t, pts, box_mm, pushrod_box_mm, obstacles, N,
             continue
         hh = _set(h0, sol.x, pts)
         r = _residual(actuation_metrics(hh, t.travel_mm, obstacles=obstacles, nodes=N), t)
-        sc = float(np.sum(r ** 2))
+        sc = float(np.dot(r, r))
         if best is None or sc < best[0]:  # pragma: no mutate (a tie keeps the first; best[1] would not compare)
             best = (sc, hh, r)
         if sc <= 1e-12:  # pragma: no mutate (tolerance)
@@ -535,10 +538,10 @@ def rocker_bearing_loads(hp: Hardpoints, cases, bearing: RockerBearing = RockerB
         fr_b = 0.5 * Fr + M / bearing.spacing_mm
         P0 = max(fr_b, bearing.X0 * fr_b + bearing.Y0 * Fa)
         s0 = bearing.C0_N / P0 if P0 > 0 else math.inf  # pragma: no mutate (unloaded guard)
+        passes = s0 >= bearing.required_s0  # pragma: no mutate (boundary)
         out.append({"case": getattr(c, "name", str(c)), "pushrod_N": T, "spring_N": f,
                     "pivot_radial_N": Fr, "pivot_axial_N": Fa, "couple_Nmm": M,
-                    "bearing_P0_N": P0, "s0": s0,
-                    "passes": s0 >= bearing.required_s0})  # pragma: no mutate (boundary)
+                    "bearing_P0_N": P0, "s0": s0, "passes": passes})
     return out
 
 
@@ -570,7 +573,6 @@ def select_rocker_bearing(hp: Hardpoints, cases, candidates) -> list[dict]:
     for b in candidates:
         rows = rocker_bearing_loads(hp, cases, b)
         s0 = min(r["s0"] for r in rows)
-        out.append({"label": b.label, "C0_N": b.C0_N, "spacing_mm": b.spacing_mm,
-                    "s0": s0,
-                    "meets": s0 >= b.required_s0})  # pragma: no mutate (boundary)
+        meets = s0 >= b.required_s0  # pragma: no mutate (boundary)
+        out.append({"label": b.label, "C0_N": b.C0_N, "spacing_mm": b.spacing_mm, "s0": s0, "meets": meets})
     return sorted(out, key=lambda r: -r["s0"])

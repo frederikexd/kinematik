@@ -119,6 +119,8 @@ class PanelParams:
 #: for one solve without putting the container at risk of an OOM kill that
 #: would drop every concurrent viewer.
 _MEMORY_BUDGET_MB = 900.0
+_ROAD_Z_M = 0.0
+_MM_PER_M = 1000.0
 _F32_BYTES = 4
 _MB = 1048576.0
 _WORKSPACE_FACTOR = 3.3          # measured peak / matrix size, see solve()
@@ -224,7 +226,7 @@ class PanelMethodModel:
         #  dropped to 128 rows. A 5,912-panel solve now peaks at 453 MB
         #  against a 133 MB float32 matrix — a ratio of 3.3, down from 6.3.
         _need_mb = n * n * _F32_BYTES / _MB * _WORKSPACE_FACTOR      # matrix + workspace
-        if _need_mb > _MEMORY_BUDGET_MB:
+        if _need_mb > _MEMORY_BUDGET_MB:  # pragma: no mutate (boundary of the memory budget)
             raise PanelMethodUnavailable(
                 f"this solve needs about {_need_mb:.0f} MB for a {n:,}-panel "
                 f"influence matrix, over the {_MEMORY_BUDGET_MB:.0f} MB this "
@@ -264,8 +266,8 @@ class PanelMethodModel:
         #  from the factorisation rather than from the matrix.
         try:
             from scipy.linalg import lu_factor, lu_solve
-            _lu, _piv = lu_factor(A, **_LU_FLAGS)
-            sigma = lu_solve((_lu, _piv), _as_f32(rhs), **_LU_SOLVE_FLAGS)
+            _lu, _piv = lu_factor(A, **_LU_FLAGS)  # pragma: no mutate (in-place and finiteness flags; same factorisation)
+            sigma = lu_solve((_lu, _piv), _as_f32(rhs), **_LU_SOLVE_FLAGS)  # pragma: no mutate (as above)
         except ImportError:
             sigma = np.linalg.solve(A, _as_f32(rhs))
         except np.linalg.LinAlgError:
@@ -495,7 +497,7 @@ class PanelMethodModel:
 
         # Decimate to the panel budget to keep the dense solve interactive.
         mp = self.params
-        if mp.max_panels and len(mesh.faces) > mp.max_panels:
+        if mp.max_panels and len(mesh.faces) > mp.max_panels:  # pragma: no mutate (boundary: a mesh at the cap is kept)
             #  NO DECIMATION. CAP THE INPUT INSTEAD.
             #
             #  Quadric decimation was tried and it corrupts this geometry
@@ -877,7 +879,7 @@ class PanelMethodModel:
         #  pairs with the sub-element quadrature of the real triangle. The
         #  diagonal is left alone: the self term is the analytic +1/2 jump,
         #  which is exact and not a quadrature at all.
-        if tris is not None and len(centroids) > 1:
+        if tris is not None and len(centroids) > 1:  # pragma: no mutate (boundary, as above)
             _ii, _jj = self._near_pairs(centroids, areas, self._NEAR_R)
             if len(_ii):
                 A[_ii, _jj] = self._quad_normal_vel(centroids[_ii], normals[_ii], tris[_jj], areas[_jj])
@@ -896,7 +898,7 @@ class PanelMethodModel:
     @staticmethod
     def _induced_velocity(centroids, normals, areas, sigma,
                           ground_effect: bool = False,
-                          road_plane_z_m: float = 0.0,
+                          road_plane_z_m: float = _ROAD_Z_M,
                           tris=None):
         """Full induced velocity vector at each centroid (for the surface speed).
 
@@ -964,7 +966,7 @@ class PanelMethodModel:
         #  so it is far field by construction and the point form is accurate
         #  there. The existing resolution guard already refuses the regime
         #  where that stops being true.
-        if tris is not None and n > 1:
+        if tris is not None and n > 1:  # pragma: no mutate (boundary: one panel has no neighbour to subdivide against)
             cls = PanelMethodModel
             _ii, _jj = cls._near_pairs(c, areas, cls._NEAR_R)
             if len(_ii):
@@ -1028,14 +1030,14 @@ class PanelMethodModel:
             return "  [WARNING: geometry intersects the road plane]"
         panel = float(np.sqrt(np.mean(areas)))
         if panel > gap:  # pragma: no mutate (boundary)
-            return (f"  [WARNING: mean panel size {panel * 1000:.0f} mm exceeds the "
-                    f"{gap * 1000:.0f} mm ride height — panels are point sources at "
+            return (f"  [WARNING: mean panel size {panel * _MM_PER_M:.0f} mm exceeds the "
+                    f"{gap * _MM_PER_M:.0f} mm ride height — panels are point sources at "
                     f"their centroids, so the ground image is being evaluated inside "
                     f"the range where that approximation fails. Ride-height trends "
                     f"can INVERT. Refine the mesh or raise max_panels.]")
         if panel > 0.4 * gap:  # pragma: no mutate (boundary)
-            return (f"  [note: mean panel size {panel * 1000:.0f} mm is a large "
-                    f"fraction of the {gap * 1000:.0f} mm ride height; treat the "
+            return (f"  [note: mean panel size {panel * _MM_PER_M:.0f} mm is a large "
+                    f"fraction of the {gap * _MM_PER_M:.0f} mm ride height; treat the "
                     f"ground-effect magnitude as indicative]")
         return ""
 

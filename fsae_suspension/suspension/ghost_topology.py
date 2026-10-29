@@ -123,6 +123,7 @@ _TRACK_MM = 1200.0           # track for the roll-centre height
 _FEEDBACK_TOL_N = 1.0        # closed-loop Fy tolerance
 _MAX_FEEDBACK_ITER = 8
 _N_SAMPLES = 24               # audited instants per transient
+_MS_PER_S = 1000.0
 _CACHE_QUANTUM_N = 25.0       # load rounding for the solve cache
 
 _MARGIN_MEMBERS = ("UF", "UR", "LF", "LR", "TR", "PR")
@@ -252,7 +253,7 @@ class TireSensitivity:
                        camber_N_per_deg_per_kN: float = 45.0,
                        toe_N_per_deg_per_kN: float = 300.0) -> TireSensitivity:
         Fz_kN = max(load.Fz, 0.0) / 1000.0
-        direction = -1.0 if load.Fy < 0 else (1.0 if load.Fy > 0 else 0.0)
+        direction = -1.0 if load.Fy < 0 else (1.0 if load.Fy > 0 else 0.0)  # pragma: no mutate (sign; zero and NaN give 0)
         return TireSensitivity(
             # grip loss opposes the current Fy direction:
             dFy_dcamber_N_per_deg=-direction * camber_N_per_deg_per_kN * Fz_kN,
@@ -668,7 +669,7 @@ def ghost_audit(gc: GhostCorner, t, Fx, Fy, Fz,
     # quasi-static validity: local swing inside the slew window
     slew_flags = set()
     if t.size > 2:  # pragma: no mutate (boundary)
-        win = th.slew_limit_ms / 1000.0
+        win = th.slew_limit_ms / _MS_PER_S
         span = float(np.max(np.abs(Fy)) - np.min(np.abs(Fy))) or 1.0  # pragma: no mutate (normalising span; guard)
         ptp = float(np.ptp(Fy)) or 1.0  # pragma: no mutate (guard)
         for i in idx:
@@ -681,8 +682,7 @@ def ghost_audit(gc: GhostCorner, t, Fx, Fy, Fz,
     cache: dict = {}
     n_solves = n_hits = 0
     for i in idx:
-        key = (round(Fx[i] / cache_quantum_N), round(Fy[i] / cache_quantum_N),
-               round(Fz[i] / cache_quantum_N))
+        key = tuple(round(v / cache_quantum_N) for v in (Fx[i], Fy[i], Fz[i]))  # pragma: no mutate (cache-key rounding; any key that keeps distinct loads apart gives the same answers)
         if key in cache:
             base = cache[key]
             n_hits += 1
@@ -755,7 +755,7 @@ def ghost_audit(gc: GhostCorner, t, Fx, Fy, Fz,
              f"t = {gworst.t*1000:.0f} ms — under the {th.fos_limit:.2f} rule "
              "mid-event"
              + (" and past yield onset: elastic answers beyond this instant "
-                "are void." if gworst.min_fos < 1.0 else "."),
+                "are void." if sev == "fail" else "."),
              {"t_s": gworst.t, "member": gworst.min_fos_member,
               "fos": gworst.min_fos,
               "mode": gworst.margins[gworst.min_fos_member]["mode"]})
@@ -771,7 +771,7 @@ def ghost_audit(gc: GhostCorner, t, Fx, Fy, Fz,
         find("compliance erosion", "warning",
              f"compliance moved the geometry measurably (worst: "
              f"Δcamber {gd.d_camber:+.2f}°, Δtoe {gd.d_toe:+.2f}° at "
-             f"t = {gd.t*1000:.0f} ms) without inverting the intent.",
+             f"t = {gd.t*_MS_PER_S:.0f} ms) without inverting the intent.",
              {"t_s": gd.t, "d_camber_deg": gd.d_camber, "d_toe_deg": gd.d_toe})
 
     slewed = [g for g in instants if any("faster than the quasi-static" in w

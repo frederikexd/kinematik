@@ -338,7 +338,7 @@ class _Flat(ReferenceTireModel):
 def _tread(ws, p=None):
     m = tt.ThermalTireModel(reference=_Flat(lateral=tt.default_tire()), params=p)
     o = m.step(ws)
-    return list(o.tread_temp_c), o.carcass_temp_c
+    return [*o.tread_temp_c, o.carcass_temp_c]          # flat: pytest.approx does not take nested sequences
 
 
 def test_every_input_is_clamped_to_its_physical_range():

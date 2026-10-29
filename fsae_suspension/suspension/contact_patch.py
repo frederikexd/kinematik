@@ -122,7 +122,11 @@ class QuarterCar:
         Minv = np.linalg.inv(M)
         A = np.block([[np.zeros((2, 2)), np.eye(2)],
                       [-Minv @ Kmat, -Minv @ Cmat]])
-        return bool(np.all(np.linalg.eigvals(A).real < 0.0))  # pragma: no mutate (float threshold: a pole on the axis is not decaying either way)
+        lam = np.linalg.eigvals(A)
+        # an undamped mode has its pole ON the imaginary axis; rounding puts it at +-1e-15 depending on the CPU's
+        # LAPACK, so a pole counts as decaying only when it is clearly left of the axis
+        tol = 1e-9 * float(np.max(np.abs(lam)))
+        return bool(np.all(lam.real < -tol))  # pragma: no mutate (float threshold: a pole on the axis is not decaying either way)
 
 
 def kappa_from_anti(anti_pct: float, cg_height_mm: float, wheelbase_mm: float,
